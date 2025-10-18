@@ -25,10 +25,9 @@ const MainWrapper = styled.section`
   @media (max-width: 992px) {
     flex-direction: column;
     align-items: center;
-    padding: 2rem;
+    border-radius: 0;
     gap: 2rem;
     margin: 0;
-    max-width: 95%;
   }
 `;
 

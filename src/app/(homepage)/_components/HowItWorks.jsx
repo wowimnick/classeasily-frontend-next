@@ -17,7 +17,6 @@ const HowItWorksWrapper = styled.section`
   background: linear-gradient(45deg, rgb(175, 16, 16), rgb(218, 84, 88));
   position: relative;
   overflow: hidden;
-  font-family: "Proxima Soft", sans-serif;
   min-height: 800px;
   display: flex;
   flex-direction: column;
@@ -49,15 +48,27 @@ const Pattern = styled.div`
   background-size: cover;
   opacity: 1;
   pointer-events: none;
+
+  @media (max-width: 768px) {
+    height: 180px;
+  }
 `;
 
 const TopPattern = styled(Pattern)`
   top: -20px;
+
+  @media (max-width: 768px) {
+    top: -10px;
+  }
 `;
 
 const BottomPattern = styled(Pattern)`
   bottom: -20px;
   transform: rotate(180deg);
+
+  @media (max-width: 768px) {
+    bottom: -10px;
+  }
 `;
 
 const ContentContainer = styled.div`
@@ -77,7 +88,7 @@ const ContentContainer = styled.div`
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 15rem 0;
+    padding: 8rem 0;
     gap: 3rem;
     text-align: center;
   }
@@ -95,63 +106,68 @@ const FirstElement = styled.div`
     align-items: center;
     text-align: center;
     flex: initial;
+    gap: 0.75rem;
   }
   @media (max-width: 768px) {
     width: 100%;
+    gap: 1rem;
   }
 `;
 
 const ButtonWrapper = styled.div`
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
 
   @media (max-width: 768px) {
     width: 100%;
-    justify-content: center;
-  }
-  @media (max-width: 480px) {
-    flex-direction: column;
-    align-items: center;
+    max-width: 400px;
+    gap: 0.625rem;
   }
 `;
 
-const RoundedButton = styled(motion.div)`
+const RoundedButton = styled(motion.button)`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem 1.5rem;
+  padding: 0.875rem 1.5rem;
   border-radius: 35px;
   background-color: ${(props) =>
     props.$isSelected ? "#fff" : "rgba(0, 0, 0, 0.1)"};
   color: ${(props) => (props.$isSelected ? "#3636ad" : "#fff")};
   cursor: pointer;
-  overflow: hidden;
   border: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  flex: 1;
 
   &:hover {
-    box-shadow: rgba(0, 0, 0, 0.05) 0px 8px 10px;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 
   @media (max-width: 768px) {
-    width: 45%;
-  }
-  @media (max-width: 480px) {
-    width: 100%;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
   }
 
-  p {
-    margin: 0;
+  @media (max-width: 480px) {
+    padding: 0.7rem 1rem;
+    font-size: 0.875rem;
   }
 `;
 
 const SecondElement = styled.div`
   flex: 0.65;
+  width: 100%;
 
   @media (max-width: 1024px) {
     flex: initial;
-  }
-  @media (max-width: 768px) {
-    width: 100%;
+    max-width: 800px;
   }
 `;
 
@@ -162,7 +178,7 @@ const StepsWrapper = styled.div`
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
-    gap: 3rem;
+    gap: 1.5rem;
   }
 `;
 
@@ -177,8 +193,12 @@ const Step = styled(motion.div)`
   @media (max-width: 768px) {
     flex-direction: row;
     text-align: left;
-    gap: 1.5rem;
+    gap: 1rem;
     align-items: flex-start;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
   }
 `;
 
@@ -191,36 +211,53 @@ const StepContent = styled.div`
 const StyledH1 = styled.h1`
   font-size: 2.5rem;
   color: #fff;
-  margin-bottom: 1rem;
-  margin-top: 0;
+  margin: 0 0 0.5rem 0;
   font-weight: 700;
+  line-height: 1.2;
+
+  @media (max-width: 1024px) {
+    font-size: 2.25rem;
+  }
 
   @media (max-width: 768px) {
-    font-size: 2rem;
+    font-size: 1.875rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.625rem;
   }
 `;
 
 const StyledH2 = styled.h2`
   font-weight: 600;
-  font-size: 1.5rem;
-  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  margin: 0 0 0.375rem 0;
   color: #fff;
 
   @media (max-width: 768px) {
-    font-size: 1.3rem;
-    margin-bottom: 0.3rem;
+    font-size: 1.125rem;
+    margin-bottom: 0.25rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 1.05rem;
   }
 `;
 
 const StyledP = styled.p`
   font-weight: 400;
   margin: 0;
-  font-family: "Proxima Soft", sans-serif;
   line-height: 1.5;
   color: inherit;
+  font-size: 0.95rem;
 
   @media (max-width: 768px) {
-    font-size: 0.9rem;
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.8125rem;
   }
 `;
 
@@ -231,13 +268,13 @@ const StepNumber = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
     border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.2);
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
+    background-color: rgba(255, 255, 255, 0.25);
+    font-size: 1rem;
+    font-weight: 700;
     color: #fff;
     flex-shrink: 0;
   }
@@ -246,23 +283,26 @@ const StepNumber = styled.div`
 const StyledIcon = styled.div`
   border-radius: 50%;
   background-color: rgba(0, 0, 0, 0.2);
-  padding: 2rem;
+  padding: 1.5rem;
   margin-bottom: 1rem;
   display: inline-flex;
 
   svg {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     color: #fff;
     stroke-width: 2;
   }
 
   @media (max-width: 768px) {
-    padding: 1.5rem;
+    padding: 1rem;
     margin-bottom: 0;
+    background-color: rgba(0, 0, 0, 0.15);
+
     svg {
-      width: 40px;
-      height: 40px;
+      width: 28px;
+      height: 28px;
+      stroke-width: 2.25;
     }
   }
 `;
@@ -366,18 +406,18 @@ const HowItWorks = () => {
             <RoundedButton
               onClick={() => handleButtonClick("forStudents")}
               $isSelected={selectedButton === "forStudents"}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.97 }}
               aria-pressed={selectedButton === "forStudents"}
             >
-              <StyledP>for Students</StyledP>
+              for Students
             </RoundedButton>
             <RoundedButton
               onClick={() => handleButtonClick("forTutors")}
               $isSelected={selectedButton === "forTutors"}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.97 }}
               aria-pressed={selectedButton === "forTutors"}
             >
-              <StyledP>for Businesses</StyledP>
+              for Businesses
             </RoundedButton>
           </ButtonWrapper>
         </FirstElement>

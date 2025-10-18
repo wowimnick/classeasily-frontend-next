@@ -1,5 +1,6 @@
 import { proximaSoft } from './fonts.js';
-import PerformanceTracker from './PerformanceTracker.jsx';
+import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from "@vercel/analytics/next"
 import Script from 'next/script';
 import ClientProviders from './ClientProviders';
 import { OrganizationSchema, WebsiteSchema } from './StructuredData';
@@ -114,9 +115,9 @@ export default function RootLayout({ children }) {
         <WebsiteSchema />
       </head>
       <body>
-        <PerformanceTracker />
+        <SpeedInsights />
+        <Analytics />
         
-        {/* Google Tag Manager - LAZY LOAD */}
         <Script
           id="gtm-script"
           src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
@@ -131,7 +132,6 @@ export default function RootLayout({ children }) {
           `}
         </Script>
         
-        {/* LordIcon - LAZY LOAD */}
         <Script src="https://cdn.lordicon.com/lordicon.js" strategy="lazyOnload" />
 
         <ClientProviders>
