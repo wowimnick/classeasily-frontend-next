@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "eslint"
   },
+  "npmConfig": {
+    "legacy-peer-deps": true
+  },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
     "@babel/parser": "^7.28.4",
