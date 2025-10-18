@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // output: 'standalone', // Remove for Vercel - only needed for self-hosted
+  // Init
   
   compiler: {
     styledComponents: true,
