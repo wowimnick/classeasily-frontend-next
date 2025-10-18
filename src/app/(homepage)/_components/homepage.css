@@ -1,0 +1,211 @@
+/* styles/homepage.css - Homepage styles for Next.js */
+
+/* Homepage Layout */
+.homepage-style {
+  background-color: #ffffff;
+  min-height: 100vh;
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.main-content > section:first-child {
+  padding-top: 0;
+  padding-bottom: 4rem;
+}
+
+/* Skeleton Loader Animations */
+@keyframes shimmer {
+  0% {
+    background-position: -800px 0;
+  }
+  100% {
+    background-position: 800px 0;
+  }
+}
+
+.skeleton-base {
+  background: #f6f7f8;
+  background-image: linear-gradient(
+    to right,
+    #f6f7f8 0%,
+    #edeef1 20%,
+    #f6f7f8 40%,
+    #f6f7f8 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 1000px 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Section Skeleton */
+.section-skeleton-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.skeleton-title {
+  height: 40px;
+  width: 40%;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  background: #f6f7f8;
+  background-image: linear-gradient(
+    to right,
+    #f6f7f8 0%,
+    #edeef1 20%,
+    #f6f7f8 40%,
+    #f6f7f8 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 1000px 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+.skeleton-block {
+  height: 20px;
+  width: 80%;
+  border-radius: 4px;
+  background: #f6f7f8;
+  background-image: linear-gradient(
+    to right,
+    #f6f7f8 0%,
+    #edeef1 20%,
+    #f6f7f8 40%,
+    #f6f7f8 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 1000px 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Category Skeleton */
+.category-skeleton-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 2rem;
+}
+
+.skeleton-category-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.skeleton-circle {
+  height: 120px;
+  width: 120px;
+  border-radius: 50%;
+  background: #f6f7f8;
+  background-image: linear-gradient(
+    to right,
+    #f6f7f8 0%,
+    #edeef1 20%,
+    #f6f7f8 40%,
+    #f6f7f8 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 1000px 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+.skeleton-line {
+  height: 24px;
+  width: 80%;
+  border-radius: 4px;
+  background: #f6f7f8;
+  background-image: linear-gradient(
+    to right,
+    #f6f7f8 0%,
+    #edeef1 20%,
+    #f6f7f8 40%,
+    #f6f7f8 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 1000px 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Responsive Skeleton Adjustments */
+@media (max-width: 768px) {
+  .section-skeleton-container,
+  .category-skeleton-container {
+    padding: 2rem 1rem;
+  }
+
+  .category-skeleton-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+
+  .skeleton-circle {
+    height: 80px;
+    width: 80px;
+  }
+
+  .skeleton-title {
+    width: 60%;
+    height: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .category-skeleton-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .skeleton-circle {
+    height: 60px;
+    width: 60px;
+  }
+}
+
+/* Prevent layout shift during loading */
+.main-content > div > section {
+  min-height: 400px;
+}
+
+/* Smooth transitions for content appearance */
+.main-content > div > section > * {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Performance optimizations */
+.homepage-style * {
+  will-change: auto;
+}
+
+/* Prevent FOUC (Flash of Unstyled Content) */
+.homepage-style {
+  opacity: 1;
+  transition: opacity 0.1s ease-in;
+}
+
+/* Loading state */
+.homepage-style.loading {
+  opacity: 0;
+}

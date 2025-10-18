@@ -1,0 +1,1407 @@
+"use client";
+
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import styled from "styled-components";
+import { Drawer } from "vaul";
+import {
+  Card,
+  Typography,
+  message,
+  ConfigProvider,
+  Skeleton,
+  Table,
+  Tooltip,
+  Button,
+  Divider,
+  Space,
+  Grid,
+  List,
+} from "antd";
+import {
+  Landmark,
+  Wallet,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  ExternalLink,
+  Box,
+  RefreshCw,
+  DollarSign,
+  TrendingUp,
+  Calendar,
+  Info,
+  Download,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import NumberFlow from "@number-flow/react";
+import dayjs from "dayjs";
+import { businessService } from "@/services/apiService";
+import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
+import { LordIcon } from "@/services/ReactUtils";
+import { theme } from "@/components/theme";
+
+const { Title, Text, Paragraph, Link } = Typography;
+const { useBreakpoint } = Grid;
+
+const colors = {
+  primary: "#ff385c",
+  success: "#10b981",
+  warning: "#f59e0b",
+  error: "#ef4444",
+  info: "#3b82f6",
+  lightBg: "#f8fafc",
+  border: "#f1f5f9",
+  textPrimary: "#334155",
+  textSecondary: "#64748b",
+};
+
+const DashboardWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background-color: #fff;
+  box-shadow: inset 0px -1px 11px 1px #0000000d;
+  min-height: 100vh;
+  @media (max-width: 768px) {
+    padding: 16px;
+    gap: 0;
+  }
+`;
+
+const DashboardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+`;
+
+const StyledDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 1049;
+`;
+
+const StyledDrawerContent = styled(Drawer.Content)`
+  background: white;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  height: 85vh;
+  max-height: 85vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  outline: none;
+`;
+
+const DrawerHandle = styled.div`
+  width: 36px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  margin: 12px auto 8px;
+  flex-shrink: 0;
+`;
+
+const DrawerHeader = styled.div`
+  flex-shrink: 0;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  background: white;
+
+  @media (max-width: 768px) {
+    padding: 12px 16px;
+  }
+`;
+
+const DrawerTitle = styled.h2`
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  @media (max-width: 768px) {
+    font-size: 16px;
+  }
+`;
+
+const DrawerBody = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  background: white;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+`;
+
+const DesktopDrawerContent = styled(Drawer.Content)`
+  right: 8px;
+  top: 8px;
+  bottom: 8px;
+  position: fixed;
+  z-index: 1050;
+  outline: none;
+  width: 800px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+const DesktopDrawerHeader = styled.div`
+  flex-shrink: 0;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  background: white;
+`;
+
+const DesktopDrawerTitle = styled.h2`
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+const DesktopDrawerBody = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  background: white;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+`;
+
+// Update the ExpandedRowWrapper to add proper padding
+const ExpandedRowWrapper = styled.div`
+  border-top: 1px solid ${colors.border};
+  padding: 16px 24px;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+`;
+
+const PageTitle = styled.h1`
+  font-size: 24px;
+  font-weight: 700;
+  color: #222222;
+  margin: 0 0 4px 0;
+  line-height: 1.2;
+  @media (max-width: 768px) {
+    font-size: 22px;
+    margin-bottom: 6px;
+  }
+  @media (max-width: 480px) {
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+`;
+
+const HeaderSubtitle = styled(Text)`
+  font-size: 15px;
+  color: ${colors.textSecondary};
+  display: block;
+  line-height: 1.4;
+  @media (max-width: 768px) {
+    font-size: 14px;
+  }
+  @media (max-width: 480px) {
+    font-size: 13px;
+  }
+`;
+
+const DesktopDrawerInner = styled.div`
+  background: white;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+`;
+
+const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+`;
+
+const StatCard = styled(Card)`
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid ${colors.border};
+  transition: all 0.2s ease;
+  min-height: 160px;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .ant-card-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+
+    @media (max-width: 768px) {
+      padding: 16px;
+    }
+  }
+`;
+
+const StatCardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+`;
+
+const IconContainer = styled.div`
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${(props) => props.background || "#f1f5f9"};
+  color: ${(props) => props.color || colors.textSecondary};
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  @media (max-width: 768px) {
+    width: 32px;
+    height: 32px;
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+`;
+
+const StatValue = styled.div`
+  font-size: 22px;
+  font-weight: 700;
+  color: ${colors.textPrimary};
+  margin-bottom: 4px;
+  display: flex;
+  align-items: baseline;
+
+  @media (max-width: 768px) {
+    font-size: 17px;
+  }
+`;
+
+const StatLabel = styled.div`
+  font-size: 13px;
+  color: ${colors.textSecondary};
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  @media (max-width: 768px) {
+    font-size: 12px;
+  }
+`;
+
+const TableSection = styled(motion.div)`
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  position: relative;
+  border: 1px solid ${colors.border};
+`;
+
+const TableHeader = styled.div`
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid ${colors.border};
+  background: white;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+`;
+
+const TableTitle = styled(Title).attrs({ level: 4 })`
+  margin: 0 0 4px 0 !important;
+  color: ${colors.textPrimary};
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  svg {
+    color: ${colors.primary};
+    width: 18px;
+    height: 18px;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 16px !important;
+  }
+`;
+
+const TableDescription = styled(Paragraph)`
+  margin: 0 !important;
+  color: ${colors.textSecondary};
+  font-size: 14px;
+
+  @media (max-width: 768px) {
+    font-size: 13px;
+  }
+`;
+
+const LoaderContainer = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.8);
+  z-index: 10;
+  border-radius: 16px;
+  backdrop-filter: blur(2px);
+`;
+
+const StatusBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 80px;
+  justify-content: center;
+
+  ${(props) => {
+    switch (props.status?.toLowerCase()) {
+      case "paid":
+        return `
+          background: rgba(16, 185, 129, 0.1);
+          color: ${colors.success};
+          border: 1px solid rgba(16, 185, 129, 0.2);
+        `;
+      case "pending":
+        return `
+          background: rgba(245, 158, 11, 0.1);
+          color: ${colors.warning};
+          border: 1px solid rgba(245, 158, 11, 0.2);
+        `;
+      case "failed":
+        return `
+          background: rgba(239, 68, 68, 0.1);
+          color: ${colors.error};
+          border: 1px solid rgba(239, 68, 68, 0.2);
+        `;
+      default:
+        return `
+          background: rgba(100, 116, 139, 0.1);
+          color: ${colors.textSecondary};
+          border: 1px solid rgba(100, 116, 139, 0.2);
+        `;
+    }
+  }}
+`;
+
+// NEW: Styled component for the Bookings column tag
+const BookingCountTag = styled(StatusBadge)`
+  background: rgba(59, 130, 246, 0.1);
+  color: ${colors.info};
+  border: 1px solid rgba(59, 130, 246, 0.2);
+`;
+
+const RefreshButton = styled(Button)`
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid ${colors.border};
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+
+  &:hover {
+    color: ${colors.primary};
+    border-color: ${colors.primary};
+    box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
+    transform: translateY(-1px);
+
+    lord-icon {
+      --lord-icon-primary: ${colors.primary};
+      --lord-icon-secondary: ${colors.primary};
+    }
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
+
+const StyledTable = styled(Table)`
+  .ant-table-thead > tr > th {
+    background: #fafbfc;
+    border-bottom: 1px solid ${colors.border};
+    font-weight: 600;
+    color: ${colors.textPrimary};
+    font-size: 13px;
+    padding: 16px 24px;
+  }
+
+  .ant-table-tbody > tr > td {
+    padding: 16px 24px;
+    border-bottom: 1px solid ${colors.border};
+    font-size: 14px;
+  }
+
+  .ant-table-expanded-row > td {
+    padding: 0 !important;
+  }
+
+  .ant-empty {
+    padding: 40px 20px;
+  }
+`;
+
+const ActionButtonStyled = styled(Button)`
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 1px solid ${colors.border};
+  background: white;
+  color: ${colors.textSecondary};
+  font-size: 12px;
+  font-weight: 500;
+
+  &:hover {
+    color: ${colors.primary};
+    border-color: ${colors.primary};
+    background: rgba(255, 56, 92, 0.05);
+  }
+`;
+
+// Mobile Card Components
+const MobileCard = styled(Card)`
+  margin-bottom: 12px;
+  border-radius: 12px;
+  border: 1px solid ${colors.border};
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+`;
+
+const MobileCardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+`;
+
+const MobileCardContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const MobileCardRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const MobileCardLabel = styled(Text)`
+  font-size: 12px;
+  color: ${colors.textSecondary};
+  font-weight: 500;
+`;
+
+const MobileBookingItem = styled(List.Item)`
+  padding: 12px 0 !important;
+  .ant-list-item-meta-title {
+    font-size: 14px !important;
+    font-weight: 500;
+    margin-bottom: 2px !important;
+  }
+  .ant-list-item-meta-description {
+    font-size: 12px;
+  }
+`;
+
+const EmptyStateContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex-grow: 0.7;
+  align-items: center;
+  justify-content: center;
+  padding: ${(props) => props.$padding || "60px 20px"};
+  text-align: center;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    padding: ${(props) => props.$padding || "40px 16px"};
+    gap: 12px;
+  }
+
+  @media (max-width: 480px) {
+    padding: ${(props) => props.$padding || "30px 12px"};
+    gap: 10px;
+  }
+`;
+
+const EmptyStateIcon = styled.div`
+  opacity: 0.3;
+  filter: grayscale(100%);
+
+  lord-icon {
+    width: 80px;
+    height: 80px;
+  }
+
+  @media (max-width: 768px) {
+    lord-icon {
+      width: 64px;
+      height: 64px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    lord-icon {
+      width: 48px;
+      height: 48px;
+    }
+  }
+`;
+
+const EmptyStateText = styled.div`
+  color: ${colors.textSecondary};
+  font-size: 15px;
+  font-weight: 500;
+
+  @media (max-width: 768px) {
+    font-size: 14px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 13px;
+  }
+`;
+
+const EmptyStateSubtext = styled.div`
+  color: ${colors.textSecondary};
+  font-size: 13px;
+  opacity: 0.7;
+  max-width: 300px;
+
+  @media (max-width: 768px) {
+    font-size: 12px;
+    max-width: 250px;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 11px;
+    max-width: 200px;
+  }
+`;
+
+const getStatusIcon = (status) => {
+  switch (status?.toLowerCase()) {
+    case "paid":
+      return <CheckCircle size={12} />;
+    case "pending":
+      return <Clock size={12} />;
+    case "failed":
+      return <AlertCircle size={12} />;
+    default:
+      return <Info size={12} />;
+  }
+};
+
+const getStatusTag = (status) => {
+  return (
+    <StatusBadge status={status}>
+      {getStatusIcon(status)}
+      {status || "Unknown"}
+    </StatusBadge>
+  );
+};
+
+const ExpandedPayoutDetails = ({ payoutId, isMobile }) => {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 5,
+    total: 0,
+  });
+
+  const fetchBookingsForPayout = useCallback(
+    async (page = 1, pageSize = 5) => {
+      setLoading(true);
+      const result = await businessService.fetchPayoutBookings(payoutId, {
+        page,
+        page_size: pageSize,
+      });
+      if (result.success) {
+        setBookings(result.data.results);
+        setPagination((prev) => ({
+          ...prev,
+          total: result.data.count,
+          current: page,
+          pageSize,
+        }));
+      } else {
+        message.error("Could not load bookings for this payout.");
+      }
+      setLoading(false);
+    },
+    [payoutId]
+  );
+
+  useEffect(() => {
+    fetchBookingsForPayout();
+  }, [fetchBookingsForPayout]);
+
+  const handleTableChange = (newPagination) => {
+    fetchBookingsForPayout(newPagination.current, newPagination.pageSize);
+  };
+
+  const desktopColumns = [
+    {
+      title: "Booking Ref",
+      dataIndex: "user_facing_reference",
+      key: "ref",
+      width: 120,
+    },
+    {
+      title: "Student",
+      dataIndex: "user_name",
+      key: "user",
+      ellipsis: true,
+    },
+    {
+      title: "Class",
+      dataIndex: "class_name",
+      key: "class",
+      ellipsis: true,
+    },
+    {
+      title: "Session Date",
+      dataIndex: "session_date",
+      key: "date",
+      width: 120,
+      render: (text) => dayjs(text).format("MMM D, YYYY"),
+    },
+    {
+      title: "Net Amount",
+      dataIndex: "net_amount_for_payout",
+      key: "net",
+      align: "right",
+      width: 120,
+      render: (val) => (
+        <Text strong style={{ color: colors.success }}>
+          ${Number(val).toFixed(2)}
+        </Text>
+      ),
+    },
+  ];
+
+  return (
+    <ExpandedRowWrapper>
+      {isMobile ? (
+        <List
+          itemLayout="horizontal"
+          dataSource={bookings}
+          loading={loading}
+          pagination={pagination}
+          renderItem={(item) => (
+            <MobileBookingItem>
+              <List.Item.Meta
+                title={item.class_name}
+                description={`${item.user_name} - ${dayjs(
+                  item.session_date
+                ).format("MMM D, YYYY")}`}
+              />
+              <Text strong style={{ color: colors.success, fontSize: "14px" }}>
+                ${Number(item.net_amount_for_payout).toFixed(2)}
+              </Text>
+            </MobileBookingItem>
+          )}
+        />
+      ) : (
+        <StyledTable
+          columns={desktopColumns}
+          dataSource={bookings}
+          loading={loading}
+          pagination={pagination}
+          onChange={handleTableChange}
+          rowKey="user_facing_reference"
+          size="small"
+        />
+      )}
+    </ExpandedRowWrapper>
+  );
+};
+
+// Mobile Payout Item
+const MobilePayoutItem = ({ payout, onExport, onViewBookings }) => {
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    await onExport(payout.id);
+    setExporting(false);
+  };
+
+  return (
+    <MobileCard>
+      <Card.Meta
+        description={
+          <MobileCardHeader>
+            <div>
+              <Text strong style={{ fontSize: "16px", display: "block" }}>
+                {payout.amount_display}
+              </Text>
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                Est. Arrival: {dayjs(payout.arrival_date).format("MMM D, YYYY")}
+              </Text>
+            </div>
+            {getStatusTag(payout.status)}
+          </MobileCardHeader>
+        }
+      />
+      <MobileCardContent>
+        <MobileCardRow>
+          <MobileCardLabel>Bookings Included</MobileCardLabel>
+          <Text strong>{payout.booking_count}</Text>
+        </MobileCardRow>
+        <MobileCardRow>
+          <MobileCardLabel>Transfer ID</MobileCardLabel>
+          <Text
+            style={{ fontSize: 12, maxWidth: 150 }}
+            copyable={{ text: payout.stripe_transfer_id }}
+            ellipsis
+          >
+            {payout.stripe_transfer_id}
+          </Text>
+        </MobileCardRow>
+        <Space
+          style={{
+            width: "100%",
+            justifyContent: "flex-end",
+            marginTop: "8px",
+          }}
+        >
+          <ActionButtonStyled
+            icon={<Download size={14} />}
+            onClick={handleExport}
+            loading={exporting}
+          >
+            Export
+          </ActionButtonStyled>
+          <ActionButtonStyled
+            icon={<Box size={14} />}
+            onClick={() => onViewBookings(payout)}
+            disabled={payout.booking_count === 0}
+          >
+            Bookings
+          </ActionButtonStyled>
+        </Space>
+      </MobileCardContent>
+    </MobileCard>
+  );
+};
+
+const Payouts = () => {
+  const [summary, setSummary] = useState(null);
+  const [payouts, setPayouts] = useState([]);
+  const [loadingSummary, setLoadingSummary] = useState(true);
+  const [loadingPayouts, setLoadingPayouts] = useState(true);
+  const [exportingId, setExportingId] = useState(null);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+  const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPayout, setSelectedPayout] = useState(null);
+  const [isDev, setIsDev] = useState(false); // State for dev environment
+  const refreshButtonRef = useRef(null);
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const [shouldRenderDrawer, setShouldRenderDrawer] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname;
+      setIsDev(hostname.includes("localhost") || hostname.includes("dev"));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isModalOpen) {
+      setShouldRenderDrawer(true);
+    } else {
+      const timer = setTimeout(() => setShouldRenderDrawer(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isModalOpen]);
+  const showBookingsModal = (payout) => {
+    setSelectedPayout(payout);
+    setIsModalOpen(true);
+  };
+
+  const handleDrawerOpenChange = (open) => {
+    if (!open) {
+      setTimeout(() => {
+        handleModalClose();
+      }, 300);
+    }
+  };
+
+  const fetchSummary = useCallback(async () => {
+    setLoadingSummary(true);
+    setIsReadyForAnimation(false);
+    const result = await businessService.fetchPayoutSummary();
+    if (result.success) {
+      setSummary(result.data);
+      setTimeout(() => setIsReadyForAnimation(true), 50);
+    } else {
+      message.error(result.error || "Failed to load summary.");
+    }
+    setLoadingSummary(false);
+  }, []);
+
+  const fetchPayouts = useCallback(async (page = 1, pageSize = 10) => {
+    setLoadingPayouts(true);
+    const params = { page, page_size: pageSize };
+    const result = await businessService.fetchBusinessPayouts(params);
+    if (result.success) {
+      setPayouts(result.data.results);
+      setPagination((prev) => ({
+        ...prev,
+        total: result.data.count,
+        current: page,
+      }));
+    } else {
+      message.error(result.error || "Failed to load payout history.");
+    }
+    setLoadingPayouts(false);
+  }, []);
+
+  const refreshData = useCallback(() => {
+    fetchSummary();
+    fetchPayouts(1, pagination.pageSize);
+  }, [fetchSummary, fetchPayouts, pagination.pageSize]);
+
+  useEffect(() => {
+    refreshData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleExportPayout = async (payoutId) => {
+    setExportingId(payoutId);
+    message.loading({
+      content: "Generating your export...",
+      key: `export-${payoutId}`,
+      duration: 0,
+    });
+
+    const result = await businessService.exportPayoutDetails(payoutId);
+
+    if (result.success) {
+      message.success({
+        content: "Payout report downloaded!",
+        key: `export-${payoutId}`,
+      });
+    } else {
+      message.error({
+        content: result.error || "Export failed.",
+        key: `export-${payoutId}`,
+      });
+    }
+    setExportingId(null);
+  };
+
+  const handleTableChange = (newPagination) => {
+    fetchPayouts(newPagination.current, newPagination.pageSize);
+  };
+
+  const handleButtonHover = useCallback((isEntering) => {
+    const buttonNode = refreshButtonRef.current;
+    if (!buttonNode) return;
+    const icon = buttonNode.querySelector("lord-icon");
+    if (!icon) return;
+    try {
+      if (isEntering) icon.playerInstance?.play();
+      else {
+        icon.playerInstance?.pause();
+        icon.playerInstance?.goToFirstFrame();
+      }
+    } catch (error) {
+      console.error("Lordicon animation failed:", error);
+    }
+  }, []);
+
+  const getStripeUrl = (record, isDevEnv) => {
+    const id = record.stripe_transfer_id;
+    if (!id) return null;
+
+    const stripeAccountId =
+      record.stripe_account_id || summary?.stripe_account_id;
+    const isTestMode = id.includes("_test_") || isDevEnv;
+
+    const testPrefix = isTestMode ? "test/" : "";
+    const base = "https://dashboard.stripe.com/";
+
+    if (stripeAccountId) {
+      return `${base}${testPrefix}connect/accounts/${stripeAccountId}/transfers/${id}`;
+    }
+    return `${base}${testPrefix}transfers/${id}`;
+  };
+
+  const columns = [
+    {
+      title: "Date (Est. Arrival)",
+      dataIndex: "arrival_date",
+      key: "arrival_date",
+      width: 180,
+      render: (text) => (
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <Calendar size={14} color={colors.textSecondary} />
+          <Text>{text ? dayjs(text).format("MMM D, YYYY") : "N/A"}</Text>
+        </div>
+      ),
+    },
+    {
+      title: "Stripe Transfer ID",
+      dataIndex: "stripe_transfer_id",
+      key: "stripe_transfer_id",
+      ellipsis: true,
+      responsive: ["lg"],
+      render: (id, record) => {
+        const stripeUrl = getStripeUrl(record, isDev);
+        if (!id) return <Text type="secondary">N/A</Text>;
+        return (
+          <Tooltip title={id}>
+            <Link href={stripeUrl} target="_blank" rel="noopener noreferrer">
+              {id}{" "}
+              <ExternalLink
+                size={12}
+                style={{ marginLeft: 4, color: colors.info }}
+              />
+            </Link>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: "Amount",
+      dataIndex: "amount_display",
+      key: "amount",
+      align: "right",
+      width: 140,
+      render: (text) => (
+        <Text strong style={{ fontSize: "15px", color: colors.textPrimary }}>
+          {text}
+        </Text>
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      align: "center",
+      width: 120,
+      render: getStatusTag,
+    },
+    {
+      title: "Bookings",
+      dataIndex: "booking_count",
+      key: "booking_count",
+      align: "center",
+      width: 120,
+      render: (count) => (
+        <BookingCountTag>
+          <Box size={12} />
+          {count}
+        </BookingCountTag>
+      ),
+    },
+    {
+      title: "Actions",
+      dataIndex: "id",
+      key: "actions",
+      width: screens.lg ? 240 : 140,
+      align: "center",
+      render: (id, record) => {
+        const isSmallDesktop = !screens.lg;
+        return (
+          <Space>
+            <Tooltip title={isSmallDesktop ? "Export" : ""}>
+              <ActionButtonStyled
+                icon={<Download size={14} />}
+                onClick={() => handleExportPayout(id)}
+                loading={exportingId === id}
+              >
+                {!isSmallDesktop && "Export"}
+              </ActionButtonStyled>
+            </Tooltip>
+            <Tooltip title={isSmallDesktop ? "Bookings" : ""}>
+              <ActionButtonStyled
+                icon={<Box size={14} />}
+                onClick={() => showBookingsModal(record)}
+                disabled={record.booking_count === 0}
+              >
+                {!isSmallDesktop && "Bookings"}
+              </ActionButtonStyled>
+            </Tooltip>
+          </Space>
+        );
+      },
+    },
+  ];
+
+  const StatSkeleton = () => <Skeleton active paragraph={{ rows: 2 }} />;
+
+  const statisticCards = [
+    {
+      key: "pending_payout",
+      title: "Pending Payout",
+      value: summary?.pending_payout_amount,
+      icon: <Wallet size={20} />,
+      color: colors.info,
+      background: "rgba(59, 130, 246, 0.1)",
+      suffix: summary?.currency,
+    },
+    {
+      key: "next_payout",
+      title: "Payout Schedule",
+      value: "Daily",
+      icon: <Clock size={20} />,
+      color: colors.warning,
+      background: "rgba(245, 158, 11, 0.1)",
+      isText: true,
+      tooltip:
+        "Payouts for completed bookings are processed daily. Funds typically arrive in your bank account in 1-3 business days.",
+    },
+    {
+      key: "last_payout",
+      title: "Last Payout",
+      value: summary?.last_payout_amount,
+      icon: <TrendingUp size={20} />,
+      color: colors.success,
+      background: "rgba(16, 185, 129, 0.1)",
+      suffix: summary?.currency,
+    },
+    {
+      key: "payout_status",
+      title: "Payouts Status",
+      value:
+        summary?.stripe_account_status?.replace("_", " ") || "Not Connected",
+      icon: summary?.payouts_enabled ? (
+        <CheckCircle size={20} />
+      ) : (
+        <AlertCircle size={20} />
+      ),
+      color: summary?.payouts_enabled ? colors.success : colors.error,
+      background: summary?.payouts_enabled
+        ? "rgba(16, 185, 129, 0.1)"
+        : "rgba(239, 68, 68, 0.1)",
+      isText: true,
+    },
+  ];
+
+  return (
+    <ConfigProvider theme={theme}>
+      <DashboardWrapper>
+        <DashboardHeader>
+          <div>
+            <PageTitle>Payouts</PageTitle>
+            <HeaderSubtitle>
+              Track your earnings and payout history.
+            </HeaderSubtitle>
+          </div>
+          <RefreshButton
+            ref={refreshButtonRef}
+            onMouseEnter={() => handleButtonHover(true)}
+            onMouseLeave={() => handleButtonHover(false)}
+            icon={
+              <LordIcon
+                src="https://cdn.lordicon.com/valwmkhs.json"
+                colors="primary:#666,secondary:#666"
+                size="20px"
+                trigger="hover"
+                playOnLoad={false}
+              />
+            }
+            onClick={refreshData}
+            loading={loadingSummary || loadingPayouts}
+          >
+            Refresh Data
+          </RefreshButton>
+        </DashboardHeader>
+
+        <Divider />
+
+        <StatsGrid>
+          {statisticCards.map((stat) => (
+            <StatCard key={stat.key}>
+              {loadingSummary ? (
+                <StatSkeleton />
+              ) : (
+                <>
+                  <div>
+                    <StatCardHeader>
+                      <IconContainer
+                        background={stat.background}
+                        color={stat.color}
+                      >
+                        {stat.icon}
+                      </IconContainer>
+                    </StatCardHeader>
+                    <StatLabel>{stat.title}</StatLabel>
+                  </div>
+                  <StatValue>
+                    <Tooltip title={stat.tooltip}>
+                      <span
+                        style={{
+                          fontSize: isMobile ? "18px" : "22px", // Changed this line
+                          textTransform: stat.isText ? "capitalize" : "none",
+                        }}
+                      >
+                        {stat.isText ? (
+                          stat.value
+                        ) : (
+                          <NumberFlow
+                            value={
+                              isReadyForAnimation
+                                ? parseFloat(stat.value) || 0
+                                : 0
+                            }
+                            duration={800}
+                            prefix="$"
+                            numberFormatOptions={{
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            }}
+                          />
+                        )}
+                      </span>
+                    </Tooltip>
+                  </StatValue>
+                </>
+              )}
+            </StatCard>
+          ))}
+        </StatsGrid>
+
+        <Divider />
+
+        <TableSection
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          {loadingPayouts && !isMobile && (
+            <LoaderContainer>
+              <GlobalLoaderWithoutInlineStyles />
+            </LoaderContainer>
+          )}
+
+          <TableHeader>
+            <TableTitle>
+              <Landmark />
+              Payout History
+            </TableTitle>
+            <TableDescription>
+              A record of all past payouts to your connected account.
+            </TableDescription>
+          </TableHeader>
+          {isMobile ? (
+            <div style={{ padding: "16px" }}>
+              {loadingPayouts ? (
+                <Skeleton active paragraph={{ rows: 5 }} />
+              ) : payouts.length > 0 ? (
+                payouts.map((payout) => (
+                  <MobilePayoutItem
+                    key={payout.id}
+                    payout={payout}
+                    onExport={handleExportPayout}
+                    onViewBookings={showBookingsModal}
+                  />
+                ))
+              ) : (
+                <EmptyStateContainer>
+                  <EmptyStateIcon>
+                    <lord-icon
+                      src="https://cdn.lordicon.com/vmztfafm.json"
+                      trigger="in"
+                      state="morph-card-cash-1"
+                      colors="primary:#94a3b8"
+                      style={{ width: 40, height: 40 }}
+                    />
+                  </EmptyStateIcon>
+                  <EmptyStateText>No Payouts Found</EmptyStateText>
+                  <EmptyStateSubtext>
+                    No payouts have been made yet. Payouts are made 24h after a
+                    class ends.
+                  </EmptyStateSubtext>
+                </EmptyStateContainer>
+              )}
+            </div>
+          ) : (
+            <StyledTable
+              columns={columns}
+              dataSource={payouts}
+              loading={false}
+              pagination={{
+                ...pagination,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} of ${total} payouts`,
+              }}
+              onChange={handleTableChange}
+              rowKey="id"
+              locale={{
+                emptyText: (
+                  <EmptyStateContainer>
+                    <EmptyStateIcon>
+                      <lord-icon
+                        src="https://cdn.lordicon.com/vmztfafm.json"
+                        trigger="in"
+                        delay="2000"
+                        state="morph-card-cash-1"
+                        colors="primary:#94a3b8"
+                        style={{ width: 40, height: 40 }}
+                      />
+                    </EmptyStateIcon>
+                    <EmptyStateText>No Payouts Found</EmptyStateText>
+                    <EmptyStateSubtext>
+                      No payouts have been made yet. Payouts are made 24h after
+                      a class ends.
+                    </EmptyStateSubtext>
+                  </EmptyStateContainer>
+                ),
+              }}
+            />
+          )}
+        </TableSection>
+        {shouldRenderDrawer && (
+          <Drawer.Root
+            open={isModalOpen}
+            onOpenChange={handleDrawerOpenChange}
+            direction={isMobile ? "bottom" : "right"}
+            dismissible
+          >
+            <Drawer.Portal>
+              <StyledDrawerOverlay />
+              {isMobile ? (
+                <StyledDrawerContent>
+                  <DrawerHandle />
+                  <DrawerHeader>
+                    <DrawerTitle>
+                      <Box size={16} style={{ color: colors.primary }} />
+                      {selectedPayout &&
+                        `Bookings in Payout (${dayjs(
+                          selectedPayout?.arrival_date
+                        ).format("MMM D, YYYY")})`}
+                    </DrawerTitle>
+                  </DrawerHeader>
+                  <DrawerBody>
+                    {selectedPayout && (
+                      <ExpandedPayoutDetails
+                        payoutId={selectedPayout.id}
+                        isMobile={isMobile}
+                      />
+                    )}
+                  </DrawerBody>
+                </StyledDrawerContent>
+              ) : (
+                <DesktopDrawerContent>
+                  <DesktopDrawerHeader>
+                    <DesktopDrawerTitle>
+                      <Box size={18} style={{ color: colors.primary }} />
+                      {selectedPayout &&
+                        `Bookings in Payout (${dayjs(
+                          selectedPayout?.arrival_date
+                        ).format("MMM D, YYYY")})`}
+                    </DesktopDrawerTitle>
+                  </DesktopDrawerHeader>
+                  <DesktopDrawerBody>
+                    {selectedPayout && (
+                      <ExpandedPayoutDetails
+                        payoutId={selectedPayout.id}
+                        isMobile={isMobile}
+                      />
+                    )}
+                  </DesktopDrawerBody>
+                </DesktopDrawerContent>
+              )}
+            </Drawer.Portal>
+          </Drawer.Root>
+        )}
+      </DashboardWrapper>
+    </ConfigProvider>
+  );
+};
+
+export default Payouts;

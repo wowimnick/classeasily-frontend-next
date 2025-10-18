@@ -1,0 +1,9 @@
+/* globals.css */
+
+/*
+  All global styles, including the CSS reset and default font settings,
+  have been centralized in 'src/app/GlobalStyles.js' to work seamlessly
+  with styled-components and the next/font system.
+
+  This file is kept for potential future use (e.g., Tailwind CSS directives).
+*/

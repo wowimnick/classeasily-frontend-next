@@ -1,0 +1,9 @@
+export const metadata = {
+  title: "Register Your Business | ClassEasily",
+  description:
+    "Join ClassEasily as an educator and share your knowledge with our community of learners.",
+};
+
+export default function RegisterLayout({ children }) {
+  return children;
+}
