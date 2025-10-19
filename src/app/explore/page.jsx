@@ -1,8 +1,8 @@
 // app/explore/page.jsx
 import { Suspense } from "react";
 import ExploreClient from "@/app/explore/_components/ExploreClient";
-import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 import { classService } from "@/services/apiService";
+import ExplorePageSkeleton from "./_components/ExplorePageSkeleton";
 
 async function getCachedCategories() {
   try {
@@ -131,9 +131,7 @@ async function ExplorePageContent({ searchParams }) {
 
 export default async function ExploreRootPage(props) {
   return (
-    <Suspense
-      fallback={<GlobalLoaderWithInlineStyles text="Loading classes..." />}
-    >
+    <Suspense fallback={<ExplorePageSkeleton />}>
       <ExplorePageContent searchParams={props.searchParams} />
     </Suspense>
   );
