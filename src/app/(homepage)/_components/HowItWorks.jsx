@@ -129,7 +129,7 @@ const RoundedButton = styled(motion.button)`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.875rem 1.5rem;
+  padding: 1rem 1.2rem;
   border-radius: 35px;
   background-color: ${(props) =>
     props.$isSelected ? "#fff" : "rgba(0, 0, 0, 0.1)"};
@@ -140,6 +140,8 @@ const RoundedButton = styled(motion.button)`
   font-weight: 500;
   transition: all 0.2s ease;
   flex: 1;
+  white-space: nowrap;
+  min-width: max-content;
 
   &:hover {
     box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;

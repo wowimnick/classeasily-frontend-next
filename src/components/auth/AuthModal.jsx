@@ -1,4 +1,4 @@
-// AuthModal.jsx - Better Auth Integration with Vaul
+// AuthModal.jsx - Better Auth Integration with Vaul + Global Redirect Logic
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -19,6 +19,7 @@ import { Mail, Lock, User, Phone, ArrowLeft, ArrowRight } from "lucide-react";
 import ReactGA from "react-ga4";
 import dynamic from "next/dynamic";
 import { Drawer } from "vaul";
+import { useRouter } from "next/navigation";
 
 // Better Auth imports
 import {
@@ -335,6 +336,7 @@ const AuthModal = ({
   defaultMode = "login",
   onLoginSuccessAction,
 }) => {
+  const router = useRouter();
   const [loginForm] = Form.useForm();
   const [registerForm] = Form.useForm();
   const [forgotPasswordForm] = Form.useForm();
@@ -376,7 +378,12 @@ const AuthModal = ({
     setError("");
     setLoading(true);
     try {
-      const result = await signInWithDjango(values.email, values.password);
+      // Pass router to signInWithDjango for automatic redirect handling
+      const result = await signInWithDjango(
+        values.email,
+        values.password,
+        router
+      );
 
       message.success("Welcome back!");
 
@@ -388,12 +395,13 @@ const AuthModal = ({
         });
       }
 
-      if (typeof onLoginSuccessAction === "function") {
-        onLoginSuccessAction();
-      }
-
       if (typeof window !== "undefined") {
         localStorage.removeItem("prefillEmailForRegistration");
+      }
+
+      // Execute custom callback if provided
+      if (typeof onLoginSuccessAction === "function") {
+        onLoginSuccessAction();
       }
 
       onClose();
@@ -413,7 +421,8 @@ const AuthModal = ({
     setError("");
 
     try {
-      await signInWithGoogle(tokenResponse.access_token);
+      // Pass router to signInWithGoogle for automatic redirect handling
+      const result = await signInWithGoogle(tokenResponse.access_token, router);
 
       message.success("Welcome!");
 
@@ -425,6 +434,7 @@ const AuthModal = ({
         });
       }
 
+      // Execute custom callback if provided
       if (typeof onLoginSuccessAction === "function") {
         onLoginSuccessAction();
       }
@@ -465,7 +475,8 @@ const AuthModal = ({
       await signUpWithDjango(payload);
       const loginResult = await signInWithDjango(
         currentFormData.email,
-        currentFormData.password
+        currentFormData.password,
+        router
       );
 
       if (ReactGA.isInitialized) {

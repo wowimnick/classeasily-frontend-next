@@ -1,9 +1,86 @@
-// lib/auth-client.js - OPTIMISTIC VERSION
+// lib/auth-client.js - OPTIMISTIC VERSION WITH REDIRECT MANAGEMENT
 "use client";
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axiosInstance from './axiosInstance';
+
+// ============================================================================
+// REDIRECT MANAGEMENT
+// ============================================================================
+const REDIRECT_PATH_KEY = 'redirectAfterLogin';
+const REDIRECT_PERMISSION_KEY = 'redirectRequiredPermission';
+
+export const saveRedirectPath = (path, requiredPermission = null) => {
+  if (typeof window === 'undefined') return;
+  
+  console.log('[Auth] Saving redirect path:', path, 'permission:', requiredPermission);
+  localStorage.setItem(REDIRECT_PATH_KEY, path);
+  
+  if (requiredPermission) {
+    localStorage.setItem(REDIRECT_PERMISSION_KEY, requiredPermission);
+  } else {
+    localStorage.removeItem(REDIRECT_PERMISSION_KEY);
+  }
+};
+
+export const getRedirectPath = () => {
+  if (typeof window === 'undefined') return null;
+  
+  return {
+    path: localStorage.getItem(REDIRECT_PATH_KEY),
+    requiredPermission: localStorage.getItem(REDIRECT_PERMISSION_KEY),
+  };
+};
+
+export const clearRedirectPath = () => {
+  if (typeof window === 'undefined') return;
+  
+  console.log('[Auth] Clearing redirect path');
+  localStorage.removeItem(REDIRECT_PATH_KEY);
+  localStorage.removeItem(REDIRECT_PERMISSION_KEY);
+};
+
+const handlePostLoginRedirect = (user, router) => {
+  if (typeof window === 'undefined') return;
+
+  // ALWAYS prioritize business dashboard for business users
+  if (user?.has_business) {
+    console.log('[Auth] User has business, redirecting to business dashboard');
+    clearRedirectPath(); // Clear any saved redirects
+    router.push('/business/dashboard/overview');
+    return true;
+  }
+
+  const { path: redirectPath, requiredPermission } = getRedirectPath();
+
+  // Clear redirect data
+  clearRedirectPath();
+
+  // Check if we have a saved redirect path (for non-business users)
+  if (redirectPath && redirectPath !== '/') {
+    console.log('[Auth] Checking redirect:', { redirectPath, requiredPermission });
+    
+    // If a permission was required, verify user has it
+    if (requiredPermission) {
+      if (user?.permissions?.includes(requiredPermission)) {
+        console.log('[Auth] User has permission, redirecting to:', redirectPath);
+        router.push(redirectPath);
+        return true;
+      } else {
+        console.log('[Auth] User lacks permission, staying on current page');
+        return false;
+      }
+    }
+    
+    // No permission required - redirect to original path
+    console.log('[Auth] No permission required, redirecting to:', redirectPath);
+    router.push(redirectPath);
+    return true;
+  }
+  
+  return false;
+};
 
 // ============================================================================
 // OPTIMISTIC AUTH STATE - Read from localStorage synchronously
@@ -46,7 +123,7 @@ export const useAuthStore = create(
         isImpersonating: optimisticState.isImpersonating,
         
         // Loading states
-        isLoading: true, // Still loading until we verify with backend
+        isLoading: true,
         isInitialized: false,
         isInitializing: false,
         _hasHydrated: false,
@@ -55,6 +132,9 @@ export const useAuthStore = create(
         registrationLoading: false,
         invitationSuccess: false,
         error: null,
+        
+        // Redirect state
+        shouldOpenAuthModal: false,
 
         setUser: (user) => {
           console.log('[AuthStore] setUser called:', {
@@ -113,6 +193,11 @@ export const useAuthStore = create(
         setHydrated: () => {
           console.log('[AuthStore] setHydrated called');
           set({ _hasHydrated: true });
+        },
+        
+        setShouldOpenAuthModal: (shouldOpen) => {
+          console.log('[AuthStore] setShouldOpenAuthModal:', shouldOpen);
+          set({ shouldOpenAuthModal: shouldOpen });
         },
 
         initialize: async () => {
@@ -185,7 +270,6 @@ export const useAuthStore = create(
             state._hasHydrated = true;
             state.isInitialized = false;
             state.isInitializing = false;
-            // Don't reset isLoading here - keep it true until backend verification
           }
         };
       },
@@ -197,7 +281,7 @@ export const useAuthStore = create(
 // AUTHENTICATION FUNCTIONS
 // ============================================================================
 
-export const signInWithDjango = async (email, password) => {
+export const signInWithDjango = async (email, password, router = null) => {
   try {
     console.log('[Auth] signInWithDjango - attempting login');
     const response = await axiosInstance.post('/login/', { email, password });
@@ -205,6 +289,16 @@ export const signInWithDjango = async (email, password) => {
     if (response.data.user) {
       console.log('[Auth] Login successful');
       useAuthStore.getState().setUser(response.data.user);
+      
+      // Handle redirect if router is provided
+      if (router) {
+        const didRedirect = handlePostLoginRedirect(response.data.user, router);
+        if (!didRedirect) {
+          // No redirect occurred, might want to go to dashboard or stay
+          console.log('[Auth] No redirect path found');
+        }
+      }
+      
       return { success: true, user: response.data.user };
     }
 
@@ -229,7 +323,7 @@ export const signUpWithDjango = async (userData) => {
   }
 };
 
-export const signInWithGoogle = async (accessToken) => {
+export const signInWithGoogle = async (accessToken, router = null) => {
   try {
     console.log('[Auth] signInWithGoogle - attempting Google auth');
     const response = await axiosInstance.post('/auth/google/', {
@@ -239,6 +333,15 @@ export const signInWithGoogle = async (accessToken) => {
     if (response.data.user) {
       console.log('[Auth] Google auth successful');
       useAuthStore.getState().setUser(response.data.user);
+      
+      // Handle redirect if router is provided
+      if (router) {
+        const didRedirect = handlePostLoginRedirect(response.data.user, router);
+        if (!didRedirect) {
+          console.log('[Auth] No redirect path found');
+        }
+      }
+      
       return { success: true, user: response.data.user };
     }
 
@@ -250,25 +353,36 @@ export const signInWithGoogle = async (accessToken) => {
   }
 };
 
-export const signOutFull = async () => {
+export const signOutFull = async (router) => {
   try {
     console.log('[Auth] signOutFull - logging out');
     await axiosInstance.post('/logout/');
   } catch (error) {
     console.warn('[Auth] Logout API call failed:', error);
   } finally {
+    // Clear redirect path on logout
+    clearRedirectPath();
+    
     useAuthStore.getState().clearUser();
     
-    try {
-      await axiosInstance.get('/csrf/');
-    } catch (err) {
-      console.warn('[Auth] Failed to fetch new CSRF token:', err);
-    }
-    
-    if (typeof window !== 'undefined') {
-      window.location.href = '/';
+    if (router) {
+      router.push('/');
+      router.refresh(); 
     }
   }
+};
+
+// ============================================================================
+// GLOBAL REDIRECT TO LOGIN FUNCTION
+// ============================================================================
+export const redirectToLogin = (path, requiredPermission = null) => {
+  console.log('[Auth] redirectToLogin called:', { path, requiredPermission });
+  
+  // Save the redirect path
+  saveRedirectPath(path, requiredPermission);
+  
+  // Set flag to open auth modal
+  useAuthStore.getState().setShouldOpenAuthModal(true);
 };
 
 // ============================================================================
@@ -331,13 +445,8 @@ export const impersonateUser = async (userId) => {
       console.log('[Auth] Impersonation successful');
       const userData = response.data.data.user;
       
-      set({ 
-        user: userData,
-        isAuthenticated: true,
-        isImpersonating: true,
-        isLoading: false,
-        error: null,
-      });
+      store.setUser(userData);
+      store.setLoading(false);
       
       return { success: true, user: userData };
     }
@@ -364,14 +473,15 @@ export const registerBusiness = async (formData) => {
   const store = useAuthStore.getState();
   
   try {
-    set({ registrationLoading: true, error: null });
+    store.setLoading(true);
+    store.setError(null);
 
     console.log('[Auth] registerBusiness - calling API');
     const response = await axiosInstance.post('/business/register/', formData);
     
     if (response.data.success) {
       console.log('[Auth] Business registration successful');
-      set({ registrationLoading: false });
+      store.setLoading(false);
       return { success: true, data: response.data };
     }
     
@@ -382,10 +492,8 @@ export const registerBusiness = async (formData) => {
                         error.response?.data?.message || 
                         'Registration failed';
     
-    set({ 
-      registrationLoading: false, 
-      error: errorMessage 
-    });
+    store.setLoading(false);
+    store.setError(errorMessage);
     
     throw error.response?.data || { error: errorMessage };
   }
@@ -399,11 +507,9 @@ export const acceptInvitation = async (token) => {
   const store = useAuthStore.getState();
   
   try {
-    set({ 
-      isLoading: true, 
-      error: null,
-      invitationSuccess: false 
-    });
+    store.setLoading(true);
+    store.setError(null);
+    store.resetInvitationStatus();
 
     console.log('[Auth] acceptInvitation - calling API');
     const response = await axiosInstance.post('/business/staff/accept-invitation/', {
@@ -413,27 +519,19 @@ export const acceptInvitation = async (token) => {
     if (response.data.success) {
       console.log('[Auth] Invitation accepted successfully');
       
-      // Extract user from response
       const userPayload = response.data.user || response.data.data?.user;
       
       if (userPayload) {
-        set({
-          user: userPayload,
-          isAuthenticated: true,
-          isLoading: false,
-          invitationSuccess: true,
-          error: null,
-        });
+        store.setUser(userPayload);
+        store.setLoading(false);
+        
+        useAuthStore.setState({ invitationSuccess: true });
         
         return { success: true, user: userPayload };
       }
       
-      // If no user but success, just mark as successful
-      set({
-        isLoading: false,
-        invitationSuccess: true,
-        error: null,
-      });
+      store.setLoading(false);
+      useAuthStore.setState({ invitationSuccess: true });
       
       return { success: true };
     }
@@ -445,11 +543,8 @@ export const acceptInvitation = async (token) => {
                         error.response?.data?.message || 
                         'Could not accept invitation';
     
-    set({ 
-      isLoading: false, 
-      error: errorMessage,
-      invitationSuccess: false 
-    });
+    store.setLoading(false);
+    store.setError(errorMessage);
     
     throw error.response?.data || { error: errorMessage };
   }
@@ -497,6 +592,7 @@ export const useAuth = () => {
     registrationLoading: store.registrationLoading,
     invitationSuccess: store.invitationSuccess,
     error: store.error,
+    shouldOpenAuthModal: store.shouldOpenAuthModal,
     
     // Actions
     signIn: signInWithDjango,
@@ -511,5 +607,12 @@ export const useAuth = () => {
     clearError: store.clearError,
     clearUpdateError: store.clearUpdateError,
     resetInvitationStatus: store.resetInvitationStatus,
+    setShouldOpenAuthModal: store.setShouldOpenAuthModal,
+    
+    // Redirect utilities
+    redirectToLogin,
+    saveRedirectPath,
+    clearRedirectPath,
+    getRedirectPath,
   };
 };

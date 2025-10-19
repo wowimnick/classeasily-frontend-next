@@ -1,7 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
 import AuthModal from "@/components/auth/AuthModal";
+import { useAuthStore } from "@/lib/auth-client";
 
 const AuthContext = createContext(null);
 
@@ -9,6 +16,25 @@ export const AuthProvider = ({ children }) => {
   const [isAuthModalVisible, setIsAuthModalVisible] = useState(false);
   const [authModalMode, setAuthModalMode] = useState("login");
   const [onSuccessCallback, setOnSuccessCallback] = useState(null);
+
+  // Watch for global auth modal trigger
+  const shouldOpenAuthModal = useAuthStore(
+    (state) => state.shouldOpenAuthModal
+  );
+  const setShouldOpenAuthModal = useAuthStore(
+    (state) => state.setShouldOpenAuthModal
+  );
+
+  // Open auth modal when global flag is set
+  useEffect(() => {
+    if (shouldOpenAuthModal && !isAuthModalVisible) {
+      console.log("[AuthContext] Global auth modal trigger detected");
+      setAuthModalMode("login");
+      setIsAuthModalVisible(true);
+      // Reset the flag
+      setShouldOpenAuthModal(false);
+    }
+  }, [shouldOpenAuthModal, isAuthModalVisible, setShouldOpenAuthModal]);
 
   const openLoginModal = useCallback((onSuccess = null) => {
     if (typeof window !== "undefined") {

@@ -15,27 +15,7 @@ import axiosInstance from "@/lib/axiosInstance";
 export default function ClientProviders({ children }) {
   const memoizedTheme = useMemo(() => theme, []);
   const hasInitialized = useRef(false);
-  const hasFetchedCsrf = useRef(false);
   const _hasHydrated = useAuthStore((state) => state._hasHydrated);
-
-  // FETCH CSRF TOKEN FIRST
-  useEffect(() => {
-    if (hasFetchedCsrf.current) return;
-
-    hasFetchedCsrf.current = true;
-
-    const fetchCsrf = async () => {
-      try {
-        console.log("[ClientProviders] Fetching CSRF token...");
-        await axiosInstance.get("/csrf/");
-        console.log("[ClientProviders] CSRF token obtained");
-      } catch (error) {
-        console.error("[ClientProviders] Failed to fetch CSRF token:", error);
-      }
-    };
-
-    fetchCsrf();
-  }, []);
 
   useEffect(() => {
     if (hasInitialized.current) return;
