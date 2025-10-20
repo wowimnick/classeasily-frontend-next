@@ -1,93 +1,73 @@
-// fixVaulDropdownsCorrect.js
+// migrate-button-imports.js
+// Run with: node migrate-button-imports.js
+
 const fs = require('fs');
 const path = require('path');
+const glob = require('glob');
 
-const COMPONENTS_TO_FIX = ['Select', 'DatePicker', 'TimePicker', 'Cascader', 'TreeSelect'];
+// Find all JS/JSX/TS/TSX files in src directory
+const files = glob.sync('src/**/*.{js,jsx,ts,tsx}', {
+  ignore: ['**/node_modules/**', '**/components/common/Button.jsx', '**/components/common/Button.tsx']
+});
 
-function getAllFiles(dirPath, arrayOfFiles = []) {
-  const files = fs.readdirSync(dirPath);
-  files.forEach((file) => {
-    const filePath = path.join(dirPath, file);
-    if (fs.statSync(filePath).isDirectory()) {
-      if (!['node_modules', '.next', 'build', 'dist', '.git'].includes(file)) {
-        arrayOfFiles = getAllFiles(filePath, arrayOfFiles);
-      }
-    } else if (filePath.match(/\.(jsx?|tsx?)$/)) {
-      arrayOfFiles.push(filePath);
-    }
-  });
-  return arrayOfFiles;
-}
+let updatedCount = 0;
 
-function fixFile(filePath) {
-  let content = fs.readFileSync(filePath, 'utf8');
-  let modified = false;
+files.forEach(file => {
+  let content = fs.readFileSync(file, 'utf8');
+  let updated = false;
 
-  COMPONENTS_TO_FIX.forEach((component) => {
-    // More sophisticated regex that handles multi-line components properly
-    // Matches <Component ... > or <Component ... />
-    const regex = new RegExp(
-      `<${component}\\s+([^>]*?)(/?>)`,
-      'gs' // 'g' for global, 's' for dotAll (. matches newlines)
+  // Pattern 1: Simple single-line import { Button } from 'antd';
+  const simpleButtonImportRegex = /import\s*{\s*Button\s*}\s*from\s*['"]antd['"]\s*;?/g;
+  if (content.match(simpleButtonImportRegex)) {
+    content = content.replace(
+      simpleButtonImportRegex,
+      "import Button from '@/components/common/Button';"
     );
-
-    content = content.replace(regex, (match, propsAndContent, closing) => {
-      // Check if already has the props
-      if (propsAndContent.includes('getPopupContainer') && 
-          (propsAndContent.includes('dropdownRender') || propsAndContent.includes('panelRender'))) {
-        return match; // Already fixed
-      }
-
-      // Determine which render prop to use
-      const renderProp = ['DatePicker', 'TimePicker'].includes(component) 
-        ? 'panelRender' 
-        : 'dropdownRender';
-
-      let newProps = propsAndContent.trimEnd();
-      
-      // Add getPopupContainer if missing
-      if (!propsAndContent.includes('getPopupContainer')) {
-        newProps += '\n        getPopupContainer={(trigger) => trigger.parentNode}';
-        modified = true;
-      }
-
-      // Add dropdownRender/panelRender if missing
-      if (!propsAndContent.includes(renderProp)) {
-        newProps += `\n        ${renderProp}={(menu) => <div data-vaul-no-drag="">{menu}</div>}`;
-        modified = true;
-      }
-
-      if (modified) {
-        // Add proper spacing before closing
-        newProps += '\n      ';
-        return `<${component} ${newProps}${closing}`;
-      }
-
-      return match;
-    });
-  });
-
-  if (modified) {
-    fs.writeFileSync(filePath, content, 'utf8');
-    console.log(`✓ Fixed: ${filePath}`);
-    return true;
+    updated = true;
   }
 
-  return false;
-}
+  // Pattern 2: Multi-line or single-line imports with Button and other components
+  // This regex matches imports that may span multiple lines
+  const multiImportRegex = /import\s*{\s*([^}]*)\s*}\s*from\s*['"]antd['"]\s*;?/gs;
+  
+  content = content.replace(multiImportRegex, (match, importList) => {
+    // Parse the import list, handling line breaks and comments
+    const imports = importList
+      .split(',')
+      .map(s => {
+        // Remove inline comments and trim
+        const cleaned = s.replace(/\/\/.*$/gm, '').trim();
+        return cleaned;
+      })
+      .filter(s => s.length > 0);
+    
+    const hasButton = imports.some(imp => imp === 'Button');
+    
+    if (!hasButton) {
+      return match; // No Button import, keep as is
+    }
+    
+    updated = true;
+    
+    // Remove Button from the list
+    const otherImports = imports.filter(imp => imp !== 'Button');
+    
+    if (otherImports.length > 0) {
+      // Keep other imports on one line, add separate Button import
+      return `import { ${otherImports.join(', ')} } from 'antd';\nimport Button from '@/components/common/Button';`;
+    } else {
+      // Only Button was imported
+      return "import Button from '@/components/common/Button';";
+    }
+  });
 
-// Run the script
-const srcDir = process.argv[2] || './src';
-console.log(`Scanning ${srcDir} for files to fix...\n`);
-
-const files = getAllFiles(srcDir);
-let fixedCount = 0;
-
-files.forEach((file) => {
-  if (fixFile(file)) {
-    fixedCount++;
+  if (updated) {
+    fs.writeFileSync(file, content, 'utf8');
+    updatedCount++;
+    console.log(`✅ Updated: ${file}`);
   }
 });
 
-console.log(`\n✓ Complete! Fixed ${fixedCount} file(s).`);
-console.log('\n⚠️  WARNING: Review the changes with git diff before committing!');
+console.log(`\n🎉 Migration complete! Updated ${updatedCount} files.`);
+console.log('\n⚠️  Please review the changes and test your app before committing.');
+console.log('\n📝 Make sure you have created @/components/common/Button.jsx first!');

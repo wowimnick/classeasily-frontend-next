@@ -11,8 +11,8 @@ import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Typography } from 'antd';
-import message from '@/lib/message';
+import { Typography } from "antd";
+import message from "@/lib/message";
 import { ArrowRightOutlined } from "@ant-design/icons";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
@@ -440,8 +440,7 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
 
   // Embla Carousel Hooks
   const handleScroll = useCallback(async () => {
-    if (isInitialLoad.current || !emblaApi || !nextPageUrl || isFetchingMore)
-      return;
+    if (!emblaApi || !nextPageUrl || isFetchingMore) return;
     const lastSlideIndex = emblaApi.scrollSnapList().length - 1;
     if (emblaApi.selectedScrollSnap() >= lastSlideIndex - 2) {
       setIsFetchingMore(true);
