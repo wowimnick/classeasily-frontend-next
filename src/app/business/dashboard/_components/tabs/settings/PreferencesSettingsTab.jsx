@@ -3,20 +3,8 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import styled from "styled-components";
-import {
-  Form,
-  Select,
-  Switch,
-  Button,
-  TimePicker,
-  Alert,
-  message,
-  Radio,
-  Spin,
-  Checkbox,
-  Row,
-  Col,
-} from "antd";
+import { Form, Select, Switch, Button, TimePicker, Alert, Radio, Spin, Checkbox, Row, Col,  } from 'antd';
+import message from '@/lib/message';
 import { InfoCircleOutlined } from "@ant-design/icons";
 import {
   Clock,
@@ -463,7 +451,7 @@ function PreferencesSettingsTabContent({
                         minuteStep={15}
                         disabled={!day.isOpen}
                         style={{ width: "100%" }}
-                      />
+      />
                     </Form.Item>
                   </Col>
                 </HoursRow>
@@ -488,7 +476,7 @@ function PreferencesSettingsTabContent({
               placeholder="Select Time Zone"
               optionFilterProp="children"
               options={timezones}
-            />
+      />
           </Form.Item>
         </FormGroup>
 

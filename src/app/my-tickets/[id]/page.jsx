@@ -23,18 +23,8 @@ import {
   AlertTriangle,
   Check,
 } from "lucide-react";
-import {
-  message,
-  Spin,
-  Card,
-  Input,
-  Button,
-  ConfigProvider,
-  Avatar,
-  Tag,
-  Empty,
-  Divider,
-} from "antd";
+import { Spin, Card, Input, Button, ConfigProvider, Avatar, Tag, Empty, Divider,  } from 'antd';
+import message from '@/lib/message';
 import { CustomerSupportTicketService } from "@/services/apiService";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import dynamic from "next/dynamic";

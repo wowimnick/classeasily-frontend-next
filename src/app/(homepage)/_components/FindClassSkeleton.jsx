@@ -1,4 +1,4 @@
-// Enhanced Skeleton Components that match real card structure
+// Enhanced Skeleton Components that match HomeClassCard structure
 import styled, { keyframes } from "styled-components";
 
 const shimmer = keyframes`
@@ -75,59 +75,77 @@ const SkeletonCarouselContainer = styled.div`
   overflow: hidden;
 `;
 
+// Updated card to match HomeClassCard layout
 const SkeletonCard = styled.div`
   display: flex;
   flex-direction: column;
   height: min-content;
   flex-shrink: 0;
-  padding: 12px;
-  border: 1px solid #efefef;
+  width: 250px;
+  max-width: 250px;
   border-radius: 12px;
+  border: 2px solid transparent;
+  padding: 2px;
   background: #ffffff;
-  width: 320px;
 
   @media (max-width: 768px) {
-    width: 290px;
+    width: 240px;
   }
   @media (max-width: 480px) {
-    width: 270px;
+    width: 230px;
   }
 `;
 
-const SkeletonImage = styled.div`
+const SkeletonImageContainer = styled.div`
   position: relative;
   width: 100%;
-  aspect-ratio: 4/3;
-  border-radius: 12px;
-  margin-bottom: 10px;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 6px;
+`;
+
+const SkeletonImage = styled.div`
+  width: 100%;
+  height: 100%;
   background: linear-gradient(to right, #e8e8e8 8%, #f4f4f4 18%, #e8e8e8 33%);
   background-size: 800px 100px;
   animation: ${shimmer} 1.5s infinite linear;
+  border-radius: 10px;
 `;
 
 const SkeletonContent = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  flex-grow: 1;
+  gap: 1px;
+`;
+
+const SkeletonTopRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 1px;
 `;
 
 const SkeletonCardTitle = styled.div`
-  height: 22px;
-  width: 85%;
+  height: 18px;
+  width: 70%;
   background: linear-gradient(to right, #f0f0f0 8%, #f8f8f8 18%, #f0f0f0 33%);
   background-size: 800px 100px;
   animation: ${shimmer} 1.5s infinite linear;
   border-radius: 4px;
+  flex: 1;
 `;
 
-const SkeletonCardTitleSecond = styled.div`
-  height: 22px;
-  width: 65%;
+const SkeletonRating = styled.div`
+  height: 16px;
+  width: 45px;
   background: linear-gradient(to right, #f0f0f0 8%, #f8f8f8 18%, #f0f0f0 33%);
   background-size: 800px 100px;
   animation: ${shimmer} 1.5s infinite linear;
   border-radius: 4px;
+  flex-shrink: 0;
 `;
 
 const SkeletonText = styled.div`
@@ -137,21 +155,32 @@ const SkeletonText = styled.div`
   background-size: 800px 100px;
   animation: ${shimmer} 1.5s infinite linear;
   border-radius: 4px;
+  margin: 2px 0;
 `;
 
-const SkeletonPriceContainer = styled.div`
+const SkeletonPriceRow = styled.div`
   display: flex;
-  gap: 10px;
-  margin-top: 8px;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
 `;
 
-const SkeletonPriceBox = styled.div`
-  height: 42px;
-  width: 80px;
+const SkeletonPrice = styled.div`
+  height: 16px;
+  width: 65px;
   background: linear-gradient(to right, #f0f0f0 8%, #f8f8f8 18%, #f0f0f0 33%);
   background-size: 800px 100px;
   animation: ${shimmer} 1.5s infinite linear;
-  border-radius: 8px;
+  border-radius: 4px;
+`;
+
+const SkeletonPriceSeparator = styled.div`
+  height: 10px;
+  width: 10px;
+  background: linear-gradient(to right, #f0f0f0 8%, #f8f8f8 18%, #f0f0f0 33%);
+  background-size: 800px 100px;
+  animation: ${shimmer} 1.5s infinite linear;
+  border-radius: 50%;
 `;
 
 const SkeletonLink = styled.div`
@@ -176,16 +205,19 @@ export function FindClassSkeleton() {
       <SkeletonCarouselContainer>
         {[1, 2, 3, 4].map((item) => (
           <SkeletonCard key={item}>
-            <SkeletonImage />
+            <SkeletonImageContainer>
+              <SkeletonImage />
+            </SkeletonImageContainer>
             <SkeletonContent>
-              <SkeletonCardTitle />
-              <SkeletonCardTitleSecond />
-              <SkeletonText width="70%" />
-              <SkeletonText width="55%" />
-              <SkeletonPriceContainer>
-                <SkeletonPriceBox />
-                <SkeletonPriceBox />
-              </SkeletonPriceContainer>
+              <SkeletonTopRow>
+                <SkeletonCardTitle />
+                <SkeletonRating />
+              </SkeletonTopRow>
+              <SkeletonText width="60%" />
+              <SkeletonText width="50%" />
+              <SkeletonPriceRow>
+                <SkeletonPrice />
+              </SkeletonPriceRow>
             </SkeletonContent>
           </SkeletonCard>
         ))}

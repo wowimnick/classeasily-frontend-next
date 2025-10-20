@@ -3,27 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import styled from "styled-components";
 import { Drawer as VaulDrawer } from "vaul";
-import {
-  Table,
-  Button,
-  Typography,
-  Tag,
-  Space,
-  Tooltip,
-  Form,
-  Input,
-  Select,
-  DatePicker,
-  InputNumber,
-  Switch,
-  message,
-  Popconfirm,
-  Skeleton,
-  Divider,
-  ConfigProvider,
-  Card,
-  Grid,
-} from "antd";
+import { Table, Button, Typography, Tag, Space, Tooltip, Form, Input, Select, DatePicker, InputNumber, Switch, Popconfirm, Skeleton, Divider, ConfigProvider, Card, Grid,  } from 'antd';
+import message from '@/lib/message';
 import {
   Plus,
   Edit,

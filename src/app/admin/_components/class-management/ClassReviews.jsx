@@ -6,32 +6,8 @@ import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
 import dayjs from "dayjs";
-import {
-  Table,
-  Card,
-  Input,
-  Select,
-  Button,
-  ConfigProvider,
-  Avatar,
-  Tag,
-  Space,
-  Tooltip,
-  Rate,
-  Modal,
-  message,
-  Grid,
-  Empty,
-  Alert,
-  Form,
-  Checkbox,
-  Radio,
-  Typography,
-  Spin,
-  Skeleton,
-  Divider,
-  Pagination,
-} from "antd";
+import { Table, Card, Input, Select, Button, ConfigProvider, Avatar, Tag, Space, Tooltip, Rate, Modal, Grid, Empty, Alert, Form, Checkbox, Radio, Typography, Spin, Skeleton, Divider, Pagination,  } from 'antd';
+import message from '@/lib/message';
 import {
   Search,
   Star,

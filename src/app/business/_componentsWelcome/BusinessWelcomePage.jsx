@@ -1217,7 +1217,7 @@ const BusinessWelcomePage = () => {
               transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
             >
               <Image
-                src="Group 1.svg"
+                src="/Group 1.svg"
                 alt="A preview of the ClassEasily dashboard UI on a laptop"
                 width={800}
                 height={600}
@@ -1290,7 +1290,6 @@ const BusinessWelcomePage = () => {
                       fill
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
                       quality={85}
-                      style={{ objectFit: "contain" }}
                     />
                   </EmblaSlide>
                 ))}

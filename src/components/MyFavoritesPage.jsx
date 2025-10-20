@@ -3,17 +3,15 @@
 import React, { useState, useEffect, useCallback } from "react";
 import ReactDOM from "react-dom";
 import styled from "styled-components";
-import { Empty, Pagination, message, Typography, ConfigProvider } from "antd";
+import { Empty, Pagination, Typography, ConfigProvider } from 'antd';
+import message from '@/lib/message';
 import { Heart, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// MIGRATION: Updated import paths to use Next.js aliases
 import HomeClassCard from "@/components/homepage/HomeClassCard";
 import { userService } from "@/services/apiService";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { theme } from "@/components/theme";
-
-// --- Modal Shell Components ---
 
 const ModalOverlay = styled(motion.div)`
   position: fixed;
@@ -115,15 +113,15 @@ const ModalContent = styled.div`
   }
 `;
 
-// --- Content-Specific Styled Components ---
-
 const GridContainer = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 250px));
   gap: 1.5rem;
+  justify-content: start;
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
+    justify-content: center;
   }
 `;
 
@@ -168,7 +166,6 @@ const FavoritesModal = ({ isOpen, onClose }) => {
   const [totalItems, setTotalItems] = useState(0);
   const pageSize = 9;
 
-  // MIGRATION: State to ensure component is mounted on client before using portals or window object
   const [isMounted, setIsMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -176,7 +173,7 @@ const FavoritesModal = ({ isOpen, onClose }) => {
     setIsMounted(true);
 
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    handleResize(); // Set initial value
+    handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -358,7 +355,6 @@ const FavoritesModal = ({ isOpen, onClose }) => {
     </ConfigProvider>
   );
 
-  // MIGRATION: Only render the portal if the component is mounted on the client.
   if (!isMounted) {
     return null;
   }

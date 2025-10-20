@@ -2,33 +2,8 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { Drawer as VaulDrawer } from "vaul";
-import {
-  Form,
-  Tabs,
-  Tooltip,
-  Typography,
-  ConfigProvider,
-  message,
-  Button,
-  Empty,
-  Space,
-  Avatar,
-  Tag,
-  Popconfirm,
-  Spin,
-  DatePicker,
-  Divider,
-  Input,
-  Checkbox,
-  Select,
-  Modal,
-  Table,
-  Switch,
-  Dropdown,
-  Menu,
-  Grid,
-  Segmented,
-} from "antd";
+import { Form, Tabs, Tooltip, Typography, ConfigProvider, Button, Empty, Space, Avatar, Tag, Popconfirm, Spin, DatePicker, Divider, Input, Checkbox, Select, Modal, Table, Switch, Dropdown, Menu, Grid, Segmented,  } from 'antd';
+import message from '@/lib/message';
 import {
   Search,
   Plus,
@@ -1504,7 +1479,7 @@ function ClassManagementContent(props) {
             value={scheduleGroupFilter}
             onChange={setScheduleGroupFilter}
             style={{ minWidth: 200, flex: 1 }}
-          >
+      >
             {hasIndividual && (
               <Option value={INDIVIDUAL_KEY}>Individual Schedules</Option>
             )}

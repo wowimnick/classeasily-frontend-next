@@ -405,7 +405,7 @@ export const ModalFooter = ({
                 animate={{ opacity: 1, width: "auto" }}
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.2 }}
-              >
+      >
                 <Calendar size={16} />
                 <strong>{formatNaiveDate(selectedSlot.date, "MMM d")}</strong>
                 <span>

@@ -1,21 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import {
-  Form,
-  Input,
-  Select,
-  Typography,
-  TimePicker,
-  Checkbox,
-  ConfigProvider,
-  InputNumber,
-  message,
-  Upload,
-  Spin,
-  Row,
-  Col,
-} from "antd";
+import { Form, Input, Select, Typography, TimePicker, Checkbox, ConfigProvider, InputNumber, Upload, Spin, Row, Col,  } from 'antd';
+import message from '@/lib/message';
 import styled from "styled-components";
 import {
   Star,
@@ -1122,7 +1109,7 @@ const BusinessInfoStep = ({
                           minuteStep={15}
                           disabled={!day.isOpen}
                           style={{ width: "100%" }}
-                        />
+      />
                       </Form.Item>
                     </Col>
                   </HoursRow>

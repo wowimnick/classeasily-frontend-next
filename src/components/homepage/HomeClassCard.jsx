@@ -19,19 +19,12 @@ import {
   Calendar,
   AlertCircle,
 } from "lucide-react";
-import { message } from "antd";
+import message from '@/lib/message';
 import { useAuthUser } from "@/hooks/useAuthUser";
 import confetti from "canvas-confetti";
 
 import { classService } from "@/services/apiService.js";
 import useIntersectionObserver from "@/hooks/useIntersectionObserver.js";
-
-// --- OPTIMIZATIONS APPLIED ---
-// 1. Reduced image quality from 75 to 60 for faster loading
-// 2. Added proper image sizing with intrinsic dimensions
-// 3. Lazy load images below the fold
-// 4. Memoized expensive computations
-// 5. Reduced animation complexity
 
 const spinAnimation = keyframes`
   to { transform: rotate(360deg); }
@@ -41,17 +34,17 @@ const ButtonSpinner = styled.div`
   border: 2px solid rgba(72, 72, 72, 0.2);
   border-left-color: #484848;
   border-radius: 50%;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   animation: ${spinAnimation} 0.8s linear infinite;
 `;
 
 const ImageLoadingSpinner = styled.div`
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-left-color: ${(props) => props.theme.token.colorPrimary || "#007bff"};
+  border: 3px solid rgba(0, 0, 0, 0.08);
+  border-left-color: #ff385c;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   animation: ${spinAnimation} 1s linear infinite;
 `;
 
@@ -59,36 +52,57 @@ const CardContainer = styled(motion.div)`
   display: flex;
   flex-direction: column;
   height: min-content;
-  flex-shrink: 0;
-  scroll-snap-align: start;
   cursor: pointer;
   position: relative;
-  padding: 12px;
-  border: 1px solid
-    ${(props) =>
-      props.$isSelected ? props.theme.token.colorPrimary : "#efefef"};
-  border-radius: 12px;
-  background: ${(props) => props.theme.token.colorBgContainer};
   width: 100%;
-  will-change: transform; // GPU acceleration hint
+  padding: ${(props) => (props.$isSelected ? "2px" : "0")};
+  transition: padding 0.2s ease;
 `;
 
 const ImageContainer = styled.div`
   position: relative;
   width: 100%;
-  aspect-ratio: 4/3; // Better than padding-top hack
-  border-radius: 12px;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
   overflow: hidden;
-  margin-bottom: 10px;
-  background: ${(props) =>
-    props.$isLoadingImage ? "#f0f0f0" : props.theme.token.colorBgContainer};
+  margin-bottom: 6px;
+  background: #f7f7f7;
 `;
 
-const DetailsDivider = styled.div`
+const ImageWrapper = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+`;
+
+const StyledImage = styled(Image)`
+  object-fit: cover;
+  opacity: ${(props) => (props.$isLoaded ? 1 : 0)};
+  transition: opacity 0.3s ease;
+`;
+
+const ImageErrorFallback = styled.div`
+  position: absolute;
+  inset: 0;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f0f0;
+  color: #bbb;
+  font-size: 0.7rem;
+  text-align: center;
+  padding: 0.5rem;
+  gap: 0.4rem;
+`;
+
+const ImagePlaceholder = styled.div`
+  position: absolute;
+  inset: 0;
+  background-color: #f7f7f7;
 `;
 
 const ImageSpinnerContainer = styled.div`
@@ -100,81 +114,20 @@ const ImageSpinnerContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(248, 248, 248, 0.7);
-  backdrop-filter: blur(1px);
+  background: rgba(247, 247, 247, 0.8);
   z-index: 2;
-`;
-
-const ImageWrapper = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-      180deg,
-      rgba(0, 0, 0, 0.02) 0%,
-      rgba(0, 0, 0, 0) 20%,
-      rgba(0, 0, 0, 0) 50%,
-      rgba(0, 0, 0, 0.05) 100%
-    );
-    pointer-events: none;
-  }
-`;
-
-const StyledImage = styled(Image)`
-  object-fit: cover;
-  opacity: ${(props) => (props.$isLoaded ? 1 : 0)};
-  transition: opacity 0.4s ease;
-
-  ${CardContainer}:hover & {
-    transform: scale(1.05);
-    transition: transform 0.3s ease;
-  }
-`;
-
-const ImageErrorFallback = styled.div`
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background-color: #eee;
-  color: #aaa;
-  font-size: 0.8rem;
-  text-align: center;
-  padding: 1rem;
-  gap: 0.5rem;
-  z-index: 1;
-`;
-
-const ImagePlaceholder = styled.div`
-  position: absolute;
-  inset: 0;
-  background-color: #f0f0f0;
-  z-index: 0;
 `;
 
 const FavoriteButton = styled.button`
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 10px;
+  right: 10px;
   background: rgba(255, 255, 255, 0);
   border: none;
   cursor: pointer;
   z-index: 3;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -188,164 +141,124 @@ const FavoriteButton = styled.button`
 `;
 
 const ContentContainer = styled.div`
-  flex-grow: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
+  gap: 1px;
 `;
 
-const Title = styled.h3`
-  font-size: 16px;
+const TopRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 1px;
+`;
+
+const TitleText = styled.div`
+  color: #222;
+  font-size: 14px;
   font-weight: 600;
-  color: #222222;
-  margin: 0;
-  line-height: 1.4;
+  line-height: 1.25;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  word-break: break-word;
-  max-width: 100%;
+  flex: 1;
+  min-width: 0;
 `;
 
 const Rating = styled.div`
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: #fff8e7;
-  padding: 4px 10px;
-  border-radius: 20px;
-  color: #b17300;
-  font-size: 14px;
-  font-weight: 600;
+  gap: 2px;
+  color: #222;
+  font-size: 13px;
+  font-weight: 400;
   white-space: nowrap;
   flex-shrink: 0;
 
-  span {
-    color: #b17300;
-    font-weight: normal;
-  }
   svg {
-    color: #ffb400;
-    fill: #ffb400;
+    color: #222;
+    fill: #222;
     stroke-width: 0;
   }
 `;
 
-const CompanyInfo = styled.div`
-  display: flex;
-  align-items: center;
-  color: #666666;
-  font-size: 14px;
-  gap: 6px;
-  min-width: 0;
-  overflow: hidden;
-
-  svg {
-    color: initial;
-    flex-shrink: 0;
-  }
-`;
-
-const CompanyText = styled.span`
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-`;
-
-const LocationInfo = styled.div`
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  color: #666666;
-  font-size: 14px;
-  min-height: 20px;
-  gap: 8px;
-  min-width: 0;
-  overflow: hidden;
-
-  svg {
-    color: initial;
-    flex-shrink: 0;
-  }
-`;
-
-const LocationText = styled.span`
-  color: #484848;
-  font-weight: 400;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-  margin-bottom: 4px;
-`;
-
-const LocationDistance = styled.span`
-  color: #666666;
+const ReviewCount = styled.span`
+  color: #717171;
   font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  white-space: nowrap;
-
-  &::before {
-    content: "•";
-    color: #c2c2c2;
-    margin-right: 4px;
-  }
+  font-weight: 400;
 `;
 
-const PricesContainer = styled.div`
+const CompanyInfo = styled.div`
+  color: #717171;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const LocationRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 3px;
+  color: #717171;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const DistanceBadge = styled.span`
+  color: #717171;
+  font-size: 13px;
+  font-weight: 400;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+`;
+
+const PriceRow = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-top: 2px;
   flex-wrap: wrap;
-  margin-top: auto;
 `;
 
-const PriceBox = styled.div`
-  display: inline-flex;
-  flex-direction: column;
-  background: ${(props) => (props.type === "course" ? "#E6F7FF" : "#FFF0F0")};
-  border-radius: 8px;
-  padding: 3px 8px;
-  min-width: 60px;
-  border: 1px solid
-    ${(props) => (props.type === "course" ? "#91D5FF" : "#FFD6DB")};
-  flex-shrink: 0;
-`;
-
-const PriceAmount = styled.div`
-  color: ${(props) => (props.type === "course" ? "#0050B3" : "#D4380D")};
+const Price = styled.div`
+  color: #222;
+  font-size: 14px;
   font-weight: 600;
-  font-size: 16px;
   display: flex;
-  align-items: center;
-  gap: 4px;
+  align-items: baseline;
+  gap: 2px;
   white-space: nowrap;
 `;
 
-const PriceLabel = styled.div`
-  color: ${(props) => (props.type === "course" ? "#0050B3" : "#D4380D")};
-  font-size: 11px;
-  opacity: 0.9;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 500;
-  white-space: nowrap;
+const PriceLabel = styled.span`
+  color: #717171;
+  font-size: 13px;
+  font-weight: 400;
 `;
 
-// Memoized utility function
+const PriceSeparator = styled.span`
+  color: #717171;
+  font-size: 12px;
+  margin: 0 1px;
+`;
+
 const truncateText = (text, maxLength) => {
   if (!text || text.length <= maxLength) return text;
   return text.substring(0, maxLength) + "...";
 };
 
-// Memoized distance formatter
 const formatDistance = (distanceInKm) => {
   if (
     distanceInKm === null ||
@@ -379,7 +292,6 @@ const HomeClassCard = ({
   priority = false,
 }) => {
   const searchParams = useSearchParams();
-
   const { user: currentUser } = useAuthUser();
   const isAuthenticated = !!currentUser;
   const [isFavorite, setIsFavorite] = useState(is_favorited);
@@ -396,18 +308,12 @@ const HomeClassCard = ({
     true
   );
 
-  // Memoized values
   const prices = useMemo(
     () => ({
       course: min_course_price,
       singleSession: min_session_price,
     }),
     [min_course_price, min_session_price]
-  );
-
-  const company = useMemo(
-    () => truncateText(business_name || "Business", 25),
-    [business_name]
   );
 
   const imageUrl = useMemo(() => {
@@ -422,19 +328,9 @@ const HomeClassCard = ({
   const displayLocation = useMemo(() => {
     const classCity = city || "";
     const classState = state || "";
-    if (classCity && classState) {
-      return truncateText(`${classCity}, ${classState}`, 40);
-    }
-    if (classCity) return truncateText(classCity, 40);
-    if (classState) return truncateText(classState, 40);
-    return "Location details unavailable";
-  }, [city, state]);
-
-  const fullLocationTitle = useMemo(() => {
-    const classCity = city || "";
-    const classState = state || "";
-    if (classCity && classState) return `${classCity}, ${classState}`;
-    return classCity || classState || "Location details unavailable";
+    if (classCity) return truncateText(classCity, 25);
+    if (classState) return truncateText(classState, 25);
+    return "Location unavailable";
   }, [city, state]);
 
   useEffect(() => setIsFavorite(is_favorited), [is_favorited]);
@@ -516,18 +412,11 @@ const HomeClassCard = ({
       onClick={handleNavigateToClass}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: 0.25 }}
       $isSelected={isSelected}
-      layout="position"
       theme={theme}
     >
-      <ImageContainer
-        $isLoadingImage={
-          imageLoadState === "loading" ||
-          (imageLoadState === "idle" && isIntersecting && !!imageUrl)
-        }
-        theme={theme}
-      >
+      <ImageContainer>
         <FavoriteButton
           ref={favoriteButtonRef}
           onClick={handleFavoriteClick}
@@ -538,7 +427,7 @@ const HomeClassCard = ({
             <ButtonSpinner />
           ) : (
             <Heart
-              size={24}
+              size={22}
               color={isFavorite ? "#FF385C" : "#ffffffff"}
               fill={isFavorite ? "#FF385C" : "rgba(0, 0, 0, 0.36)"}
               style={{ transition: "all 0.2s ease" }}
@@ -553,7 +442,7 @@ const HomeClassCard = ({
           )}
           {imageLoadState === "error" && (
             <ImageErrorFallback>
-              <AlertCircle size={32} /> Image unavailable
+              <AlertCircle size={24} /> Image unavailable
             </ImageErrorFallback>
           )}
           {imageLoadState === "no_image_url" && <ImagePlaceholder />}
@@ -564,7 +453,7 @@ const HomeClassCard = ({
                 src={imageUrl}
                 alt={title || "Class image"}
                 fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                 quality={60}
                 onLoad={handleImageLoad}
                 onError={handleImageError}
@@ -578,65 +467,64 @@ const HomeClassCard = ({
               imageLoadState === "no_image_url") && <ImagePlaceholder />}
         </ImageWrapper>
       </ImageContainer>
-      <DetailsDivider>
-        <ContentContainer>
-          <Title title={title}>{title || "Untitled Class"}</Title>
-          <CompanyInfo>
-            <Building2 size={14} />
-            <CompanyText title={business_name || "Business"}>
-              Hosted by {company}
-            </CompanyText>
-          </CompanyInfo>
-          <LocationInfo>
-            <LocationText title={fullLocationTitle}>
-              {displayLocation}
-            </LocationText>
-            {formattedDistance && (
-              <LocationDistance>
-                <Navigation size={12} /> {formattedDistance}
-              </LocationDistance>
-            )}
-          </LocationInfo>
-          <PricesContainer>
-            {prices.singleSession === null && prices.course === null ? (
-              <PriceBox type="single">
-                <PriceLabel type="single">Pricing</PriceLabel>
-                <PriceAmount
-                  type="single"
-                  style={{ fontSize: "14px", opacity: 0.8 }}
-                >
-                  Unavailable
-                </PriceAmount>
-              </PriceBox>
-            ) : (
-              <>
-                {prices.singleSession !== null && (
-                  <PriceBox type="single">
-                    <PriceLabel type="single">Class From</PriceLabel>
-                    <PriceAmount type="single">
-                      <Calendar size={12} />${prices.singleSession}
-                    </PriceAmount>
-                  </PriceBox>
-                )}
-                {prices.course !== null && (
-                  <PriceBox type="course">
-                    <PriceLabel type="course">Course From</PriceLabel>
-                    <PriceAmount type="course">
-                      <Calendar size={12} />${prices.course}
-                    </PriceAmount>
-                  </PriceBox>
-                )}
-              </>
-            )}
-          </PricesContainer>
-        </ContentContainer>
-        {rating > 0 && (
-          <Rating>
-            <Star size={16} /> {Number(rating).toFixed(1)}{" "}
-            {totalReviews > 0 && <span>({totalReviews})</span>}
-          </Rating>
-        )}
-      </DetailsDivider>
+
+      <ContentContainer>
+        <TopRow>
+          <TitleText title={title}>{title || "Untitled Class"}</TitleText>
+          {rating > 0 && (
+            <Rating>
+              <Star size={12} />
+              {Number(rating).toFixed(1)}
+              {totalReviews > 0 && <ReviewCount>({totalReviews})</ReviewCount>}
+            </Rating>
+          )}
+        </TopRow>
+
+        <CompanyInfo title={business_name}>
+          {truncateText(business_name || "Business", 30)}
+        </CompanyInfo>
+
+        <LocationRow>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+            {displayLocation}
+          </span>
+          {formattedDistance && (
+            <>
+              <span style={{ color: "#c0c0c0", margin: "0 2px" }}>•</span>
+              <DistanceBadge>
+                <Navigation size={10} strokeWidth={2.5} />
+                {formattedDistance}
+              </DistanceBadge>
+            </>
+          )}
+        </LocationRow>
+
+        <PriceRow>
+          {prices.singleSession === null && prices.course === null ? (
+            <Price>
+              <PriceLabel>Pricing unavailable</PriceLabel>
+            </Price>
+          ) : (
+            <>
+              {prices.singleSession !== null && (
+                <Price>
+                  <span>${prices.singleSession}</span>
+                  <PriceLabel>/ class</PriceLabel>
+                </Price>
+              )}
+              {prices.singleSession !== null && prices.course !== null && (
+                <PriceSeparator>•</PriceSeparator>
+              )}
+              {prices.course !== null && (
+                <Price>
+                  <span>${prices.course}</span>
+                  <PriceLabel>/ course</PriceLabel>
+                </Price>
+              )}
+            </>
+          )}
+        </PriceRow>
+      </ContentContainer>
     </CardContainer>
   );
 };

@@ -4,34 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Table,
-  Input,
-  Select,
-  Button,
-  ConfigProvider,
-  Avatar,
-  Dropdown,
-  Menu,
-  message,
-  Modal,
-  Form,
-  Empty,
-  Badge,
-  Alert,
-  Grid,
-  Checkbox,
-  Typography,
-  Spin,
-  Tooltip,
-  Tag,
-  Space,
-  Divider,
-  Card,
-  Skeleton,
-  Tabs,
-  Rate,
-} from "antd";
+import { Table, Input, Select, Button, ConfigProvider, Avatar, Dropdown, Menu, Modal, Form, Empty, Badge, Alert, Grid, Checkbox, Typography, Spin, Tooltip, Tag, Space, Divider, Card, Skeleton, Tabs, Rate,  } from 'antd';
+import message from '@/lib/message';
 import {
   Search,
   MoreHorizontal,

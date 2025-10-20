@@ -1,15 +1,8 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import {
-  Form,
-  Input,
-  Switch,
-  ConfigProvider,
-  message,
-  Typography,
-  Button,
-} from "antd";
+import { Form, Input, Switch, ConfigProvider, Typography, Button,  } from 'antd';
+import message from '@/lib/message';
 import styled from "styled-components";
 import {
   MapPin,

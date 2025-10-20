@@ -9,7 +9,8 @@ import React, {
 } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
-import { Typography, Empty, message, ConfigProvider, Alert, Spin } from "antd";
+import { Typography, Empty, ConfigProvider, Alert, Spin } from 'antd';
+import message from '@/lib/message';
 import {
   Clock,
   CalendarDays,

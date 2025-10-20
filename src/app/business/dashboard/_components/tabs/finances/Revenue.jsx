@@ -25,25 +25,8 @@ import {
   TrendingDown,
   LineChart as LineChartIcon, // Renamed to avoid conflict
 } from "lucide-react";
-import {
-  DatePicker,
-  Typography,
-  ConfigProvider,
-  Card,
-  Tooltip,
-  Badge,
-  Space,
-  Select,
-  Button,
-  message,
-  Empty,
-  Statistic,
-  Spin,
-  Skeleton,
-  Row,
-  Col,
-  Divider,
-} from "antd";
+import { DatePicker, Typography, ConfigProvider, Card, Tooltip, Badge, Space, Select, Button, Empty, Statistic, Spin, Skeleton, Row, Col, Divider,  } from 'antd';
+import message from '@/lib/message';
 import {
   ResponsiveContainer,
   Area,

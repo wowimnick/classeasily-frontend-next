@@ -2,23 +2,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import styled from "styled-components";
-import {
-  Input,
-  Button,
-  DatePicker,
-  Card,
-  Typography,
-  message,
-  ConfigProvider,
-  Spin,
-  Select,
-  Badge,
-  Space,
-  Grid,
-  Skeleton,
-  Empty,
-  Divider,
-} from "antd";
+import { Input, Button, DatePicker, Card, Typography, ConfigProvider, Spin, Select, Badge, Space, Grid, Skeleton, Empty, Divider,  } from 'antd';
+import message from '@/lib/message';
 import {
   Search,
   RefreshCw,

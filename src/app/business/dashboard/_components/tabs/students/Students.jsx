@@ -22,26 +22,8 @@ import {
   User,
   Eye,
 } from "lucide-react";
-import {
-  Button,
-  Input,
-  Select,
-  message,
-  ConfigProvider,
-  Typography,
-  Grid,
-  Divider,
-  Modal,
-  Pagination,
-  Table,
-  Avatar,
-  Tag,
-  Dropdown,
-  Menu,
-  Tooltip,
-  Space,
-  Popconfirm,
-} from "antd";
+import { Button, Input, Select, ConfigProvider, Typography, Grid, Divider, Modal, Pagination, Table, Avatar, Tag, Dropdown, Menu, Tooltip, Space, Popconfirm,  } from 'antd';
+import message from '@/lib/message';
 import { businessStudentService } from "@/services/apiService";
 import StudentCard from "./StudentCard";
 import StudentProfile from "./StudentProfile";

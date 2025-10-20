@@ -1,22 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  Form,
-  Input,
-  Select,
-  TimePicker,
-  DatePicker,
-  Switch,
-  Button,
-  ConfigProvider,
-  message,
-  InputNumber,
-  Tabs,
-  Typography,
-  Tooltip,
-} from "antd";
+import { Modal, Form, Input, Select, TimePicker, DatePicker, Switch, Button, ConfigProvider, InputNumber, Tabs, Typography, Tooltip,  } from 'antd';
+import message from '@/lib/message';
 import {
   Calendar,
   Clock,

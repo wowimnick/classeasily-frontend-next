@@ -2,20 +2,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import styled, { ThemeProvider } from "styled-components";
-import {
-  Form,
-  Input,
-  Select,
-  Button,
-  Tabs,
-  ConfigProvider,
-  message,
-  Switch,
-  Typography,
-  Tooltip,
-  InputNumber,
-  Upload,
-} from "antd";
+import { Form, Input, Select, Button, Tabs, ConfigProvider, Switch, Typography, Tooltip, InputNumber, Upload,  } from 'antd';
+import message from '@/lib/message';
 import {
   BookOpen,
   MapPin,

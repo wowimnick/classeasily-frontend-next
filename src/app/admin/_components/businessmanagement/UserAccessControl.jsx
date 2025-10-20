@@ -5,26 +5,8 @@ import ReactDOM from "react-dom";
 import styled, { ThemeProvider } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
-import {
-  Table,
-  Card,
-  Button,
-  Modal,
-  Form,
-  Input,
-  Select,
-  ConfigProvider,
-  Tag,
-  Space,
-  Timeline,
-  Divider,
-  message,
-  Grid,
-  Empty,
-  Avatar,
-  Typography,
-  Skeleton,
-} from "antd";
+import { Table, Card, Button, Modal, Form, Input, Select, ConfigProvider, Tag, Space, Timeline, Divider, Grid, Empty, Avatar, Typography, Skeleton,  } from 'antd';
+import message from '@/lib/message';
 import {
   Activity,
   User,

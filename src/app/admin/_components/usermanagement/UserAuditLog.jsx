@@ -4,27 +4,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import dayjs from "dayjs";
 import styled from "styled-components";
 import { motion } from "framer-motion";
-import {
-  Table,
-  Card,
-  DatePicker,
-  Select,
-  Input,
-  Button,
-  ConfigProvider,
-  Tag,
-  Space,
-  Badge,
-  Timeline,
-  Drawer,
-  Tabs,
-  Divider,
-  message,
-  Grid,
-  Empty,
-  Typography,
-  Skeleton,
-} from "antd";
+import { Table, Card, DatePicker, Select, Input, Button, ConfigProvider, Tag, Space, Badge, Timeline, Drawer, Tabs, Divider, Grid, Empty, Typography, Skeleton,  } from 'antd';
+import message from '@/lib/message';
 import {
   Activity,
   User,

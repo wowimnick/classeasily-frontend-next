@@ -2,7 +2,8 @@
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import useEmblaCarousel from "embla-carousel-react";
-import { Modal, Typography, Tooltip, message } from "antd";
+import { Modal, Typography, Tooltip } from 'antd';
+import message from '@/lib/message';
 import styled, { css } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import {

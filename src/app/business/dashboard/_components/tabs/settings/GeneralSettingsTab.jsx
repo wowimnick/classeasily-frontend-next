@@ -1,17 +1,8 @@
 // src/components/businessDashboard/settings/GeneralSettingsTab.jsx
 import React from "react";
 import styled, { ThemeProvider } from "styled-components";
-import {
-  Form,
-  Input,
-  Select,
-  Switch,
-  Button,
-  Upload,
-  Space,
-  InputNumber,
-  message,
-} from "antd";
+import { Form, Input, Select, Switch, Button, Upload, Space, InputNumber,  } from 'antd';
+import message from '@/lib/message';
 import { InfoCircleOutlined, CalendarOutlined } from "@ant-design/icons";
 import {
   Building,

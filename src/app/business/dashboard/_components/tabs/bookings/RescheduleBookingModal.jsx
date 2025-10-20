@@ -2,18 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import {
-  Modal,
-  List,
-  Button,
-  message,
-  Typography,
-  Empty,
-  Alert,
-  Radio,
-  Tooltip,
-  Skeleton,
-} from "antd";
+import { Modal, List, Button, Typography, Empty, Alert, Radio, Tooltip, Skeleton,  } from 'antd';
+import message from '@/lib/message';
 import {
   Calendar,
   Clock,

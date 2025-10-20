@@ -11,20 +11,8 @@ import {
   BarChart2,
   PieChart as PieIcon,
 } from "lucide-react";
-import {
-  DatePicker,
-  Typography,
-  ConfigProvider,
-  Card,
-  Select,
-  message,
-  Empty,
-  Skeleton,
-  Row,
-  Col,
-  Divider,
-  Grid,
-} from "antd";
+import { DatePicker, Typography, ConfigProvider, Card, Select, Empty, Skeleton, Row, Col, Divider, Grid,  } from 'antd';
+import message from '@/lib/message';
 import {
   Bar,
   XAxis,

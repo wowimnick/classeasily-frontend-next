@@ -8,15 +8,8 @@ import React, {
   Suspense,
 } from "react";
 import styled, { ThemeProvider } from "styled-components";
-import {
-  Form,
-  Button,
-  Tabs,
-  message,
-  ConfigProvider,
-  Grid,
-  Typography,
-} from "antd";
+import { Form, Button, Tabs, ConfigProvider, Grid, Typography,  } from 'antd';
+import message from '@/lib/message';
 import { Building, MapPin, Settings, X, Save } from "lucide-react";
 import dayjs from "dayjs";
 import "leaflet/dist/leaflet.css";

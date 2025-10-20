@@ -4,19 +4,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import {
-  Typography,
-  Button,
-  Input,
-  Space,
-  Empty,
-  message,
-  ConfigProvider,
-  Modal,
-  Form,
-  Radio,
-  Select,
-} from "antd";
+import { Typography, Button, Input, Space, Empty, ConfigProvider, Modal, Form, Radio, Select,  } from 'antd';
+import message from '@/lib/message';
 import {
   Ticket as TicketIcon,
   PlusCircle,
@@ -667,7 +656,7 @@ export default function MyTicketsContent() {
               <Select
                 placeholder="Select the most relevant category"
                 style={{ borderRadius: "8px" }}
-              >
+      >
                 <Option value="account">Account Issues</Option>
                 <Option value="booking">Booking Problems</Option>
                 <Option value="payment">Payment Issues</Option>

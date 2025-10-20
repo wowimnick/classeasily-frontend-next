@@ -11,7 +11,8 @@ import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Typography, message } from "antd";
+import { Typography } from 'antd';
+import message from '@/lib/message';
 import { ArrowRightOutlined } from "@ant-design/icons";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
@@ -100,14 +101,7 @@ const EmblaContainer = styled.div`
   .embla__slide {
     flex: 0 0 auto;
     position: relative;
-    width: 320px;
-
-    @media (max-width: 768px) {
-      width: 290px;
-    }
-    @media (max-width: 480px) {
-      width: 270px;
-    }
+    width: 250px;
   }
 `;
 

@@ -16,7 +16,8 @@ import dynamic from "next/dynamic";
 import ClassPageImagesTitle from "./ClassPageImagesTitle";
 import ClassInformation from "./ClassInformation";
 import { classService } from "@/services/apiService.js";
-import { Alert, Button as AntButton, message } from "antd";
+import { Alert, Button as AntButton } from 'antd';
+import message from '@/lib/message';
 
 // Dynamic imports for better code splitting
 const ClassOffers = dynamic(() => import("./ClassOffers"));

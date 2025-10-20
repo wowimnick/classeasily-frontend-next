@@ -2,18 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
-import {
-  Typography,
-  Divider,
-  Tag,
-  Avatar,
-  Button,
-  message,
-  Popconfirm,
-  Space,
-  List,
-  ConfigProvider,
-} from "antd";
+import { Typography, Divider, Tag, Avatar, Button, Popconfirm, Space, List, ConfigProvider,  } from 'antd';
+import message from '@/lib/message';
 import {
   User,
   BookOpen as BookIcon,

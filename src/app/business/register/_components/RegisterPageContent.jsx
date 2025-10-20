@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import styled, { ThemeProvider } from "styled-components";
-import { ConfigProvider, message, Spin, Alert } from "antd";
+import { ConfigProvider, Spin, Alert } from 'antd';
+import message from '@/lib/message';
 import { motion } from "framer-motion";
 import {
   ShopOutlined,

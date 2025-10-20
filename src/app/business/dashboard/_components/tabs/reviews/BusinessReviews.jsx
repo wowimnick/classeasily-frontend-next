@@ -2,35 +2,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import styled from "styled-components";
-import {
-  Card,
-  Avatar,
-  Rate,
-  Tag,
-  Button,
-  Modal,
-  Form,
-  Input,
-  Select,
-  DatePicker,
-  Typography,
-  message,
-  ConfigProvider,
-  Empty,
-  Pagination,
-  Tooltip,
-  Alert,
-  Row,
-  Col,
-  Image as AntImage,
-  Skeleton,
-  Table,
-  Dropdown,
-  Menu,
-  Divider,
-  Grid,
-  Space,
-} from "antd";
+import { Card, Avatar, Rate, Tag, Button, Modal, Form, Input, Select, DatePicker, Typography, ConfigProvider, Empty, Pagination, Tooltip, Alert, Row, Col, Image as AntImage, Skeleton, Table, Dropdown, Menu, Divider, Grid, Space,  } from 'antd';
+import message from '@/lib/message';
 import {
   Star,
   MessageSquare,

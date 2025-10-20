@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { message } from "antd";
+import message from '@/lib/message';
 import CookieConsentBanner from "@/components/auth/CookieConsentBanner";
 
 export default function CookieConsentProvider({ children }) {

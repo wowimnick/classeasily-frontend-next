@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import Link from "next/link";
-import { message } from "antd";
+import message from '@/lib/message';
 
 import dynamic from "next/dynamic";
 

@@ -6,28 +6,8 @@ import ReactDOM from "react-dom";
 import styled, { ThemeProvider } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
-import {
-  Table,
-  Card,
-  Select,
-  Button,
-  Form,
-  Input,
-  ConfigProvider,
-  Avatar,
-  Tag,
-  Space,
-  Grid,
-  Empty,
-  Divider,
-  message,
-  Radio,
-  Checkbox,
-  Typography,
-  Dropdown,
-  Skeleton,
-  Popconfirm,
-} from "antd";
+import { Table, Card, Select, Button, Form, Input, ConfigProvider, Avatar, Tag, Space, Grid, Empty, Divider, Radio, Checkbox, Typography, Dropdown, Skeleton, Popconfirm,  } from 'antd';
+import message from '@/lib/message';
 import {
   Briefcase,
   MapPin,

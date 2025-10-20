@@ -5,34 +5,8 @@ import ReactDOM from "react-dom";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
-import {
-  Table,
-  Card,
-  Input,
-  Select,
-  Button,
-  ConfigProvider,
-  Checkbox,
-  Avatar,
-  Tag,
-  Space,
-  Tooltip,
-  Dropdown,
-  Menu,
-  Divider,
-  message,
-  Modal,
-  Grid,
-  Empty,
-  Badge,
-  Alert,
-  Tabs,
-  Popconfirm,
-  Typography,
-  Statistic,
-  Skeleton,
-  List,
-} from "antd";
+import { Table, Card, Input, Select, Button, ConfigProvider, Checkbox, Avatar, Tag, Space, Tooltip, Dropdown, Menu, Divider, Modal, Grid, Empty, Badge, Alert, Tabs, Popconfirm, Typography, Statistic, Skeleton, List,  } from 'antd';
+import message from '@/lib/message';
 import {
   Search,
   Filter,

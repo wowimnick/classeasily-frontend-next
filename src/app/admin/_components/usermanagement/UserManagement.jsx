@@ -10,32 +10,8 @@ import React, {
 import { useRouter } from "next/navigation";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Table,
-  Card,
-  Tabs,
-  Badge,
-  Tag,
-  Space,
-  Input,
-  Select,
-  Button,
-  Modal,
-  Form,
-  ConfigProvider,
-  Avatar,
-  Dropdown,
-  Menu,
-  message,
-  Grid,
-  Empty,
-  List,
-  Drawer,
-  Divider,
-  DatePicker,
-  Typography,
-  Skeleton,
-} from "antd";
+import { Table, Card, Tabs, Badge, Tag, Space, Input, Select, Button, Modal, Form, ConfigProvider, Avatar, Dropdown, Menu, Grid, Empty, List, Drawer, Divider, DatePicker, Typography, Skeleton,  } from 'antd';
+import message from '@/lib/message';
 import {
   Users,
   Shield,
@@ -79,6 +55,7 @@ import { theme as appTheme } from "@/components/theme";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 import dayjs from "dayjs";
 import NumberFlow from "@number-flow/react";
+import { impersonateUser, useAuthStore } from "@/lib/auth-client";
 
 const { RangePicker } = DatePicker;
 const { TabPane } = Tabs;
@@ -570,15 +547,28 @@ const UserManagementDashboard = () => {
 
   const handleImpersonateUser = async (userId) => {
     try {
-      const result = await impersonate(userId);
-      if (result.success) {
-        message.success(`Now impersonating user.`);
+      setLoading(true);
+      const result = await userAdminService.impersonateUser(userId);
+
+      if (result.success && result.data?.user) {
+        // Update auth store with impersonated user
+        useAuthStore.setState({
+          user: result.data.user,
+          isAuthenticated: true,
+          isImpersonating: true,
+          isLoading: false,
+        });
+
+        message.success("Now impersonating user.");
         router.push("/");
       } else {
         message.error(result.error || "Could not start impersonation.");
       }
     } catch (e) {
+      console.error("Impersonation error:", e);
       message.error("An unexpected error occurred.");
+    } finally {
+      setLoading(false);
     }
   };
 

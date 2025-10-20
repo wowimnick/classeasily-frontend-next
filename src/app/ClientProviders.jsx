@@ -10,7 +10,7 @@ import StyledComponentsRegistry from "@/lib/registry";
 import GlobalStyles from "./GlobalStyles";
 import AnalyticsProvider from "./providers/AnalyticsProvider";
 import CookieConsentProvider from "./providers/CookieConsentProvider";
-import axiosInstance from "@/lib/axiosInstance";
+import { ToastProvider } from "@/lib/toast/ToastContext";
 
 export default function ClientProviders({ children }) {
   const memoizedTheme = useMemo(() => theme, []);
@@ -36,11 +36,13 @@ export default function ClientProviders({ children }) {
       <ConfigProvider theme={memoizedTheme}>
         <ThemeProvider theme={memoizedTheme}>
           <GlobalStyles />
-          <AuthProvider>
-            <CookieConsentProvider>
-              <AnalyticsProvider>{children}</AnalyticsProvider>
-            </CookieConsentProvider>
-          </AuthProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <CookieConsentProvider>
+                <AnalyticsProvider>{children}</AnalyticsProvider>
+              </CookieConsentProvider>
+            </AuthProvider>
+          </ToastProvider>
         </ThemeProvider>
       </ConfigProvider>
     </StyledComponentsRegistry>

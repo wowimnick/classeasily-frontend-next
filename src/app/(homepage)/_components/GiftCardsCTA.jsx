@@ -3,7 +3,8 @@
 
 import React, { useState, useRef, useCallback } from "react";
 import styled from "styled-components";
-import { Button as AntButton, message } from "antd";
+import { Button as AntButton } from 'antd';
+import message from '@/lib/message';
 import { motion } from "framer-motion";
 import {
   Gift,

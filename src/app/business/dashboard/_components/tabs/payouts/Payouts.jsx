@@ -3,20 +3,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import styled from "styled-components";
 import { Drawer } from "vaul";
-import {
-  Card,
-  Typography,
-  message,
-  ConfigProvider,
-  Skeleton,
-  Table,
-  Tooltip,
-  Button,
-  Divider,
-  Space,
-  Grid,
-  List,
-} from "antd";
+import { Card, Typography, ConfigProvider, Skeleton, Table, Tooltip, Button, Divider, Space, Grid, List,  } from 'antd';
+import message from '@/lib/message';
 import {
   Landmark,
   Wallet,

@@ -288,7 +288,8 @@ const ClassOptionCard = ({
           ))}
         </ScheduleInfo>
       )}
-      <SelectContainer>
+      <SelectContainer
+      >
         <ReserveButton
           type="primary"
           onClick={handleReserveClick}

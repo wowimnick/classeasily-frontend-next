@@ -1,24 +1,8 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect } from "react";
-import {
-  Modal,
-  Upload,
-  Button,
-  Steps,
-  message,
-  Select,
-  Table,
-  Typography,
-  ConfigProvider,
-  Spin,
-  Alert,
-  Space,
-  Card,
-  Progress,
-  Tag,
-  Divider,
-} from "antd";
+import { Modal, Upload, Button, Steps, Select, Table, Typography, ConfigProvider, Spin, Alert, Space, Card, Progress, Tag, Divider,  } from 'antd';
+import message from '@/lib/message';
 import { motion, AnimatePresence } from "framer-motion";
 import { DownloadOutlined } from "@ant-design/icons";
 import { X } from "lucide-react";

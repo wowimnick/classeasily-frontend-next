@@ -4,25 +4,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
-import {
-  Table,
-  Card,
-  Input,
-  Select,
-  Button,
-  ConfigProvider,
-  Avatar,
-  Space,
-  message,
-  Grid,
-  Empty,
-  Badge,
-  Divider,
-  Typography,
-  Skeleton,
-  Tooltip,
-  Tag,
-} from "antd";
+import { Table, Card, Input, Select, Button, ConfigProvider, Avatar, Space, Grid, Empty, Badge, Divider, Typography, Skeleton, Tooltip, Tag,  } from 'antd';
+import message from '@/lib/message';
 import {
   Search,
   Eye,

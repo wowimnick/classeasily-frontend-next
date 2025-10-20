@@ -9,21 +9,8 @@ import React, {
   useImperativeHandle,
 } from "react";
 import styled from "styled-components";
-import {
-  Input,
-  Button,
-  DatePicker,
-  Card,
-  Typography,
-  message,
-  ConfigProvider,
-  Spin,
-  Select,
-  Grid,
-  Skeleton,
-  Empty,
-  Divider,
-} from "antd";
+import { Input, Button, DatePicker, Card, Typography, ConfigProvider, Spin, Select, Grid, Skeleton, Empty, Divider,  } from 'antd';
+import message from '@/lib/message';
 import {
   Search,
   RefreshCw,

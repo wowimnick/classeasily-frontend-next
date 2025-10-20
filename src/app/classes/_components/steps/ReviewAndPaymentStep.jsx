@@ -1,13 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  ConfigProvider,
-  Form,
-  Input,
-  Alert,
-  Button,
-  Divider,
-  message,
-} from "antd";
+import { ConfigProvider, Form, Input, Alert, Button, Divider,  } from 'antd';
+import message from '@/lib/message';
 import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";

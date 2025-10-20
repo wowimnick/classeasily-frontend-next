@@ -4,7 +4,8 @@ import React, { useState, useMemo } from "react";
 import styled from "styled-components";
 import { Star, Camera, X, ImageIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Form, Input, ConfigProvider, Upload, message, Button } from "antd";
+import { Form, Input, ConfigProvider, Upload, Button } from 'antd';
+import message from '@/lib/message';
 import dayjs from "dayjs";
 import { reviewService, uploadService } from "@/services/apiService";
 

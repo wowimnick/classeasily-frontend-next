@@ -39,14 +39,8 @@ const LogoIcon = dynamic(() => import("@/components/common/logoIcon"), {
   ssr: false,
 });
 import { useAuthUser } from "@/hooks/useAuthUser";
-import {
-  DatePicker,
-  AutoComplete,
-  message,
-  ConfigProvider,
-  Select as AntdSelect,
-  Spin,
-} from "antd";
+import { DatePicker, AutoComplete, ConfigProvider, Select as AntdSelect, Spin,  } from 'antd';
+import message from '@/lib/message';
 import dayjs from "dayjs";
 const SettingsModal = dynamic(
   () => import("@/components/header/SettingsDrawer"),
@@ -1399,7 +1393,8 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
             </>
           )}
         </ConfigProvider>
-        <Selection>
+        <Selection
+      >
           <div style={{ position: "relative" }}>
             <RoundedButton
               ref={menuTriggerRef}

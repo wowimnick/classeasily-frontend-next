@@ -1,15 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
-import {
-  Input,
-  Button,
-  Form,
-  Empty,
-  Pagination,
-  Avatar,
-  ConfigProvider,
-  Tooltip,
-  message,
-} from "antd";
+import { Input, Button, Form, Empty, Pagination, Avatar, ConfigProvider, Tooltip,  } from 'antd';
+import message from '@/lib/message';
 import { Send, User, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { businessStudentService } from "@/services/apiService";

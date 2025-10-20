@@ -40,7 +40,7 @@ const unslugify = (slug) => {
 const GridContainer = styled.div`
   display: grid;
   grid-template-columns: ${({ $isMapVisible }) =>
-    $isMapVisible ? "minmax(0, 1fr) minmax(300px, 40%)" : "1fr"};
+    $isMapVisible ? "minmax(0, 1fr) minmax(200px, 40%)" : "1fr"};
   width: 100%;
   height: calc(100vh - 130px);
   position: relative;
@@ -49,7 +49,7 @@ const GridContainer = styled.div`
 
   @media (max-width: 1100px) {
     grid-template-columns: ${({ $isMapVisible }) =>
-      $isMapVisible ? "minmax(0, 1fr) minmax(280px, 35%)" : "1fr"};
+      $isMapVisible ? "minmax(0, 1fr) minmax(200px, 35%)" : "1fr"};
   }
   @media (max-width: 1048px) {
     grid-template-columns: 1fr;
@@ -134,11 +134,11 @@ const ResultsCount = styled.p`
 
 const ClassGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: clamp(16px, 3vw, 24px);
 
   @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 `;
 
@@ -173,17 +173,6 @@ const LoadingContainer = styled.div`
   align-items: center;
   min-height: 300px;
   width: 100%;
-`;
-
-const LoadMoreSkeletonsWrapper = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: clamp(16px, 3vw, 24px);
-  margin-top: 24px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  }
 `;
 
 const NoResultsContainer = styled(motion.div)`
@@ -346,7 +335,7 @@ const ClassesDisplay = ({
   categories,
   loading,
   isNavigating,
-  userLocation, // Keep this for MapDisplay if needed
+  userLocation,
   filters,
   onFiltersChange,
   currentCategory,
@@ -362,7 +351,6 @@ const ClassesDisplay = ({
   tag,
   totalClassesCount,
 }) => {
-  // ADDED: Use IP-based geolocation for distance calculations
   const { location: ipLocation } = useIpGeolocation();
 
   const [showMap, setShowMap] = useState(false);
@@ -394,7 +382,6 @@ const ClassesDisplay = ({
     }
   }, [isMobile, showMap]);
 
-  // Calculate distance helper function
   const calculateDistance = useCallback((lat1, lon1, lat2, lon2) => {
     if (lat1 == null || lon1 == null || lat2 == null || lon2 == null)
       return null;
@@ -411,15 +398,12 @@ const ClassesDisplay = ({
     return R * c;
   }, []);
 
-  // CHANGED: Use ipLocation instead of userLocation for distance calculation
   const classesWithDistance = useMemo(() => {
     return uniqueClasses.map((classItem) => {
-      // If backend already provided distance, use it
       if (classItem.distance !== undefined && classItem.distance !== null) {
         return classItem;
       }
 
-      // CHANGED: Use ipLocation instead of userLocation
       if (ipLocation && classItem.coordinates) {
         const coords = classItem.coordinates.split(",");
         if (coords.length === 2) {
@@ -439,9 +423,8 @@ const ClassesDisplay = ({
 
       return classItem;
     });
-  }, [uniqueClasses, ipLocation, calculateDistance]); // CHANGED: dependency
+  }, [uniqueClasses, ipLocation, calculateDistance]);
 
-  // Build map markers from classes with distance
   const mapMarkers = useMemo(() => {
     return classesWithDistance
       .map((classItem) => {
@@ -580,15 +563,11 @@ const ClassesDisplay = ({
               />
             </div>
           ))}
-        </ClassGrid>
-
-        {isLoadingMore && (
-          <LoadMoreSkeletonsWrapper>
-            {[...Array(6)].map((_, i) => (
+          {isLoadingMore &&
+            [...Array(6)].map((_, i) => (
               <SkeletonClassSingleCard key={`skeleton-${i}`} />
             ))}
-          </LoadMoreSkeletonsWrapper>
-        )}
+        </ClassGrid>
       </>
     );
   };
@@ -659,7 +638,7 @@ const ClassesDisplay = ({
           markers={mapMarkers}
           selectedClassId={selectedClassId}
           onMarkerClick={handleMarkerClick}
-          userLocation={ipLocation || userLocation} // CHANGED: Prefer ipLocation, fallback to userLocation
+          userLocation={ipLocation || userLocation}
           showMap={showMap}
           onHideMap={() => setIsMapVisible(false)}
         />

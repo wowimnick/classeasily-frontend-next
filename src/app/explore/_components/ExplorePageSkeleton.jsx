@@ -221,49 +221,100 @@ const SkeletonCount = styled(SkeletonBase)`
 
 const SkeletonClassGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: clamp(16px, 3vw, 24px);
   overflow: hidden;
 
   @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
 `;
 
-// Class card skeleton
+// Updated Class card skeleton to match HomeClassCard exactly
 const SkeletonClassCard = styled.div`
   display: flex;
   flex-direction: column;
+  height: min-content;
+  width: 100%;
   border-radius: 12px;
+  border: 2px solid transparent;
+  padding: 2px;
+`;
+
+const SkeletonCardImageContainer = styled.div`
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
   overflow: hidden;
+  margin-bottom: 6px;
 `;
 
 const SkeletonCardImage = styled(SkeletonBase)`
   width: 100%;
-  aspect-ratio: 4/3;
-  border-radius: 12px;
+  height: 100%;
+  border-radius: 10px;
 `;
 
 const SkeletonCardContent = styled.div`
-  padding: 12px 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 1px;
+`;
+
+const SkeletonTopRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 1px;
 `;
 
 const SkeletonCardTitle = styled(SkeletonBase)`
-  height: 20px;
-  width: 80%;
+  height: 18px;
+  width: 70%;
+  flex: 1;
+  border-radius: 4px;
 `;
 
-const SkeletonCardSubtitle = styled(SkeletonBase)`
+const SkeletonRating = styled(SkeletonBase)`
+  height: 16px;
+  width: 45px;
+  border-radius: 4px;
+  flex-shrink: 0;
+`;
+
+const SkeletonCompanyInfo = styled(SkeletonBase)`
   height: 16px;
   width: 60%;
+  border-radius: 4px;
+  margin: 2px 0;
 `;
 
-const SkeletonCardPrice = styled(SkeletonBase)`
-  height: 18px;
-  width: 40%;
+const SkeletonLocationRow = styled(SkeletonBase)`
+  height: 16px;
+  width: 50%;
+  border-radius: 4px;
+  margin: 2px 0;
+`;
+
+const SkeletonPriceRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+`;
+
+const SkeletonPrice = styled(SkeletonBase)`
+  height: 16px;
+  width: 65px;
+  border-radius: 4px;
+`;
+
+const SkeletonPriceSeparator = styled(SkeletonBase)`
+  height: 10px;
+  width: 10px;
+  border-radius: 50%;
 `;
 
 // Map skeleton
@@ -296,18 +347,27 @@ const SkeletonMapButton = styled(SkeletonBase)`
   z-index: 2;
 `;
 
-// Compact skeleton for content area only (used when categories are already loaded)
-// This renders ONLY the class cards, not the header or container
+// Compact skeleton for content area only
 export function ClassesContentSkeleton() {
   return (
     <SkeletonClassGrid>
       {[...Array(6)].map((_, i) => (
         <SkeletonClassCard key={i}>
-          <SkeletonCardImage />
+          <SkeletonCardImageContainer>
+            <SkeletonCardImage />
+          </SkeletonCardImageContainer>
           <SkeletonCardContent>
-            <SkeletonCardTitle />
-            <SkeletonCardSubtitle />
-            <SkeletonCardPrice />
+            <SkeletonTopRow>
+              <SkeletonCardTitle />
+              <SkeletonRating />
+            </SkeletonTopRow>
+            <SkeletonCompanyInfo />
+            <SkeletonLocationRow />
+            <SkeletonPriceRow>
+              <SkeletonPrice />
+              <SkeletonPriceSeparator />
+              <SkeletonPrice />
+            </SkeletonPriceRow>
           </SkeletonCardContent>
         </SkeletonClassCard>
       ))}
@@ -318,16 +378,27 @@ export function ClassesContentSkeleton() {
 export function SkeletonClassSingleCard() {
   return (
     <SkeletonClassCard>
-      <SkeletonCardImage />
+      <SkeletonCardImageContainer>
+        <SkeletonCardImage />
+      </SkeletonCardImageContainer>
       <SkeletonCardContent>
-        <SkeletonCardTitle />
-        <SkeletonCardSubtitle />
-        <SkeletonCardPrice />
+        <SkeletonTopRow>
+          <SkeletonCardTitle />
+          <SkeletonRating />
+        </SkeletonTopRow>
+        <SkeletonCompanyInfo />
+        <SkeletonLocationRow />
+        <SkeletonPriceRow>
+          <SkeletonPrice />
+          <SkeletonPriceSeparator />
+          <SkeletonPrice />
+        </SkeletonPriceRow>
       </SkeletonCardContent>
     </SkeletonClassCard>
   );
 }
-// Header skeleton (separate component for better control)
+
+// Header skeleton
 export function ClassesHeaderSkeleton() {
   return (
     <SkeletonHeaderContainer>
@@ -337,12 +408,11 @@ export function ClassesHeaderSkeleton() {
   );
 }
 
-// Full page skeleton (used for initial load)
+// Full page skeleton
 export default function ExplorePageSkeleton() {
   return (
     <SkeletonGridContainer>
       <SkeletonLeftContainer>
-        {/* Categories Skeleton */}
         <SkeletonCategoriesWrapper>
           <SkeletonTopSection>
             <SkeletonCategoriesScrollArea>
@@ -369,7 +439,6 @@ export default function ExplorePageSkeleton() {
             </SkeletonFilterWrapper>
           </SkeletonTopSection>
 
-          {/* Subcategories Skeleton - shown by default */}
           <SkeletonSubCategories>
             <SkeletonSubCategoryPill $width="100px" />
             <SkeletonSubCategoryPill $width="130px" />
@@ -380,13 +449,11 @@ export default function ExplorePageSkeleton() {
           </SkeletonSubCategories>
         </SkeletonCategoriesWrapper>
 
-        {/* Content Skeleton */}
         <SkeletonClassGridWrapper>
           <ClassesContentSkeleton />
         </SkeletonClassGridWrapper>
       </SkeletonLeftContainer>
 
-      {/* Map Skeleton */}
       <SkeletonMapContainer>
         <SkeletonMapButton />
         <SkeletonMapContent />

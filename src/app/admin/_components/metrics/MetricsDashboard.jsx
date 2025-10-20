@@ -28,19 +28,8 @@ import {
   TrendingDown,
   Download,
 } from "lucide-react";
-import {
-  Tabs,
-  Card,
-  Progress,
-  Radio,
-  ConfigProvider,
-  Grid,
-  message,
-  Button,
-  Divider,
-  Typography,
-  Skeleton,
-} from "antd";
+import { Tabs, Card, Progress, Radio, ConfigProvider, Grid, Button, Divider, Typography, Skeleton,  } from 'antd';
+import message from '@/lib/message';
 import NumberFlow from "@number-flow/react";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import RequestAnalysisTab from "./RequestAnalytics";

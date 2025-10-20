@@ -9,31 +9,8 @@ import React, {
 } from "react";
 import { useAuthStore } from "@/lib/auth-client";
 import styled from "styled-components";
-import {
-  Skeleton,
-  Table,
-  Card,
-  Select,
-  Button,
-  Modal,
-  Form,
-  Input,
-  Space,
-  Tag,
-  Alert,
-  Tooltip,
-  ConfigProvider,
-  Divider,
-  Checkbox,
-  Col,
-  ColorPicker,
-  message,
-  Grid,
-  Empty,
-  Row as AntRow,
-  Typography,
-  Collapse,
-} from "antd";
+import { Skeleton, Table, Card, Select, Button, Modal, Form, Input, Space, Tag, Alert, Tooltip, ConfigProvider, Divider, Checkbox, Col, ColorPicker, Grid, Empty, Row as AntRow, Typography, Collapse,  } from 'antd';
+import message from '@/lib/message';
 import {
   Shield,
   Users,

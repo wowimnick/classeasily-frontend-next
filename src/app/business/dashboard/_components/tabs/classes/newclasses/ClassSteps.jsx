@@ -3,7 +3,8 @@
 import React from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
-import { message, Button } from "antd";
+import { Button } from 'antd';
+import message from '@/lib/message';
 import { ArrowLeft, ArrowRight, Loader } from "lucide-react";
 import { useClass } from "./ClassContext";
 import { businessClassService, uploadService } from "@/services/apiService";

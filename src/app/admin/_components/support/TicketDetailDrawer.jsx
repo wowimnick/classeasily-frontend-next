@@ -2,29 +2,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import styled from "styled-components";
-import {
-  Drawer,
-  Skeleton,
-  Empty,
-  Avatar,
-  Space,
-  Typography,
-  Badge,
-  Divider,
-  Tabs,
-  Form,
-  Input,
-  Button,
-  Modal,
-  Select,
-  message,
-  Timeline,
-  Alert,
-  Tooltip,
-  ConfigProvider,
-  Tag,
-  Grid,
-} from "antd";
+import { Drawer, Skeleton, Empty, Avatar, Space, Typography, Badge, Divider, Tabs, Form, Input, Button, Modal, Select, Timeline, Alert, Tooltip, ConfigProvider, Tag, Grid,  } from 'antd';
+import message from '@/lib/message';
 import {
   Hash,
   User,

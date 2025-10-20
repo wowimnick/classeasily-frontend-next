@@ -4,7 +4,8 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import styled, { keyframes } from "styled-components";
-import { Button, Result, Typography, Avatar, message } from "antd";
+import { Button, Result, Typography, Avatar } from 'antd';
+import message from '@/lib/message';
 import { Building, UserCheck, Mail, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";

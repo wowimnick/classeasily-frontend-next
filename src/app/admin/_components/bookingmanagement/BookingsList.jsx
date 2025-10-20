@@ -8,30 +8,8 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import NumberFlow from "@number-flow/react";
-import {
-  Table,
-  Card,
-  Input,
-  Select,
-  Button,
-  ConfigProvider,
-  Avatar,
-  Space,
-  message,
-  Modal,
-  Grid,
-  Empty,
-  DatePicker,
-  Form,
-  Divider,
-  Typography,
-  Skeleton,
-  List,
-  Tooltip,
-  Tag,
-  InputNumber,
-  Alert,
-} from "antd";
+import { Table, Card, Input, Select, Button, ConfigProvider, Avatar, Space, Modal, Grid, Empty, DatePicker, Form, Divider, Typography, Skeleton, List, Tooltip, Tag, InputNumber, Alert,  } from 'antd';
+import message from '@/lib/message';
 import {
   Search,
   Eye,

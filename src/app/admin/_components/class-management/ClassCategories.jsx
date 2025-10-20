@@ -9,30 +9,8 @@ import {
   createContext,
 } from "react";
 import styled, { ThemeProvider } from "styled-components";
-import {
-  Table,
-  Card,
-  Input,
-  Button,
-  ConfigProvider,
-  Tag,
-  Space,
-  Modal,
-  Form,
-  message,
-  Divider,
-  Empty,
-  Typography,
-  Tooltip,
-  ColorPicker,
-  Grid,
-  Popconfirm,
-  Spin,
-  Skeleton,
-  Select,
-  Switch,
-  Upload,
-} from "antd";
+import { Table, Card, Input, Button, ConfigProvider, Tag, Space, Modal, Form, Divider, Empty, Typography, Tooltip, ColorPicker, Grid, Popconfirm, Spin, Skeleton, Select, Switch, Upload,  } from 'antd';
+import message from '@/lib/message';
 import * as allIcons from "lucide-react";
 import { theme as antdComponentTheme } from "@/components/theme";
 import {

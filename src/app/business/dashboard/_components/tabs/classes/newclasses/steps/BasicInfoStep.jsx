@@ -1,16 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import {
-  Form,
-  Input,
-  Select,
-  Typography,
-  ConfigProvider,
-  message,
-  Tooltip,
-  Upload,
-} from "antd";
+import { Form, Input, Select, Typography, ConfigProvider, Tooltip, Upload,  } from 'antd';
+import message from '@/lib/message';
 import styled from "styled-components";
 import {
   Star,

@@ -3,30 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
-import {
-  Table,
-  Card,
-  Tabs,
-  Button,
-  Modal,
-  Form,
-  Input,
-  Select,
-  message,
-  Grid,
-  Space,
-  Popconfirm,
-  Tag,
-  Divider,
-  Avatar,
-  Typography,
-  ConfigProvider,
-  DatePicker,
-  Row,
-  Col,
-  Empty,
-  Skeleton,
-} from "antd";
+import { Table, Card, Tabs, Button, Modal, Form, Input, Select, Grid, Space, Popconfirm, Tag, Divider, Avatar, Typography, ConfigProvider, DatePicker, Row, Col, Empty, Skeleton,  } from 'antd';
+import message from '@/lib/message';
 import {
   BookOpen,
   Bookmark,

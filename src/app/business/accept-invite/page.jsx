@@ -5,7 +5,7 @@ import { useEffect, useRef, Suspense } from "react";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import axiosInstance from "@/lib/axiosInstance";
 import { useSearchParams, useRouter } from "next/navigation";
-import { message } from "antd";
+import message from '@/lib/message';
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 
 const log = (message, data = "") => {
