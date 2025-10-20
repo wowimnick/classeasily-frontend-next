@@ -747,6 +747,136 @@ const NotificationsButton = () => {
           </Badge>
         )}
       </div>
+
+      {/* Mobile Notifications Portal */}
+      {isMobile &&
+        typeof window !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {mobileNotificationsVisible && (
+              <>
+                <MobileNotificationOverlay
+                  variants={overlayVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  onClick={handleMobileNotificationsClose}
+                />
+                <MobileNotificationContainer
+                  variants={notificationVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  style={{ transformOrigin }}
+                >
+                  <PopoverHeader>
+                    <HeaderTitle level={5}>
+                      <BellOutlined
+                        style={{ fontSize: "20px", marginRight: "8px" }}
+                      />
+                      Notifications
+                      {unreadCount > 0 && (
+                        <Badge
+                          count={unreadCount}
+                          style={{
+                            backgroundColor: "#ff385c",
+                            marginLeft: "8px",
+                          }}
+                        />
+                      )}
+                    </HeaderTitle>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "8px",
+                        alignItems: "center",
+                      }}
+                    >
+                      {unreadCount > 0 && (
+                        <Button
+                          type="text"
+                          icon={<Check size={16} />}
+                          onClick={markAllAsRead}
+                          style={{ padding: "4px 8px" }}
+                          title="Mark all as read"
+                        />
+                      )}
+                      <Button
+                        type="text"
+                        icon={<X size={20} />}
+                        onClick={handleMobileNotificationsClose}
+                      />
+                    </div>
+                  </PopoverHeader>
+
+                  {!currentUser ? (
+                    <EmptyContainer>
+                      <Text style={{ color: "#64748b", fontSize: "16px" }}>
+                        Please log in to see notifications.
+                      </Text>
+                    </EmptyContainer>
+                  ) : (loading && !initialLoadDone) || countLoading ? (
+                    <LoadingContainer>
+                      <GlobalLoaderWithoutInlineStyles />
+                    </LoadingContainer>
+                  ) : notifications.length === 0 ? (
+                    <EmptyContainer>
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={
+                          <Text style={{ color: "#64748b", fontSize: "16px" }}>
+                            No new notifications
+                          </Text>
+                        }
+                      />
+                    </EmptyContainer>
+                  ) : (
+                    <StyledList
+                      itemLayout="horizontal"
+                      dataSource={notifications}
+                      renderItem={(item) => (
+                        <List.Item style={{ padding: 0, border: "none" }}>
+                          <NotificationItem
+                            $isunread={!item.is_read}
+                            onClick={() => handleNotificationClick(item)}
+                          >
+                            <NotificationIconWrapper
+                              color={getIconColor(item.icon)}
+                            >
+                              {getIconComponent(item.icon)}
+                            </NotificationIconWrapper>
+                            <NotificationContent>
+                              <NotificationMessage $isunread={!item.is_read}>
+                                {item.message}
+                              </NotificationMessage>
+                              <NotificationTime>
+                                <ClockCircleOutlined />
+                                {item.time_since}
+                              </NotificationTime>
+                            </NotificationContent>
+                            {!item.is_read && (
+                              <ActionButton
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markAsRead(item.id);
+                                }}
+                                title="Mark as read"
+                                icon={
+                                  <CheckOutlined style={{ fontSize: "12px" }} />
+                                }
+                              />
+                            )}
+                          </NotificationItem>
+                        </List.Item>
+                      )}
+                    />
+                  )}
+                </MobileNotificationContainer>
+              </>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
     </>
   );
 };

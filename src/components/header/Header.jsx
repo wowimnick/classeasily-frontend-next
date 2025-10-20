@@ -23,7 +23,7 @@ const LogoIcon = dynamic(() => import("@/components/common/logoIcon"));
 // --- STYLED COMPONENTS ---
 const scrolledStyling = {
   logoColor: "#fb2243",
-  outlineAndIconColor: "#e1e1e185",
+  outlineAndIconColor: "#61616185",
   backgroundColor: "rgba(255, 255, 255, 0.9)",
   textColor: "#000000ff",
 };

@@ -1021,7 +1021,7 @@ const ActionPromptCard = styled(Card)`
     border-radius: 10px;
 
     .ant-card-body {
-      padding: 0 16px;
+      padding: 16px;
       gap: 12px;
     }
   }
@@ -1635,8 +1635,9 @@ const Overview = forwardRef((props, ref) => {
 
         <ResponsiveDivider />
 
+        {/* Asymmetric Layout: Revenue Chart (Large - 16 cols) + Upcoming Classes (Smaller - 8 cols) */}
         <GridSection gutter={[isMobile ? 12 : 20, isMobile ? 12 : 20]}>
-          <Col xs={24} lg={12}>
+          <Col xs={24} lg={16}>
             <ChartCard>
               <CardTitle>
                 <LordIcon
@@ -1769,7 +1770,7 @@ const Overview = forwardRef((props, ref) => {
               </ChartContainer>
             </ChartCard>
           </Col>
-          <Col xs={24} lg={12}>
+          <Col xs={24} lg={8}>
             <ContentListCard>
               <CardTitle>
                 <Calendar size={isMobile ? 18 : 20} color={colors.primary} />
@@ -1897,8 +1898,9 @@ const Overview = forwardRef((props, ref) => {
           </Col>
         </GridSection>
 
+        {/* Asymmetric Layout: Popular Classes (Smaller - 8 cols) + Recent Activity (Large - 16 cols) */}
         <GridSection gutter={[isMobile ? 12 : 20, isMobile ? 12 : 20]}>
-          <Col xs={24} lg={12}>
+          <Col xs={24} lg={8}>
             <ContentListCard>
               <CardTitle>
                 <Users size={isMobile ? 18 : 20} color={colors.primary} />
@@ -1973,7 +1975,7 @@ const Overview = forwardRef((props, ref) => {
               )}
             </ContentListCard>
           </Col>
-          <Col xs={24} lg={12}>
+          <Col xs={24} lg={16}>
             <ContentListCard>
               <CardTitle>
                 <Activity size={isMobile ? 18 : 20} color={colors.primary} />

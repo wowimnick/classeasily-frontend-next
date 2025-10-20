@@ -241,6 +241,34 @@ const GlobalStyles = createGlobalStyle`
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 
+.ant-select-dropdown,
+.ant-dropdown,
+.ant-picker-dropdown,
+.ant-tooltip,
+.ant-popover {
+  pointer-events: auto !important;
+  touch-action: auto !important;
+}
+
+/* Allow scrolling in time picker columns and other scrollable dropdown content */
+.ant-picker-time-panel-column,
+.ant-select-dropdown .rc-virtual-list,
+.ant-picker-content,
+.ant-picker-time-panel,
+.ant-select-item-option-content {
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Allow Vaul drawer to be draggable but not its content */
+[vaul-drawer] {
+  touch-action: none;
+}
+
+[vaul-drawer] > * {
+  touch-action: auto;
+}
+
 `;
 
 export default GlobalStyles;

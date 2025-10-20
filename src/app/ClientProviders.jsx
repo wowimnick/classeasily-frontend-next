@@ -31,9 +31,41 @@ export default function ClientProviders({ children }) {
     useAuthStore.getState().initialize();
   }, [_hasHydrated]);
 
+  // Add MutationObserver to mark Ant Design dropdowns with data-vaul-no-drag
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === 1) {
+            // Check if it's an Ant Design dropdown/select container
+            if (
+              node.classList?.contains("ant-select-dropdown") ||
+              node.classList?.contains("ant-dropdown") ||
+              node.classList?.contains("ant-picker-dropdown") ||
+              node.classList?.contains("ant-tooltip") ||
+              node.classList?.contains("ant-popover")
+            ) {
+              node.setAttribute("data-vaul-no-drag", "");
+            }
+          }
+        });
+      });
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: false, // Only observe direct children of body
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <StyledComponentsRegistry>
-      <ConfigProvider theme={memoizedTheme}>
+      <ConfigProvider
+        theme={memoizedTheme}
+        getPopupContainer={() => document.body}
+      >
         <ThemeProvider theme={memoizedTheme}>
           <GlobalStyles />
           <ToastProvider>

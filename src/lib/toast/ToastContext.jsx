@@ -148,19 +148,76 @@ export function ToastProvider({ children }) {
     [removeToast]
   );
 
+  const normalizeDuration = (duration) => {
+    if (duration === undefined || duration === null) return 3000;
+    if (duration === 0) return 0; // For loading states
+    return duration * 1000; // Convert seconds to milliseconds
+  };
+
   const messageAPI = {
-    success: (content, duration, onClose) =>
-      addToast("success", content, duration, onClose),
-    error: (content, duration, onClose) =>
-      addToast("error", content, duration, onClose),
-    info: (content, duration, onClose) =>
-      addToast("info", content, duration, onClose),
-    warning: (content, duration, onClose) =>
-      addToast("warning", content, duration, onClose),
-    loading: (content, duration = 0, onClose) =>
-      addToast("loading", content, duration, onClose),
-    open: ({ type = "info", content, duration, onClose }) =>
-      addToast(type, content, duration, onClose),
+    success: (content, duration, onClose) => {
+      if (typeof content === "object" && content.content !== undefined) {
+        return addToast(
+          "success",
+          content.content,
+          normalizeDuration(content.duration),
+          content.onClose
+        );
+      }
+      return addToast("success", content, normalizeDuration(duration), onClose);
+    },
+    error: (content, duration, onClose) => {
+      if (typeof content === "object" && content.content !== undefined) {
+        return addToast(
+          "error",
+          content.content,
+          normalizeDuration(content.duration),
+          content.onClose
+        );
+      }
+      return addToast("error", content, normalizeDuration(duration), onClose);
+    },
+    info: (content, duration, onClose) => {
+      if (typeof content === "object" && content.content !== undefined) {
+        return addToast(
+          "info",
+          content.content,
+          normalizeDuration(content.duration),
+          content.onClose
+        );
+      }
+      return addToast("info", content, normalizeDuration(duration), onClose);
+    },
+    warning: (content, duration, onClose) => {
+      if (typeof content === "object" && content.content !== undefined) {
+        return addToast(
+          "warning",
+          content.content,
+          normalizeDuration(content.duration),
+          content.onClose
+        );
+      }
+      return addToast("warning", content, normalizeDuration(duration), onClose);
+    },
+    loading: (content, duration = 0, onClose) => {
+      if (typeof content === "object" && content.content !== undefined) {
+        return addToast(
+          "loading",
+          content.content,
+          normalizeDuration(content.duration || 0),
+          content.onClose
+        );
+      }
+      return addToast(
+        "loading",
+        content,
+        normalizeDuration(duration || 0),
+        onClose
+      );
+    },
+    open: ({ type = "info", content, duration, onClose }) => {
+      return addToast(type, content, normalizeDuration(duration), onClose);
+    },
     destroy: (key) => {
       if (key) {
         removeToast(key);
