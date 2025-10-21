@@ -16,7 +16,7 @@ import {
 import { Avatar, Rate, Button } from "antd";
 import { motion, AnimatePresence } from "framer-motion";
 import { businessService } from "@/services/apiService";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader.jsx";
+import { fetchReviewsAction } from "@/app/business/actions";
 import { ReviewsTabSkeleton } from "./BusinessSkeletons";
 
 const REVIEWS_PER_PAGE = 10;
@@ -807,7 +807,8 @@ const ReviewsTab = ({ slug, totalReviews, ratingAsNumber }) => {
       if (totalReviews > 0 && mainPageReviews.length === 0) {
         setMainPageReviewsLoading(true);
         try {
-          const result = await businessService.fetchBusinessReviews(
+          // Use server action instead of direct API call for cached data
+          const result = await fetchReviewsAction(
             slug,
             1,
             MAIN_PAGE_REVIEW_COUNT
@@ -830,11 +831,8 @@ const ReviewsTab = ({ slug, totalReviews, ratingAsNumber }) => {
     async (page) => {
       setLoadingMore(true);
       try {
-        const result = await businessService.fetchBusinessReviews(
-          slug,
-          page,
-          REVIEWS_PER_PAGE
-        );
+        // Use server action for cached reviews
+        const result = await fetchReviewsAction(slug, page, REVIEWS_PER_PAGE);
         if (result.success) {
           setReviewsForModal((prev) =>
             page === 1 ? result.data : [...prev, ...result.data]

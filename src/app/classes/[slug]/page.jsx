@@ -4,40 +4,56 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Breadcrumb } from "antd";
 
-import { classService, businessService } from "@/services/apiService.js";
+import { fetchClassDetail } from "@/lib/server-data-fetchers";
+import { businessService } from "@/services/apiService.js";
 import ClientHeader from "@/components/layout/ClientHeader";
 import Footer from "@/components/homepage/Footer.jsx";
 import ClassPageClient from "../_components/ClassPageClient";
 
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
+// Generate static params - fetch ALL classes
 export async function generateStaticParams() {
-  if (process.env.NODE_ENV !== "production") {
-    console.log("=== Skipping generateStaticParams in development ===");
-    return [];
-  }
-
   try {
-    console.log("=== generateStaticParams: Fetching class slugs ===");
-    const pages = [1, 2];
+    console.log("=== Fetching ALL class slugs for static generation ===");
     const allClasses = [];
+    let page = 1;
+    let hasMore = true;
 
-    for (const page of pages) {
+    while (hasMore && page <= 20) {
       try {
         console.log(`Fetching page ${page}...`);
-        const params = { page, participants: 1 };
-        const response = await classService.searchClasses(params);
 
-        if (response.results && Array.isArray(response.results)) {
-          allClasses.push(...response.results);
-          console.log(`Page ${page}: Found ${response.results.length} classes`);
+        const response = await fetch(
+          `${BASE_URL}/classes/?page=${page}&page_size=100`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        if (!response.ok) {
+          console.error(`Failed to fetch page ${page}: ${response.status}`);
+          break;
         }
 
-        if (page < pages.length) {
-          await delay(1000);
+        const data = await response.json();
+
+        if (data.results && Array.isArray(data.results)) {
+          allClasses.push(...data.results);
+          console.log(`✅ Page ${page}: Added ${data.results.length} classes`);
+          hasMore = !!data.next;
+          page++;
+        } else {
+          hasMore = false;
+        }
+
+        if (hasMore) {
+          await new Promise((resolve) => setTimeout(resolve, 200));
         }
       } catch (error) {
-        console.error(`Error fetching page ${page} for static params:`, error);
+        console.error(`Error fetching page ${page}:`, error);
+        break;
       }
     }
 
@@ -46,17 +62,18 @@ export async function generateStaticParams() {
       .map((classItem) => ({ slug: classItem.slug }));
 
     console.log(
-      `=== generateStaticParams: Found ${slugs.length} slugs to prerender ===`
+      `=== ✅ SUCCESS: ${slugs.length} class pages will be pre-generated ===`
     );
     return slugs;
   } catch (error) {
-    console.error("Error in generateStaticParams:", error);
+    console.error("❌ Error in generateStaticParams:", error);
     return [];
   }
 }
 
+// Fetch class data - USE THE TAGGED FETCH FROM server-data-fetchers
 async function getClassData(slug) {
-  console.log(`=== getClassData called with slug: ${slug} ===`);
+  console.log(`=== Fetching data for slug: ${slug} ===`);
 
   if (!slug) {
     console.error("ERROR: slug is undefined or empty!");
@@ -64,113 +81,79 @@ async function getClassData(slug) {
   }
 
   try {
-    console.log(`Fetching class with slug: ${slug}`);
-    const classResult = await classService.fetchClassDetail(slug);
-    console.log(`✅ Class fetch successful: ${classResult?.classId}`);
+    // USE THE FUNCTION WITH CACHE TAGS
+    const classResult = await fetchClassDetail(slug);
 
-    if (!classResult || !classResult.classId) {
+    if (!classResult.success || !classResult.data) {
       console.warn(`Class not found for slug: ${slug}`);
       notFound();
     }
 
+    const classData = classResult.data;
+    console.log(`✅ Class data fetched: ${classData.classId}`);
+
     let businessResult = null;
-    if (classResult.business_slug) {
-      console.log(`Fetching business with slug: ${classResult.business_slug}`);
+    if (classData.business_slug) {
+      console.log(`Fetching business: ${classData.business_slug}`);
       const res = await businessService.fetchPublicBusinessDetail(
-        classResult.business_slug
+        classData.business_slug
       );
       if (res.success && res.data) {
         businessResult = res.data;
-        console.log(`✅ Business fetch successful`);
-      } else {
-        console.warn(
-          `Could not fetch business data for slug: ${classResult.business_slug}`
-        );
+        console.log(`✅ Business data fetched`);
       }
     }
 
-    // Fetch initial reviews during static generation
     let reviewsResult = null;
-    if (classResult.review_count > 0) {
-      console.log(`Fetching initial reviews for class: ${slug}`);
+    if (classData.review_count > 0) {
+      console.log(`Fetching reviews for: ${slug}`);
       try {
-        const reviewsData = await classService.fetchClassReviewsPaginated(
-          slug,
-          1,
-          6
-        );
-        if (reviewsData.success && reviewsData.reviews) {
-          // Pass the full reviews array from the response
-          reviewsResult = reviewsData.reviews;
-          console.log(
-            `✅ Reviews fetch successful: ${reviewsResult.length} reviews`
-          );
-
-          // Log first review to verify structure
-          if (reviewsResult.length > 0) {
-            console.log(
-              "First review structure:",
-              JSON.stringify(
-                {
-                  id: reviewsResult[0].id,
-                  reviewer_name: reviewsResult[0].reviewer_name,
-                  has_avatar: !!reviewsResult[0].reviewer_avatar_url,
-                  has_images: reviewsResult[0].image_urls?.length || 0,
-                  rating: reviewsResult[0].rating,
-                  source: reviewsResult[0].source,
-                },
-                null,
-                2
-              )
-            );
+        const response = await fetch(
+          `${BASE_URL}/classes/${slug}/reviews/?page=1&page_size=6`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            cache: "force-cache",
+            next: {
+              revalidate: 1800,
+              tags: ["reviews", `class-${slug}-reviews`],
+            },
           }
-        } else {
-          console.warn(
-            "Reviews fetch returned no data or failed:",
-            reviewsData
-          );
+        );
+
+        if (response.ok) {
+          const reviewsData = await response.json();
+          reviewsResult = reviewsData.results || reviewsData;
+          console.log(`✅ ${reviewsResult.length} reviews fetched`);
         }
       } catch (reviewError) {
         console.error("Error fetching reviews:", reviewError);
-        // Don't fail the entire page if reviews fail
-        reviewsResult = null;
       }
     }
 
     return {
-      classData: classResult,
+      classData,
       businessData: businessResult,
-      initialReviews: reviewsResult, // Pass the array directly
+      initialReviews: reviewsResult,
     };
   } catch (error) {
-    console.error(`=== ERROR in getClassData ===`);
-    console.error("Slug:", slug);
-    console.error("Error:", error);
-    console.error("Error message:", error.message);
-    console.error("Error response:", error.response?.data);
+    console.error(`❌ ERROR in getClassData for ${slug}:`, error);
 
     if (
       error.response?.status === 404 ||
       error.message?.includes("404") ||
       error.message?.includes("not found")
     ) {
-      console.log("404 error detected, calling notFound()");
       notFound();
     }
 
-    throw new Error(`Failed to load class details for slug: ${slug}`);
+    throw error;
   }
 }
 
-const getCachedClassData = React.cache(getClassData);
-
 export async function generateMetadata({ params }) {
   const resolvedParams = await Promise.resolve(params);
-  console.log("=== generateMetadata for slug:", resolvedParams.slug);
-
-  const { classData, businessData } = await getCachedClassData(
-    resolvedParams.slug
-  );
+  const { classData, businessData } = await getClassData(resolvedParams.slug);
 
   const pageTitle = classData?.title
     ? `${classData.title} | Classeasily`
@@ -239,9 +222,7 @@ export async function generateMetadata({ params }) {
 
 export default async function ClassPage({ params }) {
   const resolvedParams = await Promise.resolve(params);
-  console.log("=== ClassPage rendering slug:", resolvedParams.slug);
-
-  const { classData, businessData, initialReviews } = await getCachedClassData(
+  const { classData, businessData, initialReviews } = await getClassData(
     resolvedParams.slug
   );
 

@@ -15,39 +15,40 @@ const SectionBlock = styled.section`
 `;
 
 const SectionHeader = styled.div`
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  gap: 1rem;
+  align-items: center;
+  gap: 2rem;
 
-  h2 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-
-    svg {
-      color: #ff385c;
-      width: 24px;
-      height: 24px;
-    }
+  @media (max-width: 768px) {
+    margin-bottom: 2rem;
+    gap: 1rem;
   }
+`;
 
-  .subtitle-wrapper {
-    flex: 1;
+const TitleGroup = styled.div`
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    color: #111;
+    letter-spacing: -0.01em;
   }
 
   .subtitle {
     color: #666;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    font-weight: 500;
   }
 
   @media (max-width: 768px) {
     h2 {
-      font-size: 1.5rem;
+      font-size: 1.35rem;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
     }
   }
 `;
@@ -55,7 +56,7 @@ const SectionHeader = styled.div`
 const ClassGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+  gap: 2rem;
 
   @media (max-width: 768px) {
     display: none;
@@ -94,12 +95,12 @@ const EmblaContainer = styled.div`
 
 const ButtonContainer = styled(motion.div)`
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
 `;
 
 const ScrollButton = styled(motion.button)`
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   background-color: white;
   border: 1px solid #e8e8e8;
   border-radius: 50%;
@@ -108,47 +109,53 @@ const ScrollButton = styled(motion.button)`
   align-items: center;
   cursor: pointer;
   z-index: 10;
-  transition: all 0.2s ease-in-out;
+  transition: all 0.2s ease;
   color: #666;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 
   &:hover:not(:disabled) {
     color: #ff385c;
     border-color: #ff385c;
-    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(255, 56, 92, 0.15);
   }
+
   &:disabled {
-    opacity: 0.4;
+    opacity: 0.3;
     cursor: default;
   }
+
   svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
   }
 `;
 
 const EmptyState = styled.div`
   text-align: center;
-  padding: 4rem 2rem;
+  padding: 5rem 2rem;
   color: #999;
+  background: #fafafa;
+  border-radius: 16px;
 
   svg {
     margin-bottom: 1.5rem;
-    opacity: 0.3;
+    opacity: 0.25;
   }
 
   h3 {
     font-size: 1.25rem;
-    margin: 0;
+    margin: 0 0 0.5rem 0;
     color: #666;
+    font-weight: 600;
   }
 
   p {
     margin: 0;
     font-size: 0.95rem;
+    color: #888;
   }
 `;
 
-// --- START: Corrected useCarousel Hook ---
 const useCarousel = (emblaApi) => {
   const [prevBtnDisabled, setPrevBtnDisabled] = useState(true);
   const [nextBtnDisabled, setNextBtnDisabled] = useState(true);
@@ -180,14 +187,12 @@ const useCarousel = (emblaApi) => {
     }
   }, [emblaApi, updateButtonStates]);
 
-  // Effect for handling embla-specific events
   useEffect(() => {
     if (!emblaApi) return;
 
     emblaApi.on("select", updateButtonStates);
     emblaApi.on("reInit", checkScrollability);
 
-    // Perform an initial check on mount
     checkScrollability();
 
     return () => {
@@ -196,14 +201,11 @@ const useCarousel = (emblaApi) => {
     };
   }, [emblaApi, updateButtonStates, checkScrollability]);
 
-  // A separate effect for browser-specific logic (window resize)
   useEffect(() => {
     if (!emblaApi) return;
 
-    // Debounced check for cases where layout might take a moment to settle
     const debouncedCheck = setTimeout(() => checkScrollability(), 100);
 
-    // Add resize listener safely
     window.addEventListener("resize", checkScrollability);
 
     return () => {
@@ -220,7 +222,6 @@ const useCarousel = (emblaApi) => {
     showButtons,
   };
 };
-// --- END: Corrected useCarousel Hook ---
 
 const ClassesTab = ({ classes, businessName, handleFavoriteChange }) => {
   const emblaOptions = {
@@ -256,19 +257,16 @@ const ClassesTab = ({ classes, businessName, handleFavoriteChange }) => {
   return (
     <SectionBlock>
       <SectionHeader>
-        <div className="subtitle-wrapper">
-          <h2>
-            <Star />
-            Available Classes
-          </h2>
+        <TitleGroup>
+          <h2>Available Classes</h2>
           {classes.length > 0 && (
             <div className="subtitle">
-              Browse <NumberFlow value={classes.length} />{" "}
+              <NumberFlow value={classes.length} />{" "}
               {classes.length === 1 ? "class" : "classes"} offered by{" "}
               {businessName}
             </div>
           )}
-        </div>
+        </TitleGroup>
         <AnimatePresence>
           {classControls.showButtons && (
             <ButtonContainer>
@@ -317,7 +315,7 @@ const ClassesTab = ({ classes, businessName, handleFavoriteChange }) => {
         </>
       ) : (
         <EmptyState>
-          <MessageSquare size={64} />
+          <MessageSquare size={56} />
           <h3>No Classes Yet</h3>
           <p>{businessName} hasn't listed any public classes.</p>
         </EmptyState>

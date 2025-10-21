@@ -1,8 +1,142 @@
-// lib/server-data-fetchers.js - UPDATED WITH BLOG FUNCTIONS
-// Server-only data fetching functions for SSR/SSG
-// All functions use Next.js 16 beta compatible caching
+// lib/server-data-fetchers.js - COMPLETE FILE WITH CORRECT ENDPOINTS
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL
+
+// ==================== CACHE TAG GENERATORS ====================
+
+/**
+ * Generate cache tags for class searches
+ * This allows granular revalidation based on what changed
+ */
+function generateSearchCacheTags(params) {
+  const tags = ['classes-search'];
+  
+  // Add category-specific tags
+  if (params.category_key && params.category_key !== 'all') {
+    tags.push(`category-${params.category_key}`);
+    
+    // Add subcategory tag if present
+    if (params.subcategory_key) {
+      tags.push(`subcategory-${params.subcategory_key}`);
+    }
+  }
+  
+  // Add location-based tags if coordinates provided
+  if (params.lat && params.lng) {
+    // Round to 1 decimal to group nearby searches
+    const latRounded = Math.round(params.lat * 10) / 10;
+    const lngRounded = Math.round(params.lng * 10) / 10;
+    tags.push(`location-${latRounded}-${lngRounded}`);
+  }
+  
+  // Add tag-based searches
+  if (params.tag) {
+    tags.push(`tag-${params.tag}`);
+  }
+  
+  return tags;
+}
+
+// ==================== ENHANCED CLASS SEARCH FUNCTIONS ====================
+
+/**
+ * Search classes with category-aware caching
+ * Endpoint: /classes/search/
+ */
+export async function searchClasses(params = {}) {
+  try {
+    // Build query string
+    const queryParams = new URLSearchParams();
+    
+    // Handle all search parameters
+    Object.entries(params).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach(v => queryParams.append(key, v));
+      } else if (value !== null && value !== undefined && value !== '') {
+        queryParams.append(key, value);
+      }
+    });
+
+    const url = `${BASE_URL}/classes/search/?${queryParams.toString()}`;
+    const cacheTags = generateSearchCacheTags(params);
+    
+    // Determine revalidation time based on search type
+    let revalidateTime = 3600; // 1 hour default
+    
+    // More frequent updates for location-based searches
+    if (params.lat && params.lng) {
+      revalidateTime = 1800; // 30 minutes
+    }
+    
+    // Less frequent for category-only searches
+    if (params.category_key && !params.lat && !params.lng) {
+      revalidateTime = 7200; // 2 hours
+    }
+
+    console.log(`[Server] Fetching classes with cache tags:`, cacheTags);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'force-cache',
+      next: { 
+        revalidate: revalidateTime,
+        tags: cacheTags
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    return {
+      success: true,
+      results: data?.results || [],
+      count: data?.count || 0,
+      next: data?.next || null,
+      previous: data?.previous || null,
+    };
+  } catch (error) {
+    console.error('Error searching classes:', error);
+    return {
+      success: false,
+      results: [],
+      count: 0,
+      next: null,
+      previous: null,
+    };
+  }
+}
+
+/**
+ * Fetch classes by category (convenience function)
+ */
+export async function fetchClassesByCategory(categoryKey, subcategoryKey = null, additionalParams = {}) {
+  const params = {
+    category_key: categoryKey,
+    ...additionalParams
+  };
+  
+  if (subcategoryKey) {
+    params.subcategory_key = subcategoryKey;
+  }
+  
+  return searchClasses(params);
+}
+
+/**
+ * Fetch classes by tag
+ */
+export async function fetchClassesByTag(tag, additionalParams = {}) {
+  return searchClasses({
+    tag,
+    ...additionalParams
+  });
+}
 
 // ==================== BLOG FUNCTIONS ====================
 
@@ -205,116 +339,7 @@ export async function fetchBlogPostsByCategory(categorySlug, pageSize = 50) {
   }
 }
 
-/**
- * Generate structured data for blog listing page
- */
-export function generateBlogStructuredData(posts) {
-  if (!posts || posts.length === 0) return null;
-
-  return {
-    "@context": "https://schema.org",
-    "@type": "Blog",
-    "@id": "https://www.classeasily.com/blog",
-    "name": "ClassEasily Blog",
-    "description": "Inspiration and insights for learners and instructors",
-    "url": "https://www.classeasily.com/blog",
-    "blogPost": posts.slice(0, 10).map(post => ({
-      "@type": "BlogPosting",
-      "@id": `https://www.classeasily.com/blog/${post.slug}`,
-      "headline": post.title,
-      "description": post.excerpt,
-      "image": post.imageUrl,
-      "datePublished": post.publishedDate,
-      "author": post.author ? {
-        "@type": "Person",
-        "name": post.author.name,
-        "image": post.author.avatarUrl,
-      } : undefined,
-      "publisher": {
-        "@type": "Organization",
-        "name": "ClassEasily",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://www.classeasily.com/logo.png",
-        },
-      },
-    })),
-  };
-}
-
-/**
- * Generate structured data for individual blog post
- */
-export function generateBlogPostStructuredData(post) {
-  if (!post) return null;
-
-  return {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    "@id": `https://www.classeasily.com/blog/${post.slug}`,
-    "headline": post.title,
-    "description": post.excerpt || post.title,
-    "image": post.imageUrl,
-    "datePublished": post.publishedDate,
-    "dateModified": post.updatedDate || post.publishedDate,
-    "author": post.author ? {
-      "@type": "Person",
-      "name": post.author.name,
-      "image": post.author.avatarUrl,
-    } : {
-      "@type": "Organization",
-      "name": "ClassEasily",
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "ClassEasily",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://www.classeasily.com/logo.png",
-      },
-    },
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": `https://www.classeasily.com/blog/${post.slug}`,
-    },
-    "articleSection": post.category?.name,
-    "keywords": Array.isArray(post.tags) ? post.tags.join(", ") : post.tags,
-    "wordCount": post.content ? post.content.split(/\s+/).length : undefined,
-    "timeRequired": post.readTime ? `PT${post.readTime}M` : undefined,
-  };
-}
-
-/**
- * Generate breadcrumb structured data for blog post
- */
-export function generateBlogBreadcrumbStructuredData(post) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "name": "Home",
-        "item": "https://www.classeasily.com"
-      },
-      {
-        "@type": "ListItem",
-        "position": 2,
-        "name": "Blog",
-        "item": "https://www.classeasily.com/blog"
-      },
-      {
-        "@type": "ListItem",
-        "position": 3,
-        "name": post.title,
-        "item": `https://www.classeasily.com/blog/${post.slug}`
-      }
-    ]
-  };
-}
-
-// ==================== EXISTING CLASS FUNCTIONS ====================
+// ==================== CLASS FUNCTIONS ====================
 
 /**
  * Fetch initial classes for the homepage
@@ -330,7 +355,7 @@ export async function fetchInitialClasses() {
       cache: 'force-cache',
       next: { 
         revalidate: 3600,
-        tags: ['classes']
+        tags: ['classes', 'homepage-classes']
       }
     });
 
@@ -449,6 +474,9 @@ export async function fetchClassesByLocation(lat, lng, radius = 50, limit = 20) 
       limit: limit.toString(),
     });
 
+    const latRounded = Math.round(lat * 10) / 10;
+    const lngRounded = Math.round(lng * 10) / 10;
+
     const response = await fetch(`${BASE_URL}/classes/?${params.toString()}`, {
       method: 'GET',
       headers: {
@@ -457,7 +485,7 @@ export async function fetchClassesByLocation(lat, lng, radius = 50, limit = 20) 
       cache: 'force-cache',
       next: { 
         revalidate: 3600,
-        tags: ['classes', 'location']
+        tags: ['classes', 'location', `location-${latRounded}-${lngRounded}`]
       }
     });
 
@@ -522,6 +550,153 @@ export async function fetchClassDetail(classIdOrSlug) {
   }
 }
 
+// ==================== BUSINESS FUNCTIONS ====================
+
+/**
+ * Fetch all public businesses for static generation
+ * Endpoint: /businesses/ (PUBLIC_BUSINESSES from apiService)
+ */
+export async function fetchPublicBusinesses() {
+  try {
+    const response = await fetch(`${BASE_URL}/businesses/`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'force-cache',
+      next: { 
+        revalidate: 7200, // 2 hours
+        tags: ['businesses', 'public-businesses']
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    return {
+      success: true,
+      data: data,
+      results: data?.results || [],
+    };
+  } catch (error) {
+    console.error('Error fetching public businesses:', error);
+    return {
+      success: false,
+      data: null,
+      results: [],
+    };
+  }
+}
+
+/**
+ * Fetch business detail by slug with caching
+ * Endpoint: /businesses/{slug}/ (PUBLIC_BUSINESSES + slug from apiService)
+ */
+export async function fetchBusinessDetail(slug) {
+  try {
+    const response = await fetch(`${BASE_URL}/businesses/${slug}/`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'force-cache',
+      next: { 
+        revalidate: 3600, // 1 hour
+        tags: ['businesses', `business-${slug}`]
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { 
+          success: false, 
+          error: 'Business not found', 
+          status: 404, 
+          data: null 
+        };
+      }
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    return {
+      success: true,
+      data: data,
+    };
+  } catch (error) {
+    console.error(`Error fetching business detail ${slug}:`, error);
+    return {
+      success: false,
+      error: error.message || 'Failed to fetch business details',
+      data: null,
+    };
+  }
+}
+
+/**
+ * Fetch business reviews with pagination
+ * Endpoint: /businesses/{slug}/reviews/ (from fetchBusinessReviews in apiService)
+ */
+export async function fetchBusinessReviews(slug, page = 1, pageSize = 10) {
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      page_size: pageSize.toString(),
+    });
+
+    const response = await fetch(
+      `${BASE_URL}/businesses/${slug}/reviews/?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        cache: 'force-cache',
+        next: { 
+          revalidate: 1800, // 30 minutes - reviews update more frequently
+          tags: ['reviews', `business-${slug}-reviews`, `reviews-page-${page}`]
+        }
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { 
+          success: true, 
+          data: [], 
+          hasMore: false,
+          total: 0 
+        };
+      }
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    return {
+      success: true,
+      data: data?.results || [],
+      hasMore: !!data?.next,
+      total: data?.count || 0,
+      next: data?.next || null,
+    };
+  } catch (error) {
+    console.error(`Error fetching reviews for ${slug}:`, error);
+    return {
+      success: false,
+      data: [],
+      hasMore: false,
+      total: 0,
+    };
+  }
+}
+
+// ==================== STRUCTURED DATA GENERATORS ====================
+
 /**
  * Generate structured data for classes
  */
@@ -564,7 +739,6 @@ export function generateClassesStructuredData(classes) {
 
 /**
  * Generate structured data for a single class
- * For individual class detail pages
  */
 export function generateClassStructuredData(classData) {
   if (!classData) return null;
@@ -599,38 +773,196 @@ export function generateClassStructuredData(classData) {
 }
 
 /**
- * Fetch business data
- * Endpoint: /businesses/
+ * Generate structured data for a business
  */
-export async function fetchBusinessData() {
-  try {
-    const response = await fetch(`${BASE_URL}/businesses/`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      cache: 'force-cache',
-      next: { 
-        revalidate: 7200,
-        tags: ['businesses']
-      }
-    });
+export function generateBusinessStructuredData(businessData) {
+  if (!businessData) return null;
 
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
-    }
+  const ratingValue = businessData.average_rating 
+    ? parseFloat(businessData.average_rating) 
+    : null;
 
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching business data:', error);
-    return null;
-  }
+  return {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "@id": `https://www.classeasily.com/businesses/${businessData.slug}`,
+    "name": businessData.businessName,
+    "description": businessData.businessDescription,
+    "image": businessData.business_image_medium_url,
+    "url": `https://www.classeasily.com/businesses/${businessData.slug}`,
+    "telephone": businessData.studentContactPhone,
+    "email": businessData.studentContactEmail,
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": businessData.businessAddress,
+      "addressLocality": businessData.businessCity,
+      "addressRegion": businessData.businessState,
+      "addressCountry": "CA"
+    },
+    "geo": businessData.classes?.[0]?.coordinates ? {
+      "@type": "GeoCoordinates",
+      "latitude": businessData.classes[0].coordinates.split(',')[0],
+      "longitude": businessData.classes[0].coordinates.split(',')[1]
+    } : undefined,
+    "aggregateRating": ratingValue ? {
+      "@type": "AggregateRating",
+      "ratingValue": ratingValue,
+      "reviewCount": businessData.totalReviews || 0,
+      "bestRating": 5,
+      "worstRating": 1
+    } : undefined,
+    "openingHoursSpecification": businessData.businessHours?.map(hours => ({
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": hours.day,
+      "opens": hours.isOpen ? hours.open : undefined,
+      "closes": hours.isOpen ? hours.close : undefined
+    })) || undefined,
+  };
 }
 
 /**
+ * Generate structured data for blog listing page
+ */
+export function generateBlogStructuredData(posts) {
+  if (!posts || posts.length === 0) return null;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "@id": "https://www.classeasily.com/blog",
+    "name": "ClassEasily Blog",
+    "description": "Inspiration and insights for learners and instructors",
+    "url": "https://www.classeasily.com/blog",
+    "blogPost": posts.slice(0, 10).map(post => ({
+      "@type": "BlogPosting",
+      "@id": `https://www.classeasily.com/blog/${post.slug}`,
+      "headline": post.title,
+      "description": post.excerpt,
+      "image": post.imageUrl,
+      "datePublished": post.publishedDate,
+      "author": post.author ? {
+        "@type": "Person",
+        "name": post.author.name,
+        "image": post.author.avatarUrl,
+      } : undefined,
+      "publisher": {
+        "@type": "Organization",
+        "name": "ClassEasily",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.classeasily.com/logo.png",
+        },
+      },
+    })),
+  };
+}
+
+/**
+ * Generate structured data for individual blog post
+ */
+export function generateBlogPostStructuredData(post) {
+  if (!post) return null;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "@id": `https://www.classeasily.com/blog/${post.slug}`,
+    "headline": post.title,
+    "description": post.excerpt || post.title,
+    "image": post.imageUrl,
+    "datePublished": post.publishedDate,
+    "dateModified": post.updatedDate || post.publishedDate,
+    "author": post.author ? {
+      "@type": "Person",
+      "name": post.author.name,
+      "image": post.author.avatarUrl,
+    } : {
+      "@type": "Organization",
+      "name": "ClassEasily",
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "ClassEasily",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.classeasily.com/logo.png",
+      },
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": `https://www.classeasily.com/blog/${post.slug}`,
+    },
+    "articleSection": post.category?.name,
+    "keywords": Array.isArray(post.tags) ? post.tags.join(", ") : post.tags,
+    "wordCount": post.content ? post.content.split(/\s+/).length : undefined,
+    "timeRequired": post.readTime ? `PT${post.readTime}M` : undefined,
+  };
+}
+
+/**
+ * Generate breadcrumb structured data for blog post
+ */
+export function generateBlogBreadcrumbStructuredData(post) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.classeasily.com"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Blog",
+        "item": "https://www.classeasily.com/blog"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": post.title,
+        "item": `https://www.classeasily.com/blog/${post.slug}`
+      }
+    ]
+  };
+}
+
+/**
+ * Generate breadcrumb structured data for business page
+ */
+export function generateBusinessBreadcrumbStructuredData(businessData) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://www.classeasily.com"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Businesses",
+        "item": "https://www.classeasily.com/businesses"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": businessData.businessName,
+        "item": `https://www.classeasily.com/businesses/${businessData.slug}`
+      }
+    ]
+  };
+}
+
+// ==================== UTILITY FUNCTIONS ====================
+
+/**
  * Preload critical data for the homepage
- * This can be called in parallel to speed up data fetching
  */
 export async function preloadHomepageData() {
   try {
@@ -657,17 +989,23 @@ export async function preloadHomepageData() {
 }
 
 /**
- * Revalidate cache tags (Next.js 16 compatible)
- * Use this for on-demand revalidation
+ * Revalidate cache tags (Next.js compatible)
+ * Updated for Next.js 15+ API changes
  */
 export function revalidateTags(tags) {
   if (typeof window === 'undefined') {
     try {
       const { revalidateTag } = require('next/cache');
-      tags.forEach(tag => revalidateTag(tag));
-      return { success: true };
+      
+      // FIX: Add 'max' as second argument for each tag
+      tags.forEach(tag => {
+        revalidateTag(tag, 'max');
+        console.log(`✅ Revalidated tag: ${tag}`);
+      });
+      
+      return { success: true, revalidated: tags };
     } catch (error) {
-      console.error('Error revalidating tags:', error);
+      console.error('❌ Error revalidating tags:', error);
       return { success: false, error: error.message };
     }
   }

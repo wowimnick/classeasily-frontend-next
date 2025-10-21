@@ -1,26 +1,11 @@
 // app/explore/page.jsx
 import { Suspense } from "react";
 import ExploreClient from "@/app/explore/_components/ExploreClient";
-import { classService } from "@/services/apiService";
+import {
+  searchClasses,
+  fetchHomepageCategories,
+} from "@/lib/server-data-fetchers";
 import ExplorePageSkeleton from "./_components/ExplorePageSkeleton";
-
-async function getCachedCategories() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/`, {
-      next: { revalidate: 300 },
-    });
-
-    if (!res.ok) {
-      throw new Error("Failed to fetch categories from API");
-    }
-
-    const data = await res.json();
-    return { success: true, data: Array.isArray(data) ? data : [] };
-  } catch (error) {
-    console.error("Failed to fetch categories:", error);
-    return { success: false, data: [] };
-  }
-}
 
 export async function generateMetadata() {
   return {
@@ -46,7 +31,7 @@ async function fetchServerData(searchParams) {
     apiParams.location_search = locationDisplayNameFromUrl;
   }
 
-  // FIXED: Properly handle category and subcategory from URL
+  // Handle category and subcategory from URL
   const category = searchParams.category;
   const subcategory = searchParams.subcategory;
 
@@ -57,7 +42,7 @@ async function fetchServerData(searchParams) {
     }
   }
 
-  // FIXED: Handle all other search params
+  // Handle all other search params
   if (searchParams.tag) apiParams.tag = searchParams.tag;
   if (searchParams.keyword) apiParams.keyword = searchParams.keyword;
   if (searchParams.price_min)
@@ -87,12 +72,10 @@ async function fetchServerData(searchParams) {
 
   console.log("[Server] Fetching classes with params:", apiParams);
 
+  // Use the new searchClasses function with category-aware caching
   const [categoriesResponse, classesResponse] = await Promise.all([
-    getCachedCategories(),
-    classService.searchClasses(apiParams).catch((error) => {
-      console.error("[Server] Failed to fetch classes:", error);
-      return { results: [], count: 0, next: null };
-    }),
+    fetchHomepageCategories(),
+    searchClasses(apiParams),
   ]);
 
   console.log(

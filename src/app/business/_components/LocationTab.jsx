@@ -11,45 +11,21 @@ import { Building } from "lucide-react";
 
 const PageLayout = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: 3rem;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 2.5rem;
   align-items: start;
 
   @media (max-width: 992px) {
     grid-template-columns: 1fr;
-    gap: 2.5rem;
-  }
-`;
-
-const PrimaryColumn = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-`;
-
-const SecondaryColumn = styled.div`
-  position: sticky;
-  top: 150px;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-
-  @media (max-width: 992px) {
-    position: static;
+    gap: 2rem;
   }
 `;
 
 const SectionBlock = styled.section`
   background: white;
-  padding: 2.5rem;
-  border: 1px solid #f1f5f9;
-  border-radius: 12px;
-
-  &.borderless {
-    background: transparent;
-    padding: 0;
-    border: none;
-  }
+  padding: 2rem;
+  border: 1px solid #e8e8e8;
+  border-radius: 16px;
 
   @media (max-width: 768px) {
     padding: 1.5rem;
@@ -57,46 +33,41 @@ const SectionBlock = styled.section`
 `;
 
 const SectionHeader = styled.div`
-  margin-bottom: 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 1rem;
+  margin-bottom: 1.75rem;
 
   h2 {
-    font-size: 1.75rem;
+    font-size: 1.35rem;
     font-weight: 700;
-    margin: 0;
+    margin: 0 0 0.35rem 0;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.65rem;
+    color: #111;
 
     svg {
       color: #ff385c;
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
     }
   }
 
-  .subtitle-wrapper {
-    flex: 1;
-  }
-
   @media (max-width: 768px) {
+    margin-bottom: 1.5rem;
+
     h2 {
-      font-size: 1.5rem;
+      font-size: 1.25rem;
     }
   }
 `;
 
 const MapWrapper = styled.div`
-  height: 500px;
-  border-radius: 12px;
+  height: 450px;
+  border-radius: 16px;
   overflow: hidden;
   position: relative;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f1f5f9;
+  border: 1px solid #e8e8e8;
   z-index: 1;
+  background: #f8f8f8;
 
   .leaflet-container {
     height: 100%;
@@ -105,29 +76,38 @@ const MapWrapper = styled.div`
   }
 
   @media (max-width: 768px) {
-    height: 350px;
+    height: 320px;
+    border-radius: 12px;
   }
 `;
 
 const LocationLink = styled.a`
   position: absolute;
-  bottom: 16px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   background: white;
-  color: #222;
-  padding: 14px;
+  color: #111;
+  padding: 0.875rem 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  font-size: 1rem;
-  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 0.95rem;
+  font-weight: 600;
   z-index: 401;
   white-space: nowrap;
   text-decoration: none;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
+  border: 1px solid #e8e8e8;
 
   &:hover {
-    background: #f7f7f7;
+    background: #fafafa;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    transform: translateX(-50%) translateY(-2px);
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
   }
 `;
 
@@ -135,44 +115,49 @@ const AddressBlock = styled.div`
   display: flex;
   align-items: start;
   gap: 1rem;
-  padding: 1rem;
-  width: fit-content;
-  background: #fefefe;
+  padding: 1.25rem;
+  background: #fafafa;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+  margin-bottom: 1.5rem;
 
   svg {
     color: #ff385c;
     flex-shrink: 0;
     margin-top: 2px;
+    width: 20px;
+    height: 20px;
   }
 `;
 
 const AddressText = styled.div`
   flex: 1;
+  min-width: 0;
 
   .label {
-    font-size: 0.8rem;
-    color: #999;
+    font-size: 0.75rem;
+    color: #aaa;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    font-weight: 500;
-    margin-bottom: 0.25rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
   }
 
   .address {
     font-size: 0.95rem;
     color: #111;
     font-weight: 500;
+    line-height: 1.5;
   }
 `;
 
-const HoursCompactItem = styled.div`
+const HoursItem = styled.div`
   display: flex;
   justify-content: space-between;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 0.95rem;
+  align-items: center;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid #f5f5f5;
+  font-size: 0.9rem;
 
   &:last-child {
     border-bottom: none;
@@ -198,21 +183,26 @@ const EmptyState = styled.div`
   text-align: center;
   padding: 4rem 2rem;
   color: #999;
+  background: #fafafa;
+  border-radius: 16px;
+  border: 1px solid #f0f0f0;
 
   svg {
-    margin-bottom: 1.5rem;
-    opacity: 0.3;
+    margin-bottom: 1rem;
+    opacity: 0.25;
   }
 
   h3 {
-    font-size: 1.25rem;
-    margin: 0;
+    font-size: 1.15rem;
+    margin: 0 0 0.35rem 0;
     color: #666;
+    font-weight: 600;
   }
 
   p {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    color: #888;
   }
 `;
 
@@ -309,10 +299,10 @@ const BusinessHoursList = ({ formattedHours }) => {
   return (
     <div>
       {formattedHours.map((line, index) => (
-        <HoursCompactItem key={index}>
+        <HoursItem key={index}>
           <span className="day">{line.days}</span>
           <span className="time">{line.times}</span>
-        </HoursCompactItem>
+        </HoursItem>
       ))}
     </div>
   );
@@ -358,77 +348,72 @@ const LocationTab = ({
   const formattedHours = formatBusinessHours(businessHours);
 
   return (
-    <SectionBlock className="borderless">
-      <PageLayout>
-        <PrimaryColumn>
-          <SectionHeader style={{ marginBottom: 0 }}>
-            <div className="subtitle-wrapper">
+    <PageLayout>
+      <div>
+        <SectionHeader>
+          <h2>
+            <MapPin />
+            Location & Directions
+          </h2>
+        </SectionHeader>
+        {businessAddress && (
+          <AddressBlock>
+            <MapPin />
+            <AddressText>
+              <div className="label">Full Address</div>
+              <div className="address">{businessAddress}</div>
+            </AddressText>
+          </AddressBlock>
+        )}
+        {position ? (
+          <MapWrapper>
+            <MapContainer
+              center={position}
+              zoom={15}
+              scrollWheelZoom={true}
+              attributionControl={false}
+              zoomControl={false}
+              aria-label={`Map showing location for ${businessName}`}
+            >
+              <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+              <Marker
+                position={position}
+                icon={brandIcon}
+                alt={`Location of ${businessName}`}
+              />
+            </MapContainer>
+            <LocationLink
+              href={googleMapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open location in Google Maps"
+            >
+              Open in Google Maps
+            </LocationLink>
+          </MapWrapper>
+        ) : (
+          <EmptyState>
+            <MapPin size={56} />
+            <h3>Location Not Available</h3>
+            <p>Map location is currently unavailable.</p>
+          </EmptyState>
+        )}
+      </div>
+
+      <div>
+        {formattedHours.length > 0 && (
+          <SectionBlock>
+            <SectionHeader>
               <h2>
-                <MapPin />
-                Location & Directions
+                <Clock />
+                Business Hours
               </h2>
-            </div>
-          </SectionHeader>
-          {businessAddress && (
-            <AddressBlock>
-              <MapPin size={24} />
-              <AddressText>
-                <div className="label">Full Address</div>
-                <div className="address">{businessAddress}</div>
-              </AddressText>
-            </AddressBlock>
-          )}
-          {position ? (
-            <MapWrapper>
-              <MapContainer
-                center={position}
-                zoom={15}
-                scrollWheelZoom={true}
-                attributionControl={false}
-                zoomControl={false}
-                aria-label={`Map showing location for ${businessName}`}
-              >
-                <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
-                <Marker
-                  position={position}
-                  icon={brandIcon}
-                  alt={`Location of ${businessName}`}
-                />
-              </MapContainer>
-              <LocationLink
-                href={googleMapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Open location in Google Maps"
-              >
-                Open in Google Maps
-              </LocationLink>
-            </MapWrapper>
-          ) : (
-            <EmptyState>
-              <MapPin size={64} />
-              <h3>Location Not Available</h3>
-              <p>Map location is currently unavailable.</p>
-            </EmptyState>
-          )}
-        </PrimaryColumn>
-        <SecondaryColumn>
-          {formattedHours.length > 0 && (
-            <SectionBlock>
-              <SectionHeader>
-                <div className="subtitle-wrapper">
-                  <h2 style={{ fontSize: "1.5rem" }}>
-                    <Clock />
-                    Business Hours
-                  </h2>
-                </div>
-              </SectionHeader>
-              <BusinessHoursList formattedHours={formattedHours} />
-            </SectionBlock>
-          )}
-        </SecondaryColumn>
-      </PageLayout>
-    </SectionBlock>
+            </SectionHeader>
+            <BusinessHoursList formattedHours={formattedHours} />
+          </SectionBlock>
+        )}
+      </div>
+    </PageLayout>
   );
 };
 

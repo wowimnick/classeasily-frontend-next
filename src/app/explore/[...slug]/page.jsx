@@ -1,7 +1,10 @@
 // app/explore/[...slug]/page.jsx
 
 import { Suspense } from "react";
-import { classService } from "@/services/apiService";
+import {
+  searchClasses,
+  fetchHomepageCategories,
+} from "@/lib/server-data-fetchers";
 import ExploreClient from "@/app/explore/_components/ExploreClient";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 
@@ -50,28 +53,6 @@ function generateStructuredData(routeParams, classes, locationName) {
   };
 }
 
-async function getCachedCategories() {
-  try {
-    // The classService uses axios, which doesn't get Next.js caching.
-    // We need to use native fetch here for build-time caching.
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories/`, {
-      next: { revalidate: 300 }, // Revalidate (recache) every 300 seconds (5 minutes)
-    });
-
-    if (!res.ok) {
-      throw new Error("Failed to fetch categories from API");
-    }
-
-    const data = await res.json();
-
-    // The service layer expects a specific object structure
-    return { success: true, data: Array.isArray(data) ? data : [] };
-  } catch (error) {
-    console.error("Failed to fetch categories:", error);
-    return { success: false, data: [] };
-  }
-}
-
 export async function generateMetadata({ params, searchParams }) {
   try {
     const { slug = [] } = params;
@@ -110,7 +91,7 @@ export async function generateMetadata({ params, searchParams }) {
     let categoryText = "";
     if (categoryKey) {
       try {
-        const categoriesResponse = await getCachedCategories();
+        const categoriesResponse = await fetchHomepageCategories();
         if (categoriesResponse.success) {
           const categoryObj = categoriesResponse.data.find(
             (c) => c.key === categoryKey
@@ -241,11 +222,10 @@ async function fetchServerData({ params, searchParams }) {
     apiParams.sort_by = searchParams.sort_by;
   }
 
+  // Use the new searchClasses function with category-aware caching
   const [categoriesResponse, classesResponse] = await Promise.all([
-    getCachedCategories(),
-    classService
-      .searchClasses(apiParams)
-      .catch(() => ({ results: [], count: 0, next: null })),
+    fetchHomepageCategories(),
+    searchClasses(apiParams),
   ]);
 
   let locationName = "";

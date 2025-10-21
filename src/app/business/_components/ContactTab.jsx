@@ -17,39 +17,21 @@ import {
 
 const PageLayout = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: 3rem;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 2.5rem;
   align-items: start;
 
   @media (max-width: 992px) {
     grid-template-columns: 1fr;
-    gap: 2.5rem;
-  }
-`;
-
-const PrimaryColumn = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-`;
-
-const SecondaryColumn = styled.div`
-  position: sticky;
-  top: 150px;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-
-  @media (max-width: 992px) {
-    position: static;
+    gap: 2rem;
   }
 `;
 
 const SectionBlock = styled.section`
   background: white;
-  padding: 2.5rem;
-  border: 1px solid #f1f5f9;
-  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid #e8e8e8;
+  border-radius: 16px;
 
   @media (max-width: 768px) {
     padding: 1.5rem;
@@ -57,39 +39,35 @@ const SectionBlock = styled.section`
 `;
 
 const SectionHeader = styled.div`
-  margin-bottom: 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 1rem;
+  margin-bottom: 1.75rem;
 
   h2 {
-    font-size: 1.75rem;
+    font-size: 1.35rem;
     font-weight: 700;
-    margin: 0;
+    margin: 0 0 0.35rem 0;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.65rem;
+    color: #111;
 
     svg {
       color: #ff385c;
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
     }
   }
 
-  .subtitle-wrapper {
-    flex: 1;
-  }
-
   .subtitle {
-    color: #666;
-    font-size: 0.95rem;
+    color: #888;
+    font-size: 0.9rem;
+    font-weight: 500;
   }
 
   @media (max-width: 768px) {
+    margin-bottom: 1.5rem;
+
     h2 {
-      font-size: 1.5rem;
+      font-size: 1.25rem;
     }
   }
 `;
@@ -97,36 +75,29 @@ const SectionHeader = styled.div`
 const ContactList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 0.5rem;
 `;
 
 const ContactItem = styled.a`
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1.25rem 0;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 1rem;
   text-decoration: none;
   color: inherit;
-  transition: background 0.2s;
-
-  &:last-child {
-    border-bottom: none;
-  }
+  transition: all 0.2s ease;
+  border-radius: 10px;
 
   &:hover {
     background: #fafafa;
-    margin: 0 -1rem;
-    padding-left: 1rem;
-    padding-right: 1rem;
   }
 `;
 
 const ContactIcon = styled.div`
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   background: #f8f8f8;
-  border-radius: 50%;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -141,13 +112,14 @@ const ContactIcon = styled.div`
 
 const ContactText = styled.div`
   flex: 1;
+  min-width: 0;
 
   .label {
-    font-size: 0.8rem;
-    color: #999;
+    font-size: 0.75rem;
+    color: #aaa;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    font-weight: 500;
+    font-weight: 600;
     margin-bottom: 0.25rem;
   }
 
@@ -161,39 +133,42 @@ const ContactText = styled.div`
 
 const SocialGrid = styled.div`
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
 `;
 
 const SocialButton = styled.a`
-  width: 52px;
-  height: 52px;
-  border: 2px solid #e8e8e8;
-  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #666;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
+  background: white;
 
   &:hover {
     border-color: #ff385c;
     color: #ff385c;
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 56, 92, 0.15);
   }
 
   svg {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
   }
 `;
 
-const HoursCompactItem = styled.div`
+const HoursItem = styled.div`
   display: flex;
   justify-content: space-between;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 0.95rem;
+  align-items: center;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid #f5f5f5;
+  font-size: 0.9rem;
 
   &:last-child {
     border-bottom: none;
@@ -215,25 +190,29 @@ const HoursCompactItem = styled.div`
   }
 `;
 
-const EmptyState = styled.div`
+const PrivacyAlert = styled.div`
+  padding: 1.75rem;
+  background: #fff8f8;
+  border: 1px solid #ffe8e8;
+  border-radius: 12px;
   text-align: center;
-  padding: 4rem 2rem;
-  color: #999;
 
   svg {
-    margin-bottom: 1.5rem;
-    opacity: 0.3;
+    color: #ff4d4f;
+    margin-bottom: 0.75rem;
   }
 
   h3 {
-    font-size: 1.25rem;
-    margin: 0;
-    color: #666;
+    color: #ff4d4f;
+    margin: 0 0 0.35rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
   }
 
   p {
+    color: #ff6b6b;
     margin: 0;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
   }
 `;
 
@@ -337,10 +316,10 @@ const BusinessHoursList = ({ formattedHours }) => {
   return (
     <div>
       {formattedHours.map((line, index) => (
-        <HoursCompactItem key={index}>
+        <HoursItem key={index}>
           <span className="day">{line.days}</span>
           <span className="time">{line.times}</span>
-        </HoursCompactItem>
+        </HoursItem>
       ))}
     </div>
   );
@@ -371,17 +350,15 @@ const ContactTab = ({
 
   return (
     <PageLayout>
-      <PrimaryColumn>
+      <div>
         <SectionBlock>
           <SectionHeader>
-            <div className="subtitle-wrapper">
-              <h2>
-                <Phone />
-                Get in Touch
-              </h2>
-              <div className="subtitle">
-                Contact information for {businessName}
-              </div>
+            <h2>
+              <Phone />
+              Get in Touch
+            </h2>
+            <div className="subtitle">
+              Contact information for {businessName}
             </div>
           </SectionHeader>
           {hasPublicContact ? (
@@ -436,35 +413,23 @@ const ContactTab = ({
               )}
             </ContactList>
           ) : (
-            <EmptyState
-              style={{
-                padding: "2rem",
-                background: "#fff8f8",
-                border: "1px solid #ffeded",
-                borderRadius: "8px",
-              }}
-            >
-              <AlertCircle size={48} style={{ color: "#ff4d4f" }} />
-              <h3 style={{ color: "#ff4d4f", marginTop: "1rem" }}>
-                Contact Details Private
-              </h3>
-              <p style={{ color: "#ff4d4f" }}>
-                Direct contact information is shared after booking.
-              </p>
-            </EmptyState>
+            <PrivacyAlert>
+              <AlertCircle size={44} />
+              <h3>Contact Details Private</h3>
+              <p>Direct contact information is shared after booking.</p>
+            </PrivacyAlert>
           )}
         </SectionBlock>
-      </PrimaryColumn>
-      <SecondaryColumn>
+      </div>
+
+      <div>
         {validSocialLinks.length > 0 && (
-          <SectionBlock>
+          <SectionBlock style={{ marginBottom: "1.5rem" }}>
             <SectionHeader>
-              <div className="subtitle-wrapper">
-                <h2 style={{ fontSize: "1.5rem" }}>
-                  <Globe />
-                  Follow Us
-                </h2>
-              </div>
+              <h2>
+                <Globe />
+                Follow Us
+              </h2>
             </SectionHeader>
             <SocialGrid>
               {validSocialLinks.map(([platform, url]) =>
@@ -483,20 +448,19 @@ const ContactTab = ({
             </SocialGrid>
           </SectionBlock>
         )}
+
         {formattedHours.length > 0 && (
           <SectionBlock>
             <SectionHeader>
-              <div className="subtitle-wrapper">
-                <h2 style={{ fontSize: "1.5rem" }}>
-                  <Clock />
-                  Business Hours
-                </h2>
-              </div>
+              <h2>
+                <Clock />
+                Business Hours
+              </h2>
             </SectionHeader>
             <BusinessHoursList formattedHours={formattedHours} />
           </SectionBlock>
         )}
-      </SecondaryColumn>
+      </div>
     </PageLayout>
   );
 };

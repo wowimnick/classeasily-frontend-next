@@ -5,10 +5,11 @@ import styled from "styled-components";
 
 const TabNavigation = styled.nav`
   background: white;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 1px solid #e8e8e8;
   position: sticky;
   top: 80px;
   z-index: 100;
+  overflow: hidden;
 
   @media (max-width: 768px) {
     top: 60px;
@@ -16,20 +17,26 @@ const TabNavigation = styled.nav`
 `;
 
 const TabList = styled.div`
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 3rem;
   display: flex;
-  gap: 2rem;
+  gap: 3rem;
+  overflow: hidden;
   overflow-x: auto;
 
   &::-webkit-scrollbar {
     display: none;
   }
 
+  @media (max-width: 1024px) {
+    padding: 0 2rem;
+    gap: 2.5rem;
+  }
+
   @media (max-width: 768px) {
-    padding: 0 1rem;
-    gap: 1.5rem;
+    padding: 0 1.5rem;
+    gap: 2rem;
   }
 `;
 
@@ -39,14 +46,14 @@ const TabButton = styled.button`
   padding: 1.25rem 0;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #666;
+  color: #888;
   cursor: pointer;
   position: relative;
   white-space: nowrap;
-  transition: color 0.2s;
+  transition: color 0.2s ease;
 
   &:hover {
-    color: #111;
+    color: #333;
   }
 
   &.active {
@@ -55,7 +62,7 @@ const TabButton = styled.button`
     &::after {
       content: "";
       position: absolute;
-      bottom: -2px;
+      bottom: -1px;
       left: 0;
       right: 0;
       height: 2px;
