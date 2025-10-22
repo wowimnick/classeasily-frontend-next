@@ -6,6 +6,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from "react";
 import { createPortal } from "react-dom";
 import styled, { keyframes } from "styled-components";
@@ -23,22 +24,22 @@ const ToastContext = createContext(null);
 // Animations
 const slideIn = keyframes`
   from {
-    transform: translateY(-100%);
+    transform: translate(-50%, -100%);
     opacity: 0;
   }
   to {
-    transform: translateY(0);
+    transform: translate(-50%, 0);
     opacity: 1;
   }
 `;
 
 const slideOut = keyframes`
   from {
-    transform: translateY(0);
+    transform: translate(-50%, 0);
     opacity: 1;
   }
   to {
-    transform: translateY(-100%);
+    transform: translate(-50%, -100%);
     opacity: 0;
   }
 `;
@@ -54,6 +55,7 @@ const ToastContainer = styled.div`
   flex-direction: column;
   gap: 8px;
   pointer-events: none;
+  align-items: center;
 `;
 
 const ToastItem = styled.div`
@@ -67,7 +69,9 @@ const ToastItem = styled.div`
   animation: ${(props) => (props.$isExiting ? slideOut : slideIn)} 0.3s ease;
   pointer-events: auto;
   max-width: 500px;
+  min-width: fit-content;
   width: auto;
+  white-space: nowrap;
 
   .anticon {
     font-size: 16px;
@@ -113,12 +117,23 @@ const iconMap = {
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
   const [isMounted, setIsMounted] = useState(false);
+  const timersRef = useRef({});
 
   React.useEffect(() => {
     setIsMounted(true);
+    return () => {
+      // Clear all timers on unmount
+      Object.values(timersRef.current).forEach(clearTimeout);
+    };
   }, []);
 
   const removeToast = useCallback((id) => {
+    // Clear any existing timer for this toast
+    if (timersRef.current[id]) {
+      clearTimeout(timersRef.current[id]);
+      delete timersRef.current[id];
+    }
+
     setToasts((prev) =>
       prev.map((toast) =>
         toast.id === id ? { ...toast, isExiting: true } : toast
@@ -131,18 +146,43 @@ export function ToastProvider({ children }) {
   }, []);
 
   const addToast = useCallback(
-    (type, content, duration = 3000, onClose) => {
-      const id = Date.now() + Math.random();
+    (type, content, duration = 3000, onClose, key) => {
+      // Use provided key or generate a unique one
+      const id = key || Date.now() + Math.random();
 
-      setToasts((prev) => [...prev, { id, type, content, isExiting: false }]);
+      // Clear any existing timer for this key/id
+      if (timersRef.current[id]) {
+        clearTimeout(timersRef.current[id]);
+        delete timersRef.current[id];
+      }
 
+      // Check if toast with this key already exists
+      setToasts((prev) => {
+        const existingToast = prev.find((toast) => toast.id === id);
+
+        if (existingToast) {
+          // Update existing toast - replace type and content
+          return prev.map((toast) =>
+            toast.id === id
+              ? { ...toast, type, content, isExiting: false }
+              : toast
+          );
+        } else {
+          // Add new toast
+          return [...prev, { id, type, content, isExiting: false }];
+        }
+      });
+
+      // Set up auto-dismiss timer if duration > 0
       if (duration > 0) {
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           removeToast(id);
           onClose?.();
         }, duration);
+        timersRef.current[id] = timer;
       }
 
+      // Return function to manually close this toast
       return () => removeToast(id);
     },
     [removeToast]
@@ -150,78 +190,90 @@ export function ToastProvider({ children }) {
 
   const normalizeDuration = (duration) => {
     if (duration === undefined || duration === null) return 3000;
-    if (duration === 0) return 0; // For loading states
+    if (duration === 0) return 0; // For loading states that need manual dismissal
     return duration * 1000; // Convert seconds to milliseconds
   };
 
   const messageAPI = {
     success: (content, duration, onClose) => {
       if (typeof content === "object" && content.content !== undefined) {
+        const normalizedDuration = normalizeDuration(content.duration);
         return addToast(
           "success",
           content.content,
-          normalizeDuration(content.duration),
-          content.onClose
+          normalizedDuration,
+          content.onClose,
+          content.key
         );
       }
       return addToast("success", content, normalizeDuration(duration), onClose);
     },
     error: (content, duration, onClose) => {
       if (typeof content === "object" && content.content !== undefined) {
+        const normalizedDuration = normalizeDuration(content.duration);
         return addToast(
           "error",
           content.content,
-          normalizeDuration(content.duration),
-          content.onClose
+          normalizedDuration,
+          content.onClose,
+          content.key
         );
       }
       return addToast("error", content, normalizeDuration(duration), onClose);
     },
     info: (content, duration, onClose) => {
       if (typeof content === "object" && content.content !== undefined) {
+        const normalizedDuration = normalizeDuration(content.duration);
         return addToast(
           "info",
           content.content,
-          normalizeDuration(content.duration),
-          content.onClose
+          normalizedDuration,
+          content.onClose,
+          content.key
         );
       }
       return addToast("info", content, normalizeDuration(duration), onClose);
     },
     warning: (content, duration, onClose) => {
       if (typeof content === "object" && content.content !== undefined) {
+        const normalizedDuration = normalizeDuration(content.duration);
         return addToast(
           "warning",
           content.content,
-          normalizeDuration(content.duration),
-          content.onClose
+          normalizedDuration,
+          content.onClose,
+          content.key
         );
       }
       return addToast("warning", content, normalizeDuration(duration), onClose);
     },
     loading: (content, duration = 0, onClose) => {
       if (typeof content === "object" && content.content !== undefined) {
+        const normalizedDuration = normalizeDuration(
+          content.duration !== undefined ? content.duration : 0
+        );
         return addToast(
           "loading",
           content.content,
-          normalizeDuration(content.duration || 0),
-          content.onClose
+          normalizedDuration,
+          content.onClose,
+          content.key
         );
       }
-      return addToast(
-        "loading",
-        content,
-        normalizeDuration(duration || 0),
-        onClose
-      );
+      return addToast("loading", content, normalizeDuration(duration), onClose);
     },
-    open: ({ type = "info", content, duration, onClose }) => {
-      return addToast(type, content, normalizeDuration(duration), onClose);
+    open: ({ type = "info", content, duration, onClose, key }) => {
+      return addToast(type, content, normalizeDuration(duration), onClose, key);
     },
     destroy: (key) => {
       if (key) {
         removeToast(key);
       } else {
+        // Destroy all toasts
+        Object.keys(timersRef.current).forEach((id) => {
+          clearTimeout(timersRef.current[id]);
+        });
+        timersRef.current = {};
         setToasts([]);
       }
     },

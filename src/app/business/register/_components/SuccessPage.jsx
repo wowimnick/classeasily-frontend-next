@@ -9,7 +9,7 @@ import message from "@/lib/message";
 import { ArrowRight, CheckCircle, Layout, Users } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useAuthUser } from "@/hooks/useAuthUser";
-import { useAuth } from "@/lib/auth-client";
+import { refreshUser } from "@/lib/auth-client";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import FooterClient from "@/components/homepage/FooterClient";
 import { LordIcon } from "@/services/ReactUtils";
@@ -284,20 +284,32 @@ const SuccessPage = ({ navigate }) => {
   }, []);
 
   const handleNavigateToDashboard = async () => {
+    if (isNavigating) return; // Prevent double-clicks
+
     setIsNavigating(true);
     try {
-      // Refresh session
-      await useAuth();
-      console.log("Navigate to dashboard");
+      console.log("[SuccessPage] Refreshing user session before navigation");
+
+      // Refresh the user session to get updated data
+      await refreshUser();
+
+      console.log("[SuccessPage] Session refreshed, navigating to dashboard");
       router.push("/business/dashboard");
     } catch (error) {
-      console.error("Failed to refresh user session:", error);
-      message.error("Could not load the dashboard. Please try again.");
-      setIsNavigating(false);
+      console.error("[SuccessPage] Failed to refresh user session:", error);
+
+      // Even if refresh fails, try to navigate anyway
+      // The dashboard will handle auth validation
+      console.log("[SuccessPage] Attempting navigation despite refresh error");
+      router.push("/business/dashboard");
+    } finally {
+      // Reset loading state after a delay to prevent rapid re-clicks
+      setTimeout(() => setIsNavigating(false), 1000);
     }
   };
 
   const handleExploreClasses = () => {
+    if (isNavigating) return; // Prevent navigation during other operations
     router.push("/explore");
   };
 
@@ -379,6 +391,7 @@ const SuccessPage = ({ navigate }) => {
             <PrimaryButton
               onClick={handleNavigateToDashboard}
               loading={isNavigating}
+              disabled={isNavigating}
             >
               Start Adding Classes
               {!isNavigating && <ArrowRight size={20} strokeWidth={2.5} />}
