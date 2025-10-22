@@ -406,7 +406,7 @@ export const updateUserDetails = async ({ payload, localAvatarUrl }) => {
     }
 
     console.log('[Auth] updateUserDetails - calling API');
-    const response = await axiosInstance.patch('/user/profile/', payload);
+    const response = await axiosInstance.patch('/user/update/', payload);
     
     console.log('[Auth] User update successful');
     store.setUser(response.data);

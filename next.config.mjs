@@ -171,11 +171,10 @@ const nextConfig = {
       },
     },
   } : undefined,
+  cacheComponents: true,
+
 
   experimental: {
-    // NEXT.JS 16: Enable PPR via Cache Components (replaces experimental.ppr)
-    cacheComponents: true,
-
     // NEXT.JS 16: Enable Turbopack file system caching for faster dev startup
     turbopackFileSystemCacheForDev: true,
 

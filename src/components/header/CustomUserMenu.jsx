@@ -804,7 +804,10 @@ const CustomUserMenu = ({
 
   const handleActualNavigate = (path) => {
     onClose();
-    onNavigate(path);
+    // Small delay to allow exit animation to complete before navigation
+    setTimeout(() => {
+      onNavigate(path);
+    }, 150);
   };
   const handleActualShowSettings = () => {
     onClose();

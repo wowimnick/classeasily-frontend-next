@@ -156,9 +156,9 @@ export default async function HomePage() {
           }}
         />
       )}
+      <SharedMainClientHeader />
 
       <div className="homepage-style">
-        <SharedMainClientHeader />
         <main className="main-content">
           {/* Above the fold - render immediately */}
           <BannerSearch />

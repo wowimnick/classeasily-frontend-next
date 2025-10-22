@@ -569,7 +569,7 @@ const SettingsModal = ({ open, onClose }) => {
                 placeholder="Select your timezone"
                 optionFilterProp="label"
                 options={timezones}
-      />
+              />
             </Form.Item>
             <Form.Item name="phone_number" label="Phone Number">
               <Input placeholder="Enter phone number (optional)" />

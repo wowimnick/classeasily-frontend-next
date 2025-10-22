@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import styled from "styled-components";
+import styled, { createGlobalStyle } from "styled-components";
 import { Typography, Select, DatePicker, AutoComplete } from "antd";
 import message from "@/lib/message";
 import { Search, CalendarSearch, Users, MapPin } from "lucide-react";
@@ -53,7 +53,7 @@ const createLocationPathFromDisplayName = (displayName) => {
   return "";
 };
 
-// Styled Components (keeping all your existing styled components)
+// Styled Components
 const IconWrapper = styled.div`
   display: flex;
   align-items: center;
@@ -63,6 +63,53 @@ const IconWrapper = styled.div`
   min-width: 52px;
   border-radius: 12px;
   transition: all 0.2s ease;
+`;
+
+const OptionContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px !important;
+  cursor: pointer;
+  width: 100%;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover ${IconWrapper} {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  }
+`;
+
+const OptionText = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-width: 0;
+  gap: 2px;
+`;
+
+const PrimaryText = styled.div`
+  font-weight: 600;
+  color: #1a1a1a;
+  font-size: 15px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: "Proxima Soft", sans-serif;
+  transition: color 0.2s ease;
+`;
+
+const SecondaryText = styled.div`
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: "Proxima Soft", sans-serif;
+  font-weight: 500;
 `;
 
 const LocationWrapper = styled.div`
@@ -113,51 +160,151 @@ const LocationWrapper = styled.div`
   }
 `;
 
-const OptionContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 16px !important;
-  cursor: pointer;
-  width: 100%;
-  overflow: hidden;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-  &:hover ${IconWrapper} {
-    transform: scale(1.05);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+const BannerSearchDropdownStyles = createGlobalStyle`
+  .banner-search-location-dropdown.ant-select-dropdown,
+  .banner-search-datepicker.ant-picker-dropdown {
+    transform: translateZ(0);
+    -webkit-font-smoothing: subpixel-antialiased;
+    z-index: 1052 !important;
   }
-`;
 
-const OptionText = styled.div`
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  min-width: 0;
-  gap: 2px;
-`;
+  .banner-search-location-dropdown {
+    min-width: 450px !important;
+    max-width: 90vw !important;
+    border-radius: 16px !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12),
+      0 4px 8px rgba(0, 0, 0, 0.08) !important;
+    border: 1px solid #e5e7eb !important;
+    padding: 8px !important;
+  }
 
-const PrimaryText = styled.div`
-  font-weight: 600;
-  color: #1a1a1a;
-  font-size: 15px;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: "Proxima Soft", sans-serif;
-  transition: color 0.2s ease;
-`;
+  @media (max-width: 768px) {
+    .banner-search-location-dropdown {
+      min-width: 0px !important;
+    }
+    .ant-select-selection-item,
+    .ant-select-selection-placeholder,
+    .banner-search-datepicker .ant-picker-input > input,
+    .ant-select-selection-search-input {
+      font-size: 16px !important;
+      font-family: "Proxima Soft", sans-serif !important;
+    }
+  }
 
-const SecondaryText = styled.div`
-  font-size: 13px;
-  color: #6b7280;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: "Proxima Soft", sans-serif;
-  font-weight: 500;
+  .banner-search-location-dropdown .rc-virtual-list-holder {
+    padding-bottom: 8px;
+  }
+
+  .banner-search-location-dropdown .ant-select-item-group {
+    font-weight: 700;
+    font-size: 13px;
+    color: #374151;
+    padding: 12px 12px 8px 12px;
+    margin: 0;
+    background: transparent !important;
+    border: none !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    pointer-events: none !important;
+    cursor: default !important;
+  }
+
+  .banner-search-location-dropdown .ant-select-item {
+    padding: 0 !important;
+    border-radius: 12px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border: 1px solid transparent !important;
+  }
+
+  .banner-search-location-dropdown .ant-select-item:hover {
+    background: linear-gradient(
+      135deg,
+      #f8fafc 0%,
+      #f1f5f9 100%
+    ) !important;
+    border-color: #e2e8f0 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  .banner-search-location-dropdown .ant-select-item-option-selected {
+    background: linear-gradient(
+      135deg,
+      #eff6ff 0%,
+      #dbeafe 100%
+    ) !important;
+    border-color: #3b82f6 !important;
+  }
+
+  .banner-search-location-dropdown .ant-select-item-option-selected .option-primary-text {
+    color: #1d4ed8 !important;
+    font-weight: 600 !important;
+  }
+
+  .banner-search-location-dropdown .dropdown-loader-container {
+    padding: 24px 20px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    min-height: 80px !important;
+    background: #fafafa !important;
+    border-radius: 12px !important;
+    margin: 8px 4px !important;
+  }
+
+  .banner-search-location-dropdown .dropdown-no-results {
+    padding: 24px 20px !important;
+    text-align: center !important;
+    color: #6b7280 !important;
+    font-size: 14px !important;
+    background: #f9fafb !important;
+    border-radius: 12px !important;
+    margin: 8px 4px !important;
+    border: 1px dashed #d1d5db !important;
+  }
+
+  @media (max-width: 768px) {
+    .banner-search-location-dropdown.ant-select-dropdown {
+      position: fixed !important;
+      left: 2.5vw !important;
+      right: 2.5vw !important;
+      width: 95vw !important;
+      max-width: 95vw !important;
+      transform: none !important;
+      top: auto !important;
+      bottom: 20vh !important;
+      border-radius: 12px !important;
+      box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.2) !important;
+      max-height: 45vh !important;
+      overflow-y: auto !important;
+    }
+
+    .banner-search-datepicker.ant-picker-dropdown {
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      width: 95vw !important;
+      max-width: 400px !important;
+      position: fixed !important;
+      bottom: auto !important;
+      right: auto !important;
+      margin: 0 !important;
+    }
+
+    .banner-search-datepicker .ant-picker-panel-container {
+      width: 100% !important;
+      box-shadow: none !important;
+    }
+
+    .banner-search-datepicker .ant-picker-panel {
+      width: 100% !important;
+    }
+
+    .banner-search-datepicker .ant-picker-content,
+    .banner-search-datepicker .ant-picker-body {
+      width: 100% !important;
+    }
+  }
 `;
 
 const ButtonText = styled.div`
@@ -833,7 +980,7 @@ const BannerSearch = () => {
     }
     params.set("participants", participantCount.toString());
 
-    // FIXED: Use Toronto as default (matching suggestedAreas[0])
+    // Use Toronto as default
     if (!searchTerm.trim()) {
       params.set("location", "Toronto, ON");
       params.set("lat", "43.6532");
@@ -868,152 +1015,7 @@ const BannerSearch = () => {
 
   return (
     <Banner aria-labelledby="banner-heading">
-      <style jsx global>{`
-        .explore-header-location-search-dropdown.ant-select-dropdown,
-        .ant-picker-dropdown {
-          transform: translateZ(0);
-          -webkit-font-smoothing: subpixel-antialiased;
-          z-index: 1052 !important;
-        }
-
-        .explore-header-location-search-dropdown {
-          min-width: 450px !important;
-          max-width: 90vw !important;
-          border-radius: 16px !important;
-          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12),
-            0 4px 8px rgba(0, 0, 0, 0.08) !important;
-          border: 1px solid #e5e7eb !important;
-          padding: 8px !important;
-        }
-
-        @media (max-width: 768px) {
-          .explore-header-location-search-dropdown {
-            min-width: 0px !important;
-          }
-          .ant-select-selection-item,
-          .ant-select-selection-placeholder,
-          .ant-picker-input > input,
-          .ant-select-selection-search-input {
-            font-size: 16px !important;
-            font-family: "Proxima Soft", sans-serif !important;
-          }
-        }
-
-        .rc-virtual-list-holder {
-          padding-bottom: 8px;
-        }
-
-        .ant-select-item-group {
-          font-weight: 700;
-          font-size: 13px;
-          color: #374151;
-          padding: 12px 12px 8px 12px;
-          margin: 0;
-          background: transparent !important;
-          border: none !important;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          pointer-events: none !important;
-          cursor: default !important;
-        }
-
-        .ant-select-item {
-          padding: 0 !important;
-          border-radius: 12px !important;
-          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-          border: 1px solid transparent !important;
-        }
-
-        .ant-select-item:hover {
-          background: linear-gradient(
-            135deg,
-            #f8fafc 0%,
-            #f1f5f9 100%
-          ) !important;
-          border-color: #e2e8f0 !important;
-          transform: translateY(-1px) !important;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-        }
-
-        .ant-select-item-option-selected {
-          background: linear-gradient(
-            135deg,
-            #eff6ff 0%,
-            #dbeafe 100%
-          ) !important;
-          border-color: #3b82f6 !important;
-        }
-
-        .ant-select-item-option-selected .option-primary-text {
-          color: #1d4ed8 !important;
-          font-weight: 600 !important;
-        }
-
-        .dropdown-loader-container {
-          padding: 24px 20px !important;
-          display: flex !important;
-          justify-content: center !important;
-          align-items: center !important;
-          min-height: 80px !important;
-          background: #fafafa !important;
-          border-radius: 12px !important;
-          margin: 8px 4px !important;
-        }
-
-        .dropdown-no-results {
-          padding: 24px 20px !important;
-          text-align: center !important;
-          color: #6b7280 !important;
-          font-size: 14px !important;
-          background: #f9fafb !important;
-          border-radius: 12px !important;
-          margin: 8px 4px !important;
-          border: 1px dashed #d1d5db !important;
-        }
-
-        @media (max-width: 768px) {
-          .explore-header-location-search-dropdown.ant-select-dropdown {
-            position: fixed !important;
-            left: 2.5vw !important;
-            right: 2.5vw !important;
-            width: 95vw !important;
-            max-width: 95vw !important;
-            transform: none !important;
-            top: auto !important;
-            bottom: 20vh !important;
-            border-radius: 12px !important;
-            box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.2) !important;
-            max-height: 45vh !important;
-            overflow-y: auto !important;
-          }
-
-          .ant-picker-dropdown {
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            width: 95vw !important;
-            max-width: 400px !important;
-            position: fixed !important;
-            bottom: auto !important;
-            right: auto !important;
-            margin: 0 !important;
-          }
-
-          .ant-picker-panel-container {
-            width: 100% !important;
-            box-shadow: none !important;
-          }
-
-          .ant-picker-panel {
-            width: 100% !important;
-          }
-
-          .ant-picker-content,
-          .ant-picker-body {
-            width: 100% !important;
-          }
-        }
-      `}</style>
+      <BannerSearchDropdownStyles />
 
       {isMounted && isMobile && (
         <FilteredBackgroundImage>
@@ -1102,7 +1104,7 @@ const BannerSearch = () => {
                           width: "100%",
                           height: "25px",
                         }}
-                        popupClassName="explore-header-location-search-dropdown"
+                        popupClassName="banner-search-location-dropdown"
                         notFoundContent={
                           geocoding ? (
                             <div className="dropdown-loader-container">
@@ -1157,6 +1159,7 @@ const BannerSearch = () => {
                         value={datePickerValue}
                         allowClear={true}
                         inputReadOnly={isMobile}
+                        popupClassName="banner-search-datepicker"
                       />
                     </DatePickerInputArea>
                   </DatePickerWrapper>
