@@ -88,7 +88,12 @@ const BlogSidebar = ({
         </WidgetTitle>
         <TagsWidgetContainer>
           {tags.map((tag) => (
-            <TagLink>{tag}</TagLink>
+            <TagLink
+              key={tag}
+              href={`/blog/tag/${tag.toLowerCase().replace(/ /g, "-")}`}
+            >
+              {tag}
+            </TagLink>
           ))}
         </TagsWidgetContainer>
       </SidebarWidget>
@@ -101,10 +106,12 @@ const BlogSidebar = ({
         </WidgetTitle>
         {allCategories.map((cat) => (
           <RecentPostItem key={cat.slug}>
-            <h4>{cat.name}</h4>
-            <span>
-              {cat.post_count} {cat.post_count === 1 ? "post" : "posts"}
-            </span>
+            <Link href={`/blog/category/${cat.slug}`}>
+              <h4>{cat.name}</h4>
+              <span>
+                {cat.post_count} {cat.post_count === 1 ? "post" : "posts"}
+              </span>
+            </Link>
           </RecentPostItem>
         ))}
       </SidebarWidget>

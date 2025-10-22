@@ -61,7 +61,11 @@ const MetaDetails = styled.span`
 
 const PostHeader = ({ post }) => (
   <ArticleHeader>
-    {post.category && <PostCategory>{post.category.name}</PostCategory>}
+    {post.category && (
+      <PostCategory href={`/blog/category/${post.category.slug}`}>
+        {post.category.name}
+      </PostCategory>
+    )}
     <ArticleTitle>{post.title}</ArticleTitle>
     {post.author && (
       <PostMeta>

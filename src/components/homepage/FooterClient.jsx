@@ -374,7 +374,6 @@ const SocialLinks = styled.div`
 
 // --- MAIN COMPONENT ---
 export default function FooterClient({ categories = [] }) {
-  const today = new Date();
   const [activeTab, setActiveTab] = useState("locations");
   const [showAll, setShowAll] = useState(false);
 
@@ -597,9 +596,7 @@ export default function FooterClient({ categories = [] }) {
             </Social>
           </FooterGrid>
           <Trademark>
-            <StyledP>
-              © {today.getFullYear()} Classeasily. All rights reserved.
-            </StyledP>
+            <StyledP>© 2025 Classeasily. All rights reserved.</StyledP>
             <StyledP>
               <Link href="/terms-of-service">Terms of Service</Link> |{" "}
               <Link href="/privacy-policy">Privacy Policy</Link> |{" "}
