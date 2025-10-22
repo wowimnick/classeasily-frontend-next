@@ -3,7 +3,8 @@
 import { notFound } from "next/navigation";
 import Footer from "@/components/homepage/Footer";
 import CategoryPageClient from "../_components/CategoryPageClient";
-import ClientHeader from "@/components/layout/ClientHeader";
+import ExploreHeader from "@/components/explore/ExploreHeader";
+
 import {
   fetchBlogCategories,
   fetchBlogPostsByCategory,
@@ -85,7 +86,7 @@ export default async function CategoryBlogPage({ params }) {
         />
       )}
 
-      <ClientHeader showOptionsWrapper={false} />
+      <ExploreHeader showOptionsWrapper={false} />
       <CategoryPageClient posts={posts} category={category} />
       <Footer />
     </>

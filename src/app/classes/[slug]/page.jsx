@@ -10,7 +10,8 @@ import {
   fetchClassDetail,
   fetchBusinessDetail,
 } from "@/lib/server-data-fetchers"; // ADDED fetchBusinessDetail
-import ClientHeader from "@/components/layout/ClientHeader";
+import ExploreHeader from "@/components/explore/ExploreHeader";
+
 import Footer from "@/components/homepage/Footer.jsx";
 import ClassPageClient from "../_components/ClassPageClient";
 
@@ -286,7 +287,7 @@ export default async function ClassPage({ params }) {
     <div
       style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
     >
-      <ClientHeader showOptionsWrapper={false} />
+      <ExploreHeader showOptionsWrapper={false} />
       <main style={{ flex: 1 }}>
         <ClassPageClient
           classData={classData}

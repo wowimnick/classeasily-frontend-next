@@ -3,7 +3,8 @@
 import { notFound } from "next/navigation";
 import Footer from "@/components/homepage/Footer";
 import BlogPostClient from "./_components/BlogPostClient";
-import ClientHeader from "@/components/layout/ClientHeader";
+import ExploreHeader from "@/components/explore/ExploreHeader";
+
 import {
   fetchBlogPosts,
   fetchBlogPostBySlug,
@@ -126,7 +127,7 @@ export default async function BlogPostPage({ params }) {
         />
       )}
 
-      <ClientHeader showOptionsWrapper={false} />
+      <ExploreHeader showOptionsWrapper={false} />
       <BlogPostClient post={post} sidebarData={sidebarData} />
       <Footer />
     </>

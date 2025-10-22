@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import { copyrightPolicyContent } from "../_legalcomponents/legalPagesContent";
 import LegalContent from "../_legalcomponents/LegalContent";
-import ClientHeader from "@/components/layout/ClientHeader";
+import ExploreHeader from "@/components/explore/ExploreHeader";
+
 import { metadata } from "./metadata";
 
 export { metadata };
@@ -16,7 +17,7 @@ export default function CopyrightPolicyPage() {
   return (
     <>
       <Suspense fallback={<HeaderFallback />}>
-        <ClientHeader showOptionsWrapper={false} />
+        <ExploreHeader showOptionsWrapper={false} />
       </Suspense>
 
       <LegalContent content={copyrightPolicyContent} />

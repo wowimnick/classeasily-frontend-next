@@ -2,7 +2,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import ClientHeader from "@/components/layout/ClientHeader";
+import ExploreHeader from "@/components/explore/ExploreHeader";
 import IllustrationSvg from "@/assets/404.svg";
 import Footer from "@/components/homepage/Footer";
 
@@ -16,7 +16,7 @@ export default function NotFound() {
     <div
       style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
     >
-      <ClientHeader />
+      <ExploreHeader />
 
       <main
         style={{

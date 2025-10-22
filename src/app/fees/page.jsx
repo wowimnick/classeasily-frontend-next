@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { feeContent } from "../_legalcomponents/legalPagesContent";
 import LegalContent from "../_legalcomponents/LegalContent";
 import { metadata } from "./metadata";
-import ClientHeader from "@/components/layout/ClientHeader";
+import ExploreHeader from "@/components/explore/ExploreHeader";
 
 export { metadata };
 
@@ -17,7 +17,7 @@ export default function FeesPage() {
   return (
     <>
       <Suspense fallback={<HeaderFallback />}>
-        <ClientHeader showOptionsWrapper={false} />
+        <ExploreHeader showOptionsWrapper={false} />
       </Suspense>
 
       <LegalContent content={feeContent} />

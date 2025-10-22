@@ -2,7 +2,8 @@
 
 import Footer from "@/components/homepage/Footer";
 import BlogPageClient from "./_components/BlogPageClient";
-import ClientHeader from "@/components/layout/ClientHeader";
+import ExploreHeader from "@/components/explore/ExploreHeader";
+
 import {
   fetchBlogPosts,
   generateBlogStructuredData,
@@ -56,7 +57,7 @@ export default async function BlogPage() {
         />
       )}
 
-      <ClientHeader showOptionsWrapper={false} />
+      <ExploreHeader showOptionsWrapper={false} />
       <BlogPageClient posts={posts} />
       <Footer />
     </>
