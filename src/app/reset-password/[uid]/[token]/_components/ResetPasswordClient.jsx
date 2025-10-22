@@ -8,7 +8,7 @@ import axiosInstance from "@/lib/axiosInstance";
 import { API_ENDPOINTS } from "@/services/apiService";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { useAuthModal } from "@/context/AuthContext";
-import Footer from "@/components/homepage/Footer";
+import FooterClient from "@/components/homepage/FooterClient";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 
 const theme = {
@@ -371,7 +371,7 @@ export default function ResetPasswordClient({ uid, token }) {
         </ContentBox>
       </PageWrapper>
 
-      <Footer />
+      <FooterClient />
     </ConfigProvider>
   );
 }

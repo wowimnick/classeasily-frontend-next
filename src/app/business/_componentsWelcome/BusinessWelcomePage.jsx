@@ -62,7 +62,7 @@ const GradientCanvas = dynamic(() => import("@/components/Gradient"), {
 
 // Import components (adjust paths as needed)
 import Header from "@/components/layout/SharedMainClientHeader";
-import Footer from "@/components/homepage/Footer";
+import FooterClient from "@/components/homepage/FooterClient";
 import { LordIcon } from "@/services/ReactUtils";
 
 // --- Styled Components ---
@@ -1597,7 +1597,7 @@ const BusinessWelcomePage = () => {
         </FAQSection>
       </main>
 
-      <Footer />
+      <FooterClient />
     </PageWrapper>
   );
 };

@@ -5,7 +5,7 @@ import styled, { createGlobalStyle } from "styled-components";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic"; // Import dynamic
 import ExploreHeader from "@/components/explore/ExploreHeader.jsx";
-import Footer from "@/components/homepage/Footer.jsx";
+import FooterClient from "@/components/homepage/FooterClient";
 import BusinessHero from "./BusinessHero";
 import BusinessNavigation from "./BusinessNavigation";
 import ClassesTab from "./ClassesTab";
@@ -195,7 +195,7 @@ const BusinessPageClient = ({ initialData, slug }) => {
         )}
       </ContentArea>
 
-      <Footer />
+      <FooterClient />
     </BusinessPageWrapper>
   );
 };

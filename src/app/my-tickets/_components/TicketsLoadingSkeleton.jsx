@@ -5,10 +5,7 @@ import styled, { keyframes, ThemeProvider } from "styled-components";
 import { theme as globalTheme } from "@/components/theme";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import dynamic from "next/dynamic";
-
-const Footer = dynamic(() => import("@/components/homepage/Footer"), {
-  ssr: false,
-});
+import FooterClient from "@/components/homepage/FooterClient";
 
 const shimmer = keyframes`
   0% {
@@ -234,7 +231,7 @@ export function TicketsListLoadingSkeleton() {
             ))}
           </TicketList>
         </PageContainer>
-        <Footer />
+        <FooterClient />
       </PageWrapper>
     </ThemeProvider>
   );
@@ -468,7 +465,7 @@ export function TicketDetailLoadingSkeleton() {
             </AgentCard>
           </Sidebar>
         </DetailPageContainer>
-        <Footer />
+        <FooterClient />
       </PageWrapper>
     </ThemeProvider>
   );

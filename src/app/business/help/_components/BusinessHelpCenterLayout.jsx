@@ -12,8 +12,7 @@ import Link from "next/link";
 import { helpCenterData } from "@/components/common/_pages/docs/helpCenterData";
 import { ChevronRight, Home } from "lucide-react";
 import { LordIcon } from "@/services/ReactUtils";
-import Header from "@/components/header/Header";
-import Footer from "@/components/homepage/Footer";
+import FooterClient from "@/components/homepage/FooterClient";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 
 const PageWrapper = styled.div`
@@ -451,7 +450,7 @@ const BusinessHelpCenterLayout = ({ children, categorySlug, articleSlug }) => {
           </MainContent>
         </Container>
       </PageWrapper>
-      <Footer />
+      <FooterClient />
     </>
   );
 };

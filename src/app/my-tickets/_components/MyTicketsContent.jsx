@@ -4,8 +4,19 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { Typography, Button, Input, Space, Empty, ConfigProvider, Modal, Form, Radio, Select,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Typography,
+  Button,
+  Input,
+  Space,
+  Empty,
+  ConfigProvider,
+  Modal,
+  Form,
+  Radio,
+  Select,
+} from "antd";
+import message from "@/lib/message";
 import {
   Ticket as TicketIcon,
   PlusCircle,
@@ -23,11 +34,7 @@ import ExploreHeader from "@/components/explore/ExploreHeader";
 import { CustomerSupportTicketService } from "@/services/apiService";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { theme as globalTheme } from "@/components/theme";
-
-// Dynamically import Footer to avoid Date() prerender issues
-const Footer = dynamic(() => import("@/components/homepage/Footer"), {
-  ssr: false,
-});
+import FooterClient from "@/components/homepage/FooterClient";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -615,7 +622,7 @@ export default function MyTicketsContent() {
               renderTickets()
             )}
           </PageContainer>
-          <Footer />
+          <FooterClient />
         </PageWrapper>
 
         <StyledModal
@@ -656,7 +663,7 @@ export default function MyTicketsContent() {
               <Select
                 placeholder="Select the most relevant category"
                 style={{ borderRadius: "8px" }}
-      >
+              >
                 <Option value="account">Account Issues</Option>
                 <Option value="booking">Booking Problems</Option>
                 <Option value="payment">Payment Issues</Option>

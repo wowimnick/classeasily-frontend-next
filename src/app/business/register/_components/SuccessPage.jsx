@@ -4,14 +4,14 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
-import { Typography, Button } from 'antd';
-import message from '@/lib/message';
+import { Typography, Button } from "antd";
+import message from "@/lib/message";
 import { ArrowRight, CheckCircle, Layout, Users } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useAuth } from "@/lib/auth-client";
 import ExploreHeader from "@/components/explore/ExploreHeader";
-import Footer from "@/components/homepage/Footer";
+import FooterClient from "@/components/homepage/FooterClient";
 import { LordIcon } from "@/services/ReactUtils";
 
 const { Title, Text } = Typography;
@@ -445,7 +445,7 @@ const SuccessPage = ({ navigate }) => {
         </SuccessContainer>
       </ContentContainer>
 
-      <Footer />
+      <FooterClient />
     </Container>
   );
 };

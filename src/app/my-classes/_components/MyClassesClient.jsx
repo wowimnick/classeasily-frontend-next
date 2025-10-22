@@ -9,8 +9,8 @@ import React, {
 } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
-import { Typography, Empty, ConfigProvider, Alert, Spin } from 'antd';
-import message from '@/lib/message';
+import { Typography, Empty, ConfigProvider, Alert, Spin } from "antd";
+import message from "@/lib/message";
 import {
   Clock,
   CalendarDays,
@@ -29,7 +29,7 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 import CancellationInfoModal from "./CancellationInfoModal";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import BookingsListSkeleton from "./BookingsListSkeleton";
-import Footer from "@/components/homepage/Footer";
+import FooterClient from "@/components/homepage/FooterClient";
 import BookingListItem from "./BookingClassCard";
 import ReviewModal from "./ReviewModal";
 import { bookingService, reviewService } from "@/services/apiService";
@@ -846,7 +846,7 @@ const MyScheduleAndBookings = () => {
         isCancelling={isProcessingCancellation}
       />
 
-      <Footer />
+      <FooterClient />
     </ConfigProvider>
   );
 };

@@ -23,19 +23,24 @@ import {
   AlertTriangle,
   Check,
 } from "lucide-react";
-import { Spin, Card, Input, Button, ConfigProvider, Avatar, Tag, Empty, Divider,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Spin,
+  Card,
+  Input,
+  Button,
+  ConfigProvider,
+  Avatar,
+  Tag,
+  Empty,
+  Divider,
+} from "antd";
+import message from "@/lib/message";
 import { CustomerSupportTicketService } from "@/services/apiService";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import dynamic from "next/dynamic";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { theme as globalTheme } from "@/components/theme";
 import { TicketDetailLoadingSkeleton } from "../_components/TicketsLoadingSkeleton";
-
-// Dynamically import Footer to avoid Date() prerender issues
-const Footer = dynamic(() => import("@/components/homepage/Footer"), {
-  ssr: false,
-});
+import FooterClient from "@/components/homepage/FooterClient";
 
 // Keep all your styled components exactly as they are...
 const PageWrapper = styled.div`
@@ -614,7 +619,7 @@ function TicketDetailContent() {
           <PageContentContainer>
             <Empty description="Ticket not found." />
           </PageContentContainer>
-          <Footer />
+          <FooterClient />
         </PageWrapper>
       </ThemeProvider>
     );
@@ -775,7 +780,7 @@ function TicketDetailContent() {
               </AgentCard>
             </Sidebar>
           </PageContentContainer>
-          <Footer />
+          <FooterClient />
         </PageWrapper>
       </ConfigProvider>
     </ThemeProvider>
