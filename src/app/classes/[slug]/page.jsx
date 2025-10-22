@@ -1,11 +1,15 @@
 // app/classes/[slug]/page.jsx
+// UPDATED: Use fetchBusinessDetail from server-data-fetchers instead of businessService
+
 import React from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Breadcrumb } from "antd";
 
-import { fetchClassDetail } from "@/lib/server-data-fetchers";
-import { businessService } from "@/services/apiService.js";
+import {
+  fetchClassDetail,
+  fetchBusinessDetail,
+} from "@/lib/server-data-fetchers"; // ADDED fetchBusinessDetail
 import ClientHeader from "@/components/layout/ClientHeader";
 import Footer from "@/components/homepage/Footer.jsx";
 import ClassPageClient from "../_components/ClassPageClient";
@@ -71,7 +75,7 @@ export async function generateStaticParams() {
   }
 }
 
-// Fetch class data - USE THE TAGGED FETCH FROM server-data-fetchers
+// UPDATED: Fetch class data with proper tagged business fetch
 async function getClassData(slug) {
   console.log(`=== Fetching data for slug: ${slug} ===`);
 
@@ -92,15 +96,18 @@ async function getClassData(slug) {
     const classData = classResult.data;
     console.log(`✅ Class data fetched: ${classData.classId}`);
 
+    // UPDATED: Use server-side fetcher with proper cache tags
     let businessResult = null;
     if (classData.business_slug) {
       console.log(`Fetching business: ${classData.business_slug}`);
-      const res = await businessService.fetchPublicBusinessDetail(
+      const businessFetchResult = await fetchBusinessDetail(
         classData.business_slug
       );
-      if (res.success && res.data) {
-        businessResult = res.data;
+      if (businessFetchResult.success && businessFetchResult.data) {
+        businessResult = businessFetchResult.data;
         console.log(`✅ Business data fetched`);
+      } else {
+        console.warn(`Business not found or error: ${classData.business_slug}`);
       }
     }
 
@@ -151,6 +158,7 @@ async function getClassData(slug) {
   }
 }
 
+// Rest of the file remains the same...
 export async function generateMetadata({ params }) {
   const resolvedParams = await Promise.resolve(params);
   const { classData, businessData } = await getClassData(resolvedParams.slug);

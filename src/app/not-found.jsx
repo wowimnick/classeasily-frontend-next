@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import ClientHeader from "@/components/layout/ClientHeader";
 import IllustrationSvg from "@/assets/404.svg";
-import FooterClient from "@/components/homepage/FooterClient";
+import Footer from "@/components/homepage/Footer";
 
 export const metadata = {
   title: "404 - Page Not Found",
@@ -115,7 +115,7 @@ export default function NotFound() {
       </main>
 
       <Suspense>
-        <FooterClient />
+        <Footer />
       </Suspense>
     </div>
   );

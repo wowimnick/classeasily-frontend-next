@@ -1,3 +1,5 @@
+import '@ant-design/v5-patch-for-react-19';
+
 import { proximaSoft } from './fonts.js';
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/next"

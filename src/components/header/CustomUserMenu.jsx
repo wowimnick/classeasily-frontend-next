@@ -9,6 +9,7 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 import { signOutFull } from "@/lib/auth-client";
 import { getRoleDisplayName } from "@/services/apiService.js";
 import { LordIcon } from "@/services/ReactUtils.jsx";
+import message from "@/lib/message";
 import FavoritesModal from "@/components/MyFavoritesPage";
 import { ChevronRight, LogOutIcon, X } from "lucide-react";
 

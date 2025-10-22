@@ -3,8 +3,17 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import styled from "styled-components";
-import { Modal, Form, Input, Button, Steps, ConfigProvider, Alert, Progress,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Modal,
+  Form,
+  Input,
+  Button,
+  Steps,
+  ConfigProvider,
+  Alert,
+  Progress,
+} from "antd";
+import message from "@/lib/message";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, Phone, ArrowLeft, ArrowRight } from "lucide-react";
 import ReactGA from "react-ga4";

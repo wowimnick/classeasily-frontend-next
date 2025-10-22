@@ -989,6 +989,43 @@ export async function preloadHomepageData() {
 }
 
 /**
+ * Fetch business categories for footer
+ * Endpoint: /business/all-categories/
+ */
+export async function fetchBusinessCategories() {
+  try {
+    const response = await fetch(`${BASE_URL}/business/all-categories/`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'force-cache',
+      next: { 
+        revalidate: 86400, // 24 hours
+        tags: ['business-categories']
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    return {
+      success: true,
+      data: data,
+    };
+  } catch (error) {
+    console.error('Error fetching business categories:', error);
+    return {
+      success: false,
+      data: [],
+    };
+  }
+}
+
+/**
  * Revalidate cache tags (Next.js compatible)
  * Updated for Next.js 15+ API changes
  */
