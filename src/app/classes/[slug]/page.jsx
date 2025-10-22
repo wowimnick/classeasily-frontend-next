@@ -123,7 +123,7 @@ async function getClassData(slug) {
             headers: { "Content-Type": "application/json" },
             cache: "force-cache",
             next: {
-              revalidate: 1800,
+              revalidate: 86400,
               tags: ["reviews", `class-${slug}-reviews`],
             },
           }

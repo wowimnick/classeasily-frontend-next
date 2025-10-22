@@ -61,16 +61,16 @@ export async function searchClasses(params = {}) {
     const cacheTags = generateSearchCacheTags(params);
     
     // Determine revalidation time based on search type
-    let revalidateTime = 3600; // 1 hour default
+    let revalidateTime = 86400; // 1 hour default
     
     // More frequent updates for location-based searches
     if (params.lat && params.lng) {
-      revalidateTime = 1800; // 30 minutes
+      revalidateTime = 86400; // 30 minutes
     }
     
     // Less frequent for category-only searches
     if (params.category_key && !params.lat && !params.lng) {
-      revalidateTime = 7200; // 2 hours
+      revalidateTime = 86400; // 2 hours
     }
 
     console.log(`[Server] Fetching classes with cache tags:`, cacheTags);
@@ -193,7 +193,7 @@ export async function fetchBlogPostBySlug(slug) {
       },
       cache: 'force-cache',
       next: { 
-        revalidate: 3600,
+        revalidate: 86400,
         tags: ['blog-posts', `blog-post-${slug}`]
       }
     });
@@ -233,7 +233,7 @@ export async function fetchBlogCategories() {
       },
       cache: 'force-cache',
       next: { 
-        revalidate: 7200,
+        revalidate: 86400,
         tags: ['blog-categories']
       }
     });
@@ -270,7 +270,7 @@ export async function fetchRecentBlogPosts(limit = 4) {
       },
       cache: 'force-cache',
       next: { 
-        revalidate: 3600,
+        revalidate: 86400,
         tags: ['blog-recent']
       }
     });
@@ -309,7 +309,7 @@ export async function fetchBlogPostsByCategory(categorySlug, pageSize = 50) {
         },
         cache: 'force-cache',
         next: { 
-          revalidate: 3600,
+          revalidate: 86400,
           tags: ['blog-posts', `category-${categorySlug}`]
         }
       }
@@ -425,92 +425,6 @@ export async function fetchHomepageCategories() {
 }
 
 /**
- * Fetch featured classes for SEO
- * Endpoint: /classes/?limit=X
- */
-export async function fetchFeaturedClasses(limit = 12) {
-  try {
-    const response = await fetch(`${BASE_URL}/classes/?limit=${limit}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      cache: 'force-cache',
-      next: { 
-        revalidate: 1800,
-        tags: ['classes', 'featured']
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    return {
-      classes: data?.results || [],
-      total: data?.count || 0,
-    };
-  } catch (error) {
-    console.error('Error fetching featured classes:', error);
-    return {
-      classes: [],
-      total: 0,
-    };
-  }
-}
-
-/**
- * Fetch classes by location for SEO
- * Endpoint: /classes/ with query params
- */
-export async function fetchClassesByLocation(lat, lng, radius = 50, limit = 20) {
-  try {
-    const params = new URLSearchParams({
-      lat: lat.toString(),
-      lng: lng.toString(),
-      radius: radius.toString(),
-      limit: limit.toString(),
-    });
-
-    const latRounded = Math.round(lat * 10) / 10;
-    const lngRounded = Math.round(lng * 10) / 10;
-
-    const response = await fetch(`${BASE_URL}/classes/?${params.toString()}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      cache: 'force-cache',
-      next: { 
-        revalidate: 3600,
-        tags: ['classes', 'location', `location-${latRounded}-${lngRounded}`]
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    return {
-      success: true,
-      classes: data?.results || [],
-      total: data?.count || 0,
-    };
-  } catch (error) {
-    console.error('Error fetching classes by location:', error);
-    return {
-      success: false,
-      classes: [],
-      total: 0,
-    };
-  }
-}
-
-/**
  * Fetch class detail by ID or slug
  * Endpoint: /classes/{classId}/
  */
@@ -523,7 +437,7 @@ export async function fetchClassDetail(classIdOrSlug) {
       },
       cache: 'force-cache',
       next: { 
-        revalidate: 1800,
+        revalidate: 86400,
         tags: ['classes', `class-${classIdOrSlug}`]
       }
     });
@@ -565,7 +479,7 @@ export async function fetchPublicBusinesses() {
       },
       cache: 'force-cache',
       next: { 
-        revalidate: 7200, // 2 hours
+        revalidate: 86400, // 2 hours
         tags: ['businesses', 'public-businesses']
       }
     });
@@ -604,7 +518,7 @@ export async function fetchBusinessDetail(slug) {
       },
       cache: 'force-cache',
       next: { 
-        revalidate: 3600, // 1 hour
+        revalidate: 86400, // 1 day
         tags: ['businesses', `business-${slug}`]
       }
     });
@@ -657,7 +571,7 @@ export async function fetchBusinessReviews(slug, page = 1, pageSize = 10) {
         },
         cache: 'force-cache',
         next: { 
-          revalidate: 1800, // 30 minutes - reviews update more frequently
+          revalidate: 86400, 
           tags: ['reviews', `business-${slug}-reviews`, `reviews-page-${page}`]
         }
       }
@@ -987,7 +901,7 @@ export async function preloadHomepageData() {
     };
   }
 }
-
+5
 /**
  * Fetch business categories for footer
  * Endpoint: /business/all-categories/
