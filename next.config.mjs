@@ -63,7 +63,7 @@ const nextConfig = {
 
   async headers() {
     return [
-      // Global security headers
+      // Global security headers - MUST BE FIRST
       {
         source: '/:path*',
         headers: [
@@ -86,7 +86,7 @@ const nextConfig = {
         ],
       },
       
-      // Dynamic SEO content - NO CACHING (matches your CloudFront "Managed-CachingDisabled")
+      // Dynamic SEO content - NO CACHING
       {
         source: '/sitemap.xml',
         headers: [
@@ -97,65 +97,7 @@ const nextConfig = {
         ],
       },
       {
-        source: '/sitemap-:path*.xml',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-        ],
-      },
-      {
-        source: '/robots.txt',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-        ],
-      },
-      
-      // Static assets - 1 YEAR CACHE, IMMUTABLE (matches your CloudFront setup)
-      {
-        source: '/assets/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/widget/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/public/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      
-      // Dynamic SEO content - NO CACHING (matches your CloudFront "Managed-CachingDisabled")
-      {
-        source: '/sitemap.xml',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-        ],
-      },
-      {
-        source: '/sitemap-:path*.xml',
+        source: '/sitemap-:number.xml',  // Use :number instead of :path*
         headers: [
           {
             key: 'Cache-Control',
