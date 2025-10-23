@@ -10,8 +10,32 @@ import React, {
 import { useRouter } from "next/navigation";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
-import { Table, Card, Tabs, Badge, Tag, Space, Input, Select, Button, Modal, Form, ConfigProvider, Avatar, Dropdown, Menu, Grid, Empty, List, Drawer, Divider, DatePicker, Typography, Skeleton,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Table,
+  Card,
+  Tabs,
+  Badge,
+  Tag,
+  Space,
+  Input,
+  Select,
+  Button,
+  Modal,
+  Form,
+  ConfigProvider,
+  Avatar,
+  Dropdown,
+  Menu,
+  Grid,
+  Empty,
+  List,
+  Drawer,
+  Divider,
+  DatePicker,
+  Typography,
+  Skeleton,
+} from "antd";
+import message from "@/lib/message";
 import {
   Users,
   Shield,
@@ -152,7 +176,6 @@ const StatCard = styled(Card)`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   transition: all 0.2s ease;
-  min-height: 160px;
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);

@@ -186,7 +186,6 @@ const StatCard = styled(Card)`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   transition: all 0.2s ease;
-  min-height: 160px;
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -751,7 +750,9 @@ const PayoutsList = () => {
     pageSize: 10,
     total: 0,
   });
-  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" ? window.innerWidth <= 768 : false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth <= 768 : false
+  );
   const abortControllerRef = useRef(null);
   const searchInputRef = useRef(null);
 

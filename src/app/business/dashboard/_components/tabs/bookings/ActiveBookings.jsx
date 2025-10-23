@@ -2,8 +2,23 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import styled from "styled-components";
-import { Input, Button, DatePicker, Card, Typography, ConfigProvider, Spin, Select, Badge, Space, Grid, Skeleton, Empty, Divider,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Input,
+  Button,
+  DatePicker,
+  Card,
+  Typography,
+  ConfigProvider,
+  Spin,
+  Select,
+  Badge,
+  Space,
+  Grid,
+  Skeleton,
+  Empty,
+  Divider,
+} from "antd";
+import message from "@/lib/message";
 import {
   Search,
   RefreshCw,
@@ -115,7 +130,6 @@ const StatCard = styled(Card)`
   border: 1px solid ${colors.border};
   margin-bottom: 0;
   transition: transform 0.2s ease;
-  min-height: 160px;
 
   &:hover {
     transform: translateY(-2px);

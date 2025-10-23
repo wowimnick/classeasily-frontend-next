@@ -5,8 +5,26 @@ import ReactDOM from "react-dom";
 import styled, { ThemeProvider } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
-import { Table, Card, Button, Modal, Form, Input, Select, ConfigProvider, Tag, Space, Timeline, Divider, Grid, Empty, Avatar, Typography, Skeleton,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Table,
+  Card,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Select,
+  ConfigProvider,
+  Tag,
+  Space,
+  Timeline,
+  Divider,
+  Grid,
+  Empty,
+  Avatar,
+  Typography,
+  Skeleton,
+} from "antd";
+import message from "@/lib/message";
 import {
   Activity,
   User,
@@ -152,7 +170,6 @@ const StatCard = styled(Card)`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   transition: all 0.2s ease;
-  min-height: 160px;
 
   &:hover {
     transform: translateY(-2px);

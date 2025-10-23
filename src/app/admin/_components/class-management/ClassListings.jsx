@@ -4,8 +4,34 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
-import { Table, Input, Select, Button, ConfigProvider, Avatar, Dropdown, Menu, Modal, Form, Empty, Badge, Alert, Grid, Checkbox, Typography, Spin, Tooltip, Tag, Space, Divider, Card, Skeleton, Tabs, Rate,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Table,
+  Input,
+  Select,
+  Button,
+  ConfigProvider,
+  Avatar,
+  Dropdown,
+  Menu,
+  Modal,
+  Form,
+  Empty,
+  Badge,
+  Alert,
+  Grid,
+  Checkbox,
+  Typography,
+  Spin,
+  Tooltip,
+  Tag,
+  Space,
+  Divider,
+  Card,
+  Skeleton,
+  Tabs,
+  Rate,
+} from "antd";
+import message from "@/lib/message";
 import {
   Search,
   MoreHorizontal,
@@ -170,7 +196,6 @@ const StatCard = styled(Card)`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   transition: all 0.2s ease;
-  min-height: 160px;
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);

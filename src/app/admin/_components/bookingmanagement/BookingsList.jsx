@@ -8,8 +8,30 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import NumberFlow from "@number-flow/react";
-import { Table, Card, Input, Select, Button, ConfigProvider, Avatar, Space, Modal, Grid, Empty, DatePicker, Form, Divider, Typography, Skeleton, List, Tooltip, Tag, InputNumber, Alert,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Table,
+  Card,
+  Input,
+  Select,
+  Button,
+  ConfigProvider,
+  Avatar,
+  Space,
+  Modal,
+  Grid,
+  Empty,
+  DatePicker,
+  Form,
+  Divider,
+  Typography,
+  Skeleton,
+  List,
+  Tooltip,
+  Tag,
+  InputNumber,
+  Alert,
+} from "antd";
+import message from "@/lib/message";
 import {
   Search,
   Eye,
@@ -194,7 +216,6 @@ const StatCard = styled(Card)`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   transition: all 0.2s ease;
-  min-height: 160px;
 
   &:hover {
     transform: translateY(-2px);

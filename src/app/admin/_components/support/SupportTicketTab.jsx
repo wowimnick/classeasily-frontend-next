@@ -4,8 +4,25 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
-import { Table, Card, Input, Select, Button, ConfigProvider, Avatar, Space, Grid, Empty, Badge, Divider, Typography, Skeleton, Tooltip, Tag,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Table,
+  Card,
+  Input,
+  Select,
+  Button,
+  ConfigProvider,
+  Avatar,
+  Space,
+  Grid,
+  Empty,
+  Badge,
+  Divider,
+  Typography,
+  Skeleton,
+  Tooltip,
+  Tag,
+} from "antd";
+import message from "@/lib/message";
 import {
   Search,
   Eye,
@@ -136,7 +153,6 @@ const StatCard = styled(Card)`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   transition: all 0.2s ease;
-  min-height: 160px;
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);

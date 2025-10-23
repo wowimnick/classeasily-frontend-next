@@ -69,9 +69,6 @@ const ToastItem = styled.div`
   animation: ${(props) => (props.$isExiting ? slideOut : slideIn)} 0.3s ease;
   pointer-events: auto;
   max-width: 500px;
-  min-width: fit-content;
-  width: auto;
-  white-space: nowrap;
 
   .anticon {
     font-size: 16px;

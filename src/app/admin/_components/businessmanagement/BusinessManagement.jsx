@@ -6,8 +6,28 @@ import ReactDOM from "react-dom";
 import styled, { ThemeProvider } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
-import { Table, Card, Select, Button, Form, Input, ConfigProvider, Avatar, Tag, Space, Grid, Empty, Divider, Radio, Checkbox, Typography, Dropdown, Skeleton, Popconfirm,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Table,
+  Card,
+  Select,
+  Button,
+  Form,
+  Input,
+  ConfigProvider,
+  Avatar,
+  Tag,
+  Space,
+  Grid,
+  Empty,
+  Divider,
+  Radio,
+  Checkbox,
+  Typography,
+  Dropdown,
+  Skeleton,
+  Popconfirm,
+} from "antd";
+import message from "@/lib/message";
 import {
   Briefcase,
   MapPin,
@@ -178,7 +198,6 @@ const StatCard = styled(Card)`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   transition: all 0.2s ease;
-  min-height: 160px;
 
   &:hover {
     transform: translateY(-2px);

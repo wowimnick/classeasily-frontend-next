@@ -120,19 +120,7 @@ export default function RootLayout({ children }) {
         <SpeedInsights />
         <Analytics />
         
-        <Script
-          id="gtm-script"
-          src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
-          strategy="lazyOnload"
-        />
-        <Script id="gtm-config" strategy="lazyOnload">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');
-          `}
-        </Script>
+        {/* GA4 loading removed - now handled by AnalyticsProvider for better performance */}
         
         <Script src="https://cdn.lordicon.com/lordicon.js" strategy="lazyOnload" />
 

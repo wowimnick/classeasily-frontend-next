@@ -11,8 +11,20 @@ import {
   BarChart2,
   PieChart as PieIcon,
 } from "lucide-react";
-import { DatePicker, Typography, ConfigProvider, Card, Select, Empty, Skeleton, Row, Col, Divider, Grid,  } from 'antd';
-import message from '@/lib/message';
+import {
+  DatePicker,
+  Typography,
+  ConfigProvider,
+  Card,
+  Select,
+  Empty,
+  Skeleton,
+  Row,
+  Col,
+  Divider,
+  Grid,
+} from "antd";
+import message from "@/lib/message";
 import {
   Bar,
   XAxis,
@@ -172,7 +184,6 @@ const StatCard = styled(Card)`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   transition: all 0.2s ease;
-  min-height: 160px;
 
   &:hover {
     transform: translateY(-2px);

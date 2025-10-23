@@ -351,7 +351,7 @@ const SkeletonMapButton = styled(SkeletonBase)`
 export function ClassesContentSkeleton() {
   return (
     <SkeletonClassGrid>
-      {[...Array(6)].map((_, i) => (
+      {[...Array(12)].map((_, i) => (
         <SkeletonClassCard key={i}>
           <SkeletonCardImageContainer>
             <SkeletonCardImage />

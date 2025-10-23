@@ -28,8 +28,19 @@ import {
   TrendingDown,
   Download,
 } from "lucide-react";
-import { Tabs, Card, Progress, Radio, ConfigProvider, Grid, Button, Divider, Typography, Skeleton,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Tabs,
+  Card,
+  Progress,
+  Radio,
+  ConfigProvider,
+  Grid,
+  Button,
+  Divider,
+  Typography,
+  Skeleton,
+} from "antd";
+import message from "@/lib/message";
 import NumberFlow from "@number-flow/react";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import RequestAnalysisTab from "./RequestAnalytics";
@@ -162,7 +173,6 @@ const StatCard = styled(Card)`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   transition: all 0.2s ease;
-  min-height: 160px;
   cursor: ${(props) => (props.$isClickable ? "pointer" : "default")};
 
   &:hover {

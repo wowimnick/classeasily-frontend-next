@@ -3,8 +3,20 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import styled from "styled-components";
 import { Drawer } from "vaul";
-import { Card, Typography, ConfigProvider, Skeleton, Table, Tooltip, Button, Divider, Space, Grid, List,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Card,
+  Typography,
+  ConfigProvider,
+  Skeleton,
+  Table,
+  Tooltip,
+  Button,
+  Divider,
+  Space,
+  Grid,
+  List,
+} from "antd";
+import message from "@/lib/message";
 import {
   Landmark,
   Wallet,
@@ -264,7 +276,6 @@ const StatCard = styled(Card)`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   transition: all 0.2s ease;
-  min-height: 160px;
 
   &:hover {
     transform: translateY(-2px);
