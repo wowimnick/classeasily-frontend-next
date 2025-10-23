@@ -24,22 +24,22 @@ const ToastContext = createContext(null);
 // Animations
 const slideIn = keyframes`
   from {
-    transform: translate(-50%, -100%);
+    transform: translateY(-100%);
     opacity: 0;
   }
   to {
-    transform: translate(-50%, 0);
+    transform: translateY(0);
     opacity: 1;
   }
 `;
 
 const slideOut = keyframes`
   from {
-    transform: translate(-50%, 0);
+    transform: translateY(0);
     opacity: 1;
   }
   to {
-    transform: translate(-50%, -100%);
+    transform: translateY(-100%);
     opacity: 0;
   }
 `;
@@ -69,6 +69,9 @@ const ToastItem = styled.div`
   animation: ${(props) => (props.$isExiting ? slideOut : slideIn)} 0.3s ease;
   pointer-events: auto;
   max-width: 500px;
+  min-width: fit-content;
+  width: auto;
+  white-space: nowrap;
 
   .anticon {
     font-size: 16px;
