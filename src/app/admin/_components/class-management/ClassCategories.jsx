@@ -9,8 +9,30 @@ import {
   createContext,
 } from "react";
 import styled, { ThemeProvider } from "styled-components";
-import { Table, Card, Input, Button, ConfigProvider, Tag, Space, Modal, Form, Divider, Empty, Typography, Tooltip, ColorPicker, Grid, Popconfirm, Spin, Skeleton, Select, Switch, Upload,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Table,
+  Card,
+  Input,
+  Button,
+  ConfigProvider,
+  Tag,
+  Space,
+  Modal,
+  Form,
+  Divider,
+  Empty,
+  Typography,
+  Tooltip,
+  ColorPicker,
+  Grid,
+  Popconfirm,
+  Spin,
+  Skeleton,
+  Select,
+  Switch,
+  Upload,
+} from "antd";
+import message from "@/lib/message";
 import * as allIcons from "lucide-react";
 import { theme as antdComponentTheme } from "@/components/theme";
 import {
@@ -331,7 +353,6 @@ const SubcategoryItem = styled.div`
   padding: 2px 8px;
   font-size: 13px;
   font-weight: 500;
-  gap: 6px;
   transition: all 0.2s ease-in-out;
 
   .action-icon {
@@ -726,6 +747,23 @@ const ClassCategories = () => {
     setActionLoading(false);
   };
 
+  // Direct delete handlers for Popconfirm
+  const confirmDeleteCategory = (cat) => {
+    if (cat.class_count > 0) {
+      setReassignmentData({ type: "category", target: cat, parent: null });
+    } else {
+      handleDeleteCategory(cat.id);
+    }
+  };
+
+  const confirmDeleteSubcategory = (sub, cat) => {
+    if (sub.class_count > 0) {
+      setReassignmentData({ type: "subcategory", target: sub, parent: cat });
+    } else {
+      handleDeleteSubcategory(cat.id, sub.id);
+    }
+  };
+
   const handleSaveCategory = async () => {
     try {
       const values = await editForm.validateFields();
@@ -1108,22 +1146,33 @@ const ClassCategories = () => {
                   <span>
                     {s.name} ({s.class_count})
                   </span>
-                  <Tooltip title="Edit">
-                    <PenLine
-                      size={12}
-                      className="action-icon"
-                      onClick={() => openEditSubcategoryModal(s, cat)}
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<PenLine size={12} />}
+                    onClick={() => openEditSubcategoryModal(s, cat)}
+                    style={{ padding: 0, height: "auto", minWidth: "auto" }}
+                  />
+                  <Popconfirm
+                    title="Delete subcategory?"
+                    description={`Are you sure you want to delete "${s.name}"?${
+                      s.class_count > 0
+                        ? " Classes will need to be reassigned."
+                        : ""
+                    }`}
+                    onConfirm={() => confirmDeleteSubcategory(s, cat)}
+                    okText="Delete"
+                    cancelText="Cancel"
+                    okButtonProps={{ danger: true }}
+                  >
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      icon={<Trash2 size={12} />}
+                      style={{ padding: 0, height: "auto", minWidth: "auto" }}
                     />
-                  </Tooltip>
-                  <Tooltip title="Delete">
-                    <Trash2
-                      size={12}
-                      className="action-icon"
-                      onClick={() =>
-                        handleInitiateDelete(s, "subcategory", cat)
-                      }
-                    />
-                  </Tooltip>
+                  </Popconfirm>
                 </SubcategoryItem>
               ))
             ) : (
@@ -1158,14 +1207,20 @@ const ClassCategories = () => {
           >
             Edit
           </Button>
-          <Button
-            danger
-            icon={<Trash2 size={14} />}
-            onClick={() => handleInitiateDelete(cat, "category")}
-            size="middle"
+          <Popconfirm
+            title="Delete category?"
+            description={`Are you sure you want to delete "${cat.name}"?${
+              cat.class_count > 0 ? " Classes will need to be reassigned." : ""
+            }`}
+            onConfirm={() => confirmDeleteCategory(cat)}
+            okText="Delete"
+            cancelText="Cancel"
+            okButtonProps={{ danger: true }}
           >
-            Delete
-          </Button>
+            <Button danger icon={<Trash2 size={14} />} size="middle">
+              Delete
+            </Button>
+          </Popconfirm>
         </Space>
       ),
     },
@@ -1218,22 +1273,33 @@ const ClassCategories = () => {
                   <span>
                     {s.name} ({s.class_count})
                   </span>
-                  <Tooltip title="Edit">
-                    <PenLine
-                      size={12}
-                      className="action-icon"
-                      onClick={() => openEditSubcategoryModal(s, cat)}
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<PenLine size={12} />}
+                    onClick={() => openEditSubcategoryModal(s, cat)}
+                    style={{ padding: 0, height: "auto", minWidth: "auto" }}
+                  />
+                  <Popconfirm
+                    title="Delete subcategory?"
+                    description={`Are you sure you want to delete "${s.name}"?${
+                      s.class_count > 0
+                        ? " Classes will need to be reassigned."
+                        : ""
+                    }`}
+                    onConfirm={() => confirmDeleteSubcategory(s, cat)}
+                    okText="Delete"
+                    cancelText="Cancel"
+                    okButtonProps={{ danger: true }}
+                  >
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      icon={<Trash2 size={12} />}
+                      style={{ padding: 0, height: "auto", minWidth: "auto" }}
                     />
-                  </Tooltip>
-                  <Tooltip title="Delete">
-                    <Trash2
-                      size={12}
-                      className="action-icon"
-                      onClick={() =>
-                        handleInitiateDelete(s, "subcategory", cat)
-                      }
-                    />
-                  </Tooltip>
+                  </Popconfirm>
                 </SubcategoryItem>
               ))}
             </div>
@@ -1254,14 +1320,20 @@ const ClassCategories = () => {
           >
             Edit
           </Button>
-          <Button
-            danger
-            icon={<Trash2 size={14} />}
-            onClick={() => handleInitiateDelete(cat, "category")}
-            size="small"
+          <Popconfirm
+            title="Delete category?"
+            description={`Are you sure you want to delete "${cat.name}"?${
+              cat.class_count > 0 ? " Classes will need to be reassigned." : ""
+            }`}
+            onConfirm={() => confirmDeleteCategory(cat)}
+            okText="Delete"
+            cancelText="Cancel"
+            okButtonProps={{ danger: true }}
           >
-            Delete
-          </Button>
+            <Button danger icon={<Trash2 size={14} />} size="small">
+              Delete
+            </Button>
+          </Popconfirm>
         </CategoryCardFooter>
       </CategoryCard>
     );

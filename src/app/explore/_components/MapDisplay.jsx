@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, useMap, Marker, Popup } from "react-leaflet";
 import { useRouter } from "next/navigation";
 import styled, { createGlobalStyle } from "styled-components";
@@ -296,42 +296,82 @@ const truncateText = (text, maxLength) => {
 
 function ChangeView({ bounds }) {
   const map = useMap();
+  const previousBoundsRef = useRef(null);
+
   useEffect(() => {
+    // Don't do anything if map is not ready
+    if (!map || !map._loaded) {
+      return;
+    }
+
+    // Don't update if bounds haven't changed
+    const boundsKey = bounds
+      ? `${bounds.sw.lat},${bounds.sw.lng},${bounds.ne.lat},${bounds.ne.lng}`
+      : null;
+
+    if (boundsKey === previousBoundsRef.current) {
+      return;
+    }
+
+    previousBoundsRef.current = boundsKey;
+
     if (bounds && bounds.sw && bounds.ne) {
       if (bounds.sw.lat !== bounds.ne.lat || bounds.sw.lng !== bounds.ne.lng) {
         try {
-          map.fitBounds(
-            [
-              [bounds.sw.lat, bounds.sw.lng],
-              [bounds.ne.lat, bounds.ne.lng],
-            ],
-            { padding: [50, 50] }
-          );
+          // Use requestAnimationFrame to ensure DOM is ready
+          requestAnimationFrame(() => {
+            if (map && map._loaded) {
+              map.fitBounds(
+                [
+                  [bounds.sw.lat, bounds.sw.lng],
+                  [bounds.ne.lat, bounds.ne.lng],
+                ],
+                { padding: [50, 50], animate: false }
+              );
+            }
+          });
         } catch (error) {
-          console.error("Error fitting bounds:", error, bounds);
+          console.error("Error fitting bounds:", error);
         }
       } else if (bounds.sw.lat && bounds.sw.lng) {
-        map.setView([bounds.sw.lat, bounds.sw.lng], 14);
+        try {
+          requestAnimationFrame(() => {
+            if (map && map._loaded) {
+              map.setView([bounds.sw.lat, bounds.sw.lng], 14, {
+                animate: false,
+              });
+            }
+          });
+        } catch (error) {
+          console.error("Error setting view:", error);
+        }
       }
     }
   }, [bounds, map]);
+
   return null;
 }
 
 function InvalidateSizeOnShow({ isVisible }) {
   const map = useMap();
+
   useEffect(() => {
     if (
       isVisible &&
+      map &&
+      map._loaded &&
       typeof window !== "undefined" &&
       window.innerWidth <= 1048
     ) {
       const timer = setTimeout(() => {
-        map.invalidateSize();
+        if (map && map._loaded) {
+          map.invalidateSize();
+        }
       }, 150);
       return () => clearTimeout(timer);
     }
   }, [isVisible, map]);
+
   return null;
 }
 
@@ -447,6 +487,7 @@ const MapDisplay = ({
   onHideMap,
 }) => {
   const [mapBounds, setMapBounds] = useState(null);
+  const mapRef = useRef(null);
 
   const calculateMapCenter = useMemo(() => {
     const validMarkers = markers.filter(
@@ -538,6 +579,20 @@ const MapDisplay = ({
     setMapBounds(calculateMapBounds);
   }, [calculateMapBounds]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (mapRef.current) {
+        try {
+          mapRef.current.remove();
+          mapRef.current = null;
+        } catch (error) {
+          console.error("Error cleaning up map:", error);
+        }
+      }
+    };
+  }, []);
+
   return (
     <MapWrapper>
       <LeafletMarkerStyles />
@@ -546,11 +601,15 @@ const MapDisplay = ({
       </HideMapButton>
       <Map>
         <MapContainer
+          ref={mapRef}
           center={[calculateMapCenter.lat, calculateMapCenter.lng]}
           zoom={12}
           attributionControl={false}
           scrollWheelZoom={true}
           zoomControl={false}
+          whenReady={(map) => {
+            mapRef.current = map.target;
+          }}
           aria-label="Map displaying nearby classes"
           title="Map displaying nearby classes"
         >

@@ -281,58 +281,47 @@ const NoResultsAnimation = ({ onReset }) => {
     visible: { opacity: 1, y: 0, transition: { delay: 0.3, duration: 0.5 } },
   };
   const icons = [
-    { icon: <BookOpen size={32} />, color: "#ff3d5d" },
-    { icon: <Palette size={32} />, color: "#00a699" },
-    { icon: <Music size={32} />, color: "#484848" },
-    { icon: <TechnologyIcon size={32} />, color: "#767676" },
-    { icon: <Dumbbell size={32} />, color: "#ff3d5d" },
-    { icon: <PersonStanding size={32} />, color: "#00a699" },
+    { Icon: BookOpen, color: "#FF385C" },
+    { Icon: Palette, color: "#00A699" },
+    { Icon: Music, color: "#FC642D" },
+    { Icon: TechnologyIcon, color: "#767676" },
+    { Icon: Dumbbell, color: "#FF5A5F" },
+    { Icon: PersonStanding, color: "#008489" },
   ];
+
   return (
-    <NoResultsContainer initial="hidden" animate="visible">
+    <NoResultsContainer
+      initial="hidden"
+      animate="visible"
+      variants={contentVariants}
+    >
       <IconGrid variants={gridVariants}>
-        {icons.map((item, index) => (
-          <EmptyIcon key={index} variants={iconVariants} $color={item.color}>
-            {item.icon}
+        {icons.map(({ Icon, color }, index) => (
+          <EmptyIcon
+            key={index}
+            variants={iconVariants}
+            $color={color}
+            whileHover={{ scale: 1.1, rotate: 5 }}
+          >
+            <Icon size={32} strokeWidth={2} />
           </EmptyIcon>
         ))}
       </IconGrid>
-      <NoResultsTitle variants={contentVariants}>
-        No Classes Found
-      </NoResultsTitle>
-      <NoResultsText variants={contentVariants}>
-        We couldn't find any classes matching your current filters. Try
-        adjusting your search criteria or explore other categories.
+      <NoResultsTitle>No classes found</NoResultsTitle>
+      <NoResultsText>
+        We couldn't find any classes matching your criteria. Try adjusting your
+        filters or exploring different categories.
       </NoResultsText>
-      <NoResultsButton
-        variants={contentVariants}
-        onClick={onReset}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        Reset Filters
+      <NoResultsButton whileHover={{ scale: 1.05 }} onClick={onReset}>
+        Clear Filters
       </NoResultsButton>
     </NoResultsContainer>
   );
 };
 
-function applyRandomReviewOffset(originalCount, classId) {
-  if (originalCount === 0) {
-    return 0;
-  }
-  let hash = 0;
-  const idStr = String(classId);
-  for (let i = 0; i < idStr.length; i++) {
-    hash = (hash << 5) - hash + idStr.charCodeAt(i);
-    hash = hash & hash;
-  }
-  const offset = 10 + (Math.abs(hash) % 11);
-  return originalCount + offset;
-}
-
 const ClassesDisplay = ({
-  classes,
-  categories,
+  classes = [],
+  categories = [],
   loading,
   isNavigating,
   userLocation,
@@ -351,36 +340,69 @@ const ClassesDisplay = ({
   tag,
   totalClassesCount,
 }) => {
-  const { location: ipLocation } = useIpGeolocation();
+  const applyRandomReviewOffset = (reviewCount, classId) => {
+    const offset = classId % 10;
+    return Math.max(0, reviewCount + offset);
+  };
 
-  const [showMap, setShowMap] = useState(false);
+  const { location: ipLocation, loading: locationLoading } = useIpGeolocation();
+
+  const [selectedClassId, setSelectedClassId] = useState(null);
   const [isMapVisible, setIsMapVisible] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-  const [selectedClassId, setSelectedClassId] = useState(null);
+  const [showMap, setShowMap] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [mapKey, setMapKey] = useState(0);
 
   useEffect(() => {
-    const checkIsMobile = () => setIsMobile(window.innerWidth <= 1048);
-    checkIsMobile();
-    window.addEventListener("resize", checkIsMobile);
-    return () => window.removeEventListener("resize", checkIsMobile);
+    const checkMobile = () => {
+      const mobile = window.innerWidth <= 1048;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setShowMap(false);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  useEffect(() => {
+    if (isMobile && showMap) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobile, showMap]);
+
+  // Force remount map when visibility changes to prevent reuse errors
+  useEffect(() => {
+    if (!isMobile && isMapVisible) {
+      setMapKey((prev) => prev + 1);
+    }
+  }, [isMapVisible, isMobile]);
+
+  // Force remount map when mobile map is toggled
+  useEffect(() => {
+    if (isMobile && showMap) {
+      setMapKey((prev) => prev + 1);
+    }
+  }, [showMap, isMobile]);
+
   const uniqueClasses = useMemo(() => {
-    const seenIds = new Set();
+    const seen = new Set();
     return classes.filter((classItem) => {
-      if (!classItem || typeof classItem.classId === "undefined") return false;
-      const isDuplicate = seenIds.has(classItem.classId);
-      seenIds.add(classItem.classId);
-      return !isDuplicate;
+      if (seen.has(classItem.classId)) {
+        return false;
+      }
+      seen.add(classItem.classId);
+      return true;
     });
   }, [classes]);
-
-  useEffect(() => {
-    if (!isMobile && showMap) {
-      setShowMap(false);
-    }
-  }, [isMobile, showMap]);
 
   const calculateDistance = useCallback((lat1, lon1, lat2, lon2) => {
     if (lat1 == null || lon1 == null || lat2 == null || lon2 == null)
@@ -627,21 +649,17 @@ const ClassesDisplay = ({
         $isMapVisible={!isMobile && isMapVisible}
         $showMap={isMobile && showMap}
       >
-        <MapDisplay
-          key={`map-display-${
-            isMobile
-              ? showMap
-                ? "mobile-visible"
-                : "mobile-hidden"
-              : "desktop"
-          }-${ipLocation?.lat}`}
-          markers={mapMarkers}
-          selectedClassId={selectedClassId}
-          onMarkerClick={handleMarkerClick}
-          userLocation={ipLocation || userLocation}
-          showMap={showMap}
-          onHideMap={() => setIsMapVisible(false)}
-        />
+        {((isMobile && showMap) || (!isMobile && isMapVisible)) && (
+          <MapDisplay
+            key={mapKey}
+            markers={mapMarkers}
+            selectedClassId={selectedClassId}
+            onMarkerClick={handleMarkerClick}
+            userLocation={ipLocation || userLocation}
+            showMap={showMap}
+            onHideMap={() => setIsMapVisible(false)}
+          />
+        )}
       </MapContainer>
 
       {isMobile && !isFilterModalOpen && (

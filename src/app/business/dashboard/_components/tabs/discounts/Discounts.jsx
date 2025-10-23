@@ -3,8 +3,27 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import styled from "styled-components";
 import { Drawer as VaulDrawer } from "vaul";
-import { Table, Button, Typography, Tag, Space, Tooltip, Form, Input, Select, DatePicker, InputNumber, Switch, Popconfirm, Skeleton, Divider, ConfigProvider, Card, Grid,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Table,
+  Button,
+  Typography,
+  Tag,
+  Space,
+  Tooltip,
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  InputNumber,
+  Switch,
+  Popconfirm,
+  Skeleton,
+  Divider,
+  ConfigProvider,
+  Card,
+  Grid,
+} from "antd";
+import message from "@/lib/message";
 import {
   Plus,
   Edit,
@@ -23,6 +42,11 @@ import {
   RefreshCw,
   BarChart3,
   X,
+  Users,
+  Clock,
+  ShoppingCart,
+  Gift,
+  Hash,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
@@ -118,7 +142,7 @@ const DrawerHandle = styled.div`
 
 const DrawerHeader = styled.div`
   flex-shrink: 0;
-  padding: 16px 24px;
+  padding: 20px 24px;
   border-bottom: 1px solid ${colors.border};
   background: white;
   border-radius: 16px 16px 0 0;
@@ -126,7 +150,7 @@ const DrawerHeader = styled.div`
 
 const DrawerTitle = styled.h2`
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: #1a1a1a;
   display: flex;
@@ -136,6 +160,13 @@ const DrawerTitle = styled.h2`
   svg {
     color: ${colors.primary};
   }
+`;
+
+const DrawerSubtitle = styled.p`
+  margin: 6px 0 0 0;
+  font-size: 14px;
+  color: ${colors.textSecondary};
+  line-height: 1.5;
 `;
 
 const DrawerBody = styled.div`
@@ -151,7 +182,7 @@ const DrawerBody = styled.div`
 
 const DrawerFooter = styled.div`
   flex-shrink: 0;
-  padding: 12px 16px;
+  padding: 16px 24px;
   border-top: 1px solid ${colors.border};
   background: white;
   display: flex;
@@ -287,73 +318,80 @@ const StatValue = styled.div`
   font-size: 22px;
   font-weight: 700;
   color: ${colors.textPrimary};
+  line-height: 1;
   margin-bottom: 4px;
-  display: flex;
-  align-items: baseline;
 
   @media (max-width: 768px) {
-    font-size: 17px;
+    font-size: 20px;
   }
 `;
 
 const StatLabel = styled.div`
   font-size: 13px;
   color: ${colors.textSecondary};
-  display: flex;
-  align-items: center;
-  gap: 6px;
-
+  font-weight: 500;
+  margin-bottom: 8px;
   @media (max-width: 768px) {
     font-size: 12px;
   }
 `;
 
-const TableSection = styled(motion.div)`
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  position: relative;
-  border: 1px solid ${colors.border};
-`;
+const ActionButton = styled(Button)`
+  height: 40px;
+  border-radius: 10px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
 
-const TableHeader = styled.div`
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid ${colors.border};
-  background: white;
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
 
   @media (max-width: 768px) {
-    padding: 16px;
+    width: 100%;
+    justify-content: center;
   }
 `;
 
-const TableTitle = styled(Title).attrs({ level: 4 })`
-  margin: 0 0 4px 0 !important;
-  color: ${colors.textPrimary};
+const TableSection = styled(motion.div)`
+  margin-top: 0;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid ${colors.border};
+  padding: 24px;
+  position: relative;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+    border-radius: 12px;
+  }
+`;
+
+const TableHeader = styled.div`
+  margin-bottom: 20px;
+`;
+
+const TableTitle = styled.h2`
+  font-size: 18px;
   font-weight: 600;
+  color: ${colors.textPrimary};
+  margin: 0 0 6px 0;
   display: flex;
   align-items: center;
   gap: 10px;
 
   svg {
     color: ${colors.primary};
-    width: 18px;
-    height: 18px;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 16px !important;
   }
 `;
 
-const TableDescription = styled(Paragraph)`
-  margin: 0 !important;
-  color: ${colors.textSecondary};
+const TableDescription = styled(Text)`
   font-size: 14px;
-
-  @media (max-width: 768px) {
-    font-size: 13px;
-  }
+  color: ${colors.textSecondary};
 `;
 
 const LoaderContainer = styled.div`
@@ -363,124 +401,142 @@ const LoaderContainer = styled.div`
   right: 0;
   bottom: 0;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   background: rgba(255, 255, 255, 0.8);
   z-index: 10;
   border-radius: 16px;
-  backdrop-filter: blur(2px);
 `;
 
 const StyledTable = styled(Table)`
+  .ant-table {
+    border-radius: 12px;
+  }
+
   .ant-table-thead > tr > th {
-    background: #fafbfc;
-    border-bottom: 1px solid ${colors.border};
+    background: ${colors.lightBg};
     font-weight: 600;
     color: ${colors.textPrimary};
-    font-size: 13px;
-    padding: 16px 24px;
+    border-bottom: 2px solid ${colors.border};
+    padding: 14px 16px;
+
+    &:first-child {
+      border-top-left-radius: 12px;
+    }
+
+    &:last-child {
+      border-top-right-radius: 12px;
+    }
   }
 
   .ant-table-tbody > tr > td {
-    padding: 16px 24px;
+    padding: 14px 16px;
     border-bottom: 1px solid ${colors.border};
-    font-size: 14px;
+  }
+
+  .ant-table-tbody > tr:last-child > td {
+    border-bottom: none;
   }
 
   .ant-table-tbody > tr:hover > td {
-    background: #fafcff;
-  }
-
-  .ant-empty {
-    padding: 40px 20px;
+    background: ${colors.lightBg};
   }
 `;
 
-const ActionButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
+const EmptyStateContainer = styled.div`
+  text-align: center;
+  padding: 60px 20px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-weight: 500;
-  padding: 0 16px;
-  border: 1px solid ${colors.border};
+  gap: 12px;
+`;
+
+const EmptyStateIcon = styled.div`
+  margin-bottom: 8px;
+`;
+
+const EmptyStateText = styled.div`
+  font-size: 16px;
+  font-weight: 600;
+  color: ${colors.textPrimary};
+`;
+
+const EmptyStateSubtext = styled.div`
+  font-size: 14px;
+  color: ${colors.textSecondary};
+  max-width: 400px;
+`;
+
+const MobileDiscountCard = styled.div`
   background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid ${colors.border};
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+`;
 
-  &:hover {
-    color: ${colors.primary};
-    border-color: ${colors.primary};
-    box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
-    transform: translateY(-1px);
+const MobileDiscountHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+`;
 
-    lord-icon {
-      --lord-icon-primary: ${colors.primary};
-      --lord-icon-secondary: ${colors.primary};
-    }
-  }
+const MobileDiscountTitle = styled.div`
+  font-size: 16px;
+  font-weight: 600;
+  color: ${colors.textPrimary};
+  margin-bottom: 4px;
+`;
 
-  &.ant-btn-primary {
-    background: ${colors.primary};
-    border-color: ${colors.primary};
-    color: white;
+const MobileDiscountCode = styled.div`
+  font-size: 14px;
+  color: ${colors.primary};
+  font-weight: 500;
+  font-family: "Courier New", monospace;
+`;
 
-    &:hover {
-      background: #e6325a;
-      border-color: #e6325a;
-      color: white;
-      transform: translateY(-1px);
-    }
-  }
+const MobileDiscountRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid ${colors.border};
+  font-size: 14px;
+`;
 
-  @media (max-width: 768px) {
-    width: 100%;
-    height: 40px;
-  }
+const MobileDiscountLabel = styled.span`
+  color: ${colors.textSecondary};
+  font-weight: 500;
+`;
+
+const MobileDiscountValue = styled.span`
+  color: ${colors.textPrimary};
+  font-weight: 500;
+`;
+
+const MobileDiscountActions = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid ${colors.border};
 `;
 
 const DrawerContent = styled.div`
   padding: 24px;
-  height: 100%;
-  overflow-y: auto;
-  @media (max-width: 480px) {
-    padding: 16px;
-  }
 `;
 
-const StepHeader = styled.div`
-  text-align: center;
-  margin-bottom: 2rem;
-  position: relative;
-`;
-
-const StepTitle = styled(Title)`
-  margin-bottom: 8px !important;
-  color: ${colors.textPrimary};
-  font-size: 24px !important;
-  font-weight: 700 !important;
-  @media (max-width: 480px) {
-    font-size: 20px !important;
-  }
-`;
-
-const StepDescription = styled(Text)`
-  display: block;
-  color: ${colors.textSecondary};
-  font-size: 15px;
-  margin-bottom: 24px;
-  line-height: 1.6;
-  @media (max-width: 480px) {
-    font-size: 14px;
-  }
+const FormSection = styled.div`
+  margin-bottom: 28px;
 `;
 
 const SectionDivider = styled.div`
   display: flex;
   align-items: center;
-  margin: 2rem 0;
-
+  margin: 32px 0 24px 0;
   &::before,
   &::after {
     content: "";
@@ -488,41 +544,28 @@ const SectionDivider = styled.div`
     height: 1px;
     background: ${colors.border};
   }
-
   span {
-    padding: 0 1rem;
+    padding: 0 16px;
     color: ${colors.textSecondary};
-    font-weight: 500;
+    font-weight: 600;
     font-size: 14px;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-  }
-`;
-
-const FormSection = styled(motion.div)`
-  margin-bottom: 2rem;
-  border-radius: 12px;
-`;
-
-const FormGroup = styled.div`
-  margin-bottom: 24px;
-  width: 100%;
-  @media (max-width: 768px) {
-    margin-bottom: 16px;
+    gap: 8px;
+    svg {
+      color: ${colors.primary};
+    }
   }
 `;
 
 const FormGrid = styled.div`
   display: grid;
-  grid-template-columns: ${(props) => props.columns || "1fr 1fr"};
-  gap: 24px;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
-    gap: 0;
-    & > ${FormGroup} {
-      margin-bottom: 16px;
-    }
   }
 `;
 
@@ -530,144 +573,94 @@ const MobileFormGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  margin-bottom: 16px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 16px;
 `;
 
 const FormLabel = styled.label`
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: ${colors.textPrimary};
-  margin-bottom: 8px;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: ${colors.textPrimary};
+  margin-bottom: 8px;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    color: ${colors.primary};
+  }
 `;
 
 const HelpText = styled.div`
-  font-size: 12px;
+  font-size: 13px;
   color: ${colors.textSecondary};
   margin-top: 4px;
-  line-height: 1.4;
-`;
+  margin-bottom: 8px;
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
 
-const commonInputStyles = `
-  height: 44px;
-  border-radius: 12px;
-  font-size: 14px;
-  @media (max-width: 768px) {
-    height: 40px;
-    font-size: 14px;
+  svg {
+    flex-shrink: 0;
+    margin-top: 2px;
   }
 `;
 
 const StyledFormInput = styled(Input)`
-  ${commonInputStyles}
-`;
+  border-radius: 8px;
+  height: 40px;
 
-const StyledFormSelect = styled(Select)`
-  .ant-select-selector {
-    ${commonInputStyles}
-    display: flex !important;
-    align-items: center !important;
-  }
-  .ant-select-selection-item,
-  .ant-select-selection-placeholder {
-    line-height: 42px !important;
-    @media (max-width: 768px) {
-      line-height: 38px !important;
-    }
+  &:focus {
+    box-shadow: 0 0 0 3px ${colors.primary}20;
   }
 `;
 
 const StyledFormInputNumber = styled(InputNumber)`
   width: 100%;
-  ${commonInputStyles}
-  .ant-input-number-input-wrap, .ant-input-number-input {
-    height: 100% !important;
-    display: flex !important;
-    align-items: center !important;
+  border-radius: 8px;
+  height: 40px;
+
+  .ant-input-number-input {
+    height: 38px;
+  }
+
+  &:focus-within {
+    box-shadow: 0 0 0 3px ${colors.primary}20;
+  }
+`;
+
+const StyledFormSelect = styled(Select)`
+  .ant-select-selector {
+    border-radius: 8px !important;
+    height: 40px !important;
+    display: flex;
+    align-items: center;
+  }
+
+  &.ant-select-focused .ant-select-selector {
+    box-shadow: 0 0 0 3px ${colors.primary}20 !important;
   }
 `;
 
 const StyledFormRangePicker = styled(RangePicker)`
-  width: 100%;
-  ${commonInputStyles}
-`;
-
-const DiscountCard = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-`;
-
-const DiscountName = styled(Text)`
-  font-weight: 600;
-  color: ${colors.textPrimary};
-  font-size: 14px;
-`;
-
-const DiscountBadge = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  width: fit-content;
-
-  &.coupon {
-    background: rgba(59, 130, 246, 0.1);
-    color: ${colors.info};
-  }
-
-  &.automatic {
-    background: rgba(16, 185, 129, 0.1);
-    color: ${colors.success};
-  }
-`;
-
-const ValueDisplay = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  color: ${colors.textPrimary};
-  font-size: 15px;
-
-  svg {
-    color: ${colors.textSecondary};
-  }
-`;
-
-const ScopeTag = styled(Tag)`
-  border-radius: 6px;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: none;
-
-  &.class {
-    background: rgba(139, 92, 246, 0.1);
-    color: #7c3aed;
-  }
-
-  &.schedule {
-    background: rgba(6, 182, 212, 0.1);
-    color: #0891b2;
-  }
-`;
-
-const UsageDisplay = styled.div`
-  font-weight: 500;
-  color: ${colors.textPrimary};
-`;
-
-const ActionButtonSmall = styled(Button)`
-  height: 32px;
   border-radius: 8px;
+  height: 40px;
+  width: 100%;
+
+  &:focus,
+  &.ant-picker-focused {
+    box-shadow: 0 0 0 3px ${colors.primary}20;
+  }
 `;
 
 const StyledSwitch = styled(Switch)`
@@ -676,314 +669,171 @@ const StyledSwitch = styled(Switch)`
   }
 `;
 
-const MobileCard = styled(Card)`
-  margin-bottom: 12px;
+const DiscountTypeCard = styled.div`
+  border: 2px solid
+    ${(props) => (props.$selected ? colors.primary : colors.border)};
   border-radius: 12px;
-  border: 1px solid ${colors.border};
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: ${(props) => (props.$selected ? `${colors.primary}08` : "white")};
+
+  &:hover {
+    border-color: ${colors.primary};
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
 `;
 
-const MobileCardHeader = styled.div`
+const DiscountTypeIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-`;
-
-const MobileCardContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-
-const MobileCardRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const MobileCardLabel = styled(Text)`
-  font-size: 12px;
-  color: ${colors.textSecondary};
-  font-weight: 500;
-`;
-
-const EmptyStateContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  flex-grow: 0.7;
   align-items: center;
   justify-content: center;
-  padding: ${(props) => props.$padding || "60px 20px"};
-  text-align: center;
-  gap: 16px;
-
-  @media (max-width: 768px) {
-    padding: ${(props) => props.$padding || "40px 16px"};
-    gap: 12px;
-  }
-
-  @media (max-width: 480px) {
-    padding: ${(props) => props.$padding || "30px 12px"};
-    gap: 10px;
-  }
+  background: ${(props) => (props.$selected ? colors.primary : colors.lightBg)};
+  color: ${(props) => (props.$selected ? "white" : colors.textSecondary)};
+  margin-bottom: 12px;
 `;
 
-const EmptyStateIcon = styled.div`
-  opacity: 0.3;
-  filter: grayscale(100%);
-
-  lord-icon {
-    width: 80px;
-    height: 80px;
-  }
-
-  @media (max-width: 768px) {
-    lord-icon {
-      width: 64px;
-      height: 64px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    lord-icon {
-      width: 48px;
-      height: 48px;
-    }
-  }
-`;
-
-const EmptyStateText = styled.div`
-  color: ${colors.textSecondary};
+const DiscountTypeTitle = styled.div`
   font-size: 15px;
-  font-weight: 500;
-
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 13px;
-  }
+  font-weight: 600;
+  color: ${colors.textPrimary};
+  margin-bottom: 4px;
 `;
 
-const EmptyStateSubtext = styled.div`
-  color: ${colors.textSecondary};
+const DiscountTypeDesc = styled.div`
   font-size: 13px;
-  opacity: 0.7;
-  max-width: 300px;
+  color: ${colors.textSecondary};
+  line-height: 1.4;
+`;
 
-  @media (max-width: 768px) {
-    font-size: 12px;
-    max-width: 250px;
-  }
+const InfoBox = styled.div`
+  background: ${colors.lightBg};
+  border: 1px solid ${colors.border};
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
 
-  @media (max-width: 480px) {
-    font-size: 11px;
-    max-width: 200px;
+  svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: ${colors.info};
   }
 `;
 
-const MobileDiscountItem = ({ record, onEdit, onDelete, onToggleActive }) => {
-  return (
-    <MobileCard>
-      <MobileCardHeader>
-        <DiscountCard>
-          <DiscountName>{record.name}</DiscountName>
-          <DiscountBadge className={record.code ? "coupon" : "automatic"}>
-            <Ticket size={10} />
-            {record.code ? record.code : "AUTOMATIC"}
-          </DiscountBadge>
-        </DiscountCard>
-        <Space>
-          <Tooltip title="Edit">
-            <ActionButtonSmall
-              icon={<Edit size={14} />}
-              onClick={() => onEdit(record)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Delete this discount?"
-            description="This action cannot be undone."
-            onConfirm={() => onDelete(record.id)}
-            okText="Yes, Delete"
-            cancelText="No"
-            placement="topRight"
-          >
-            <Tooltip title="Delete">
-              <ActionButtonSmall danger icon={<Trash2 size={14} />} />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      </MobileCardHeader>
-      <MobileCardContent>
-        <MobileCardRow>
-          <MobileCardLabel>Value</MobileCardLabel>
-          <ValueDisplay>
-            {record.discount_type === "percentage" ? (
-              <Percent size={14} />
-            ) : (
-              <DollarSign size={14} />
-            )}
-            <span>
-              {record.discount_type === "percentage"
-                ? `${parseFloat(record.value)}%`
-                : `$${parseFloat(record.value).toFixed(2)}`}
-            </span>
-          </ValueDisplay>
-        </MobileCardRow>
-        <MobileCardRow>
-          <MobileCardLabel>Scope</MobileCardLabel>
-          {record.scope === "class" ? (
-            <Tooltip title={record.target_class_name || "N/A"}>
-              <ScopeTag className="class">
-                <Package size={12} />
-                Entire Class
-              </ScopeTag>
-            </Tooltip>
-          ) : (
-            <Tooltip title={record.target_schedule_group_name || "N/A"}>
-              <ScopeTag className="schedule">
-                <Calendar size={12} />
-                Schedule Group
-              </ScopeTag>
-            </Tooltip>
-          )}
-        </MobileCardRow>
-        <MobileCardRow>
-          <MobileCardLabel>Usage</MobileCardLabel>
-          <UsageDisplay>
-            {record.usage_count} / {record.usage_limit || "∞"}
-          </UsageDisplay>
-        </MobileCardRow>
-        <MobileCardRow>
-          <MobileCardLabel>Status</MobileCardLabel>
-          <StyledSwitch
-            checked={record.is_active}
-            onChange={() => onToggleActive(record)}
-            size="small"
-          />
-        </MobileCardRow>
-      </MobileCardContent>
-    </MobileCard>
-  );
-};
+const InfoBoxText = styled.div`
+  font-size: 13px;
+  color: ${colors.textSecondary};
+  line-height: 1.5;
+`;
 
-const Discounts = () => {
+const StatSkeleton = () => <Skeleton active paragraph={{ rows: 2 }} />;
+
+const Discounts = ({ businessId }) => {
   const [discounts, setDiscounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saveLoading, setSaveLoading] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [shouldRender, setShouldRender] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState(null);
   const [form] = Form.useForm();
   const [isReady, setIsReady] = useState(false);
-
+  const [shouldRender, setShouldRender] = useState(false);
+  const refreshButtonRef = useRef(null);
   const screens = useBreakpoint();
   const isMobile = !screens.md;
 
-  const [businessClasses, setBusinessClasses] = useState([]);
-  const [classOptions, setClassOptions] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [loadingClasses, setLoadingClasses] = useState(false);
   const [scheduleGroups, setScheduleGroups] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
-  const [scope, setScope] = useState("class");
-  const [selectedClassOption, setSelectedClassOption] = useState(null);
+
+  const watchedClassOption = Form.useWatch("applicable_classes_type", form);
   const watchedDiscountType = Form.useWatch("discount_type", form);
-  const watchedClassOption = Form.useWatch("target_class_option", form);
-
-  const refreshButtonRef = useRef(null);
-
-  const totalDiscounts = discounts.length;
-  const activeDiscounts = discounts.filter((d) => d.is_active).length;
-  const totalUsage = discounts.reduce(
-    (sum, d) => sum + (d.usage_count || 0),
-    0
-  );
-  const avgUsage =
-    totalDiscounts > 0 ? (totalUsage / totalDiscounts).toFixed(1) : 0;
 
   useEffect(() => {
-    if (drawerVisible) {
-      setShouldRender(true);
-    } else {
-      const timer = setTimeout(() => setShouldRender(false), 300);
+    fetchDiscounts();
+    fetchClasses();
+  }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      const timer = setTimeout(() => setIsReady(true), 100);
       return () => clearTimeout(timer);
     }
-  }, [drawerVisible]);
+  }, [loading]);
 
   const fetchDiscounts = async () => {
-    setLoading(true);
-    setIsReady(false);
-    const result = await businessDiscountService.getDiscounts();
-    if (result.success) {
-      setDiscounts(result.data);
-      setTimeout(() => setIsReady(true), 50);
-    } else {
-      message.error(result.error || "Failed to load discounts.");
-    }
-    setLoading(false);
-  };
-
-  const fetchClassesAndOptions = async () => {
-    const classResult = await businessClassService.fetchBusinessClasses({
-      page_size: 500,
-    });
-    if (classResult.success) {
-      setBusinessClasses(classResult.data);
-      const options = classResult.data.flatMap((cls) =>
-        cls.options.map((opt) => ({
-          ...opt,
-          className: cls.title,
-          classId: cls.classId,
-        }))
-      );
-      setClassOptions(options);
-    }
-  };
-
-  const fetchScheduleGroups = async (classOptionId) => {
-    if (!classOptionId) {
-      setScheduleGroups([]);
-      return;
-    }
-
-    setLoadingSchedules(true);
     try {
-      const result = await scheduleService.fetchSchedules({
-        option_id: classOptionId,
+      setLoading(true);
+      const response = await businessDiscountService.getDiscounts(businessId);
+      setDiscounts(response.data || []);
+    } catch (error) {
+      message.error("Failed to load discounts");
+      console.error("Error fetching discounts:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchClasses = async () => {
+    try {
+      setLoadingClasses(true);
+      const response = await businessClassService.fetchBusinessClasses({
+        business_id: businessId,
       });
-      if (result.success) {
-        const scheduleData = result.data || [];
-        const groupedSchedules = scheduleData.reduce((acc, schedule) => {
-          const groupName = schedule.name || `Unnamed Group (${schedule.date})`;
-          if (!acc[groupName]) {
-            acc[groupName] = { name: groupName, schedules: [] };
-          }
-          acc[groupName].schedules.push(schedule);
-          return acc;
-        }, {});
-        setScheduleGroups(Object.values(groupedSchedules));
-      } else {
-        message.error("Failed to load schedule groups");
-        setScheduleGroups([]);
-      }
+      setClasses(response.data || []);
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+    } finally {
+      setLoadingClasses(false);
+    }
+  };
+
+  const fetchScheduleGroups = async (classId) => {
+    try {
+      setLoadingSchedules(true);
+      const response = await scheduleService.getClassSchedules(classId);
+      const uniqueGroups = [
+        ...new Set(
+          response.data
+            .filter((schedule) => schedule.group_name)
+            .map((schedule) => schedule.group_name)
+        ),
+      ].map((name) => ({ name }));
+      setScheduleGroups(uniqueGroups);
+    } catch (error) {
+      console.error("Error fetching schedule groups:", error);
+      setScheduleGroups([]);
     } finally {
       setLoadingSchedules(false);
     }
   };
 
   useEffect(() => {
-    fetchDiscounts();
-    fetchClassesAndOptions();
-  }, []);
+    const classId = form.getFieldValue("applicable_class_id");
+    if (watchedClassOption === "specific_class" && classId) {
+      fetchScheduleGroups(classId);
+    } else {
+      setScheduleGroups([]);
+    }
+  }, [watchedClassOption]);
 
-  const refreshData = () => {
-    fetchDiscounts();
-    fetchClassesAndOptions();
+  const refreshData = async () => {
+    await fetchDiscounts();
+    if (refreshButtonRef.current) {
+      refreshButtonRef.current.blur();
+    }
   };
 
   const showDrawer = (discount = null) => {
     setEditingDiscount(discount);
+    setShouldRender(true);
+
     if (discount) {
       const formData = {
         ...discount,
@@ -991,196 +841,192 @@ const Discounts = () => {
           discount.valid_from && discount.valid_to
             ? [dayjs(discount.valid_from), dayjs(discount.valid_to)]
             : null,
-        value: Number(discount.value),
+        applicable_classes_type: discount.applicable_class_id
+          ? "specific_class"
+          : "all_classes",
       };
-
-      setScope(discount.scope);
-      if (discount.scope === "schedule_group" && discount.target_class_option) {
-        setSelectedClassOption(discount.target_class_option);
-        fetchScheduleGroups(discount.target_class_option);
-      }
       form.setFieldsValue(formData);
+
+      if (discount.applicable_class_id) {
+        fetchScheduleGroups(discount.applicable_class_id);
+      }
     } else {
       form.resetFields();
-      setScope("class");
-      setSelectedClassOption(null);
-      setScheduleGroups([]);
       form.setFieldsValue({
-        is_active: true,
-        scope: "class",
         discount_type: "percentage",
-        value: 10,
+        applicable_classes_type: "all_classes",
+        is_active: true,
       });
     }
-    setDrawerVisible(true);
+
+    requestAnimationFrame(() => {
+      setDrawerVisible(true);
+    });
   };
 
   const onDrawerClose = () => {
     setDrawerVisible(false);
+    setTimeout(() => {
+      setShouldRender(false);
+      setEditingDiscount(null);
+      form.resetFields();
+    }, 300);
   };
 
-  const handleClassOptionChange = (optionId) => {
-    setSelectedClassOption(optionId);
-    form.setFieldsValue({ target_schedule_group_name: undefined });
-    fetchScheduleGroups(optionId);
-  };
-
-  const onFormSubmit = async (values) => {
-    setSaveLoading(true);
+  const handleSubmit = async (values) => {
     try {
+      setSaveLoading(true);
+
       const payload = {
         ...values,
-        valid_from: values.valid_dates
-          ? values.valid_dates[0]?.toISOString()
-          : null,
-        valid_to: values.valid_dates
-          ? values.valid_dates[1]?.toISOString()
-          : null,
+        business_id: businessId,
+        valid_from: values.valid_dates?.[0]?.format("YYYY-MM-DD") || null,
+        valid_to: values.valid_dates?.[1]?.format("YYYY-MM-DD") || null,
+        applicable_class_id:
+          values.applicable_classes_type === "specific_class"
+            ? values.applicable_class_id
+            : null,
+        applicable_group:
+          values.applicable_classes_type === "specific_class"
+            ? values.applicable_group
+            : null,
       };
-      delete payload.valid_dates;
 
-      let result;
+      delete payload.valid_dates;
+      delete payload.applicable_classes_type;
+
       if (editingDiscount) {
-        result = await businessDiscountService.updateDiscount(
+        await businessDiscountService.updateDiscount(
           editingDiscount.id,
           payload
         );
+        message.success("Discount updated successfully!");
       } else {
-        result = await businessDiscountService.createDiscount(payload);
+        await businessDiscountService.createDiscount(payload);
+        message.success("Discount created successfully!");
       }
 
-      if (result.success) {
-        message.success(`Discount ${editingDiscount ? "updated" : "created"}!`);
-        onDrawerClose();
-        fetchDiscounts();
-      } else {
-        message.error(
-          result.error?.code?.[0] ||
-            result.error?.detail ||
-            "An error occurred."
-        );
-      }
+      await fetchDiscounts();
+      onDrawerClose();
+    } catch (error) {
+      message.error(error.response?.data?.message || "Failed to save discount");
+      console.error("Error saving discount:", error);
     } finally {
       setSaveLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    const result = await businessDiscountService.deleteDiscount(id);
-    if (result.success) {
-      message.success("Discount deleted.");
-      fetchDiscounts();
-    } else {
-      message.error(result.error || "Failed to delete discount.");
+    try {
+      await businessDiscountService.deleteDiscount(id);
+      message.success("Discount deleted successfully!");
+      await fetchDiscounts();
+    } catch (error) {
+      message.error("Failed to delete discount");
+      console.error("Error deleting discount:", error);
     }
   };
 
-  const handleToggleActive = async (discount) => {
-    const result = await businessDiscountService.toggleDiscountActive(
-      discount.id
-    );
-    if (result.success) {
+  const handleToggleActive = async (id, currentStatus) => {
+    try {
+      await businessDiscountService.updateDiscount(id, {
+        is_active: !currentStatus,
+      });
       message.success(
-        `Discount is now ${result.data.is_active ? "active" : "inactive"}.`
+        `Discount ${!currentStatus ? "activated" : "deactivated"} successfully!`
       );
-      fetchDiscounts();
-    } else {
-      message.error("Failed to update status.");
+      await fetchDiscounts();
+    } catch (error) {
+      message.error("Failed to update discount status");
+      console.error("Error toggling discount status:", error);
     }
   };
 
   const statisticCards = [
     {
-      key: "total_discounts",
+      key: "total",
       title: "Total Discounts",
-      value: totalDiscounts,
-      icon: <Ticket size={20} />,
+      value: discounts.length,
+      icon: <Ticket size={18} />,
+      background: `${colors.chart.blue}15`,
       color: colors.chart.blue,
-      background: "rgba(59, 130, 246, 0.1)",
     },
     {
-      key: "active_discounts",
-      title: "Active",
-      value: activeDiscounts,
-      icon: <Target size={20} />,
+      key: "active",
+      title: "Active Offers",
+      value: discounts.filter((d) => d.is_active).length,
+      icon: <TrendingUp size={18} />,
+      background: `${colors.success}15`,
       color: colors.success,
-      background: "rgba(16, 185, 129, 0.1)",
     },
     {
-      key: "total_usage",
+      key: "usage",
       title: "Total Usage",
-      value: totalUsage,
-      icon: <BarChart3 size={20} />,
+      value: discounts.reduce((sum, d) => sum + (d.times_used || 0), 0),
+      icon: <BarChart3 size={18} />,
+      background: `${colors.chart.purple}15`,
       color: colors.chart.purple,
-      background: "rgba(139, 92, 246, 0.1)",
-    },
-    {
-      key: "avg_usage",
-      title: "Avg. Usage",
-      value: parseFloat(avgUsage),
-      icon: <TrendingUp size={20} />,
-      color: colors.chart.orange,
-      background: "#ec4a211a",
-      precision: 1,
     },
   ];
 
   const columns = [
     {
-      title: "Discount Details",
+      title: "Code",
+      dataIndex: "code",
+      key: "code",
+      render: (text) => (
+        <Text
+          strong
+          style={{
+            fontFamily: "monospace",
+            color: colors.primary,
+            fontSize: "14px",
+          }}
+        >
+          {text}
+        </Text>
+      ),
+    },
+    {
+      title: "Name",
       dataIndex: "name",
       key: "name",
-      render: (text, record) => (
-        <DiscountCard>
-          <DiscountName>{record.name}</DiscountName>
-          <DiscountBadge className={record.code ? "coupon" : "automatic"}>
-            <Ticket size={10} />
-            {record.code ? record.code : "AUTOMATIC"}
-          </DiscountBadge>
-        </DiscountCard>
-      ),
+      render: (text) => <Text strong>{text}</Text>,
     },
     {
-      title: "Value",
-      dataIndex: "value",
-      key: "value",
-      render: (value, record) => (
-        <ValueDisplay>
-          {record.discount_type === "percentage" ? (
-            <Percent size={14} />
+      title: "Type",
+      dataIndex: "discount_type",
+      key: "discount_type",
+      render: (type, record) => (
+        <Space>
+          {type === "percentage" ? (
+            <Tag color="blue">{record.value}% OFF</Tag>
           ) : (
-            <DollarSign size={14} />
+            <Tag color="green">${record.value} OFF</Tag>
           )}
-          <span>
-            {record.discount_type === "percentage"
-              ? `${parseFloat(value)}%`
-              : `${parseFloat(value).toFixed(2)}`}
-          </span>
-        </ValueDisplay>
+        </Space>
       ),
     },
     {
-      title: "Scope",
-      dataIndex: "scope",
-      key: "scope",
-      render: (scope, record) => {
-        if (scope === "class") {
-          return (
-            <Tooltip title={record.target_class_name || "N/A"}>
-              <ScopeTag className="class">
-                <Package size={12} />
-                Entire Class
-              </ScopeTag>
-            </Tooltip>
-          );
+      title: "Validity",
+      key: "validity",
+      render: (_, record) => {
+        if (!record.valid_from && !record.valid_to) {
+          return <Text type="secondary">No expiry</Text>;
         }
         return (
-          <Tooltip title={record.target_schedule_group_name || "N/A"}>
-            <ScopeTag className="schedule">
-              <Calendar size={12} />
-              Schedule Group
-            </ScopeTag>
-          </Tooltip>
+          <Space direction="vertical" size={0}>
+            {record.valid_from && (
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                From: {dayjs(record.valid_from).format("MMM D, YYYY")}
+              </Text>
+            )}
+            {record.valid_to && (
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                Until: {dayjs(record.valid_to).format("MMM D, YYYY")}
+              </Text>
+            )}
+          </Space>
         );
       },
     },
@@ -1188,20 +1034,33 @@ const Discounts = () => {
       title: "Usage",
       key: "usage",
       render: (_, record) => (
-        <UsageDisplay>
-          {record.usage_count} / {record.usage_limit || "∞"}
-        </UsageDisplay>
+        <Space direction="vertical" size={0}>
+          <Text strong>{record.times_used || 0} times</Text>
+          {record.usage_limit && (
+            <Text type="secondary" style={{ fontSize: "12px" }}>
+              Limit: {record.usage_limit}
+            </Text>
+          )}
+        </Space>
       ),
     },
     {
       title: "Status",
-      key: "status",
-      render: (_, record) => (
-        <StyledSwitch
-          checked={record.is_active}
-          onChange={() => handleToggleActive(record)}
-          size="small"
-        />
+      dataIndex: "is_active",
+      key: "is_active",
+      render: (isActive, record) => (
+        <Space>
+          <Tag color={isActive ? "success" : "default"}>
+            {isActive ? "Active" : "Inactive"}
+          </Tag>
+          <Tooltip title={record.is_active ? "Deactivate" : "Activate"}>
+            <Switch
+              size="small"
+              checked={record.is_active}
+              onChange={() => handleToggleActive(record.id, record.is_active)}
+            />
+          </Tooltip>
+        </Space>
       ),
     },
     {
@@ -1209,22 +1068,24 @@ const Discounts = () => {
       key: "actions",
       render: (_, record) => (
         <Space>
-          <Tooltip title="Edit">
-            <ActionButtonSmall
-              icon={<Edit size={14} />}
+          <Tooltip title="Edit discount">
+            <Button
+              type="text"
+              icon={<Edit size={16} />}
               onClick={() => showDrawer(record)}
             />
           </Tooltip>
+
           <Popconfirm
-            title="Delete this discount?"
-            description="This action cannot be undone."
+            title="Delete discount"
+            description="Are you sure you want to delete this discount?"
             onConfirm={() => handleDelete(record.id)}
-            okText="Yes, Delete"
-            cancelText="No"
-            placement="topRight"
+            okText="Delete"
+            cancelText="Cancel"
+            okButtonProps={{ danger: true }}
           >
-            <Tooltip title="Delete">
-              <ActionButtonSmall danger icon={<Trash2 size={14} />} />
+            <Tooltip title="Delete discount">
+              <Button type="text" danger icon={<Trash2 size={16} />} />
             </Tooltip>
           </Popconfirm>
         </Space>
@@ -1232,162 +1093,405 @@ const Discounts = () => {
     },
   ];
 
-  const StatSkeleton = () => <Skeleton active paragraph={{ rows: 2 }} />;
+  const MobileDiscountItem = ({ record, onEdit, onDelete, onToggleActive }) => (
+    <MobileDiscountCard>
+      <MobileDiscountHeader>
+        <div>
+          <MobileDiscountTitle>{record.name}</MobileDiscountTitle>
+          <MobileDiscountCode>{record.code}</MobileDiscountCode>
+        </div>
+        <Tag color={record.is_active ? "success" : "default"}>
+          {record.is_active ? "Active" : "Inactive"}
+        </Tag>
+      </MobileDiscountHeader>
+
+      <MobileDiscountRow>
+        <MobileDiscountLabel>Discount</MobileDiscountLabel>
+        <MobileDiscountValue>
+          {record.discount_type === "percentage"
+            ? `${record.value}% OFF`
+            : `$${record.value} OFF`}
+        </MobileDiscountValue>
+      </MobileDiscountRow>
+
+      <MobileDiscountRow>
+        <MobileDiscountLabel>Times Used</MobileDiscountLabel>
+        <MobileDiscountValue>
+          {record.times_used || 0}
+          {record.usage_limit ? ` / ${record.usage_limit}` : ""}
+        </MobileDiscountValue>
+      </MobileDiscountRow>
+
+      {(record.valid_from || record.valid_to) && (
+        <MobileDiscountRow>
+          <MobileDiscountLabel>Valid Period</MobileDiscountLabel>
+          <MobileDiscountValue style={{ fontSize: "12px" }}>
+            {record.valid_from && dayjs(record.valid_from).format("MMM D")} -{" "}
+            {record.valid_to && dayjs(record.valid_to).format("MMM D, YYYY")}
+          </MobileDiscountValue>
+        </MobileDiscountRow>
+      )}
+
+      <MobileDiscountActions>
+        <Button
+          size="small"
+          icon={<Edit size={14} />}
+          onClick={() => onEdit(record)}
+          style={{ flex: 1 }}
+        >
+          Edit
+        </Button>
+        <Button
+          size="small"
+          onClick={() => onToggleActive(record.id, record.is_active)}
+          style={{ flex: 1 }}
+        >
+          {record.is_active ? "Deactivate" : "Activate"}
+        </Button>
+        <Popconfirm
+          title="Delete?"
+          onConfirm={() => onDelete(record.id)}
+          okText="Yes"
+          cancelText="No"
+        >
+          <Button size="small" danger icon={<Trash2 size={14} />} />
+        </Popconfirm>
+      </MobileDiscountActions>
+    </MobileDiscountCard>
+  );
 
   const renderDrawerContent = () => (
     <>
       <DrawerHeader>
         <DrawerTitle>
-          <Ticket size={20} />
+          <Gift size={20} />
           {editingDiscount ? "Edit Discount" : "Create New Discount"}
         </DrawerTitle>
+        <DrawerSubtitle>
+          {editingDiscount
+            ? "Update your discount details to adjust your promotional offer"
+            : "Set up a promotional offer to attract more students and boost enrollment"}
+        </DrawerSubtitle>
       </DrawerHeader>
 
       <DrawerBody>
         <DrawerContent>
-          {!isMobile && (
-            <StepHeader>
-              <StepTitle level={2}>
-                {editingDiscount ? "Edit Discount" : "Create New Discount"}
-              </StepTitle>
-              <StepDescription>
-                Configure your promotional offer.
-              </StepDescription>
-            </StepHeader>
-          )}
-
           <Form
             form={form}
             layout="vertical"
-            onFinish={onFormSubmit}
-            onValuesChange={(changedValues) => {
-              if (changedValues.scope) setScope(changedValues.scope);
-              if (changedValues.target_class_option) {
-                handleClassOptionChange(changedValues.target_class_option);
-              }
+            onFinish={handleSubmit}
+            initialValues={{
+              discount_type: "percentage",
+              applicable_classes_type: "all_classes",
+              is_active: true,
             }}
           >
-            <FormSection>
-              <FormGrid>
-                <FormGroup>
-                  <FormLabel>Internal Name</FormLabel>
-                  <HelpText>For your reference only.</HelpText>
-                  <Form.Item
-                    name="name"
-                    rules={[{ required: true, message: "Name is required" }]}
-                  >
-                    <StyledFormInput placeholder="e.g., Summer Sale" />
-                  </Form.Item>
-                </FormGroup>
-                <FormGroup>
-                  <FormLabel>Coupon Code</FormLabel>
-                  <HelpText>Leave blank for an automatic discount.</HelpText>
-                  <Form.Item name="code">
-                    <StyledFormInput placeholder="e.g., SUMMER20" />
-                  </Form.Item>
-                </FormGroup>
-              </FormGrid>
-
-              <MobileFormGrid>
-                <FormGroup>
-                  <FormLabel>Discount Type</FormLabel>
-                  <Form.Item name="discount_type" rules={[{ required: true }]}>
-                    <StyledFormSelect>
-                      <Option value="percentage">Percentage</Option>
-                      <Option value="fixed_amount">Fixed Amount</Option>
-                    </StyledFormSelect>
-                  </Form.Item>
-                </FormGroup>
-                <FormGroup>
-                  <FormLabel>Value</FormLabel>
-                  <Form.Item
-                    name="value"
-                    rules={[
-                      { required: true, message: "Value is required" },
-                      { type: "number", min: 0.01 },
-                      ...(watchedDiscountType === "percentage"
-                        ? [{ type: "number", max: 100 }]
-                        : []),
-                    ]}
-                  >
-                    <StyledFormInputNumber
-                      min={0.01}
-                      max={watchedDiscountType === "percentage" ? 100 : 9999}
-                      step={watchedDiscountType === "percentage" ? 1 : 0.01}
-                      precision={watchedDiscountType === "percentage" ? 0 : 2}
-                      suffix={watchedDiscountType === "percentage" ? "%" : ""}
-                    />
-                  </Form.Item>
-                </FormGroup>
-              </MobileFormGrid>
-            </FormSection>
-
             <SectionDivider>
               <span>
-                <Package size={16} /> Scope & Application
+                <TagIcon size={16} /> Basic Information
               </span>
             </SectionDivider>
 
             <FormSection>
               <FormGroup>
-                <FormLabel>Scope</FormLabel>
-                <Form.Item name="scope" rules={[{ required: true }]}>
+                <FormLabel>
+                  <TagIcon size={16} />
+                  Discount Name
+                  <Tooltip title="Give your discount a descriptive name that helps you identify it easily in your dashboard">
+                    <Info
+                      size={14}
+                      style={{ color: "#8c8c8c", cursor: "help" }}
+                    />
+                  </Tooltip>
+                </FormLabel>
+                <HelpText>
+                  <Info size={14} />A friendly name for internal use (e.g.,
+                  "Summer Sale", "New Student Welcome")
+                </HelpText>
+                <Form.Item
+                  name="name"
+                  rules={[
+                    { required: true, message: "Please enter a discount name" },
+                  ]}
+                >
+                  <StyledFormInput placeholder="e.g., Summer Sale 2025" />
+                </Form.Item>
+              </FormGroup>
+
+              <FormGroup>
+                <FormLabel>
+                  <Hash size={16} />
+                  Promo Code
+                  <Tooltip title="Create a unique code that students will enter at checkout. Use uppercase letters, numbers, and hyphens only">
+                    <Info
+                      size={14}
+                      style={{ color: "#8c8c8c", cursor: "help" }}
+                    />
+                  </Tooltip>
+                </FormLabel>
+                <HelpText>
+                  <Info size={14} />
+                  The code students will use at checkout (e.g., "SUMMER25",
+                  "WELCOME10")
+                </HelpText>
+                <Form.Item
+                  name="code"
+                  rules={[
+                    { required: true, message: "Please enter a promo code" },
+                    {
+                      pattern: /^[A-Z0-9-]+$/,
+                      message:
+                        "Code must contain only uppercase letters, numbers, and hyphens",
+                    },
+                  ]}
+                >
+                  <StyledFormInput
+                    placeholder="e.g., SUMMER25"
+                    style={{
+                      textTransform: "uppercase",
+                      fontFamily: "monospace",
+                    }}
+                  />
+                </Form.Item>
+              </FormGroup>
+
+              <FormGroup>
+                <FormLabel>
+                  <FileText size={16} />
+                  Description (Optional)
+                  <Tooltip title="Add details about this promotion that will be visible to students when they apply the code">
+                    <Info
+                      size={14}
+                      style={{ color: "#8c8c8c", cursor: "help" }}
+                    />
+                  </Tooltip>
+                </FormLabel>
+                <HelpText>
+                  <Info size={14} />
+                  Explain what this discount offers and any special conditions
+                </HelpText>
+                <Form.Item name="description">
+                  <Input.TextArea
+                    rows={3}
+                    placeholder="e.g., Get 20% off all summer classes when you enroll by June 1st"
+                    style={{ borderRadius: "8px" }}
+                  />
+                </Form.Item>
+              </FormGroup>
+            </FormSection>
+
+            <SectionDivider>
+              <span>
+                <Percent size={16} /> Discount Type & Value
+              </span>
+            </SectionDivider>
+
+            <FormSection>
+              <FormGroup>
+                <FormLabel>
+                  Select Discount Type
+                  <Tooltip title="Choose between a percentage discount (e.g., 20% off) or a fixed amount discount (e.g., $10 off)">
+                    <Info
+                      size={14}
+                      style={{ color: "#8c8c8c", cursor: "help" }}
+                    />
+                  </Tooltip>
+                </FormLabel>
+                <Form.Item name="discount_type">
+                  <FormGrid>
+                    <DiscountTypeCard
+                      $selected={watchedDiscountType === "percentage"}
+                      onClick={() =>
+                        form.setFieldValue("discount_type", "percentage")
+                      }
+                    >
+                      <DiscountTypeIcon
+                        $selected={watchedDiscountType === "percentage"}
+                      >
+                        <Percent size={20} />
+                      </DiscountTypeIcon>
+                      <DiscountTypeTitle>Percentage Off</DiscountTypeTitle>
+                      <DiscountTypeDesc>
+                        Discount as a percentage of the total price
+                      </DiscountTypeDesc>
+                    </DiscountTypeCard>
+
+                    <DiscountTypeCard
+                      $selected={watchedDiscountType === "fixed"}
+                      onClick={() =>
+                        form.setFieldValue("discount_type", "fixed")
+                      }
+                    >
+                      <DiscountTypeIcon
+                        $selected={watchedDiscountType === "fixed"}
+                      >
+                        <DollarSign size={20} />
+                      </DiscountTypeIcon>
+                      <DiscountTypeTitle>Fixed Amount</DiscountTypeTitle>
+                      <DiscountTypeDesc>
+                        Discount as a specific dollar amount
+                      </DiscountTypeDesc>
+                    </DiscountTypeCard>
+                  </FormGrid>
+                </Form.Item>
+              </FormGroup>
+
+              <FormGroup>
+                <FormLabel>
+                  {watchedDiscountType === "percentage" ? (
+                    <Percent size={16} />
+                  ) : (
+                    <DollarSign size={16} />
+                  )}
+                  Discount Value
+                  <Tooltip
+                    title={
+                      watchedDiscountType === "percentage"
+                        ? "Enter the percentage amount to discount (1-100). For example, enter 20 for a 20% discount"
+                        : "Enter the dollar amount to discount. For example, enter 10 for $10 off the total price"
+                    }
+                  >
+                    <Info
+                      size={14}
+                      style={{ color: "#8c8c8c", cursor: "help" }}
+                    />
+                  </Tooltip>
+                </FormLabel>
+                <HelpText>
+                  <Info size={14} />
+                  {watchedDiscountType === "percentage"
+                    ? "Enter a percentage between 1 and 100"
+                    : "Enter the fixed dollar amount to discount"}
+                </HelpText>
+                <Form.Item
+                  name="value"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter a discount value",
+                    },
+                    {
+                      type: "number",
+                      min: watchedDiscountType === "percentage" ? 1 : 0.01,
+                      max:
+                        watchedDiscountType === "percentage" ? 100 : undefined,
+                      message:
+                        watchedDiscountType === "percentage"
+                          ? "Percentage must be between 1 and 100"
+                          : "Amount must be greater than 0",
+                    },
+                  ]}
+                >
+                  <StyledFormInputNumber
+                    min={watchedDiscountType === "percentage" ? 1 : 0.01}
+                    max={watchedDiscountType === "percentage" ? 100 : undefined}
+                    prefix={
+                      watchedDiscountType === "percentage" ? null : (
+                        <DollarSign size={14} />
+                      )
+                    }
+                    suffix={watchedDiscountType === "percentage" ? "%" : null}
+                    placeholder={
+                      watchedDiscountType === "percentage"
+                        ? "e.g., 20"
+                        : "e.g., 10.00"
+                    }
+                    precision={watchedDiscountType === "percentage" ? 0 : 2}
+                  />
+                </Form.Item>
+                <InfoBox>
+                  <InfoBoxText>
+                    {watchedDiscountType === "percentage"
+                      ? "This discount will reduce the total price by the specified percentage. For example, a 20% discount on a $100 class would save $20."
+                      : "This discount will reduce the total price by the exact dollar amount specified, regardless of the original price."}
+                  </InfoBoxText>
+                </InfoBox>
+              </FormGroup>
+            </FormSection>
+
+            <SectionDivider>
+              <span>
+                <Package size={16} /> Applicability
+              </span>
+            </SectionDivider>
+
+            <FormSection>
+              <FormGroup>
+                <FormLabel>
+                  Apply To
+                  <Tooltip title="Choose whether this discount applies to all your classes or only specific ones">
+                    <Info
+                      size={14}
+                      style={{ color: "#8c8c8c", cursor: "help" }}
+                    />
+                  </Tooltip>
+                </FormLabel>
+                <HelpText>
+                  <Info size={14} />
+                  Select which classes this discount can be applied to
+                </HelpText>
+                <Form.Item name="applicable_classes_type">
                   <StyledFormSelect>
-                    <Option value="class">Entire Class</Option>
-                    <Option value="schedule_group">Schedule Group</Option>
+                    <Option value="all_classes">All Classes</Option>
+                    <Option value="specific_class">
+                      Specific Class & Group
+                    </Option>
                   </StyledFormSelect>
                 </Form.Item>
               </FormGroup>
-              {scope === "class" && (
-                <FormGroup>
-                  <FormLabel>Select Class</FormLabel>
-                  <Form.Item
-                    name="target_class"
-                    rules={[{ required: true, message: "Select a class" }]}
-                  >
-                    <StyledFormSelect
-                      showSearch
-                      filterOption={(input, option) =>
-                        option.label.toLowerCase().includes(input.toLowerCase())
-                      }
-                      placeholder="Choose a class"
-                      options={businessClasses.map((c) => ({
-                        value: c.classId,
-                        label: c.title,
-                      }))}
-                    />
-                  </Form.Item>
-                </FormGroup>
-              )}
-              {scope === "schedule_group" && (
+
+              {watchedClassOption === "specific_class" && (
                 <FormGrid>
                   <FormGroup>
-                    <FormLabel>Select Class Option</FormLabel>
+                    <FormLabel>
+                      <Package size={16} />
+                      Select Class
+                      <Tooltip title="Choose the specific class this discount applies to">
+                        <Info
+                          size={14}
+                          style={{ color: "#8c8c8c", cursor: "help" }}
+                        />
+                      </Tooltip>
+                    </FormLabel>
                     <Form.Item
-                      name="target_class_option"
-                      rules={[{ required: true, message: "Select an option" }]}
+                      name="applicable_class_id"
+                      rules={[
+                        {
+                          required: watchedClassOption === "specific_class",
+                          message: "Please select a class",
+                        },
+                      ]}
                     >
                       <StyledFormSelect
+                        placeholder="Choose a class"
+                        loading={loadingClasses}
+                        onChange={(classId) => {
+                          form.setFieldValue("applicable_group", undefined);
+                          fetchScheduleGroups(classId);
+                        }}
                         showSearch
-                        placeholder="Choose an option"
-                        filterOption={(input, option) =>
-                          option.label
-                            .toLowerCase()
-                            .includes(input.toLowerCase())
-                        }
-                        options={classOptions.map((opt) => ({
-                          value: opt.optionId,
-                          label: opt.className,
-                        }))}
-                      />
+                        optionFilterProp="children"
+                      >
+                        {classes.map((cls) => (
+                          <Option key={cls.id} value={cls.id}>
+                            {cls.name}
+                          </Option>
+                        ))}
+                      </StyledFormSelect>
                     </Form.Item>
                   </FormGroup>
                   <FormGroup>
-                    <FormLabel>Select Schedule Group</FormLabel>
-                    <Form.Item
-                      name="target_schedule_group_name"
-                      rules={[{ required: true, message: "Select a group" }]}
-                    >
+                    <FormLabel>
+                      <Users size={16} />
+                      Group (Optional)
+                      <Tooltip title="Optionally select a specific schedule group within the class">
+                        <Info
+                          size={14}
+                          style={{ color: "#8c8c8c", cursor: "help" }}
+                        />
+                      </Tooltip>
+                    </FormLabel>
+                    <Form.Item name="applicable_group">
                       <StyledFormSelect
                         placeholder="Choose a group"
                         loading={loadingSchedules}
@@ -1412,13 +1516,39 @@ const Discounts = () => {
             <FormSection>
               <MobileFormGrid>
                 <FormGroup>
-                  <FormLabel>Status</FormLabel>
+                  <FormLabel>
+                    <TrendingUp size={16} />
+                    Status
+                    <Tooltip title="Active discounts can be used by students. Inactive discounts are hidden and cannot be applied">
+                      <Info
+                        size={14}
+                        style={{ color: "#8c8c8c", cursor: "help" }}
+                      />
+                    </Tooltip>
+                  </FormLabel>
+                  <HelpText>
+                    <Info size={14} />
+                    Enable or disable this discount
+                  </HelpText>
                   <Form.Item name="is_active" valuePropName="checked">
                     <StyledSwitch />
                   </Form.Item>
                 </FormGroup>
                 <FormGroup>
-                  <FormLabel>Validity Period</FormLabel>
+                  <FormLabel>
+                    <Calendar size={16} />
+                    Validity Period
+                    <Tooltip title="Set when this discount code becomes available and when it expires. Leave empty for no expiration">
+                      <Info
+                        size={14}
+                        style={{ color: "#8c8c8c", cursor: "help" }}
+                      />
+                    </Tooltip>
+                  </FormLabel>
+                  <HelpText>
+                    <Info size={14} />
+                    Set start and end dates (optional)
+                  </HelpText>
                   <Form.Item name="valid_dates">
                     <StyledFormRangePicker />
                   </Form.Item>
@@ -1426,25 +1556,65 @@ const Discounts = () => {
               </MobileFormGrid>
               <MobileFormGrid>
                 <FormGroup>
-                  <FormLabel>Total Usage Limit</FormLabel>
+                  <FormLabel>
+                    <Target size={16} />
+                    Total Usage Limit
+                    <Tooltip title="Set the maximum number of times this discount can be used across all students. Leave empty for unlimited uses">
+                      <Info
+                        size={14}
+                        style={{ color: "#8c8c8c", cursor: "help" }}
+                      />
+                    </Tooltip>
+                  </FormLabel>
+                  <HelpText>
+                    <Info size={14} />
+                    Max times this code can be used overall
+                  </HelpText>
                   <Form.Item name="usage_limit">
                     <StyledFormInputNumber min={1} placeholder="Unlimited" />
                   </Form.Item>
                 </FormGroup>
                 <FormGroup>
-                  <FormLabel>Limit Per User</FormLabel>
+                  <FormLabel>
+                    <Users size={16} />
+                    Limit Per User
+                    <Tooltip title="Set how many times each individual student can use this discount. Leave empty for no per-user limit">
+                      <Info
+                        size={14}
+                        style={{ color: "#8c8c8c", cursor: "help" }}
+                      />
+                    </Tooltip>
+                  </FormLabel>
+                  <HelpText>
+                    <Info size={14} />
+                    Max times per student can use this code
+                  </HelpText>
                   <Form.Item name="usage_limit_per_user">
                     <StyledFormInputNumber min={1} placeholder="Unlimited" />
                   </Form.Item>
                 </FormGroup>
               </MobileFormGrid>
               <FormGroup>
-                <FormLabel>Minimum Purchase</FormLabel>
+                <FormLabel>
+                  <ShoppingCart size={16} />
+                  Minimum Purchase
+                  <Tooltip title="Set a minimum purchase amount required to use this discount. Leave empty for no minimum">
+                    <Info
+                      size={14}
+                      style={{ color: "#8c8c8c", cursor: "help" }}
+                    />
+                  </Tooltip>
+                </FormLabel>
+                <HelpText>
+                  <Info size={14} />
+                  Minimum cart value required to apply this discount
+                </HelpText>
                 <Form.Item name="min_purchase_amount">
                   <StyledFormInputNumber
                     min={0}
                     placeholder="No minimum"
                     precision={2}
+                    prefix={<DollarSign size={14} />}
                   />
                 </Form.Item>
               </FormGroup>
@@ -1454,7 +1624,7 @@ const Discounts = () => {
       </DrawerBody>
 
       <DrawerFooter>
-        <Button onClick={onDrawerClose} disabled={saveLoading}>
+        <Button onClick={onDrawerClose} disabled={saveLoading} size="middle">
           Cancel
         </Button>
         <Button
@@ -1463,6 +1633,7 @@ const Discounts = () => {
           onClick={() => form.submit()}
           loading={saveLoading}
           disabled={loading}
+          size="middle"
         >
           {editingDiscount ? "Save Changes" : "Create Discount"}
         </Button>

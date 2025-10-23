@@ -472,7 +472,7 @@ const NotificationsButton = () => {
   useEffect(() => {
     if (currentUser) {
       fetchUnreadCount();
-      const countInterval = setInterval(fetchUnreadCount, 60000);
+      const countInterval = setInterval(fetchUnreadCount, 300000);
       return () => clearInterval(countInterval);
     } else {
       setUnreadCount(0);
