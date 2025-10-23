@@ -146,15 +146,6 @@ const nextConfig = {
       
       // Next.js static assets - 1 YEAR CACHE
       {
-        source: '/favicon/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
         source: '/_next/static/:path*',
         headers: [
           {
