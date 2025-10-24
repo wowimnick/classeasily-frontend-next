@@ -158,24 +158,27 @@ const nextConfig = {
   },
 
   async rewrites() {
-    // Get base API URL without /api suffix for root-level files
+    // Backend API URL (without /api suffix) for robots.txt and sitemap - DJANGO
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-    const baseUrl = apiUrl.replace(/\/api$/, '');
+    const backendUrl = apiUrl.replace(/\/api$/, '');
+    
+    // CloudFront URL for static files from S3
+    const cloudFrontUrl = process.env.NEXT_PUBLIC_CLOUDFRONT_URL || 'https://d1uuoquc68y10e.cloudfront.net';
 
     return [
-      // Proxy robots.txt and sitemap to Django backend
+      // Proxy robots.txt and sitemap to Django backend (dynamically generated)
       {
         source: '/robots.txt',
-        destination: `${baseUrl}/robots.txt`,
+        destination: `${backendUrl}/robots.txt`,
       },
       {
         source: '/sitemap.xml',
-        destination: `${baseUrl}/sitemap.xml`,
+        destination: `${backendUrl}/sitemap.xml`,
       },
-      // Proxy /public/* to backend S3 bucket
+      // Proxy /public/* to CloudFront (S3 static files)
       {
         source: '/public/:path*',
-        destination: `${baseUrl}/public/:path*`,
+        destination: `${cloudFrontUrl}/public/:path*`,
       },
     ];
   },
