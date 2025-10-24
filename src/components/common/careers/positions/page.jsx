@@ -555,8 +555,8 @@ export default function JobsPage() {
         hiringOrganization: {
           "@type": "Organization",
           name: "Classeasily",
-          sameAs: "https://www.classeasily.com", // Replace with your domain
-          logo: "https://www.classeasily.com/logo.png", // Replace with your logo URL
+          sameAs: "https://classeasily.com", // Replace with your domain
+          logo: "https://classeasily.com/logo.png", // Replace with your logo URL
         },
         datePosted: new Date().toISOString().split("T")[0], // Replace with actual post date
         validThrough: new Date(new Date().setDate(new Date().getDate() + 60))
@@ -647,10 +647,7 @@ export default function JobsPage() {
         name="description"
         content="Join our mission to transform education. Explore open roles in engineering, product, design, and more at Classeasily."
       />
-      <link
-        rel="canonical"
-        href="https://www.classeasily.com/careers/positions"
-      />{" "}
+      <link rel="canonical" href="https://classeasily.com/careers/positions" />{" "}
       {/* Replace domain */}
       {/* Add JobPosting schema for each job */}
       {jobPostingSchemas && jobPostingSchemas.length > 0 && (

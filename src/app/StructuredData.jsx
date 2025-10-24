@@ -4,15 +4,15 @@ export function OrganizationSchema() {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "Classeasily",
-    url: "https://www.classeasily.com",
+    url: "https://classeasily.com",
     logo: "https://i.imgur.com/biTTckW.png",
     description:
       "Discover and book local classes and workshops in art, cooking, fitness, and more.",
     sameAs: [
       // Add your social media profiles
-      // "https://www.facebook.com/classeasily",
+      // "https://facebook.com/classeasily",
       // "https://twitter.com/classeasily",
-      // "https://www.linkedin.com/company/classeasily"
+      // "https://linkedin.com/company/classeasily"
     ],
     contactPoint: {
       "@type": "ContactPoint",
@@ -34,13 +34,12 @@ export function WebsiteSchema() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "Classeasily",
-    url: "https://www.classeasily.com",
+    url: "https://classeasily.com",
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate:
-          "https://www.classeasily.com/explore?q={search_term_string}",
+        urlTemplate: "https://classeasily.com/explore?q={search_term_string}",
       },
       "query-input": "required name=search_term_string",
     },

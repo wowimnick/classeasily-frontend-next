@@ -33,7 +33,7 @@ function generateStructuredData(routeParams, classes, locationName) {
           "@type": "Organization",
           name: classItem.business_name || "Classeasily",
         },
-        url: `https://www.classeasily.com/classes/${classItem.slug}`,
+        url: `https://classeasily.com/classes/${classItem.slug}`,
         ...(classItem.average_rating > 0 && {
           aggregateRating: {
             "@type": "AggregateRating",
@@ -133,7 +133,7 @@ export async function generateMetadata({ params, searchParams }) {
     }
     const queryString = new URLSearchParams(plainSearchParams).toString();
 
-    const fullUrl = `https://www.classeasily.com${url}${
+    const fullUrl = `https://classeasily.com${url}${
       queryString ? `?${queryString}` : ""
     }`;
 

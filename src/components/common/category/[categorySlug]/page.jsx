@@ -40,7 +40,7 @@ export async function generateMetadata({ params }) {
       title: `${category.name} | ClassEasily Blog`,
       description: `Browse ${category.name} articles on the ClassEasily Blog.`,
       type: "website",
-      url: `https://www.classeasily.com/blog/category/${category.slug}`,
+      url: `https://classeasily.com/blog/category/${category.slug}`,
       siteName: "ClassEasily",
     },
     twitter: {
@@ -49,7 +49,7 @@ export async function generateMetadata({ params }) {
       description: `Browse ${category.name} articles on the ClassEasily Blog.`,
     },
     alternates: {
-      canonical: `https://www.classeasily.com/blog/category/${category.slug}`,
+      canonical: `https://classeasily.com/blog/category/${category.slug}`,
     },
   };
 }

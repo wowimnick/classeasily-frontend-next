@@ -90,7 +90,7 @@ export async function generateMetadata({ params }) {
       images: business_image_medium_url ? [business_image_medium_url] : [],
     },
     alternates: {
-      canonical: `https://www.classeasily.com/businesses/${slug}`,
+      canonical: `https://classeasily.com/businesses/${slug}`,
     },
   };
 }
@@ -122,7 +122,7 @@ export default async function BusinessPage({ params }) {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "@id": `https://www.classeasily.com/businesses/${slug}`,
+    "@id": `https://classeasily.com/businesses/${slug}`,
     name: businessData.businessName,
     description: businessData.businessDescription,
     image: businessData.business_image_medium_url,
@@ -142,7 +142,7 @@ export default async function BusinessPage({ params }) {
           worstRating: 1,
         }
       : undefined,
-    url: `https://www.classeasily.com/businesses/${slug}`,
+    url: `https://classeasily.com/businesses/${slug}`,
     telephone: businessData.studentContactPhone,
     email: businessData.studentContactEmail,
     openingHoursSpecification:
@@ -163,19 +163,19 @@ export default async function BusinessPage({ params }) {
         "@type": "ListItem",
         position: 1,
         name: "Home",
-        item: "https://www.classeasily.com",
+        item: "https://classeasily.com",
       },
       {
         "@type": "ListItem",
         position: 2,
         name: "Businesses",
-        item: "https://www.classeasily.com/businesses",
+        item: "https://classeasily.com/businesses",
       },
       {
         "@type": "ListItem",
         position: 3,
         name: businessData.businessName,
-        item: `https://www.classeasily.com/businesses/${slug}`,
+        item: `https://classeasily.com/businesses/${slug}`,
       },
     ],
   };

@@ -79,11 +79,11 @@ export const metadata = {
   openGraph: {
     title: "Classeasily - Find Local Classes & Workshops Near You",
     description: "Discover and book local classes and workshops in your area.",
-    url: "https://www.classeasily.com",
+    url: "https://classeasily.com",
     siteName: "Classeasily",
     images: [
       {
-        url: "https://www.classeasily.com/og-image.jpg",
+        url: "https://classeasily.com/og-image.jpg",
         width: 1200,
         height: 630,
       },
@@ -95,10 +95,10 @@ export const metadata = {
     card: "summary_large_image",
     title: "Classeasily - Find Local Classes & Workshops Near You",
     description: "Discover and book local classes and workshops in your area.",
-    images: ["https://www.classeasily.com/twitter-image.jpg"],
+    images: ["https://classeasily.com/twitter-image.jpg"],
   },
   alternates: {
-    canonical: "https://www.classeasily.com",
+    canonical: "https://classeasily.com",
   },
   other: {
     "application/ld+json": JSON.stringify([
@@ -106,22 +106,22 @@ export const metadata = {
         "@context": "https://schema.org",
         "@type": "Organization",
         name: "Classeasily",
-        url: "https://www.classeasily.com",
-        logo: "https://www.classeasily.com/logo.png",
+        url: "https://classeasily.com",
+        logo: "https://classeasily.com/logo.png",
         sameAs: [
-          "https://www.facebook.com/classeasily",
-          "https://www.linkedin.com/company/classeasily",
+          "https://facebook.com/classeasily",
+          "https://linkedin.com/company/classeasily",
         ],
       },
       {
         "@context": "https://schema.org",
         "@type": "WebSite",
         name: "Classeasily",
-        url: "https://www.classeasily.com",
+        url: "https://classeasily.com",
         potentialAction: {
           "@type": "SearchAction",
           target:
-            "https://www.classeasily.com/explore?keyword={search_term_string}",
+            "https://classeasily.com/explore?keyword={search_term_string}",
           "query-input": "required name=search_term_string",
         },
       },

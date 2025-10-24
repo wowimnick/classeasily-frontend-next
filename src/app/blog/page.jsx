@@ -20,11 +20,11 @@ export const metadata = {
     description:
       "Inspiration and insights for our community of learners and instructors.",
     type: "website",
-    url: "https://www.classeasily.com/blog",
+    url: "https://classeasily.com/blog",
     siteName: "ClassEasily",
     images: [
       {
-        url: "https://www.classeasily.com/images/blog-og-image.jpg",
+        url: "https://classeasily.com/images/blog-og-image.jpg",
         width: 1200,
         height: 630,
         alt: "ClassEasily Blog",
@@ -35,10 +35,10 @@ export const metadata = {
     card: "summary_large_image",
     title: "The ClassEasily Blog",
     description: "Expert insights for learners and instructors",
-    images: ["https://www.classeasily.com/images/blog-og-image.jpg"],
+    images: ["https://classeasily.com/images/blog-og-image.jpg"],
   },
   alternates: {
-    canonical: "https://www.classeasily.com/blog",
+    canonical: "https://classeasily.com/blog",
   },
 };
 

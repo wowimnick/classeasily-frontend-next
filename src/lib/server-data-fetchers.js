@@ -625,7 +625,7 @@ export function generateClassesStructuredData(classes) {
       'position': index + 1,
       'item': {
         '@type': 'Course',
-        '@id': `https://www.classeasily.com/classes/${classItem.slug || classItem.classId}`,
+        '@id': `https://classeasily.com/classes/${classItem.slug || classItem.classId}`,
         'name': classItem.title || 'Class',
         'description': classItem.description || '',
         'provider': {
@@ -660,7 +660,7 @@ export function generateClassStructuredData(classData) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Course',
-    '@id': `https://www.classeasily.com/classes/${classData.slug || classData.classId}`,
+    '@id': `https://classeasily.com/classes/${classData.slug || classData.classId}`,
     'name': classData.title || 'Class',
     'description': classData.description || '',
     'provider': {
@@ -699,11 +699,11 @@ export function generateBusinessStructuredData(businessData) {
   return {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "@id": `https://www.classeasily.com/businesses/${businessData.slug}`,
+    "@id": `https://classeasily.com/businesses/${businessData.slug}`,
     "name": businessData.businessName,
     "description": businessData.businessDescription,
     "image": businessData.business_image_medium_url,
-    "url": `https://www.classeasily.com/businesses/${businessData.slug}`,
+    "url": `https://classeasily.com/businesses/${businessData.slug}`,
     "telephone": businessData.studentContactPhone,
     "email": businessData.studentContactEmail,
     "address": {
@@ -743,13 +743,13 @@ export function generateBlogStructuredData(posts) {
   return {
     "@context": "https://schema.org",
     "@type": "Blog",
-    "@id": "https://www.classeasily.com/blog",
+    "@id": "https://classeasily.com/blog",
     "name": "ClassEasily Blog",
     "description": "Inspiration and insights for learners and instructors",
-    "url": "https://www.classeasily.com/blog",
+    "url": "https://classeasily.com/blog",
     "blogPost": posts.slice(0, 10).map(post => ({
       "@type": "BlogPosting",
-      "@id": `https://www.classeasily.com/blog/${post.slug}`,
+      "@id": `https://classeasily.com/blog/${post.slug}`,
       "headline": post.title,
       "description": post.excerpt,
       "image": post.imageUrl,
@@ -764,7 +764,7 @@ export function generateBlogStructuredData(posts) {
         "name": "ClassEasily",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://www.classeasily.com/logo.png",
+          "url": "https://classeasily.com/logo.png",
         },
       },
     })),
@@ -780,7 +780,7 @@ export function generateBlogPostStructuredData(post) {
   return {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    "@id": `https://www.classeasily.com/blog/${post.slug}`,
+    "@id": `https://classeasily.com/blog/${post.slug}`,
     "headline": post.title,
     "description": post.excerpt || post.title,
     "image": post.imageUrl,
@@ -799,12 +799,12 @@ export function generateBlogPostStructuredData(post) {
       "name": "ClassEasily",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://www.classeasily.com/logo.png",
+        "url": "https://classeasily.com/logo.png",
       },
     },
     "mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": `https://www.classeasily.com/blog/${post.slug}`,
+      "@id": `https://classeasily.com/blog/${post.slug}`,
     },
     "articleSection": post.category?.name,
     "keywords": Array.isArray(post.tags) ? post.tags.join(", ") : post.tags,
@@ -825,19 +825,19 @@ export function generateBlogBreadcrumbStructuredData(post) {
         "@type": "ListItem",
         "position": 1,
         "name": "Home",
-        "item": "https://www.classeasily.com"
+        "item": "https://classeasily.com"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Blog",
-        "item": "https://www.classeasily.com/blog"
+        "item": "https://classeasily.com/blog"
       },
       {
         "@type": "ListItem",
         "position": 3,
         "name": post.title,
-        "item": `https://www.classeasily.com/blog/${post.slug}`
+        "item": `https://classeasily.com/blog/${post.slug}`
       }
     ]
   };
@@ -855,19 +855,19 @@ export function generateBusinessBreadcrumbStructuredData(businessData) {
         "@type": "ListItem",
         "position": 1,
         "name": "Home",
-        "item": "https://www.classeasily.com"
+        "item": "https://classeasily.com"
       },
       {
         "@type": "ListItem",
         "position": 2,
         "name": "Businesses",
-        "item": "https://www.classeasily.com/businesses"
+        "item": "https://classeasily.com/businesses"
       },
       {
         "@type": "ListItem",
         "position": 3,
         "name": businessData.businessName,
-        "item": `https://www.classeasily.com/businesses/${businessData.slug}`
+        "item": `https://classeasily.com/businesses/${businessData.slug}`
       }
     ]
   };

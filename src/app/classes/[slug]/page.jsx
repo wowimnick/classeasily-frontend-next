@@ -170,11 +170,11 @@ export async function generateMetadata({ params }) {
   const pageDescription = classData?.description
     ? classData.description.substring(0, 160) + "..."
     : "View details and book this class on Classeasily.";
-  const canonicalUrl = `https://www.classeasily.com/classes/${classData.slug}`;
+  const canonicalUrl = `https://classeasily.com/classes/${classData.slug}`;
   const imageUrl =
     classData.images?.length > 0
       ? classData.images[0].original_url
-      : "https://www.classeasily.com/placeholder-image.jpg";
+      : "https://classeasily.com/placeholder-image.jpg";
 
   const courseSchema = {
     "@context": "https://schema.org",
@@ -186,7 +186,7 @@ export async function generateMetadata({ params }) {
     provider: {
       "@type": "Organization",
       name: businessData?.businessName || "Classeasily Partner",
-      url: businessData?.website || "https://www.classeasily.com",
+      url: businessData?.website || "https://classeasily.com",
     },
     aggregateRating: {
       "@type": "AggregateRating",

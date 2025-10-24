@@ -9,7 +9,7 @@ import { OrganizationSchema, WebsiteSchema } from './StructuredData';
 import './globals.css';
 
 export const metadata = {
-  metadataBase: new URL('https://www.classeasily.com'),
+  metadataBase: new URL('https://classeasily.com'),
   title: {
     default: "Classeasily - Discover Local Classes & Workshops",
     template: "%s | Classeasily"
@@ -33,7 +33,7 @@ export const metadata = {
       height: 630,
       alt: 'Classeasily - Discover Local Classes'
     }],
-    url: "https://www.classeasily.com",
+    url: "https://classeasily.com",
     siteName: "Classeasily",
     type: "website",
     locale: "en_US",
@@ -52,7 +52,7 @@ export const metadata = {
     capable: true,
   },
   alternates: {
-    canonical: 'https://www.classeasily.com',
+    canonical: 'https://classeasily.com',
   },
   robots: {
     index: true,

@@ -48,7 +48,7 @@ export async function generateMetadata({ params }) {
         title: post.title,
         description: post.excerpt,
         type: "article",
-        url: `https://www.classeasily.com/blog/${post.slug}`,
+        url: `https://classeasily.com/blog/${post.slug}`,
         siteName: "ClassEasily",
         publishedTime: post.publishedDate,
         modifiedTime: post.updatedDate || post.publishedDate,
@@ -71,7 +71,7 @@ export async function generateMetadata({ params }) {
         images: [post.imageUrl],
       },
       alternates: {
-        canonical: `https://www.classeasily.com/blog/${post.slug}`,
+        canonical: `https://classeasily.com/blog/${post.slug}`,
       },
     };
   } catch {
