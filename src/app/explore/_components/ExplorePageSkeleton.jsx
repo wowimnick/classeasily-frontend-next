@@ -177,7 +177,7 @@ const SkeletonClassGridWrapper = styled.div`
   overflow: hidden;
 
   @media (max-width: 1048px) {
-    padding: 1rem;
+    padding: 0.5rem;
   }
 `;
 
@@ -221,12 +221,27 @@ const SkeletonCount = styled(SkeletonBase)`
 
 const SkeletonClassGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(max(140px, calc((100% - 72px) / 4)), 1fr)
+  );
   gap: clamp(16px, 3vw, 24px);
   overflow: hidden;
 
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  @media (max-width: 1048px) {
+    gap: 12px;
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(max(140px, calc((100% - 36px) / 3)), 1fr)
+    );
+  }
+
+  @media (max-width: 600px) {
+    gap: 10px;
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(max(140px, calc((100% - 10px) / 2)), 1fr)
+    );
   }
 `;
 
@@ -248,18 +263,31 @@ const SkeletonCardImageContainer = styled.div`
   border-radius: 10px;
   overflow: hidden;
   margin-bottom: 6px;
+
+  @media (max-width: 600px) {
+    margin-bottom: 4px;
+    border-radius: 8px;
+  }
 `;
 
 const SkeletonCardImage = styled(SkeletonBase)`
   width: 100%;
   height: 100%;
   border-radius: 10px;
+
+  @media (max-width: 600px) {
+    border-radius: 8px;
+  }
 `;
 
 const SkeletonCardContent = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1px;
+
+  @media (max-width: 600px) {
+    gap: 0.5px;
+  }
 `;
 
 const SkeletonTopRow = styled.div`
@@ -275,6 +303,10 @@ const SkeletonCardTitle = styled(SkeletonBase)`
   width: 70%;
   flex: 1;
   border-radius: 4px;
+
+  @media (max-width: 600px) {
+    height: 15px;
+  }
 `;
 
 const SkeletonRating = styled(SkeletonBase)`
@@ -282,6 +314,11 @@ const SkeletonRating = styled(SkeletonBase)`
   width: 45px;
   border-radius: 4px;
   flex-shrink: 0;
+
+  @media (max-width: 600px) {
+    height: 14px;
+    width: 38px;
+  }
 `;
 
 const SkeletonCompanyInfo = styled(SkeletonBase)`
@@ -289,6 +326,11 @@ const SkeletonCompanyInfo = styled(SkeletonBase)`
   width: 60%;
   border-radius: 4px;
   margin: 2px 0;
+
+  @media (max-width: 600px) {
+    height: 14px;
+    margin: 1px 0;
+  }
 `;
 
 const SkeletonLocationRow = styled(SkeletonBase)`
@@ -296,6 +338,11 @@ const SkeletonLocationRow = styled(SkeletonBase)`
   width: 50%;
   border-radius: 4px;
   margin: 2px 0;
+
+  @media (max-width: 600px) {
+    height: 14px;
+    margin: 1px 0;
+  }
 `;
 
 const SkeletonPriceRow = styled.div`
@@ -309,12 +356,22 @@ const SkeletonPrice = styled(SkeletonBase)`
   height: 16px;
   width: 65px;
   border-radius: 4px;
+
+  @media (max-width: 600px) {
+    height: 14px;
+    width: 55px;
+  }
 `;
 
 const SkeletonPriceSeparator = styled(SkeletonBase)`
   height: 10px;
   width: 10px;
   border-radius: 50%;
+
+  @media (max-width: 600px) {
+    height: 8px;
+    width: 8px;
+  }
 `;
 
 // Map skeleton

@@ -88,7 +88,7 @@ const ClassGridWrapper = styled.div`
   }
 
   @media (max-width: 1048px) {
-    padding: 1rem;
+    padding: 0.5rem !important;
   }
 `;
 
@@ -134,11 +134,26 @@ const ResultsCount = styled.p`
 
 const ClassGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(max(140px, calc((100% - 72px) / 4)), 1fr)
+  );
   gap: clamp(16px, 3vw, 24px);
 
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  @media (max-width: 1048px) {
+    gap: 12px;
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(max(140px, calc((100% - 36px) / 3)), 1fr)
+    );
+  }
+
+  @media (max-width: 600px) {
+    gap: 10px;
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(max(140px, calc((100% - 10px) / 2)), 1fr)
+    );
   }
 `;
 

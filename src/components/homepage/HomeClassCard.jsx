@@ -57,18 +57,12 @@ const CardContainer = styled(motion.div)`
   width: 100%;
   padding: ${(props) => (props.$isSelected ? "2px" : "0")};
   transition: padding 0.2s ease;
-`;
 
-const ImageContainer = styled.div`
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 6px;
-  background: #f7f7f7;
+  @media (max-width: 600px) {
+    /* Scale down content on mobile */
+    font-size: 0.9em;
+  }
 `;
-
 const ImageWrapper = styled.div`
   position: absolute;
   top: 0;
@@ -140,12 +134,6 @@ const FavoriteButton = styled.button`
   }
 `;
 
-const ContentContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-`;
-
 const TopRow = styled.div`
   display: flex;
   justify-content: space-between;
@@ -166,6 +154,66 @@ const TitleText = styled.div`
   text-overflow: ellipsis;
   flex: 1;
   min-width: 0;
+
+  @media (max-width: 600px) {
+    font-size: 12px;
+    -webkit-line-clamp: 2;
+  }
+`;
+
+const CompanyInfo = styled.div`
+  color: #717171;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  @media (max-width: 600px) {
+    font-size: 11px;
+  }
+`;
+
+const LocationRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: #717171;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  @media (max-width: 600px) {
+    font-size: 11px;
+  }
+`;
+
+const Price = styled.div`
+  color: #222;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  white-space: nowrap;
+
+  @media (max-width: 600px) {
+    font-size: 12px;
+  }
+`;
+
+const PriceLabel = styled.span`
+  color: #717171;
+  font-size: 13px;
+  font-weight: 400;
+
+  @media (max-width: 600px) {
+    font-size: 11px;
+  }
 `;
 
 const Rating = styled.div`
@@ -183,40 +231,56 @@ const Rating = styled.div`
     fill: #222;
     stroke-width: 0;
   }
+
+  @media (max-width: 600px) {
+    font-size: 11px;
+
+    svg {
+      width: 10px;
+      height: 10px;
+    }
+  }
 `;
 
 const ReviewCount = styled.span`
   color: #717171;
   font-size: 13px;
   font-weight: 400;
+
+  @media (max-width: 600px) {
+    font-size: 11px;
+  }
 `;
 
-const CompanyInfo = styled.div`
-  color: #717171;
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 1.3;
-  white-space: nowrap;
+// Update ImageContainer margin for mobile:
+const ImageContainer = styled.div`
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
   overflow: hidden;
-  text-overflow: ellipsis;
+  margin-bottom: 6px;
+  background: #f7f7f7;
+
+  @media (max-width: 600px) {
+    margin-bottom: 4px;
+    border-radius: 8px;
+  }
 `;
 
-const LocationRow = styled.div`
+// Update ContentContainer gap for mobile:
+const ContentContainer = styled.div`
   display: flex;
-  align-items: center;
-  gap: 3px;
-  color: #717171;
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex-direction: column;
+  gap: 1px;
+
+  @media (max-width: 600px) {
+    gap: 0.5px;
+  }
 `;
 
 const DistanceBadge = styled.span`
   color: #717171;
-  font-size: 13px;
   font-weight: 400;
   flex-shrink: 0;
   display: flex;
@@ -231,23 +295,6 @@ const PriceRow = styled.div`
   margin-top: 2px;
   flex-wrap: wrap;
 `;
-
-const Price = styled.div`
-  color: #222;
-  font-size: 14px;
-  font-weight: 600;
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-  white-space: nowrap;
-`;
-
-const PriceLabel = styled.span`
-  color: #717171;
-  font-size: 13px;
-  font-weight: 400;
-`;
-
 const PriceSeparator = styled.span`
   color: #717171;
   font-size: 12px;

@@ -805,9 +805,21 @@ const LogoContainer = styled.div`
   display: flex;
   align-items: center;
   padding-right: 1rem;
+
+  /* Add this to control logo size */
+  svg {
+    width: 40px;
+    height: 40px;
+  }
+
   @media (max-width: 768px) {
     padding-right: 0.5rem;
     flex-shrink: 0;
+
+    svg {
+      width: 32px; /* Smaller on mobile */
+      height: 32px;
+    }
   }
 `;
 

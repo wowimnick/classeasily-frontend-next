@@ -53,7 +53,6 @@ const HeaderContainer = styled.div`
   justify-content: space-between;
   align-items: flex-end;
   width: 100%;
-  margin-bottom: 1rem;
   gap: 1rem;
 `;
 
