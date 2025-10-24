@@ -17,8 +17,8 @@ import { ArrowRightOutlined } from "@ant-design/icons";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import { classService } from "@/services/apiService";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import HomeClassCard from "@/components/homepage/HomeClassCard";
+import { FindClassSkeleton } from "./FindClassSkeleton"; // Import skeleton
 
 // --- STYLED COMPONENTS ---
 const { Title: AntTitle, Paragraph } = Typography;
@@ -117,6 +117,21 @@ const LoadingOverlay = styled.div`
   backdrop-filter: blur(2px);
 `;
 
+const ButtonSpinner = styled.div`
+  border: 2px solid rgba(255, 56, 92, 0.2);
+  border-left-color: #ff385c;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 0.8s linear infinite;
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
 const ButtonContainer = styled(motion.div)`
   display: flex;
   gap: 0.5rem;
@@ -193,6 +208,14 @@ const NoClassesFound = styled.div`
   font-style: italic;
 `;
 
+// Skeleton carousel for initial loading
+const SkeletonCarousel = styled.div`
+  display: flex;
+  gap: 24px;
+  padding: 1rem 0.5rem;
+  overflow: hidden;
+`;
+
 // --- CONFIGURATION ---
 const ENABLE_IP_GEOLOCATION = true;
 const AWS_LOCATION_API_URL =
@@ -241,10 +264,15 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
   const searchParams = useSearchParams();
   const [isMounted, setIsMounted] = useState(false);
   const [classes, setClasses] = useState(initialClasses);
-  const [loading, setLoading] = useState(!initialClasses.length);
+
+  // FIX: Start with loading=false if we have initialClasses
+  const [loading, setLoading] = useState(initialClasses.length === 0);
+
   const [nextPageUrl, setNextPageUrl] = useState(initialNextPageUrl);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const isInitialLoad = useRef(true);
+  const isComponentMounted = useRef(false);
+
   const [userLocation, setUserLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
   const [locationError, setLocationError] = useState(null);
@@ -260,128 +288,108 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
   const [nextBtnDisabled, setNextBtnDisabled] = useState(true);
   const [showButtons, setShowButtons] = useState(false);
 
-  // Handle hydration
+  // Handle hydration and set component mounted flag
   useEffect(() => {
     setIsMounted(true);
+    isComponentMounted.current = true;
+
+    return () => {
+      isComponentMounted.current = false;
+    };
   }, []);
 
   // Step 1: ALWAYS attempt to get user location (client-side only)
   useEffect(() => {
     if (!isMounted) return;
 
-    let isComponentMounted = true;
-
-    const fetchIpLocation = async () => {
-      try {
-        const response = await fetch("https://ipapi.co/json/");
-        if (!response.ok) throw new Error("IP API failed");
-        const data = await response.json();
-        if (data && data.latitude && data.longitude && isComponentMounted) {
-          setUserLocation({
-            lat: data.latitude,
-            lng: data.longitude,
-            city: data.city,
-            region: data.region,
-            region_code: data.region_code,
-          });
-        } else {
-          throw new Error(data.reason || "Invalid data from IP API");
-        }
-      } catch (err) {
-        if (isComponentMounted) setLocationError(err.message);
-      } finally {
-        if (isComponentMounted) setLoadingLocation(false);
-      }
-    };
-
-    const fetchBrowserLocation = () => {
-      if (!navigator.geolocation) {
-        if (isComponentMounted) {
-          setLocationError("Geolocation is not supported.");
-          setLoadingLocation(false);
-        }
+    const fetchUserLocation = async () => {
+      if (!ENABLE_IP_GEOLOCATION) {
+        setLoadingLocation(false);
         return;
       }
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          if (!isComponentMounted) return;
-          const { latitude, longitude } = position.coords;
-          try {
-            const response = await fetch(
-              `${AWS_LOCATION_API_URL}?lat=${latitude}&lng=${longitude}&reverse=true`
-            );
-            if (!response.ok)
-              throw new Error(`Reverse geocoding failed: ${response.status}`);
-            const data = await response.json();
 
-            if (Array.isArray(data) && data.length > 0) {
-              const place = data[0];
-              setUserLocation({
-                lat: latitude,
-                lng: longitude,
-                city: place.city || place.locality || place.place || null,
-                region: place.state || place.region || null,
-                region_code: place.state || place.region || "",
-              });
-            } else {
-              setUserLocation({
-                lat: latitude,
-                lng: longitude,
-                city: null,
-                region: null,
-                region_code: "",
-              });
-            }
-          } catch (error) {
-            console.error("Reverse geocoding error:", error);
-            setUserLocation({
-              lat: latitude,
-              lng: longitude,
-              city: null,
-              region: null,
-              region_code: "",
-            });
-          } finally {
-            setLoadingLocation(false);
-          }
-        },
-        (error) => {
-          if (isComponentMounted) {
-            setLocationError(error.message);
-            setLoadingLocation(false);
-          }
+      try {
+        const response = await fetch(AWS_LOCATION_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "ipLocation" }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch location");
         }
-      );
+
+        const data = await response.json();
+
+        if (data?.location) {
+          const { latitude, longitude, city, region, country, regionCode } =
+            data.location;
+          const parsedLocation = {
+            lat: parseFloat(latitude),
+            lng: parseFloat(longitude),
+            city: city || "",
+            region: region || "",
+            country: country || "",
+            region_code: regionCode || "",
+          };
+
+          if (
+            !isNaN(parsedLocation.lat) &&
+            !isNaN(parsedLocation.lng) &&
+            isComponentMounted.current
+          ) {
+            setUserLocation(parsedLocation);
+            setLocationError(null);
+          } else {
+            throw new Error("Invalid location coordinates");
+          }
+        } else {
+          throw new Error("No location data returned");
+        }
+      } catch (err) {
+        console.error("Location fetch error:", err);
+        if (isComponentMounted.current) {
+          setLocationError(err.message);
+        }
+      } finally {
+        if (isComponentMounted.current) {
+          setLoadingLocation(false);
+        }
+      }
     };
 
-    if (ENABLE_IP_GEOLOCATION) {
-      fetchIpLocation();
-    } else {
-      fetchBrowserLocation();
-    }
-
-    return () => {
-      isComponentMounted = false;
-    };
+    fetchUserLocation();
   }, [isMounted]);
 
-  // Step 2: Fetch classes if not provided as props
+  // Step 2: Fetch classes only on initial mount if initialClasses is empty
   useEffect(() => {
-    if (!isMounted || initialClasses.length > 0) return;
-    // Remove loadingLocation check here
+    if (!isMounted) return;
+    if (!isInitialLoad.current) return;
 
+    // If we have initialClasses from server, use them
+    if (initialClasses.length > 0) {
+      console.log(
+        "[FindClass] Using preloaded classes from server:",
+        initialClasses.length
+      );
+      isInitialLoad.current = false;
+      setLoading(false);
+      return;
+    }
+
+    // Only fetch if no initialClasses provided
     const fetchClasses = async () => {
-      setLoading(true);
+      console.log("[FindClass] No preloaded classes, fetching from API");
       try {
         const response = await classService.fetchClasses({}, nextPageUrl);
-        if (isComponentMounted) {
+        if (isComponentMounted.current) {
           setClasses(response?.results || []);
           setNextPageUrl(response?.next || null);
         }
       } catch (error) {
         console.error("Error fetching class data:", error);
       } finally {
-        if (isComponentMounted) {
+        if (isComponentMounted.current) {
           setLoading(false);
           isInitialLoad.current = false;
         }
@@ -389,7 +397,8 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
     };
 
     fetchClasses();
-  }, [isMounted, initialClasses]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMounted]); // FIXED: Removed initialClasses from dependencies to prevent refetch
 
   // Step 3: "See All" button behavior
   const handleSeeAllClick = useCallback(
@@ -549,7 +558,7 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
             />
             {isFetchingMore && index === classes.length - 1 && (
               <LoadingOverlay>
-                <GlobalLoaderWithoutInlineStyles size="30px" />
+                <ButtonSpinner />
               </LoadingOverlay>
             )}
           </div>
@@ -560,7 +569,12 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
 
   // Don't render until mounted to prevent hydration mismatch
   if (!isMounted) {
-    return null; // Return null instead of rendering to avoid hydration issues
+    return null;
+  }
+
+  // FIX: Show skeleton cards when loading instead of spinner
+  if (loading) {
+    return <FindClassSkeleton />;
   }
 
   return (
@@ -573,7 +587,7 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
           </StyledSubtitle>
         </SectionHeader>
         <AnimatePresence>
-          {showButtons && !loading && (
+          {showButtons && (
             <ButtonContainer
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -581,14 +595,14 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
             >
               <ScrollButton
                 onClick={scrollPrev}
-                disabled={prevBtnDisabled || loading}
+                disabled={prevBtnDisabled}
                 aria-label="Scroll previous classes"
               >
                 <ChevronLeft />
               </ScrollButton>
               <ScrollButton
                 onClick={scrollNext}
-                disabled={nextBtnDisabled || loading}
+                disabled={nextBtnDisabled}
                 aria-label="Scroll next classes"
               >
                 <ChevronRight />
@@ -607,19 +621,7 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
       <CarouselContainer>
         <EmblaViewport ref={emblaRef}>
           <EmblaContainer>
-            {loading ? (
-              <div
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  minHeight: "380px",
-                }}
-              >
-                <GlobalLoaderWithoutInlineStyles />
-              </div>
-            ) : classes.length === 0 ? (
+            {classes.length === 0 ? (
               <NoClassesFound>
                 No nearby classes found at the moment.
               </NoClassesFound>

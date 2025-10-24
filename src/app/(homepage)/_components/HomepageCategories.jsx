@@ -244,8 +244,16 @@ const HomepageCategories = ({ initialCategories = [] }) => {
     };
   }, [emblaApi, checkScrollabilityAndVisibility, updateButtonStates]);
 
+  // ✅ UPDATED: Navigate with query params and default Toronto location
   const handleCategoryClick = (categoryKey) => {
-    router.push(`/explore/ontario/toronto/${categoryKey}`);
+    const params = new URLSearchParams({
+      category: categoryKey,
+      participants: "1",
+      location: "Toronto, ON",
+      lat: "43.6532",
+      lng: "-79.3832",
+    });
+    router.push(`/explore?${params.toString()}`);
   };
 
   return (

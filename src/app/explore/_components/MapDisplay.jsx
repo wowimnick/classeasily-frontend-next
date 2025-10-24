@@ -304,44 +304,32 @@ function ChangeView({ bounds }) {
       return;
     }
 
-    // Don't update if bounds haven't changed
-    const boundsKey = bounds
-      ? `${bounds.sw.lat},${bounds.sw.lng},${bounds.ne.lat},${bounds.ne.lng}`
-      : null;
+    if (bounds) {
+      const currentBoundsStr = JSON.stringify(bounds);
+      const previousBoundsStr = JSON.stringify(previousBoundsRef.current);
 
-    if (boundsKey === previousBoundsRef.current) {
-      return;
-    }
+      if (currentBoundsStr !== previousBoundsStr) {
+        previousBoundsRef.current = bounds;
 
-    previousBoundsRef.current = boundsKey;
-
-    if (bounds && bounds.sw && bounds.ne) {
-      if (bounds.sw.lat !== bounds.ne.lat || bounds.sw.lng !== bounds.ne.lng) {
         try {
-          // Use requestAnimationFrame to ensure DOM is ready
-          requestAnimationFrame(() => {
-            if (map && map._loaded) {
-              map.fitBounds(
-                [
-                  [bounds.sw.lat, bounds.sw.lng],
-                  [bounds.ne.lat, bounds.ne.lng],
-                ],
-                { padding: [50, 50], animate: false }
-              );
-            }
-          });
-        } catch (error) {
-          console.error("Error fitting bounds:", error);
-        }
-      } else if (bounds.sw.lat && bounds.sw.lng) {
-        try {
-          requestAnimationFrame(() => {
-            if (map && map._loaded) {
-              map.setView([bounds.sw.lat, bounds.sw.lng], 14, {
-                animate: false,
-              });
-            }
-          });
+          const leafletBounds = L.latLngBounds(
+            [bounds.sw.lat, bounds.sw.lng],
+            [bounds.ne.lat, bounds.ne.lng]
+          );
+
+          if (leafletBounds.isValid()) {
+            map.fitBounds(leafletBounds, {
+              padding: [50, 50],
+              maxZoom: 15,
+              animate: true,
+              duration: 0.5,
+            });
+          } else {
+            console.warn("Invalid bounds, falling back to default view");
+            map.setView([bounds.sw.lat, bounds.sw.lng], 14, {
+              animate: false,
+            });
+          }
         } catch (error) {
           console.error("Error setting view:", error);
         }
@@ -488,6 +476,7 @@ const MapDisplay = ({
 }) => {
   const [mapBounds, setMapBounds] = useState(null);
   const mapRef = useRef(null);
+  const containerRef = useRef(null);
 
   const calculateMapCenter = useMemo(() => {
     const validMarkers = markers.filter(
@@ -579,11 +568,16 @@ const MapDisplay = ({
     setMapBounds(calculateMapBounds);
   }, [calculateMapBounds]);
 
-  // Cleanup on unmount
+  // FIX: Improved cleanup on unmount to prevent DOM errors
   useEffect(() => {
     return () => {
       if (mapRef.current) {
         try {
+          // Remove all event listeners first
+          mapRef.current.off();
+          mapRef.current.stop();
+
+          // Remove the map instance
           mapRef.current.remove();
           mapRef.current = null;
         } catch (error) {
@@ -594,7 +588,7 @@ const MapDisplay = ({
   }, []);
 
   return (
-    <MapWrapper>
+    <MapWrapper ref={containerRef}>
       <LeafletMarkerStyles />
       <HideMapButton onClick={onHideMap}>
         <MapPin size={16} /> Hide Map
@@ -607,8 +601,8 @@ const MapDisplay = ({
           attributionControl={false}
           scrollWheelZoom={true}
           zoomControl={false}
-          whenReady={(map) => {
-            mapRef.current = map.target;
+          whenCreated={(map) => {
+            mapRef.current = map;
           }}
           aria-label="Map displaying nearby classes"
           title="Map displaying nearby classes"

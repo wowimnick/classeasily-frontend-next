@@ -879,29 +879,45 @@ export function generateBusinessBreadcrumbStructuredData(businessData) {
  * Preload critical data for the homepage
  */
 export async function preloadHomepageData() {
-  try {
-    const [classesData, categoriesData] = await Promise.allSettled([
-      fetchInitialClasses(),
-      fetchHomepageCategories(),
-    ]);
+  const [classesData, categoriesData] = await Promise.allSettled([
+    fetchInitialClasses(),
+    fetchHomepageCategories(),
+  ]);
 
-    return {
-      classes: classesData.status === 'fulfilled' 
-        ? classesData.value 
-        : { classes: [], nextPageUrl: null },
-      categories: categoriesData.status === 'fulfilled' 
-        ? categoriesData.value 
-        : { success: false, data: [] },
-    };
-  } catch (error) {
-    console.error('Error preloading homepage data:', error);
-    return {
-      classes: { classes: [], nextPageUrl: null },
-      categories: { success: false, data: [] },
-    };
+  // Handle classes data
+  let classes = [];
+  let nextPageUrl = null;
+  
+  if (classesData.status === 'fulfilled' && classesData.value) {
+    const response = classesData.value;
+    
+    // IMPORTANT: Keep coordinates as STRING format
+    // HomeClassCard will parse them client-side when calculating distance
+    classes = (response.results || []).map(cls => ({
+      ...cls,
+      // Don't modify coordinates - keep as string "lat,lng" format
+      // Don't calculate distance on server - will be done client-side
+      distance: null,
+    }));
+    
+    nextPageUrl = response.next || null;
   }
+
+  // Handle categories data
+  let categories = { data: [] };
+  if (categoriesData.status === 'fulfilled' && categoriesData.value) {
+    categories = categoriesData.value;
+  }
+
+  return {
+    classes: {
+      classes,
+      nextPageUrl,
+    },
+    categories,
+  };
 }
-5
+
 /**
  * Fetch business categories for footer
  * Endpoint: /business/all-categories/
