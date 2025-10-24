@@ -189,8 +189,7 @@ export const stepsConfig = [
     title: "Business Info",
     description: "Tell us about your teaching business",
     color: "#FF385C",
-    animationData:
-      "https://d1uuoquc68y10e.cloudfront.net/public/animations/onebuilding.json",
+    animationData: "https://classeasily.com/public/animations/onebuilding.json",
     loop: false,
     pauseFrame: null,
     hasTwoPartAnimation: true,
@@ -200,8 +199,7 @@ export const stepsConfig = [
     title: "Contact Details",
     description: "How students can reach you",
     color: "#00C4B4",
-    animationData:
-      "https://d1uuoquc68y10e.cloudfront.net/public/animations/contact.json",
+    animationData: "https://classeasily.com/public/animations/contact.json",
     loop: true,
     pauseFrame: null,
     hasTwoPartAnimation: false,
@@ -211,8 +209,7 @@ export const stepsConfig = [
     title: "Location",
     description: "Where you'll teach",
     color: "#2D87FF",
-    animationData:
-      "https://d1uuoquc68y10e.cloudfront.net/public/animations/map2.json",
+    animationData: "https://classeasily.com/public/animations/map2.json",
     loop: true,
     pauseFrame: null,
     hasTwoPartAnimation: false,
@@ -222,8 +219,7 @@ export const stepsConfig = [
     title: "Class Types & Agreements",
     description: "What you'll teach & final steps",
     color: "#FF8C38",
-    animationData:
-      "https://d1uuoquc68y10e.cloudfront.net/public/animations/buildings.json",
+    animationData: "https://classeasily.com/public/animations/buildings.json",
     loop: false,
     pauseFrame: 60,
     hasTwoPartAnimation: true,
