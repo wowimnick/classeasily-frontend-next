@@ -4,7 +4,7 @@ import FooterClient from "./FooterClient";
 
 /**
  * Server Component wrapper for Footer
- * Fetches categories on the server and passes them to the client component
+ * Fetches categories on the server (with caching) and passes them to the client component
  */
 export default async function Footer() {
   // Fetch categories on the server (with caching)
