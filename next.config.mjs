@@ -161,7 +161,7 @@ const nextConfig = {
     const baseUrl = apiUrl.replace(/\/api$/, '');
 
     return [
-      // Proxy robots.txt and sitemaps to Django backend
+      // Proxy robots.txt and sitemap to Django backend
       {
         source: '/robots.txt',
         destination: `${baseUrl}/robots.txt`,
@@ -169,10 +169,6 @@ const nextConfig = {
       {
         source: '/sitemap.xml',
         destination: `${baseUrl}/sitemap.xml`,
-      },
-      {
-        source: '/sitemap-:path*.xml',
-        destination: `${baseUrl}/sitemap-:path*.xml`,
       },
     ];
   },
