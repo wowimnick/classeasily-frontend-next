@@ -86,7 +86,7 @@ const nextConfig = {
         ],
       },
       
-      // Static assets - 1 YEAR CACHE, IMMUTABLE
+      // Static assets from /public folder - 1 YEAR CACHE, IMMUTABLE
       {
         source: '/assets/:path*',
         headers: [
@@ -106,35 +106,6 @@ const nextConfig = {
         ],
       },
       {
-        source: '/public/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      
-      // Next.js static assets - 1 YEAR CACHE
-      {
-        source: '/favicon/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
         source: '/images/:path*',
         headers: [
           {
@@ -145,6 +116,37 @@ const nextConfig = {
       },
       {
         source: '/videos/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      
+      // Next.js internal static assets - 1 YEAR CACHE (Vercel handles this, but explicit is better)
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/_next/image/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      
+      // Favicon - 1 YEAR CACHE
+      {
+        source: '/favicon.ico',
         headers: [
           {
             key: 'Cache-Control',
