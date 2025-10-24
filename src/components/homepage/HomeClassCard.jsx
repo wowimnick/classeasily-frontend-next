@@ -25,7 +25,6 @@ import confetti from "canvas-confetti";
 
 import { classService } from "@/services/apiService.js";
 import useIntersectionObserver from "@/hooks/useIntersectionObserver.js";
-import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 
 const spinAnimation = keyframes`
   to { transform: rotate(360deg); }
@@ -273,25 +272,6 @@ const formatDistance = (distanceInKm) => {
   return `${Math.round(distanceInKm)}km`;
 };
 
-// Haversine formula to calculate distance between two coordinates
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  if (!lat1 || !lon1 || !lat2 || !lon2) return null;
-
-  const R = 6371; // Earth's radius in kilometers
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
-
 const HomeClassCard = ({
   classId,
   slug,
@@ -306,7 +286,7 @@ const HomeClassCard = ({
   coordinates = null,
   business_name = "",
   is_favorited = false,
-  distance = null, // Keep accepting this prop for backward compatibility
+  distance = null,
   isSelected,
   onFavoriteChange,
   priority = false,
@@ -318,13 +298,6 @@ const HomeClassCard = ({
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const [imageLoadState, setImageLoadState] = useState("idle");
 
-  // Get user's actual location client-side
-  const { location: userLocation, loading: locationLoading } =
-    useIpGeolocation();
-
-  // Calculate distance client-side
-  const [calculatedDistance, setCalculatedDistance] = useState(distance);
-
   const cardRef = useRef(null);
   const favoriteButtonRef = useRef(null);
   const theme = useTheme();
@@ -334,35 +307,6 @@ const HomeClassCard = ({
     { threshold: 0.1 },
     true
   );
-
-  // Recalculate distance when user location is available
-  useEffect(() => {
-    if (userLocation && !locationLoading && coordinates) {
-      // Handle both string and object coordinate formats
-      let lat, lng;
-
-      if (typeof coordinates === "string") {
-        // Parse "43.71257000,-79.39925000" format
-        const [latStr, lngStr] = coordinates.split(",");
-        lat = parseFloat(latStr);
-        lng = parseFloat(lngStr);
-      } else if (coordinates.lat && coordinates.lng) {
-        // Already an object
-        lat = coordinates.lat;
-        lng = coordinates.lng;
-      }
-
-      if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-        const newDistance = calculateDistance(
-          userLocation.lat,
-          userLocation.lng,
-          lat,
-          lng
-        );
-        setCalculatedDistance(newDistance);
-      }
-    }
-  }, [userLocation, locationLoading, coordinates]);
 
   const prices = useMemo(
     () => ({
@@ -379,11 +323,7 @@ const HomeClassCard = ({
     return null;
   }, [images]);
 
-  // Use calculatedDistance instead of distance prop
-  const formattedDistance = useMemo(
-    () => formatDistance(calculatedDistance),
-    [calculatedDistance]
-  );
+  const formattedDistance = useMemo(() => formatDistance(distance), [distance]);
 
   const displayLocation = useMemo(() => {
     const classCity = city || "";
