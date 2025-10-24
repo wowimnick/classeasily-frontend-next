@@ -172,6 +172,11 @@ const nextConfig = {
         source: '/sitemap.xml',
         destination: `${baseUrl}/sitemap.xml`,
       },
+      // Proxy /public/* to backend S3 bucket
+      {
+        source: '/public/:path*',
+        destination: `${baseUrl}/public/:path*`,
+      },
     ];
   },
 
