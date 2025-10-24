@@ -260,7 +260,7 @@ const LandingPage = ({ steps, startForm, isMobile }) => {
               {isMounted && (
                 <Lottie
                   lottieRef={lottieAnimRef}
-                  path="https://classeasily.com/public/animations/buildings.json"
+                  path="https://d1uuoquc68y10e.cloudfront.net/public/animations/buildings.json"
                   loop={false}
                   autoplay={false}
                   onDOMLoaded={handleLottieDOMLoaded}
