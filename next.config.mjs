@@ -86,36 +86,7 @@ const nextConfig = {
         ],
       },
       
-      // Dynamic SEO content - NO CACHING
-      {
-        source: '/sitemap.xml',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-        ],
-      },
-      {
-        source: '/sitemap-:number.xml',  // Use :number instead of :path*
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-        ],
-      },
-      {
-        source: '/robots.txt',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
-          },
-        ],
-      },
-      
-      // Static assets - 1 YEAR CACHE, IMMUTABLE (matches your CloudFront setup)
+      // Static assets - 1 YEAR CACHE, IMMUTABLE
       {
         source: '/assets/:path*',
         headers: [
@@ -180,6 +151,28 @@ const nextConfig = {
             value: 'public, max-age=31536000, immutable',
           },
         ],
+      },
+    ];
+  },
+
+  async rewrites() {
+    // Get base API URL without /api suffix for root-level files
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+    const baseUrl = apiUrl.replace(/\/api$/, '');
+
+    return [
+      // Proxy robots.txt and sitemaps to Django backend
+      {
+        source: '/robots.txt',
+        destination: `${baseUrl}/robots.txt`,
+      },
+      {
+        source: '/sitemap.xml',
+        destination: `${baseUrl}/sitemap.xml`,
+      },
+      {
+        source: '/sitemap-:path*.xml',
+        destination: `${baseUrl}/sitemap-:path*.xml`,
       },
     ];
   },
