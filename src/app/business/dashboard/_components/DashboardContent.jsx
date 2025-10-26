@@ -2,6 +2,7 @@
 
 import React, { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useDashboard } from "./DashboardContext";
 
 // Import tab components
 import Overview from "./tabs/overview/Overview";
@@ -16,14 +17,12 @@ import BookingTrends from "./tabs/bookings/BookingTrends";
 import Payouts from "./tabs/payouts/Payouts";
 import Staff from "./tabs/staff/Staff";
 
-export default function DashboardContent({
-  params,
-  overviewData,
-  overviewLoading,
-  overviewError,
-  onDataRefresh,
-}) {
+export default function DashboardContent({ params }) {
   const router = useRouter();
+
+  // Get data from context instead of props
+  const { overviewData, overviewLoading, overviewError, fetchOverviewData } =
+    useDashboard();
 
   const activeKey = useMemo(() => {
     if (!params?.tab || params.tab.length === 0) {
@@ -40,7 +39,7 @@ export default function DashboardContent({
             overviewData={overviewData}
             loading={overviewLoading}
             error={overviewError}
-            onDataRefresh={onDataRefresh}
+            onDataRefresh={fetchOverviewData}
           />
         );
       case "bookings/active":
