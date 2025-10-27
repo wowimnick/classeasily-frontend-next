@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo } from "react";
-import { useRouter } from "next/navigation";
+import React, { useMemo, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useDashboard } from "./DashboardContext";
 
 // Import tab components
@@ -16,22 +16,40 @@ import ClassManagement from "./tabs/classes/manageclasses/ClassManagement";
 import BookingTrends from "./tabs/bookings/BookingTrends";
 import Payouts from "./tabs/payouts/Payouts";
 import Staff from "./tabs/staff/Staff";
+import WidgetCustomizer from "./tabs/widget/WidgetCustomizer";
 
-export default function DashboardContent({ params }) {
+export default function DashboardContent() {
+  const pathname = usePathname();
   const router = useRouter();
 
-  // Get data from context instead of props
+  // Get data from context
   const { overviewData, overviewLoading, overviewError, fetchOverviewData } =
     useDashboard();
 
+  // Extract activeKey from pathname - this is MORE RELIABLE than using params
   const activeKey = useMemo(() => {
-    if (!params?.tab || params.tab.length === 0) {
-      return "overview";
-    }
-    return params.tab.join("/");
-  }, [params]);
+    // Remove the base path
+    const path = pathname
+      .replace("/business/dashboard/", "")
+      .replace("/business/dashboard", "");
+
+    // Return the path or default to overview
+    return path || "overview";
+  }, [pathname]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log(
+      "DashboardContent - pathname:",
+      pathname,
+      "activeKey:",
+      activeKey
+    );
+  }, [pathname, activeKey]);
 
   const renderContent = () => {
+    console.log("Rendering content for:", activeKey); // Additional debug log
+
     switch (activeKey) {
       case "overview":
         return (
@@ -62,10 +80,12 @@ export default function DashboardContent({ params }) {
         return <BookingTrends />;
       case "discounts":
         return <Discounts />;
+      case "widget":
+        return <WidgetCustomizer />;
       default:
-        // Redirect to overview if unknown route
+        console.warn("Unknown route:", activeKey, "- redirecting to overview");
         router.replace("/business/dashboard/overview");
-        return <Overview />;
+        return null;
     }
   };
 
