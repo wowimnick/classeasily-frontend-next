@@ -26,29 +26,27 @@ export default function DashboardContent() {
   const { overviewData, overviewLoading, overviewError, fetchOverviewData } =
     useDashboard();
 
-  // Extract activeKey from pathname - this is MORE RELIABLE than using params
+  // CRITICAL: Use pathname instead of params - this will actually trigger re-renders
   const activeKey = useMemo(() => {
-    // Remove the base path
-    const path = pathname
-      .replace("/business/dashboard/", "")
-      .replace("/business/dashboard", "");
+    // Remove base dashboard path
+    let path = pathname.replace("/business/dashboard", "");
 
-    // Return the path or default to overview
+    // Remove leading slash
+    if (path.startsWith("/")) {
+      path = path.substring(1);
+    }
+
+    // Return cleaned path or default to overview
     return path || "overview";
   }, [pathname]);
 
-  // Debug logging
+  // Debug logging - check console to verify this updates
   useEffect(() => {
-    console.log(
-      "DashboardContent - pathname:",
-      pathname,
-      "activeKey:",
-      activeKey
-    );
+    console.log("🔄 DashboardContent render:", { pathname, activeKey });
   }, [pathname, activeKey]);
 
   const renderContent = () => {
-    console.log("Rendering content for:", activeKey); // Additional debug log
+    console.log("📄 Rendering content for activeKey:", activeKey);
 
     switch (activeKey) {
       case "overview":
@@ -83,7 +81,11 @@ export default function DashboardContent() {
       case "widget":
         return <WidgetCustomizer />;
       default:
-        console.warn("Unknown route:", activeKey, "- redirecting to overview");
+        console.warn(
+          "⚠️ Unknown route:",
+          activeKey,
+          "- redirecting to overview"
+        );
         router.replace("/business/dashboard/overview");
         return null;
     }
