@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useDashboard } from "./DashboardContext";
 
 // Import tab components
@@ -18,32 +18,17 @@ import Payouts from "./tabs/payouts/Payouts";
 import Staff from "./tabs/staff/Staff";
 import WidgetCustomizer from "./tabs/widget/WidgetCustomizer";
 
-export default function DashboardContent() {
-  const pathname = usePathname();
+export default function DashboardContent({ activeKey }) {
   const router = useRouter();
 
   // Get data from context
   const { overviewData, overviewLoading, overviewError, fetchOverviewData } =
     useDashboard();
 
-  // CRITICAL: Use pathname instead of params - this will actually trigger re-renders
-  const activeKey = useMemo(() => {
-    // Remove base dashboard path
-    let path = pathname.replace("/business/dashboard", "");
-
-    // Remove leading slash
-    if (path.startsWith("/")) {
-      path = path.substring(1);
-    }
-
-    // Return cleaned path or default to overview
-    return path || "overview";
-  }, [pathname]);
-
-  // Debug logging - check console to verify this updates
+  // Debug logging
   useEffect(() => {
-    console.log("🔄 DashboardContent render:", { pathname, activeKey });
-  }, [pathname, activeKey]);
+    console.log("🔄 DashboardContent render - activeKey:", activeKey);
+  }, [activeKey]);
 
   const renderContent = () => {
     console.log("📄 Rendering content for activeKey:", activeKey);
