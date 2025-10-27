@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, Suspense } from "react";
+import React, { useState, useRef, Suspense, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import styled, { css, keyframes } from "styled-components";
 import { useAuth } from "@/lib/auth-client";
@@ -207,6 +207,14 @@ const BusinessHeader = () => {
   const router = useRouter();
   const userProfileRef = useRef(null);
 
+  // Close menu when component unmounts (route change)
+  useEffect(() => {
+    return () => {
+      setUserMenuVisible(false);
+      setSettingsDrawerVisible(false);
+    };
+  }, []);
+
   const handleLogout = async () => {
     try {
       await signOut();
@@ -229,9 +237,15 @@ const BusinessHeader = () => {
     setSettingsLoading(true);
   };
 
-  // FIX 1: Create proper navigation handler function
+  // Create proper navigation handler function that closes menu first
   const handleNavigate = (path) => {
-    router.push(path);
+    // Close menu BEFORE navigation to prevent invisible overlay
+    setUserMenuVisible(false);
+    setSettingsDrawerVisible(false);
+    // Small delay to ensure menu closes before navigation
+    setTimeout(() => {
+      router.push(path);
+    }, 100);
   };
 
   const getUserInitials = () => {

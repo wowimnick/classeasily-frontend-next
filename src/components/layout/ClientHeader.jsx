@@ -1315,10 +1315,23 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
     searchParams,
   ]);
 
+  // Close menu when component unmounts (route change)
+  useEffect(() => {
+    return () => {
+      setIsMenuOpen(false);
+      setSettingsDrawerVisible(false);
+    };
+  }, []);
+
   const handleDatePickerChange = (date) => setDatePickerValue(date);
   const handleNavigate = (path) => {
-    router.push(path);
+    // Close menu BEFORE navigation to prevent invisible overlay
     setIsMenuOpen(false);
+    setSettingsDrawerVisible(false);
+    // Small delay to ensure menu closes before navigation
+    setTimeout(() => {
+      router.push(path);
+    }, 100);
   };
   const handleShowSettings = () => {
     showSettingsDrawer();

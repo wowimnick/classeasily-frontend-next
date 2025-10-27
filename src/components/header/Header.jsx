@@ -284,9 +284,22 @@ const Header = ({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Close menu when component unmounts (route change)
+  useEffect(() => {
+    return () => {
+      setIsMenuOpen(false);
+      setIsSettingsModalOpen(false);
+    };
+  }, []);
+
   const handleNavigate = (path) => {
-    router.push(path);
+    // Close menu BEFORE navigation to prevent invisible overlay
     setIsMenuOpen(false);
+    setIsSettingsModalOpen(false);
+    // Small delay to ensure menu closes before navigation
+    setTimeout(() => {
+      router.push(path);
+    }, 100);
   };
 
   const handleShowSettings = () => {
