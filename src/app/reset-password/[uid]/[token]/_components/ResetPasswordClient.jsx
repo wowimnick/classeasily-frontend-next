@@ -224,7 +224,7 @@ export default function ResetPasswordClient({ uid, token }) {
             />
           </ContentBox>
         </PageWrapper>
-        <Footer />
+        <FooterClient />
       </ConfigProvider>
     );
   }
@@ -253,7 +253,7 @@ export default function ResetPasswordClient({ uid, token }) {
             />
           </ContentBox>
         </PageWrapper>
-        <Footer />
+        <FooterClient />
       </ConfigProvider>
     );
   }
