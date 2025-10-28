@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import styled from "styled-components";
 import { Form, Input, Button, Result, ConfigProvider, Alert } from "antd";
 import { Lock, DoorClosed, CheckCheck } from "lucide-react";
@@ -132,43 +131,30 @@ const LoadingWrapper = styled.div`
   min-height: 200px;
 `;
 
-export default function ResetPasswordClient() {
-  const searchParams = useSearchParams();
+export default function ResetPasswordClient({ uid, token }) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [linkSeemsValid, setLinkSeemsValid] = useState(null); // null = checking, true = valid, false = invalid
+  const [linkSeemsValid, setLinkSeemsValid] = useState(true);
   const { openLoginModal } = useAuthModal();
 
-  // Extract uid and token from URL search params
-  const uid = searchParams.get("uid");
-  const token = searchParams.get("token");
-
   useEffect(() => {
-    // Only validate once we've checked the search params
-    if (uid === null || token === null) {
-      // Still loading or params not found
-      if (searchParams.toString()) {
-        // We have params but no uid/token
-        setError(
-          "This password reset link is incomplete or invalid. Please request a new one."
-        );
-        setLinkSeemsValid(false);
-      }
-    } else if (!uid || !token) {
-      // Empty string values
+    console.log("ResetPasswordClient mounted with:", { uid, token });
+
+    if (!uid || !token) {
+      console.error("Missing uid or token:", { uid, token });
       setError(
         "This password reset link is incomplete or invalid. Please request a new one."
       );
       setLinkSeemsValid(false);
-    } else {
-      // We have both uid and token
-      setLinkSeemsValid(true);
     }
-  }, [uid, token, searchParams]);
+  }, [uid, token]);
 
   const handleConfirmReset = async (values) => {
+    console.log("handleConfirmReset called with values:", values);
+    console.log("Using uid:", uid, "token:", token);
+
     setError("");
     setLoading(true);
 
@@ -179,14 +165,23 @@ export default function ResetPasswordClient() {
       new_password2: values.password2,
     };
 
+    console.log("Sending payload:", payload);
+    console.log("To endpoint:", API_ENDPOINTS.PASSWORD_RESET_CONFIRM);
+
     try {
-      await axiosInstance.post(API_ENDPOINTS.PASSWORD_RESET_CONFIRM, payload);
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.PASSWORD_RESET_CONFIRM,
+        payload
+      );
+      console.log("Password reset successful:", response.data);
       setSuccess(true);
     } catch (err) {
       console.error(
         "Password reset confirmation error:",
         err.response?.data || err.message
       );
+      console.error("Full error object:", err);
+
       let errorMessage =
         "Failed to reset password. The link may be invalid/expired, or the new password doesn't meet requirements.";
       if (err.response?.data) {
@@ -218,23 +213,6 @@ export default function ResetPasswordClient() {
       setLoading(false);
     }
   };
-
-  // Show loading state while checking params
-  if (linkSeemsValid === null) {
-    return (
-      <ConfigProvider theme={theme}>
-        <ExploreHeader />
-        <PageWrapper>
-          <ContentBox>
-            <LoadingWrapper>
-              <GlobalLoaderWithoutInlineStyles />
-            </LoadingWrapper>
-          </ContentBox>
-        </PageWrapper>
-        <FooterClient />
-      </ConfigProvider>
-    );
-  }
 
   if (success) {
     return (
