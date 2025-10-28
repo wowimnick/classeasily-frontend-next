@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import styled from "styled-components";
 import { Form, Input, Button, Result, ConfigProvider, Alert } from "antd";
 import { Lock, DoorClosed, CheckCheck } from "lucide-react";
@@ -131,22 +132,41 @@ const LoadingWrapper = styled.div`
   min-height: 200px;
 `;
 
-export default function ResetPasswordClient({ uid, token }) {
+export default function ResetPasswordClient() {
+  const searchParams = useSearchParams();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [linkSeemsValid, setLinkSeemsValid] = useState(true);
+  const [linkSeemsValid, setLinkSeemsValid] = useState(null); // null = checking, true = valid, false = invalid
   const { openLoginModal } = useAuthModal();
 
+  // Extract uid and token from URL search params
+  const uid = searchParams.get("uid");
+  const token = searchParams.get("token");
+
   useEffect(() => {
-    if (!uid || !token) {
+    // Only validate once we've checked the search params
+    if (uid === null || token === null) {
+      // Still loading or params not found
+      if (searchParams.toString()) {
+        // We have params but no uid/token
+        setError(
+          "This password reset link is incomplete or invalid. Please request a new one."
+        );
+        setLinkSeemsValid(false);
+      }
+    } else if (!uid || !token) {
+      // Empty string values
       setError(
         "This password reset link is incomplete or invalid. Please request a new one."
       );
       setLinkSeemsValid(false);
+    } else {
+      // We have both uid and token
+      setLinkSeemsValid(true);
     }
-  }, [uid, token]);
+  }, [uid, token, searchParams]);
 
   const handleConfirmReset = async (values) => {
     setError("");
@@ -198,6 +218,23 @@ export default function ResetPasswordClient({ uid, token }) {
       setLoading(false);
     }
   };
+
+  // Show loading state while checking params
+  if (linkSeemsValid === null) {
+    return (
+      <ConfigProvider theme={theme}>
+        <ExploreHeader />
+        <PageWrapper>
+          <ContentBox>
+            <LoadingWrapper>
+              <GlobalLoaderWithoutInlineStyles />
+            </LoadingWrapper>
+          </ContentBox>
+        </PageWrapper>
+        <FooterClient />
+      </ConfigProvider>
+    );
+  }
 
   if (success) {
     return (

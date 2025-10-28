@@ -6,7 +6,6 @@ export const metadata = {
   description: "Set a new password for your Classeasily account.",
 };
 
-// You can create a more sophisticated loading component if you wish
 function LoadingFallback() {
   return (
     <div
@@ -17,16 +16,15 @@ function LoadingFallback() {
         minHeight: "80vh",
       }}
     >
-      {/* You can use your GlobalLoader component here if it's simple enough not to cause the same issue */}
       <p>Loading...</p>
     </div>
   );
 }
 
-export default function ResetPasswordPage({ params }) {
+export default function ResetPasswordPage() {
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <ResetPasswordClient uid={params.uid} token={params.token} />
+      <ResetPasswordClient />
     </Suspense>
   );
 }
