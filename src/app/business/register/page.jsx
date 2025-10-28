@@ -53,20 +53,7 @@ const FormProvider = dynamic(
 export default function RegisterPage() {
   return (
     <FormProvider>
-      <Suspense
-        fallback={
-          <div
-            style={{
-              minHeight: "100vh",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            Loading...
-          </div>
-        }
-      >
+      <Suspense>
         <RegisterPageContent />
       </Suspense>
     </FormProvider>

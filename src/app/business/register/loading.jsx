@@ -54,7 +54,7 @@ export default function Loading() {
           justifyContent: "center",
         }}
       >
-        <Suspense fallback={<LoaderFallback>Loading...</LoaderFallback>}>
+        <Suspense>
           <GlobalLoaderWithoutInlineStyles />
         </Suspense>
       </div>

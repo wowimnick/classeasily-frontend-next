@@ -59,8 +59,6 @@ const SettingsModal = dynamic(
   () => import("@/components/header/SettingsDrawer"),
   {
     ssr: false,
-    // Optional: Add a loading component while the drawer is being loaded on the client
-    loading: () => <p>Loading...</p>,
   }
 );
 import debounce from "lodash/debounce";
