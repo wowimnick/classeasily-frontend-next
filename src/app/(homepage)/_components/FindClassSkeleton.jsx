@@ -1,4 +1,4 @@
-// Enhanced Skeleton Components that match HomeClassCard structure
+// Enhanced Skeleton Components that match HomeClassCard structure - 2 ROW VERSION
 import styled, { keyframes } from "styled-components";
 
 const shimmer = keyframes`
@@ -65,6 +65,13 @@ const SkeletonSubtitle = styled.div`
   @media (max-width: 768px) {
     width: 80%;
   }
+`;
+
+const RowContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
 `;
 
 const SkeletonCarouselContainer = styled.div`
@@ -174,15 +181,6 @@ const SkeletonPrice = styled.div`
   border-radius: 4px;
 `;
 
-const SkeletonPriceSeparator = styled.div`
-  height: 10px;
-  width: 10px;
-  background: linear-gradient(to right, #f0f0f0 8%, #f8f8f8 18%, #f0f0f0 33%);
-  background-size: 800px 100px;
-  animation: ${shimmer} 1.5s infinite linear;
-  border-radius: 50%;
-`;
-
 const SkeletonLink = styled.div`
   height: 20px;
   width: 180px;
@@ -193,8 +191,29 @@ const SkeletonLink = styled.div`
   margin-top: 1rem;
 `;
 
-// Main Skeleton Component for FindClass
+// Main Skeleton Component for FindClass with 2 rows
 export function FindClassSkeleton() {
+  const renderSkeletonCards = (count) => {
+    return [...Array(count)].map((_, item) => (
+      <SkeletonCard key={item}>
+        <SkeletonImageContainer>
+          <SkeletonImage />
+        </SkeletonImageContainer>
+        <SkeletonContent>
+          <SkeletonTopRow>
+            <SkeletonCardTitle />
+            <SkeletonRating />
+          </SkeletonTopRow>
+          <SkeletonText width="60%" />
+          <SkeletonText width="50%" />
+          <SkeletonPriceRow>
+            <SkeletonPrice />
+          </SkeletonPriceRow>
+        </SkeletonContent>
+      </SkeletonCard>
+    ));
+  };
+
   return (
     <SkeletonWrapper>
       <SkeletonHeader>
@@ -202,26 +221,17 @@ export function FindClassSkeleton() {
         <SkeletonSubtitle />
       </SkeletonHeader>
 
-      <SkeletonCarouselContainer>
-        {[1, 2, 3, 4].map((item) => (
-          <SkeletonCard key={item}>
-            <SkeletonImageContainer>
-              <SkeletonImage />
-            </SkeletonImageContainer>
-            <SkeletonContent>
-              <SkeletonTopRow>
-                <SkeletonCardTitle />
-                <SkeletonRating />
-              </SkeletonTopRow>
-              <SkeletonText width="60%" />
-              <SkeletonText width="50%" />
-              <SkeletonPriceRow>
-                <SkeletonPrice />
-              </SkeletonPriceRow>
-            </SkeletonContent>
-          </SkeletonCard>
-        ))}
-      </SkeletonCarouselContainer>
+      <RowContainer>
+        {/* First Row */}
+        <SkeletonCarouselContainer>
+          {renderSkeletonCards(4)}
+        </SkeletonCarouselContainer>
+
+        {/* Second Row */}
+        <SkeletonCarouselContainer>
+          {renderSkeletonCards(4)}
+        </SkeletonCarouselContainer>
+      </RowContainer>
 
       <SkeletonLink />
     </SkeletonWrapper>

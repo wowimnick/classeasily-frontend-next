@@ -104,6 +104,13 @@ const EmblaContainer = styled.div`
   }
 `;
 
+const RowContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+`;
+
 const LoadingOverlay = styled.div`
   position: absolute;
   inset: 0;
@@ -248,16 +255,28 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
   const [loadingLocation, setLoadingLocation] = useState(true);
   const [locationError, setLocationError] = useState(null);
 
-  const [emblaRef, emblaApi] = useEmblaCarousel({
+  // First row carousel
+  const [emblaRef1, emblaApi1] = useEmblaCarousel({
     align: "start",
     containScroll: "trimSnaps",
     loop: false,
     dragFree: true,
   });
 
-  const [prevBtnDisabled, setPrevBtnDisabled] = useState(true);
-  const [nextBtnDisabled, setNextBtnDisabled] = useState(true);
-  const [showButtons, setShowButtons] = useState(false);
+  // Second row carousel
+  const [emblaRef2, emblaApi2] = useEmblaCarousel({
+    align: "start",
+    containScroll: "trimSnaps",
+    loop: false,
+    dragFree: true,
+  });
+
+  const [prevBtnDisabled1, setPrevBtnDisabled1] = useState(true);
+  const [nextBtnDisabled1, setNextBtnDisabled1] = useState(true);
+  const [prevBtnDisabled2, setPrevBtnDisabled2] = useState(true);
+  const [nextBtnDisabled2, setNextBtnDisabled2] = useState(true);
+  const [showButtons1, setShowButtons1] = useState(false);
+  const [showButtons2, setShowButtons2] = useState(false);
 
   // Handle hydration
   useEffect(() => {
@@ -268,109 +287,60 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
   useEffect(() => {
     if (!isMounted) return;
 
-    let isComponentMounted = true;
-
-    const fetchIpLocation = async () => {
-      try {
-        const response = await fetch("https://ipapi.co/json/");
-        if (!response.ok) throw new Error("IP API failed");
-        const data = await response.json();
-        if (data && data.latitude && data.longitude && isComponentMounted) {
-          setUserLocation({
-            lat: data.latitude,
-            lng: data.longitude,
-            city: data.city,
-            region: data.region,
-            region_code: data.region_code,
-          });
-        } else {
-          throw new Error(data.reason || "Invalid data from IP API");
-        }
-      } catch (err) {
-        if (isComponentMounted) setLocationError(err.message);
-      } finally {
-        if (isComponentMounted) setLoadingLocation(false);
-      }
-    };
-
-    const fetchBrowserLocation = () => {
-      if (!navigator.geolocation) {
-        if (isComponentMounted) {
-          setLocationError("Geolocation is not supported.");
-          setLoadingLocation(false);
-        }
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          if (!isComponentMounted) return;
-          const { latitude, longitude } = position.coords;
-          try {
-            const response = await fetch(
-              `${AWS_LOCATION_API_URL}?lat=${latitude}&lng=${longitude}&reverse=true`
-            );
-            if (!response.ok)
-              throw new Error(`Reverse geocoding failed: ${response.status}`);
-            const data = await response.json();
-
-            if (Array.isArray(data) && data.length > 0) {
-              const place = data[0];
-              setUserLocation({
-                lat: latitude,
-                lng: longitude,
-                city: place.city || place.locality || place.place || null,
-                region: place.state || place.region || null,
-                region_code: place.state || place.region || "",
-              });
-            } else {
-              setUserLocation({
-                lat: latitude,
-                lng: longitude,
-                city: null,
-                region: null,
-                region_code: "",
-              });
-            }
-          } catch (error) {
-            console.error("Reverse geocoding error:", error);
-            setUserLocation({
-              lat: latitude,
-              lng: longitude,
-              city: null,
-              region: null,
-              region_code: "",
-            });
-          } finally {
-            setLoadingLocation(false);
-          }
-        },
-        (error) => {
-          if (isComponentMounted) {
-            setLocationError(error.message);
-            setLoadingLocation(false);
-          }
-        }
-      );
-    };
-
-    if (ENABLE_IP_GEOLOCATION) {
-      fetchIpLocation();
-    } else {
-      fetchBrowserLocation();
+    if (!ENABLE_IP_GEOLOCATION) {
+      setLoadingLocation(false);
+      return;
     }
 
-    return () => {
-      isComponentMounted = false;
+    const fetchUserLocationFromIP = async () => {
+      try {
+        setLoadingLocation(true);
+        const response = await fetch(`${AWS_LOCATION_API_URL}/user-location`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data && data.lat && data.lng) {
+          const locationData = {
+            lat: data.lat,
+            lng: data.lng,
+            city: data.city || null,
+            region: data.region || null,
+            region_code: data.region_code || null,
+          };
+          setUserLocation(locationData);
+          setLocationError(null);
+        } else {
+          throw new Error("Location data incomplete");
+        }
+      } catch (error) {
+        console.error("Error fetching user location from IP:", error);
+        setLocationError(error.message);
+      } finally {
+        setLoadingLocation(false);
+      }
     };
+
+    fetchUserLocationFromIP();
   }, [isMounted]);
 
-  // Step 2: Fetch classes if not provided as props
+  // Step 2: Fetch classes if not provided by SSR
   useEffect(() => {
-    if (!isMounted || initialClasses.length > 0) return;
-    // Remove loadingLocation check here
+    if (!isMounted) return;
+
+    if (initialClasses && initialClasses.length > 0) {
+      setLoading(false);
+      return;
+    }
 
     const fetchClasses = async () => {
-      setLoading(true);
+      let isComponentMounted = true;
+
       try {
         const response = await classService.fetchClasses({}, nextPageUrl);
         if (isComponentMounted) {
@@ -437,11 +407,11 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
     return "See all classes";
   }, [userLocation, loadingLocation]);
 
-  // Embla Carousel Hooks
-  const handleScroll = useCallback(async () => {
-    if (!emblaApi || !nextPageUrl || isFetchingMore) return;
-    const lastSlideIndex = emblaApi.scrollSnapList().length - 1;
-    if (emblaApi.selectedScrollSnap() >= lastSlideIndex - 2) {
+  // Embla Carousel Hooks for Row 1
+  const handleScroll1 = useCallback(async () => {
+    if (!emblaApi1 || !nextPageUrl || isFetchingMore) return;
+    const lastSlideIndex = emblaApi1.scrollSnapList().length - 1;
+    if (emblaApi1.selectedScrollSnap() >= lastSlideIndex - 2) {
       setIsFetchingMore(true);
       try {
         const response = await classService.fetchClasses({}, nextPageUrl);
@@ -462,104 +432,170 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
         setIsFetchingMore(false);
       }
     }
-  }, [emblaApi, nextPageUrl, isFetchingMore]);
+  }, [emblaApi1, nextPageUrl, isFetchingMore]);
 
-  const scrollPrev = useCallback(
-    () => emblaApi && emblaApi.scrollPrev(),
-    [emblaApi]
+  const scrollPrev1 = useCallback(
+    () => emblaApi1 && emblaApi1.scrollPrev(),
+    [emblaApi1]
   );
-  const scrollNext = useCallback(() => {
-    if (emblaApi) {
-      emblaApi.scrollNext();
-      handleScroll();
+  const scrollNext1 = useCallback(() => {
+    if (emblaApi1) {
+      emblaApi1.scrollNext();
+      handleScroll1();
     }
-  }, [emblaApi, handleScroll]);
+  }, [emblaApi1, handleScroll1]);
 
-  const updateButtonStates = useCallback(() => {
-    if (emblaApi) {
-      setPrevBtnDisabled(!emblaApi.canScrollPrev());
-      setNextBtnDisabled(!emblaApi.canScrollNext());
+  const scrollPrev2 = useCallback(
+    () => emblaApi2 && emblaApi2.scrollPrev(),
+    [emblaApi2]
+  );
+  const scrollNext2 = useCallback(() => {
+    if (emblaApi2) {
+      emblaApi2.scrollNext();
     }
-  }, [emblaApi]);
+  }, [emblaApi2]);
 
-  const checkScrollabilityAndVisibility = useCallback(() => {
-    if (emblaApi && !loading) {
-      const isScrollable = emblaApi.canScrollNext() || emblaApi.canScrollPrev();
-      setShowButtons(isScrollable);
-      updateButtonStates();
+  const updateButtonStates1 = useCallback(() => {
+    if (emblaApi1) {
+      setPrevBtnDisabled1(!emblaApi1.canScrollPrev());
+      setNextBtnDisabled1(!emblaApi1.canScrollNext());
+    }
+  }, [emblaApi1]);
+
+  const updateButtonStates2 = useCallback(() => {
+    if (emblaApi2) {
+      setPrevBtnDisabled2(!emblaApi2.canScrollPrev());
+      setNextBtnDisabled2(!emblaApi2.canScrollNext());
+    }
+  }, [emblaApi2]);
+
+  const checkScrollabilityAndVisibility1 = useCallback(() => {
+    if (emblaApi1 && !loading) {
+      const isScrollable =
+        emblaApi1.canScrollNext() || emblaApi1.canScrollPrev();
+      setShowButtons1(isScrollable);
+      updateButtonStates1();
     } else {
-      setShowButtons(false);
+      setShowButtons1(false);
     }
-  }, [emblaApi, loading, updateButtonStates]);
+  }, [emblaApi1, loading, updateButtonStates1]);
+
+  const checkScrollabilityAndVisibility2 = useCallback(() => {
+    if (emblaApi2 && !loading) {
+      const isScrollable =
+        emblaApi2.canScrollNext() || emblaApi2.canScrollPrev();
+      setShowButtons2(isScrollable);
+      updateButtonStates2();
+    } else {
+      setShowButtons2(false);
+    }
+  }, [emblaApi2, loading, updateButtonStates2]);
 
   useEffect(() => {
-    if (!isMounted || !emblaApi) return;
+    if (!isMounted || !emblaApi1) return;
 
-    emblaApi.on("scroll", handleScroll);
-    emblaApi.on("select", updateButtonStates);
-    emblaApi.on("reInit", checkScrollabilityAndVisibility);
-    window.addEventListener("resize", checkScrollabilityAndVisibility);
-    checkScrollabilityAndVisibility();
+    emblaApi1.on("scroll", handleScroll1);
+    emblaApi1.on("select", updateButtonStates1);
+    emblaApi1.on("reInit", checkScrollabilityAndVisibility1);
+    window.addEventListener("resize", checkScrollabilityAndVisibility1);
+    checkScrollabilityAndVisibility1();
 
     return () => {
-      emblaApi.off("scroll", handleScroll);
-      emblaApi.off("select", updateButtonStates);
-      emblaApi.off("reInit", checkScrollabilityAndVisibility);
-      window.removeEventListener("resize", checkScrollabilityAndVisibility);
+      emblaApi1.off("scroll", handleScroll1);
+      emblaApi1.off("select", updateButtonStates1);
+      emblaApi1.off("reInit", checkScrollabilityAndVisibility1);
+      window.removeEventListener("resize", checkScrollabilityAndVisibility1);
     };
   }, [
     isMounted,
-    emblaApi,
-    handleScroll,
-    updateButtonStates,
-    checkScrollabilityAndVisibility,
+    emblaApi1,
+    handleScroll1,
+    updateButtonStates1,
+    checkScrollabilityAndVisibility1,
   ]);
 
-  // Memoized class cards with distance calculation - PRIORITIZE FIRST 3 IMAGES
-  const classCards = useMemo(() => {
-    return classes.map((classItem, index) => {
-      let calculatedDistance = null;
-      if (userLocation && classItem.coordinates) {
-        const [classLat, classLng] = classItem.coordinates
-          .split(",")
-          .map(Number);
-        calculatedDistance = getDistanceFromLatLonInKm(
-          userLocation.lat,
-          userLocation.lng,
-          classLat,
-          classLng
+  useEffect(() => {
+    if (!isMounted || !emblaApi2) return;
+
+    emblaApi2.on("select", updateButtonStates2);
+    emblaApi2.on("reInit", checkScrollabilityAndVisibility2);
+    window.addEventListener("resize", checkScrollabilityAndVisibility2);
+    checkScrollabilityAndVisibility2();
+
+    return () => {
+      emblaApi2.off("select", updateButtonStates2);
+      emblaApi2.off("reInit", checkScrollabilityAndVisibility2);
+      window.removeEventListener("resize", checkScrollabilityAndVisibility2);
+    };
+  }, [
+    isMounted,
+    emblaApi2,
+    updateButtonStates2,
+    checkScrollabilityAndVisibility2,
+  ]);
+
+  // Split classes into two rows
+  const firstRowClasses = useMemo(() => {
+    const halfLength = Math.ceil(classes.length / 2);
+    return classes.slice(0, halfLength);
+  }, [classes]);
+
+  const secondRowClasses = useMemo(() => {
+    const halfLength = Math.ceil(classes.length / 2);
+    return classes.slice(halfLength);
+  }, [classes]);
+
+  // Memoized class cards with distance calculation
+  const createClassCards = useCallback(
+    (classList, priorityOffset = 0) => {
+      return classList.map((classItem, index) => {
+        let calculatedDistance = null;
+        if (userLocation && classItem.coordinates) {
+          const [classLat, classLng] = classItem.coordinates
+            .split(",")
+            .map(Number);
+          calculatedDistance = getDistanceFromLatLonInKm(
+            userLocation.lat,
+            userLocation.lng,
+            classLat,
+            classLng
+          );
+        }
+
+        const adjustedReviewCount = applyRandomReviewOffset(
+          classItem.review_count,
+          classItem.classId
         );
-      }
 
-      const adjustedReviewCount = applyRandomReviewOffset(
-        classItem.review_count,
-        classItem.classId
-      );
-
-      return (
-        <div className="embla__slide" key={`${classItem.classId}-${index}`}>
-          <div style={{ position: "relative" }}>
-            <HomeClassCard
-              {...classItem}
-              rating={classItem.average_rating}
-              totalReviews={adjustedReviewCount}
-              distance={calculatedDistance}
-              priority={index < 3} // PRIORITY LOADING FOR FIRST 3 CARDS
-            />
-            {isFetchingMore && index === classes.length - 1 && (
-              <LoadingOverlay>
-                <GlobalLoaderWithoutInlineStyles size="30px" />
-              </LoadingOverlay>
-            )}
+        return (
+          <div className="embla__slide" key={`${classItem.classId}-${index}`}>
+            <div style={{ position: "relative" }}>
+              <HomeClassCard
+                {...classItem}
+                rating={classItem.average_rating}
+                totalReviews={adjustedReviewCount}
+                distance={calculatedDistance}
+                priority={index + priorityOffset < 3} // PRIORITY LOADING FOR FIRST 3 CARDS
+              />
+            </div>
           </div>
-        </div>
-      );
-    });
-  }, [classes, isFetchingMore, userLocation]);
+        );
+      });
+    },
+    [userLocation]
+  );
+
+  const firstRowCards = useMemo(() => {
+    return createClassCards(firstRowClasses, 0);
+  }, [firstRowClasses, createClassCards]);
+
+  const secondRowCards = useMemo(() => {
+    return createClassCards(secondRowClasses, firstRowClasses.length);
+  }, [secondRowClasses, createClassCards, firstRowClasses.length]);
 
   // Don't render until mounted to prevent hydration mismatch
   if (!isMounted) {
-    return null; // Return null instead of rendering to avoid hydration issues
+    return null;
   }
 
   return (
@@ -572,22 +608,22 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
           </StyledSubtitle>
         </SectionHeader>
         <AnimatePresence>
-          {showButtons && !loading && (
+          {(showButtons1 || showButtons2) && !loading && (
             <ButtonContainer
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
               <ScrollButton
-                onClick={scrollPrev}
-                disabled={prevBtnDisabled || loading}
+                onClick={scrollPrev1}
+                disabled={prevBtnDisabled1 || loading}
                 aria-label="Scroll previous classes"
               >
                 <ChevronLeft />
               </ScrollButton>
               <ScrollButton
-                onClick={scrollNext}
-                disabled={nextBtnDisabled || loading}
+                onClick={scrollNext1}
+                disabled={nextBtnDisabled1 || loading}
                 aria-label="Scroll next classes"
               >
                 <ChevronRight />
@@ -603,31 +639,52 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
         </Paragraph>
       )}
 
-      <CarouselContainer>
-        <EmblaViewport ref={emblaRef}>
-          <EmblaContainer>
-            {loading ? (
-              <div
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  minHeight: "380px",
-                }}
-              >
-                <GlobalLoaderWithoutInlineStyles />
-              </div>
-            ) : classes.length === 0 ? (
-              <NoClassesFound>
-                No nearby classes found at the moment.
-              </NoClassesFound>
-            ) : (
-              classCards
-            )}
-          </EmblaContainer>
-        </EmblaViewport>
-      </CarouselContainer>
+      {loading ? (
+        <CarouselContainer>
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: "380px",
+            }}
+          >
+            <GlobalLoaderWithoutInlineStyles />
+          </div>
+        </CarouselContainer>
+      ) : classes.length === 0 ? (
+        <NoClassesFound>No nearby classes found at the moment.</NoClassesFound>
+      ) : (
+        <RowContainer>
+          {/* First Row */}
+          <CarouselContainer>
+            <EmblaViewport ref={emblaRef1}>
+              <EmblaContainer>
+                {firstRowCards}
+                {isFetchingMore && (
+                  <div className="embla__slide">
+                    <LoadingOverlay
+                      style={{ position: "relative", height: "380px" }}
+                    >
+                      <GlobalLoaderWithoutInlineStyles size="30px" />
+                    </LoadingOverlay>
+                  </div>
+                )}
+              </EmblaContainer>
+            </EmblaViewport>
+          </CarouselContainer>
+
+          {/* Second Row */}
+          {secondRowClasses.length > 0 && (
+            <CarouselContainer>
+              <EmblaViewport ref={emblaRef2}>
+                <EmblaContainer>{secondRowCards}</EmblaContainer>
+              </EmblaViewport>
+            </CarouselContainer>
+          )}
+        </RowContainer>
+      )}
 
       <SeeAllLink href="/explore" onClick={handleSeeAllClick}>
         {linkText}

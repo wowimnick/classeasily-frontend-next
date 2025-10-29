@@ -305,17 +305,17 @@ function ChangeView({ bounds }) {
     }
 
     if (bounds) {
-      const currentBoundsStr = JSON.stringify(bounds);
-      const previousBoundsStr = JSON.stringify(previousBoundsRef.current);
+      try {
+        const currentBounds = JSON.stringify({
+          sw: bounds.sw,
+          ne: bounds.ne,
+        });
+        const previousBounds = previousBoundsRef.current;
 
-      if (currentBoundsStr !== previousBoundsStr) {
-        previousBoundsRef.current = bounds;
-
-        try {
-          const leafletBounds = L.latLngBounds(
-            [bounds.sw.lat, bounds.sw.lng],
-            [bounds.ne.lat, bounds.ne.lng]
-          );
+        if (currentBounds !== previousBounds) {
+          const southWest = L.latLng(bounds.sw.lat, bounds.sw.lng);
+          const northEast = L.latLng(bounds.ne.lat, bounds.ne.lng);
+          const leafletBounds = L.latLngBounds(southWest, northEast);
 
           if (leafletBounds.isValid()) {
             map.fitBounds(leafletBounds, {
@@ -324,15 +324,11 @@ function ChangeView({ bounds }) {
               animate: true,
               duration: 0.5,
             });
-          } else {
-            console.warn("Invalid bounds, falling back to default view");
-            map.setView([bounds.sw.lat, bounds.sw.lng], 14, {
-              animate: false,
-            });
+            previousBoundsRef.current = currentBounds;
           }
-        } catch (error) {
-          console.error("Error setting view:", error);
         }
+      } catch (error) {
+        console.error("Error updating map bounds:", error);
       }
     }
   }, [bounds, map]);
@@ -477,6 +473,10 @@ const MapDisplay = ({
   const [mapBounds, setMapBounds] = useState(null);
   const mapRef = useRef(null);
   const containerRef = useRef(null);
+  // CRITICAL FIX: Generate unique ID for each component instance to prevent Leaflet reuse errors
+  const containerIdRef = useRef(
+    `map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  );
 
   const calculateMapCenter = useMemo(() => {
     const validMarkers = markers.filter(
@@ -568,34 +568,72 @@ const MapDisplay = ({
     setMapBounds(calculateMapBounds);
   }, [calculateMapBounds]);
 
-  // FIX: Improved cleanup on unmount to prevent DOM errors
+  // CRITICAL FIX: Comprehensive cleanup that handles browser navigation
   useEffect(() => {
-    return () => {
-      if (mapRef.current) {
-        try {
-          // Remove all event listeners first
-          mapRef.current.off();
-          mapRef.current.stop();
+    // Mark container as in use by this instance
+    const containerId = containerIdRef.current;
 
-          // Remove the map instance
-          mapRef.current.remove();
-          mapRef.current = null;
-        } catch (error) {
-          console.error("Error cleaning up map:", error);
+    return () => {
+      // Cleanup function runs when component unmounts or before re-render
+      const cleanup = () => {
+        if (mapRef.current) {
+          try {
+            const map = mapRef.current;
+
+            // Stop all animations
+            if (map.stop) {
+              map.stop();
+            }
+
+            // Close all popups
+            map.closePopup();
+
+            // Remove all layers
+            map.eachLayer((layer) => {
+              try {
+                map.removeLayer(layer);
+              } catch (e) {
+                // Ignore errors when removing layers
+              }
+            });
+
+            // Remove all event listeners
+            map.off();
+
+            // Clear the map instance
+            if (map.remove) {
+              map.remove();
+            }
+
+            mapRef.current = null;
+          } catch (error) {
+            // Silently catch errors during cleanup
+            console.warn("Map cleanup warning:", error.message);
+          }
         }
-      }
+
+        // Clean up the DOM container if it still exists
+        if (containerRef.current) {
+          const container =
+            containerRef.current.querySelector(".leaflet-container");
+          if (container && container._leaflet_id) {
+            delete container._leaflet_id;
+          }
+        }
+      };
+
+      cleanup();
     };
-  }, []);
+  }, []); // Empty dependency array - only run on mount/unmount
 
   return (
-    <MapWrapper ref={containerRef}>
+    <MapWrapper ref={containerRef} id={containerIdRef.current}>
       <LeafletMarkerStyles />
       <HideMapButton onClick={onHideMap}>
         <MapPin size={16} /> Hide Map
       </HideMapButton>
       <Map>
         <MapContainer
-          ref={mapRef}
           center={[calculateMapCenter.lat, calculateMapCenter.lng]}
           zoom={12}
           attributionControl={false}
