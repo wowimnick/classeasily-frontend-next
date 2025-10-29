@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useDashboard } from "./DashboardContext";
 
 // Import tab components
@@ -16,17 +15,16 @@ import ClassManagement from "./tabs/classes/manageclasses/ClassManagement";
 import BookingTrends from "./tabs/bookings/BookingTrends";
 import Payouts from "./tabs/payouts/Payouts";
 import Staff from "./tabs/staff/Staff";
+import WidgetCustomizer from "./tabs/widget/WidgetCustomizer";
 
 export default function DashboardContent({ activeKey }) {
-  const router = useRouter();
-
   // Get data from context
   const { overviewData, overviewLoading, overviewError, fetchOverviewData } =
     useDashboard();
 
   // Debug logging
   useEffect(() => {
-    console.log("🔄 DashboardContent render - activeKey:", activeKey);
+    console.log("📄 DashboardContent render - activeKey:", activeKey);
   }, [activeKey]);
 
   const renderContent = () => {
@@ -62,14 +60,29 @@ export default function DashboardContent({ activeKey }) {
         return <BookingTrends />;
       case "discounts":
         return <Discounts />;
-      default:
-        console.warn(
-          "⚠️ Unknown route:",
-          activeKey,
-          "- redirecting to overview"
+      case "widget":
+        return <WidgetCustomizer />;
+      case "settings":
+        // Settings is handled by SideMenu drawer, show overview
+        return (
+          <Overview
+            overviewData={overviewData}
+            loading={overviewLoading}
+            error={overviewError}
+            onDataRefresh={fetchOverviewData}
+          />
         );
-        router.replace("/business/dashboard/overview");
-        return null;
+      default:
+        console.warn("⚠️ Unknown route:", activeKey, "- showing overview");
+        // DON'T redirect here, just show overview
+        return (
+          <Overview
+            overviewData={overviewData}
+            loading={overviewLoading}
+            error={overviewError}
+            onDataRefresh={fetchOverviewData}
+          />
+        );
     }
   };
 
