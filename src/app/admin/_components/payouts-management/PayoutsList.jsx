@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import ReactDOM from "react-dom";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
+import { Drawer } from "vaul";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import NumberFlow from "@number-flow/react";
@@ -82,6 +82,11 @@ const hexToRgba = (hex, alpha = 1) => {
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
+
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0px); }
+`;
 
 // --- MAIN PAGE COMPONENTS ---
 const DashboardWrapper = styled.div`
@@ -330,69 +335,104 @@ const StyledTable = styled(Table)`
   }
 `;
 
-// --- DRAWER COMPONENTS ---
-const DrawerOverlay = styled(motion.div)`
+// --- VAUL DRAWER COMPONENTS ---
+const StyledDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 1050;
-  @media (max-width: 768px) {
-    padding: 0;
-    align-items: flex-end;
-  }
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1049;
 `;
-const DrawerContainer = styled(motion.div)`
-  width: 100%;
-  max-width: 720px;
+
+const StyledDrawerContent = styled(Drawer.Content)`
   background: white;
-  border-radius: 24px;
-  overflow: hidden;
-  position: relative;
   display: flex;
   flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  height: 90%;
   max-height: 90vh;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  @media (max-width: 768px) {
-    height: auto;
-    max-height: 85vh;
-    border-radius: 24px 24px 0 0;
-  }
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  outline: none;
 `;
-const DrawerCloseButton = styled(motion.button)`
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: #f0f0f0;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  color: #717171;
-  &:hover {
-    background: #e0e0e0;
-  }
-`;
-const DrawerHeaderSection = styled.header`
-  padding: 20px 24px;
-  border-bottom: 1px solid #f0f0f0;
+
+const DrawerHandle = styled.div`
+  width: 36px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  margin: 12px auto 8px;
   flex-shrink: 0;
 `;
+
+const DesktopDrawerContent = styled(Drawer.Content)`
+  right: 8px;
+  top: 8px;
+  bottom: 8px;
+  position: fixed;
+  z-index: 1050;
+  outline: none;
+  width: 680px;
+  display: flex;
+`;
+
+const DesktopDrawerInner = styled.div`
+  background: white;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+`;
+
+const DrawerHeader = styled.div`
+  background: white;
+  border-bottom: 1px solid ${colors.border};
+  padding: 20px 24px;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+`;
+
+const DrawerHeaderTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: ${colors.textPrimary};
+  font-size: 20px;
+  font-weight: 600;
+`;
+
+const CloseButton = styled(Button)`
+  padding: 8px;
+  height: auto;
+  border: none;
+  background: none;
+  &:hover {
+    background: ${colors.border};
+  }
+`;
+
+const DrawerContentContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1;
+  overflow: hidden;
+`;
+
 const DrawerContent = styled.div`
   flex: 1;
   overflow-y: auto;
   background-color: ${colors.lightBg};
   padding: 24px;
+  animation: ${fadeIn} 0.5s 0.1s ease-out both;
+  border-radius: 0 0 16px 16px;
   @media (max-width: 768px) {
     padding: 16px;
   }
@@ -417,6 +457,14 @@ const InfoGroupTitle = styled.h3`
     height: 18px;
     color: ${colors.primary};
   }
+`;
+
+const LoaderWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 40px;
 `;
 
 // --- MOBILE COMPONENTS ---
@@ -588,89 +636,78 @@ const DetailDrawerModal = ({
   isMobile,
   onRetry,
 }) => {
-  const modalVariants = isMobile
-    ? {
-        hidden: { y: "100%", opacity: 0 },
-        visible: {
-          y: 0,
-          opacity: 1,
-          transition: { type: "spring", damping: 30, stiffness: 300 },
-        },
-        exit: {
-          y: "100%",
-          opacity: 0,
-          transition: { duration: 0.2, ease: "easeIn" },
-        },
-      }
-    : {
-        hidden: { scale: 0.95, opacity: 0 },
-        visible: {
-          scale: 1,
-          opacity: 1,
-          transition: { duration: 0.2, ease: "easeOut" },
-        },
-        exit: {
-          scale: 0.95,
-          opacity: 0,
-          transition: { duration: 0.2, ease: "easeIn" },
-        },
-      };
+  const [shouldRender, setShouldRender] = useState(false);
 
-  const drawerComponent = (
-    <AnimatePresence>
-      {isVisible && (
-        <DrawerOverlay
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        >
-          <DrawerContainer
-            variants={modalVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <DrawerHeaderSection>
-              <Space align="center" size={12}>
-                <Hash size={20} style={{ color: colors.primary }} />
-                <span
-                  style={{ fontWeight: 700, fontSize: "18px", color: "#222" }}
-                >
-                  Payout: {payout?.id}
-                </span>
-              </Space>
-              <DrawerCloseButton whileTap={{ scale: 0.9 }} onClick={onClose}>
-                <X size={20} />
-              </DrawerCloseButton>
-            </DrawerHeaderSection>
-            <DrawerContent>
-              {isLoading ? (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    minHeight: "350px",
-                  }}
-                >
-                  <GlobalLoaderWithoutInlineStyles />
-                </div>
-              ) : (
-                <PayoutDetailContent
-                  payout={payout}
-                  isMobile={isMobile}
-                  onRetry={onRetry}
-                />
-              )}
-            </DrawerContent>
-          </DrawerContainer>
-        </DrawerOverlay>
-      )}
-    </AnimatePresence>
+  useEffect(() => {
+    if (isVisible) {
+      setShouldRender(true);
+    } else {
+      const timer = setTimeout(() => setShouldRender(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible]);
+
+  if (!shouldRender) return null;
+
+  const renderDrawerContent = () => (
+    <>
+      <DrawerHeader>
+        <DrawerHeaderTitle>
+          <Hash size={20} />
+          <span>Payout: {payout?.id || "Details"}</span>
+        </DrawerHeaderTitle>
+        <CloseButton icon={<X size={20} />} onClick={onClose} />
+      </DrawerHeader>
+      <DrawerContentContainer>
+        <DrawerContent>
+          {isLoading ? (
+            <LoaderWrapper>
+              <GlobalLoaderWithoutInlineStyles />
+            </LoaderWrapper>
+          ) : (
+            <PayoutDetailContent
+              payout={payout}
+              isMobile={isMobile}
+              onRetry={onRetry}
+            />
+          )}
+        </DrawerContent>
+      </DrawerContentContainer>
+    </>
   );
-  return ReactDOM.createPortal(drawerComponent, document.body);
+
+  return (
+    <ConfigProvider theme={appTheme}>
+      {isMobile ? (
+        <Drawer.Root
+          open={isVisible}
+          onOpenChange={(open) => !open && onClose()}
+        >
+          <Drawer.Portal>
+            <StyledDrawerOverlay />
+            <StyledDrawerContent>
+              <DrawerHandle />
+              {renderDrawerContent()}
+            </StyledDrawerContent>
+          </Drawer.Portal>
+        </Drawer.Root>
+      ) : (
+        <Drawer.Root
+          open={isVisible}
+          onOpenChange={(open) => !open && onClose()}
+          direction="right"
+          dismissible
+        >
+          <Drawer.Portal>
+            <StyledDrawerOverlay />
+            <DesktopDrawerContent>
+              <DesktopDrawerInner>{renderDrawerContent()}</DesktopDrawerInner>
+            </DesktopDrawerContent>
+          </Drawer.Portal>
+        </Drawer.Root>
+      )}
+    </ConfigProvider>
+  );
 };
 
 const MobilePayoutItem = ({ payout, onViewDetails }) => (

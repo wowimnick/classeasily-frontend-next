@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import styled from "styled-components";
-import { motion, AnimatePresence } from "framer-motion";
+import styled, { keyframes } from "styled-components";
 import {
   Table,
   Input,
@@ -30,6 +29,7 @@ import {
   Skeleton,
   Tabs,
   Rate,
+  List,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -42,9 +42,7 @@ import {
   Award,
   Lock,
   Unlock,
-  MessageSquare,
   Download,
-  List,
   BarChart2,
   CheckCircle,
   XCircle,
@@ -57,19 +55,24 @@ import {
   Calendar,
   ShieldAlert,
   Edit,
+  List as ListIcon,
+  FileText,
+  X,
 } from "lucide-react";
 import { classManagementService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
 import AdminClassEditDrawer from "./AdminClassEditDrawer";
+import { Drawer } from "vaul";
+import moment from "moment";
+import { motion } from "framer-motion";
 
 const { Option } = Select;
 const { useBreakpoint } = Grid;
 const { Text, Title, Paragraph } = Typography;
-const { TabPane } = Tabs;
 
-// --- STYLING & THEME (ADAPTED FROM BOOKINGSLIST) ---
+// --- STYLING & THEME ---
 const colors = {
   primary: "#ff385c",
   success: "#10b981",
@@ -78,8 +81,8 @@ const colors = {
   info: "#3b82f6",
   lightBg: "#f8fafc",
   border: "#f1f5f9",
-  textPrimary: "#334155",
-  textSecondary: "#64748b",
+  textPrimary: "#1f2937",
+  textSecondary: "#6b7280",
   textTertiary: "#94a3b8",
 };
 
@@ -90,6 +93,11 @@ const hexToRgba = (hex, alpha = 1) => {
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
+
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0px); }
+`;
 
 // --- MAIN PAGE COMPONENTS ---
 const DashboardWrapper = styled.div`
@@ -265,7 +273,6 @@ const TableSection = styled(motion.div)`
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   position: relative;
-  border: 1px solid ${colors.border};
 `;
 
 const TableHeader = styled.div`
@@ -330,28 +337,6 @@ const SearchFilterContainer = styled.div`
   }
 `;
 
-const StyledTable = styled(Table)`
-  .ant-table-thead > tr > th {
-    background: #fafbfc;
-    border-bottom: 1px solid ${colors.border};
-    font-weight: 600;
-    color: ${colors.textPrimary};
-    font-size: 13px;
-    padding: 16px 24px;
-  }
-  .ant-table-tbody > tr > td {
-    padding: 16px 24px;
-    border-bottom: 1px solid ${colors.border};
-    font-size: 14px;
-  }
-  .ant-table-tbody > tr:hover > td {
-    background: #fafcff;
-  }
-  .ant-empty {
-    padding: 40px 20px;
-  }
-`;
-
 // --- MOBILE COMPONENTS ---
 const MobileCard = styled(Card)`
   margin-bottom: 12px;
@@ -411,146 +396,161 @@ const MobileCardFooter = styled.div`
   gap: 8px;
 `;
 
-// --- DRAWER COMPONENTS ---
-const DrawerOverlay = styled(motion.div)`
+// --- NEW VAUL DRAWER STYLES ---
+const StyledDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 1050;
-  @media (max-width: 768px) {
-    padding: 0;
-    align-items: flex-end;
-  }
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1049;
 `;
-
-const DrawerContainer = styled(motion.div)`
-  width: 100%;
-  max-width: 800px;
+const StyledDrawerContent = styled(Drawer.Content)`
   background: white;
-  border-radius: 24px;
-  overflow: hidden;
-  position: relative;
   display: flex;
   flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  height: 90%;
   max-height: 90vh;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  @media (max-width: 768px) {
-    height: auto;
-    max-height: 85vh;
-    border-radius: 24px 24px 0 0;
-  }
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  outline: none;
 `;
-
-const DrawerCloseButton = styled(motion.button)`
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: #f0f0f0;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  color: #717171;
-  &:hover {
-    background: #e0e0e0;
-  }
-`;
-
-const DrawerHeaderSection = styled.header`
-  padding: 20px 24px;
-  border-bottom: 1px solid #f0f0f0;
+const DrawerHandle = styled.div`
+  width: 36px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  margin: 12px auto 8px;
   flex-shrink: 0;
 `;
-
-const DrawerContent = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  background-color: ${colors.lightBg};
+const DesktopDrawerContent = styled(Drawer.Content)`
+  right: 8px;
+  top: 8px;
+  bottom: 8px;
+  position: fixed;
+  z-index: 1050;
+  outline: none;
+  width: 680px;
+  display: flex;
 `;
-const DrawerTabs = styled(Tabs)`
-  .ant-tabs-nav {
-    margin-bottom: 0;
-    background-color: white;
-    padding: 0 24px;
-  }
+const DesktopDrawerInner = styled.div`
+  background: white;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 `;
-
-const TabContentWrapper = styled.div`
-  padding: 24px;
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-`;
-
 const DrawerHeader = styled.div`
+  background: white;
+  border-bottom: 1px solid ${colors.border};
+  padding: 20px 24px;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+`;
+const DrawerHeaderTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: ${colors.textPrimary};
+  font-size: 20px;
+  font-weight: 600;
+`;
+const CloseButton = styled(Button)`
+  padding: 8px;
+  height: auto;
+  border: none;
+  background: none;
+  &:hover {
+    background: ${colors.border};
+  }
+`;
+const DrawerContentContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1;
+  overflow: hidden;
+`;
+const HeaderSection = styled.div`
   background-color: white;
   padding: 24px;
   border-bottom: 1px solid ${colors.border};
   display: flex;
   align-items: center;
   gap: 16px;
+  animation: ${fadeIn} 0.3s ease-out;
 `;
-
 const ClassAvatar = styled(Avatar)`
   width: 60px !important;
   height: 60px !important;
-  line-height: 60px !important;
-  font-size: 28px !important;
   border-radius: 12px !important;
   flex-shrink: 0;
 `;
-
+const ContentBody = styled.div`
+  padding: 24px;
+  flex: 1;
+  overflow-y: auto;
+  animation: ${fadeIn} 0.5s 0.1s ease-out both;
+`;
 const InfoGroup = styled.div`
   background: white;
   padding: 20px;
   border-radius: 12px;
   border: 1px solid ${colors.border};
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   margin-bottom: 20px;
-`;
-
-const InfoGroupTitle = styled.h3`
-  font-size: 1rem;
-  font-weight: 600;
-  color: ${colors.textPrimary};
-  margin: 0 0 16px 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  svg {
-    width: 18px;
-    height: 18px;
-    color: ${colors.primary};
+  &:last-child {
+    margin-bottom: 0;
   }
 `;
-
+const InfoGroupTitle = styled(Title).attrs({ level: 5 })`
+  color: ${colors.textPrimary};
+  margin-bottom: 16px !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 16px !important;
+  svg {
+    color: ${colors.primary};
+    width: 18px;
+    height: 18px;
+  }
+`;
 const InfoGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
 `;
-
 const InfoItem = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
 `;
-
 const InfoIcon = styled.div`
   color: ${colors.textSecondary};
   svg {
     width: 16px;
     height: 16px;
+  }
+`;
+const InfoContent = styled.div``;
+const InfoLabel = styled.div`
+  font-size: 13px;
+  color: ${colors.textSecondary};
+`;
+const InfoValue = styled(Paragraph)`
+  &.ant-typography {
+    font-weight: 500;
+    color: ${colors.textPrimary};
+    margin-bottom: 0 !important;
   }
 `;
 const FeatureGrid = styled.div`
@@ -565,19 +565,6 @@ const FeatureItem = styled.div`
   padding: 12px;
   background: ${colors.lightBg};
   border-radius: 12px;
-`;
-
-const InfoContent = styled.div``;
-const InfoLabel = styled.div`
-  font-size: 13px;
-  color: ${colors.textSecondary};
-`;
-const InfoValue = styled(Paragraph)`
-  &.ant-typography {
-    font-weight: 500;
-    color: ${colors.textPrimary};
-    margin-bottom: 0 !important;
-  }
 `;
 const ReviewCard = styled.div`
   background-color: white;
@@ -613,6 +600,88 @@ const ReviewFooter = styled.div`
   font-size: 0.8rem;
   color: ${colors.textTertiary};
 `;
+const LoaderWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 40px;
+`;
+const StyledScheduleTable = styled(Table)`
+  .ant-table-thead > tr > th {
+    background: #fafbfc;
+    font-weight: 600;
+    font-size: 13px;
+  }
+`;
+
+// --- MODAL & TABLE STYLES ---
+const EnhancedModal = styled(Modal)`
+  .ant-modal-content {
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .ant-modal-header {
+    border-bottom: 1px solid ${colors.border};
+    padding: 20px 24px;
+    background: ${colors.lightBg};
+  }
+  .ant-modal-title {
+    font-weight: 600;
+    font-size: 18px;
+    color: ${colors.textPrimary};
+  }
+  .ant-modal-body {
+    padding: 24px;
+  }
+  .ant-modal-footer {
+    border-top: 1px solid ${colors.border};
+    padding: 16px 24px;
+  }
+`;
+
+const EnhancedStyledTable = styled(Table)`
+  .ant-table-thead > tr > th {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 600;
+    color: #475569;
+    font-size: 13px;
+    padding: 16px 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    &:first-child {
+      border-top-left-radius: 12px;
+    }
+    &:last-child {
+      border-top-right-radius: 12px;
+    }
+  }
+  .ant-table-tbody > tr > td {
+    padding: 16px 20px;
+    border-bottom: 1px solid ${colors.border};
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  .ant-table-tbody > tr {
+    transition: all 0.2s;
+    &:hover > td {
+      background: #f8fafc;
+    }
+    &:last-child > td {
+      border-bottom: none;
+    }
+  }
+  .ant-table-cell-row-hover {
+    background: transparent !important;
+  }
+  .ant-empty {
+    padding: 60px 20px;
+  }
+  .ant-pagination {
+    margin: 24px 24px;
+  }
+`;
 
 // --- UTILITY FUNCTIONS & COMPONENTS ---
 const formatCurrency = (value) =>
@@ -629,18 +698,14 @@ const formatHoursForDisplay = (hours) => {
   if (typeof hours !== "number" || isNaN(hours) || hours <= 0) {
     return "";
   }
-
   const days = Math.floor(hours / 24);
   const remainingHours = hours % 24;
-
   if (remainingHours === 0) {
     return `${days} ${days === 1 ? "day" : "days"}`;
   }
-
   if (days === 0) {
     return `${remainingHours} ${remainingHours === 1 ? "hour" : "hours"}`;
   }
-
   return `${days} ${days === 1 ? "day" : "days"} and ${remainingHours} ${
     remainingHours === 1 ? "hour" : "hours"
   }`;
@@ -677,38 +742,37 @@ const StatusBadge = ({ status }) => {
     </Tag>
   );
 };
+
+// --- NEW SCHEDULE TABLE COLUMNS ---
 const scheduleColumns = (themeTokens) => [
   {
-    title: "Day",
-    dataIndex: "day",
-    key: "day",
-    width: 120,
-    render: (day) => <Text strong>{day || "N/A"}</Text>,
+    title: "Schedule",
+    key: "schedule",
+    render: (_, record) => (
+      <div>
+        <Text strong>
+          {record.date
+            ? moment(record.date).format("ddd, MMM D, YYYY")
+            : record.day}
+        </Text>
+        <Text type="secondary" style={{ display: "block", fontSize: "13px" }}>
+          {record.time
+            ? moment(record.time, "HH:mm:ss").format("h:mm A")
+            : "N/A"}
+        </Text>
+      </div>
+    ),
   },
   {
-    title: "Time",
-    dataIndex: "time",
-    key: "time",
-    width: 120,
-    render: (time) =>
-      time
-        ? new Date(`1970-01-01T${time}`).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        : "N/A",
-  },
-  {
-    title: "Duration (min)",
+    title: "Duration",
     dataIndex: "duration",
     key: "duration",
-    width: 120,
+    render: (duration) => `${duration || "N/A"} min`,
   },
   {
     title: "Price",
     dataIndex: "price",
     key: "price",
-    width: 120,
     render: (price) => (
       <Text strong style={{ color: themeTokens.colorPrimary }}>
         {formatCurrency(price)}
@@ -716,21 +780,16 @@ const scheduleColumns = (themeTokens) => [
     ),
   },
   {
-    title: "Spots",
+    title: "Capacity",
     dataIndex: "maxParticipants",
     key: "maxParticipants",
     align: "center",
-    width: 80,
+    render: (p) => p || "N/A",
   },
 ];
 
-// --- DETAIL DRAWER ---
-const ClassDetailDrawerContent = ({
-  classData,
-  onShowLockModal,
-  onShowMessageModal,
-}) => {
-  const [activeTab, setActiveTab] = useState("details");
+// --- REBUILT DETAIL DRAWER CONTENT ---
+const ClassDetailDrawerContent = ({ classData, onShowLockModal }) => {
   const [selectedOptionId, setSelectedOptionId] = useState(
     classData?.options?.[0]?.optionId || null
   );
@@ -740,9 +799,10 @@ const ClassDetailDrawerContent = ({
 
   return (
     <>
-      <DrawerHeader>
+      <HeaderSection>
         <ClassAvatar
           shape="square"
+          size={60}
           src={classData.images?.[0]?.image_medium_url}
         >
           {classData.title?.[0]}
@@ -753,361 +813,319 @@ const ClassDetailDrawerContent = ({
           </Title>
           <Text type="secondary">{classData.business_name}</Text>
         </div>
-      </DrawerHeader>
-      <DrawerTabs activeKey={activeTab} onChange={setActiveTab}>
-        <TabPane tab="Details" key="details">
-          <TabContentWrapper>
-            <InfoGroup>
-              <InfoGrid>
+      </HeaderSection>
+      <ContentBody>
+        <InfoGroup>
+          <InfoGroupTitle>
+            <Zap /> Class Overview
+          </InfoGroupTitle>
+          <InfoGrid>
+            <InfoItem>
+              <InfoIcon>
+                <Star />
+              </InfoIcon>
+              <InfoContent>
+                <InfoLabel>Avg. Rating</InfoLabel>
+                <InfoValue>
+                  {classData.average_rating.toFixed(1)} (
+                  {classData.review_count} reviews)
+                </InfoValue>
+              </InfoContent>
+            </InfoItem>
+            <InfoItem>
+              <InfoIcon>
+                <DollarSign />
+              </InfoIcon>
+              <InfoContent>
+                <InfoLabel>Price Range</InfoLabel>
+                <InfoValue>
+                  {classData.price_range
+                    ? classData.price_range.single_price
+                      ? formatCurrency(classData.price_range.min)
+                      : `${formatCurrency(
+                          classData.price_range.min
+                        )} - ${formatCurrency(classData.price_range.max)}`
+                    : "N/A"}
+                </InfoValue>
+              </InfoContent>
+            </InfoItem>
+            <InfoItem>
+              <InfoIcon>
+                <TagIcon />
+              </InfoIcon>
+              <InfoContent>
+                <InfoLabel>Category</InfoLabel>
+                <InfoValue>
+                  <Tag color={getCategoryColor(classData.category)}>
+                    {getCategoryName(classData.category)}
+                  </Tag>
+                </InfoValue>
+              </InfoContent>
+            </InfoItem>
+            <InfoItem>
+              <InfoIcon>
+                <Zap />
+              </InfoIcon>
+              <InfoContent>
+                <InfoLabel>Status</InfoLabel>
+                <InfoValue>
+                  <StatusBadge status={classData.status} />
+                </InfoValue>
+              </InfoContent>
+            </InfoItem>
+          </InfoGrid>
+        </InfoGroup>
+
+        <InfoGroup>
+          <InfoGroupTitle>
+            <BookOpen /> Description
+          </InfoGroupTitle>
+          <Paragraph style={{ whiteSpace: "pre-line" }}>
+            {classData.description || "No description provided."}
+          </Paragraph>
+        </InfoGroup>
+
+        {classData.features?.length > 0 && (
+          <InfoGroup>
+            <InfoGroupTitle>
+              <Award /> Features & Amenities
+            </InfoGroupTitle>
+            <FeatureGrid>
+              {classData.features.map((feature, i) => (
+                <FeatureItem key={i}>
+                  <CheckCircle size={18} color={colors.success} />
+                  <Text>{feature}</Text>
+                </FeatureItem>
+              ))}
+            </FeatureGrid>
+          </InfoGroup>
+        )}
+
+        <InfoGroup>
+          <InfoGroupTitle>
+            <ListIcon /> Options & Schedules
+          </InfoGroupTitle>
+          {classData.options?.length > 1 && (
+            <Space wrap style={{ marginBottom: "20px" }}>
+              {classData.options.map((opt) => (
+                <Button
+                  key={opt.optionId}
+                  type={
+                    selectedOptionId === opt.optionId ? "primary" : "default"
+                  }
+                  onClick={() => setSelectedOptionId(opt.optionId)}
+                >
+                  {opt.parent_class_title}
+                </Button>
+              ))}
+            </Space>
+          )}
+          {selectedOption ? (
+            <>
+              <InfoGrid style={{ marginBottom: "20px" }}>
                 <InfoItem>
                   <InfoIcon>
-                    <Star />
+                    <UserIcon />
                   </InfoIcon>
                   <InfoContent>
-                    <InfoLabel>Avg. Rating</InfoLabel>
+                    <InfoLabel>Level</InfoLabel>
                     <InfoValue>
-                      {classData.average_rating.toFixed(1)} (
-                      {classData.review_count} reviews)
+                      {capitalizeWords(selectedOption.level)}
                     </InfoValue>
                   </InfoContent>
                 </InfoItem>
                 <InfoItem>
                   <InfoIcon>
-                    <DollarSign />
+                    <BookOpen />
                   </InfoIcon>
                   <InfoContent>
-                    <InfoLabel>Price Range</InfoLabel>
+                    <InfoLabel>Booking Type</InfoLabel>
                     <InfoValue>
-                      {classData.price_range
-                        ? classData.price_range.single_price
-                          ? formatCurrency(classData.price_range.min)
-                          : `${formatCurrency(
-                              classData.price_range.min
-                            )} - ${formatCurrency(classData.price_range.max)}`
-                        : "N/A"}
+                      {capitalizeWords(selectedOption.booking_type)}
                     </InfoValue>
                   </InfoContent>
                 </InfoItem>
                 <InfoItem>
                   <InfoIcon>
-                    <TagIcon />
+                    <XCircle />
                   </InfoIcon>
                   <InfoContent>
-                    <InfoLabel>Category</InfoLabel>
+                    <InfoLabel>Cancellation</InfoLabel>
                     <InfoValue>
-                      <Tag color={getCategoryColor(classData.category)}>
-                        {getCategoryName(classData.category)}
-                      </Tag>
-                    </InfoValue>
-                  </InfoContent>
-                </InfoItem>
-                <InfoItem>
-                  <InfoIcon>
-                    <Zap />
-                  </InfoIcon>
-                  <InfoContent>
-                    <InfoLabel>Status</InfoLabel>
-                    <InfoValue>
-                      <StatusBadge status={classData.status} />
+                      {selectedOption.cancellationRefundPercentage}% refund over{" "}
+                      {selectedOption.cancellationPolicy === "custom" &&
+                      selectedOption.cancellationCustomHours
+                        ? `${formatHoursForDisplay(
+                            selectedOption.cancellationCustomHours
+                          )} notice`
+                        : capitalizeWords(selectedOption.cancellationPolicy)}
                     </InfoValue>
                   </InfoContent>
                 </InfoItem>
               </InfoGrid>
-            </InfoGroup>
-            <InfoGroup>
-              <InfoGroupTitle>
-                <BookOpen /> Description
-              </InfoGroupTitle>
-              <Paragraph style={{ whiteSpace: "pre-line" }}>
-                {classData.description || "No description provided."}
-              </Paragraph>
-            </InfoGroup>
-            {classData.features?.length > 0 && (
-              <InfoGroup>
-                <InfoGroupTitle>
-                  <Award /> Features & Amenities
-                </InfoGroupTitle>
-                <FeatureGrid>
-                  {classData.features.map((feature, i) => (
-                    <FeatureItem key={i}>
-                      <CheckCircle size={18} color={colors.success} />
-                      <Text>{feature}</Text>
-                    </FeatureItem>
-                  ))}
-                </FeatureGrid>
-              </InfoGroup>
-            )}
-          </TabContentWrapper>
-        </TabPane>
-        <TabPane
-          tab={`Options & Schedules (${classData.options?.length || 0})`}
-          key="schedules"
-        >
-          <TabContentWrapper>
-            {classData.options?.length > 1 && (
-              <InfoGroup>
-                <InfoGroupTitle>
-                  <BarChart2 /> Select an Option
-                </InfoGroupTitle>
-                <Space wrap>
-                  {classData.options.map((opt) => (
-                    <Button
-                      key={opt.optionId}
-                      type={
-                        selectedOptionId === opt.optionId
-                          ? "primary"
-                          : "default"
-                      }
-                      onClick={() => setSelectedOptionId(opt.optionId)}
+              <StyledScheduleTable
+                dataSource={selectedOption.schedules}
+                columns={scheduleColumns(appTheme.token)}
+                rowKey="id"
+                pagination={{ pageSize: 5, size: "small" }}
+                size="middle"
+              />
+            </>
+          ) : (
+            <Empty description="No class options have been created yet." />
+          )}
+        </InfoGroup>
+
+        <InfoGroup>
+          <InfoGroupTitle>
+            <Star /> Reviews ({classData.reviews?.length || 0})
+          </InfoGroupTitle>
+          {(classData.reviews?.length ?? 0) > 0 ? (
+            classData.reviews.map((review) => (
+              <ReviewCard key={review.reviewId}>
+                <ReviewHeader>
+                  <ReviewUser>
+                    <Avatar src={review.user?.avatar_thumb_url}>
+                      {review.user?.name?.[0]}
+                    </Avatar>
+                    <Text strong>{review.user?.name || "Anonymous"}</Text>
+                  </ReviewUser>
+                  <Rate disabled defaultValue={review.rating} />
+                </ReviewHeader>
+                <Paragraph>{review.comment}</Paragraph>
+                {review.business_response && (
+                  <ReviewResponse>
+                    <Text strong>Business Response:</Text>
+                    <Paragraph
+                      style={{ margin: "8px 0 0 0", whiteSpace: "pre-line" }}
                     >
-                      {opt.parent_class_title}
-                    </Button>
-                  ))}
-                </Space>
-              </InfoGroup>
-            )}
-            {selectedOption ? (
-              <>
-                <InfoGroup>
-                  <InfoGroupTitle>
-                    <TagIcon /> Details for: {selectedOption.parent_class_title}
-                  </InfoGroupTitle>
-                  <InfoGrid>
-                    <InfoItem>
-                      <InfoIcon>
-                        <UserIcon />
-                      </InfoIcon>
-                      <InfoContent>
-                        <InfoLabel>Level</InfoLabel>
-                        <InfoValue>
-                          {capitalizeWords(selectedOption.level)}
-                        </InfoValue>
-                      </InfoContent>
-                    </InfoItem>
-                    <InfoItem>
-                      <InfoIcon>
-                        <BookOpen />
-                      </InfoIcon>
-                      <InfoContent>
-                        <InfoLabel>Booking Type</InfoLabel>
-                        <InfoValue>
-                          {capitalizeWords(selectedOption.booking_type)}
-                        </InfoValue>
-                      </InfoContent>
-                    </InfoItem>
-                    <InfoItem>
-                      <InfoIcon>
-                        <XCircle />
-                      </InfoIcon>
-                      <InfoContent>
-                        <InfoLabel>Cancellation</InfoLabel>
-                        <InfoValue>
-                          {selectedOption.cancellationRefundPercentage}% refund
-                          cancelled over{" "}
-                          {selectedOption.cancellationPolicy === "custom" &&
-                          selectedOption.cancellationCustomHours
-                            ? `${formatHoursForDisplay(
-                                selectedOption.cancellationCustomHours
-                              )} notice`
-                            : capitalizeWords(
-                                selectedOption.cancellationPolicy
-                              )}
-                        </InfoValue>
-                      </InfoContent>
-                    </InfoItem>
-                  </InfoGrid>
-                </InfoGroup>
-                <InfoGroup>
-                  <InfoGroupTitle>
-                    <Calendar /> Weekly Schedule
-                  </InfoGroupTitle>
-                  {selectedOption.schedules?.length > 0 ? (
-                    <StyledTable
-                      dataSource={selectedOption.schedules}
-                      columns={scheduleColumns(appTheme.token)}
-                      rowKey="id"
-                      pagination={false}
-                      size="middle"
-                      scroll={{ x: "max-content" }}
-                    />
-                  ) : (
-                    <Empty description="No schedules defined." />
-                  )}
-                </InfoGroup>
-              </>
-            ) : (
-              <Empty description="No class options have been created yet." />
-            )}
-          </TabContentWrapper>
-        </TabPane>
-        <TabPane
-          tab={`Reviews (${classData.reviews?.length || 0})`}
-          key="reviews"
-        >
-          <TabContentWrapper>
-            {(classData.reviews?.length ?? 0) > 0 ? (
-              classData.reviews.map((review) => (
-                <ReviewCard key={review.reviewId}>
-                  <ReviewHeader>
-                    <ReviewUser>
-                      <Avatar src={review.user?.avatar_thumb_url}>
-                        {review.user?.name?.[0]}
-                      </Avatar>
-                      <Text strong>{review.user?.name || "Anonymous"}</Text>
-                    </ReviewUser>
-                    <Rate disabled defaultValue={review.rating} />
-                  </ReviewHeader>
-                  <Paragraph>{review.comment}</Paragraph>
-                  {review.business_response && (
-                    <ReviewResponse>
-                      <Text strong>Business Response:</Text>
-                      <Paragraph
-                        style={{ margin: "8px 0 0 0", whiteSpace: "pre-line" }}
-                      >
-                        {review.business_response}
-                      </Paragraph>
-                    </ReviewResponse>
-                  )}
-                  <ReviewFooter>
-                    <span>ID: {review.reviewId}</span>
-                    <span>
-                      Posted: {new Date(review.createdAt).toLocaleDateString()}
-                    </span>
-                  </ReviewFooter>
-                </ReviewCard>
-              ))
-            ) : (
-              <Empty description="No reviews submitted yet." />
-            )}
-          </TabContentWrapper>
-        </TabPane>
-        <TabPane tab="Admin Actions" key="actions">
-          <TabContentWrapper>
-            <InfoGroup>
-              <InfoGroupTitle>
-                <ShieldAlert /> Moderation
-              </InfoGroupTitle>
-              <Space>
-                <Button
-                  icon={<MessageSquare size={16} />}
-                  onClick={() => onShowMessageModal(classData)}
-                >
-                  Message Business
-                </Button>
-                <Button
-                  icon={
-                    classData.status === "active" ? (
-                      <Lock size={16} />
-                    ) : (
-                      <Unlock size={16} />
-                    )
-                  }
-                  onClick={() => onShowLockModal(classData)}
-                  danger={classData.status === "active"}
-                >
-                  {classData.status === "active"
-                    ? "Suspend Class"
-                    : "Activate Class"}
-                </Button>
-              </Space>
-            </InfoGroup>
-          </TabContentWrapper>
-        </TabPane>
-      </DrawerTabs>
+                      {review.business_response}
+                    </Paragraph>
+                  </ReviewResponse>
+                )}
+                <ReviewFooter>
+                  <span>ID: {review.reviewId}</span>
+                  <span>
+                    Posted: {new Date(review.createdAt).toLocaleDateString()}
+                  </span>
+                </ReviewFooter>
+              </ReviewCard>
+            ))
+          ) : (
+            <Empty description="No reviews submitted yet." />
+          )}
+        </InfoGroup>
+
+        <InfoGroup>
+          <InfoGroupTitle>
+            <ShieldAlert /> Moderation
+          </InfoGroupTitle>
+          <Button
+            icon={
+              classData.status === "active" ? (
+                <Lock size={16} />
+              ) : (
+                <Unlock size={16} />
+              )
+            }
+            onClick={() => onShowLockModal(classData)}
+            danger={classData.status === "active"}
+          >
+            {classData.status === "active" ? "Suspend Class" : "Activate Class"}
+          </Button>
+        </InfoGroup>
+      </ContentBody>
     </>
   );
 };
 
+// --- REBUILT DETAIL DRAWER COMPONENT ---
 const ClassDetailDrawer = ({
   isVisible,
   onClose,
   classData,
   isLoading,
-  isMobile,
   onShowLockModal,
-  onShowMessageModal,
 }) => {
-  const modalVariants = isMobile
-    ? {
-        hidden: { y: "100%", opacity: 0 },
-        visible: {
-          y: 0,
-          opacity: 1,
-          transition: { type: "spring", damping: 30, stiffness: 300 },
-        },
-        exit: {
-          y: "100%",
-          opacity: 0,
-          transition: { duration: 0.2, ease: "easeIn" },
-        },
-      }
-    : {
-        hidden: { scale: 0.95, opacity: 0 },
-        visible: {
-          scale: 1,
-          opacity: 1,
-          transition: { duration: 0.2, ease: "easeOut" },
-        },
-        exit: {
-          scale: 0.95,
-          opacity: 0,
-          transition: { duration: 0.2, ease: "easeIn" },
-        },
-      };
+  const [isMobile, setIsMobile] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
 
-  const drawerComponent = (
-    <AnimatePresence>
-      {isVisible && (
-        <DrawerOverlay
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        >
-          <DrawerContainer
-            variants={modalVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            onClick={(e) => e.stopPropagation()}
-            drag={isMobile ? "y" : false}
-            dragConstraints={{ top: 0, bottom: 500 }}
-            dragElastic={{ top: 0, bottom: 0.5 }}
-            onDragEnd={(e, i) => i.offset.y > 100 && onClose()}
-            dragSnapToOrigin
-          >
-            <DrawerHeaderSection>
-              <Space align="center" size={12}>
-                <BookOpen size={20} style={{ color: colors.primary }} />
-                <span
-                  style={{ fontWeight: 700, fontSize: "18px", color: "#222" }}
-                >
-                  Class: {classData?.title || ""}
-                </span>
-              </Space>
-            </DrawerHeaderSection>
-            <DrawerContent>
-              {isLoading ? (
-                <div style={{ padding: 40, textAlign: "center" }}>
-                  <GlobalLoaderWithInlineStyles />
-                </div>
-              ) : classData ? (
-                <ClassDetailDrawerContent
-                  classData={classData}
-                  onShowLockModal={onShowLockModal}
-                  onShowMessageModal={onShowMessageModal}
-                />
-              ) : (
-                <Empty description="Could not load class details." />
-              )}
-            </DrawerContent>
-          </DrawerContainer>
-        </DrawerOverlay>
-      )}
-    </AnimatePresence>
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (isVisible) {
+      setShouldRender(true);
+    } else {
+      const timer = setTimeout(() => setShouldRender(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible]);
+
+  if (!shouldRender) return null;
+
+  const renderDrawerContent = () => (
+    <>
+      <DrawerHeader>
+        <DrawerHeaderTitle>
+          <FileText size={20} />
+          <span>Class Details</span>
+        </DrawerHeaderTitle>
+        <CloseButton icon={<X size={20} />} onClick={onClose} />
+      </DrawerHeader>
+      <DrawerContentContainer>
+        {isLoading ? (
+          <LoaderWrapper>
+            <GlobalLoaderWithInlineStyles />
+          </LoaderWrapper>
+        ) : classData ? (
+          <ClassDetailDrawerContent
+            classData={classData}
+            onShowLockModal={onShowLockModal}
+          />
+        ) : (
+          <Empty description="Could not load class details." />
+        )}
+      </DrawerContentContainer>
+    </>
   );
 
-  return createPortal(drawerComponent, document.body);
+  return (
+    <ConfigProvider theme={appTheme}>
+      {isMobile ? (
+        <Drawer.Root
+          open={isVisible}
+          onOpenChange={(open) => !open && onClose()}
+        >
+          <Drawer.Portal>
+            <StyledDrawerOverlay />
+            <StyledDrawerContent>
+              <DrawerHandle />
+              {renderDrawerContent()}
+            </StyledDrawerContent>
+          </Drawer.Portal>
+        </Drawer.Root>
+      ) : (
+        <Drawer.Root
+          open={isVisible}
+          onOpenChange={(open) => !open && onClose()}
+          direction="right"
+          dismissible
+        >
+          <Drawer.Portal>
+            <StyledDrawerOverlay />
+            <DesktopDrawerContent>
+              <DesktopDrawerInner>{renderDrawerContent()}</DesktopDrawerInner>
+            </DesktopDrawerContent>
+          </Drawer.Portal>
+        </Drawer.Root>
+      )}
+    </ConfigProvider>
+  );
 };
 
 export default function ClassListings() {
@@ -1127,9 +1145,7 @@ export default function ClassListings() {
   const [selectedClassDetails, setSelectedClassDetails] = useState(null);
   const [isDetailDrawerVisible, setIsDetailDrawerVisible] = useState(false);
   const [isLockModalVisible, setIsLockModalVisible] = useState(false);
-  const [isMessageModalVisible, setIsMessageModalVisible] = useState(false);
   const [classToModify, setClassToModify] = useState(null);
-  const [messageForm] = Form.useForm();
   const [lockForm] = Form.useForm();
   const [categories, setCategories] = useState([]);
   const [classStats, setClassStats] = useState({});
@@ -1223,7 +1239,9 @@ export default function ClassListings() {
   }, [fetchStats]);
 
   const handleTableChange = (newPagination, filters, sorter) => {
-    setSortedInfo(sorter);
+    // antd sorter can be an array in multi-sort, ensure we handle a single object
+    const singleSorter = Array.isArray(sorter) ? sorter[0] : sorter;
+    setSortedInfo(singleSorter);
     setPagination(newPagination);
   };
 
@@ -1258,13 +1276,10 @@ export default function ClassListings() {
   };
 
   const handleEditDrawerClose = useCallback(() => {
-    // Cancel ongoing operation
     if (editDrawerOperation.current) {
       editDrawerOperation.current.cancelled = true;
       editDrawerOperation.current = null;
     }
-
-    // Reset states immediately
     setIsEditDrawerVisible(false);
     setClassToEdit(null);
     setDetailsLoading(false);
@@ -1279,29 +1294,22 @@ export default function ClassListings() {
   }, []);
 
   const showEditDrawer = useCallback(async (classItem) => {
-    // Cancel any existing operation
     if (editDrawerOperation.current) {
       editDrawerOperation.current.cancelled = true;
     }
-
-    // Create new operation tracker
     const operation = { cancelled: false };
     editDrawerOperation.current = operation;
 
     try {
-      // Open drawer immediately and show loading state
       setIsEditDrawerVisible(true);
       setDetailsLoading(true);
-      setClassToEdit(null); // Clear previous data immediately
+      setClassToEdit(null);
 
       const response = await classManagementService.getClassDetails(
         classItem.classId
       );
 
-      // Check if operation was cancelled
-      if (operation.cancelled) {
-        return;
-      }
+      if (operation.cancelled) return;
 
       if (response.success) {
         setClassToEdit(response.data);
@@ -1313,19 +1321,15 @@ export default function ClassListings() {
         setClassToEdit(null);
       }
     } catch (error) {
-      // Only show error if operation wasn't cancelled
       if (!operation.cancelled) {
         message.error("An error occurred while fetching class details.");
         setIsEditDrawerVisible(false);
         setClassToEdit(null);
       }
     } finally {
-      // Only update loading state if operation wasn't cancelled
       if (!operation.cancelled) {
         setDetailsLoading(false);
       }
-
-      // Clear operation reference if it's still the current one
       if (editDrawerOperation.current === operation) {
         editDrawerOperation.current = null;
       }
@@ -1334,18 +1338,13 @@ export default function ClassListings() {
 
   const handleEditSuccess = useCallback(
     (updatedClassData) => {
-      // Refresh the main list
       fetchClasses(filterParams, pagination, sortedInfo);
-
-      // If the detail drawer is open for the same class, update its data
       if (
         isDetailDrawerVisible &&
         selectedClassDetails?.classId === updatedClassData.classId
       ) {
         setSelectedClassDetails(updatedClassData);
       }
-
-      // Refresh stats
       fetchStats();
     },
     [
@@ -1363,7 +1362,7 @@ export default function ClassListings() {
     try {
       setIsDetailDrawerVisible(true);
       setDetailsLoading(true);
-      setSelectedClassDetails(null); // Clear previous data immediately
+      setSelectedClassDetails(null);
 
       const response = await classManagementService.getClassDetails(
         classItem.classId
@@ -1388,11 +1387,7 @@ export default function ClassListings() {
     setIsLockModalVisible(true);
     lockForm.resetFields();
   };
-  const showMessageModal = (classItem) => {
-    setClassToModify(classItem);
-    setIsMessageModalVisible(true);
-    messageForm.resetFields();
-  };
+
   const handleLockSubmit = async () => {
     if (!classToModify) return;
     try {
@@ -1404,6 +1399,7 @@ export default function ClassListings() {
       console.error("Validation failed:", error);
     }
   };
+
   const refreshData = () => {
     fetchClasses(filterParams, { ...pagination, current: 1 }, sortedInfo);
     fetchStats();
@@ -1464,10 +1460,11 @@ export default function ClassListings() {
     {
       title: "Price",
       dataIndex: "price_range",
-      key: "price",
+      key: "min_price",
       width: 150,
       sorter: true,
       columnKey: "min_price",
+      sortOrder: sortedInfo.columnKey === "min_price" ? sortedInfo.order : null,
       render: (pr) =>
         pr
           ? pr.single_price
@@ -1478,12 +1475,14 @@ export default function ClassListings() {
     {
       title: "Rating",
       dataIndex: "average_rating",
-      key: "rating",
+      key: "average_rating",
       width: 140,
       sorter: true,
       columnKey: "average_rating",
+      sortOrder:
+        sortedInfo.columnKey === "average_rating" ? sortedInfo.order : null,
       render: (rating, c) =>
-        rating ? (
+        rating > 0 ? (
           <Space>
             <Star size={14} fill="#ffc107" color="#ffc107" />
             <span>
@@ -1500,6 +1499,9 @@ export default function ClassListings() {
       dataIndex: "status",
       key: "status",
       width: 120,
+      sorter: true,
+      columnKey: "status",
+      sortOrder: sortedInfo.columnKey === "status" ? sortedInfo.order : null,
       render: (s) => <StatusBadge status={s} />,
     },
     {
@@ -1527,13 +1529,6 @@ export default function ClassListings() {
                 Edit Class
               </Menu.Item>
               <Menu.Divider />
-              <Menu.Item
-                key="3"
-                icon={<MessageSquare size={14} />}
-                onClick={() => showMessageModal(record)}
-              >
-                Message Business
-              </Menu.Item>
               <Menu.Item
                 key="4"
                 icon={<Lock size={14} />}
@@ -1623,28 +1618,132 @@ export default function ClassListings() {
     {
       title: "Total Classes",
       value: classStats.totalClasses,
-      icon: List,
+      icon: BookOpen,
+      color: colors.primary,
+      footer: `${classStats.activeClasses || 0} active`,
+    },
+    {
+      title: "Average Rating",
+      value: classStats.averageRating?.toFixed(1) || "0.0",
+      icon: Star,
+      color: colors.warning,
+      footer: `${classStats.totalReviews || 0} reviews (${
+        classStats.platformReviews || 0
+      } platform + ${classStats.googleReviews || 0} Google)`,
+    },
+    {
+      title: "Categories",
+      value: classStats.totalCategories,
+      icon: TagIcon,
       color: colors.info,
-      footer: "Platform-wide",
+      footer: `${classStats.totalSubcategories || 0} subcategories`,
     },
     {
-      title: "Active",
-      value: classStats.activeClasses,
-      icon: CheckCircle,
-      color: colors.success,
-      footer: "Visible & bookable",
-    },
-    {
-      title: "Featured",
-      value: classStats.featuredClasses,
-      icon: Award,
-      color: "#8b5cf6",
-      footer: "Promoted listings",
+      title: "Schedule Warnings",
+      value: classStats.scheduleWarningsCount || 0,
+      icon: ShieldAlert,
+      color:
+        classStats.scheduleWarningsCount > 0 ? colors.error : colors.success,
+      footer:
+        classStats.scheduleWarningsCount > 0
+          ? "Classes need attention"
+          : "All schedules healthy",
     },
   ];
 
+  const renderScheduleWarnings = () => {
+    if (
+      !classStats.classesWithLowSchedules ||
+      classStats.classesWithLowSchedules.length === 0
+    ) {
+      return null;
+    }
+    return (
+      <Card
+        style={{
+          borderRadius: "16px",
+          border: `1px solid ${colors.border}`,
+          marginTop: "24px",
+        }}
+        bodyStyle={{ paddingTop: 16 }}
+      >
+        <Card.Meta
+          avatar={
+            <IconContainer
+              color={colors.warning}
+              background={hexToRgba(colors.warning, 0.1)}
+            >
+              <ShieldAlert size={20} />
+            </IconContainer>
+          }
+          title={
+            <Title level={5} style={{ margin: 0 }}>
+              Schedule Attention Needed
+            </Title>
+          }
+          description={`${classStats.scheduleWarningsCount} ${
+            classStats.scheduleWarningsCount === 1 ? "class is" : "classes are"
+          } running out of scheduled dates.`}
+        />
+        <List
+          itemLayout="horizontal"
+          dataSource={classStats.classesWithLowSchedules}
+          pagination={{ pageSize: 4, size: "small" }}
+          renderItem={(item) => (
+            <List.Item
+              actions={[
+                <Button
+                  key="view"
+                  type="primary"
+                  ghost
+                  onClick={() =>
+                    showClassDetails({
+                      classId: item.classId,
+                      title: item.title,
+                    })
+                  }
+                >
+                  View Class
+                </Button>,
+              ]}
+              style={{ paddingLeft: 0, paddingRight: 0 }}
+            >
+              <List.Item.Meta
+                title={<Text strong>{item.title}</Text>}
+                description={
+                  <Space size="middle" wrap>
+                    <Text type="secondary">
+                      <Briefcase size={12} style={{ marginRight: 4 }} />
+                      {item.businessName}
+                    </Text>
+                    <Text type="secondary">
+                      <Calendar size={12} style={{ marginRight: 4 }} />
+                      {item.lastScheduleDate
+                        ? `Last on ${new Date(
+                            item.lastScheduleDate
+                          ).toLocaleDateString()}`
+                        : "No future dates"}
+                    </Text>
+                    <Text type="danger" strong>
+                      {item.daysRemaining > 0
+                        ? `${item.daysRemaining} ${
+                            item.daysRemaining === 1 ? "day" : "days"
+                          } left`
+                        : "Expired"}
+                    </Text>
+                  </Space>
+                }
+              />
+            </List.Item>
+          )}
+          style={{ marginTop: "8px" }}
+        />
+      </Card>
+    );
+  };
+
   return (
-    <ConfigProvider theme={appTheme}>
+    <ConfigProvider theme={{ token: appTheme }}>
       <DashboardWrapper>
         <DashboardHeader>
           <div>
@@ -1702,12 +1801,14 @@ export default function ClassListings() {
           ))}
         </StatsGrid>
 
+        {!statsLoading && renderScheduleWarnings()}
+
         <Divider />
 
         <TableSection>
           <TableHeader>
             <TableTitle>
-              <List /> All Classes
+              <ListIcon /> All Classes
             </TableTitle>
             <TableDescription>
               Search, filter, and take action on individual class listings.
@@ -1716,7 +1817,10 @@ export default function ClassListings() {
           <FilterBar>
             <SearchFilterContainer>
               <Input
-                placeholder="Search classes or businesses"
+                prefix={
+                  <Search size={16} style={{ color: colors.textSecondary }} />
+                }
+                placeholder="Search classes or businesses..."
                 onChange={(e) => handleFilterChange({ search: e.target.value })}
                 style={{ width: isMobile ? "100%" : 280 }}
                 allowClear
@@ -1785,11 +1889,16 @@ export default function ClassListings() {
               )}
             </div>
           ) : (
-            <StyledTable
+            <EnhancedStyledTable
               columns={columns}
               dataSource={classes}
               rowKey="classId"
-              pagination={pagination}
+              pagination={{
+                ...pagination,
+                showSizeChanger: true,
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} of ${total} classes`,
+              }}
               onChange={handleTableChange}
               scroll={{ x: "max-content" }}
               loading={{
@@ -1803,7 +1912,7 @@ export default function ClassListings() {
         <AdminClassEditDrawer
           visible={isEditDrawerVisible}
           onClose={handleEditDrawerClose}
-          classData={classToEdit} // This will be null while loading, which is handled in the drawer
+          classData={classToEdit}
           onSuccess={handleEditSuccess}
         />
 
@@ -1812,19 +1921,33 @@ export default function ClassListings() {
           onClose={() => setIsDetailDrawerVisible(false)}
           classData={selectedClassDetails}
           isLoading={detailsLoading}
-          isMobile={isMobile}
-          onShowMessageModal={showMessageModal}
           onShowLockModal={showLockModal}
         />
 
-        <Modal
-          title={`Confirm ${
-            classToModify?.status === "active" ? "Suspension" : "Activation"
-          }`}
+        <EnhancedModal
+          title={
+            <Space>
+              {classToModify?.status === "active" ? (
+                <Lock size={20} color={colors.error} />
+              ) : (
+                <Unlock size={20} color={colors.success} />
+              )}
+              <span>
+                Confirm{" "}
+                {classToModify?.status === "active"
+                  ? "Suspension"
+                  : "Activation"}
+              </span>
+            </Space>
+          }
           open={isLockModalVisible}
           onCancel={() => setIsLockModalVisible(false)}
           footer={[
-            <Button key="back" onClick={() => setIsLockModalVisible(false)}>
+            <Button
+              key="back"
+              onClick={() => setIsLockModalVisible(false)}
+              size="large"
+            >
               Cancel
             </Button>,
             <Button
@@ -1832,6 +1955,7 @@ export default function ClassListings() {
               type="primary"
               danger={classToModify?.status === "active"}
               onClick={handleLockSubmit}
+              size="large"
             >
               {classToModify?.status === "active"
                 ? "Suspend Class"
@@ -1839,52 +1963,39 @@ export default function ClassListings() {
             </Button>,
           ]}
           destroyOnClose
+          width={560}
         >
           {classToModify && (
             <Form form={lockForm} layout="vertical">
-              <Paragraph>
-                You are about to{" "}
-                <strong>
-                  {classToModify.status === "active" ? "suspend" : "activate"}
-                </strong>{" "}
-                the class: <strong>{classToModify.title}</strong>
-              </Paragraph>
+              <Alert
+                message={
+                  <span>
+                    You are about to{" "}
+                    <strong>
+                      {classToModify.status === "active"
+                        ? "suspend"
+                        : "activate"}
+                    </strong>{" "}
+                    the class: <strong>{classToModify.title}</strong>
+                  </span>
+                }
+                type={classToModify.status === "active" ? "warning" : "info"}
+                showIcon
+                style={{ marginBottom: 20 }}
+              />
               <Form.Item
                 name="reason"
                 label="Reason (Internal Note)"
                 rules={[{ required: true, message: "Please provide a reason" }]}
               >
-                <Input.TextArea rows={4} />
+                <Input.TextArea
+                  rows={4}
+                  placeholder="Enter the reason for this status change..."
+                />
               </Form.Item>
             </Form>
           )}
-        </Modal>
-
-        <Modal
-          title="Message Business"
-          open={isMessageModalVisible}
-          onCancel={() => setIsMessageModalVisible(false)}
-          onOk={() => message.info("Message sending not implemented.")}
-          okText="Send Message"
-          destroyOnClose
-        >
-          {classToModify && (
-            <Form form={messageForm} layout="vertical">
-              <Paragraph>
-                Sending message to{" "}
-                <strong>{classToModify.business_name}</strong> about class:{" "}
-                <strong>{classToModify.title}</strong>
-              </Paragraph>
-              <Form.Item
-                name="message"
-                label="Message"
-                rules={[{ required: true }]}
-              >
-                <Input.TextArea rows={6} />
-              </Form.Item>
-            </Form>
-          )}
-        </Modal>
+        </EnhancedModal>
       </DashboardWrapper>
     </ConfigProvider>
   );

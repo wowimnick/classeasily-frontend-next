@@ -53,6 +53,7 @@ import {
   Book,
   PenLine,
   GripVertical,
+  X,
 } from "lucide-react";
 import {
   PieChart,
@@ -70,6 +71,7 @@ import {
 } from "@/components/common/GlobalLoader";
 import { uploadService } from "@/services/apiService";
 import { motion } from "framer-motion";
+import { Drawer } from "vaul";
 import {
   DndContext,
   closestCenter,
@@ -354,15 +356,6 @@ const SubcategoryItem = styled.div`
   font-size: 13px;
   font-weight: 500;
   transition: all 0.2s ease-in-out;
-
-  .action-icon {
-    cursor: pointer;
-    color: ${(props) => hexToRgba(props.color, 0.8)};
-    &:hover {
-      color: ${(props) => props.color};
-      transform: scale(1.1);
-    }
-  }
 `;
 
 const CategoryCard = styled(Card)`
@@ -425,6 +418,96 @@ const ModalTitleWrapper = styled.div`
   font-size: 20px;
   font-weight: 600;
   color: ${colors.textPrimary};
+`;
+
+// --- VAUL DRAWER STYLES ---
+const StyledDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1049;
+`;
+const StyledDrawerContent = styled(Drawer.Content)`
+  background: white;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  height: 90%;
+  max-height: 90vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  outline: none;
+`;
+const DrawerHandle = styled.div`
+  width: 36px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  margin: 12px auto 8px;
+  flex-shrink: 0;
+`;
+const DesktopDrawerContent = styled(Drawer.Content)`
+  right: 8px;
+  top: 8px;
+  bottom: 8px;
+  position: fixed;
+  z-index: 1050;
+  outline: none;
+  width: 500px;
+  display: flex;
+`;
+const DesktopDrawerInner = styled.div`
+  background: white;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+`;
+const DrawerHeader = styled.div`
+  background: white;
+  border-bottom: 1px solid ${colors.border};
+  padding: 20px 24px;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+`;
+const DrawerHeaderTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: ${colors.textPrimary};
+  font-size: 20px;
+  font-weight: 600;
+`;
+const CloseButton = styled(Button)`
+  padding: 8px;
+  height: auto;
+  border: none;
+  background: none;
+  &:hover {
+    background: ${colors.border};
+  }
+`;
+const DrawerFormContainer = styled.div`
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+`;
+const DrawerFooter = styled.div`
+  padding: 16px 24px;
+  border-top: 1px solid ${colors.border};
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+  background: white;
 `;
 
 // --- DND & UTILITIES ---
@@ -601,6 +684,240 @@ const ReassignmentModal = ({
   );
 };
 
+const CategoryEditDrawer = ({
+  isVisible,
+  onClose,
+  categoryData,
+  onSave,
+  isLoading,
+  form,
+}) => {
+  const [isMobile, setIsMobile] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (isVisible) {
+      setShouldRender(true);
+    } else {
+      const timer = setTimeout(() => setShouldRender(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible]);
+
+  if (!shouldRender) return null;
+
+  const renderDrawerContent = () => (
+    <>
+      <DrawerHeader>
+        <DrawerHeaderTitle>
+          {categoryData ? <Edit2 size={20} /> : <Plus size={20} />}{" "}
+          {categoryData ? `Edit Category` : "Add New Category"}
+        </DrawerHeaderTitle>
+        <CloseButton icon={<X size={20} />} onClick={onClose} />
+      </DrawerHeader>
+      <DrawerFormContainer>
+        <Form
+          form={form}
+          layout="vertical"
+          id="category-edit-form"
+          onFinish={onSave}
+        >
+          <Form.Item
+            name="name"
+            label="Category Name"
+            rules={[{ required: true }]}
+          >
+            <Input placeholder="e.g., Music, Art" />
+          </Form.Item>
+          <Form.Item
+            name="slug"
+            label="Category Slug"
+            tooltip={{
+              title:
+                "URL-friendly identifier (e.g., 'digital-art'). Auto-generates from name if left blank.",
+              icon: <InfoIcon size={13} />,
+            }}
+            rules={[
+              {
+                pattern: /^[a-z0-9-]+$/,
+                message: "Lowercase, numbers, and hyphens only.",
+              },
+            ]}
+          >
+            <Input
+              placeholder="e.g., music, digital-art"
+              suffix={
+                <Tooltip title="Auto-generate from name">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<allIcons.Bot size={20} />}
+                    style={{
+                      margin: 0,
+                      padding: 0,
+                      height: 22,
+                      lineHeight: 1,
+                    }}
+                    onClick={() => {
+                      const n = form.getFieldValue("name");
+                      if (n)
+                        form.setFieldsValue({
+                          slug: n
+                            .toLowerCase()
+                            .replace(/\s+/g, "-")
+                            .replace(/[^a-z0-9-]/g, ""),
+                        });
+                    }}
+                  />
+                </Tooltip>
+              }
+            />
+          </Form.Item>
+          <Form.Item
+            name="description"
+            label="Homepage Description"
+            tooltip="Short, catchy description for the category card on the homepage."
+            rules={[{ required: true, message: "A description is required." }]}
+          >
+            <Input.TextArea
+              rows={2}
+              placeholder="e.g., Unleash your inner creative genius"
+            />
+          </Form.Item>
+          <Form.Item
+            name="image"
+            label="Homepage Image"
+            tooltip="Image for the category card (e.g., 500x500px). Uploading a new image will replace the old one."
+            valuePropName="fileList"
+            getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
+            rules={[
+              {
+                required: !categoryData,
+                message: "An image is required for new categories.",
+              },
+            ]}
+          >
+            <Upload
+              name="image"
+              listType="picture-card"
+              maxCount={1}
+              beforeUpload={() => false}
+            >
+              <div>
+                <Plus />
+                <div style={{ marginTop: 8 }}>Upload</div>
+              </div>
+            </Upload>
+          </Form.Item>
+          <Form.Item
+            name="is_featured"
+            label="Feature on Homepage"
+            valuePropName="checked"
+          >
+            <Switch />
+          </Form.Item>
+          <Divider>Admin Panel Display</Divider>
+          <Form.Item
+            name="icon_name"
+            label="Icon (for Admin Panel)"
+            tooltip="Select an icon that represents this category in the admin panel."
+            rules={[{ required: true, message: "Please select an icon." }]}
+          >
+            <Select
+              showSearch
+              placeholder="Search for an icon..."
+              optionFilterProp="label"
+            >
+              {iconOptions.map((opt) => (
+                <Select.Option
+                  key={opt.value}
+                  value={opt.value}
+                  label={opt.label}
+                >
+                  <Space>
+                    <opt.component size={16} />
+                    {opt.label}
+                  </Space>
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="color"
+            label="Category Color (for Admin Panel)"
+            rules={[{ required: true }]}
+          >
+            <ColorPicker
+              format="hex"
+              presets={[
+                {
+                  label: "Recommended",
+                  colors: [
+                    "#3b82f6",
+                    "#8b5cf6",
+                    "#ec4899",
+                    "#10b981",
+                    "#f97316",
+                    "#0ea5e9",
+                    "#ef4444",
+                    "#64748b",
+                  ],
+                },
+              ]}
+              style={{ padding: "10px 10px" }}
+              showText
+              getPopupContainer={(trigger) => trigger.parentElement}
+            />
+          </Form.Item>
+        </Form>
+      </DrawerFormContainer>
+      <DrawerFooter>
+        <Button onClick={onClose} disabled={isLoading}>
+          Cancel
+        </Button>
+        <Button
+          type="primary"
+          htmlType="submit"
+          form="category-edit-form"
+          loading={isLoading}
+        >
+          {categoryData ? "Update Category" : "Create Category"}
+        </Button>
+      </DrawerFooter>
+    </>
+  );
+
+  return (
+    <Drawer.Root
+      open={isVisible}
+      onOpenChange={(open) => !open && onClose()}
+      direction={isMobile ? "bottom" : "right"}
+      dismissible
+    >
+      <Drawer.Portal>
+        <StyledDrawerOverlay />
+        {isMobile ? (
+          <StyledDrawerContent>
+            <DrawerHandle />
+            {renderDrawerContent()}
+          </StyledDrawerContent>
+        ) : (
+          <DesktopDrawerContent>
+            <DesktopDrawerInner>{renderDrawerContent()}</DesktopDrawerInner>
+          </DesktopDrawerContent>
+        )}
+      </Drawer.Portal>
+    </Drawer.Root>
+  );
+};
+
 const ClassCategories = () => {
   const [categories, setCategories] = useState([]);
   const [dashboardStats, setDashboardStats] = useState(null);
@@ -610,7 +927,7 @@ const ClassCategories = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [isEditDrawerVisible, setIsEditDrawerVisible] = useState(false);
   const [isAddSubcategoryModalVisible, setIsAddSubcategoryModalVisible] =
     useState(false);
   const [isEditSubcategoryModalVisible, setIsEditSubcategoryModalVisible] =
@@ -843,7 +1160,7 @@ const ClassCategories = () => {
           key: "categoryAction",
           duration: 2,
         });
-        setIsEditModalVisible(false);
+        setIsEditDrawerVisible(false);
         fetchCategories();
         fetchDashboardStats();
       } else {
@@ -1026,7 +1343,7 @@ const ClassCategories = () => {
     setActionLoading(false);
   };
 
-  const openCategoryModal = (category = null) => {
+  const openCategoryDrawer = (category = null) => {
     setSelectedCategory(category);
     if (category) {
       const fileList = category.image_medium_url
@@ -1058,7 +1375,7 @@ const ClassCategories = () => {
         image: [],
       });
     }
-    setIsEditModalVisible(true);
+    setIsEditDrawerVisible(true);
   };
 
   const showAddSubcategoryModal = (category) => {
@@ -1134,61 +1451,58 @@ const ClassCategories = () => {
           <div
             style={{
               maxWidth: 450,
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              gap: 8,
             }}
           >
-            {subs.length > 0 ? (
-              subs.map((s) => (
+            <Space size={[4, 8]} wrap>
+              {subs.map((s) => (
                 <SubcategoryItem key={s.id} color={cat.color}>
                   <span>
                     {s.name} ({s.class_count})
                   </span>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<PenLine size={12} />}
-                    onClick={() => openEditSubcategoryModal(s, cat)}
-                    style={{ padding: 0, height: "auto", minWidth: "auto" }}
-                  />
+                  <Tooltip title="Edit Subcategory">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<PenLine size={12} />}
+                      onClick={() => openEditSubcategoryModal(s, cat)}
+                      style={{
+                        padding: "0 2px",
+                        height: "auto",
+                        marginLeft: 4,
+                      }}
+                    />
+                  </Tooltip>
                   <Popconfirm
                     title="Delete subcategory?"
-                    description={`Are you sure you want to delete "${s.name}"?${
-                      s.class_count > 0
-                        ? " Classes will need to be reassigned."
-                        : ""
+                    description={`Delete "${s.name}"?${
+                      s.class_count > 0 ? " Classes need reassignment." : ""
                     }`}
                     onConfirm={() => confirmDeleteSubcategory(s, cat)}
                     okText="Delete"
                     cancelText="Cancel"
                     okButtonProps={{ danger: true }}
                   >
-                    <Button
-                      type="text"
-                      size="small"
-                      danger
-                      icon={<Trash2 size={12} />}
-                      style={{ padding: 0, height: "auto", minWidth: "auto" }}
-                    />
+                    <Tooltip title="Delete Subcategory">
+                      <Button
+                        type="text"
+                        size="small"
+                        danger
+                        icon={<Trash2 size={12} />}
+                        style={{ padding: "0 2px", height: "auto" }}
+                      />
+                    </Tooltip>
                   </Popconfirm>
                 </SubcategoryItem>
-              ))
-            ) : (
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                None
-              </Text>
-            )}
-            <Button
-              type="text"
-              icon={<Plus size={13} />}
-              size="small"
-              onClick={() => showAddSubcategoryModal(cat)}
-              style={{ marginLeft: 4, padding: "0 4px", height: 22 }}
-            >
-              Add
-            </Button>
+              ))}
+              <Tooltip title="Add New Subcategory">
+                <Button
+                  type="dashed"
+                  icon={<Plus size={12} />}
+                  size="small"
+                  onClick={() => showAddSubcategoryModal(cat)}
+                />
+              </Tooltip>
+            </Space>
           </div>
         );
       },
@@ -1196,30 +1510,29 @@ const ClassCategories = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 180,
+      width: 120,
       align: "right",
       render: (_, cat) => (
         <Space>
-          <Button
-            icon={<Edit size={14} />}
-            onClick={() => openCategoryModal(cat)}
-            size="middle"
-          >
-            Edit
-          </Button>
+          <Tooltip title="Edit Category">
+            <Button
+              icon={<Edit size={16} />}
+              onClick={() => openCategoryDrawer(cat)}
+            />
+          </Tooltip>
           <Popconfirm
             title="Delete category?"
-            description={`Are you sure you want to delete "${cat.name}"?${
-              cat.class_count > 0 ? " Classes will need to be reassigned." : ""
+            description={`Delete "${cat.name}"?${
+              cat.class_count > 0 ? " Classes need reassignment." : ""
             }`}
             onConfirm={() => confirmDeleteCategory(cat)}
             okText="Delete"
             cancelText="Cancel"
             okButtonProps={{ danger: true }}
           >
-            <Button danger icon={<Trash2 size={14} />} size="middle">
-              Delete
-            </Button>
+            <Tooltip title="Delete Category">
+              <Button danger icon={<Trash2 size={16} />} />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -1315,7 +1628,7 @@ const ClassCategories = () => {
           </Button>
           <Button
             icon={<Edit size={14} />}
-            onClick={() => openCategoryModal(cat)}
+            onClick={() => openCategoryDrawer(cat)}
             size="small"
           >
             Edit
@@ -1424,7 +1737,7 @@ const ClassCategories = () => {
               <Button
                 type="primary"
                 icon={<Plus size={16} />}
-                onClick={() => openCategoryModal()}
+                onClick={() => openCategoryDrawer()}
               >
                 Add New Category
               </Button>
@@ -1642,197 +1955,14 @@ const ClassCategories = () => {
             loading={actionLoading}
           />
 
-          <Modal
-            title={
-              <ModalTitleWrapper>
-                {selectedCategory ? <Edit2 size={20} /> : <Plus size={20} />}{" "}
-                {selectedCategory ? `Edit Category` : "Add New Category"}
-              </ModalTitleWrapper>
-            }
-            open={isEditModalVisible}
-            onCancel={() => setIsEditModalVisible(false)}
-            footer={null}
-            width={isMobile ? "95%" : 500}
-            destroyOnClose
-          >
-            <Form
-              form={editForm}
-              layout="vertical"
-              onFinish={handleSaveCategory}
-              initialValues={{
-                color: colors.primary,
-                icon_name: "Bookmark",
-                is_featured: false,
-              }}
-            >
-              <Form.Item
-                name="name"
-                label="Category Name"
-                rules={[{ required: true }]}
-              >
-                <Input placeholder="e.g., Music, Art" />
-              </Form.Item>
-              <Form.Item
-                name="slug"
-                label="Category Slug"
-                tooltip={{
-                  title:
-                    "URL-friendly identifier (e.g., 'digital-art'). Auto-generates from name if left blank.",
-                  icon: <InfoIcon size={13} />,
-                }}
-                rules={[
-                  {
-                    pattern: /^[a-z0-9-]+$/,
-                    message: "Lowercase, numbers, and hyphens only.",
-                  },
-                ]}
-              >
-                <Input
-                  placeholder="e.g., music, digital-art"
-                  suffix={
-                    <Tooltip title="Auto-generate from name">
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<allIcons.Bot size={20} />}
-                        style={{
-                          margin: 0,
-                          padding: 0,
-                          height: 22,
-                          lineHeight: 1,
-                        }}
-                        onClick={() => {
-                          const n = editForm.getFieldValue("name");
-                          if (n)
-                            editForm.setFieldsValue({
-                              slug: n
-                                .toLowerCase()
-                                .replace(/\s+/g, "-")
-                                .replace(/[^a-z0-9-]/g, ""),
-                            });
-                        }}
-                      />
-                    </Tooltip>
-                  }
-                />
-              </Form.Item>
-              <Form.Item
-                name="description"
-                label="Homepage Description"
-                tooltip="Short, catchy description for the category card on the homepage."
-                rules={[
-                  { required: true, message: "A description is required." },
-                ]}
-              >
-                <Input.TextArea
-                  rows={2}
-                  placeholder="e.g., Unleash your inner creative genius"
-                />
-              </Form.Item>
-              <Form.Item
-                name="image"
-                label="Homepage Image"
-                tooltip="Image for the category card (e.g., 500x500px). Uploading a new image will replace the old one."
-                valuePropName="fileList"
-                getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
-                rules={[
-                  {
-                    required: !selectedCategory,
-                    message: "An image is required for new categories.",
-                  },
-                ]}
-              >
-                <Upload
-                  name="image"
-                  listType="picture-card"
-                  maxCount={1}
-                  beforeUpload={() => false}
-                >
-                  <div>
-                    <Plus />
-                    <div style={{ marginTop: 8 }}>Upload</div>
-                  </div>
-                </Upload>
-              </Form.Item>
-              <Form.Item
-                name="is_featured"
-                label="Feature on Homepage"
-                valuePropName="checked"
-              >
-                <Switch />
-              </Form.Item>
-              <Divider>Admin Panel Display</Divider>
-              <Form.Item
-                name="icon_name"
-                label="Icon (for Admin Panel)"
-                tooltip="Select an icon that represents this category in the admin panel."
-                rules={[{ required: true, message: "Please select an icon." }]}
-              >
-                <Select
-                  showSearch
-                  placeholder="Search for an icon..."
-                  optionFilterProp="label"
-                >
-                  {iconOptions.map((opt) => (
-                    <Select.Option
-                      key={opt.value}
-                      value={opt.value}
-                      label={opt.label}
-                    >
-                      <Space>
-                        <opt.component size={16} />
-                        {opt.label}
-                      </Space>
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-              <Form.Item
-                name="color"
-                label="Category Color (for Admin Panel)"
-                rules={[{ required: true }]}
-              >
-                <ColorPicker
-                  format="hex"
-                  presets={[
-                    {
-                      label: "Recommended",
-                      colors: [
-                        "#3b82f6",
-                        "#8b5cf6",
-                        "#ec4899",
-                        "#10b981",
-                        "#f97316",
-                        "#0ea5e9",
-                        "#ef4444",
-                        "#64748b",
-                      ],
-                    },
-                  ]}
-                  style={{ padding: "10px 10px" }}
-                  showText
-                />
-              </Form.Item>
-              <Divider />
-              <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
-                <Space>
-                  <Button
-                    onClick={() => setIsEditModalVisible(false)}
-                    disabled={actionLoading}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    loading={actionLoading}
-                  >
-                    {selectedCategory ? "Update Category" : "Create Category"}
-                  </Button>
-                </Space>
-              </Form.Item>
-            </Form>
-          </Modal>
+          <CategoryEditDrawer
+            isVisible={isEditDrawerVisible}
+            onClose={() => setIsEditDrawerVisible(false)}
+            categoryData={selectedCategory}
+            onSave={handleSaveCategory}
+            isLoading={actionLoading}
+            form={editForm}
+          />
 
           <Modal
             title={

@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import ReactDOM from "react-dom";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import NumberFlow from "@number-flow/react";
+import { Drawer } from "vaul";
 import {
   Table,
   Card,
@@ -412,62 +412,75 @@ const StyledTable = styled(Table)`
 `;
 
 // --- IOS STYLE DRAWER (FROM CANCELLATION MODAL) ---
-const DrawerOverlay = styled(motion.div)`
+// --- VAUL DRAWER STYLES ---
+const StyledDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 1050;
-
-  @media (max-width: 768px) {
-    padding: 0;
-    align-items: flex-end;
-  }
+  z-index: 1049;
 `;
 
-const DrawerContainer = styled(motion.div)`
-  width: 100%;
-  max-width: 720px;
+const MobileDrawerContent = styled(Drawer.Content)`
   background: white;
-  border-radius: 24px;
-  overflow: hidden;
-  position: relative;
   display: flex;
   flex-direction: column;
-  max-height: 90vh;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-
-  @media (max-width: 768px) {
-    height: auto;
-    max-height: 85vh;
-    border-radius: 24px 24px 0 0;
-  }
+  border-radius: 24px 24px 0 0;
+  height: 85vh;
+  max-height: 85vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  outline: none;
 `;
 
-const DragHandle = styled(motion.div)`
-  display: none;
+const DragHandle = styled.div`
   width: 40px;
   height: 5px;
   background: #d1d1d1;
   border-radius: 2.5px;
-  margin: 12px auto 0;
-  cursor: grab;
+  margin: 12px auto 8px;
+  flex-shrink: 0;
+`;
+
+const DesktopDrawerContent = styled(Drawer.Content)`
+  right: 8px;
+  top: 8px;
+  bottom: 8px;
+  position: fixed;
+  z-index: 1050;
+  outline: none;
+  width: 720px;
+  display: flex;
+`;
+
+const DesktopDrawerInner = styled.div`
+  background: white;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+`;
+
+const DrawerHeaderSection = styled.div`
+  background: white;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 20px 24px;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
 
   @media (max-width: 768px) {
-    display: block;
+    padding: 16px 24px;
   }
 `;
 
-const DrawerCloseButton = styled(motion.button)`
-  position: absolute;
-  top: 16px;
-  right: 16px;
+const DrawerCloseButton = styled.button`
   background: #f0f0f0;
   border: none;
   cursor: pointer;
@@ -476,7 +489,6 @@ const DrawerCloseButton = styled(motion.button)`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
   color: #717171;
 
   &:hover {
@@ -484,24 +496,20 @@ const DrawerCloseButton = styled(motion.button)`
   }
 `;
 
-const DrawerHeaderSection = styled.header`
-  padding: 20px 24px;
-  border-bottom: 1px solid #f0f0f0;
-  flex-shrink: 0;
-
-  @media (max-width: 768px) {
-    padding: 16px 24px;
-  }
+const DrawerScrollContent = styled.div`
+  overflow-y: auto;
+  flex: 1;
+  background-color: ${colors.lightBg};
 `;
 
-const DrawerContent = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  background-color: ${colors.lightBg};
-
-  @media (max-width: 768px) {
-    padding: 0;
-  }
+const DrawerFooter = styled.div`
+  padding: 16px 24px;
+  border-top: 1px solid ${colors.border};
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+  background: white;
 `;
 
 const DrawerHeader = styled.div`
@@ -764,41 +772,8 @@ const DetailDrawerContent = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            style={{ padding: 24, overflowY: "auto" }}
+            style={{ overflowY: "auto" }}
           >
-            <InfoGroup>
-              <InfoGroupTitle>
-                <ShieldAlert />
-                Admin Actions
-              </InfoGroupTitle>
-              <Space wrap>
-                <Button
-                  danger
-                  icon={<XCircle size={16} />}
-                  onClick={onOpenCancelModal}
-                  disabled={
-                    booking.status === "cancelled" ||
-                    booking.status === "completed" ||
-                    isActionLoading
-                  }
-                >
-                  Cancel Booking
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<DollarSign size={16} />}
-                  onClick={onOpenRefundModal}
-                  disabled={
-                    !payment ||
-                    !(payment.available_refund_amount > 0) ||
-                    isActionLoading
-                  }
-                >
-                  Process Refund
-                </Button>
-              </Space>
-            </InfoGroup>
-
             <InfoGroup>
               <InfoGroupTitle>
                 <Hash />
@@ -1121,94 +1096,85 @@ const DetailDrawerModal = ({
   onOpenRefundModal,
   isActionLoading,
 }) => {
-  const handleDragEnd = (event, info) => {
-    const dragThreshold = 100;
-    const velocityThreshold = 20;
-    if (info.offset.y > dragThreshold && info.velocity.y > velocityThreshold) {
-      onClose();
-    }
-  };
+  if (!booking) return null;
 
-  const modalVariants = isMobile
-    ? {
-        hidden: { y: "100%", opacity: 0 },
-        visible: {
-          y: 0,
-          opacity: 1,
-          transition: { type: "spring", damping: 30, stiffness: 300 },
-        },
-        exit: {
-          y: "100%",
-          opacity: 0,
-          transition: { duration: 0.2, ease: "easeIn" },
-        },
-      }
-    : {
-        hidden: { scale: 0.95, opacity: 0 },
-        visible: {
-          scale: 1,
-          opacity: 1,
-          transition: { duration: 0.2, ease: "easeOut" },
-        },
-        exit: {
-          scale: 0.95,
-          opacity: 0,
-          transition: { duration: 0.2, ease: "easeIn" },
-        },
-      };
+  const { payment } = booking;
 
-  const drawerComponent = (
-    <AnimatePresence>
-      {isVisible && (
-        <DrawerOverlay
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
+  const renderDrawerContent = () => (
+    <>
+      <DrawerHeaderSection>
+        <Space align="center" size={12}>
+          <Hash size={20} style={{ color: colors.primary }} />
+          <span style={{ fontWeight: 700, fontSize: "18px", color: "#222" }}>
+            Booking: {booking?.user_facing_reference || `#${booking?.id}`}
+          </span>
+        </Space>
+        <DrawerCloseButton onClick={onClose}>
+          <X size={20} />
+        </DrawerCloseButton>
+      </DrawerHeaderSection>
+
+      <DrawerScrollContent>
+        <DetailDrawerContent
+          booking={booking}
+          isLoading={isLoading}
+          onOpenCancelModal={onOpenCancelModal}
+          onOpenRefundModal={onOpenRefundModal}
+          isActionLoading={isActionLoading}
+        />
+      </DrawerScrollContent>
+
+      <DrawerFooter>
+        <Button
+          danger
+          icon={<XCircle size={16} />}
+          onClick={onOpenCancelModal}
+          disabled={
+            booking.status === "cancelled" ||
+            booking.status === "completed" ||
+            isActionLoading
+          }
         >
-          <DrawerContainer
-            variants={modalVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            onClick={(e) => e.stopPropagation()}
-            drag={isMobile ? "y" : false}
-            dragConstraints={{ top: 0, bottom: 500 }}
-            dragElastic={{ top: 0, bottom: 0.5 }}
-            onDragEnd={handleDragEnd}
-            dragSnapToOrigin
-          >
-            <DragHandle />
-            <DrawerHeaderSection>
-              <Space align="center" size={12}>
-                <Hash size={20} style={{ color: colors.primary }} />
-                <span
-                  style={{ fontWeight: 700, fontSize: "18px", color: "#222" }}
-                >
-                  Booking: {booking?.user_facing_reference || `#${booking?.id}`}
-                </span>
-              </Space>
-              <DrawerCloseButton whileTap={{ scale: 0.9 }} onClick={onClose}>
-                <X size={20} />
-              </DrawerCloseButton>
-            </DrawerHeaderSection>
-            <DrawerContent>
-              <DetailDrawerContent
-                booking={booking}
-                isLoading={isLoading}
-                onOpenCancelModal={onOpenCancelModal}
-                onOpenRefundModal={onOpenRefundModal}
-                isActionLoading={isActionLoading}
-              />
-            </DrawerContent>
-          </DrawerContainer>
-        </DrawerOverlay>
-      )}
-    </AnimatePresence>
+          Cancel Booking
+        </Button>
+        <Button
+          type="primary"
+          icon={<DollarSign size={16} />}
+          onClick={onOpenRefundModal}
+          disabled={
+            !payment ||
+            !(payment.available_refund_amount > 0) ||
+            isActionLoading
+          }
+        >
+          Process Refund
+        </Button>
+      </DrawerFooter>
+    </>
   );
 
-  // Mount into the body to escape parent styling contexts
-  return ReactDOM.createPortal(drawerComponent, document.body);
+  return (
+    <Drawer.Root
+      open={isVisible}
+      onOpenChange={(open) => !open && onClose()}
+      direction={isMobile ? "bottom" : "right"}
+      dismissible
+    >
+      <Drawer.Portal>
+        <StyledDrawerOverlay />
+        {isMobile ? (
+          <MobileDrawerContent>
+            <DragHandle />
+            {renderDrawerContent()}
+          </MobileDrawerContent>
+        ) : (
+          <DesktopDrawerContent>
+            <DesktopDrawerInner>{renderDrawerContent()}</DesktopDrawerInner>
+          </DesktopDrawerContent>
+        )}
+      </Drawer.Portal>
+    </Drawer.Root>
+  );
 };
 
 // Mobile Booking Item
