@@ -209,6 +209,24 @@ const BookingModal = ({
   const { openLoginModal } = useAuthModal();
   const [paymentAction, setPaymentAction] = useState(null);
 
+  const effectiveInitialParticipants = useMemo(() => {
+    // This code runs on the client side, which is appropriate for a modal interaction.
+    // We check for `isOpen` to avoid running this when the component is not active.
+    if (typeof window !== "undefined" && isOpen) {
+      const params = new URLSearchParams(window.location.search);
+      const participantsFromUrl = params.get("participants");
+      if (participantsFromUrl) {
+        const num = parseInt(participantsFromUrl, 10);
+        // Use the URL value if it's a valid positive number
+        if (!isNaN(num) && num > 0) {
+          return num;
+        }
+      }
+    }
+    // Fallback to the prop
+    return initialParticipantCount;
+  }, [isOpen, initialParticipantCount]);
+
   useEffect(() => {
     setIsMobile(window.innerWidth <= 768);
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -242,8 +260,9 @@ const BookingModal = ({
 
   const getInitialBookingState = useCallback(() => {
     const validInitialParticipantCount =
-      Number.isInteger(initialParticipantCount) && initialParticipantCount > 0
-        ? initialParticipantCount
+      Number.isInteger(effectiveInitialParticipants) &&
+      effectiveInitialParticipants > 0
+        ? effectiveInitialParticipants
         : 1;
     let bookerName = "";
     let bookerEmail = "";
@@ -311,11 +330,21 @@ const BookingModal = ({
         const userJustLoggedIn = !prev.userEmail && !!newInitialState.userEmail;
         const optionChanged =
           selectedOption?.optionId !== prev.selectedOption?.optionId;
+        // FIX: Also reset if the participant count from the prop is different
+        // and the user hasn't already started picking slots.
+        const participantsPropChanged =
+          prev.participants !== newInitialState.participants &&
+          prev.selectedSlots.length === 0;
 
-        if (userJustLoggedIn || optionChanged) {
+        if (userJustLoggedIn || optionChanged || participantsPropChanged) {
           return {
             ...newInitialState,
-            selectedSlots: optionChanged ? [] : prev.selectedSlots,
+            // If the option or participants changed, clear the slots. Otherwise, keep them.
+            selectedSlots:
+              optionChanged || participantsPropChanged
+                ? []
+                : prev.selectedSlots,
+            // Persist payment details across state resets if needed
             paymentIntentId: prev.paymentIntentId,
             clientSecret: prev.clientSecret,
             bookingId: prev.bookingId,
@@ -546,8 +575,6 @@ const BookingModal = ({
       handleClose,
     ]
   );
-
-  if (!isOpen) return null;
 
   if (!classData || !selectedOption) {
     return null;

@@ -1328,8 +1328,8 @@ const BookingsList = () => {
   const [filterParams, setFilterParams] = useState({
     status: "all",
     search: "",
-    startDate: dayjs().subtract(29, "day"),
-    endDate: dayjs(),
+    startDate: null,
+    endDate: null,
   });
 
   const [pagination, setPagination] = useState({
@@ -1662,17 +1662,27 @@ const BookingsList = () => {
       key: "user",
       fixed: "left",
       width: 220,
-      render: (_, r) => (
-        <Space>
-          <Avatar src={r.user_avatar_thumb_url}>{r.user_name?.[0]}</Avatar>
-          <div>
-            <Text style={{ fontWeight: 500 }}>{r.user_name}</Text>
-            <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
-              {r.user_email}
-            </Text>
-          </div>
-        </Space>
-      ),
+      render: (_, r) => {
+        const userName =
+          r.user_name || r.user?.name || r.user_details?.name || "N/A";
+        const userEmail =
+          r.user_email || r.user?.email || r.user_details?.email || "";
+        const userAvatar =
+          r.user_avatar_thumb_url ||
+          r.user?.avatar_thumb_url ||
+          r.user_details?.avatar_thumb_url;
+        return (
+          <Space>
+            <Avatar src={userAvatar}>{userName?.[0]}</Avatar>
+            <div>
+              <Text style={{ fontWeight: 500 }}>{userName}</Text>
+              <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
+                {userEmail}
+              </Text>
+            </div>
+          </Space>
+        );
+      },
     },
     {
       title: "Class",

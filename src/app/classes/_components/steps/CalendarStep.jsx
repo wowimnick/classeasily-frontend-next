@@ -19,7 +19,9 @@ import {
   ServerCrash,
   ArrowLeft,
   CheckCircle,
-  UserCheck, // MODIFICATION: Added icon for minimum participants
+  UserCheck,
+  Minus,
+  Plus,
 } from "lucide-react";
 
 import { scheduleService } from "@/services/apiService";
@@ -36,6 +38,7 @@ const theme = {
   primaryLight: "#fff8f9",
   textPrimary: "#222222",
   textSecondary: "#717171",
+  textOnPrimary: "#ffffff",
   border: "#dddddd",
   borderLight: "#f0f0f0",
   background: "#f7f7f7",
@@ -43,6 +46,56 @@ const theme = {
   success: "#00a96f",
   successLight: "#f0fdf9",
 };
+
+// --- Participant Stepper ---
+const StepperContainer = styled.div`
+  display: flex;
+  align-items: stretch;
+  border-radius: 999px;
+  border: 1px solid ${theme.border};
+  background: ${theme.white};
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus-within {
+    border-color: ${theme.primary};
+  }
+`;
+
+const StepperButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: ${theme.textSecondary};
+  transition: color 0.2s;
+
+  &:hover:not(:disabled) {
+    color: ${theme.primary};
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+`;
+
+const NumberDisplay = styled.div`
+  padding: 0 0.5rem;
+  font-size: 16px;
+  font-weight: 600;
+  color: ${theme.textPrimary};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  text-align: center;
+`;
+// --- End Participant Stepper ---
 
 // --- Styled Components ---
 
@@ -72,6 +125,7 @@ const MobileTimeSlotsHeader = styled(motion.div)`
   color: ${theme.textSecondary};
   font-size: 14px;
   font-weight: 500;
+  flex-shrink: 0;
 
   @media (max-width: 959px) {
     display: flex;
@@ -104,82 +158,13 @@ const CalendarWrapper = styled(motion.div)`
   overflow: hidden;
 `;
 
-const SelectedSlotConfirmation = styled(motion.div)`
-  margin-top: 16px;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, ${theme.successLight} 0%, #f8fffe 100%);
-  border: 1px solid ${theme.success}22;
-  border-radius: 16px;
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  box-shadow: 0 2px 8px rgba(0, 169, 111, 0.08);
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: ${theme.success};
-    border-radius: 0 2px 2px 0;
-  }
-
-  @media (max-width: 959px) {
-    margin: 16px;
-    margin-top: 16px;
-    padding: 16px 18px;
-    border-radius: 12px;
-  }
-`;
-
-const ConfirmationIconWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: ${theme.success};
-  border-radius: 50%;
-  flex-shrink: 0;
-  margin-top: 2px;
-`;
-
-const ConfirmationIcon = styled(CheckCircle)`
-  color: white;
-  width: 14px;
-  height: 14px;
-`;
-
-const ConfirmationContent = styled.div`
-  flex: 1;
-  min-width: 0;
-`;
-
-const ConfirmationTitle = styled.div`
-  color: ${theme.success};
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 1.3;
-  margin-bottom: 4px;
-`;
-
-const ConfirmationDetails = styled.div`
-  color: #065f46;
-  font-size: 13px;
-  line-height: 1.4;
-  opacity: 0.9;
-`;
-
 const TimeSlotsWrapper = styled.div`
   align-self: flex-start;
   width: 100%;
 
   @media (min-width: 960px) {
     position: sticky;
+    top: 1px;
   }
 `;
 
@@ -188,25 +173,10 @@ const TimeSlotsContainer = styled(motion.div)`
   border-radius: 16px;
   border: 1px solid ${theme.borderLight};
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  padding: 16px;
-  overflow-y: auto;
-
-  max-height: 425px;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background-color: ${theme.border};
-    border-radius: 3px;
-  }
-
-  @media (min-width: 768px) {
-    padding: 24px;
-  }
+  max-height: 420px; /* MODIFICATION: Adjusted max-height for better balance */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 
   @media (max-width: 959px) {
     position: fixed;
@@ -218,7 +188,6 @@ const TimeSlotsContainer = styled(motion.div)`
     border-radius: 20px;
     max-height: none;
     height: auto;
-    padding: 0;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   }
 `;
@@ -312,22 +281,22 @@ const DayNumber = styled.span`
   ${(props) =>
     props.$hasSlots &&
     !props.$isDisabled &&
-    `
-    color: ${theme.textPrimary};
-    font-weight: 600;
+    css`
+      color: ${theme.textPrimary};
+      font-weight: 600;
 
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 4px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background-color: ${theme.primary};
-    }
-  `}
+      &::after {
+        content: "";
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background-color: ${theme.primary};
+      }
+    `}
 
   ${DayCell}:hover:not(:disabled) & {
     ${(props) =>
@@ -336,20 +305,16 @@ const DayNumber = styled.span`
 
   ${(props) =>
     props.$isSelected &&
-    `
-    background-color: ${theme.primary};
-    color: ${theme.white};
-    font-weight: 700;
-    &::after {
-      background-color: ${theme.white};
-    }
-  `}
+    css`
+      background-color: ${theme.primary};
+      color: ${theme.textOnPrimary};
+      font-weight: 700;
+      &::after {
+        background-color: ${theme.textOnPrimary};
+      }
+    `}
 
-  ${(props) =>
-    props.$isToday &&
-    `
-    border: 1px solid ${theme.primary};
-  `}
+  ${(props) => props.$isToday && `border: 1px solid ${theme.primary};`}
 `;
 
 const TimeSlotsList = styled(motion.div)`
@@ -364,24 +329,33 @@ const TimeSlotButton = styled(motion.button)`
   padding: 14px;
   background: ${theme.white};
   border: 1px solid ${theme.borderLight};
-  border-radius: 16px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
   width: 100%;
   text-align: left;
   font-family: inherit;
   position: relative;
   overflow: hidden;
 
-  &:hover {
+  &:hover:not(:disabled) {
     border-color: ${theme.primary};
+  }
+
+  &:disabled {
+    background-color: #f9fafb;
+    cursor: not-allowed;
+    opacity: 0.7;
+    &:hover {
+      border-color: ${theme.borderLight};
+    }
   }
 
   ${(props) =>
     props.$selected &&
     css`
       border-color: ${theme.primary};
-      background: ${theme.primaryLight};
+      background: #ff385c1a; /* Match widget subtle pink */
     `}
 `;
 
@@ -389,43 +363,35 @@ const TimeSlotHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: relative;
-  z-index: 2;
 `;
 
 const TimeText = styled.div`
   font-size: 15px;
   font-weight: 700;
   color: ${theme.textPrimary};
-  line-height: 1.2;
 `;
 
 const PriceTag = styled.div`
   display: flex;
   align-items: center;
   gap: 4px;
-  color: ${theme.primary};
+  color: ${theme.textPrimary};
   font-weight: 700;
   font-size: 16px;
-  background: ${theme.white};
-  padding: 6px 12px;
-  border-radius: 8px;
 `;
 
 const TimeSlotMeta = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-top: 8px; /* Added margin for spacing */
-  position: relative;
-  z-index: 2;
-  flex-wrap: wrap; /* Allow wrapping on small screens */
+  margin-top: 8px;
+  flex-wrap: wrap;
 `;
 
 const MetaItem = styled.div`
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: ${theme.textSecondary};
   font-size: 13px;
   font-weight: 500;
@@ -433,7 +399,6 @@ const MetaItem = styled.div`
   svg {
     width: 16px;
     height: 16px;
-    opacity: 0.8;
   }
 `;
 
@@ -466,6 +431,8 @@ const MessageContainer = styled.div`
   flex-direction: column;
   align-items: center;
   gap: 16px;
+  flex: 1; /* Grow to fill space */
+  justify-content: center;
 
   svg {
     color: ${theme.border};
@@ -493,35 +460,9 @@ const MobileBackdrop = styled(motion.div)`
   }
 `;
 
-const CloseButton = styled(motion.button)`
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: rgba(0, 0, 0, 0.05);
-  border: none;
-  cursor: pointer;
-  font-size: 20px;
-  color: #666;
-  padding: 8px;
-  line-height: 1;
-  z-index: 10;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #ff4757;
-    color: white;
-  }
-`;
-
 const TimeSlotsContentArea = styled.div`
-  padding: 0px;
-  overflow-y: visible;
+  padding: 20px;
+  overflow-y: auto;
   flex: 1;
 
   &::-webkit-scrollbar {
@@ -534,10 +475,23 @@ const TimeSlotsContentArea = styled.div`
     background-color: ${theme.border};
     border-radius: 3px;
   }
+`;
 
-  @media (max-width: 959px) {
-    padding: 20px;
-  }
+const ParticipantSelectorContainer = styled(motion.div)`
+  flex-shrink: 0;
+  padding: 16px 20px;
+  border-top: 1px solid ${theme.borderLight};
+  background-color: #fcfcfc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  overflow: hidden; /* MODIFICATION: Clip content during animation */
+`;
+
+const ParticipantLabel = styled.div`
+  font-size: 14px;
+  font-weight: 500;
+  color: ${theme.textSecondary};
 `;
 
 const CalendarStep = ({
@@ -549,6 +503,34 @@ const CalendarStep = ({
   userTimeZone,
   initialDate,
 }) => {
+  // --- Participant Stepper Component (React version) ---
+  const ParticipantStepper = ({ value = 1, min = 1, max = Infinity }) => {
+    const handleUpdate = (newValue) => {
+      if (newValue >= min && newValue <= max) {
+        onUpdate({ participants: newValue });
+      }
+    };
+
+    return (
+      <StepperContainer>
+        <StepperButton
+          disabled={value <= min}
+          onClick={() => handleUpdate(value - 1)}
+        >
+          <Minus size={16} strokeWidth={3} />
+        </StepperButton>
+        <NumberDisplay>{value}</NumberDisplay>
+        <StepperButton
+          disabled={value >= max}
+          onClick={() => handleUpdate(value + 1)}
+        >
+          <Plus size={16} strokeWidth={3} />
+        </StepperButton>
+      </StepperContainer>
+    );
+  };
+  // --- End Participant Stepper ---
+
   const getInitialDateObj = useCallback(() => {
     if (initialDate) {
       const [year, month, day] = initialDate.split("-").map(Number);
@@ -571,12 +553,10 @@ const CalendarStep = ({
   const abortControllerRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
 
-  // And keep the useEffect as is - it will update after hydration
   useEffect(() => {
     setIsMobile(window.innerWidth <= 959);
   }, []);
 
-  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       const newIsMobile = window.innerWidth <= 959;
@@ -694,7 +674,6 @@ const CalendarStep = ({
         onUpdate({ selectedSlots: [] });
       }
 
-      // FIX: Safe window access for mobile
       if (isMobile && event) {
         const rect = event.currentTarget.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
@@ -710,32 +689,43 @@ const CalendarStep = ({
   const handleSlotSelect = useCallback(
     (slotFromApi) => {
       if (!selectedDate) return;
+
       const naiveDateForSlot = getLocalYYYYMMDD(selectedDate);
+      const currentParticipants = bookingData.participants || 1;
+
+      // Clamp current participants between the selected slot's min requirement and available spots
+      let updatedParticipants = Math.max(
+        currentParticipants,
+        slotFromApi.min_participants
+      );
+      updatedParticipants = Math.min(
+        updatedParticipants,
+        slotFromApi.available_spots
+      );
+
+      const slotData = {
+        id: slotFromApi.instance_id,
+        date: naiveDateForSlot,
+        time: slotFromApi.time,
+        available_spots: slotFromApi.available_spots,
+        price: slotFromApi.price,
+        duration: slotFromApi.duration,
+        isCourse: false,
+        minParticipants: slotFromApi.min_participants,
+      };
 
       const updatePayload = {
-        selectedSlots: [
-          {
-            id: slotFromApi.instance_id,
-            date: naiveDateForSlot,
-            time: slotFromApi.time,
-            available_spots: slotFromApi.available_spots,
-            price: slotFromApi.price,
-            duration: slotFromApi.duration,
-            isCourse: false,
-            minParticipants: slotFromApi.min_participants,
-          },
-        ],
-        participants:
-          slotFromApi.min_participants > 1 ? slotFromApi.min_participants : 1,
+        selectedSlots: [slotData],
+        participants: updatedParticipants,
       };
 
       onUpdate(updatePayload);
 
       if (isMobile) {
-        setShowTimeSlots(false);
+        // On mobile, we keep the timeslot view open to allow participant changes
       }
     },
-    [selectedDate, onUpdate, isMobile]
+    [selectedDate, onUpdate, isMobile, bookingData.participants]
   );
 
   const handleMonthChange = useCallback((direction) => {
@@ -783,7 +773,6 @@ const CalendarStep = ({
     [availableSlots, naiveKeyForSelectedDate]
   );
 
-  // FIX: Safe window access for mobile animations
   const mobileTimeSlotsVariants = useMemo(() => {
     if (typeof window === "undefined") {
       return {
@@ -1006,6 +995,7 @@ const CalendarStep = ({
                   />
                 )}
                 <TimeSlotsContainer
+                  layout
                   variants={
                     isMobile
                       ? mobileTimeSlotsVariants
@@ -1014,19 +1004,18 @@ const CalendarStep = ({
                   initial="initial"
                   animate="animate"
                   exit="exit"
+                  transition={{ type: "spring", stiffness: 400, damping: 40 }}
                 >
-                  {isMobile && showTimeSlots && (
-                    <MobileTimeSlotsHeader
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ ease: "linear" }}
-                    >
-                      <MobileBackButton onClick={handleBackToCalendar}>
-                        <ArrowLeft size={18} />
-                      </MobileBackButton>
-                      <span>Step 2: Select Time</span>
-                    </MobileTimeSlotsHeader>
-                  )}
+                  <MobileTimeSlotsHeader
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ ease: "linear" }}
+                  >
+                    <MobileBackButton onClick={handleBackToCalendar}>
+                      <ArrowLeft size={18} />
+                    </MobileBackButton>
+                    <span>Step 2: Select Time</span>
+                  </MobileTimeSlotsHeader>
 
                   <TimeSlotsContentArea>
                     <TimeSlotsHeader>
@@ -1070,59 +1059,74 @@ const CalendarStep = ({
                             exit={{ opacity: 0 }}
                             transition={{ ease: "linear" }}
                           >
-                            {slotsForSelectedDate.map((slot, index) => (
-                              <TimeSlotButton
-                                key={slot.instance_id}
-                                $selected={
-                                  currentSelectedSlot?.id === slot.instance_id
-                                }
-                                onClick={() => handleSlotSelect(slot)}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{
-                                  opacity: 1,
-                                  y: 0,
-                                  transition: {
-                                    delay: index * 0.03,
-                                    ease: "linear",
-                                    duration: 0.2,
-                                  },
-                                }}
-                              >
-                                <TimeSlotHeader>
-                                  <TimeText>
-                                    {formatTimeRangeForDisplay(
-                                      naiveKeyForSelectedDate,
-                                      slot.time,
-                                      slot.duration,
-                                      displayBusinessTimeZone,
-                                      displayUserTimeZone
-                                    )}
-                                  </TimeText>
-                                  <PriceTag>
-                                    <DollarSign size={14} />
-                                    {parseFloat(slot.price).toFixed(2)}
-                                  </PriceTag>
-                                </TimeSlotHeader>
-                                <TimeSlotMeta>
-                                  <MetaItem>
-                                    <Clock size={16} />
-                                    {getDurationText(slot.duration)}
-                                  </MetaItem>
-                                  <MetaItem>
-                                    <Users size={16} />
-                                    {slot.available_spots} spots left
-                                  </MetaItem>
-                                  {/* --- MODIFICATION START --- */}
-                                  {slot.min_participants > 1 && (
+                            {slotsForSelectedDate.map((slot, index) => {
+                              const isSelected =
+                                currentSelectedSlot?.id === slot.instance_id;
+                              const isDisabled =
+                                slot.available_spots < bookingData.participants;
+
+                              return (
+                                <TimeSlotButton
+                                  key={slot.instance_id}
+                                  $selected={isSelected}
+                                  onClick={() => handleSlotSelect(slot)}
+                                  disabled={isDisabled}
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{
+                                    opacity: 1,
+                                    y: 0,
+                                    transition: {
+                                      delay: index * 0.03,
+                                      ease: "linear",
+                                      duration: 0.2,
+                                    },
+                                  }}
+                                >
+                                  <TimeSlotHeader>
+                                    <TimeText>
+                                      {formatTimeRangeForDisplay(
+                                        naiveKeyForSelectedDate,
+                                        slot.time,
+                                        slot.duration,
+                                        displayBusinessTimeZone,
+                                        displayUserTimeZone
+                                      )}
+                                    </TimeText>
+                                    <PriceTag>
+                                      <DollarSign size={14} />
+                                      {parseFloat(slot.price).toFixed(2)}
+                                    </PriceTag>
+                                  </TimeSlotHeader>
+                                  <TimeSlotMeta>
                                     <MetaItem>
-                                      <UserCheck size={16} />
-                                      Minimum {slot.min_participants} people
+                                      <Clock />
+                                      {getDurationText(slot.duration)}
+                                    </MetaItem>
+                                    <MetaItem>
+                                      <Users />
+                                      {slot.available_spots} spots left
+                                    </MetaItem>
+                                    {slot.min_participants > 1 && (
+                                      <MetaItem>
+                                        <UserCheck />
+                                        Min {slot.min_participants} people
+                                      </MetaItem>
+                                    )}
+                                  </TimeSlotMeta>
+                                  {isDisabled && !isSelected && (
+                                    <MetaItem
+                                      style={{
+                                        color: theme.primary,
+                                        marginTop: "8px",
+                                      }}
+                                    >
+                                      <AlertCircle size={16} />
+                                      Not enough spots available
                                     </MetaItem>
                                   )}
-                                  {/* --- MODIFICATION END --- */}
-                                </TimeSlotMeta>
-                              </TimeSlotButton>
-                            ))}
+                                </TimeSlotButton>
+                              );
+                            })}
                           </TimeSlotsList>
                         ) : (
                           <MessageContainer key="no-slots">
@@ -1141,6 +1145,23 @@ const CalendarStep = ({
                       )}
                     </AnimatePresence>
                   </TimeSlotsContentArea>
+                  <AnimatePresence>
+                    {currentSelectedSlot && (
+                      <ParticipantSelectorContainer
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <ParticipantLabel>Participants</ParticipantLabel>
+                        <ParticipantStepper
+                          value={bookingData.participants}
+                          min={Math.max(1, currentSelectedSlot.minParticipants)}
+                          max={currentSelectedSlot.available_spots}
+                        />
+                      </ParticipantSelectorContainer>
+                    )}
+                  </AnimatePresence>
                 </TimeSlotsContainer>
               </>
             )}
