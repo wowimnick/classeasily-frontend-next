@@ -173,7 +173,7 @@ const TimeSlotsContainer = styled(motion.div)`
   border-radius: 16px;
   border: 1px solid ${theme.borderLight};
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  max-height: 420px; /* MODIFICATION: Adjusted max-height for better balance */
+  max-height: 420px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -244,130 +244,161 @@ const WeekDay = styled.div`
   font-weight: 600;
   font-size: 12px;
   color: ${theme.textSecondary};
+  text-transform: uppercase;
 `;
 
 const DayCell = styled(motion.button)`
-  padding: 8px 0;
-  border: none;
-  background: transparent;
-  text-align: center;
-  cursor: pointer;
-  position: relative;
-  font-family: inherit;
-
-  &:disabled {
-    cursor: not-allowed;
-  }
-`;
-
-const DayNumber = styled.span`
+  aspect-ratio: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  margin: 0 auto;
-  font-weight: 500;
-  color: ${theme.textSecondary};
-  transition: all 0.2s ease;
-  position: relative;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  transition: background 0.2s ease;
 
-  ${(props) => !props.$isInMonth && `opacity: 0.4;`}
-  ${(props) =>
-    props.$isDisabled &&
-    `color: ${theme.border}; text-decoration: line-through;`}
-
-  ${(props) =>
-    props.$hasSlots &&
-    !props.$isDisabled &&
-    css`
-      color: ${theme.textPrimary};
-      font-weight: 600;
-
-      &::after {
-        content: "";
-        position: absolute;
-        bottom: 4px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background-color: ${theme.primary};
-      }
-    `}
-
-  ${DayCell}:hover:not(:disabled) & {
-    ${(props) =>
-      !props.$isSelected && `background-color: ${theme.primaryLight};`}
+  &:hover:not(:disabled) {
+    background: ${theme.primaryLight};
   }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
+  }
+`;
+
+const DayNumber = styled.div`
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 500;
+  position: relative;
+  transition: all 0.2s ease;
 
   ${(props) =>
     props.$isSelected &&
     css`
-      background-color: ${theme.primary};
-      color: ${theme.textOnPrimary};
-      font-weight: 700;
+      background: ${theme.primary};
+      color: ${theme.white};
+      font-weight: 600;
+    `}
+
+  ${(props) =>
+    !props.$isSelected &&
+    props.$isToday &&
+    css`
+      border: 2px solid ${theme.primary};
+      color: ${theme.primary};
+      font-weight: 600;
+    `}
+
+  ${(props) =>
+    !props.$isSelected &&
+    !props.$isToday &&
+    props.$hasSlots &&
+    props.$isInMonth &&
+    css`
       &::after {
-        background-color: ${theme.textOnPrimary};
+        content: "";
+        position: absolute;
+        bottom: 4px;
+        width: 4px;
+        height: 4px;
+        background: ${theme.primary};
+        border-radius: 50%;
       }
     `}
 
-  ${(props) => props.$isToday && `border: 1px solid ${theme.primary};`}
+  ${(props) =>
+    !props.$isInMonth &&
+    css`
+      color: ${theme.textSecondary};
+      opacity: 0.3;
+    `}
+`;
+
+const TimeSlotsContentArea = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${theme.border};
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${theme.textSecondary};
+  }
+`;
+
+const TimeSlotsHeader = styled.div`
+  padding: 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: ${theme.textPrimary};
+  background: ${theme.white};
+  border-bottom: 1px solid ${theme.borderLight};
+  flex-shrink: 0;
 `;
 
 const TimeSlotsList = styled(motion.div)`
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: 20px;
+  flex: 1;
 `;
 
 const TimeSlotButton = styled(motion.button)`
+  background: ${(props) =>
+    props.$selected ? theme.successLight : theme.white};
+  border: 2px solid
+    ${(props) => (props.$selected ? theme.success : theme.borderLight)};
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
   display: flex;
   flex-direction: column;
-  padding: 14px;
-  background: ${theme.white};
-  border: 1px solid ${theme.borderLight};
-  border-radius: 12px;
-  cursor: pointer;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
-  width: 100%;
-  text-align: left;
-  font-family: inherit;
-  position: relative;
-  overflow: hidden;
+  gap: 12px;
 
   &:hover:not(:disabled) {
-    border-color: ${theme.primary};
+    border-color: ${(props) =>
+      props.$selected ? theme.success : theme.primary};
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
 
   &:disabled {
-    background-color: #f9fafb;
+    opacity: 0.6;
     cursor: not-allowed;
-    opacity: 0.7;
-    &:hover {
-      border-color: ${theme.borderLight};
-    }
   }
-
-  ${(props) =>
-    props.$selected &&
-    css`
-      border-color: ${theme.primary};
-      background: #ff385c1a; /* Match widget subtle pink */
-    `}
 `;
 
 const TimeSlotHeader = styled.div`
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
 `;
 
-const TimeText = styled.div`
-  font-size: 15px;
-  font-weight: 700;
+const TimeText = styled.span`
+  font-size: 16px;
+  font-weight: 600;
   color: ${theme.textPrimary};
 `;
 
@@ -375,557 +406,365 @@ const PriceTag = styled.div`
   display: flex;
   align-items: center;
   gap: 4px;
-  color: ${theme.textPrimary};
-  font-weight: 700;
   font-size: 16px;
+  font-weight: 700;
+  color: ${theme.primary};
 `;
 
 const TimeSlotMeta = styled.div`
   display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 8px;
   flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+  color: ${theme.textSecondary};
 `;
 
 const MetaItem = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: ${theme.textSecondary};
-  font-size: 13px;
-  font-weight: 500;
+  gap: 6px;
 
   svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
   }
 `;
 
-const Overlay = styled(motion.div)`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(2px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-`;
-
-const TimeSlotsHeader = styled.h4`
-  margin: 0 0 16px 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: ${theme.textPrimary};
-`;
-
-const MessageContainer = styled.div`
-  text-align: center;
-  padding: 48px 24px;
-  color: ${theme.textSecondary};
+const MessageContainer = styled(motion.div)`
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  flex: 1; /* Grow to fill space */
   justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  color: ${theme.textSecondary};
 
   svg {
     color: ${theme.border};
   }
+
   p {
     margin: 0;
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: 15px;
   }
 `;
 
 const MobileBackdrop = styled(motion.div)`
-  display: none;
-
-  @media (max-width: 959px) {
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(4px);
-    z-index: 999;
-  }
-`;
-
-const TimeSlotsContentArea = styled.div`
-  padding: 20px;
-  overflow-y: auto;
-  flex: 1;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background-color: ${theme.border};
-    border-radius: 3px;
-  }
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  backdrop-filter: blur(4px);
 `;
 
 const ParticipantSelectorContainer = styled(motion.div)`
-  flex-shrink: 0;
-  padding: 16px 20px;
-  border-top: 1px solid ${theme.borderLight};
-  background-color: #fcfcfc;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  overflow: hidden; /* MODIFICATION: Clip content during animation */
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: ${theme.primaryLight};
+  border-top: 1px solid ${theme.borderLight};
+  flex-shrink: 0;
 `;
 
-const ParticipantLabel = styled.div`
+const ParticipantLabel = styled.span`
   font-size: 14px;
-  font-weight: 500;
-  color: ${theme.textSecondary};
+  font-weight: 600;
+  color: ${theme.textPrimary};
 `;
 
+// --- Animation Variants ---
+const dayGridVariants = {
+  initial: { opacity: 0 },
+  animate: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.01,
+    },
+  },
+};
+
+const dayVariants = {
+  initial: { opacity: 0, scale: 0.8 },
+  animate: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.2,
+    },
+  },
+};
+
+const mobileTimeSlotsVariants = {
+  initial: { opacity: 0, scale: 0.95, y: 20 },
+  animate: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 400, damping: 40 },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.95,
+    y: 20,
+    transition: { duration: 0.2 },
+  },
+};
+
+const desktopTimeSlotsVariants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 0.3 } },
+  exit: { opacity: 0, transition: { duration: 0.2 } },
+};
+
+// --- Main Component ---
 const CalendarStep = ({
   optionId,
   bookingData,
   onUpdate,
   selectedOption,
-  businessTimeZone,
-  userTimeZone,
-  initialDate,
+  businessTimeZone = "Etc/UTC",
+  userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone,
+  initialDate = null,
 }) => {
-  // --- Participant Stepper Component (React version) ---
-  const ParticipantStepper = ({ value = 1, min = 1, max = Infinity }) => {
-    const handleUpdate = (newValue) => {
-      if (newValue >= min && newValue <= max) {
-        onUpdate({ participants: newValue });
-      }
-    };
-
-    return (
-      <StepperContainer>
-        <StepperButton
-          disabled={value <= min}
-          onClick={() => handleUpdate(value - 1)}
-        >
-          <Minus size={16} strokeWidth={3} />
-        </StepperButton>
-        <NumberDisplay>{value}</NumberDisplay>
-        <StepperButton
-          disabled={value >= max}
-          onClick={() => handleUpdate(value + 1)}
-        >
-          <Plus size={16} strokeWidth={3} />
-        </StepperButton>
-      </StepperContainer>
-    );
-  };
-  // --- End Participant Stepper ---
-
-  const getInitialDateObj = useCallback(() => {
-    if (initialDate) {
-      const [year, month, day] = initialDate.split("-").map(Number);
-      if (year && month && day) {
-        return new Date(year, month - 1, day);
-      }
-    }
-    return null;
-  }, [initialDate]);
-
-  const [currentDate, setCurrentDate] = useState(
-    getInitialDateObj() || new Date()
-  );
-  const [selectedDate, setSelectedDate] = useState(getInitialDateObj());
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(null);
   const [availableSlots, setAvailableSlots] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showTimeSlots, setShowTimeSlots] = useState(false);
-  const [clickedDayPosition, setClickedDayPosition] = useState({ x: 0, y: 0 });
-  const abortControllerRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
+  const timeSlotsRef = useRef(null);
+
+  const displayBusinessTimeZone = businessTimeZone || "Etc/UTC";
+  const displayUserTimeZone =
+    userTimeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   useEffect(() => {
-    setIsMobile(window.innerWidth <= 959);
-  }, []);
-
-  useEffect(() => {
-    const handleResize = () => {
-      const newIsMobile = window.innerWidth <= 959;
-      setIsMobile(newIsMobile);
-      if (!newIsMobile) {
-        setShowTimeSlots(false);
-      }
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 959);
     };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const currentSelectedSlot = useMemo(
-    () => bookingData.selectedSlots[0] || null,
-    [bookingData.selectedSlots]
-  );
-
-  const displayUserTimeZone = useMemo(
-    () => userTimeZone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-    [userTimeZone]
-  );
-
-  const displayBusinessTimeZone = useMemo(
-    () => businessTimeZone || selectedOption?.business_timezone || "Etc/UTC",
-    [businessTimeZone, selectedOption]
-  );
-
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
-
-  const fetchMonthSlots = useCallback(async () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+  useEffect(() => {
+    if (initialDate && !selectedDate) {
+      const parsedDate = new Date(initialDate + "T00:00:00");
+      if (!isNaN(parsedDate.getTime())) {
+        setSelectedDate(parsedDate);
+        setCurrentMonth(parsedDate);
+      }
     }
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
+  }, [initialDate, selectedDate]);
 
-    setLoading(true);
-    setError(null);
-    try {
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      const firstDayOfMonth = new Date(year, month, 1);
-      const lastDayOfMonth = new Date(year, month + 1, 0);
-      const startDateStr = getLocalYYYYMMDD(firstDayOfMonth);
-      const endDateStr = getLocalYYYYMMDD(lastDayOfMonth);
+  const fetchAvailabilityForMonth = useCallback(
+    async (date) => {
+      if (!optionId) return;
 
-      if (!startDateStr || !endDateStr) {
-        throw new Error("Could not generate valid dates for fetching slots.");
-      }
+      setLoading(true);
+      setError(null);
 
-      const response = await scheduleService.getAvailabilityForOption(
-        optionId,
-        {
-          start_date: startDateStr,
-          end_date: endDateStr,
+      try {
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const data = await scheduleService.getAvailability(
+          optionId,
+          year,
+          month
+        );
+
+        if (data && data.availability) {
+          setAvailableSlots(data.availability);
+        } else {
+          setAvailableSlots({});
         }
-      );
-
-      if (signal.aborted) return;
-      setAvailableSlots((prevSlots) => ({ ...prevSlots, ...(response || {}) }));
-    } catch (err) {
-      if (err.name !== "AbortError") {
-        console.error("Error fetching slots:", err);
-        setError("Could not load available times. Please try again later.");
-      }
-    } finally {
-      if (!signal.aborted) {
+      } catch (err) {
+        console.error("Error fetching availability:", err);
+        setError("Failed to load availability. Please try again.");
+        setAvailableSlots({});
+      } finally {
         setLoading(false);
       }
-    }
-  }, [optionId, currentDate]);
-
-  useEffect(() => {
-    if (optionId) {
-      fetchMonthSlots();
-    }
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [fetchMonthSlots, optionId]);
-
-  useEffect(() => {
-    if (currentSelectedSlot && currentSelectedSlot.date) {
-      const [year, month, day] = currentSelectedSlot.date
-        .split("-")
-        .map(Number);
-      const slotDateObj = new Date(year, month - 1, day);
-      if (selectedDate?.getTime() !== slotDateObj.getTime()) {
-        setSelectedDate(slotDateObj);
-        if (
-          slotDateObj.getFullYear() !== currentDate.getFullYear() ||
-          slotDateObj.getMonth() !== currentDate.getMonth()
-        ) {
-          setCurrentDate(new Date(slotDateObj));
-        }
-      }
-    }
-  }, [currentSelectedSlot, selectedDate, currentDate]);
-
-  const handleDateClick = useCallback(
-    (dateFromCell, event) => {
-      setSelectedDate(dateFromCell);
-      const naiveDateClicked = getLocalYYYYMMDD(dateFromCell);
-      if (
-        !currentSelectedSlot ||
-        currentSelectedSlot.date !== naiveDateClicked
-      ) {
-        onUpdate({ selectedSlots: [] });
-      }
-
-      if (isMobile && event) {
-        const rect = event.currentTarget.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-
-        setClickedDayPosition({ x: centerX, y: centerY });
-        setShowTimeSlots(true);
-      }
     },
-    [currentSelectedSlot, onUpdate, isMobile]
+    [optionId]
   );
 
-  const handleSlotSelect = useCallback(
-    (slotFromApi) => {
-      if (!selectedDate) return;
+  useEffect(() => {
+    fetchAvailabilityForMonth(currentMonth);
+  }, [currentMonth, fetchAvailabilityForMonth]);
 
-      const naiveDateForSlot = getLocalYYYYMMDD(selectedDate);
-      const currentParticipants = bookingData.participants || 1;
-
-      // Clamp current participants between the selected slot's min requirement and available spots
-      let updatedParticipants = Math.max(
-        currentParticipants,
-        slotFromApi.min_participants
-      );
-      updatedParticipants = Math.min(
-        updatedParticipants,
-        slotFromApi.available_spots
-      );
-
-      const slotData = {
-        id: slotFromApi.instance_id,
-        date: naiveDateForSlot,
-        time: slotFromApi.time,
-        available_spots: slotFromApi.available_spots,
-        price: slotFromApi.price,
-        duration: slotFromApi.duration,
-        isCourse: false,
-        minParticipants: slotFromApi.min_participants,
-      };
-
-      const updatePayload = {
-        selectedSlots: [slotData],
-        participants: updatedParticipants,
-      };
-
-      onUpdate(updatePayload);
-
-      if (isMobile) {
-        // On mobile, we keep the timeslot view open to allow participant changes
-      }
-    },
-    [selectedDate, onUpdate, isMobile, bookingData.participants]
-  );
-
-  const handleMonthChange = useCallback((direction) => {
-    setCurrentDate((prev) => {
+  const handleMonthChange = (direction) => {
+    setCurrentMonth((prev) => {
       const newDate = new Date(prev);
-      newDate.setMonth(prev.getMonth() + direction, 1);
+      newDate.setMonth(prev.getMonth() + direction);
       return newDate;
     });
-  }, []);
+  };
+
+  const handleDateClick = (date, event) => {
+    event.stopPropagation();
+    setSelectedDate(date);
+    if (isMobile) {
+      setShowTimeSlots(true);
+    }
+  };
 
   const handleBackToCalendar = () => {
     setShowTimeSlots(false);
   };
 
+  const handleSlotSelect = (slot) => {
+    const naiveDateStr = getLocalYYYYMMDD(selectedDate);
+    onUpdate({
+      selectedSlots: [
+        {
+          id: slot.instance_id,
+          date: naiveDateStr,
+          time: slot.time,
+          price: parseFloat(slot.price),
+          duration: slot.duration,
+          available_spots: slot.available_spots,
+          minParticipants: slot.min_participants || 1,
+        },
+      ],
+    });
+
+    // FIX: Auto-close timeslot popup on mobile after selection
+    if (isMobile) {
+      setTimeout(() => {
+        setShowTimeSlots(false);
+      }, 300);
+    }
+  };
+
+  const ParticipantStepper = ({ value, min, max }) => {
+    const handleDecrement = () => {
+      if (value > min) {
+        onUpdate({ participants: value - 1 });
+      }
+    };
+
+    const handleIncrement = () => {
+      if (value < max) {
+        onUpdate({ participants: value + 1 });
+      }
+    };
+
+    return (
+      <StepperContainer>
+        <StepperButton onClick={handleDecrement} disabled={value <= min}>
+          <Minus size={18} />
+        </StepperButton>
+        <NumberDisplay>{value}</NumberDisplay>
+        <StepperButton onClick={handleIncrement} disabled={value >= max}>
+          <Plus size={18} />
+        </StepperButton>
+      </StepperContainer>
+    );
+  };
+
+  const today = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return now;
+  }, []);
+
   const daysInMonth = useMemo(() => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonthCount = new Date(year, month + 1, 0).getDate();
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInCurrentMonth = lastDay.getDate();
+    const startDayOfWeek = firstDay.getDay();
 
     const days = [];
-    for (let i = 0; i < firstDay; i++) {
-      days.push({
-        date: new Date(year, month, i - firstDay + 1),
-        inMonth: false,
-      });
+
+    for (let i = 0; i < startDayOfWeek; i++) {
+      const prevMonthDay = new Date(year, month, -startDayOfWeek + i + 1);
+      days.push({ date: prevMonthDay, inMonth: false });
     }
-    for (let i = 1; i <= daysInMonthCount; i++) {
-      days.push({ date: new Date(year, month, i), inMonth: true });
+
+    for (let day = 1; day <= daysInCurrentMonth; day++) {
+      days.push({ date: new Date(year, month, day), inMonth: true });
     }
-    const remaining = 42 - days.length;
-    for (let i = 1; i <= remaining; i++) {
+
+    const remainingDays = 42 - days.length;
+    for (let i = 1; i <= remainingDays; i++) {
       days.push({ date: new Date(year, month + 1, i), inMonth: false });
     }
+
     return days;
-  }, [currentDate]);
+  }, [currentMonth]);
 
-  const naiveKeyForSelectedDate = useMemo(
-    () => (selectedDate ? getLocalYYYYMMDD(selectedDate) : null),
-    [selectedDate]
-  );
+  const naiveKeyForSelectedDate = selectedDate
+    ? getLocalYYYYMMDD(selectedDate)
+    : null;
 
-  const slotsForSelectedDate = useMemo(
-    () => availableSlots[naiveKeyForSelectedDate] || [],
-    [availableSlots, naiveKeyForSelectedDate]
-  );
+  const slotsForSelectedDate = useMemo(() => {
+    if (!naiveKeyForSelectedDate) return [];
+    return availableSlots[naiveKeyForSelectedDate] || [];
+  }, [naiveKeyForSelectedDate, availableSlots]);
 
-  const mobileTimeSlotsVariants = useMemo(() => {
-    if (typeof window === "undefined") {
-      return {
-        initial: { scale: 0.2, opacity: 0 },
-        animate: { scale: 1, opacity: 1 },
-        exit: { scale: 0.2, opacity: 0 },
-      };
-    }
-
+  const currentSelectedSlot = useMemo(() => {
+    if (!bookingData?.selectedSlots?.[0]) return null;
+    const {
+      id,
+      date,
+      time,
+      price,
+      duration,
+      available_spots,
+      minParticipants,
+    } = bookingData.selectedSlots[0];
     return {
-      initial: {
-        scale: 0.2,
-        opacity: 0,
-        x: clickedDayPosition.x - window.innerWidth / 2,
-        y: clickedDayPosition.y - window.innerHeight / 2,
-        borderRadius: "50px",
-      },
-      animate: {
-        scale: 1,
-        opacity: 1,
-        x: 0,
-        y: 0,
-        borderRadius: "20px",
-        transition: {
-          type: "spring",
-          damping: 25,
-          stiffness: 300,
-          duration: 0.4,
-        },
-      },
-      exit: {
-        scale: 0.2,
-        opacity: 0,
-        x: clickedDayPosition.x - window.innerWidth / 2,
-        y: clickedDayPosition.y - window.innerHeight / 2,
-        borderRadius: "50px",
-        transition: {
-          duration: 0.25,
-          ease: "easeIn",
-        },
-      },
+      id,
+      date,
+      time,
+      price,
+      duration,
+      available_spots,
+      minParticipants: minParticipants || 1,
     };
-  }, [clickedDayPosition]);
+  }, [bookingData]);
 
-  // Simplified animation variants
-  const calendarVariants = {
-    initial: { opacity: 0, y: 20 },
-    animate: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.4,
-        ease: "linear",
-      },
-    },
-  };
-
-  const dayGridVariants = {
-    initial: { opacity: 0 },
-    animate: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.01,
-        delayChildren: 0.1,
-        ease: "linear",
-      },
-    },
-  };
-
-  const dayVariants = {
-    initial: { opacity: 0 },
-    animate: {
-      opacity: 1,
-      transition: {
-        duration: 0.2,
-        ease: "linear",
-      },
-    },
-  };
-
-  const desktopTimeSlotsVariants = {
-    initial: { opacity: 0, x: 20 },
-    animate: {
-      opacity: 1,
-      x: 0,
-      transition: {
-        duration: 0.3,
-        ease: "linear",
-      },
-    },
-    exit: {
-      opacity: 0,
-      x: 20,
-      transition: {
-        duration: 0.2,
-        ease: "linear",
-      },
-    },
-  };
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
 
   return (
     <StepWrapper>
       <ContentGrid>
         <div>
-          <CalendarWrapper
-            variants={calendarVariants}
-            initial="initial"
-            animate="animate"
-          >
-            <AnimatePresence>
-              {loading && (
-                <Overlay
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      duration: 1,
-                      repeat: Infinity,
-                      ease: "linear",
-                      delay: 0.2,
-                    }}
-                    style={{
-                      width: 32,
-                      height: 32,
-                      border: `3px solid ${theme.primaryLight}`,
-                      borderTopColor: theme.primary,
-                      borderRadius: "50%",
-                    }}
-                  />
-                </Overlay>
-              )}
-            </AnimatePresence>
-            <CalendarHeader
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, ease: "linear" }}
-            >
+          <CalendarWrapper>
+            <CalendarHeader>
               <NavButton
                 onClick={() => handleMonthChange(-1)}
-                disabled={
-                  loading ||
-                  (currentDate.getFullYear() === today.getFullYear() &&
-                    currentDate.getMonth() === today.getMonth())
-                }
+                disabled={loading}
                 aria-label="Previous month"
               >
                 <ChevronLeft size={20} />
               </NavButton>
               <MonthTitle>
-                {formatNaiveDate(getLocalYYYYMMDD(currentDate), "MMMM yyyy")}
+                {monthNames[currentMonth.getMonth()]}{" "}
+                {currentMonth.getFullYear()}
               </MonthTitle>
               <NavButton
                 onClick={() => handleMonthChange(1)}
@@ -991,7 +830,11 @@ const CalendarStep = ({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    onClick={handleBackToCalendar}
+                    onClick={(e) => {
+                      // FIX: Prevent backdrop click from closing the entire modal
+                      e.stopPropagation();
+                      handleBackToCalendar();
+                    }}
                   />
                 )}
                 <TimeSlotsContainer
@@ -1005,6 +848,10 @@ const CalendarStep = ({
                   animate="animate"
                   exit="exit"
                   transition={{ type: "spring", stiffness: 400, damping: 40 }}
+                  onClick={(e) => {
+                    // FIX: Prevent clicks inside the timeslot container from bubbling
+                    e.stopPropagation();
+                  }}
                 >
                   <MobileTimeSlotsHeader
                     initial={{ opacity: 0, y: -10 }}
@@ -1014,7 +861,8 @@ const CalendarStep = ({
                     <MobileBackButton onClick={handleBackToCalendar}>
                       <ArrowLeft size={18} />
                     </MobileBackButton>
-                    <span>Step 2: Select Time</span>
+                    {/* FIX: Removed confusing "Step 2" text */}
+                    <span>Select Time</span>
                   </MobileTimeSlotsHeader>
 
                   <TimeSlotsContentArea>
