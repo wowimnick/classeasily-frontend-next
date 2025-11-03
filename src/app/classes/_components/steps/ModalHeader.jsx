@@ -1,5 +1,14 @@
-import React from "react";
-import { Clock, Users, Check, Calendar, ArrowRight } from "lucide-react";
+import React, { useState } from "react";
+import {
+  Clock,
+  Users,
+  Check,
+  Calendar,
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
+  MapPin,
+} from "lucide-react";
 import styled from "styled-components";
 import { getScheduleSummary, getDurationText } from "./utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -87,7 +96,6 @@ const ProgressContainer = styled.div`
 const ProgressTrack = styled.div`
   position: absolute;
   top: 12px;
-  /* FIX: Constrain line to centers of first/last dots */
   left: 40px;
   right: 40px;
   height: 2px;
@@ -99,7 +107,6 @@ const ProgressTrack = styled.div`
 const ProgressFill = styled(motion.div)`
   position: absolute;
   top: 12px;
-  /* FIX: Constrain line to centers of first/last dots */
   left: 40px;
   right: 40px;
   height: 2px;
@@ -116,7 +123,7 @@ const Step = styled.div`
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  width: 80px; /* Provides spacing for the labels */
+  width: 80px;
 `;
 
 const StepCircle = styled.div`
@@ -157,6 +164,109 @@ const StepLabel = styled.span`
   transition: color 0.3s ease;
 `;
 
+// --- Booking Summary Styles ---
+const BookingSummaryContainer = styled.div`
+  margin-top: 16px;
+  border-top: 1px solid ${theme.borderLight};
+  padding-top: 16px;
+
+  @media (min-width: 969px) {
+    display: none;
+  }
+`;
+
+const SummaryHeader = styled.button`
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: transparent;
+  border: none;
+  padding: 12px 16px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f9fafb;
+  }
+`;
+
+const SummaryHeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const SummaryCompact = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+`;
+
+const SummaryDate = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${theme.textPrimary};
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const SummaryDetails = styled.div`
+  font-size: 12px;
+  color: ${theme.textSecondary};
+`;
+
+const ExpandIcon = styled(motion.div)`
+  color: ${theme.textSecondary};
+`;
+
+const SummaryExpanded = styled(motion.div)`
+  background-color: #f9fafb;
+  border-radius: 8px;
+  overflow: hidden;
+`;
+
+const SummaryRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid ${theme.borderLight};
+  }
+
+  svg {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    color: ${theme.primary};
+    margin-top: 2px;
+  }
+`;
+
+const SummaryRowContent = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`;
+
+const SummaryRowLabel = styled.div`
+  font-size: 12px;
+  color: ${theme.textSecondary};
+  font-weight: 500;
+`;
+
+const SummaryRowValue = styled.div`
+  font-size: 14px;
+  color: ${theme.textPrimary};
+  font-weight: 500;
+`;
+
 // --- Footer Styles ---
 const FooterContainer = styled.div`
   padding: 16px 24px;
@@ -178,7 +288,6 @@ const FooterContent = styled.div`
   gap: 16px;
 `;
 
-// FIX: Added wrapper divs for better layout control
 const FooterLeft = styled.div`
   display: flex;
   align-items: center;
@@ -203,7 +312,6 @@ const SelectedSlotInfo = styled(motion.div)`
   background-color: #f9fafb;
   padding: 8px 12px;
   border-radius: 8px;
-  /* FIX: Let the content determine the width */
   flex-shrink: 1;
   overflow: hidden;
   white-space: nowrap;
@@ -217,6 +325,10 @@ const SelectedSlotInfo = styled(motion.div)`
   strong {
     color: ${theme.textPrimary};
     font-weight: 500;
+  }
+
+  @media (min-width: 969px) {
+    display: none;
   }
 `;
 
@@ -275,7 +387,127 @@ const DesktopPayButton = styled(Button)`
   }
 `;
 
-export const ModalHeader = ({ classData, currentStep }) => {
+// --- Booking Summary Component ---
+const BookingSummary = ({
+  bookingData,
+  classData,
+  businessTimeZone,
+  userTimeZone,
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  if (!bookingData?.selectedSlots?.[0]) {
+    return null;
+  }
+
+  const selectedSlot = bookingData.selectedSlots[0];
+  const selectedOption = classData?.selectedOption;
+  const participantsCount = bookingData.participants || 1;
+  const schedule = selectedOption?.schedules?.find(
+    (s) => s.scheduleId === selectedSlot.scheduleId
+  );
+
+  const dateDisplay = formatNaiveDate(selectedSlot.date, "EEE, MMM d, yyyy");
+  const timeDisplay = formatTimeRangeForDisplay(
+    selectedSlot.date,
+    selectedSlot.time,
+    selectedSlot.duration,
+    businessTimeZone,
+    userTimeZone
+  );
+
+  return (
+    <BookingSummaryContainer>
+      <SummaryHeader onClick={() => setIsExpanded(!isExpanded)}>
+        <SummaryHeaderLeft>
+          <Calendar size={20} style={{ color: theme.primary }} />
+          <SummaryCompact>
+            <SummaryDate>
+              {formatNaiveDate(selectedSlot.date, "MMM d, yyyy")}
+            </SummaryDate>
+            <SummaryDetails>
+              {timeDisplay} • {participantsCount}{" "}
+              {participantsCount > 1 ? "people" : "person"}
+            </SummaryDetails>
+          </SummaryCompact>
+        </SummaryHeaderLeft>
+        <ExpandIcon
+          animate={{ rotate: isExpanded ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ChevronDown size={20} />
+        </ExpandIcon>
+      </SummaryHeader>
+
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <SummaryExpanded
+            initial={{ maxHeight: 0, opacity: 0, marginTop: 0 }}
+            animate={{ maxHeight: 500, opacity: 1, marginTop: 8 }}
+            exit={{ maxHeight: 0, opacity: 0, marginTop: 0 }}
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <div style={{ padding: "16px" }}>
+              <SummaryRow>
+                <Calendar size={16} />
+                <SummaryRowContent>
+                  <SummaryRowLabel>Date & Time</SummaryRowLabel>
+                  <SummaryRowValue>{dateDisplay}</SummaryRowValue>
+                  <SummaryRowValue
+                    style={{ fontSize: "13px", color: theme.textSecondary }}
+                  >
+                    {timeDisplay}
+                  </SummaryRowValue>
+                </SummaryRowContent>
+              </SummaryRow>
+
+              <SummaryRow>
+                <Users size={16} />
+                <SummaryRowContent>
+                  <SummaryRowLabel>Participants</SummaryRowLabel>
+                  <SummaryRowValue>
+                    {participantsCount}{" "}
+                    {participantsCount > 1 ? "people" : "person"}
+                  </SummaryRowValue>
+                </SummaryRowContent>
+              </SummaryRow>
+
+              <SummaryRow>
+                <Clock size={16} />
+                <SummaryRowContent>
+                  <SummaryRowLabel>Duration</SummaryRowLabel>
+                  <SummaryRowValue>
+                    {getDurationText(
+                      selectedSlot.duration || schedule?.duration
+                    )}
+                  </SummaryRowValue>
+                </SummaryRowContent>
+              </SummaryRow>
+
+              {schedule?.location && (
+                <SummaryRow>
+                  <MapPin size={16} />
+                  <SummaryRowContent>
+                    <SummaryRowLabel>Location</SummaryRowLabel>
+                    <SummaryRowValue>{schedule.location}</SummaryRowValue>
+                  </SummaryRowContent>
+                </SummaryRow>
+              )}
+            </div>
+          </SummaryExpanded>
+        )}
+      </AnimatePresence>
+    </BookingSummaryContainer>
+  );
+};
+
+export const ModalHeader = ({
+  classData,
+  currentStep,
+  bookingData = null,
+  businessTimeZone = "Etc/UTC",
+  userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone,
+}) => {
   const selectedOption = classData?.selectedOption;
   const summary = getScheduleSummary(selectedOption?.schedules);
   const steps = ["Select Date", "Payment", "Confirmation"];
@@ -346,6 +578,16 @@ export const ModalHeader = ({ classData, currentStep }) => {
           );
         })}
       </ProgressContainer>
+
+      {/* Show booking summary on step 2 */}
+      {currentStep === 2 && bookingData && (
+        <BookingSummary
+          bookingData={bookingData}
+          classData={classData}
+          businessTimeZone={businessTimeZone}
+          userTimeZone={userTimeZone}
+        />
+      )}
     </HeaderContainer>
   );
 };
@@ -405,11 +647,10 @@ export const ModalFooter = ({
                 animate={{ opacity: 1, width: "auto" }}
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.2 }}
-      >
+              >
                 <Calendar size={16} />
                 <strong>{formatNaiveDate(selectedSlot.date, "MMM d")}</strong>
                 <span>
-                  {/* FIX: Added the time display */}
                   {formatTimeRangeForDisplay(
                     selectedSlot.date,
                     selectedSlot.time,
@@ -424,16 +665,7 @@ export const ModalFooter = ({
         </FooterLeft>
 
         <FooterRight>
-          {currentStep === 1 && (
-            <Button
-              $primary
-              onClick={onNext}
-              disabled={loading || isNextDisabled}
-            >
-              {getButtonText()}
-              <ArrowRight size={16} />
-            </Button>
-          )}
+          {/* Step 1 button removed - now in popup footer */}
 
           {currentStep === 2 && (
             <DesktopPayButton

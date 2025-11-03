@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { ConfigProvider, Form, Input, Alert, Button, Divider,  } from 'antd';
-import message from '@/lib/message';
+import { ConfigProvider, Form, Input, Alert, Button, Divider } from "antd";
+import message from "@/lib/message";
 import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
@@ -45,6 +45,10 @@ const PaymentSection = styled.div`
 `;
 
 const SummarySection = styled.div`
+  @media (max-width: 968px) {
+    display: none;
+  }
+
   @media (min-width: 969px) {
     position: sticky;
     top: 1px;

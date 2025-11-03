@@ -523,6 +523,7 @@ const BookingModal = ({
             selectedOption={selectedOption}
             businessTimeZone={businessTimeZone}
             userTimeZone={userTimeZone}
+            onNext={handleNext}
             initialDate={initialDate}
           />
         ),
@@ -572,6 +573,7 @@ const BookingModal = ({
       currentUserFromRedux,
       updateBookingDetailsFromPolling,
       initialDate,
+      handleNext,
       handleClose,
     ]
   );
@@ -602,6 +604,9 @@ const BookingModal = ({
                 }}
                 currentStep={currentStep}
                 totalSteps={Object.keys(steps).length}
+                bookingData={bookingData}
+                businessTimeZone={businessTimeZone}
+                userTimeZone={userTimeZone}
               />
             </DrawerHeader>
 
@@ -672,6 +677,9 @@ const BookingModal = ({
               }}
               currentStep={currentStep}
               totalSteps={Object.keys(steps).length}
+              bookingData={bookingData}
+              businessTimeZone={businessTimeZone}
+              userTimeZone={userTimeZone}
             />
 
             <CloseButton
