@@ -1,20 +1,9 @@
-// lib/auth-client.js - OPTIMISTIC VERSION WITH AUTO SESSION REFRESH
+// lib/auth-client.js - OPTIMISTIC VERSION WITH REDIRECT MANAGEMENT
 "use client";
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axiosInstance from './axiosInstance';
-
-// ============================================================================
-// SESSION REFRESH CONFIGURATION
-// ============================================================================
-const SESSION_REFRESH_INTERVAL = 10 * 60 * 1000; // Refresh every 10 minutes
-const IDLE_TIMEOUT = 30 * 60 * 1000; // Consider idle after 30 minutes
-const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'scroll', 'touchstart'];
-
-let refreshTimer = null;
-let lastActivityTime = Date.now();
-let activityListenersAttached = false;
 
 // ============================================================================
 // REDIRECT MANAGEMENT
@@ -119,102 +108,6 @@ const getOptimisticAuthState = () => {
 };
 
 // ============================================================================
-// SESSION REFRESH MANAGER
-// ============================================================================
-const startSessionRefreshTimer = (store) => {
-  if (typeof window === 'undefined') return;
-  
-  // Clear existing timer
-  if (refreshTimer) {
-    clearInterval(refreshTimer);
-    refreshTimer = null;
-  }
-  
-  // Only start if user is authenticated
-  if (!store.isAuthenticated) {
-    console.log('[SessionRefresh] User not authenticated, skipping timer setup');
-    return;
-  }
-  
-  console.log('[SessionRefresh] Starting automatic session refresh timer');
-  
-  // Set up periodic refresh
-  refreshTimer = setInterval(async () => {
-    const timeSinceActivity = Date.now() - lastActivityTime;
-    
-    // Don't refresh if user has been idle too long
-    if (timeSinceActivity > IDLE_TIMEOUT) {
-      console.log('[SessionRefresh] User idle for too long, skipping refresh');
-      return;
-    }
-    
-    console.log('[SessionRefresh] Auto-refreshing session...');
-    try {
-      const response = await axiosInstance.post('/token/refresh/');
-      store.setUser(response.data.user);
-      console.log('[SessionRefresh] Session refreshed successfully');
-    } catch (error) {
-      console.error('[SessionRefresh] Auto-refresh failed:', error);
-      
-      // If refresh fails with 401, user session is invalid
-      if (error.response?.status === 401) {
-        console.log('[SessionRefresh] Session expired, logging out and showing login');
-        
-        // Import message dynamically to avoid circular dependencies
-        import('./message').then(({ default: message }) => {
-          message.warning('Your session has expired. Please log in again.', 4);
-        }).catch(() => {
-          console.log('[SessionRefresh] Could not show toast message');
-        });
-        
-        // Save current path for redirect after login
-        if (typeof window !== 'undefined') {
-          saveRedirectPath(window.location.pathname);
-        }
-        
-        // Clear user and open login modal
-        store.clearUser();
-        store.setShouldOpenAuthModal(true);
-        stopSessionRefreshTimer();
-      }
-    }
-  }, SESSION_REFRESH_INTERVAL);
-};
-
-const stopSessionRefreshTimer = () => {
-  if (refreshTimer) {
-    console.log('[SessionRefresh] Stopping session refresh timer');
-    clearInterval(refreshTimer);
-    refreshTimer = null;
-  }
-  
-  // Remove activity listeners
-  if (activityListenersAttached && typeof window !== 'undefined') {
-    ACTIVITY_EVENTS.forEach(event => {
-      window.removeEventListener(event, handleUserActivity);
-    });
-    activityListenersAttached = false;
-  }
-};
-
-const handleUserActivity = () => {
-  lastActivityTime = Date.now();
-};
-
-const setupActivityListeners = () => {
-  if (typeof window === 'undefined' || activityListenersAttached) return;
-  
-  console.log('[SessionRefresh] Setting up activity listeners');
-  ACTIVITY_EVENTS.forEach(event => {
-    window.addEventListener(event, handleUserActivity, { passive: true });
-  });
-  activityListenersAttached = true;
-  
-  // Initialize activity time
-  lastActivityTime = Date.now();
-};
-
-// ============================================================================
 // ZUSTAND STORE - Client-side auth state management
 // ============================================================================
 export const useAuthStore = create(
@@ -254,13 +147,6 @@ export const useAuthStore = create(
             isAuthenticated: !!user, 
             isLoading: false 
           });
-          
-          // Start session refresh when user is set
-          if (user) {
-            const store = get();
-            setupActivityListeners();
-            startSessionRefreshTimer(store);
-          }
         },
         
         clearUser: () => {
@@ -273,9 +159,6 @@ export const useAuthStore = create(
             isInitialized: true,
             error: null,
           });
-          
-          // Stop session refresh when user is cleared
-          stopSessionRefreshTimer();
         },
         
         setLoading: (loading) => {
@@ -353,10 +236,6 @@ export const useAuthStore = create(
               isInitializing: false 
             });
             
-            // Start session refresh timer after successful initialization
-            setupActivityListeners();
-            startSessionRefreshTimer(get());
-            
           } catch (error) {
             console.log('[AuthStore] Refresh failed:', error.message);
             
@@ -369,175 +248,28 @@ export const useAuthStore = create(
             });
           }
         },
-
-        signIn: async (credentials, router) => {
-          set({ isLoading: true, error: null });
-          
-          try {
-            console.log('[AuthStore] signIn - Calling backend');
-            const response = await axiosInstance.post('/login/', credentials);
-            
-            const user = response.data.user;
-            
-            console.log('[AuthStore] Login successful');
-            set({ 
-              user,
-              isAuthenticated: true,
-              isLoading: false 
-            });
-            
-            // Start session refresh after login
-            setupActivityListeners();
-            startSessionRefreshTimer(get());
-            
-            if (router) {
-              handlePostLoginRedirect(user, router);
-            }
-            
-            return { success: true, user };
-          } catch (error) {
-            console.error('[AuthStore] Login failed:', error);
-            const message = error.response?.data?.message || 
-                           error.response?.data?.detail || 
-                           'Login failed';
-            set({ 
-              isLoading: false,
-              error: message 
-            });
-            throw new Error(message);
-          }
-        },
-
-        signUp: async (formData, router) => {
-          set({ isLoading: true, error: null });
-          
-          try {
-            console.log('[AuthStore] signUp - Calling backend');
-            const response = await axiosInstance.post('/auth/registration/', formData);
-            
-            const user = response.data.user;
-            
-            console.log('[AuthStore] Registration successful');
-            set({ 
-              user,
-              isAuthenticated: true,
-              isLoading: false 
-            });
-            
-            // Start session refresh after registration
-            setupActivityListeners();
-            startSessionRefreshTimer(get());
-            
-            if (router) {
-              handlePostLoginRedirect(user, router);
-            }
-            
-            return { success: true, user };
-          } catch (error) {
-            console.error('[AuthStore] Registration failed:', error);
-            const message = error.response?.data?.message || 
-                           error.response?.data?.detail || 
-                           'Registration failed';
-            set({ 
-              isLoading: false,
-              error: message 
-            });
-            throw new Error(message);
-          }
-        },
-
-        signInWithGoogle: async (credentialResponse, router) => {
-          set({ isLoading: true, error: null });
-          
-          try {
-            console.log('[AuthStore] Google Sign In - Calling backend');
-            const response = await axiosInstance.post('/auth/google/', {
-              credential: credentialResponse.credential,
-            });
-            
-            const user = response.data.user;
-            
-            console.log('[AuthStore] Google login successful');
-            set({ 
-              user,
-              isAuthenticated: true,
-              isLoading: false 
-            });
-            
-            // Start session refresh after Google login
-            setupActivityListeners();
-            startSessionRefreshTimer(get());
-            
-            if (router) {
-              handlePostLoginRedirect(user, router);
-            }
-            
-            return { success: true, user };
-          } catch (error) {
-            console.error('[AuthStore] Google login failed:', error);
-            const message = error.response?.data?.message || 
-                           error.response?.data?.detail || 
-                           'Google login failed';
-            set({ 
-              isLoading: false,
-              error: message 
-            });
-            throw new Error(message);
-          }
-        },
-
-        signOut: async () => {
-          set({ isLoading: true, error: null });
-          
-          try {
-            console.log('[AuthStore] Logging out');
-            await axiosInstance.post('/logout/');
-            
-            console.log('[AuthStore] Logout successful');
-            set({ 
-              user: null, 
-              isAuthenticated: false,
-              isImpersonating: false,
-              isLoading: false 
-            });
-            
-            // Stop session refresh on logout
-            stopSessionRefreshTimer();
-            
-            return { success: true };
-          } catch (error) {
-            console.error('[AuthStore] Logout failed:', error);
-            
-            set({ 
-              user: null, 
-              isAuthenticated: false,
-              isImpersonating: false,
-              isLoading: false 
-            });
-            
-            // Stop session refresh even if logout failed
-            stopSessionRefreshTimer();
-            
-            return { success: true };
-          }
-        },
       };
     },
     {
       name: 'auth-storage',
-      partialize: (state) => ({
-        user: state.user,
+      partialize: (state) => ({ 
+        user: state.user, 
         isAuthenticated: state.isAuthenticated,
         isImpersonating: state.isImpersonating,
       }),
       onRehydrateStorage: () => {
-        console.log('[AuthStore] Starting rehydration');
+        console.log('[AuthStore] onRehydrateStorage - hydration starting...');
         return (state, error) => {
           if (error) {
-            console.error('[AuthStore] Rehydration error:', error);
+            console.error('[AuthStore] Hydration error:', error);
           } else {
-            console.log('[AuthStore] Rehydration complete');
-            state?.setHydrated();
+            console.log('[AuthStore] Hydration complete');
+          }
+          
+          if (state) {
+            state._hasHydrated = true;
+            state.isInitialized = false;
+            state.isInitializing = false;
           }
         };
       },
@@ -546,22 +278,98 @@ export const useAuthStore = create(
 );
 
 // ============================================================================
-// EXPORTED AUTH FUNCTIONS
+// AUTHENTICATION FUNCTIONS
 // ============================================================================
-export const signInWithDjango = async (credentials, router) => {
-  return useAuthStore.getState().signIn(credentials, router);
+
+export const signInWithDjango = async (email, password, router = null) => {
+  try {
+    console.log('[Auth] signInWithDjango - attempting login');
+    const response = await axiosInstance.post('/login/', { email, password });
+
+    if (response.data.user) {
+      console.log('[Auth] Login successful');
+      useAuthStore.getState().setUser(response.data.user);
+      
+      // Handle redirect if router is provided
+      if (router) {
+        const didRedirect = handlePostLoginRedirect(response.data.user, router);
+        if (!didRedirect) {
+          // No redirect occurred, might want to go to dashboard or stay
+          console.log('[Auth] No redirect path found');
+        }
+      }
+      
+      return { success: true, user: response.data.user };
+    }
+
+    throw new Error('No user data received');
+  } catch (error) {
+    console.error('[Auth] Login failed:', error);
+    const message = error.response?.data?.detail || 
+                   error.response?.data?.message || 
+                   'Invalid credentials';
+    throw new Error(message);
+  }
 };
 
-export const signUpWithDjango = async (formData, router) => {
-  return useAuthStore.getState().signUp(formData, router);
+export const signUpWithDjango = async (userData) => {
+  try {
+    console.log('[Auth] signUpWithDjango - attempting registration');
+    const response = await axiosInstance.post('/auth/registration/', userData);
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error('[Auth] Registration failed:', error);
+    throw error.response?.data || error;
+  }
 };
 
-export const signInWithGoogle = async (credentialResponse, router) => {
-  return useAuthStore.getState().signInWithGoogle(credentialResponse, router);
+export const signInWithGoogle = async (accessToken, router = null) => {
+  try {
+    console.log('[Auth] signInWithGoogle - attempting Google auth');
+    const response = await axiosInstance.post('/auth/google/', {
+      access_token: accessToken,
+    });
+
+    if (response.data.user) {
+      console.log('[Auth] Google auth successful');
+      useAuthStore.getState().setUser(response.data.user);
+      
+      // Handle redirect if router is provided
+      if (router) {
+        const didRedirect = handlePostLoginRedirect(response.data.user, router);
+        if (!didRedirect) {
+          console.log('[Auth] No redirect path found');
+        }
+      }
+      
+      return { success: true, user: response.data.user };
+    }
+
+    throw new Error('Google authentication failed');
+  } catch (error) {
+    console.error('[Auth] Google auth failed:', error);
+    const message = error.response?.data?.detail || 'Google login failed';
+    throw new Error(message);
+  }
 };
 
-export const signOutFull = async () => {
-  return useAuthStore.getState().signOut();
+export const signOutFull = async (router) => {
+  try {
+    console.log('[Auth] signOutFull - logging out');
+    await axiosInstance.post('/logout/');
+  } catch (error) {
+    console.warn('[Auth] Logout API call failed:', error);
+  } finally {
+    // Clear redirect path on logout
+    clearRedirectPath();
+    
+    useAuthStore.getState().clearUser();
+    
+    if (router) {
+      router.push('/');
+      router.refresh(); 
+    }
+  }
 };
 
 // ============================================================================

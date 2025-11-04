@@ -1,4 +1,4 @@
-// src/lib/axiosInstance.js - FIXED VERSION WITH ISR SUPPORT AND AUTO-LOGIN REDIRECT
+// src/lib/axiosInstance.js - FIXED VERSION WITH ISR SUPPORT
 import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -121,14 +121,13 @@ axiosInstance.interceptors.request.use(
   (config) => {
     config.withCredentials = true;
     
-    // REMOVED: CSRF token logic - not needed for JWT auth
     
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response interceptor with auto-login redirect on 401
+// Response interceptor
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -141,45 +140,6 @@ axiosInstance.interceptors.response.use(
 
     if (error.response?.status === 401 && typeof window !== 'undefined') {
       console.log(`[Axios] 401 Unauthorized: ${originalRequest.method} ${originalRequest.url}`);
-      
-      // Don't auto-redirect for these endpoints (they're expected to return 401)
-      const skipAutoRedirectEndpoints = [
-        '/login/',
-        '/token/refresh/',
-        '/auth/registration/',
-        '/auth/google/',
-        '/logout/',
-      ];
-      
-      const shouldSkipRedirect = skipAutoRedirectEndpoints.some(endpoint => 
-        originalRequest.url.includes(endpoint)
-      );
-      
-      if (!shouldSkipRedirect) {
-        console.log('[Axios] Session expired during user action, triggering login modal');
-        
-        // Dynamically import to avoid circular dependencies
-        Promise.all([
-          import('./auth-client'),
-          import('./message')
-        ]).then(([authModule, messageModule]) => {
-          const { saveRedirectPath, useAuthStore } = authModule;
-          const message = messageModule.default;
-          
-          // Show toast notification
-          message.warning('Your session has expired. Please log in again.', 4);
-          
-          // Save current path for redirect after login
-          saveRedirectPath(window.location.pathname);
-          
-          // Clear user state and open login modal
-          const store = useAuthStore.getState();
-          store.clearUser();
-          store.setShouldOpenAuthModal(true);
-        }).catch(err => {
-          console.error('[Axios] Failed to trigger login modal:', err);
-        });
-      }
     }
     
     return Promise.reject(error);
