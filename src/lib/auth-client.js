@@ -375,7 +375,7 @@ export const useAuthStore = create(
           
           try {
             console.log('[AuthStore] signIn - Calling backend');
-            const response = await axiosInstance.post('/token/', credentials);
+            const response = await axiosInstance.post('/login/', credentials);
             
             const user = response.data.user;
             
@@ -413,7 +413,7 @@ export const useAuthStore = create(
           
           try {
             console.log('[AuthStore] signUp - Calling backend');
-            const response = await axiosInstance.post('/register/', formData);
+            const response = await axiosInstance.post('/auth/registration/', formData);
             
             const user = response.data.user;
             
@@ -451,7 +451,7 @@ export const useAuthStore = create(
           
           try {
             console.log('[AuthStore] Google Sign In - Calling backend');
-            const response = await axiosInstance.post('/social-auth/google/', {
+            const response = await axiosInstance.post('/auth/google/', {
               credential: credentialResponse.credential,
             });
             
