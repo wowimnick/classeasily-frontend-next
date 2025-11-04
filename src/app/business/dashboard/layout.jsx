@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import styled from "styled-components";
 
@@ -72,57 +72,47 @@ function DashboardLayoutInner({ children }) {
     displaySetupGuide,
   } = useDashboard();
 
-  const getActiveKeyFromPath = useCallback(() => {
-    const parts = pathname
-      .replace("/business/dashboard/", "")
-      .replace("/business/dashboard", "");
-    return parts || "overview";
-  }, [pathname]);
-
-  const [selectedMenu, setSelectedMenu] = useState(() =>
-    getActiveKeyFromPath()
-  );
-
   const sideMenuRef = useRef(null);
   const mainContentRef = useRef(null);
 
-  // FIX: Use useEffect with proper dependencies
-  useEffect(() => {
-    const currentKey = getActiveKeyFromPath();
-    setSelectedMenu(currentKey);
+  // Derive activeKey from pathname (don't store in state)
+  const activeKey =
+    pathname
+      .replace("/business/dashboard/", "")
+      .replace("/business/dashboard", "") || "overview";
 
-    // Scroll to top when route changes
+  // Scroll to top when route changes
+  useEffect(() => {
     if (mainContentRef.current) {
       mainContentRef.current.scrollTop = 0;
     }
-  }, [pathname, getActiveKeyFromPath]);
+  }, [pathname]);
 
+  // Update document title based on current route
   useEffect(() => {
-    const getPageTitle = (menuKey) => {
-      const titles = {
-        overview: "Overview",
-        classes: "Manage Classes",
-        "bookings/active": "Active Bookings",
-        "bookings/history": "Booking History",
-        reviews: "Reviews",
-        discounts: "Discounts",
-        trends: "Booking Trends",
-        revenue: "Revenue",
-        payouts: "Payouts",
-        staff: "Staff Management",
-        students: "Students",
-        widget: "Widget Customizer",
-      };
-      return titles[menuKey] || "Dashboard";
+    const titles = {
+      overview: "Overview",
+      classes: "Manage Classes",
+      "bookings/active": "Active Bookings",
+      "bookings/history": "Booking History",
+      reviews: "Reviews",
+      discounts: "Discounts",
+      trends: "Booking Trends",
+      revenue: "Revenue",
+      payouts: "Payouts",
+      staff: "Staff Management",
+      students: "Students",
+      widget: "Widget Customizer",
     };
 
-    document.title = `${getPageTitle(selectedMenu)} | ClassEasily`;
-  }, [selectedMenu]);
+    const pageTitle = titles[activeKey] || "Dashboard";
+    document.title = `${pageTitle} | ClassEasily`;
+  }, [activeKey]);
 
   const handleMenuSelect = useCallback(
     (key) => {
       if (key !== "settings") {
-        // FIX: Use router.push with proper error handling
+        console.log("🔄 Layout - Navigating to:", `/business/dashboard/${key}`);
         router.push(`/business/dashboard/${key}`);
       }
     },
@@ -139,7 +129,7 @@ function DashboardLayoutInner({ children }) {
           <SideMenu
             ref={sideMenuRef}
             onMenuSelect={handleMenuSelect}
-            activeKey={selectedMenu}
+            activeKey={activeKey}
           />
         </SideMenuWrapper>
         <MainContent ref={mainContentRef}>{children}</MainContent>

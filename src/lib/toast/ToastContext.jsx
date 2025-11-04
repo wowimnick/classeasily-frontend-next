@@ -56,26 +56,35 @@ const ToastContainer = styled.div`
   gap: 8px;
   pointer-events: none;
   align-items: center;
+  width: 100%;
+  padding: 0 16px;
+  box-sizing: border-box;
+
+  @media (max-width: 768px) {
+    top: 16px;
+    padding: 0 12px;
+    gap: 6px;
+  }
 `;
 
 const ToastItem = styled.div`
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  align-items: flex-start;
   gap: 8px;
   background: white;
-  padding: 10px 16px;
+  padding: 12px 16px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   animation: ${(props) => (props.$isExiting ? slideOut : slideIn)} 0.3s ease;
   pointer-events: auto;
   max-width: 500px;
-  min-width: fit-content;
-  width: auto;
-  white-space: nowrap;
+  width: 100%;
+  box-sizing: border-box;
 
   .anticon {
     font-size: 16px;
     flex-shrink: 0;
+    margin-top: 2px;
   }
 
   &[data-type="success"] .anticon {
@@ -97,13 +106,47 @@ const ToastItem = styled.div`
   &[data-type="loading"] .anticon {
     color: #1890ff;
   }
+
+  @media (max-width: 768px) {
+    padding: 10px 14px;
+    max-width: 100%;
+    gap: 8px;
+    border-radius: 6px;
+
+    .anticon {
+      font-size: 14px;
+      margin-top: 1px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 8px 12px;
+    gap: 6px;
+
+    .anticon {
+      font-size: 14px;
+    }
+  }
 `;
 
 const ToastContent = styled.div`
   font-size: 14px;
   color: rgba(0, 0, 0, 0.88);
   line-height: 1.5;
-  white-space: nowrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  flex: 1;
+  min-width: 0;
+
+  @media (max-width: 768px) {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+    line-height: 1.4;
+  }
 `;
 
 const iconMap = {
