@@ -1,8 +1,16 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Form, Input, Select, Typography, ConfigProvider, Tooltip, Upload,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Form,
+  Input,
+  Select,
+  Typography,
+  ConfigProvider,
+  Tooltip,
+  Upload,
+} from "antd";
+import message from "@/lib/message";
 import styled from "styled-components";
 import {
   Star,
@@ -768,7 +776,8 @@ const BasicInfoStep = ({ onValidatedNext }) => {
             <HelpText>
               <Info size={14} />
               Describe what students will learn, your teaching approach, and
-              what makes your class special.
+              what makes your class special. Longer descriptions = higher
+              ranking ⭐
             </HelpText>
             <Form.Item
               name="description"
@@ -810,21 +819,21 @@ const BasicInfoStep = ({ onValidatedNext }) => {
           <FormGroup>
             <FormLabel>
               <ImagePlus size={16} />
-              Class Images (5-10 photos required)
+              Class Images (2-10 photos required)
             </FormLabel>
             <HelpText>
               <Info size={14} />
               Upload high-quality photos that showcase your class environment,
-              materials, and student work.
+              materials, and student work. More images = higher ranking ⭐
             </HelpText>
             <Form.Item
               name="class_photos_validation"
               rules={[
                 {
                   validator: async () => {
-                    if (!images || images.length < 5) {
+                    if (!images || images.length < 2) {
                       return Promise.reject(
-                        new Error("Please upload at least 5 images.")
+                        new Error("Please upload at least 2 images.")
                       );
                     }
                     if (images.length > 10) {

@@ -639,7 +639,7 @@ const menuItemsConfig = [
     ),
     children: [
       { key: "settings", label: "Business Settings" },
-      { key: "widget", label: "Widget" },
+      { key: "widget", label: "Widget Management" },
     ],
   },
 ];

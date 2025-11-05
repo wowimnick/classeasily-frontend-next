@@ -1,9 +1,27 @@
-"use client"
+"use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import styled, { keyframes } from "styled-components";
-import { Row, Col, Card, Form, Input, Select, Button, ColorPicker, Tooltip, Skeleton, Tabs, Typography, Alert, ConfigProvider, Modal, Menu, Divider,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Row,
+  Col,
+  Card,
+  Form,
+  Input,
+  Select,
+  Button,
+  ColorPicker,
+  Tooltip,
+  Skeleton,
+  Tabs,
+  Typography,
+  Alert,
+  ConfigProvider,
+  Modal,
+  Menu,
+  Divider,
+} from "antd";
+import message from "@/lib/message";
 import {
   Copy,
   Code,
@@ -29,7 +47,7 @@ const { Title, Paragraph, Text } = Typography;
 // --- CONFIGURATION & CONSTANTS ---
 // =============================================================================
 
-const WIDGET_SCRIPT_URL = process.env.NEXT_WIDGET_SCRIPT_URL;
+const WIDGET_SCRIPT_URL = process.env.NEXT_PUBLIC_WIDGET_SCRIPT_URL;
 const THEME_COLOR = "#ff385c";
 
 const PRESETS = {
@@ -1017,7 +1035,9 @@ const CustomizerView = ({ onBack }) => {
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" ? window.innerWidth < 1406 : false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 1406 : false
+  );
   const [isPreviewModalVisible, setIsPreviewModalVisible] = useState(false);
   const [activeMenuKey, setActiveMenuKey] = useState("customize");
   const [widgetScale, setWidgetScale] = useState(1);
@@ -1406,8 +1426,7 @@ const CustomizerView = ({ onBack }) => {
           <Row gutter={24}>
             <Col xs={24} sm={12}>
               <Form.Item name="fontFamily" label="Font Family">
-                <Select options={FONT_OPTIONS}
-      />
+                <Select options={FONT_OPTIONS} />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
@@ -1419,7 +1438,7 @@ const CustomizerView = ({ onBack }) => {
                     { value: "rounded", label: "Rounded (8px)" },
                     { value: "large", label: "Large (16px)" },
                   ]}
-      />
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -1436,7 +1455,7 @@ const CustomizerView = ({ onBack }) => {
                     { value: "comfortable", label: "Comfortable" },
                     { value: "compact", label: "Compact" },
                   ]}
-      />
+                />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
@@ -1446,7 +1465,7 @@ const CustomizerView = ({ onBack }) => {
                     { value: "inline", label: "Inline" },
                     { value: "modal", label: "Modal Button" },
                   ]}
-      />
+                />
               </Form.Item>
             </Col>
             {config.view === "modal" && (
@@ -1465,10 +1484,9 @@ const CustomizerView = ({ onBack }) => {
                   loading={loading}
                   placeholder="Show all classes by default"
                   allowClear
-      >
+                >
                   {businessClasses.map((c) => (
-                    <Select.Option key={c.classId} value={c.classId}
-      >
+                    <Select.Option key={c.classId} value={c.classId}>
                       {c.title}
                     </Select.Option>
                   ))}
