@@ -1,3 +1,5 @@
+// app/ClientProviders.js - WITH SESSION MONITORING
+
 "use client";
 
 import { ConfigProvider } from "antd";
@@ -11,6 +13,7 @@ import GlobalStyles from "./GlobalStyles";
 import AnalyticsProvider from "./providers/AnalyticsProvider";
 import CookieConsentProvider from "./providers/CookieConsentProvider";
 import { ToastProvider } from "@/lib/toast/ToastContext";
+import SessionMonitor from "@/components/auth/SessionMonitor";
 
 export default function ClientProviders({ children }) {
   const memoizedTheme = useMemo(() => theme, []);
@@ -70,6 +73,7 @@ export default function ClientProviders({ children }) {
           <GlobalStyles />
           <ToastProvider>
             <AuthProvider>
+              <SessionMonitor />
               <CookieConsentProvider>
                 <AnalyticsProvider>{children}</AnalyticsProvider>
               </CookieConsentProvider>

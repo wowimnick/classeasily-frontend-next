@@ -1,4 +1,4 @@
-// src/lib/axiosInstance.js - FIXED VERSION WITH ISR SUPPORT
+// src/lib/axiosInstance.js - FIXED SESSION EXPIRATION HANDLING
 import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -112,22 +112,22 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  // Use custom adapter for ISR support
   adapter: nextJsFetchAdapter,
 });
 
-// Request interceptor - NO CSRF TOKEN NEEDED FOR JWT
+// Track if we're handling session expiration globally
+let sessionExpirationPromise = null;
+
+// Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
     config.withCredentials = true;
-    
-    
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response interceptor
+// Response interceptor with FIXED session expiration handling
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -138,8 +138,62 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Handle 401 Unauthorized - Session Expired
     if (error.response?.status === 401 && typeof window !== 'undefined') {
-      console.log(`[Axios] 401 Unauthorized: ${originalRequest.method} ${originalRequest.url}`);
+      const url = originalRequest.url;
+      
+      // Don't trigger session expiration for auth-related endpoints
+      const isAuthEndpoint = url.includes('/auth/registration/') || 
+                            url.includes('/login/') || 
+                            url.includes('/auth/google/') ||
+                            url.includes('/token/refresh/') ||
+                            url.includes('/logout/') ||
+                            url.includes('/auth/password/reset/');
+
+      // If it's not an auth endpoint
+      if (!isAuthEndpoint) {
+        console.log('[Axios] Session expired - 401 on:', url);
+
+        // If we're already handling session expiration, wait for it
+        if (sessionExpirationPromise) {
+          console.log('[Axios] Already handling session expiration, waiting...');
+          await sessionExpirationPromise;
+          return Promise.reject(error);
+        }
+
+        // Create a promise to handle session expiration
+        sessionExpirationPromise = (async () => {
+          try {
+            // Import dynamically to avoid circular dependency
+            const { useAuthStore } = await import('./auth-client');
+            const { redirectToLogin } = await import('./auth-client');
+            
+            // Get current path before clearing
+            const currentPath = window.location.pathname + window.location.search;
+            
+            // Clear user state
+            console.log('[Axios] Clearing user state due to session expiration');
+            useAuthStore.getState().clearUser();
+            
+            // Save redirect path and trigger login modal
+            // Only save non-home paths
+            if (currentPath !== '/' && currentPath !== '') {
+              console.log('[Axios] Saving redirect path:', currentPath);
+              redirectToLogin(currentPath);
+            } else {
+              // Just open modal without redirect
+              useAuthStore.getState().setShouldOpenAuthModal(true);
+            }
+          } finally {
+            // Reset the promise after 2 seconds
+            setTimeout(() => {
+              sessionExpirationPromise = null;
+            }, 2000);
+          }
+        })();
+
+        await sessionExpirationPromise;
+      }
     }
     
     return Promise.reject(error);

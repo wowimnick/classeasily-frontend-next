@@ -260,6 +260,12 @@ const GlobalStyles = createGlobalStyle`
   -webkit-overflow-scrolling: touch !important;
 }
 
+.ant-picker-time-panel-column {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+}
+
 /* Allow Vaul drawer to be draggable but not its content */
 [vaul-drawer] {
   touch-action: none;

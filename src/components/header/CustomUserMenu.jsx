@@ -15,7 +15,7 @@ import { ChevronRight, LogOutIcon, X } from "lucide-react";
 
 const MOBILE_BREAKPOINT = "768px";
 
-// --- Styled Components (No Changes) ---
+// --- Styled Components ---
 const GlobalStyle = createGlobalStyle`
   body.mobile-menu-open {
     overflow: hidden;
@@ -29,7 +29,7 @@ const Overlay = styled(motion.div)`
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  z-index: 99998;
   display: none;
 
   @media (max-width: ${MOBILE_BREAKPOINT}) {
@@ -45,7 +45,7 @@ const MobileOverlay = styled(motion.div)`
   bottom: 0;
   background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(4px);
-  z-index: 1020;
+  z-index: 99998;
   display: none;
 
   @media (max-width: ${MOBILE_BREAKPOINT}) {
@@ -60,7 +60,7 @@ const MenuContainer = styled(motion.div)`
   border-radius: 16px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-  z-index: 1001;
+  z-index: 99999;
   padding: 8px 0;
   max-height: calc(100vh - 100px);
   overflow-y: auto;
@@ -76,7 +76,7 @@ const MenuContainer = styled(motion.div)`
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
     padding: 0;
-    z-index: 1030;
+    z-index: 99999;
   }
 `;
 
@@ -382,7 +382,6 @@ const useIsMobile = () => {
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
-  // Return false during SSR to prevent hydration mismatch
   return isClient ? isMobile : false;
 };
 
@@ -716,6 +715,7 @@ const MenuContents = React.forwardRef(
 );
 MenuContents.displayName = "MenuContents";
 
+// SIMPLIFIED VERSION: Just use document.body and let React handle cleanup
 const CustomUserMenu = ({
   isOpen,
   onClose,
@@ -730,9 +730,8 @@ const CustomUserMenu = ({
   const [menuPosition, setMenuPosition] = useState(null);
   const [transformOrigin, setTransformOrigin] = useState("center");
   const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
-  const [isClient, setIsClient] = useState(false); // <-- ADDED STATE
+  const [isClient, setIsClient] = useState(false);
 
-  // This effect runs once after the component mounts on the client
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -804,27 +803,29 @@ const CustomUserMenu = ({
 
   const handleActualNavigate = (path) => {
     onClose();
-    // Small delay to allow exit animation to complete before navigation
-    setTimeout(() => {
-      onNavigate(path);
-    }, 150);
+    setTimeout(() => onNavigate(path), 150);
   };
+
   const handleActualShowSettings = () => {
     onClose();
     onShowSettings();
   };
+
   const handleShowFavorites = () => {
     onClose();
     setIsFavoritesModalOpen(true);
   };
+
   const handleLogin = () => {
     onClose();
     openLoginModal();
   };
+
   const handleRegister = () => {
     onClose();
     openRegisterModal();
   };
+
   const handleLogout = async () => {
     onClose();
     try {
@@ -843,37 +844,34 @@ const CustomUserMenu = ({
     return `${f}${l}`.toUpperCase() || "U";
   };
 
-  const menuComponent = (
-    <AnimatePresence>
-      {isOpen && (
-        <MenuContents
-          key="menu-contents-wrapper"
-          ref={menuRef}
-          isMobile={isMobile}
-          onClose={onClose}
-          currentUser={currentUser}
-          onNavigate={handleActualNavigate}
-          onShowSettings={handleActualShowSettings}
-          onShowFavorites={handleShowFavorites}
-          hasPermission={hasPermission}
-          getUserInitials={getUserInitials}
-          handleLogin={handleLogin}
-          handleRegister={handleRegister}
-          handleLogout={handleLogout}
-          menuPosition={menuPosition}
-          transformOrigin={transformOrigin}
-        />
-      )}
-    </AnimatePresence>
-  );
-
   if (!isClient || typeof document === "undefined") {
     return null;
   }
 
+  // SIMPLER: Just portal directly to document.body, let React handle cleanup
   return ReactDOM.createPortal(
     <>
-      {menuComponent}
+      <AnimatePresence mode="wait">
+        {isOpen && (
+          <MenuContents
+            key="menu-contents-wrapper"
+            ref={menuRef}
+            isMobile={isMobile}
+            onClose={onClose}
+            currentUser={currentUser}
+            onNavigate={handleActualNavigate}
+            onShowSettings={handleActualShowSettings}
+            onShowFavorites={handleShowFavorites}
+            hasPermission={hasPermission}
+            getUserInitials={getUserInitials}
+            handleLogin={handleLogin}
+            handleRegister={handleRegister}
+            handleLogout={handleLogout}
+            menuPosition={menuPosition}
+            transformOrigin={transformOrigin}
+          />
+        )}
+      </AnimatePresence>
       <FavoritesModal
         isOpen={isFavoritesModalOpen}
         onClose={() => setIsFavoritesModalOpen(false)}
