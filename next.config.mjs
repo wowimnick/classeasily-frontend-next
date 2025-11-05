@@ -184,6 +184,11 @@ const nextConfig = {
         source: '/public/:path*',
         destination: `${cloudFrontUrl}/public/:path*`,
       },
+      // Proxy /widget/* to CloudFront (widget static files)
+      {
+        source: '/widget/:path*',
+        destination: `${cloudFrontUrl}/widget/:path*`,
+      },
     ];
   },
 

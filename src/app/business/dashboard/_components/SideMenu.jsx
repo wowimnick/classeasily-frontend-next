@@ -637,7 +637,10 @@ const menuItemsConfig = [
         state="in-code"
       />
     ),
-    children: [{ key: "settings", label: "Business Settings" }],
+    children: [
+      { key: "settings", label: "Business Settings" },
+      { key: "widget", label: "Widget" },
+    ],
   },
 ];
 
