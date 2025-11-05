@@ -22,6 +22,7 @@ import ClassManagement from "./tabs/classes/manageclasses/ClassManagement";
 import BookingTrends from "./tabs/bookings/BookingTrends";
 import Payouts from "./tabs/payouts/Payouts";
 import Staff from "./tabs/staff/Staff";
+import WidgetCustomizer from "./tabs/widget/WidgetCustomizer";
 
 const DEBUG_ALWAYS_SHOW_SETUP_GUIDE = false;
 
@@ -180,6 +181,7 @@ export default function DashboardClient({ params }) {
       payouts: "Payouts",
       staff: "Staff Management",
       students: "Students",
+      widget: "Widget Customizer",
     };
     return titles[menuKey] || null;
   };
@@ -215,6 +217,8 @@ export default function DashboardClient({ params }) {
         return <BookingTrends />;
       case "discounts":
         return <Discounts />;
+      case "widget":
+        return <WidgetCustomizer />;
       case "settings":
         router.push("/business/dashboard/overview");
         return null;

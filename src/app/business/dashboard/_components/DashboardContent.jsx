@@ -15,6 +15,7 @@ import ClassManagement from "./tabs/classes/manageclasses/ClassManagement";
 import BookingTrends from "./tabs/bookings/BookingTrends";
 import Payouts from "./tabs/payouts/Payouts";
 import Staff from "./tabs/staff/Staff";
+import WidgetCustomizer from "./tabs/widget/WidgetCustomizer";
 
 export default function DashboardContent({ activeKey }) {
   // Get data from context
@@ -59,6 +60,8 @@ export default function DashboardContent({ activeKey }) {
         return <BookingTrends />;
       case "discounts":
         return <Discounts />;
+      case "widget":
+        return <WidgetCustomizer />;
       case "settings":
         // Settings is handled by SideMenu drawer, show overview
         return (
