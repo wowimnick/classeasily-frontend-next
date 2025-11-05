@@ -169,27 +169,33 @@ const nextConfig = {
     // CloudFront URL for static files from S3
     const cloudFrontUrl = process.env.NEXT_PUBLIC_CLOUDFRONT_URL || 'https://d1uuoquc68y10e.cloudfront.net';
 
-    return [
-      // Proxy robots.txt and sitemap to Django backend (dynamically generated)
-      {
-        source: '/robots.txt',
-        destination: `${backendUrl}/robots.txt`,
-      },
-      {
-        source: '/sitemap.xml',
-        destination: `${backendUrl}/sitemap.xml`,
-      },
-      // Proxy /public/* to CloudFront (S3 static files)
-      {
-        source: '/public/:path*',
-        destination: `${cloudFrontUrl}/public/:path*`,
-      },
-      // Proxy /widget/* to CloudFront (widget static files)
-      {
-        source: '/widget/:path*',
-        destination: `${cloudFrontUrl}/widget/:path*`,
-      },
-    ];
+    return {
+      beforeFiles: [
+        // These run BEFORE Next.js checks for pages/static files
+        // Proxy /widget/* to CloudFront (widget static files)
+        {
+          source: '/widget/:path*',
+          destination: `${cloudFrontUrl}/widget/:path*`,
+        },
+      ],
+      afterFiles: [
+        // These run AFTER Next.js checks for pages/static files
+        // Proxy robots.txt and sitemap to Django backend (dynamically generated)
+        {
+          source: '/robots.txt',
+          destination: `${backendUrl}/robots.txt`,
+        },
+        {
+          source: '/sitemap.xml',
+          destination: `${backendUrl}/sitemap.xml`,
+        },
+        // Proxy /public/* to CloudFront (S3 static files)
+        {
+          source: '/public/:path*',
+          destination: `${cloudFrontUrl}/public/:path*`,
+        },
+      ],
+    };
   },
 
   async redirects() {
