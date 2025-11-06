@@ -1446,8 +1446,9 @@ const ClassEditDrawer = ({
                     <HelpText>
                       <Info size={14} />
                       Describe what students will learn, your teaching approach,
-                      and what makes your class special. Longer descriptions =
-                      higher ranking ⭐
+                      and what makes your class special. Detailed descriptions
+                      help guests understand what to expect and improve
+                      discoverability.
                     </HelpText>
                     <FormItemAntd
                       name="description"
@@ -1492,7 +1493,8 @@ const ClassEditDrawer = ({
                     <HelpText>
                       <Info size={14} />
                       Drag & drop or click to upload high-quality photos that
-                      showcase your class. More images = higher ranking ⭐
+                      showcase your class. More photos help guests visualize the
+                      experience and stand out in search.
                     </HelpText>
                     <FormItemAntd
                       name="class_photos_validation_edit"

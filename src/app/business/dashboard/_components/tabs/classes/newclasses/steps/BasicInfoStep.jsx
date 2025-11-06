@@ -776,8 +776,8 @@ const BasicInfoStep = ({ onValidatedNext }) => {
             <HelpText>
               <Info size={14} />
               Describe what students will learn, your teaching approach, and
-              what makes your class special. Longer descriptions = higher
-              ranking ⭐
+              what makes your class special. Detailed descriptions help guests
+              understand what to expect and improve discoverability.
             </HelpText>
             <Form.Item
               name="description"
@@ -824,7 +824,8 @@ const BasicInfoStep = ({ onValidatedNext }) => {
             <HelpText>
               <Info size={14} />
               Upload high-quality photos that showcase your class environment,
-              materials, and student work. More images = higher ranking ⭐
+              materials, and student work. More photos help guests visualize the
+              experience and stand out in search.
             </HelpText>
             <Form.Item
               name="class_photos_validation"
