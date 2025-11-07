@@ -3,8 +3,8 @@
 import React from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
-import { Button } from 'antd';
-import message from '@/lib/message';
+import { Button, Tooltip } from "antd"; // ADDED: Tooltip
+import message from "@/lib/message";
 import { ArrowLeft, ArrowRight, Loader } from "lucide-react";
 import { useClass } from "./ClassContext";
 import { businessClassService, uploadService } from "@/services/apiService";
@@ -118,12 +118,14 @@ const ClassSteps = ({
   loading,
   setLoading,
   steps,
+  isStructureSelected, // MODIFIED: Receive prop
   onCreationSuccess,
 }) => {
   const { state, resetForm } = useClass();
+  const isFinalStep = currentStep === steps.length - 1;
 
   const handleNextStep = async () => {
-    if (currentStep === steps.length - 1) {
+    if (isFinalStep) {
       setLoading(true);
       const uploadKey = "imageUpload";
       message.loading({
@@ -165,16 +167,6 @@ const ClassSteps = ({
 
         const currentOptionState = state.options?.[0] || {};
 
-        console.log("--- DEBUG: PREPARING FINAL PAYLOAD ---");
-        console.log(
-          "Full state from context at time of submission:",
-          JSON.stringify(state, null, 2)
-        );
-        console.log(
-          "Extracted currentOptionState:",
-          JSON.stringify(currentOptionState, null, 2)
-        );
-
         const finalPayload = {
           // Basic Info
           title: state.basicInfo.title,
@@ -199,7 +191,7 @@ const ClassSteps = ({
           image_s3_keys: imageS3Keys,
           cover_image_s3_key: coverImageS3Key,
 
-          // Options (JSON stringified) with original logic
+          // Options (JSON stringified)
           options: JSON.stringify([
             {
               booking_type: currentOptionState.booking_type || "Single Session",
@@ -213,15 +205,18 @@ const ClassSteps = ({
               cancellationRefundPercentage:
                 currentOptionState.cancellationRefundPercentage ?? 100,
               price_type: currentOptionState.price_type || "per_session",
+              // Mid-course drop fields
+              allowMidCourseDrops:
+                currentOptionState.allowMidCourseDrops ?? true,
+              midCourseCancellationPolicy:
+                currentOptionState.midCourseCancellationPolicy,
+              midCourseCancellationCustomHours:
+                currentOptionState.midCourseCancellationCustomHours,
+              midCourseCancellationRefundPercentage:
+                currentOptionState.midCourseCancellationRefundPercentage,
             },
           ]),
         };
-
-        console.log(
-          "Final payload being sent to backend:",
-          JSON.stringify(finalPayload, null, 2)
-        );
-        console.log("--------------------------------------");
 
         const response = await businessClassService.createClass(finalPayload);
 
@@ -261,6 +256,9 @@ const ClassSteps = ({
     return <StepComponent onValidatedNext={handleNextStep} />;
   };
 
+  const finalButtonIsDisabled =
+    loading || (isFinalStep && !isStructureSelected);
+
   return (
     <StepsLayout>
       <ContentContainer>
@@ -288,24 +286,35 @@ const ClassSteps = ({
           Previous
         </FooterButton>
 
-        <FooterButton
-          type="primary"
-          size="middle"
-          form={`step-${currentStep}-form`}
-          htmlType="submit"
-          disabled={loading}
+        {/* MODIFIED: Wrapped button in a Tooltip and a span */}
+        <Tooltip
+          title={
+            isFinalStep && !isStructureSelected
+              ? "Please select a class structure (Single Session or Course) in the previous step."
+              : ""
+          }
         >
-          {currentStep === steps.length - 1
-            ? loading
-              ? "Creating..."
-              : "Create Class"
-            : "Next"}
-          {loading ? (
-            <LoadingSpinner size={16} />
-          ) : (
-            currentStep < steps.length - 1 && <ArrowRight size={16} />
-          )}
-        </FooterButton>
+          <span>
+            <FooterButton
+              type="primary"
+              size="middle"
+              form={`step-${currentStep}-form`}
+              htmlType="submit"
+              disabled={finalButtonIsDisabled}
+            >
+              {isFinalStep
+                ? loading
+                  ? "Creating..."
+                  : "Create Class"
+                : "Next"}
+              {loading ? (
+                <LoadingSpinner size={16} />
+              ) : (
+                !isFinalStep && <ArrowRight size={16} />
+              )}
+            </FooterButton>
+          </span>
+        </Tooltip>
       </NavigationFooter>
     </StepsLayout>
   );

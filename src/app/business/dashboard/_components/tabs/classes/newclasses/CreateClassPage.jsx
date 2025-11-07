@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { ConfigProvider, Steps, Typography } from "antd";
+import { ConfigProvider, Steps, Typography, Tooltip } from "antd";
 import { BookOpen, MapPin, Layers } from "lucide-react";
 import ClassSteps from "./ClassSteps";
 import BasicInfoStep from "./steps/BasicInfoStep";
 import ClassOptionsStep from "./steps/ClassOptionsStep";
 import LocationContactStep from "./steps/LocationContactStep";
+import { useClass } from "./ClassContext"; // ADDED: Import context hook
 
 const { Text } = Typography;
 
@@ -114,6 +115,10 @@ const CreateClassPage = ({ onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const isMobile = useIsMobile();
 
+  // ADDED: Get state from context to check if the core structure is defined
+  const { state } = useClass();
+  const isStructureSelected = !!state.options?.[0]?.booking_type;
+
   const handleCreationSuccess = (newClass) => {
     if (onSuccess) {
       onSuccess(newClass);
@@ -151,6 +156,7 @@ const CreateClassPage = ({ onSuccess }) => {
             loading={loading}
             setLoading={setLoading}
             steps={steps}
+            isStructureSelected={isStructureSelected} // MODIFIED: Pass the flag down
             onCreationSuccess={handleCreationSuccess}
           />
         </StepsContainer>

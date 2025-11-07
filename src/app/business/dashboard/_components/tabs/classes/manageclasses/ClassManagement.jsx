@@ -2,8 +2,33 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { Drawer as VaulDrawer } from "vaul";
-import { Form, Tabs, Tooltip, Typography, ConfigProvider, Button, Empty, Space, Avatar, Tag, Popconfirm, Spin, DatePicker, Divider, Input, Checkbox, Select, Modal, Table, Switch, Dropdown, Menu, Grid, Segmented,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Form,
+  Tabs,
+  Tooltip,
+  Typography,
+  ConfigProvider,
+  Button,
+  Empty,
+  Space,
+  Avatar,
+  Tag,
+  Popconfirm,
+  Spin,
+  DatePicker,
+  Divider,
+  Input,
+  Checkbox,
+  Select,
+  Modal,
+  Table,
+  Switch,
+  Dropdown,
+  Menu,
+  Grid,
+  Segmented,
+} from "antd";
+import message from "@/lib/message";
 import {
   Search,
   Plus,
@@ -39,6 +64,7 @@ import {
   Star,
   MessageSquare,
   Undo2,
+  BookOpen, // Added for Course icon
 } from "lucide-react";
 import styled, { css } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
@@ -47,10 +73,15 @@ import isBetween from "dayjs/plugin/isBetween";
 import isToday from "dayjs/plugin/isToday";
 import weekOfYear from "dayjs/plugin/weekOfYear";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { businessClassService, scheduleService } from "@/services/apiService";
+import {
+  businessClassService,
+  scheduleService,
+  courseService,
+} from "@/services/apiService";
 import ScheduleEditDrawer from "./ScheduleEditDrawer";
 import ClassEditDrawer from "./ClassEditDrawer";
 import DeleteClassModal from "./DeleteClassModal";
+import CourseScheduleDrawer from "./CourseScheduleDrawer"; // ADDED: New import
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { ClassProvider } from "../newclasses/ClassContext";
 import CreateClassPage from "../newclasses/CreateClassPage";
@@ -99,6 +130,32 @@ const needsSchedulesWarning = (lastScheduleDate) => {
   return dayjs(lastScheduleDate).isBefore(
     dayjs().add(SCHEDULE_WARNING_THRESHOLD_DAYS, "day")
   );
+};
+
+// --- ADDED: New helper function to format class type info ---
+const formatClassType = (bookingType) => {
+  const isCourse = bookingType === "Full Course";
+  return {
+    label: isCourse ? "Course" : "Single Session",
+    icon: isCourse ? <BookOpen size={12} /> : <Calendar size={12} />,
+    color: isCourse ? "purple" : "cyan",
+  };
+};
+
+// --- ADDED: New helper function to format schedule text ---
+const formatScheduleInfo = (record) => {
+  const isCourse = record.options?.[0]?.booking_type === "Full Course";
+  if (isCourse) {
+    if (!record.last_schedule_date) return "No course schedules set";
+    return `Courses run until ${dayjs(record.last_schedule_date).format(
+      "MMM YYYY"
+    )}`;
+  } else {
+    if (!record.last_schedule_date) return "No sessions scheduled";
+    return `Sessions available until ${dayjs(record.last_schedule_date).format(
+      "MMM D, YYYY"
+    )}`;
+  }
 };
 
 const colors = {
@@ -160,6 +217,27 @@ const Controls = styled.div`
     flex-direction: column;
     gap: 12px;
     margin-bottom: 16px;
+  }
+`;
+
+const StyledSegmented = styled(Segmented)`
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 10px;
+
+  .ant-segmented-item {
+    border-radius: 8px !important;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease; // More specific transitions
+  }
+
+  .ant-segmented-item-selected {
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  // Prevent thumb animation from interfering
+  .ant-segmented-thumb {
+    transition: transform 0.2s ease, width 0.2s ease; // Control thumb animation
   }
 `;
 
@@ -949,6 +1027,8 @@ function ClassManagementContent(props) {
   const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState([]);
   const [searchText, setSearchText] = useState("");
+  // ADDED: State for view type filter (all, single, course)
+  const [viewType, setViewType] = useState("all");
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [selectedClassForAction, setSelectedClassForAction] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -960,6 +1040,11 @@ function ClassManagementContent(props) {
     editingSchedule: null,
   });
   const [schedulesModal, setSchedulesModal] = useState({
+    visible: false,
+    classData: null,
+  });
+  // ADDED: State for the new course drawer
+  const [courseDrawer, setCourseDrawer] = useState({
     visible: false,
     classData: null,
   });
@@ -992,10 +1077,16 @@ function ClassManagementContent(props) {
         (c) => c.classId === parseInt(openClassId)
       );
       if (classToOpen) {
+        const isCourse =
+          classToOpen.options?.[0]?.booking_type === "Full Course";
         router.replace(pathname, { scroll: false });
-        openSchedulesModal(classToOpen);
-        if (openScheduleGroup) setScheduleGroupFilter(openScheduleGroup);
-        setShowPastSchedules(true);
+        if (isCourse) {
+          openCourseSchedulesModal(classToOpen);
+        } else {
+          openSchedulesModal(classToOpen);
+          if (openScheduleGroup) setScheduleGroupFilter(openScheduleGroup);
+          setShowPastSchedules(true);
+        }
       }
     }
   }, [openClassId, openScheduleGroup, classes, pathname, router]);
@@ -1097,6 +1188,11 @@ function ClassManagementContent(props) {
     if (classItem.option) {
       refreshSchedulesInModal(classItem);
     }
+  };
+
+  // ADDED: Function to open the new course drawer
+  const openCourseSchedulesModal = (classItem) => {
+    setCourseDrawer({ visible: true, classData: classItem });
   };
 
   const closeSchedulesModal = () => {
@@ -1479,7 +1575,7 @@ function ClassManagementContent(props) {
             value={scheduleGroupFilter}
             onChange={setScheduleGroupFilter}
             style={{ minWidth: 200, flex: 1 }}
-      >
+          >
             {hasIndividual && (
               <Option value={INDIVIDUAL_KEY}>Individual Schedules</Option>
             )}
@@ -1671,12 +1767,24 @@ function ClassManagementContent(props) {
           c.subcategory_name?.toLowerCase().includes(lowerSearch)
       );
     }
+
+    // MODIFIED: Updated filter to use new viewType state
+    if (viewType === "single") {
+      filtered = filtered.filter(
+        (c) => c.options?.[0]?.booking_type === "Single Session"
+      );
+    } else if (viewType === "course") {
+      filtered = filtered.filter(
+        (c) => c.options?.[0]?.booking_type === "Full Course"
+      );
+    }
+
     return filtered;
   };
 
   const filteredClasses = useMemo(
     () => getFilteredClasses(),
-    [classes, searchText]
+    [classes, searchText, viewType] // viewType added as dependency
   );
 
   const columns = [
@@ -1688,6 +1796,9 @@ function ClassManagementContent(props) {
         const categoryDisplay = [record.category_name, record.subcategory_name]
           .filter(Boolean)
           .join(" / ");
+
+        // MODIFIED: Use formatClassType helper
+        const typeInfo = formatClassType(record.options?.[0]?.booking_type);
 
         return (
           <Space size="middle">
@@ -1713,15 +1824,36 @@ function ClassManagementContent(props) {
                   </Tooltip>
                 )}
               </div>
-              {categoryDisplay && (
-                <CategoryTag>
-                  <TagIcon size={12} /> {categoryDisplay}
-                </CategoryTag>
-              )}
+              <Space size={4}>
+                {/* MODIFIED: Add type tag */}
+                <Tag
+                  icon={typeInfo.icon}
+                  color={typeInfo.color}
+                  style={{ borderRadius: "6px", fontSize: "12px" }}
+                >
+                  {typeInfo.label}
+                </Tag>
+                {categoryDisplay && (
+                  <CategoryTag>
+                    <TagIcon size={12} /> {categoryDisplay}
+                  </CategoryTag>
+                )}
+              </Space>
             </div>
           </Space>
         );
       },
+    },
+    // MODIFIED: New column for Schedule Info
+    {
+      title: "Schedule",
+      key: "schedule",
+      width: 220,
+      render: (_, record) => (
+        <Text type="secondary" style={{ fontSize: "13px" }}>
+          {formatScheduleInfo(record)}
+        </Text>
+      ),
     },
     {
       title: "Rating",
@@ -1776,6 +1908,9 @@ function ClassManagementContent(props) {
       align: "right",
       width: 200,
       render: (_, record) => {
+        // MODIFIED: Check class type
+        const isCourse = record.options?.[0]?.booking_type === "Full Course";
+
         const menu = (
           <StyledMenu onClick={({ domEvent }) => domEvent.stopPropagation()}>
             <Menu.Item
@@ -1808,7 +1943,12 @@ function ClassManagementContent(props) {
               <Button
                 onClick={() => {
                   if (record.option) {
-                    openSchedulesModal(record);
+                    // MODIFIED: Open correct modal depending on type
+                    if (isCourse) {
+                      openCourseSchedulesModal(record);
+                    } else {
+                      openSchedulesModal(record);
+                    }
                   } else {
                     handleEditClass(record);
                   }
@@ -1865,6 +2005,10 @@ function ClassManagementContent(props) {
       last_schedule_date,
     } = classItem;
 
+    // MODIFIED: Determine type
+    const isCourse = option?.booking_type === "Full Course";
+    const typeInfo = formatClassType(option?.booking_type);
+
     const categoryDisplay = [category_name, subcategory_name]
       .filter(Boolean)
       .join(" / ");
@@ -1912,10 +2056,26 @@ function ClassManagementContent(props) {
                 </Tooltip>
               )}
             </div>
-            {categoryDisplay && <CategoryTag>{categoryDisplay}</CategoryTag>}
+            <Space size={4} style={{ marginTop: "4px" }}>
+              {/* MODIFIED: Add type tag */}
+              <Tag
+                icon={typeInfo.icon}
+                color={typeInfo.color}
+                style={{ borderRadius: "6px", fontSize: "12px" }}
+              >
+                {typeInfo.label}
+              </Tag>
+              {categoryDisplay && <CategoryTag>{categoryDisplay}</CategoryTag>}
+            </Space>
           </CardContent>
         </CardHeader>
         <CardBody>
+          {/* MODIFIED: Use schedule info helper */}
+          <div style={{ marginBottom: "12px", marginTop: "4px" }}>
+            <Text type="secondary" style={{ fontSize: "13px" }}>
+              {formatScheduleInfo(classItem)}
+            </Text>
+          </div>
           <CardStats>
             {review_count > 0 ? (
               <StatItem>
@@ -1946,8 +2106,16 @@ function ClassManagementContent(props) {
             type="primary"
             ghost
             onClick={() => {
-              if (option) openSchedulesModal(classItem);
-              else handleEditClass(classItem);
+              if (option) {
+                // MODIFIED: Open correct modal based on type
+                if (isCourse) {
+                  openCourseSchedulesModal(classItem);
+                } else {
+                  openSchedulesModal(classItem);
+                }
+              } else {
+                handleEditClass(classItem);
+              }
             }}
             style={{ flex: 1 }}
           >
@@ -1983,6 +2151,16 @@ function ClassManagementContent(props) {
             onChange={(e) => setSearchText(e.target.value)}
             allowClear
           />
+          <StyledSegmented
+            options={[
+              { label: "All Classes", value: "all" },
+              { label: "Single Sessions", value: "single" },
+              { label: "Courses", value: "course" },
+            ]}
+            value={viewType}
+            onChange={setViewType}
+            style={{ transition: "none" }} // Prevents animation flash
+          />
           <ActionButton
             type="primary"
             icon={<Plus size={18} />}
@@ -2012,7 +2190,14 @@ function ClassManagementContent(props) {
               onRow={(record) => ({
                 onClick: () => {
                   if (record.option) {
-                    openSchedulesModal(record);
+                    // MODIFIED: Open correct modal on row click
+                    const isCourse =
+                      record.options?.[0]?.booking_type === "Full Course";
+                    if (isCourse) {
+                      openCourseSchedulesModal(record);
+                    } else {
+                      openSchedulesModal(record);
+                    }
                   }
                 },
                 className: record.option ? "clickable-row" : "",
@@ -2020,6 +2205,14 @@ function ClassManagementContent(props) {
             />
           </TableViewWrapper>
         )}
+
+        {/* ADDED: New Course Schedule Drawer */}
+        <CourseScheduleDrawer
+          open={courseDrawer.visible}
+          onClose={() => setCourseDrawer({ visible: false, classData: null })}
+          classData={courseDrawer.classData}
+          onSchedulesUpdate={loadClasses}
+        />
 
         <ScheduleEditDrawer
           open={scheduleEditModal.visible}

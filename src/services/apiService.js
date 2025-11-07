@@ -56,6 +56,12 @@ export const API_ENDPOINTS = {
   PAYMENTS_CREATE_INTENT: '/payments/create-payment-intent/',
   PAYMENTS_WEBHOOK: '/payments/webhook/',
 
+  // Course Endpoints
+  BUSINESS_COURSES: '/business/courses/',
+  BUSINESS_COURSE_ENROLLMENTS: '/business/course-enrollments/',
+  PUBLIC_COURSES: '/courses/',
+  COURSE_ENROLLMENT_CREATE: '/api/bookings/course/',
+
   // Support & Chat
   SUPPORT_TICKETS: '/support-tickets/',
   CHAT_MESSAGE: '/chat/message/',
@@ -1795,4 +1801,79 @@ export const fetchOptions = async (classId) => {
     console.error('Error fetching class options:', error);
     throw error;
   }
+};
+// --- Course Service ---
+export const courseService = {
+  // Public endpoints
+  getPublicCourses: async (params = {}) => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.PUBLIC_COURSES, { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error fetching public courses:', error.response?.data || error);
+      return { success: false, error: error.response?.data?.detail || 'Failed to fetch courses' };
+    }
+  },
+
+  getCourseDetail: async (scheduleId) => {
+    try {
+      const response = await axiosInstance.get(`${API_ENDPOINTS.PUBLIC_COURSES}${scheduleId}/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(`Error fetching course detail ${scheduleId}:`, error.response?.data || error);
+      return { success: false, error: error.response?.data?.detail || 'Failed to fetch course detail' };
+    }
+  },
+
+  // Business endpoints
+  getBusinessCourses: async (params = {}) => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.BUSINESS_COURSES, { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error fetching business courses:', error.response?.data || error);
+      return { success: false, error: error.response?.data?.detail || 'Failed to fetch business courses' };
+    }
+  },
+
+  getCourseEnrollments: async (params = {}) => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.BUSINESS_COURSE_ENROLLMENTS, { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error fetching course enrollments:', error.response?.data || error);
+      return { success: false, error: error.response?.data?.detail || 'Failed to fetch enrollments' };
+    }
+  },
+
+  getCourseEnrollmentDetail: async (enrollmentId) => {
+    try {
+      const response = await axiosInstance.get(`${API_ENDPOINTS.BUSINESS_COURSE_ENROLLMENTS}${enrollmentId}/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(`Error fetching enrollment detail ${enrollmentId}:`, error.response?.data || error);
+      return { success: false, error: error.response?.data?.detail || 'Failed to fetch enrollment detail' };
+    }
+  },
+
+  // Student enrollment
+  createCourseEnrollment: async (enrollmentData) => {
+    try {
+      const response = await axiosInstance.post(API_ENDPOINTS.COURSE_ENROLLMENT_CREATE, enrollmentData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error creating course enrollment:', error.response?.data || error);
+      return { success: false, error: error.response?.data || 'Failed to create enrollment' };
+    }
+  },
+
+  cancelCourseEnrollment: async (enrollmentId, reason) => {
+    try {
+      const response = await axiosInstance.post(`${API_ENDPOINTS.BUSINESS_COURSE_ENROLLMENTS}${enrollmentId}/cancel/`, { reason });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(`Error canceling enrollment ${enrollmentId}:`, error.response?.data || error);
+      return { success: false, error: error.response?.data || 'Failed to cancel enrollment' };
+    }
+  },
 };
