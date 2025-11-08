@@ -492,6 +492,11 @@ const SettingsModal = ({ open, onClose }) => {
       initial: { opacity: 0, y: 10 },
       animate: { opacity: 1, y: 0 },
       transition: { duration: 0.3 },
+      style: {
+        transform: "translateZ(0)",
+        backfaceVisibility: "hidden",
+        willChange: "transform",
+      },
     };
     switch (selectedMenu) {
       case "profile":

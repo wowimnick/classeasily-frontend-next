@@ -422,37 +422,10 @@ const StyledDatePicker = styled(DatePicker)``;
 const StyledRangePicker = styled(DatePicker.RangePicker)``;
 const StyledInputNumber = styled(InputNumber)``;
 
-const StyledSwitch = styled(Switch)`
-  &.ant-switch-checked {
-    background: #ff385c;
-  }
-`;
-
 const DaysContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
   gap: 8px;
-`;
-
-const DayButton = styled(Button)`
-  height: 40px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 0 8px;
-`;
-
-const SwitchContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 0;
-`;
-
-const SwitchLabel = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 `;
 
 const TimeListContainer = styled.div`
@@ -543,10 +516,8 @@ const ScheduleEditDrawer = ({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const isCourse = optionType === "Full Course";
   const isSingleSession = optionType === "Single Session";
 
-  const singleFormDay = Form.useWatch("day", form);
   const bulkFormDays = Form.useWatch("days_of_week", bulkForm) || [];
 
   useEffect(() => {
@@ -567,23 +538,10 @@ const ScheduleEditDrawer = ({
         maxParticipants: editingSchedule.maxParticipants,
         duration: editingSchedule.duration,
         minParticipants: editingSchedule.minParticipants || 1,
-        day: editingSchedule.day || null,
       };
       if (editingSchedule.time)
         valuesToSet.time = dayjs(editingSchedule.time, "HH:mm");
-      if (isSingleSession) {
-        if (editingSchedule.date)
-          valuesToSet.date = dayjs(editingSchedule.date);
-      } else if (isCourse) {
-        if (editingSchedule.start_date && editingSchedule.end_date) {
-          valuesToSet.course_dates = [
-            dayjs(editingSchedule.start_date),
-            dayjs(editingSchedule.end_date),
-          ];
-        }
-        valuesToSet.allow_late_enrollment =
-          !!editingSchedule.allow_late_enrollment;
-      }
+      if (editingSchedule.date) valuesToSet.date = dayjs(editingSchedule.date);
       form.setFieldsValue(valuesToSet);
     } else {
       const defaultValues = {
@@ -592,17 +550,9 @@ const ScheduleEditDrawer = ({
         maxParticipants: 10,
         minParticipants: 1,
         time: dayjs("09:00", "HH:mm"),
+        date: dayjs(),
       };
-      form.setFieldsValue(
-        isCourse
-          ? {
-              ...defaultValues,
-              course_dates: [dayjs(), dayjs().add(4, "week")],
-              allow_late_enrollment: false,
-              day: null,
-            }
-          : { ...defaultValues, date: dayjs() }
-      );
+      form.setFieldsValue(defaultValues);
       bulkForm.setFieldsValue({
         times: [dayjs("09:00", "HH:mm")],
         days_of_week: [],
@@ -615,7 +565,7 @@ const ScheduleEditDrawer = ({
         },
       });
     }
-  }, [editingSchedule, open, isCourse, isSingleSession, form, bulkForm]);
+  }, [editingSchedule, open, isSingleSession, form, bulkForm]);
 
   const handleSubmit = async () => {
     try {
@@ -630,21 +580,9 @@ const ScheduleEditDrawer = ({
         price: parseFloat(values.price).toFixed(2),
         maxParticipants: values.maxParticipants,
         minParticipants: values.minParticipants || 1,
+        date: values.date.format("YYYY-MM-DD"),
       };
 
-      if (isSingleSession) {
-        scheduleData.date = values.date.format("YYYY-MM-DD");
-      } else if (isCourse) {
-        scheduleData.day = values.day;
-        scheduleData.start_date = values.course_dates[0].format("YYYY-MM-DD");
-        scheduleData.end_date = values.course_dates[1].format("YYYY-MM-DD");
-        scheduleData.allow_late_enrollment =
-          values.allow_late_enrollment || false;
-      } else {
-        message.error("Invalid class type configuration.");
-        setIsLoading(false);
-        return;
-      }
       await onSubmit(editingSchedule ? "edit" : "add", scheduleData);
     } catch (errorInfo) {
       if (errorInfo?.errorFields)
@@ -701,8 +639,6 @@ const ScheduleEditDrawer = ({
           <InfoContent>
             {editingSchedule
               ? "You are editing an existing schedule. Changes will affect this schedule only."
-              : isCourse
-              ? "Create a recurring course that takes place on the same day each week for a set period."
               : "Create a single, one-time session for a specific date."}
           </InfoContent>
         </InfoBox>
@@ -729,81 +665,28 @@ const ScheduleEditDrawer = ({
         <SectionDivider>
           <span>
             <Calendar />
-            {isCourse ? "Course Details" : "Session Details"}
+            Session Details
           </span>
         </SectionDivider>
 
-        {isCourse ? (
-          <>
-            <FormGroup>
-              <FormLabel>
-                <ListChecks /> Weekly Class Day
-              </FormLabel>
-              <HelpText>
-                Select the day of the week this class will occur.
-              </HelpText>
-              <NoMarginFormItem
-                name="day"
-                rules={[{ required: true, message: "Please select a day." }]}
-              >
-                <DaysContainer>
-                  {Object.entries(dayLabels).map(([key, label]) => (
-                    <DayButton
-                      key={key}
-                      type={singleFormDay === key ? "primary" : "default"}
-                      onClick={() =>
-                        form.setFieldsValue({
-                          day: singleFormDay === key ? null : key,
-                        })
-                      }
-                      disabled={isLoading}
-                    >
-                      {label}
-                    </DayButton>
-                  ))}
-                </DaysContainer>
-              </NoMarginFormItem>
-            </FormGroup>
-            <FormGroup>
-              <FormLabel>
-                <ChevronsRight /> Course Start & End Dates
-              </FormLabel>
-              <HelpText>
-                Pick the entire date range for the course. Sessions will only be
-                created on the selected 'Weekly Class Day' within this range.
-              </HelpText>
-              <NoMarginFormItem
-                name="course_dates"
-                rules={[{ required: true, message: "Select a date range." }]}
-              >
-                <StyledRangePicker
-                  style={{ width: "100%" }}
-                  disabled={isLoading}
-                  disabledDate={(c) => c && c < dayjs().startOf("day")}
-                />
-              </NoMarginFormItem>
-            </FormGroup>
-          </>
-        ) : (
-          <FormGroup>
-            <FormLabel>
-              <Calendar /> Session Date
-            </FormLabel>
-            <HelpText>
-              Pick the specific date this single session will happen.
-            </HelpText>
-            <NoMarginFormItem
-              name="date"
-              rules={[{ required: true, message: "Please select a date." }]}
-            >
-              <StyledDatePicker
-                style={{ width: "100%" }}
-                disabled={isLoading}
-                disabledDate={(c) => c && c < dayjs().startOf("day")}
-              />
-            </NoMarginFormItem>
-          </FormGroup>
-        )}
+        <FormGroup>
+          <FormLabel>
+            <Calendar /> Session Date
+          </FormLabel>
+          <HelpText>
+            Pick the specific date this single session will happen.
+          </HelpText>
+          <NoMarginFormItem
+            name="date"
+            rules={[{ required: true, message: "Please select a date." }]}
+          >
+            <StyledDatePicker
+              style={{ width: "100%" }}
+              disabled={isLoading}
+              disabledDate={(c) => c && c < dayjs().startOf("day")}
+            />
+          </NoMarginFormItem>
+        </FormGroup>
 
         <FormGrid>
           <FormGroup>
@@ -936,31 +819,6 @@ const ScheduleEditDrawer = ({
             />
           </NoMarginFormItem>
         </FormGroup>
-
-        {isCourse && (
-          <FormGroup>
-            <SwitchContainer>
-              <SwitchLabel>
-                <FormLabel style={{ marginBottom: 0 }}>
-                  <Tag /> Allow Late Enrollment
-                  <Tooltip title="If enabled, students can join this course even after it has already started. Their price may be prorated depending on your business settings.">
-                    <HelpCircle size={14} className="tooltip-icon" />
-                  </Tooltip>
-                </FormLabel>
-                <HelpText style={{ margin: 0, paddingLeft: "24px" }}>
-                  Let students join after the course start date.
-                </HelpText>
-              </SwitchLabel>
-              <NoMarginFormItem
-                name="allow_late_enrollment"
-                valuePropName="checked"
-                noStyle
-              >
-                <StyledSwitch disabled={isLoading} />
-              </NoMarginFormItem>
-            </SwitchContainer>
-          </FormGroup>
-        )}
       </Form>
     </FormContainer>
   );

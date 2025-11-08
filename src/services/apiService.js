@@ -60,7 +60,7 @@ export const API_ENDPOINTS = {
   BUSINESS_COURSES: '/business/courses/',
   BUSINESS_COURSE_ENROLLMENTS: '/business/course-enrollments/',
   PUBLIC_COURSES: '/courses/',
-  COURSE_ENROLLMENT_CREATE: '/api/bookings/course/',
+  COURSE_ENROLLMENT_CREATE: '/bookings/course/',
 
   // Support & Chat
   SUPPORT_TICKETS: '/support-tickets/',
@@ -1856,10 +1856,22 @@ export const courseService = {
     }
   },
 
+  getCourseSchedules: async (classId) => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.BUSINESS_SCHEDULES, {
+        params: { class_id: classId, booking_type: 'Full Course' }
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(`Error fetching course schedules for class ${classId}:`, error.response?.data || error);
+      return { success: false, error: 'Failed to fetch course schedules' };
+    }
+  },
+
   // Student enrollment
   createCourseEnrollment: async (enrollmentData) => {
     try {
-      const response = await axiosInstance.post(API_ENDPOINTS.COURSE_ENROLLMENT_CREATE, enrollmentData);
+      const response = await axiosInstance.post(API_ENDPOINTS.STUDENT_COURSE_ENROLLMENTS, enrollmentData);
       return { success: true, data: response.data };
     } catch (error) {
       console.error('Error creating course enrollment:', error.response?.data || error);

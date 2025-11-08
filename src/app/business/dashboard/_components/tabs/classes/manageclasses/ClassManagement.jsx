@@ -1792,6 +1792,7 @@ function ClassManagementContent(props) {
       title: "Class",
       dataIndex: "title",
       key: "class",
+      width: 400,
       render: (text, record) => {
         const categoryDisplay = [record.category_name, record.subcategory_name]
           .filter(Boolean)
@@ -1848,7 +1849,7 @@ function ClassManagementContent(props) {
     {
       title: "Schedule",
       key: "schedule",
-      width: 220,
+      width: 350,
       render: (_, record) => (
         <Text type="secondary" style={{ fontSize: "13px" }}>
           {formatScheduleInfo(record)}
