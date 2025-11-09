@@ -214,7 +214,7 @@ const getIconSrc = (categorySlug) => {
     "getting-started": "https://cdn.lordicon.com/upjgggre.json",
     "classes-and-scheduling": "https://cdn.lordicon.com/abfverha.json",
     finances: "https://cdn.lordicon.com/yycecovd.json",
-    "website-integration": "https://cdn.lordicon.com/nqlwocyk.json",
+    // "website-integration": "https://cdn.lordicon.com/nqlwocyk.json",
     "team-and-community": "https://cdn.lordicon.com/cniwvohj.json",
     "bookings-and-students": "https://cdn.lordicon.com/meaqueth.json",
     "marketing-and-promotions": "https://cdn.lordicon.com/abgykmtd.json",
