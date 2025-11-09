@@ -36,6 +36,8 @@ import {
   CalendarDays,
   TrendingUp,
   Repeat,
+  Edit3,
+  Filter,
 } from "lucide-react";
 import dayjs from "dayjs";
 import styled from "styled-components";
@@ -509,7 +511,7 @@ const DetailedMetricsRow = styled.div`
   flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 24px;
-  background: #f8fafc;
+  background: #ffffffff;
   padding: 20px;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
@@ -620,6 +622,14 @@ const StepContent = styled.div`
   margin: 0 auto;
 `;
 
+const FilterBar = styled.div`
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+`;
+
 // ============= MAIN COMPONENT =============
 
 const CourseScheduleDrawer = ({ open, onClose, classData }) => {
@@ -631,6 +641,10 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
   const [submitting, setSubmitting] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
+  const [editingSchedule, setEditingSchedule] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
   const [formData, setFormData] = useState({
     name: "",
     startDate: null,
@@ -659,6 +673,9 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
       setView("list");
       setCurrentStep(0);
       setSelectedSchedule(null);
+      setEditingSchedule(null);
+      setSearchTerm("");
+      setStatusFilter("all");
       form.resetFields();
       setFormData({
         name: "",
@@ -695,7 +712,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
           if (!acc[groupKey]) {
             acc[groupKey] = {
               ...schedule,
-              ids: [schedule.id], // Store original IDs for deletion
+              ids: [schedule.id], // Store original IDs for deletion/editing
               day: [schedule.day], // Start with an array of days
             };
           } else {
@@ -917,40 +934,72 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
       if (!courseOption)
         throw new Error("Could not find a valid course option for this class.");
 
-      const creationPromises = formData.selectedDays.map((day) => {
+      if (editingSchedule) {
+        // --- EDIT LOGIC ---
+        const firstScheduleId = editingSchedule.ids[0];
         const payload = {
-          option: courseOption.optionId,
+          // option is not changed
           name: formData.name,
           start_date: formData.startDate.format("YYYY-MM-DD"),
           end_date: formData.endDate.format("YYYY-MM-DD"),
-          day: day.substring(0, 3),
+          // day is complex for multi-day, backend must handle this
           time: formData.time.format("HH:mm:ss"),
           duration: formData.duration,
           maxParticipants: formData.maxParticipants,
           price: parseFloat(formData.price),
-          date: null,
         };
-        return scheduleService.createSchedule(payload);
-      });
-
-      const results = await Promise.all(creationPromises);
-      const successfulCreations = results.filter((res) => res.success).length;
-
-      if (successfulCreations > 0) {
-        message.success(
-          `${successfulCreations} course schedule(s) created successfully!`
+        // This assumes the backend can update the whole group from one ID
+        const result = await scheduleService.updateSchedule(
+          firstScheduleId,
+          payload
         );
-        await fetchSchedules();
-        setView("list");
+        if (result?.success) {
+          message.success("Course schedule updated successfully!");
+          await fetchSchedules();
+          setView("list");
+        } else {
+          throw new Error("Failed to update course schedule.");
+        }
+      } else {
+        // --- CREATE LOGIC ---
+        const creationPromises = formData.selectedDays.map((day) => {
+          const payload = {
+            option: courseOption.optionId,
+            name: formData.name,
+            start_date: formData.startDate.format("YYYY-MM-DD"),
+            end_date: formData.endDate.format("YYYY-MM-DD"),
+            day: day.substring(0, 3),
+            time: formData.time.format("HH:mm:ss"),
+            duration: formData.duration,
+            maxParticipants: formData.maxParticipants,
+            price: parseFloat(formData.price),
+          };
+          return scheduleService.createSchedule(payload);
+        });
+
+        const results = await Promise.all(creationPromises);
+        const successfulCreations = results.filter((res) => res.success).length;
+
+        if (successfulCreations > 0) {
+          message.success(
+            `${successfulCreations} course schedule(s) created successfully!`
+          );
+          await fetchSchedules();
+          setView("list");
+        }
+        if (successfulCreations < results.length)
+          throw new Error("Some schedules could not be created.");
       }
-      if (successfulCreations < results.length)
-        throw new Error("Some schedules could not be created.");
     } catch (error) {
       message.error(
-        error.message || "Failed to create one or more course schedules"
+        error.message ||
+          `Failed to ${
+            editingSchedule ? "update" : "create"
+          } course schedule(s)`
       );
     } finally {
       setSubmitting(false);
+      setEditingSchedule(null);
     }
   };
 
@@ -980,6 +1029,72 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
       message.error(error.message || "Failed to delete schedule");
     }
   };
+
+  const handleEditClick = (e, schedule) => {
+    e.stopPropagation();
+    setEditingSchedule(schedule);
+    const startDate = dayjs(schedule.start_date);
+    const endDate = dayjs(schedule.end_date);
+    const time = dayjs(schedule.time, "HH:mm:ss");
+
+    const dayMapReverse = {
+      Mon: "Monday",
+      Tue: "Tuesday",
+      Wed: "Wednesday",
+      Thu: "Thursday",
+      Fri: "Friday",
+      Sat: "Saturday",
+      Sun: "Sunday",
+    };
+    const selectedDays = schedule.day.split(", ").map((d) => dayMapReverse[d]);
+
+    const formDataForEdit = {
+      name: schedule.name,
+      startDate: startDate,
+      endDate: endDate,
+      selectedDays: selectedDays,
+      time: time,
+      duration: schedule.duration,
+      maxParticipants: schedule.maxParticipants,
+      price: schedule.price,
+      totalSessions: calculateSessionCount(startDate, endDate, selectedDays),
+    };
+
+    setFormData(formDataForEdit);
+    form.setFieldsValue({
+      name: schedule.name,
+      dateRange: [startDate, endDate],
+      selectedDays: selectedDays,
+      time: time,
+      duration: schedule.duration,
+      price: schedule.price,
+      maxParticipants: schedule.maxParticipants,
+    });
+    setView("create");
+  };
+
+  const filteredSchedules = useMemo(() => {
+    if (!schedules) return [];
+    const now = dayjs();
+    return schedules.filter((s) => {
+      const nameMatch = s.name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const startDate = dayjs(s.start_date);
+      const endDate = dayjs(s.end_date);
+      let statusMatch = true;
+      if (statusFilter === "upcoming") {
+        statusMatch = startDate.isAfter(now);
+      } else if (statusFilter === "ongoing") {
+        statusMatch =
+          (now.isAfter(startDate) || now.isSame(startDate, "day")) &&
+          (now.isBefore(endDate) || now.isSame(endDate, "day"));
+      } else if (statusFilter === "completed") {
+        statusMatch = endDate.isBefore(now);
+      }
+      return nameMatch && statusMatch;
+    });
+  }, [schedules, searchTerm, statusFilter]);
 
   const renderStepContent = () => {
     const stepVariants = {
@@ -1040,7 +1155,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
               </FormLabel>
               <HelpText>
                 <Info size={14} />
-                Select the start and end dates
+                Select the start and end dates for the entire course.
               </HelpText>
               <Form.Item
                 name="dateRange"
@@ -1053,6 +1168,9 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                   size="large"
                   disabledDate={(c) => c && c < dayjs().startOf("day")}
                   onChange={handleDateRangeChange}
+                  disabled={
+                    editingSchedule && editingSchedule.has_confirmed_bookings
+                  }
                 />
               </Form.Item>
             </FormGroup>
@@ -1063,7 +1181,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
               </FormLabel>
               <HelpText>
                 <Info size={14} />
-                Select which days the course will meet
+                Select which days of the week the course will meet.
               </HelpText>
               <Form.Item
                 name="selectedDays"
@@ -1081,6 +1199,10 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                           : "default"
                       }
                       onClick={() => handleDayToggle(d)}
+                      disabled={
+                        editingSchedule &&
+                        editingSchedule.has_confirmed_bookings
+                      }
                     >
                       {d.substring(0, 3)}
                     </DayButton>
@@ -1109,6 +1231,9 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                     use12Hours
                     size="large"
                     minuteStep={15}
+                    disabled={
+                      editingSchedule && editingSchedule.has_confirmed_bookings
+                    }
                   />
                 </Form.Item>
               </FormGroup>
@@ -1150,7 +1275,10 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
           >
             <StepHeader>
               <StepTitle level={3}>Pricing & Capacity</StepTitle>
-              <StepDescription>Set price and participants</StepDescription>
+              <StepDescription>
+                Set the total price for the course and the maximum number of
+                participants.
+              </StepDescription>
             </StepHeader>
             <FormGroup>
               <FormLabel>
@@ -1159,7 +1287,8 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
               </FormLabel>
               <HelpText>
                 <Info size={14} />
-                Total price for all {formData.totalSessions} sessions
+                This is the total price per participant for all{" "}
+                {formData.totalSessions} sessions.
               </HelpText>
               <Form.Item
                 name="price"
@@ -1189,7 +1318,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
               </FormLabel>
               <HelpText>
                 <Info size={14} />
-                Max students per course
+                The maximum number of students that can enroll in this course.
               </HelpText>
               <Form.Item
                 name="maxParticipants"
@@ -1218,7 +1347,9 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
           >
             <StepHeader>
               <StepTitle level={3}>Review & Confirm</StepTitle>
-              <StepDescription>Review details before creating</StepDescription>
+              <StepDescription>
+                Please review the details below before creating the schedule.
+              </StepDescription>
             </StepHeader>
             <ReviewSection>
               <InfoRow>
@@ -1284,6 +1415,26 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
 
   const renderList = () => (
     <ContentPadding>
+      <FilterBar>
+        <StyledInput
+          placeholder="Search by name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ flex: 1, minWidth: 200 }}
+          allowClear
+        />
+        <StyledSelect
+          value={statusFilter}
+          onChange={(value) => setStatusFilter(value)}
+          style={{ width: 150 }}
+        >
+          <Option value="all">All Statuses</Option>
+          <Option value="upcoming">Upcoming</Option>
+          <Option value="ongoing">Ongoing</Option>
+          <Option value="completed">Completed</Option>
+        </StyledSelect>
+      </FilterBar>
+
       {loading ? (
         <div
           style={{
@@ -1295,9 +1446,9 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
         >
           <GlobalLoaderWithoutInlineStyles />
         </div>
-      ) : schedules.length > 0 ? (
+      ) : filteredSchedules.length > 0 ? (
         <ScheduleList>
-          {schedules.map((scheduleGroup) => {
+          {filteredSchedules.map((scheduleGroup) => {
             const s = scheduleGroup;
             const selectedDays = s.day.split(", ");
             const startDate = dayjs(s.start_date);
@@ -1333,12 +1484,29 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                   <ScheduleActions>
                     <Tooltip
                       title={
-                        s.has_confirmed_bookings ? "Cannot delete" : "Delete"
+                        s.has_confirmed_bookings
+                          ? "Cannot edit with active bookings"
+                          : "Edit"
+                      }
+                    >
+                      <Button
+                        type="text"
+                        icon={<Edit3 size={14} />}
+                        disabled={s.has_confirmed_bookings}
+                        onClick={(e) => handleEditClick(e, s)}
+                        style={{ height: 32, width: 32 }}
+                      />
+                    </Tooltip>
+                    <Tooltip
+                      title={
+                        s.has_confirmed_bookings
+                          ? "Cannot delete with active bookings"
+                          : "Delete"
                       }
                     >
                       <Popconfirm
                         title="Delete this course schedule?"
-                        description="This will remove all recurring sessions for this course."
+                        description="This will remove all recurring sessions for this course. This action cannot be undone."
                         onConfirm={(e) => {
                           e.stopPropagation();
                           handleDeleteGroup(s);
@@ -1432,6 +1600,16 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
             );
           })}
         </ScheduleList>
+      ) : schedules.length > 0 ? (
+        <Empty
+          description={
+            <span>
+              No course schedules match your filters.
+              <br />
+              Try adjusting your search.
+            </span>
+          }
+        />
       ) : (
         <Empty description={<span>No course schedules yet</span>} />
       )}
@@ -1631,6 +1809,9 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
         </Button>
       );
 
+      const submitButtonText = editingSchedule
+        ? "Update Course"
+        : "Create Course";
       const createButton = (
         <Button
           key="create"
@@ -1639,7 +1820,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
           onClick={handleSubmit}
           loading={submitting}
         >
-          Create Course
+          {submitButtonText}
         </Button>
       );
 
@@ -1706,7 +1887,12 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     </>
   );
 
-  const title = (
+  const title = editingSchedule ? (
+    <Space>
+      <Edit3 size={20} />
+      <span>Edit Course Schedule - {classData?.title}</span>
+    </Space>
+  ) : (
     <Space>
       <BookOpen size={20} />
       <span>Course Schedules - {classData?.title}</span>
