@@ -8,7 +8,7 @@ import { theme as antdTheme } from "antd";
 import SideMenu from "./SideMenu";
 import BusinessHeader from "./BusinessHeader";
 import BusinessSetupGuide from "./BusinessSetupGuide";
-import { businessService } from "@/services/apiService";
+import { DashboardProvider, useDashboard } from "./DashboardContext";
 
 // Import tab components
 import Overview from "./tabs/overview/Overview";
@@ -74,9 +74,21 @@ const MainContent = styled.main`
   }
 `;
 
-export default function DashboardClient({ params }) {
+// Inner component that uses the context
+function DashboardClientInner({ params }) {
   const { token } = antdTheme.useToken();
   const router = useRouter();
+
+  // Get data from context
+  const {
+    overviewData,
+    overviewLoading,
+    overviewError,
+    setupGuideInitialStatus,
+    allSetupStepsCompleteActual,
+    displaySetupGuide,
+    fetchOverviewData,
+  } = useDashboard();
 
   // Extract active key from params
   const getActiveKeyFromParams = useCallback(() => {
@@ -88,60 +100,9 @@ export default function DashboardClient({ params }) {
   }, [params]);
 
   const [selectedMenu, setSelectedMenu] = useState(getActiveKeyFromParams());
-  const [overviewData, setOverviewData] = useState(null);
-  const [overviewLoading, setOverviewLoading] = useState(true);
-  const [overviewError, setOverviewError] = useState(null);
-  const [setupGuideInitialStatus, setSetupGuideInitialStatus] = useState(null);
-  const [allSetupStepsCompleteActual, setAllSetupStepsCompleteActual] =
-    useState(false);
-  const [displaySetupGuide, setDisplaySetupGuide] = useState(false);
 
   const sideMenuRef = useRef(null);
   const mainContentRef = useRef(null);
-
-  const fetchOverviewData = useCallback(async () => {
-    setOverviewLoading(true);
-    setOverviewError(null);
-    try {
-      const response = await businessService.fetchMyBusinessOverview();
-      if (response.success && response.data) {
-        setOverviewData(response.data);
-
-        const setupProgress = response.data.setup_progress;
-        if (setupProgress) {
-          const allActuallyComplete =
-            setupProgress.is_stripe_connected &&
-            setupProgress.is_profile_complete &&
-            setupProgress.has_created_class &&
-            setupProgress.has_class_options &&
-            setupProgress.has_schedules;
-
-          setAllSetupStepsCompleteActual(allActuallyComplete);
-          setSetupGuideInitialStatus(setupProgress);
-          setDisplaySetupGuide(
-            DEBUG_ALWAYS_SHOW_SETUP_GUIDE || !allActuallyComplete
-          );
-        } else {
-          setAllSetupStepsCompleteActual(false);
-          setSetupGuideInitialStatus(null);
-          setDisplaySetupGuide(DEBUG_ALWAYS_SHOW_SETUP_GUIDE);
-        }
-      } else {
-        setOverviewError(response.error || "Failed to fetch overview data.");
-        setDisplaySetupGuide(DEBUG_ALWAYS_SHOW_SETUP_GUIDE);
-      }
-    } catch (error) {
-      console.error("Error fetching overview data:", error);
-      setOverviewError("An unexpected error occurred.");
-      setDisplaySetupGuide(DEBUG_ALWAYS_SHOW_SETUP_GUIDE);
-    } finally {
-      setOverviewLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchOverviewData();
-  }, [fetchOverviewData]);
 
   // Update selected menu when params change
   useEffect(() => {
@@ -220,11 +181,40 @@ export default function DashboardClient({ params }) {
       case "widget":
         return <WidgetCustomizer />;
       case "settings":
-        router.push("/business/dashboard/overview");
-        return null;
+        // Settings handled by SideMenu drawer - show overview
+        return (
+          <Overview
+            overviewData={overviewData}
+            loading={overviewLoading}
+            error={overviewError}
+            onDataRefresh={fetchOverviewData}
+          />
+        );
+      // Parent menu keys (from SideMenu) that shouldn't trigger navigation
+      case "management":
+      case "financials":
+      case "growth":
+      case "platform":
+        // Show overview while submenu is open/being selected
+        return (
+          <Overview
+            overviewData={overviewData}
+            loading={overviewLoading}
+            error={overviewError}
+            onDataRefresh={fetchOverviewData}
+          />
+        );
       default:
-        router.push("/business/dashboard/overview");
-        return null;
+        // Don't redirect in default case - just show overview to avoid loops
+        console.warn("Unknown route:", selectedMenu);
+        return (
+          <Overview
+            overviewData={overviewData}
+            loading={overviewLoading}
+            error={overviewError}
+            onDataRefresh={fetchOverviewData}
+          />
+        );
     }
   };
 
@@ -253,5 +243,14 @@ export default function DashboardClient({ params }) {
         />
       )}
     </PageLayout>
+  );
+}
+
+// Main component that provides the context
+export default function DashboardClient({ params }) {
+  return (
+    <DashboardProvider>
+      <DashboardClientInner params={params} />
+    </DashboardProvider>
   );
 }
