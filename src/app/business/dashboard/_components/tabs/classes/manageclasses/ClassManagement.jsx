@@ -213,6 +213,8 @@ const Controls = styled.div`
   gap: 16px;
   margin-bottom: 24px;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 12px;
@@ -278,6 +280,52 @@ const StyledSearchInput = styled(Input)`
   }
 `;
 
+const StyledSelect = styled(Select)`
+  .ant-select-selector {
+    height: 44px !important;
+    border-radius: 12px !important;
+    background: white !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 11px !important;
+  }
+
+  .ant-select-selection-item {
+    display: flex !important;
+    align-items: center !important;
+    font-size: 15px !important;
+    line-height: 44px !important;
+  }
+
+  .ant-select-selection-placeholder {
+    line-height: 44px !important;
+  }
+
+  &:hover .ant-select-selector {
+    border-color: #ff385c !important;
+  }
+
+  &.ant-select-focused .ant-select-selector {
+    border-color: #ff385c !important;
+    box-shadow: 0 0 0 3px rgba(255, 56, 92, 0.1) !important;
+  }
+
+  @media (max-width: 768px) {
+    width: 100% !important;
+
+    .ant-select-selector {
+      height: 40px !important;
+    }
+
+    .ant-select-selection-item {
+      line-height: 40px !important;
+    }
+  }
+`;
+
 const ActionButton = styled(Button)`
   height: 44px;
   border-radius: 12px;
@@ -329,6 +377,69 @@ const CategoryTag = styled(Tag)`
     width: 12px;
     height: 12px;
   }
+`;
+
+const CustomSwitch = styled.div`
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background-color: ${(props) => (props.$checked ? "#10b981" : "#e5e7eb")};
+  border-radius: 12px;
+  cursor: ${(props) => (props.$disabled ? "not-allowed" : "pointer")};
+  transition: background-color 0.3s ease;
+  opacity: ${(props) => (props.$disabled ? 0.5 : 1)};
+
+  &:hover {
+    background-color: ${(props) =>
+      props.$disabled
+        ? props.$checked
+          ? "#10b981"
+          : "#e5e7eb"
+        : props.$checked
+        ? "#059669"
+        : "#d1d5db"};
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: ${(props) => (props.$checked ? "22px" : "2px")};
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border-radius: 50%;
+    transition: left 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  ${(props) =>
+    props.$loading &&
+    css`
+      &::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+      }
+
+      &::after {
+        opacity: 0.6;
+      }
+
+      @keyframes spin {
+        to {
+          transform: translate(-50%, -50%) rotate(360deg);
+        }
+      }
+    `}
 `;
 
 const StyledScheduleDrawerOverlay = styled(VaulDrawer.Overlay)`
@@ -538,330 +649,6 @@ const StyledMenu = styled(Menu)`
   }
 `;
 
-const MobileDragHandle = styled(motion.div)`
-  width: 36px;
-  height: 4px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 2px;
-  margin: 12px auto 0;
-  cursor: grab;
-
-  &:active {
-    cursor: grabbing;
-  }
-
-  @media (min-width: 1025px) {
-    display: none;
-  }
-`;
-
-const DesktopScheduleModal = styled(Modal)`
-  .ant-modal-content {
-    border-radius: 16px;
-    overflow: hidden;
-    padding: 0;
-  }
-  .ant-modal-header {
-    border-radius: 16px 16px 0 0;
-    padding: 20px 24px;
-  }
-  .ant-modal-footer {
-    border-top: 1px solid #f0f0f0;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-    padding: 12px 24px;
-    margin: 0;
-  }
-  .ant-modal-title {
-    font-weight: 600;
-    font-size: 18px;
-  }
-  .ant-modal-body {
-    padding: 0;
-    background-color: #f8fafc;
-    height: 80vh;
-    max-height: 800px;
-    display: flex;
-    flex-direction: column;
-  }
-
-  @media (max-width: 1024px) {
-    display: none;
-  }
-`;
-
-const MobileScheduleHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  border-bottom: 1px solid #f0f0f0;
-  background-color: white;
-  flex-shrink: 0;
-`;
-
-const MobileScheduleTitle = styled(Title)`
-  &.ant-typography {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0 !important;
-    color: #1f2937;
-  }
-`;
-
-const MobileCloseButton = styled(Button)`
-  border: none;
-  background: none;
-  padding: 8px;
-  height: auto;
-  color: #6b7280;
-
-  &:hover {
-    background: #f3f4f6;
-  }
-`;
-
-const MobileScheduleFooter = styled.div`
-  padding: 16px 24px;
-  border-top: 1px solid #f0f0f0;
-  background-color: white;
-  flex-shrink: 0;
-`;
-
-const ModalLayout = styled.div`
-  display: flex;
-  height: 100%;
-  width: 100%;
-  flex: 1;
-  flex-direction: row-reverse;
-  overflow: hidden;
-`;
-
-const CalendarPanel = styled.div`
-  flex: 3;
-  background: white;
-  padding: 20px;
-  border-right: 1px solid #f0f0f0;
-  display: flex;
-  flex-direction: column;
-`;
-
-const ScheduleListPanel = styled.div`
-  flex: 2;
-  display: flex;
-  flex-direction: column;
-  overflow-y: hidden;
-  background-color: #f8fafc;
-`;
-
-const CalendarHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding: 0 4px;
-`;
-
-const MonthTitle = styled.h4`
-  font-weight: 600;
-  font-size: 16px;
-  margin: 0;
-  text-align: center;
-`;
-
-const NavButton = styled.button`
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #64748b;
-  transition: all 0.2s ease;
-  &:hover {
-    background: #f1f5f9;
-  }
-`;
-
-const DaysGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-auto-rows: 1fr;
-  gap: 4px;
-  flex: 1;
-`;
-
-const WeekDay = styled.div`
-  text-align: center;
-  font-weight: 500;
-  font-size: 12px;
-  color: #94a3b8;
-  padding-bottom: 8px;
-`;
-
-const DayCell = styled.div`
-  border: 1px solid #f1f5f9;
-  border-radius: 8px;
-  background: transparent;
-  cursor: pointer;
-  padding: 8px;
-  position: relative;
-  transition: all 0.2s ease;
-  min-height: 100px;
-  display: flex;
-  flex-direction: column;
-  ${(props) =>
-    !props.$isInMonth && `background-color: #f8fafc; pointer-events: none;`}
-  ${(props) =>
-    props.$isSelected &&
-    `border-color: ${theme.token.colorPrimary}; background-color: #fff8f9; box-shadow: 0 0 0 2px ${theme.token.colorPrimary}40;`}
-  &:hover {
-    border-color: #e2e8f0;
-  }
-`;
-
-const DayHeader = styled.div`
-  font-weight: 500;
-  font-size: 13px;
-  color: ${(props) => (props.$isPast ? "#94a3b8" : "#1f2937")};
-  margin-bottom: 4px;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  ${(props) =>
-    props.$isToday &&
-    `background-color: ${theme.token.colorPrimary}; color: white; border-radius: 50%;`}
-`;
-
-const SchedulePreviewContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow-y: auto;
-  flex: 1;
-`;
-
-const CalendarSchedulePreview = styled.div`
-  background-color: #eff6ff;
-  color: #1d4ed8;
-  border-radius: 4px;
-  padding: 2px 6px;
-  font-size: 11px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
-const MoreSchedulesIndicator = styled.div`
-  font-size: 11px;
-  color: #64748b;
-  font-weight: 500;
-  text-align: center;
-  margin-top: 4px;
-`;
-
-const ScheduleCard = styled(motion.div)`
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  transition: all 0.2s ease;
-  position: relative;
-  ${(props) => props.$isPast && `opacity: 0.6;`}
-`;
-
-const CardTop = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-`;
-
-const CardInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  .time {
-    font-size: 16px;
-    font-weight: 600;
-    color: #1f2937;
-  }
-  .date {
-    font-size: 13px;
-    font-weight: 500;
-    color: #64748b;
-  }
-  .group {
-    font-size: 12px;
-    color: #475569;
-    background: #f1f5f9;
-    padding: 2px 6px;
-    border-radius: 6px;
-    width: fit-content;
-  }
-`;
-
-const CardActions = styled(Space)`
-  flex-shrink: 0;
-  .ant-btn {
-    border-radius: 8px;
-  }
-`;
-
-const CardBottom = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 12px;
-  border-top: 1px solid #f1f5f9;
-  font-size: 13px;
-  color: #475569;
-`;
-
-const DropdownHeader = styled(motion.div)`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  padding: 16px;
-  cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
-  background: white;
-  &:hover {
-    background: #fafafa;
-  }
-`;
-
-const DropdownIcon = styled(motion.div)`
-  display: inline-flex;
-  margin-left: 8px;
-`;
-
-const DropdownContent = styled(motion.div)`
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  background: #f8fafc;
-`;
-
-const ScheduleListContainer = styled(motion.div)`
-  flex-grow: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background-color: #f8fafc;
-`;
-
 const EmptyStateContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -990,36 +777,6 @@ const CloseButton = styled(Button)`
   }
 `;
 
-const ModalControls = styled.div`
-  padding: 16px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  border-bottom: 1px solid #f0f0f0;
-  flex-shrink: 0;
-  background-color: white;
-`;
-
-const ControlRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-`;
-
-const overlayVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.3 } },
-  exit: { opacity: 0, transition: { duration: 0.2 } },
-};
-
-const mobileScheduleVariants = {
-  hidden: { y: "100%" },
-  visible: { y: 0, transition: { duration: 0.4, ease: [0.25, 1, 0.5, 1] } },
-  exit: { y: "100%", transition: { duration: 0.3, ease: [0.5, 0, 0.75, 0] } },
-};
-
 function ClassManagementContent(props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -1034,12 +791,7 @@ function ClassManagementContent(props) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [editDrawerVisible, setEditDrawerVisible] = useState(false);
   const [createDrawerVisible, setCreateDrawerVisible] = useState(false);
-  const [scheduleEditModal, setScheduleEditModal] = useState({
-    visible: false,
-    selectedClass: null,
-    editingSchedule: null,
-  });
-  const [schedulesModal, setSchedulesModal] = useState({
+  const [scheduleDrawer, setScheduleDrawer] = useState({
     visible: false,
     classData: null,
   });
@@ -1048,14 +800,9 @@ function ClassManagementContent(props) {
     visible: false,
     classData: null,
   });
-  const [schedulesModalLoading, setSchedulesModalLoading] = useState(false);
-  const [scheduleGroupFilter, setScheduleGroupFilter] = useState(undefined);
-  const [showPastSchedules, setShowPastSchedules] = useState(false);
   const [scheduleForm] = Form.useForm();
-  const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
-  const [calendarMonth, setCalendarMonth] = useState(dayjs());
-  const [scheduleView, setScheduleView] = useState("calendar");
   const [shouldRender, setShouldRender] = useState(false);
+  const [togglingClassId, setTogglingClassId] = useState(null);
   const screens = useBreakpoint();
   const isMobileView = !screens.md;
   const openClassId = searchParams.get("classId");
@@ -1084,32 +831,10 @@ function ClassManagementContent(props) {
           openCourseSchedulesModal(classToOpen);
         } else {
           openSchedulesModal(classToOpen);
-          if (openScheduleGroup) setScheduleGroupFilter(openScheduleGroup);
-          setShowPastSchedules(true);
         }
       }
     }
-  }, [openClassId, openScheduleGroup, classes, pathname, router]);
-
-  useEffect(() => {
-    if (
-      scrollToScheduleId &&
-      !schedulesModalLoading &&
-      schedulesModal.visible
-    ) {
-      const element = document.getElementById(
-        `schedule-card-${scrollToScheduleId}`
-      );
-      if (element) {
-        setTimeout(() => {
-          element.scrollIntoView({ behavior: "smooth", block: "center" });
-          element.style.transition = "box-shadow 0.3s";
-          element.style.boxShadow = "0 0 0 3px rgba(255, 56, 92, 0.5)";
-          setTimeout(() => (element.style.boxShadow = ""), 2500);
-        }, 300);
-      }
-    }
-  }, [scrollToScheduleId, schedulesModalLoading, schedulesModal.visible]);
+  }, [openClassId, classes, pathname, router]);
 
   useEffect(() => {
     loadClasses();
@@ -1129,7 +854,7 @@ function ClassManagementContent(props) {
           return {
             ...classItem,
             options: classItem.options || [],
-            option: primaryOption ? { ...primaryOption, schedules: [] } : null,
+            option: primaryOption,
             active: classItem.status === "active",
             coverImageUrl: coverImage?.image_thumb_url || null,
           };
@@ -1147,61 +872,13 @@ function ClassManagementContent(props) {
     }
   };
 
-  const refreshSchedulesInModal = async (classToRefresh) => {
-    const targetClass = classToRefresh || schedulesModal.classData;
-    if (!targetClass?.option) return;
-    setSchedulesModalLoading(true);
-    try {
-      const result = await scheduleService.fetchSchedules({
-        option_id: targetClass.option.optionId,
-      });
-      if (result.success) {
-        setSchedulesModal((prev) => {
-          if (!prev.classData) {
-            return prev;
-          }
-          return {
-            ...prev,
-            classData: {
-              ...prev.classData,
-              option: {
-                ...prev.classData.option,
-                schedules: result.data || [],
-              },
-            },
-          };
-        });
-      } else {
-        message.error(
-          getErrorMessage(result.error || "Failed to refresh schedules.")
-        );
-      }
-    } catch (error) {
-      message.error(getErrorMessage(error));
-    } finally {
-      setSchedulesModalLoading(false);
-    }
-  };
-
   const openSchedulesModal = (classItem) => {
-    setSchedulesModal({ visible: true, classData: classItem });
-    if (classItem.option) {
-      refreshSchedulesInModal(classItem);
-    }
+    setScheduleDrawer({ visible: true, classData: classItem });
   };
 
   // ADDED: Function to open the new course drawer
   const openCourseSchedulesModal = (classItem) => {
     setCourseDrawer({ visible: true, classData: classItem });
-  };
-
-  const closeSchedulesModal = () => {
-    setSchedulesModal({ visible: false, classData: null });
-    setSelectedCalendarDate(null);
-    setShowPastSchedules(false);
-    setCalendarMonth(dayjs());
-    setScheduleGroupFilter(undefined);
-    setScheduleView("calendar");
   };
 
   const handleEditClass = (classItem) => {
@@ -1243,6 +920,7 @@ function ClassManagementContent(props) {
 
   const toggleClassVisibility = async (classId, currentStatus) => {
     const isActive = currentStatus === "active";
+    setTogglingClassId(classId);
     try {
       await businessClassService.toggleClassActive(classId);
       message.success(
@@ -1257,502 +935,9 @@ function ClassManagementContent(props) {
       );
     } catch (error) {
       message.error(getErrorMessage(error));
+    } finally {
+      setTogglingClassId(null);
     }
-  };
-
-  const handleAddSchedule = (classItemFromModalContext) => {
-    const targetClass = classItemFromModalContext || schedulesModal.classData;
-    if (!targetClass?.option) {
-      message.error(
-        "This class needs main options configured before adding schedules."
-      );
-      return;
-    }
-    setScheduleEditModal({
-      visible: true,
-      selectedClass: targetClass,
-      selectedOption: targetClass.option,
-      editingSchedule: null,
-    });
-  };
-
-  const handleEditSchedule = (scheduleToEdit) => {
-    const targetClass = schedulesModal.classData;
-    setScheduleEditModal({
-      visible: true,
-      selectedClass: targetClass,
-      selectedOption: targetClass.option,
-      editingSchedule: scheduleToEdit,
-    });
-  };
-
-  const handleDeleteSchedule = async (scheduleId) => {
-    try {
-      await scheduleService.deleteSchedule(scheduleId);
-      await refreshSchedulesInModal();
-      message.success("Schedule deleted successfully.");
-    } catch (error) {
-      message.error(getErrorMessage(error));
-    }
-  };
-
-  const handleDeleteScheduleGroup = async (groupName) => {
-    const optionId = schedulesModal.classData?.option?.optionId;
-    if (!optionId) return;
-
-    try {
-      await scheduleService.deleteScheduleGroup({
-        option_id: optionId,
-        name: groupName,
-      });
-      message.success(`Group "${groupName}" deleted successfully.`);
-      await refreshSchedulesInModal();
-    } catch (error) {
-      message.error(getErrorMessage(error));
-    }
-  };
-
-  const handleScheduleSave = async (action, data) => {
-    try {
-      let result;
-      const editingId = scheduleEditModal.editingSchedule?.id;
-
-      if (action === "edit" && editingId) {
-        result = await scheduleService.updateSchedule(editingId, data);
-      } else if (action === "add") {
-        result = await scheduleService.createSchedule(data);
-      } else if (action === "add-bulk") {
-        result = { success: true };
-      } else {
-        throw new Error("Invalid schedule operation.");
-      }
-
-      if (result.success) {
-        message.success(
-          `Schedule ${action === "edit" ? "updated" : "created"} successfully.`
-        );
-        setScheduleEditModal({ visible: false, selectedClass: null });
-        await refreshSchedulesInModal();
-      } else {
-        message.error(
-          getErrorMessage(result.error || "Schedule operation failed.")
-        );
-      }
-    } catch (error) {
-      message.error(getErrorMessage(error));
-    }
-  };
-
-  const formatTime = (timeStr) =>
-    timeStr ? dayjs(`2000-01-01T${timeStr}`).format("h:mm A") : "N/A";
-
-  const renderScheduleCard = (schedule) => {
-    const isPast = dayjs(schedule.date || schedule.start_date).isBefore(
-      dayjs(),
-      "day"
-    );
-    const hasConfirmedBookings = schedule.has_confirmed_bookings || false;
-    const canDelete = !isPast && !hasConfirmedBookings;
-    const dateToDisplay = schedule.date || schedule.start_date;
-    const isCourse =
-      schedulesModal.classData?.option.booking_type === "Full Course";
-
-    return (
-      <ScheduleCard key={schedule.id} $isPast={isPast}>
-        <CardTop>
-          <CardInfo>
-            <div className="time">{formatTime(schedule.time)}</div>
-            <div className="date">
-              {isCourse
-                ? `Every ${schedule.day} from ${dayjs(
-                    schedule.start_date
-                  ).format("MMM D")} to ${dayjs(schedule.end_date).format(
-                    "MMM D, YYYY"
-                  )}`
-                : dayjs(dateToDisplay).format("dddd, MMMM D, YYYY")}
-            </div>
-            {schedule.name && <div className="group">{schedule.name}</div>}
-          </CardInfo>
-          <CardActions>
-            <Tooltip title="Edit Schedule Details">
-              <Button
-                icon={<Edit3 size={14} />}
-                onClick={() => handleEditSchedule(schedule)}
-                disabled={isPast}
-              />
-            </Tooltip>
-            <Popconfirm
-              title="Are you sure you want to delete this schedule?"
-              description="This action cannot be undone."
-              onConfirm={() => handleDeleteSchedule(schedule.id)}
-              disabled={!canDelete}
-              okText="Yes, delete"
-              cancelText="No"
-            >
-              <Tooltip
-                title={
-                  canDelete
-                    ? "Delete Schedule"
-                    : "Cannot delete past schedules or schedules with confirmed bookings."
-                }
-              >
-                <span>
-                  <Button
-                    danger
-                    icon={<Trash2 size={14} />}
-                    disabled={!canDelete}
-                  />
-                </span>
-              </Tooltip>
-            </Popconfirm>
-          </CardActions>
-        </CardTop>
-        <CardBottom>
-          <StatItem>
-            <Users size={14} />{" "}
-            <b>
-              {schedule.booked_participants}/{schedule.maxParticipants}
-            </b>
-            &nbsp;Spots Booked
-          </StatItem>
-          <StatItem>
-            <DollarSign size={14} />{" "}
-            <b>{parseFloat(schedule.price).toFixed(2)}</b>
-            &nbsp;CAD
-          </StatItem>
-        </CardBottom>
-      </ScheduleCard>
-    );
-  };
-
-  const CustomDropdown = ({ groupName, schedulesInGroup }) => {
-    const [isOpen, setIsOpen] = useState(true);
-    return (
-      <div>
-        <DropdownHeader onClick={() => setIsOpen(!isOpen)}>
-          <Space>
-            <Text strong>{groupName}</Text>
-            <Tag>{schedulesInGroup.length} schedules</Tag>
-          </Space>
-          <Space>
-            {groupName !== "Individual Schedules" && (
-              <Popconfirm
-                title={`Delete all ${schedulesInGroup.length} schedules in the "${groupName}" group?`}
-                description="This cannot be undone. Schedules with bookings will not be deleted."
-                onConfirm={(e) => {
-                  e.stopPropagation();
-                  handleDeleteScheduleGroup(groupName);
-                }}
-                onCancel={(e) => e.stopPropagation()}
-                okText="Yes, delete all"
-              >
-                <Tooltip title={`Delete entire '${groupName}' group`}>
-                  <Button
-                    size="small"
-                    type="text"
-                    danger
-                    icon={<Trash2 size={14} />}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </Tooltip>
-              </Popconfirm>
-            )}
-            <DropdownIcon animate={{ rotate: isOpen ? 180 : 0 }}>
-              <ChevronDown size={16} />
-            </DropdownIcon>
-          </Space>
-        </DropdownHeader>
-        <AnimatePresence>
-          {isOpen && (
-            <DropdownContent
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-            >
-              {schedulesInGroup.map(renderScheduleCard)}
-            </DropdownContent>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  };
-
-  const renderSchedulesModalContent = (
-    classItem,
-    currentCalendarMonth,
-    setCalendarMonth
-  ) => {
-    if (!classItem?.option) {
-      return (
-        <EmptyStateContainer>
-          <EmptyStateIcon>
-            <LordIcon
-              src="https://cdn.lordicon.com/asyunleq.json"
-              trigger="in"
-              state="in-cog"
-              colors="primary:#94a3b8"
-              style={{ width: 40, height: 40 }}
-            />
-          </EmptyStateIcon>
-          <EmptyStateText>Configuration Needed</EmptyStateText>
-          <EmptyStateSubtext>
-            This class must be configured before schedules can be added.
-          </EmptyStateSubtext>
-        </EmptyStateContainer>
-      );
-    }
-
-    const allSchedules = classItem.option.schedules || [];
-    let filteredForList = allSchedules;
-
-    if (selectedCalendarDate) {
-      filteredForList = allSchedules.filter((s) =>
-        dayjs(s.date || s.start_date).isSame(selectedCalendarDate, "day")
-      );
-    } else if (!showPastSchedules) {
-      filteredForList = allSchedules.filter(
-        (s) => !dayjs(s.date || s.start_date).isBefore(dayjs(), "day")
-      );
-    }
-
-    const INDIVIDUAL_KEY = "##__INDIVIDUAL__##";
-    if (scheduleGroupFilter) {
-      filteredForList =
-        scheduleGroupFilter === INDIVIDUAL_KEY
-          ? filteredForList.filter((s) => !s.name)
-          : filteredForList.filter((s) => s.name === scheduleGroupFilter);
-    }
-
-    const groupedSchedules = filteredForList.reduce((acc, schedule) => {
-      const groupName = schedule.name || "Individual Schedules";
-      if (!acc[groupName]) acc[groupName] = [];
-      acc[groupName].push(schedule);
-      return acc;
-    }, {});
-
-    Object.values(groupedSchedules).forEach((group) =>
-      group.sort((a, b) => {
-        const dateA = dayjs(a.date || a.start_date);
-        const dateB = dayjs(b.date || b.start_date);
-        if (dateA.isBefore(dateB)) return -1;
-        if (dateA.isAfter(dateB)) return 1;
-        return dayjs(`T${a.time}`).isBefore(dayjs(`T${b.time}`)) ? -1 : 1;
-      })
-    );
-
-    const sortedGroupNames = Object.keys(groupedSchedules).sort((a, b) => {
-      if (a === "Individual Schedules") return 1;
-      if (b === "Individual Schedules") return -1;
-      return a.localeCompare(b);
-    });
-
-    const uniqueGroups = [
-      ...new Set(allSchedules.map((s) => s.name).filter(Boolean)),
-    ];
-    const hasIndividual = allSchedules.some((s) => !s.name);
-
-    const ScheduleFilters = () => (
-      <ModalControls>
-        <ControlRow>
-          {!isMobileView && (
-            <Segmented
-              options={[
-                { label: "List", value: "list", icon: <List size={14} /> },
-                {
-                  label: "Calendar",
-                  value: "calendar",
-                  icon: <Calendar size={14} />,
-                },
-              ]}
-              value={scheduleView}
-              onChange={setScheduleView}
-            />
-          )}
-
-          <Select
-            placeholder="Filter by group"
-            allowClear
-            value={scheduleGroupFilter}
-            onChange={setScheduleGroupFilter}
-            style={{ minWidth: 200, flex: 1 }}
-          >
-            {hasIndividual && (
-              <Option value={INDIVIDUAL_KEY}>Individual Schedules</Option>
-            )}
-            {uniqueGroups.map((group) => (
-              <Option key={group} value={group}>
-                {group}
-              </Option>
-            ))}
-          </Select>
-
-          <Tooltip title="Check this to see schedules that have already occurred.">
-            <Checkbox
-              checked={showPastSchedules}
-              onChange={(e) => setShowPastSchedules(e.target.checked)}
-            >
-              Show Past
-            </Checkbox>
-          </Tooltip>
-        </ControlRow>
-        {selectedCalendarDate && (
-          <ControlRow>
-            <Text>
-              Showing schedules for:{" "}
-              <b>{selectedCalendarDate.format("MMMM D, YYYY")}</b>
-            </Text>
-            <Button
-              type="link"
-              size="small"
-              onClick={() => setSelectedCalendarDate(null)}
-              icon={<Undo2 size={14} />}
-            >
-              Clear Selection
-            </Button>
-          </ControlRow>
-        )}
-      </ModalControls>
-    );
-
-    const CalendarView = ({ onDateSelect, currentMonth, onMonthChange }) => {
-      const schedulesByDate = allSchedules.reduce((acc, s) => {
-        const dateKey = s.date || s.start_date;
-        if (!acc[dateKey]) acc[dateKey] = [];
-        acc[dateKey].push(s);
-        return acc;
-      }, {});
-
-      const today = dayjs().startOf("day");
-      const year = currentMonth.year();
-      const month = currentMonth.month();
-      const firstDay = dayjs(new Date(year, month, 1)).day();
-      const daysInMonth = currentMonth.daysInMonth();
-      const days = Array.from({ length: firstDay }, (_, i) => ({
-        inMonth: false,
-        key: `prev-${i}`,
-      })).concat(
-        Array.from({ length: daysInMonth }, (_, i) => ({
-          date: dayjs(new Date(year, month, i + 1)),
-          inMonth: true,
-        }))
-      );
-
-      return (
-        <CalendarPanel>
-          <CalendarHeader>
-            <NavButton onClick={() => onMonthChange(-1)}>
-              <ChevronLeft size={20} />
-            </NavButton>
-            <MonthTitle>{currentMonth.format("MMMM YYYY")}</MonthTitle>
-            <NavButton onClick={() => onMonthChange(1)}>
-              <ChevronRight size={20} />
-            </NavButton>
-          </CalendarHeader>
-          <div
-            style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}
-          >
-            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
-              <WeekDay key={day}>{day}</WeekDay>
-            ))}
-          </div>
-          <DaysGrid>
-            {days.map((day, index) => {
-              if (!day.inMonth) return <DayCell key={index} />;
-              const dateStr = day.date.format("YYYY-MM-DD");
-              const isSelected = selectedCalendarDate?.isSame(day.date, "day");
-              const isToday = day.date.isSame(today, "day");
-              const daySchedules = schedulesByDate[dateStr] || [];
-
-              return (
-                <DayCell
-                  key={dateStr}
-                  $isInMonth
-                  $isSelected={isSelected}
-                  onClick={() => onDateSelect(day.date)}
-                >
-                  <DayHeader $isToday={isToday}>{day.date.date()}</DayHeader>
-                  <SchedulePreviewContainer>
-                    {daySchedules.slice(0, 1).map((s) => (
-                      <CalendarSchedulePreview key={s.id}>
-                        {formatTime(s.time)}
-                      </CalendarSchedulePreview>
-                    ))}
-                    {daySchedules.length > 1 && (
-                      <MoreSchedulesIndicator>
-                        {daySchedules.length - 1} more
-                      </MoreSchedulesIndicator>
-                    )}
-                  </SchedulePreviewContainer>
-                </DayCell>
-              );
-            })}
-          </DaysGrid>
-        </CalendarPanel>
-      );
-    };
-
-    const ListView = () => (
-      <ScheduleListContainer>
-        {schedulesModalLoading ? (
-          <LoaderContainer>
-            <GlobalLoaderWithoutInlineStyles />
-          </LoaderContainer>
-        ) : sortedGroupNames.length === 0 ? (
-          <EmptyStateContainer>
-            <EmptyStateIcon>
-              <LordIcon
-                src="https://cdn.lordicon.com/uoljexdg.json"
-                trigger="in"
-                colors="primary:#94a3b8"
-                style={{ width: 40, height: 40 }}
-              />
-            </EmptyStateIcon>
-            <EmptyStateText>No Schedules Found</EmptyStateText>
-            <EmptyStateSubtext>
-              Try adjusting your filters or creating a new schedule.
-            </EmptyStateSubtext>
-          </EmptyStateContainer>
-        ) : (
-          sortedGroupNames.map((groupName) => (
-            <CustomDropdown
-              key={groupName}
-              groupName={groupName}
-              schedulesInGroup={groupedSchedules[groupName]}
-            />
-          ))
-        )}
-      </ScheduleListContainer>
-    );
-
-    const renderContent = () => {
-      if (isMobileView || scheduleView === "list") {
-        return <ListView />;
-      }
-      if (scheduleView === "calendar") {
-        return (
-          <ModalLayout>
-            <CalendarView
-              onDateSelect={setSelectedCalendarDate}
-              currentMonth={currentCalendarMonth}
-              onMonthChange={(dir) =>
-                setCalendarMonth((prev) => prev.add(dir, "month"))
-              }
-            />
-            <ScheduleListPanel>
-              <ListView />
-            </ScheduleListPanel>
-          </ModalLayout>
-        );
-      }
-      return null;
-    };
-
-    return (
-      <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-        <ScheduleFilters />
-        {renderContent()}
-      </div>
-    );
   };
 
   const getFilteredClasses = () => {
@@ -1825,17 +1010,31 @@ function ClassManagementContent(props) {
                   </Tooltip>
                 )}
               </div>
-              <Space size={4}>
+              <Space size={4} style={{ display: "flex", alignItems: "center" }}>
                 {/* MODIFIED: Add type tag */}
                 <Tag
                   icon={typeInfo.icon}
                   color={typeInfo.color}
-                  style={{ borderRadius: "6px", fontSize: "12px" }}
+                  bordered={false}
+                  style={{
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
+                  }}
                 >
                   {typeInfo.label}
                 </Tag>
                 {categoryDisplay && (
-                  <CategoryTag>
+                  <CategoryTag
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
                     <TagIcon size={12} /> {categoryDisplay}
                   </CategoryTag>
                 )}
@@ -1845,31 +1044,162 @@ function ClassManagementContent(props) {
         );
       },
     },
-    // MODIFIED: New column for Schedule Info
+    // MODIFIED: New column for Schedule Info with enhanced design
     {
       title: "Schedule",
       key: "schedule",
       width: 350,
-      render: (_, record) => (
-        <Text type="secondary" style={{ fontSize: "13px" }}>
-          {formatScheduleInfo(record)}
-        </Text>
-      ),
+      render: (_, record) => {
+        const scheduleInfo = formatScheduleInfo(record);
+        const hasSchedules = !!record.last_schedule_date;
+        const isCourse = record.options?.[0]?.booking_type === "Full Course";
+
+        return (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              padding: "8px 12px",
+              background: hasSchedules ? "#f0fdf4" : "#fef2f2",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
+              borderRadius: "8px",
+              transition: "all 0.2s ease",
+              maxWidth: "320px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "32px",
+                height: "32px",
+                borderRadius: "6px",
+                background: hasSchedules ? "#dcfce7" : "#fee2e2",
+                flexShrink: 0,
+              }}
+            >
+              {isCourse ? (
+                <BookOpen
+                  size={16}
+                  color={hasSchedules ? "#16a34a" : "#dc2626"}
+                />
+              ) : (
+                <Clock size={16} color={hasSchedules ? "#16a34a" : "#dc2626"} />
+              )}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Text
+                style={{
+                  fontSize: "13px",
+                  color: hasSchedules ? "#166534" : "#991b1b",
+                  fontWeight: 500,
+                  display: "block",
+                  lineHeight: "1.4",
+                }}
+              >
+                {scheduleInfo}
+              </Text>
+              {hasSchedules && (
+                <Text
+                  type="secondary"
+                  style={{
+                    fontSize: "11px",
+                    color: "#16a34a",
+                    display: "block",
+                  }}
+                >
+                  {isCourse ? "Course active" : "Sessions available"}
+                </Text>
+              )}
+            </div>
+          </div>
+        );
+      },
     },
     {
       title: "Rating",
       key: "rating",
       width: 150,
-      render: (_, record) =>
-        record.review_count > 0 ? (
-          <StatItem>
-            <Star size={16} className="lucide-star" fill={colors.warning} />
-            <Text strong>{record.average_rating.toFixed(1)}</Text>
-            <Text type="secondary">({record.review_count})</Text>
-          </StatItem>
-        ) : (
-          <Text type="secondary">No reviews yet</Text>
-        ),
+      render: (_, record) => {
+        if (record.review_count > 0) {
+          const rating = record.average_rating;
+          // Use consistent gold/yellow color scheme for all ratings
+          const colors = {
+            bg: "#fef3c7",
+            border: "#fcd34d",
+            text: "#92400e",
+            star: "#f59e0b",
+          };
+
+          return (
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "6px 12px",
+                background: colors.bg,
+                borderRadius: "8px",
+              }}
+            >
+              <Star
+                size={16}
+                fill={colors.star}
+                color={colors.star}
+                style={{ flexShrink: 0 }}
+              />
+              <Text
+                strong
+                style={{
+                  fontSize: "14px",
+                  color: colors.text,
+                  lineHeight: "1",
+                }}
+              >
+                {rating.toFixed(1)}
+              </Text>
+              <Text
+                type="secondary"
+                style={{
+                  fontSize: "12px",
+                  color: colors.text,
+                  opacity: 0.7,
+                  lineHeight: "1",
+                }}
+              >
+                ({record.review_count})
+              </Text>
+            </div>
+          );
+        }
+        return (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "6px 12px",
+              background: "#f3f4f6",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
+              borderRadius: "8px",
+            }}
+          >
+            <MessageSquare
+              size={16}
+              color="#9ca3af"
+              style={{ flexShrink: 0 }}
+            />
+            <Text
+              type="secondary"
+              style={{ fontSize: "13px", lineHeight: "1" }}
+            >
+              No reviews
+            </Text>
+          </div>
+        );
+      },
     },
     {
       title: "Status",
@@ -1884,21 +1214,53 @@ function ClassManagementContent(props) {
           );
         }
         const isActive = record.status === "active";
+        const isLoading = togglingClassId === record.classId;
+
         return (
           <Tooltip
-            title={`Click to set class to ${isActive ? "Inactive" : "Active"}`}
+            title={
+              isLoading
+                ? "Updating..."
+                : `Click to set class to ${isActive ? "Inactive" : "Active"}`
+            }
           >
-            <Space>
-              <Switch
-                checked={isActive}
-                onChange={(checked, event) => {
-                  event.stopPropagation();
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isLoading) {
                   toggleClassVisibility(record.classId, record.status);
-                }}
-                size="small"
+                }
+              }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "8px 14px",
+                background: isActive ? "#ecfdf5" : "#fef2f2",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
+                borderRadius: "10px",
+                transition: "all 0.3s ease",
+                cursor: isLoading ? "wait" : "pointer",
+                opacity: isLoading ? 0.7 : 1,
+              }}
+            >
+              <CustomSwitch
+                $checked={isActive}
+                $loading={isLoading}
+                $disabled={isLoading}
               />
-              <Text>{isActive ? "Active" : "Inactive"}</Text>
-            </Space>
+              <Text
+                strong
+                style={{
+                  fontSize: "13px",
+                  color: isActive ? "#065f46" : "#991b1b",
+                  fontWeight: 600,
+                  lineHeight: "1",
+                }}
+              >
+                {isActive ? "Active" : "Inactive"}
+              </Text>
+            </div>
           </Tooltip>
         );
       },
@@ -2062,7 +1424,12 @@ function ClassManagementContent(props) {
               <Tag
                 icon={typeInfo.icon}
                 color={typeInfo.color}
-                style={{ borderRadius: "6px", fontSize: "12px" }}
+                bordered={false}
+                style={{
+                  borderRadius: "6px",
+                  fontSize: "12px",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
+                }}
               >
                 {typeInfo.label}
               </Tag>
@@ -2145,23 +1512,34 @@ function ClassManagementContent(props) {
         <Divider />
 
         <Controls>
-          <StyledSearchInput
-            prefix={<Search size={18} />}
-            placeholder="Search classes by name or category..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            allowClear
-          />
-          <StyledSegmented
-            options={[
-              { label: "All Classes", value: "all" },
-              { label: "Single Sessions", value: "single" },
-              { label: "Courses", value: "course" },
-            ]}
-            value={viewType}
-            onChange={setViewType}
-            style={{ transition: "none" }} // Prevents animation flash
-          />
+          <div
+            style={{
+              display: "flex",
+              gap: "16px",
+              alignItems: "center",
+              flex: 1,
+              flexWrap: "wrap",
+            }}
+          >
+            <StyledSearchInput
+              prefix={<Search size={18} />}
+              placeholder="Search classes by name or category..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              allowClear
+            />
+            <StyledSelect
+              value={viewType}
+              onChange={setViewType}
+              style={{
+                width: 200,
+              }}
+            >
+              <Option value="all">All Classes</Option>
+              <Option value="single">Single Sessions</Option>
+              <Option value="course">Courses</Option>
+            </StyledSelect>
+          </div>
           <ActionButton
             type="primary"
             icon={<Plus size={18} />}
@@ -2216,12 +1594,10 @@ function ClassManagementContent(props) {
         />
 
         <ScheduleEditDrawer
-          open={scheduleEditModal.visible}
-          onCancel={() => setScheduleEditModal({ visible: false })}
-          onSubmit={handleScheduleSave}
-          editingSchedule={scheduleEditModal.editingSchedule}
-          optionType={scheduleEditModal.selectedOption?.booking_type}
-          optionId={scheduleEditModal.selectedOption?.optionId}
+          open={scheduleDrawer.visible}
+          onClose={() => setScheduleDrawer({ visible: false, classData: null })}
+          classData={scheduleDrawer.classData}
+          onSchedulesUpdate={loadClasses}
           form={scheduleForm}
         />
 
@@ -2302,80 +1678,6 @@ function ClassManagementContent(props) {
               </VaulDrawer.Portal>
             </VaulDrawer.Root>
           ))}
-
-        {!isMobileView && (
-          <DesktopScheduleModal
-            title={`Manage Schedules for "${schedulesModal.classData?.title}"`}
-            open={schedulesModal.visible}
-            centered
-            onCancel={closeSchedulesModal}
-            width="65vw"
-            destroyOnClose
-            footer={[
-              <Button
-                key="add"
-                type="primary"
-                icon={<Plus size={16} />}
-                onClick={() => handleAddSchedule(schedulesModal.classData)}
-              >
-                Add New Schedule
-              </Button>,
-            ]}
-          >
-            {schedulesModal.visible &&
-              renderSchedulesModalContent(
-                schedulesModal.classData,
-                calendarMonth,
-                setCalendarMonth
-              )}
-          </DesktopScheduleModal>
-        )}
-
-        {isMobileView && (
-          <VaulDrawer.Root
-            open={schedulesModal.visible}
-            onOpenChange={(open) => {
-              if (!open) {
-                closeSchedulesModal();
-              }
-            }}
-          >
-            <VaulDrawer.Portal>
-              <StyledScheduleDrawerOverlay />
-              <StyledScheduleDrawerContent>
-                <ScheduleDrawerHandle />
-
-                <MobileScheduleHeader>
-                  <MobileScheduleTitle>Manage Schedules</MobileScheduleTitle>
-                  <MobileCloseButton
-                    icon={<X size={20} />}
-                    onClick={closeSchedulesModal}
-                  />
-                </MobileScheduleHeader>
-
-                <div style={{ flex: 1, overflow: "hidden" }}>
-                  {schedulesModal.visible &&
-                    renderSchedulesModalContent(
-                      schedulesModal.classData,
-                      calendarMonth,
-                      setCalendarMonth
-                    )}
-                </div>
-
-                <MobileScheduleFooter>
-                  <Button
-                    type="primary"
-                    icon={<Plus size={16} />}
-                    onClick={() => handleAddSchedule(schedulesModal.classData)}
-                    block
-                  >
-                    Add New Schedule
-                  </Button>
-                </MobileScheduleFooter>
-              </StyledScheduleDrawerContent>
-            </VaulDrawer.Portal>
-          </VaulDrawer.Root>
-        )}
       </PageContainer>
     </ConfigProvider>
   );
