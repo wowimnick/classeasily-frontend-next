@@ -884,7 +884,7 @@ const SideMenuComponent = memo(
             }
           }
         } catch (error) {
-          console.log("Icon animation error:", error);
+          console.error("Icon animation error:", error);
         }
       }
     }, []);

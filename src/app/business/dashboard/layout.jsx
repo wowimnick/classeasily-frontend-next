@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import styled from "styled-components";
+import { ConfigProvider } from "antd";
+import { Suspense } from "react";
 
 import SideMenu from "./_components/SideMenu";
 import BusinessHeader from "./_components/BusinessHeader";
@@ -12,6 +14,8 @@ import {
   useDashboard,
 } from "./_components/DashboardContext";
 import PermissionProtectedRoute from "@/components/auth/PermissionProtectedRoute";
+import { theme as appTheme } from "@/components/theme";
+import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 
 const PageLayout = styled.div`
   display: flex;
@@ -66,7 +70,7 @@ function DashboardLayoutInner({ children }) {
   const pathname = usePathname();
 
   const {
-    overviewLoading,
+    setupGuideLoading,
     setupGuideInitialStatus,
     allSetupStepsCompleteActual,
     displaySetupGuide,
@@ -75,20 +79,18 @@ function DashboardLayoutInner({ children }) {
   const sideMenuRef = useRef(null);
   const mainContentRef = useRef(null);
 
-  // Derive activeKey from pathname (don't store in state)
-  const activeKey =
-    pathname
-      .replace("/business/dashboard/", "")
-      .replace("/business/dashboard", "") || "overview";
+  // Memoize activeKey derivation
+  const activeKey = useMemo(() => {
+    const path = pathname.replace("/business/dashboard", "");
+    return !path || path === "/" ? "overview" : path.substring(1);
+  }, [pathname]);
 
   // Scroll to top when route changes
   useEffect(() => {
-    if (mainContentRef.current) {
-      mainContentRef.current.scrollTop = 0;
-    }
+    mainContentRef.current.scrollTop = 0;
   }, [pathname]);
 
-  // Update document title based on current route
+  // Update document title
   useEffect(() => {
     const titles = {
       overview: "Overview",
@@ -105,14 +107,12 @@ function DashboardLayoutInner({ children }) {
       widget: "Widget Customizer",
     };
 
-    const pageTitle = titles[activeKey] || "Dashboard";
-    document.title = `${pageTitle} | ClassEasily`;
+    document.title = `${titles[activeKey] || "Dashboard"} | ClassEasily`;
   }, [activeKey]);
 
   const handleMenuSelect = useCallback(
     (key) => {
       if (key !== "settings") {
-        console.log("🔄 Layout - Navigating to:", `/business/dashboard/${key}`);
         router.push(`/business/dashboard/${key}`);
       }
     },
@@ -132,14 +132,17 @@ function DashboardLayoutInner({ children }) {
             activeKey={activeKey}
           />
         </SideMenuWrapper>
-        <MainContent ref={mainContentRef}>{children}</MainContent>
+        <MainContent ref={mainContentRef}>
+          <Suspense fallback={<GlobalLoaderWithInlineStyles />}>
+            {children}
+          </Suspense>
+        </MainContent>
       </DashboardContainer>
 
-      {displaySetupGuide && !overviewLoading && (
+      {displaySetupGuide && !setupGuideLoading && (
         <BusinessSetupGuide
           key="setup-guide-widget"
           sideMenuRef={sideMenuRef}
-          setupStatus={setupGuideInitialStatus}
           initialOpen={!allSetupStepsCompleteActual}
         />
       )}
@@ -150,9 +153,11 @@ function DashboardLayoutInner({ children }) {
 export default function DashboardLayout({ children }) {
   return (
     <PermissionProtectedRoute requiredPermission="quickstart.access_business_dashboard">
-      <DashboardProvider>
-        <DashboardLayoutInner>{children}</DashboardLayoutInner>
-      </DashboardProvider>
+      <ConfigProvider theme={appTheme}>
+        <DashboardProvider>
+          <DashboardLayoutInner>{children}</DashboardLayoutInner>
+        </DashboardProvider>
+      </ConfigProvider>
     </PermissionProtectedRoute>
   );
 }

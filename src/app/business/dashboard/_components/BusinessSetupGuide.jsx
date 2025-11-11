@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Card,
   Typography,
@@ -25,6 +25,7 @@ import {
   CloseOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
+import { businessService } from "@/services/apiService";
 import styled, { ThemeProvider } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -352,16 +353,48 @@ const ExpandableButtonContent = styled(motion.div)`
   user-select: none;
 `;
 
-const BusinessSetupGuide = ({
-  sideMenuRef,
-  setupStatus,
-  initialOpen = false,
-}) => {
+const BusinessSetupGuide = ({ sideMenuRef, initialOpen = false }) => {
   const { token, theme: antdTheme } = theme.useToken();
   const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
-
   const [isExpanded, setIsExpanded] = useState(initialOpen);
+
+  // Fetch setup status locally in this component
+  const [setupStatus, setSetupStatus] = useState(null);
+  const [setupLoading, setSetupLoading] = useState(true);
+
+  const fetchSetupStatus = useCallback(async () => {
+    console.log("🟡 BusinessSetupGuide - fetchSetupStatus CALLED");
+    setSetupLoading(true);
+    try {
+      console.log("🟡 BusinessSetupGuide - Fetching from businessService...");
+      const response = await businessService.fetchMyBusinessOverview();
+      console.log(
+        "🟡 BusinessSetupGuide - Response received:",
+        response.success
+      );
+
+      if (response.success && response.data?.setup_progress) {
+        console.log("🟡 BusinessSetupGuide - Setting setup status");
+        setSetupStatus(response.data.setup_progress);
+      } else {
+        console.log("🟡 BusinessSetupGuide - No setup progress data");
+        setSetupStatus(null);
+      }
+    } catch (err) {
+      console.error("🟡 BusinessSetupGuide - ERROR:", err);
+      setSetupStatus(null);
+    } finally {
+      console.log("🟡 BusinessSetupGuide - Fetch complete");
+      setSetupLoading(false);
+    }
+  }, []);
+
+  // Fetch data on mount
+  useEffect(() => {
+    console.log("🟡 BusinessSetupGuide - Component mounted, fetching data");
+    fetchSetupStatus();
+  }, [fetchSetupStatus]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

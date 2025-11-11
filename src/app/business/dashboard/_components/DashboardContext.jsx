@@ -6,6 +6,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
 } from "react";
 import { businessService } from "@/services/apiService";
 
@@ -22,22 +23,26 @@ export const useDashboard = () => {
 const DEBUG_ALWAYS_SHOW_SETUP_GUIDE = false;
 
 export const DashboardProvider = ({ children }) => {
-  const [overviewData, setOverviewData] = useState(null);
-  const [overviewLoading, setOverviewLoading] = useState(true);
-  const [overviewError, setOverviewError] = useState(null);
+  console.error("🟢 DashboardProvider - COMPONENT RENDER START");
+
   const [setupGuideInitialStatus, setSetupGuideInitialStatus] = useState(null);
   const [allSetupStepsCompleteActual, setAllSetupStepsCompleteActual] =
     useState(false);
   const [displaySetupGuide, setDisplaySetupGuide] = useState(false);
+  const [setupGuideLoading, setSetupGuideLoading] = useState(true);
 
-  const fetchOverviewData = useCallback(async () => {
-    setOverviewLoading(true);
-    setOverviewError(null);
+  const fetchSetupGuideData = useCallback(async () => {
+    console.error("🟢 DashboardContext - fetchSetupGuideData CALLED");
+    setSetupGuideLoading(true);
     try {
+      console.error("🟢 DashboardContext - Fetching from businessService...");
       const response = await businessService.fetchMyBusinessOverview();
-      if (response.success && response.data) {
-        setOverviewData(response.data);
+      console.error(
+        "🟢 DashboardContext - Response received:",
+        response.success
+      );
 
+      if (response.success && response.data) {
         const setupProgress = response.data.setup_progress;
         if (setupProgress) {
           const allActuallyComplete =
@@ -47,42 +52,69 @@ export const DashboardProvider = ({ children }) => {
             setupProgress.has_class_options &&
             setupProgress.has_schedules;
 
+          console.error(
+            "🟢 DashboardContext - Setup complete:",
+            allActuallyComplete
+          );
           setAllSetupStepsCompleteActual(allActuallyComplete);
           setSetupGuideInitialStatus(setupProgress);
           setDisplaySetupGuide(
             DEBUG_ALWAYS_SHOW_SETUP_GUIDE || !allActuallyComplete
           );
         } else {
+          console.error("🟢 DashboardContext - No setup progress data");
           setAllSetupStepsCompleteActual(false);
           setSetupGuideInitialStatus(null);
           setDisplaySetupGuide(DEBUG_ALWAYS_SHOW_SETUP_GUIDE);
         }
       } else {
-        setOverviewError(response.error || "Failed to fetch overview data.");
+        console.error("🟢 DashboardContext - Fetch failed:", response.error);
         setDisplaySetupGuide(DEBUG_ALWAYS_SHOW_SETUP_GUIDE);
       }
     } catch (error) {
-      console.error("Error fetching overview data:", error);
-      setOverviewError("An unexpected error occurred.");
+      console.error("🟢 DashboardContext - ERROR:", error);
       setDisplaySetupGuide(DEBUG_ALWAYS_SHOW_SETUP_GUIDE);
     } finally {
-      setOverviewLoading(false);
+      console.error(
+        "🟢 DashboardContext - Fetch complete, setting loading to false"
+      );
+      setSetupGuideLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchOverviewData();
-  }, [fetchOverviewData]);
+    console.error(
+      "🟢 DashboardContext - Provider mounted, calling fetchSetupGuideData"
+    );
+    fetchSetupGuideData();
+  }, [fetchSetupGuideData]);
 
-  const value = {
-    overviewData,
-    overviewLoading,
-    overviewError,
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(() => {
+    console.error("🟢 DashboardContext - Creating new context value object");
+    return {
+      setupGuideInitialStatus,
+      allSetupStepsCompleteActual,
+      displaySetupGuide,
+      setupGuideLoading,
+      fetchSetupGuideData,
+    };
+  }, [
     setupGuideInitialStatus,
     allSetupStepsCompleteActual,
     displaySetupGuide,
-    fetchOverviewData,
-  };
+    setupGuideLoading,
+    fetchSetupGuideData,
+  ]);
+
+  console.error("🟢 DashboardContext - Provider rendering with value:", {
+    setupGuideLoading,
+    displaySetupGuide,
+  });
+
+  console.error(
+    "🟢 DashboardProvider - COMPONENT RENDER END - returning Provider"
+  );
 
   return (
     <DashboardContext.Provider value={value}>
