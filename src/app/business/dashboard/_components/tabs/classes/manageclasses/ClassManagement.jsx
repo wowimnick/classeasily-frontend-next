@@ -247,36 +247,25 @@ const StyledSearchInput = styled(Input)`
   width: 300px;
   height: 44px;
   border-radius: 12px;
-  background: white;
   border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 
-  .ant-input {
-    background: transparent;
-    font-size: 15px;
-    &::placeholder {
-      color: #9ca3af;
-    }
+  &:hover,
+  &:focus {
+    border-color: #ff385c;
+    box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
   }
-
+  .ant-input {
+    font-size: 15px;
+  }
   .ant-input-prefix {
     color: #9ca3af;
-    margin-right: 10px;
-  }
-
-  &:hover {
-    border-color: #ff385c;
-  }
-
-  &.ant-input-affix-wrapper-focused {
-    border-color: #ff385c;
-    box-shadow: 0 0 0 3px rgba(255, 56, 92, 0.1);
+    margin-right: 8px;
   }
 
   @media (max-width: 768px) {
     width: 100%;
-    height: 40px;
   }
 `;
 

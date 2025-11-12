@@ -1322,10 +1322,9 @@ const ScheduleEditDrawer = ({
   form,
   classData,
   onSchedulesUpdate,
-  // Direct-to-form props for legacy use (optional)
-  optionId: directOptionId,
-  optionType: directOptionType,
   editingSchedule: directEditingSchedule,
+  startInEditMode = false,
+  hideBackButton = false,
 }) => {
   const [bulkForm] = Form.useForm();
   const [isLoading, setIsLoading] = useState(false);
@@ -1337,7 +1336,7 @@ const ScheduleEditDrawer = ({
   const [bulkCurrentStep, setBulkCurrentStep] = useState(0);
 
   // --- View Management State ---
-  const [activeView, setActiveView] = useState("manage"); // 'manage' or 'form'
+  const [activeView, setActiveView] = useState("manage");
   const [editingSchedule, setEditingSchedule] = useState(null);
 
   useEffect(() => {
@@ -1349,15 +1348,12 @@ const ScheduleEditDrawer = ({
 
   useEffect(() => {
     if (open) {
-      // If classData is provided, start in management view
-      if (classData) {
+      if (startInEditMode && directEditingSchedule) {
+        setActiveView("form");
+        setEditingSchedule(directEditingSchedule);
+      } else if (classData) {
         setActiveView("manage");
         setEditingSchedule(null);
-      }
-      // If direct form props are provided, go straight to form view
-      else if (directOptionId) {
-        setActiveView("form");
-        setEditingSchedule(directEditingSchedule || null);
       }
     } else {
       // Reset everything on close
@@ -1368,11 +1364,10 @@ const ScheduleEditDrawer = ({
       setFormData({});
       setEditingSchedule(null);
     }
-  }, [open, classData, directOptionId, directEditingSchedule]);
+  }, [open, classData, startInEditMode, directEditingSchedule]);
 
-  const optionType =
-    classData?.option?.booking_type || directOptionType || "Single Session";
-  const optionId = classData?.option?.optionId || directOptionId;
+  const optionType = classData?.option?.booking_type || "Single Session";
+  const optionId = classData?.option?.optionId;
   const isSingleSession = optionType === "Single Session";
   const bulkFormDays = Form.useWatch("days_of_week", bulkForm) || [];
 
@@ -1424,11 +1419,11 @@ const ScheduleEditDrawer = ({
   }, [activeView, editingSchedule, form, bulkForm]);
 
   const handleFormSuccess = () => {
-    onSchedulesUpdate(); // Notify parent component to refetch class list
-    if (classData) {
-      setActiveView("manage"); // Go back to management view
+    onSchedulesUpdate();
+    if (classData && !startInEditMode) {
+      setActiveView("manage");
     } else {
-      onClose(); // Close if it was a direct-to-form call
+      onClose();
     }
   };
 
@@ -2349,7 +2344,7 @@ const ScheduleEditDrawer = ({
           }}
         >
           <div>
-            {classData && (
+            {classData && !hideBackButton && (
               <Button onClick={() => setActiveView("manage")}>
                 Back to List
               </Button>
@@ -2422,7 +2417,7 @@ const ScheduleEditDrawer = ({
         }}
       >
         <div>
-          {classData && activeTab === "single" && (
+          {classData && activeTab === "single" && !hideBackButton && (
             <Button onClick={() => setActiveView("manage")}>
               Back to List
             </Button>

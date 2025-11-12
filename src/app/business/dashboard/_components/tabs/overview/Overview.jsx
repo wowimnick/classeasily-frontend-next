@@ -27,8 +27,8 @@ import {
   Clock,
   Tag as TagIcon,
   Link as LinkIcon,
-  Edit3, // Import Edit icon
-  Shield, // Import Shield icon for permission denied
+  Edit3,
+  Shield,
   AlertTriangle,
 } from "lucide-react";
 import {
@@ -46,9 +46,9 @@ import {
   Row,
   Col,
   Divider,
-  Button, // Import Button
-  message, // Import message
-  Form, // Import Form
+  Button,
+  message,
+  Form,
 } from "antd";
 import {
   LineChart,
@@ -79,7 +79,7 @@ const colors = {
   error: "#ef4444",
   info: "#3b82f6",
   lightBg: "#f8fafc",
-  border: "#f1f5f9", // Updated to match Discounts.jsx
+  border: "#f1f5f9",
   textPrimary: "#1f2937",
   textSecondary: "#64748b",
   chart: {
@@ -115,19 +115,11 @@ const hexToRgba = (hex, alpha = 1) => {
 };
 
 const getErrorMessage = (error) => {
-  // 1. Handle Axios-style error responses
   if (error?.response?.data) {
     const data = error.response.data;
-    if (typeof data.detail === "string") {
-      return data.detail; // Handles { "detail": "Error message" }
-    }
-    if (typeof data.message === "string") {
-      return data.message;
-    }
-    if (typeof data.error === "string") {
-      return data.error;
-    }
-    // Handles DRF validation errors: { "field": ["error"], "field2": ["error"] }
+    if (typeof data.detail === "string") return data.detail;
+    if (typeof data.message === "string") return data.message;
+    if (typeof data.error === "string") return data.error;
     if (typeof data === "object" && data !== null) {
       const messages = Object.entries(data).map(([key, value]) => {
         const formattedKey = key
@@ -140,26 +132,10 @@ const getErrorMessage = (error) => {
       if (messages.length > 0) return messages.join("; ");
     }
   }
-
-  // 2. Handle custom service error formats
-  if (typeof error?.error === "string") {
-    return error.error;
-  }
-  if (typeof error?.detail === "string") {
-    return error.detail;
-  }
-
-  // 3. Handle standard JavaScript Error objects
-  if (error?.message) {
-    return error.message;
-  }
-
-  // 4. Handle if the error is just a string
-  if (typeof error === "string") {
-    return error;
-  }
-
-  // 5. Fallback for any other unknown format
+  if (typeof error?.error === "string") return error.error;
+  if (typeof error?.detail === "string") return error.detail;
+  if (error?.message) return error.message;
+  if (typeof error === "string") return error;
   return "An unexpected error occurred. Please try again.";
 };
 
@@ -174,11 +150,6 @@ const DashboardWrapper = styled.div`
   @media (max-width: 768px) {
     padding: 12px;
     gap: 12px;
-  }
-
-  @media (max-width: 480px) {
-    padding: 12px;
-    gap: 8px;
   }
 `;
 
@@ -206,11 +177,6 @@ const StyledTitle = styled.h1`
   line-height: 1.2;
   @media (max-width: 768px) {
     font-size: 22px;
-    margin-bottom: 6px;
-  }
-  @media (max-width: 480px) {
-    font-size: 20px;
-    margin-bottom: 4px;
   }
 `;
 
@@ -222,12 +188,8 @@ const HeaderSubtitle = styled(Text)`
   @media (max-width: 768px) {
     font-size: 14px;
   }
-  @media (max-width: 480px) {
-    font-size: 13px;
-  }
 `;
 
-// Mobile-optimized grid for stats
 const StatsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -239,7 +201,6 @@ const StatsGrid = styled.div`
   }
 `;
 
-// Mobile-optimized grid for snapshots (horizontal on mobile)
 const SnapshotGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -248,11 +209,6 @@ const SnapshotGrid = styled.div`
   @media (max-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-  }
-
-  @media (max-width: 480px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
   }
 `;
 
@@ -270,46 +226,15 @@ const StatCardBase = styled(Card)`
     padding: 20px;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: space-between;
     height: 100%;
   }
 
   @media (max-width: 768px) {
     min-height: 120px;
     border-radius: 12px;
-
     .ant-card-body {
       padding: 16px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    min-height: 110px;
-    border-radius: 10px;
-
-    .ant-card-body {
-      padding: 14px;
-    }
-  }
-`;
-
-// Mobile snapshot card (horizontal scrollable)
-const MobileSnapshotCard = styled(StatCardBase)`
-  @media (max-width: 768px) {
-    min-height: 120px;
-    border-radius: 12px;
-
-    .ant-card-body {
-      padding: 16px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    min-height: 110px;
-    border-radius: 10px;
-
-    .ant-card-body {
-      padding: 14px;
     }
   }
 `;
@@ -325,7 +250,6 @@ const MetricStatCardLink = styled(Link)`
 
 const MetricStatCard = styled(StatCardBase)`
   cursor: ${(props) => (props.$isClickable ? "pointer" : "default")};
-
   ${(props) =>
     props.$isClickable &&
     css`
@@ -343,10 +267,6 @@ const StatHeader = styled.div`
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 10px;
-
-  @media (max-width: 480px) {
-    margin-bottom: 8px;
-  }
 `;
 
 const IconContainer = styled.div`
@@ -368,22 +288,9 @@ const IconContainer = styled.div`
   @media (max-width: 768px) {
     width: 32px;
     height: 32px;
-    border-radius: 8px;
-
     svg {
       width: 16px;
       height: 16px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-
-    svg {
-      width: 14px;
-      height: 14px;
     }
   }
 `;
@@ -392,7 +299,6 @@ const MetricValue = styled.div`
   font-size: 22px;
   font-weight: 700;
   color: ${colors.textPrimary};
-  margin-top: auto;
   margin-bottom: 4px;
   display: flex;
   align-items: baseline;
@@ -401,38 +307,23 @@ const MetricValue = styled.div`
   @media (max-width: 768px) {
     font-size: 18px;
   }
-
-  @media (max-width: 480px) {
-    font-size: 16px;
-    margin-bottom: 2px;
-  }
 `;
 
-const MetricChange = styled.div`
+const PercentChange = styled.span`
+  color: ${(props) => (props.isPositive ? colors.success : colors.error)};
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 500;
+`;
+
+const StatFooter = styled.div`
+  font-size: 12px;
+  color: ${colors.textSecondary};
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 13px;
-  color: ${(props) => (props.change >= 0 ? colors.success : colors.error)};
-  background: ${(props) =>
-    props.change >= 0
-      ? hexToRgba(colors.success, 0.1)
-      : hexToRgba(colors.error, 0.1)};
-  padding: 3px 8px;
-  border-radius: 6px;
-  white-space: nowrap;
-
-  @media (max-width: 768px) {
-    font-size: 11px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    gap: 2px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 10px;
-    padding: 1px 4px;
-  }
 `;
 
 const StatLabel = styled(Text)`
@@ -440,13 +331,10 @@ const StatLabel = styled(Text)`
   color: ${colors.textSecondary};
   display: block;
   line-height: 1.3;
+  margin-bottom: auto;
 
   @media (max-width: 768px) {
     font-size: 12px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 11px;
   }
 `;
 
@@ -455,25 +343,15 @@ const GridSection = styled(Row)`
   &:last-child {
     margin-bottom: 0;
   }
-
   @media (max-width: 768px) {
     margin-bottom: 16px;
-  }
-
-  @media (max-width: 480px) {
-    margin-bottom: 12px;
   }
 `;
 
 const ChartCard = styled(StatCardBase)`
   min-height: 400px;
-
   @media (max-width: 768px) {
     min-height: 350px;
-  }
-
-  @media (max-width: 480px) {
-    min-height: 300px;
   }
 `;
 
@@ -482,15 +360,8 @@ const ChartContainer = styled.div`
   width: 100%;
   margin-top: 16px;
   position: relative;
-
   @media (max-width: 768px) {
     height: 250px;
-    margin-top: 12px;
-  }
-
-  @media (max-width: 480px) {
-    height: 200px;
-    margin-top: 8px;
   }
 `;
 
@@ -504,41 +375,29 @@ const CardTitle = styled(Title).attrs({ level: 5 })`
     align-items: center;
     gap: 8px;
   }
-
   @media (max-width: 768px) {
     font-size: 16px;
-    margin-bottom: 12px !important;
-    gap: 6px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 15px;
-    margin-bottom: 8px !important;
-    gap: 4px;
   }
 `;
 
 const SectionTitle = styled(CardTitle)`
-  margin-bottom: 12px !important;
+  margin-bottom: 4px !important;
+`;
 
+const SectionDescription = styled(Text)`
+  font-size: 15px;
+  color: ${colors.textSecondary};
+  display: block;
+  margin-bottom: 12px;
   @media (max-width: 768px) {
-    margin-bottom: 8px !important;
-  }
-
-  @media (max-width: 480px) {
-    margin-bottom: 6px !important;
+    font-size: 14px;
   }
 `;
 
 const ContentListCard = styled(StatCardBase)`
   min-height: 400px;
-
   @media (max-width: 768px) {
     min-height: 350px;
-  }
-
-  @media (max-width: 480px) {
-    min-height: 300px;
   }
 `;
 
@@ -548,17 +407,8 @@ const ScrollableList = styled.div`
   overflow-y: auto;
   padding-right: 8px;
   margin-right: -8px;
-
   @media (max-width: 768px) {
     max-height: 280px;
-    padding-right: 4px;
-    margin-right: -4px;
-  }
-
-  @media (max-width: 480px) {
-    max-height: 240px;
-    padding-right: 2px;
-    margin-right: -2px;
   }
 `;
 
@@ -566,8 +416,9 @@ const ClassItemContainer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px;
-  border-radius: 8px;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 12px;
   margin-bottom: 8px;
   background-color: #fff;
   border: 1px solid ${colors.border};
@@ -576,23 +427,13 @@ const ClassItemContainer = styled.div`
   color: inherit;
 
   &:hover {
-    background-color: #f9fafb;
-    border-color: ${colors.primary}60;
+    background-color: ${colors.lightBg};
+    border-color: ${hexToRgba(colors.primary, 0.4)};
   }
 
   @media (max-width: 768px) {
-    padding: 10px;
-    border-radius: 6px;
-    margin-bottom: 6px;
-  }
-
-  @media (max-width: 480px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 8px;
-    border-radius: 4px;
-    margin-bottom: 4px;
+    padding: 12px;
+    gap: 12px;
   }
 `;
 
@@ -601,62 +442,56 @@ const ClassInfo = styled.div`
   flex-direction: column;
   flex-grow: 1;
   min-width: 0;
-
-  @media (max-width: 480px) {
-    width: 100%;
-  }
 `;
 
 const ClassName = styled.span`
   font-weight: 600;
   color: ${colors.textPrimary};
-  margin-bottom: 2px;
+  margin-bottom: 4px;
   font-size: 15px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.4;
+  word-break: break-word; /* Allow long words to break */
+  white-space: normal; /* Override any potential nowrap */
 
   @media (max-width: 768px) {
     font-size: 14px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 13px;
-    white-space: normal;
-    overflow: visible;
-    text-overflow: initial;
   }
 `;
 
 const ClassMeta = styled.span`
   color: ${colors.textSecondary};
   font-size: 13px;
+  display: flex;
+  align-items: center;
 
   @media (max-width: 768px) {
     font-size: 12px;
   }
+`;
 
-  @media (max-width: 480px) {
-    font-size: 11px;
-  }
+const OccupancyWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+`;
+
+const OccupancyText = styled.div`
+  font-size: 14px;
+  color: ${colors.textSecondary};
+  font-weight: 500;
 `;
 
 const OccupancyBar = styled.div`
-  width: 80px;
+  width: 100px;
   height: 6px;
   background-color: #e5e7eb;
   border-radius: 3px;
   overflow: hidden;
 
   @media (max-width: 768px) {
-    width: 60px;
-    height: 5px;
-  }
-
-  @media (max-width: 480px) {
-    width: 100%;
-    height: 4px;
-    margin-top: 4px;
+    width: 80px;
   }
 `;
 
@@ -665,30 +500,6 @@ const OccupancyFill = styled.div`
   background-color: ${(props) => props.color};
   width: ${(props) => props.percentage}%;
   transition: width 0.3s ease;
-`;
-
-// Mobile-optimized class controls
-const MobileClassControls = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  gap: 8px;
-
-  @media (min-width: 481px) {
-    display: none;
-  }
-`;
-
-const DesktopClassControls = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-
-  @media (max-width: 480px) {
-    display: none;
-  }
 `;
 
 const ActivityItem = styled(List.Item)`
@@ -702,15 +513,10 @@ const ActivityItem = styled(List.Item)`
     border-bottom: none !important;
   }
 
-  @media (max-width: 768px) {
-    padding: 10px 0 !important;
-  }
-
   @media (max-width: 480px) {
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
-    padding: 8px 0 !important;
   }
 `;
 
@@ -721,12 +527,7 @@ const ActivityContent = styled.div`
   flex: 1;
   min-width: 0;
 
-  @media (max-width: 768px) {
-    gap: 10px;
-  }
-
   @media (max-width: 480px) {
-    gap: 8px;
     width: 100%;
   }
 `;
@@ -750,22 +551,9 @@ const ActivityIcon = styled.div`
   @media (max-width: 768px) {
     width: 32px;
     height: 32px;
-    border-radius: 6px;
-
     svg {
       width: 16px;
       height: 16px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    width: 28px;
-    height: 28px;
-    border-radius: 4px;
-
-    svg {
-      width: 14px;
-      height: 14px;
     }
   }
 `;
@@ -779,10 +567,6 @@ const ActivityText = styled(Text)`
   @media (max-width: 768px) {
     font-size: 13px;
   }
-
-  @media (max-width: 480px) {
-    font-size: 12px;
-  }
 `;
 
 const TimeStamp = styled.span`
@@ -791,13 +575,7 @@ const TimeStamp = styled.span`
   white-space: nowrap;
   margin-left: 12px;
 
-  @media (max-width: 768px) {
-    font-size: 11px;
-    margin-left: 8px;
-  }
-
   @media (max-width: 480px) {
-    font-size: 10px;
     margin-left: 0;
     align-self: flex-end;
   }
@@ -815,23 +593,9 @@ const CustomRechartsTooltip = styled.div`
     color: ${colors.textSecondary};
     font-size: 13px;
   }
-
   strong {
     color: ${colors.textPrimary};
     font-size: 15px;
-  }
-
-  @media (max-width: 480px) {
-    padding: 8px;
-    border-radius: 6px;
-
-    p {
-      font-size: 11px;
-    }
-
-    strong {
-      font-size: 13px;
-    }
   }
 `;
 
@@ -841,17 +605,8 @@ const LoaderWrapper = styled.div`
   align-items: center;
   min-height: 200px;
   width: 100%;
-
-  @media (max-width: 768px) {
-    min-height: 150px;
-  }
-
-  @media (max-width: 480px) {
-    min-height: 120px;
-  }
 `;
 
-// New styled component for permission denied message
 const PermissionDeniedContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -862,11 +617,6 @@ const PermissionDeniedContainer = styled.div`
   margin-top: 10px;
   text-align: center;
   gap: 12px;
-
-  @media (max-width: 480px) {
-    gap: 8px;
-    margin-top: 8px;
-  }
 `;
 
 const PermissionDeniedText = styled(Text)`
@@ -874,14 +624,6 @@ const PermissionDeniedText = styled(Text)`
   font-size: 15px;
   color: ${colors.error} !important;
   margin: 0 !important;
-
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 13px;
-  }
 `;
 
 const PermissionDeniedSubtext = styled(Text)`
@@ -889,26 +631,12 @@ const PermissionDeniedSubtext = styled(Text)`
   color: ${colors.textSecondary} !important;
   margin: 0 !important;
   opacity: 0.8;
-
-  @media (max-width: 768px) {
-    font-size: 12px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 11px;
-  }
 `;
 
-// Mobile-optimized divider
 const ResponsiveDivider = styled(Divider)`
   margin: 24px 0;
-
   @media (max-width: 768px) {
     margin: 16px 0;
-  }
-
-  @media (max-width: 480px) {
-    margin: 12px 0;
   }
 `;
 
@@ -920,38 +648,19 @@ const EmptyStateContainer = styled.div`
   padding: ${(props) => props.$padding || "60px 20px"};
   text-align: center;
   gap: 16px;
-
-  @media (max-width: 768px) {
-    padding: ${(props) => props.$padding || "40px 16px"};
-    gap: 12px;
-  }
-
-  @media (max-width: 480px) {
-    padding: ${(props) => props.$padding || "30px 12px"};
-    gap: 10px;
-  }
 `;
 
 const EmptyStateIcon = styled.div`
   opacity: 0.3;
   filter: grayscale(100%);
-
   lord-icon {
     width: 80px;
     height: 80px;
   }
-
   @media (max-width: 768px) {
     lord-icon {
       width: 64px;
       height: 64px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    lord-icon {
-      width: 48px;
-      height: 48px;
     }
   }
 `;
@@ -960,14 +669,6 @@ const EmptyStateText = styled.div`
   color: ${colors.textSecondary};
   font-size: 15px;
   font-weight: 500;
-
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 13px;
-  }
 `;
 
 const EmptyStateSubtext = styled.div`
@@ -975,56 +676,68 @@ const EmptyStateSubtext = styled.div`
   font-size: 13px;
   opacity: 0.7;
   max-width: 300px;
+`;
+
+const ActionPromptContainer = styled.div`
+  background-color: ${hexToRgba(colors.warning, 0.05)};
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 
   @media (max-width: 768px) {
-    font-size: 12px;
-    max-width: 250px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 11px;
-    max-width: 200px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 `;
 
-const ActionPromptCard = styled(Card)`
-  background-color: ${hexToRgba(colors.warning, 0.08)};
-  border: 1px solid ${hexToRgba(colors.warning, 0.3)};
-  margin-bottom: 24px;
+const ActionPromptContent = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
 
-  .ant-card-body {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px 20px;
+const PopularClassItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid transparent;
+
+  &:hover {
+    background-color: ${colors.lightBg};
+    border-color: ${colors.border};
   }
+`;
 
-  @media (max-width: 768px) {
-    margin-bottom: 20px;
-    border-radius: 12px;
-    border-width: 1.5px;
+const RankNumber = styled.div`
+  font-size: 16px;
+  font-weight: 700;
+  color: ${colors.textSecondary};
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+`;
 
-    &::before {
-      width: 4px;
-    }
-
-    .ant-card-body {
-      flex-direction: column;
-      align-items: flex-start;
-      padding: 20px 20px 20px 24px;
-      gap: 16px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    margin-bottom: 16px;
-    border-radius: 10px;
-
-    .ant-card-body {
-      padding: 16px;
-      gap: 12px;
-    }
-  }
+const EnrollmentMetric = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: ${colors.chart.blue};
+  margin-left: auto;
+  flex-shrink: 0;
 `;
 
 const getOccupancyColor = (percentage) => {
@@ -1071,12 +784,14 @@ const metricDisplayInfo = {
     icon: Users,
     color: colors.chart.blue,
     link: "/business/dashboard/students",
+    footer: "vs last month",
   },
   active_classes: {
     title: "Active Classes",
     icon: BookOpen,
     color: colors.chart.green,
     link: "/business/dashboard/classes",
+    footer: "Total published classes",
   },
   monthly_revenue: {
     title: "Gross Revenue (Month)",
@@ -1084,6 +799,7 @@ const metricDisplayInfo = {
     color: colors.chart.purple,
     prefix: "$",
     link: "/business/dashboard/revenue",
+    footer: "vs last month",
   },
   average_rating: {
     title: "Average Rating",
@@ -1091,11 +807,10 @@ const metricDisplayInfo = {
     color: colors.chart.orange,
     suffix: "/5 stars",
     link: "/business/dashboard/reviews",
+    footer: "Based on all reviews",
   },
 };
 
-// --- START: FIXED COMPONENT ---
-// This component now correctly handles the animation after the skeleton disappears.
 const AnimatedNumberFlow = ({
   value,
   prefix = "",
@@ -1103,44 +818,29 @@ const AnimatedNumberFlow = ({
   loading,
   numberFormatOptions = {},
 }) => {
-  // State to hold the value that will be animated.
-  // We initialize it to 0, which is our animation starting point.
   const [displayValue, setDisplayValue] = useState(0);
-
-  const targetValue = useMemo(() => {
-    if (value == null || isNaN(value)) return 0;
-    return Number(value);
-  }, [value]);
-
+  const targetValue = useMemo(
+    () => (value == null || isNaN(value) ? 0 : Number(value)),
+    [value]
+  );
   useEffect(() => {
-    // When the loading from the parent is finished, we trigger the animation.
     if (!loading) {
-      // This timer ensures that the skeleton has been removed and the component
-      // has rendered once with its initial value (0) before starting the animation.
-      const timer = setTimeout(() => {
-        setDisplayValue(targetValue);
-      }, 50); // A brief delay is enough to ensure a smooth visual transition.
-
+      const timer = setTimeout(() => setDisplayValue(targetValue), 50);
       return () => clearTimeout(timer);
     }
-  }, [loading, targetValue]); // Re-run if loading state changes or the target value itself changes.
-
-  // The parent component (`Overview.jsx`) is responsible for rendering the <Skeleton>.
-  // This component is only rendered when loading is false.
-  // Therefore, we don't return null or a skeleton here, preventing the flicker.
+  }, [loading, targetValue]);
   return (
     <>
       {prefix}
       <NumberFlow
-        value={displayValue} // This value transitions from 0 to targetValue
+        value={displayValue}
         format={numberFormatOptions}
-        animated={true} // Animation is always enabled
+        animated={true}
       />
       {suffix}
     </>
   );
 };
-// --- END: FIXED COMPONENT ---
 
 const Overview = forwardRef((props, ref) => {
   const {
@@ -1151,10 +851,8 @@ const Overview = forwardRef((props, ref) => {
   } = useDashboard();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
-  const isSmallMobile = !screens.sm;
 
   const [userTimeZone, setUserTimeZone] = useState("UTC");
-
   useEffect(() => {
     setUserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
   }, []);
@@ -1163,9 +861,10 @@ const Overview = forwardRef((props, ref) => {
   const [editingScheduleId, setEditingScheduleId] = useState(null);
   const [scheduleEditDrawer, setScheduleEditDrawer] = useState({
     visible: false,
-    scheduleData: null,
-    optionType: null,
-    optionId: null,
+    classData: null,
+    editingSchedule: null,
+    startInEditMode: false,
+    hideBackButton: false,
   });
 
   const overviewTitleRef = useRef(null);
@@ -1173,7 +872,6 @@ const Overview = forwardRef((props, ref) => {
     getTargetElement: () => overviewTitleRef.current,
   }));
 
-  // Prepare animated values with better defaults
   const animatedValues = useMemo(() => {
     if (!overviewData?.metrics) {
       return {
@@ -1183,7 +881,6 @@ const Overview = forwardRef((props, ref) => {
         average_rating: 0,
       };
     }
-
     return {
       total_students: Number(overviewData.metrics.total_students?.value) || 0,
       active_classes: Number(overviewData.metrics.active_classes?.value) || 0,
@@ -1192,112 +889,65 @@ const Overview = forwardRef((props, ref) => {
     };
   }, [overviewData]);
 
-  const handleOpenEditDrawer = async (scheduleInstanceId) => {
+  const handleOpenEditDrawer = async (cls) => {
     if (editingScheduleId) return;
-    setEditingScheduleId(scheduleInstanceId);
+    setEditingScheduleId(cls.schedule_instance_id);
     try {
-      const result = await scheduleService.fetchInstance(scheduleInstanceId);
+      const result = await scheduleService.fetchInstance(
+        cls.schedule_instance_id
+      );
       if (result.success && result.data) {
         const apiData = result.data;
         if (!apiData.booking_type) {
-          message.error(
-            "This schedule lacks key details (like booking type) and cannot be edited from here."
-          );
+          message.error("Cannot edit: schedule is missing key details.");
           return;
         }
 
-        // Correctly transform the fetched data to match the drawer's expected props
-        const transformedData = {
-          id: apiData.schedule, // The actual schedule ID
+        const classDataForDrawer = {
+          title: cls.name,
+          option: {
+            optionId: apiData.option,
+            booking_type: apiData.booking_type,
+          },
+        };
+
+        const scheduleToEdit = {
+          id: apiData.schedule,
           name: apiData.name,
           price: apiData.price,
           maxParticipants: apiData.max_participants,
+          minParticipants: apiData.min_participants || 1,
           duration: apiData.duration,
-          time: apiData.time, // Already in HH:mm format
-          // Fields for "Single Session"
-          date: apiData.date, // Already in YYYY-MM-DD format
-          // Fields for "Full Course"
-          day: apiData.day,
-          start_date: apiData.start_date,
-          end_date: apiData.end_date,
-          allow_late_enrollment: apiData.allow_late_enrollment,
+          time: apiData.time,
+          date: apiData.date,
         };
 
         setScheduleEditDrawer({
           visible: true,
-          scheduleData: transformedData,
-          optionType: apiData.booking_type,
-          optionId: apiData.option,
+          classData: classDataForDrawer,
+          editingSchedule: scheduleToEdit,
+          startInEditMode: true,
+          hideBackButton: true,
         });
       } else {
         message.error(
-          getErrorMessage(result.error) ||
-            "Failed to load schedule details for editing."
+          getErrorMessage(result.error) || "Failed to load schedule details."
         );
       }
     } catch (err) {
       message.error(getErrorMessage(err));
-      console.error(err);
     } finally {
       setEditingScheduleId(null);
-    }
-  };
-
-  const handleScheduleSave = async (action, data) => {
-    if (action !== "edit" || !scheduleEditDrawer.scheduleData) {
-      message.error("Invalid save operation from this view.");
-      return;
-    }
-
-    const idToUpdate = scheduleEditDrawer.scheduleData.id;
-    if (!idToUpdate) {
-      message.error("Cannot update: Parent schedule ID is missing.");
-      return;
-    }
-
-    // Construct the full payload required by the backend serializer
-    let payload = {
-      name: data.name,
-      time: data.time,
-      duration: data.duration,
-      price: data.price,
-      maxParticipants: data.maxParticipants,
-    };
-
-    if (scheduleEditDrawer.optionType === "Single Session") {
-      payload.date = data.date;
-    } else if (scheduleEditDrawer.optionType === "Full Course") {
-      payload.day = data.day;
-      payload.start_date = data.start_date;
-      payload.end_date = data.end_date;
-      payload.allow_late_enrollment = data.allow_late_enrollment;
-    }
-
-    try {
-      const result = await scheduleService.updateSchedule(idToUpdate, payload);
-      if (result.success) {
-        message.success("Schedule updated successfully.");
-        handleCloseEditDrawer();
-        if (onDataRefresh) {
-          onDataRefresh();
-        }
-      } else {
-        message.error(
-          getErrorMessage(result.error) || "Failed to update the schedule."
-        );
-      }
-    } catch (error) {
-      console.error("Error updating schedule from overview:", error);
-      message.error(getErrorMessage(error));
     }
   };
 
   const handleCloseEditDrawer = () => {
     setScheduleEditDrawer({
       visible: false,
-      scheduleData: null,
-      optionType: null,
-      optionId: null,
+      classData: null,
+      editingSchedule: null,
+      startInEditMode: false,
+      hideBackButton: false,
     });
   };
 
@@ -1309,7 +959,6 @@ const Overview = forwardRef((props, ref) => {
     }));
   }, [overviewData, loading, error]);
 
-  // Check if revenue data access is denied
   const revenueAccessDenied = !overviewData?.metrics?.monthly_revenue;
 
   const renderRechartsTooltip = ({ active, payload, label }) => {
@@ -1332,16 +981,15 @@ const Overview = forwardRef((props, ref) => {
     return null;
   };
 
-  const mainStats = useMemo(() => {
-    // Always include monthly_revenue in the layout order.
-    // The rendering logic below will handle the permission check.
-    return [
+  const mainStats = useMemo(
+    () => [
       "total_students",
       "active_classes",
       "monthly_revenue",
       "average_rating",
-    ];
-  }, []);
+    ],
+    []
+  );
 
   const todaySnap = overviewData?.today_snapshot || {};
   const todaySnapshotMetrics = [
@@ -1408,37 +1056,40 @@ const Overview = forwardRef((props, ref) => {
         {!loading &&
           overviewData?.actionable_prompts?.classes_needing_schedules_count >
             0 && (
-            <ActionPromptCard>
-              <IconContainer
-                background={hexToRgba(colors.warning, 0.15)}
-                iconcolor={colors.warning}
-              >
-                <AlertTriangle />
-              </IconContainer>
-              <div style={{ flex: 1 }}>
-                <Text strong>Action Required</Text>
-                <Paragraph style={{ marginBottom: 0, color: "#4a5568" }}>
-                  You have{" "}
-                  <b>
-                    {
-                      overviewData.actionable_prompts
-                        .classes_needing_schedules_count
-                    }
-                  </b>{" "}
-                  {overviewData.actionable_prompts
-                    .classes_needing_schedules_count === 1
-                    ? "class that is"
-                    : "classes that are"}{" "}
-                  running out of schedules. Add more to keep them visible to
-                  students.
-                </Paragraph>
-              </div>
+            <ActionPromptContainer>
+              <ActionPromptContent>
+                <IconContainer
+                  background={hexToRgba(colors.warning, 0.15)}
+                  iconcolor={colors.warning}
+                >
+                  <AlertTriangle />
+                </IconContainer>
+                <div>
+                  <Text strong>Action Required</Text>
+                  <Paragraph
+                    style={{ marginBottom: 0, color: colors.textSecondary }}
+                  >
+                    You have{" "}
+                    <b>
+                      {
+                        overviewData.actionable_prompts
+                          .classes_needing_schedules_count
+                      }
+                    </b>{" "}
+                    {overviewData.actionable_prompts
+                      .classes_needing_schedules_count === 1
+                      ? "class that is"
+                      : "classes that are"}{" "}
+                    running out of available schedules.
+                  </Paragraph>
+                </div>
+              </ActionPromptContent>
               <Link href="/business/dashboard/classes">
                 <Button type="primary" ghost>
                   Manage Classes
                 </Button>
               </Link>
-            </ActionPromptCard>
+            </ActionPromptContainer>
           )}
 
         <ResponsiveDivider />
@@ -1448,13 +1099,14 @@ const Overview = forwardRef((props, ref) => {
             <BarChart size={isMobile ? 18 : 20} color={colors.primary} />
             Monthly Overview
           </SectionTitle>
+          <SectionDescription>
+            A high-level summary of your key performance indicators for the
+            current month.
+          </SectionDescription>
         </div>
 
         <StatsGrid>
           {mainStats.map((key) => {
-            const displayInfo = metricDisplayInfo[key];
-
-            // Handle loading state first for all cards
             if (loading) {
               return (
                 <MetricStatCard key={key}>
@@ -1462,8 +1114,6 @@ const Overview = forwardRef((props, ref) => {
                 </MetricStatCard>
               );
             }
-
-            // Handle permission denied state for the revenue card
             if (
               key === "monthly_revenue" &&
               !overviewData?.metrics?.monthly_revenue
@@ -1492,8 +1142,7 @@ const Overview = forwardRef((props, ref) => {
                 </MetricStatCard>
               );
             }
-
-            // Default rendering for all other cards with data
+            const displayInfo = metricDisplayInfo[key];
             const metric = overviewData?.metrics?.[key];
             const MetricIconComponent = displayInfo?.icon || Activity;
             const changeValue = metric?.change;
@@ -1502,7 +1151,6 @@ const Overview = forwardRef((props, ref) => {
             const isRating = key === "average_rating";
             const iconcolor = displayInfo?.color || colors.info;
             const iconBackground = hexToRgba(iconcolor, 0.1);
-
             const cardContent = (
               <>
                 <div>
@@ -1513,55 +1161,52 @@ const Overview = forwardRef((props, ref) => {
                     >
                       <MetricIconComponent />
                     </IconContainer>
-                    {changeValue != null && (
-                      <MetricChange change={changeValue}>
-                        {changeValue >= 0 ? (
-                          <LordIcon
-                            src="https://cdn.lordicon.com/excswhey.json"
-                            colors="primary:#30c702"
-                            size={isMobile ? "16px" : "20px"}
-                            trigger="hover"
-                            playOnLoad={true}
-                          />
-                        ) : (
-                          <LordIcon
-                            src="https://cdn.lordicon.com/zwtssiaj.json"
-                            colors="primary:#f56231"
-                            size={isMobile ? "16px" : "20px"}
-                            trigger="hover"
-                            playOnLoad={true}
-                          />
-                        )}
-                        {formatChange(changeValue, isPercentageChange)}
-                      </MetricChange>
-                    )}
                   </StatHeader>
                   <StatLabel>
                     {displayInfo?.title || key.replace(/_/g, " ")}
                   </StatLabel>
                 </div>
-                <MetricValue>
-                  {isRating &&
-                  (metric?.value == null || metric?.value === 0) ? (
-                    "N/A"
+                <div>
+                  <MetricValue>
+                    {isRating &&
+                    (metric?.value == null || metric?.value === 0) ? (
+                      "N/A"
+                    ) : (
+                      <AnimatedNumberFlow
+                        value={animatedValues[key]}
+                        prefix={displayInfo?.prefix || ""}
+                        suffix={displayInfo?.suffix || ""}
+                        loading={loading}
+                        numberFormatOptions={
+                          isRating
+                            ? { maximumFractionDigits: 1 }
+                            : { maximumFractionDigits: 0 }
+                        }
+                      />
+                    )}
+                  </MetricValue>
+                  {changeValue != null &&
+                  key !== "active_classes" &&
+                  key !== "average_rating" ? (
+                    <StatFooter>
+                      <PercentChange isPositive={changeValue >= 0}>
+                        {changeValue >= 0 ? (
+                          <TrendingUp size={12} />
+                        ) : (
+                          <TrendingDown size={12} />
+                        )}
+                        {formatChange(changeValue, isPercentageChange)}
+                      </PercentChange>
+                      {displayInfo?.footer}
+                    </StatFooter>
                   ) : (
-                    <AnimatedNumberFlow
-                      value={animatedValues[key]}
-                      prefix={displayInfo?.prefix || ""}
-                      suffix={displayInfo?.suffix || ""}
-                      loading={loading}
-                      numberFormatOptions={
-                        isRating
-                          ? { maximumFractionDigits: 1 }
-                          : { maximumFractionDigits: 0 }
-                      }
-                      uniqueKey={`main-${key}`}
-                    />
+                    displayInfo?.footer && (
+                      <StatFooter>{displayInfo.footer}</StatFooter>
+                    )
                   )}
-                </MetricValue>
+                </div>
               </>
             );
-
             return displayInfo?.link ? (
               <MetricStatCardLink href={displayInfo.link} key={key}>
                 <MetricStatCard $isClickable={!!displayInfo.link}>
@@ -1586,67 +1231,49 @@ const Overview = forwardRef((props, ref) => {
             />
             Today's Snapshot
           </SectionTitle>
+          <SectionDescription>
+            A real-time overview of your operational activities for today.
+          </SectionDescription>
         </div>
 
         <SnapshotGrid>
-          {todaySnapshotMetrics.map((stat) => {
-            const IconComponent = stat.icon || Activity;
-            const iconcolor = stat.color || colors.info;
-            const iconBackground = hexToRgba(iconcolor, 0.15);
-
-            const CardComponent = isSmallMobile
-              ? MobileSnapshotCard
-              : SnapshotStatCard;
-
-            return (
-              <CardComponent key={stat.key}>
-                {loading ? (
-                  <Skeleton
-                    active
-                    paragraph={{ rows: isSmallMobile ? 1 : 2 }}
-                  />
-                ) : (
-                  <>
-                    <div>
-                      <StatHeader>
-                        <IconContainer
-                          background={iconBackground}
-                          iconcolor={iconcolor}
-                        >
-                          <IconComponent />
-                        </IconContainer>
-                      </StatHeader>
-                      <StatLabel>{stat.title}</StatLabel>
-                    </div>
-                    <MetricValue>
-                      <AnimatedNumberFlow
-                        value={stat.value}
-                        loading={loading}
-                        numberFormatOptions={{ maximumFractionDigits: 0 }}
-                        uniqueKey={`snapshot-${stat.key}`}
-                      />
-                    </MetricValue>
-                  </>
-                )}
-              </CardComponent>
-            );
-          })}
+          {todaySnapshotMetrics.map((stat) => (
+            <SnapshotStatCard key={stat.key}>
+              {loading ? (
+                <Skeleton active paragraph={{ rows: 2 }} />
+              ) : (
+                <>
+                  <div>
+                    <StatHeader>
+                      <IconContainer
+                        background={hexToRgba(stat.color, 0.15)}
+                        iconcolor={stat.color}
+                      >
+                        {React.createElement(stat.icon)}
+                      </IconContainer>
+                    </StatHeader>
+                    <StatLabel>{stat.title}</StatLabel>
+                  </div>
+                  <MetricValue>
+                    <AnimatedNumberFlow
+                      value={stat.value}
+                      loading={loading}
+                      numberFormatOptions={{ maximumFractionDigits: 0 }}
+                    />
+                  </MetricValue>
+                </>
+              )}
+            </SnapshotStatCard>
+          ))}
         </SnapshotGrid>
 
         <ResponsiveDivider />
 
-        {/* Asymmetric Layout: Revenue Chart (Large - 16 cols) + Upcoming Classes (Smaller - 8 cols) */}
         <GridSection gutter={[isMobile ? 12 : 20, isMobile ? 12 : 20]}>
           <Col xs={24} lg={16}>
             <ChartCard>
               <CardTitle>
-                <LordIcon
-                  src="https://cdn.lordicon.com/excswhey.json"
-                  colors="primary:#f56231"
-                  size={isMobile ? "18px" : "20px"}
-                  trigger="hover"
-                  playOnLoad={true}
-                />
+                <TrendingUp size={isMobile ? 18 : 20} color={colors.primary} />
                 Revenue Trend (Last 30 days)
               </CardTitle>
               <ChartContainer>
@@ -1658,16 +1285,7 @@ const Overview = forwardRef((props, ref) => {
                   <PermissionDeniedContainer
                     style={{ marginTop: 0, height: "100%" }}
                   >
-                    <lord-icon
-                      src="https://cdn.lordicon.com/ebyacdql.json"
-                      trigger="in"
-                      state="in-cross"
-                      colors="primary:#c45759"
-                      style={{
-                        width: isMobile ? "32px" : "40px",
-                        height: isMobile ? "32px" : "40px",
-                      }}
-                    ></lord-icon>
+                    <Shield size={isMobile ? 32 : 40} />
                     <PermissionDeniedText>
                       Access Restricted
                     </PermissionDeniedText>
@@ -1700,7 +1318,7 @@ const Overview = forwardRef((props, ref) => {
                         top: 5,
                         right: isMobile ? 10 : 20,
                         bottom: 5,
-                        left: isMobile ? 5 : 20,
+                        left: isMobile ? -10 : 0,
                       }}
                     >
                       <CartesianGrid
@@ -1717,21 +1335,17 @@ const Overview = forwardRef((props, ref) => {
                         tickFormatter={(tick) =>
                           formatNaiveDate(tick, isMobile ? "M/d" : "MMM d")
                         }
-                        style={{ fontSize: isMobile ? "10px" : "12px" }}
+                        style={{ fontSize: "12px" }}
                       />
                       <YAxis
                         stroke={colors.textSecondary}
                         axisLine={false}
                         tickLine={false}
-                        tickFormatter={(value) =>
-                          value == null || isNaN(value)
-                            ? "$0"
-                            : `${Math.round(value)}`
-                        }
-                        width={isMobile ? 35 : 60}
+                        tickFormatter={(value) => `$${value}`}
+                        width={isMobile ? 45 : 50}
                         domain={["auto", "auto"]}
                         allowDecimals={false}
-                        style={{ fontSize: isMobile ? "10px" : "12px" }}
+                        style={{ fontSize: "12px" }}
                       />
                       <RechartsTooltip
                         content={renderRechartsTooltip}
@@ -1745,24 +1359,19 @@ const Overview = forwardRef((props, ref) => {
                         dataKey="gross_revenue"
                         name="Gross Revenue"
                         stroke={colors.primary}
-                        strokeWidth={isMobile ? 1.5 : 2}
-                        dot={
-                          revenueChartData.length <= 30
-                            ? {
-                                r: isMobile ? 3 : 4,
-                                fill: colors.primary,
-                                strokeWidth: 2,
-                                stroke: "white",
-                              }
-                            : false
-                        }
-                        activeDot={{
-                          r: isMobile ? 4 : 6,
+                        strokeWidth={2}
+                        dot={{
+                          r: 4,
                           fill: colors.primary,
                           strokeWidth: 2,
                           stroke: "white",
                         }}
-                        connectNulls={false}
+                        activeDot={{
+                          r: 6,
+                          fill: colors.primary,
+                          strokeWidth: 2,
+                          stroke: "white",
+                        }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -1784,6 +1393,7 @@ const Overview = forwardRef((props, ref) => {
                 overviewData.upcoming_classes.length > 0 ? (
                 <ScrollableList>
                   {overviewData.upcoming_classes.map((cls, index) => {
+                    const isCourseSession = cls.booking_type === "Full Course";
                     const occupancyPercentage =
                       cls.max_occupancy > 0
                         ? Math.min(
@@ -1793,85 +1403,75 @@ const Overview = forwardRef((props, ref) => {
                         : 0;
                     const occupancyColor =
                       getOccupancyColor(occupancyPercentage);
+                    const EditButtonComponent = () => {
+                      const button = (
+                        <Button
+                          type="text"
+                          shape="circle"
+                          icon={<Edit3 size={16} />}
+                          onClick={() => handleOpenEditDrawer(cls)}
+                          loading={
+                            editingScheduleId === cls.schedule_instance_id
+                          }
+                          disabled={isCourseSession}
+                        />
+                      );
+                      if (isCourseSession) {
+                        return (
+                          <Tooltip title="Course schedules are edited from the 'My Classes' page, not individually.">
+                            <span
+                              style={{
+                                display: "inline-block",
+                                cursor: "not-allowed",
+                              }}
+                            >
+                              {button}
+                            </span>
+                          </Tooltip>
+                        );
+                      }
+                      return <Tooltip title="Edit Schedule">{button}</Tooltip>;
+                    };
                     return (
                       <ClassItemContainer
                         key={cls.schedule_instance_id || index}
                       >
                         <ClassInfo>
                           <ClassName>{cls.name}</ClassName>
-                          <ClassMeta>{cls.time}</ClassMeta>
+                          <ClassMeta>
+                            {isCourseSession && (
+                              <Tooltip title="This is a session within a multi-day course.">
+                                <TagIcon
+                                  size={12}
+                                  style={{
+                                    marginRight: 6,
+                                    verticalAlign: "middle",
+                                    color: colors.chart.purple,
+                                  }}
+                                />
+                              </Tooltip>
+                            )}
+                            {cls.time}
+                          </ClassMeta>
                         </ClassInfo>
-
-                        <DesktopClassControls>
+                        <Space>
                           <Tooltip
                             title={`Occupancy: ${cls.current_occupancy}/${cls.max_occupancy}`}
                           >
-                            <Space>
-                              <Users size={16} color={colors.textSecondary} />
-                              <span
-                                style={{
-                                  color: colors.textSecondary,
-                                  fontSize: "14px",
-                                  minWidth: "40px",
-                                  textAlign: "right",
-                                }}
-                              >
+                            <OccupancyWrapper>
+                              <OccupancyText>
                                 {cls.current_occupancy}/{cls.max_occupancy}
-                              </span>
+                              </OccupancyText>
                               <OccupancyBar>
                                 <OccupancyFill
                                   color={occupancyColor}
                                   percentage={occupancyPercentage}
                                 />
                               </OccupancyBar>
-                            </Space>
+                            </OccupancyWrapper>
                           </Tooltip>
-                          <Tooltip title="Edit Schedule">
-                            <Button
-                              type="text"
-                              shape="circle"
-                              icon={<Edit3 size={16} />}
-                              onClick={() =>
-                                handleOpenEditDrawer(cls.schedule_instance_id)
-                              }
-                              loading={
-                                editingScheduleId === cls.schedule_instance_id
-                              }
-                            />
-                          </Tooltip>
-                        </DesktopClassControls>
-
-                        <MobileClassControls>
-                          <Space>
-                            <Users size={14} color={colors.textSecondary} />
-                            <span
-                              style={{
-                                color: colors.textSecondary,
-                                fontSize: "12px",
-                              }}
-                            >
-                              {cls.current_occupancy}/{cls.max_occupancy}
-                            </span>
-                          </Space>
-                          <Button
-                            type="text"
-                            size="small"
-                            shape="circle"
-                            icon={<Edit3 size={14} />}
-                            onClick={() =>
-                              handleOpenEditDrawer(cls.schedule_instance_id)
-                            }
-                            loading={
-                              editingScheduleId === cls.schedule_instance_id
-                            }
-                          />
-                          <OccupancyBar>
-                            <OccupancyFill
-                              color={occupancyColor}
-                              percentage={occupancyPercentage}
-                            />
-                          </OccupancyBar>
-                        </MobileClassControls>
+                          <EditButtonComponent />
+                        </Space>
                       </ClassItemContainer>
                     );
                   })}
@@ -1884,7 +1484,6 @@ const Overview = forwardRef((props, ref) => {
                         src="https://cdn.lordicon.com/fhtaantg.json"
                         trigger="in"
                         colors="primary:#94a3b8"
-                        style={{ height: 40, width: 40 }}
                       />
                     </EmptyStateIcon>
                     <EmptyStateText>No upcoming classes</EmptyStateText>
@@ -1898,7 +1497,6 @@ const Overview = forwardRef((props, ref) => {
           </Col>
         </GridSection>
 
-        {/* Asymmetric Layout: Popular Classes (Smaller - 8 cols) + Recent Activity (Large - 16 cols) */}
         <GridSection gutter={[isMobile ? 12 : 20, isMobile ? 12 : 20]}>
           <Col xs={24} lg={8}>
             <ContentListCard>
@@ -1919,38 +1517,20 @@ const Overview = forwardRef((props, ref) => {
                       key={index}
                       style={{ textDecoration: "none" }}
                     >
-                      <ClassItemContainer>
-                        <ClassName style={{ flexGrow: 1 }}>
-                          {cls.name}
-                        </ClassName>
-                        <Space align="center">
-                          <Users
-                            size={isMobile ? 14 : 16}
-                            color={colors.chart.blue}
+                      <PopularClassItem>
+                        <RankNumber>#{index + 1}</RankNumber>
+                        <ClassInfo>
+                          <ClassName>{cls.name}</ClassName>
+                        </ClassInfo>
+                        <EnrollmentMetric>
+                          <Users size={16} />
+                          <AnimatedNumberFlow
+                            value={cls.enrollment || 0}
+                            loading={loading}
+                            numberFormatOptions={{ maximumFractionDigits: 0 }}
                           />
-                          <span
-                            style={{
-                              color: colors.chart.blue,
-                              fontWeight: 500,
-                              fontSize: isMobile ? "12px" : "14px",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px",
-                            }}
-                          >
-                            <AnimatedNumberFlow
-                              value={cls.enrollment || 0}
-                              loading={loading}
-                              numberFormatOptions={{
-                                maximumFractionDigits: 0,
-                              }}
-                              uniqueKey={`popular-${index}`}
-                            />
-                            student
-                            {(cls.enrollment || 0) !== 1 ? "s" : ""}
-                          </span>
-                        </Space>
-                      </ClassItemContainer>
+                        </EnrollmentMetric>
+                      </PopularClassItem>
                     </Link>
                   ))}
                 </ScrollableList>
@@ -1962,7 +1542,6 @@ const Overview = forwardRef((props, ref) => {
                         src="https://cdn.lordicon.com/fhtaantg.json"
                         trigger="in"
                         colors="primary:#94a3b8"
-                        style={{ height: 40, width: 40 }}
                       />
                     </EmptyStateIcon>
                     <EmptyStateText>No enrollment data yet</EmptyStateText>
@@ -1999,12 +1578,11 @@ const Overview = forwardRef((props, ref) => {
                                 src="https://cdn.lordicon.com/bgebyztw.json"
                                 trigger="in"
                                 colors="primary:#94a3b8"
-                                style={{ height: 40, width: 40 }}
                               />
                             </EmptyStateIcon>
                             <EmptyStateText>No recent activity</EmptyStateText>
                             <EmptyStateSubtext>
-                              Activity from the past 30 days will appear here
+                              Activity from the past 3 days will appear here
                             </EmptyStateSubtext>
                           </EmptyStateContainer>
                         </div>
@@ -2016,7 +1594,7 @@ const Overview = forwardRef((props, ref) => {
                         ? formatUTCToUserDisplay(
                             activity.timestamp,
                             userTimeZone,
-                            { dateTimeFormat: isMobile ? "p" : "p, MMM d" }
+                            { dateTimeFormat: "p, MMM d" }
                           )
                         : "N/A";
                       return (
@@ -2025,7 +1603,7 @@ const Overview = forwardRef((props, ref) => {
                             <ActivityIcon
                               background={activity.color || colors.info}
                             >
-                              <IconComponent size={isMobile ? 14 : 18} />
+                              <IconComponent size={18} />
                             </ActivityIcon>
                             <ActivityText>{activity.message}</ActivityText>
                           </ActivityContent>
@@ -2054,11 +1632,12 @@ const Overview = forwardRef((props, ref) => {
 
         <ScheduleEditDrawer
           open={scheduleEditDrawer.visible}
-          onCancel={handleCloseEditDrawer}
-          onSubmit={handleScheduleSave}
-          editingSchedule={scheduleEditDrawer.scheduleData}
-          optionType={scheduleEditDrawer.optionType}
-          optionId={scheduleEditDrawer.optionId}
+          onClose={handleCloseEditDrawer}
+          onSchedulesUpdate={onDataRefresh}
+          classData={scheduleEditDrawer.classData}
+          editingSchedule={scheduleEditDrawer.editingSchedule}
+          startInEditMode={scheduleEditDrawer.startInEditMode}
+          hideBackButton={scheduleEditDrawer.hideBackButton}
           form={scheduleForm}
         />
       </DashboardWrapper>
