@@ -1,43 +1,32 @@
+// src/app/business/dashboard/[...tab]/page.jsx
+
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useParams } from "next/navigation";
 
-// Static imports - no dynamic loading
+// Import all tab components
 import Overview from "../_components/tabs/overview/Overview";
 import ActiveBookings from "../_components/tabs/bookings/ActiveBookings";
 import BookingHistory from "../_components/tabs/bookings/BookingHistory";
-import Students from "../_components/tabs/students/Students";
-import Revenue from "../_components/tabs/finances/Revenue";
-import Discounts from "../_components/tabs/discounts/Discounts";
-import BusinessReviews from "../_components/tabs/reviews/BusinessReviews";
 import ClassManagement from "../_components/tabs/classes/manageclasses/ClassManagement";
-import BookingTrends from "../_components/tabs/bookings/BookingTrends";
-import Payouts from "../_components/tabs/payouts/Payouts";
+import BusinessReviews from "../_components/tabs/reviews/BusinessReviews";
+import Students from "../_components/tabs/students/Students";
 import Staff from "../_components/tabs/staff/Staff";
+import Revenue from "../_components/tabs/finances/Revenue";
+import Payouts from "../_components/tabs/payouts/Payouts";
+import BookingTrends from "../_components/tabs/bookings/BookingTrends";
+import Discounts from "../_components/tabs/discounts/Discounts";
 import WidgetCustomizer from "../_components/tabs/widget/WidgetCustomizer";
 
 export default function DashboardPage() {
   const params = useParams();
-  const router = useRouter();
 
-  // Extract tab from params - default to overview if no tab
-  const activeKey = params.tab
-    ? Array.isArray(params.tab)
-      ? params.tab.join("/")
-      : params.tab
-    : "overview";
+  const activeKey = params.tab ? params.tab.join("/") : "overview";
+  console.error(`[Page] Rendering content for activeKey: "${activeKey}"`);
 
-  // Redirect to overview if no tab specified
-  useEffect(() => {
-    if (!params.tab) {
-      router.replace("/business/dashboard/overview");
-    }
-  }, [params.tab, router]);
-
-  // Render the appropriate tab content - each component fetches its own data
   switch (activeKey) {
     case "overview":
+      // UPDATED: Overview no longer receives props
       return <Overview />;
     case "bookings/active":
       return <ActiveBookings />;
@@ -61,8 +50,18 @@ export default function DashboardPage() {
       return <Discounts />;
     case "widget":
       return <WidgetCustomizer />;
-    default:
-      // Unknown route - show overview
+    case "settings":
+      // UPDATED: Settings now renders Overview without props
       return <Overview />;
+    default:
+      console.error(
+        `[Page] FATAL: Unknown route detected: "${activeKey}". Rendering error message.`
+      );
+      return (
+        <div>
+          <h2>Error: Page Not Found</h2>
+          <p>The dashboard tab "/{activeKey}" does not exist.</p>
+        </div>
+      );
   }
 }
