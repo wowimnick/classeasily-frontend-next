@@ -21,12 +21,14 @@ import WidgetCustomizer from "../_components/tabs/widget/WidgetCustomizer";
 export default function DashboardPage() {
   const params = useParams();
 
+  // The key is now calculated directly from params for the switch statement
   const activeKey = params.tab ? params.tab.join("/") : "overview";
-  console.error(`[Page] Rendering content for activeKey: "${activeKey}"`);
+
+  // The console log can be removed as the layout now handles the stable state
+  // console.error(`[Page] Rendering content for activeKey: "${activeKey}"`);
 
   switch (activeKey) {
     case "overview":
-      // UPDATED: Overview no longer receives props
       return <Overview />;
     case "bookings/active":
       return <ActiveBookings />;
@@ -51,7 +53,6 @@ export default function DashboardPage() {
     case "widget":
       return <WidgetCustomizer />;
     case "settings":
-      // UPDATED: Settings now renders Overview without props
       return <Overview />;
     default:
       console.error(

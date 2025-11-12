@@ -662,9 +662,7 @@ const menuItemPermissions = {
 
 const SideMenuComponent = memo(
   forwardRef(({ onMenuSelect, activeKey }, ref) => {
-    const [displaySelectedKey, setDisplaySelectedKey] = useState(
-      activeKey || "overview"
-    );
+    // REMOVED: displaySelectedKey state is no longer needed.
     const [isMobile, setIsMobile] = useState(false);
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [settingsDrawerVisible, setSettingsDrawerVisible] = useState(false);
@@ -721,14 +719,12 @@ const SideMenuComponent = memo(
         } else {
           sessionStorage.removeItem("scrollToSection");
         }
-        setDisplaySelectedKey("settings");
+        // REMOVED: setDisplaySelectedKey("settings");
         setSettingsDrawerVisible(true);
       },
       closeSettingsDrawer: () => {
         setSettingsDrawerVisible(false);
-        if (activeKey !== "settings") {
-          setDisplaySelectedKey(activeKey || "overview");
-        }
+        // REMOVED: Logic to reset displaySelectedKey
       },
       getBusinessSettingsRef: () => businessSettingsRefInternal,
     }));
@@ -792,11 +788,7 @@ const SideMenuComponent = memo(
       fetchBusinessProfile("initial mount");
     }, [fetchBusinessProfile]);
 
-    useEffect(() => {
-      if (!settingsDrawerVisible || activeKey === "settings") {
-        setDisplaySelectedKey(activeKey || "overview");
-      }
-    }, [activeKey, settingsDrawerVisible]);
+    // REMOVED: useEffect that was syncing displaySelectedKey with activeKey
 
     useEffect(() => {
       const handleResize = () => setIsMobile(window.innerWidth <= 1024);
@@ -806,9 +798,9 @@ const SideMenuComponent = memo(
     }, []);
 
     useEffect(() => {
-      if (displaySelectedKey) {
+      if (activeKey) {
         const parentKey = menuItemsConfig.find((item) =>
-          item.children?.some((child) => child.key === displaySelectedKey)
+          item.children?.some((child) => child.key === activeKey)
         )?.key;
         if (parentKey && !openKeys.includes(parentKey)) {
           setOpenKeys((prevKeys) => {
@@ -817,7 +809,7 @@ const SideMenuComponent = memo(
           });
         }
       }
-    }, [displaySelectedKey]);
+    }, [activeKey]); // UPDATED: Dependency is now activeKey
 
     useEffect(() => {
       if (typeof window === "undefined") return;
@@ -826,7 +818,7 @@ const SideMenuComponent = memo(
       if (forcedTab) {
         sessionStorage.removeItem("forceOpenSettingsTab");
         activeSettingsTab.current = forcedTab;
-        setDisplaySelectedKey("settings");
+        // REMOVED: setDisplaySelectedKey("settings");
         setSettingsDrawerVisible(true);
         fetchBusinessProfile("after Stripe redirect");
       }
@@ -837,12 +829,12 @@ const SideMenuComponent = memo(
     const handleMenuClick = (e) => {
       if (e.key === "settings") {
         activeSettingsTab.current = "general";
-        setDisplaySelectedKey("settings");
+        // REMOVED: setDisplaySelectedKey("settings");
         setSettingsDrawerVisible(true);
         if (isMobile) setDrawerVisible(false);
         return;
       }
-      setDisplaySelectedKey(e.key);
+      // REMOVED: setDisplaySelectedKey(e.key);
       if (onMenuSelect) onMenuSelect(e.key);
       if (isMobile) setDrawerVisible(false);
     };
@@ -864,7 +856,7 @@ const SideMenuComponent = memo(
 
     const handleSettingsClose = () => {
       setSettingsDrawerVisible(false);
-      setDisplaySelectedKey(activeKey || "overview");
+      // REMOVED: setDisplaySelectedKey(activeKey || "overview");
     };
 
     const handleSettingsTabChange = (key) => (activeSettingsTab.current = key);
@@ -931,7 +923,7 @@ const SideMenuComponent = memo(
         });
       };
       setTimeout(updateAllIconColors, 100);
-    }, [displaySelectedKey, openKeys, updateIconColors]);
+    }, [activeKey, openKeys, updateIconColors]); // UPDATED: Dependency is now activeKey
 
     const getMenuItemsForAntd = React.useMemo(() => {
       const attachRefToLabel = (label, key) => {
@@ -1016,7 +1008,7 @@ const SideMenuComponent = memo(
       <MenuContainer>
         <StyledAntMenu
           mode="inline"
-          selectedKeys={[displaySelectedKey]}
+          selectedKeys={[activeKey]} // UPDATED: Use activeKey prop
           openKeys={openKeys}
           onOpenChange={handleOpenChange}
           onClick={handleMenuClick}
@@ -1029,7 +1021,7 @@ const SideMenuComponent = memo(
       <MobileMenuContainer>
         <StyledAntMenu
           mode="inline"
-          selectedKeys={[displaySelectedKey]}
+          selectedKeys={[activeKey]} // UPDATED: Use activeKey prop
           openKeys={openKeys}
           onOpenChange={handleOpenChange}
           onClick={handleMenuClick}
