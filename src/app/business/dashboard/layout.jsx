@@ -2,7 +2,6 @@
 
 "use client";
 
-// --- IMPORT useState and useEffect ---
 import { useCallback, useRef, useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import styled from "styled-components";
@@ -66,24 +65,59 @@ function DashboardLayoutInner({ children }) {
   const pathname = usePathname();
   const sideMenuRef = useRef(null);
 
-  // --- STABLE STATE MANAGEMENT PATTERN (from working Admin page) ---
+  // --- STABLE STATE MANAGEMENT PATTERN ---
   const pathKey = pathname.replace("/business/dashboard/", "") || "overview";
   const [activeKey, setActiveKey] = useState(pathKey);
+
+  // EXTENSIVE LOGGING: Render Cycle
+  console.error(
+    `[Layout] RENDER START -----------------------------------------`
+  );
+  console.error(`[Layout] Props check | Pathname: "${pathname}"`);
+  console.error(`[Layout] State check | Current activeKey: "${activeKey}"`);
 
   useEffect(() => {
     const currentPathKey =
       pathname.replace("/business/dashboard/", "") || "overview";
-    setActiveKey(currentPathKey);
-  }, [pathname]);
-  // ----------------------------------------------------------------
+
+    console.error(`[Layout] EFFECT TRIGGERED | Dependency: [pathname]`);
+    console.error(
+      `[Layout] Logic | Comparing state "${activeKey}" with derived key "${currentPathKey}"`
+    );
+
+    if (activeKey !== currentPathKey) {
+      console.error(
+        `[Layout] ACTION | Updating activeKey state to: "${currentPathKey}"`
+      );
+      setActiveKey(currentPathKey);
+    } else {
+      console.error(`[Layout] ACTION | Keys match, NO state update required.`);
+    }
+  }, [pathname, activeKey]);
 
   const handleMenuSelect = useCallback(
     (key) => {
+      console.error(
+        `[Layout] HANDLER | handleMenuSelect called with key: "${key}"`
+      );
       if (key !== "settings") {
-        router.push(`/business/dashboard/${key}`);
+        const targetPath = `/business/dashboard/${key}`;
+        console.error(`[Layout] NAVIGATING | router.push("${targetPath}")`);
+        router.push(targetPath);
+      } else {
+        console.error(
+          `[Layout] HANDLER | Settings selected, no navigation needed.`
+        );
       }
     },
     [router]
+  );
+
+  console.error(
+    `[Layout] RENDER END | Passing activeKey="${activeKey}" to SideMenu`
+  );
+  console.error(
+    `[Layout] -------------------------------------------------------`
   );
 
   return (
@@ -97,13 +131,12 @@ function DashboardLayoutInner({ children }) {
             <SideMenu
               ref={sideMenuRef}
               onMenuSelect={handleMenuSelect}
-              activeKey={activeKey} // Pass the stable state down
+              activeKey={activeKey}
             />
           </SideMenuWrapper>
           <MainContent>{children}</MainContent>
         </DashboardContainer>
 
-        {/* Restore the SetupGuideWrapper */}
         <SetupGuideWrapper sideMenuRef={sideMenuRef} />
       </PageLayout>
     </ConfigProvider>
@@ -112,7 +145,6 @@ function DashboardLayoutInner({ children }) {
 
 export default function DashboardLayout({ children }) {
   return (
-    // Restore the PermissionProtectedRoute
     <PermissionProtectedRoute requiredPermission="quickstart.access_business_dashboard">
       <DashboardLayoutInner>{children}</DashboardLayoutInner>
     </PermissionProtectedRoute>

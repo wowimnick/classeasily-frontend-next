@@ -21,48 +21,85 @@ import WidgetCustomizer from "../_components/tabs/widget/WidgetCustomizer";
 export default function DashboardPage() {
   const params = useParams();
 
-  // The key is now calculated directly from params for the switch statement
+  // Calculate key
   const activeKey = params.tab ? params.tab.join("/") : "overview";
 
-  // The console log can be removed as the layout now handles the stable state
-  // console.error(`[Page] Rendering content for activeKey: "${activeKey}"`);
+  // EXTENSIVE LOGGING: Page Level
+  console.error(
+    `[Page] RENDER START >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>`
+  );
+  console.error(`[Page] Params received:`, JSON.stringify(params));
+  console.error(`[Page] Derived activeKey: "${activeKey}"`);
+
+  let componentToRender;
+  let componentName = "";
 
   switch (activeKey) {
     case "overview":
-      return <Overview />;
+      componentToRender = <Overview />;
+      componentName = "Overview";
+      break;
     case "bookings/active":
-      return <ActiveBookings />;
+      componentToRender = <ActiveBookings />;
+      componentName = "ActiveBookings";
+      break;
     case "bookings/history":
-      return <BookingHistory />;
+      componentToRender = <BookingHistory />;
+      componentName = "BookingHistory";
+      break;
     case "classes":
-      return <ClassManagement />;
+      componentToRender = <ClassManagement />;
+      componentName = "ClassManagement";
+      break;
     case "reviews":
-      return <BusinessReviews />;
+      componentToRender = <BusinessReviews />;
+      componentName = "BusinessReviews";
+      break;
     case "students":
-      return <Students />;
+      componentToRender = <Students />;
+      componentName = "Students";
+      break;
     case "staff":
-      return <Staff />;
+      componentToRender = <Staff />;
+      componentName = "Staff";
+      break;
     case "revenue":
-      return <Revenue />;
+      componentToRender = <Revenue />;
+      componentName = "Revenue";
+      break;
     case "payouts":
-      return <Payouts />;
+      componentToRender = <Payouts />;
+      componentName = "Payouts";
+      break;
     case "trends":
-      return <BookingTrends />;
+      componentToRender = <BookingTrends />;
+      componentName = "BookingTrends";
+      break;
     case "discounts":
-      return <Discounts />;
+      componentToRender = <Discounts />;
+      componentName = "Discounts";
+      break;
     case "widget":
-      return <WidgetCustomizer />;
+      componentToRender = <WidgetCustomizer />;
+      componentName = "WidgetCustomizer";
+      break;
     case "settings":
-      return <Overview />;
+      componentToRender = <Overview />;
+      componentName = "Overview (Settings Mode)";
+      break;
     default:
-      console.error(
-        `[Page] FATAL: Unknown route detected: "${activeKey}". Rendering error message.`
-      );
-      return (
+      console.error(`[Page] FATAL | Unknown key "${activeKey}"`);
+      componentName = "ErrorDisplay";
+      componentToRender = (
         <div>
           <h2>Error: Page Not Found</h2>
           <p>The dashboard tab "/{activeKey}" does not exist.</p>
         </div>
       );
   }
+
+  console.error(`[Page] DECISION | Returning component: <${componentName} />`);
+  console.error(`[Page] RENDER END <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`);
+
+  return componentToRender;
 }
