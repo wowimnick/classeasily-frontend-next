@@ -65,59 +65,16 @@ function DashboardLayoutInner({ children }) {
   const pathname = usePathname();
   const sideMenuRef = useRef(null);
 
-  // --- STABLE STATE MANAGEMENT PATTERN ---
-  const pathKey = pathname.replace("/business/dashboard/", "") || "overview";
-  const [activeKey, setActiveKey] = useState(pathKey);
-
-  // EXTENSIVE LOGGING: Render Cycle
-  console.error(
-    `[Layout] RENDER START -----------------------------------------`
-  );
-  console.error(`[Layout] Props check | Pathname: "${pathname}"`);
-  console.error(`[Layout] State check | Current activeKey: "${activeKey}"`);
-
-  useEffect(() => {
-    const currentPathKey =
-      pathname.replace("/business/dashboard/", "") || "overview";
-
-    console.error(`[Layout] EFFECT TRIGGERED | Dependency: [pathname]`);
-    console.error(
-      `[Layout] Logic | Comparing state "${activeKey}" with derived key "${currentPathKey}"`
-    );
-
-    if (activeKey !== currentPathKey) {
-      console.error(
-        `[Layout] ACTION | Updating activeKey state to: "${currentPathKey}"`
-      );
-      setActiveKey(currentPathKey);
-    } else {
-      console.error(`[Layout] ACTION | Keys match, NO state update required.`);
-    }
-  }, [pathname, activeKey]);
+  // Derive activeKey directly from pathname - no state needed!
+  const activeKey = pathname.replace("/business/dashboard/", "") || "overview";
 
   const handleMenuSelect = useCallback(
     (key) => {
-      console.error(
-        `[Layout] HANDLER | handleMenuSelect called with key: "${key}"`
-      );
       if (key !== "settings") {
-        const targetPath = `/business/dashboard/${key}`;
-        console.error(`[Layout] NAVIGATING | router.push("${targetPath}")`);
-        router.push(targetPath);
-      } else {
-        console.error(
-          `[Layout] HANDLER | Settings selected, no navigation needed.`
-        );
+        router.push(`/business/dashboard/${key}`);
       }
     },
     [router]
-  );
-
-  console.error(
-    `[Layout] RENDER END | Passing activeKey="${activeKey}" to SideMenu`
-  );
-  console.error(
-    `[Layout] -------------------------------------------------------`
   );
 
   return (
@@ -136,7 +93,6 @@ function DashboardLayoutInner({ children }) {
           </SideMenuWrapper>
           <MainContent>{children}</MainContent>
         </DashboardContainer>
-
         <SetupGuideWrapper sideMenuRef={sideMenuRef} />
       </PageLayout>
     </ConfigProvider>

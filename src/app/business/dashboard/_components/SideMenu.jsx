@@ -837,24 +837,19 @@ const SideMenuComponent = memo(
     }, []);
 
     useEffect(() => {
-      console.error(
-        `[SideMenuComponent] useEffect (activeKey/openKeys sync) triggered for activeKey: ${activeKey}`
-      );
-      if (activeKey) {
-        const parentKey = menuItemsConfig.find((item) =>
-          item.children?.some((child) => child.key === activeKey)
-        )?.key;
-        if (parentKey && !openKeys.includes(parentKey)) {
-          console.error(
-            `[SideMenuComponent] Adding parentKey "${parentKey}" to openKeys`
-          );
-          setOpenKeys((prevKeys) => {
-            if (prevKeys.includes(parentKey)) return prevKeys;
-            return [...prevKeys, parentKey];
-          });
-        }
+      const parentKey = menuItemsConfig.find((item) =>
+        item.children?.some((child) => child.key === activeKey)
+      )?.key;
+
+      if (parentKey) {
+        setOpenKeys((prevOpenKeys) => {
+          if (prevOpenKeys.includes(parentKey)) {
+            return prevOpenKeys; // No change needed
+          }
+          return [parentKey]; // Set the new parent key
+        });
       }
-    }, [activeKey, openKeys]);
+    }, [activeKey]);
 
     useEffect(() => {
       console.error(
@@ -995,8 +990,13 @@ const SideMenuComponent = memo(
           updateIconColors(item, isSelected, false, isSubmenuTitle);
         });
       };
-      setTimeout(updateAllIconColors, 100);
-    }, [activeKey, openKeys, updateIconColors]);
+
+      const timeoutId = setTimeout(updateAllIconColors, 100);
+
+      return () => {
+        clearTimeout(timeoutId);
+      };
+    }, [activeKey, openKeys]);
 
     const getMenuItemsForAntd = useMemo(() => {
       console.error(
@@ -1087,8 +1087,8 @@ const SideMenuComponent = memo(
           <StyledAntMenu
             mode="inline"
             selectedKeys={[activeKey]}
+            onOpenChange={setOpenKeys} // Directly connect the handler to the state setter
             openKeys={openKeys}
-            onOpenChange={handleOpenChange}
             onClick={handleMenuClick}
             items={getMenuItemsForAntd}
           />
@@ -1103,8 +1103,8 @@ const SideMenuComponent = memo(
           <StyledAntMenu
             mode="inline"
             selectedKeys={[activeKey]}
+            onOpenChange={setOpenKeys} // Directly connect the handler to the state setter
             openKeys={openKeys}
-            onOpenChange={handleOpenChange}
             onClick={handleMenuClick}
             items={getMenuItemsForAntd}
           />

@@ -117,7 +117,7 @@ const HeaderWrapper = styled.header`
   box-shadow: ${(props) =>
     props.$isScrolled ? "0 2px 10px rgba(0, 0, 0, 0.1)" : "none"};
   backdrop-filter: ${(props) => (props.$isScrolled ? "blur(8px)" : "none")};
-  padding: ${(props) => (props.$isScrolled ? "0rem 1rem" : "0.5rem 3rem")};
+  padding: ${(props) => (props.$isScrolled ? "0.3rem 2rem" : "0.5rem 3rem")};
   color: ${(props) =>
     props.$isScrolled ? scrolledStyling.textColor : props.$initialColor};
   text-align: center;
@@ -133,8 +133,37 @@ const HeaderWrapper = styled.header`
   transition: all 0.3s ease-in-out;
   z-index: 999;
 
+  @media (min-width: 757px) {
+    /* Desktop: Subtle glass effect when scrolled */
+    ${(props) =>
+      props.$isScrolled &&
+      `
+      background-color: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px) saturate(180%);
+      -webkit-backdrop-filter: blur(12px) saturate(180%);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), 
+                  inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    `}
+  }
+
   @media (max-width: 756px) {
-    padding: ${(props) => (props.$isScrolled ? "0.4rem 1rem" : "0.5rem 1rem")};
+    /* iOS 26 Liquid Glass styling - detached, rounded, glassmorphic */
+    width: calc(100% - 2rem);
+    left: 1rem;
+    right: 1rem;
+    top: ${(props) => (props.$isImpersonating ? "48px" : "0.5rem")};
+    border-radius: 9999px;
+    padding: 0.5rem 1rem;
+    background-color: ${(props) =>
+      props.$isScrolled
+        ? "rgba(255, 255, 255, 0.25)"
+        : "rgba(255, 255, 255, 0.15)"};
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.25);
   }
 `;
 
@@ -164,7 +193,7 @@ const RoundedButton = styled(motion.button)`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.8rem;
+  padding: ${(props) => (props.$isScrolled ? "0.5rem 0.7rem" : "0.8rem")};
   border-radius: 30px;
   background-color: transparent;
   cursor: pointer;
@@ -172,16 +201,19 @@ const RoundedButton = styled(motion.button)`
   color: ${(props) => props.color};
   gap: 0.5rem;
   margin-left: 1rem;
-  padding-left: 1rem;
+  padding-left: ${(props) => (props.$isScrolled ? "0.7rem" : "1rem")};
   transition: box-shadow 0.2s ease-in-out, background-color 0.2s ease,
-    color 0.2s ease, border-color 0.3s ease;
+    color 0.2s ease, border-color 0.3s ease, padding 0.3s ease;
 
   &:hover {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
   @media (max-width: 756px) {
-    padding: 0.6rem;
+    padding: 0.4rem 0.5rem;
+    margin-left: 0.5rem;
+    padding-left: 0.5rem;
+    gap: 0.35rem;
   }
 `;
 
@@ -194,15 +226,16 @@ const MenuIconStyled = styled(Menu)`
 `;
 
 const Title = styled.p`
-  font-family: "Proxima Soft";
+  font-family: "Proxima Soft", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif !important;
   font-weight: 600;
-  font-size: 2.5rem;
+  font-size: ${(props) => (props.$isScrolled ? "2rem" : "2.5rem")};
   padding: 0;
-  margin: 0.4rem;
+  margin: ${(props) => (props.$isScrolled ? "0.2rem" : "0.4rem")};
   color: ${(props) => props.color};
-  transition: color 0.3s ease;
+  transition: font-size 0.3s ease, margin 0.3s ease, color 0.3s ease;
   @media (max-width: 756px) {
-    font-size: 2rem;
+    display: none;
   }
   @media (max-width: 575px) {
     display: none;
@@ -213,14 +246,14 @@ const LogoContainer = styled.div`
   display: flex;
   align-items: center;
   & > svg {
-    width: 3rem;
-    height: 3rem;
-    transition: width 0.2s ease-in-out, height 0.2s ease-in-out;
+    width: ${(props) => (props.$isScrolled ? "2.5rem" : "3rem")};
+    height: ${(props) => (props.$isScrolled ? "2.5rem" : "3rem")};
+    transition: width 0.3s ease, height 0.3s ease;
   }
   @media (max-width: 756px) {
     & > svg {
-      width: 3rem;
-      height: 3rem;
+      width: 2.25rem;
+      height: 2.25rem;
     }
   }
 `;
@@ -228,23 +261,23 @@ const LogoContainer = styled.div`
 const AuthLink = styled.span`
   color: ${(props) => props.color};
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: ${(props) => (props.$isScrolled ? "0.85rem" : "0.95rem")};
   cursor: pointer;
-  padding: 1.1rem 1.4rem;
+  padding: ${(props) => (props.$isScrolled ? "0.7rem 1rem" : "1.1rem 1.4rem")};
   border-radius: 24px;
   white-space: nowrap;
   border: 1px solid ${(props) => props.$borderColor};
   display: inline-block;
   transition: background-color 0.2s ease, color 0.2s ease,
-    border-color 0.3s ease;
+    border-color 0.3s ease, font-size 0.3s ease, padding 0.3s ease;
   &:hover {
     background-color: ${(props) => props.$hoverColor};
     color: #fff;
     border-color: ${(props) => props.$hoverColor};
   }
   @media (max-width: 756px) {
-    font-size: 0.85rem;
-    padding: 0.8rem 1rem;
+    font-size: 0.8rem;
+    padding: 0.55rem 0.9rem;
   }
 `;
 
@@ -254,6 +287,15 @@ const AuthContainer = styled(motion.div)`
   gap: 1rem;
   @media (max-width: 756px) {
     gap: 0.25rem;
+  }
+`;
+
+const AvatarWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  @media (max-width: 756px) {
+    transform: scale(0.8);
   }
 `;
 
@@ -341,20 +383,23 @@ const Header = ({
               aria-label="User menu"
               color={currentTextColor}
               $borderColor={currentBorderColor}
+              $isScrolled={isScrolled}
             >
               <MenuIconStyled
                 aria-hidden="true"
                 $iconColor={currentIconColor}
               />
-              {currentUser?.avatar_thumb_url ? (
-                <UserAvatar size={32} />
-              ) : (
-                <UserCircleIcon
-                  size="32px"
-                  color={currentIconColor}
-                  style={{ flexShrink: 0 }}
-                />
-              )}
+              <AvatarWrapper>
+                {currentUser?.avatar_thumb_url ? (
+                  <UserAvatar size={32} />
+                ) : (
+                  <UserCircleIcon
+                    size="32px"
+                    color={currentIconColor}
+                    style={{ flexShrink: 0 }}
+                  />
+                )}
+              </AvatarWrapper>
             </RoundedButton>
             <CustomUserMenu
               isOpen={isMenuOpen}
@@ -371,6 +416,7 @@ const Header = ({
               color={currentTextColor}
               $borderColor={currentBorderColor}
               $hoverColor={dropdownButtonHoverColor}
+              $isScrolled={isScrolled}
             >
               Log In
             </AuthLink>
@@ -379,6 +425,7 @@ const Header = ({
               color={currentTextColor}
               $borderColor={currentBorderColor}
               $hoverColor={dropdownButtonHoverColor}
+              $isScrolled={isScrolled}
             >
               Sign Up
             </AuthLink>
@@ -396,13 +443,14 @@ const Header = ({
         $isImpersonating={isImpersonating}
       >
         <LogoLink href="/">
-          <LogoContainer>
+          <LogoContainer $isScrolled={isScrolled}>
             <LogoIcon
               isScrolled={isScrolled}
               activeColor={scrolledStyling.logoColor}
               restingColor={logoTitleColor}
             />
             <Title
+              $isScrolled={isScrolled}
               color={isScrolled ? scrolledStyling.logoColor : logoTitleColor}
             >
               classeasily
