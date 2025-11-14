@@ -168,78 +168,93 @@ const ActionButton = styled(Button)`
 
 // --- SKELETON LOADER ---
 
+const SkeletonLine = styled.div`
+  height: ${props => props.height || '16px'};
+  width: ${props => props.width || '100%'};
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+`;
+
+const SkeletonTag = styled(SkeletonLine)`
+  height: 22px;
+  width: 90px;
+  border-radius: 6px;
+`;
+
 const MobileBookingSkeleton = () => (
   <BookingCard>
     <CardHeader>
-      <div
-        style={{
-          width: "80%",
-          height: "20px",
-          background: "#f0f0f0",
-          borderRadius: "4px",
-        }}
-      />
-      <div
-        style={{
-          width: "50%",
-          height: "16px",
-          background: "#f0f0f0",
-          borderRadius: "4px",
-          marginTop: "4px",
-        }}
-      />
+      <SkeletonLine width="80%" height="18px" />
+      <SkeletonLine width="50%" height="14px" />
     </CardHeader>
+
     <CardContent>
-      {Array.from({ length: 4 }).map((_, i) => (
-        <MetaItem key={i}>
-          <div
-            style={{
-              width: "80%",
-              height: "12px",
-              background: "#f0f0f0",
-              borderRadius: "2px",
-            }}
-          />
-          <div
-            style={{
-              width: "60%",
-              height: "14px",
-              background: "#f0f0f0",
-              borderRadius: "2px",
-              marginTop: "4px",
-            }}
-          />
-        </MetaItem>
-      ))}
+      <MetaItem>
+        <MetaLabel style={{ opacity: 0.5 }}>
+          <Calendar size={14} /> Class Date
+        </MetaLabel>
+        <SkeletonLine width="100px" height="14px" />
+      </MetaItem>
+      <MetaItem>
+        <MetaLabel style={{ opacity: 0.5 }}>
+          <Clock size={14} /> Class Time
+        </MetaLabel>
+        <SkeletonLine width="70px" height="14px" />
+      </MetaItem>
+      <MetaItem>
+        <MetaLabel style={{ opacity: 0.5 }}>
+          <Hash size={14} /> Reference
+        </MetaLabel>
+        <SkeletonLine width="90px" height="14px" />
+      </MetaItem>
+      <MetaItem>
+        <MetaLabel style={{ opacity: 0.5 }}>
+          <Users size={14} /> Spots
+        </MetaLabel>
+        <SkeletonLine width="30px" height="14px" />
+      </MetaItem>
+      <MetaItem>
+        <MetaLabel style={{ opacity: 0.5 }}>
+          <Clock size={14} /> Booked On
+        </MetaLabel>
+        <SkeletonLine width="100px" height="14px" />
+      </MetaItem>
+      <MetaItem>
+        <MetaLabel style={{ opacity: 0.5 }}>
+          <BookOpen size={14} /> Class Option
+        </MetaLabel>
+        <SkeletonLine width="80%" height="14px" />
+      </MetaItem>
       <MetaItem style={{ gridColumn: "1 / -1" }}>
-        <div
-          style={{
-            width: "50%",
-            height: "12px",
-            background: "#f0f0f0",
-            borderRadius: "2px",
-          }}
-        />
-        <div
-          style={{
-            width: "40%",
-            height: "20px",
-            background: "#f0f0f0",
-            borderRadius: "4px",
-            marginTop: "4px",
-          }}
-        />
+        <MetaLabel style={{ opacity: 0.5 }}>
+          <Calendar size={14} /> Booking Type
+        </MetaLabel>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <SkeletonTag />
+          <SkeletonTag width="120px" />
+        </div>
+      </MetaItem>
+      <MetaItem style={{ gridColumn: "1 / -1" }}>
+        <MetaLabel style={{ opacity: 0.5 }}>
+          <Hash size={14} /> Status
+        </MetaLabel>
+        <SkeletonTag />
       </MetaItem>
     </CardContent>
+
     <CardFooter>
-      <div
-        style={{
-          width: "100%",
-          height: "40px",
-          background: "#f0f0f0",
-          borderRadius: "8px",
-        }}
-      />
+      <SkeletonLine height="40px" />
     </CardFooter>
   </BookingCard>
 );

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
-import { Typography, Divider, Tag, Avatar, Button, Popconfirm, Space, List, ConfigProvider,  } from 'antd';
+import { Typography, Divider, Tag, Avatar, Button, Popconfirm, Space, List, ConfigProvider, Skeleton } from 'antd';
 import message from '@/lib/message';
 import {
   User,
@@ -30,7 +30,6 @@ import {
   X,
 } from "lucide-react";
 import { bookingService } from "@/services/apiService";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import {
   formatUTCToUserDisplay,
   formatBusinessLocalToUserDisplay,
@@ -110,6 +109,10 @@ const DesktopDrawerInner = styled.div`
   flex-direction: column;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 `;
 
 const DrawerHeader = styled.div`
@@ -223,6 +226,10 @@ const ContentBody = styled.div`
   flex: 1;
   overflow-y: auto;
   animation: ${fadeIn} 0.5s 0.1s ease-out both;
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 
   @media (max-width: 768px) {
     padding: 16px;
@@ -357,6 +364,269 @@ const ActionSection = styled.div`
   }
 `;
 
+// Skeleton Components
+const SkeletonLine = styled.div`
+  height: ${props => props.height || '16px'};
+  width: ${props => props.width || '100%'};
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  margin-bottom: ${props => props.marginBottom || '0'};
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+`;
+
+const SkeletonCircle = styled(SkeletonLine)`
+  border-radius: 50%;
+  width: ${props => props.size || '60px'};
+  height: ${props => props.size || '60px'};
+  margin-bottom: 0;
+  flex-shrink: 0;
+`;
+
+const SkeletonTag = styled(SkeletonLine)`
+  height: 24px;
+  width: ${props => props.width || '80px'};
+  border-radius: 6px;
+  display: inline-block;
+  margin-bottom: 0;
+`;
+
+const SkeletonHeaderSection = () => (
+  <HeaderSection>
+    <SkeletonCircle size="60px" />
+    <StudentInfo>
+      <SkeletonLine width="60%" height="20px" marginBottom="8px" />
+      <SkeletonLine width="80%" height="14px" marginBottom="8px" />
+      <SkeletonTag width="90px" />
+    </StudentInfo>
+  </HeaderSection>
+);
+
+const SkeletonInfoItem = () => (
+  <InfoItem>
+    <InfoIcon style={{ opacity: 0.2 }}>
+      <SkeletonCircle size="20px" />
+    </InfoIcon>
+    <InfoContent>
+      <SkeletonLine width="40%" height="12px" marginBottom="8px" />
+      <SkeletonLine width="70%" height="14px" />
+    </InfoContent>
+  </InfoItem>
+);
+
+const SkeletonInfoGroup = ({ icon, title, itemCount = 2 }) => (
+  <InfoGroup>
+    <InfoGroupTitle>
+      {icon} {title}
+    </InfoGroupTitle>
+    <InfoGrid>
+      {Array.from({ length: itemCount }).map((_, index) => (
+        <SkeletonInfoItem key={index} />
+      ))}
+    </InfoGrid>
+  </InfoGroup>
+);
+
+const SkeletonContent = () => (
+  <>
+    <SkeletonHeaderSection />
+    <ContentBody>
+      {/* Service & Schedule - 4 items */}
+      <InfoGroup>
+        <InfoGroupTitle style={{ opacity: 0.5 }}>
+          <BookIcon /> Service & Schedule
+        </InfoGroupTitle>
+        <InfoGrid>
+          <InfoItem>
+            <InfoIcon style={{ opacity: 0.3 }}>
+              <BookIcon size={18} />
+            </InfoIcon>
+            <InfoContent>
+              <InfoLabel>Class</InfoLabel>
+              <SkeletonLine width="80%" height="16px" />
+            </InfoContent>
+          </InfoItem>
+          <InfoItem>
+            <InfoIcon style={{ opacity: 0.3 }}>
+              <Calendar size={18} />
+            </InfoIcon>
+            <InfoContent>
+              <InfoLabel>Date & Time (Business Timezone)</InfoLabel>
+              <SkeletonLine width="85%" height="16px" />
+            </InfoContent>
+          </InfoItem>
+          <InfoItem>
+            <InfoIcon style={{ opacity: 0.3 }}>
+              <Clock size={18} />
+            </InfoIcon>
+            <InfoContent>
+              <InfoLabel>Duration</InfoLabel>
+              <SkeletonLine width="50%" height="16px" />
+            </InfoContent>
+          </InfoItem>
+          <InfoItem>
+            <InfoIcon style={{ opacity: 0.3 }}>
+              <Building size={18} />
+            </InfoIcon>
+            <InfoContent>
+              <InfoLabel>Business</InfoLabel>
+              <SkeletonLine width="70%" height="16px" />
+            </InfoContent>
+          </InfoItem>
+        </InfoGrid>
+      </InfoGroup>
+
+      {/* Attendees - 2 items + participant list */}
+      <InfoGroup>
+        <InfoGroupTitle style={{ opacity: 0.5 }}>
+          <UsersIcon /> Attendees
+        </InfoGroupTitle>
+        <InfoGrid>
+          <InfoItem>
+            <InfoIcon style={{ opacity: 0.3 }}>
+              <Mail size={18} />
+            </InfoIcon>
+            <InfoContent>
+              <InfoLabel>Booker Email</InfoLabel>
+              <SkeletonLine width="85%" height="16px" />
+            </InfoContent>
+          </InfoItem>
+          <InfoItem>
+            <InfoIcon style={{ opacity: 0.3 }}>
+              <Phone size={18} />
+            </InfoIcon>
+            <InfoContent>
+              <InfoLabel>Booker Phone</InfoLabel>
+              <SkeletonLine width="60%" height="16px" />
+            </InfoContent>
+          </InfoItem>
+        </InfoGrid>
+        <Divider style={{ margin: "20px 0 16px" }} />
+        <div style={{ marginBottom: '12px' }}>
+          <SkeletonLine width="150px" height="16px" />
+        </div>
+        {[1, 2].map((i) => (
+          <div 
+            key={i}
+            style={{ 
+              padding: '12px 0',
+              borderBottom: i === 1 ? `1px solid ${colors.border}` : 'none'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <SkeletonCircle size="40px" />
+              <div style={{ flex: 1 }}>
+                <SkeletonLine width="140px" height="14px" marginBottom="6px" />
+                <SkeletonLine width="180px" height="12px" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </InfoGroup>
+
+      {/* Booking Information - 4 items (all shown in skeleton) */}
+      <InfoGroup>
+        <InfoGroupTitle style={{ opacity: 0.5 }}>
+          <FileText /> Booking Information
+        </InfoGroupTitle>
+        <InfoGrid>
+          <InfoItem>
+            <InfoIcon style={{ opacity: 0.3 }}>
+              <Hash size={18} />
+            </InfoIcon>
+            <InfoContent>
+              <InfoLabel>Reference Code</InfoLabel>
+              <SkeletonLine width="90px" height="16px" />
+            </InfoContent>
+          </InfoItem>
+          <InfoItem>
+            <InfoIcon style={{ opacity: 0.3 }}>
+              <Calendar size={18} />
+            </InfoIcon>
+            <InfoContent>
+              <InfoLabel>Booked On (User's Time)</InfoLabel>
+              <SkeletonLine width="80%" height="16px" />
+            </InfoContent>
+          </InfoItem>
+          <InfoItem>
+            <InfoIcon style={{ opacity: 0.3 }}>
+              <Repeat size={18} />
+            </InfoIcon>
+            <InfoContent>
+              <InfoLabel>Booking Type</InfoLabel>
+              <SkeletonTag width="100px" />
+            </InfoContent>
+          </InfoItem>
+          <InfoItem>
+            <InfoIcon style={{ opacity: 0.3 }}>
+              <MessageSquare size={18} />
+            </InfoIcon>
+            <InfoContent>
+              <InfoLabel>Notes from Booker</InfoLabel>
+              <SkeletonLine width="100%" height="14px" marginBottom="4px" />
+              <SkeletonLine width="80%" height="14px" />
+            </InfoContent>
+          </InfoItem>
+        </InfoGrid>
+      </InfoGroup>
+
+      {/* Payment & Transaction - 4 items (all shown in skeleton) */}
+      <InfoGroup>
+        <InfoGroupTitle style={{ opacity: 0.5 }}>
+          <CreditCard /> Payment & Transaction
+        </InfoGroupTitle>
+        <InfoGrid>
+          <InfoItem>
+            <InfoIcon style={{ opacity: 0.3 }}>
+              <Info size={18} />
+            </InfoIcon>
+            <InfoContent>
+              <InfoLabel>Payment Status</InfoLabel>
+              <SkeletonTag width="80px" />
+            </InfoContent>
+          </InfoItem>
+          <InfoItem>
+            <InfoIcon style={{ opacity: 0.3 }}>
+              <DollarSign size={18} />
+            </InfoIcon>
+            <InfoContent>
+              <InfoLabel>Gross Amount</InfoLabel>
+              <SkeletonLine width="80px" height="16px" />
+            </InfoContent>
+          </InfoItem>
+          <InfoItem>
+            <InfoIcon style={{ opacity: 0.3 }}>
+              <CreditCard size={18} />
+            </InfoIcon>
+            <InfoContent>
+              <InfoLabel>Payment Method</InfoLabel>
+              <SkeletonLine width="65%" height="16px" />
+            </InfoContent>
+          </InfoItem>
+          <InfoItem>
+            <InfoIcon style={{ opacity: 0.3 }}>
+              <ExternalLink size={18} />
+            </InfoIcon>
+            <InfoContent>
+              <InfoLabel>Payment Receipt</InfoLabel>
+              <SkeletonLine width="110px" height="32px" />
+            </InfoContent>
+          </InfoItem>
+        </InfoGrid>
+      </InfoGroup>
+    </ContentBody>
+  </>
+);
+
 const NoDataText = styled(Text)`
   color: #9ca3af;
   font-style: italic;
@@ -394,14 +664,6 @@ const ParticipantListItem = styled(List.Item)`
     font-weight: 500;
     margin-bottom: 2px !important;
   }
-`;
-
-const LoaderWrapper = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  padding: 40px;
 `;
 
 const BookingDetailsDrawer = ({
@@ -607,11 +869,7 @@ const BookingDetailsDrawer = ({
 
   const renderContent = () => {
     if (loading) {
-      return (
-        <LoaderWrapper>
-          <GlobalLoaderWithoutInlineStyles />
-        </LoaderWrapper>
-      );
+      return <SkeletonContent />;
     }
     if (error || !booking) {
       return (

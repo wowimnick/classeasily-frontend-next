@@ -49,6 +49,7 @@ import {
   Button,
   message,
   Form,
+  Progress,
 } from "antd";
 import {
   LineChart,
@@ -104,6 +105,12 @@ const localAntDTheme = {
   components: {
     Card: { borderRadiusLG: 16, paddingLG: 20 },
     Button: { borderRadius: 12, controlHeight: 40 },
+    List: {
+      itemPadding: "12px 0",
+    },
+    Progress: {
+      circleTextFontSize: "0.8em",
+    },
   },
 };
 
@@ -196,7 +203,7 @@ const StatsGrid = styled.div`
   gap: 20px;
 
   @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
 `;
@@ -299,7 +306,6 @@ const MetricValue = styled.div`
   font-size: 22px;
   font-weight: 700;
   color: ${colors.textPrimary};
-  margin-bottom: 4px;
   display: flex;
   align-items: baseline;
   line-height: 1.2;
@@ -370,7 +376,6 @@ const CardTitle = styled(Title).attrs({ level: 5 })`
     font-weight: 600;
     font-size: 17px;
     color: ${colors.textPrimary};
-    margin-bottom: 16px !important;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -385,7 +390,7 @@ const SectionTitle = styled(CardTitle)`
 `;
 
 const SectionDescription = styled(Text)`
-  font-size: 15px;
+  font-size: 14px;
   color: ${colors.textSecondary};
   display: block;
   margin-bottom: 12px;
@@ -412,29 +417,35 @@ const ScrollableList = styled.div`
   }
 `;
 
-const ClassItemContainer = styled.div`
+const StyledListItem = styled(List.Item)`
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 16px;
+  padding: 16px 8px !important;
   border-radius: 12px;
-  margin-bottom: 8px;
-  background-color: #fff;
-  border: 1px solid ${colors.border};
-  transition: all 0.2s ease;
-  text-decoration: none;
-  color: inherit;
+  transition: background-color 0.2s ease;
 
   &:hover {
     background-color: ${colors.lightBg};
-    border-color: ${hexToRgba(colors.primary, 0.4)};
   }
 
-  @media (max-width: 768px) {
-    padding: 12px;
-    gap: 12px;
+  .ant-list-item-main {
+    min-width: 0;
   }
+  .ant-list-item-extra {
+    @media (max-width: 576px) {
+      margin-left: 0;
+    }
+  }
+`;
+
+const ListItemContent = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-grow: 1;
+  min-width: 0;
 `;
 
 const ClassInfo = styled.div`
@@ -444,62 +455,38 @@ const ClassInfo = styled.div`
   min-width: 0;
 `;
 
-const ClassName = styled.span`
+const ClassName = styled(Text)`
   font-weight: 600;
   color: ${colors.textPrimary};
   margin-bottom: 4px;
   font-size: 15px;
   line-height: 1.4;
-  word-break: break-word; /* Allow long words to break */
-  white-space: normal; /* Override any potential nowrap */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   @media (max-width: 768px) {
     font-size: 14px;
   }
 `;
 
-const ClassMeta = styled.span`
+const ClassMeta = styled(Text)`
   color: ${colors.textSecondary};
   font-size: 13px;
   display: flex;
   align-items: center;
+  gap: 6px;
 
   @media (max-width: 768px) {
     font-size: 12px;
   }
 `;
 
-const OccupancyWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  flex-shrink: 0;
-`;
-
 const OccupancyText = styled.div`
   font-size: 14px;
   color: ${colors.textSecondary};
   font-weight: 500;
-`;
-
-const OccupancyBar = styled.div`
-  width: 100px;
-  height: 6px;
-  background-color: #e5e7eb;
-  border-radius: 3px;
-  overflow: hidden;
-
-  @media (max-width: 768px) {
-    width: 80px;
-  }
-`;
-
-const OccupancyFill = styled.div`
-  height: 100%;
-  background-color: ${(props) => props.color};
-  width: ${(props) => props.percentage}%;
-  transition: width 0.3s ease;
+  white-space: nowrap;
 `;
 
 const ActivityItem = styled(List.Item)`
@@ -701,25 +688,6 @@ const ActionPromptContent = styled.div`
   gap: 16px;
 `;
 
-const PopularClassItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 12px;
-  border-radius: 12px;
-  margin-bottom: 8px;
-  background-color: transparent;
-  transition: background-color 0.2s ease;
-  text-decoration: none;
-  color: inherit;
-  border: 1px solid transparent;
-
-  &:hover {
-    background-color: ${colors.lightBg};
-    border-color: ${colors.border};
-  }
-`;
-
 const RankNumber = styled.div`
   font-size: 16px;
   font-weight: 700;
@@ -729,6 +697,17 @@ const RankNumber = styled.div`
   flex-shrink: 0;
 `;
 
+const MinimalRankBadge = styled.div`
+  font-size: 11px;
+  font-weight: 600;
+  color: ${colors.textSecondary};
+  background-color: ${hexToRgba(colors.textSecondary, 0.08)};
+  border-radius: 6px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+  line-height: 1.4;
+`;
+
 const EnrollmentMetric = styled.div`
   display: flex;
   align-items: center;
@@ -736,8 +715,6 @@ const EnrollmentMetric = styled.div`
   font-size: 14px;
   font-weight: 600;
   color: ${colors.chart.blue};
-  margin-left: auto;
-  flex-shrink: 0;
 `;
 
 const getOccupancyColor = (percentage) => {
@@ -851,6 +828,7 @@ const Overview = forwardRef((props, ref) => {
   } = useDashboard();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
+  const isSmallMobile = !screens.sm;
 
   const [userTimeZone, setUserTimeZone] = useState("UTC");
   useEffect(() => {
@@ -1197,7 +1175,7 @@ const Overview = forwardRef((props, ref) => {
                         )}
                         {formatChange(changeValue, isPercentageChange)}
                       </PercentChange>
-                      {displayInfo?.footer}
+                      {!isSmallMobile && displayInfo?.footer}
                     </StatFooter>
                   ) : (
                     displayInfo?.footer && (
@@ -1389,109 +1367,152 @@ const Overview = forwardRef((props, ref) => {
                 <LoaderWrapper>
                   <Skeleton active paragraph={{ rows: 4 }} />
                 </LoaderWrapper>
-              ) : overviewData?.upcoming_classes &&
-                overviewData.upcoming_classes.length > 0 ? (
+              ) : (
                 <ScrollableList>
-                  {overviewData.upcoming_classes.map((cls, index) => {
-                    const isCourseSession = cls.booking_type === "Full Course";
-                    const occupancyPercentage =
-                      cls.max_occupancy > 0
-                        ? Math.min(
-                            100,
-                            (cls.current_occupancy / cls.max_occupancy) * 100
-                          )
-                        : 0;
-                    const occupancyColor =
-                      getOccupancyColor(occupancyPercentage);
-                    const EditButtonComponent = () => {
-                      const button = (
-                        <Button
-                          type="text"
-                          shape="circle"
-                          icon={<Edit3 size={16} />}
-                          onClick={() => handleOpenEditDrawer(cls)}
-                          loading={
-                            editingScheduleId === cls.schedule_instance_id
-                          }
-                          disabled={isCourseSession}
-                        />
-                      );
-                      if (isCourseSession) {
+                  <List
+                    itemLayout={isSmallMobile ? "vertical" : "horizontal"}
+                    dataSource={overviewData?.upcoming_classes ?? []}
+                    locale={{
+                      emptyText: (
+                        <EmptyStateContainer $padding="50px 20px">
+                          <EmptyStateIcon>
+                            <lord-icon
+                              src="https://cdn.lordicon.com/fhtaantg.json"
+                              trigger="in"
+                              colors="primary:#94a3b8"
+                            />
+                          </EmptyStateIcon>
+                          <EmptyStateText>No upcoming classes</EmptyStateText>
+                          <EmptyStateSubtext>
+                            Classes scheduled in the next 7 days will appear
+                            here
+                          </EmptyStateSubtext>
+                        </EmptyStateContainer>
+                      ),
+                    }}
+                    renderItem={(cls, index) => {
+                      const isCourseSession =
+                        cls.booking_type === "Full Course";
+                      const occupancyPercentage =
+                        cls.max_occupancy > 0
+                          ? Math.min(
+                              100,
+                              (cls.current_occupancy / cls.max_occupancy) * 100
+                            )
+                          : 0;
+                      const occupancyColor =
+                        getOccupancyColor(occupancyPercentage);
+
+                      const EditButtonComponent = () => {
+                        const button = (
+                          <Button
+                            type="text"
+                            shape="circle"
+                            icon={<Edit3 size={16} />}
+                            onClick={() => handleOpenEditDrawer(cls)}
+                            loading={
+                              editingScheduleId === cls.schedule_instance_id
+                            }
+                            disabled={isCourseSession}
+                          />
+                        );
+                        if (isCourseSession) {
+                          return (
+                            <Tooltip title="Course schedules are edited from the 'My Classes' page, not individually.">
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  cursor: "not-allowed",
+                                }}
+                              >
+                                {button}
+                              </span>
+                            </Tooltip>
+                          );
+                        }
                         return (
-                          <Tooltip title="Course schedules are edited from the 'My Classes' page, not individually.">
-                            <span
+                          <Tooltip title="Edit Schedule">{button}</Tooltip>
+                        );
+                      };
+
+                      return (
+                        <StyledListItem
+                          key={cls.schedule_instance_id || index}
+                          extra={
+                            !isSmallMobile && (
+                              <Space size="middle">
+                                <Tooltip
+                                  title={`Occupancy: ${cls.current_occupancy}/${cls.max_occupancy}`}
+                                >
+                                  <Progress
+                                    type="circle"
+                                    percent={occupancyPercentage}
+                                    size={40}
+                                    strokeColor={occupancyColor}
+                                    format={() => (
+                                      <OccupancyText>
+                                        {`${cls.current_occupancy}/${cls.max_occupancy}`}
+                                      </OccupancyText>
+                                    )}
+                                  />
+                                </Tooltip>
+                                <EditButtonComponent />
+                              </Space>
+                            )
+                          }
+                        >
+                          <ListItemContent>
+                            <ClassInfo>
+                              <Tooltip title={cls.name}>
+                                <ClassName>{cls.name}</ClassName>
+                              </Tooltip>
+                              <ClassMeta>
+                                {isCourseSession && (
+                                  <Tooltip title="This is a session within a multi-day course.">
+                                    <TagIcon
+                                      size={12}
+                                      style={{ color: colors.chart.purple }}
+                                    />
+                                  </Tooltip>
+                                )}
+                                <Clock size={12} />
+                                <span>{cls.time}</span>
+                              </ClassMeta>
+                            </ClassInfo>
+                          </ListItemContent>
+                          {isSmallMobile && (
+                            <div
                               style={{
-                                display: "inline-block",
-                                cursor: "not-allowed",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                width: "100%",
+                                marginTop: "12px",
                               }}
                             >
-                              {button}
-                            </span>
-                          </Tooltip>
-                        );
-                      }
-                      return <Tooltip title="Edit Schedule">{button}</Tooltip>;
-                    };
-                    return (
-                      <ClassItemContainer
-                        key={cls.schedule_instance_id || index}
-                      >
-                        <ClassInfo>
-                          <ClassName>{cls.name}</ClassName>
-                          <ClassMeta>
-                            {isCourseSession && (
-                              <Tooltip title="This is a session within a multi-day course.">
-                                <TagIcon
-                                  size={12}
-                                  style={{
-                                    marginRight: 6,
-                                    verticalAlign: "middle",
-                                    color: colors.chart.purple,
-                                  }}
+                              <Tooltip
+                                title={`Occupancy: ${cls.current_occupancy}/${cls.max_occupancy}`}
+                              >
+                                <Progress
+                                  type="circle"
+                                  percent={occupancyPercentage}
+                                  size={40}
+                                  strokeColor={occupancyColor}
+                                  format={() => (
+                                    <OccupancyText>
+                                      {`${cls.current_occupancy}/${cls.max_occupancy}`}
+                                    </OccupancyText>
+                                  )}
                                 />
                               </Tooltip>
-                            )}
-                            {cls.time}
-                          </ClassMeta>
-                        </ClassInfo>
-                        <Space>
-                          <Tooltip
-                            title={`Occupancy: ${cls.current_occupancy}/${cls.max_occupancy}`}
-                          >
-                            <OccupancyWrapper>
-                              <OccupancyText>
-                                {cls.current_occupancy}/{cls.max_occupancy}
-                              </OccupancyText>
-                              <OccupancyBar>
-                                <OccupancyFill
-                                  color={occupancyColor}
-                                  percentage={occupancyPercentage}
-                                />
-                              </OccupancyBar>
-                            </OccupancyWrapper>
-                          </Tooltip>
-                          <EditButtonComponent />
-                        </Space>
-                      </ClassItemContainer>
-                    );
-                  })}
+                              <EditButtonComponent />
+                            </div>
+                          )}
+                        </StyledListItem>
+                      );
+                    }}
+                  />
                 </ScrollableList>
-              ) : (
-                <LoaderWrapper>
-                  <EmptyStateContainer>
-                    <EmptyStateIcon>
-                      <lord-icon
-                        src="https://cdn.lordicon.com/fhtaantg.json"
-                        trigger="in"
-                        colors="primary:#94a3b8"
-                      />
-                    </EmptyStateIcon>
-                    <EmptyStateText>No upcoming classes</EmptyStateText>
-                    <EmptyStateSubtext>
-                      Classes scheduled in the next 7 days will appear here
-                    </EmptyStateSubtext>
-                  </EmptyStateContainer>
-                </LoaderWrapper>
               )}
             </ContentListCard>
           </Col>
@@ -1508,49 +1529,106 @@ const Overview = forwardRef((props, ref) => {
                 <LoaderWrapper>
                   <Skeleton active paragraph={{ rows: 4 }} />
                 </LoaderWrapper>
-              ) : overviewData?.popular_classes &&
-                overviewData.popular_classes.length > 0 ? (
-                <ScrollableList>
-                  {overviewData.popular_classes.map((cls, index) => (
-                    <Link
-                      href={`/business/dashboard/classes`}
-                      key={index}
-                      style={{ textDecoration: "none" }}
-                    >
-                      <PopularClassItem>
-                        <RankNumber>#{index + 1}</RankNumber>
-                        <ClassInfo>
-                          <ClassName>{cls.name}</ClassName>
-                        </ClassInfo>
-                        <EnrollmentMetric>
-                          <Users size={16} />
-                          <AnimatedNumberFlow
-                            value={cls.enrollment || 0}
-                            loading={loading}
-                            numberFormatOptions={{ maximumFractionDigits: 0 }}
-                          />
-                        </EnrollmentMetric>
-                      </PopularClassItem>
-                    </Link>
-                  ))}
-                </ScrollableList>
               ) : (
-                <LoaderWrapper>
-                  <EmptyStateContainer>
-                    <EmptyStateIcon>
-                      <lord-icon
-                        src="https://cdn.lordicon.com/fhtaantg.json"
-                        trigger="in"
-                        colors="primary:#94a3b8"
-                      />
-                    </EmptyStateIcon>
-                    <EmptyStateText>No enrollment data yet</EmptyStateText>
-                    <EmptyStateSubtext>
-                      Popular classes will be displayed once students start
-                      enrolling
-                    </EmptyStateSubtext>
-                  </EmptyStateContainer>
-                </LoaderWrapper>
+                <ScrollableList>
+                  <List
+                    itemLayout="horizontal"
+                    dataSource={overviewData?.popular_classes ?? []}
+                    locale={{
+                      emptyText: (
+                        <EmptyStateContainer $padding="50px 20px">
+                          <EmptyStateIcon>
+                            <lord-icon
+                              src="https://cdn.lordicon.com/fhtaantg.json"
+                              trigger="in"
+                              colors="primary:#94a3b8"
+                            />
+                          </EmptyStateIcon>
+                          <EmptyStateText>
+                            No enrollment data yet
+                          </EmptyStateText>
+                          <EmptyStateSubtext>
+                            Popular classes will be displayed once students
+                            start enrolling
+                          </EmptyStateSubtext>
+                        </EmptyStateContainer>
+                      ),
+                    }}
+                    renderItem={(cls, index) => {
+                      const EditButtonComponent = () => (
+                        <Link href={`/business/dashboard/classes`}>
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<Edit3 size={14} />}
+                            style={{
+                              color: colors.textSecondary,
+                              padding: "4px 8px",
+                              height: "auto",
+                            }}
+                          />
+                        </Link>
+                      );
+
+                      return (
+                        <StyledListItem
+                          key={index}
+                          extra={
+                            !isSmallMobile && (
+                              <Space size={12} align="center">
+                                <EnrollmentMetric>
+                                  <Users size={16} />
+                                  <AnimatedNumberFlow
+                                    value={cls.enrollment || 0}
+                                    loading={loading}
+                                    numberFormatOptions={{
+                                      maximumFractionDigits: 0,
+                                    }}
+                                  />
+                                </EnrollmentMetric>
+                                <EditButtonComponent />
+                              </Space>
+                            )
+                          }
+                        >
+                          <ListItemContent>
+                            <ClassInfo>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <MinimalRankBadge>#{index + 1}</MinimalRankBadge>
+                                <Tooltip title={cls.name}>
+                                  <ClassName>{cls.name}</ClassName>
+                                </Tooltip>
+                              </div>
+                            </ClassInfo>
+                          </ListItemContent>
+                          {isSmallMobile && (
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                width: "100%",
+                                marginTop: "12px",
+                              }}
+                            >
+                              <EnrollmentMetric>
+                                <Users size={16} />
+                                <AnimatedNumberFlow
+                                  value={cls.enrollment || 0}
+                                  loading={loading}
+                                  numberFormatOptions={{
+                                    maximumFractionDigits: 0,
+                                  }}
+                                />
+                              </EnrollmentMetric>
+                              <EditButtonComponent />
+                            </div>
+                          )}
+                        </StyledListItem>
+                      );
+                    }}
+                  />
+                </ScrollableList>
               )}
             </ContentListCard>
           </Col>

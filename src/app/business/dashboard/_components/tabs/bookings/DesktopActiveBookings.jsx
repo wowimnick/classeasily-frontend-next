@@ -1,6 +1,6 @@
 import React from "react";
 import styled from "styled-components";
-import { Table, Tag, Space, Button, Dropdown, Menu, Popconfirm } from "antd";
+import { Table, Tag, Space, Button, Dropdown, Menu, Popconfirm, Skeleton } from "antd";
 import {
   MoreVertical,
   Eye,
@@ -12,7 +12,6 @@ import {
   CheckCircle,
 } from "lucide-react";
 import moment from "moment";
-import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 
 // --- STYLES (Optimized for Desktop Clarity) ---
 
@@ -226,6 +225,91 @@ const BookingTypeContainer = styled.div`
   gap: 6px;
 `;
 
+const SkeletonWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+`;
+
+const SkeletonLine = styled.div`
+  height: ${props => props.height || '16px'};
+  width: ${props => props.width || '100%'};
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+`;
+
+const SkeletonCircle = styled(SkeletonLine)`
+  border-radius: 50%;
+  width: ${props => props.size || '36px'};
+  height: ${props => props.size || '36px'};
+`;
+
+const SkeletonTag = styled(SkeletonLine)`
+  height: 24px;
+  width: 100px;
+  border-radius: 6px;
+`;
+
+// Skeleton Row Component
+const SkeletonRow = () => ({
+  id: Math.random(),
+  user_facing_reference: (
+    <SkeletonLine width="120px" height="14px" />
+  ),
+  user_name: (
+    <SkeletonWrapper>
+      <SkeletonLine width="140px" height="14px" />
+      <SkeletonLine width="180px" height="12px" />
+    </SkeletonWrapper>
+  ),
+  class_name: (
+    <SkeletonWrapper>
+      <SkeletonLine width="200px" height="14px" />
+      <SkeletonLine width="160px" height="12px" />
+    </SkeletonWrapper>
+  ),
+  enrollment_type: (
+    <SkeletonWrapper>
+      <SkeletonTag />
+    </SkeletonWrapper>
+  ),
+  date: (
+    <SkeletonWrapper>
+      <SkeletonLine width="100px" height="14px" />
+      <SkeletonLine width="80px" height="12px" />
+    </SkeletonWrapper>
+  ),
+  participants: (
+    <SkeletonLine width="30px" height="14px" />
+  ),
+  status: (
+    <SkeletonTag />
+  ),
+  action: (
+    <SkeletonCircle size="36px" />
+  ),
+});
+
+// Generate skeleton data
+const generateSkeletonData = (count = 10) => {
+  return Array.from({ length: count }, (_, i) => ({
+    key: `skeleton-${i}`,
+    ...SkeletonRow(),
+  }));
+};
+
 // --- COMPONENT ---
 
 const DesktopActiveBookings = ({
@@ -294,12 +378,18 @@ const DesktopActiveBookings = ({
       key: "student",
       sorter: true,
       sortOrder: sortField === "user_name" ? sortOrder : null,
-      render: (_, record) => (
-        <StudentInfo>
-          <div className="name">{record.user_name || "N/A"}</div>
-          <div className="email">{record.user_email || "N/A"}</div>
-        </StudentInfo>
-      ),
+      render: (_, record) => {
+        // Handle skeleton loading state
+        if (React.isValidElement(record.user_name)) {
+          return record.user_name;
+        }
+        return (
+          <StudentInfo>
+            <div className="name">{record.user_name || "N/A"}</div>
+            <div className="email">{record.user_email || "N/A"}</div>
+          </StudentInfo>
+        );
+      },
       width: 220,
     },
     {
@@ -311,12 +401,18 @@ const DesktopActiveBookings = ({
         sortField === "schedule_instance__schedule__option__classId__title"
           ? sortOrder
           : null,
-      render: (text, record) => (
-        <ClassDetails>
-          <div className="main-class">{text || "N/A"}</div>
-          <div className="option-name">{record.option_name || "N/A"}</div>
-        </ClassDetails>
-      ),
+      render: (text, record) => {
+        // Handle skeleton loading state
+        if (React.isValidElement(text)) {
+          return text;
+        }
+        return (
+          <ClassDetails>
+            <div className="main-class">{text || "N/A"}</div>
+            <div className="option-name">{record.option_name || "N/A"}</div>
+          </ClassDetails>
+        );
+      },
       width: 280,
     },
     {
@@ -325,7 +421,13 @@ const DesktopActiveBookings = ({
       key: "booking_type",
       sorter: true,
       sortOrder: sortField === "enrollment_type" ? sortOrder : null,
-      render: (type, record) => getBookingTypeTag(type, record.session_info),
+      render: (type, record) => {
+        // Handle skeleton loading state
+        if (React.isValidElement(type)) {
+          return type;
+        }
+        return getBookingTypeTag(type, record.session_info);
+      },
       width: 180,
     },
     {
@@ -334,18 +436,24 @@ const DesktopActiveBookings = ({
       key: "date",
       sorter: true,
       sortOrder: sortField === "schedule_instance__date" ? sortOrder : null,
-      render: (_, record) => (
-        <Space direction="vertical" size={0}>
-          <div>
-            {record.date ? moment(record.date).format("MMM D, YYYY") : "N/A"}
-          </div>
-          <div style={{ color: "#64748b", fontSize: "13px" }}>
-            {record.time
-              ? moment(record.time, "HH:mm:ss").format("h:mm A")
-              : "N/A"}
-          </div>
-        </Space>
-      ),
+      render: (_, record) => {
+        // Handle skeleton loading state
+        if (React.isValidElement(record.date)) {
+          return record.date;
+        }
+        return (
+          <Space direction="vertical" size={0}>
+            <div>
+              {record.date ? moment(record.date).format("MMM D, YYYY") : "N/A"}
+            </div>
+            <div style={{ color: "#64748b", fontSize: "13px" }}>
+              {record.time
+                ? moment(record.time, "HH:mm:ss").format("h:mm A")
+                : "N/A"}
+            </div>
+          </Space>
+        );
+      },
       width: 160,
     },
     {
@@ -364,16 +472,21 @@ const DesktopActiveBookings = ({
       sorter: true,
       sortOrder: sortField === "status" ? sortOrder : null,
       render: (status) => {
-        const statusLower = status?.toLowerCase();
+        // Handle skeleton loading state
+        if (React.isValidElement(status)) {
+          return status;
+        }
+        
+        const statusLower = status && typeof status === 'string' ? status.toLowerCase() : '';
         if (statusLower === "confirmed") {
           return (
             <StyledTag className="confirmed" icon={<CheckCircle size={12} />}>
-              {status?.toUpperCase()}
+              {status.toUpperCase()}
             </StyledTag>
           );
         }
         // Fallback for any unexpected statuses
-        return <Tag>{status?.toUpperCase() || "N/A"}</Tag>;
+        return <Tag>{status && typeof status === 'string' ? status.toUpperCase() : "N/A"}</Tag>;
       },
       width: 140,
       align: "center",
@@ -441,15 +554,12 @@ const DesktopActiveBookings = ({
   return (
     <StyledTable
       columns={columns}
-      dataSource={data}
-      rowKey="id"
-      pagination={pagination}
+      dataSource={loading ? generateSkeletonData(pagination?.pageSize || 10) : data}
+      rowKey={loading ? "key" : "id"}
+      pagination={loading ? false : pagination}
       onChange={handleTableChange}
       scroll={{ x: 1300 }}
-      loading={{
-        spinning: loading && data.length > 0,
-        indicator: <GlobalLoaderWithInlineStyles />,
-      }}
+      loading={false}
     />
   );
 };

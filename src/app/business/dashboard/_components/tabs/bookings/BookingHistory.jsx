@@ -40,7 +40,6 @@ import { bookingService } from "@/services/apiService";
 import DesktopBookingHistory from "./DesktopBookingHistory";
 import MobileBookingHistory from "./MobileBookingHistory";
 import BookingDetailsDrawer from "./BookingDetailsDrawer";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
 import { theme } from "@/components/theme";
 
@@ -312,25 +311,6 @@ const TableSection = styled(motion.div)`
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   position: relative;
-`;
-
-const LoaderContainer = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(
-    180deg,
-    rgb(255, 255, 255) 0%,
-    rgb(251, 252, 255) 100%
-  );
-  z-index: 10;
-  min-height: 200px;
-  border-radius: 16px;
 `;
 
 const EmptyStateContainer = styled.div`
@@ -710,12 +690,6 @@ const BookingHistory = forwardRef((props, ref) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          {loadingTable && bookings.length === 0 && (
-            <LoaderContainer>
-              {" "}
-              <GlobalLoaderWithoutInlineStyles />{" "}
-            </LoaderContainer>
-          )}
           {!loadingTable && bookings.length === 0 && (
             <EmptyStateContainer>
               <EmptyStateIcon>
@@ -733,7 +707,7 @@ const BookingHistory = forwardRef((props, ref) => {
               </EmptyStateSubtext>
             </EmptyStateContainer>
           )}
-          {bookings.length > 0 &&
+          {(bookings.length > 0 || loadingTable) &&
             (isMobile ? (
               <MobileBookingHistory
                 data={bookings}
