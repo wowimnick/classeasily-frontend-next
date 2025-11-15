@@ -27,6 +27,7 @@ import {
   Menu,
   Grid,
   Segmented,
+  Skeleton, // ADDED: For Skeleton Loader
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -82,7 +83,6 @@ import ScheduleEditDrawer from "./ScheduleEditDrawer";
 import ClassEditDrawer from "./ClassEditDrawer";
 import DeleteClassModal from "./DeleteClassModal";
 import CourseScheduleDrawer from "./CourseScheduleDrawer"; // ADDED: New import
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { ClassProvider } from "../newclasses/ClassContext";
 import CreateClassPage from "../newclasses/CreateClassPage";
 
@@ -97,6 +97,133 @@ const { Option } = Select;
 const { useBreakpoint } = Grid;
 import { theme } from "@/components/theme";
 import { LordIcon } from "@/services/ReactUtils";
+
+// --- ADDED: Skeleton component for mobile card view ---
+const CardSkeleton = () => (
+  <ClassCardStyled>
+    <CardHeader>
+      <Skeleton.Avatar
+        active
+        shape="square"
+        size={48}
+        style={{ borderRadius: "8px" }}
+      />
+      <CardContent style={{ paddingTop: "8px" }}>
+        <Skeleton.Input active style={{ width: "60%", height: "20px" }} />
+        <Skeleton.Input
+          active
+          style={{ width: "40%", height: "16px", marginTop: "8px" }}
+        />
+      </CardContent>
+    </CardHeader>
+    <CardBody>
+      <Skeleton.Input active style={{ width: "120px", height: "24px" }} />
+      <Skeleton.Input active style={{ width: "80px", height: "24px" }} />
+    </CardBody>
+    <CardFooter>
+      <Skeleton.Button active style={{ width: "100%", height: "38px" }} />
+    </CardFooter>
+  </ClassCardStyled>
+);
+
+// --- ADDED: Skeleton component for desktop table view ---
+const TableSkeleton = () => {
+  const skeletonColumns = [
+    {
+      title: "Class",
+      key: "class",
+      width: 400,
+      render: () => (
+        <Space size="middle">
+          <Skeleton.Avatar
+            active
+            shape="square"
+            size={56}
+            style={{ borderRadius: "8px" }}
+          />
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <Skeleton.Input active style={{ width: 150, height: 20 }} />
+            <Skeleton.Input active style={{ width: 200, height: 16 }} />
+          </div>
+        </Space>
+      ),
+    },
+    {
+      title: "Schedule",
+      key: "schedule",
+      width: 350,
+      render: () => (
+        <Skeleton.Input
+          active
+          style={{ width: "80%", height: 48, borderRadius: "8px" }}
+        />
+      ),
+    },
+    {
+      title: "Rating",
+      key: "rating",
+      width: 150,
+      render: () => (
+        <Skeleton.Input
+          active
+          style={{ width: 100, height: 32, borderRadius: "8px" }}
+        />
+      ),
+    },
+    {
+      title: "Status",
+      key: "status",
+      width: 150,
+      render: () => (
+        <Skeleton.Input
+          active
+          style={{ width: 110, height: 40, borderRadius: "10px" }}
+        />
+      ),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      align: "right",
+      width: 200,
+      render: () => (
+        <Space size="small">
+          <Skeleton.Button active style={{ width: 140, height: 36 }} />
+          <Skeleton.Button active shape="circle" style={{ width: 36 }} />
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <TableViewWrapper>
+      <Table
+        rowKey="key"
+        pagination={false}
+        columns={skeletonColumns}
+        dataSource={[...Array(5)].map((_, i) => ({ key: i }))}
+      />
+    </TableViewWrapper>
+  );
+};
+
+// --- ADDED: Wrapper for responsive skeleton ---
+const ClassManagementSkeleton = () => {
+  const screens = useBreakpoint();
+  const isMobileView = !screens.md;
+
+  if (isMobileView) {
+    return (
+      <MobileCardContainer>
+        {[...Array(3)].map((_, i) => (
+          <CardSkeleton key={i} />
+        ))}
+      </MobileCardContainer>
+    );
+  }
+
+  return <TableSkeleton />;
+};
 
 const getErrorMessage = (error) => {
   if (error?.response?.data) {
@@ -266,6 +393,19 @@ const StyledSearchInput = styled(Input)`
 
   @media (max-width: 768px) {
     width: 100%;
+    height: 42px;
+    
+    .ant-input {
+      font-size: 14px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    height: 40px;
+    
+    .ant-input {
+      font-size: 13px;
+    }
   }
 `;
 
@@ -273,44 +413,45 @@ const StyledSelect = styled(Select)`
   .ant-select-selector {
     height: 44px !important;
     border-radius: 12px !important;
-    background: white !important;
     border: 1px solid #e5e7eb !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
-    display: flex !important;
-    align-items: center !important;
-    padding: 0 11px !important;
+    background: white !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02) !important;
+    display: flex;
+    align-items: center;
+  }
+
+  &:hover .ant-select-selector,
+  &.ant-select-focused .ant-select-selector {
+    border-color: #ff385c !important;
+    box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1) !important;
   }
 
   .ant-select-selection-item {
-    display: flex !important;
-    align-items: center !important;
-    font-size: 15px !important;
-    line-height: 44px !important;
+    line-height: 42px !important;
+    font-size: 15px;
   }
-
-  .ant-select-selection-placeholder {
-    line-height: 44px !important;
-  }
-
-  &:hover .ant-select-selector {
-    border-color: #ff385c !important;
-  }
-
-  &.ant-select-focused .ant-select-selector {
-    border-color: #ff385c !important;
-    box-shadow: 0 0 0 3px rgba(255, 56, 92, 0.1) !important;
-  }
-
+  
   @media (max-width: 768px) {
     width: 100% !important;
-
+    
+    .ant-select-selector {
+      height: 42px !important;
+    }
+    
+    .ant-select-selection-item {
+      line-height: 40px !important;
+      font-size: 14px;
+    }
+  }
+  
+  @media (max-width: 480px) {
     .ant-select-selector {
       height: 40px !important;
     }
-
+    
     .ant-select-selection-item {
-      line-height: 40px !important;
+      line-height: 38px !important;
+      font-size: 13px;
     }
   }
 `;
@@ -325,15 +466,31 @@ const ActionButton = styled(Button)`
   padding: 0 24px;
   font-weight: 500;
   font-size: 15px;
+  white-space: nowrap;
+  
   svg {
     width: 18px;
     height: 18px;
+    flex-shrink: 0;
   }
+  
   @media (max-width: 768px) {
     width: 100%;
-    height: 40px;
+    height: 42px;
     font-size: 14px;
     padding: 0 16px;
+  }
+  
+  @media (max-width: 480px) {
+    height: 40px;
+    font-size: 13px;
+    padding: 0 12px;
+    gap: 6px;
+    
+    svg {
+      width: 16px;
+      height: 16px;
+    }
   }
 `;
 
@@ -362,6 +519,11 @@ const CategoryTag = styled(Tag)`
   border: none;
   background-color: #f0f9ff;
   color: #0284c7;
+  /* MODIFIED: Added for text truncation */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
   svg {
     width: 12px;
     height: 12px;
@@ -521,6 +683,10 @@ const MobileCardContainer = styled(motion.div)`
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
+  
+  @media (max-width: 480px) {
+    gap: 12px;
+  }
 `;
 
 const ClassCardStyled = styled(motion.div)`
@@ -543,6 +709,11 @@ const CardHeader = styled.div`
   gap: 12px;
   padding: 16px;
   align-items: center;
+  
+  @media (max-width: 480px) {
+    padding: 12px;
+    gap: 10px;
+  }
 `;
 
 const CardContent = styled.div`
@@ -556,6 +727,19 @@ const CardTitle = styled(Text)`
   color: #1e293b;
   display: block;
   margin-bottom: 4px;
+  line-height: 1.3;
+  /* MODIFIED: Added for text truncation */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  
+  @media (max-width: 768px) {
+    font-size: 15px;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 14px;
+  }
 `;
 
 const CardBody = styled.div`
@@ -564,6 +748,13 @@ const CardBody = styled.div`
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #f1f5f9;
+  gap: 12px;
+  flex-wrap: wrap;
+  
+  @media (max-width: 480px) {
+    padding: 0 12px 12px;
+    gap: 8px;
+  }
 `;
 
 const CardStats = styled.div`
@@ -571,6 +762,16 @@ const CardStats = styled.div`
   gap: 16px;
   font-size: 13px;
   color: ${colors.textSecondary};
+  flex-wrap: wrap;
+  
+  @media (max-width: 768px) {
+    gap: 12px;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 12px;
+    gap: 10px;
+  }
 `;
 
 const StatItem = styled.div`
@@ -589,6 +790,17 @@ const CardFooter = styled.div`
   justify-content: space-between;
   align-items: center;
   background: #f8fafc;
+  gap: 8px;
+  
+  @media (max-width: 480px) {
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    
+    button:first-child {
+      flex: 1;
+      min-width: 0;
+    }
+  }
 `;
 
 const TableActionButton = styled(Button)`
@@ -1418,6 +1630,9 @@ function ClassManagementContent(props) {
                   borderRadius: "6px",
                   fontSize: "12px",
                   boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
                 }}
               >
                 {typeInfo.label}
@@ -1427,12 +1642,7 @@ function ClassManagementContent(props) {
           </CardContent>
         </CardHeader>
         <CardBody>
-          {/* MODIFIED: Use schedule info helper */}
-          <div style={{ marginBottom: "12px", marginTop: "4px" }}>
-            <Text type="secondary" style={{ fontSize: "13px" }}>
-              {formatScheduleInfo(classItem)}
-            </Text>
-          </div>
+          {/* MODIFIED: Removed schedule info text for mobile view */}
           <CardStats>
             {review_count > 0 ? (
               <StatItem>
@@ -1539,9 +1749,7 @@ function ClassManagementContent(props) {
         </Controls>
 
         {loading ? (
-          <LoaderContainer>
-            <GlobalLoaderWithoutInlineStyles />
-          </LoaderContainer>
+          <ClassManagementSkeleton />
         ) : filteredClasses.length === 0 ? (
           renderEmptyState()
         ) : isMobileView ? (
@@ -1555,6 +1763,7 @@ function ClassManagementContent(props) {
               dataSource={filteredClasses}
               rowKey="classId"
               pagination={false}
+              scroll={{ x: true }}
               onRow={(record) => ({
                 onClick: () => {
                   if (record.option) {

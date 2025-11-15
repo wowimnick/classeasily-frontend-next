@@ -40,6 +40,7 @@ import {
   FileText,
   Info,
   Clock,
+  AlertCircle,
 } from "lucide-react";
 import heic2any from "heic2any";
 import { motion } from "framer-motion";
@@ -60,7 +61,6 @@ import { Drawer } from "vaul";
 const { Option } = Select;
 const { TextArea } = Input;
 const { Title, Text } = Typography;
-const { TabPane } = Tabs;
 
 // NEW: Vaul Drawer Styles for Mobile
 const StyledDrawerOverlay = styled(Drawer.Overlay)`
@@ -111,7 +111,6 @@ const DesktopDrawerContent = styled(Drawer.Content)`
   overflow: hidden;
 `;
 
-// Keep these components as they are for the content structure
 const DrawerHeader = styled.div`
   display: flex;
   align-items: center;
@@ -128,11 +127,9 @@ const DrawerHeader = styled.div`
 const DrawerContentWrapper = styled.div`
   flex: 1 1 auto;
   overflow-y: auto;
-  padding: 24px;
-  background-color: white;
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
+  background-color: #f8fafc;
+  display: flex;
+  flex-direction: column;
 `;
 
 const DrawerFooter = styled.div`
@@ -171,9 +168,55 @@ const CloseButton = styled(Button)`
   }
 `;
 
+const StyledTabs = styled(Tabs)`
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .ant-tabs-nav {
+    margin: 0 !important;
+    padding: 0 16px;
+    background: white;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  .ant-tabs-tab {
+    padding: 12px 10px !important;
+    font-weight: 500;
+  }
+
+  .ant-tabs-content-holder {
+    flex: 1;
+    background: #f8fafc;
+    overflow-y: auto;
+  }
+
+  .ant-tabs-tabpane {
+    height: 100%;
+    padding: 0;
+    position: relative;
+  }
+
+  @media (max-width: 768px) {
+    .ant-tabs-nav {
+      padding: 0 16px;
+    }
+    
+    .ant-tabs-tab {
+      padding: 10px 8px !important;
+      font-size: 13px;
+    }
+  }
+`;
+
 const FormSection = styled(motion.div)`
   margin-bottom: 2rem;
   border-radius: 12px;
+  
   @media (max-width: 768px) {
     margin-bottom: 1.5rem;
   }
@@ -633,47 +676,20 @@ const FormItemAntd = styled(Form.Item)`
   }
 `;
 
-const VisibilityToggleContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  background: ${(props) => props.theme.token.colorBgContainer};
-  padding: 12px 16px;
-  border-radius: 14px;
-  border: 1px solid ${(props) => props.theme.token.colorBorder};
-`;
-
-const VisibilityInfo = styled.div`
-  flex: 1;
-  margin-right: 16px;
-`;
-
-const VisibilityLabel = styled(Text)`
-  font-size: 15px;
-  font-weight: 600;
-  color: ${(props) => props.theme.token.colorText};
-  display: block;
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-`;
-
-const VisibilityStatus = styled.div`
-  font-size: 13px;
-  color: ${(props) => props.theme.token.colorTextSecondary};
-  margin-top: 2px;
-  @media (max-width: 768px) {
-    font-size: 12px;
-  }
-`;
-
 const LoaderWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100%;
   min-height: 300px;
+`;
+
+const TabContentWrapper = styled.div`
+  padding: 16px;
+  
+  @media (max-width: 768px) {
+    padding: 12px;
+  }
 `;
 
 const AWS_LOCATION_API_URL =
@@ -684,13 +700,13 @@ const MAP_CIRCLE_RADIUS = 1000;
 
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
-  "image/jpg", // Some browsers use this
+  "image/jpg",
   "image/png",
   "image/webp",
   "image/heic",
   "image/heif",
   "image/avif",
-  "", // Empty string for cases where MIME type isn't detected
+  "",
 ];
 
 const MAX_IMAGE_SIZE_MB = 30;
@@ -759,7 +775,6 @@ const ClassEditDrawer = ({
   const [mapSearchValue, setMapSearchValue] = useState("");
   const [selectedMapLocation, setSelectedMapLocation] = useState(null);
   const [hideExactLocation, setHideExactLocation] = useState(false);
-  const [isActive, setIsActive] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -774,6 +789,12 @@ const ClassEditDrawer = ({
 
   const currentFormCategoryKey = Form.useWatch("category_key", form);
   const watchedCancellationPolicy = Form.useWatch("cancellationPolicy", form);
+  const watchedBookingType = Form.useWatch("booking_type", form);
+  const midCourseDropsAllowed = Form.useWatch("allowMidCourseDrops", form);
+  const watchedMidCoursePolicy = Form.useWatch(
+    "midCourseCancellationPolicy",
+    form
+  );
 
   useEffect(() => {
     return () => {
@@ -791,7 +812,12 @@ const ClassEditDrawer = ({
         form.setFieldsValue({ cancellationRefundPercentage: 0 });
       }
     }
-  }, [watchedCancellationPolicy, form]);
+    if (watchedMidCoursePolicy === "strict") {
+      if (form.getFieldValue("midCourseCancellationRefundPercentage") !== 0) {
+        form.setFieldsValue({ midCourseCancellationRefundPercentage: 0 });
+      }
+    }
+  }, [watchedCancellationPolicy, watchedMidCoursePolicy, form]);
 
   useEffect(() => {
     if (visible && initialClassDataProp) {
@@ -810,7 +836,6 @@ const ClassEditDrawer = ({
     } else if (!visible) {
       form.resetFields();
       setMainImages([]);
-      setIsActive(true);
       setCategories([]);
       setSubcategories([]);
       initialSubcategoryKeyRef.current = null;
@@ -858,10 +883,9 @@ const ClassEditDrawer = ({
 
   const handleOpenChange = (open) => {
     if (!open) {
-      // Allow Vaul's closing animation to play before calling onClose
       setTimeout(() => {
         onClose();
-      }, 300); // Match Vaul's default animation duration
+      }, 300);
     }
   };
 
@@ -903,6 +927,7 @@ const ClassEditDrawer = ({
       title: classData.title || "",
       description: classData.description || "",
       category_key: classData.category_key || undefined,
+      subcategory_key: classData.subcategory_key || undefined,
       features: featuresData,
       location: classData.location || "",
       unit_number: classData.unit_number || "",
@@ -922,9 +947,15 @@ const ClassEditDrawer = ({
         primaryOption.cancellationRefundPercentage ?? 100,
       booking_type: primaryOption.booking_type || "Single Session",
       price_type: primaryOption.price_type || "per_session",
+      allowMidCourseDrops: primaryOption.allowMidCourseDrops || false,
+      midCourseCancellationPolicy:
+        primaryOption.midCourseCancellationPolicy || undefined,
+      midCourseCancellationCustomHours:
+        primaryOption.midCourseCancellationCustomHours || undefined,
+      midCourseCancellationRefundPercentage:
+        primaryOption.midCourseCancellationRefundPercentage ?? 100,
     });
 
-    setIsActive(classData.status === "active");
     setHideExactLocation(classData.saltLocation || false);
 
     if (
@@ -950,7 +981,6 @@ const ClassEditDrawer = ({
 
     setMapSearchValue(classData.location || "");
     let coverFound = false;
-    // --- IMAGE URL LOGIC REVERTED ---
     const initialImages = (classData.images || []).map((img) => {
       const isCover = img.isCover || img.is_cover;
       if (isCover) coverFound = true;
@@ -1028,7 +1058,6 @@ const ClassEditDrawer = ({
     }
 
     const validateFile = (file) => {
-      // Check file extension for HEIC files since browsers might not detect MIME type correctly
       const fileExtension = file.name.toLowerCase().split(".").pop();
       const allowedExtensions = [
         "jpg",
@@ -1040,7 +1069,6 @@ const ClassEditDrawer = ({
         "avif",
       ];
 
-      // Check both MIME type and file extension
       const isValidType =
         ALLOWED_IMAGE_TYPES.includes(file.type) ||
         allowedExtensions.includes(fileExtension);
@@ -1095,7 +1123,6 @@ const ClassEditDrawer = ({
       try {
         let blobToProcess = file;
 
-        // Convert HEIC to JPEG if needed
         if (isHeic) {
           blobToProcess = await heic2any({
             blob: file,
@@ -1104,7 +1131,6 @@ const ClassEditDrawer = ({
           });
         }
 
-        // Handle the result from heic2any (could be Blob or File)
         const processedFile =
           blobToProcess instanceof File
             ? blobToProcess
@@ -1114,7 +1140,6 @@ const ClassEditDrawer = ({
                 { type: "image/jpeg" }
               );
 
-        // Create image object and return it
         return {
           id: `new_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           file: processedFile,
@@ -1185,7 +1210,7 @@ const ClassEditDrawer = ({
       const existingImages = mainImages.filter((img) => !img.file);
 
       let uploadedImageKeys = [];
-      let uploadResults = []; // Declare uploadResults in the proper scope
+      let uploadResults = [];
 
       if (newImageFiles.length > 0) {
         message.loading({
@@ -1213,7 +1238,6 @@ const ClassEditDrawer = ({
       }
 
       const payload = { ...values };
-      payload.status = isActive ? "active" : "inactive";
       payload.saltLocation = hideExactLocation;
 
       const initialImageIds = (initialClassDataRef.current?.images || []).map(
@@ -1229,7 +1253,6 @@ const ClassEditDrawer = ({
       const coverImage = mainImages.find((img) => img.isCover);
       if (coverImage) {
         if (coverImage.file) {
-          // Find the corresponding upload result for this new cover image
           const newCoverFile = coverImage.file;
           const correspondingUploadResultIndex = newImageFiles.findIndex(
             (newImg) => newImg.file === newCoverFile
@@ -1261,6 +1284,18 @@ const ClassEditDrawer = ({
         cancellationRefundPercentage:
           values.cancellationRefundPercentage ?? 100,
         price_type: values.price_type || "per_session",
+        allowMidCourseDrops: values.allowMidCourseDrops || false,
+        midCourseCancellationPolicy: values.allowMidCourseDrops
+          ? values.midCourseCancellationPolicy
+          : null,
+        midCourseCancellationCustomHours:
+          values.allowMidCourseDrops &&
+          values.midCourseCancellationPolicy === "custom"
+            ? values.cancellationCustomHours
+            : null,
+        midCourseCancellationRefundPercentage: values.allowMidCourseDrops
+          ? values.cancellationRefundPercentage ?? 100
+          : null,
       };
       payload.options = JSON.stringify([optionData]);
 
@@ -1361,867 +1396,994 @@ const ClassEditDrawer = ({
           </LoaderWrapper>
         ) : (
           <>
-            <VisibilityToggleContainer>
-              <VisibilityInfo>
-                <VisibilityLabel>Class Visibility</VisibilityLabel>
-                <VisibilityStatus>
-                  {isActive ? "Visible to students" : "Hidden from students"}
-                </VisibilityStatus>
-              </VisibilityInfo>
-              <Switch
-                checked={isActive}
-                onChange={setIsActive}
-                disabled={loading}
-              />
-            </VisibilityToggleContainer>
-            <Tabs
+            <StyledTabs
               activeKey={activeTab}
               onChange={setActiveTab}
-              type="card"
-              size="middle"
-            >
-              {/* All TabPanes are the same as before */}
-              <TabPane
-                tab={
-                  <>
-                    <BookOpen size={16} style={{ marginRight: "8px" }} /> Basic
-                    Info
-                  </>
-                }
-                key="1"
-              >
-                <FormSection>
-                  <FormGroup>
-                    <FormLabel htmlFor="edit_class_title">
-                      <BookOpen size={16} />
-                      Class Title
-                    </FormLabel>
-                    <HelpText>
-                      <Info size={14} />
-                      Create a clear, descriptive title that tells students
-                      exactly what you're teaching.
-                    </HelpText>
-                    <FormItemAntd
-                      name="title"
-                      rules={[
-                        {
-                          required: true,
-                          message: "Please enter a class title",
-                        },
-                        {
-                          min: 5,
-                          message: "Title must be at least 5 characters",
-                        },
-                        {
-                          max: 100,
-                          message: "Title cannot exceed 100 characters",
-                        },
-                      ]}
-                    >
-                      <StyledInput
-                        id="edit_class_title"
-                        placeholder="e.g., Introduction to Classical Piano"
-                      />
-                    </FormItemAntd>
-                  </FormGroup>
-                  <FormGroup>
-                    <FormLabel htmlFor="edit_class_description">
-                      <BookOpen size={16} />
-                      Class Description
-                      <Tooltip
-                        title={descriptionTooltipContent}
-                        placement="topRight"
-                        overlayInnerStyle={{ maxWidth: "300px" }}
-                      >
-                        <Info
-                          size={14}
-                          style={{
-                            color: appTheme.token.colorTextSecondary,
-                            cursor: "help",
-                            marginLeft: "4px",
-                          }}
-                        />
-                      </Tooltip>
-                    </FormLabel>
-                    <HelpText>
-                      <Info size={14} />
-                      Describe what students will learn, your teaching approach,
-                      and what makes your class special. Detailed descriptions
-                      help guests understand what to expect and improve
-                      discoverability.
-                    </HelpText>
-                    <FormItemAntd
-                      name="description"
-                      rules={[
-                        {
-                          required: true,
-                          message: "Please enter a class description",
-                        },
-                        {
-                          min: 100,
-                          message:
-                            "Description must be at least 100 characters",
-                        },
-                        {
-                          max: 4000,
-                          message: "Description cannot exceed 4000 characters",
-                        },
-                      ]}
-                    >
-                      <StyledTextArea
-                        id="edit_class_description"
-                        rows={5}
-                        placeholder="Tell students about what they'll learn..."
-                        showCount
-                        maxLength={4000}
-                      />
-                    </FormItemAntd>
-                  </FormGroup>
-                </FormSection>
-                <SectionDivider>
-                  <span>
-                    <ImageIcon size={16} />
-                    Class Photos
-                  </span>
-                </SectionDivider>
-                <FormSection>
-                  <FormGroup>
-                    <FormLabel>
-                      <ImageIcon size={16} />
-                      Class Images (2-10 photos required)
-                    </FormLabel>
-                    <HelpText>
-                      <Info size={14} />
-                      Drag & drop or click to upload high-quality photos that
-                      showcase your class. More photos help guests visualize the
-                      experience and stand out in search.
-                    </HelpText>
-                    <FormItemAntd
-                      name="class_photos_validation_edit"
-                      rules={[
-                        {
-                          validator: async () => {
-                            if (!mainImages || mainImages.length < 2)
-                              return Promise.reject(
-                                new Error("Please upload at least 2 images.")
-                              );
-                            if (mainImages.length > 10)
-                              return Promise.reject(
-                                new Error("Maximum 10 images allowed.")
-                              );
-                            if (
-                              mainImages.length > 0 &&
-                              !mainImages.some((img) => img.isCover)
-                            )
-                              return Promise.reject(
-                                new Error("Please select a cover image.")
-                              );
-                            return Promise.resolve();
-                          },
-                        },
-                      ]}
-                      dependencies={[
-                        mainImages
-                          .map((img) => `${img.id}-${img.isCover}-${img.url}`)
-                          .join(","),
-                      ]}
-                    >
-                      <ImageUploadSection>
-                        <ImageGrid>
-                          {mainImages.map((image) => (
-                            <ImageCard key={image.id} $isCover={image.isCover}>
-                              <ImagePreview
-                                src={image.url}
-                                alt={image.name || "Class image"}
-                              />
-                              <ImageActions>
-                                {!image.isCover && mainImages.length > 0 && (
-                                  <Tooltip title="Set as cover">
-                                    <ActionButton
-                                      type="button"
-                                      onClick={() =>
-                                        handleSetCoverMainImage(image.id)
-                                      }
-                                    >
-                                      <Star />
-                                    </ActionButton>
-                                  </Tooltip>
-                                )}
-                                <Tooltip title="Remove image">
-                                  <ActionButton
-                                    type="button"
-                                    onClick={() =>
-                                      handleRemoveMainImage(image.id)
-                                    }
-                                  >
-                                    <X />
-                                  </ActionButton>
-                                </Tooltip>
-                              </ImageActions>
-                              {image.isCover && (
-                                <CoverBadge>
-                                  <Star size={12} />
-                                  Cover
-                                </CoverBadge>
-                              )}
-                            </ImageCard>
-                          ))}
-                          {mainImages.length < 10 && (
-                            <StyledDragger
-                              multiple
-                              showUploadList={false}
-                              beforeUpload={handleBeforeUpload}
-                              accept={ACCEPTED_IMAGE_FORMATS_STRING}
-                            >
-                              <ImageCard $isUpload>
-                                <ImagePlus size={32} color="#94a3b8" />
-                                <span
-                                  style={{
-                                    fontSize: "14px",
-                                    fontWeight: "500",
-                                  }}
-                                >
-                                  Add Photos
-                                </span>
-                                <span
-                                  style={{
-                                    fontSize: "12px",
-                                    color: "#64748b",
-                                  }}
-                                >
-                                  Drag or click
-                                </span>
-                                <span
-                                  style={{
-                                    fontSize: "11px",
-                                    color: "#94a3b8",
-                                  }}
-                                >
-                                  up to {10 - mainImages.length} more
-                                </span>
-                              </ImageCard>
-                            </StyledDragger>
-                          )}
-                        </ImageGrid>
-                      </ImageUploadSection>
-                    </FormItemAntd>
-                  </FormGroup>
-                </FormSection>
-                <SectionDivider>
-                  <span>
-                    <Building2 size={16} />
-                    Category & Features
-                  </span>
-                </SectionDivider>
-                <FormSection>
-                  <FormGrid>
-                    <FormGroup>
-                      <FormLabel htmlFor="edit_class_category">
-                        <Building2 size={16} />
-                        Main Category
-                      </FormLabel>
-                      <HelpText>
-                        <Info size={14} />
-                        Choose the primary subject area that best describes your
-                        class.
-                      </HelpText>
-                      <FormItemAntd
-                        name="category_key"
-                        rules={[
-                          {
-                            required: true,
-                            message: "Please select a category",
-                          },
-                        ]}
-                      >
-                        <StyledSelect
-                          id="edit_class_category"
-                          placeholder="Select the main category"
-                          allowClear
-                          loading={categories.length === 0 && dataLoading}
-                        >
-                          {categories.map((cat) => (
-                            <Option key={cat.key} value={cat.key}>
-                              {cat.name}
-                            </Option>
-                          ))}
-                        </StyledSelect>
-                      </FormItemAntd>
-                    </FormGroup>
-                    <FormGroup>
-                      <FormLabel htmlFor="edit_class_subcategory">
-                        <Building2 size={16} />
-                        Subcategory
-                      </FormLabel>
-                      <HelpText>
-                        <Info size={14} />
-                        Select a specific subcategory to help students find
-                        exactly what they're looking for.
-                      </HelpText>
-                      <FormItemAntd
-                        name="subcategory_key"
-                        rules={[
-                          {
-                            required: true,
-                            message: "Please select a subcategory",
-                          },
-                        ]}
-                      >
-                        <StyledSelect
-                          id="edit_class_subcategory"
-                          placeholder="Select a subcategory"
-                          disabled={!currentFormCategoryKey}
-                          loading={
-                            !!currentFormCategoryKey &&
-                            subcategories.length === 0 &&
-                            !dataLoading
-                          }
-                          allowClear
-                        >
-                          {subcategories.map((sub) => (
-                            <Option key={sub.key} value={sub.key}>
-                              {sub.name}
-                            </Option>
-                          ))}
-                        </StyledSelect>
-                      </FormItemAntd>
-                    </FormGroup>
-                  </FormGrid>
-                  <FormGroup>
-                    <FormLabel htmlFor="edit_class_features">
-                      <Hash size={16} />
-                      Class Features
-                    </FormLabel>
-                    <HelpText>
-                      <Info size={14} />
-                      Select or add features that highlight what makes your
-                      class special.
-                    </HelpText>
-                    <FormItemAntd
-                      name="features"
-                      rules={[
-                        {
-                          required: true,
-                          message: "Please select at least one feature",
-                        },
-                      ]}
-                    >
-                      <StyledTagsSelect
-                        id="edit_class_features"
-                        mode="tags"
-                        style={{ width: "100%" }}
-                        placeholder="Select or type custom features"
-                        tokenSeparators={[","]}
-                        options={presetFeaturesOptions}
-                        maxTagCount="responsive"
-                      />
-                    </FormItemAntd>
-                  </FormGroup>
-                </FormSection>
-              </TabPane>
-              <TabPane
-                tab={
-                  <>
-                    <MapPin size={16} style={{ marginRight: "8px" }} />
-                    Location & Contact
-                  </>
-                }
-                key="2"
-              >
-                {/* Location & Contact Tab Content is identical to the creation step */}
-                <FormSection>
-                  <FormGrid>
-                    <FormGroup>
-                      <FormLabel htmlFor="edit_location_search_input_display_only">
-                        <Search size={16} />
-                        Class Location Search
-                      </FormLabel>
-                      <HelpText>
-                        <Info size={14} />
-                        Search for the main address or building.
-                      </HelpText>
-                      <SearchWrapper>
-                        <FormItemAntd
-                          name="location"
-                          noStyle
-                          rules={[
-                            {
-                              required: true,
-                              message:
-                                "Please select a location from search results.",
-                            },
-                          ]}
-                        >
-                          <Input type="hidden" />
-                        </FormItemAntd>
-                        <FormItemAntd name="coordinates" noStyle>
-                          <Input type="hidden" />
-                        </FormItemAntd>
-                        <FormItemAntd name="saltLocation" noStyle>
-                          <Switch style={{ display: "none" }} />
-                        </FormItemAntd>
-                        <FormItemAntd name="city" noStyle>
-                          <Input type="hidden" />
-                        </FormItemAntd>
-                        <FormItemAntd name="state" noStyle>
-                          <Input type="hidden" />
-                        </FormItemAntd>
-                        <FormItemAntd name="zipCode" noStyle>
-                          <Input type="hidden" />
-                        </FormItemAntd>
-                        <FormItemAntd name="country" noStyle>
-                          <Input type="hidden" />
-                        </FormItemAntd>
-                        <StyledInput
-                          id="edit_location_search_input_display_only"
-                          prefix={
-                            <Search size={16} style={{ color: "#adb5bd" }} />
-                          }
-                          placeholder="Search for address or place name"
-                          value={mapSearchValue}
-                          onChange={(e) => {
-                            setMapSearchValue(e.target.value);
-                            debouncedAwsSearch(e.target.value);
-                          }}
-                          allowClear
-                        />
-                        {mapSearchResults.length > 0 && (
-                          <SearchResults
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            {mapSearchResults.map((result, index) => (
-                              <SearchResult
-                                key={index}
-                                onClick={() => handleMapLocationSelect(result)}
-                              >
-                                <MapPin size={18} />
-                                <ResultContent>
-                                  <PrimaryText>
-                                    {result.displayName}
-                                  </PrimaryText>
-                                </ResultContent>
-                              </SearchResult>
-                            ))}
-                          </SearchResults>
-                        )}
-                      </SearchWrapper>
-                    </FormGroup>
-                    <FormGroup>
-                      <FormLabel htmlFor="edit_class_unit_number">
-                        <Building2 size={16} />
-                        Apartment, suite, etc. (Optional)
-                      </FormLabel>
-                      <HelpText>
-                        <Info size={14} />A specific unit, suite, or apartment
-                        number.
-                      </HelpText>
-                      <FormItemAntd name="unit_number" noStyle>
-                        <StyledInput
-                          id="edit_class_unit_number"
-                          placeholder="e.g., Unit B"
-                        />
-                      </FormItemAntd>
-                    </FormGroup>
-                  </FormGrid>
-                  {selectedMapLocation && (
-                    <>
-                      <MapWrapper
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: 0.1 }}
-                      >
-                        <MapContainer
-                          key={`${selectedMapLocation.lat}-${selectedMapLocation.lon}-${hideExactLocation}`}
-                          center={[
-                            selectedMapLocation.lat,
-                            selectedMapLocation.lon,
-                          ]}
-                          zoom={MAP_ZOOM_LEVEL}
-                          scrollWheelZoom={false}
-                          attributionControl={false}
-                        >
-                          <TileLayer
-                            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                            attributionControl={false}
-                          />
-                          {hideExactLocation ? (
-                            <Circle
-                              center={[
-                                selectedMapLocation.lat,
-                                selectedMapLocation.lon,
-                              ]}
-                              radius={MAP_CIRCLE_RADIUS}
-                              pathOptions={{
-                                fillColor: appTheme.token.colorPrimary,
-                                fillOpacity: 0.15,
-                                color: appTheme.token.colorPrimary,
-                                weight: 1,
-                              }}
-                            />
-                          ) : (
-                            <CircleMarker
-                              center={[
-                                selectedMapLocation.lat,
-                                selectedMapLocation.lon,
-                              ]}
-                              radius={8}
-                              pathOptions={{
-                                fillColor: appTheme.token.colorPrimary,
-                                fillOpacity: 0.9,
-                                color: "white",
-                                weight: 2,
-                              }}
-                            />
-                          )}
-                          <MapCenterHandler
-                            center={[
-                              selectedMapLocation.lat,
-                              selectedMapLocation.lon,
+              items={[
+                {
+                  label: "Basic Info",
+                  key: "1",
+                  children: (
+                    <TabContentWrapper>
+                      <FormSection>
+                        <FormGroup>
+                          <FormLabel htmlFor="edit_class_title">
+                            <BookOpen size={16} />
+                            Class Title
+                          </FormLabel>
+                          <HelpText>
+                            <Info size={14} />
+                            Create a clear, descriptive title that tells students
+                            exactly what you're teaching.
+                          </HelpText>
+                          <FormItemAntd
+                            name="title"
+                            rules={[
+                              {
+                                required: true,
+                                message: "Please enter a class title",
+                              },
+                              {
+                                min: 5,
+                                message: "Title must be at least 5 characters",
+                              },
+                              {
+                                max: 100,
+                                message: "Title cannot exceed 100 characters",
+                              },
                             ]}
-                          />
-                        </MapContainer>
-                      </MapWrapper>
-                      <LocationText>
-                        {hideExactLocation
-                          ? `Approximate area shown`
-                          : `Exact location shown`}
-                      </LocationText>
-                      <FormGroup>
-                        <FormLabel>Location Privacy</FormLabel>
-                        <HelpText>
-                          <Info size={14} />
-                          Choose how your location is displayed.
-                        </HelpText>
-                        <ToggleGroup>
-                          <ToggleButton
-                            type="button"
-                            $selected={!hideExactLocation}
-                            onClick={() => handleLocationPrivacyToggle("show")}
-                            title="Show precise address"
                           >
-                            <Eye size={16} /> Show exact location
-                          </ToggleButton>
-                          <ToggleButton
-                            type="button"
-                            $selected={hideExactLocation}
-                            onClick={() => handleLocationPrivacyToggle("hide")}
-                            title="Show general area"
+                            <StyledInput
+                              id="edit_class_title"
+                              placeholder="e.g., Introduction to Classical Piano"
+                            />
+                          </FormItemAntd>
+                        </FormGroup>
+                        <FormGroup>
+                          <FormLabel htmlFor="edit_class_description">
+                            <BookOpen size={16} />
+                            Class Description
+                            <Tooltip
+                              title={descriptionTooltipContent}
+                              placement="topRight"
+                              overlayInnerStyle={{ maxWidth: "300px" }}
+                            >
+                              <Info
+                                size={14}
+                                style={{
+                                  color: appTheme.token.colorTextSecondary,
+                                  cursor: "help",
+                                  marginLeft: "4px",
+                                }}
+                              />
+                            </Tooltip>
+                          </FormLabel>
+                          <HelpText>
+                            <Info size={14} />
+                            Describe what students will learn, your teaching approach,
+                            and what makes your class special. Detailed descriptions
+                            help guests understand what to expect and improve
+                            discoverability.
+                          </HelpText>
+                          <FormItemAntd
+                            name="description"
+                            rules={[
+                              {
+                                required: true,
+                                message: "Please enter a class description",
+                              },
+                              {
+                                min: 100,
+                                message:
+                                  "Description must be at least 100 characters",
+                              },
+                              {
+                                max: 4000,
+                                message: "Description cannot exceed 4000 characters",
+                              },
+                            ]}
                           >
-                            <EyeOff size={16} /> Hide exact location
-                          </ToggleButton>
-                        </ToggleGroup>
-                      </FormGroup>
-                    </>
-                  )}
-                </FormSection>
-                <SectionDivider>
-                  <span>
-                    <Phone size={16} />
-                    Student Contact
-                  </span>
-                </SectionDivider>
-                <FormSection>
-                  <FormGrid>
-                    <FormGroup>
-                      <FormLabel htmlFor="edit_studentContactEmail">
-                        <Mail size={16} />
-                        Contact Email
-                      </FormLabel>
-                      <HelpText>
-                        <Info size={14} />
-                        Email for students to contact you about this class.
-                      </HelpText>
-                      <FormItemAntd
-                        name="studentContactEmail"
-                        rules={[
-                          {
-                            required: true,
-                            message: "Please enter an email",
-                          },
-                          {
-                            type: "email",
-                            message: "Please enter a valid email",
-                          },
-                        ]}
-                      >
-                        <StyledInput
-                          id="edit_studentContactEmail"
-                          prefix={
-                            <Mail size={16} style={{ color: "#adb5bd" }} />
-                          }
-                          placeholder="you@example.com"
-                        />
-                      </FormItemAntd>
-                    </FormGroup>
-                    <FormGroup>
-                      <FormLabel htmlFor="edit_studentContactPhone">
-                        <Phone size={16} />
-                        Contact Phone
-                      </FormLabel>
-                      <HelpText>
-                        <Info size={14} />
-                        Phone number for students.
-                      </HelpText>
-                      <FormItemAntd
-                        name="studentContactPhone"
-                        rules={[
-                          {
-                            required: true,
-                            message: "Please enter a phone number",
-                          },
-                          {
-                            pattern:
-                              /^\+?(\d{1,4}[\s-]?)?\(?\d{1,4}\)?[\s-]?\d{1,4}[\s-]?\d{1,9}$/,
-                            message: "Please enter a valid phone number",
-                          },
-                        ]}
-                      >
-                        <StyledInput
-                          id="edit_studentContactPhone"
-                          prefix={
-                            <Phone size={16} style={{ color: "#adb5bd" }} />
-                          }
-                          placeholder="+1 555-123-4567"
-                        />
-                      </FormItemAntd>
-                    </FormGroup>
-                  </FormGrid>
-                </FormSection>
-              </TabPane>
-              <TabPane
-                tab={
-                  <>
-                    <Layers size={16} style={{ marginRight: "8px" }} />
-                    Class Settings
-                  </>
-                }
-                key="3"
-                forceRender
-              >
-                {/* Class Settings Tab Content is identical to the creation step */}
-                <FormSection>
-                  <FormItemAntd name="booking_type" hidden>
-                    <Input />
-                  </FormItemAntd>
-                  <FormItemAntd name="price_type" hidden>
-                    <Input />
-                  </FormItemAntd>
-                  <FormGroup>
-                    <FormLabel htmlFor="edit_level">
-                      <UserCheck size={16} />
-                      Experience Level
-                    </FormLabel>
-                    <HelpText>
-                      <Info size={14} />
-                      What skill level should students have?
-                    </HelpText>
-                    <FormItemAntd
-                      name="level"
-                      rules={[
-                        {
-                          required: true,
-                          message: "Please select an experience level",
-                        },
-                      ]}
-                    >
-                      <StyledSelect
-                        id="edit_level"
-                        placeholder="Select experience level"
-                      >
-                        <Option value="beginner">
-                          Beginner - No experience needed
-                        </Option>
-                        <Option value="intermediate">
-                          Intermediate - Some experience
-                        </Option>
-                        <Option value="advanced">
-                          Advanced - Significant experience
-                        </Option>
-                        <Option value="all">All Levels Welcome</Option>
-                      </StyledSelect>
-                    </FormItemAntd>
-                  </FormGroup>
-                </FormSection>
-                <SectionDivider>
-                  <span>
-                    <FileText size={16} />
-                    Policies & Cancellation
-                  </span>
-                </SectionDivider>
-                <FormSection>
-                  <FormGrid>
-                    <FormGroup>
-                      <FormLabel htmlFor="edit_cancellationPolicy">
-                        <FileText size={16} />
-                        Cancellation Notice
-                      </FormLabel>
-                      <HelpText>
-                        <Info size={14} />
-                        Required notice for cancellations.
-                      </HelpText>
-                      <FormItemAntd
-                        name="cancellationPolicy"
-                        rules={[
-                          {
-                            required: true,
-                            message: "Please select a cancellation policy",
-                          },
-                        ]}
-                      >
-                        <StyledSelect
-                          id="edit_cancellationPolicy"
-                          placeholder="Select cancellation period"
-                        >
-                          <Option value="flexible">
-                            Flexible (up to 1 hour before)
-                          </Option>
-                          <Option value="24h">24 Hours Notice</Option>
-                          <Option value="48h">48 Hours Notice</Option>
-                          <Option value="72h">72 Hours Notice</Option>
-                          <Option value="strict">
-                            Strict (Non-refundable)
-                          </Option>
-                          <Option value="custom">Custom Notice Period</Option>
-                        </StyledSelect>
-                      </FormItemAntd>
-                    </FormGroup>
-                    <FormGroup>
-                      <FormLabel htmlFor="edit_cancellationRefundPercentage">
-                        <Percent size={16} />
-                        Refund Percentage
-                      </FormLabel>
-                      <HelpText>
-                        <Info size={14} />
-                        Refund for cancellations within notice period.
-                      </HelpText>
-                      <FormItemAntd
-                        name="cancellationRefundPercentage"
-                        rules={[
-                          {
-                            required: true,
-                            message: "Please enter a refund percentage",
-                          },
-                          {
-                            type: "number",
-                            min: 0,
-                            max: 100,
-                            message: "Must be between 0 and 100",
-                          },
-                        ]}
-                      >
-                        <StyledInputNumber
-                          id="edit_cancellationRefundPercentage"
-                          min={0}
-                          max={100}
-                          formatter={(value) => `${value}%`}
-                          parser={(value) => String(value).replace("%", "")}
-                          placeholder="e.g., 100"
-                          disabled={watchedCancellationPolicy === "strict"}
-                        />
-                      </FormItemAntd>
-                    </FormGroup>
-                  </FormGrid>
-
-                  {watchedCancellationPolicy === "custom" && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                      animate={{
-                        opacity: 1,
-                        height: "auto",
-                        marginTop: "24px",
-                      }}
-                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <FormGroup>
-                        <FormLabel htmlFor="edit_cancellationCustomHours">
-                          <Clock size={16} />
-                          Custom Notice (Hours)
-                        </FormLabel>
-                        <HelpText>
-                          <Info size={14} />
-                          Required notice period in hours.
-                        </HelpText>
-                        <FormItemAntd
-                          name="cancellationCustomHours"
-                          rules={[
-                            {
-                              required: true,
-                              message:
-                                "Please enter the notice period in hours",
-                            },
-                            {
-                              type: "number",
-                              min: 1,
-                              message: "Must be at least 1 hour",
-                            },
-                          ]}
-                        >
-                          <StyledInputNumber
-                            id="edit_cancellationCustomHours"
-                            min={1}
-                            placeholder="e.g., 36"
-                            style={{ width: "100%" }}
-                          />
+                            <StyledTextArea
+                              id="edit_class_description"
+                              rows={5}
+                              placeholder="Tell students about what they'll learn..."
+                              showCount
+                              maxLength={4000}
+                            />
+                          </FormItemAntd>
+                        </FormGroup>
+                      </FormSection>
+                      <SectionDivider>
+                        <span>
+                          <ImageIcon size={16} />
+                          Class Photos
+                        </span>
+                      </SectionDivider>
+                      <FormSection>
+                        <FormGroup>
+                          <FormLabel>
+                            <ImageIcon size={16} />
+                            Class Images (2-10 photos required)
+                          </FormLabel>
+                          <HelpText>
+                            <Info size={14} />
+                            Drag & drop or click to upload high-quality photos that
+                            showcase your class. More photos help guests visualize the
+                            experience and stand out in search.
+                          </HelpText>
+                          <FormItemAntd
+                            name="class_photos_validation_edit"
+                            rules={[
+                              {
+                                validator: async () => {
+                                  if (!mainImages || mainImages.length < 2)
+                                    return Promise.reject(
+                                      new Error("Please upload at least 2 images.")
+                                    );
+                                  if (mainImages.length > 10)
+                                    return Promise.reject(
+                                      new Error("Maximum 10 images allowed.")
+                                    );
+                                  if (
+                                    mainImages.length > 0 &&
+                                    !mainImages.some((img) => img.isCover)
+                                  )
+                                    return Promise.reject(
+                                      new Error("Please select a cover image.")
+                                    );
+                                  return Promise.resolve();
+                                },
+                              },
+                            ]}
+                            dependencies={[
+                              mainImages
+                                .map((img) => `${img.id}-${img.isCover}-${img.url}`)
+                                .join(","),
+                            ]}
+                          >
+                            <ImageUploadSection>
+                              <ImageGrid>
+                                {mainImages.map((image) => (
+                                  <ImageCard key={image.id} $isCover={image.isCover}>
+                                    <ImagePreview
+                                      src={image.url}
+                                      alt={image.name || "Class image"}
+                                    />
+                                    <ImageActions>
+                                      {!image.isCover && mainImages.length > 0 && (
+                                        <Tooltip title="Set as cover">
+                                          <ActionButton
+                                            type="button"
+                                            onClick={() =>
+                                              handleSetCoverMainImage(image.id)
+                                            }
+                                          >
+                                            <Star />
+                                          </ActionButton>
+                                        </Tooltip>
+                                      )}
+                                      <Tooltip title="Remove image">
+                                        <ActionButton
+                                          type="button"
+                                          onClick={() =>
+                                            handleRemoveMainImage(image.id)
+                                          }
+                                        >
+                                          <X />
+                                        </ActionButton>
+                                      </Tooltip>
+                                    </ImageActions>
+                                    {image.isCover && (
+                                      <CoverBadge>
+                                        <Star size={12} />
+                                        Cover
+                                      </CoverBadge>
+                                    )}
+                                  </ImageCard>
+                                ))}
+                                {mainImages.length < 10 && (
+                                  <StyledDragger
+                                    multiple
+                                    showUploadList={false}
+                                    beforeUpload={handleBeforeUpload}
+                                    accept={ACCEPTED_IMAGE_FORMATS_STRING}
+                                  >
+                                    <ImageCard $isUpload>
+                                      <ImagePlus size={32} color="#94a3b8" />
+                                      <span
+                                        style={{
+                                          fontSize: "14px",
+                                          fontWeight: "500",
+                                        }}
+                                      >
+                                        Add Photos
+                                      </span>
+                                      <span
+                                        style={{
+                                          fontSize: "12px",
+                                          color: "#64748b",
+                                        }}
+                                      >
+                                        Drag or click
+                                      </span>
+                                      <span
+                                        style={{
+                                          fontSize: "11px",
+                                          color: "#94a3b8",
+                                        }}
+                                      >
+                                        up to {10 - mainImages.length} more
+                                      </span>
+                                    </ImageCard>
+                                  </StyledDragger>
+                                )}
+                              </ImageGrid>
+                            </ImageUploadSection>
+                          </FormItemAntd>
+                        </FormGroup>
+                      </FormSection>
+                      <SectionDivider>
+                        <span>
+                          <Building2 size={16} />
+                          Category & Features
+                        </span>
+                      </SectionDivider>
+                      <FormSection>
+                        <FormGrid>
+                          <FormGroup>
+                            <FormLabel htmlFor="edit_class_category">
+                              <Building2 size={16} />
+                              Main Category
+                            </FormLabel>
+                            <HelpText>
+                              <Info size={14} />
+                              Choose the primary subject area that best describes your
+                              class.
+                            </HelpText>
+                            <FormItemAntd
+                              name="category_key"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Please select a category",
+                                },
+                              ]}
+                            >
+                              <StyledSelect
+                                id="edit_class_category"
+                                placeholder="Select the main category"
+                                allowClear
+                                loading={categories.length === 0 && dataLoading}
+                              >
+                                {categories.map((cat) => (
+                                  <Option key={cat.key} value={cat.key}>
+                                    {cat.name}
+                                  </Option>
+                                ))}
+                              </StyledSelect>
+                            </FormItemAntd>
+                          </FormGroup>
+                          <FormGroup>
+                            <FormLabel htmlFor="edit_class_subcategory">
+                              <Building2 size={16} />
+                              Subcategory
+                            </FormLabel>
+                            <HelpText>
+                              <Info size={14} />
+                              Select a specific subcategory to help students find
+                              exactly what they're looking for.
+                            </HelpText>
+                            <FormItemAntd
+                              name="subcategory_key"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Please select a subcategory",
+                                },
+                              ]}
+                            >
+                              <StyledSelect
+                                id="edit_class_subcategory"
+                                placeholder="Select a subcategory"
+                                disabled={!currentFormCategoryKey}
+                                loading={
+                                  !!currentFormCategoryKey &&
+                                  subcategories.length === 0 &&
+                                  !dataLoading
+                                }
+                                allowClear
+                              >
+                                {subcategories.map((sub) => (
+                                  <Option key={sub.key} value={sub.key}>
+                                    {sub.name}
+                                  </Option>
+                                ))}
+                              </StyledSelect>
+                            </FormItemAntd>
+                          </FormGroup>
+                        </FormGrid>
+                        <FormGroup>
+                          <FormLabel htmlFor="edit_class_features">
+                            <Hash size={16} />
+                            Class Features
+                          </FormLabel>
+                          <HelpText>
+                            <Info size={14} />
+                            Select or add features that highlight what makes your
+                            class special.
+                          </HelpText>
+                          <FormItemAntd
+                            name="features"
+                            rules={[
+                              {
+                                required: true,
+                                message: "Please select at least one feature",
+                              },
+                            ]}
+                          >
+                            <StyledTagsSelect
+                              id="edit_class_features"
+                              mode="tags"
+                              style={{ width: "100%" }}
+                              placeholder="Select or type custom features"
+                              tokenSeparators={[","]}
+                              options={presetFeaturesOptions}
+                              maxTagCount="responsive"
+                            />
+                          </FormItemAntd>
+                        </FormGroup>
+                      </FormSection>
+                    </TabContentWrapper>
+                  ),
+                },
+                {
+                  label: "Location & Contact",
+                  key: "2",
+                  children: (
+                    <TabContentWrapper>
+                      <FormSection>
+                        <FormGrid>
+                          <FormGroup>
+                            <FormLabel htmlFor="edit_location_search_input_display_only">
+                              <Search size={16} />
+                              Class Location Search
+                            </FormLabel>
+                            <HelpText>
+                              <Info size={14} />
+                              Search for the main address or building.
+                            </HelpText>
+                            <SearchWrapper>
+                              <FormItemAntd
+                                name="location"
+                                noStyle
+                                rules={[
+                                  {
+                                    required: true,
+                                    message:
+                                      "Please select a location from search results.",
+                                  },
+                                ]}
+                              >
+                                <Input type="hidden" />
+                              </FormItemAntd>
+                              <FormItemAntd name="coordinates" noStyle>
+                                <Input type="hidden" />
+                              </FormItemAntd>
+                              <FormItemAntd name="saltLocation" noStyle>
+                                <Switch style={{ display: "none" }} />
+                              </FormItemAntd>
+                              <FormItemAntd name="city" noStyle>
+                                <Input type="hidden" />
+                              </FormItemAntd>
+                              <FormItemAntd name="state" noStyle>
+                                <Input type="hidden" />
+                              </FormItemAntd>
+                              <FormItemAntd name="zipCode" noStyle>
+                                <Input type="hidden" />
+                              </FormItemAntd>
+                              <FormItemAntd name="country" noStyle>
+                                <Input type="hidden" />
+                              </FormItemAntd>
+                              <StyledInput
+                                id="edit_location_search_input_display_only"
+                                prefix={
+                                  <Search size={16} style={{ color: "#adb5bd" }} />
+                                }
+                                placeholder="Search for address or place name"
+                                value={mapSearchValue}
+                                onChange={(e) => {
+                                  setMapSearchValue(e.target.value);
+                                  debouncedAwsSearch(e.target.value);
+                                }}
+                                allowClear
+                              />
+                              {mapSearchResults.length > 0 && (
+                                <SearchResults
+                                  initial={{ opacity: 0, y: -10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                >
+                                  {mapSearchResults.map((result, index) => (
+                                    <SearchResult
+                                      key={index}
+                                      onClick={() => handleMapLocationSelect(result)}
+                                    >
+                                      <MapPin size={18} />
+                                      <ResultContent>
+                                        <PrimaryText>
+                                          {result.displayName}
+                                        </PrimaryText>
+                                      </ResultContent>
+                                    </SearchResult>
+                                  ))}
+                                </SearchResults>
+                              )}
+                            </SearchWrapper>
+                          </FormGroup>
+                          <FormGroup>
+                            <FormLabel htmlFor="edit_class_unit_number">
+                              <Building2 size={16} />
+                              Apartment, suite, etc. (Optional)
+                            </FormLabel>
+                            <HelpText>
+                              <Info size={14} />A specific unit, suite, or apartment
+                              number.
+                            </HelpText>
+                            <FormItemAntd name="unit_number" noStyle>
+                              <StyledInput
+                                id="edit_class_unit_number"
+                                placeholder="e.g., Unit B"
+                              />
+                            </FormItemAntd>
+                          </FormGroup>
+                        </FormGrid>
+                        {selectedMapLocation && (
+                          <>
+                            <MapWrapper
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.3, delay: 0.1 }}
+                            >
+                              <MapContainer
+                                key={`${selectedMapLocation.lat}-${selectedMapLocation.lon}-${hideExactLocation}`}
+                                center={[
+                                  selectedMapLocation.lat,
+                                  selectedMapLocation.lon,
+                                ]}
+                                zoom={MAP_ZOOM_LEVEL}
+                                scrollWheelZoom={false}
+                                attributionControl={false}
+                              >
+                                <TileLayer
+                                  url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                                  attributionControl={false}
+                                />
+                                {hideExactLocation ? (
+                                  <Circle
+                                    center={[
+                                      selectedMapLocation.lat,
+                                      selectedMapLocation.lon,
+                                    ]}
+                                    radius={MAP_CIRCLE_RADIUS}
+                                    pathOptions={{
+                                      fillColor: appTheme.token.colorPrimary,
+                                      fillOpacity: 0.15,
+                                      color: appTheme.token.colorPrimary,
+                                      weight: 1,
+                                    }}
+                                  />
+                                ) : (
+                                  <CircleMarker
+                                    center={[
+                                      selectedMapLocation.lat,
+                                      selectedMapLocation.lon,
+                                    ]}
+                                    radius={8}
+                                    pathOptions={{
+                                      fillColor: appTheme.token.colorPrimary,
+                                      fillOpacity: 0.9,
+                                      color: "white",
+                                      weight: 2,
+                                    }}
+                                  />
+                                )}
+                                <MapCenterHandler
+                                  center={[
+                                    selectedMapLocation.lat,
+                                    selectedMapLocation.lon,
+                                  ]}
+                                />
+                              </MapContainer>
+                            </MapWrapper>
+                            <LocationText>
+                              {hideExactLocation
+                                ? `Approximate area shown`
+                                : `Exact location shown`}
+                            </LocationText>
+                            <FormGroup>
+                              <FormLabel>Location Privacy</FormLabel>
+                              <HelpText>
+                                <Info size={14} />
+                                Choose how your location is displayed.
+                              </HelpText>
+                              <ToggleGroup>
+                                <ToggleButton
+                                  type="button"
+                                  $selected={!hideExactLocation}
+                                  onClick={() => handleLocationPrivacyToggle("show")}
+                                  title="Show precise address"
+                                >
+                                  <Eye size={16} /> Show exact location
+                                </ToggleButton>
+                                <ToggleButton
+                                  type="button"
+                                  $selected={hideExactLocation}
+                                  onClick={() => handleLocationPrivacyToggle("hide")}
+                                  title="Show general area"
+                                >
+                                  <EyeOff size={16} /> Hide exact location
+                                </ToggleButton>
+                              </ToggleGroup>
+                            </FormGroup>
+                          </>
+                        )}
+                      </FormSection>
+                      <SectionDivider>
+                        <span>
+                          <Phone size={16} />
+                          Student Contact
+                        </span>
+                      </SectionDivider>
+                      <FormSection>
+                        <FormGrid>
+                          <FormGroup>
+                            <FormLabel htmlFor="edit_studentContactEmail">
+                              <Mail size={16} />
+                              Contact Email
+                            </FormLabel>
+                            <HelpText>
+                              <Info size={14} />
+                              Email for students to contact you about this class.
+                            </HelpText>
+                            <FormItemAntd
+                              name="studentContactEmail"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Please enter an email",
+                                },
+                                {
+                                  type: "email",
+                                  message: "Please enter a valid email",
+                                },
+                              ]}
+                            >
+                              <StyledInput
+                                id="edit_studentContactEmail"
+                                prefix={
+                                  <Mail size={16} style={{ color: "#adb5bd" }} />
+                                }
+                                placeholder="you@example.com"
+                              />
+                            </FormItemAntd>
+                          </FormGroup>
+                          <FormGroup>
+                            <FormLabel htmlFor="edit_studentContactPhone">
+                              <Phone size={16} />
+                              Contact Phone
+                            </FormLabel>
+                            <HelpText>
+                              <Info size={14} />
+                              Phone number for students.
+                            </HelpText>
+                            <FormItemAntd
+                              name="studentContactPhone"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Please enter a phone number",
+                                },
+                                {
+                                  pattern:
+                                    /^\+?(\d{1,4}[\s-]?)?\(?\d{1,4}\)?[\s-]?\d{1,4}[\s-]?\d{1,9}$/,
+                                  message: "Please enter a valid phone number",
+                                },
+                              ]}
+                            >
+                              <StyledInput
+                                id="edit_studentContactPhone"
+                                prefix={
+                                  <Phone size={16} style={{ color: "#adb5bd" }} />
+                                }
+                                placeholder="+1 555-123-4567"
+                              />
+                            </FormItemAntd>
+                          </FormGroup>
+                        </FormGrid>
+                      </FormSection>
+                    </TabContentWrapper>
+                  ),
+                },
+                {
+                  label: "Settings",
+                  key: "3",
+                  children: (
+                    <TabContentWrapper>
+                      <FormSection>
+                        <FormItemAntd name="booking_type" hidden>
+                          <Input />
                         </FormItemAntd>
-                      </FormGroup>
-                    </motion.div>
-                  )}
-                </FormSection>
-                <SectionDivider>
-                  <span>
-                    <SettingsIcon size={16} />
-                    Optional Details
-                  </span>
-                </SectionDivider>
-                <FormSection>
-                  <FormGrid>
-                    <FormGroup>
-                      <FormLabel htmlFor="edit_equipment">
-                        <PackageIcon size={16} />
-                        Equipment to Bring
-                      </FormLabel>
-                      <HelpText>
-                        <Info size={14} />
-                        List items students need.
-                      </HelpText>
-                      <FormItemAntd name="equipment">
-                        <StyledTagsSelect
-                          id="edit_equipment"
-                          mode="tags"
-                          style={{ width: "100%" }}
-                          placeholder="e.g., Yoga Mat, Notebook"
-                          tokenSeparators={[","]}
-                          maxTagCount="responsive"
-                        />
-                      </FormItemAntd>
-                    </FormGroup>
-                    <FormGroup>
-                      <FormLabel htmlFor="edit_tags">
-                        <TagIcon size={16} />
-                        Additional Tags
-                      </FormLabel>
-                      <HelpText>
-                        <Info size={14} />
-                        Keywords to help students find your class.
-                      </HelpText>
-                      <FormItemAntd name="tags">
-                        <StyledTagsSelect
-                          id="edit_tags"
-                          mode="tags"
-                          style={{ width: "100%" }}
-                          placeholder="e.g., Relaxing, Intensive"
-                          tokenSeparators={[","]}
-                          maxTagCount="responsive"
-                        />
-                      </FormItemAntd>
-                    </FormGroup>
-                  </FormGrid>
-                </FormSection>
-              </TabPane>
-            </Tabs>
+                        <FormItemAntd name="price_type" hidden>
+                          <Input />
+                        </FormItemAntd>
+                        <FormGroup>
+                          <FormLabel htmlFor="edit_level">
+                            <UserCheck size={16} />
+                            Experience Level
+                          </FormLabel>
+                          <HelpText>
+                            <Info size={14} />
+                            What skill level should students have?
+                          </HelpText>
+                          <FormItemAntd
+                            name="level"
+                            rules={[
+                              {
+                                required: true,
+                                message: "Please select an experience level",
+                              },
+                            ]}
+                          >
+                            <StyledSelect
+                              id="edit_level"
+                              placeholder="Select experience level"
+                            >
+                              <Option value="beginner">
+                                Beginner - No experience needed
+                              </Option>
+                              <Option value="intermediate">
+                                Intermediate - Some experience
+                              </Option>
+                              <Option value="advanced">
+                                Advanced - Significant experience
+                              </Option>
+                              <Option value="all">All Levels Welcome</Option>
+                            </StyledSelect>
+                          </FormItemAntd>
+                        </FormGroup>
+                      </FormSection>
+                      <SectionDivider>
+                        <span>
+                          <FileText size={16} />
+                          Policies & Cancellation
+                        </span>
+                      </SectionDivider>
+                      <FormSection>
+                        <FormGrid>
+                          <FormGroup>
+                            <FormLabel htmlFor="edit_cancellationPolicy">
+                              <FileText size={16} />
+                              Cancellation Notice
+                            </FormLabel>
+                            <HelpText>
+                              <Info size={14} />
+                              Required notice for cancellations.
+                            </HelpText>
+                            <FormItemAntd
+                              name="cancellationPolicy"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Please select a cancellation policy",
+                                },
+                              ]}
+                            >
+                              <StyledSelect
+                                id="edit_cancellationPolicy"
+                                placeholder="Select cancellation period"
+                              >
+                                <Option value="flexible">
+                                  Flexible (up to 1 hour before)
+                                </Option>
+                                <Option value="24h">24 Hours Notice</Option>
+                                <Option value="48h">48 Hours Notice</Option>
+                                <Option value="72h">72 Hours Notice</Option>
+                                <Option value="strict">
+                                  Strict (Non-refundable)
+                                </Option>
+                                <Option value="custom">Custom Notice Period</Option>
+                              </StyledSelect>
+                            </FormItemAntd>
+                          </FormGroup>
+                          <FormGroup>
+                            <FormLabel htmlFor="edit_cancellationRefundPercentage">
+                              <Percent size={16} />
+                              Refund Percentage
+                            </FormLabel>
+                            <HelpText>
+                              <Info size={14} />
+                              Refund for cancellations within notice period.
+                            </HelpText>
+                            <FormItemAntd
+                              name="cancellationRefundPercentage"
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "Please enter a refund percentage",
+                                },
+                                {
+                                  type: "number",
+                                  min: 0,
+                                  max: 100,
+                                  message: "Must be between 0 and 100",
+                                },
+                              ]}
+                            >
+                              <StyledInputNumber
+                                id="edit_cancellationRefundPercentage"
+                                min={0}
+                                max={100}
+                                formatter={(value) => `${value}%`}
+                                parser={(value) => String(value).replace("%", "")}
+                                placeholder="e.g., 100"
+                                disabled={watchedCancellationPolicy === "strict"}
+                              />
+                            </FormItemAntd>
+                          </FormGroup>
+                        </FormGrid>
+
+                        {watchedBookingType === "Full Course" && (
+                          <motion.div
+                            key="mid-course-policy"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3, delay: 0.2 }}
+                          >
+                            <SectionDivider>
+                              <span>
+                                <AlertCircle size={16} />
+                                Mid-Course Drop Policy
+                              </span>
+                            </SectionDivider>
+                            <FormSection>
+                              <FormGroup>
+                                <FormLabel htmlFor="edit_allowMidCourseDrops">
+                                  <AlertCircle size={16} />
+                                  Allow Mid-Course Drops?
+                                </FormLabel>
+                                <HelpText>
+                                  <Info size={14} />
+                                  Can students drop out after the course has started
+                                  and get a pro-rated refund for remaining sessions?
+                                </HelpText>
+                                <FormItemAntd
+                                  name="allowMidCourseDrops"
+                                  valuePropName="checked"
+                                >
+                                  <Switch
+                                    id="edit_allowMidCourseDrops"
+                                    checkedChildren="Yes"
+                                    unCheckedChildren="No"
+                                  />
+                                </FormItemAntd>
+                              </FormGroup>
+
+                              {midCourseDropsAllowed && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.3 }}
+                                >
+                                  <FormGrid>
+                                    <FormGroup>
+                                      <FormLabel htmlFor="edit_midCourseCancellationPolicy">
+                                        <FileText size={16} />
+                                        Mid-Course Drop Notice
+                                      </FormLabel>
+                                      <HelpText>
+                                        <Info size={14} />
+                                        Notice required before their NEXT session to
+                                        drop.
+                                      </HelpText>
+                                      <FormItemAntd
+                                        name="midCourseCancellationPolicy"
+                                        rules={[
+                                          {
+                                            required: midCourseDropsAllowed,
+                                            message:
+                                              "A policy is required if drops are allowed",
+                                          },
+                                        ]}
+                                      >
+                                        <StyledSelect
+                                          id="edit_midCourseCancellationPolicy"
+                                          placeholder="Select notice period"
+                                        >
+                                          <Option value="flexible">
+                                            Flexible (up to 1 hour before)
+                                          </Option>
+                                          <Option value="24h">24 Hours Notice</Option>
+                                          <Option value="48h">48 Hours Notice</Option>
+                                          <Option value="72h">72 Hours Notice</Option>
+                                          <Option value="strict">
+                                            Strict (Non-refundable)
+                                          </Option>
+                                          <Option value="custom">
+                                            Custom Notice Period
+                                          </Option>
+                                        </StyledSelect>
+                                      </FormItemAntd>
+                                    </FormGroup>
+
+                                    <FormGroup>
+                                      <FormLabel htmlFor="edit_midCourseCancellationRefundPercentage">
+                                        <Percent size={16} />
+                                        Mid-Course Refund
+                                      </FormLabel>
+                                      <HelpText>
+                                        <Info size={14} />
+                                        Refund for remaining sessions' value.
+                                      </HelpText>
+                                      <FormItemAntd
+                                        name="midCourseCancellationRefundPercentage"
+                                        rules={[
+                                          {
+                                            required: midCourseDropsAllowed,
+                                            message: "Enter a refund percentage",
+                                          },
+                                        ]}
+                                      >
+                                        <StyledInputNumber
+                                          id="edit_midCourseCancellationRefundPercentage"
+                                          min={0}
+                                          max={100}
+                                          formatter={(value) => `${value}%`}
+                                          parser={(value) =>
+                                            String(value).replace("%", "")
+                                          }
+                                          disabled={
+                                            watchedMidCoursePolicy === "strict"
+                                          }
+                                        />
+                                      </FormItemAntd>
+                                    </FormGroup>
+                                  </FormGrid>
+                                  {watchedMidCoursePolicy === "custom" && (
+                                    <motion.div
+                                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                      animate={{
+                                        opacity: 1,
+                                        height: "auto",
+                                        marginTop: "24px",
+                                      }}
+                                      transition={{ duration: 0.3 }}
+                                    >
+                                      <FormGroup>
+                                        <FormLabel htmlFor="edit_midCourseCancellationCustomHours">
+                                          <Clock size={16} />
+                                          Custom Mid-Course Notice (Hours)
+                                        </FormLabel>
+                                        <FormItemAntd
+                                          name="midCourseCancellationCustomHours"
+                                          rules={[{ required: true, min: 1 }]}
+                                        >
+                                          <StyledInputNumber
+                                            id="edit_midCourseCancellationCustomHours"
+                                            min={1}
+                                            style={{ width: "100%" }}
+                                          />
+                                        </FormItemAntd>
+                                      </FormGroup>
+                                    </motion.div>
+                                  )}
+                                </motion.div>
+                              )}
+                            </FormSection>
+                          </motion.div>
+                        )}
+
+                        {watchedCancellationPolicy === "custom" && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                            animate={{
+                              opacity: 1,
+                              height: "auto",
+                              marginTop: "24px",
+                            }}
+                            exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <FormGroup>
+                              <FormLabel htmlFor="edit_cancellationCustomHours">
+                                <Clock size={16} />
+                                Custom Notice (Hours)
+                              </FormLabel>
+                              <HelpText>
+                                <Info size={14} />
+                                Required notice period in hours.
+                              </HelpText>
+                              <FormItemAntd
+                                name="cancellationCustomHours"
+                                rules={[
+                                  {
+                                    required: true,
+                                    message:
+                                      "Please enter the notice period in hours",
+                                  },
+                                  {
+                                    type: "number",
+                                    min: 1,
+                                    message: "Must be at least 1 hour",
+                                  },
+                                ]}
+                              >
+                                <StyledInputNumber
+                                  id="edit_cancellationCustomHours"
+                                  min={1}
+                                  placeholder="e.g., 36"
+                                  style={{ width: "100%" }}
+                                />
+                              </FormItemAntd>
+                            </FormGroup>
+                          </motion.div>
+                        )}
+                      </FormSection>
+                      <SectionDivider>
+                        <span>
+                          <SettingsIcon size={16} />
+                          Optional Details
+                        </span>
+                      </SectionDivider>
+                      <FormSection>
+                        <FormGrid>
+                          <FormGroup>
+                            <FormLabel htmlFor="edit_equipment">
+                              <PackageIcon size={16} />
+                              Equipment to Bring
+                            </FormLabel>
+                            <HelpText>
+                              <Info size={14} />
+                              List items students need.
+                            </HelpText>
+                            <FormItemAntd name="equipment">
+                              <StyledTagsSelect
+                                id="edit_equipment"
+                                mode="tags"
+                                style={{ width: "100%" }}
+                                placeholder="e.g., Yoga Mat, Notebook"
+                                tokenSeparators={[","]}
+                                maxTagCount="responsive"
+                              />
+                            </FormItemAntd>
+                          </FormGroup>
+                          <FormGroup>
+                            <FormLabel htmlFor="edit_tags">
+                              <TagIcon size={16} />
+                              Additional Tags
+                            </FormLabel>
+                            <HelpText>
+                              <Info size={14} />
+                              Keywords to help students find your class.
+                            </HelpText>
+                            <FormItemAntd name="tags">
+                              <StyledTagsSelect
+                                id="edit_tags"
+                                mode="tags"
+                                style={{ width: "100%" }}
+                                placeholder="e.g., Relaxing, Intensive"
+                                tokenSeparators={[","]}
+                                maxTagCount="responsive"
+                              />
+                            </FormItemAntd>
+                          </FormGroup>
+                        </FormGrid>
+                      </FormSection>
+                    </TabContentWrapper>
+                  ),
+                },
+              ]}
+            />
           </>
         )}
       </DrawerContentWrapper>

@@ -40,7 +40,7 @@ import {
   Filter,
 } from "lucide-react";
 import dayjs from "dayjs";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { Drawer as VaulDrawer } from "vaul";
 import { theme as appTheme } from "@/components/theme";
 import { courseService, scheduleService } from "@/services/apiService";
@@ -59,6 +59,7 @@ const StyledDrawerOverlay = styled(VaulDrawer.Overlay)`
   z-index: 1049;
 `;
 
+// MODIFIED: Reverted to styled-components for Vaul's content, but without transform properties
 const StyledDrawerContent = styled(VaulDrawer.Content)`
   background: white;
   display: flex;
@@ -71,6 +72,21 @@ const StyledDrawerContent = styled(VaulDrawer.Content)`
   left: 0;
   right: 0;
   z-index: 1050;
+  outline: none;
+`;
+
+const StyledNestedDrawerContent = styled(VaulDrawer.Content)`
+  background: white;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px 16px 0 0;
+  height: 94%;
+  max-height: 94vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1051; /* Higher z-index for nested */
   outline: none;
 `;
 
@@ -96,6 +112,14 @@ const DrawerTitle = styled(Title)`
   margin: 0 !important;
   font-size: 18px !important;
   font-weight: 600 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: calc(100% - 40px);
+  
+  @media (max-width: 768px) {
+    font-size: 16px !important;
+  }
 `;
 
 const DrawerBody = styled.div`
@@ -199,6 +223,13 @@ const FormSection = styled(motion.div)`
   border-radius: 12px;
   padding: 24px;
   border: 1px solid #e2e8f0;
+  @media (max-width: 768px) {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    padding: 20px 16px;
+  }
 `;
 
 const FormGroup = styled.div`
@@ -206,6 +237,16 @@ const FormGroup = styled.div`
   width: 100%;
   &:last-child {
     margin-bottom: 0;
+  }
+`;
+
+const FormGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+
+  @media (min-width: 769px) {
+    grid-template-columns: 1fr 1fr;
   }
 `;
 
@@ -308,13 +349,21 @@ const DaySelector = styled.div`
 `;
 
 const DayButton = styled(Button)`
-  flex: 1;
-  min-width: 80px;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
   height: 44px;
   border-radius: 8px;
   font-weight: 500;
+  padding: 0 8px;
+  
   &.ant-btn-primary {
     background: ${(props) => props.theme.token.colorPrimary};
+  }
+  
+  @media (max-width: 768px) {
+    height: 40px;
+    font-size: 13px;
   }
 `;
 
@@ -322,6 +371,10 @@ const ScheduleList = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 1.5rem;
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 `;
 
 const ScheduleCard = styled.div`
@@ -408,8 +461,16 @@ const StatValue = styled.div`
 const ReviewSection = styled.div`
   background: white;
   padding: 24px;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid #e2e8f0;
+
+  @media (max-width: 768px) {
+    padding: 20px 16px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+  }
 `;
 
 const InfoRow = styled.div`
@@ -439,8 +500,12 @@ const ContentWrapper = styled.div`
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 24px;
+  padding: 32px;
   padding-top: 100px;
+  @media (max-width: 768px) {
+    padding: 0;
+    padding-top: 0;
+  }
 `;
 
 const StepsWrapper = styled.div`
@@ -476,23 +541,40 @@ const StepsWrapper = styled.div`
   .ant-steps-item-content {
     margin-top: 0 !important;
   }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const ContentPadding = styled.div`
-  padding: 24px;
+  padding: 32px;
   @media (max-width: 768px) {
     padding: 16px;
   }
 `;
 
 const DetailedViewContainer = styled.div`
-  padding: 24px;
+  padding: 32px;
+  @media (max-width: 768px) {
+    padding: 0;
+  }
 `;
 
 const DetailedHeader = styled.div`
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
   margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 2px solid #e2e8f0;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+    margin-bottom: 8px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
 `;
 
 const DetailedTitle = styled(Title)`
@@ -507,20 +589,32 @@ const DetailedTitle = styled(Title)`
 `;
 
 const DetailedMetricsRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 24px;
   background: #ffffffff;
   padding: 20px;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
+  @media (max-width: 768px) {
+    padding: 16px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
 `;
 
 const MetricItem = styled.div`
   flex: 1;
   min-width: 150px;
   text-align: center;
+  @media (max-width: 768px) {
+    min-width: unset;
+  }
 `;
 
 const MetricLabel = styled.div`
@@ -530,6 +624,9 @@ const MetricLabel = styled.div`
   font-weight: 500;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  @media (max-width: 768px) {
+    font-size: 10px;
+  }
 `;
 
 const MetricValue = styled.div`
@@ -545,6 +642,10 @@ const MetricValue = styled.div`
   svg {
     opacity: 0.7;
   }
+  @media (max-width: 768px) {
+    font-size: 20px;
+    gap: 4px;
+  }
 `;
 
 const SessionsBreakdown = styled.div`
@@ -553,6 +654,13 @@ const SessionsBreakdown = styled.div`
   padding: 20px;
   border: 1px solid #e2e8f0;
   margin-bottom: 24px;
+  @media (max-width: 768px) {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    margin-bottom: 8px;
+    padding: 16px;
+  }
 `;
 
 const SessionsTitle = styled(Title)`
@@ -576,13 +684,13 @@ const SessionItem = styled.div`
   border-radius: 12px;
   border: 1px solid
     ${(props) =>
-      props.$isToday ? "rgba(255, 56, 92, 0.2)" : "rgba(226, 232, 240, 0.4)"};
+  props.$isToday ? "rgba(255, 56, 92, 0.2)" : "rgba(226, 232, 240, 0.4)"};
   opacity: ${(props) => (props.$isPast ? 0.6 : 1)};
   transition: all 0.2s ease;
 
   &:hover {
     box-shadow: ${(props) =>
-      props.$isPast ? "none" : "0 2px 8px rgba(0, 0, 0, 0.05)"};
+  props.$isPast ? "none" : "0 2px 8px rgba(0, 0, 0, 0.05)"};
   }
 `;
 
@@ -628,13 +736,79 @@ const FilterBar = styled.div`
   margin-bottom: 24px;
   align-items: center;
   flex-wrap: wrap;
+  @media (max-width: 768px) {
+    gap: 8px;
+    margin-bottom: 16px;
+  }
 `;
+
+// ============= SKELETON COMPONENTS =============
+const skeletonKeyframes = keyframes`
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+`;
+
+const SkeletonPrimitive = styled.div`
+  background-color: #f0f2f5;
+  background-image: linear-gradient(90deg, #f0f2f5, #e6e8eb, #f0f2f5);
+  background-size: 200px 100%;
+  background-repeat: no-repeat;
+  border-radius: 4px;
+  animation: ${skeletonKeyframes} 1.3s ease-in-out infinite;
+  display: inline-block;
+  line-height: 1;
+  width: 100%;
+`;
+
+const CourseScheduleCardSkeleton = () => (
+  <ScheduleCard>
+    <ScheduleHeader>
+      <div style={{ flex: 1, paddingRight: "16px" }}>
+        <SkeletonPrimitive style={{ height: "24px", width: "70%", marginBottom: "8px" }} />
+        <SkeletonPrimitive style={{ height: "18px", width: "50%" }} />
+      </div>
+      <ScheduleActions>
+        <SkeletonPrimitive style={{ height: "32px", width: "32px", borderRadius: "8px" }} />
+        <SkeletonPrimitive style={{ height: "32px", width: "32px", borderRadius: "8px" }} />
+      </ScheduleActions>
+    </ScheduleHeader>
+    <StatsRow>
+      <StatItem>
+        <SkeletonPrimitive style={{ height: "24px", width: "40px", margin: "0 auto 4px" }} />
+        <SkeletonPrimitive style={{ height: "16px", width: "60px", margin: "0 auto" }} />
+      </StatItem>
+      <StatItem>
+        <SkeletonPrimitive style={{ height: "24px", width: "50px", margin: "0 auto 4px" }} />
+        <SkeletonPrimitive style={{ height: "16px", width: "70px", margin: "0 auto" }} />
+      </StatItem>
+      <StatItem>
+        <SkeletonPrimitive style={{ height: "24px", width: "60px", margin: "0 auto 4px" }} />
+        <SkeletonPrimitive style={{ height: "16px", width: "60px", margin: "0 auto" }} />
+      </StatItem>
+    </StatsRow>
+    <div style={{ padding: "12px 16px" }}>
+      <SkeletonPrimitive style={{ height: "21px", width: "150px", marginBottom: "12px" }} />
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <SkeletonPrimitive style={{ height: "20px", width: "80%" }} />
+        <SkeletonPrimitive style={{ height: "20px", width: "75%" }} />
+        <SkeletonPrimitive style={{ height: "20px", width: "85%" }} />
+      </div>
+    </div>
+  </ScheduleCard>
+);
+
+const CourseScheduleListSkeleton = () => (
+  <ScheduleList>
+    <CourseScheduleCardSkeleton />
+    <CourseScheduleCardSkeleton />
+  </ScheduleList>
+);
 
 // ============= MAIN COMPONENT =============
 
 const CourseScheduleDrawer = ({ open, onClose, classData }) => {
   const [form] = Form.useForm();
-  const [view, setView] = useState("list");
+  const [view, setView] = useState("list"); // Used for desktop modal
   const [currentStep, setCurrentStep] = useState(0);
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -644,6 +818,10 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // State for nested drawers on mobile
+  const [createOpen, setCreateOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -670,12 +848,15 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
 
   useEffect(() => {
     if (!open) {
+      // Reset all states on close
       setView("list");
       setCurrentStep(0);
       setSelectedSchedule(null);
       setEditingSchedule(null);
       setSearchTerm("");
       setStatusFilter("all");
+      setCreateOpen(false);
+      setDetailOpen(false);
       form.resetFields();
       setFormData({
         name: "",
@@ -706,50 +887,25 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
       });
 
       if (response?.success && Array.isArray(response.data)) {
-        // Group schedules by name, dates, time, etc., to combine multi-day courses
         const groupedSchedules = response.data.reduce((acc, schedule) => {
           const groupKey = `${schedule.name}-${schedule.start_date}-${schedule.end_date}-${schedule.time}-${schedule.duration}-${schedule.price}`;
           if (!acc[groupKey]) {
-            acc[groupKey] = {
-              ...schedule,
-              ids: [schedule.id], // Store original IDs for deletion/editing
-              day: [schedule.day], // Start with an array of days
-            };
+            acc[groupKey] = { ...schedule, ids: [schedule.id], day: [schedule.day] };
           } else {
             acc[groupKey].ids.push(schedule.id);
             acc[groupKey].day.push(schedule.day);
-            // Aggregate metrics
             acc[groupKey].booked_participants += schedule.booked_participants;
-            acc[groupKey].total_revenue = (
-              parseFloat(acc[groupKey].total_revenue) +
-              parseFloat(schedule.total_revenue)
-            ).toFixed(2);
-            acc[groupKey].has_confirmed_bookings =
-              acc[groupKey].has_confirmed_bookings ||
-              schedule.has_confirmed_bookings;
+            acc[groupKey].total_revenue = (parseFloat(acc[groupKey].total_revenue) + parseFloat(schedule.total_revenue)).toFixed(2);
+            acc[groupKey].has_confirmed_bookings = acc[groupKey].has_confirmed_bookings || schedule.has_confirmed_bookings;
           }
           return acc;
         }, {});
 
-        // Convert grouped object back to an array and sort days
-        const finalSchedules = Object.values(groupedSchedules).map(
-          (schedule) => {
-            const dayOrder = {
-              Mon: 1,
-              Tue: 2,
-              Wed: 3,
-              Thu: 4,
-              Fri: 5,
-              Sat: 6,
-              Sun: 7,
-            };
-            // Sort days and join into a string like "Mon, Wed"
-            schedule.day = schedule.day
-              .sort((a, b) => dayOrder[a] - dayOrder[b])
-              .join(", ");
-            return schedule;
-          }
-        );
+        const finalSchedules = Object.values(groupedSchedules).map((schedule) => {
+          const dayOrder = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
+          schedule.day = schedule.day.sort((a, b) => dayOrder[a] - dayOrder[b]).join(", ");
+          return schedule;
+        });
         setSchedules(finalSchedules);
       } else {
         setSchedules([]);
@@ -766,15 +922,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     let count = 0;
     let current = dayjs(startDate);
     const end = dayjs(endDate);
-    const dayMap = {
-      Monday: "Mon",
-      Tuesday: "Tue",
-      Wednesday: "Wed",
-      Thursday: "Thu",
-      Friday: "Fri",
-      Saturday: "Sat",
-      Sunday: "Sun",
-    };
+    const dayMap = { Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu", Friday: "Fri", Saturday: "Sat", Sunday: "Sun" };
     const shortSelectedDays = selectedDays.map((d) => dayMap[d]);
 
     while (current.isBefore(end) || current.isSame(end, "day")) {
@@ -788,19 +936,8 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     const sessions = [];
     let current = dayjs(startDate);
     const end = dayjs(endDate);
-    const dayMap = {
-      Monday: "Mon",
-      Tuesday: "Tue",
-      Wednesday: "Wed",
-      Thursday: "Thu",
-      Friday: "Fri",
-      Saturday: "Sat",
-      Sunday: "Sun",
-    };
-    // Ensure selectedDays is always an array of short day names ("Mon", "Tue", etc.)
-    const shortSelectedDays = Array.isArray(selectedDays)
-      ? selectedDays.map((d) => dayMap[d] || d)
-      : [];
+    const dayMap = { Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu", Friday: "Fri", Saturday: "Sat", Sunday: "Sun" };
+    const shortSelectedDays = Array.isArray(selectedDays) ? selectedDays.map((d) => dayMap[d] || d) : [];
 
     while (current.isBefore(end) || current.isSame(end, "day")) {
       if (shortSelectedDays.includes(current.format("ddd"))) {
@@ -811,66 +948,21 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     return sessions;
   };
 
-  const getCalendarDaysForSchedule = (startDate, endDate, selectedDays) => {
-    const start = dayjs(startDate).startOf("month");
-    const end = dayjs(endDate).endOf("month");
-    const days = [];
-
-    let current = start;
-    while (current.isBefore(end) || current.isSame(end, "day")) {
-      days.push(current.toDate());
-      current = current.add(1, "day");
-    }
-
-    return days;
-  };
-
-  const isSessionDate = (date, startDate, endDate, selectedDays) => {
-    const d = dayjs(date);
-    const start = dayjs(startDate);
-    const end = dayjs(endDate);
-
-    if (d.isBefore(start) || d.isAfter(end)) return false;
-    return selectedDays.includes(d.format("dddd"));
-  };
-
   const handleDayToggle = (day) => {
     const newSelectedDays = formData.selectedDays?.includes(day)
       ? formData.selectedDays.filter((d) => d !== day)
       : [...(formData.selectedDays || []), day];
-    const newSessionCount = calculateSessionCount(
-      formData.startDate,
-      formData.endDate,
-      newSelectedDays
-    );
-    setFormData({
-      ...formData,
-      selectedDays: newSelectedDays,
-      totalSessions: newSessionCount,
-    });
+    const newSessionCount = calculateSessionCount(formData.startDate, formData.endDate, newSelectedDays);
+    setFormData({ ...formData, selectedDays: newSelectedDays, totalSessions: newSessionCount });
     form.setFieldsValue({ selectedDays: newSelectedDays });
   };
 
   const handleDateRangeChange = (dates) => {
     if (dates && dates[0] && dates[1]) {
-      const newSessionCount = calculateSessionCount(
-        dates[0],
-        dates[1],
-        formData.selectedDays
-      );
-      setFormData({
-        ...formData,
-        startDate: dates[0],
-        endDate: dates[1],
-        totalSessions: newSessionCount,
-      });
+      const newSessionCount = calculateSessionCount(dates[0], dates[1], formData.selectedDays);
+      setFormData({ ...formData, startDate: dates[0], endDate: dates[1], totalSessions: newSessionCount });
     } else {
-      setFormData({
-        ...formData,
-        startDate: null,
-        endDate: null,
-        totalSessions: 0,
-      });
+      setFormData({ ...formData, startDate: null, endDate: null, totalSessions: 0 });
     }
   };
 
@@ -878,37 +970,14 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     try {
       switch (step) {
         case 0:
-          await form.validateFields([
-            "name",
-            "dateRange",
-            "selectedDays",
-            "time",
-            "duration",
-          ]);
+          await form.validateFields(["name", "dateRange", "selectedDays", "time", "duration"]);
           const [startDate, endDate] = form.getFieldValue("dateRange");
-          const sessionCount = calculateSessionCount(
-            startDate,
-            endDate,
-            form.getFieldValue("selectedDays")
-          );
-          setFormData({
-            ...formData,
-            name: form.getFieldValue("name"),
-            startDate,
-            endDate,
-            selectedDays: form.getFieldValue("selectedDays"),
-            time: form.getFieldValue("time"),
-            duration: form.getFieldValue("duration"),
-            totalSessions: sessionCount,
-          });
+          const sessionCount = calculateSessionCount(startDate, endDate, form.getFieldValue("selectedDays"));
+          setFormData({ ...formData, name: form.getFieldValue("name"), startDate, endDate, selectedDays: form.getFieldValue("selectedDays"), time: form.getFieldValue("time"), duration: form.getFieldValue("duration"), totalSessions: sessionCount });
           return true;
         case 1:
           await form.validateFields(["price", "maxParticipants"]);
-          setFormData({
-            ...formData,
-            price: form.getFieldValue("price"),
-            maxParticipants: form.getFieldValue("maxParticipants"),
-          });
+          setFormData({ ...formData, price: form.getFieldValue("price"), maxParticipants: form.getFieldValue("maxParticipants") });
           return true;
         default:
           return true;
@@ -928,40 +997,29 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
-      const courseOption = classData.options?.find(
-        (opt) => opt.booking_type === "Full Course"
-      );
-      if (!courseOption)
-        throw new Error("Could not find a valid course option for this class.");
+      const courseOption = classData.options?.find((opt) => opt.booking_type === "Full Course");
+      if (!courseOption) throw new Error("Could not find a valid course option for this class.");
 
       if (editingSchedule) {
-        // --- EDIT LOGIC ---
         const firstScheduleId = editingSchedule.ids[0];
         const payload = {
-          // option is not changed
           name: formData.name,
           start_date: formData.startDate.format("YYYY-MM-DD"),
           end_date: formData.endDate.format("YYYY-MM-DD"),
-          // day is complex for multi-day, backend must handle this
           time: formData.time.format("HH:mm:ss"),
           duration: formData.duration,
           maxParticipants: formData.maxParticipants,
           price: parseFloat(formData.price),
         };
-        // This assumes the backend can update the whole group from one ID
-        const result = await scheduleService.updateSchedule(
-          firstScheduleId,
-          payload
-        );
+        const result = await scheduleService.updateSchedule(firstScheduleId, payload);
         if (result?.success) {
           message.success("Course schedule updated successfully!");
           await fetchSchedules();
-          setView("list");
+          if (isMobile) setCreateOpen(false); else setView("list");
         } else {
           throw new Error("Failed to update course schedule.");
         }
       } else {
-        // --- CREATE LOGIC ---
         const creationPromises = formData.selectedDays.map((day) => {
           const payload = {
             option: courseOption.optionId,
@@ -981,22 +1039,14 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
         const successfulCreations = results.filter((res) => res.success).length;
 
         if (successfulCreations > 0) {
-          message.success(
-            `${successfulCreations} course schedule(s) created successfully!`
-          );
+          message.success(`${successfulCreations} course schedule(s) created successfully!`);
           await fetchSchedules();
-          setView("list");
+          if (isMobile) setCreateOpen(false); else setView("list");
         }
-        if (successfulCreations < results.length)
-          throw new Error("Some schedules could not be created.");
+        if (successfulCreations < results.length) throw new Error("Some schedules could not be created.");
       }
     } catch (error) {
-      message.error(
-        error.message ||
-          `Failed to ${
-            editingSchedule ? "update" : "create"
-          } course schedule(s)`
-      );
+      message.error(error.message || `Failed to ${editingSchedule ? "update" : "create"} course schedule(s)`);
     } finally {
       setSubmitting(false);
       setEditingSchedule(null);
@@ -1011,16 +1061,12 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     }
 
     try {
-      const deletePromises = scheduleIdsToDelete.map((id) =>
-        scheduleService.deleteSchedule(id)
-      );
+      const deletePromises = scheduleIdsToDelete.map((id) => scheduleService.deleteSchedule(id));
       const results = await Promise.all(deletePromises);
 
       const failedDeletions = results.filter((res) => !res?.success);
       if (failedDeletions.length > 0) {
-        throw new Error(
-          `Failed to delete ${failedDeletions.length} schedule(s).`
-        );
+        throw new Error(`Failed to delete ${failedDeletions.length} schedule(s).`);
       }
 
       message.success("Course schedule deleted successfully");
@@ -1037,23 +1083,15 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     const endDate = dayjs(schedule.end_date);
     const time = dayjs(schedule.time, "HH:mm:ss");
 
-    const dayMapReverse = {
-      Mon: "Monday",
-      Tue: "Tuesday",
-      Wed: "Wednesday",
-      Thu: "Thursday",
-      Fri: "Friday",
-      Sat: "Saturday",
-      Sun: "Sunday",
-    };
+    const dayMapReverse = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday" };
     const selectedDays = schedule.day.split(", ").map((d) => dayMapReverse[d]);
 
     const formDataForEdit = {
       name: schedule.name,
-      startDate: startDate,
-      endDate: endDate,
-      selectedDays: selectedDays,
-      time: time,
+      startDate,
+      endDate,
+      selectedDays,
+      time,
       duration: schedule.duration,
       maxParticipants: schedule.maxParticipants,
       price: schedule.price,
@@ -1065,36 +1103,47 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
       name: schedule.name,
       dateRange: [startDate, endDate],
       selectedDays: selectedDays,
-      time: time,
+      time,
       duration: schedule.duration,
       price: schedule.price,
       maxParticipants: schedule.maxParticipants,
     });
-    setView("create");
+
+    if (isMobile) {
+      setCreateOpen(true);
+    } else {
+      setView("create");
+    }
   };
 
   const filteredSchedules = useMemo(() => {
     if (!schedules) return [];
     const now = dayjs();
     return schedules.filter((s) => {
-      const nameMatch = s.name
-        ?.toLowerCase()
-        .includes(searchTerm.toLowerCase());
+      const nameMatch = s.name?.toLowerCase().includes(searchTerm.toLowerCase());
       const startDate = dayjs(s.start_date);
       const endDate = dayjs(s.end_date);
       let statusMatch = true;
       if (statusFilter === "upcoming") {
         statusMatch = startDate.isAfter(now);
       } else if (statusFilter === "ongoing") {
-        statusMatch =
-          (now.isAfter(startDate) || now.isSame(startDate, "day")) &&
-          (now.isBefore(endDate) || now.isSame(endDate, "day"));
+        statusMatch = (now.isAfter(startDate) || now.isSame(startDate, "day")) && (now.isBefore(endDate) || now.isSame(endDate, "day"));
       } else if (statusFilter === "completed") {
         statusMatch = endDate.isBefore(now);
       }
       return nameMatch && statusMatch;
     });
   }, [schedules, searchTerm, statusFilter]);
+
+  const schedulesWithSessions = useMemo(() => {
+    return filteredSchedules.map((scheduleGroup) => {
+      const s = scheduleGroup;
+      const selectedDays = s.day.split(", ");
+      const sessionDates = generateSessionDates(s.start_date, s.end_date, selectedDays);
+      const sessionPreview = sessionDates.slice(0, 4);
+      return { ...s, sessionDates, sessionPreview, selectedDays };
+    });
+  }, [filteredSchedules]);
 
   const renderStepContent = () => {
     const stepVariants = {
@@ -1104,151 +1153,50 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     };
     switch (currentStep) {
       case 0:
-        const daysOfWeek = [
-          "Monday",
-          "Tuesday",
-          "Wednesday",
-          "Thursday",
-          "Friday",
-          "Saturday",
-          "Sunday",
-        ];
+        const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
         return (
-          <FormSection
-            key="step0"
-            variants={stepVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-          >
+          <FormSection key="step0" variants={stepVariants} initial="hidden" animate="visible" exit="exit">
             <StepHeader>
               <StepTitle level={3}>Schedule Details</StepTitle>
-              <StepDescription>
-                Set up your course name and schedule
-              </StepDescription>
+              <StepDescription>Set up your course name and schedule</StepDescription>
             </StepHeader>
             <FormGroup>
-              <FormLabel>
-                <BookOpen size={16} />
-                Course Schedule Name
-              </FormLabel>
-              <HelpText>
-                <Info size={14} />
-                e.g., "Spring 2025 Evening Sessions"
-              </HelpText>
-              <Form.Item
-                name="name"
-                rules={[
-                  { required: true, message: "Please enter a schedule name" },
-                ]}
-              >
-                <StyledInput
-                  placeholder="Enter course schedule name"
-                  size="large"
-                />
+              <FormLabel><BookOpen size={16} /> Course Schedule Name</FormLabel>
+              <HelpText><Info size={14} /> e.g., "Spring 2025 Evening Sessions"</HelpText>
+              <Form.Item name="name" rules={[{ required: true, message: "Please enter a schedule name" }]}>
+                <StyledInput placeholder="Enter course schedule name" size="large" />
               </Form.Item>
             </FormGroup>
             <FormGroup>
-              <FormLabel>
-                <Calendar size={16} />
-                Date Range
-              </FormLabel>
-              <HelpText>
-                <Info size={14} />
-                Select the start and end dates for the entire course.
-              </HelpText>
-              <Form.Item
-                name="dateRange"
-                rules={[
-                  { required: true, message: "Please select a date range" },
-                ]}
-              >
-                <StyledRangePicker
-                  format="MMMM D, YYYY"
-                  size="large"
-                  disabledDate={(c) => c && c < dayjs().startOf("day")}
-                  onChange={handleDateRangeChange}
-                  disabled={
-                    editingSchedule && editingSchedule.has_confirmed_bookings
-                  }
-                />
+              <FormLabel><Calendar size={16} /> Date Range</FormLabel>
+              <HelpText><Info size={14} /> Select the start and end dates for the entire course.</HelpText>
+              <Form.Item name="dateRange" rules={[{ required: true, message: "Please select a date range" }]}>
+                <StyledRangePicker format="MMMM D, YYYY" size="large" disabledDate={(c) => c && c < dayjs().startOf("day")} onChange={handleDateRangeChange} disabled={editingSchedule && editingSchedule.has_confirmed_bookings} />
               </Form.Item>
             </FormGroup>
             <FormGroup>
-              <FormLabel>
-                <CalendarDays size={16} />
-                Days of Week
-              </FormLabel>
-              <HelpText>
-                <Info size={14} />
-                Select which days of the week the course will meet.
-              </HelpText>
-              <Form.Item
-                name="selectedDays"
-                rules={[
-                  { required: true, message: "Please select at least one day" },
-                ]}
-              >
+              <FormLabel><CalendarDays size={16} /> Days of Week</FormLabel>
+              <HelpText><Info size={14} /> Select which days of the week the course will meet.</HelpText>
+              <Form.Item name="selectedDays" rules={[{ required: true, message: "Please select at least one day" }]}>
                 <DaySelector>
                   {daysOfWeek.map((d) => (
-                    <DayButton
-                      key={d}
-                      type={
-                        formData.selectedDays?.includes(d)
-                          ? "primary"
-                          : "default"
-                      }
-                      onClick={() => handleDayToggle(d)}
-                      disabled={
-                        editingSchedule &&
-                        editingSchedule.has_confirmed_bookings
-                      }
-                    >
+                    <DayButton key={d} type={formData.selectedDays?.includes(d) ? "primary" : "default"} onClick={() => handleDayToggle(d)} disabled={editingSchedule && editingSchedule.has_confirmed_bookings}>
                       {d.substring(0, 3)}
                     </DayButton>
                   ))}
                 </DaySelector>
               </Form.Item>
             </FormGroup>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 16,
-              }}
-            >
+            <FormGrid>
               <FormGroup>
-                <FormLabel>
-                  <Clock size={16} />
-                  Time
-                </FormLabel>
-                <Form.Item
-                  name="time"
-                  rules={[{ required: true, message: "Please select a time" }]}
-                >
-                  <StyledTimePicker
-                    format="h:mm A"
-                    use12Hours
-                    size="large"
-                    minuteStep={15}
-                    disabled={
-                      editingSchedule && editingSchedule.has_confirmed_bookings
-                    }
-                  />
+                <FormLabel><Clock size={16} /> Time</FormLabel>
+                <Form.Item name="time" rules={[{ required: true, message: "Please select a time" }]}>
+                  <StyledTimePicker format="h:mm A" use12Hours size="large" minuteStep={15} disabled={editingSchedule && editingSchedule.has_confirmed_bookings} />
                 </Form.Item>
               </FormGroup>
               <FormGroup>
-                <FormLabel>
-                  <Clock size={16} />
-                  Duration
-                </FormLabel>
-                <Form.Item
-                  name="duration"
-                  initialValue={60}
-                  rules={[
-                    { required: true, message: "Please select duration" },
-                  ]}
-                >
+                <FormLabel><Clock size={16} /> Duration</FormLabel>
+                <Form.Item name="duration" initialValue={60} rules={[{ required: true, message: "Please select duration" }]}>
                   <StyledSelect size="large">
                     <Option value={15}>15 mins</Option>
                     <Option value={30}>30 mins</Option>
@@ -1261,76 +1209,27 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                   </StyledSelect>
                 </Form.Item>
               </FormGroup>
-            </div>
+            </FormGrid>
           </FormSection>
         );
       case 1:
         return (
-          <FormSection
-            key="step1"
-            variants={stepVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-          >
+          <FormSection key="step1" variants={stepVariants} initial="hidden" animate="visible" exit="exit">
             <StepHeader>
               <StepTitle level={3}>Pricing & Capacity</StepTitle>
-              <StepDescription>
-                Set the total price for the course and the maximum number of
-                participants.
-              </StepDescription>
+              <StepDescription>Set the total price for the course and the maximum number of participants.</StepDescription>
             </StepHeader>
             <FormGroup>
-              <FormLabel>
-                <DollarSign size={16} />
-                Course Price
-              </FormLabel>
-              <HelpText>
-                <Info size={14} />
-                This is the total price per participant for all{" "}
-                {formData.totalSessions} sessions.
-              </HelpText>
-              <Form.Item
-                name="price"
-                rules={[
-                  { required: true, message: "Please enter a price" },
-                  {
-                    validator: (_, v) =>
-                      v && parseFloat(v) <= 0
-                        ? Promise.reject("Price > 0")
-                        : Promise.resolve(),
-                  },
-                ]}
-              >
-                <StyledInputNumber
-                  min={0}
-                  step={1}
-                  precision={2}
-                  prefix="$"
-                  size="large"
-                />
+              <FormLabel><DollarSign size={16} /> Course Price</FormLabel>
+              <HelpText><Info size={14} /> This is the total price per participant for all {formData.totalSessions} sessions.</HelpText>
+              <Form.Item name="price" rules={[{ required: true, message: "Please enter a price" }, { validator: (_, v) => v && parseFloat(v) <= 0 ? Promise.reject("Price > 0") : Promise.resolve() }]}>
+                <StyledInputNumber min={0} step={1} precision={2} prefix="$" size="large" />
               </Form.Item>
             </FormGroup>
             <FormGroup>
-              <FormLabel>
-                <Users size={16} />
-                Max Participants
-              </FormLabel>
-              <HelpText>
-                <Info size={14} />
-                The maximum number of students that can enroll in this course.
-              </HelpText>
-              <Form.Item
-                name="maxParticipants"
-                initialValue={10}
-                rules={[
-                  { required: true, message: "Please enter max participants" },
-                  {
-                    validator: (_, v) =>
-                      v && v < 1 ? Promise.reject("Min 1") : Promise.resolve(),
-                  },
-                ]}
-              >
+              <FormLabel><Users size={16} /> Max Participants</FormLabel>
+              <HelpText><Info size={14} /> The maximum number of students that can enroll in this course.</HelpText>
+              <Form.Item name="maxParticipants" initialValue={10} rules={[{ required: true, message: "Please enter max participants" }, { validator: (_, v) => v && v < 1 ? Promise.reject("Min 1") : Promise.resolve() }]}>
                 <StyledInputNumber min={1} max={100} size="large" />
               </Form.Item>
             </FormGroup>
@@ -1338,278 +1237,73 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
         );
       case 2:
         return (
-          <FormSection
-            key="step2"
-            variants={stepVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-          >
+          <FormSection key="step2" variants={stepVariants} initial="hidden" animate="visible" exit="exit">
             <StepHeader>
               <StepTitle level={3}>Review & Confirm</StepTitle>
-              <StepDescription>
-                Please review the details below before creating the schedule.
-              </StepDescription>
+              <StepDescription>Please review the details below before creating the schedule.</StepDescription>
             </StepHeader>
             <ReviewSection>
-              <InfoRow>
-                <InfoLabel>Name</InfoLabel>
-                <InfoValue>{formData.name}</InfoValue>
-              </InfoRow>
-              <InfoRow>
-                <InfoLabel>Date Range</InfoLabel>
-                <InfoValue>
-                  <Calendar size={16} />
-                  {formData.startDate?.format("MMM D, YYYY")} -{" "}
-                  {formData.endDate?.format("MMM D, YYYY")}
-                </InfoValue>
-              </InfoRow>
-              <InfoRow>
-                <InfoLabel>Days</InfoLabel>
-                <InfoValue>
-                  <CalendarDays size={16} />
-                  {formData.selectedDays.join(", ")}
-                </InfoValue>
-              </InfoRow>
-              <InfoRow>
-                <InfoLabel>Time</InfoLabel>
-                <InfoValue>
-                  <Clock size={16} />
-                  {formData.time?.format("h:mm A")}
-                </InfoValue>
-              </InfoRow>
-              <InfoRow>
-                <InfoLabel>Duration</InfoLabel>
-                <InfoValue>{formData.duration} mins</InfoValue>
-              </InfoRow>
-              <InfoRow>
-                <InfoLabel>Total Sessions</InfoLabel>
-                <InfoValue>
-                  <BookOpen size={16} />
-                  {formData.totalSessions}
-                </InfoValue>
-              </InfoRow>
-              <InfoRow>
-                <InfoLabel>Price</InfoLabel>
-                <InfoValue>
-                  <DollarSign size={16} />
-                  {parseFloat(formData.price) === 0
-                    ? "Free"
-                    : `$${parseFloat(formData.price).toFixed(2)}`}
-                </InfoValue>
-              </InfoRow>
-              <InfoRow>
-                <InfoLabel>Max Participants</InfoLabel>
-                <InfoValue>
-                  <Users size={16} />
-                  {formData.maxParticipants}
-                </InfoValue>
-              </InfoRow>
+              <InfoRow><InfoLabel>Name</InfoLabel><InfoValue>{formData.name}</InfoValue></InfoRow>
+              <InfoRow><InfoLabel>Date Range</InfoLabel><InfoValue><Calendar size={16} />{formData.startDate?.format("MMM D, YYYY")} - {formData.endDate?.format("MMM D, YYYY")}</InfoValue></InfoRow>
+              <InfoRow><InfoLabel>Days</InfoLabel><InfoValue><CalendarDays size={16} />{formData.selectedDays.join(", ")}</InfoValue></InfoRow>
+              <InfoRow><InfoLabel>Time</InfoLabel><InfoValue><Clock size={16} />{formData.time?.format("h:mm A")}</InfoValue></InfoRow>
+              <InfoRow><InfoLabel>Duration</InfoLabel><InfoValue>{formData.duration} mins</InfoValue></InfoRow>
+              <InfoRow><InfoLabel>Total Sessions</InfoLabel><InfoValue><BookOpen size={16} />{formData.totalSessions}</InfoValue></InfoRow>
+              <InfoRow><InfoLabel>Price</InfoLabel><InfoValue><DollarSign size={16} />{parseFloat(formData.price) === 0 ? "Free" : `$${parseFloat(formData.price).toFixed(2)}`}</InfoValue></InfoRow>
+              <InfoRow><InfoLabel>Max Participants</InfoLabel><InfoValue><Users size={16} />{formData.maxParticipants}</InfoValue></InfoRow>
             </ReviewSection>
           </FormSection>
         );
-      default:
-        return null;
+      default: return null;
     }
   };
 
   const renderList = () => (
     <ContentPadding>
       <FilterBar>
-        <StyledInput
-          placeholder="Search by name..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ flex: 1, minWidth: 200 }}
-          allowClear
-        />
-        <StyledSelect
-          value={statusFilter}
-          onChange={(value) => setStatusFilter(value)}
-          style={{ width: 150 }}
-        >
+        <StyledInput placeholder="Search by name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ flex: 1, minWidth: 200 }} allowClear />
+        <StyledSelect value={statusFilter} onChange={(value) => setStatusFilter(value)} style={{ width: 150 }}>
           <Option value="all">All Statuses</Option>
           <Option value="upcoming">Upcoming</Option>
           <Option value="ongoing">Ongoing</Option>
           <Option value="completed">Completed</Option>
         </StyledSelect>
       </FilterBar>
-
       {loading ? (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "200px",
-          }}
-        >
-          <GlobalLoaderWithoutInlineStyles />
-        </div>
-      ) : filteredSchedules.length > 0 ? (
+        <CourseScheduleListSkeleton />
+      ) : schedulesWithSessions.length > 0 ? (
         <ScheduleList>
-          {filteredSchedules.map((scheduleGroup) => {
-            const s = scheduleGroup;
-            const selectedDays = s.day.split(", ");
-            const startDate = dayjs(s.start_date);
-            const endDate = dayjs(s.end_date);
-
-            const sessionDates = generateSessionDates(
-              s.start_date,
-              s.end_date,
-              selectedDays
-            );
-            const sessionPreview = sessionDates.slice(0, 4);
-
-            return (
-              <ScheduleCard
-                key={s.name || s.ids.join("-")}
-                onClick={() => setSelectedSchedule(s)}
-                style={{ cursor: "pointer" }}
-              >
+            {schedulesWithSessions.map((s) => (
+              <ScheduleCard key={s.name || s.ids.join("-")} onClick={() => { setSelectedSchedule(s); if (isMobile) setDetailOpen(true); else setView("detail"); }} style={{ cursor: "pointer" }}>
                 <ScheduleHeader>
                   <div>
-                    <ScheduleTitle level={5}>
-                      <CalendarDays size={16} />
-                      {s.name || `Every ${s.day}`}
-                    </ScheduleTitle>
-                    <Text
-                      type="secondary"
-                      style={{ fontSize: 12, letterSpacing: "0.2px" }}
-                    >
-                      {startDate.format("MMM D")} -{" "}
-                      {endDate.format("MMM D, YYYY")}
-                    </Text>
-                  </div>
-                  <ScheduleActions>
-                    <Tooltip
-                      title={
-                        s.has_confirmed_bookings
-                          ? "Cannot edit with active bookings"
-                          : "Edit"
-                      }
-                    >
-                      <Button
-                        type="text"
-                        icon={<Edit3 size={14} />}
-                        disabled={s.has_confirmed_bookings}
-                        onClick={(e) => handleEditClick(e, s)}
-                        style={{ height: 32, width: 32 }}
-                      />
-                    </Tooltip>
-                    <Tooltip
-                      title={
-                        s.has_confirmed_bookings
-                          ? "Cannot delete with active bookings"
-                          : "Delete"
-                      }
-                    >
-                      <Popconfirm
-                        title="Delete this course schedule?"
-                        description="This will remove all recurring sessions for this course. This action cannot be undone."
-                        onConfirm={(e) => {
-                          e.stopPropagation();
-                          handleDeleteGroup(s);
-                        }}
-                        onCancel={(e) => e.stopPropagation()}
-                        okText="Delete"
-                        cancelText="Cancel"
-                        okButtonProps={{ danger: true }}
-                        disabled={s.has_confirmed_bookings}
-                      >
-                        <Button
-                          type="text"
-                          danger
-                          icon={<Trash2 size={14} />}
-                          disabled={s.has_confirmed_bookings}
-                          onClick={(e) => e.stopPropagation()}
-                          style={{ height: 32, width: 32 }}
-                        />
-                      </Popconfirm>
-                    </Tooltip>
-                  </ScheduleActions>
-                </ScheduleHeader>
-
-                <StatsRow>
-                  <StatItem>
-                    <StatValue>
-                      <BookOpen size={16} />{" "}
-                      {calculateSessionCount(
-                        s.start_date,
-                        s.end_date,
-                        selectedDays.map((d) => dayjs().day(d).format("dddd"))
-                      )}
-                    </StatValue>
-                    <StatLabel>Sessions</StatLabel>
-                  </StatItem>
-                  <StatItem>
-                    <StatValue>
-                      <Users size={16} /> {s.booked_participants || 0}/
-                      {s.maxParticipants}
-                    </StatValue>
-                    <StatLabel>Enrolled</StatLabel>
-                  </StatItem>
-                  <StatItem>
-                    <StatValue>
-                      <TrendingUp size={16} /> $
-                      {parseFloat(s.total_revenue || 0).toFixed(0)}
-                    </StatValue>
-                    <StatLabel>Revenue</StatLabel>
-                  </StatItem>
-                </StatsRow>
-
-                <div style={{ padding: "12px 16px" }}>
-                  <SessionsTitle
-                    style={{ fontSize: "14px", margin: "0 0 8px 0" }}
-                  >
-                    Upcoming Sessions:
-                  </SessionsTitle>
-                  {sessionPreview.map((date, idx) => (
-                    <SessionItem
-                      key={idx}
-                      $isPast={false}
-                      $isToday={dayjs(date).isSame(dayjs(), "day")}
-                      style={{
-                        padding: "6px 8px",
-                        marginBottom: "4px",
-                        background: "transparent",
-                        border: "none",
-                      }}
-                    >
-                      <SessionDate style={{ fontSize: "13px" }}>
-                        <Calendar size={14} />
-                        {dayjs(date).format("ddd, MMM D, YYYY")}
-                      </SessionDate>
-                    </SessionItem>
-                  ))}
-                  {sessionDates.length > 4 && (
-                    <Text
-                      type="secondary"
-                      style={{
-                        fontSize: 12,
-                        display: "block",
-                        textAlign: "center",
-                        marginTop: "8px",
-                      }}
-                    >
-                      + {sessionDates.length - 4} more sessions
-                    </Text>
-                  )}
+                  <ScheduleTitle level={5}><CalendarDays size={16} />{s.name || `Every ${s.day}`}</ScheduleTitle>
+                  <Text type="secondary" style={{ fontSize: 12, letterSpacing: "0.2px" }}>{dayjs(s.start_date).format("MMM D")} - {dayjs(s.end_date).format("MMM D, YYYY")}</Text>
                 </div>
-              </ScheduleCard>
-            );
-          })}
+                <ScheduleActions>
+                  <Tooltip title={s.has_confirmed_bookings ? "Cannot edit with active bookings" : "Edit"}><Button type="text" icon={<Edit3 size={14} />} disabled={s.has_confirmed_bookings} onClick={(e) => handleEditClick(e, s)} style={{ height: 32, width: 32 }} /></Tooltip>
+                  <Tooltip title={s.has_confirmed_bookings ? "Cannot delete with active bookings" : "Delete"}>
+                    <Popconfirm title="Delete this course schedule?" description="This will remove all recurring sessions for this course. This action cannot be undone." onConfirm={(e) => { e.stopPropagation(); handleDeleteGroup(s); }} onCancel={(e) => e.stopPropagation()} okText="Delete" cancelText="Cancel" okButtonProps={{ danger: true }} disabled={s.has_confirmed_bookings}>
+                      <Button type="text" danger icon={<Trash2 size={14} />} disabled={s.has_confirmed_bookings} onClick={(e) => e.stopPropagation()} style={{ height: 32, width: 32 }} />
+                    </Popconfirm>
+                  </Tooltip>
+                </ScheduleActions>
+              </ScheduleHeader>
+              <StatsRow>
+                <StatItem><StatValue><BookOpen size={16} /> {s.sessionDates.length}</StatValue><StatLabel>Sessions</StatLabel></StatItem>
+                <StatItem><StatValue><Users size={16} /> {s.booked_participants || 0}/{s.maxParticipants}</StatValue><StatLabel>Enrolled</StatLabel></StatItem>
+                <StatItem><StatValue><TrendingUp size={16} /> ${parseFloat(s.total_revenue || 0).toFixed(0)}</StatValue><StatLabel>Revenue</StatLabel></StatItem>
+              </StatsRow>
+              <div style={{ padding: "12px 16px" }}>
+                <SessionsTitle style={{ fontSize: "14px", margin: "0 0 8px 0" }}>Upcoming Sessions:</SessionsTitle>
+                {s.sessionPreview.map((date, idx) => (<SessionItem key={idx} $isPast={false} $isToday={dayjs(date).isSame(dayjs(), "day")} style={{ padding: "6px 8px", marginBottom: "4px", background: "transparent", border: "none" }}><SessionDate style={{ fontSize: "13px" }}><Calendar size={14} />{dayjs(date).format("ddd, MMM D, YYYY")}</SessionDate></SessionItem>))}
+                {s.sessionDates.length > 4 && (<Text type="secondary" style={{ fontSize: 12, display: "block", textAlign: "center", marginTop: "8px" }}>+ {s.sessionDates.length - 4} more sessions</Text>)}
+              </div>
+            </ScheduleCard>
+          ))}
         </ScheduleList>
       ) : schedules.length > 0 ? (
-        <Empty
-          description={
-            <span>
-              No course schedules match your filters.
-              <br />
-              Try adjusting your search.
-            </span>
-          }
-        />
+            <Empty description={<span>No course schedules match your filters.<br />Try adjusting your search.</span>} />
       ) : (
         <Empty description={<span>No course schedules yet</span>} />
       )}
@@ -1618,69 +1312,22 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
 
   const renderDetailedView = () => {
     if (!selectedSchedule) return null;
-
-    const selectedDays = selectedSchedule.day.split(", ");
-    const sessionDates = generateSessionDates(
-      selectedSchedule.start_date,
-      selectedSchedule.end_date,
-      selectedDays
-    );
+    const sessionDates = generateSessionDates(selectedSchedule.start_date, selectedSchedule.end_date, selectedSchedule.day.split(", "));
     const today = dayjs();
-
     return (
       <DetailedViewContainer>
         <DetailedHeader>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "16px",
-              marginBottom: "16px",
-            }}
-          >
-            <Button
-              icon={<ArrowLeft size={16} />}
-              onClick={() => setSelectedSchedule(null)}
-              type="text"
-            >
-              Back to List
-            </Button>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
+            <Button icon={<ArrowLeft size={16} />} onClick={() => { if (isMobile) setDetailOpen(false); else { setView("list"); setSelectedSchedule(null); } }} type="text">Back to List</Button>
           </div>
-          <DetailedTitle level={3}>
-            <CalendarDays size={24} />
-            {selectedSchedule.name || `Every ${selectedSchedule.day}`}
-          </DetailedTitle>
-          <Text type="secondary" style={{ fontSize: 14 }}>
-            {dayjs(selectedSchedule.start_date).format("MMMM D, YYYY")} -{" "}
-            {dayjs(selectedSchedule.end_date).format("MMMM D, YYYY")}
-          </Text>
+          <DetailedTitle level={3}><CalendarDays size={24} />{selectedSchedule.name || `Every ${selectedSchedule.day}`}</DetailedTitle>
+          <Text type="secondary" style={{ fontSize: 14 }}>{dayjs(selectedSchedule.start_date).format("MMMM D, YYYY")} - {dayjs(selectedSchedule.end_date).format("MMMM D, YYYY")}</Text>
         </DetailedHeader>
-
         <DetailedMetricsRow>
-          <MetricItem>
-            <MetricValue>
-              <DollarSign size={22} />$
-              {parseFloat(selectedSchedule.total_revenue || 0).toFixed(2)}
-            </MetricValue>
-            <MetricLabel>Total Revenue</MetricLabel>
-          </MetricItem>
-          <MetricItem>
-            <MetricValue>
-              <Users size={22} />
-              {selectedSchedule.booked_participants || 0} /{" "}
-              {selectedSchedule.maxParticipants}
-            </MetricValue>
-            <MetricLabel>Enrolled</MetricLabel>
-          </MetricItem>
-          <MetricItem>
-            <MetricValue>
-              <BookOpen size={22} />
-              {sessionDates.length}
-            </MetricValue>
-            <MetricLabel>Total Sessions</MetricLabel>
-          </MetricItem>
+          <MetricItem><MetricValue><DollarSign size={22} />${parseFloat(selectedSchedule.total_revenue || 0).toFixed(2)}</MetricValue><MetricLabel>Total Revenue</MetricLabel></MetricItem>
+          <MetricItem><MetricValue><Users size={22} />{selectedSchedule.booked_participants || 0} / {selectedSchedule.maxParticipants}</MetricValue><MetricLabel>Enrolled</MetricLabel></MetricItem>
+          <MetricItem><MetricValue><BookOpen size={22} />{sessionDates.length}</MetricValue><MetricLabel>Total Sessions</MetricLabel></MetricItem>
         </DetailedMetricsRow>
-
         <SessionsBreakdown>
           <SessionsTitle level={4}>Session Schedule</SessionsTitle>
           <div style={{ maxHeight: "400px", overflowY: "auto" }}>
@@ -1688,263 +1335,152 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
               const sessionDate = dayjs(date);
               const isPast = sessionDate.isBefore(today, "day");
               const isToday = sessionDate.isSame(today, "day");
-
               return (
                 <SessionItem key={idx} $isPast={isPast} $isToday={isToday}>
                   <SessionDate>
-                    <Calendar size={16} />
-                    {sessionDate.format("ddd, MMM D, YYYY")}
-                    {selectedSchedule.time && (
-                      <Text
-                        type="secondary"
-                        style={{ fontSize: 12, marginLeft: 8 }}
-                      >
-                        at{" "}
-                        {dayjs(selectedSchedule.time, "HH:mm:ss").format(
-                          "h:mm A"
-                        )}
-                      </Text>
-                    )}
+                    <Calendar size={16} />{sessionDate.format("ddd, MMM D, YYYY")}
+                    {selectedSchedule.time && (<Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>at {dayjs(selectedSchedule.time, "HH:mm:ss").format("h:mm A")}</Text>)}
                   </SessionDate>
-                  <SessionBadge $isPast={isPast} $isToday={isToday}>
-                    {isPast ? "Completed" : isToday ? "Today" : "Upcoming"}
-                  </SessionBadge>
+                  <SessionBadge $isPast={isPast} $isToday={isToday}>{isPast ? "Completed" : isToday ? "Today" : "Upcoming"}</SessionBadge>
                 </SessionItem>
               );
             })}
           </div>
         </SessionsBreakdown>
-
         <ReviewSection>
-          <Title level={5} style={{ marginBottom: 16 }}>
-            Course Details
-          </Title>
-          <InfoRow>
-            <InfoLabel>Price per Participant</InfoLabel>
-            <InfoValue>
-              <DollarSign size={16} />$
-              {parseFloat(selectedSchedule.price || 0).toFixed(2)}
-            </InfoValue>
-          </InfoRow>
-          <InfoRow>
-            <InfoLabel>Duration per Session</InfoLabel>
-            <InfoValue>
-              <Clock size={16} />
-              {selectedSchedule.duration || 60} minutes
-            </InfoValue>
-          </InfoRow>
-          <InfoRow>
-            <InfoLabel>Recurring Days</InfoLabel>
-            <InfoValue>
-              <Repeat size={16} />
-              {selectedSchedule.day}
-            </InfoValue>
-          </InfoRow>
-          <InfoRow>
-            <InfoLabel>Capacity</InfoLabel>
-            <InfoValue>
-              <Users size={16} />
-              {selectedSchedule.booked_participants || 0} /{" "}
-              {selectedSchedule.maxParticipants}
-            </InfoValue>
-          </InfoRow>
+          <Title level={5} style={{ marginBottom: 16 }}>Course Details</Title>
+          <InfoRow><InfoLabel>Price per Participant</InfoLabel><InfoValue><DollarSign size={16} />${parseFloat(selectedSchedule.price || 0).toFixed(2)}</InfoValue></InfoRow>
+          <InfoRow><InfoLabel>Duration per Session</InfoLabel><InfoValue><Clock size={16} />{selectedSchedule.duration || 60} minutes</InfoValue></InfoRow>
+          <InfoRow><InfoLabel>Recurring Days</InfoLabel><InfoValue><Repeat size={16} />{selectedSchedule.day}</InfoValue></InfoRow>
+          <InfoRow><InfoLabel>Capacity</InfoLabel><InfoValue><Users size={16} />{selectedSchedule.booked_participants || 0} / {selectedSchedule.maxParticipants}</InfoValue></InfoRow>
         </ReviewSection>
       </DetailedViewContainer>
     );
   };
 
-  const renderFooter = () => {
-    if (view === "list" && !selectedSchedule) {
-      if (isMobile) {
-        return (
-          <DrawerFooter>
-            <Button
-              type="primary"
-              icon={<Plus size={16} />}
-              onClick={() => setView("create")}
-              style={{ width: "100%" }}
-            >
-              New Course Schedule
-            </Button>
-          </DrawerFooter>
-        );
-      }
-      return [
-        <Button
-          key="new"
-          type="primary"
-          icon={<Plus size={16} />}
-          onClick={() => setView("create")}
-        >
-          New Course Schedule
-        </Button>,
-      ];
-    }
-
-    if (view === "list" && selectedSchedule) {
-      return null; // No footer in detailed view
-    }
-
-    if (view === "create") {
-      const backButton = (
-        <Button
-          key="back"
-          icon={<ChevronLeft size={16} />}
-          onClick={handleBack}
-          disabled={submitting}
-        >
-          Back
-        </Button>
-      );
-
-      const nextButton = (
-        <Button
-          key="next"
-          type="primary"
-          icon={<ChevronRight size={16} />}
-          iconPosition="end"
-          onClick={handleNext}
-        >
-          Next
-        </Button>
-      );
-
-      const submitButtonText = editingSchedule
-        ? "Update Course"
-        : "Create Course";
-      const createButton = (
-        <Button
-          key="create"
-          type="primary"
-          icon={<CheckCircle size={16} />}
-          onClick={handleSubmit}
-          loading={submitting}
-        >
-          {submitButtonText}
-        </Button>
-      );
-
-      if (isMobile) {
-        return (
-          <DrawerFooter>
-            <div>{currentStep > 0 && backButton}</div>
-            {currentStep < 2 ? nextButton : createButton}
-          </DrawerFooter>
-        );
-      }
-
-      return (
-        <div
-          style={{
-            display: "flex",
-            width: "100%",
-            justifyContent: "space-between",
-          }}
-        >
-          <div>{currentStep > 0 && backButton}</div>
-          <div>{currentStep < 2 ? nextButton : createButton}</div>
-        </div>
-      );
-    }
-
-    return null;
-  };
-
-  const content = (
-    <>
-      {view === "list" && !selectedSchedule && renderList()}
-      {view === "list" && selectedSchedule && renderDetailedView()}
-      {view === "create" && (
-        <>
-          <StepsWrapper>
-            <Steps
-              size="small"
-              current={currentStep}
-              items={[
-                { title: "Schedule", icon: <Calendar size={16} /> },
-                { title: "Pricing", icon: <DollarSign size={16} /> },
-                { title: "Review", icon: <CheckCircle size={16} /> },
-              ]}
-            />
-          </StepsWrapper>
-          <ContentWrapper>
-            <StepContent>
-              <ConfigProvider theme={appTheme}>
-                <StyledForm
-                  form={form}
-                  layout="vertical"
-                  onValuesChange={(c, v) => setFormData({ ...formData, ...v })}
-                >
-                  <AnimatePresence mode="wait">
-                    {renderStepContent()}
-                  </AnimatePresence>
-                </StyledForm>
-              </ConfigProvider>
-            </StepContent>
-          </ContentWrapper>
-        </>
-      )}
-    </>
-  );
-
-  const title = editingSchedule ? (
-    <Space>
-      <Edit3 size={20} />
-      <span>Edit Course Schedule - {classData?.title}</span>
-    </Space>
-  ) : (
-    <Space>
-      <BookOpen size={20} />
-      <span>Course Schedules - {classData?.title}</span>
-    </Space>
-  );
-
   if (isMobile) {
+    const mainTitle = (
+      <Space>
+        <BookOpen size={20} />
+        <span>Course Schedules - {classData?.title}</span>
+      </Space>
+    );
+
+    const createEditTitle = editingSchedule ? (
+      <Space><Edit3 size={20} /><span>Edit Course Schedule</span></Space>
+    ) : (
+      <Space><Plus size={20} /><span>New Course Schedule</span></Space>
+    );
+
+    const detailTitle = <Space><CalendarDays size={20} /><span>Schedule Details</span></Space>;
+
     return (
       <ConfigProvider theme={appTheme}>
-        <VaulDrawer.Root
-          open={open}
-          onOpenChange={(o) => !o && onClose()}
-          dismissible={!loading && !submitting}
-        >
+        <VaulDrawer.Root open={open} onOpenChange={(o) => !o && onClose()} dismissible={!loading && !submitting}>
           <VaulDrawer.Portal>
             <StyledDrawerOverlay />
             <StyledDrawerContent>
               <DrawerHandle />
               <DrawerHeader>
-                <DrawerTitle level={4}>
-                  {view === "list" && selectedSchedule
-                    ? "Schedule Details"
-                    : title}
-                </DrawerTitle>
-                <CloseButton
-                  icon={<X size={20} />}
-                  onClick={onClose}
-                  disabled={submitting}
-                />
+                <DrawerTitle level={4}>{mainTitle}</DrawerTitle>
+                <CloseButton icon={<X size={20} />} onClick={onClose} disabled={submitting} />
               </DrawerHeader>
-              <DrawerBody>{content}</DrawerBody>
-              {renderFooter()}
+              <DrawerBody>{renderList()}</DrawerBody>
+              <DrawerFooter>
+                <Button type="primary" icon={<Plus size={16} />} onClick={() => { setEditingSchedule(null); form.resetFields(); setCreateOpen(true); }} style={{ width: "100%" }}>New Course Schedule</Button>
+              </DrawerFooter>
             </StyledDrawerContent>
           </VaulDrawer.Portal>
         </VaulDrawer.Root>
+
+        {/* Nested Drawer for Creating/Editing */}
+        <VaulDrawer.NestedRoot open={createOpen} onOpenChange={setCreateOpen}>
+          <VaulDrawer.Portal>
+            <StyledDrawerOverlay />
+            <StyledNestedDrawerContent>
+              <DrawerHandle />
+              <DrawerHeader>
+                <DrawerTitle level={4}>{createEditTitle}</DrawerTitle>
+                <CloseButton icon={<X size={20} />} onClick={() => setCreateOpen(false)} />
+              </DrawerHeader>
+              <DrawerBody>
+                <ContentWrapper style={{ paddingTop: 0 }}>
+                  <StepContent>
+                    <StyledForm form={form} layout="vertical" onValuesChange={(c, v) => setFormData({ ...formData, ...v })}>
+                      <AnimatePresence mode="wait">{renderStepContent()}</AnimatePresence>
+                    </StyledForm>
+                  </StepContent>
+                </ContentWrapper>
+              </DrawerBody>
+              <DrawerFooter>
+                <div>{currentStep > 0 && (<Button key="back" icon={<ChevronLeft size={16} />} onClick={handleBack} disabled={submitting}>Back</Button>)}</div>
+                {currentStep < 2 ? (<Button key="next" type="primary" icon={<ChevronRight size={16} />} iconPosition="end" onClick={handleNext}>Next</Button>) : (<Button key="create" type="primary" icon={<CheckCircle size={16} />} onClick={handleSubmit} loading={submitting}>{editingSchedule ? "Update Course" : "Create Course"}</Button>)}
+              </DrawerFooter>
+            </StyledNestedDrawerContent>
+          </VaulDrawer.Portal>
+        </VaulDrawer.NestedRoot>
+
+        {/* Nested Drawer for Details */}
+        <VaulDrawer.NestedRoot open={detailOpen} onOpenChange={setDetailOpen}>
+          <VaulDrawer.Portal>
+            <StyledDrawerOverlay />
+            <StyledNestedDrawerContent>
+              <DrawerHandle />
+              <DrawerHeader>
+                <DrawerTitle level={4}>{detailTitle}</DrawerTitle>
+                <CloseButton icon={<X size={20} />} onClick={() => setDetailOpen(false)} />
+              </DrawerHeader>
+              <DrawerBody>{renderDetailedView()}</DrawerBody>
+            </StyledNestedDrawerContent>
+          </VaulDrawer.Portal>
+        </VaulDrawer.NestedRoot>
       </ConfigProvider>
     );
   }
 
+  // Desktop Modal Logic
+  const desktopTitle = view === 'list'
+    ? <Space><BookOpen size={20} /><span>Course Schedules - {classData?.title}</span></Space>
+    : view === 'create'
+      ? <Space><Edit3 size={20} /><span>{editingSchedule ? 'Edit' : 'Create'} Course Schedule - {classData?.title}</span></Space>
+      : <Space><CalendarDays size={20} /><span>Schedule Details</span></Space>;
+
+  const desktopFooter = () => {
+    if (view === 'list') return [<Button key="new" type="primary" icon={<Plus size={16} />} onClick={() => { setEditingSchedule(null); form.resetFields(); setView("create"); }}>New Course Schedule</Button>];
+    if (view === 'detail') return [<Button key="close" onClick={() => { setView("list"); setSelectedSchedule(null); }}>Close</Button>];
+    if (view === 'create') {
+      const backButton = (<Button key="back" icon={<ChevronLeft size={16} />} onClick={handleBack} disabled={submitting}>Back</Button>);
+      const nextButton = (<Button key="next" type="primary" icon={<ChevronRight size={16} />} iconPosition="end" onClick={handleNext}>Next</Button>);
+      const submitButtonText = editingSchedule ? "Update Course" : "Create Course";
+      const createButton = (<Button key="create" type="primary" icon={<CheckCircle size={16} />} onClick={handleSubmit} loading={submitting}>{submitButtonText}</Button>);
+
+      return (
+        <div style={{ display: "flex", width: "100%", justifyContent: "space-between" }}>
+          <div>{currentStep > 0 && backButton}</div>
+          <div>{currentStep < 2 ? nextButton : createButton}</div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <ConfigProvider theme={appTheme}>
-      <StyledModal
-        open={open}
-        onCancel={onClose}
-        closable={!submitting}
-        width="80%"
-        centered
-        style={{ maxWidth: 800 }}
-        title={view === "list" && selectedSchedule ? "Schedule Details" : title}
-        footer={renderFooter()}
-      >
-        {content}
+      <StyledModal open={open} onCancel={onClose} closable={!submitting} width="80%" centered style={{ maxWidth: 800 }} title={desktopTitle} footer={desktopFooter()}>
+        {view === 'list' && renderList()}
+        {view === 'detail' && renderDetailedView()}
+        {view === 'create' && (
+          <>
+            <StepsWrapper><Steps size="small" current={currentStep} items={[{ title: "Schedule", icon: <Calendar size={16} /> }, { title: "Pricing", icon: <DollarSign size={16} /> }, { title: "Review", icon: <CheckCircle size={16} /> }]} /></StepsWrapper>
+            <ContentWrapper>
+              <StepContent>
+                <StyledForm form={form} layout="vertical" onValuesChange={(c, v) => setFormData({ ...formData, ...v })}>
+                  <AnimatePresence mode="wait">{renderStepContent()}</AnimatePresence>
+                </StyledForm>
+              </StepContent>
+            </ContentWrapper>
+          </>
+        )}
       </StyledModal>
     </ConfigProvider>
   );
