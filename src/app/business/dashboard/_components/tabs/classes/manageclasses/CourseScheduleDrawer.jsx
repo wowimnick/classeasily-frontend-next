@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
 import {
   Form,
   Input,
@@ -50,6 +50,50 @@ import { motion, AnimatePresence } from "framer-motion";
 const { Option } = Select;
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
+
+// --- ADDED: HOOK AND COMPONENT FOR MODAL ANIMATION ---
+
+const useElementSize = () => {
+  const ref = useRef(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    
+    const observer = new ResizeObserver(([entry]) => {
+      setSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height
+      });
+    });
+    
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, size];
+};
+
+const AnimatedModalContent = ({ children }) => {
+  const [ref, { height }] = useElementSize();
+
+  return (
+    <motion.div
+      animate={{ height: height || "auto" }}
+      style={{ overflow: "hidden" }}
+      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+    >
+      <div ref={ref}>
+        {/* We add a tiny border to prevent margin collapse issues which cause jumpiness */}
+        <div style={{ border: '1px solid transparent', margin: '-1px' }}>
+          {children}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+
 // ============= STYLED COMPONENTS =============
 
 const StyledDrawerOverlay = styled(VaulDrawer.Overlay)`
@@ -65,7 +109,6 @@ const StyledDrawerContent = styled(VaulDrawer.Content)`
   display: flex;
   flex-direction: column;
   border-radius: 16px 16px 0 0;
-  height: 96%;
   max-height: 96vh;
   position: fixed;
   bottom: 0;
@@ -73,6 +116,7 @@ const StyledDrawerContent = styled(VaulDrawer.Content)`
   right: 0;
   z-index: 1050;
   outline: none;
+  transition: height 0.3s ease-in-out;
 `;
 
 const StyledNestedDrawerContent = styled(VaulDrawer.Content)`
@@ -80,7 +124,6 @@ const StyledNestedDrawerContent = styled(VaulDrawer.Content)`
   display: flex;
   flex-direction: column;
   border-radius: 16px 16px 0 0;
-  height: 94%;
   max-height: 94vh;
   position: fixed;
   bottom: 0;
@@ -88,6 +131,7 @@ const StyledNestedDrawerContent = styled(VaulDrawer.Content)`
   right: 0;
   z-index: 1051; /* Higher z-index for nested */
   outline: none;
+  transition: height 0.3s ease-in-out;
 `;
 
 const DrawerHandle = styled.div`
@@ -149,32 +193,28 @@ const CloseButton = styled(Button)`
   height: auto;
 `;
 
+// --- MODIFIED: Updated StyledModal for smooth animation ---
 const StyledModal = styled(Modal)`
   .ant-modal-content {
     border-radius: 16px;
-    overflow: hidden;
-    height: 90vh;
-    max-height: 90vh;
+    overflow: hidden; /* CRITICAL for smooth resize */
     display: flex;
     padding: 0 !important;
     flex-direction: column;
+    /* Removed CSS transition, Framer Motion now handles it */
   }
   .ant-modal-header {
     padding: 20px 24px;
     flex-shrink: 0;
     background: white;
+    position: relative;
+    z-index: 1;
   }
   .ant-modal-body {
     padding: 0;
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: thin;
     background: #f8fafc;
-    display: flex;
-    flex-direction: column;
     position: relative;
+    /* Let the animation wrapper handle overflow */
   }
   .ant-modal-footer {
     padding: 16px 24px;
@@ -182,6 +222,8 @@ const StyledModal = styled(Modal)`
     background: white;
     flex-shrink: 0;
     margin: 0 !important;
+    position: relative; /* Keep footer visible during animation */
+    z-index: 1;
   }
 `;
 
@@ -498,10 +540,11 @@ const InfoValue = styled(Text)`
 const ContentWrapper = styled.div`
   flex: 1;
   min-height: 0;
+  /* MODIFIED: Changed overflow to allow parent to control scroll */
   overflow-y: auto;
   overflow-x: hidden;
   padding: 32px;
-  padding-top: 100px;
+  padding-top: 80px;
   @media (max-width: 768px) {
     padding: 0;
     padding-top: 0;
@@ -522,7 +565,6 @@ const StepsWrapper = styled.div`
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 
   position: absolute;
-  top: 16px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
@@ -1438,7 +1480,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     );
   }
 
-  // Desktop Modal Logic
+  // --- MODIFIED: Desktop Modal Logic with Animated Wrapper ---
   const desktopTitle = view === 'list'
     ? <Space><BookOpen size={20} /><span>Course Schedules - {classData?.title}</span></Space>
     : view === 'create'
@@ -1467,20 +1509,22 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
   return (
     <ConfigProvider theme={appTheme}>
       <StyledModal open={open} onCancel={onClose} closable={!submitting} width="80%" centered style={{ maxWidth: 800 }} title={desktopTitle} footer={desktopFooter()}>
-        {view === 'list' && renderList()}
-        {view === 'detail' && renderDetailedView()}
-        {view === 'create' && (
-          <>
-            <StepsWrapper><Steps size="small" current={currentStep} items={[{ title: "Schedule", icon: <Calendar size={16} /> }, { title: "Pricing", icon: <DollarSign size={16} /> }, { title: "Review", icon: <CheckCircle size={16} /> }]} /></StepsWrapper>
-            <ContentWrapper>
-              <StepContent>
-                <StyledForm form={form} layout="vertical" onValuesChange={(c, v) => setFormData({ ...formData, ...v })}>
-                  <AnimatePresence mode="wait">{renderStepContent()}</AnimatePresence>
-                </StyledForm>
-              </StepContent>
-            </ContentWrapper>
-          </>
-        )}
+        <AnimatedModalContent>
+          {view === 'list' && renderList()}
+          {view === 'detail' && renderDetailedView()}
+          {view === 'create' && (
+            <>
+              <StepsWrapper><Steps size="small" current={currentStep} items={[{ title: "Schedule", icon: <Calendar size={16} /> }, { title: "Pricing", icon: <DollarSign size={16} /> }, { title: "Review", icon: <CheckCircle size={16} /> }]} /></StepsWrapper>
+              <ContentWrapper>
+                <StepContent>
+                  <StyledForm form={form} layout="vertical" onValuesChange={(c, v) => setFormData({ ...formData, ...v })}>
+                    <AnimatePresence mode="wait">{renderStepContent()}</AnimatePresence>
+                  </StyledForm>
+                </StepContent>
+              </ContentWrapper>
+            </>
+          )}
+        </AnimatedModalContent>
       </StyledModal>
     </ConfigProvider>
   );

@@ -30,7 +30,6 @@ import StudentProfile from "./StudentProfile";
 import ImportStudentsModal from "./ImportStudentsModal";
 import {
   GlobalLoaderWithInlineStyles,
-  GlobalLoaderWithoutInlineStyles,
 } from "@/components/common/GlobalLoader";
 import { theme } from "@/components/theme";
 import dayjs from "dayjs";
@@ -208,6 +207,10 @@ const TableViewWrapper = styled(motion.div)`
   .ant-table-tbody > tr:hover > td {
     background-color: #f8fafc;
   }
+  
+  .ant-table-tbody > tr.ant-table-placeholder:hover > td {
+    background: white;
+  }
 
   .ant-pagination {
     margin: 24px 0 0;
@@ -265,14 +268,6 @@ const NoResultsContainer = styled.div`
     color: ${colors.textSecondary};
     margin-bottom: 16px;
   }
-`;
-
-const LoadingContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 300px;
-  width: 100%;
 `;
 
 const PaginationContainer = styled.div`
@@ -773,6 +768,191 @@ const Students = forwardRef((props, ref) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
+  
+  // --- SKELETON LOADER DEFINITIONS ---
+  const SkeletonWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: ${(props) => props.gap || "8px"};
+    width: 100%;
+  `;
+
+  const SkeletonLine = styled.div`
+    height: ${(props) => props.height || "16px"};
+    width: ${(props) => props.width || "100%"};
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s ease-in-out infinite;
+    border-radius: 6px;
+
+    @keyframes loading {
+      0% {
+        background-position: 200% 0;
+      }
+      100% {
+        background-position: -200% 0;
+      }
+    }
+  `;
+
+  const SkeletonCircle = styled(SkeletonLine)`
+    border-radius: 50%;
+    width: ${(props) => props.size || "40px"};
+    height: ${(props) => props.size || "40px"};
+  `;
+
+  const SkeletonTag = styled(SkeletonLine)`
+    height: 22px;
+    width: 110px;
+    border-radius: 6px;
+  `;
+
+  // Skeleton for Grid View Card
+  const SkeletonStudentCard = () => (
+    <div
+      style={{
+        background: "white",
+        borderRadius: "16px",
+        padding: "24px",
+        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "20px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <SkeletonCircle size="48px" />
+        <SkeletonWrapper gap="8px">
+          <SkeletonLine width="150px" height="16px" />
+          <SkeletonLine width="180px" height="14px" />
+        </SkeletonWrapper>
+      </div>
+      <SkeletonTag width="120px" height="24px" />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          borderTop: "1px solid #f1f5f9",
+          paddingTop: "16px",
+        }}
+      >
+        <SkeletonWrapper gap="4px">
+          <SkeletonLine width="80px" height="12px" />
+          <SkeletonLine width="50px" height="16px" />
+        </SkeletonWrapper>
+        <SkeletonWrapper gap="4px" style={{ alignItems: "flex-end" }}>
+          <SkeletonLine width="80px" height="12px" />
+          <SkeletonLine width="70px" height="16px" />
+        </SkeletonWrapper>
+      </div>
+    </div>
+  );
+
+  // Skeleton Row for Table View
+  const SkeletonTableRow = () => ({
+    key: Math.random(),
+    student: (
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <SkeletonCircle size="40px" />
+        <SkeletonWrapper gap="8px">
+          <SkeletonLine width="120px" height="14px" />
+          <SkeletonTag width="100px" height="20px" />
+        </SkeletonWrapper>
+      </div>
+    ),
+    contact: (
+      <SkeletonWrapper gap="8px">
+        <SkeletonLine width="180px" height="14px" />
+        <SkeletonLine width="120px" height="14px" />
+      </SkeletonWrapper>
+    ),
+    total_classes_taken: (
+      <SkeletonLine width="40px" height="14px" style={{ margin: "0 auto" }} />
+    ),
+    total_spent_this_business: (
+      <SkeletonLine width="80px" height="14px" style={{ float: "right" }} />
+    ),
+    last_booking_date_this_business: (
+      <SkeletonLine width="100px" height="14px" />
+    ),
+    actions: <SkeletonCircle size="36px" style={{ margin: "0 auto" }} />,
+  });
+
+  const generateSkeletonData = (count = 10) => {
+    return Array.from({ length: count }, () => SkeletonTableRow());
+  };
+
+  const skeletonColumns = useMemo(
+    () => [
+      { title: "Student", key: "student", dataIndex: "student", width: 280 },
+      {
+        title: "Contact Info",
+        key: "contact",
+        dataIndex: "contact",
+        width: 250,
+      },
+      {
+        title: "Classes",
+        key: "classes",
+        dataIndex: "total_classes_taken",
+        align: "center",
+        width: 120,
+      },
+      {
+        title: "Total Spent",
+        key: "spent",
+        dataIndex: "total_spent_this_business",
+        align: "right",
+        width: 140,
+      },
+      {
+        title: "Last Booking",
+        key: "booking",
+        dataIndex: "last_booking_date_this_business",
+        width: 150,
+      },
+      {
+        title: "Actions",
+        key: "actions",
+        dataIndex: "actions",
+        align: "center",
+        width: 100,
+        fixed: "right",
+      },
+    ],
+    []
+  );
+
+  const StudentsSkeleton = ({ viewMode, pageSize }) => {
+    // Fallback for viewMode if it's still undefined during the very first render
+    const currentViewMode =
+      viewMode === undefined ? (screens.md ? "table" : "grid") : viewMode;
+
+    if (currentViewMode === "grid") {
+      return (
+        <StudentsGrid>
+          {Array.from({ length: pageSize }).map((_, index) => (
+            <motion.div key={index}>
+              <SkeletonStudentCard />
+            </motion.div>
+          ))}
+        </StudentsGrid>
+      );
+    }
+
+    return (
+      <TableViewWrapper>
+        <Table
+          columns={skeletonColumns}
+          dataSource={generateSkeletonData(pageSize)}
+          rowKey="key"
+          pagination={false}
+          scroll={{ x: 1200 }}
+        />
+      </TableViewWrapper>
+    );
+  };
+
 
   return (
     <ConfigProvider theme={theme}>
@@ -851,9 +1031,9 @@ const Students = forwardRef((props, ref) => {
 
         <AnimatePresence mode="wait">
           {isLoading && students.length === 0 ? (
-            <LoadingContainer key="loader">
-              <GlobalLoaderWithoutInlineStyles text="Loading contacts..." />
-            </LoadingContainer>
+            <div key="skeleton">
+              <StudentsSkeleton viewMode={viewMode} pageSize={pagination.pageSize} />
+            </div>
           ) : error ? (
             <NoResultsContainer key="error">
               <h3>Error Loading Data</h3>

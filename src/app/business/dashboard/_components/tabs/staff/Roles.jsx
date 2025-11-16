@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import styled from "styled-components";
 import { Drawer as VaulDrawer } from "vaul";
 import { Table, Button, Typography, Tag, Space, Tooltip, Drawer, Form, Input, Checkbox, Popconfirm, Empty, Row, Col, Collapse, Spin, Card,  } from 'antd';
@@ -8,7 +8,6 @@ import message from '@/lib/message';
 import { Plus, Edit, Trash2, Shield, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { businessRoleService } from "@/services/apiService";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { useAuth } from "@/lib/auth-client";
 
 const { Title, Text, Paragraph } = Typography;
@@ -175,19 +174,6 @@ const VaulDrawerFooter = styled.div`
   gap: 12px;
 `;
 
-const LoaderContainer = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.8);
-  z-index: 10;
-`;
-
 const StyledTable = styled(Table)`
   .ant-table {
     border: none;
@@ -214,6 +200,10 @@ const StyledTable = styled(Table)`
     border-bottom: 1px solid ${colors.border};
     font-size: 14px;
     vertical-align: middle;
+  }
+  
+  .ant-table-tbody > tr.ant-table-placeholder:hover > td {
+    background: white;
   }
 
   .ant-table-tbody > tr:hover > td {
@@ -475,6 +465,120 @@ const MobileCardLabel = styled(Text)`
     font-size: 11px;
   }
 `;
+
+// --- SKELETON LOADER DEFINITIONS ---
+const SkeletonWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${(props) => props.gap || "8px"};
+  width: 100%;
+`;
+
+const SkeletonLine = styled.div`
+  height: ${(props) => props.height || "14px"};
+  width: ${(props) => props.width || "100%"};
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+  border-radius: 6px;
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+`;
+
+const SkeletonBlock = styled(SkeletonLine)`
+  border-radius: ${(props) => props.radius || "8px"};
+  width: ${(props) => props.size || "32px"};
+  height: ${(props) => props.size || "32px"};
+`;
+
+const SkeletonTag = styled(SkeletonLine)`
+  height: 28px;
+  width: 110px;
+  border-radius: 6px;
+`;
+
+// Skeleton for Mobile View Card
+const SkeletonMobileRoleCard = () => (
+  <MobileRoleCard>
+    <MobileCardHeader>
+      <RoleNameCell style={{ flex: 1, minWidth: 0 }}>
+        <SkeletonBlock radius="6px" size="32px" />
+        <SkeletonWrapper>
+          <SkeletonLine width="120px" />
+          <SkeletonLine width="160px" height="12px" />
+        </SkeletonWrapper>
+      </RoleNameCell>
+      <Space size="small" style={{ flexShrink: 0, marginLeft: "8px" }}>
+        <SkeletonBlock radius="6px" size="28px" />
+        <SkeletonBlock radius="6px" size="28px" />
+      </Space>
+    </MobileCardHeader>
+    <MobileCardContent>
+      <MobileCardRow>
+        <SkeletonLine width="90px" height="12px" />
+        <SkeletonTag width="100px" height="24px" />
+      </MobileCardRow>
+    </MobileCardContent>
+  </MobileRoleCard>
+);
+
+// Skeleton Row for Table View
+const SkeletonTableRow = () => ({
+  key: Math.random(),
+  name: (
+    <RoleNameCell>
+      <SkeletonBlock size="32px" />
+      <SkeletonLine width="150px" />
+    </RoleNameCell>
+  ),
+  description: <SkeletonLine width="250px" />,
+  user_count: <SkeletonTag />,
+  actions: (
+    <Space size="small">
+      <SkeletonBlock size="32px" />
+      <SkeletonBlock size="32px" />
+    </Space>
+  ),
+});
+
+const generateSkeletonData = (count = 3) => {
+  return Array.from({ length: count }, SkeletonTableRow);
+};
+
+const skeletonColumns = [
+  { title: "Role Name", dataIndex: "name", key: "name" },
+  { title: "Description", dataIndex: "description", key: "description" },
+  { title: "Team Members", dataIndex: "user_count", key: "user_count" },
+  { title: "Actions", dataIndex: "actions", key: "actions", width: 120 },
+];
+
+const RolesSkeleton = ({ isMobile, count = 3 }) => {
+  if (isMobile) {
+    return (
+      <div style={{ padding: "16px" }}>
+        {Array.from({ length: count }).map((_, i) => (
+          <SkeletonMobileRoleCard key={i} />
+        ))}
+      </div>
+    );
+  }
+  return (
+    <StyledTable
+      columns={skeletonColumns}
+      dataSource={generateSkeletonData(count)}
+      pagination={false}
+      rowKey="key"
+    />
+  );
+};
+
 
 const MobileRoleItem = ({
   record,
@@ -771,105 +875,109 @@ const Roles = () => {
     }
   };
 
-  const columns = [
-    {
-      title: "Role Name",
-      dataIndex: "name",
-      key: "name",
-      render: (name) => (
-        <RoleNameCell>
-          <RoleIcon>
-            <Shield size={16} color={colors.primary} />
-          </RoleIcon>
-          <Text strong style={{ fontSize: "14px" }}>
-            {name || "Unnamed Role"}
-          </Text>
-        </RoleNameCell>
-      ),
-    },
-    {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-      ellipsis: true,
-      render: (description) => (
-        <Text type="secondary" style={{ fontSize: "14px" }}>
-          {description || "No description provided"}
-        </Text>
-      ),
-    },
-    {
-      title: "Team Members",
-      dataIndex: "user_count",
-      key: "user_count",
-      render: (count) => (
-        <MemberCountTag>
-          <Users size={12} />
-          <Text strong style={{ fontSize: "13px" }}>
-            {typeof count === "number" ? count : 0} members
-          </Text>
-        </MemberCountTag>
-      ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      width: 120,
-      render: (_, record) => {
-        const isOwnerRole = record?.name === "Business Owner";
-        const canEdit = !isOwnerRole && canManageRoles;
-        const userCount =
-          typeof record?.user_count === "number" ? record.user_count : 0;
-        const canDelete = !isOwnerRole && userCount === 0 && canManageRoles;
-
-        const tooltipEdit = isOwnerRole
-          ? "The Owner role cannot be edited"
-          : !canManageRoles
-          ? "You don't have permission to edit roles"
-          : "Edit role";
-
-        const tooltipDelete = isOwnerRole
-          ? "The Owner role cannot be deleted"
-          : userCount > 0
-          ? "Cannot delete role with assigned members"
-          : !canManageRoles
-          ? "You don't have permission to delete roles"
-          : "Delete role";
-
-        return (
-          <Space size="small">
-            <Tooltip title={tooltipEdit}>
-              <span>
-                <ActionButtonSmall
-                  icon={<Edit size={14} />}
-                  onClick={() => showDrawer(record)}
-                  disabled={!canEdit}
-                />
-              </span>
-            </Tooltip>
-            <Tooltip title={tooltipDelete}>
-              <span>
-                <Popconfirm
-                  title="Delete this role?"
-                  description="This action cannot be undone."
-                  onConfirm={() => handleDeleteRole(record?.id)}
-                  okText="Yes, Delete"
-                  cancelText="No"
-                  disabled={!canDelete}
-                >
-                  <ActionButtonSmall
-                    className="danger"
-                    icon={<Trash2 size={14} />}
-                    disabled={!canDelete}
-                  />
-                </Popconfirm>
-              </span>
-            </Tooltip>
-          </Space>
-        );
+  const columns = useMemo(
+    () => [
+      {
+        title: "Role Name",
+        dataIndex: "name",
+        key: "name",
+        render: (name) => (
+          <RoleNameCell>
+            <RoleIcon>
+              <Shield size={16} color={colors.primary} />
+            </RoleIcon>
+            <Text strong style={{ fontSize: "14px" }}>
+              {name || "Unnamed Role"}
+            </Text>
+          </RoleNameCell>
+        ),
       },
-    },
-  ];
+      {
+        title: "Description",
+        dataIndex: "description",
+        key: "description",
+        ellipsis: true,
+        render: (description) => (
+          <Text type="secondary" style={{ fontSize: "14px" }}>
+            {description || "No description provided"}
+          </Text>
+        ),
+      },
+      {
+        title: "Team Members",
+        dataIndex: "user_count",
+        key: "user_count",
+        render: (count) => (
+          <MemberCountTag>
+            <Users size={12} />
+            <Text strong style={{ fontSize: "13px" }}>
+              {typeof count === "number" ? count : 0} members
+            </Text>
+          </MemberCountTag>
+        ),
+      },
+      {
+        title: "Actions",
+        key: "actions",
+        width: 120,
+        render: (_, record) => {
+          const isOwnerRole = record?.name === "Business Owner";
+          const canEdit = !isOwnerRole && canManageRoles;
+          const userCount =
+            typeof record?.user_count === "number" ? record.user_count : 0;
+          const canDelete = !isOwnerRole && userCount === 0 && canManageRoles;
+
+          const tooltipEdit = isOwnerRole
+            ? "The Owner role cannot be edited"
+            : !canManageRoles
+            ? "You don't have permission to edit roles"
+            : "Edit role";
+
+          const tooltipDelete = isOwnerRole
+            ? "The Owner role cannot be deleted"
+            : userCount > 0
+            ? "Cannot delete role with assigned members"
+            : !canManageRoles
+            ? "You don't have permission to delete roles"
+            : "Delete role";
+
+          return (
+            <Space size="small">
+              <Tooltip title={tooltipEdit}>
+                <span>
+                  <ActionButtonSmall
+                    icon={<Edit size={14} />}
+                    onClick={() => showDrawer(record)}
+                    disabled={!canEdit}
+                  />
+                </span>
+              </Tooltip>
+              <Tooltip title={tooltipDelete}>
+                <span>
+                  <Popconfirm
+                    title="Delete this role?"
+                    description="This action cannot be undone."
+                    onConfirm={() => handleDeleteRole(record?.id)}
+                    okText="Yes, Delete"
+                    cancelText="No"
+                    disabled={!canDelete}
+                  >
+                    <ActionButtonSmall
+                      className="danger"
+                      icon={<Trash2 size={14} />}
+                      disabled={!canDelete}
+                    />
+                  </Popconfirm>
+                </span>
+              </Tooltip>
+            </Space>
+          );
+        },
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [canManageRoles]
+  );
 
   const handlePermissionChange = (permissionId, isChecked) => {
     if (!permissionId) return;
@@ -889,15 +997,57 @@ const Roles = () => {
       }, 300);
     }
   };
+  
+  const renderContent = () => {
+    if (loading && roles.length === 0) {
+      return <RolesSkeleton isMobile={isMobile} />;
+    }
+
+    if (isMobile) {
+      return (
+        <div style={{ padding: '16px' }}>
+          {roles.length === 0 ? (
+            <Empty
+              description="No custom roles created yet."
+              style={{ padding: '40px 20px' }}
+            />
+          ) : (
+            roles.map((role) => (
+              <MobileRoleItem
+                key={role.id}
+                record={role}
+                onEdit={showDrawer}
+                onDelete={handleDeleteRole}
+                canEdit={role.name !== 'Business Owner' && canManageRoles}
+                canDelete={
+                  role.name !== 'Business Owner' &&
+                  role.user_count === 0 &&
+                  canManageRoles
+                }
+                windowWidth={windowWidth}
+              />
+            ))
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <StyledTable
+        columns={columns}
+        dataSource={Array.isArray(roles) ? roles : []}
+        rowKey="id"
+        pagination={false}
+        loading={loading && roles.length > 0}
+        locale={{
+          emptyText: <Empty description="No custom roles created yet." />,
+        }}
+      />
+    );
+  };
 
   return (
     <TableSection initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      {loading && (
-        <LoaderContainer>
-          <GlobalLoaderWithoutInlineStyles />
-        </LoaderContainer>
-      )}
-
       <TableHeader>
         <HeaderContent>
           <TableTitle>Roles & Permissions</TableTitle>
@@ -924,46 +1074,8 @@ const Roles = () => {
           </Tooltip>
         )}
       </TableHeader>
-
-      {/* Mobile View */}
-      {isMobile ? (
-        <div style={{ padding: "16px" }}>
-          {roles.length === 0 ? (
-            <Empty
-              description="No custom roles created yet."
-              style={{ padding: "40px 20px" }}
-            />
-          ) : (
-            roles.map((role) => (
-              <MobileRoleItem
-                key={role.id}
-                record={role}
-                onEdit={showDrawer}
-                onDelete={handleDeleteRole}
-                canEdit={role.name !== "Business Owner" && canManageRoles}
-                canDelete={
-                  role.name !== "Business Owner" &&
-                  role.user_count === 0 &&
-                  canManageRoles
-                }
-                windowWidth={windowWidth}
-              />
-            ))
-          )}
-        </div>
-      ) : (
-        /* Desktop View */
-        <StyledTable
-          columns={columns}
-          dataSource={Array.isArray(roles) ? roles : []}
-          rowKey="id"
-          pagination={false}
-          loading={false}
-          locale={{
-            emptyText: <Empty description="No custom roles created yet." />,
-          }}
-        />
-      )}
+      
+      {renderContent()}
 
       {/* Single Vaul Drawer for both mobile and desktop */}
       <VaulDrawer.Root

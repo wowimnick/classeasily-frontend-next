@@ -236,9 +236,8 @@ const getErrorMessage = (error) => {
         const formattedKey = key
           .replace(/_/g, " ")
           .replace(/\b\w/g, (l) => l.toUpperCase());
-        return `${formattedKey}: ${
-          Array.isArray(value) ? value.join(", ") : value
-        }`;
+        return `${formattedKey}: ${Array.isArray(value) ? value.join(", ") : value
+          }`;
       });
       if (messages.length > 0) return messages.join("; ");
     }
@@ -542,11 +541,11 @@ const CustomSwitch = styled.div`
 
   &:hover {
     background-color: ${(props) =>
-      props.$disabled
-        ? props.$checked
-          ? "#10b981"
-          : "#e5e7eb"
-        : props.$checked
+    props.$disabled
+      ? props.$checked
+        ? "#10b981"
+        : "#e5e7eb"
+      : props.$checked
         ? "#059669"
         : "#d1d5db"};
   }
@@ -1002,22 +1001,12 @@ function ClassManagementContent(props) {
     classData: null,
   });
   const [scheduleForm] = Form.useForm();
-  const [shouldRender, setShouldRender] = useState(false);
   const [togglingClassId, setTogglingClassId] = useState(null);
   const screens = useBreakpoint();
   const isMobileView = !screens.md;
   const openClassId = searchParams.get("classId");
   const scrollToScheduleId = searchParams.get("scheduleId");
   const openScheduleGroup = searchParams.get("scheduleGroup");
-
-  useEffect(() => {
-    if (createDrawerVisible) {
-      setShouldRender(true);
-    } else {
-      const timer = setTimeout(() => setShouldRender(false), 300);
-      return () => clearTimeout(timer);
-    }
-  }, [createDrawerVisible]);
 
   useEffect(() => {
     if (openClassId && classes.length > 0) {
@@ -1443,6 +1432,8 @@ function ClassManagementContent(props) {
                 transition: "all 0.3s ease",
                 cursor: isLoading ? "wait" : "pointer",
                 opacity: isLoading ? 0.7 : 1,
+                width: "140px", // FIX: Added fixed width
+                justifyContent: "center", // FIX: Centered content
               }}
             >
               <CustomSwitch
@@ -1763,11 +1754,10 @@ function ClassManagementContent(props) {
               dataSource={filteredClasses}
               rowKey="classId"
               pagination={false}
-              scroll={{ x: true }}
+              scroll={{ x: 'max-content' }} 
               onRow={(record) => ({
                 onClick: () => {
                   if (record.option) {
-                    // MODIFIED: Open correct modal on row click
                     const isCourse =
                       record.options?.[0]?.booking_type === "Full Course";
                     if (isCourse) {
@@ -1814,68 +1804,67 @@ function ClassManagementContent(props) {
           onSuccess={handleClassEditSuccess}
         />
 
-        {shouldRender &&
-          (isMobileView ? (
-            <VaulDrawer.Root
-              open={createDrawerVisible}
-              onOpenChange={(open) => {
-                if (!open) setCreateDrawerVisible(false);
-              }}
-              dismissible
-            >
-              <VaulDrawer.Portal>
-                <StyledScheduleDrawerOverlay />
-                <StyledScheduleDrawerContent>
-                  <ScheduleDrawerHandle />
+        {isMobileView ? (
+          <VaulDrawer.Root
+            open={createDrawerVisible}
+            onOpenChange={(open) => {
+              if (!open) setCreateDrawerVisible(false);
+            }}
+            dismissible
+          >
+            <VaulDrawer.Portal>
+              <StyledScheduleDrawerOverlay />
+              <StyledScheduleDrawerContent>
+                <ScheduleDrawerHandle />
 
-                  <DrawerHeader>
-                    <Title level={4} style={{ margin: 0 }}>
-                      Create New Class
-                    </Title>
-                    <CloseButton
-                      icon={<X size={20} />}
-                      onClick={() => setCreateDrawerVisible(false)}
-                    />
-                  </DrawerHeader>
+                <DrawerHeader>
+                  <Title level={4} style={{ margin: 0 }}>
+                    Create New Class
+                  </Title>
+                  <CloseButton
+                    icon={<X size={20} />}
+                    onClick={() => setCreateDrawerVisible(false)}
+                  />
+                </DrawerHeader>
 
-                  <DrawerBody>
-                    <ClassProvider>
-                      <CreateClassPage onSuccess={handleCreateClassSuccess} />
-                    </ClassProvider>
-                  </DrawerBody>
-                </StyledScheduleDrawerContent>
-              </VaulDrawer.Portal>
-            </VaulDrawer.Root>
-          ) : (
-            <VaulDrawer.Root
-              open={createDrawerVisible}
-              onOpenChange={(open) => {
-                if (!open) setCreateDrawerVisible(false);
-              }}
-              direction="right"
-              dismissible
-            >
-              <VaulDrawer.Portal>
-                <StyledScheduleDrawerOverlay />
-                <DesktopDrawerContent>
-                  <DrawerHeader>
-                    <Title level={4} style={{ margin: 0 }}>
-                      Create New Class
-                    </Title>
-                    <CloseButton
-                      icon={<X size={20} />}
-                      onClick={() => setCreateDrawerVisible(false)}
-                    />
-                  </DrawerHeader>
-                  <DrawerBody>
-                    <ClassProvider>
-                      <CreateClassPage onSuccess={handleCreateClassSuccess} />
-                    </ClassProvider>
-                  </DrawerBody>
-                </DesktopDrawerContent>
-              </VaulDrawer.Portal>
-            </VaulDrawer.Root>
-          ))}
+                <DrawerBody>
+                  <ClassProvider>
+                    <CreateClassPage onSuccess={handleCreateClassSuccess} />
+                  </ClassProvider>
+                </DrawerBody>
+              </StyledScheduleDrawerContent>
+            </VaulDrawer.Portal>
+          </VaulDrawer.Root>
+        ) : (
+          <VaulDrawer.Root
+            open={createDrawerVisible}
+            onOpenChange={(open) => {
+              if (!open) setCreateDrawerVisible(false);
+            }}
+            direction="right"
+            dismissible
+          >
+            <VaulDrawer.Portal>
+              <StyledScheduleDrawerOverlay />
+              <DesktopDrawerContent>
+                <DrawerHeader>
+                  <Title level={4} style={{ margin: 0 }}>
+                    Create New Class
+                  </Title>
+                  <CloseButton
+                    icon={<X size={20} />}
+                    onClick={() => setCreateDrawerVisible(false)}
+                  />
+                </DrawerHeader>
+                <DrawerBody>
+                  <ClassProvider>
+                    <CreateClassPage onSuccess={handleCreateClassSuccess} />
+                  </ClassProvider>
+                </DrawerBody>
+              </DesktopDrawerContent>
+            </VaulDrawer.Portal>
+          </VaulDrawer.Root>
+        )}
       </PageContainer>
     </ConfigProvider>
   );

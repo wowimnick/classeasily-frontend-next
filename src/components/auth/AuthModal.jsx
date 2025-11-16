@@ -1,7 +1,7 @@
 // AuthModal.jsx - Better Auth Integration with Vaul + Global Redirect Logic
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
 import styled from "styled-components";
 import {
   Modal,
@@ -40,25 +40,55 @@ import { theme } from "@/components/theme";
 
 const { Step } = Steps;
 
-// Desktop Modal Styles
-const DesktopModalContent = styled(motion.div)`
-  padding: 1rem;
-  max-height: 75vh;
-  overflow-y: auto;
-  min-height: 350px;
+// --- ADDED: HOOK AND COMPONENT FOR MODAL ANIMATION ---
 
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: #e0e0e0;
-    border-radius: 3px;
-  }
+const useElementSize = () => {
+  const ref = useRef(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    
+    const observer = new ResizeObserver(([entry]) => {
+      setSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height
+      });
+    });
+    
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, size];
+};
+
+const AnimatedModalContent = ({ children }) => {
+  const [ref, { height }] = useElementSize();
+
+  return (
+    <motion.div
+      animate={{ height: height || "auto" }}
+      style={{ overflow: "hidden" }}
+      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+    >
+      <div ref={ref}>
+        {/* We add a tiny border to prevent margin collapse issues which cause jumpiness */}
+        <div style={{ border: '1px solid transparent', margin: '-1px' }}>
+          {children}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+
+// --- MODIFIED: Simplified DesktopModalContent for animation ---
+const DesktopModalContent = styled(motion.div)`
+  padding: 1.5rem;
 
   @media (max-width: 768px) {
-    padding: 0.75rem;
-    max-height: 90vh;
-    min-height: 300px;
+    padding: 1rem;
   }
 `;
 
@@ -819,7 +849,7 @@ const AuthModal = ({
     );
   }
 
-  // Desktop: Use Ant Design Modal
+  // --- MODIFIED: Desktop Modal with animated wrapper ---
   return (
     <ConfigProvider theme={theme}>
       <Modal
@@ -830,9 +860,16 @@ const AuthModal = ({
         centered
         destroyOnClose
         maskClosable={!loading}
-        styles={{ body: { padding: 0 } }}
+        styles={{ 
+          body: { padding: 0 },
+          content: { borderRadius: '24px', overflow: 'hidden' } 
+        }}
       >
-        <DesktopModalContent>{renderContent()}</DesktopModalContent>
+        <AnimatedModalContent>
+          <DesktopModalContent>
+            {renderContent()}
+          </DesktopModalContent>
+        </AnimatedModalContent>
       </Modal>
     </ConfigProvider>
   );

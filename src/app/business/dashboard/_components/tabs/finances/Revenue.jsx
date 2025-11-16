@@ -235,7 +235,6 @@ const StatValue = styled.div`
   font-size: 22px;
   font-weight: 700;
   color: ${colors.textPrimary};
-  margin-bottom: 4px;
   display: flex;
   align-items: baseline;
   @media (max-width: 768px) {
@@ -250,6 +249,15 @@ const StatLabel = styled.div`
   gap: 6px;
   @media (max-width: 768px) {
     font-size: 12px;
+  }
+`;
+const StatFooter = styled.div`
+  font-size: 12px;
+  color: ${colors.textSecondary};
+  margin-top: 4px;
+  line-height: 1.4;
+  @media (max-width: 768px) {
+    font-size: 11px;
   }
 `;
 const MetricTrend = styled.div`
@@ -628,6 +636,7 @@ const Revenue = forwardRef((props, ref) => {
       icon: <DollarSign size={20} />,
       color: colors.chart.green,
       background: `rgba(16, 185, 129, 0.1)`,
+      footer: "vs. previous period",
     },
     {
       key: "estimated_platform_fees",
@@ -637,6 +646,7 @@ const Revenue = forwardRef((props, ref) => {
       icon: <TrendingDown size={20} />,
       color: colors.chart.red,
       background: `rgba(239, 68, 68, 0.1)`,
+      footer: "Total estimated platform fees",
     },
     {
       key: "estimated_net_revenue",
@@ -646,6 +656,7 @@ const Revenue = forwardRef((props, ref) => {
       icon: <TrendingUp size={20} />,
       color: colors.chart.blue,
       background: `rgba(59, 130, 246, 0.1)`,
+      footer: "Gross revenue minus platform fees",
     },
     {
       key: "average_order_value",
@@ -655,6 +666,7 @@ const Revenue = forwardRef((props, ref) => {
       icon: <CreditCard size={20} />,
       color: colors.chart.purple,
       background: `rgba(139, 92, 246, 0.1)`,
+      footer: "Average revenue per transaction",
     },
     {
       key: "revenue_per_booker",
@@ -664,6 +676,7 @@ const Revenue = forwardRef((props, ref) => {
       icon: <Users size={20} />,
       color: colors.chart.orange,
       background: `rgba(249, 115, 22, 0.1)`,
+      footer: "Average per unique customer",
     },
     {
       key: "revenue_per_spot",
@@ -673,6 +686,7 @@ const Revenue = forwardRef((props, ref) => {
       icon: <Percent size={20} />,
       color: colors.chart.teal,
       background: `rgba(20, 184, 166, 0.1)`,
+      footer: "Average revenue per enrollment",
     },
   ];
 
@@ -772,31 +786,34 @@ const Revenue = forwardRef((props, ref) => {
                     </StatCardHeader>
                     <StatLabel>{stat.title}</StatLabel>
                   </div>
-                  <StatValue>
-                    {stat.prefix}
-                    <NumberFlow
-                      key={
-                        loading ? `${stat.key}-loading` : `${stat.key}-loaded`
-                      }
-                      value={isReadyForAnimation ? stat.value || 0 : 0}
-                      duration={800}
-                      numberFormatOptions={{
-                        maximumFractionDigits:
-                          stat.key === "average_order_value" ||
-                          stat.key === "revenue_per_booker" ||
-                          stat.key === "revenue_per_spot"
-                            ? 2
-                            : 0,
-                        minimumFractionDigits:
-                          stat.key === "average_order_value" ||
-                          stat.key === "revenue_per_booker" ||
-                          stat.key === "revenue_per_spot"
-                            ? 2
-                            : 0,
-                      }}
-                    />
-                    {stat.suffix}
-                  </StatValue>
+                  <div>
+                    <StatValue>
+                      {stat.prefix}
+                      <NumberFlow
+                        key={
+                          loading ? `${stat.key}-loading` : `${stat.key}-loaded`
+                        }
+                        value={isReadyForAnimation ? stat.value || 0 : 0}
+                        duration={800}
+                        numberFormatOptions={{
+                          maximumFractionDigits:
+                            stat.key === "average_order_value" ||
+                            stat.key === "revenue_per_booker" ||
+                            stat.key === "revenue_per_spot"
+                              ? 2
+                              : 0,
+                          minimumFractionDigits:
+                            stat.key === "average_order_value" ||
+                            stat.key === "revenue_per_booker" ||
+                            stat.key === "revenue_per_spot"
+                              ? 2
+                              : 0,
+                        }}
+                      />
+                      {stat.suffix}
+                    </StatValue>
+                    {stat.footer && <StatFooter>{stat.footer}</StatFooter>}
+                  </div>
                 </>
               )}
             </StatCard>

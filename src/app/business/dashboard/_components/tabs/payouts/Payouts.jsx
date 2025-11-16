@@ -330,7 +330,6 @@ const StatValue = styled.div`
   font-size: 22px;
   font-weight: 700;
   color: ${colors.textPrimary};
-  margin-bottom: 4px;
   display: flex;
   align-items: baseline;
 
@@ -348,6 +347,17 @@ const StatLabel = styled.div`
 
   @media (max-width: 768px) {
     font-size: 12px;
+  }
+`;
+
+const StatFooter = styled.div`
+  font-size: 12px;
+  color: ${colors.textSecondary};
+  margin-top: 4px;
+  line-height: 1.4;
+
+  @media (max-width: 768px) {
+    font-size: 11px;
   }
 `;
 
@@ -1129,6 +1139,7 @@ const Payouts = () => {
       color: colors.info,
       background: "rgba(59, 130, 246, 0.1)",
       suffix: summary?.currency,
+      footer: "Funds currently awaiting payout.",
     },
     {
       key: "next_payout",
@@ -1140,6 +1151,7 @@ const Payouts = () => {
       isText: true,
       tooltip:
         "Payouts for completed bookings are processed daily. Funds typically arrive in your bank account in 1-3 business days.",
+      footer: "Payouts are processed daily.",
     },
     {
       key: "last_payout",
@@ -1149,6 +1161,7 @@ const Payouts = () => {
       color: colors.success,
       background: "rgba(16, 185, 129, 0.1)",
       suffix: summary?.currency,
+      footer: "Most recent successful payout.",
     },
     {
       key: "payout_status",
@@ -1165,6 +1178,7 @@ const Payouts = () => {
         ? "rgba(16, 185, 129, 0.1)"
         : "rgba(239, 68, 68, 0.1)",
       isText: true,
+      footer: "Your account's payout eligibility.",
     },
   ];
 
@@ -1218,34 +1232,37 @@ const Payouts = () => {
                     </StatCardHeader>
                     <StatLabel>{stat.title}</StatLabel>
                   </div>
-                  <StatValue>
-                    <Tooltip title={stat.tooltip}>
-                      <span
-                        style={{
-                          fontSize: isMobile ? "18px" : "22px", // Changed this line
-                          textTransform: stat.isText ? "capitalize" : "none",
-                        }}
-                      >
-                        {stat.isText ? (
-                          stat.value
-                        ) : (
-                          <NumberFlow
-                            value={
-                              isReadyForAnimation
-                                ? parseFloat(stat.value) || 0
-                                : 0
-                            }
-                            duration={800}
-                            prefix="$"
-                            numberFormatOptions={{
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            }}
-                          />
-                        )}
-                      </span>
-                    </Tooltip>
-                  </StatValue>
+                  <div>
+                    <StatValue>
+                      <Tooltip title={stat.tooltip}>
+                        <span
+                          style={{
+                            fontSize: isMobile ? "18px" : "22px", // Changed this line
+                            textTransform: stat.isText ? "capitalize" : "none",
+                          }}
+                        >
+                          {stat.isText ? (
+                            stat.value
+                          ) : (
+                            <NumberFlow
+                              value={
+                                isReadyForAnimation
+                                  ? parseFloat(stat.value) || 0
+                                  : 0
+                              }
+                              duration={800}
+                              prefix="$"
+                              numberFormatOptions={{
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              }}
+                            />
+                          )}
+                        </span>
+                      </Tooltip>
+                    </StatValue>
+                    {stat.footer && <StatFooter>{stat.footer}</StatFooter>}
+                  </div>
                 </>
               )}
             </StatCard>

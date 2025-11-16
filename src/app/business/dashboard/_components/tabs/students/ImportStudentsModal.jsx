@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { Modal, Upload, Button, Steps, Select, Table, Typography, ConfigProvider, Spin, Alert, Space, Card, Progress, Tag, Divider,  } from 'antd';
 import message from '@/lib/message';
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,6 +17,49 @@ import { Drawer } from "vaul";
 const { Dragger } = Upload;
 const { Step } = Steps;
 const { Title, Text, Paragraph } = Typography;
+
+// --- ADDED: HOOK AND COMPONENT FOR MODAL ANIMATION ---
+
+const useElementSize = () => {
+  const ref = useRef(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    
+    const observer = new ResizeObserver(([entry]) => {
+      setSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height
+      });
+    });
+    
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, size];
+};
+
+const AnimatedModalContent = ({ children }) => {
+  const [ref, { height }] = useElementSize();
+
+  return (
+    <motion.div
+      animate={{ height: height || "auto" }}
+      style={{ overflow: "hidden" }}
+      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+    >
+      <div ref={ref}>
+        {/* We add a tiny border to prevent margin collapse issues which cause jumpiness */}
+        <div style={{ border: '1px solid transparent', margin: '-1px' }}>
+          {children}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 
 // --- Vaul Drawer Styles ---
 const StyledDrawerOverlay = styled(Drawer.Overlay)`
@@ -955,7 +998,7 @@ const ImportStudentsModal = ({ visible, onClose, onImportComplete }) => {
 
   return (
     <ConfigProvider theme={theme}>
-      {/* Desktop Modal */}
+      {/* --- MODIFIED: Desktop Modal with Animated Wrapper --- */}
       {!isMobile && (
         <DesktopModal
           title="Import Students"
@@ -966,18 +1009,20 @@ const ImportStudentsModal = ({ visible, onClose, onImportComplete }) => {
           destroyOnClose
           centered
         >
-          <ModalContent
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <StyledSteps current={currentStep} size="small">
-              {steps.map((item) => (
-                <Step key={item.title} title={item.title} icon={item.icon} />
-              ))}
-            </StyledSteps>
-            <AnimatePresence mode="wait">{renderStepContent()}</AnimatePresence>
-          </ModalContent>
+          <AnimatedModalContent>
+            <ModalContent
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              <StyledSteps current={currentStep} size="small">
+                {steps.map((item) => (
+                  <Step key={item.title} title={item.title} icon={item.icon} />
+                ))}
+              </StyledSteps>
+              <AnimatePresence mode="wait">{renderStepContent()}</AnimatePresence>
+            </ModalContent>
+          </AnimatedModalContent>
         </DesktopModal>
       )}
 

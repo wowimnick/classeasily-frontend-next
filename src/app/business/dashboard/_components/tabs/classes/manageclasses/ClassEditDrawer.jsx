@@ -883,9 +883,7 @@ const ClassEditDrawer = ({
 
   const handleOpenChange = (open) => {
     if (!open) {
-      setTimeout(() => {
-        onClose();
-      }, 300);
+      onClose();
     }
   };
 
@@ -2409,7 +2407,6 @@ const ClassEditDrawer = ({
     </>
   );
 
-  if (!visible) return null;
 
   return (
     <ThemeProvider theme={appTheme}>

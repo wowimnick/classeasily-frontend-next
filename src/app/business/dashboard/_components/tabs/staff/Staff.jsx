@@ -199,7 +199,6 @@ const Staff = () => {
     {
       label: (
         <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Users size={16} />
           <span>Team Members</span>
         </span>
       ),
@@ -216,7 +215,6 @@ const Staff = () => {
     items.push({
       label: (
         <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Shield size={16} />
           <span>Roles & Permissions</span>
         </span>
       ),

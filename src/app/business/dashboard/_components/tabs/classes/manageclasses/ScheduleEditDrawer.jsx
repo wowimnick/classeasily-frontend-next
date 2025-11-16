@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from "react";
 import {
   Modal,
   Form,
@@ -59,6 +59,47 @@ import { theme } from "@/components/theme";
 const { Option } = Select;
 const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
+
+// --- ADDED: HOOK AND COMPONENT FOR MODAL ANIMATION ---
+
+const useElementSize = () => {
+  const ref = useRef(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    
+    const observer = new ResizeObserver(([entry]) => {
+      setSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height
+      });
+    });
+    
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, size];
+};
+
+const AnimatedModalContent = ({ children }) => {
+  const [ref, { height }] = useElementSize();
+
+  return (
+    <motion.div
+      animate={{ height: height || "auto" }}
+      style={{ overflow: "hidden" }}
+      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+    >
+      <div ref={ref}>
+        <div style={{ border: '1px solid transparent', margin: '-1px' }}>
+          {children}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 // --- Error Handling ---
 const getErrorMessage = (error) => {
@@ -228,11 +269,10 @@ const StyledTabs = styled(Tabs)`
   }
 `;
 
-// --- Desktop Modal Styles ---
+// --- MODIFIED: Desktop Modal Styles for Animation ---
 const DesktopModal = styled(Modal)`
   .ant-modal-content {
     border-radius: 12px;
-    overflow: hidden;
     padding: 0;
     max-height: 85vh;
     display: flex;
@@ -245,6 +285,8 @@ const DesktopModal = styled(Modal)`
     border-bottom: 1px solid #f0f0f0;
     margin-bottom: 0;
     flex-shrink: 0;
+    position: relative;
+    z-index: 1;
   }
 
   .ant-modal-title {
@@ -255,20 +297,19 @@ const DesktopModal = styled(Modal)`
   .ant-modal-body {
     padding: 0;
     background: #f8fafc;
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
+    flex: 1; /* ADDED: Allows the body to fill available space */
+    min-height: 0; /* ADDED: Prevents flex items from overflowing */
+    overflow-y: auto; /* ADDED: Makes the body scrollable if content is tall */
     position: relative;
   }
-
   .ant-modal-footer {
     padding: 12px 24px;
     margin-top: 0;
     border-top: 1px solid #f0f0f0;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
+    position: relative;
+    z-index: 1;
   }
 `;
 
@@ -2553,7 +2594,13 @@ const ScheduleEditDrawer = ({
           closable={!isLoading && !isBulkLoading}
           footer={renderFooterButtons(false)}
         >
-          {renderContent()}
+          {activeView === 'manage' && renderContent()}
+          
+          {activeView === 'form' && (
+            <AnimatedModalContent>
+              {renderContent()}
+            </AnimatedModalContent>
+          )}
         </DesktopModal>
       )}
 

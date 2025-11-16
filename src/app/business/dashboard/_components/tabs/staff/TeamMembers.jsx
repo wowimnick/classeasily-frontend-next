@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import styled from "styled-components";
 import { Drawer } from "vaul";
 import { Table, Button, Typography, Tag, Space, Tooltip, Modal, Form, Input, Select, Popconfirm, Empty, Card, Row, Col, Avatar,  } from 'antd';
@@ -20,7 +20,6 @@ import {
   businessStaffService,
   businessRoleService,
 } from "@/services/apiService";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -186,19 +185,6 @@ const HeaderParagraph = styled(Paragraph)`
   }
 `;
 
-const LoaderContainer = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.8);
-  z-index: 10;
-`;
-
 const StyledTable = styled(Table)`
   .ant-table {
     border: none;
@@ -249,6 +235,10 @@ const StyledTable = styled(Table)`
 
   .ant-table-tbody > tr:hover > td {
     background: ${colors.lightBg};
+  }
+
+  .ant-table-tbody > tr.ant-table-placeholder:hover > td {
+    background: white;
   }
 
   @media (max-width: 768px) {
@@ -465,6 +455,132 @@ const StatusTag = styled(Tag)`
     gap: 3px;
   }
 `;
+
+// --- SKELETON LOADER DEFINITIONS ---
+const SkeletonWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${(props) => props.gap || "8px"};
+  width: 100%;
+`;
+
+const SkeletonLine = styled.div`
+  height: ${(props) => props.height || "14px"};
+  width: ${(props) => props.width || "100%"};
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+  border-radius: 6px;
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+`;
+
+const SkeletonBlock = styled(SkeletonLine)`
+  border-radius: ${(props) => props.radius || "8px"};
+  width: ${(props) => props.size || "32px"};
+  height: ${(props) => props.size || "32px"};
+`;
+
+const SkeletonTag = styled(SkeletonLine)`
+  height: 28px;
+  width: 90px;
+  border-radius: 6px;
+`;
+
+// Skeleton for Mobile View Card
+const SkeletonMobileCard = () => (
+  <MobileStaffCard>
+    <MobileCardHeader>
+      <MemberNameCell>
+        <SkeletonBlock radius="6px" size="32px" />
+        <SkeletonWrapper>
+          <SkeletonLine width="120px" />
+          <SkeletonLine width="150px" height="12px" />
+        </SkeletonWrapper>
+      </MemberNameCell>
+      <Space size="small">
+        <SkeletonBlock radius="6px" size="28px" />
+        <SkeletonBlock radius="6px" size="28px" />
+      </Space>
+    </MobileCardHeader>
+    <MobileCardContent>
+      <MobileCardRow>
+        <SkeletonLine width="40px" height="12px" />
+        <SkeletonTag width="80px" height="24px" />
+      </MobileCardRow>
+      <MobileCardRow>
+        <SkeletonLine width="50px" height="12px" />
+        <SkeletonTag width="90px" height="24px" />
+      </MobileCardRow>
+      <MobileCardRow>
+        <SkeletonLine width="70px" height="12px" />
+        <SkeletonLine width="80px" height="12px" />
+      </MobileCardRow>
+    </MobileCardContent>
+  </MobileStaffCard>
+);
+
+// Skeleton Row for Table View
+const SkeletonTableRow = () => ({
+  key: Math.random(),
+  member: (
+    <MemberNameCell>
+      <SkeletonBlock size="32px" />
+      <SkeletonLine width="150px" />
+    </MemberNameCell>
+  ),
+  email: <SkeletonLine width="180px" />,
+  role: <SkeletonTag width="100px" />,
+  status: <SkeletonTag />,
+  created_at: <SkeletonLine width="100px" />,
+  actions: (
+    <Space size="small">
+      <SkeletonBlock size="32px" />
+      <SkeletonBlock size="32px" />
+    </Space>
+  ),
+});
+
+const generateSkeletonData = (count = 5) => {
+  return Array.from({ length: count }, SkeletonTableRow);
+};
+
+const skeletonColumns = [
+  { title: "Team Member", dataIndex: "member", key: "member" },
+  { title: "Email", dataIndex: "email", key: "email" },
+  { title: "Role", dataIndex: "role", key: "role" },
+  { title: "Status", dataIndex: "status", key: "status" },
+  { title: "Date Added", dataIndex: "created_at", key: "created_at" },
+  { title: "Actions", dataIndex: "actions", key: "actions", width: 120 },
+];
+
+const TeamMembersSkeleton = ({ isMobile, count = 5 }) => {
+  if (isMobile) {
+    return (
+      <div style={{ padding: "16px" }}>
+        {Array.from({ length: count }).map((_, i) => (
+          <SkeletonMobileCard key={i} />
+        ))}
+      </div>
+    );
+  }
+  return (
+    <StyledTable
+      columns={skeletonColumns}
+      dataSource={generateSkeletonData(count)}
+      pagination={false}
+      rowKey="key"
+    />
+  );
+};
+
 
 const MobileStaffItem = ({
   record,
@@ -717,175 +833,160 @@ const TeamMembers = () => {
     }
   };
 
-  const columns = [
-    {
-      title: "Team Member",
-      key: "member",
-      render: (_, record) => (
-        <MemberNameCell>
-          <MemberIcon>
-            <User size={16} color={colors.primary} />
-          </MemberIcon>
-          <Text strong style={{ fontSize: "14px" }}>
-            {record.user_name || "Invitation Pending"}
+  const columns = useMemo(
+    () => [
+      {
+        title: "Team Member",
+        key: "member",
+        render: (_, record) => (
+          <MemberNameCell>
+            <MemberIcon>
+              <User size={16} color={colors.primary} />
+            </MemberIcon>
+            <Text strong style={{ fontSize: "14px" }}>
+              {record.user_name || "Invitation Pending"}
+            </Text>
+          </MemberNameCell>
+        ),
+      },
+      {
+        title: "Email",
+        dataIndex: "invited_email",
+        key: "email",
+        render: (email) => (
+          <Text type="secondary" style={{ fontSize: "14px" }}>
+            {email}
           </Text>
-        </MemberNameCell>
-      ),
-    },
-    {
-      title: "Email",
-      dataIndex: "invited_email",
-      key: "email",
-      render: (email) => (
-        <Text type="secondary" style={{ fontSize: "14px" }}>
-          {email}
-        </Text>
-      ),
-    },
-    {
-      title: "Role",
-      dataIndex: "role_name",
-      key: "role",
-      render: (role) => (
-        <Tag
-          style={{
-            borderRadius: "6px",
-            padding: "6px 8px",
-            fontWeight: 600,
-            fontSize: "12px",
-            lineHeight: 1,
-            height: "auto",
-            textTransform: "uppercase",
-            border: "none",
-            background: "#f0f9ff",
-            color: "#0369a1",
-          }}
-        >
-          {role}
-        </Tag>
-      ),
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (status) => {
-        const statusMap = {
-          pending: {
-            color: "#f59e0b",
-            background: "#fef3c7",
-            text: "Pending",
-            icon: <Mail size={12} />,
-          },
-          accepted: {
-            color: "#10b981",
-            background: "#d1fae5",
-            text: "Accepted",
-            icon: <CheckCircle size={12} />,
-          },
-        };
-        const { color, background, text, icon } = statusMap[status] || {
-          color: "#64748b",
-          background: "#f1f5f9",
-          text: status,
-          icon: null,
-        };
-        return (
-          <StatusTag
+        ),
+      },
+      {
+        title: "Role",
+        dataIndex: "role_name",
+        key: "role",
+        render: (role) => (
+          <Tag
             style={{
-              color: color,
-              background: background,
+              borderRadius: "6px",
+              padding: "6px 8px",
+              fontWeight: 600,
+              fontSize: "12px",
+              lineHeight: 1,
+              height: "auto",
+              textTransform: "uppercase",
+              border: "none",
+              background: "#f0f9ff",
+              color: "#0369a1",
             }}
           >
-            {icon}
-            {text}
-          </StatusTag>
-        );
+            {role}
+          </Tag>
+        ),
       },
-    },
-    {
-      title: "Date Added",
-      dataIndex: "created_at",
-      key: "created_at",
-      render: (date) => (
-        <Text style={{ fontSize: "14px" }}>
-          {dayjs(date).format("MMM D, YYYY")}
-        </Text>
-      ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      width: 120,
-      render: (_, record) => {
-        const isSelf = record.user_email === currentUser?.email;
-        return (
-          <Space size="small">
-            <Tooltip
-              title={isSelf ? "You cannot edit your own role" : "Edit Role"}
+      {
+        title: "Status",
+        dataIndex: "status",
+        key: "status",
+        render: (status) => {
+          const statusMap = {
+            pending: {
+              color: "#f59e0b",
+              background: "#fef3c7",
+              text: "Pending",
+              icon: <Mail size={12} />,
+            },
+            accepted: {
+              color: "#10b981",
+              background: "#d1fae5",
+              text: "Accepted",
+              icon: <CheckCircle size={12} />,
+            },
+          };
+          const { color, background, text, icon } = statusMap[status] || {
+            color: "#64748b",
+            background: "#f1f5f9",
+            text: status,
+            icon: null,
+          };
+          return (
+            <StatusTag
+              style={{
+                color: color,
+                background: background,
+              }}
             >
-              <span>
-                <ActionButtonSmall
-                  icon={<Edit size={14} />}
-                  onClick={() => showModal(record)}
-                  disabled={isSelf}
-                />
-              </span>
-            </Tooltip>
-            <Tooltip title={isSelf ? "You cannot remove yourself" : "Remove"}>
-              <span>
-                <Popconfirm
-                  title="Remove this team member?"
-                  description="This will revoke their access to your business dashboard."
-                  onConfirm={() => handleRemoveStaff(record.id)}
-                  okText="Yes, Remove"
-                  cancelText="Cancel"
-                  disabled={isSelf}
-                >
+              {icon}
+              {text}
+            </StatusTag>
+          );
+        },
+      },
+      {
+        title: "Date Added",
+        dataIndex: "created_at",
+        key: "created_at",
+        render: (date) => (
+          <Text style={{ fontSize: "14px" }}>
+            {dayjs(date).format("MMM D, YYYY")}
+          </Text>
+        ),
+      },
+      {
+        title: "Actions",
+        key: "actions",
+        width: 120,
+        render: (_, record) => {
+          const isSelf = record.user_email === currentUser?.email;
+          return (
+            <Space size="small">
+              <Tooltip
+                title={isSelf ? "You cannot edit your own role" : "Edit Role"}
+              >
+                <span>
                   <ActionButtonSmall
-                    className="danger"
-                    icon={<Trash2 size={14} />}
+                    icon={<Edit size={14} />}
+                    onClick={() => showModal(record)}
                     disabled={isSelf}
                   />
-                </Popconfirm>
-              </span>
-            </Tooltip>
-          </Space>
-        );
+                </span>
+              </Tooltip>
+              <Tooltip title={isSelf ? "You cannot remove yourself" : "Remove"}>
+                <span>
+                  <Popconfirm
+                    title="Remove this team member?"
+                    description="This will revoke their access to your business dashboard."
+                    onConfirm={() => handleRemoveStaff(record.id)}
+                    okText="Yes, Remove"
+                    cancelText="Cancel"
+                    disabled={isSelf}
+                  >
+                    <ActionButtonSmall
+                      className="danger"
+                      icon={<Trash2 size={14} />}
+                      disabled={isSelf}
+                    />
+                  </Popconfirm>
+                </span>
+              </Tooltip>
+            </Space>
+          );
+        },
       },
-    },
-  ];
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentUser?.email]
+  );
 
   const modalTitle = editingStaff
     ? "Edit Staff Member Role"
     : "Invite a New Staff Member";
 
-  return (
-    <TableSection initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      {loading && (
-        <LoaderContainer>
-          <GlobalLoaderWithoutInlineStyles />
-        </LoaderContainer>
-      )}
+  const renderContent = () => {
+    if (loading && staff.length === 0) {
+      return <TeamMembersSkeleton isMobile={isMobile} />;
+    }
 
-      <TableHeader>
-        <HeaderContent>
-          <TableTitle>Team Members</TableTitle>
-          <HeaderParagraph type="secondary">
-            Invite and manage who has access to your business dashboard.
-          </HeaderParagraph>
-        </HeaderContent>
-        <ActionButton
-          type="primary"
-          icon={<Plus size={16} />}
-          onClick={() => showModal()}
-        >
-          Invite Staff
-        </ActionButton>
-      </TableHeader>
-
-      {/* Mobile View */}
-      {isMobile ? (
+    if (isMobile) {
+      return (
         <div style={{ padding: "16px" }}>
           {staff.length === 0 ? (
             <Empty
@@ -905,21 +1006,45 @@ const TeamMembers = () => {
             ))
           )}
         </div>
-      ) : (
-        /* Desktop View */
-        <StyledTable
-          columns={columns}
-          dataSource={staff}
-          rowKey="id"
-          pagination={false}
-          loading={false}
-          locale={{
-            emptyText: (
-              <Empty description="No team members yet. Invite your first staff member!" />
-            ),
-          }}
-        />
-      )}
+      );
+    }
+
+    return (
+      <StyledTable
+        columns={columns}
+        dataSource={staff}
+        rowKey="id"
+        pagination={false}
+        loading={loading && staff.length > 0} // Show table spinner on refresh, not initial load
+        locale={{
+          emptyText: (
+            <Empty description="No team members yet. Invite your first staff member!" />
+          ),
+        }}
+      />
+    );
+  };
+
+
+  return (
+    <TableSection initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <TableHeader>
+        <HeaderContent>
+          <TableTitle>Team Members</TableTitle>
+          <HeaderParagraph type="secondary">
+            Invite and manage who has access to your business dashboard.
+          </HeaderParagraph>
+        </HeaderContent>
+        <ActionButton
+          type="primary"
+          icon={<Plus size={16} />}
+          onClick={() => showModal()}
+        >
+          Invite Staff
+        </ActionButton>
+      </TableHeader>
+      
+      {renderContent()}
 
       {isMobile ? (
         <Drawer.Root
