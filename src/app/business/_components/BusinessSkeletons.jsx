@@ -14,9 +14,14 @@ const shimmer = keyframes`
 
 const SkeletonBase = styled.div`
   background: linear-gradient(90deg, #f0f0f0 0%, #f8f8f8 50%, #f0f0f0 100%);
-  background-size: 1000px 100%;
+  background-size: 2000px 100%;
   animation: ${shimmer} 2s infinite;
   border-radius: 8px;
+`;
+
+const DarkSkeletonBase = styled(SkeletonBase)`
+  background: linear-gradient(90deg, #333 0%, #444 50%, #333 100%);
+  background-size: 2000px 100%;
 `;
 
 const SkeletonTextLine = styled(SkeletonBase)`
@@ -25,98 +30,83 @@ const SkeletonTextLine = styled(SkeletonBase)`
   margin-bottom: ${(props) => props.mb || "0"};
 `;
 
-// Hero Skeleton
+// --- NEW HERO SKELETON ---
 const HeroSkeletonWrapper = styled.div`
-  background: white;
-  border-bottom: 1px solid #e8e8e8;
-  padding: 3rem 0;
+  position: relative;
+  background-color: #222;
+  min-height: 450px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+  padding: 2rem;
 
   @media (max-width: 768px) {
-    padding: 2rem 0 0 0;
+    min-height: 400px;
+    padding: 1.5rem;
   }
 `;
 
 const HeroSkeletonContent = styled.div`
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  display: grid;
-  grid-template-columns: 180px 1fr 320px;
-  gap: 3rem;
-  align-items: start;
-
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
-
-  @media (max-width: 768px) {
-    padding: 0 1rem;
-  }
-`;
-
-const SkeletonAvatar = styled(SkeletonBase)`
-  width: 180px;
-  height: 180px;
-  border-radius: 12px;
-
-  @media (max-width: 1024px) {
-    margin: 0 auto;
-  }
-
-  @media (max-width: 768px) {
-    width: 120px;
-    height: 120px;
-  }
-`;
-
-const SkeletonInfoSection = styled.div`
-  padding-top: 1rem;
-
-  @media (max-width: 1024px) {
-    padding-top: 0;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-`;
-
-const SkeletonStats = styled.div`
+  width: 100%;
+  max-width: 800px;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 1.5rem;
+`;
+
+const SkeletonName = styled(DarkSkeletonBase)`
+  height: 48px;
+  width: 60%;
+  max-width: 500px;
+  border-radius: 8px;
 
   @media (max-width: 768px) {
-    flex-direction: row;
+    height: 36px;
   }
 `;
 
-const SkeletonStatBlock = styled(SkeletonBase)`
-  height: 100px;
+const SkeletonDescriptionWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 80%;
+  max-width: 600px;
+`;
+
+const SkeletonDescriptionLine = styled(DarkSkeletonBase)`
+  height: 18px;
+  border-radius: 4px;
+
+  @media (max-width: 768px) {
+    height: 16px;
+  }
+`;
+
+const SkeletonStatsRow = styled(DarkSkeletonBase)`
+  height: 60px;
+  width: 90%;
+  max-width: 550px;
   border-radius: 12px;
-  flex: 1;
+  margin-top: 1rem;
+
+  @media (max-width: 768px) {
+    height: 50px;
+  }
 `;
 
 export const BusinessHeroSkeleton = () => (
   <HeroSkeletonWrapper>
     <HeroSkeletonContent>
-      <SkeletonAvatar />
-
-      <SkeletonInfoSection>
-        <SkeletonTextLine height="40px" width="60%" mb="20px" />
-        <SkeletonTextLine height="20px" width="40%" mb="20px" />
-        <SkeletonTextLine height="32px" width="200px" mb="20px" />
-        <SkeletonTextLine height="16px" width="100%" mb="8px" />
-        <SkeletonTextLine height="16px" width="90%" mb="8px" />
-        <SkeletonTextLine height="16px" width="70%" />
-      </SkeletonInfoSection>
-
-      <SkeletonStats>
-        <SkeletonStatBlock />
-        <SkeletonStatBlock />
-        <SkeletonStatBlock />
-      </SkeletonStats>
+      <SkeletonName />
+      <SkeletonDescriptionWrapper>
+        <SkeletonDescriptionLine style={{ width: "100%" }} />
+        <SkeletonDescriptionLine style={{ width: "85%" }} />
+      </SkeletonDescriptionWrapper>
+      <SkeletonStatsRow />
     </HeroSkeletonContent>
   </HeroSkeletonWrapper>
 );

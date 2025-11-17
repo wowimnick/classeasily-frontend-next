@@ -9,11 +9,6 @@ import {
 
 // Generate static params for business pages at build time
 export async function generateStaticParams() {
-  // Only generate static params in production builds
-  if (process.env.NODE_ENV !== "production") {
-    return [];
-  }
-
   try {
     const businessesResult = await fetchPublicBusinesses();
 

@@ -19,6 +19,7 @@ import {
   LocationTabSkeleton, // We'll use this for the dynamic loading state
   ContactTabSkeleton,
 } from "./BusinessSkeletons";
+import Header from "@/components/header/Header";
 
 // --- START: Dynamic import for the Leaflet-based component ---
 const LocationTab = dynamic(() => import("./LocationTab"), {
@@ -125,7 +126,7 @@ const BusinessPageClient = ({ initialData, slug }) => {
   return (
     <BusinessPageWrapper>
       <LeafletMarkerStyles />
-      <ExploreHeader showOptionsWrapper={false} />
+      <Header />
 
       {isHeroLoaded ? (
         <BusinessHero

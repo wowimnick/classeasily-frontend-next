@@ -2,211 +2,135 @@
 
 import React from "react";
 import styled from "styled-components";
-import { MapPin, Star } from "lucide-react";
+import { Star, MapPin, BookOpen, MessageSquare } from "lucide-react";
 import NumberFlow from "@number-flow/react";
-import { LordIcon } from "@/services/ReactUtils.jsx";
 
-const HeroSection = styled.div`
-  background: #fafafa;
-  border-bottom: 1px solid #e8e8e8;
-  padding: 4rem 0 3rem;
+const HeroContainer = styled.section`
+  position: relative;
+  background-color: #111;
+  color: white;
+  padding: 6rem 2rem;
+  min-height: 450px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
 
   @media (max-width: 768px) {
-    padding: 2rem 0 1.5rem;
+    padding: 5rem 1.5rem;
+    min-height: 400px;
   }
+`;
+
+const BackgroundImage = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url(${(props) => props.src});
+  background-size: cover;
+  background-position: center;
+  opacity: 0.35;
+  filter: blur(4px) brightness(0.9);
+  transform: scale(1.05);
+`;
+
+const Overlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
 `;
 
 const HeroContent = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 3rem;
-  display: grid;
-  grid-template-columns: 140px 1fr auto;
-  gap: 2.5rem;
-  align-items: start;
-
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-    text-align: center;
-    padding: 0 2rem;
-  }
-
-  @media (max-width: 768px) {
-    padding: 0 1.5rem;
-    gap: 1.5rem;
-  }
-`;
-
-const BusinessAvatar = styled.div`
-  width: 140px;
-  height: 140px;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  background: white;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  @media (max-width: 1024px) {
-    margin: 0 auto;
-  }
-
-  @media (max-width: 768px) {
-    width: 100px;
-    height: 100px;
-    border-radius: 12px;
-  }
-`;
-
-const BusinessInfo = styled.div`
-  min-width: 0;
+  position: relative;
+  z-index: 2;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
 `;
 
 const BusinessName = styled.h1`
-  font-size: 2.25rem;
-  font-weight: 700;
-  margin: 0 0 1rem 0;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-  color: #111;
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: #fff;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  margin: 0;
 
   @media (max-width: 768px) {
-    font-size: 1.75rem;
-    margin-bottom: 0.75rem;
-  }
-`;
-
-const MetaRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.5rem;
-
-  @media (max-width: 1024px) {
-    justify-content: center;
-  }
-
-  @media (max-width: 768px) {
-    gap: 1rem;
-    margin-bottom: 1rem;
-  }
-`;
-
-const LocationBadge = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #666;
-  font-size: 0.95rem;
-
-  svg {
-    color: #ff385c;
-    width: 18px;
-    height: 18px;
-  }
-`;
-
-const RatingBadge = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: white;
-  padding: 0.4rem 0.9rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-
-  svg {
-    color: #ffb800;
-    width: 16px;
-    height: 16px;
-  }
-
-  strong {
-    font-weight: 600;
-    color: #111;
-  }
-
-  span {
-    color: #666;
+    font-size: 2.5rem;
   }
 `;
 
 const BusinessDescription = styled.p`
-  font-size: 1rem;
-  line-height: 1.65;
-  color: #555;
-  white-space: pre-line;
-  max-width: 680px;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #e0e0e0;
+  max-width: 650px;
   margin: 0;
-
-  @media (max-width: 1024px) {
-    margin: 0 auto;
-  }
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 
   @media (max-width: 768px) {
-    font-size: 0.95rem;
-    line-height: 1.6;
+    font-size: 1rem;
   }
 `;
 
-const QuickStats = styled.div`
+const StatsRow = styled.div`
   display: flex;
-  gap: 1rem;
-  align-self: start;
-
-  @media (max-width: 1024px) {
-    justify-content: center;
-    max-width: 600px;
-    margin: 0 auto;
-    width: 100%;
-  }
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  justify-content: center;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 
   @media (max-width: 768px) {
-    gap: 0.75rem;
+    gap: 0.75rem 1.5rem;
+    padding: 0.75rem;
   }
 `;
 
-const StatBlock = styled.div`
-  text-align: center;
-  padding: 1.5rem 1.75rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-  min-width: 110px;
+const StatItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #f0f0f0;
 
-  .value {
-    font-size: 2rem;
-    font-weight: 700;
-    line-height: 1;
-    margin-bottom: 0.4rem;
-    color: #111;
+  svg {
+    width: 18px;
+    height: 18px;
+    color: #ff385c;
   }
 
-  .label {
-    font-size: 0.8rem;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+  strong {
+    color: #fff;
     font-weight: 600;
   }
 
   @media (max-width: 768px) {
-    padding: 1.25rem 1.25rem;
-    min-width: 90px;
+    font-size: 0.9rem;
 
-    .value {
-      font-size: 1.75rem;
-    }
-
-    .label {
-      font-size: 0.75rem;
+    svg {
+      width: 16px;
+      height: 16px;
     }
   }
 `;
@@ -217,85 +141,66 @@ const BusinessHero = ({
   business_image_medium_url,
   businessCity,
   businessState,
-  businessAddress,
   ratingAsNumber,
   totalReviews,
   classesCount,
 }) => {
+  const defaultImageUrl = `https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1600`;
+
   return (
-    <HeroSection>
+    <HeroContainer>
+      <BackgroundImage
+        src={business_image_medium_url || defaultImageUrl}
+        aria-hidden="true"
+      />
+      <Overlay />
       <HeroContent>
-        <BusinessAvatar>
-          <img
-            src={
-              business_image_medium_url ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                businessName
-              )}&size=140&background=ff385c&color=fff`
-            }
-            alt={`${businessName} logo`}
-            loading="eager"
-          />
-        </BusinessAvatar>
+        <BusinessName>{businessName}</BusinessName>
 
-        <BusinessInfo>
-          <BusinessName>{businessName}</BusinessName>
-          <MetaRow>
-            <LocationBadge>
-              <LordIcon
-                src="https://cdn.lordicon.com/innuazqa.json"
-                trigger="in"
-                delay="1500"
-                state="in-reveal"
-                colors="primary:#ee6d66"
-              />
-              <span>
-                {businessAddress || `${businessCity}, ${businessState}`}
-              </span>
-            </LocationBadge>
-            {ratingAsNumber > 0 && (
-              <RatingBadge>
-                <Star size={16} fill="#FFB800" />
-                <strong>{ratingAsNumber.toFixed(1)}</strong>
-                <span>
-                  (<NumberFlow value={totalReviews} />)
-                </span>
-              </RatingBadge>
-            )}
-          </MetaRow>
-          <BusinessDescription>
-            {businessDescription ||
-              "The business description is currently unavailable."}
-          </BusinessDescription>
-        </BusinessInfo>
+        <BusinessDescription>
+          {businessDescription ||
+            "The business description is currently unavailable."}
+        </BusinessDescription>
 
-        <QuickStats>
-          <StatBlock>
-            <div className="value">
-              <NumberFlow value={classesCount} />
-            </div>
-            <div className="label">Classes</div>
-          </StatBlock>
-          <StatBlock>
-            <div className="value">
-              <NumberFlow value={totalReviews} />
-            </div>
-            <div className="label">Reviews</div>
-          </StatBlock>
+        <StatsRow>
           {ratingAsNumber > 0 && (
-            <StatBlock>
-              <div className="value">
+            <StatItem>
+              <Star fill="#FFB800" color="#FFB800" />
+              <strong>
                 <NumberFlow
                   value={ratingAsNumber}
                   format={{ maximumFractionDigits: 1 }}
                 />
-              </div>
-              <div className="label">Rating</div>
-            </StatBlock>
+              </strong>
+              <span>Star Rating</span>
+            </StatItem>
           )}
-        </QuickStats>
+
+          <StatItem>
+            <MessageSquare />
+            <strong>
+              <NumberFlow value={totalReviews} />
+            </strong>
+            <span>{totalReviews === 1 ? "Review" : "Reviews"}</span>
+          </StatItem>
+
+          <StatItem>
+            <BookOpen />
+            <strong>
+              <NumberFlow value={classesCount} />
+            </strong>
+            <span>{classesCount === 1 ? "Class" : "Classes"}</span>
+          </StatItem>
+
+          <StatItem>
+            <MapPin />
+            <span>
+              {businessCity}, {businessState}
+            </span>
+          </StatItem>
+        </StatsRow>
       </HeroContent>
-    </HeroSection>
+    </HeroContainer>
   );
 };
 

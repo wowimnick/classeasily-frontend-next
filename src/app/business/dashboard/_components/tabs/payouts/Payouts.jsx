@@ -36,7 +36,6 @@ import { motion } from "framer-motion";
 import NumberFlow from "@number-flow/react";
 import dayjs from "dayjs";
 import { businessService } from "@/services/apiService";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
 import { theme } from "@/components/theme";
 
@@ -93,8 +92,8 @@ const StyledDrawerContent = styled(Drawer.Content)`
   display: flex;
   flex-direction: column;
   border-radius: 24px 24px 0 0;
-  height: 85vh;
-  max-height: 85vh;
+  height: 90%;
+  max-height: 90vh;
   position: fixed;
   bottom: 0;
   left: 0;
@@ -141,7 +140,7 @@ const DrawerBody = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 0;
-  background: white;
+  background: ${colors.lightBg};
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -164,7 +163,7 @@ const DesktopDrawerContent = styled(Drawer.Content)`
   position: fixed;
   z-index: 1050;
   outline: none;
-  width: 800px;
+  width: min(90vw, 800px);
   background: white;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
@@ -194,7 +193,7 @@ const DesktopDrawerBody = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 0;
-  background: white;
+  background: ${colors.lightBg};
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -210,10 +209,12 @@ const DesktopDrawerBody = styled.div`
   }
 `;
 
-// Update the ExpandedRowWrapper to add proper padding
 const ExpandedRowWrapper = styled.div`
-  border-top: 1px solid ${colors.border};
+  background: white;
   padding: 16px 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 
   @media (max-width: 768px) {
     padding: 16px;
@@ -247,16 +248,6 @@ const HeaderSubtitle = styled(Text)`
   @media (max-width: 480px) {
     font-size: 13px;
   }
-`;
-
-const DesktopDrawerInner = styled.div`
-  background: white;
-  height: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 `;
 
 const StatsGrid = styled.div`
@@ -407,21 +398,6 @@ const TableDescription = styled(Paragraph)`
   @media (max-width: 768px) {
     font-size: 13px;
   }
-`;
-
-const LoaderContainer = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.8);
-  z-index: 10;
-  border-radius: 16px;
-  backdrop-filter: blur(2px);
 `;
 
 const StatusBadge = styled.div`
@@ -596,7 +572,7 @@ const MobileBookingItem = styled(List.Item)`
 const EmptyStateContainer = styled.div`
   display: flex;
   flex-direction: column;
-  flex-grow: 0.7;
+  flex-grow: 1;
   align-items: center;
   justify-content: center;
   padding: ${(props) => props.$padding || "60px 20px"};
@@ -669,6 +645,123 @@ const EmptyStateSubtext = styled.div`
   }
 `;
 
+// --- SKELETONS ---
+
+const SkeletonLine = styled.div`
+  height: ${(props) => props.height || "16px"};
+  width: ${(props) => props.width || "100%"};
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+`;
+
+const SkeletonTag = styled(SkeletonLine)`
+  height: 28px;
+  border-radius: 20px;
+  min-width: 80px;
+`;
+
+const MobilePayoutSkeleton = () => (
+  <MobileCard>
+    <Card.Meta
+      description={
+        <MobileCardHeader>
+          <div>
+            <SkeletonLine width="120px" height="20px" />
+            <SkeletonLine
+              width="150px"
+              height="14px"
+              style={{ marginTop: "8px" }}
+            />
+          </div>
+          <SkeletonTag width="90px" />
+        </MobileCardHeader>
+      }
+    />
+    <MobileCardContent>
+      <MobileCardRow>
+        <SkeletonLine width="100px" height="14px" />
+        <SkeletonLine width="30px" height="14px" />
+      </MobileCardRow>
+      <MobileCardRow>
+        <SkeletonLine width="80px" height="14px" />
+        <SkeletonLine width="130px" height="14px" />
+      </MobileCardRow>
+      <Space
+        style={{
+          width: "100%",
+          justifyContent: "flex-end",
+          marginTop: "8px",
+        }}
+      >
+        <SkeletonLine width="90px" height="32px" />
+        <SkeletonLine width="90px" height="32px" />
+      </Space>
+    </MobileCardContent>
+  </MobileCard>
+);
+
+const BookingItemSkeleton = () => (
+  <MobileBookingItem>
+    <List.Item.Meta
+      title={<SkeletonLine width="60%" />}
+      description={<SkeletonLine width="40%" style={{ marginTop: "4px" }} />}
+    />
+    <SkeletonLine width="50px" />
+  </MobileBookingItem>
+);
+
+// --- DRAWER COMPONENTS ---
+
+const DetailsContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+`;
+
+const DrawerSummary = styled.div`
+  padding: 20px 24px;
+  background: white;
+  border-bottom: 1px solid ${colors.border};
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+`;
+
+const SummaryItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const SummaryLabel = styled(Text)`
+  font-size: 13px;
+  color: ${colors.textSecondary};
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const SummaryValue = styled(Text)`
+  font-size: 16px;
+  font-weight: 600;
+  color: ${colors.textPrimary};
+`;
+
 const getStatusIcon = (status) => {
   switch (status?.toLowerCase()) {
     case "paid":
@@ -683,6 +776,7 @@ const getStatusIcon = (status) => {
 };
 
 const getStatusTag = (status) => {
+  if (React.isValidElement(status)) return status;
   return (
     <StatusBadge status={status}>
       {getStatusIcon(status)}
@@ -691,19 +785,20 @@ const getStatusTag = (status) => {
   );
 };
 
-const ExpandedPayoutDetails = ({ payoutId, isMobile }) => {
+const ExpandedPayoutDetails = ({ payout, isMobile }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: 5,
+    pageSize: isMobile ? 8 : 10,
     total: 0,
   });
 
   const fetchBookingsForPayout = useCallback(
-    async (page = 1, pageSize = 5) => {
+    async (page = 1, pageSize = isMobile ? 8 : 10) => {
+      if (!payout?.id) return;
       setLoading(true);
-      const result = await businessService.fetchPayoutBookings(payoutId, {
+      const result = await businessService.fetchPayoutBookings(payout.id, {
         page,
         page_size: pageSize,
       });
@@ -718,9 +813,9 @@ const ExpandedPayoutDetails = ({ payoutId, isMobile }) => {
       } else {
         message.error("Could not load bookings for this payout.");
       }
-      setLoading(false);
+      setTimeout(() => setLoading(false), 300);
     },
-    [payoutId]
+    [payout?.id, isMobile]
   );
 
   useEffect(() => {
@@ -731,25 +826,26 @@ const ExpandedPayoutDetails = ({ payoutId, isMobile }) => {
     fetchBookingsForPayout(newPagination.current, newPagination.pageSize);
   };
 
-  const desktopColumns = [
+  const generateBookingSkeletonData = (count) => {
+    return Array.from({ length: count }, (_, i) => ({
+      key: `skel-${i}`,
+      user_facing_reference: <SkeletonLine width="80px" />,
+      user_name: <SkeletonLine width="120px" />,
+      class_name: <SkeletonLine width="150px" />,
+      session_date: <SkeletonLine width="100px" />,
+      net_amount_for_payout: <SkeletonLine width="60px" />,
+    }));
+  };
+
+  const baseDesktopColumns = [
     {
       title: "Booking Ref",
       dataIndex: "user_facing_reference",
       key: "ref",
       width: 120,
     },
-    {
-      title: "Student",
-      dataIndex: "user_name",
-      key: "user",
-      ellipsis: true,
-    },
-    {
-      title: "Class",
-      dataIndex: "class_name",
-      key: "class",
-      ellipsis: true,
-    },
+    { title: "Student", dataIndex: "user_name", key: "user", ellipsis: true },
+    { title: "Class", dataIndex: "class_name", key: "class", ellipsis: true },
     {
       title: "Session Date",
       dataIndex: "session_date",
@@ -771,40 +867,104 @@ const ExpandedPayoutDetails = ({ payoutId, isMobile }) => {
     },
   ];
 
-  return (
-    <ExpandedRowWrapper>
-      {isMobile ? (
+  const desktopColumns = baseDesktopColumns.map((col) => ({
+    ...col,
+    render: (text, record) => {
+      if (React.isValidElement(record[col.dataIndex])) {
+        return record[col.dataIndex];
+      }
+      return col.render ? col.render(text, record) : text;
+    },
+  }));
+
+  const renderContent = () => {
+    if (loading) {
+      return isMobile ? (
         <List
-          itemLayout="horizontal"
-          dataSource={bookings}
-          loading={loading}
-          pagination={pagination}
-          renderItem={(item) => (
-            <MobileBookingItem>
-              <List.Item.Meta
-                title={item.class_name}
-                description={`${item.user_name} - ${dayjs(
-                  item.session_date
-                ).format("MMM D, YYYY")}`}
-              />
-              <Text strong style={{ color: colors.success, fontSize: "14px" }}>
-                ${Number(item.net_amount_for_payout).toFixed(2)}
-              </Text>
-            </MobileBookingItem>
-          )}
+            dataSource={Array.from({ length: 8 }, (_, i) => ({ key: i }))}
+            renderItem={() => <BookingItemSkeleton />}
         />
       ) : (
         <StyledTable
           columns={desktopColumns}
-          dataSource={bookings}
-          loading={loading}
-          pagination={pagination}
-          onChange={handleTableChange}
-          rowKey="user_facing_reference"
+          dataSource={generateBookingSkeletonData(10)}
+          pagination={false}
+          rowKey="key"
           size="small"
         />
-      )}
-    </ExpandedRowWrapper>
+      );
+    }
+
+    if (bookings.length === 0) {
+      return (
+        <EmptyStateContainer $padding="40px 20px">
+          <EmptyStateIcon>
+            <lord-icon
+              src="https://cdn.lordicon.com/uoljexdg.json"
+              trigger="in"
+              colors="primary:#94a3b8"
+            />
+          </EmptyStateIcon>
+          <EmptyStateText>No Bookings Found</EmptyStateText>
+          <EmptyStateSubtext>
+            This payout does not contain any bookings.
+          </EmptyStateSubtext>
+        </EmptyStateContainer>
+      );
+    }
+
+    return isMobile ? (
+      <List
+        itemLayout="horizontal"
+        dataSource={bookings}
+        pagination={{ ...pagination, size: "small", align: "center" }}
+        onChange={(page, pageSize) =>
+          handleTableChange({ current: page, pageSize })
+        }
+        renderItem={(item) => (
+          <MobileBookingItem>
+            <List.Item.Meta
+              title={item.class_name}
+              description={`${item.user_name} - ${dayjs(
+                item.session_date
+              ).format("MMM D, YYYY")}`}
+            />
+            <Text strong style={{ color: colors.success, fontSize: "14px" }}>
+              ${Number(item.net_amount_for_payout).toFixed(2)}
+            </Text>
+          </MobileBookingItem>
+        )}
+      />
+    ) : (
+      <StyledTable
+        columns={desktopColumns}
+        dataSource={bookings}
+        pagination={pagination}
+        onChange={handleTableChange}
+        rowKey="user_facing_reference"
+        size="small"
+      />
+    );
+  };
+
+  return (
+    <DetailsContainer>
+      <DrawerSummary>
+        <SummaryItem>
+          <SummaryLabel>
+            <DollarSign size={14} /> Total Payout
+          </SummaryLabel>
+          <SummaryValue>{payout.amount_display}</SummaryValue>
+        </SummaryItem>
+        <SummaryItem>
+          <SummaryLabel>
+            <Box size={14} /> Bookings Included
+          </SummaryLabel>
+          <SummaryValue>{payout.booking_count}</SummaryValue>
+        </SummaryItem>
+      </DrawerSummary>
+      <ExpandedRowWrapper>{renderContent()}</ExpandedRowWrapper>
+    </DetailsContainer>
   );
 };
 
@@ -889,13 +1049,12 @@ const Payouts = () => {
     total: 0,
   });
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState(null);
-  const [isDev, setIsDev] = useState(false); // State for dev environment
+  const [isDev, setIsDev] = useState(false);
   const refreshButtonRef = useRef(null);
   const screens = useBreakpoint();
   const isMobile = !screens.md;
-  const [shouldRenderDrawer, setShouldRenderDrawer] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -904,24 +1063,18 @@ const Payouts = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (isModalOpen) {
-      setShouldRenderDrawer(true);
-    } else {
-      const timer = setTimeout(() => setShouldRenderDrawer(false), 300);
-      return () => clearTimeout(timer);
-    }
-  }, [isModalOpen]);
-  const showBookingsModal = (payout) => {
+  const showBookingsDrawer = (payout) => {
     setSelectedPayout(payout);
-    setIsModalOpen(true);
+    setIsDrawerOpen(true);
+  };
+
+  const handleDrawerClose = () => {
+    setIsDrawerOpen(false);
   };
 
   const handleDrawerOpenChange = (open) => {
     if (!open) {
-      setTimeout(() => {
-        handleModalClose();
-      }, 300);
+      handleDrawerClose();
     }
   };
 
@@ -952,7 +1105,7 @@ const Payouts = () => {
     } else {
       message.error(result.error || "Failed to load payout history.");
     }
-    setLoadingPayouts(false);
+    setTimeout(() => setLoadingPayouts(false), 300);
   }, []);
 
   const refreshData = useCallback(() => {
@@ -1026,18 +1179,33 @@ const Payouts = () => {
     return `${base}${testPrefix}transfers/${id}`;
   };
 
+  const generateSkeletonData = (count = 10) => {
+    return Array.from({ length: count }, (_, i) => ({
+      key: `skeleton-${i}`,
+      arrival_date: <SkeletonLine width="120px" />,
+      stripe_transfer_id: <SkeletonLine width="200px" />,
+      amount_display: <SkeletonLine width="80px" />,
+      status: <SkeletonTag width="90px" />,
+      booking_count: <SkeletonTag width="90px" />,
+      id: <SkeletonLine width="120px" height="32px" />,
+    }));
+  };
+
   const columns = [
     {
       title: "Date (Est. Arrival)",
       dataIndex: "arrival_date",
       key: "arrival_date",
       width: 180,
-      render: (text) => (
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <Calendar size={14} color={colors.textSecondary} />
-          <Text>{text ? dayjs(text).format("MMM D, YYYY") : "N/A"}</Text>
-        </div>
-      ),
+      render: (text) =>
+        React.isValidElement(text) ? (
+          text
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <Calendar size={14} color={colors.textSecondary} />
+            <Text>{text ? dayjs(text).format("MMM D, YYYY") : "N/A"}</Text>
+          </div>
+        ),
     },
     {
       title: "Stripe Transfer ID",
@@ -1046,6 +1214,7 @@ const Payouts = () => {
       ellipsis: true,
       responsive: ["lg"],
       render: (id, record) => {
+        if (React.isValidElement(id)) return id;
         const stripeUrl = getStripeUrl(record, isDev);
         if (!id) return <Text type="secondary">N/A</Text>;
         return (
@@ -1067,11 +1236,14 @@ const Payouts = () => {
       key: "amount",
       align: "right",
       width: 140,
-      render: (text) => (
-        <Text strong style={{ fontSize: "15px", color: colors.textPrimary }}>
-          {text}
-        </Text>
-      ),
+      render: (text) =>
+        React.isValidElement(text) ? (
+          text
+        ) : (
+          <Text strong style={{ fontSize: "15px", color: colors.textPrimary }}>
+            {text}
+          </Text>
+        ),
     },
     {
       title: "Status",
@@ -1087,12 +1259,15 @@ const Payouts = () => {
       key: "booking_count",
       align: "center",
       width: 120,
-      render: (count) => (
-        <BookingCountTag>
-          <Box size={12} />
-          {count}
-        </BookingCountTag>
-      ),
+      render: (count) =>
+        React.isValidElement(count) ? (
+          count
+        ) : (
+          <BookingCountTag>
+            <Box size={12} />
+            {count}
+          </BookingCountTag>
+        ),
     },
     {
       title: "Actions",
@@ -1101,6 +1276,7 @@ const Payouts = () => {
       width: screens.lg ? 240 : 140,
       align: "center",
       render: (id, record) => {
+        if (React.isValidElement(id)) return id;
         const isSmallDesktop = !screens.lg;
         return (
           <Space>
@@ -1116,7 +1292,7 @@ const Payouts = () => {
             <Tooltip title={isSmallDesktop ? "Bookings" : ""}>
               <ActionButtonStyled
                 icon={<Box size={14} />}
-                onClick={() => showBookingsModal(record)}
+                onClick={() => showBookingsDrawer(record)}
                 disabled={record.booking_count === 0}
               >
                 {!isSmallDesktop && "Bookings"}
@@ -1237,7 +1413,7 @@ const Payouts = () => {
                       <Tooltip title={stat.tooltip}>
                         <span
                           style={{
-                            fontSize: isMobile ? "18px" : "22px", // Changed this line
+                            fontSize: isMobile ? "18px" : "22px",
                             textTransform: stat.isText ? "capitalize" : "none",
                           }}
                         >
@@ -1276,12 +1452,6 @@ const Payouts = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          {loadingPayouts && !isMobile && (
-            <LoaderContainer>
-              <GlobalLoaderWithoutInlineStyles />
-            </LoaderContainer>
-          )}
-
           <TableHeader>
             <TableTitle>
               <Landmark />
@@ -1294,14 +1464,16 @@ const Payouts = () => {
           {isMobile ? (
             <div style={{ padding: "16px" }}>
               {loadingPayouts ? (
-                <Skeleton active paragraph={{ rows: 5 }} />
+                Array.from({ length: 5 }).map((_, index) => (
+                  <MobilePayoutSkeleton key={index} />
+                ))
               ) : payouts.length > 0 ? (
                 payouts.map((payout) => (
                   <MobilePayoutItem
                     key={payout.id}
                     payout={payout}
                     onExport={handleExportPayout}
-                    onViewBookings={showBookingsModal}
+                    onViewBookings={showBookingsDrawer}
                   />
                 ))
               ) : (
@@ -1326,17 +1498,25 @@ const Payouts = () => {
           ) : (
             <StyledTable
               columns={columns}
-              dataSource={payouts}
+              dataSource={
+                loadingPayouts
+                  ? generateSkeletonData(pagination.pageSize)
+                  : payouts
+              }
               loading={false}
-              pagination={{
-                ...pagination,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} of ${total} payouts`,
-              }}
+              pagination={
+                loadingPayouts
+                  ? false
+                  : {
+                      ...pagination,
+                      showSizeChanger: true,
+                      showQuickJumper: true,
+                      showTotal: (total, range) =>
+                        `${range[0]}-${range[1]} of ${total} payouts`,
+                    }
+              }
               onChange={handleTableChange}
-              rowKey="id"
+              rowKey={(record) => record.key || record.id}
               locale={{
                 emptyText: (
                   <EmptyStateContainer>
@@ -1361,60 +1541,58 @@ const Payouts = () => {
             />
           )}
         </TableSection>
-        {shouldRenderDrawer && (
-          <Drawer.Root
-            open={isModalOpen}
-            onOpenChange={handleDrawerOpenChange}
-            direction={isMobile ? "bottom" : "right"}
-            dismissible
-          >
-            <Drawer.Portal>
-              <StyledDrawerOverlay />
-              {isMobile ? (
-                <StyledDrawerContent>
-                  <DrawerHandle />
-                  <DrawerHeader>
-                    <DrawerTitle>
-                      <Box size={16} style={{ color: colors.primary }} />
-                      {selectedPayout &&
-                        `Bookings in Payout (${dayjs(
-                          selectedPayout?.arrival_date
-                        ).format("MMM D, YYYY")})`}
-                    </DrawerTitle>
-                  </DrawerHeader>
-                  <DrawerBody>
-                    {selectedPayout && (
-                      <ExpandedPayoutDetails
-                        payoutId={selectedPayout.id}
-                        isMobile={isMobile}
-                      />
-                    )}
-                  </DrawerBody>
-                </StyledDrawerContent>
-              ) : (
-                <DesktopDrawerContent>
-                  <DesktopDrawerHeader>
-                    <DesktopDrawerTitle>
-                      <Box size={18} style={{ color: colors.primary }} />
-                      {selectedPayout &&
-                        `Bookings in Payout (${dayjs(
-                          selectedPayout?.arrival_date
-                        ).format("MMM D, YYYY")})`}
-                    </DesktopDrawerTitle>
-                  </DesktopDrawerHeader>
-                  <DesktopDrawerBody>
-                    {selectedPayout && (
-                      <ExpandedPayoutDetails
-                        payoutId={selectedPayout.id}
-                        isMobile={isMobile}
-                      />
-                    )}
-                  </DesktopDrawerBody>
-                </DesktopDrawerContent>
-              )}
-            </Drawer.Portal>
-          </Drawer.Root>
-        )}
+        <Drawer.Root
+          open={isDrawerOpen}
+          onOpenChange={handleDrawerOpenChange}
+          direction={isMobile ? "bottom" : "right"}
+          dismissible
+        >
+          <Drawer.Portal>
+            <StyledDrawerOverlay />
+            {isMobile ? (
+              <StyledDrawerContent>
+                <DrawerHandle />
+                <DrawerHeader>
+                  <DrawerTitle>
+                    <Box size={16} style={{ color: colors.primary }} />
+                    {selectedPayout &&
+                      `Bookings in Payout (${dayjs(
+                        selectedPayout?.arrival_date
+                      ).format("MMM D, YYYY")})`}
+                  </DrawerTitle>
+                </DrawerHeader>
+                <DrawerBody>
+                  {selectedPayout && (
+                    <ExpandedPayoutDetails
+                      payout={selectedPayout}
+                      isMobile={isMobile}
+                    />
+                  )}
+                </DrawerBody>
+              </StyledDrawerContent>
+            ) : (
+              <DesktopDrawerContent>
+                <DesktopDrawerHeader>
+                  <DesktopDrawerTitle>
+                    <Box size={18} style={{ color: colors.primary }} />
+                    {selectedPayout &&
+                      `Bookings in Payout (${dayjs(
+                        selectedPayout?.arrival_date
+                      ).format("MMM D, YYYY")})`}
+                  </DesktopDrawerTitle>
+                </DesktopDrawerHeader>
+                <DesktopDrawerBody>
+                  {selectedPayout && (
+                    <ExpandedPayoutDetails
+                      payout={selectedPayout}
+                      isMobile={isMobile}
+                    />
+                  )}
+                </DesktopDrawerBody>
+              </DesktopDrawerContent>
+            )}
+          </Drawer.Portal>
+        </Drawer.Root>
       </DashboardWrapper>
     </ConfigProvider>
   );
