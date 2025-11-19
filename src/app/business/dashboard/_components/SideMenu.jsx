@@ -1,3 +1,5 @@
+// src/app/business/dashboard/_components/SideMenu.jsx
+
 "use client";
 
 import React, {
@@ -8,6 +10,7 @@ import React, {
   useCallback,
   forwardRef,
   useImperativeHandle,
+  useMemo, // Added useMemo for explicit memoization of menuItemsForAnt
 } from "react";
 import { useRouter } from "next/navigation";
 import styled, { createGlobalStyle, ThemeProvider } from "styled-components";
@@ -662,8 +665,8 @@ const menuItemPermissions = {
 
 const SideMenuComponent = memo(
   forwardRef(({ onMenuSelect, activeKey }, ref) => {
-    const [displaySelectedKey, setDisplaySelectedKey] = useState(
-      activeKey || "overview"
+    console.error(
+      `[SideMenuComponent] Render start for activeKey: "${activeKey}"`
     );
     const [isMobile, setIsMobile] = useState(false);
     const [drawerVisible, setDrawerVisible] = useState(false);
@@ -686,7 +689,12 @@ const SideMenuComponent = memo(
 
     const businessClickHandler =
       isBusinessClickable && businessData.slug
-        ? () => router.push(`/business/${businessData.slug}`)
+        ? () => {
+            console.error(
+              "[SideMenuComponent] BusinessInfoWrapper click: Navigating to business page"
+            );
+            router.push(`/business/${businessData.slug}`);
+          }
         : null;
 
     const businessClickableTitle = isBusinessClickable
@@ -715,25 +723,28 @@ const SideMenuComponent = memo(
       platformMenuRef,
 
       openSettingsDrawer: (tab = "general", sectionId = null) => {
+        console.error(
+          `[SideMenuComponent] openSettingsDrawer called with tab: ${tab}, section: ${sectionId}`
+        );
         activeSettingsTab.current = tab;
         if (sectionId) {
           sessionStorage.setItem("scrollToSection", sectionId);
         } else {
           sessionStorage.removeItem("scrollToSection");
         }
-        setDisplaySelectedKey("settings");
         setSettingsDrawerVisible(true);
       },
       closeSettingsDrawer: () => {
+        console.error("[SideMenuComponent] closeSettingsDrawer called");
         setSettingsDrawerVisible(false);
-        if (activeKey !== "settings") {
-          setDisplaySelectedKey(activeKey || "overview");
-        }
       },
       getBusinessSettingsRef: () => businessSettingsRefInternal,
     }));
 
     useEffect(() => {
+      console.error(
+        "[SideMenuComponent] useEffect (mobile transform origin) triggered"
+      );
       if (typeof window === "undefined") return;
 
       if (drawerVisible && mobileButtonRef.current && isMobile) {
@@ -761,13 +772,20 @@ const SideMenuComponent = memo(
 
     const fetchBusinessProfile = useCallback(
       async (context = "explicit call") => {
+        console.error(
+          `[SideMenuComponent] fetchBusinessProfile CALLED (context: ${context})`
+        );
         setLoadingBusiness(true);
         setBusinessError(null);
         try {
           const result = await businessService.getMyBusinessProfile();
           if (result.success && result.data) {
+            console.error("[SideMenuComponent] fetchBusinessProfile SUCCESS");
             setBusinessData(result.data);
           } else if (result.status === 404) {
+            console.error(
+              "[SideMenuComponent] fetchBusinessProfile NOT FOUND (404)"
+            );
             setBusinessData({
               businessName: "Create Business Profile",
               businessImage: null,
@@ -775,13 +793,21 @@ const SideMenuComponent = memo(
               _isPlaceholder: true,
             });
           } else {
+            console.error(
+              "[SideMenuComponent] fetchBusinessProfile FAILED (API error)"
+            );
             setBusinessError(result.error || "Failed to load business info");
             setBusinessData(null);
           }
         } catch (error) {
+          console.error(
+            "[SideMenuComponent] fetchBusinessProfile CATCH ERROR:",
+            error
+          );
           setBusinessError("Network error occurred while fetching profile");
           setBusinessData(null);
         } finally {
+          console.error("[SideMenuComponent] fetchBusinessProfile COMPLETE");
           setLoadingBusiness(false);
         }
       },
@@ -789,65 +815,86 @@ const SideMenuComponent = memo(
     );
 
     useEffect(() => {
+      console.error(
+        "[SideMenuComponent] useEffect (initial fetchBusinessProfile) triggered"
+      );
       fetchBusinessProfile("initial mount");
     }, [fetchBusinessProfile]);
 
     useEffect(() => {
-      if (!settingsDrawerVisible || activeKey === "settings") {
-        setDisplaySelectedKey(activeKey || "overview");
-      }
-    }, [activeKey, settingsDrawerVisible]);
-
-    useEffect(() => {
+      console.error(
+        "[SideMenuComponent] useEffect (resize listener) triggered"
+      );
       const handleResize = () => setIsMobile(window.innerWidth <= 1024);
       handleResize();
       window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
+      return () => {
+        console.error(
+          "[SideMenuComponent] useEffect (resize listener) cleanup"
+        );
+        window.removeEventListener("resize", handleResize);
+      };
     }, []);
 
     useEffect(() => {
-      if (displaySelectedKey) {
-        const parentKey = menuItemsConfig.find((item) =>
-          item.children?.some((child) => child.key === displaySelectedKey)
-        )?.key;
-        if (parentKey && !openKeys.includes(parentKey)) {
-          setOpenKeys((prevKeys) => {
-            if (prevKeys.includes(parentKey)) return prevKeys;
-            return [...prevKeys, parentKey];
-          });
-        }
+      const parentKey = menuItemsConfig.find((item) =>
+        item.children?.some((child) => child.key === activeKey)
+      )?.key;
+
+      if (parentKey) {
+        setOpenKeys((prevOpenKeys) => {
+          if (prevOpenKeys.includes(parentKey)) {
+            return prevOpenKeys; // No change needed
+          }
+          return [parentKey]; // Set the new parent key
+        });
       }
-    }, [displaySelectedKey]);
+    }, [activeKey]);
 
     useEffect(() => {
+      console.error(
+        "[SideMenuComponent] useEffect (forceOpenSettingsTab) triggered"
+      );
       if (typeof window === "undefined") return;
 
       const forcedTab = sessionStorage.getItem("forceOpenSettingsTab");
       if (forcedTab) {
         sessionStorage.removeItem("forceOpenSettingsTab");
         activeSettingsTab.current = forcedTab;
-        setDisplaySelectedKey("settings");
         setSettingsDrawerVisible(true);
+        console.error(
+          "[SideMenuComponent] Force opening settings drawer, fetching business profile."
+        );
         fetchBusinessProfile("after Stripe redirect");
       }
     }, [fetchBusinessProfile]);
 
-    const toggleMobileDrawer = () => setDrawerVisible(!drawerVisible);
+    const toggleMobileDrawer = () => {
+      console.error(
+        `[SideMenuComponent] toggleMobileDrawer called, drawerVisible: ${!drawerVisible}`
+      );
+      setDrawerVisible(!drawerVisible);
+    };
 
     const handleMenuClick = (e) => {
+      console.error(
+        `[SideMenuComponent] handleMenuClick called with key: ${e.key}`
+      );
       if (e.key === "settings") {
         activeSettingsTab.current = "general";
-        setDisplaySelectedKey("settings");
         setSettingsDrawerVisible(true);
         if (isMobile) setDrawerVisible(false);
+        console.error("[SideMenuComponent] Navigating to settings.");
         return;
       }
-      setDisplaySelectedKey(e.key);
-      if (onMenuSelect) onMenuSelect(e.key);
+      onMenuSelect(e.key);
       if (isMobile) setDrawerVisible(false);
     };
 
     const handleOpenChange = (keys) => {
+      console.error(
+        `[SideMenuComponent] handleOpenChange called with keys: ${keys}`
+      );
       const latestOpenKey = keys.find((key) => !openKeys.includes(key));
       if (
         menuItemsConfig.some(
@@ -863,17 +910,26 @@ const SideMenuComponent = memo(
     };
 
     const handleSettingsClose = () => {
+      console.error("[SideMenuComponent] handleSettingsClose called");
       setSettingsDrawerVisible(false);
-      setDisplaySelectedKey(activeKey || "overview");
     };
 
-    const handleSettingsTabChange = (key) => (activeSettingsTab.current = key);
+    const handleSettingsTabChange = (key) => {
+      console.error(
+        `[SideMenuComponent] handleSettingsTabChange called with key: ${key}`
+      );
+      activeSettingsTab.current = key;
+    };
 
     const handleSettingsSave = () => {
+      console.error(
+        "[SideMenuComponent] handleSettingsSave called, re-fetching business profile"
+      );
       fetchBusinessProfile("after settings save");
     };
 
     const handleMenuItemHover = useCallback((e, isEntering) => {
+      // console.error(`[SideMenuComponent] handleMenuItemHover: ${isEntering ? 'entering' : 'leaving'} ${e.currentTarget.innerText}`);
       const menuItem = e.currentTarget;
       const icon = menuItem.querySelector("lord-icon");
       if (icon) {
@@ -884,13 +940,14 @@ const SideMenuComponent = memo(
             }
           }
         } catch (error) {
-          console.log("Icon animation error:", error);
+          console.error("[SideMenuComponent] Icon animation error:", error);
         }
       }
     }, []);
 
     const updateIconColors = useCallback(
       (menuItem, isSelected, isHovering = false, isSubmenuTitle = false) => {
+        // console.error(`[SideMenuComponent] updateIconColors for ${menuItem.innerText}, selected: ${isSelected}, hovering: ${isHovering}, submenu: ${isSubmenuTitle}`);
         const icon = menuItem.querySelector("lord-icon");
         if (icon) {
           const isDropdownParent =
@@ -913,6 +970,9 @@ const SideMenuComponent = memo(
     );
 
     useEffect(() => {
+      console.error(
+        "[SideMenuComponent] useEffect (icon color update) triggered"
+      );
       const updateAllIconColors = () => {
         const menuItems = document.querySelectorAll(
           ".ant-menu-item, .ant-menu-submenu-title"
@@ -930,10 +990,18 @@ const SideMenuComponent = memo(
           updateIconColors(item, isSelected, false, isSubmenuTitle);
         });
       };
-      setTimeout(updateAllIconColors, 100);
-    }, [displaySelectedKey, openKeys, updateIconColors]);
 
-    const getMenuItemsForAntd = React.useMemo(() => {
+      const timeoutId = setTimeout(updateAllIconColors, 100);
+
+      return () => {
+        clearTimeout(timeoutId);
+      };
+    }, [activeKey, openKeys]);
+
+    const getMenuItemsForAntd = useMemo(() => {
+      console.error(
+        "[SideMenuComponent] useMemo (getMenuItemsForAntd) re-calculated"
+      );
       const attachRefToLabel = (label, key) => {
         let refToAttach;
         switch (key) {
@@ -1012,33 +1080,40 @@ const SideMenuComponent = memo(
       }));
     }, [handleMenuItemHover, permissions]);
 
-    const renderMenu = () => (
-      <MenuContainer>
-        <StyledAntMenu
-          mode="inline"
-          selectedKeys={[displaySelectedKey]}
-          openKeys={openKeys}
-          onOpenChange={handleOpenChange}
-          onClick={handleMenuClick}
-          items={getMenuItemsForAntd}
-        />
-      </MenuContainer>
-    );
+    const renderMenu = () => {
+      console.error("[SideMenuComponent] renderMenu called");
+      return (
+        <MenuContainer>
+          <StyledAntMenu
+            mode="inline"
+            selectedKeys={[activeKey]}
+            onOpenChange={setOpenKeys} // Directly connect the handler to the state setter
+            openKeys={openKeys}
+            onClick={handleMenuClick}
+            items={getMenuItemsForAntd}
+          />
+        </MenuContainer>
+      );
+    };
 
-    const renderMobileMenu = () => (
-      <MobileMenuContainer>
-        <StyledAntMenu
-          mode="inline"
-          selectedKeys={[displaySelectedKey]}
-          openKeys={openKeys}
-          onOpenChange={handleOpenChange}
-          onClick={handleMenuClick}
-          items={getMenuItemsForAntd}
-        />
-      </MobileMenuContainer>
-    );
+    const renderMobileMenu = () => {
+      console.error("[SideMenuComponent] renderMobileMenu called");
+      return (
+        <MobileMenuContainer>
+          <StyledAntMenu
+            mode="inline"
+            selectedKeys={[activeKey]}
+            onOpenChange={setOpenKeys} // Directly connect the handler to the state setter
+            openKeys={openKeys}
+            onClick={handleMenuClick}
+            items={getMenuItemsForAntd}
+          />
+        </MobileMenuContainer>
+      );
+    };
 
     const renderLogoOrAvatar = (size = 36) => {
+      // console.error("[SideMenuComponent] renderLogoOrAvatar called");
       return businessData.business_image_medium_url ? (
         <BusinessLogo
           src={businessData.business_image_medium_url}
@@ -1058,6 +1133,7 @@ const SideMenuComponent = memo(
     };
 
     const renderHeaderContent = () => {
+      console.error("[SideMenuComponent] renderHeaderContent called");
       if (loadingBusiness) {
         return (
           <BusinessInfoContainer align="center" size={12}>
@@ -1159,6 +1235,7 @@ const SideMenuComponent = memo(
     };
 
     const renderFooterActions = () => {
+      console.error("[SideMenuComponent] renderFooterActions called");
       if (
         loadingBusiness ||
         businessError ||
@@ -1170,7 +1247,10 @@ const SideMenuComponent = memo(
             type="text"
             style={{ boxShadow: "rgba(0, 0, 0, 0.05) 1px 4px 9px 0px" }}
             icon={<AlertCircle size={16} />}
-            onClick={() => router.push("/business/help/")}
+            onClick={() => {
+              console.error("[SideMenuComponent] Get Help (desktop) clicked");
+              router.push("/business/help/");
+            }}
             block
           >
             Get Help
@@ -1183,9 +1263,11 @@ const SideMenuComponent = memo(
             type="text"
             style={{ boxShadow: "rgba(0, 0, 0, 0.05) 1px 4px 9px 0px" }}
             icon={<Eye size={16} />}
-            onClick={() =>
-              businessData.slug && router.push(`/business/${businessData.slug}`)
-            }
+            onClick={() => {
+              console.error("[SideMenuComponent] Preview (desktop) clicked");
+              businessData.slug &&
+                router.push(`/business/${businessData.slug}`);
+            }}
             block
             size="small"
           >
@@ -1195,7 +1277,12 @@ const SideMenuComponent = memo(
             type="text"
             style={{ boxShadow: "rgba(0, 0, 0, 0.05) 1px 4px 9px 0px" }}
             icon={<AlertCircle size={16} />}
-            onClick={() => router.push("/business/help/")}
+            onClick={() => {
+              console.error(
+                "[SideMenuComponent] Help & Docs (desktop) clicked"
+              );
+              router.push("/business/help/");
+            }}
             block
             size="small"
           >
@@ -1206,6 +1293,7 @@ const SideMenuComponent = memo(
     };
 
     const renderMobileFooterActions = () => {
+      console.error("[SideMenuComponent] renderMobileFooterActions called");
       if (
         loadingBusiness ||
         businessError ||
@@ -1221,6 +1309,7 @@ const SideMenuComponent = memo(
             }}
             icon={<AlertCircle size={16} />}
             onClick={() => {
+              console.error("[SideMenuComponent] Get Help (mobile) clicked");
               router.push("/business/help/");
               setDrawerVisible(false);
             }}
@@ -1241,6 +1330,7 @@ const SideMenuComponent = memo(
             }}
             icon={<Eye size={16} />}
             onClick={() => {
+              console.error("[SideMenuComponent] Preview (mobile) clicked");
               if (businessData.slug) {
                 router.push(`/business/${businessData.slug}`);
               }
@@ -1258,6 +1348,7 @@ const SideMenuComponent = memo(
             }}
             icon={<AlertCircle size={16} />}
             onClick={() => {
+              console.error("[SideMenuComponent] Help (mobile) clicked");
               router.push("/business/help/");
               setDrawerVisible(false);
             }}
@@ -1268,6 +1359,9 @@ const SideMenuComponent = memo(
       );
     };
 
+    console.error(
+      `[SideMenuComponent] Render end for activeKey: "${activeKey}"`
+    );
     return (
       <ThemeProvider theme={augmentedTheme}>
         <ConfigProvider theme={augmentedTheme}>
@@ -1348,12 +1442,7 @@ const SideMenuComponent = memo(
                         style={{ transformOrigin }}
                       >
                         <MobileHeaderContainer>
-                          <BusinessInfoWrapper
-                            onClick={businessClickHandler}
-                            title={businessClickableTitle}
-                          >
-                            {renderHeaderContent()}
-                          </BusinessInfoWrapper>
+                          {renderHeaderContent()}
                           <MobileCloseButton
                             variants={closeButtonVariants}
                             whileHover="hover"
@@ -1364,7 +1453,9 @@ const SideMenuComponent = memo(
                             <X size={20} />
                           </MobileCloseButton>
                         </MobileHeaderContainer>
-                        {renderMobileMenu()}
+                        <MobileMenuContainer>
+                          {renderMobileMenu()}
+                        </MobileMenuContainer>
                         <MobileFooterContainer>
                           {renderMobileFooterActions()}
                         </MobileFooterContainer>

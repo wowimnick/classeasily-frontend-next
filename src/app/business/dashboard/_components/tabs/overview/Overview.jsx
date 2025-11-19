@@ -7,8 +7,8 @@ import React, {
   useRef,
   useImperativeHandle,
   forwardRef,
+  useCallback,
 } from "react";
-import { useDashboard } from "../../DashboardContext";
 import styled, { css } from "styled-components";
 import {
   Users,
@@ -66,7 +66,7 @@ import Link from "next/link";
 import AppGlobalStyles from "@/app/GlobalStyles";
 import { formatUTCToUserDisplay, formatNaiveDate } from "@/services/utils";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
-import { scheduleService } from "@/services/apiService";
+import { businessService, scheduleService } from "@/services/apiService";
 import ScheduleEditDrawer from "../classes/manageclasses/ScheduleEditDrawer";
 import { LordIcon } from "@/services/ReactUtils";
 
@@ -820,12 +820,42 @@ const AnimatedNumberFlow = ({
 };
 
 const Overview = forwardRef((props, ref) => {
-  const {
-    overviewData,
-    overviewLoading: loading,
-    overviewError: error,
-    fetchOverviewData: onDataRefresh,
-  } = useDashboard();
+  // Fetch overview data locally in this component
+  const [overviewData, setOverviewData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchOverviewData = useCallback(async () => {
+    console.error("🔵 Overview - fetchOverviewData CALLED");
+    setLoading(true);
+    setError(null);
+    try {
+      console.error("🔵 Overview - Fetching from businessService...");
+      const response = await businessService.fetchMyBusinessOverview();
+      console.error("🔵 Overview - Response received:", response.success);
+
+      if (response.success && response.data) {
+        console.error("🔵 Overview - Setting overview data");
+        setOverviewData(response.data);
+      } else {
+        console.error("🔵 Overview - Fetch failed:", response.error);
+        setError(response.error || "Failed to fetch overview data.");
+      }
+    } catch (err) {
+      console.error("🔵 Overview - ERROR:", err);
+      setError("An unexpected error occurred.");
+    } finally {
+      console.error("🔵 Overview - Fetch complete, setting loading to false");
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch data on mount
+  useEffect(() => {
+    console.error("🔵 Overview - Component mounted, fetching data");
+    fetchOverviewData();
+  }, [fetchOverviewData]);
+
   const screens = useBreakpoint();
   const isMobile = !screens.md;
   const isSmallMobile = !screens.sm;

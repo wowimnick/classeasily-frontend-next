@@ -463,7 +463,7 @@ const MenuContents = React.forwardRef(
         <MenuGroup>
           <GroupLabel>Business Management</GroupLabel>
           <MenuItem
-            onClick={() => onNavigate("/business/dashboard")}
+            onClick={() => onNavigate("/business/dashboard/overview")}
             onMouseEnter={handleMenuItemEnter}
             onMouseLeave={handleMenuItemLeave}
           >

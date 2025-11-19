@@ -6,6 +6,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useMemo, // <-- IMPORT useMemo
 } from "react";
 import { useRouter } from "next/navigation";
 import AuthModal from "@/components/auth/AuthModal";
@@ -148,15 +149,20 @@ export const AuthProvider = ({ children }) => {
     }
   }, [onSuccessCallback]);
 
+  // --- SOLUTION: Memoize the context value ---
+  const authModalValue = useMemo(
+    () => ({
+      openLoginModal,
+      openRegisterModal,
+      openForgotPasswordModal,
+      closeAuthModal,
+    }),
+    [openLoginModal, openRegisterModal, openForgotPasswordModal, closeAuthModal]
+  );
+  // ---------------------------------------------
+
   return (
-    <AuthContext.Provider
-      value={{
-        openLoginModal,
-        openRegisterModal,
-        openForgotPasswordModal,
-        closeAuthModal,
-      }}
-    >
+    <AuthContext.Provider value={authModalValue}>
       {children}
       <AuthModal
         visible={isAuthModalVisible}

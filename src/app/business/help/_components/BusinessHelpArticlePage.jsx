@@ -1,8 +1,9 @@
-// --- START OF FILE BusinessHelpArticlePage.jsx (Fixed Navigation) ---
+// --- START OF FILE BusinessHelpArticlePage.jsx (Fixed with useSearchParams) ---
 
 "use client";
 
 import React from "react";
+import { useSearchParams } from "next/navigation";
 import { redirect } from "next/navigation";
 import styled from "styled-components";
 import { motion } from "framer-motion";
@@ -242,9 +243,13 @@ const ArticleRenderer = ({ content = [] }) => {
   });
 };
 
-const BusinessHelpArticlePage = ({ categorySlug, articleSlug }) => {
-  const currentCategorySlug = categorySlug || "getting-started";
-  const category = helpCenterData.find((c) => c.slug === currentCategorySlug);
+const BusinessHelpArticlePage = () => {
+  // Use useSearchParams hook to get URL params in client component
+  const searchParams = useSearchParams();
+  const categorySlug = searchParams.get("category") || "getting-started";
+  const articleSlug = searchParams.get("article");
+
+  const category = helpCenterData.find((c) => c.slug === categorySlug);
 
   if (!category) {
     redirect("/business/help?category=getting-started&article=setup-guide");
@@ -263,7 +268,7 @@ const BusinessHelpArticlePage = ({ categorySlug, articleSlug }) => {
       "getting-started": "https://cdn.lordicon.com/upjgggre.json",
       "classes-and-scheduling": "https://cdn.lordicon.com/abfverha.json",
       finances: "https://cdn.lordicon.com/yycecovd.json",
-      "website-integration": "https://cdn.lordicon.com/nqlwocyk.json",
+      // "website-integration": "https://cdn.lordicon.com/nqlwocyk.json",
       "team-and-community": "https://cdn.lordicon.com/cniwvohj.json",
       "bookings-and-students": "https://cdn.lordicon.com/meaqueth.json",
       "marketing-and-promotions": "https://cdn.lordicon.com/abgykmtd.json",

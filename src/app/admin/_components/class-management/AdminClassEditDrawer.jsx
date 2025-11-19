@@ -2,8 +2,21 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import styled, { ThemeProvider } from "styled-components";
-import { Form, Drawer, Input, Select, Button, Tabs, ConfigProvider, Switch, Typography, Tooltip, InputNumber, Upload,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Form,
+  Drawer,
+  Input,
+  Select,
+  Button,
+  Tabs,
+  ConfigProvider,
+  Switch,
+  Typography,
+  Tooltip,
+  InputNumber,
+  Upload,
+} from "antd";
+import message from "@/lib/message";
 import {
   BookOpen,
   MapPin,
@@ -1563,7 +1576,7 @@ const AdminClassEditDrawer = ({
                         <FormGroup>
                           <FormLabel>
                             <ImageIcon size={16} />
-                            Class Images (5-10 photos required)
+                            Class Images (2-10 photos required)
                           </FormLabel>
                           <HelpText>
                             <Info size={14} />
@@ -1575,10 +1588,10 @@ const AdminClassEditDrawer = ({
                             rules={[
                               {
                                 validator: async () => {
-                                  if (!mainImages || mainImages.length < 5)
+                                  if (!mainImages || mainImages.length < 2)
                                     return Promise.reject(
                                       new Error(
-                                        "Please upload at least 5 images."
+                                        "Please upload at least 2 images."
                                       )
                                     );
                                   if (mainImages.length > 10)

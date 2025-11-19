@@ -1,42 +1,42 @@
+// src/app/business/dashboard/layout.jsx
+
 "use client";
 
-import React, { useEffect, useCallback, useRef } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useCallback, useRef, useState, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import styled from "styled-components";
+import { theme as appTheme } from "@/components/theme";
+import { ConfigProvider } from "antd";
 
-import SideMenu from "./_components/SideMenu";
-import BusinessHeader from "./_components/BusinessHeader";
-import BusinessSetupGuide from "./_components/BusinessSetupGuide";
-import {
-  DashboardProvider,
-  useDashboard,
-} from "./_components/DashboardContext";
+// Import layout components
 import PermissionProtectedRoute from "@/components/auth/PermissionProtectedRoute";
+import BusinessHeader from "./_components/BusinessHeader";
+import SideMenu from "./_components/SideMenu";
+import SetupGuideWrapper from "./_components/SetupGuideWrapper";
 
 const PageLayout = styled.div`
   display: flex;
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  background: black;
+  background-color: #f8fafc;
 `;
 
 const HeaderWrapper = styled.div`
   flex-shrink: 0;
+  z-index: 10;
 `;
 
 const DashboardContainer = styled.div`
   display: flex;
   flex: 1;
   overflow: hidden;
-  background-color: #fff;
 `;
 
 const SideMenuWrapper = styled.div`
   height: 100%;
   overflow-y: auto;
   flex-shrink: 0;
-
   &::-webkit-scrollbar {
     width: 6px;
   }
@@ -50,69 +50,27 @@ const SideMenuWrapper = styled.div`
 `;
 
 const MainContent = styled.main`
-  margin-top: 2.5rem;
-  border-top-left-radius: 14px;
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  padding: 8px;
 
   @media (max-width: 768px) {
-    margin-top: 0;
+    padding: 4px;
   }
 `;
 
 function DashboardLayoutInner({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-
-  const {
-    overviewLoading,
-    setupGuideInitialStatus,
-    allSetupStepsCompleteActual,
-    displaySetupGuide,
-  } = useDashboard();
-
   const sideMenuRef = useRef(null);
-  const mainContentRef = useRef(null);
 
-  // Derive activeKey from pathname (don't store in state)
-  const activeKey =
-    pathname
-      .replace("/business/dashboard/", "")
-      .replace("/business/dashboard", "") || "overview";
-
-  // Scroll to top when route changes
-  useEffect(() => {
-    if (mainContentRef.current) {
-      mainContentRef.current.scrollTop = 0;
-    }
-  }, [pathname]);
-
-  // Update document title based on current route
-  useEffect(() => {
-    const titles = {
-      overview: "Overview",
-      classes: "Manage Classes",
-      "bookings/active": "Active Bookings",
-      "bookings/history": "Booking History",
-      reviews: "Reviews",
-      discounts: "Discounts",
-      trends: "Booking Trends",
-      revenue: "Revenue",
-      payouts: "Payouts",
-      staff: "Staff Management",
-      students: "Students",
-      widget: "Widget Customizer",
-    };
-
-    const pageTitle = titles[activeKey] || "Dashboard";
-    document.title = `${pageTitle} | ClassEasily`;
-  }, [activeKey]);
+  // Derive activeKey directly from pathname - no state needed!
+  const activeKey = pathname.replace("/business/dashboard/", "") || "overview";
 
   const handleMenuSelect = useCallback(
     (key) => {
       if (key !== "settings") {
-        console.log("🔄 Layout - Navigating to:", `/business/dashboard/${key}`);
         router.push(`/business/dashboard/${key}`);
       }
     },
@@ -120,39 +78,31 @@ function DashboardLayoutInner({ children }) {
   );
 
   return (
-    <PageLayout>
-      <HeaderWrapper>
-        <BusinessHeader />
-      </HeaderWrapper>
-      <DashboardContainer>
-        <SideMenuWrapper>
-          <SideMenu
-            ref={sideMenuRef}
-            onMenuSelect={handleMenuSelect}
-            activeKey={activeKey}
-          />
-        </SideMenuWrapper>
-        <MainContent ref={mainContentRef}>{children}</MainContent>
-      </DashboardContainer>
-
-      {displaySetupGuide && !overviewLoading && (
-        <BusinessSetupGuide
-          key="setup-guide-widget"
-          sideMenuRef={sideMenuRef}
-          setupStatus={setupGuideInitialStatus}
-          initialOpen={!allSetupStepsCompleteActual}
-        />
-      )}
-    </PageLayout>
+    <ConfigProvider theme={appTheme}>
+      <PageLayout>
+        <HeaderWrapper>
+          <BusinessHeader />
+        </HeaderWrapper>
+        <DashboardContainer>
+          <SideMenuWrapper>
+            <SideMenu
+              ref={sideMenuRef}
+              onMenuSelect={handleMenuSelect}
+              activeKey={activeKey}
+            />
+          </SideMenuWrapper>
+          <MainContent>{children}</MainContent>
+        </DashboardContainer>
+        <SetupGuideWrapper sideMenuRef={sideMenuRef} />
+      </PageLayout>
+    </ConfigProvider>
   );
 }
 
 export default function DashboardLayout({ children }) {
   return (
     <PermissionProtectedRoute requiredPermission="quickstart.access_business_dashboard">
-      <DashboardProvider>
-        <DashboardLayoutInner>{children}</DashboardLayoutInner>
-      </DashboardProvider>
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
     </PermissionProtectedRoute>
   );
 }

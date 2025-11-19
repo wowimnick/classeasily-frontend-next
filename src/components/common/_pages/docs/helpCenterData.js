@@ -184,104 +184,104 @@ export const helpCenterData = [
       },
     ],
   },
-  {
-    slug: "website-integration",
-    title: "Website Integration",
-    icon: AppWindow,
-    description: "Embed your booking calendar on your own website.",
-    articles: [
-      {
-        slug: "embedding-the-booking-widget",
-        title: "Embedding the Booking Widget on Your Website",
-        content: [
-          {
-            type: "p",
-            text: "Our booking widget allows you to take bookings and payments directly from your own website. It's designed to be easy to install and fully customizable to match your brand, turning your website visitors into paying customers without any complex development work.",
-          },
-          { type: "h3", text: "Step 1: Customize Your Widget" },
-          {
-            type: "p",
-            text: "Before installing, you need to design your widget. Navigate to your <strong>Dashboard</strong> and find the <strong>Widget Settings</strong> page. Here, you'll find a live preview and several customization options:",
-          },
-          {
-            type: "ul",
-            items: [
-              "<strong>Theme Presets & Colors:</strong> Quickly select a pre-made theme (like Default, Corporate, or Playful) or fine-tune every color to perfectly match your brand's palette.",
-              "<strong>Typography & Styling:</strong> Choose a font family and decide on the roundness of corners (border-radius) for elements like buttons and cards.",
-              "<strong>Layout & Behavior:</strong> Select a 'Comfortable' layout with more spacing or a 'Compact' one for tighter spaces. You can also choose how the widget displays:",
-              "  - <strong>Inline:</strong> The full booking calendar is embedded directly on your page.",
-              "  - <strong>Modal Button:</strong> A simple 'Book Now' button is shown on your page, which opens the widget in a pop-up (modal) when clicked.",
-              "<strong>Feature a Specific Class:</strong> You can choose to have the widget open directly to a specific class's calendar, bypassing the initial class selection screen. Leave it empty to show all classes.",
-            ],
-          },
-          {
-            type: "blockquote",
-            text: "As you make changes, the Live Preview on the right side of the screen updates instantly, so you know exactly how it will look.",
-          },
-          { type: "h3", text: "Step 2: Get Your Embed Code" },
-          {
-            type: "p",
-            text: "Once you are happy with your widget's design, click on the <strong>Installation</strong> tab. You will see a small block of HTML code. This snippet contains everything needed for the widget to work. Click the 'Copy' button to copy the entire code to your clipboard.",
-          },
-          {
-            type: "p",
-            text: "The code will look something like this:",
-          },
-          {
-            type: "p",
-            text: `<pre style="background-color: #f6f9fc; padding: 16px; border-radius: 6px; border: 1px solid #e3e8ee; font-size: 14px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;"><code>&lt;div class="classeasily-widget" data-widget-api-key="..." ...&gt;&lt;/div&gt;\n\n&lt;script src="https://staging.classeasily.com/widget/widget.js" async defer&gt;&lt;/script&gt;</code></pre>`,
-          },
-          { type: "h3", text: "Step 3: Install the Widget on Your Website" },
-          {
-            type: "p",
-            text: "Paste the code snippet you copied into your website's HTML. The best place to put it is right before the closing <code>&lt;/body&gt;</code> tag. Below are instructions for popular platforms.",
-          },
-          { type: "h4", text: "For a standard HTML website:" },
-          {
-            type: "p",
-            text: "Open the HTML file of the page where you want the widget to appear. Paste the code snippet anywhere in the <code>&lt;body&gt;</code> section.",
-          },
-          { type: "h4", text: "For WordPress:" },
-          {
-            type: "ol",
-            items: [
-              "Log in to your WordPress admin panel.",
-              "Go to the Page or Post where you want to add the widget.",
-              "Click the '+' icon to add a new block and search for 'Custom HTML'.",
-              "Paste the widget's embed code into the Custom HTML block.",
-              "Click 'Update' or 'Publish' to save your changes.",
-            ],
-          },
-          { type: "h4", text: "For Squarespace, Wix, or other builders:" },
-          {
-            type: "p",
-            text: "These platforms use blocks or elements for adding custom code.",
-          },
-          {
-            type: "ul",
-            items: [
-              "Find the option to add an 'Embed', 'Code', or 'Custom HTML' block/element.",
-              "Drag this block to the desired location on your page.",
-              "Paste the widget's embed code into the block and save.",
-            ],
-          },
-          { type: "h3", text: "Important: Security Setup" },
-          {
-            type: "p",
-            text: "For your security, the widget will only work on domains you explicitly allow. In the Widget Customizer, go to the <strong>Security</strong> tab.",
-          },
-          {
-            type: "ul",
-            items: [
-              "In the 'Allowed Domains' box, enter the domain of your website (e.g., <code>my-business.com</code>).",
-              "If you use different versions, add each one on a new line (e.g., <code>www.my-business.com</code>).",
-              "This is a critical step to prevent others from using your widget on their websites.",
-            ],
-          },
-        ],
-      },
-    ],
-  },
+  // {
+  //   slug: "website-integration",
+  //   title: "Website Integration",
+  //   icon: AppWindow,
+  //   description: "Embed your booking calendar on your own website.",
+  //   articles: [
+  //     {
+  //       slug: "embedding-the-booking-widget",
+  //       title: "Embedding the Booking Widget on Your Website",
+  //       content: [
+  //         {
+  //           type: "p",
+  //           text: "Our booking widget allows you to take bookings and payments directly from your own website. It's designed to be easy to install and fully customizable to match your brand, turning your website visitors into paying customers without any complex development work.",
+  //         },
+  //         { type: "h3", text: "Step 1: Customize Your Widget" },
+  //         {
+  //           type: "p",
+  //           text: "Before installing, you need to design your widget. Navigate to your <strong>Dashboard</strong> and find the <strong>Widget Settings</strong> page. Here, you'll find a live preview and several customization options:",
+  //         },
+  //         {
+  //           type: "ul",
+  //           items: [
+  //             "<strong>Theme Presets & Colors:</strong> Quickly select a pre-made theme (like Default, Corporate, or Playful) or fine-tune every color to perfectly match your brand's palette.",
+  //             "<strong>Typography & Styling:</strong> Choose a font family and decide on the roundness of corners (border-radius) for elements like buttons and cards.",
+  //             "<strong>Layout & Behavior:</strong> Select a 'Comfortable' layout with more spacing or a 'Compact' one for tighter spaces. You can also choose how the widget displays:",
+  //             "  - <strong>Inline:</strong> The full booking calendar is embedded directly on your page.",
+  //             "  - <strong>Modal Button:</strong> A simple 'Book Now' button is shown on your page, which opens the widget in a pop-up (modal) when clicked.",
+  //             "<strong>Feature a Specific Class:</strong> You can choose to have the widget open directly to a specific class's calendar, bypassing the initial class selection screen. Leave it empty to show all classes.",
+  //           ],
+  //         },
+  //         {
+  //           type: "blockquote",
+  //           text: "As you make changes, the Live Preview on the right side of the screen updates instantly, so you know exactly how it will look.",
+  //         },
+  //         { type: "h3", text: "Step 2: Get Your Embed Code" },
+  //         {
+  //           type: "p",
+  //           text: "Once you are happy with your widget's design, click on the <strong>Installation</strong> tab. You will see a small block of HTML code. This snippet contains everything needed for the widget to work. Click the 'Copy' button to copy the entire code to your clipboard.",
+  //         },
+  //         {
+  //           type: "p",
+  //           text: "The code will look something like this:",
+  //         },
+  //         {
+  //           type: "p",
+  //           text: `<pre style="background-color: #f6f9fc; padding: 16px; border-radius: 6px; border: 1px solid #e3e8ee; font-size: 14px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;"><code>&lt;div class="classeasily-widget" data-widget-api-key="..." ...&gt;&lt;/div&gt;\n\n&lt;script src="https://staging.classeasily.com/widget/widget.js" async defer&gt;&lt;/script&gt;</code></pre>`,
+  //         },
+  //         { type: "h3", text: "Step 3: Install the Widget on Your Website" },
+  //         {
+  //           type: "p",
+  //           text: "Paste the code snippet you copied into your website's HTML. The best place to put it is right before the closing <code>&lt;/body&gt;</code> tag. Below are instructions for popular platforms.",
+  //         },
+  //         { type: "h4", text: "For a standard HTML website:" },
+  //         {
+  //           type: "p",
+  //           text: "Open the HTML file of the page where you want the widget to appear. Paste the code snippet anywhere in the <code>&lt;body&gt;</code> section.",
+  //         },
+  //         { type: "h4", text: "For WordPress:" },
+  //         {
+  //           type: "ol",
+  //           items: [
+  //             "Log in to your WordPress admin panel.",
+  //             "Go to the Page or Post where you want to add the widget.",
+  //             "Click the '+' icon to add a new block and search for 'Custom HTML'.",
+  //             "Paste the widget's embed code into the Custom HTML block.",
+  //             "Click 'Update' or 'Publish' to save your changes.",
+  //           ],
+  //         },
+  //         { type: "h4", text: "For Squarespace, Wix, or other builders:" },
+  //         {
+  //           type: "p",
+  //           text: "These platforms use blocks or elements for adding custom code.",
+  //         },
+  //         {
+  //           type: "ul",
+  //           items: [
+  //             "Find the option to add an 'Embed', 'Code', or 'Custom HTML' block/element.",
+  //             "Drag this block to the desired location on your page.",
+  //             "Paste the widget's embed code into the block and save.",
+  //           ],
+  //         },
+  //         { type: "h3", text: "Important: Security Setup" },
+  //         {
+  //           type: "p",
+  //           text: "For your security, the widget will only work on domains you explicitly allow. In the Widget Customizer, go to the <strong>Security</strong> tab.",
+  //         },
+  //         {
+  //           type: "ul",
+  //           items: [
+  //             "In the 'Allowed Domains' box, enter the domain of your website (e.g., <code>my-business.com</code>).",
+  //             "If you use different versions, add each one on a new line (e.g., <code>www.my-business.com</code>).",
+  //             "This is a critical step to prevent others from using your widget on their websites.",
+  //           ],
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // },
   {
     slug: "classes-and-scheduling",
     title: "Classes & Scheduling",
