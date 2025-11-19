@@ -103,35 +103,34 @@ const StyledDrawerOverlay = styled(VaulDrawer.Overlay)`
   z-index: 1049;
 `;
 
-// MODIFIED: Reverted to styled-components for Vaul's content, but without transform properties
+// MODIFIED: Removed height transition and set a fixed height for consistency on mobile
 const StyledDrawerContent = styled(VaulDrawer.Content)`
   background: white;
   display: flex;
   flex-direction: column;
   border-radius: 16px 16px 0 0;
-  max-height: 96vh;
+  height: 96vh; /* Set fixed height */
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 1050;
   outline: none;
-  transition: height 0.3s ease-in-out;
 `;
 
+// MODIFIED: Removed height transition and set a fixed height for consistency on mobile
 const StyledNestedDrawerContent = styled(VaulDrawer.Content)`
   background: white;
   display: flex;
   flex-direction: column;
   border-radius: 16px 16px 0 0;
-  max-height: 94vh;
+  height: 94vh; /* Set fixed height */
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 1051; /* Higher z-index for nested */
   outline: none;
-  transition: height 0.3s ease-in-out;
 `;
 
 const DrawerHandle = styled.div`
@@ -888,6 +887,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     if (open && classData?.classId) fetchSchedules();
   }, [open, classData?.classId]);
 
+  // This effect ensures that every time the main drawer is closed, all state is reset to default.
   useEffect(() => {
     if (!open) {
       // Reset all states on close
@@ -1455,7 +1455,10 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                 </ContentWrapper>
               </DrawerBody>
               <DrawerFooter>
-                <div>{currentStep > 0 && (<Button key="back" icon={<ChevronLeft size={16} />} onClick={handleBack} disabled={submitting}>Back</Button>)}</div>
+                <div>
+                  {currentStep === 0 && (<Button key="list" onClick={() => setCreateOpen(false)}>Back to List</Button>)}
+                  {currentStep > 0 && (<Button key="back" icon={<ChevronLeft size={16} />} onClick={handleBack} disabled={submitting}>Back</Button>)}
+                </div>
                 {currentStep < 2 ? (<Button key="next" type="primary" icon={<ChevronRight size={16} />} iconPosition="end" onClick={handleNext}>Next</Button>) : (<Button key="create" type="primary" icon={<CheckCircle size={16} />} onClick={handleSubmit} loading={submitting}>{editingSchedule ? "Update Course" : "Create Course"}</Button>)}
               </DrawerFooter>
             </StyledNestedDrawerContent>
@@ -1491,6 +1494,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     if (view === 'list') return [<Button key="new" type="primary" icon={<Plus size={16} />} onClick={() => { setEditingSchedule(null); form.resetFields(); setView("create"); }}>New Course Schedule</Button>];
     if (view === 'detail') return [<Button key="close" onClick={() => { setView("list"); setSelectedSchedule(null); }}>Close</Button>];
     if (view === 'create') {
+      const backToListButton = (<Button key="list" onClick={() => setView('list')}>Back to List</Button>);
       const backButton = (<Button key="back" icon={<ChevronLeft size={16} />} onClick={handleBack} disabled={submitting}>Back</Button>);
       const nextButton = (<Button key="next" type="primary" icon={<ChevronRight size={16} />} iconPosition="end" onClick={handleNext}>Next</Button>);
       const submitButtonText = editingSchedule ? "Update Course" : "Create Course";
@@ -1498,7 +1502,10 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
 
       return (
         <div style={{ display: "flex", width: "100%", justifyContent: "space-between" }}>
-          <div>{currentStep > 0 && backButton}</div>
+          <div>
+            {currentStep === 0 && backToListButton}
+            {currentStep > 0 && backButton}
+          </div>
           <div>{currentStep < 2 ? nextButton : createButton}</div>
         </div>
       );

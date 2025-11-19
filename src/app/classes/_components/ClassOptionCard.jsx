@@ -5,7 +5,7 @@ import React from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
 import { Button as AntButton } from "antd";
-import { Clock, Users, Calendar, Tag } from "lucide-react";
+import { Clock, Users, Calendar, Tag, ArrowRight } from "lucide-react";
 import { getScheduleSummary } from "./steps/utils";
 import dayjs from "dayjs";
 
@@ -46,20 +46,11 @@ const TypeBadge = styled.div`
   }
 `;
 
-const LevelBadge = styled.div`
-  padding: 0.25rem 0.5rem;
-  background: #f0f0f0;
-  color: #666;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 500;
-  text-transform: capitalize;
-`;
-
 const DetailsGrid = styled.div`
   display: flex;
   flex-direction: row;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   margin-bottom: 1rem;
 `;
 
@@ -79,6 +70,42 @@ const DetailItem = styled.div`
     width: 14px;
     height: 14px;
     flex-shrink: 0;
+  }
+`;
+
+// Added Styles for Course Details
+const CourseDetailsContainer = styled.div`
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #f0f0f0;
+`;
+
+const CourseDetailRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: #484848;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  svg {
+    color: #1890ff; /* Blue for course info */
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  strong {
+    font-weight: 600;
+    color: #222;
+    margin-right: 4px;
   }
 `;
 
@@ -176,11 +203,19 @@ const ClassOptionCard = ({
 
   const optionId = option.optionId;
   const type = option.booking_type;
-  const level = option.level || "all";
   const isCourse = type === "Full Course";
   const schedules = Array.isArray(option.schedules) ? option.schedules : [];
 
   const summary = getScheduleSummary(schedules);
+
+  // Logic for Courses
+  const nextCourseSchedule = isCourse
+    ? schedules
+        .filter(
+          (s) => s.date && dayjs(s.date).isAfter(dayjs().subtract(1, "day"))
+        )
+        .sort((a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf())[0]
+    : null;
 
   const formatTime = (timeStr) => {
     if (!timeStr) return "";
@@ -204,16 +239,12 @@ const ClassOptionCard = ({
 
   const getPriceRange = () => {
     if (!schedules.length) return { min: 0, max: 0, display: "-" };
-
     const prices = schedules
       .map((s) => parseFloat(s.price || 0))
       .filter((p) => p > 0);
-
     if (prices.length === 0) return { min: 0, max: 0, display: "-" };
-
     const min = Math.min(...prices);
     const max = Math.max(...prices);
-
     if (min === max) {
       return { min, max, display: `${min}` };
     } else {
@@ -222,14 +253,18 @@ const ClassOptionCard = ({
   };
 
   const priceInfo = getPriceRange();
-  const upcomingSchedules = schedules
-    .filter((s) => s.date && dayjs(s.date).isAfter(dayjs().subtract(1, "day")))
-    .sort((a, b) => {
-      const dateTimeA = dayjs(`${a.date}T${a.time}`);
-      const dateTimeB = dayjs(`${b.date}T${b.time}`);
-      return dateTimeA - dateTimeB;
-    })
-    .slice(0, 3);
+  
+  // Filter generic upcoming sessions (non-course)
+  const upcomingSchedules = !isCourse
+    ? schedules
+        .filter((s) => s.date && dayjs(s.date).isAfter(dayjs().subtract(1, "day")))
+        .sort((a, b) => {
+          const dateTimeA = dayjs(`${a.date}T${a.time}`);
+          const dateTimeB = dayjs(`${b.date}T${b.time}`);
+          return dateTimeA - dateTimeB;
+        })
+        .slice(0, 3)
+    : [];
 
   const handleReserveClick = () => {
     if (optionId && onBookNow) {
@@ -245,7 +280,7 @@ const ClassOptionCard = ({
         <PricingSection>
           <PriceDisplay>
             <Price>${priceInfo.display}</Price>
-            <PriceRange>{isCourse ? "/ course" : "/ session"}</PriceRange>
+            <PriceRange>{isCourse ? "/ full course" : "/ session"}</PriceRange>
           </PriceDisplay>
         </PricingSection>
         <TypeBadge $isCourse={isCourse}>
@@ -261,7 +296,7 @@ const ClassOptionCard = ({
         </DetailItem>
         <DetailItem>
           <Users size={14} />
-          {summary?.capacity + " spots available" || "Available spots vary"}
+          {summary?.capacity ? `${summary.capacity} spots` : "Spots vary"}
         </DetailItem>
         {summary?.minParticipants && (
           <DetailItem>
@@ -271,6 +306,36 @@ const ClassOptionCard = ({
         )}
       </DetailsGrid>
 
+      {/* New Course Specific Details */}
+      {isCourse && nextCourseSchedule && (
+        <CourseDetailsContainer>
+          <CourseDetailRow>
+            <Calendar />
+            <div>
+                <strong>Next Start:</strong> 
+                {formatDate(nextCourseSchedule.date)}
+            </div>
+          </CourseDetailRow>
+          {nextCourseSchedule.end_date && (
+            <CourseDetailRow>
+                <ArrowRight size={14} style={{transform: 'rotate(0deg)'}} /> 
+                <div>
+                    <strong>Ends:</strong> 
+                    {formatDate(nextCourseSchedule.end_date)}
+                </div>
+            </CourseDetailRow>
+          )}
+          <CourseDetailRow>
+            <Clock />
+            <div>
+                <strong>Schedule:</strong> 
+                Every {Array.isArray(nextCourseSchedule.days) ? nextCourseSchedule.days.join(", ") : "Week"} at {formatTime(nextCourseSchedule.time)}
+            </div>
+          </CourseDetailRow>
+        </CourseDetailsContainer>
+      )}
+
+      {/* Existing Single Session List */}
       {upcomingSchedules.length > 0 && (
         <ScheduleInfo>
           <ScheduleTitle>
@@ -288,8 +353,8 @@ const ClassOptionCard = ({
           ))}
         </ScheduleInfo>
       )}
-      <SelectContainer
-      >
+
+      <SelectContainer>
         <ReserveButton
           type="primary"
           onClick={handleReserveClick}

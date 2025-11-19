@@ -1,4 +1,3 @@
-// AuthModal.jsx - Better Auth Integration with Vaul + Global Redirect Logic
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
@@ -11,7 +10,6 @@ import {
   Steps,
   ConfigProvider,
   Alert,
-  Progress,
 } from "antd";
 import message from "@/lib/message";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,8 +37,6 @@ import axiosInstance from "@/lib/axiosInstance";
 import { theme } from "@/components/theme";
 
 const { Step } = Steps;
-
-// --- ADDED: HOOK AND COMPONENT FOR MODAL ANIMATION ---
 
 const useElementSize = () => {
   const ref = useRef(null);
@@ -105,14 +101,18 @@ const StyledDrawerContent = styled(Drawer.Content)`
   display: flex;
   flex-direction: column;
   border-radius: 24px 24px 0 0;
-  height: 85%;
-  max-height: 85vh;
+  /* Dynamic height settings for mobile */
+  height: auto;
+  max-height: 90vh;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 1050;
   outline: none;
+
+  /* Respect safe area */
+  padding-bottom: env(safe-area-inset-bottom);
 `;
 
 const DrawerHandle = styled.div`
@@ -125,7 +125,8 @@ const DrawerHandle = styled.div`
 `;
 
 const DrawerBody = styled.div`
-  flex: 1;
+  /* Remove flex: 1 so it doesn't force height */
+  width: 100%;
   overflow-y: auto;
   padding: 1.5rem;
 
@@ -258,15 +259,6 @@ const StyledSteps = styled(Steps)`
   margin-bottom: 2rem;
   @media (max-width: 768px) {
     display: none;
-  }
-`;
-
-const MobileProgressBar = styled(Progress)`
-  @media (min-width: 769px) {
-    display: none;
-  }
-  .ant-progress-bg {
-    background-color: #ff385c !important;
   }
 `;
 
@@ -611,13 +603,11 @@ const AuthModal = ({
       <OrDivider>
         <span>or continue with</span>
       </OrDivider>
-      {visible && (
-        <GoogleOAuthWrapper
-          onSuccess={handleGoogleAuth}
-          onError={() => setError("Google login failed.")}
-          disabled={loading}
-        />
-      )}
+      <GoogleOAuthWrapper
+        onSuccess={handleGoogleAuth}
+        onError={() => setError("Google login failed.")}
+        disabled={loading}
+      />
       <ToggleText>
         Don't have an account?{" "}
         <button type="button" onClick={() => setModalView("register")}>
@@ -631,15 +621,15 @@ const AuthModal = ({
     <>
       <Title>Create an account</Title>
       <Subtitle>Join our community today</Subtitle>
-      <StyledSteps current={currentStep} size="small">
-        {steps.map((item) => (
-          <Step key={item.title} title={item.title} icon={item.icon} />
-        ))}
-      </StyledSteps>
-      <MobileProgressBar
-        percent={((currentStep + 1) / steps.length) * 100}
-        showInfo={false}
-      />
+      
+      {/* Explicitly check !isMobile in JS to ensure Stepper is removed */}
+      {!isMobile && (
+        <StyledSteps current={currentStep} size="small">
+          {steps.map((item) => (
+            <Step key={item.title} title={item.title} icon={item.icon} />
+          ))}
+        </StyledSteps>
+      )}
 
       <StyledForm
         form={registerForm}
@@ -799,13 +789,11 @@ const AuthModal = ({
           <OrDivider>
             <span>or continue with</span>
           </OrDivider>
-          {visible && (
-            <GoogleOAuthWrapper
-              onSuccess={handleGoogleAuth}
-              onError={() => setError("Google login failed.")}
-              disabled={loading}
-            />
-          )}
+          <GoogleOAuthWrapper
+            onSuccess={handleGoogleAuth}
+            onError={() => setError("Google login failed.")}
+            disabled={loading}
+          />
         </>
       )}
       <ToggleText>
@@ -830,8 +818,6 @@ const AuthModal = ({
     }
   };
 
-  if (!visible) return null;
-
   // Mobile: Use Vaul Drawer
   if (isMobile) {
     return (
@@ -841,7 +827,12 @@ const AuthModal = ({
             <StyledDrawerOverlay />
             <StyledDrawerContent>
               <DrawerHandle />
-              <DrawerBody>{renderContent()}</DrawerBody>
+              <DrawerBody>
+                {/* Wrapped in AnimatedModalContent for dynamic height on mobile */}
+                <AnimatedModalContent>
+                  {renderContent()}
+                </AnimatedModalContent>
+              </DrawerBody>
             </StyledDrawerContent>
           </Drawer.Portal>
         </Drawer.Root>
@@ -858,7 +849,6 @@ const AuthModal = ({
         width={500}
         footer={null}
         centered
-        destroyOnClose
         maskClosable={!loading}
         styles={{ 
           body: { padding: 0 },

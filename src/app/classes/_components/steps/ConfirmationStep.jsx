@@ -14,6 +14,7 @@ import { isValid, addMinutes, format as dateFnsFormat } from "date-fns";
 import {
   formatBusinessLocalToUserDisplay,
   formatNaiveDate,
+  formatTimeRangeForDisplay,
 } from "@/services/utils";
 import { createEvent } from "ics";
 import { saveAs } from "file-saver";
@@ -259,47 +260,22 @@ const RetryButton = styled.button`
 const getUTCDateFromBusinessLocal = (
   naiveDateStr,
   naiveTimeStr,
-  businessTimeZoneStr,
-  durationMinutes = 0
+  businessTimeZoneStr
 ) => {
-  if (!naiveDateStr || !naiveTimeStr || !businessTimeZoneStr) {
-    console.error("getUTCDateFromBusinessLocal: Missing arguments", {
-      naiveDateStr,
-      naiveTimeStr,
-      businessTimeZoneStr,
-    });
-    return { start: null, end: null };
+  if (!naiveDateStr || !naiveTimeStr || !businessTimeZoneStr) return null;
+
+  try {
+    const timeParts = naiveTimeStr.split(":");
+    const formattedTimeStr = `${timeParts[0]}:${timeParts[1] || "00"}:${
+      timeParts[2] || "00"
+    }`;
+    const dateTimeInBusinessTZStr = `${naiveDateStr}T${formattedTimeStr}`;
+    const utcDate = fromZonedTime(dateTimeInBusinessTZStr, businessTimeZoneStr);
+    return isValid(utcDate) ? utcDate : null;
+  } catch (error) {
+    console.error("Error creating UTC date:", error);
+    return null;
   }
-
-  const timeParts = naiveTimeStr.split(":");
-  const formattedTimeStr = `${timeParts[0]}:${timeParts[1] || "00"}:${
-    timeParts[2] || "00"
-  }`;
-  const dateTimeInBusinessTZStr = `${naiveDateStr}T${formattedTimeStr}`;
-  const utcStartDate = fromZonedTime(
-    dateTimeInBusinessTZStr,
-    businessTimeZoneStr
-  );
-
-  if (!isValid(utcStartDate)) {
-    console.error(
-      "getUTCDateFromBusinessLocal: Invalid UTC start date",
-      dateTimeInBusinessTZStr,
-      businessTimeZoneStr
-    );
-    return { start: null, end: null };
-  }
-
-  let utcEndDate = null;
-  if (durationMinutes > 0) {
-    utcEndDate = addMinutes(utcStartDate, durationMinutes);
-    if (!isValid(utcEndDate)) {
-      console.error("getUTCDateFromBusinessLocal: Invalid UTC end date");
-      return { start: utcStartDate, end: null };
-    }
-  }
-
-  return { start: utcStartDate, end: utcEndDate };
 };
 
 const ConfirmationStep = ({
@@ -308,6 +284,7 @@ const ConfirmationStep = ({
   userTimeZone,
   businessTimeZone,
   paymentIntentId,
+  clientSecret, // --- MODIFICATION: Receive clientSecret for guest polling
   bookingId: propBookingId,
   onBookingDetailsFetched,
   onRetryBooking,
@@ -337,17 +314,22 @@ const ConfirmationStep = ({
     const attemptFetch = async () => {
       attempts++;
       try {
+        // --- MODIFICATION: Pass clientSecret for guest auth ---
         const result = await bookingService.bookingStatusPolling(
           paymentIntentId,
-          bookingData.clientSecret
+          clientSecret
         );
         if (result.success) {
           const data = result.data;
           if (data.status === "confirmed" && data.user_facing_reference) {
             setFetchedReference(data.user_facing_reference);
-            if (onBookingDetailsFetched) {
-              onBookingDetailsFetched(data);
-            }
+            if (onBookingDetailsFetched) onBookingDetailsFetched(data);
+            setIsPolling(false);
+          } else if (data.status === "payment_failed") {
+            setBookingFailed(true);
+            setPollingError(
+              data.failure_message || "Your payment could not be processed."
+            );
             setIsPolling(false);
           } else if (
             ["pending_webhook", "processing"].includes(data.status) &&
@@ -365,18 +347,17 @@ const ConfirmationStep = ({
         } else {
           setBookingFailed(true);
           setPollingError(
-            result.error?.detail ||
-              "An error occurred while confirming your booking."
+            result.error || "An error occurred while confirming your booking."
           );
           setIsPolling(false);
         }
       } catch (error) {
         if (attempts < maxAttempts) {
-          setTimeout(attemptFetch, pollInterval + attempts * 1000);
+          setTimeout(attemptFetch, pollInterval + attempts * 500);
         } else {
           setBookingFailed(true);
           setPollingError(
-            "A critical error occurred. Please try again or contact support."
+            "A network error occurred. Please check your connection or contact support."
           );
           setIsPolling(false);
         }
@@ -384,12 +365,7 @@ const ConfirmationStep = ({
     };
 
     attemptFetch();
-  }, [
-    paymentIntentId,
-    actualBookingId,
-    bookingData.clientSecret,
-    onBookingDetailsFetched,
-  ]);
+  }, [paymentIntentId, actualBookingId, clientSecret, onBookingDetailsFetched]);
 
   useEffect(() => {
     if (paymentIntentId && !actualBookingId) {
@@ -402,25 +378,25 @@ const ConfirmationStep = ({
     else window.location.reload();
   };
 
+  // --- MODIFICATION: Enhanced calendar event creation for courses ---
   const handleAddToCalendar = () => {
+    const selectedSlot = bookingData.selectedSlots?.[0];
     if (!selectedSlot || !businessTimeZone) return;
 
     const {
-      date: naiveDate,
+      date: naiveStartDate,
       time: naiveTime,
       duration,
       isCourse,
       end_date: naiveCourseEndDate,
-      day: courseDayOfWeek,
+      days,
     } = selectedSlot;
 
-    const { start: startUTC, end: endUTC } = getUTCDateFromBusinessLocal(
-      naiveDate,
+    const startUTC = getUTCDateFromBusinessLocal(
+      naiveStartDate,
       naiveTime,
-      businessTimeZone,
-      duration
+      businessTimeZone
     );
-
     if (!startUTC) {
       alert("Could not generate calendar event due to invalid date/time.");
       return;
@@ -437,14 +413,39 @@ const ConfirmationStep = ({
     const eventDetails = {
       title: classData?.title || "Booked Class",
       description: `Your booking for ${classData?.title} with ${
-        classData?.businessName
+        classData?.business_name
       }.\nRef: ${displayReference || "Pending..."}`,
       location: classData?.location || "",
       start: formatToICSDateArray(startUTC),
       startOutputType: "utc",
-      end: endUTC ? formatToICSDateArray(endUTC) : undefined,
-      duration: !endUTC && duration ? { minutes: duration } : undefined,
+      duration: { minutes: duration },
     };
+
+    if (isCourse && days?.length > 0 && naiveCourseEndDate) {
+      const dayMap = {
+        Sun: "SU",
+        Mon: "MO",
+        Tue: "TU",
+        Wed: "WE",
+        Thu: "TH",
+        Fri: "FR",
+        Sat: "SA",
+      };
+      const byDay = days.map((d) => dayMap[d]).filter(Boolean).join(",");
+
+      // Set UNTIL date to the end of the course's last day
+      const untilDate = new Date(`${naiveCourseEndDate}T23:59:59Z`);
+      const untilDateFormatted = dateFnsFormat(
+        untilDate,
+        "yyyyMMdd'T'HHmmss'Z'"
+      );
+
+      eventDetails.recurrenceRule = `FREQ=WEEKLY;BYDAY=${byDay};UNTIL=${untilDateFormatted}`;
+    } else {
+      const endUTC = addMinutes(startUTC, duration);
+      eventDetails.end = formatToICSDateArray(endUTC);
+      delete eventDetails.duration;
+    }
 
     createEvent(eventDetails, (error, value) => {
       if (error) {
@@ -462,65 +463,75 @@ const ConfirmationStep = ({
 
   const selectedSlot = bookingData.selectedSlots?.[0];
 
+  // --- MODIFICATION: Updated rendering for courses ---
   const renderBookingDetails = () => {
     if (!selectedSlot) return null;
 
+    const { date, time, duration, isCourse, end_date, days } = selectedSlot;
     const effectiveUserTimeZone =
       userTimeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const effectiveBusinessTimeZone = businessTimeZone || "Etc/UTC";
-    const isCourse = selectedSlot.isCourse;
 
-    const dateInfo = isCourse ? (
-      <>
-        <strong>Course Dates:</strong>{" "}
-        {formatNaiveDate(selectedSlot.date, "MMM d")} -{" "}
-        {formatNaiveDate(selectedSlot.end_date, "MMM d, yyyy")}
-      </>
-    ) : (
-      <>
-        <strong>Date:</strong>{" "}
-        {formatBusinessLocalToUserDisplay(
-          selectedSlot.date,
-          selectedSlot.time,
-          effectiveBusinessTimeZone,
-          effectiveUserTimeZone,
-          { dateTimeFormat: "MMMM d, yyyy" }
-        )}
-      </>
-    );
-
-    const timeInfo = (
-      <>
-        <strong>Time:</strong>{" "}
-        {formatBusinessLocalToUserDisplay(
-          selectedSlot.date,
-          selectedSlot.time,
-          effectiveBusinessTimeZone,
-          effectiveUserTimeZone,
-          { timeFormat: "p" }
-        )}
-      </>
-    );
-
-    const durationInfo = (
-      <>
-        <strong>Duration:</strong> {getDurationText(selectedSlot.duration)}
-      </>
-    );
+    if (isCourse) {
+      return (
+        <>
+          <DetailRow>
+            <CalendarIcon />
+            <div>
+              <strong>Course Dates:</strong>{" "}
+              {formatNaiveDate(date, "MMM d, yyyy")} -{" "}
+              {formatNaiveDate(end_date, "MMM d, yyyy")}
+            </div>
+          </DetailRow>
+          <DetailRow>
+            <Clock />
+            <div>
+              <strong>Schedule:</strong> Every {days.join(", ")} at{" "}
+              {formatTimeRangeForDisplay(
+                date,
+                time,
+                duration,
+                businessTimeZone,
+                effectiveUserTimeZone
+              )}
+            </div>
+          </DetailRow>
+        </>
+      );
+    }
 
     return (
       <>
         <DetailRow>
           <CalendarIcon />
-          <div>{dateInfo}</div>
+          <div>
+            <strong>Date:</strong>{" "}
+            {formatBusinessLocalToUserDisplay(
+              date,
+              time,
+              businessTimeZone,
+              effectiveUserTimeZone,
+              { dateTimeFormat: "MMMM d, yyyy" }
+            )}
+          </div>
         </DetailRow>
         <DetailRow>
           <Clock />
-          <div>{timeInfo}</div>
+          <div>
+            <strong>Time:</strong>{" "}
+            {formatBusinessLocalToUserDisplay(
+              date,
+              time,
+              businessTimeZone,
+              effectiveUserTimeZone,
+              { timeFormat: "p" }
+            )}
+          </div>
         </DetailRow>
         <DetailRow>
           <Clock />
-          <div>{durationInfo}</div>
+          <div>
+            <strong>Duration:</strong> {getDurationText(duration)}
+          </div>
         </DetailRow>
       </>
     );
@@ -534,7 +545,7 @@ const ConfirmationStep = ({
       participant_details
         ?.map((d) => d.name)
         .filter(Boolean)
-        .slice(0, 5) || []; // Show up to 5 names
+        .slice(0, 5) || [];
 
     return (
       <DetailRow>

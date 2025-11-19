@@ -598,6 +598,7 @@ export const ModalFooter = ({
   onNext,
   onClose,
   loading = false,
+  hideNextButton = false,
   hideBackButton = false,
   isNextDisabled = false,
   bookingData = null,
@@ -665,7 +666,12 @@ export const ModalFooter = ({
         </FooterLeft>
 
         <FooterRight>
-          {/* Step 1 button removed - now in popup footer */}
+          {/* MODIFICATION: Conditionally render Step 1 Next button based on hideNextButton */}
+          {currentStep === 1 && !hideNextButton && (
+            <Button $primary onClick={onNext} disabled={isNextDisabled}>
+              {getButtonText()}
+            </Button>
+          )}
 
           {currentStep === 2 && (
             <DesktopPayButton

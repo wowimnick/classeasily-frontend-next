@@ -12,7 +12,8 @@ import {
 } from "@/lib/server-data-fetchers"; // ADDED fetchBusinessDetail
 import ExploreHeader from "@/components/explore/ExploreHeader";
 
-import Footer from "@/components/homepage/Footer.jsx";
+// CRITICAL FIX: Use FooterSmart for client component context
+import FooterSmart from "@/components/homepage/FooterSmart.jsx";
 import ClassPageClient from "../_components/ClassPageClient";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -305,7 +306,7 @@ export default async function ClassPage({ params }) {
       >
         <Breadcrumb items={breadcrumbItems} />
       </div>
-      <Footer />
+      <FooterSmart />
     </div>
   );
 }

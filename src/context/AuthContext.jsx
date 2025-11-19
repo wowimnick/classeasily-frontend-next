@@ -1,5 +1,3 @@
-// context/AuthContext.js - WITH POST-LOGIN REDIRECT HANDLING
-
 "use client";
 
 import React, {
@@ -160,14 +158,12 @@ export const AuthProvider = ({ children }) => {
       }}
     >
       {children}
-      {isAuthModalVisible && (
-        <AuthModal
-          visible={isAuthModalVisible}
-          onClose={closeAuthModal}
-          defaultMode={authModalMode}
-          onLoginSuccessAction={executeLoginSuccessAction}
-        />
-      )}
+      <AuthModal
+        visible={isAuthModalVisible}
+        onClose={closeAuthModal}
+        defaultMode={authModalMode}
+        onLoginSuccessAction={executeLoginSuccessAction}
+      />
     </AuthContext.Provider>
   );
 };

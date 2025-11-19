@@ -553,6 +553,18 @@ const CalendarStep = ({
   initialDate,
   onNext, // Added for Continue button functionality
 }) => {
+  console.log("📅 [CalendarStep] RENDER START", {
+    optionId,
+    hasBookingData: !!bookingData,
+    participants: bookingData?.participants,
+    selectedSlotsCount: bookingData?.selectedSlots?.length || 0,
+    hasSelectedOption: !!selectedOption,
+    businessTimeZone,
+    userTimeZone,
+    initialDate,
+    timestamp: new Date().toISOString()
+  });
+
   // --- Participant Stepper Component (React version) ---
   const ParticipantStepper = ({ value = 1, min = 1, max = Infinity }) => {
     const handleUpdate = (newValue) => {

@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  useLayoutEffect,
+} from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
@@ -13,12 +20,20 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 import { useAuthModal } from "@/context/AuthContext";
 import dayjs from "dayjs";
 
-// Initialize Stripe outside component to prevent re-initialization
+// Initialize Stripe outside component
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
-// Dynamic imports for better code splitting
+// Dynamic imports
 const ReviewAndPaymentStep = dynamic(
   () => import("./steps/ReviewAndPaymentStep"),
+  {
+    loading: () => <div style={{ minHeight: "400px" }} />,
+    ssr: false,
+  }
+);
+
+const CourseCalendarStep = dynamic(
+  () => import("./steps/CourseCalendarStep"),
   {
     loading: () => <div style={{ minHeight: "400px" }} />,
     ssr: false,
@@ -38,18 +53,54 @@ const ConfirmationStep = dynamic(() => import("./steps/ConfirmationStep"), {
 const ModalHeader = dynamic(
   () =>
     import("./steps/ModalHeader").then((mod) => ({ default: mod.ModalHeader })),
-  {
-    ssr: false,
-  }
+  { ssr: false }
 );
 
 const ModalFooter = dynamic(
   () =>
     import("./steps/ModalHeader").then((mod) => ({ default: mod.ModalFooter })),
-  {
-    ssr: false,
-  }
+  { ssr: false }
 );
+
+// --- ANIMATION HOOKS ---
+const useElementSize = () => {
+  const ref = useRef(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+
+    const observer = new ResizeObserver(([entry]) => {
+      setSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      });
+    });
+
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, size];
+};
+
+const AnimatedModalContent = ({ children }) => {
+  const [ref, { height }] = useElementSize();
+
+  return (
+    <motion.div
+      animate={{ height: height || "auto" }}
+      style={{ overflow: "hidden" }}
+      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+    >
+      <div ref={ref}>
+        <div style={{ border: "1px solid transparent", margin: "-1px" }}>
+          {children}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 // Desktop Modal Styles
 const DesktopOverlay = styled(motion.div)`
@@ -98,19 +149,25 @@ const CloseButton = styled(motion.button)`
   backdrop-filter: blur(10px);
 `;
 
-const ModalContent = styled.div`
-  flex: 1;
+const ScrollableContent = styled.div`
+  flex: 1 1 auto;
   overflow-y: auto;
-  padding: 32px;
+  min-height: 0;
   background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
-
   &::-webkit-scrollbar {
-    display: none;
+    width: 6px;
   }
-  scrollbar-width: none;
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+  }
 `;
 
-// Vaul Drawer Styles
+const StepContentWrapper = styled.div`
+  padding: 32px;
+`;
+
+// Vaul Drawer Styles (Omitted for brevity, keeping existing styles)
 const StyledDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
   inset: 0;
@@ -152,7 +209,6 @@ const DrawerBody = styled.div`
   overflow-y: auto;
   padding: 4px;
   background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
-
   &::-webkit-scrollbar {
     display: none;
   }
@@ -208,22 +264,43 @@ const BookingModal = ({
   const [isMobile, setIsMobile] = useState(false);
   const { openLoginModal } = useAuthModal();
   const [paymentAction, setPaymentAction] = useState(null);
+  const [isVisible, setIsVisible] = useState(isOpen);
+
+  // --- PERFORMANCE OPTIMIZATION: Preload Steps ---
+  useEffect(() => {
+    if (isOpen) {
+      // Preload critical steps immediately when modal opens
+      import("./steps/ReviewAndPaymentStep");
+      import("./steps/ConfirmationStep");
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) setIsVisible(true);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isVisible) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isVisible]);
 
   const effectiveInitialParticipants = useMemo(() => {
-    // This code runs on the client side, which is appropriate for a modal interaction.
-    // We check for `isOpen` to avoid running this when the component is not active.
     if (typeof window !== "undefined" && isOpen) {
       const params = new URLSearchParams(window.location.search);
       const participantsFromUrl = params.get("participants");
       if (participantsFromUrl) {
         const num = parseInt(participantsFromUrl, 10);
-        // Use the URL value if it's a valid positive number
         if (!isNaN(num) && num > 0) {
           return num;
         }
       }
     }
-    // Fallback to the prop
     return initialParticipantCount;
   }, [isOpen, initialParticipantCount]);
 
@@ -235,14 +312,14 @@ const BookingModal = ({
   }, []);
 
   const selectedOption = useMemo(() => {
-    return classData?.options?.find((opt) => opt.optionId === optionId);
+    const found = classData?.options?.find((opt) => opt.optionId === optionId);
+    return found;
   }, [classData, optionId]);
 
   const initialDate = useMemo(() => {
     if (!selectedOption || !Array.isArray(selectedOption.schedules)) {
       return null;
     }
-
     const upcomingSchedules = selectedOption.schedules
       .filter(
         (s) => s.date && dayjs(s.date).isAfter(dayjs().subtract(1, "day"))
@@ -259,65 +336,63 @@ const BookingModal = ({
   const isCourseBooking = selectedOption?.booking_type === "Full Course";
 
   const getInitialBookingState = useCallback(() => {
-    const validInitialParticipantCount =
-      Number.isInteger(effectiveInitialParticipants) &&
-      effectiveInitialParticipants > 0
-        ? effectiveInitialParticipants
-        : 1;
-    let bookerName = "";
-    let bookerEmail = "";
-    let bookerPhone = "";
+    try {
+      const validInitialParticipantCount =
+        Number.isInteger(effectiveInitialParticipants) &&
+        effectiveInitialParticipants > 0
+          ? effectiveInitialParticipants
+          : 1;
+      let bookerName = "";
+      let bookerEmail = "";
+      let bookerPhone = "";
 
-    if (currentUserFromRedux) {
-      bookerName = `${currentUserFromRedux.first_name || ""} ${
-        currentUserFromRedux.last_name || ""
-      }`.trim();
-      bookerEmail = currentUserFromRedux.email || "";
-      bookerPhone = currentUserFromRedux.phone_number || "";
-    }
+      if (currentUserFromRedux) {
+        bookerName = `${currentUserFromRedux.first_name || ""} ${
+          currentUserFromRedux.last_name || ""
+        }`.trim();
+        bookerEmail = currentUserFromRedux.email || "";
+        bookerPhone = currentUserFromRedux.phone_number || "";
+      }
 
-    const participantDetails = Array.from(
-      { length: validInitialParticipantCount },
-      (_, i) => ({
-        name: i === 0 && bookerName ? bookerName : "",
-      })
-    );
-
-    let initialPrice = 0;
-    if (selectedOption) {
-      const firstActiveSchedule = selectedOption.schedules?.find(
-        (s) => s.is_active === true
+      const participantDetails = Array.from(
+        { length: validInitialParticipantCount },
+        (_, i) => ({
+          name: i === 0 && bookerName ? bookerName : "",
+        })
       );
-      initialPrice = parseFloat(
-        firstActiveSchedule?.price || selectedOption.price || 0
-      );
-      if (isNaN(initialPrice)) initialPrice = 0;
-    }
 
-    return {
-      selectedSlots: [],
-      participants: validInitialParticipantCount,
-      participant_details: participantDetails,
-      notes: "",
-      price: initialPrice,
-      paymentIntentId: null,
-      clientSecret: null,
-      bookingId: null,
-      user_facing_reference: null,
-      booking_group_id: null,
-      selectedOption: selectedOption,
-      userName: bookerName,
-      userEmail: bookerEmail,
-      userPhone: bookerPhone,
-    };
-  }, [
-    initialParticipantCount,
-    selectedOption,
-    currentUserFromRedux?.first_name,
-    currentUserFromRedux?.last_name,
-    currentUserFromRedux?.email,
-    currentUserFromRedux?.phone_number,
-  ]);
+      let initialPrice = 0;
+      if (selectedOption) {
+        const firstActiveSchedule = selectedOption.schedules?.find(
+          (s) => s.is_active === true
+        );
+        initialPrice = parseFloat(
+          firstActiveSchedule?.price || selectedOption.price || 0
+        );
+        if (isNaN(initialPrice)) initialPrice = 0;
+      }
+
+      return {
+        selectedSlots: [],
+        participants: validInitialParticipantCount,
+        participant_details: participantDetails,
+        notes: "",
+        price: initialPrice,
+        paymentIntentId: null,
+        clientSecret: null,
+        bookingId: null,
+        user_facing_reference: null,
+        booking_group_id: null,
+        selectedOption: selectedOption,
+        userName: bookerName,
+        userEmail: bookerEmail,
+        userPhone: bookerPhone,
+      };
+    } catch (error) {
+      console.error("Error in getInitialBookingState", error);
+      throw error;
+    }
+  }, [effectiveInitialParticipants, selectedOption, currentUserFromRedux]);
 
   const [bookingData, setBookingData] = useState(() =>
     getInitialBookingState()
@@ -330,8 +405,6 @@ const BookingModal = ({
         const userJustLoggedIn = !prev.userEmail && !!newInitialState.userEmail;
         const optionChanged =
           selectedOption?.optionId !== prev.selectedOption?.optionId;
-        // FIX: Also reset if the participant count from the prop is different
-        // and the user hasn't already started picking slots.
         const participantsPropChanged =
           prev.participants !== newInitialState.participants &&
           prev.selectedSlots.length === 0;
@@ -339,12 +412,10 @@ const BookingModal = ({
         if (userJustLoggedIn || optionChanged || participantsPropChanged) {
           return {
             ...newInitialState,
-            // If the option or participants changed, clear the slots. Otherwise, keep them.
             selectedSlots:
               optionChanged || participantsPropChanged
                 ? []
                 : prev.selectedSlots,
-            // Persist payment details across state resets if needed
             paymentIntentId: prev.paymentIntentId,
             clientSecret: prev.clientSecret,
             bookingId: prev.bookingId,
@@ -366,6 +437,10 @@ const BookingModal = ({
   }, [getInitialBookingState]);
 
   const handleClose = useCallback(() => {
+    setIsVisible(false);
+  }, []);
+
+  const handleAnimationComplete = useCallback(() => {
     resetModal();
     onClose();
   }, [resetModal, onClose]);
@@ -374,6 +449,8 @@ const BookingModal = ({
     (data) => {
       setBookingData((prev) => {
         const newState = { ...prev, ...data };
+        
+        // Price updating logic
         if (
           data.selectedSlots &&
           data.selectedSlots.length > 0 &&
@@ -382,7 +459,8 @@ const BookingModal = ({
           const newSlotPrice = parseFloat(data.selectedSlots[0].price);
           newState.price = isNaN(newSlotPrice) ? prev.price || 0 : newSlotPrice;
         } else if (data.selectedSlots && data.selectedSlots.length === 0) {
-          const firstActiveSchedule = newState.selectedOption?.schedules?.find(
+           // ... (existing reset logic)
+           const firstActiveSchedule = newState.selectedOption?.schedules?.find(
             (s) => s.is_active === true
           );
           let resetPrice = parseFloat(
@@ -390,6 +468,8 @@ const BookingModal = ({
           );
           newState.price = isNaN(resetPrice) ? 0 : resetPrice;
         }
+
+        // Participant details syncing logic
         if (
           data.participants !== undefined &&
           data.participants !== prev.participants
@@ -473,48 +553,49 @@ const BookingModal = ({
 
   const validateStep = useCallback(
     (step, dataToValidate) => {
-      switch (step) {
-        case 1:
-          if (isCourseBooking) {
+      if (step === 1) {
+        if (isCourseBooking) {
             const courseSlot = dataToValidate.selectedSlots?.[0];
             return !!(courseSlot && courseSlot.id);
-          } else {
+        } else {
             const slot = dataToValidate.selectedSlots?.[0];
             return !!(slot && slot.id && slot.date && slot.time);
-          }
-        case 2:
-          return true;
-        case 3:
-          return false;
-        default:
-          return false;
+        }
       }
+      return true;
     },
     [isCourseBooking]
   );
 
   const handleNext = useCallback(async () => {
-    if (currentStep === 1) {
-      setCurrentStep(2);
-    } else if (currentStep < 3) {
-      setCurrentStep((prev) => prev + 1);
-    }
+    if (currentStep < 3) setCurrentStep((prev) => prev + 1);
   }, [currentStep]);
 
   const handleBack = useCallback(() => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
-    }
+    if (currentStep > 1) setCurrentStep((prev) => prev - 1);
   }, [currentStep]);
 
   const businessTimeZone = classData?.business_timezone || "Etc/UTC";
   const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  const steps = useMemo(
-    () => ({
-      1: {
-        component: isCourseBooking ? (
-          <div />
+  if (!classData || !selectedOption) return null;
+
+  const shouldHideNextButton =
+    currentStep === 1 ? !isCourseBooking : currentStep >= 2;
+  
+  // Render specific step content based on currentStep
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return isCourseBooking ? (
+          <CourseCalendarStep
+            optionId={optionId}
+            bookingData={bookingData}
+            onUpdate={handleUpdateBooking}
+            onNext={handleNext}
+            classData={classData}
+            userTimeZone={userTimeZone}
+          />
         ) : (
           <CalendarStep
             optionId={optionId}
@@ -526,106 +607,114 @@ const BookingModal = ({
             onNext={handleNext}
             initialDate={initialDate}
           />
-        ),
-      },
-      2: {
-        component: (
-          <Elements stripe={stripePromise}>
-            <ReviewAndPaymentStep
-              bookingData={bookingData}
-              classData={classData}
-              paymentService={paymentService}
-              onPaymentComplete={handlePaymentComplete}
-              isUserLoggedIn={!!currentUserFromRedux}
-              onUpdateBookingData={handleUpdateBooking}
-              onPaymentAction={setPaymentAction}
-              userTimeZone={userTimeZone}
-              businessTimeZone={businessTimeZone}
-            />
-          </Elements>
-        ),
-      },
-      3: {
-        component: (
+        );
+      case 2:
+        // NO <Elements> wrapper here - moved to parent level
+        return (
+          <ReviewAndPaymentStep
+            bookingData={bookingData}
+            classData={classData}
+            paymentService={paymentService}
+            onPaymentComplete={handlePaymentComplete}
+            isUserLoggedIn={!!currentUserFromRedux}
+            onUpdateBookingData={handleUpdateBooking}
+            onPaymentAction={setPaymentAction}
+            userTimeZone={userTimeZone}
+            businessTimeZone={businessTimeZone}
+          />
+        );
+      case 3:
+        return (
           <ConfirmationStep
             bookingData={bookingData}
             classData={classData}
             userTimeZone={userTimeZone}
             businessTimeZone={businessTimeZone}
             paymentIntentId={bookingData.paymentIntentId}
+            clientSecret={bookingData.clientSecret}
             bookingId={bookingData.bookingId}
             onBookingDetailsFetched={updateBookingDetailsFromPolling}
             onRetryBooking={handleClose}
           />
-        ),
-      },
-    }),
-    [
-      isCourseBooking,
-      optionId,
-      bookingData,
-      handleUpdateBooking,
-      classData,
-      selectedOption,
-      businessTimeZone,
-      userTimeZone,
-      handlePaymentComplete,
-      currentUserFromRedux,
-      updateBookingDetailsFromPolling,
-      initialDate,
-      handleNext,
-      handleClose,
-    ]
-  );
+        );
+      default:
+        return <div>Error: Step not found.</div>;
+    }
+  };
 
-  if (!classData || !selectedOption) {
-    return null;
-  }
-
-  // Render mobile drawer
-  if (isMobile) {
-    return (
-      <Drawer.Root
-        open={isOpen}
-        onOpenChange={(open) => !open && handleClose()}
-      >
-        <Drawer.Portal>
-          <StyledDrawerOverlay />
-          <StyledDrawerContent>
-            <DrawerHandle />
-
-            <DrawerHeader>
-              <ModalHeader
-                classData={{
-                  title: classData.title,
-                  image:
-                    classData.images?.[0]?.thumbnail_url || "/placeholder.jpg",
-                  selectedOption: selectedOption,
-                }}
-                currentStep={currentStep}
-                totalSteps={Object.keys(steps).length}
-                bookingData={bookingData}
-                businessTimeZone={businessTimeZone}
-                userTimeZone={userTimeZone}
-              />
-            </DrawerHeader>
-
-            <DrawerBody>
+  // --- WRAPPER: Wrap everything in Elements here to persist Stripe context ---
+  const ModalContentWithStripe = (
+    <Elements stripe={stripePromise}>
+       <ScrollableContent id="booking-modal-scroll-container">
+          <AnimatedModalContent>
+            <StepContentWrapper>
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentStep}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  transition={{
+                    duration: 0.3,
+                    ease: [0.25, 0.46, 0.45, 0.94],
+                  }}
                 >
-                  {steps[currentStep]?.component || (
-                    <div>Error: Step not found.</div>
-                  )}
+                  {renderStepContent()}
                 </motion.div>
               </AnimatePresence>
-            </DrawerBody>
+            </StepContentWrapper>
+          </AnimatedModalContent>
+        </ScrollableContent>
+    </Elements>
+  );
 
+  if (isMobile) {
+    return (
+      <Drawer.Root
+        open={isVisible}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsVisible(false);
+            setTimeout(() => {
+                handleAnimationComplete();
+            }, 300);
+          }
+        }}
+      >
+        <Drawer.Portal>
+          <StyledDrawerOverlay />
+          <StyledDrawerContent>
+            <DrawerHandle />
+            <DrawerHeader>
+              <ModalHeader
+                classData={{
+                  title: classData.title,
+                  image: classData.images?.[0]?.thumbnail_url || "/placeholder.jpg",
+                  selectedOption: selectedOption,
+                }}
+                currentStep={currentStep}
+                totalSteps={3}
+                bookingData={bookingData}
+                businessTimeZone={businessTimeZone}
+                userTimeZone={userTimeZone}
+              />
+            </DrawerHeader>
+            <DrawerBody>
+                 {/* Wrap Drawer Body content in Elements */}
+                 <Elements stripe={stripePromise}>
+                   <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentStep}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    >
+                      {renderStepContent()}
+                    </motion.div>
+                  </AnimatePresence>
+                 </Elements>
+            </DrawerBody>
             <DrawerFooter>
               <ModalFooter
                 currentStep={currentStep}
@@ -633,11 +722,9 @@ const BookingModal = ({
                 onNext={handleNext}
                 onClose={handleClose}
                 loading={isLoading}
-                hideNextButton={currentStep >= 2}
+                hideNextButton={shouldHideNextButton}
                 hideBackButton={currentStep === 1 || currentStep === 3}
-                isNextDisabled={
-                  currentStep === 1 && !validateStep(currentStep, bookingData)
-                }
+                isNextDisabled={currentStep === 1 && !validateStep(currentStep, bookingData)}
                 bookingData={bookingData}
                 businessTimeZone={businessTimeZone}
                 userTimeZone={userTimeZone}
@@ -650,10 +737,9 @@ const BookingModal = ({
     );
   }
 
-  // Render desktop modal
   return (
-    <AnimatePresence mode="wait">
-      {isOpen && (
+    <AnimatePresence mode="wait" onExitComplete={handleAnimationComplete}>
+      {isVisible && (
         <DesktopOverlay
           variants={overlayVariants}
           initial="hidden"
@@ -671,17 +757,15 @@ const BookingModal = ({
             <ModalHeader
               classData={{
                 title: classData.title,
-                image:
-                  classData.images?.[0]?.thumbnail_url || "/placeholder.jpg",
+                image: classData.images?.[0]?.thumbnail_url || "/placeholder.jpg",
                 selectedOption: selectedOption,
               }}
               currentStep={currentStep}
-              totalSteps={Object.keys(steps).length}
+              totalSteps={3}
               bookingData={bookingData}
               businessTimeZone={businessTimeZone}
               userTimeZone={userTimeZone}
             />
-
             <CloseButton
               onClick={handleClose}
               aria-label="Close booking modal"
@@ -691,21 +775,8 @@ const BookingModal = ({
               <X size={20} />
             </CloseButton>
 
-            <ModalContent>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentStep}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-                >
-                  {steps[currentStep]?.component || (
-                    <div>Error: Step not found.</div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </ModalContent>
+            {/* Use the content wrapped in Elements */}
+            {ModalContentWithStripe}
 
             <ModalFooter
               currentStep={currentStep}
@@ -713,11 +784,9 @@ const BookingModal = ({
               onNext={handleNext}
               onClose={handleClose}
               loading={isLoading}
-              hideNextButton={currentStep >= 2}
+              hideNextButton={shouldHideNextButton}
               hideBackButton={currentStep === 1 || currentStep === 3}
-              isNextDisabled={
-                currentStep === 1 && !validateStep(currentStep, bookingData)
-              }
+              isNextDisabled={currentStep === 1 && !validateStep(currentStep, bookingData)}
               bookingData={bookingData}
               businessTimeZone={businessTimeZone}
               userTimeZone={userTimeZone}

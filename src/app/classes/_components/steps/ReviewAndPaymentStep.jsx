@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { ConfigProvider, Form, Input, Alert, Button, Divider } from "antd";
 import message from "@/lib/message";
 import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
@@ -15,46 +15,46 @@ import {
   UserCheck,
   Percent,
 } from "lucide-react";
-import { getCancellationPolicyText, getDurationText } from "./utils";
+import {
+  getCancellationPolicyText,
+  getDurationText,
+  getCourseDuration,
+} from "./utils";
 import { businessDiscountService } from "@/services/apiService";
 import { theme as appTheme } from "@/components/theme";
+import { formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
 
-// --- Styles ---
 const HST_RATE = 0.13;
 
+// Styles omitted for brevity - they are unchanged from original file //
 const StepContainer = styled.div`
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
   padding: 0 4px;
-
   @media (min-width: 969px) {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
     gap: 32px;
     align-items: flex-start;
   }
 `;
-
 const PaymentSection = styled.div`
   display: flex;
   flex-direction: column;
   gap: 24px;
   @media (max-width: 968px) {
-    padding-bottom: 70px; // Space for mobile footer
+    padding-bottom: 70px;
   }
 `;
-
 const SummarySection = styled.div`
   @media (max-width: 968px) {
     display: none;
   }
-
   @media (min-width: 969px) {
     position: sticky;
     top: 1px;
   }
 `;
-
 const Card = styled.div`
   background: white;
   border-radius: 16px;
@@ -62,22 +62,18 @@ const Card = styled.div`
   padding: 24px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
     0 2px 4px -2px rgba(0, 0, 0, 0.05);
-
   @media (max-width: 968px) {
     padding: 20px;
   }
 `;
-
 const SummaryCard = styled(Card)``;
 const FormCard = styled(Card)``;
-
 const SectionTitle = styled.h4`
   margin: 0 0 16px 0;
   font-size: 18px;
   font-weight: 600;
   color: #111827;
 `;
-
 const SummaryHeader = styled.div`
   display: flex;
   gap: 16px;
@@ -85,7 +81,6 @@ const SummaryHeader = styled.div`
   border-bottom: 1px solid #e5e7eb;
   margin-bottom: 16px;
 `;
-
 const SummaryClassImage = styled.img`
   width: 90px;
   height: 60px;
@@ -93,11 +88,9 @@ const SummaryClassImage = styled.img`
   border-radius: 8px;
   flex-shrink: 0;
 `;
-
 const SummaryClassDetails = styled.div`
   flex: 1;
 `;
-
 const SummaryTitle = styled.h3`
   margin: 0 0 6px 0;
   font-size: 16px;
@@ -105,18 +98,15 @@ const SummaryTitle = styled.h3`
   font-weight: 600;
   line-height: 1.3;
 `;
-
 const ClassDetail = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
   color: #4b5563;
   font-size: 13px;
-
   &:not(:last-child) {
     margin-bottom: 6px;
   }
-
   svg {
     color: #9ca3af;
     width: 16px;
@@ -124,20 +114,17 @@ const ClassDetail = styled.div`
     flex-shrink: 0;
   }
 `;
-
 const PriceBreakdown = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
 `;
-
 const PriceRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 14px;
   color: ${(props) => (props.$success ? "#10b981" : "#4b5563")};
-
   &.total {
     font-size: 16px;
     font-weight: 600;
@@ -147,7 +134,6 @@ const PriceRow = styled.div`
     border-top: 1px solid #e5e7eb;
   }
 `;
-
 const InfoPanel = styled.div`
   display: flex;
   gap: 12px;
@@ -156,14 +142,12 @@ const InfoPanel = styled.div`
   margin-top: 16px;
   background: ${(props) => props.$bgColor || "#f9fafb"};
   border: 1px solid ${(props) => props.$borderColor || "#e5e7eb"};
-
   svg {
     flex-shrink: 0;
     width: 20px;
     height: 20px;
     color: ${(props) => props.$iconColor || "#6b7280"};
   }
-
   div {
     flex: 1;
     h5 {
@@ -180,7 +164,6 @@ const InfoPanel = styled.div`
     }
   }
 `;
-
 const CardElementContainer = styled.div`
   padding: 14px;
   border: 1px solid #d1d5db;
@@ -188,23 +171,19 @@ const CardElementContainer = styled.div`
   background: white;
   margin-top: 4px;
   transition: border-color 0.2s, box-shadow 0.2s;
-
   &:focus-within {
     border-color: #ff385c;
     box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.2);
   }
 `;
-
 const ParticipantSection = styled.div`
   padding-top: 8px;
 `;
-
 const ParticipantEntry = styled.div`
   .ant-form-item {
     margin-bottom: 12px;
   }
 `;
-
 const CouponInputWrapper = styled.div`
   display: flex;
   gap: 8px;
@@ -215,7 +194,6 @@ const CouponInputWrapper = styled.div`
     }
   }
 `;
-
 const AppliedCouponDisplay = styled.div`
   display: flex;
   justify-content: space-between;
@@ -228,10 +206,8 @@ const AppliedCouponDisplay = styled.div`
   color: #005f9e;
   font-weight: 500;
 `;
-
 const MobilePaymentFooter = styled(motion.div)`
   display: none;
-
   @media (max-width: 968px) {
     display: flex;
     flex-direction: column;
@@ -248,7 +224,6 @@ const MobilePaymentFooter = styled(motion.div)`
     z-index: 100;
   }
 `;
-
 const MobilePriceRow = styled.div`
   display: flex;
   justify-content: space-between;
@@ -257,7 +232,6 @@ const MobilePriceRow = styled.div`
   color: #111827;
   font-weight: 600;
 `;
-
 const mobileFooterVariants = {
   hidden: { y: "100%", opacity: 0 },
   visible: {
@@ -272,7 +246,7 @@ const mobileFooterVariants = {
   },
 };
 
-// ... (ParticipantNameInputs component remains unchanged)
+// Helper component for participant names
 const ParticipantNameInputs = ({
   count,
   form,
@@ -373,41 +347,46 @@ const ReviewAndPaymentStep = ({
   const [isFormValid, setIsFormValid] = useState(false);
   const [isCardComplete, setIsCardComplete] = useState(false);
 
+  // --- OPTIMIZATION: Debounce Timer Ref ---
+  const debounceTimerRef = useRef(null);
+
   useEffect(() => {
     if (form) {
       if (isUserLoggedIn) {
         form.setFieldsValue({
           email: bookingData.userEmail || "",
           phone: bookingData.userPhone || "",
-          // Clear guest name when logging in, if it exists
           guest_full_name: "",
         });
       } else {
-        // Clear all contact/billing fields when user is logged out
-        form.resetFields([
-          "email",
-          "phone",
-          "guest_full_name",
-          "fullName",
-          "address",
-          "city",
-          "state",
-          "zipCode",
-        ]);
+        // Keep existing values if present to avoid clearing on unnecessary re-renders
+        const currentValues = form.getFieldsValue();
+        if (!currentValues.email) {
+             form.resetFields([
+              "email",
+              "phone",
+              "guest_full_name",
+              "fullName",
+              "address",
+              "city",
+              "state",
+              "zipCode",
+            ]);
+        }
       }
     }
-    // This effect should only run when the user's login status or their data changes.
   }, [isUserLoggedIn, bookingData.userEmail, bookingData.userPhone, form]);
 
-  // Effect 2: Handles initialization of non-contact fields from bookingData.
   useEffect(() => {
     if (form) {
-      form.setFieldsValue({
-        participant_details: bookingData.participant_details || [],
-        notes: bookingData.notes || "",
-      });
+      const currentNotes = form.getFieldValue("notes");
+      if (currentNotes !== bookingData.notes) {
+          form.setFieldsValue({
+            participant_details: bookingData.participant_details || [],
+            notes: bookingData.notes || "",
+          });
+      }
     }
-    // This effect runs only when these specific props change, without affecting contact info.
   }, [bookingData.participant_details, bookingData.notes, form]);
 
   const selectedSlot = bookingData.selectedSlots?.[0];
@@ -416,7 +395,7 @@ const ReviewAndPaymentStep = ({
   const basePrice = parseFloat(selectedSlot?.price || option?.price || 0);
   const subtotal = basePrice * participantsCount;
 
-  const { discountAmount, finalTotal } = useCallback(() => {
+  const { discountAmount, finalTotal } = useMemo(() => {
     const calculatedDiscount = appliedDiscount
       ? parseFloat(appliedDiscount.calculated_discount_amount) || 0
       : 0;
@@ -427,9 +406,9 @@ const ReviewAndPaymentStep = ({
       taxAmount: tax,
       finalTotal: subtotalAfter + tax,
     };
-  }, [subtotal, appliedDiscount])();
+  }, [subtotal, appliedDiscount]);
 
-  const taxAmount = Math.max(0, subtotal - discountAmount) * HST_RATE;
+  const taxAmount = (subtotal - discountAmount) * HST_RATE;
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -464,8 +443,17 @@ const ReviewAndPaymentStep = ({
   };
 
   const handleFormValuesChange = (changedValues, allValues) => {
-    onUpdateBookingData(allValues);
+    // --- OPTIMIZATION: Debounce the parent state update ---
+    // This prevents the entire modal from re-rendering on every keystroke
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
 
+    debounceTimerRef.current = setTimeout(() => {
+       onUpdateBookingData(allValues);
+    }, 300); // Wait 300ms after typing stops
+
+    // Local validation runs immediately
     const {
       email,
       phone,
@@ -518,8 +506,8 @@ const ReviewAndPaymentStep = ({
       const intentResponse = await paymentService.createPaymentIntent(
         paymentIntentPayload
       );
-      if (intentResponse.booking?.id) {
-        onPaymentComplete(intentResponse.booking);
+      if (intentResponse.booking_id) {
+        onPaymentComplete(intentResponse);
         return;
       }
 
@@ -559,16 +547,36 @@ const ReviewAndPaymentStep = ({
     } finally {
       setLoading(false);
     }
-  }, [stripe, elements, form, bookingData, onPaymentComplete, isUserLoggedIn]);
+  }, [
+    stripe,
+    elements,
+    form,
+    bookingData,
+    onPaymentComplete,
+    isUserLoggedIn,
+    participantsCount,
+    appliedDiscount,
+    selectedSlot,
+  ]);
 
   useEffect(() => {
     onPaymentAction?.({
       handleSubmit,
       loading,
-      canSubmit: stripe && elements && !loading,
+      canSubmit:
+        stripe && elements && !loading && isFormValid && isCardComplete,
       finalTotal,
     });
-  }, [onPaymentAction, handleSubmit, loading, stripe, elements, finalTotal]);
+  }, [
+    onPaymentAction,
+    handleSubmit,
+    loading,
+    stripe,
+    elements,
+    finalTotal,
+    isFormValid,
+    isCardComplete,
+  ]);
 
   const renderBookingDetails = () => {
     if (!selectedSlot) return null;
@@ -578,35 +586,64 @@ const ReviewAndPaymentStep = ({
       duration,
       isCourse,
       end_date,
-      day,
+      days,
       price,
       minParticipants,
     } = selectedSlot;
+
+    if (isCourse) {
+      return (
+        <>
+          <ClassDetail>
+            <CalendarIcon />
+            <span>
+              <strong>Course:</strong> {formatNaiveDate(date, "MMM d")} -{" "}
+              {formatNaiveDate(end_date, "MMM d, yyyy")}
+            </span>
+          </ClassDetail>
+          <ClassDetail>
+            <Clock />
+            <span>
+              Every {days.join(", ")} at{" "}
+              {formatTimeRangeForDisplay(
+                date,
+                time,
+                duration,
+                businessTimeZone,
+                userTimeZone
+              )}
+            </span>
+          </ClassDetail>
+          <ClassDetail>
+            <Tag />
+            <span>${parseFloat(price || 0).toFixed(2)} for the course</span>
+          </ClassDetail>
+        </>
+      );
+    }
 
     return (
       <>
         <ClassDetail>
           <CalendarIcon />
           <span>
-            {isCourse
-              ? `Course: ${formatDate(date)} - ${formatDate(end_date)}`
-              : `${formatDate(date)} at ${formatTime(time)}`}
+            {formatNaiveDate(date, "MMMM d, yyyy")} at{" "}
+            {formatTimeRangeForDisplay(
+              date,
+              time,
+              duration,
+              businessTimeZone,
+              userTimeZone
+            )}
           </span>
         </ClassDetail>
         <ClassDetail>
           <Clock />
-          <span>
-            {isCourse
-              ? `Classes every ${day}`
-              : `Duration: ${getDurationText(duration)}`}
-          </span>
+          <span>Duration: {getDurationText(duration)}</span>
         </ClassDetail>
         <ClassDetail>
           <Tag />
-          <span>
-            ${parseFloat(price || 0).toFixed(2)}{" "}
-            {isCourse ? "for the course" : "per person"}
-          </span>
+          <span>${parseFloat(price || 0).toFixed(2)} per person</span>
         </ClassDetail>
         {minParticipants > 1 && (
           <ClassDetail>
@@ -619,23 +656,6 @@ const ReviewAndPaymentStep = ({
       </>
     );
   };
-
-  const formatDate = (dateStr) =>
-    dateStr
-      ? new Date(dateStr.replace(/-/g, "/")).toLocaleDateString("en-US", {
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        })
-      : "N/A";
-  const formatTime = (timeStr) =>
-    timeStr
-      ? new Date(`1970-01-01T${timeStr}`).toLocaleTimeString([], {
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true,
-        })
-      : "N/A";
 
   const cardElementOptions = {
     style: {

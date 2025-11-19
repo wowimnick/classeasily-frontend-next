@@ -56,11 +56,10 @@ export const API_ENDPOINTS = {
   PAYMENTS_CREATE_INTENT: '/payments/create-payment-intent/',
   PAYMENTS_WEBHOOK: '/payments/webhook/',
 
-  // Course Endpoints
-  BUSINESS_COURSES: '/business/courses/',
-  BUSINESS_COURSE_ENROLLMENTS: '/business/course-enrollments/',
-  PUBLIC_COURSES: '/courses/',
-  COURSE_ENROLLMENT_CREATE: '/bookings/course/',
+  // --- CORRECTED COURSE ENDPOINTS ---
+  BUSINESS_COURSES: '/business/course-management/', 
+  PUBLIC_COURSES: '/business/courses/', 
+  STUDENT_COURSE_ENROLLMENTS: '/business/student/course-enrollments/',
 
   // Support & Chat
   SUPPORT_TICKETS: '/support-tickets/',
@@ -1808,7 +1807,7 @@ export const courseService = {
   getPublicCourses: async (params = {}) => {
     try {
       const response = await axiosInstance.get(API_ENDPOINTS.PUBLIC_COURSES, { params });
-      return { success: true, data: response.data };
+      return { success: true, data: response.data.results || response.data };
     } catch (error) {
       console.error('Error fetching public courses:', error.response?.data || error);
       return { success: false, error: error.response?.data?.detail || 'Failed to fetch courses' };
@@ -1836,9 +1835,10 @@ export const courseService = {
     }
   },
 
-  getCourseEnrollments: async (params = {}) => {
+  getBusinessCourseEnrollments: async (courseScheduleId, params = {}) => {
     try {
-      const response = await axiosInstance.get(API_ENDPOINTS.BUSINESS_COURSE_ENROLLMENTS, { params });
+      // This endpoint is a custom action on the BusinessCourseManagementViewSet
+      const response = await axiosInstance.get(`${API_ENDPOINTS.BUSINESS_COURSES}${courseScheduleId}/enrollments/`, { params });
       return { success: true, data: response.data };
     } catch (error) {
       console.error('Error fetching course enrollments:', error.response?.data || error);
@@ -1846,31 +1846,10 @@ export const courseService = {
     }
   },
 
-  getCourseEnrollmentDetail: async (enrollmentId) => {
-    try {
-      const response = await axiosInstance.get(`${API_ENDPOINTS.BUSINESS_COURSE_ENROLLMENTS}${enrollmentId}/`);
-      return { success: true, data: response.data };
-    } catch (error) {
-      console.error(`Error fetching enrollment detail ${enrollmentId}:`, error.response?.data || error);
-      return { success: false, error: error.response?.data?.detail || 'Failed to fetch enrollment detail' };
-    }
-  },
-
-  getCourseSchedules: async (classId) => {
-    try {
-      const response = await axiosInstance.get(API_ENDPOINTS.BUSINESS_SCHEDULES, {
-        params: { class_id: classId, booking_type: 'Full Course' }
-      });
-      return { success: true, data: response.data };
-    } catch (error) {
-      console.error(`Error fetching course schedules for class ${classId}:`, error.response?.data || error);
-      return { success: false, error: 'Failed to fetch course schedules' };
-    }
-  },
-
-  // Student enrollment
+  // Student enrollment (for creating, viewing, and canceling their own)
   createCourseEnrollment: async (enrollmentData) => {
     try {
+      // Uses the correct student-facing endpoint for creation
       const response = await axiosInstance.post(API_ENDPOINTS.STUDENT_COURSE_ENROLLMENTS, enrollmentData);
       return { success: true, data: response.data };
     } catch (error) {
@@ -1879,9 +1858,19 @@ export const courseService = {
     }
   },
 
-  cancelCourseEnrollment: async (enrollmentId, reason) => {
+  getMyCourseEnrollments: async (params = {}) => {
     try {
-      const response = await axiosInstance.post(`${API_ENDPOINTS.BUSINESS_COURSE_ENROLLMENTS}${enrollmentId}/cancel/`, { reason });
+        const response = await axiosInstance.get(API_ENDPOINTS.STUDENT_COURSE_ENROLLMENTS, { params });
+        return { success: true, data: response.data };
+    } catch (error) {
+        console.error('Error fetching student course enrollments:', error.response?.data || error);
+        return { success: false, error: 'Failed to fetch your enrollments' };
+    }
+  },
+
+  cancelMyCourseEnrollment: async (enrollmentId, reason = '') => {
+    try {
+      const response = await axiosInstance.post(`${API_ENDPOINTS.STUDENT_COURSE_ENROLLMENTS}${enrollmentId}/cancel/`, { reason });
       return { success: true, data: response.data };
     } catch (error) {
       console.error(`Error canceling enrollment ${enrollmentId}:`, error.response?.data || error);

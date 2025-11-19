@@ -227,7 +227,6 @@ const MobileFooter = styled.div`
 `;
 
 const StyledTabs = styled(Tabs)`
-  height: 100%;
   display: flex;
   flex-direction: column;
 
@@ -253,11 +252,9 @@ const StyledTabs = styled(Tabs)`
   .ant-tabs-content-holder {
     flex: 1;
     background: #f8fafc;
-    overflow-y: auto;
   }
 
   .ant-tabs-tabpane {
-    height: 100%;
     padding: 0;
     position: relative;
   }
@@ -842,8 +839,6 @@ const DropdownContent = styled(motion.div)`
 `;
 
 const ScheduleListContainer = styled(motion.div)`
-  flex-grow: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1487,7 +1482,7 @@ const ScheduleManagementView = React.memo(({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column" }}>
       <ScheduleFilters />
       {renderContent()}
     </div>
@@ -1522,6 +1517,7 @@ const ScheduleEditDrawer = ({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  // MODIFIED: Added setActiveView("manage") to the cleanup logic in the 'else' block
   useEffect(() => {
     if (open) {
       if (startInEditMode && directEditingSchedule) {
@@ -1538,6 +1534,7 @@ const ScheduleEditDrawer = ({
       setBulkCurrentStep(0);
       setFormData({});
       setEditingSchedule(null);
+      setActiveView("manage"); // This ensures the view is reset on close
     }
   }, [open, classData, startInEditMode, directEditingSchedule, form, bulkForm]);
 
@@ -2594,13 +2591,9 @@ const ScheduleEditDrawer = ({
           closable={!isLoading && !isBulkLoading}
           footer={renderFooterButtons(false)}
         >
-          {activeView === 'manage' && renderContent()}
-          
-          {activeView === 'form' && (
-            <AnimatedModalContent>
-              {renderContent()}
-            </AnimatedModalContent>
-          )}
+          <AnimatedModalContent>
+            {renderContent()}
+          </AnimatedModalContent>
         </DesktopModal>
       )}
 

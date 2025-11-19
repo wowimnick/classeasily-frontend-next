@@ -4,7 +4,6 @@ import React from "react";
 import styled from "styled-components";
 import { Alert, Button as AntButton } from "antd";
 import ExploreHeader from "@/components/explore/ExploreHeader";
-import Footer from "@/components/homepage/Footer";
 
 const ErrorWrapper = styled.div`
   display: flex;
@@ -36,7 +35,6 @@ export default function Error({ error, reset }) {
           Try Again
         </AntButton>
       </ErrorWrapper>
-      <Footer />
     </>
   );
 }

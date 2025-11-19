@@ -194,7 +194,7 @@ const MenuIconStyled = styled(Menu)`
 `;
 
 const Title = styled.p`
-  font-family: "Proxima Soft";
+  font-family: "ProximaSoft";
   font-weight: 600;
   font-size: 2.5rem;
   padding: 0;
