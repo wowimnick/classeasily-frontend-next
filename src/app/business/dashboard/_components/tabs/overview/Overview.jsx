@@ -1,3 +1,5 @@
+// src/app/business/dashboard/_components/tabs/overview/Overview.jsx
+
 "use client";
 
 import React, {
@@ -850,6 +852,12 @@ const Overview = forwardRef((props, ref) => {
     }
   }, []);
 
+  // Fix for: "onDataRefresh is not defined"
+  // This callback wraps the fetch function to be passed down to children
+  const onDataRefresh = useCallback(() => {
+    fetchOverviewData();
+  }, [fetchOverviewData]);
+
   // Fetch data on mount
   useEffect(() => {
     console.error("🔵 Overview - Component mounted, fetching data");
@@ -1623,8 +1631,16 @@ const Overview = forwardRef((props, ref) => {
                         >
                           <ListItemContent>
                             <ClassInfo>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                <MinimalRankBadge>#{index + 1}</MinimalRankBadge>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                }}
+                              >
+                                <MinimalRankBadge>
+                                  #{index + 1}
+                                </MinimalRankBadge>
                                 <Tooltip title={cls.name}>
                                   <ClassName>{cls.name}</ClassName>
                                 </Tooltip>
