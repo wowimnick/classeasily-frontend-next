@@ -672,6 +672,7 @@ const BookingModal = ({
     return (
       <Drawer.Root
         open={isVisible}
+        repositionInputs={false}
         onOpenChange={(open) => {
           if (!open) {
             setIsVisible(false);

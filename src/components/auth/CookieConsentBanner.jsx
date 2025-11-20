@@ -71,7 +71,7 @@ const Header = styled.div`
 
 const Title = styled.h2`
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #2c3e50;
   display: flex;
@@ -258,7 +258,7 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
       </Header>
 
       <TextContent>
-        <Typography.Text style={{ color: "inherit", fontSize: "inherit" }}>
+        <Typography.Text style={{ color: "inherit", fontSize: "0.9rem" }}>
           We use cookies to analyze traffic. See our{" "}
           <StyledLink href="/cookie-policy">Policy</StyledLink>.
         </Typography.Text>

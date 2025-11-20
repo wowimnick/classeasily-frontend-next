@@ -379,7 +379,7 @@ const CompactContactModal = ({
     <ConfigProvider theme={appTheme}>
       {/* Mobile Drawer */}
       {isMobile ? (
-        <Drawer.Root open={true} onOpenChange={(open) => !open && onClose()}>
+        <Drawer.Root open={true} onOpenChange={(open) => !open && onClose()} repositionInputs={false}>
           <Drawer.Portal>
             <StyledDrawerOverlay />
             <StyledDrawerContent>

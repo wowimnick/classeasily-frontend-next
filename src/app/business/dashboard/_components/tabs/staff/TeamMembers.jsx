@@ -1050,6 +1050,7 @@ const TeamMembers = () => {
         <Drawer.Root
           open={isModalVisible}
           onOpenChange={(open) => !open && onModalClose()}
+          repositionInputs={false}
         >
           <Drawer.Portal>
             <StyledDrawerOverlay />

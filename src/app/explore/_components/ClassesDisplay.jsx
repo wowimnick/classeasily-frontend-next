@@ -92,46 +92,6 @@ const ClassGridWrapper = styled.div`
   }
 `;
 
-const HeaderContainer = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #ebebeb;
-  padding-bottom: 1rem;
-  margin-bottom: 1.5rem;
-  gap: 1rem;
-
-  @media (max-width: 768px) {
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
-  }
-`;
-
-const PageTitleHeader = styled.h1`
-  font-size: 16px;
-  font-weight: 600;
-  color: #222222;
-  margin: 0;
-  padding: 0;
-  line-height: 1.4;
-
-  @media (max-width: 768px) {
-    font-size: 15px;
-  }
-`;
-
-const ResultsCount = styled.p`
-  font-size: 14px;
-  font-weight: 500;
-  color: #717171;
-  margin: 0;
-  white-space: nowrap;
-  flex-shrink: 0;
-`;
-
 const ClassGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(
@@ -394,14 +354,12 @@ const ClassesDisplay = ({
     };
   }, [isMobile, showMap]);
 
-  // Force remount map when visibility changes to prevent reuse errors
   useEffect(() => {
     if (!isMobile && isMapVisible) {
       setMapKey((prev) => prev + 1);
     }
   }, [isMapVisible, isMobile]);
 
-  // Force remount map when mobile map is toggled
   useEffect(() => {
     if (isMobile && showMap) {
       setMapKey((prev) => prev + 1);
@@ -524,36 +482,6 @@ const ClassesDisplay = ({
     onCategoryChange("all", "");
   };
 
-  const pageHeading = useMemo(() => {
-    const subcategoryName = categories
-      .find((c) => c.key === currentCategory)
-      ?.subcategories?.find((sc) => sc.key === currentSubcategory)?.name;
-    const categoryName = categories.find(
-      (c) => c.key === currentCategory
-    )?.name;
-    const tagName = tag ? unslugify(tag) : "";
-    const cityName = city ? unslugify(city) : "";
-    const provinceName = province ? unslugify(province) : "";
-    const locationName = cityName
-      ? `${cityName}${provinceName ? `, ${provinceName}` : ""}`
-      : "";
-
-    let mainTopic = "Classes & Workshops";
-    if (tagName) {
-      mainTopic = `${tagName} Classes`;
-    } else if (subcategoryName) {
-      mainTopic = `${subcategoryName} Classes`;
-    } else if (categoryName && categoryName.toLowerCase() !== "all") {
-      mainTopic = `${categoryName} Classes`;
-    }
-
-    if (locationName) {
-      return `${mainTopic} in ${locationName}`;
-    }
-
-    return mainTopic;
-  }, [categories, currentCategory, currentSubcategory, tag, city, province]);
-
   const renderContent = () => {
     if (isNavigating) {
       return <ClassesContentSkeleton />;
@@ -630,21 +558,6 @@ const ClassesDisplay = ({
           />
         </CategoriesWrapper>
         <ClassGridWrapper>
-          {isNavigating || (loading && classesWithDistance.length === 0) ? (
-            <ClassesHeaderSkeleton />
-          ) : (
-            !loading &&
-            totalClassesCount > 0 && (
-              <HeaderContainer>
-                <PageTitleHeader>{pageHeading}</PageTitleHeader>
-                <ResultsCount>
-                  {totalClassesCount}{" "}
-                  {totalClassesCount === 1 ? "class" : "classes"}
-                </ResultsCount>
-              </HeaderContainer>
-            )
-          )}
-
           {renderContent()}
 
           {classesWithDistance.length > 0 && hasMorePages && !isLoadingMore && (

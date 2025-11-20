@@ -1031,6 +1031,7 @@ const ImportStudentsModal = ({ visible, onClose, onImportComplete }) => {
         <Drawer.Root
           open={visible}
           onOpenChange={(open) => !open && handleClose()}
+          repositionInputs={false}
         >
           <Drawer.Portal>
             <StyledDrawerOverlay />

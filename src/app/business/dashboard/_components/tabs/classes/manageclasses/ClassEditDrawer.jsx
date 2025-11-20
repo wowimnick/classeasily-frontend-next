@@ -2421,6 +2421,7 @@ const ClassEditDrawer = ({
             onOpenChange={handleOpenChange}
             direction={isMobile ? "bottom" : "right"}
             dismissible
+            repositionInputs={false}
           >
             <Drawer.Portal>
               <StyledDrawerOverlay />

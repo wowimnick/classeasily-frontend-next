@@ -45,10 +45,13 @@ function generateSearchCacheTags(params) {
  */
 export async function searchClasses(params = {}) {
   try {
-    // Build query string
     const queryParams = new URLSearchParams();
     
-    // Handle all search parameters
+    // Standardize page_size if not provided
+    if (!params.page_size) {
+      queryParams.append('page_size', '24'); // Default to 24 for better grid fill
+    }
+
     Object.entries(params).forEach(([key, value]) => {
       if (Array.isArray(value)) {
         value.forEach(v => queryParams.append(key, v));
@@ -60,36 +63,22 @@ export async function searchClasses(params = {}) {
     const url = `${BASE_URL}/classes/search/?${queryParams.toString()}`;
     const cacheTags = generateSearchCacheTags(params);
     
-    // Determine revalidation time based on search type
-    let revalidateTime = 86400; // 1 hour default
-    
-    // More frequent updates for location-based searches
-    if (params.lat && params.lng) {
-      revalidateTime = 86400; // 30 minutes
-    }
-    
-    // Less frequent for category-only searches
-    if (params.category_key && !params.lat && !params.lng) {
-      revalidateTime = 86400; // 2 hours
-    }
+    const isLocationSearch = params.lat && params.lng;
+    const cacheStrategy = isLocationSearch ? 'no-store' : 'force-cache';
+    const nextConfig = isLocationSearch 
+      ? {} // No tags/revalidate for live location search
+      : { revalidate: 3600, tags: cacheTags };
 
-    console.log(`[Server] Fetching classes with cache tags:`, cacheTags);
+    console.log(`[Server] Fetching classes: ${url}`);
 
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      cache: 'force-cache',
-      next: { 
-        revalidate: revalidateTime,
-        tags: cacheTags
-      }
+      headers: { 'Content-Type': 'application/json' },
+      cache: cacheStrategy,
+      next: nextConfig
     });
 
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`API request failed: ${response.status}`);
 
     const data = await response.json();
     
@@ -102,13 +91,7 @@ export async function searchClasses(params = {}) {
     };
   } catch (error) {
     console.error('Error searching classes:', error);
-    return {
-      success: false,
-      results: [],
-      count: 0,
-      next: null,
-      previous: null,
-    };
+    return { success: false, results: [], count: 0, next: null };
   }
 }
 

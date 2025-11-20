@@ -2259,6 +2259,7 @@ const ScheduleEditDrawer = ({
               onClose();
             }
           }}
+          repositionInputs={false}
         >
           <Drawer.Portal>
             <StyledDrawerOverlay />
@@ -2297,7 +2298,7 @@ const ScheduleEditDrawer = ({
             </StyledDrawerContent>
           </Drawer.Portal>
           
-          <Drawer.NestedRoot open={activeView === "form"} onOpenChange={(o) => !o && setActiveView("manage")}>
+          <Drawer.NestedRoot open={activeView === "form"} onOpenChange={(o) => !o && setActiveView("manage")} repositionInputs={false}>
             <Drawer.Portal>
                <StyledDrawerOverlay />
                <StyledDrawerContent style={{ height: '96%' }}>

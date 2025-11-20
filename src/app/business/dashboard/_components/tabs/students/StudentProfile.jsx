@@ -978,7 +978,7 @@ const StudentProfile = ({
     <ConfigProvider theme={appTheme}>
       {/* Mobile Drawer with Vaul */}
       {isMobile ? (
-        <Drawer.Root open={visible} onOpenChange={(open) => !open && onClose()}>
+        <Drawer.Root open={visible} onOpenChange={(open) => !open && onClose()} repositionInputs={false}>
           <Drawer.Portal>
             <StyledDrawerOverlay />
             <StyledDrawerContent>

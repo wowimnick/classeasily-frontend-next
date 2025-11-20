@@ -222,6 +222,8 @@ async function fetchServerData({ params, searchParams }) {
     apiParams.sort_by = searchParams.sort_by;
   }
 
+  apiParams.page_size = 24; 
+
   // Use the new searchClasses function with category-aware caching
   const [categoriesResponse, classesResponse] = await Promise.all([
     fetchHomepageCategories(),

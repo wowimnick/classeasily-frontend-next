@@ -20,7 +20,79 @@ const SkeletonBase = styled.div`
   border-radius: ${(props) => props.$radius || "8px"};
 `;
 
-// Main container matching GridContainer
+// --- HEADER SKELETON STYLES ---
+const SkeletonHeaderWrapper = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 80px;
+  padding: 0 2rem;
+  border-bottom: 1px solid #f1f1f1;
+  background-color: #fff;
+  position: relative;
+  z-index: 98;
+
+  @media (max-width: 768px) {
+    height: 60px;
+    padding: 0 1rem;
+  }
+`;
+
+const SkeletonLogo = styled(SkeletonBase)`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    width: 32px;
+    height: 32px;
+  }
+`;
+
+const SkeletonSearchBar = styled(SkeletonBase)`
+  width: 550px;
+  height: 48px;
+  border-radius: 40px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const SkeletonMobileSearchTrigger = styled(SkeletonBase)`
+  display: none;
+  @media (max-width: 768px) {
+    display: block;
+    flex: 1;
+    margin: 0 0.75rem;
+    height: 40px;
+    border-radius: 40px;
+  }
+`;
+
+const SkeletonUserSection = styled.div`
+  display: flex;
+  align-items: center;
+  padding-left: 1rem;
+  gap: 1rem;
+  
+  @media (max-width: 768px) {
+    padding-left: 0;
+  }
+`;
+
+const SkeletonUserPill = styled(SkeletonBase)`
+  width: 80px;
+  height: 40px;
+  border-radius: 30px;
+`;
+
+// --- MAIN CONTENT SKELETONS ---
+
 const SkeletonGridContainer = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 40%);
@@ -38,7 +110,6 @@ const SkeletonGridContainer = styled.div`
   }
 `;
 
-// Left container
 const SkeletonLeftContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -48,7 +119,6 @@ const SkeletonLeftContainer = styled.div`
   border-right: 1px solid #e8e8e8;
 `;
 
-// Categories skeleton
 const SkeletonCategoriesWrapper = styled.div`
   flex-shrink: 0;
   position: sticky;
@@ -143,7 +213,6 @@ const SkeletonFilterButton = styled(SkeletonBase)`
   }
 `;
 
-// Subcategories skeleton
 const SkeletonSubCategories = styled.div`
   display: flex;
   position: relative;
@@ -170,7 +239,6 @@ const SkeletonSubCategoryPill = styled(SkeletonBase)`
   }
 `;
 
-// Content area skeleton
 const SkeletonClassGridWrapper = styled.div`
   flex-grow: 1;
   padding: 1.5rem 2.5rem;
@@ -178,44 +246,6 @@ const SkeletonClassGridWrapper = styled.div`
 
   @media (max-width: 1048px) {
     padding: 0.5rem;
-  }
-`;
-
-const SkeletonHeaderContainer = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #ebebeb;
-  padding-bottom: 1rem;
-  margin-bottom: 1.5rem;
-  gap: 1rem;
-
-  @media (max-width: 768px) {
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
-  }
-`;
-
-const SkeletonTitle = styled(SkeletonBase)`
-  height: 24px;
-  width: 300px;
-  max-width: 100%;
-
-  @media (max-width: 768px) {
-    height: 20px;
-    width: 200px;
-  }
-`;
-
-const SkeletonCount = styled(SkeletonBase)`
-  height: 20px;
-  width: 80px;
-
-  @media (max-width: 768px) {
-    height: 18px;
   }
 `;
 
@@ -245,7 +275,6 @@ const SkeletonClassGrid = styled.div`
   }
 `;
 
-// Updated Class card skeleton to match HomeClassCard exactly
 const SkeletonClassCard = styled.div`
   display: flex;
   flex-direction: column;
@@ -374,7 +403,6 @@ const SkeletonPriceSeparator = styled(SkeletonBase)`
   }
 `;
 
-// Map skeleton
 const SkeletonMapContainer = styled.div`
   position: relative;
   height: 100%;
@@ -404,7 +432,6 @@ const SkeletonMapButton = styled(SkeletonBase)`
   z-index: 2;
 `;
 
-// Compact skeleton for content area only
 export function ClassesContentSkeleton() {
   return (
     <SkeletonClassGrid>
@@ -455,17 +482,20 @@ export function SkeletonClassSingleCard() {
   );
 }
 
-// Header skeleton
-export function ClassesHeaderSkeleton() {
+// Header skeleton with search bar included (visual placeholder)
+export function ExploreHeaderSkeleton() {
   return (
-    <SkeletonHeaderContainer>
-      <SkeletonTitle />
-      <SkeletonCount />
-    </SkeletonHeaderContainer>
+    <SkeletonHeaderWrapper>
+      <SkeletonLogo />
+      <SkeletonSearchBar />
+      <SkeletonMobileSearchTrigger />
+      <SkeletonUserSection>
+        <SkeletonUserPill />
+      </SkeletonUserSection>
+    </SkeletonHeaderWrapper>
   );
 }
 
-// Full page skeleton
 export default function ExplorePageSkeleton() {
   return (
     <SkeletonGridContainer>

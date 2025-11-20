@@ -513,6 +513,12 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  // Mount tracking for Antd hydration
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const {
     searchTerm, setSearchTerm,
     datePickerValue, setDatePickerValue,
@@ -542,10 +548,9 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
         });
       }
     } else {
-      // If no explicit location param, check path (simplified)
       const segments = pathname.split("/").filter(Boolean);
       if (segments.length > 1 && segments[0] === 'explore') {
-        // Not fully parsing slugs here for brevity, relying on explicit context logic or user input
+        // Not fully parsing slugs here for brevity
       }
     }
 
@@ -559,7 +564,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
     }
   }, [searchParams, pathname, setSearchTerm, setDatePickerValue, setParticipantCount, setSelectedLocation]);
 
-  // Compute options for Desktop AutoComplete (duplication of logic for inline display)
+  // Compute options for Desktop AutoComplete
   const locationOptions = useMemo(() => {
     let options = [];
     if (searchTerm && geocodedAddressResults.length > 0) {
@@ -637,8 +642,8 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
         <ConfigProvider theme={exploreHeaderTheme}>
           {showOptionsWrapper && (
             <>
-              {/* Desktop Search Bar */}
-              <OptionsWrapper>
+              {/* Desktop Search Bar - Hidden until mounted */}
+              <OptionsWrapper style={{ visibility: isMounted ? "visible" : "hidden" }}>
                 <Option className="location-option">
                   <MapPin />
                   <StyledAutoComplete
@@ -702,9 +707,10 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
                 </Option>
               </OptionsWrapper>
 
-              {/* Mobile Trigger */}
+              {/* Mobile Trigger - Hidden until mounted */}
               <MobileSearchTrigger
                 onClick={() => setIsDrawerOpen(true)}
+                style={{ visibility: isMounted ? "visible" : "hidden" }}
               >
                 <SearchIcon size={20} color="#ff385c" />
                 <p>{searchTerm || "Start your search"}</p>

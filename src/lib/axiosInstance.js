@@ -1,4 +1,5 @@
-// src/lib/axiosInstance.js - FIXED SESSION EXPIRATION HANDLING
+// src/lib/axiosInstance.js
+
 import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -115,9 +116,6 @@ const axiosInstance = axios.create({
   adapter: nextJsFetchAdapter,
 });
 
-// Track if we're handling session expiration globally
-let sessionExpirationPromise = null;
-
 // Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
@@ -127,7 +125,25 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor with FIXED session expiration handling
+// ============================================================================
+// SILENT REFRESH & RETRY LOGIC
+// ============================================================================
+
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+// Response interceptor
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -139,60 +155,85 @@ axiosInstance.interceptors.response.use(
     }
 
     // Handle 401 Unauthorized - Session Expired
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
+    if (error.response?.status === 401 && !originalRequest._retry && typeof window !== 'undefined') {
       const url = originalRequest.url;
       
-      // Don't trigger session expiration for auth-related endpoints
+      // Ignored endpoints that shouldn't trigger refresh logic to avoid loops
       const isAuthEndpoint = url.includes('/auth/registration/') || 
                             url.includes('/login/') || 
                             url.includes('/auth/google/') ||
-                            url.includes('/token/refresh/') ||
+                            url.includes('/token/refresh/') || // Don't refresh the refresh endpoint
                             url.includes('/logout/') ||
                             url.includes('/auth/password/reset/');
 
-      // If it's not an auth endpoint
+      // If it's not an auth endpoint, attempt silent refresh
       if (!isAuthEndpoint) {
-        console.log('[Axios] Session expired - 401 on:', url);
-
-        // If we're already handling session expiration, wait for it
-        if (sessionExpirationPromise) {
-          console.log('[Axios] Already handling session expiration, waiting...');
-          await sessionExpirationPromise;
-          return Promise.reject(error);
+        if (isRefreshing) {
+          // If already refreshing, queue this request to retry after refresh completes
+          return new Promise(function(resolve, reject) {
+            failedQueue.push({ resolve, reject });
+          })
+            .then(function() {
+              return axiosInstance(originalRequest);
+            })
+            .catch(function(err) {
+              return Promise.reject(err);
+            });
         }
 
-        // Create a promise to handle session expiration
-        sessionExpirationPromise = (async () => {
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        try {
+          console.log('[Axios] 401 detected on non-auth endpoint. Attempting silent refresh...');
+          
+          // Attempt to refresh the cookie
+          await axiosInstance.post('/token/refresh/');
+          
+          console.log('[Axios] Silent refresh successful. Retrying original request.');
+          
+          // Process any queued requests (retry them)
+          processQueue(null, true);
+          
+          // Retry the original request
+          return axiosInstance(originalRequest);
+          
+        } catch (refreshError) {
+          console.error('[Axios] Silent refresh failed:', refreshError);
+          
+          // Fail all queued requests
+          processQueue(refreshError, null);
+          
+          // Handle UI feedback (Modal vs Redirect)
           try {
             // Import dynamically to avoid circular dependency
-            const { useAuthStore } = await import('./auth-client');
-            const { redirectToLogin } = await import('./auth-client');
-            
-            // Get current path before clearing
-            const currentPath = window.location.pathname + window.location.search;
+            const { useAuthStore, redirectToLogin } = await import('./auth-client');
             
             // Clear user state
             console.log('[Axios] Clearing user state due to session expiration');
             useAuthStore.getState().clearUser();
             
-            // Save redirect path and trigger login modal
-            // Only save non-home paths
-            if (currentPath !== '/' && currentPath !== '') {
-              console.log('[Axios] Saving redirect path:', currentPath);
+            // Check if we are on the registration page
+            const currentPath = window.location.pathname + window.location.search;
+            const isRegistrationPage = currentPath.includes('/business/register');
+
+            if (isRegistrationPage) {
+              console.log('[Axios] Registration page detected. Opening auth modal to preserve state.');
+              useAuthStore.getState().setShouldOpenAuthModal(true);
+            } else if (currentPath !== '/' && currentPath !== '') {
+              // For other pages, use standard redirect logic
               redirectToLogin(currentPath);
             } else {
-              // Just open modal without redirect
               useAuthStore.getState().setShouldOpenAuthModal(true);
             }
-          } finally {
-            // Reset the promise after 2 seconds
-            setTimeout(() => {
-              sessionExpirationPromise = null;
-            }, 2000);
+          } catch (importError) {
+            console.error('[Axios] Error importing auth client:', importError);
           }
-        })();
-
-        await sessionExpirationPromise;
+          
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
+        }
       }
     }
     

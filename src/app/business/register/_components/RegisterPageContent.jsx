@@ -16,6 +16,7 @@ import {
   WarningOutlined,
 } from "@ant-design/icons";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import { useAuth } from "@/lib/auth-client"; // Added useAuth import
 import axiosInstance from "@/lib/axiosInstance";
 import dynamic from "next/dynamic";
 import { useForm } from "./FormContext";
@@ -484,6 +485,8 @@ const RegisterPageContent = () => {
   const hasCheckedBusinessRef = useRef(false);
 
   const { user: currentUser, isLoading: loading } = useAuthUser();
+  // Destructure setShouldOpenAuthModal from useAuth
+  const { setShouldOpenAuthModal } = useAuth();
   const isAuthenticated = !!currentUser;
 
   const { formData, updateStepData, resetForm } = useForm();
@@ -686,18 +689,32 @@ const RegisterPageContent = () => {
     let imageS3Key = null;
 
     if (businessInfo.businessImage instanceof File) {
-      const uploadResult = await uploadService.uploadFile(
-        businessInfo.businessImage,
-        "business_image"
-      );
-      if (uploadResult.success) {
-        imageS3Key = uploadResult.s3_key;
-      } else {
-        message.error(
-          uploadResult.error || "Image upload failed. Please try again.",
-          5
+      try {
+        const uploadResult = await uploadService.uploadFile(
+          businessInfo.businessImage,
+          "business_image"
         );
-        throw new Error("Image upload failed.");
+        if (uploadResult.success) {
+          imageS3Key = uploadResult.s3_key;
+        } else {
+          message.error(
+            uploadResult.error || "Image upload failed. Please try again.",
+            5
+          );
+          throw new Error("Image upload failed.");
+        }
+      } catch (uploadError) {
+        // Handle session expiration during upload
+        if (uploadError.response?.status === 401) {
+          setIsSubmitting(false);
+          setShouldOpenAuthModal(true);
+          message.warning(
+            "Your session has expired. Please log in to submit your registration.",
+            5
+          );
+          return;
+        }
+        throw uploadError;
       }
     }
 
@@ -790,6 +807,18 @@ const RegisterPageContent = () => {
         message.success("Business registration submitted successfully!");
       }
     } catch (error) {
+      // Check for 401 Session Expired that failed auto-refresh
+      if (error.response?.status === 401) {
+        setIsSubmitting(false);
+        setShouldOpenAuthModal(true);
+        message.warning(
+          "Your session has expired. Please log in to submit your registration.",
+          5
+        );
+        // EARLY RETURN to prevent standard error handling
+        return;
+      }
+
       if (gaInitialized && typeof window !== "undefined") {
         import("react-ga4").then((GA) => {
           if (GA.default.isInitialized) {
@@ -847,7 +876,10 @@ const RegisterPageContent = () => {
         } catch (error) {
           console.error("Submission flow failed:", error.message);
         } finally {
-          setIsSubmitting(false);
+          // Don't set false here if we triggered modal, relying on logic inside handleFinalApiSubmit
+          if (!error?.response || error.response.status !== 401) {
+             setIsSubmitting(false);
+          }
         }
       } else {
         setDirection(1);

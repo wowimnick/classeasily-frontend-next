@@ -1673,6 +1673,7 @@ const BusinessReviews = () => {
           <Drawer.Root
             open={isRespondModalVisible}
             onOpenChange={(open) => !open && setIsRespondModalVisible(false)}
+            repositionInputs={false}
           >
             <Drawer.Portal>
               <StyledDrawerOverlay />
@@ -1715,6 +1716,7 @@ const BusinessReviews = () => {
           <Drawer.Root
             open={isReportModalVisible}
             onOpenChange={(open) => !open && setIsReportModalVisible(false)}
+            repositionInputs={false}
           >
             <Drawer.Portal>
               <StyledDrawerOverlay />

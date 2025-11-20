@@ -86,20 +86,6 @@ const CarouselContainer = styled.div`
   position: relative;
   width: 100%;
   padding: 0.5rem 0;
-
-  /* 
-     FIX: Logic to prevent "cut off" look. 
-     We use negative margins to pull the carousel container to the screen edges,
-     counteracting the MainWrapper padding on mobile.
-  */
-  @media (max-width: 768px) {
-    width: calc(100% + 3rem); /* 100% width + (1.5rem padding * 2 sides) */
-    margin-left: -1.5rem;
-  }
-  @media (max-width: 616px) {
-    width: calc(100% + 2rem); /* 100% width + (1rem padding * 2 sides) */
-    margin-left: -1rem;
-  }
 `;
 
 const EmblaViewport = styled.div`
@@ -114,29 +100,41 @@ const EmblaContainer = styled.div`
   will-change: transform; 
 
   /* 
-     FIX: We add padding INSIDE the scroll container equal to the removed margin.
-     This ensures the first card starts aligned with the title text, 
-     but subsequent cards scroll all the way to the edge.
+     Updated: Removed negative margins and added left padding 
+     to ensure the first card isn't cut off.
   */
-  padding: 1rem 0.5rem; /* Default desktop padding */
-  margin: 0 -0.5rem; /* Default desktop margin offset */
+  padding: 1rem 0.5rem 1rem 1rem; 
 
   @media (max-width: 768px) {
-    margin: 0; /* Reset default margin */
-    padding-left: 1.5rem; /* Align with MainWrapper padding */
-    padding-right: 1.5rem;
+    min-height: auto; /* Remove forced height on mobile so short cards fit tightly */
+    gap: 12px; /* Reduce gap to fit 2 items better */
   }
+
   @media (max-width: 616px) {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
 `;
 
 const SlideWrapper = styled.div`
   flex: 0 0 auto;
   position: relative;
+  
+  /* Desktop Width */
   width: 250px;
   min-width: 250px;
+
+  /* 
+     Mobile Optimization:
+     ~165px allows 2 cards to fit on a standard 375px/390px mobile screen
+     with a slight peek of the 3rd card, or a clean 2-column feel.
+     Reducing the width automatically scales down the image height 
+     (assuming aspect-ratio is preserved in HomeClassCard).
+  */
+  @media (max-width: 616px) {
+    width: 165px;
+    min-width: 165px;
+  }
 `;
 
 const ButtonContainer = styled(motion.div)`
