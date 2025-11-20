@@ -391,7 +391,7 @@ const SearchDrawer = () => {
                       <span className="label">When?</span>
                       <DatePicker 
                         variant="borderless" 
-                        placeholder="Add dates" 
+                        placeholder="Any week" 
                         value={datePickerValue} 
                         onChange={setDatePickerValue} 
                         disabledDate={d => d && d < dayjs().startOf("day")} 

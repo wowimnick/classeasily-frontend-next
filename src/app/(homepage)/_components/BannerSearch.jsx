@@ -152,6 +152,12 @@ const FilteredBackgroundImage = styled.div`
   opacity: 0;
   animation: fadeIn 0.6s ease-in forwards;
   animation-delay: 0.1s;
+  
+  /* CSS-based visibility toggling */
+  display: none;
+  @media (max-width: 1088px) {
+    display: block;
+  }
 
   @keyframes fadeIn {
     from { opacity: 0; }
@@ -168,10 +174,6 @@ const FilteredBackgroundImage = styled.div`
     background: linear-gradient(to bottom, transparent, white);
     z-index: 1;
   }
-
-  @media (min-width: 1089px) {
-    display: none;
-  }
 `;
 
 const Video = styled.video`
@@ -185,6 +187,8 @@ const Video = styled.video`
   background-color: #000;
   z-index: 0;
 
+  /* CSS-based visibility toggling */
+  display: block;
   @media (max-width: 1088px) {
     display: none;
   }
@@ -196,6 +200,8 @@ const DesktopContainer = styled.div`
   width: 100%;
   display: flex;
   justify-content: center;
+  
+  /* Controlled via CSS to match SSR */
   @media (max-width: 1088px) {
     display: none;
   }
@@ -262,7 +268,7 @@ const ClippedBackground = styled.div`
   z-index: -1;
   border-radius: 10px;
   clip-path: path(
-    "M 190,65 L 130,65 A 30,30 0 0,1 111,45 L 110,30 A 30,30 0 0,0 85,0 L 10,0 A 10,10 0 0,0 0,10 L 0,190 A 10,10 0 0,0 10,200 L 150,210 A 10,10 0 0,0 200,190 L 200,65 A 10,10 0 0,0 230,65 Z"
+    "M 230,65 L 170,65 A 30,30 0 0,1 151,45 L 150,30 A 30,30 0 0,0 125,0 L 10,0 A 10,10 0 0,0 0,10 L 0,190 A 10,10 0 0,0 10,200 L 190,210 A 10,10 0 0,0 240,190 L 240,65 A 10,10 0 0,0 270,65 Z"
   );
 
   @supports not (clip-path: path("")) {
@@ -314,6 +320,23 @@ const StyledParticipantSelect = styled(Select)`
     align-items: center;
     font-size: 14px !important;
   }
+
+  .ant-select-arrow {
+    top: 35% !important; 
+    right: 0px !important;
+  }
+`;
+
+// Placeholder for SSR to avoid FOUC
+const ParticipantPlaceholder = styled.div`
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  height: 25px;
+  padding-left: 12px;
+  min-width: 80px;
+  color: ${(props) => props.theme.token.colorText};
+  border-bottom: 1px solid transparent; /* Maintains height consistency */
 `;
 
 const SelectorsWrapper = styled.div`
@@ -348,6 +371,12 @@ const LocationWrapper = styled.div`
   max-width: 220px;
   transition: 0.3s all;
 
+  /* HIDE THE X (CLEAR ICON) */
+  .ant-select-clear {
+    display: none !important;
+  }
+
+  /* Ant Select Reset */
   .ant-select {
     width: 100%;
     height: 25px !important;
@@ -357,9 +386,12 @@ const LocationWrapper = styled.div`
     background: transparent !important;
     border-radius: 0 !important;
     border-bottom: 1px solid ${(props) => props.theme.token.colorBorder} !important;
+    transition: border-bottom-color 0.3s;
 
+    /* Added &:hover to ensure consistency */
     &.ant-select-focused,
-    &:focus-within {
+    &:focus-within,
+    &:hover {
       border-bottom-color: ${(props) => props.theme.token.colorPrimary} !important;
     }
 
@@ -370,6 +402,34 @@ const LocationWrapper = styled.div`
       padding: 0 !important;
     }
   }
+
+  .banner-search-input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    outline: none;
+    padding: 0;
+    font-size: 14px !important;
+    font-family: inherit !important;
+    color: ${(props) => props.theme.token.colorText} !important;
+
+    &::placeholder {
+      color: #bfbfbf !important; 
+      font-family: inherit !important;
+      opacity: 1;
+    }
+  }
+`;
+
+// Placeholder that looks exactly like the input
+const InputPlaceholder = styled.div`
+  width: 100%;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid ${(props) => props.theme.token.colorBorder};
+  font-size: 14px;
+  color: #bfbfbf; /* Placeholder color */
 `;
 
 const DateAndSearchWrapper = styled.div`
@@ -406,21 +466,43 @@ const DatePickerInputArea = styled.div`
     background: transparent !important;
     border: none !important;
     border-bottom: 1px solid ${(props) => props.theme.token.colorBorder} !important;
+    transition: border-bottom-color 0.3s;
+
+    /* Added &:hover to match Location field */
+    &.ant-picker-focused,
+    &:focus,
+    &:focus-within,
+    &:hover {
+      border-bottom-color: ${(props) => props.theme.token.colorPrimary} !important;
+      box-shadow: none !important;
+      outline: none !important;
+    }
   }
 
   .ant-picker-input > input {
     height: 23px !important;
     padding-bottom: 2px;
+    font-size: 14px !important;
+    font-family: inherit !important;
     color: ${(props) => props.theme.token.colorText} !important;
-    font-size: 14px;
+
+    &::placeholder {
+      color: #bfbfbf !important;
+      font-family: inherit !important;
+      opacity: 1;
+    }
   }
 `;
 
-const DatePickerLabel = styled(Typography.Text)`
+// Changed from styled(Typography.Text) to styled.label to avoid Theme Context dependency during SSR
+const DatePickerLabel = styled.label`
   font-size: 0.9rem;
   font-weight: 700;
-  color: ${(props) => props.theme.token.colorTextPrimary};
+  color: #1a1a1a; /* Hardcoded fallback to ensure visibility */
   margin-bottom: -2px;
+  cursor: pointer;
+  display: block;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 `;
 
 const RoundedSearchButton = styled(motion.button)`
@@ -460,6 +542,7 @@ const ButtonText = styled.div`
 const MobileContainer = styled.div`
   width: 100%;
   padding: 1rem 1.5rem;
+  /* Controlled via CSS to match SSR */
   display: none;
   flex-direction: column;
   align-items: center;
@@ -545,50 +628,31 @@ const PillSubtext = styled.div`
   text-overflow: ellipsis;
 `;
 
-const participantOptions = Array.from({ length: 10 }, (_, i) => ({
+const participantOptions = Array.from({ length: 9 }, (_, i) => ({
   value: i + 1,
-  label: i === 0 ? "1 Person" : i === 9 ? "10+ People" : `${i + 1} People`,
+  label: i === 0 ? "1 Person" : i === 8 ? "9+ People" : `${i + 1} People`,
 }));
 
 const BLACK_PIXEL =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
-const BannerSearch = () => {
-  const router = useRouter();
-  const { 
-    // We primarily use the context for Mobile Drawer sync and triggering.
-    // For desktop, we can use local state or shared state. 
-    // To keep the desktop form feeling responsive and independent until search, 
-    // we will use the context hook methods for the drawer, but duplicate logic for the desktop inline form to keep it cleanly separated as requested in strict refactorings, 
-    // OR we can wire the desktop form to the context.
-    // Given the requirement "Ensure state is maintained between them", we will sync the desktop inputs to the context on change.
-    searchTerm, setSearchTerm,
+// ------------------------------------------------------------------------
+//  INTERNAL COMPONENTS: Separating Dynamic Logic from Static Layout
+// ------------------------------------------------------------------------
+
+// 1. Desktop Logic
+//    Contains useSearch() and other hooks that might fail SSR
+const DesktopSearchForm = () => {
+  const {
+    searchTerm,
     datePickerValue, setDatePickerValue,
     participantCount, setParticipantCount,
     geocoding, geocodedAddressResults,
     handleLocationChange, handleLocationSelect,
-    performSearch, setIsDrawerOpen
+    performSearch
   } = useSearch();
 
-  const [isMounted, setIsMounted] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isAntdReady, setIsAntdReady] = useState(false);
-  
-  // Computed options for Desktop AutoComplete (duplicating the logic from context/drawer for the inline display)
-  // In a deeper refactor, we'd export this generator from context too, but here we'll just access what we have.
   const [locationOptions, setLocationOptions] = useState([]);
-
-  useEffect(() => {
-    setIsMounted(true);
-    setIsAntdReady(true);
-    const checkIsMobile = () => setIsMobile(window.innerWidth <= 1088);
-    checkIsMobile();
-    
-    window.addEventListener("resize", checkIsMobile);
-    return () => {
-        window.removeEventListener("resize", checkIsMobile);
-    };
-  }, []);
 
   const generateLocationOptions = useCallback(() => {
     let options = [];
@@ -647,216 +711,276 @@ const BannerSearch = () => {
     performSearch();
   };
 
-  // Helper for mobile pill label (Reading from Shared Context)
+  return (
+    <InputsWrapper onSubmit={handleDesktopSubmit}>
+      <ClippedBackground />
+      
+      <ParticipantInputContainer>
+        <Users size={20} color="#000" aria-hidden="true" />
+        <StyledParticipantSelect
+          id="participant-count"
+          value={participantCount}
+          onChange={setParticipantCount}
+          aria-label="Number of participants"
+          options={participantOptions}
+          variant="borderless"
+          popupClassName="participant-count-dropdown"
+          popupMatchSelectWidth={false}
+          dropdownStyle={{ minWidth: "80px" }}
+        />
+      </ParticipantInputContainer>
+
+      <SelectorsWrapper>
+        <LocationSearchWrapper>
+          <LocationWrapper>
+            <MapPin
+              style={{
+                marginRight: "0.5rem",
+                marginTop: "0.5rem",
+                flexShrink: 0,
+              }}
+              color="black"
+              size={25}
+            />
+            <div style={{ width: "100%" }}>
+              <ButtonText>
+                <Typography.Text
+                  style={{ fontSize: "0.9rem", fontWeight: "700" }}
+                >
+                  Location
+                </Typography.Text>
+              </ButtonText>
+              
+              <AutoComplete
+                value={searchTerm}
+                options={locationOptions}
+                onSelect={handleLocationSelect}
+                onChange={handleLocationChange}
+                filterOption={false}
+                style={{
+                  width: "100%",
+                  height: "25px",
+                }}
+                popupClassName="banner-search-location-dropdown"
+                notFoundContent={
+                  geocoding ? (
+                    <div className="dropdown-loader-container">
+                      <GlobalLoaderWithInlineStyles />
+                    </div>
+                  ) : searchTerm &&
+                    !locationOptions.some(
+                      (group) => group.options.length > 0
+                    ) ? (
+                    <div className="dropdown-no-results">
+                      No results found for &quot;{searchTerm}&quot;
+                    </div>
+                  ) : null
+                }
+              >
+                <input
+                  className="banner-search-input"
+                  placeholder="City or address"
+                />
+              </AutoComplete>
+            </div>
+          </LocationWrapper>
+        </LocationSearchWrapper>
+
+        <DateAndSearchWrapper>
+          <DatePickerWrapper>
+            <CalendarSearch color="#000" size={20} aria-hidden="true" />
+            <DatePickerInputArea>
+              <DatePickerLabel htmlFor="date-picker">
+                Date
+              </DatePickerLabel>
+              <DatePicker
+                id="date-picker"
+                name="date-picker"
+                variant="borderless"
+                placeholder="Whenever"
+                disabledDate={(current) =>
+                  current && current < dayjs().startOf("day")
+                }
+                onChange={setDatePickerValue}
+                format="YYYY-MM-DD"
+                value={datePickerValue}
+                allowClear={true}
+                inputReadOnly={false}
+                popupClassName="banner-search-datepicker"
+              />
+            </DatePickerInputArea>
+          </DatePickerWrapper>
+
+          <RoundedSearchButton
+            type="submit"
+            aria-label="Search classes"
+          >
+            <Search size={20} />
+          </RoundedSearchButton>
+        </DateAndSearchWrapper>
+      </SelectorsWrapper>
+    </InputsWrapper>
+  );
+};
+
+// 2. Mobile Logic
+//    Uses useSearch() for the Drawer interaction
+const MobileSearchPill = () => {
+  const {
+    searchTerm,
+    datePickerValue,
+    participantCount,
+    setIsDrawerOpen
+  } = useSearch();
+
   const getPillLabel = () => {
-      if (searchTerm) return searchTerm;
-      return "Find a class?";
+    if (searchTerm) return searchTerm;
+    return "Find a class?";
   };
-  
+
   const getPillSubLabel = () => {
-      let parts = [];
-      if (datePickerValue) parts.push(dayjs(datePickerValue).format("MMM D"));
-      else parts.push("Any week");
-      
-      if (participantCount > 1) parts.push(`${participantCount} people`);
-      else parts.push("Add people");
-      
-      return parts.join(" • ");
+    let parts = [];
+    if (datePickerValue) parts.push(dayjs(datePickerValue).format("MMM D"));
+    else parts.push("Any week");
+
+    if (participantCount > 1) parts.push(`${participantCount} people`);
+    else parts.push("Add people");
+
+    return parts.join(" • ");
   };
+
+  return (
+    <StaticSearchPill onClick={() => setIsDrawerOpen(true)} whileTap={{ scale: 0.95 }}>
+      <div className="icon-circle">
+        <Search size={22} strokeWidth={2.5} />
+      </div>
+      <div className="content">
+        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+          <PillText>{getPillLabel()}</PillText>
+          <PillSubtext>{getPillSubLabel()}</PillSubtext>
+        </div>
+      </div>
+    </StaticSearchPill>
+  );
+};
+
+// --- MAIN EXPORT ---
+
+const BannerSearch = () => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // 3. Fallbacks (STATIC HTML ONLY)
+  //    These match the styled components exactly but contain NO Logic/Hooks.
+  //    This prevents "Uncached data accessed outside Suspense" errors on the server.
+  
+  const DesktopFallback = () => (
+    <InputsWrapper>
+      <ClippedBackground />
+      <ParticipantInputContainer>
+        <Users size={20} color="#000" />
+        <ParticipantPlaceholder>1 Person</ParticipantPlaceholder>
+      </ParticipantInputContainer>
+      <SelectorsWrapper>
+        <LocationSearchWrapper>
+          <LocationWrapper>
+            <MapPin style={{ marginRight: "0.5rem", marginTop: "0.5rem" }} color="black" size={25} />
+            <div style={{ width: "100%" }}>
+               <ButtonText>
+                 <span style={{ fontSize: "0.9rem", fontWeight: "700", color: "#1a1a1a" }}>Location</span>
+               </ButtonText>
+               <InputPlaceholder>City or address</InputPlaceholder>
+            </div>
+          </LocationWrapper>
+        </LocationSearchWrapper>
+        <DateAndSearchWrapper>
+          <DatePickerWrapper>
+            <CalendarSearch color="#000" size={20} />
+            <DatePickerInputArea>
+               <DatePickerLabel>Date</DatePickerLabel>
+               <InputPlaceholder style={{ width: '120px' }}>Whenever</InputPlaceholder>
+            </DatePickerInputArea>
+          </DatePickerWrapper>
+          <RoundedSearchButton type="button">
+             <Search size={20} />
+          </RoundedSearchButton>
+        </DateAndSearchWrapper>
+      </SelectorsWrapper>
+    </InputsWrapper>
+  );
+
+  const MobileFallback = () => (
+    <StaticSearchPill>
+      <div className="icon-circle">
+        <Search size={22} strokeWidth={2.5} />
+      </div>
+      <div className="content">
+        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+          <PillText>Find a class?</PillText>
+          <PillSubtext>Any week • Add people</PillSubtext>
+        </div>
+      </div>
+    </StaticSearchPill>
+  );
 
   return (
     <Banner aria-labelledby="banner-heading">
       <BannerSearchDropdownStyles />
-      <SearchDrawer />
 
-      {isMounted && isMobile && (
-        <FilteredBackgroundImage>
-          <Image
-            src="/homepageMobile.webp"
-            alt="Background"
-            fill
-            priority
-            fetchPriority="high"
-            quality={85}
-            sizes="100vw"
-            placeholder="blur"
-            blurDataURL={BLACK_PIXEL}
-            style={{ objectFit: "cover" }}
-          />
-        </FilteredBackgroundImage>
-      )}
+      <FilteredBackgroundImage>
+        <Image
+          src="/homepageMobile.webp"
+          alt="Background"
+          fill
+          priority
+          fetchPriority="high"
+          quality={85}
+          sizes="100vw"
+          placeholder="blur"
+          blurDataURL={BLACK_PIXEL}
+          style={{ objectFit: "cover" }}
+        />
+      </FilteredBackgroundImage>
 
-      {isMounted && !isMobile && (
-        <Video
-          autoPlay
-          loop
-          muted
-          playsInline
-          poster="/videos/1.png"
-          preload="none"
-        >
-          <source src="/videos/Classes.mp4" type="video/mp4" />
-        </Video>
-      )}
+      <Video
+        autoPlay
+        loop
+        muted
+        playsInline
+        poster="/videos/1.png"
+        preload="none"
+      >
+        <source src="/videos/Classes.mp4" type="video/mp4" />
+      </Video>
 
-      {/* --- DESKTOP LAYOUT --- */}
-      {!isMobile && (
-        <DesktopContainer>
-            <MainWrapper>
-                <MainContent>
-                <HeroText id="banner-heading">
-                    Learn locally
-                </HeroText>
-                <SubText>
-                    Explore What Ignites Your Mind. Discover Countless Local Classes &
-                    Workshops.
-                </SubText>
-                {isAntdReady ? (
-                    <InputsWrapper onSubmit={handleDesktopSubmit}>
-                    <ClippedBackground />
-                    <ParticipantInputContainer>
-                        <Users size={20} color="#000" aria-hidden="true" />
-                        <StyledParticipantSelect
-                        id="participant-count"
-                        value={participantCount}
-                        onChange={setParticipantCount}
-                        aria-label="Number of participants"
-                        options={participantOptions}
-                        variant="borderless"
-                        popupClassName="participant-count-dropdown"
-                        popupMatchSelectWidth={false}
-                        dropdownStyle={{ minWidth: "80px" }}
-                        />
-                    </ParticipantInputContainer>
+      <DesktopContainer>
+        <MainWrapper>
+          <MainContent>
+            <HeroText id="banner-heading">
+              Learn locally
+            </HeroText>
+            <SubText>
+              Explore What Ignites Your Mind. Discover Countless Local Classes &
+              Workshops.
+            </SubText>
+            
+            {/* SWAP: Fallback (SSR) vs Real Form (CSR) */}
+            {isMounted ? <DesktopSearchForm /> : <DesktopFallback />}
 
-                    <SelectorsWrapper>
-                        <LocationSearchWrapper>
-                        <LocationWrapper>
-                            <MapPin
-                            style={{
-                                marginRight: "0.5rem",
-                                marginTop: "0.5rem",
-                                flexShrink: 0,
-                            }}
-                            color="black"
-                            size={25}
-                            />
-                            <div style={{ width: "100%" }}>
-                            <ButtonText>
-                                <Typography.Text
-                                style={{ fontSize: "0.9rem", fontWeight: "700" }}
-                                >
-                                Location
-                                </Typography.Text>
-                            </ButtonText>
-                            <AutoComplete
-                                value={searchTerm}
-                                options={locationOptions}
-                                onSelect={handleLocationSelect}
-                                onChange={handleLocationChange}
-                                filterOption={false}
-                                style={{
-                                width: "100%",
-                                height: "25px",
-                                }}
-                                popupClassName="banner-search-location-dropdown"
-                                notFoundContent={
-                                geocoding ? (
-                                    <div className="dropdown-loader-container">
-                                    <GlobalLoaderWithInlineStyles />
-                                    </div>
-                                ) : searchTerm &&
-                                    !locationOptions.some(
-                                    (group) => group.options.length > 0
-                                    ) ? (
-                                    <div className="dropdown-no-results">
-                                    No results found for &quot;{searchTerm}&quot;
-                                    </div>
-                                ) : null
-                                }
-                            >
-                                <input
-                                className="banner-search-input"
-                                placeholder="City or address"
-                                style={{
-                                    width: "100%",
-                                    border: "none",
-                                    background: "transparent",
-                                    fontSize: "14px",
-                                    color: "inherit",
-                                    fontFamily: "inherit",
-                                    outline: "none",
-                                    padding: "0",
-                                }}
-                                />
-                            </AutoComplete>
-                            </div>
-                        </LocationWrapper>
-                        </LocationSearchWrapper>
+          </MainContent>
+        </MainWrapper>
+      </DesktopContainer>
 
-                        <DateAndSearchWrapper>
-                        <DatePickerWrapper>
-                            <CalendarSearch color="#000" size={20} aria-hidden="true" />
-                            <DatePickerInputArea>
-                            <DatePickerLabel htmlFor="date-picker">
-                                Date
-                            </DatePickerLabel>
-                            <DatePicker
-                                id="date-picker"
-                                name="date-picker"
-                                variant="borderless"
-                                placeholder="Whenever"
-                                disabledDate={(current) =>
-                                current && current < dayjs().startOf("day")
-                                }
-                                onChange={setDatePickerValue}
-                                format="YYYY-MM-DD"
-                                value={datePickerValue}
-                                allowClear={true}
-                                inputReadOnly={false}
-                                popupClassName="banner-search-datepicker"
-                            />
-                            </DatePickerInputArea>
-                        </DatePickerWrapper>
+      <MobileContainer>
+        <HeroTextMobile>Learn locally</HeroTextMobile>
+        <SubTextMobile>Discover unique classes & workshops near you.</SubTextMobile>
 
-                        <RoundedSearchButton
-                            type="submit"
-                            aria-label="Search classes"
-                        >
-                            <Search size={20} />
-                        </RoundedSearchButton>
-                        </DateAndSearchWrapper>
-                    </SelectorsWrapper>
-                    </InputsWrapper>
-                ) : (
-                    <div style={{ height: "56px" }}></div>
-                )}
-                </MainContent>
-            </MainWrapper>
-        </DesktopContainer>
-      )}
-
-      {/* --- MOBILE CONTENT (Improved Layout) --- */}
-      {isMobile && (
-        <>
-            <MobileContainer>
-                <HeroTextMobile>Learn locally</HeroTextMobile>
-                <SubTextMobile>Discover unique classes & workshops near you.</SubTextMobile>
-                
-                <StaticSearchPill onClick={() => setIsDrawerOpen(true)} whileTap={{ scale: 0.95 }}>
-                    <div className="icon-circle">
-                        <Search size={22} strokeWidth={2.5} />
-                    </div>
-                    <div className="content">
-                        <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                            <PillText>{getPillLabel()}</PillText>
-                            <PillSubtext>{getPillSubLabel()}</PillSubtext>
-                        </div>
-                    </div>
-                </StaticSearchPill>
-            </MobileContainer>
-        </>
-      )}
+        {/* SWAP: Fallback (SSR) vs Real Pill (CSR) */}
+        {isMounted ? <MobileSearchPill /> : <MobileFallback />}
+      </MobileContainer>
     </Banner>
   );
 };

@@ -278,8 +278,6 @@ const Header = ({
 
   return (
     <>
-      <SearchDrawer />
-      
       <HeaderWrapper $isScrolled={isScrolled} $initialColor={logoTitleColor} $isImpersonating={isImpersonating}>
         {/* LOGO */}
         <LogoLink href="/">

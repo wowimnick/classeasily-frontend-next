@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,7 +9,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { debounce } from "lodash";
 import useEmblaCarousel from "embla-carousel-react";
 import CategoryCard from "./CategoryCard";
-import { classService } from "@/services/apiService";
 
 const { Title: AntTitle, Paragraph } = Typography;
 
@@ -54,7 +53,7 @@ const StyledTitle = styled(AntTitle)`
     font-size: clamp(1.8rem, 4vw, 2.2rem);
     font-weight: 700;
     margin-bottom: 0.5rem !important;
-    color: ${(props) => props.theme.token.colorText};
+    color: #000;
     line-height: 1.3;
   }
 `;
@@ -148,55 +147,17 @@ const HomepageCategories = ({ initialCategories = [] }) => {
     dragFree: true,
   });
 
-  // ✅ Use initialCategories directly - no client-side fetch needed
-  const [categories, setCategories] = useState(initialCategories);
-  const [loading, setLoading] = useState(initialCategories.length === 0);
+  // Logic simplified: We trust the server props.
+  // If initialCategories is empty, we consider it "loading" or empty state depending on context.
+  // However, usually with SSR, empty array means no categories found.
+  // For smoother UX, we can show skeleton if array is empty to prevent layout shift,
+  // or just render nothing if we are sure data should be there.
+  const categories = initialCategories;
+  const isLoading = !categories || categories.length === 0;
+
   const [prevBtnDisabled, setPrevBtnDisabled] = useState(true);
   const [nextBtnDisabled, setNextBtnDisabled] = useState(true);
   const [showButtons, setShowButtons] = useState(false);
-
-  // ✅ Track if we've already fetched to prevent duplicate fetches
-  const hasFetchedRef = useRef(false);
-
-  // ✅ FIXED: Separate effect for data fetching (runs once)
-  useEffect(() => {
-    // Only fetch if no initial data AND we haven't fetched before
-    if (initialCategories.length > 0 || hasFetchedRef.current) {
-      return;
-    }
-
-    let isMounted = true;
-    hasFetchedRef.current = true; // Mark as fetched
-
-    const fetchHomepageCategories = async () => {
-      setLoading(true);
-      try {
-        const response = await classService.getPublicCategories();
-        if (isMounted) {
-          if (response.success && Array.isArray(response.data)) {
-            setCategories(response.data);
-          } else {
-            console.error(
-              "Failed to fetch homepage categories:",
-              response.error
-            );
-            setCategories([]);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-        if (isMounted) setCategories([]);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    fetchHomepageCategories();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []); // ✅ Empty dependency array - runs ONCE on mount
 
   const scrollPrev = useCallback(
     () => emblaApi && emblaApi.scrollPrev(),
@@ -223,7 +184,6 @@ const HomepageCategories = ({ initialCategories = [] }) => {
     updateButtonStates();
   }, [emblaApi, updateButtonStates]);
 
-  // ✅ Separate effect for Embla carousel setup
   useEffect(() => {
     if (!emblaApi) return;
 
@@ -244,7 +204,6 @@ const HomepageCategories = ({ initialCategories = [] }) => {
     };
   }, [emblaApi, checkScrollabilityAndVisibility, updateButtonStates]);
 
-  // ✅ UPDATED: Navigate with query params and default Toronto location
   const handleCategoryClick = (categoryKey) => {
     const params = new URLSearchParams({
       category: categoryKey,
@@ -268,7 +227,7 @@ const HomepageCategories = ({ initialCategories = [] }) => {
           </StyledSubtitle>
         </SectionHeader>
         <AnimatePresence>
-          {showButtons && !loading && (
+          {showButtons && !isLoading && (
             <ButtonContainer
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -296,7 +255,7 @@ const HomepageCategories = ({ initialCategories = [] }) => {
       <CarouselContainer>
         <EmblaViewport ref={emblaRef}>
           <EmblaContainer>
-            {loading
+            {isLoading
               ? Array.from({ length: 6 }).map((_, index) => (
                   <div className="embla__slide" key={`skeleton-${index}`}>
                     <Skeleton.Node

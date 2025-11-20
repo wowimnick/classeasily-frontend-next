@@ -1,8 +1,8 @@
 "use client";
 
+import { Suspense, useMemo, useEffect, useRef } from "react";
 import { ConfigProvider } from "antd";
 import { ThemeProvider } from "styled-components";
-import { useMemo, useEffect, useRef } from "react";
 import { AuthProvider } from "@/context/AuthContext";
 import { useAuthStore } from "@/lib/auth-client";
 import { theme } from "@/components/theme";
@@ -13,6 +13,8 @@ import CookieConsentProvider from "./providers/CookieConsentProvider";
 import { ToastProvider } from "@/lib/toast/ToastContext";
 import SessionMonitor from "@/components/auth/SessionMonitor";
 import { SearchProvider } from "@/context/SearchContext";
+import SearchDrawer from "@/components/common/SearchDrawer";
+import SearchUrlHandler from "@/components/common/SearchUrlHandler";
 
 export default function ClientProviders({ children }) {
   const memoizedTheme = useMemo(() => theme, []);
@@ -75,7 +77,13 @@ export default function ClientProviders({ children }) {
               <SessionMonitor />
               <SearchProvider>
                 <CookieConsentProvider>
-                  <AnalyticsProvider>{children}</AnalyticsProvider>
+                  <AnalyticsProvider>
+                    <SearchDrawer />
+                    <Suspense fallback={null}>
+                      <SearchUrlHandler />
+                    </Suspense>
+                    {children}
+                  </AnalyticsProvider>
                 </CookieConsentProvider>
               </SearchProvider>
             </AuthProvider>

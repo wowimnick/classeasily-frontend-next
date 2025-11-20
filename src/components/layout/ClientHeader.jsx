@@ -628,8 +628,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
   return (
     <>
       <CustomDropdownStyles />
-      <SearchDrawer />
-      
       <HeaderWrapper isFixed={isFixed}>
         <Link href="/" style={{ textDecoration: "none", color: "inherit" }}>
           <LogoContainer>

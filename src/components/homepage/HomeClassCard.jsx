@@ -15,8 +15,6 @@ import {
   Heart,
   Star,
   Navigation,
-  Building2,
-  Calendar,
   AlertCircle,
 } from "lucide-react";
 import message from "@/lib/message";
@@ -59,10 +57,25 @@ const CardContainer = styled(motion.div)`
   transition: padding 0.2s ease;
 
   @media (max-width: 600px) {
-    /* Scale down content on mobile */
     font-size: 0.9em;
   }
 `;
+
+const ImageContainer = styled.div`
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  background: #f7f7f7;
+
+  @media (max-width: 600px) {
+    margin-bottom: 4px;
+    border-radius: 8px;
+  }
+`;
+
 const ImageWrapper = styled.div`
   position: absolute;
   top: 0;
@@ -131,6 +144,16 @@ const FavoriteButton = styled.button`
 
   &:hover:not(:disabled) {
     transform: ${(props) => (props.disabled ? "none" : "scale(1.1)")};
+  }
+`;
+
+const ContentContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+
+  @media (max-width: 600px) {
+    gap: 0.5px;
   }
 `;
 
@@ -252,33 +275,6 @@ const ReviewCount = styled.span`
   }
 `;
 
-// Update ImageContainer margin for mobile:
-const ImageContainer = styled.div`
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 6px;
-  background: #f7f7f7;
-
-  @media (max-width: 600px) {
-    margin-bottom: 4px;
-    border-radius: 8px;
-  }
-`;
-
-// Update ContentContainer gap for mobile:
-const ContentContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-
-  @media (max-width: 600px) {
-    gap: 0.5px;
-  }
-`;
-
 const DistanceBadge = styled.span`
   color: #717171;
   font-weight: 400;
@@ -330,7 +326,6 @@ const HomeClassCard = ({
   min_session_price = null,
   min_course_price = null,
   totalReviews = 0,
-  coordinates = null,
   business_name = "",
   is_favorited = false,
   distance = null,

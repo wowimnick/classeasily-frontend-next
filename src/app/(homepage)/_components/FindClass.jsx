@@ -1,3 +1,5 @@
+// --- START OF FILE FindClass.jsx ---
+
 "use client";
 
 import React, {
@@ -17,8 +19,8 @@ import { ArrowRightOutlined } from "@ant-design/icons";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
 import { classService } from "@/services/apiService";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import HomeClassCard from "@/components/homepage/HomeClassCard";
+import ClassCardSkeleton from "@/components/common/ClassCardSkeleton";
 
 // --- STYLED COMPONENTS ---
 const { Title: AntTitle, Paragraph } = Typography;
@@ -54,6 +56,8 @@ const HeaderContainer = styled.div`
   align-items: flex-end;
   width: 100%;
   gap: 1rem;
+  /* Ensure header height doesn't jump when buttons appear */
+  min-height: 60px; 
 `;
 
 const SectionHeader = styled.div``;
@@ -63,7 +67,7 @@ const StyledTitle = styled(AntTitle)`
     font-size: clamp(1.8rem, 4vw, 2.2rem);
     font-weight: 700;
     margin-bottom: 0.5rem !important;
-    color: ${(props) => props.theme.token.colorText};
+    color: #000;
     line-height: 1.3;
   }
 `;
@@ -96,24 +100,15 @@ const EmblaContainer = styled.div`
   padding: 1rem 0.5rem;
   margin: 0 -0.5rem;
   min-height: 380px;
-
-  .embla__slide {
-    flex: 0 0 auto;
-    position: relative;
-    width: 250px;
-  }
+  will-change: transform; 
 `;
 
-const LoadingOverlay = styled.div`
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.8);
-  z-index: 5;
-  border-radius: ${(props) => props.theme.token.borderRadiusLG}px;
-  backdrop-filter: blur(2px);
+// Common style for both Slides and Skeletons to ensure perfect alignment
+const SlideWrapper = styled.div`
+  flex: 0 0 auto;
+  position: relative;
+  width: 250px;
+  min-width: 250px; /* Enforce strict width */
 `;
 
 const ButtonContainer = styled(motion.div)`
@@ -197,6 +192,16 @@ const ENABLE_IP_GEOLOCATION = true;
 const AWS_LOCATION_API_URL =
   "https://geocoding.classeasily.com/address-autocomplete-proxy";
 
+// --- CONSTANTS ---
+// Moved outside component to ensure referential stability (prevents re-init jitter)
+const CAROUSEL_OPTIONS = {
+  align: "start",
+  containScroll: false, // CRITICAL: prevents jumping when list grows
+  loop: false,
+  dragFree: true, // CRITICAL: removes "snappy" feeling, allows free scrolling
+  slidesToScroll: "auto",
+};
+
 // --- HELPER FUNCTIONS ---
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
   if (
@@ -248,26 +253,20 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
   const [loadingLocation, setLoadingLocation] = useState(true);
   const [locationError, setLocationError] = useState(null);
 
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    align: "start",
-    containScroll: "trimSnaps",
-    loop: false,
-    dragFree: true,
-  });
+  // Use static options object to prevent re-renders
+  const [emblaRef, emblaApi] = useEmblaCarousel(CAROUSEL_OPTIONS);
 
   const [prevBtnDisabled, setPrevBtnDisabled] = useState(true);
   const [nextBtnDisabled, setNextBtnDisabled] = useState(true);
   const [showButtons, setShowButtons] = useState(false);
 
-  // Handle hydration
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Step 1: ALWAYS attempt to get user location (client-side only)
+  // 1. Location Logic
   useEffect(() => {
     if (!isMounted) return;
-
     let isComponentMounted = true;
 
     const fetchIpLocation = async () => {
@@ -283,8 +282,6 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
             region: data.region,
             region_code: data.region_code,
           });
-        } else {
-          throw new Error(data.reason || "Invalid data from IP API");
         }
       } catch (err) {
         if (isComponentMounted) setLocationError(err.message);
@@ -309,8 +306,7 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
             const response = await fetch(
               `${AWS_LOCATION_API_URL}?lat=${latitude}&lng=${longitude}&reverse=true`
             );
-            if (!response.ok)
-              throw new Error(`Reverse geocoding failed: ${response.status}`);
+            if (!response.ok) throw new Error("Reverse geocoding failed");
             const data = await response.json();
 
             if (Array.isArray(data) && data.length > 0) {
@@ -353,34 +349,30 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
       );
     };
 
-    if (ENABLE_IP_GEOLOCATION) {
-      fetchIpLocation();
-    } else {
-      fetchBrowserLocation();
-    }
+    if (ENABLE_IP_GEOLOCATION) fetchIpLocation();
+    else fetchBrowserLocation();
 
     return () => {
       isComponentMounted = false;
     };
   }, [isMounted]);
 
-  // Step 2: Fetch classes if not provided as props
+  // 2. Initial Fetch
   useEffect(() => {
     if (!isMounted || initialClasses.length > 0) return;
-    // Remove loadingLocation check here
 
     const fetchClasses = async () => {
       setLoading(true);
       try {
         const response = await classService.fetchClasses({}, nextPageUrl);
-        if (isComponentMounted) {
+        if (isMounted) {
           setClasses(response?.results || []);
           setNextPageUrl(response?.next || null);
         }
       } catch (error) {
         console.error("Error fetching class data:", error);
       } finally {
-        if (isComponentMounted) {
+        if (isMounted) {
           setLoading(false);
           isInitialLoad.current = false;
         }
@@ -390,63 +382,19 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
     fetchClasses();
   }, [isMounted, initialClasses]);
 
-  // Step 3: "See All" button behavior
-  const handleSeeAllClick = useCallback(
-    (event) => {
-      event.preventDefault();
-      if (userLocation && userLocation.city && userLocation.region) {
-        const { lat, lng, city, region, region_code } = userLocation;
-
-        const urlRegion = region.toLowerCase().replace(/\s+/g, "-");
-        const urlCity = city.toLowerCase().replace(/\s+/g, "-");
-        const path = `/explore/${urlRegion}/${urlCity}`;
-
-        const params = new URLSearchParams();
-        params.set("lat", lat.toString());
-        params.set("lng", lng.toString());
-
-        const locationParam = `${city}, ${region_code}`;
-        params.set("location", locationParam);
-
-        const participants = searchParams.get("participants");
-        if (participants) {
-          params.set("participants", participants);
-        }
-
-        router.push(`${path}?${params.toString()}`);
-      } else if (userLocation) {
-        const params = new URLSearchParams();
-        params.set("lat", userLocation.lat.toString());
-        params.set("lng", userLocation.lng.toString());
-        router.push(`/explore?${params.toString()}`);
-      } else {
-        message.info(
-          "Could not determine your location. Showing popular classes."
-        );
-        router.push("/explore/ontario/toronto");
-      }
-    },
-    [userLocation, searchParams, router]
-  );
-
-  // Dynamic link text based on location status
-  const linkText = useMemo(() => {
-    if (loadingLocation) return "Locating...";
-    if (userLocation?.city) return `See all classes in ${userLocation.city}`;
-    if (userLocation) return "See all classes near me";
-    return "See all classes";
-  }, [userLocation, loadingLocation]);
-
-  // Embla Carousel Hooks
+  // 3. Infinite Scroll Handler
   const handleScroll = useCallback(async () => {
     if (!emblaApi || !nextPageUrl || isFetchingMore) return;
-    const lastSlideIndex = emblaApi.scrollSnapList().length - 1;
-    if (emblaApi.selectedScrollSnap() >= lastSlideIndex - 2) {
+
+    // Fetch when user is 70% through the list
+    if (emblaApi.scrollProgress() > 0.7) {
       setIsFetchingMore(true);
       try {
         const response = await classService.fetchClasses({}, nextPageUrl);
         const newResults = response.results || [];
+
         if (newResults.length > 0) {
+          // Filter duplicates before setting state to ensure stable keys
           setClasses((prev) => {
             const existingIds = new Set(prev.map((cls) => cls.classId));
             const uniqueNewResults = newResults.filter(
@@ -464,6 +412,7 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
     }
   }, [emblaApi, nextPageUrl, isFetchingMore]);
 
+  // 4. Carousel Controls
   const scrollPrev = useCallback(
     () => emblaApi && emblaApi.scrollPrev(),
     [emblaApi]
@@ -498,14 +447,14 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
     emblaApi.on("scroll", handleScroll);
     emblaApi.on("select", updateButtonStates);
     emblaApi.on("reInit", checkScrollabilityAndVisibility);
-    window.addEventListener("resize", checkScrollabilityAndVisibility);
+    emblaApi.on("resize", checkScrollabilityAndVisibility);
     checkScrollabilityAndVisibility();
 
     return () => {
       emblaApi.off("scroll", handleScroll);
       emblaApi.off("select", updateButtonStates);
       emblaApi.off("reInit", checkScrollabilityAndVisibility);
-      window.removeEventListener("resize", checkScrollabilityAndVisibility);
+      emblaApi.off("resize", checkScrollabilityAndVisibility);
     };
   }, [
     isMounted,
@@ -515,7 +464,7 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
     checkScrollabilityAndVisibility,
   ]);
 
-  // Memoized class cards with distance calculation - PRIORITIZE FIRST 3 IMAGES
+  // 5. Memoized Class Cards
   const classCards = useMemo(() => {
     return classes.map((classItem, index) => {
       let calculatedDistance = null;
@@ -537,30 +486,60 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
       );
 
       return (
-        <div className="embla__slide" key={`${classItem.classId}-${index}`}>
-          <div style={{ position: "relative" }}>
-            <HomeClassCard
-              {...classItem}
-              rating={classItem.average_rating}
-              totalReviews={adjustedReviewCount}
-              distance={calculatedDistance}
-              priority={index < 3} // PRIORITY LOADING FOR FIRST 3 CARDS
-            />
-            {isFetchingMore && index === classes.length - 1 && (
-              <LoadingOverlay>
-                <GlobalLoaderWithoutInlineStyles size="30px" />
-              </LoadingOverlay>
-            )}
-          </div>
-        </div>
+        <SlideWrapper key={classItem.classId}>
+          <HomeClassCard
+            {...classItem}
+            rating={classItem.average_rating}
+            totalReviews={adjustedReviewCount}
+            distance={calculatedDistance}
+            priority={index < 3}
+          />
+        </SlideWrapper>
       );
     });
-  }, [classes, isFetchingMore, userLocation]);
+  }, [classes, userLocation]);
 
-  // Don't render until mounted to prevent hydration mismatch
-  if (!isMounted) {
-    return null; // Return null instead of rendering to avoid hydration issues
-  }
+  // 6. Handle "See All" Link
+  const handleSeeAllClick = useCallback(
+    (event) => {
+      event.preventDefault();
+      if (userLocation && userLocation.city && userLocation.region) {
+        const { lat, lng, city, region, region_code } = userLocation;
+        const urlRegion = region.toLowerCase().replace(/\s+/g, "-");
+        const urlCity = city.toLowerCase().replace(/\s+/g, "-");
+        const path = `/explore/${urlRegion}/${urlCity}`;
+        const params = new URLSearchParams();
+        params.set("lat", lat.toString());
+        params.set("lng", lng.toString());
+        params.set("location", `${city}, ${region_code}`);
+
+        const participants = searchParams.get("participants");
+        if (participants) params.set("participants", participants);
+
+        router.push(`${path}?${params.toString()}`);
+      } else if (userLocation) {
+        const params = new URLSearchParams();
+        params.set("lat", userLocation.lat.toString());
+        params.set("lng", userLocation.lng.toString());
+        router.push(`/explore?${params.toString()}`);
+      } else {
+        message.info(
+          "Could not determine your location. Showing popular classes."
+        );
+        router.push("/explore/ontario/toronto");
+      }
+    },
+    [userLocation, searchParams, router]
+  );
+
+  const linkText = useMemo(() => {
+    if (loadingLocation) return "Locating...";
+    if (userLocation?.city) return `See all classes in ${userLocation.city}`;
+    if (userLocation) return "See all classes near me";
+    return "See all classes";
+  }, [userLocation, loadingLocation]);
+
+  if (!isMounted) return null;
 
   return (
     <MainWrapper>
@@ -581,14 +560,14 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
               <ScrollButton
                 onClick={scrollPrev}
                 disabled={prevBtnDisabled || loading}
-                aria-label="Scroll previous classes"
+                aria-label="Scroll previous"
               >
                 <ChevronLeft />
               </ScrollButton>
               <ScrollButton
                 onClick={scrollNext}
                 disabled={nextBtnDisabled || loading}
-                aria-label="Scroll next classes"
+                aria-label="Scroll next"
               >
                 <ChevronRight />
               </ScrollButton>
@@ -607,23 +586,35 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
         <EmblaViewport ref={emblaRef}>
           <EmblaContainer>
             {loading ? (
-              <div
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  minHeight: "380px",
-                }}
-              >
-                <GlobalLoaderWithoutInlineStyles />
-              </div>
+              // Initial Loading Skeletons
+              Array.from({ length: 6 }).map((_, index) => (
+                <SlideWrapper key={`skeleton-init-${index}`}>
+                  <ClassCardSkeleton />
+                </SlideWrapper>
+              ))
             ) : classes.length === 0 ? (
               <NoClassesFound>
                 No nearby classes found at the moment.
               </NoClassesFound>
             ) : (
-              classCards
+              <>
+                {classCards}
+                {/* Infinite Scroll Skeletons: Show them if we have a next page.
+                    This prevents layout jumps by keeping content area width consistent. */}
+                {nextPageUrl && (
+                  <>
+                    <SlideWrapper key="skeleton-1">
+                      <ClassCardSkeleton />
+                    </SlideWrapper>
+                    <SlideWrapper key="skeleton-2">
+                      <ClassCardSkeleton />
+                    </SlideWrapper>
+                    <SlideWrapper key="skeleton-3">
+                      <ClassCardSkeleton />
+                    </SlideWrapper>
+                  </>
+                )}
+              </>
             )}
           </EmblaContainer>
         </EmblaViewport>
@@ -637,7 +628,6 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
   );
 };
 
-// Export with display name for better debugging
 FindClass.displayName = "FindClass";
 
 export default FindClass;

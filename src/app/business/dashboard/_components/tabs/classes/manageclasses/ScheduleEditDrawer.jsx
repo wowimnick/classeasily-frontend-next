@@ -18,7 +18,6 @@ import {
   Space,
   Checkbox,
   Popconfirm,
-  Segmented,
   Grid,
 } from "antd";
 import message from "@/lib/message";
@@ -27,7 +26,6 @@ import {
   Clock,
   DollarSign,
   Users,
-  Target,
   Edit3,
   ListChecks,
   PlusCircle,
@@ -35,30 +33,25 @@ import {
   X,
   File,
   Type,
-  Info,
   HelpCircle,
   CheckCircle,
   ChevronRight,
   ChevronLeft,
-  Edit,
   Trash2,
   List,
-  Undo2,
   Plus,
+  Filter
 } from "lucide-react";
 import dayjs from "dayjs";
 import styled, { keyframes } from "styled-components";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { theme as appTheme } from "@/components/theme";
 import { scheduleService } from "@/services/apiService";
 import { Drawer } from "vaul";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
-import { theme } from "@/components/theme";
 
 const { Option } = Select;
 const { Title, Text } = Typography;
-const { useBreakpoint } = Grid;
 
 // --- ADDED: HOOK AND COMPONENT FOR MODAL ANIMATION ---
 
@@ -294,9 +287,9 @@ const DesktopModal = styled(Modal)`
   .ant-modal-body {
     padding: 0;
     background: #f8fafc;
-    flex: 1; /* ADDED: Allows the body to fill available space */
-    min-height: 0; /* ADDED: Prevents flex items from overflowing */
-    overflow-y: auto; /* ADDED: Makes the body scrollable if content is tall */
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     position: relative;
   }
   .ant-modal-footer {
@@ -307,20 +300,6 @@ const DesktopModal = styled(Modal)`
     flex-shrink: 0;
     position: relative;
     z-index: 1;
-  }
-`;
-
-// --- Redesigned Form Components for clarity ---
-const FormContainer = styled.div`
-  padding: 24px;
-
-  @media (min-width: 769px) {
-    height: 100%;
-    overflow-y: auto;
-  }
-
-  @media (max-width: 768px) {
-    padding: 16px;
   }
 `;
 
@@ -357,12 +336,6 @@ const HelpText = styled.div`
   color: #64748b;
   margin: -4px 0 8px 0;
   line-height: 1.4;
-`;
-
-const SectionDivider = styled.div`
-  display: flex;
-  align-items: center;
-  margin: 32px 0 28px 0;
 `;
 
 const FormGrid = styled.div`
@@ -419,18 +392,14 @@ const StepsWrapper = styled.div`
   max-width: 500px;
   margin: 16px auto;
   padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: white;
+  border: 1px solid #e2e8f0;
   border-radius: 50px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  width: calc(100% - 48px);
+  z-index: 100;
+  width: 90%;
 
   .ant-steps-item-icon {
     margin-top: -2px;
@@ -441,13 +410,9 @@ const StepsWrapper = styled.div`
     line-height: 1.2 !important;
     padding-top: 4px;
   }
-
-  .ant-steps-item-content {
-    margin-top: 0 !important;
-  }
-
+  
   @media (max-width: 768px) {
-    display: none;
+    display: none; /* Removed on mobile */
   }
 `;
 
@@ -458,7 +423,7 @@ const ContentWrapper = styled.div`
   padding-top: 0;
 
   @media (max-width: 768px) {
-    padding: 0;
+    padding: 16px;
   }
 `;
 
@@ -473,12 +438,9 @@ const FormSection = styled(motion.div)`
   border-radius: 12px;
   padding: 24px;
   border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 
   @media (max-width: 768px) {
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-    border-top: none;
     padding: 20px 16px;
   }
 `;
@@ -594,7 +556,7 @@ const dayLabels = {
   Sun: "Sun",
 };
 
-// --- Schedule Management Components (Moved from ClassManagement) ---
+// --- Schedule Management Components (Redesigned) ---
 const colors = {
   primary: "#ff385c",
   textSecondary: "#64748b",
@@ -611,155 +573,149 @@ const StatItem = styled.div`
   }
 `;
 
-const ModalLayout = styled.div`
+const ManagementContainer = styled.div`
   display: flex;
+  flex-direction: column;
   height: 100%;
-  width: 100%;
-  flex: 1;
-  flex-direction: row-reverse;
   overflow: hidden;
 `;
 
-const CalendarPanel = styled.div`
-  flex: 3;
+// --- NEW: Date Strip Components ---
+const DateStripContainer = styled.div`
   background: white;
-  padding: 20px;
-  border-right: 1px solid #f0f0f0;
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  gap: 12px;
 `;
 
-const ScheduleListPanel = styled.div`
-  flex: 2;
-  display: flex;
-  flex-direction: column;
-  overflow-y: hidden;
-  background-color: #f8fafc;
-`;
-
-const CalendarHeader = styled.div`
+const DateStripHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding: 0 4px;
+  padding: 0 20px;
 `;
 
-const MonthTitle = styled.h4`
-  font-weight: 600;
-  font-size: 16px;
+const MonthNavigation = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const MonthTitle = styled.h3`
   margin: 0;
-  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
 `;
 
-const NavButton = styled.button`
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
+const NavBtn = styled(Button)`
+  border: none;
+  box-shadow: none;
+  background: #f1f5f9;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  color: #64748b;
-  transition: all 0.2s ease;
+  padding: 0;
   &:hover {
-    background: #f1f5f9;
+    background: #e2e8f0 !important;
   }
 `;
 
-const DaysGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-auto-rows: 1fr;
-  gap: 4px;
-  flex: 1;
+const DatesScrollArea = styled.div`
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 20px 12px 20px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+  
+  &::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+  
+  scroll-snap-type: x mandatory;
 `;
 
-const WeekDay = styled.div`
-  text-align: center;
-  font-weight: 500;
-  font-size: 12px;
-  color: #94a3b8;
-  padding-bottom: 8px;
-`;
-
-const DayCell = styled.div`
-  border: 1px solid #f1f5f9;
-  border-radius: 8px;
-  background: transparent;
+const DateCard = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  height: 70px;
+  border-radius: 12px;
+  border: 1px solid ${(props) => props.$selected ? props.theme.token.colorPrimary : "#e2e8f0"};
+  background: ${(props) => props.$selected ? props.theme.token.colorPrimary : "white"};
+  color: ${(props) => props.$selected ? "white" : "#475569"};
   cursor: pointer;
-  padding: 8px;
+  transition: all 0.2s ease;
+  scroll-snap-align: start;
   position: relative;
-  transition: all 0.2s ease;
-  min-height: 100px;
-  display: flex;
-  flex-direction: column;
-  ${(props) =>
-    !props.$isInMonth && `background-color: #f8fafc; pointer-events: none;`}
-  ${(props) =>
-    props.$isSelected &&
-    `border-color: ${theme.token.colorPrimary}; background-color: #fff8f9; box-shadow: 0 0 0 2px ${theme.token.colorPrimary}40;`}
+  padding: 4px;
+
   &:hover {
-    border-color: #e2e8f0;
+    border-color: ${(props) => props.$selected ? props.theme.token.colorPrimary : "#cbd5e1"};
+    background: ${(props) => props.$selected ? props.theme.token.colorPrimary : "#f8fafc"};
+  }
+
+  .day-name {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    opacity: 0.8;
+    margin-bottom: 2px;
+  }
+
+  .day-number {
+    font-size: 18px;
+    font-weight: 700;
   }
 `;
 
-const DayHeader = styled.div`
-  font-weight: 500;
-  font-size: 13px;
-  color: ${(props) => (props.$isPast ? "#94a3b8" : "#1f2937")};
-  margin-bottom: 4px;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  ${(props) =>
-    props.$isToday &&
-    `background-color: ${theme.token.colorPrimary}; color: white; border-radius: 50%;`}
+const MarkerDot = styled.div`
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: ${(props) => props.$selected ? "white" : props.theme.token.colorPrimary};
+  position: absolute;
+  bottom: 6px;
+  opacity: ${(props) => props.$visible ? 1 : 0};
 `;
 
-const SchedulePreviewContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow-y: auto;
+const ScheduleListArea = styled.div`
   flex: 1;
-`;
-
-const CalendarSchedulePreview = styled.div`
-  background-color: #eff6ff;
-  color: #1d4ed8;
-  border-radius: 4px;
-  padding: 2px 6px;
-  font-size: 11px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
-const MoreSchedulesIndicator = styled.div`
-  font-size: 11px;
-  color: #64748b;
-  font-weight: 500;
-  text-align: center;
-  margin-top: 4px;
+  overflow-y: auto;
+  padding: 16px;
+  background: #f8fafc;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  align-content: start;
 `;
 
 const ScheduleCard = styled(motion.div)`
   background: white;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   transition: all 0.2s ease;
   position: relative;
-  ${(props) => props.$isPast && `opacity: 0.6;`}
+  height: 100%;
+  
+  &:hover {
+    border-color: ${colors.primary};
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+  
+  ${(props) => props.$isPast && `opacity: 0.7; background: #f9fafb;`}
 `;
 
 const CardTop = styled.div`
@@ -771,99 +727,54 @@ const CardTop = styled.div`
 const CardInfo = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   .time {
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 700;
     color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  .date {
-    font-size: 12px;
+  .duration {
+    font-size: 11px;
     font-weight: 500;
     color: #64748b;
-  }
-  .group {
-    font-size: 11px;
-    color: #475569;
     background: #f1f5f9;
     padding: 2px 6px;
     border-radius: 4px;
-    width: fit-content;
-    margin-top: 2px;
+  }
+  .group {
+    font-size: 12px;
+    color: ${colors.primary};
+    font-weight: 600;
   }
 `;
 
 const CardActions = styled(Space)`
   flex-shrink: 0;
-  .ant-btn {
-    border-radius: 8px;
-  }
 `;
 
 const CardBottom = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 8px;
+  padding-top: 10px;
   border-top: 1px solid #f1f5f9;
   font-size: 12px;
   color: #475569;
-`;
-
-const DropdownHeader = styled(motion.div)`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  padding: 12px 16px;
-  cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
-  background: white;
-  &:hover {
-    background: #fafafa;
-  }
-`;
-
-const DropdownIcon = styled(motion.div)`
-  display: inline-flex;
-  margin-left: 8px;
-`;
-
-const DropdownContent = styled(motion.div)`
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  background: #f8fafc;
-`;
-
-const ScheduleListContainer = styled(motion.div)`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background-color: #f8fafc;
+  margin-top: auto;
 `;
 
 const EmptyStateContainer = styled.div`
+  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
-  flex-grow: 0.7;
   align-items: center;
   justify-content: center;
-  padding: ${(props) => props.$padding || "60px 20px"};
+  padding: 60px 20px;
   text-align: center;
   gap: 16px;
-
-  @media (max-width: 768px) {
-    padding: ${(props) => props.$padding || "40px 16px"};
-    gap: 12px;
-  }
-
-  @media (max-width: 480px) {
-    padding: ${(props) => props.$padding || "30px 12px"};
-    gap: 10px;
-  }
 `;
 
 const EmptyStateIcon = styled.div`
@@ -874,34 +785,12 @@ const EmptyStateIcon = styled.div`
     width: 80px;
     height: 80px;
   }
-
-  @media (max-width: 768px) {
-    lord-icon {
-      width: 64px;
-      height: 64px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    lord-icon {
-      width: 48px;
-      height: 48px;
-    }
-  }
 `;
 
 const EmptyStateText = styled.div`
   color: ${colors.textSecondary};
   font-size: 15px;
   font-weight: 500;
-
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 13px;
-  }
 `;
 
 const EmptyStateSubtext = styled.div`
@@ -909,35 +798,23 @@ const EmptyStateSubtext = styled.div`
   font-size: 13px;
   opacity: 0.7;
   max-width: 300px;
-
-  @media (max-width: 768px) {
-    font-size: 12px;
-    max-width: 250px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 11px;
-    max-width: 200px;
-  }
 `;
 
-const ModalControls = styled.div`
-  padding: 12px 20px;
+const FilterBar = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  border-bottom: 1px solid #f0f0f0;
-  flex-shrink: 0;
-  background-color: white;
-`;
-
-const ControlRow = styled.div`
-  display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  background: white;
+  flex-shrink: 0;
+  overflow-x: auto;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
+
 const formatTime = (timeStr) =>
   timeStr ? dayjs(`2000-01-01T${timeStr}`).format("h:mm A") : "N/A";
 
@@ -959,62 +836,30 @@ const SkeletonPrimitive = styled.div`
   width: 100%;
 `;
 
-const ScheduleCardSkeletonContainer = styled(ScheduleCard)`
-  background: white;
-  pointer-events: none;
-  border-color: #e2e8f0;
-`;
-
 const ScheduleCardSkeleton = () => (
-  <ScheduleCardSkeletonContainer as="div">
-    <CardTop>
-      <CardInfo>
-        <SkeletonPrimitive style={{ height: "22px", width: "100px", marginBottom: "6px" }} />
-        <SkeletonPrimitive style={{ height: "18px", width: "180px" }} />
-      </CardInfo>
-      <CardActions>
-        <SkeletonPrimitive style={{ height: "32px", width: "32px", borderRadius: "8px" }} />
-        <SkeletonPrimitive style={{ height: "32px", width: "32px", borderRadius: "8px" }} />
-      </CardActions>
-    </CardTop>
-    <CardBottom>
-      <StatItem>
-        <SkeletonPrimitive style={{ height: "18px", width: "120px" }} />
-      </StatItem>
-      <StatItem style={{ justifyContent: "flex-end" }}>
-        <SkeletonPrimitive style={{ height: "18px", width: "90px" }} />
-      </StatItem>
-    </CardBottom>
-  </ScheduleCardSkeletonContainer>
-);
-
-const ScheduleManagementSkeleton = () => (
-  <div style={{ padding: "0 8px" }}>
-    {/* Skeleton for a Dropdown Group */}
-    <div style={{ borderBottom: '1px solid #f0f0f0' }}>
-      <DropdownHeader as="div" style={{ cursor: "default", background: 'white' }}>
-        <SkeletonPrimitive style={{ height: "22px", width: "200px" }} />
-        <SkeletonPrimitive style={{ height: "24px", width: "60px", borderRadius: "8px" }} />
-      </DropdownHeader>
+  <div style={{ 
+    background: 'white', 
+    border: '1px solid #e5e7eb', 
+    borderRadius: '12px', 
+    padding: '12px',
+    height: '100%',
+    display: 'flex', 
+    flexDirection: 'column',
+    gap: '12px'
+  }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <div style={{ width: '60%' }}>
+        <SkeletonPrimitive style={{ height: "18px", width: "80px", marginBottom: "6px" }} />
+        <SkeletonPrimitive style={{ height: "14px", width: "100px" }} />
+      </div>
+      <SkeletonPrimitive style={{ height: "28px", width: "50px", borderRadius: "8px" }} />
     </div>
-    <DropdownContent as="div" style={{ background: "#f8fafc", padding: "12px" }}>
-      <ScheduleCardSkeleton />
-      <ScheduleCardSkeleton />
-    </DropdownContent>
-
-    {/* Skeleton for a second Dropdown Group */}
-    <div style={{ borderBottom: '1px solid #f0f0f0' }}>
-       <DropdownHeader as="div" style={{ cursor: "default", background: 'white' }}>
-        <SkeletonPrimitive style={{ height: "22px", width: "180px" }} />
-        <SkeletonPrimitive style={{ height: "24px", width: "60px", borderRadius: "8px" }} />
-      </DropdownHeader>
+    <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '10px', marginTop: 'auto', display: 'flex', justifyContent: 'space-between' }}>
+      <SkeletonPrimitive style={{ height: "14px", width: "60px" }} />
+      <SkeletonPrimitive style={{ height: "14px", width: "40px" }} />
     </div>
-    <DropdownContent as="div" style={{ background: "#f8fafc", padding: "12px" }}>
-      <ScheduleCardSkeleton />
-    </DropdownContent>
   </div>
 );
-
 
 // --- Internal Management View ---
 const ScheduleManagementView = React.memo(({
@@ -1025,21 +870,15 @@ const ScheduleManagementView = React.memo(({
 }) => {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentMonth, setCurrentMonth] = useState(dayjs());
+  const [selectedDate, setSelectedDate] = useState(dayjs());
   const [groupFilter, setGroupFilter] = useState(undefined);
-  const [showPast, setShowPast] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [calendarMonth, setCalendarMonth] = useState(dayjs());
-  const [view, setView] = useState("calendar");
-  const screens = useBreakpoint();
-  const isMobileView = !screens.md;
 
-  // OPTIMIZATION: Depend on the primitive ID, not the entire object
   const optionId = classData?.option?.optionId;
 
   const refreshSchedules = useCallback(async () => {
     if (!optionId) return;
     
-    // Don't set loading to true if we already have schedules (prevents flash)
     setLoading((prev) => (prev === true ? true : false)); 
     
     try {
@@ -1060,10 +899,9 @@ const ScheduleManagementView = React.memo(({
     }
   }, [optionId]);
 
-  // Only fetch when the ID changes, not on every render of the parent
   useEffect(() => {
     if (optionId) {
-        setLoading(true); // Initial load
+        setLoading(true); 
         refreshSchedules();
     }
   }, [optionId, refreshSchedules]);
@@ -1079,180 +917,100 @@ const ScheduleManagementView = React.memo(({
     }
   };
 
-  const handleDeleteGroup = async (groupName) => {
-    if (!optionId) return;
-    try {
-      await scheduleService.deleteScheduleGroup({
-        option_id: optionId,
-        name: groupName,
-      });
-      message.success(`Group "${groupName}" deleted successfully.`);
-      await refreshSchedules();
-      onSchedulesUpdate();
-    } catch (error) {
-      message.error(getErrorMessage(error));
+  const datesInMonth = useMemo(() => {
+    const start = currentMonth.startOf('month');
+    const end = currentMonth.endOf('month');
+    const dates = [];
+    let curr = start;
+    while(curr.isBefore(end) || curr.isSame(end, 'day')) {
+      dates.push(curr);
+      curr = curr.add(1, 'day');
     }
-  };
+    return dates;
+  }, [currentMonth]);
 
-  const filteredForList = useMemo(() => {
-    let filtered = schedules;
-    if (selectedDate) {
-      filtered = schedules.filter((s) =>
-        dayjs(s.date).isSame(selectedDate, "day")
-      );
-    } else if (!showPast) {
-      filtered = schedules.filter(
-        (s) => !dayjs(s.date).isBefore(dayjs(), "day")
-      );
-    }
-    const INDIVIDUAL_KEY = "##__INDIVIDUAL__##";
+  const scheduleDatesMap = useMemo(() => {
+    const map = {};
+    schedules.forEach(s => {
+      const dateStr = s.date; // YYYY-MM-DD
+      if (!map[dateStr]) map[dateStr] = 0;
+      map[dateStr]++;
+    });
+    return map;
+  }, [schedules]);
+
+  const filteredSchedules = useMemo(() => {
+    const targetDateStr = selectedDate.format('YYYY-MM-DD');
+    
+    let filtered = schedules.filter(s => s.date === targetDateStr);
+
     if (groupFilter) {
-      filtered =
-        groupFilter === INDIVIDUAL_KEY
+       filtered = groupFilter === "##__INDIVIDUAL__##"
           ? filtered.filter((s) => !s.name)
           : filtered.filter((s) => s.name === groupFilter);
     }
-    return filtered;
-  }, [schedules, selectedDate, showPast, groupFilter]);
 
-  const { groupedSchedules, sortedGroupNames } = useMemo(() => {
-    const acc = filteredForList.reduce((acc, schedule) => {
-      const groupName = schedule.name || "Individual Schedules";
-      if (!acc[groupName]) acc[groupName] = [];
-      acc[groupName].push(schedule);
-      return acc;
-    }, {});
+    return filtered.sort((a, b) => dayjs(`T${a.time}`).diff(dayjs(`T${b.time}`)));
+  }, [schedules, selectedDate, groupFilter]);
 
-    Object.values(acc).forEach((group) =>
-      group.sort(
-        (a, b) =>
-          dayjs(a.date).diff(dayjs(b.date)) ||
-          dayjs(`T${a.time}`).diff(dayjs(`T${b.time}`))
-      )
-    );
-    const sortedNames = Object.keys(acc).sort((a, b) =>
-      a === "Individual Schedules" ? 1 : b === "Individual Schedules" ? -1 : a.localeCompare(b)
-    );
-    return { groupedSchedules: acc, sortedGroupNames: sortedNames };
-  }, [filteredForList]);
-
-  const { uniqueGroups, hasIndividual } = useMemo(() => {
+  const uniqueGroups = useMemo(() => {
     const groups = [...new Set(schedules.map((s) => s.name).filter(Boolean))];
-    const individual = schedules.some((s) => !s.name);
-    return { uniqueGroups: groups, hasIndividual: individual };
+    return groups;
   }, [schedules]);
 
-  // Replaced motion.div with div in styled components, effectively removing animation here
   const renderScheduleCard = (schedule) => {
     const isPast = dayjs(schedule.date).isBefore(dayjs(), "day");
     const hasConfirmedBookings = schedule.has_confirmed_bookings || false;
     const canDelete = !isPast && !hasConfirmedBookings;
 
     return (
-      <ScheduleCard key={schedule.id} $isPast={isPast}>
+      <ScheduleCard key={schedule.id} $isPast={isPast} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <CardTop>
           <CardInfo>
-            <div className="time">{formatTime(schedule.time)}</div>
-            <div className="date">
-              {dayjs(schedule.date).format("dddd, MMMM D, YYYY")}
+            <div className="time">
+              {formatTime(schedule.time)}
+              <span className="duration">{schedule.duration} min</span>
             </div>
             {schedule.name && <div className="group">{schedule.name}</div>}
           </CardInfo>
           <CardActions>
-            <Tooltip title="Edit Schedule Details">
+            <Tooltip title="Edit">
               <Button
+                size="small"
                 icon={<Edit3 size={14} />}
                 onClick={() => onEdit(schedule)}
                 disabled={isPast}
               />
             </Tooltip>
             <Popconfirm
-              title="Are you sure you want to delete this schedule?"
-              description="This action cannot be undone."
+              title="Delete schedule?"
+              description="Action cannot be undone."
               onConfirm={() => handleDelete(schedule.id)}
               disabled={!canDelete}
-              okText="Yes, delete"
+              okText="Yes"
               cancelText="No"
             >
-              <Tooltip
-                title={
-                  canDelete
-                    ? "Delete Schedule"
-                    : "Cannot delete past schedules or schedules with confirmed bookings."
-                }
-              >
-                <span>
-                  <Button
-                    danger
-                    icon={<Trash2 size={14} />}
-                    disabled={!canDelete}
-                  />
-                </span>
-              </Tooltip>
+              <Button
+                size="small"
+                danger
+                icon={<Trash2 size={14} />}
+                disabled={!canDelete}
+              />
             </Popconfirm>
           </CardActions>
         </CardTop>
         <CardBottom>
           <StatItem>
             <Users size={14} />{" "}
-            <b>
-              {schedule.booked_participants}/{schedule.maxParticipants}
-            </b>
-            &nbsp;Spots Booked
+            <b>{schedule.booked_participants}/{schedule.maxParticipants}</b>
+            &nbsp;Booked
           </StatItem>
           <StatItem>
             <DollarSign size={14} />{" "}
             <b>{parseFloat(schedule.price).toFixed(2)}</b>
-            &nbsp;CAD
           </StatItem>
         </CardBottom>
       </ScheduleCard>
-    );
-  };
-
-  const CustomDropdown = ({ groupName, schedulesInGroup }) => {
-    const [isOpen, setIsOpen] = useState(true);
-    // Removed AnimatePresence and rotation animations
-    return (
-      <div>
-        <DropdownHeader onClick={() => setIsOpen(!isOpen)}>
-          <Space>
-            <Text strong>{groupName}</Text>
-          </Space>
-          <Space>
-            {groupName !== "Individual Schedules" && (
-              <Popconfirm
-                title={`Delete all schedules in the "${groupName}" group?`}
-                description="This cannot be undone. Schedules with bookings will not be deleted."
-                onConfirm={(e) => {
-                  e.stopPropagation();
-                  handleDeleteGroup(groupName);
-                }}
-                onCancel={(e) => e.stopPropagation()}
-                okText="Yes, delete all"
-              >
-                <Tooltip title={`Delete entire '${groupName}' group`}>
-                  <Button
-                    size="small"
-                    type="text"
-                    danger
-                    icon={<Trash2 size={14} />}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </Tooltip>
-              </Popconfirm>
-            )}
-            <DropdownIcon style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
-              <ChevronRight size={16} />
-            </DropdownIcon>
-          </Space>
-        </DropdownHeader>
-        {isOpen && (
-            <DropdownContent>
-              {schedulesInGroup.map(renderScheduleCard)}
-            </DropdownContent>
-        )}
-      </div>
     );
   };
 
@@ -1269,223 +1027,115 @@ const ScheduleManagementView = React.memo(({
           />
         </EmptyStateIcon>
         <EmptyStateText>Configuration Needed</EmptyStateText>
-        <EmptyStateSubtext>
-          This class must be configured before schedules can be added.
-        </EmptyStateSubtext>
       </EmptyStateContainer>
     );
   }
 
-  const INDIVIDUAL_KEY = "##__INDIVIDUAL__##";
-
-  const ScheduleFilters = () => (
-    <ModalControls>
-      <ControlRow>
-        {!isMobileView && (
-          <Segmented
-            options={[
-              { label: "List", value: "list", icon: <List size={14} /> },
-              {
-                label: "Calendar",
-                value: "calendar",
-                icon: <Calendar size={14} />,
-              },
-            ]}
-            value={view}
-            onChange={setView}
-          />
-        )}
-        <Select
-          placeholder="Filter by group"
-          allowClear
-          value={groupFilter}
-          onChange={setGroupFilter}
-          style={{ minWidth: 200, flex: 1 }}
-        >
-          {hasIndividual && (
-            <Option value={INDIVIDUAL_KEY}>Individual Schedules</Option>
-          )}
-          {uniqueGroups.map((group) => (
-            <Option key={group} value={group}>
-              {group}
-            </Option>
-          ))}
-        </Select>
-        <Tooltip title="Check this to see schedules that have already occurred.">
-          <Checkbox
-            checked={showPast}
-            onChange={(e) => setShowPast(e.target.checked)}
-          >
-            Show Past
-          </Checkbox>
-        </Tooltip>
-      </ControlRow>
-      {selectedDate && (
-        <ControlRow>
-          <Text>
-            Showing schedules for: <b>{selectedDate.format("MMMM D, YYYY")}</b>
-          </Text>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => setSelectedDate(null)}
-            icon={<Undo2 size={14} />}
-          >
-            Clear Selection
-          </Button>
-        </ControlRow>
-      )}
-    </ModalControls>
-  );
-
-  const CalendarView = () => {
-    const schedulesByDate = schedules.reduce((acc, s) => {
-      if (!acc[s.date]) acc[s.date] = [];
-      acc[s.date].push(s);
-      return acc;
-    }, {});
-    const today = dayjs().startOf("day");
-    const firstDay = calendarMonth.startOf("month").day();
-    const daysInMonth = calendarMonth.daysInMonth();
-    const days = Array.from({ length: firstDay + daysInMonth }, (_, i) =>
-      i < firstDay ? null : calendarMonth.date(i - firstDay + 1)
-    );
-
-    return (
-      <CalendarPanel>
-        <CalendarHeader>
-          <NavButton
-            onClick={() => setCalendarMonth(calendarMonth.subtract(1, "month"))}
-          >
-            <ChevronLeft size={20} />
-          </NavButton>
-          <MonthTitle>{calendarMonth.format("MMMM YYYY")}</MonthTitle>
-          <NavButton
-            onClick={() => setCalendarMonth(calendarMonth.add(1, "month"))}
-          >
-            <ChevronRight size={20} />
-          </NavButton>
-        </CalendarHeader>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
-          {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
-            <WeekDay key={day}>{day}</WeekDay>
-          ))}
-        </div>
-        <DaysGrid>
-          {days.map((day, index) => {
-            if (!day) return <DayCell key={`empty-${index}`} />;
-            const dateStr = day.format("YYYY-MM-DD");
-            const daySchedules = schedulesByDate[dateStr] || [];
-            return (
-              <DayCell
-                key={dateStr}
-                $isInMonth
-                $isSelected={selectedDate?.isSame(day, "day")}
-                onClick={() => setSelectedDate(day)}
-              >
-                <DayHeader $isToday={day.isSame(today, "day")}>
-                  {day.date()}
-                </DayHeader>
-                <SchedulePreviewContainer>
-                  {daySchedules.slice(0, 1).map((s) => (
-                    <CalendarSchedulePreview key={s.id}>
-                      {formatTime(s.time)}
-                    </CalendarSchedulePreview>
-                  ))}
-                  {daySchedules.length > 1 && (
-                    <MoreSchedulesIndicator>
-                      {daySchedules.length - 1} more
-                    </MoreSchedulesIndicator>
-                  )}
-                </SchedulePreviewContainer>
-              </DayCell>
-            );
-          })}
-        </DaysGrid>
-      </CalendarPanel>
-    );
-  };
-
-  const ListView = () => (
-    <ScheduleListContainer>
-      {loading && schedules.length === 0 ? (
-        <ScheduleManagementSkeleton />
-      ) : sortedGroupNames.length === 0 ? (
-        <EmptyStateContainer>
-          <EmptyStateIcon>
-            <LordIcon
-              src="https://cdn.lordicon.com/uoljexdg.json"
-              trigger="in"
-              colors="primary:#94a3b8"
-              style={{ width: 40, height: 40 }}
-            />
-          </EmptyStateIcon>
-          <EmptyStateText>No Schedules Found</EmptyStateText>
-          <EmptyStateSubtext>
-            Try adjusting your filters or creating a new schedule.
-          </EmptyStateSubtext>
-        </EmptyStateContainer>
-      ) : (
-        sortedGroupNames.map((groupName) => (
-          <CustomDropdown
-            key={groupName}
-            groupName={groupName}
-            schedulesInGroup={groupedSchedules[groupName]}
-          />
-        ))
-      )}
-    </ScheduleListContainer>
-  );
-
-  const renderContent = () => {
-    if (isMobileView || view === "list") return <ListView />;
-    if (view === "calendar") {
-      return (
-        <ModalLayout>
-          <CalendarView />
-          <ScheduleListPanel>
-            {loading && schedules.length === 0 ? (
-              <ScheduleListContainer>
-                <ScheduleManagementSkeleton />
-              </ScheduleListContainer>
-            ) : sortedGroupNames.length === 0 ? (
-              <EmptyStateContainer $padding="40px 20px">
-                <EmptyStateIcon>
-                  <LordIcon
-                    src="https://cdn.lordicon.com/uoljexdg.json"
-                    trigger="in"
-                    colors="primary:#94a3b8"
-                    style={{ width: 40, height: 40 }}
-                  />
-                </EmptyStateIcon>
-                <EmptyStateText>No Schedules Found</EmptyStateText>
-                <EmptyStateSubtext>
-                  Try adjusting your filters or creating a new schedule.
-                </EmptyStateSubtext>
-              </EmptyStateContainer>
-            ) : (
-              <ScheduleListContainer>
-                {sortedGroupNames.map((groupName) => (
-                  <CustomDropdown
-                    key={groupName}
-                    groupName={groupName}
-                    schedulesInGroup={groupedSchedules[groupName]}
-                  />
-                ))}
-              </ScheduleListContainer>
-            )}
-          </ScheduleListPanel>
-        </ModalLayout>
-      );
-    }
-    return null;
-  };
-
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
-      <ScheduleFilters />
-      {renderContent()}
-    </div>
+    <ManagementContainer>
+      <DateStripContainer>
+        <DateStripHeader>
+            <MonthNavigation>
+                <NavBtn onClick={() => setCurrentMonth(currentMonth.subtract(1, 'month'))}><ChevronLeft size={16} /></NavBtn>
+                <MonthTitle>{currentMonth.format('MMMM YYYY')}</MonthTitle>
+                <NavBtn onClick={() => setCurrentMonth(currentMonth.add(1, 'month'))}><ChevronRight size={16} /></NavBtn>
+            </MonthNavigation>
+            <Button size="small" onClick={() => {
+                const today = dayjs();
+                setCurrentMonth(today);
+                setSelectedDate(today);
+            }}>Today</Button>
+        </DateStripHeader>
+        <DatesScrollArea>
+            {datesInMonth.map(date => {
+                const dateStr = date.format('YYYY-MM-DD');
+                const isSelected = selectedDate.isSame(date, 'day');
+                const hasSchedule = scheduleDatesMap[dateStr] > 0;
+                
+                return (
+                    <DateCard 
+                        key={dateStr} 
+                        $selected={isSelected}
+                        onClick={() => setSelectedDate(date)}
+                    >
+                        <span className="day-name">{date.format('ddd')}</span>
+                        <span className="day-number">{date.format('D')}</span>
+                        <MarkerDot $visible={hasSchedule} $selected={isSelected} />
+                    </DateCard>
+                )
+            })}
+        </DatesScrollArea>
+      </DateStripContainer>
+
+      <FilterBar>
+        <Filter size={14} color="#64748b" />
+        <Select 
+            placeholder="Filter Group" 
+            style={{ width: 160 }} 
+            allowClear 
+            size="small" 
+            value={groupFilter}
+            onChange={setGroupFilter}
+            bordered={false}
+        >
+            <Option value="##__INDIVIDUAL__##">Individual</Option>
+            {uniqueGroups.map(g => <Option key={g} value={g}>{g}</Option>)}
+        </Select>
+        <div style={{ flex: 1 }} />
+        <Text type="secondary" style={{ fontSize: 12 }}>
+            {filteredSchedules.length} session{filteredSchedules.length !== 1 && 's'}
+        </Text>
+      </FilterBar>
+
+      <ScheduleListArea>
+        {loading && schedules.length === 0 ? (
+            <>
+                <ScheduleCardSkeleton />
+                <ScheduleCardSkeleton />
+                <ScheduleCardSkeleton />
+            </>
+        ) : filteredSchedules.length > 0 ? (
+            filteredSchedules.map(renderScheduleCard)
+        ) : (
+            <EmptyStateContainer>
+                {schedules.length === 0 ? (
+                    // Global empty state
+                    <>
+                        <EmptyStateIcon>
+                            <LordIcon
+                              src="https://cdn.lordicon.com/uoljexdg.json"
+                              trigger="in"
+                              colors="primary:#94a3b8"
+                              style={{ width: 64, height: 64 }}
+                            />
+                        </EmptyStateIcon>
+                        <EmptyStateText>No Schedules Found</EmptyStateText>
+                        <EmptyStateSubtext>
+                          Try creating a new schedule.
+                        </EmptyStateSubtext>
+                    </>
+                ) : (
+                    // Specific date empty state
+                    <>
+                        <EmptyStateIcon>
+                          <Calendar size={48} color="#e2e8f0" />
+                        </EmptyStateIcon>
+                        <EmptyStateText>No sessions on {selectedDate.format('MMM D')}</EmptyStateText>
+                    </>
+                )}
+                
+                <Button 
+                    type={schedules.length === 0 ? "primary" : "link"} 
+                    icon={<Plus size={14} />} 
+                    onClick={() => onAdd(selectedDate)}
+                    style={{ marginTop: 16 }}
+                >
+                    Add Session for {selectedDate.format('MMM D')}
+                </Button>
+            </EmptyStateContainer>
+        )}
+      </ScheduleListArea>
+    </ManagementContainer>
   );
 });
 
@@ -1509,6 +1159,7 @@ const ScheduleEditDrawer = ({
   const [bulkCurrentStep, setBulkCurrentStep] = useState(0);
   const [activeView, setActiveView] = useState("manage");
   const [editingSchedule, setEditingSchedule] = useState(null);
+  const [prefillDate, setPrefillDate] = useState(null);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 1024);
@@ -1517,15 +1168,16 @@ const ScheduleEditDrawer = ({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // MODIFIED: Added setActiveView("manage") to the cleanup logic in the 'else' block
   useEffect(() => {
     if (open) {
       if (startInEditMode && directEditingSchedule) {
         setActiveView("form");
         setEditingSchedule(directEditingSchedule);
+        setPrefillDate(null);
       } else if (classData) {
         setActiveView("manage");
         setEditingSchedule(null);
+        setPrefillDate(null);
       }
     } else {
       form.resetFields();
@@ -1534,7 +1186,8 @@ const ScheduleEditDrawer = ({
       setBulkCurrentStep(0);
       setFormData({});
       setEditingSchedule(null);
-      setActiveView("manage"); // This ensures the view is reset on close
+      setPrefillDate(null);
+      setActiveView("manage");
     }
   }, [open, classData, startInEditMode, directEditingSchedule, form, bulkForm]);
 
@@ -1557,7 +1210,8 @@ const ScheduleEditDrawer = ({
       maxParticipants: 10,
       minParticipants: 1,
       time: dayjs("09:00", "HH:mm"),
-      date: dayjs().add(1, "day"),
+      // Use the prefillDate if available, otherwise tomorrow
+      date: prefillDate || dayjs().add(1, "day"),
     };
 
     if (editingSchedule) {
@@ -1587,12 +1241,13 @@ const ScheduleEditDrawer = ({
         },
       });
     }
-  }, [activeView, editingSchedule, form, bulkForm]);
+  }, [activeView, editingSchedule, form, bulkForm, prefillDate]);
 
   const handleFormSuccess = () => {
     onSchedulesUpdate();
     if (classData && !startInEditMode) {
       setActiveView("manage");
+      setPrefillDate(null);
     } else {
       onClose();
     }
@@ -1734,7 +1389,6 @@ const ScheduleEditDrawer = ({
     <Form.Item {...props} style={{ marginBottom: 0 }} />
   );
 
-  // Removed all framer motion wrappers here
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
@@ -1977,17 +1631,19 @@ const ScheduleEditDrawer = ({
 
   const renderSingleSessionStepperForm = () => (
     <>
-      <StepsWrapper>
-        <Steps
-          size="small"
-          current={currentStep}
-          items={[
-            { title: "Details", icon: <Calendar size={16} /> },
-            { title: "Pricing", icon: <DollarSign size={16} /> },
-            { title: "Review", icon: <CheckCircle size={16} /> },
-          ]}
-        />
-      </StepsWrapper>
+      {!isMobile && (
+        <StepsWrapper>
+          <Steps
+            size="small"
+            current={currentStep}
+            items={[
+              { title: "Details", icon: <Calendar size={16} /> },
+              { title: "Pricing", icon: <DollarSign size={16} /> },
+              { title: "Review", icon: <CheckCircle size={16} /> },
+            ]}
+          />
+        </StepsWrapper>
+      )}
       <ContentWrapper>
         <StepContent>
           <Form
@@ -2286,17 +1942,19 @@ const ScheduleEditDrawer = ({
 
     return (
       <>
-        <StepsWrapper>
-          <Steps
-            size="small"
-            current={bulkCurrentStep}
-            items={[
-              { title: "Setup", icon: <Calendar size={16} /> },
-              { title: "Pricing", icon: <DollarSign size={16} /> },
-              { title: "Review", icon: <CheckCircle size={16} /> },
-            ]}
-          />
-        </StepsWrapper>
+        {!isMobile && (
+          <StepsWrapper>
+            <Steps
+              size="small"
+              current={bulkCurrentStep}
+              items={[
+                { title: "Setup", icon: <Calendar size={16} /> },
+                { title: "Pricing", icon: <DollarSign size={16} /> },
+                { title: "Review", icon: <CheckCircle size={16} /> },
+              ]}
+            />
+          </StepsWrapper>
+        )}
         <ContentWrapper>
           <StepContent>
             <Form
@@ -2355,8 +2013,10 @@ const ScheduleEditDrawer = ({
     );
   };
 
-  const handleAddNew = useCallback(() => {
+  const handleAddNew = useCallback((date) => {
     setEditingSchedule(null);
+    // If a specific date was clicked, pass it to prefill, otherwise null
+    setPrefillDate(date && dayjs.isDayjs(date) ? date : null); 
     setActiveView("form");
   }, []);
 
@@ -2389,7 +2049,7 @@ const ScheduleEditDrawer = ({
           key="add"
           type="primary"
           icon={<Plus size={16} />}
-          onClick={handleAddNew}
+          onClick={() => handleAddNew(null)}
           block={isMobileLayout}
           style={isMobileLayout ? { height: 44 } : {}}
         >
@@ -2440,14 +2100,11 @@ const ScheduleEditDrawer = ({
         return (
           <>
             <div>
+              {/* Fix: Just go back to 'manage' view, don't close drawer */}
               {classData && bulkCurrentStep === 0 && !hideBackButton && (
-                <Drawer.Close asChild>
-                  <Button
-                    icon={<List size={16} />}
-                  >
-                    Back to List
-                  </Button>
-                </Drawer.Close>
+                 <Button icon={<List size={16} />} onClick={() => setActiveView("manage")}>
+                   Back to List
+                 </Button>
               )}
               {bulkCurrentStep > 0 && (
                 <span style={{ marginLeft: classData && !hideBackButton ? 8 : 0 }}>{backButton}</span>
@@ -2525,14 +2182,11 @@ const ScheduleEditDrawer = ({
       return (
         <>
           <div>
+            {/* Fix: Just go back to 'manage' view, don't close drawer */}
             {classData && activeTab === "single" && currentStep === 0 && !hideBackButton && (
-              <Drawer.Close asChild>
-                <Button 
-                  icon={<List size={16} />}
-                >
+                <Button icon={<List size={16} />} onClick={() => setActiveView("manage")}>
                   Back to List
                 </Button>
-              </Drawer.Close>
             )}
             {currentStep > 0 && (
               <span style={{ marginLeft: classData && activeTab === "single" && currentStep === 0 && !hideBackButton ? 8 : 0 }}>
@@ -2574,7 +2228,7 @@ const ScheduleEditDrawer = ({
     if (activeView === "form") {
       return `${editingSchedule ? "Edit" : "Create"} Schedule`;
     }
-    return `Manage Schedules for "${classData?.title}"`;
+    return `Manage Schedules - ${classData?.title}`;
   };
 
   return (
@@ -2585,7 +2239,7 @@ const ScheduleEditDrawer = ({
           title={getTitle()}
           open={open}
           onCancel={onClose}
-          width={activeView === "manage" ? "65vw" : "50vw"}
+          width={activeView === "manage" ? "800px" : "600px"}
           destroyOnClose
           maskClosable={!isLoading && !isBulkLoading}
           closable={!isLoading && !isBulkLoading}
@@ -2612,7 +2266,7 @@ const ScheduleEditDrawer = ({
               <DrawerHandle />
               <MobileHeader>
                 <MobileTitle>
-                  {classData ? `Manage Schedules for "${classData?.title}"` : "Manage Schedules"}
+                  {`Manage Schedules - ${classData?.title}`}
                 </MobileTitle>
                 <CloseButton
                   icon={<X size={20} />}
@@ -2621,19 +2275,19 @@ const ScheduleEditDrawer = ({
                 />
               </MobileHeader>
               <MobileContent>
-                <ScheduleManagementView
-                  classData={classData}
-                  onAdd={handleAddNew}
-                  onEdit={handleEdit}
-                  onSchedulesUpdate={onSchedulesUpdate}
-                />
+                 <ScheduleManagementView
+                    classData={classData}
+                    onAdd={handleAddNew}
+                    onEdit={handleEdit}
+                    onSchedulesUpdate={onSchedulesUpdate}
+                  />
               </MobileContent>
               <MobileFooter>
-                <Button
+                 <Button
                   key="add"
                   type="primary"
                   icon={<Plus size={16} />}
-                  onClick={handleAddNew}
+                  onClick={() => handleAddNew(null)}
                   block
                   style={{ height: 44 }}
                 >
@@ -2643,31 +2297,18 @@ const ScheduleEditDrawer = ({
             </StyledDrawerContent>
           </Drawer.Portal>
           
-          <Drawer.NestedRoot
-            open={activeView === "form"}
-            onOpenChange={(isOpen) => {
-              if (!isOpen) {
-                setActiveView("manage");
-                setEditingSchedule(null);
-              }
-            }}
-          >
+          <Drawer.NestedRoot open={activeView === "form"} onOpenChange={(o) => !o && setActiveView("manage")}>
             <Drawer.Portal>
-              <StyledDrawerOverlay />
-              <StyledDrawerContent style={{ height: '94%', maxHeight: '94vh' }}>
-                <DrawerHandle />
-                <MobileHeader>
-                  <MobileTitle>{getTitle()}</MobileTitle>
-                  <Drawer.Close asChild>
-                    <CloseButton
-                      icon={<X size={20} />}
-                      disabled={isLoading || isBulkLoading}
-                    />
-                  </Drawer.Close>
-                </MobileHeader>
-                <MobileContent>{renderFormContent()}</MobileContent>
-                <MobileFooter>{renderFooterButtons(true)}</MobileFooter>
-              </StyledDrawerContent>
+               <StyledDrawerOverlay />
+               <StyledDrawerContent style={{ height: '96%' }}>
+                  <DrawerHandle />
+                  <MobileHeader>
+                     <MobileTitle>{editingSchedule ? "Edit Schedule" : "New Schedule"}</MobileTitle>
+                     <CloseButton icon={<X size={20} />} onClick={() => setActiveView("manage")} />
+                  </MobileHeader>
+                  <MobileContent>{renderFormContent()}</MobileContent>
+                  <MobileFooter>{renderFooterButtons(true)}</MobileFooter>
+               </StyledDrawerContent>
             </Drawer.Portal>
           </Drawer.NestedRoot>
         </Drawer.Root>

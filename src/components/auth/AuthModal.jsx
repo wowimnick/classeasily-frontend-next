@@ -369,6 +369,7 @@ const AuthModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isMobile, setIsMobile] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const browserTimezone = useMemo(
     () => Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -376,6 +377,7 @@ const AuthModal = ({
   );
 
   useEffect(() => {
+    setMounted(true);
     setIsMobile(window.innerWidth <= 768);
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener("resize", handleResize);
@@ -817,6 +819,9 @@ const AuthModal = ({
       );
     }
   };
+
+  // Prevent rendering on server to avoid Date.now() error
+  if (!mounted) return null;
 
   // Mobile: Use Vaul Drawer
   if (isMobile) {

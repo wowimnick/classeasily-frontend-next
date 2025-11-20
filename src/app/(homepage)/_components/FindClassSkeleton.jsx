@@ -1,243 +1,265 @@
-// Enhanced Skeleton Components that match HomeClassCard structure
+"use client";
+
+import React from "react";
 import styled, { keyframes } from "styled-components";
 
+// --- Shared Animations & Primitives ---
+
 const shimmer = keyframes`
-  0% {
-    background-position: -468px 0;
-  }
-  100% {
-    background-position: 468px 0;
-  }
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+`;
+
+const ShimmerBlock = styled.div`
+  background: #f6f7f8;
+  background-image: linear-gradient(
+    to right,
+    #f6f7f8 0%,
+    #edeef1 20%,
+    #f6f7f8 40%,
+    #f6f7f8 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 1000px 100%;
+  animation: ${shimmer} 2s infinite linear;
+  border-radius: ${(props) => props.$radius || "4px"};
+  width: ${(props) => props.$width || "100%"};
+  height: ${(props) => props.$height || "20px"};
+  margin-bottom: ${(props) => props.$mb || "0"};
 `;
 
 const SkeletonWrapper = styled.div`
+  width: 100%;
+  max-width: 1200px; /* Matches main content max-width */
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 0 14rem;
-  margin: 4rem auto 2rem auto;
-  width: 100%;
-  box-sizing: border-box;
-
-  @media (max-width: 1425px) {
-    padding: 0 3rem;
-  }
-  @media (max-width: 768px) {
-    padding: 0 1.5rem;
-    gap: 1rem;
-    margin: 3rem auto;
-  }
-  @media (max-width: 616px) {
-    padding: 0 1rem;
-  }
-`;
-
-const SkeletonHeader = styled.div`
-  width: 100%;
-  margin-bottom: 1rem;
-`;
-
-const SkeletonTitle = styled.div`
-  height: 36px;
-  width: 320px;
-  background: linear-gradient(to right, #f0f0f0 8%, #f8f8f8 18%, #f0f0f0 33%);
-  background-size: 800px 100px;
-  animation: ${shimmer} 1.5s infinite linear;
-  border-radius: 4px;
-  margin-bottom: 8px;
 
   @media (max-width: 768px) {
-    width: 250px;
-    height: 30px;
+    padding: 3rem 1.5rem;
   }
 `;
 
-const SkeletonSubtitle = styled.div`
-  height: 20px;
-  width: 450px;
-  background: linear-gradient(to right, #f0f0f0 8%, #f8f8f8 18%, #f0f0f0 33%);
-  background-size: 800px 100px;
-  animation: ${shimmer} 1.5s infinite linear;
-  border-radius: 4px;
-  margin-left: 2px;
-
-  @media (max-width: 768px) {
-    width: 80%;
-  }
+const HeaderGroup = styled.div`
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 `;
 
-const SkeletonCarouselContainer = styled.div`
+const CarouselRow = styled.div`
   display: flex;
   gap: 24px;
-  padding: 1rem 0.5rem;
-  width: 100%;
   overflow: hidden;
+  width: 100%;
+  padding-bottom: 1rem;
 `;
 
-// Updated card to match HomeClassCard layout
-const SkeletonCard = styled.div`
+// --- 1. Find Class Skeleton (Matches HomeClassCard) ---
+
+const ClassCardSkeleton = styled.div`
   display: flex;
   flex-direction: column;
-  height: min-content;
   flex-shrink: 0;
   width: 250px;
-  max-width: 250px;
-  border-radius: 12px;
-  border: 2px solid transparent;
-  padding: 2px;
-  background: #ffffff;
-
-  @media (max-width: 768px) {
-    width: 240px;
-  }
-  @media (max-width: 480px) {
-    width: 230px;
-  }
+  gap: 8px;
 `;
 
-const SkeletonImageContainer = styled.div`
-  position: relative;
+const ClassImage = styled(ShimmerBlock)`
   width: 100%;
   aspect-ratio: 1 / 1;
   border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 6px;
 `;
 
-const SkeletonImage = styled.div`
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to right, #e8e8e8 8%, #f4f4f4 18%, #e8e8e8 33%);
-  background-size: 800px 100px;
-  animation: ${shimmer} 1.5s infinite linear;
-  border-radius: 10px;
-`;
-
-const SkeletonContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-`;
-
-const SkeletonTopRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 6px;
-  margin-bottom: 1px;
-`;
-
-const SkeletonCardTitle = styled.div`
-  height: 18px;
-  width: 70%;
-  background: linear-gradient(to right, #f0f0f0 8%, #f8f8f8 18%, #f0f0f0 33%);
-  background-size: 800px 100px;
-  animation: ${shimmer} 1.5s infinite linear;
-  border-radius: 4px;
-  flex: 1;
-`;
-
-const SkeletonRating = styled.div`
-  height: 16px;
-  width: 45px;
-  background: linear-gradient(to right, #f0f0f0 8%, #f8f8f8 18%, #f0f0f0 33%);
-  background-size: 800px 100px;
-  animation: ${shimmer} 1.5s infinite linear;
-  border-radius: 4px;
-  flex-shrink: 0;
-`;
-
-const SkeletonText = styled.div`
-  height: 16px;
-  width: ${(props) => props.width || "60%"};
-  background: linear-gradient(to right, #f0f0f0 8%, #f8f8f8 18%, #f0f0f0 33%);
-  background-size: 800px 100px;
-  animation: ${shimmer} 1.5s infinite linear;
-  border-radius: 4px;
-  margin: 2px 0;
-`;
-
-const SkeletonPriceRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-`;
-
-const SkeletonPrice = styled.div`
-  height: 16px;
-  width: 65px;
-  background: linear-gradient(to right, #f0f0f0 8%, #f8f8f8 18%, #f0f0f0 33%);
-  background-size: 800px 100px;
-  animation: ${shimmer} 1.5s infinite linear;
-  border-radius: 4px;
-`;
-
-const SkeletonPriceSeparator = styled.div`
-  height: 10px;
-  width: 10px;
-  background: linear-gradient(to right, #f0f0f0 8%, #f8f8f8 18%, #f0f0f0 33%);
-  background-size: 800px 100px;
-  animation: ${shimmer} 1.5s infinite linear;
-  border-radius: 50%;
-`;
-
-const SkeletonLink = styled.div`
-  height: 20px;
-  width: 180px;
-  background: linear-gradient(to right, #f0f0f0 8%, #f8f8f8 18%, #f0f0f0 33%);
-  background-size: 800px 100px;
-  animation: ${shimmer} 1.5s infinite linear;
-  border-radius: 4px;
-  margin-top: 1rem;
-`;
-
-// Main Skeleton Component for FindClass
 export function FindClassSkeleton() {
   return (
     <SkeletonWrapper>
-      <SkeletonHeader>
-        <SkeletonTitle />
-        <SkeletonSubtitle />
-      </SkeletonHeader>
+      <HeaderGroup>
+        <ShimmerBlock $width="40%" $height="36px" $mb="8px" />
+        <ShimmerBlock $width="60%" $height="20px" />
+      </HeaderGroup>
 
-      <SkeletonCarouselContainer>
-        {[1, 2, 3, 4].map((item) => (
-          <SkeletonCard key={item}>
-            <SkeletonImageContainer>
-              <SkeletonImage />
-            </SkeletonImageContainer>
-            <SkeletonContent>
-              <SkeletonTopRow>
-                <SkeletonCardTitle />
-                <SkeletonRating />
-              </SkeletonTopRow>
-              <SkeletonText width="60%" />
-              <SkeletonText width="50%" />
-              <SkeletonPriceRow>
-                <SkeletonPrice />
-              </SkeletonPriceRow>
-            </SkeletonContent>
-          </SkeletonCard>
+      <CarouselRow>
+        {[1, 2, 3, 4, 5].map((i) => (
+          <ClassCardSkeleton key={i}>
+            <ClassImage />
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <ShimmerBlock $width="70%" $height="16px" />
+              <ShimmerBlock $width="15%" $height="16px" />
+            </div>
+            <ShimmerBlock $width="50%" $height="14px" />
+            <ShimmerBlock $width="40%" $height="14px" />
+          </ClassCardSkeleton>
         ))}
-      </SkeletonCarouselContainer>
-
-      <SkeletonLink />
+      </CarouselRow>
+      
+      <ShimmerBlock $width="150px" $height="20px" $mb="0" style={{marginTop: '1rem'}} />
     </SkeletonWrapper>
   );
 }
 
-// Legacy skeleton for backward compatibility
+// --- 2. Category Skeleton (Matches CategoryCard) ---
+
+const CategoryCardSkeleton = styled(ShimmerBlock)`
+  width: 250px;
+  height: 250px;
+  border-radius: 12px;
+  flex-shrink: 0;
+`;
+
 export function CategorySkeleton() {
   return (
-    <div className="category-skeleton-container">
-      {[...Array(6)].map((_, i) => (
-        <div className="skeleton-category-card" key={i}>
-          <div className="skeleton-circle" />
-          <div className="skeleton-line" />
+    <SkeletonWrapper>
+      <HeaderGroup>
+        <ShimmerBlock $width="35%" $height="36px" $mb="8px" />
+        <ShimmerBlock $width="50%" $height="20px" />
+      </HeaderGroup>
+
+      <CarouselRow>
+        {[1, 2, 3, 4, 5].map((i) => (
+          <CategoryCardSkeleton key={i} />
+        ))}
+      </CarouselRow>
+    </SkeletonWrapper>
+  );
+}
+
+// --- 3. Testimonial Skeleton (Matches Testimonials.jsx) ---
+
+const TestimonialCardSkeleton = styled.div`
+  width: 400px;
+  height: 280px;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 16px;
+  padding: 1.8rem;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 1rem;
+  
+  @media (max-width: 480px) {
+    width: 300px;
+  }
+`;
+
+const TestimonialUserRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: auto;
+`;
+
+export function TestimonialSkeleton() {
+  return (
+    <SkeletonWrapper>
+      <HeaderGroup>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <ShimmerBlock $width="30%" $height="36px" />
+          <div style={{ display: 'flex', gap: '10px' }}>
+             <ShimmerBlock $width="40px" $height="40px" $radius="50%" />
+             <ShimmerBlock $width="40px" $height="40px" $radius="50%" />
+          </div>
         </div>
-      ))}
-    </div>
+      </HeaderGroup>
+
+      <CarouselRow>
+        {[1, 2, 3].map((i) => (
+          <TestimonialCardSkeleton key={i}>
+            {/* Stars & Date */}
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <ShimmerBlock $width="100px" $height="16px" />
+              <ShimmerBlock $width="80px" $height="16px" />
+            </div>
+            {/* Quote Lines */}
+            <ShimmerBlock $width="100%" $height="16px" />
+            <ShimmerBlock $width="95%" $height="16px" />
+            <ShimmerBlock $width="90%" $height="16px" />
+            
+            {/* User Info */}
+            <TestimonialUserRow>
+              <ShimmerBlock $width="40px" $height="40px" $radius="50%" />
+              <div style={{ flex: 1 }}>
+                <ShimmerBlock $width="60%" $height="14px" $mb="4px" />
+                <ShimmerBlock $width="40%" $height="12px" />
+              </div>
+            </TestimonialUserRow>
+          </TestimonialCardSkeleton>
+        ))}
+      </CarouselRow>
+    </SkeletonWrapper>
+  );
+}
+
+// --- 4. Gift Card CTA Skeleton ---
+
+const GiftSplitLayout = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 5rem;
+  align-items: center;
+  width: 100%;
+  
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+`;
+
+const GiftLeft = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+const GiftRight = styled.div`
+  height: 450px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  @media (max-width: 1024px) {
+    height: 300px;
+  }
+`;
+
+export function GiftCardSkeleton() {
+  return (
+    <SkeletonWrapper>
+      <GiftSplitLayout>
+        <GiftLeft>
+          <ShimmerBlock $width="80%" $height="48px" />
+          <ShimmerBlock $width="100%" $height="20px" />
+          <ShimmerBlock $width="90%" $height="20px" />
+          
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+            <ShimmerBlock $width="100px" $height="20px" />
+            <ShimmerBlock $width="100px" $height="20px" />
+            <ShimmerBlock $width="100px" $height="20px" />
+          </div>
+          
+          <ShimmerBlock $width="200px" $height="50px" $radius="8px" style={{marginTop: '1rem'}} />
+        </GiftLeft>
+        
+        <GiftRight>
+           {/* Mimics the tilted cards */}
+           <ShimmerBlock 
+             $width="350px" 
+             $height="220px" 
+             $radius="12px" 
+             style={{ transform: 'rotate(-5deg) translateY(-20px)', opacity: 0.5 }} 
+           />
+           <ShimmerBlock 
+             $width="350px" 
+             $height="220px" 
+             $radius="12px" 
+             style={{ position: 'absolute', transform: 'rotate(5deg) translateY(20px)', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }} 
+           />
+        </GiftRight>
+      </GiftSplitLayout>
+    </SkeletonWrapper>
   );
 }

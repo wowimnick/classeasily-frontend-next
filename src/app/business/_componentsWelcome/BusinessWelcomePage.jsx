@@ -140,7 +140,7 @@ const HeroAnimationContainer = styled(motion.div)`
 
 const HeroTitle = styled.h1`
   font-size: clamp(2.5rem, 6vw, 4.5rem);
-  font-weight: 800;
+  font-weight: 700;
   margin-bottom: 1.5rem;
   letter-spacing: -0.035em;
   line-height: 1.1;
@@ -271,7 +271,6 @@ const EmblaSlide = styled.div`
   min-width: 0;
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 10;
 `;
 
 const TwoColumnSection = styled.section`
@@ -781,7 +780,7 @@ const ImageDescription = styled(motion.p)`
   margin: 2rem auto 0;
   max-width: 700px;
   line-height: 1.6;
-  font-size: 1.1rem;
+  font-size: 1rem;
 
   @media (max-width: 768px) {
     font-size: 0.95rem;
@@ -902,7 +901,7 @@ const BusinessWelcomePage = () => {
         {
           feature: "Commission Rate",
           others: "20-30% + Other Fees",
-          classEasily: "20% All-Inclusive",
+          classEasily: "15% All-Inclusive",
           highlight: true,
         },
         {
@@ -1007,7 +1006,7 @@ const BusinessWelcomePage = () => {
           feature: "Fee model",
           imported: "Free",
           widget: "~6%",
-          marketplace: "~20%",
+          marketplace: "~15%",
         },
       ],
       faqData: [
@@ -1034,7 +1033,7 @@ const BusinessWelcomePage = () => {
           key: "4",
           question: "How do payments and fees work on ClassEasily?",
           answer:
-            "We handle all payments through our secure platform (Stripe). Funds are transferred to your account after the class is completed, minus our transparent, all-inclusive <strong>20% service fee</strong>. This fee covers all platform costs, including marketing, payment processing, and 24/7 support.",
+            "We handle all payments through our secure platform (Stripe). Funds are transferred to your account after the class is completed, minus our transparent, all-inclusive <strong>15% service fee</strong>. This fee covers all platform costs, including marketing, payment processing, and 24/7 support.",
         },
         {
           key: "5",
@@ -1287,9 +1286,15 @@ const BusinessWelcomePage = () => {
                     <Image
                       src={content.image}
                       alt={`Dashboard view for ${navigationItems[index].label}`}
-                      fill
+                      width={1440}
+                      height={900}
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
                       quality={85}
+                      style={{ 
+                        width: "100%", 
+                        height: "auto", 
+                        display: "block" 
+                      }}
                     />
                   </EmblaSlide>
                 ))}
@@ -1436,7 +1441,7 @@ const BusinessWelcomePage = () => {
                 <TierHeaderCell>
                   Marketplace
                   <br />
-                  (20% Fee)
+                  (15% Fee)
                 </TierHeaderCell>
               </TierTableHeader>
               {tierComparisonData.map((row) => (

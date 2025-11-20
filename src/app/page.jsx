@@ -9,10 +9,17 @@ import {
 } from "@/lib/server-data-fetchers";
 import FindClassClientWrapper from "./(homepage)/_components/FindClassClientWrapper";
 
-// Lazy load all homepage components for optimal performance
-// This ensures ZERO blocking time by loading non-critical sections after initial paint
+// Import Specific Skeletons
+import { 
+  FindClassSkeleton, 
+  CategorySkeleton, 
+  TestimonialSkeleton, 
+  GiftCardSkeleton 
+} from "./(homepage)/_components/FindClassSkeleton";
+
+// Lazy load all homepage components
 const Footer = dynamic(() => import("@/components/homepage/Footer"), {
-  loading: () => <div style={{ minHeight: "300px" }} />,
+  loading: () => <div style={{ height: "300px", background: "#f9f9f9" }} />,
 });
 
 const HomepageCategories = dynamic(
@@ -25,53 +32,31 @@ const HomepageCategories = dynamic(
 const HowItWorks = dynamic(
   () => import("./(homepage)/_components/HowItWorks"),
   {
-    loading: () => <div style={{ minHeight: "800px" }} />,
+    // Since HowItWorks is a full-screen colored section, a simple placeholder 
+    // often looks better than a complex skeleton until it pops in, 
+    // but we can add a block loader if preferred.
+    loading: () => <div style={{ height: "800px", background: "#f0f0f0" }} />,
   }
 );
 
 const ForHosts = dynamic(() => import("./(homepage)/_components/ForHosts"), {
-  loading: () => <div style={{ minHeight: "400px" }} />,
+  loading: () => <div style={{ height: "400px", margin: "4rem auto", maxWidth: "1200px", background: "#ffecee", borderRadius: "1.5rem" }} />,
 });
 
 const Testimonials = dynamic(
   () => import("./(homepage)/_components/Testimonials"),
   {
-    loading: () => <div style={{ minHeight: "500px" }} />,
+    loading: () => <TestimonialSkeleton />,
   }
 );
 
 const GiftCardsCTA = dynamic(
   () => import("./(homepage)/_components/GiftCardsCTA"),
   {
-    loading: () => <div style={{ minHeight: "600px" }} />,
+    loading: () => <GiftCardSkeleton />,
   }
 );
 
-// Skeleton Components (Server Components)
-function SectionSkeleton() {
-  return (
-    <div className="section-skeleton-container">
-      <div className="skeleton-title" />
-      <div className="skeleton-block" style={{ width: "70%" }} />
-      <div className="skeleton-block" style={{ width: "75%" }} />
-    </div>
-  );
-}
-
-function CategorySkeleton() {
-  return (
-    <div className="category-skeleton-container">
-      {[...Array(6)].map((_, i) => (
-        <div className="skeleton-category-card" key={i}>
-          <div className="skeleton-circle" />
-          <div className="skeleton-line" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// Metadata export for SEO
 export const metadata = {
   title: "Classeasily - Find Local Classes & Workshops Near You",
   description:
@@ -129,25 +114,16 @@ export const metadata = {
   },
 };
 
-/**
- * Server Component with SSR data fetching
- * Fetches data on the server for SEO and performance
- */
 export default async function HomePage() {
-  // Use the new, efficient preload function to fetch data in parallel
   const preloadedData = await preloadHomepageData();
-
-  // Extract the actual arrays of data from the results
   const initialClasses = preloadedData.classes.classes;
   const initialNextPageUrl = preloadedData.classes.nextPageUrl;
-  const initialCategories = preloadedData.categories.data; // Correctly access the .data property
+  const initialCategories = preloadedData.categories.data;
 
-  // Generate structured data for SEO rich results
   const structuredData = generateClassesStructuredData(initialClasses);
 
   return (
     <>
-      {/* Inject structured data for SEO */}
       {structuredData && (
         <script
           type="application/ld+json"
@@ -160,45 +136,37 @@ export default async function HomePage() {
 
       <div className="homepage-style">
         <main className="main-content">
-          {/* Above the fold - render immediately */}
           <BannerSearch />
 
-          {/* Pass the correctly extracted data to the client component */}
-          <Suspense fallback={<CategorySkeleton />}>
+          <Suspense fallback={<FindClassSkeleton />}>
             <FindClassClientWrapper
               initialClasses={initialClasses}
               initialNextPageUrl={initialNextPageUrl}
             />
           </Suspense>
 
-          {/* Pass the correctly extracted data to the categories component */}
           <Suspense fallback={<CategorySkeleton />}>
             <HomepageCategories initialCategories={initialCategories} />
           </Suspense>
 
-          {/* How It Works section - lazy loaded, static content */}
-          <Suspense fallback={<div style={{ minHeight: "800px" }} />}>
+          <Suspense fallback={<div style={{ height: "800px", background: "#fafafa" }} />}>
             <HowItWorks />
           </Suspense>
 
-          {/* For Hosts section - lazy loaded, static content */}
-          <Suspense fallback={<div style={{ minHeight: "400px" }} />}>
+          <Suspense fallback={<div style={{ height: "400px", background: "#fff" }} />}>
             <ForHosts />
           </Suspense>
 
-          {/* Gift Cards CTA - lazy loaded, interactive content */}
-          <Suspense fallback={<div style={{ minHeight: "600px" }} />}>
+          <Suspense fallback={<GiftCardSkeleton />}>
             <GiftCardsCTA />
           </Suspense>
 
-          {/* Testimonials section - lazy loaded, static content */}
-          <Suspense fallback={<div style={{ minHeight: "500px" }} />}>
+          <Suspense fallback={<TestimonialSkeleton />}>
             <Testimonials />
           </Suspense>
         </main>
 
-        {/* Footer - lazy loaded, lowest priority */}
-        <Suspense fallback={<div style={{ minHeight: "300px" }} />}>
+        <Suspense fallback={<div style={{ height: "200px" }} />}>
           <Footer />
         </Suspense>
       </div>

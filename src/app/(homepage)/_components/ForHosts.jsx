@@ -78,7 +78,6 @@ const RightWrapper = styled.div`
 `;
 
 const StyledH2 = styled.h2`
-  color: #333;
   font-size: clamp(1.8rem, 4vw, 2.5rem);
   font-weight: 700;
   line-height: 1.3;
