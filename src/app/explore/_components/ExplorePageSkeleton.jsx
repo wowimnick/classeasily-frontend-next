@@ -20,6 +20,37 @@ const SkeletonBase = styled.div`
   border-radius: ${(props) => props.$radius || "8px"};
 `;
 
+// --- PAGE LAYOUT WRAPPERS ---
+const SkeletonPageWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background-color: #fff;
+`;
+
+const SimpleHeaderPlaceholder = styled.div`
+  height: 80px;
+  width: 100%;
+  border-bottom: 1px solid #e8e8e8;
+  background-color: #fff;
+  flex-shrink: 0;
+  z-index: 98;
+
+  @media (max-width: 768px) {
+    height: 60px;
+  }
+`;
+
+const SimpleBreadcrumbPlaceholder = styled.div`
+  height: 50px;
+  width: 100%;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #fff;
+  flex-shrink: 0;
+`;
+
 // --- HEADER SKELETON STYLES ---
 const SkeletonHeaderWrapper = styled.div`
   display: flex;
@@ -97,6 +128,7 @@ const SkeletonGridContainer = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 40%);
   width: 100%;
+  /* The height calculation matches the header (80px) + breadcrumbs (50px) = 130px */
   height: calc(100vh - 130px);
   position: relative;
   overflow: hidden;
@@ -498,53 +530,59 @@ export function ExploreHeaderSkeleton() {
 
 export default function ExplorePageSkeleton() {
   return (
-    <SkeletonGridContainer>
-      <SkeletonLeftContainer>
-        <SkeletonCategoriesWrapper>
-          <SkeletonTopSection>
-            <SkeletonCategoriesScrollArea>
-              <div
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  display: "flex",
-                  padding: "0 1.5rem",
-                }}
-              >
-                <SkeletonCategories>
-                  {[...Array(8)].map((_, i) => (
-                    <SkeletonCategoryItem key={i}>
-                      <SkeletonCategoryIcon />
-                      <SkeletonCategoryText />
-                    </SkeletonCategoryItem>
-                  ))}
-                </SkeletonCategories>
-              </div>
-            </SkeletonCategoriesScrollArea>
-            <SkeletonFilterWrapper>
-              <SkeletonFilterButton />
-            </SkeletonFilterWrapper>
-          </SkeletonTopSection>
+    <SkeletonPageWrapper>
+      {/* Simple placeholders for Header and Breadcrumbs to prevent layout shift */}
+      <SimpleHeaderPlaceholder />
+      <SimpleBreadcrumbPlaceholder />
+      
+      <SkeletonGridContainer>
+        <SkeletonLeftContainer>
+          <SkeletonCategoriesWrapper>
+            <SkeletonTopSection>
+              <SkeletonCategoriesScrollArea>
+                <div
+                  style={{
+                    position: "relative",
+                    width: "100%",
+                    display: "flex",
+                    padding: "0 1.5rem",
+                  }}
+                >
+                  <SkeletonCategories>
+                    {[...Array(8)].map((_, i) => (
+                      <SkeletonCategoryItem key={i}>
+                        <SkeletonCategoryIcon />
+                        <SkeletonCategoryText />
+                      </SkeletonCategoryItem>
+                    ))}
+                  </SkeletonCategories>
+                </div>
+              </SkeletonCategoriesScrollArea>
+              <SkeletonFilterWrapper>
+                <SkeletonFilterButton />
+              </SkeletonFilterWrapper>
+            </SkeletonTopSection>
 
-          <SkeletonSubCategories>
-            <SkeletonSubCategoryPill $width="100px" />
-            <SkeletonSubCategoryPill $width="130px" />
-            <SkeletonSubCategoryPill $width="110px" />
-            <SkeletonSubCategoryPill $width="95px" />
-            <SkeletonSubCategoryPill $width="120px" />
-            <SkeletonSubCategoryPill $width="105px" />
-          </SkeletonSubCategories>
-        </SkeletonCategoriesWrapper>
+            <SkeletonSubCategories>
+              <SkeletonSubCategoryPill $width="100px" />
+              <SkeletonSubCategoryPill $width="130px" />
+              <SkeletonSubCategoryPill $width="110px" />
+              <SkeletonSubCategoryPill $width="95px" />
+              <SkeletonSubCategoryPill $width="120px" />
+              <SkeletonSubCategoryPill $width="105px" />
+            </SkeletonSubCategories>
+          </SkeletonCategoriesWrapper>
 
-        <SkeletonClassGridWrapper>
-          <ClassesContentSkeleton />
-        </SkeletonClassGridWrapper>
-      </SkeletonLeftContainer>
+          <SkeletonClassGridWrapper>
+            <ClassesContentSkeleton />
+          </SkeletonClassGridWrapper>
+        </SkeletonLeftContainer>
 
-      <SkeletonMapContainer>
-        <SkeletonMapButton />
-        <SkeletonMapContent />
-      </SkeletonMapContainer>
-    </SkeletonGridContainer>
+        <SkeletonMapContainer>
+          <SkeletonMapButton />
+          <SkeletonMapContent />
+        </SkeletonMapContainer>
+      </SkeletonGridContainer>
+    </SkeletonPageWrapper>
   );
 }

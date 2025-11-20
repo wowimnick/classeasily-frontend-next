@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
-import { Typography, Divider, Tag, Avatar, Button, Popconfirm, Space, List, ConfigProvider, Skeleton } from 'antd';
+import { Typography, Divider, Tag, Avatar, Button, Popconfirm, Space, List, ConfigProvider, Skeleton, Timeline } from 'antd';
 import message from '@/lib/message';
 import {
   User,
@@ -994,6 +994,54 @@ const BookingDetailsDrawer = ({
               </InfoItem>
             </InfoGrid>
           </InfoGroup>
+
+          {/* NEW: Course Schedule Section */}
+          {booking.enrollment_type === "Full Course" && booking.course_schedule && (
+            <InfoGroup>
+              <InfoGroupTitle>
+                <Calendar /> Course Schedule
+              </InfoGroupTitle>
+              <div style={{ marginTop: '12px', padding: '0 12px' }}>
+                <Timeline
+                  items={booking.course_schedule.map((session) => ({
+                    color: session.is_current 
+                      ? colors.primary 
+                      : session.status === 'completed' 
+                        ? colors.success 
+                        : 'gray',
+                    children: (
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        opacity: session.status === 'cancelled' ? 0.5 : 1,
+                        fontWeight: session.is_current ? 600 : 400
+                      }}>
+                        <Space direction="vertical" size={0}>
+                          <Text strong={session.is_current}>
+                            Session {session.session_number}
+                            {session.is_current && <Tag color="blue" style={{marginLeft: 8}}>Current Viewing</Tag>}
+                          </Text>
+                          <Text type="secondary" style={{ fontSize: '13px' }}>
+                            {formatBusinessLocalToUserDisplay(
+                              session.date,
+                              session.time,
+                              // You might need to pass timezone props down or use the ones from booking context
+                              booking.business_context.business_timezone, 
+                              booking.business_context.business_timezone,
+                              { dateTimeFormat: "EEE, MMM d, yyyy • h:mm a" }
+                            )}
+                          </Text>
+                        </Space>
+                        <StatusTag style={{ height: 'fit-content' }}>
+                          {session.status.toUpperCase()}
+                        </StatusTag>
+                      </div>
+                    ),
+                  }))}
+                />
+              </div>
+            </InfoGroup>
+          )}
 
           <InfoGroup>
             <InfoGroupTitle>
