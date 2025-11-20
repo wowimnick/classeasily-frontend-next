@@ -1,4 +1,3 @@
-// ClassOptionCard.jsx
 "use client";
 
 import React from "react";
@@ -237,19 +236,33 @@ const ClassOptionCard = ({
     }
   };
 
+  // Updated logic to include $0 (Free) pricing
   const getPriceRange = () => {
     if (!schedules.length) return { min: 0, max: 0, display: "-" };
+    
+    // Include 0 in the prices array
     const prices = schedules
       .map((s) => parseFloat(s.price || 0))
-      .filter((p) => p > 0);
+      .filter((p) => !isNaN(p));
+
     if (prices.length === 0) return { min: 0, max: 0, display: "-" };
+    
     const min = Math.min(...prices);
     const max = Math.max(...prices);
-    if (min === max) {
-      return { min, max, display: `${min}` };
+    
+    // Determine display string
+    let display = "";
+    if (min === 0 && max === 0) {
+      display = "Free";
+    } else if (min === 0) {
+      display = `Free - $${max}`;
+    } else if (min === max) {
+      display = `$${min}`;
     } else {
-      return { min, max, display: `${min} - ${max}` };
+      display = `$${min} - $${max}`;
     }
+
+    return { min, max, display };
   };
 
   const priceInfo = getPriceRange();
@@ -266,6 +279,11 @@ const ClassOptionCard = ({
         .slice(0, 3)
     : [];
 
+  const formatSchedulePrice = (price) => {
+    const numPrice = parseFloat(price || 0);
+    return numPrice === 0 ? "Free" : `$${numPrice}`;
+  };
+
   const handleReserveClick = () => {
     if (optionId && onBookNow) {
       onBookNow(optionId);
@@ -279,7 +297,7 @@ const ClassOptionCard = ({
       <Header>
         <PricingSection>
           <PriceDisplay>
-            <Price>${priceInfo.display}</Price>
+            <Price>{priceInfo.display}</Price>
             <PriceRange>{isCourse ? "/ full course" : "/ session"}</PriceRange>
           </PriceDisplay>
         </PricingSection>
@@ -348,7 +366,7 @@ const ClassOptionCard = ({
                 {schedule.date ? formatDate(schedule.date) : schedule.day} at{" "}
                 {formatTime(schedule.time)}
               </span>
-              <span>${schedule.price}</span>
+              <span>{formatSchedulePrice(schedule.price)}</span>
             </ScheduleItem>
           ))}
         </ScheduleInfo>

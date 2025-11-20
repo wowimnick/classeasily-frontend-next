@@ -22,6 +22,7 @@ import {
   UserCheck,
   Minus,
   Plus,
+  Tag,
 } from "lucide-react";
 
 import { scheduleService } from "@/services/apiService";
@@ -1146,6 +1147,8 @@ const CalendarStep = ({
                                 currentSelectedSlot?.id === slot.instance_id;
                               const isDisabled =
                                 slot.available_spots < bookingData.participants;
+                              const priceValue = parseFloat(slot.price);
+                              const isFree = priceValue === 0;
 
                               return (
                                 <TimeSlotButton
@@ -1175,8 +1178,10 @@ const CalendarStep = ({
                                       )}
                                     </TimeText>
                                     <PriceTag>
-                                      <DollarSign size={14} />
-                                      {parseFloat(slot.price).toFixed(2)}
+                                      {!isFree && <DollarSign size={14} />}
+                                      {isFree
+                                        ? "Free"
+                                        : priceValue.toFixed(2)}
                                     </PriceTag>
                                   </TimeSlotHeader>
                                   <TimeSlotMeta>

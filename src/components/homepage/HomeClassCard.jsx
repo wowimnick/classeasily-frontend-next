@@ -448,6 +448,19 @@ const HomeClassCard = ({
     [isAuthenticated, isTogglingFavorite, isFavorite, classId, onFavoriteChange]
   );
 
+  // Logic to format the price display (handles $0 -> "Free")
+  const renderPrice = (priceValue, label) => {
+    const numericPrice = parseFloat(priceValue);
+    const isFree = numericPrice === 0;
+
+    return (
+      <Price>
+        <span>{isFree ? "Free" : `$${numericPrice}`}</span>
+        <PriceLabel>{label}</PriceLabel>
+      </Price>
+    );
+  };
+
   return (
     <CardContainer
       ref={cardRef}
@@ -548,21 +561,13 @@ const HomeClassCard = ({
             </Price>
           ) : (
             <>
-              {prices.singleSession !== null && (
-                <Price>
-                  <span>${prices.singleSession}</span>
-                  <PriceLabel>/ class</PriceLabel>
-                </Price>
-              )}
+              {prices.singleSession !== null &&
+                renderPrice(prices.singleSession, "/ class")}
               {prices.singleSession !== null && prices.course !== null && (
                 <PriceSeparator>•</PriceSeparator>
               )}
-              {prices.course !== null && (
-                <Price>
-                  <span>${prices.course}</span>
-                  <PriceLabel>/ course</PriceLabel>
-                </Price>
-              )}
+              {prices.course !== null &&
+                renderPrice(prices.course, "/ course")}
             </>
           )}
         </PriceRow>

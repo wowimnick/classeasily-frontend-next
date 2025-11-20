@@ -499,10 +499,10 @@ const DatePickerLabel = styled.label`
   font-size: 0.9rem;
   font-weight: 700;
   color: #1a1a1a; /* Hardcoded fallback to ensure visibility */
-  margin-bottom: -2px;
+  margin-bottom: 0;
   cursor: pointer;
   display: block;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: "ProximaSoft", sans-serif;
 `;
 
 const RoundedSearchButton = styled(motion.button)`

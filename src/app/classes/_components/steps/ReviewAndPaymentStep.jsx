@@ -14,6 +14,7 @@ import {
   Shield,
   UserCheck,
   Percent,
+  CheckCircle,
 } from "lucide-react";
 import {
   getCancellationPolicyText,
@@ -408,6 +409,9 @@ const ReviewAndPaymentStep = ({
     };
   }, [subtotal, appliedDiscount]);
 
+  // Determine if the order is free (100% off or free class)
+  const isFree = finalTotal === 0;
+
   const taxAmount = (subtotal - discountAmount) * HST_RATE;
 
   const handleApplyCoupon = async () => {
@@ -468,7 +472,10 @@ const ReviewAndPaymentStep = ({
     const contactFields = isUserLoggedIn
       ? [email, phone]
       : [email, phone, guest_full_name];
-    const billingFields = [fullName, address, city, state, zipCode];
+    
+    // If free, billing fields are NOT required
+    const billingFields = isFree ? [] : [fullName, address, city, state, zipCode];
+    
     const allTextFieldsFilled = [...contactFields, ...billingFields].every(
       (val) => val && String(val).trim()
     );
@@ -478,11 +485,25 @@ const ReviewAndPaymentStep = ({
     setIsFormValid(allTextFieldsFilled && participantsFilled);
   };
 
+  // Re-run local validation if isFree changes (e.g. coupon applied making it free)
+  useEffect(() => {
+    if (form) {
+        const values = form.getFieldsValue();
+        handleFormValuesChange({}, values);
+    }
+  }, [isFree, form]);
+
   const handleSubmit = useCallback(async () => {
-    if (!stripe || !elements || !selectedSlot) {
-      setError("Payment system not ready or slot not selected.");
+    // Check for payment system readiness only if NOT free
+    if (!isFree && (!stripe || !elements)) {
+      setError("Payment system not ready.");
       return;
     }
+    if (!selectedSlot) {
+        setError("Slot not selected.");
+        return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -506,6 +527,8 @@ const ReviewAndPaymentStep = ({
       const intentResponse = await paymentService.createPaymentIntent(
         paymentIntentPayload
       );
+      
+      // If the response contains a booking_id, it means the booking was confirmed immediately (Free booking)
       if (intentResponse.booking_id) {
         onPaymentComplete(intentResponse);
         return;
@@ -548,6 +571,7 @@ const ReviewAndPaymentStep = ({
       setLoading(false);
     }
   }, [
+    isFree,
     stripe,
     elements,
     form,
@@ -560,11 +584,15 @@ const ReviewAndPaymentStep = ({
   ]);
 
   useEffect(() => {
+    // For free bookings, we don't need card completion
+    const canSubmit = isFree 
+        ? (!loading && isFormValid) 
+        : (stripe && elements && !loading && isFormValid && isCardComplete);
+
     onPaymentAction?.({
       handleSubmit,
       loading,
-      canSubmit:
-        stripe && elements && !loading && isFormValid && isCardComplete,
+      canSubmit,
       finalTotal,
     });
   }, [
@@ -576,6 +604,7 @@ const ReviewAndPaymentStep = ({
     finalTotal,
     isFormValid,
     isCardComplete,
+    isFree
   ]);
 
   const renderBookingDetails = () => {
@@ -590,6 +619,8 @@ const ReviewAndPaymentStep = ({
       price,
       minParticipants,
     } = selectedSlot;
+
+    const numericPrice = parseFloat(price || 0);
 
     if (isCourse) {
       return (
@@ -616,7 +647,11 @@ const ReviewAndPaymentStep = ({
           </ClassDetail>
           <ClassDetail>
             <Tag />
-            <span>${parseFloat(price || 0).toFixed(2)} for the course</span>
+            <span>
+              {numericPrice === 0
+                ? "Free for the course"
+                : `$${numericPrice.toFixed(2)} for the course`}
+            </span>
           </ClassDetail>
         </>
       );
@@ -643,7 +678,11 @@ const ReviewAndPaymentStep = ({
         </ClassDetail>
         <ClassDetail>
           <Tag />
-          <span>${parseFloat(price || 0).toFixed(2)} per person</span>
+          <span>
+            {numericPrice === 0
+              ? "Free per person"
+              : `$${numericPrice.toFixed(2)} per person`}
+          </span>
         </ClassDetail>
         {minParticipants > 1 && (
           <ClassDetail>
@@ -681,11 +720,13 @@ const ReviewAndPaymentStep = ({
       onClick={handleSubmit}
       loading={loading}
       disabled={
-        !stripe || !elements || loading || !isFormValid || !isCardComplete
+        loading || !isFormValid || (!isFree && (!stripe || !elements || !isCardComplete))
       }
       {...props}
     >
-      {loading ? "Processing..." : `Confirm & Pay $${finalTotal.toFixed(2)}`}
+      {loading 
+        ? "Processing..." 
+        : (isFree ? "Confirm Booking" : `Confirm & Pay $${finalTotal.toFixed(2)}`)}
     </Button>
   );
 
@@ -779,69 +820,72 @@ const ReviewAndPaymentStep = ({
                 </Form.Item>
               </div>
 
-              <div
-                style={{ paddingTop: "16px", borderTop: "1px solid #e5e7eb" }}
-              >
-                <SectionTitle>Payment & Billing</SectionTitle>
-                <Form.Item
-                  name="fullName"
-                  label="Full Name on Card"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Cardholder's name is required",
-                    },
-                  ]}
-                >
-                  <Input placeholder="e.g., John Doe" />
-                </Form.Item>
-                <Form.Item
-                  name="address"
-                  label="Billing Address"
-                  rules={[
-                    { required: true, message: "Billing address is required" },
-                  ]}
-                >
-                  <Input placeholder="e.g., 123 Main Street" />
-                </Form.Item>
+              {/* Hide Payment Fields if the booking is FREE */}
+              {!isFree && (
                 <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
-                    gap: "16px",
-                  }}
+                  style={{ paddingTop: "16px", borderTop: "1px solid #e5e7eb" }}
                 >
+                  <SectionTitle>Payment & Billing</SectionTitle>
                   <Form.Item
-                    name="city"
-                    label="City"
-                    rules={[{ required: true }]}
+                    name="fullName"
+                    label="Full Name on Card"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Cardholder's name is required",
+                      },
+                    ]}
                   >
-                    <Input placeholder="e.g., Toronto" />
+                    <Input placeholder="e.g., John Doe" />
                   </Form.Item>
                   <Form.Item
-                    name="state"
-                    label="Province"
-                    rules={[{ required: true }]}
+                    name="address"
+                    label="Billing Address"
+                    rules={[
+                      { required: true, message: "Billing address is required" },
+                    ]}
                   >
-                    <Input placeholder="e.g., Ontario" />
+                    <Input placeholder="e.g., 123 Main Street" />
                   </Form.Item>
-                  <Form.Item
-                    name="zipCode"
-                    label="Postal Code"
-                    rules={[{ required: true }]}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
+                      gap: "16px",
+                    }}
                   >
-                    <Input placeholder="e.g., M5V 2T6" />
+                    <Form.Item
+                      name="city"
+                      label="City"
+                      rules={[{ required: true }]}
+                    >
+                      <Input placeholder="e.g., Toronto" />
+                    </Form.Item>
+                    <Form.Item
+                      name="state"
+                      label="Province"
+                      rules={[{ required: true }]}
+                    >
+                      <Input placeholder="e.g., Ontario" />
+                    </Form.Item>
+                    <Form.Item
+                      name="zipCode"
+                      label="Postal Code"
+                      rules={[{ required: true }]}
+                    >
+                      <Input placeholder="e.g., M5V 2T6" />
+                    </Form.Item>
+                  </div>
+                  <Form.Item label="Credit or Debit Card">
+                    <CardElementContainer>
+                      <CardElement
+                        options={cardElementOptions}
+                        onChange={(e) => setIsCardComplete(e.complete)}
+                      />
+                    </CardElementContainer>
                   </Form.Item>
                 </div>
-                <Form.Item label="Credit or Debit Card">
-                  <CardElementContainer>
-                    <CardElement
-                      options={cardElementOptions}
-                      onChange={(e) => setIsCardComplete(e.complete)}
-                    />
-                  </CardElementContainer>
-                </Form.Item>
-              </div>
+              )}
 
               <div
                 style={{ paddingTop: "16px", borderTop: "1px solid #e5e7eb" }}
@@ -923,7 +967,9 @@ const ReviewAndPaymentStep = ({
                   Price &times; {participantsCount}{" "}
                   {participantsCount > 1 ? "people" : "person"}
                 </span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>
+                  {subtotal === 0 ? "Free" : `$${subtotal.toFixed(2)}`}
+                </span>
               </PriceRow>
               {appliedDiscount && (
                 <PriceRow $success>
@@ -937,7 +983,9 @@ const ReviewAndPaymentStep = ({
               </PriceRow>
               <PriceRow className="total">
                 <span>Grand Total (CAD)</span>
-                <span>${finalTotal.toFixed(2)}</span>
+                <span>
+                  {finalTotal === 0 ? "Free" : `$${finalTotal.toFixed(2)}`}
+                </span>
               </PriceRow>
             </PriceBreakdown>
 
@@ -966,27 +1014,46 @@ const ReviewAndPaymentStep = ({
               </div>
             </InfoPanel>
 
-            <InfoPanel
-              $bgColor="#f0fdf4"
-              $borderColor="#bbf7d0"
-              $iconColor="#22c55e"
-              $titleColor="#15803d"
-              $textColor="#166534"
-            >
-              <Lock />
-              <div>
-                <h5>Secure Payment</h5>
-                <p>
-                  Your payment is encrypted and processed securely by Stripe.
-                </p>
-              </div>
-            </InfoPanel>
+            {/* Free Booking Note */}
+            {isFree && (
+              <InfoPanel
+                $bgColor="#f0fdf4"
+                $borderColor="#bbf7d0"
+                $iconColor="#22c55e"
+                $titleColor="#15803d"
+                $textColor="#166534"
+              >
+                <CheckCircle />
+                <div>
+                  <h5>No Payment Required</h5>
+                  <p>This booking is free. No credit card is required.</p>
+                </div>
+              </InfoPanel>
+            )}
+
+            {!isFree && (
+              <InfoPanel
+                $bgColor="#f0fdf4"
+                $borderColor="#bbf7d0"
+                $iconColor="#22c55e"
+                $titleColor="#15803d"
+                $textColor="#166534"
+              >
+                <Lock />
+                <div>
+                  <h5>Secure Payment</h5>
+                  <p>
+                    Your payment is encrypted and processed securely by Stripe.
+                  </p>
+                </div>
+              </InfoPanel>
+            )}
           </SummaryCard>
         </SummarySection>
       </StepContainer>
 
       <AnimatePresence>
-        {isFormValid && isCardComplete && (
+        {isFormValid && (isFree || isCardComplete) && (
           <MobilePaymentFooter
             $visible={true}
             variants={mobileFooterVariants}
@@ -996,7 +1063,9 @@ const ReviewAndPaymentStep = ({
           >
             <MobilePriceRow>
               <span>Grand Total (CAD)</span>
-              <span>${finalTotal.toFixed(2)}</span>
+              <span>
+                {finalTotal === 0 ? "Free" : `$${finalTotal.toFixed(2)}`}
+              </span>
             </MobilePriceRow>
             <PayButton style={{ width: "100%" }} />
           </MobilePaymentFooter>
