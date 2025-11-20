@@ -122,7 +122,7 @@ const NotchTitle = styled.span`
   font-size: 14px;
   font-weight: 700;
   color: #1a1a1a;
-  font-family: "Proxima Soft", sans-serif;
+  font-family: "ProximaSoft", sans-serif;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -133,7 +133,7 @@ const NotchSubtitle = styled.span`
   font-size: 12px;
   color: #666;
   font-weight: 600;
-  font-family: "Proxima Soft", sans-serif;
+  font-family: "ProximaSoft", sans-serif;
 `;
 
 const NotchIcon = styled.div`

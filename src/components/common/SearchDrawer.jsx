@@ -166,9 +166,16 @@ const CompactRow = styled.div`
     height: 28px !important;
   }
   
+  /* 
+     iOS Zoom Prevention: 
+     Targeting every possible input type including standard inputs, select boxes,
+     search inputs, and picker inputs. 
+     Force 16px !important.
+  */
   input, 
   .ant-select-selection-item, 
   .ant-select-selection-search-input,
+  .ant-picker-input > input,
   input::placeholder,
   .ant-select-selection-placeholder {
     font-size: 16px !important;

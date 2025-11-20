@@ -1,28 +1,30 @@
-// src/components/layout/CookieConsentBanner.jsx
-"use client"; // MIGRATION: Added client directive for hooks and browser-side rendering.
+
+"use client";
 
 import React, { useState } from "react";
 import styled from "styled-components";
 import { Button, Typography, Modal } from "antd";
-import Link from "next/link"; // MIGRATION: Swapped react-router-dom for next/link
+import Link from "next/link";
 import {
   MoreOutlined,
   CloseOutlined,
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
 
-// --- STYLED COMPONENTS (No changes needed) ---
+// --- STYLED COMPONENTS ---
+
 const PopupWrapper = styled.div`
   position: fixed;
+  z-index: 990; 
+  
   bottom: 20px;
   right: 20px;
   background: #ffffff;
   border: 1px solid #e8e8e8;
-  border-radius: 12px;
+  border-radius: 16px; /* Slightly more rounded for modern iOS feel */
   padding: 1.5rem;
   max-width: 380px;
   min-width: 320px;
-  z-index: 2000;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   animation: slideUp 0.3s ease-out;
 
@@ -37,73 +39,86 @@ const PopupWrapper = styled.div`
     }
   }
 
+  /* --- COMPACT IOS / MOBILE STYLING --- */
   @media (max-width: 480px) {
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
+    left: 12px;
+    /* Ensure full width minus margins */
+    width: calc(100% - 24px); 
+    min-width: 0;
     max-width: none;
-    min-width: auto;
-    padding: 1rem;
-    border-radius: 8px;
+    
+    /* Respect iOS Home Bar Safe Area */
+    bottom: max(12px, env(safe-area-inset-bottom));
+    
+    padding: 12px 16px;
+    border-radius: 14px;
+    
+    /* Tighter shadow for mobile */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
 `;
 
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center; /* Center alignment for tighter vertical space */
   margin-bottom: 0.75rem;
 
   @media (max-width: 480px) {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem; /* Much tighter on mobile */
   }
 `;
 
 const Title = styled.h2`
   margin: 0;
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #2c3e50;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 
   @media (max-width: 480px) {
-    font-size: 1rem;
+    font-size: 0.95rem; /* Smaller title */
   }
 `;
 
 const CloseButton = styled.button`
-  background: none;
+  background: #f3f4f6;
   border: none;
   cursor: pointer;
-  color: #95a5a6;
-  padding: 4px;
-  border-radius: 4px;
+  color: #9ca3af;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  transition: all 0.2s;
 
   &:hover {
-    color: #7f8c8d;
-    background: #f8f9fa;
-  }
-
-  @media (max-width: 480px) {
-    padding: 2px;
+    color: #4b5563;
+    background: #e5e7eb;
   }
 `;
 
 const TextContent = styled.div`
   margin-bottom: 1.25rem;
-  line-height: 1.4;
+  line-height: 1.5;
 
   @media (max-width: 480px) {
     margin-bottom: 0.75rem;
-    font-size: 0.85rem;
-    line-height: 1.3;
+    font-size: 0.8rem; /* Smaller text */
+    line-height: 1.35;
+    color: #6b7280;
   }
 `;
 
-// MIGRATION: This component now correctly uses the Next.js Link
 const StyledLink = styled(Link)`
   color: #3498db;
   text-decoration: none;
+  font-weight: 500;
   &:hover {
     text-decoration: underline;
   }
@@ -113,74 +128,86 @@ const ButtonGroup = styled.div`
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
+  align-items: center;
 
   @media (max-width: 480px) {
     gap: 0.5rem;
+    padding-top: 4px;
   }
 `;
 
 const OptionsMenu = styled.div`
   position: absolute;
   right: 0;
-  bottom: 3rem;
+  bottom: 3.5rem; /* Moved up slightly */
   background: white;
   border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  padding: 0.5rem;
-  z-index: 2001;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+  padding: 8px;
+  z-index: 991; /* Just above the wrapper */
   animation: fadeIn 0.2s ease-out;
-  min-width: 140px;
+  min-width: 160px;
 
   @keyframes fadeIn {
     from {
       opacity: 0;
-      transform: scale(0.9);
+      transform: scale(0.9) translateY(10px);
     }
     to {
       opacity: 1;
-      transform: scale(1);
+      transform: scale(1) translateY(0);
     }
   }
 
   @media (max-width: 480px) {
-    bottom: 2.5rem;
-    right: -10px;
+    bottom: 100%; /* Sit on top of the banner on mobile */
+    right: 0;
+    margin-bottom: 8px;
+    width: 100%;
   }
 `;
 
 const OptionsButton = styled.button`
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-  color: #6c757d;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #6b7280;
   cursor: pointer;
-  padding: 0.5rem;
-  font-size: 0.875rem;
+  padding: 0;
+  width: 36px;
+  height: 36px; /* Square button saves width */
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: all 0.2s;
 
   &:hover {
-    background: #e9ecef;
-    border-color: #dee2e6;
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #374151;
   }
 
   @media (max-width: 480px) {
-    padding: 0.4rem 0.5rem;
+    height: 32px;
+    width: 32px;
   }
 `;
 
 const AcceptButton = styled(Button)`
+  border-radius: 8px;
+  font-weight: 600;
+  
   @media (max-width: 480px) {
     font-size: 0.85rem;
-    padding: 4px 12px;
-    height: auto;
+    height: 32px;
+    padding: 0 16px;
+    flex: 1; /* Make accept button take remaining space on mobile */
   }
 `;
 
-// --- COMPONENT (Logic is the same, only the Link `to` prop changes) ---
+// --- COMPONENT ---
 
 const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
   const [showOptions, setShowOptions] = useState(false);
@@ -206,39 +233,47 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
 
   return (
     <PopupWrapper>
+      {showOptions && (
+        <OptionsMenu>
+          <Button 
+            size="middle" 
+            onClick={handleDeclineClick} 
+            danger 
+            block
+            type="text"
+            style={{ textAlign: 'left', fontWeight: 500 }}
+          >
+            Manage / Decline
+          </Button>
+        </OptionsMenu>
+      )}
+
       <Header>
-        <Title>🍪 Cookie Settings</Title>
+        <Title>
+          <span>🍪</span> Cookie Settings
+        </Title>
         <CloseButton onClick={onClose} aria-label="Close cookie banner">
-          <CloseOutlined />
+          <CloseOutlined style={{ fontSize: '12px' }} />
         </CloseButton>
       </Header>
 
       <TextContent>
-        <Typography.Text style={{ color: "#495057", fontSize: "0.9rem" }}>
-          We use cookies to enhance your experience and analyze our traffic. 📊
-          View our {/* MIGRATION: Changed `to` prop to `href` */}
-          <StyledLink href="/cookie-policy">Cookie Policy</StyledLink> for
-          details.
+        <Typography.Text style={{ color: "inherit", fontSize: "inherit" }}>
+          We use cookies to analyze traffic. See our{" "}
+          <StyledLink href="/cookie-policy">Policy</StyledLink>.
         </Typography.Text>
       </TextContent>
-
-      {showOptions && (
-        <OptionsMenu>
-          <Button size="small" onClick={handleDeclineClick} danger block>
-            Manage Settings
-          </Button>
-        </OptionsMenu>
-      )}
 
       <ButtonGroup>
         <OptionsButton onClick={handleOptionsClick} aria-label="More options">
           <MoreOutlined />
         </OptionsButton>
-        <AcceptButton type="primary" onClick={onAccept} size="default">
+        <AcceptButton type="primary" onClick={onAccept} size="middle">
           Accept All
         </AcceptButton>
       </ButtonGroup>
 
+      {/* Modal inherits default Ant Z-Index (1000), so it will appear ABOVE the banner (990) */}
       <Modal
         title={
           <span style={{ color: "#d32f2f" }}>
@@ -248,37 +283,27 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
         }
         open={showDeclineModal}
         onCancel={handleCancelDecline}
+        zIndex={1001} // Ensure Modal is definitely above banner
         footer={[
           <Button key="cancel" type="primary" onClick={handleCancelDecline}>
-            Keep Cookies (Recommended)
+            Keep Cookies
           </Button>,
           <Button
             key="decline"
             onClick={handleFinalDecline}
-            style={{ color: "#666" }}
+            danger
+            type="text"
           >
-            Yes, Decline All
+            Decline All
           </Button>,
         ]}
-        width={480}
+        width={400}
         centered
+        styles={{ mask: { backdropFilter: 'blur(2px)' } }}
       >
-        <div style={{ padding: "16px 0" }}>
-          <Typography.Text>
-            <strong style={{ color: "#d32f2f" }}>⛔ Warning:</strong> Declining
-            cookies may significantly impact your browsing experience. You may
-            encounter:
-          </Typography.Text>
-          <ul style={{ marginTop: "12px", color: "#666" }}>
-            <li>Reduced website functionality</li>
-            <li>Less personalized content</li>
-            <li>Repeated login prompts</li>
-            <li>Slower page loading times</li>
-          </ul>
-          <Typography.Text
-            style={{ color: "#666", fontSize: "0.9rem", fontStyle: "italic" }}
-          >
-            Most users prefer to accept cookies for the best experience.
+        <div style={{ padding: "8px 0" }}>
+          <Typography.Text type="secondary" style={{ fontSize: '0.9rem' }}>
+            Declining cookies may result in a degraded experience, including functionality issues and slower loading times.
           </Typography.Text>
         </div>
       </Modal>

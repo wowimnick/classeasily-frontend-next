@@ -87,6 +87,16 @@ const CarouselContainer = styled.div`
   position: relative;
   width: 100%;
   padding: 0.5rem 0;
+
+  /* FIX: Break out of parent padding on mobile to allow edge-to-edge scrolling */
+  @media (max-width: 768px) {
+    width: calc(100% + 3rem); /* 100% + (1.5rem * 2) */
+    margin-left: -1.5rem;
+  }
+  @media (max-width: 616px) {
+    width: calc(100% + 2rem); /* 100% + (1rem * 2) */
+    margin-left: -1rem;
+  }
 `;
 
 const EmblaViewport = styled.div`
@@ -101,6 +111,17 @@ const EmblaContainer = styled.div`
   margin: 0 -0.5rem;
   min-height: 380px;
   will-change: transform; 
+
+  /* FIX: Add padding back to the container so the first card aligns with the title */
+  @media (max-width: 768px) {
+    margin: 0;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  @media (max-width: 616px) {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 `;
 
 // Common style for both Slides and Skeletons to ensure perfect alignment

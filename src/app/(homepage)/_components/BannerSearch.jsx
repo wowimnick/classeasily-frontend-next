@@ -610,7 +610,7 @@ const StaticSearchPill = styled(motion.button)`
 `;
 
 const PillText = styled.div`
-  font-family: 'Proxima Soft', sans-serif;
+  font-family: 'ProximaSoft', sans-serif;
   font-size: 15px;
   font-weight: 600;
   color: #222;
@@ -620,7 +620,7 @@ const PillText = styled.div`
 `;
 
 const PillSubtext = styled.div`
-  font-family: 'Proxima Soft', sans-serif;
+  font-family: 'ProximaSoft', sans-serif;
   font-size: 13px;
   color: #717171;
   white-space: nowrap;

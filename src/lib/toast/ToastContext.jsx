@@ -56,31 +56,49 @@ const ToastContainer = styled.div`
   gap: 8px;
   pointer-events: none;
   align-items: center;
+
+  /* Mobile: Take full width and manage margins via padding */
+  @media (max-width: 768px) {
+    top: 16px;
+    left: 0;
+    transform: none;
+    width: 100%;
+    padding: 0 16px; /* Safety margin on sides */
+    align-items: stretch; /* Force toasts to fill width */
+  }
 `;
 
 const ToastItem = styled.div`
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px; /* Increased gap for better spacing */
   background: white;
   padding: 10px 16px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   animation: ${(props) => (props.$isExiting ? slideOut : slideIn)} 0.3s ease;
   pointer-events: auto;
+  
+  /* Desktop: content based width */
   max-width: 500px;
   min-width: fit-content;
   width: auto;
   white-space: nowrap;
 
+  /* Mobile: Full width banner style */
   @media (max-width: 768px) {
-    max-width: calc(100vw - 32px);
+    max-width: none;
+    width: 100%;
+    min-width: 0;
     white-space: normal;
     word-wrap: break-word;
+    padding: 12px 16px;
+    border-radius: 12px; /* Softer corners on mobile */
+    justify-content: flex-start;
   }
 
   .anticon {
-    font-size: 16px;
+    font-size: 18px; /* Slightly larger icon */
     flex-shrink: 0;
   }
 
@@ -110,9 +128,12 @@ const ToastContent = styled.div`
   color: rgba(0, 0, 0, 0.88);
   line-height: 1.5;
   white-space: nowrap;
+  font-weight: 500;
 
   @media (max-width: 768px) {
     white-space: normal;
+    text-align: left;
+    flex: 1; /* Ensure text takes up remaining space */
   }
 `;
 

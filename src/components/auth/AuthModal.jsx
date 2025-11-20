@@ -162,23 +162,40 @@ const StyledForm = styled(Form)`
   .ant-form-item {
     margin-bottom: 1rem;
   }
+  
+  /* 
+     iOS Zoom Fix:
+     Targeting affix wrappers, password inputs, and standard inputs.
+     Forcing font-size to 16px prevents iOS from zooming in on focus.
+  */
   .ant-input-affix-wrapper,
-  .ant-input-password {
+  .ant-input-password,
+  .ant-input {
     padding: 0 11px;
     height: 48px;
     border-radius: 12px;
     border: 1px solid #e8e8e8;
-    font-size: 14px;
+    font-size: 16px !important; /* CHANGED: 14px -> 16px to prevent zoom */
+    
     &:hover,
     &.ant-input-affix-wrapper-focused,
-    &.ant-input-password-focused {
+    &.ant-input-password-focused,
+    &:focus {
       border-color: #ff385c;
       box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
     }
   }
+
+  /* Ensure nested inputs inside affix wrappers also inherit the size */
+  .ant-input-affix-wrapper > input.ant-input {
+    font-size: 16px !important;
+    height: 100%;
+  }
+
   @media (max-width: 768px) {
     .ant-input-affix-wrapper,
-    .ant-input-password {
+    .ant-input-password,
+    .ant-input {
       height: 44px !important;
     }
   }
