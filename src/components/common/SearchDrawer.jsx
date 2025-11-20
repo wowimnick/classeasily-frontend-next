@@ -34,11 +34,13 @@ const MobileDrawerGlobalStyles = createGlobalStyle`
     padding: 12px 12px 8px 12px;
     background: transparent !important;
     cursor: default !important;
+    font-family: "ProximaSoft", sans-serif !important;
   }
 
   .explore-header-location-search-dropdown .ant-select-item {
       border-radius: 12px !important;
       padding: 4px !important;
+      font-family: "ProximaSoft", sans-serif !important;
   }
 
   .explore-header-location-search-dropdown .ant-select-item-option-selected {
@@ -50,6 +52,7 @@ const MobileDrawerGlobalStyles = createGlobalStyle`
     border-radius: 16px !important;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
     overflow: hidden;
+    font-family: "ProximaSoft", sans-serif !important;
   }
 
   .mobile-drawer-picker-dropdown {
@@ -74,8 +77,11 @@ const DrawerContent = styled(Drawer.Content)`
   flex-direction: column;
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
+  
+  /* KEYBOARD FIX: */
   height: auto;
   max-height: 90vh;
+  
   position: fixed;
   bottom: 0;
   left: 0;
@@ -83,6 +89,9 @@ const DrawerContent = styled(Drawer.Content)`
   z-index: 9999;
   outline: none;
   box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+  
+  /* Ensure content is pushed up by safe area, preventing keyboard overlap issues */
+  padding-bottom: env(safe-area-inset-bottom);
 `;
 
 const DrawerHeader = styled.div`
@@ -155,6 +164,7 @@ const CompactRow = styled.div`
     text-transform: uppercase;
     margin-bottom: 0px;
     letter-spacing: 0.5px;
+    font-family: "ProximaSoft", sans-serif;
   }
 
   .ant-select, .ant-picker {
@@ -167,10 +177,9 @@ const CompactRow = styled.div`
   }
   
   /* 
-     iOS Zoom Prevention: 
-     Targeting every possible input type including standard inputs, select boxes,
-     search inputs, and picker inputs. 
-     Force 16px !important.
+     iOS Zoom Prevention & Font Fix: 
+     1. Force 16px !important to stop zooming.
+     2. Force font-family "ProximaSoft" on actual input elements.
   */
   input, 
   .ant-select-selection-item, 
@@ -183,13 +192,14 @@ const CompactRow = styled.div`
     color: #222 !important;
     padding: 0 !important;
     line-height: 28px !important;
-    font-family: "Proxima Soft", sans-serif !important;
+    font-family: "ProximaSoft", sans-serif !important; /* FIX: Applied correctly */
   }
 
   input::placeholder,
   .ant-select-selection-placeholder {
     color: #999 !important;
     font-weight: 500 !important;
+    font-family: "ProximaSoft", sans-serif !important;
   }
 
   .ant-select-selector {
@@ -226,6 +236,7 @@ const SearchButtonFull = styled.button`
   gap: 8px;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(230, 30, 77, 0.2);
+  font-family: "ProximaSoft", sans-serif;
   
   &:active { opacity: 0.9; scale: 0.98; }
 `;
@@ -264,6 +275,7 @@ const PrimaryText = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: "ProximaSoft", sans-serif;
 `;
 
 const SecondaryText = styled.div`
@@ -272,6 +284,7 @@ const SecondaryText = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: "ProximaSoft", sans-serif;
 `;
 
 const participantOptions = Array.from({ length: 10 }, (_, i) => ({
@@ -347,7 +360,16 @@ const SearchDrawer = () => {
     <>
       <MobileDrawerGlobalStyles />
       <ConfigProvider theme={exploreHeaderTheme}>
-        <Drawer.Root open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+        {/* 
+           VAUL FIX: `shouldScaleBackground` and `repositionInputs={false}` 
+           help prevent the viewport jumping on iOS when keyboard opens. 
+        */}
+        <Drawer.Root 
+          open={isDrawerOpen} 
+          onOpenChange={setIsDrawerOpen}
+          shouldScaleBackground
+          repositionInputs={false} 
+        >
           <Drawer.Portal>
             <DrawerOverlay />
             <DrawerContent>
@@ -357,7 +379,7 @@ const SearchDrawer = () => {
                 <CloseButton onClick={() => setIsDrawerOpen(false)}>
                   <X size={16} />
                 </CloseButton>
-                <span style={{ fontWeight: 700, fontSize: 16, color: '#222' }}>Search</span>
+                <span style={{ fontWeight: 700, fontSize: 16, color: '#222', fontFamily: "ProximaSoft, sans-serif" }}>Search</span>
                 <div style={{ width: 30 }} />
               </DrawerHeader>
               
@@ -422,7 +444,7 @@ const SearchDrawer = () => {
                           options={participantOptions} 
                           variant="borderless" 
                           popupClassName="mobile-drawer-dropdown"
-                          dropdownStyle={{ padding: '8px' }}
+                          dropdownStyle={{ padding: '8px', fontFamily: "ProximaSoft, sans-serif" }}
                           getPopupContainer={(trigger) => document.body}
                           style={{ width: '100%' }}
                           suffixIcon={<ChevronDown size={16} color="#222" />}
@@ -435,7 +457,7 @@ const SearchDrawer = () => {
 
               <DrawerFooter>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                  <span style={{ textDecoration: 'underline', fontWeight: 600, color: '#717171', cursor: 'pointer', fontSize: 14 }} onClick={clearAll}>
+                  <span style={{ textDecoration: 'underline', fontWeight: 600, color: '#717171', cursor: 'pointer', fontSize: 14, fontFamily: "ProximaSoft, sans-serif" }} onClick={clearAll}>
                     Clear all
                   </span>
                 </div>

@@ -1,5 +1,3 @@
-// --- START OF FILE FindClass.jsx ---
-
 "use client";
 
 import React, {
@@ -30,7 +28,8 @@ const MainWrapper = styled.section`
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  padding: 0 14rem;
+  /* Restore original padding */
+  padding: 0 14rem; 
   margin: 4rem auto 2rem auto;
   color: ${(props) => props.theme.token.colorText};
   z-index: 1;
@@ -41,7 +40,8 @@ const MainWrapper = styled.section`
     padding: 0 3rem;
   }
   @media (max-width: 768px) {
-    padding: 0 1.5rem;
+    /* Restore mobile padding so text aligns correctly */
+    padding: 0 1.5rem; 
     gap: 1rem;
     margin: 3rem auto;
   }
@@ -56,7 +56,6 @@ const HeaderContainer = styled.div`
   align-items: flex-end;
   width: 100%;
   gap: 1rem;
-  /* Ensure header height doesn't jump when buttons appear */
   min-height: 60px; 
 `;
 
@@ -88,13 +87,17 @@ const CarouselContainer = styled.div`
   width: 100%;
   padding: 0.5rem 0;
 
-  /* FIX: Break out of parent padding on mobile to allow edge-to-edge scrolling */
+  /* 
+     FIX: Logic to prevent "cut off" look. 
+     We use negative margins to pull the carousel container to the screen edges,
+     counteracting the MainWrapper padding on mobile.
+  */
   @media (max-width: 768px) {
-    width: calc(100% + 3rem); /* 100% + (1.5rem * 2) */
+    width: calc(100% + 3rem); /* 100% width + (1.5rem padding * 2 sides) */
     margin-left: -1.5rem;
   }
   @media (max-width: 616px) {
-    width: calc(100% + 2rem); /* 100% + (1rem * 2) */
+    width: calc(100% + 2rem); /* 100% width + (1rem padding * 2 sides) */
     margin-left: -1rem;
   }
 `;
@@ -107,15 +110,20 @@ const EmblaViewport = styled.div`
 const EmblaContainer = styled.div`
   display: flex;
   gap: 24px;
-  padding: 1rem 0.5rem;
-  margin: 0 -0.5rem;
   min-height: 380px;
   will-change: transform; 
 
-  /* FIX: Add padding back to the container so the first card aligns with the title */
+  /* 
+     FIX: We add padding INSIDE the scroll container equal to the removed margin.
+     This ensures the first card starts aligned with the title text, 
+     but subsequent cards scroll all the way to the edge.
+  */
+  padding: 1rem 0.5rem; /* Default desktop padding */
+  margin: 0 -0.5rem; /* Default desktop margin offset */
+
   @media (max-width: 768px) {
-    margin: 0;
-    padding-left: 1.5rem;
+    margin: 0; /* Reset default margin */
+    padding-left: 1.5rem; /* Align with MainWrapper padding */
     padding-right: 1.5rem;
   }
   @media (max-width: 616px) {
@@ -124,12 +132,11 @@ const EmblaContainer = styled.div`
   }
 `;
 
-// Common style for both Slides and Skeletons to ensure perfect alignment
 const SlideWrapper = styled.div`
   flex: 0 0 auto;
   position: relative;
   width: 250px;
-  min-width: 250px; /* Enforce strict width */
+  min-width: 250px;
 `;
 
 const ButtonContainer = styled(motion.div)`
@@ -214,12 +221,11 @@ const AWS_LOCATION_API_URL =
   "https://geocoding.classeasily.com/address-autocomplete-proxy";
 
 // --- CONSTANTS ---
-// Moved outside component to ensure referential stability (prevents re-init jitter)
 const CAROUSEL_OPTIONS = {
   align: "start",
-  containScroll: false, // CRITICAL: prevents jumping when list grows
+  containScroll: false, 
   loop: false,
-  dragFree: true, // CRITICAL: removes "snappy" feeling, allows free scrolling
+  dragFree: true,
   slidesToScroll: "auto",
 };
 
@@ -274,7 +280,6 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
   const [loadingLocation, setLoadingLocation] = useState(true);
   const [locationError, setLocationError] = useState(null);
 
-  // Use static options object to prevent re-renders
   const [emblaRef, emblaApi] = useEmblaCarousel(CAROUSEL_OPTIONS);
 
   const [prevBtnDisabled, setPrevBtnDisabled] = useState(true);
@@ -285,7 +290,6 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
     setIsMounted(true);
   }, []);
 
-  // 1. Location Logic
   useEffect(() => {
     if (!isMounted) return;
     let isComponentMounted = true;
@@ -378,7 +382,6 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
     };
   }, [isMounted]);
 
-  // 2. Initial Fetch
   useEffect(() => {
     if (!isMounted || initialClasses.length > 0) return;
 
@@ -403,11 +406,9 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
     fetchClasses();
   }, [isMounted, initialClasses]);
 
-  // 3. Infinite Scroll Handler
   const handleScroll = useCallback(async () => {
     if (!emblaApi || !nextPageUrl || isFetchingMore) return;
 
-    // Fetch when user is 70% through the list
     if (emblaApi.scrollProgress() > 0.7) {
       setIsFetchingMore(true);
       try {
@@ -415,7 +416,6 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
         const newResults = response.results || [];
 
         if (newResults.length > 0) {
-          // Filter duplicates before setting state to ensure stable keys
           setClasses((prev) => {
             const existingIds = new Set(prev.map((cls) => cls.classId));
             const uniqueNewResults = newResults.filter(
@@ -433,7 +433,6 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
     }
   }, [emblaApi, nextPageUrl, isFetchingMore]);
 
-  // 4. Carousel Controls
   const scrollPrev = useCallback(
     () => emblaApi && emblaApi.scrollPrev(),
     [emblaApi]
@@ -485,7 +484,6 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
     checkScrollabilityAndVisibility,
   ]);
 
-  // 5. Memoized Class Cards
   const classCards = useMemo(() => {
     return classes.map((classItem, index) => {
       let calculatedDistance = null;
@@ -520,7 +518,6 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
     });
   }, [classes, userLocation]);
 
-  // 6. Handle "See All" Link
   const handleSeeAllClick = useCallback(
     (event) => {
       event.preventDefault();
@@ -607,7 +604,6 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
         <EmblaViewport ref={emblaRef}>
           <EmblaContainer>
             {loading ? (
-              // Initial Loading Skeletons
               Array.from({ length: 6 }).map((_, index) => (
                 <SlideWrapper key={`skeleton-init-${index}`}>
                   <ClassCardSkeleton />
@@ -620,8 +616,6 @@ const FindClass = ({ initialClasses = [], initialNextPageUrl = null }) => {
             ) : (
               <>
                 {classCards}
-                {/* Infinite Scroll Skeletons: Show them if we have a next page.
-                    This prevents layout jumps by keeping content area width consistent. */}
                 {nextPageUrl && (
                   <>
                     <SlideWrapper key="skeleton-1">

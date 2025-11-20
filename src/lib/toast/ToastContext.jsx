@@ -71,7 +71,7 @@ const ToastContainer = styled.div`
 const ToastItem = styled.div`
   display: inline-flex;
   align-items: center;
-  gap: 12px; /* Increased gap for better spacing */
+  gap: 12px;
   background: white;
   padding: 10px 16px;
   border-radius: 8px;
@@ -93,12 +93,13 @@ const ToastItem = styled.div`
     white-space: normal;
     word-wrap: break-word;
     padding: 12px 16px;
-    border-radius: 12px; /* Softer corners on mobile */
-    justify-content: flex-start;
+    border-radius: 12px;
+    /* FIX: Center content on mobile */
+    justify-content: center; 
   }
 
   .anticon {
-    font-size: 18px; /* Slightly larger icon */
+    font-size: 18px;
     flex-shrink: 0;
   }
 
@@ -132,8 +133,9 @@ const ToastContent = styled.div`
 
   @media (max-width: 768px) {
     white-space: normal;
-    text-align: left;
-    flex: 1; /* Ensure text takes up remaining space */
+    flex: 1; 
+    /* FIX: Center text alignment on mobile */
+    text-align: center;
   }
 `;
 
