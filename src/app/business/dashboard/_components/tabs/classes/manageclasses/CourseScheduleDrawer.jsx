@@ -1259,6 +1259,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                     use12Hours 
                     size="large" 
                     minuteStep={15} 
+                    inputReadOnly
                     disabled={editingSchedule && editingSchedule.has_confirmed_bookings}
                     getPopupContainer={(trigger) => trigger.parentElement}
                   />

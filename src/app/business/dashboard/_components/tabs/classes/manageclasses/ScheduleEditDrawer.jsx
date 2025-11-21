@@ -1764,6 +1764,7 @@ const ScheduleEditDrawer = ({
                     >
                       <StyledTimePicker
                         use12Hours
+                        inputReadOnly
                         format="h:mm A"
                         minuteStep={15}
                         style={{ flex: 1 }}
