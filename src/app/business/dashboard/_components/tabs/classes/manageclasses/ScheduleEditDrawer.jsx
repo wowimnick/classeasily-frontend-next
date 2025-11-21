@@ -1435,6 +1435,7 @@ const ScheduleEditDrawer = ({
                 <StyledDatePicker
                   style={{ width: "100%" }}
                   disabled={isLoading}
+                  inputReadOnly
                   disabledDate={(c) => c && c < dayjs().startOf("day")}
                 />
               </Form.Item>

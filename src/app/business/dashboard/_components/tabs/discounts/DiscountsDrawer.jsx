@@ -192,14 +192,20 @@ const ContentContainer = styled.div`
   flex: 1;
   position: relative;
   overflow: hidden;
+  display: flex;           // Added
+  flex-direction: column;  // Added
+  min-height: 0;           // CRITICAL: Allows flex child to scroll
 `;
 
 const ScrollContainer = styled.div`
-  height: 100%;
+  flex: 1;                 // Changed from height: 100% to flex: 1
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
   padding: 2rem;
+  
+  // Improve mobile touch scrolling
+  -webkit-overflow-scrolling: touch; 
 
   @media (max-width: 768px) {
     padding: 1.5rem 1rem;
@@ -207,6 +213,7 @@ const ScrollContainer = styled.div`
 
   @media (max-width: 480px) {
     padding: 1rem;
+    padding-bottom: 2rem; // Extra padding so content isn't hidden behind scrollbars
   }
 `;
 
@@ -219,6 +226,7 @@ const FormContainer = styled(motion.div)`
 `;
 
 const NavigationFooter = styled.footer`
+  flex-shrink: 0;          // CRITICAL: Prevents footer from being squashed
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -226,9 +234,13 @@ const NavigationFooter = styled.footer`
   border-top: 1px solid #ebebeb;
   background: white;
   z-index: 2;
+  
+  // Handle iPhone Home Bar area
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom)); 
 
   @media (max-width: 768px) {
     padding: 0.75rem 1rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
   }
 `;
 
@@ -437,14 +449,14 @@ const StyledTabs = styled(Tabs)`
   height: 100%;
   display: flex;
   flex-direction: column;
+  min-height: 0; // CRITICAL for tabs scrolling
 
   .ant-tabs-nav {
     margin: 0 !important;
     padding: 0 24px;
     background: white;
     flex-shrink: 0;
-    position: sticky;
-    top: 0;
+    position: relative; // Changed from sticky to relative as the whole header is fixed
     z-index: 10;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   }
@@ -457,19 +469,31 @@ const StyledTabs = styled(Tabs)`
   .ant-tabs-content-holder {
     flex: 1;
     background: #f8fafc;
-    overflow-y: auto;
+    overflow-y: auto; // This ensures only the content area scrolls
+    min-height: 0;    // CRITICAL
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ant-tabs-content {
+    flex: 1;
+    height: 100%;
   }
 
   .ant-tabs-tabpane {
     height: 100%;
     padding: 0;
+    outline: none; // Remove focus outline
   }
 
   @media (max-width: 768px) {
-
     .ant-tabs-tab {
       padding: 10px 12px !important;
       font-size: 13px;
+    }
+    
+    .ant-tabs-nav {
+      padding: 0 12px;
     }
   }
 `;
