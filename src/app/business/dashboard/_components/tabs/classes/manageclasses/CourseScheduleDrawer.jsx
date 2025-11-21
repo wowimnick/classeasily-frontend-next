@@ -4,6 +4,9 @@ import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from "re
 import {
   Form,
   Input,
+  Select,
+  TimePicker,
+  DatePicker,
   Button,
   ConfigProvider,
   InputNumber,
@@ -34,24 +37,21 @@ import {
   TrendingUp,
   Repeat,
   Edit3,
+  Filter,
 } from "lucide-react";
 import dayjs from "dayjs";
 import styled, { keyframes } from "styled-components";
 import { Drawer as VaulDrawer } from "vaul";
 import { theme as appTheme } from "@/components/theme";
 import { courseService, scheduleService } from "@/services/apiService";
+import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { motion, AnimatePresence } from "framer-motion";
 
-// --- NEW IMPORTS: SMART ADAPTERS ---
-import { 
-  ResponsiveSelect, 
-  ResponsiveTimePicker, 
-  ResponsiveRangePicker 
-} from "@/components/common/ResponsiveInputs";
-
+const { Option } = Select;
 const { Title, Text } = Typography;
+const { RangePicker } = DatePicker;
+// --- ADDED: HOOK AND COMPONENT FOR MODAL ANIMATION ---
 
-// --- ANIMATION HOOKS ---
 const useElementSize = () => {
   const ref = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -83,6 +83,7 @@ const AnimatedModalContent = ({ children }) => {
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
     >
       <div ref={ref}>
+        {/* We add a tiny border to prevent margin collapse issues which cause jumpiness */}
         <div style={{ border: '1px solid transparent', margin: '-1px' }}>
           {children}
         </div>
@@ -90,6 +91,7 @@ const AnimatedModalContent = ({ children }) => {
     </motion.div>
   );
 };
+
 
 // ============= STYLED COMPONENTS =============
 
@@ -100,32 +102,48 @@ const StyledDrawerOverlay = styled(VaulDrawer.Overlay)`
   z-index: 1049;
 `;
 
+// MODIFIED: Removed height transition and set a fixed height for consistency on mobile
 const StyledDrawerContent = styled(VaulDrawer.Content)`
   background: white;
   display: flex;
   flex-direction: column;
   border-radius: 16px 16px 0 0;
-  height: 96vh;
+  height: 96vh; /* Set fixed height */
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 1050;
   outline: none;
+  
+  /* Ensure Ant Design dropdowns appear correctly */
+  .ant-picker-dropdown,
+  .ant-select-dropdown,
+  .ant-dropdown {
+    z-index: 1055 !important;
+  }
 `;
 
+// MODIFIED: Removed height transition and set a fixed height for consistency on mobile
 const StyledNestedDrawerContent = styled(VaulDrawer.Content)`
   background: white;
   display: flex;
   flex-direction: column;
   border-radius: 16px 16px 0 0;
-  height: 94vh;
+  height: 94vh; /* Set fixed height */
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 1051;
+  z-index: 1051; /* Higher z-index for nested */
   outline: none;
+  
+  /* Ensure Ant Design dropdowns appear correctly in nested drawer */
+  .ant-picker-dropdown,
+  .ant-select-dropdown,
+  .ant-dropdown {
+    z-index: 1060 !important;
+  }
 `;
 
 const DrawerHandle = styled.div`
@@ -187,13 +205,15 @@ const CloseButton = styled(Button)`
   height: auto;
 `;
 
+// --- MODIFIED: Updated StyledModal for smooth animation ---
 const StyledModal = styled(Modal)`
   .ant-modal-content {
     border-radius: 16px;
-    overflow: hidden;
+    overflow: hidden; /* CRITICAL for smooth resize */
     display: flex;
     padding: 0 !important;
     flex-direction: column;
+    /* Removed CSS transition, Framer Motion now handles it */
   }
   .ant-modal-header {
     padding: 20px 24px;
@@ -206,6 +226,7 @@ const StyledModal = styled(Modal)`
     padding: 0;
     background: #f8fafc;
     position: relative;
+    /* Let the animation wrapper handle overflow */
   }
   .ant-modal-footer {
     padding: 16px 24px;
@@ -213,7 +234,7 @@ const StyledModal = styled(Modal)`
     background: white;
     flex-shrink: 0;
     margin: 0 !important;
-    position: relative;
+    position: relative; /* Keep footer visible during animation */
     z-index: 1;
   }
 `;
@@ -314,9 +335,24 @@ const StyledInput = styled(Input)`
   }
 `;
 
-// Replaced StyledSelect, StyledTimePicker, StyledRangePicker 
-// We use the Responsive components directly or wrap them lightly if needed
-// But for simplicity, we'll use them directly in JSX since they include their own 'desktop' styling wrapper
+const StyledSelect = styled(Select)`
+  .ant-select-selector {
+    height: ${(props) => props.theme.token.controlHeight}px !important;
+    padding: 0 ${(props) => props.theme.token.controlPaddingHorizontal}px !important;
+    border-radius: ${(props) => props.theme.token.borderRadius}px !important;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+  }
+  .ant-select-selection-item,
+  .ant-select-selection-placeholder {
+    line-height: ${(props) => props.theme.token.controlHeight - 2}px !important;
+    font-size: ${(props) => props.theme.token.fontSize}px;
+  }
+  &.ant-select-focused .ant-select-selector {
+    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20 !important;
+  }
+`;
 
 const StyledInputNumber = styled(InputNumber)`
   height: ${(props) => props.theme.token.controlHeight}px;
@@ -330,6 +366,30 @@ const StyledInputNumber = styled(InputNumber)`
     display: flex;
     align-items: center;
     font-size: ${(props) => props.theme.token.fontSize}px !important;
+  }
+  &:focus-within {
+    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
+  }
+`;
+
+const StyledTimePicker = styled(TimePicker)`
+  width: 100%;
+  height: ${(props) => props.theme.token.controlHeight}px;
+  border-radius: ${(props) => props.theme.token.borderRadius}px;
+  .ant-picker-input > input {
+    font-size: ${(props) => props.theme.token.fontSize}px;
+  }
+  &:focus-within {
+    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
+  }
+`;
+
+const StyledRangePicker = styled(RangePicker)`
+  width: 100%;
+  height: ${(props) => props.theme.token.controlHeight}px;
+  border-radius: ${(props) => props.theme.token.borderRadius}px;
+  .ant-picker-input > input {
+    font-size: ${(props) => props.theme.token.fontSize}px;
   }
   &:focus-within {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
@@ -492,6 +552,7 @@ const InfoValue = styled(Text)`
 const ContentWrapper = styled.div`
   flex: 1;
   min-height: 0;
+  /* MODIFIED: Changed overflow to allow parent to control scroll */
   overflow-y: auto;
   overflow-x: hidden;
   padding: 32px;
@@ -506,12 +567,15 @@ const StepsWrapper = styled.div`
   max-width: 600px;
   margin: 16px auto;
   padding: 8px 16px;
+
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+
   border-radius: 50px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -798,7 +862,7 @@ const CourseScheduleListSkeleton = () => (
 
 const CourseScheduleDrawer = ({ open, onClose, classData }) => {
   const [form] = Form.useForm();
-  const [view, setView] = useState("list");
+  const [view, setView] = useState("list"); // Used for desktop modal
   const [currentStep, setCurrentStep] = useState(0);
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -809,6 +873,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  // State for nested drawers on mobile
   const [createOpen, setCreateOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
 
@@ -835,8 +900,10 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     if (open && classData?.classId) fetchSchedules();
   }, [open, classData?.classId]);
 
+  // This effect ensures that every time the main drawer is closed, all state is reset to default.
   useEffect(() => {
     if (!open) {
+      // Reset all states on close
       setView("list");
       setCurrentStep(0);
       setSelectedSchedule(null);
@@ -1133,7 +1200,6 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     });
   }, [filteredSchedules]);
 
-  // --- RENDER STEPS (UPDATED TO USE RESPONSIVE INPUTS) ---
   const renderStepContent = () => {
     const stepVariants = {
       hidden: { opacity: 0, x: 20 },
@@ -1160,13 +1226,14 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
               <FormLabel><Calendar size={16} /> Date Range</FormLabel>
               <HelpText><Info size={14} /> Select the start and end dates for the entire course.</HelpText>
               <Form.Item name="dateRange" rules={[{ required: true, message: "Please select a date range" }]}>
-                {/* CHANGED: Using ResponsiveRangePicker */}
-                <ResponsiveRangePicker 
+                <StyledRangePicker 
                   format="MMMM D, YYYY" 
                   size="large" 
+                  inputReadOnly
                   disabledDate={(c) => c && c < dayjs().startOf("day")} 
                   onChange={handleDateRangeChange} 
-                  disabled={editingSchedule && editingSchedule.has_confirmed_bookings} 
+                  disabled={editingSchedule && editingSchedule.has_confirmed_bookings}
+                  getPopupContainer={(trigger) => trigger.parentElement}
                 />
               </Form.Item>
             </FormGroup>
@@ -1187,30 +1254,29 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
               <FormGroup>
                 <FormLabel><Clock size={16} /> Time</FormLabel>
                 <Form.Item name="time" rules={[{ required: true, message: "Please select a time" }]}>
-                  {/* CHANGED: Using ResponsiveTimePicker */}
-                  <ResponsiveTimePicker 
+                  <StyledTimePicker 
                     format="h:mm A" 
                     use12Hours 
                     size="large" 
                     minuteStep={15} 
-                    disabled={editingSchedule && editingSchedule.has_confirmed_bookings} 
+                    disabled={editingSchedule && editingSchedule.has_confirmed_bookings}
+                    getPopupContainer={(trigger) => trigger.parentElement}
                   />
                 </Form.Item>
               </FormGroup>
               <FormGroup>
                 <FormLabel><Clock size={16} /> Duration</FormLabel>
                 <Form.Item name="duration" initialValue={60} rules={[{ required: true, message: "Please select duration" }]}>
-                  {/* CHANGED: Using ResponsiveSelect */}
-                  <ResponsiveSelect size="large">
-                    <option value={15}>15 mins</option>
-                    <option value={30}>30 mins</option>
-                    <option value={45}>45 mins</option>
-                    <option value={60}>1 hr</option>
-                    <option value={90}>1.5 hrs</option>
-                    <option value={120}>2 hrs</option>
-                    <option value={180}>3 hrs</option>
-                    <option value={240}>4 hrs</option>
-                  </ResponsiveSelect>
+                  <StyledSelect size="large" getPopupContainer={(trigger) => trigger.parentElement}>
+                    <Option value={15}>15 mins</Option>
+                    <Option value={30}>30 mins</Option>
+                    <Option value={45}>45 mins</Option>
+                    <Option value={60}>1 hr</Option>
+                    <Option value={90}>1.5 hrs</Option>
+                    <Option value={120}>2 hrs</Option>
+                    <Option value={180}>3 hrs</Option>
+                    <Option value={240}>4 hrs</Option>
+                  </StyledSelect>
                 </Form.Item>
               </FormGroup>
             </FormGrid>
@@ -1266,15 +1332,17 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     <ContentPadding>
       <FilterBar>
         <StyledInput placeholder="Search by name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ flex: 1, minWidth: 200 }} allowClear />
-        {/* CHANGED: Using ResponsiveSelect for Filter */}
-        <div style={{ width: 150 }}>
-          <ResponsiveSelect value={statusFilter} onChange={(value) => setStatusFilter(value)} style={{ width: '100%' }}>
-            <option value="all">All Statuses</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="ongoing">Ongoing</option>
-            <option value="completed">Completed</option>
-          </ResponsiveSelect>
-        </div>
+        <StyledSelect 
+          value={statusFilter} 
+          onChange={(value) => setStatusFilter(value)} 
+          style={{ width: 150 }}
+          getPopupContainer={(trigger) => trigger.parentElement}
+        >
+          <Option value="all">All Statuses</Option>
+          <Option value="upcoming">Upcoming</Option>
+          <Option value="ongoing">Ongoing</Option>
+          <Option value="completed">Completed</Option>
+        </StyledSelect>
       </FilterBar>
       {loading ? (
         <CourseScheduleListSkeleton />
@@ -1382,22 +1450,22 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     const detailTitle = <Space><CalendarDays size={20} /><span>Schedule Details</span></Space>;
 
     return (
-      <ConfigProvider theme={appTheme}>
-        <VaulDrawer.Root open={open} onOpenChange={(o) => !o && onClose()} dismissible={!loading && !submitting}>
-          <VaulDrawer.Portal>
-            <StyledDrawerOverlay />
-            <StyledDrawerContent>
-              <DrawerHandle />
-              <DrawerHeader>
-                <DrawerTitle level={4}>{mainTitle}</DrawerTitle>
-                <CloseButton icon={<X size={20} />} onClick={onClose} disabled={submitting} />
-              </DrawerHeader>
-              <DrawerBody>{renderList()}</DrawerBody>
-              <DrawerFooter>
-                <Button type="primary" icon={<Plus size={16} />} onClick={() => { setEditingSchedule(null); form.resetFields(); setCreateOpen(true); }} style={{ width: "100%" }}>New Course Schedule</Button>
-              </DrawerFooter>
-            </StyledDrawerContent>
-          </VaulDrawer.Portal>
+        <ConfigProvider theme={appTheme}>
+          <VaulDrawer.Root open={open} onOpenChange={(o) => !o && onClose()} dismissible={!loading && !submitting}>
+            <VaulDrawer.Portal>
+              <StyledDrawerOverlay />
+              <StyledDrawerContent>
+                <DrawerHandle />
+                <DrawerHeader>
+                  <DrawerTitle level={4}>{mainTitle}</DrawerTitle>
+                  <CloseButton icon={<X size={20} />} onClick={onClose} disabled={submitting} />
+                </DrawerHeader>
+                <DrawerBody>{renderList()}</DrawerBody>
+                <DrawerFooter>
+                  <Button type="primary" icon={<Plus size={16} />} onClick={() => { setEditingSchedule(null); form.resetFields(); setCreateOpen(true); }} style={{ width: "100%" }}>New Course Schedule</Button>
+                </DrawerFooter>
+              </StyledDrawerContent>
+            </VaulDrawer.Portal>
         </VaulDrawer.Root>
 
         {/* Nested Drawer for Creating/Editing */}
@@ -1448,7 +1516,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     );
   }
 
-  // Desktop View
+  // --- MODIFIED: Desktop Modal Logic with Animated Wrapper ---
   const desktopTitle = view === 'list'
     ? <Space><BookOpen size={20} /><span>Course Schedules - {classData?.title}</span></Space>
     : view === 'create'
@@ -1479,26 +1547,26 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
   };
 
   return (
-    <ConfigProvider theme={appTheme}>
-      <StyledModal open={open} onCancel={onClose} closable={!submitting} width="80%" centered style={{ maxWidth: 800 }} title={desktopTitle} footer={desktopFooter()}>
-        <AnimatedModalContent>
-          {view === 'list' && renderList()}
-          {view === 'detail' && renderDetailedView()}
-          {view === 'create' && (
-            <>
-              <StepsWrapper><Steps size="small" current={currentStep} items={[{ title: "Schedule", icon: <Calendar size={16} /> }, { title: "Pricing", icon: <DollarSign size={16} /> }, { title: "Review", icon: <CheckCircle size={16} /> }]} /></StepsWrapper>
-              <ContentWrapper>
-                <StepContent>
-                  <StyledForm form={form} layout="vertical" onValuesChange={(c, v) => setFormData({ ...formData, ...v })}>
-                    <AnimatePresence mode="wait">{renderStepContent()}</AnimatePresence>
-                  </StyledForm>
-                </StepContent>
-              </ContentWrapper>
-            </>
-          )}
-        </AnimatedModalContent>
-      </StyledModal>
-    </ConfigProvider>
+      <ConfigProvider theme={appTheme}>
+        <StyledModal open={open} onCancel={onClose} closable={!submitting} width="80%" centered style={{ maxWidth: 800 }} title={desktopTitle} footer={desktopFooter()}>
+          <AnimatedModalContent>
+            {view === 'list' && renderList()}
+            {view === 'detail' && renderDetailedView()}
+            {view === 'create' && (
+              <>
+                <StepsWrapper><Steps size="small" current={currentStep} items={[{ title: "Schedule", icon: <Calendar size={16} /> }, { title: "Pricing", icon: <DollarSign size={16} /> }, { title: "Review", icon: <CheckCircle size={16} /> }]} /></StepsWrapper>
+                <ContentWrapper>
+                  <StepContent>
+                    <StyledForm form={form} layout="vertical" onValuesChange={(c, v) => setFormData({ ...formData, ...v })}>
+                      <AnimatePresence mode="wait">{renderStepContent()}</AnimatePresence>
+                    </StyledForm>
+                  </StepContent>
+                </ContentWrapper>
+              </>
+            )}
+          </AnimatedModalContent>
+        </StyledModal>
+      </ConfigProvider>
   );
 };
 

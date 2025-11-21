@@ -1455,6 +1455,7 @@ const ScheduleEditDrawer = ({
                     use12Hours
                     format="h:mm A"
                     minuteStep={15}
+                    inputReadOnly
                     disabled={isLoading}
                     style={{ width: "100%" }}
                   />
@@ -1709,7 +1710,7 @@ const ScheduleEditDrawer = ({
             name="date_range"
             rules={[{ required: true, message: "Select a date range." }]}
           >
-            <StyledRangePicker style={{ width: "100%" }} />
+            <StyledRangePicker inputReadOnly style={{ width: "100%" }} />
           </NoMarginFormItem>
         </FormGroup>
 
