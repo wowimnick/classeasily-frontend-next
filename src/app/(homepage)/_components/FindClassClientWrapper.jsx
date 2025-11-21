@@ -1,8 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { Component } from "react";
-import { FindClassSkeleton } from "./FindClassSkeleton";
+import FindClass from "./FindClass";
 
 // Error Boundary for graceful error handling
 class ErrorBoundary extends Component {
@@ -51,12 +50,6 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
-
-// Dynamically import FindClass with NO SSR and realistic skeleton
-const FindClass = dynamic(() => import("./FindClass"), {
-  ssr: false,
-  loading: () => <FindClassSkeleton />,
-});
 
 // Client wrapper component that receives server data
 export default function FindClassClientWrapper({

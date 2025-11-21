@@ -120,8 +120,6 @@ export default function RootLayout({ children }) {
         <SpeedInsights />
         <Analytics />
         
-        {/* GA4 loading removed - now handled by AnalyticsProvider for better performance */}
-        
         <Script src="https://cdn.lordicon.com/lordicon.js" strategy="lazyOnload" />
 
         <ClientProviders>
