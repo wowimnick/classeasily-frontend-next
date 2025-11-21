@@ -13,21 +13,23 @@ const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
 const { Title, Text } = Typography;
 
-// ... (keep all your existing styled components)
 const ContentContainer = styled.div`
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  margin-top: -5rem;
+  /* Pull content up slightly on desktop, less on mobile */
+  margin-top: -5rem; 
   position: relative;
   overflow: hidden;
   width: 100%;
 
   @media (max-width: 768px) {
     padding: 1rem;
-    margin-top: -2rem;
+    margin-top: 0; /* Reset margin on mobile for natural flow */
+    align-items: flex-start; /* Align top on mobile */
+    padding-top: 2rem;
   }
 `;
 
@@ -42,6 +44,8 @@ const LandingContainer = styled.div`
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
     gap: 2rem;
+    display: flex;
+    flex-direction: column-reverse; /* Text comes after visuals on mobile usually, but here we keep visuals top (order set below) */
   }
 `;
 
@@ -55,7 +59,7 @@ const InfoSection = styled.div`
   @media (max-width: 1024px) {
     align-items: center;
     text-align: center;
-    padding: 1rem;
+    padding: 0 1rem 2rem 1rem;
   }
 `;
 
@@ -68,8 +72,9 @@ const AnimationSection = styled.div`
   padding: 2rem;
 
   @media (max-width: 1024px) {
-    order: -1;
-    padding: 1rem;
+    /* Visuals at the top */
+    order: -1; 
+    padding: 0 1rem 1rem 1rem;
   }
 `;
 
@@ -87,7 +92,7 @@ const LottieContainer = styled.div`
   }
 
   @media (max-width: 768px) {
-    max-width: 400px;
+    max-width: 280px; /* Smaller on mobile */
     margin-bottom: 1rem;
   }
 `;
@@ -99,6 +104,13 @@ const StepsContainer = styled.div`
   justify-content: center;
   max-width: 500px;
   width: 100%;
+
+  @media (max-width: 768px) {
+    gap: 0.5rem;
+    /* Make steps more compact on mobile */
+    display: grid;
+    grid-template-columns: 1fr 1fr; 
+  }
 `;
 
 const StepItem = styled.div`
@@ -115,6 +127,12 @@ const StepItem = styled.div`
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     transform: translateY(-1px);
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.6rem 0.8rem;
+    justify-content: center;
+    font-size: 13px;
   }
 `;
 
@@ -136,6 +154,13 @@ const StepText = styled.span`
   font-size: 0.85rem;
   color: ${theme.token.colorTextBase};
   font-weight: 500;
+  
+  @media (max-width: 768px) {
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `;
 
 const HeadingText = styled.span`
@@ -168,6 +193,14 @@ const StartButton = styled(motion.button)`
 
   &:active {
     transform: translateY(0);
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: center;
+    margin-top: 1.5rem;
+    padding: 0.8rem 1rem;
+    font-size: 1rem;
   }
 `;
 
@@ -213,8 +246,8 @@ const LandingPage = ({ steps, startForm, isMobile }) => {
             <Title
               level={1}
               style={{
-                fontSize: isMobile ? "2.5rem" : "3.5rem",
-                marginBottom: "1rem",
+                fontSize: isMobile ? "1.8rem" : "3.5rem", // Compact font for mobile
+                marginBottom: isMobile ? "0.5rem" : "1rem",
                 lineHeight: 1.2,
                 fontWeight: "800",
                 color: theme.token.colorTextBase,
@@ -225,14 +258,15 @@ const LandingPage = ({ steps, startForm, isMobile }) => {
             </Title>
             <Text
               style={{
-                fontSize: "1.2rem",
+                fontSize: isMobile ? "1rem" : "1.2rem",
                 color: theme.token.colorTextSecondary,
                 display: "block",
-                marginBottom: "2rem",
+                marginBottom: isMobile ? "1rem" : "2rem",
                 maxWidth: "600px",
                 fontFamily: theme.token.fontFamily,
                 marginRight: isMobile ? "auto" : "0",
                 marginLeft: isMobile ? "auto" : "0",
+                lineHeight: 1.5,
               }}
             >
               Join as an educator and expand your reach into our community of
@@ -277,6 +311,7 @@ const LandingPage = ({ steps, startForm, isMobile }) => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
+                style={isMobile ? { width: '100%' } : {}}
               >
                 <StepItem>
                   <StepNumber>{index + 1}</StepNumber>

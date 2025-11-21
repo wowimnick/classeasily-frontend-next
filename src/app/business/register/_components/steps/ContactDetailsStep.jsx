@@ -38,6 +38,10 @@ const StepHeader = styled.div`
   text-align: center;
   margin-bottom: 2rem;
   position: relative;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1rem;
+  }
 `;
 
 const StepTitle = styled(Title)`
@@ -45,6 +49,10 @@ const StepTitle = styled(Title)`
   color: ${(props) => props.theme.token.colorText};
   font-size: 28px !important;
   font-weight: 700 !important;
+
+  @media (max-width: 768px) {
+    font-size: 22px !important;
+  }
 `;
 
 const StepDescription = styled(Text)`
@@ -53,12 +61,21 @@ const StepDescription = styled(Text)`
   font-size: ${(props) => props.theme.token.fontSizeLG || "16px"};
   margin-bottom: ${(props) => props.theme.token.marginLG}px;
   line-height: 1.6;
+
+  @media (max-width: 768px) {
+    font-size: 14px;
+    margin-bottom: 1rem;
+  }
 `;
 
 const SectionDivider = styled.div`
   display: flex;
   align-items: center;
   margin: 2rem 0;
+
+  @media (max-width: 768px) {
+    margin: 1.5rem 0;
+  }
 
   &::before,
   &::after {
@@ -86,18 +103,31 @@ const SectionDivider = styled.div`
     border-radius: 20px;
     padding: 0.5rem 1rem;
     border: 1px solid ${(props) => props.theme.token.colorBorder};
+    
+    @media (max-width: 768px) {
+       font-size: 13px;
+       padding: 0.4rem 0.8rem;
+    }
   }
 `;
 
 const FormSection = styled(motion.div)`
   margin-bottom: 2rem;
   border-radius: 12px;
+
+  @media (max-width: 768px) {
+    margin-bottom: 1rem;
+  }
 `;
 
 const FormGroup = styled.div`
   margin-bottom: ${(props) =>
     props.theme.token.marginLG || props.theme.token.margin}px;
   width: 100%;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1rem;
+  }
 `;
 
 const FormLabel = styled.label`
@@ -187,6 +217,11 @@ const InfoSection = styled(motion.div)`
   position: relative;
   overflow: hidden;
 
+  @media (max-width: 768px) {
+    padding: 1rem;
+    margin: 1rem 0;
+  }
+
   &::before {
     content: "";
     position: absolute;
@@ -220,6 +255,32 @@ const InfoText = styled.p`
   font-size: ${(props) => props.theme.token.fontSize}px;
   margin: 0;
   line-height: 1.6;
+  
+  @media (max-width: 768px) {
+    font-size: 13px;
+  }
+`;
+
+const StyledRadioGroup = styled(Radio.Group)`
+  display: flex;
+  flex-direction: row;
+  
+  @media (max-width: 500px) {
+    flex-direction: column;
+    width: 100%;
+    
+    .ant-radio-button-wrapper {
+      width: 100%;
+      text-align: center;
+      border-radius: 6px !important;
+      margin-bottom: 4px;
+      border-left-width: 1px !important;
+      
+      &:before {
+        display: none !important;
+      }
+    }
+  }
 `;
 
 const ContactDetailsStep = ({
@@ -473,7 +534,7 @@ const ContactDetailsStep = ({
                 },
               ]}
             >
-              <Radio.Group>
+              <StyledRadioGroup>
                 <Radio.Button
                   value="on_booking"
                   style={{
@@ -494,7 +555,7 @@ const ContactDetailsStep = ({
                 >
                   Show Publicly
                 </Radio.Button>
-              </Radio.Group>
+              </StyledRadioGroup>
             </Form.Item>
             <HelpText>
               "Show After Booking" is recommended for most individual teachers.

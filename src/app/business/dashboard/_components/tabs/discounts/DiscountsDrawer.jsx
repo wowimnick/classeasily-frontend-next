@@ -88,13 +88,15 @@ const StyledDrawerContent = styled(VaulDrawer.Content)`
   flex-direction: column;
   border-radius: 24px 24px 0 0;
   height: 95%;
-  max-height: 95vh;
+  height: 95dvh; /* Fixes mobile toolbar overlay issues */
+  max-height: 95dvh;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 1050;
   outline: none;
+  padding-bottom: env(safe-area-inset-bottom); /* distinct separation for the home bar */
 `;
 
 const DesktopDrawerContent = styled(VaulDrawer.Content)`
@@ -391,6 +393,10 @@ const StyledInput = styled(Input)`
   &:focus {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
   }
+
+  @media (max-width: 768px) {
+    font-size: 16px !important;
+  }
 `;
 
 const StyledSelect = styled(Select)`
@@ -409,6 +415,10 @@ const StyledSelect = styled(Select)`
     line-height: ${(props) =>
       props.theme.token.controlHeight - 2}px !important;
     font-size: ${(props) => props.theme.token.fontSize}px;
+    
+    @media (max-width: 768px) {
+      font-size: 16px !important;
+    }
   }
 
   &.ant-select-focused .ant-select-selector {
@@ -428,6 +438,10 @@ const StyledInputNumber = styled(InputNumber)`
     height: 100% !important;
     display: flex;
     align-items: center;
+    
+    @media (max-width: 768px) {
+      font-size: 16px !important;
+    }
   }
 
   &:focus-within {
@@ -439,6 +453,12 @@ const StyledRangePicker = styled(RangePicker)`
   width: 100%;
   height: ${(props) => props.theme.token.controlHeight}px;
   border-radius: ${(props) => props.theme.token.borderRadius}px;
+
+  input {
+    @media (max-width: 768px) {
+      font-size: 16px !important;
+    }
+  }
 
   &.ant-picker-focused {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20 !important;
@@ -802,7 +822,7 @@ const ApplicabilityStep = ({ businessId, form }) => {
   );
 };
 
-const RulesStep = () => (
+const RulesStep = ({ isMobile }) => (
   <FormSection initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
     <StepHeader>
         <StepTitle level={2}>Usage Rules & Limits</StepTitle>
@@ -811,7 +831,14 @@ const RulesStep = () => (
     <FormGroup>
       <FormLabel><Calendar size={16} /> Valid Date Range (Optional)</FormLabel>
       <HelpText><Info size={14} /> Leave blank if this discount has no expiration.</HelpText>
-      <Form.Item name="valid_dates"><StyledRangePicker format="YYYY-MM-DD" size="middle" style={{ width: '100%' }} /></Form.Item>
+      <Form.Item name="valid_dates">
+        <StyledRangePicker 
+          format="YYYY-MM-DD" 
+          size="middle" 
+          style={{ width: '100%' }} 
+          inputReadOnly={isMobile} 
+        />
+      </Form.Item>
     </FormGroup>
     <FormGrid>
       <FormGroup>
@@ -898,7 +925,7 @@ const DiscountCreateWizard = ({ onFinalSubmit, businessId }) => {
         <ScrollContainer>
             <Form form={form} layout="vertical" onFinish={handleNext} initialValues={state[wizardSteps[currentStep].key]}>
                 <FormContainer key={currentStep}>
-                    <StepComponent businessId={businessId} form={form} />
+                    <StepComponent businessId={businessId} form={form} isMobile={isMobile} />
                 </FormContainer>
             </Form>
         </ScrollContainer>
@@ -968,7 +995,7 @@ const DiscountEditTabs = ({ onFinalSubmit, businessId }) => {
     { key: "1", label: "Basic Info", children: <BasicInfoStep /> },
     { key: "2", label: "Type & Value", children: <TypeAndValueStep form={form} /> },
     { key: "3", label: "Applicability", children: <ApplicabilityStep businessId={businessId} form={form} /> },
-    { key: "4", label: "Rules", children: <RulesStep /> },
+    { key: "4", label: "Rules", children: <RulesStep isMobile={isMobile} /> },
   ];
   
   // Construct initial values once the state is loaded

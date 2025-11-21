@@ -18,8 +18,8 @@ const ContentWrapper = styled.div`
   width: 100%;
   box-sizing: border-box;
 
-  @media (max-width: ${(props) => props.theme.breakpoints?.md || "768px"}) {
-    padding: 1rem;
+  @media (max-width: 768px) {
+    padding: 0.5rem; /* Minimized padding on mobile */
   }
 `;
 
@@ -30,9 +30,10 @@ const FormContainer = styled(motion.div)`
   padding: 2rem 3rem;
   box-sizing: border-box;
 
-  @media (max-width: ${(props) => props.theme.breakpoints?.md || "768px"}) {
-    padding: 1.5rem;
+  @media (max-width: 768px) {
+    padding: 1.5rem 1rem; /* Tighter padding on mobile */
     max-width: 100%;
+    background: transparent; /* Remove card background on mobile for cleaner look */
   }
 `;
 // --- End Styled Components ---

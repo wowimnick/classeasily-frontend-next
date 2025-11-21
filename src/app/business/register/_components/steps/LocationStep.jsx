@@ -51,7 +51,7 @@ const StepHeader = styled.div`
   position: relative;
 
   @media (max-width: 768px) {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
   }
 `;
 const StepTitle = styled(Title)`
@@ -61,7 +61,7 @@ const StepTitle = styled(Title)`
   font-weight: 700 !important;
 
   @media (max-width: 768px) {
-    font-size: 24px !important;
+    font-size: 22px !important;
   }
 `;
 const StepDescription = styled(Text)`
@@ -72,7 +72,8 @@ const StepDescription = styled(Text)`
   line-height: 1.6;
 
   @media (max-width: 768px) {
-    font-size: ${(props) => props.theme.token.fontSize || "14px"};
+    font-size: 14px;
+    margin-bottom: 1rem;
   }
 `;
 const SectionDivider = styled.div`
@@ -81,7 +82,7 @@ const SectionDivider = styled.div`
   margin: 2rem 0;
 
   @media (max-width: 768px) {
-    margin: 1.5rem 1rem;
+    margin: 1.5rem 0;
   }
 
   &::before,
@@ -121,13 +122,17 @@ const FormSection = styled(motion.div)`
   border-radius: 12px;
 
   @media (max-width: 768px) {
-    margin: 0 1rem 1.5rem 1rem;
+    margin-bottom: 1rem;
   }
 `;
 const FormGroup = styled.div`
   margin-bottom: ${(props) =>
     props.theme.token.marginLG || props.theme.token.margin}px;
   width: 100%;
+  
+  @media (max-width: 768px) {
+     margin-bottom: 1rem;
+  }
 `;
 const FormLabel = styled.label`
   display: block;
@@ -163,9 +168,9 @@ const InfoSection = styled(motion.div)`
   overflow: hidden;
 
   @media (max-width: 768px) {
-    margin: 0 1rem 1.5rem 1rem;
-    padding: ${(props) => props.theme.token.padding}px;
+    padding: 1rem;
     border-radius: 12px;
+    margin-bottom: 1.5rem;
   }
 
   &::before {
@@ -199,6 +204,9 @@ const InfoText = styled.p`
   font-size: ${(props) => props.theme.token.fontSize}px;
   margin: 0;
   line-height: 1.6;
+  @media (max-width: 768px) {
+      font-size: 13px;
+  }
 `;
 const SearchContainer = styled.div`
   position: relative;
@@ -220,7 +228,7 @@ const StyledInput = styled(Input)`
   }
 
   @media (max-width: 768px) {
-    font-size: 16px !important;
+    font-size: 16px !important; /* Prevent iOS Zoom */
     input {
       font-size: 16px !important;
     }
@@ -261,6 +269,10 @@ const SearchResult = styled(motion.div)`
     margin-top: 2px;
     flex-shrink: 0;
   }
+  
+  @media (max-width: 768px) {
+      padding: 1rem; /* Ensure touch target size */
+  }
 `;
 const ResultContent = styled.div`
   display: flex;
@@ -291,7 +303,7 @@ const MapWrapper = styled(motion.div)`
   z-index: 2;
 
   @media (max-width: 768px) {
-    height: 300px;
+    height: 250px; /* More compact map on mobile */
   }
 
   .leaflet-container {
@@ -319,8 +331,16 @@ const NoMapAlert = styled(motion.div)`
   color: ${(props) => props.theme.token.colorTextSecondary};
   font-size: ${(props) => props.theme.token.fontSizeLG}px;
   gap: ${(props) => props.theme.token.marginSM}px;
+  text-align: center;
+  padding: 1rem;
+  
   svg {
     color: ${(props) => props.theme.token.colorPrimary};
+  }
+  
+  @media (max-width: 768px) {
+    height: 150px;
+    font-size: 14px;
   }
 `;
 const NoResultsFound = styled(motion.div)`
