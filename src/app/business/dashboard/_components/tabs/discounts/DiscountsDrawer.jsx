@@ -446,7 +446,7 @@ const StyledRangePicker = styled(RangePicker)`
 `;
 
 const StyledTabs = styled(Tabs)`
-  height: 100%;
+  flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0; // CRITICAL for tabs scrolling
@@ -890,7 +890,7 @@ const DiscountCreateWizard = ({ onFinalSubmit, businessId }) => {
   const StepComponent = wizardSteps[currentStep].component;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
       <StepsNav>
         {isMobile ? (<MobileStepsIndicator>Step {currentStep + 1} of {wizardSteps.length}: <strong>{wizardSteps[currentStep].title}</strong></MobileStepsIndicator>) : (<Steps current={currentStep} size="small" items={wizardSteps.map(s => ({ title: s.title, icon: s.icon }))} />)}
       </StepsNav>
@@ -977,7 +977,15 @@ const DiscountEditTabs = ({ onFinalSubmit, businessId }) => {
   } : {};
 
   return (
-    <Form form={form} layout="vertical" onFinish={handleSave} onFinishFailed={onFinishFailed} onValuesChange={onValuesChange} initialValues={initialValues} style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <Form 
+      form={form} 
+      layout="vertical" 
+      onFinish={handleSave} 
+      onFinishFailed={onFinishFailed} 
+      onValuesChange={onValuesChange} 
+      initialValues={initialValues} 
+      style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
+    >
       <StyledTabs activeKey={activeTab} onChange={setActiveTab} items={tabs.map(t => ({...t, children: <TabContentWrapper>{t.children}</TabContentWrapper>}))} />
       <NavigationFooter>
         <div />
