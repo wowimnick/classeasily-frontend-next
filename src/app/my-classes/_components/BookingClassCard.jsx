@@ -28,7 +28,7 @@ const ListItemContainer = styled(motion.div)`
   padding: 16px;
   margin-bottom: 16px;
   transition: all 0.2s ease;
-  font-family: "Proxima Soft", sans-serif;
+  font-family: "ProximaSoft", sans-serif;
 
   &:hover {
     border-color: #d1d1d1;

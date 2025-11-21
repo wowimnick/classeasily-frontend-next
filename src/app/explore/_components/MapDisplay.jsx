@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { MapContainer, TileLayer, useMap, Marker, Popup } from "react-leaflet";
-import { useRouter } from "next/navigation";
+import { MapContainer, TileLayer, useMap, Marker, Popup, ZoomControl } from "react-leaflet";
 import styled, { createGlobalStyle } from "styled-components";
-import { Star, Building2, MapPin, Navigation } from "lucide-react";
+import { Star, Navigation, MapPin } from "lucide-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -36,6 +35,48 @@ const LeafletMarkerStyles = createGlobalStyle`
     transform: scale(1.1);
     z-index: 1000 !important;
   }
+
+  /* Ensure the container has a defined height */
+  .map-root-container {
+    height: 100%;
+    width: 100%;
+  }
+
+  /* --- CUSTOM ZOOM CONTROL STYLES --- */
+  .leaflet-control-zoom {
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    margin-top: 12px !important;
+    margin-right: 12px !important;
+  }
+
+  .leaflet-control-zoom a {
+    background: white !important;
+    color: #222 !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    width: 36px !important;
+    height: 36px !important;
+    line-height: 36px !important;
+    font-size: 18px !important;
+    font-weight: 400 !important;
+    transition: background-color 0.2s;
+  }
+
+  .leaflet-control-zoom a:hover {
+    background: #f7f7f7 !important;
+    color: #000 !important;
+  }
+
+  .leaflet-control-zoom a:first-child {
+    border-top-left-radius: 8px !important;
+    border-top-right-radius: 8px !important;
+  }
+
+  .leaflet-control-zoom a:last-child {
+    border-bottom-left-radius: 8px !important;
+    border-bottom-right-radius: 8px !important;
+    border-bottom: none !important;
+  }
 `;
 
 const MapWrapper = styled.div`
@@ -46,11 +87,13 @@ const MapWrapper = styled.div`
   border-radius: 30px;
   overflow: hidden;
 
+  /* Target the immediate child div created by React Leaflet */
   .leaflet-container {
-    font-family: "Proxima Soft", sans-serif;
+    font-family: "ProximaSoft", sans-serif;
     height: 100%;
     width: 100%;
   }
+  
   .leaflet-popup-content-wrapper {
     padding: 0;
     border-radius: 12px;
@@ -65,10 +108,6 @@ const MapWrapper = styled.div`
   .leaflet-popup-tip {
     background: white;
   }
-`;
-
-const Map = styled.div`
-  height: 100%;
 `;
 
 const HideMapButton = styled.button`
@@ -121,9 +160,7 @@ const PopupImage = styled.div`
 
   ${(props) =>
     !props.$src || props.$src.trim() === ""
-      ? `
-        background: #f7f7f7;
-      `
+      ? `background: #f7f7f7;`
       : ""}
 `;
 
@@ -263,6 +300,7 @@ const ViewButton = styled.button`
 `;
 
 // --- HELPER FUNCTIONS ---
+
 const createPriceIcon = (price, isSelected) => {
   const priceText = price ? `$${Math.round(price)}` : "View";
   const className = `leaflet-price-marker ${isSelected ? "selected" : ""}`;
@@ -294,38 +332,28 @@ const truncateText = (text, maxLength) => {
   return text.substring(0, maxLength) + "...";
 };
 
-function ChangeView({ bounds }) {
+// Helper component to access map instance in React Leaflet v4+
+function MapController({ bounds, onMapReady }) {
   const map = useMap();
-  const previousBoundsRef = useRef(null);
 
   useEffect(() => {
-    // Don't do anything if map is not ready
-    if (!map || !map._loaded) {
-      return;
-    }
+    if (onMapReady) onMapReady(map);
+  }, [map, onMapReady]);
 
-    if (bounds) {
+  useEffect(() => {
+    if (bounds && map) {
       try {
-        const currentBounds = JSON.stringify({
-          sw: bounds.sw,
-          ne: bounds.ne,
-        });
-        const previousBounds = previousBoundsRef.current;
+        const southWest = L.latLng(bounds.sw.lat, bounds.sw.lng);
+        const northEast = L.latLng(bounds.ne.lat, bounds.ne.lng);
+        const leafletBounds = L.latLngBounds(southWest, northEast);
 
-        if (currentBounds !== previousBounds) {
-          const southWest = L.latLng(bounds.sw.lat, bounds.sw.lng);
-          const northEast = L.latLng(bounds.ne.lat, bounds.ne.lng);
-          const leafletBounds = L.latLngBounds(southWest, northEast);
-
-          if (leafletBounds.isValid()) {
-            map.fitBounds(leafletBounds, {
-              padding: [50, 50],
-              maxZoom: 15,
-              animate: true,
-              duration: 0.5,
-            });
-            previousBoundsRef.current = currentBounds;
-          }
+        if (leafletBounds.isValid()) {
+          map.fitBounds(leafletBounds, {
+            padding: [50, 50],
+            maxZoom: 15,
+            animate: true,
+            duration: 0.5,
+          });
         }
       } catch (error) {
         console.error("Error updating map bounds:", error);
@@ -336,6 +364,7 @@ function ChangeView({ bounds }) {
   return null;
 }
 
+// Helper component for resizing
 function InvalidateSizeOnShow({ isVisible }) {
   const map = useMap();
 
@@ -343,14 +372,11 @@ function InvalidateSizeOnShow({ isVisible }) {
     if (
       isVisible &&
       map &&
-      map._loaded &&
       typeof window !== "undefined" &&
       window.innerWidth <= 1048
     ) {
       const timer = setTimeout(() => {
-        if (map && map._loaded) {
-          map.invalidateSize();
-        }
+        map.invalidateSize();
       }, 150);
       return () => clearTimeout(timer);
     }
@@ -470,13 +496,20 @@ const MapDisplay = ({
   userLocation,
   onHideMap,
 }) => {
+  const [isMounted, setIsMounted] = useState(false);
   const [mapBounds, setMapBounds] = useState(null);
-  const mapRef = useRef(null);
-  const containerRef = useRef(null);
-  // CRITICAL FIX: Generate unique ID for each component instance to prevent Leaflet reuse errors
-  const containerIdRef = useRef(
-    `map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-  );
+  // We use a key on the PARENT div to force React to rebuild the DOM node
+  const [mapKey, setMapKey] = useState(null); 
+
+  // Initialize on mount
+  useEffect(() => {
+    setMapKey(`map-instance-${Date.now()}`);
+    setIsMounted(true);
+    
+    return () => {
+      setIsMounted(false);
+    };
+  }, []);
 
   const calculateMapCenter = useMemo(() => {
     const validMarkers = markers.filter(
@@ -568,107 +601,54 @@ const MapDisplay = ({
     setMapBounds(calculateMapBounds);
   }, [calculateMapBounds]);
 
-  // CRITICAL FIX: Comprehensive cleanup that handles browser navigation
-  useEffect(() => {
-    // Mark container as in use by this instance
-    const containerId = containerIdRef.current;
-
-    return () => {
-      // Cleanup function runs when component unmounts or before re-render
-      const cleanup = () => {
-        if (mapRef.current) {
-          try {
-            const map = mapRef.current;
-
-            // Stop all animations
-            if (map.stop) {
-              map.stop();
-            }
-
-            // Close all popups
-            map.closePopup();
-
-            // Remove all layers
-            map.eachLayer((layer) => {
-              try {
-                map.removeLayer(layer);
-              } catch (e) {
-                // Ignore errors when removing layers
-              }
-            });
-
-            // Remove all event listeners
-            map.off();
-
-            // Clear the map instance
-            if (map.remove) {
-              map.remove();
-            }
-
-            mapRef.current = null;
-          } catch (error) {
-            // Silently catch errors during cleanup
-            console.warn("Map cleanup warning:", error.message);
-          }
-        }
-
-        // Clean up the DOM container if it still exists
-        if (containerRef.current) {
-          const container =
-            containerRef.current.querySelector(".leaflet-container");
-          if (container && container._leaflet_id) {
-            delete container._leaflet_id;
-          }
-        }
-      };
-
-      cleanup();
-    };
-  }, []); // Empty dependency array - only run on mount/unmount
-
   return (
-    <MapWrapper ref={containerRef} id={containerIdRef.current}>
+    <MapWrapper>
       <LeafletMarkerStyles />
       <HideMapButton onClick={onHideMap}>
         <MapPin size={16} /> Hide Map
       </HideMapButton>
-      <Map>
-        <MapContainer
-          center={[calculateMapCenter.lat, calculateMapCenter.lng]}
-          zoom={12}
-          attributionControl={false}
-          scrollWheelZoom={true}
-          zoomControl={false}
-          whenCreated={(map) => {
-            mapRef.current = map;
-          }}
-          aria-label="Map displaying nearby classes"
-          title="Map displaying nearby classes"
-        >
-          <TileLayer
-            attribution='© <a href="https://carto.com/">CARTO</a> contributors'
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          />
-          <ChangeView bounds={mapBounds} />
-          <InvalidateSizeOnShow isVisible={showMap} />
-          {markers.map(
-            (marker) =>
-              typeof marker.lat === "number" &&
-              typeof marker.lng === "number" &&
-              !isNaN(marker.lat) &&
-              !isNaN(marker.lng) && (
-                <MarkerComponent
-                  key={marker.id}
-                  position={[marker.lat, marker.lng]}
-                  id={marker.id}
-                  isSelected={selectedClassId === marker.id}
-                  onClick={onMarkerClick}
-                  classInfo={marker}
-                />
-              )
-          )}
-        </MapContainer>
-      </Map>
+      
+      {/* Key is applied to the Wrapper DIV, forcing a full DOM tear-down */}
+      {isMounted && mapKey && (
+        <div key={mapKey} className="map-root-container">
+          <MapContainer
+            center={[calculateMapCenter.lat, calculateMapCenter.lng]}
+            zoom={12}
+            attributionControl={false}
+            scrollWheelZoom={true}
+            zoomControl={false}
+            style={{ height: "100%", width: "100%" }}
+          >
+            {/* Added ZoomControl here */}
+            <ZoomControl position="topright" />
+            
+            <TileLayer
+              attribution='© <a href="https://carto.com/">CARTO</a> contributors'
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            />
+            {/* Use Child Component to control map instance */}
+            <MapController bounds={mapBounds} />
+            <InvalidateSizeOnShow isVisible={showMap} />
+            
+            {markers.map(
+              (marker) =>
+                typeof marker.lat === "number" &&
+                typeof marker.lng === "number" &&
+                !isNaN(marker.lat) &&
+                !isNaN(marker.lng) && (
+                  <MarkerComponent
+                    key={marker.id}
+                    position={[marker.lat, marker.lng]}
+                    id={marker.id}
+                    isSelected={selectedClassId === marker.id}
+                    onClick={onMarkerClick}
+                    classInfo={marker}
+                  />
+                )
+            )}
+          </MapContainer>
+        </div>
+      )}
     </MapWrapper>
   );
 };

@@ -97,7 +97,7 @@ const FONT_OPTIONS = [
   {
     label: "Proxima Soft (Default)",
     value:
-      '"Proxima Soft", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      '"ProximaSoft", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
   {
     label: "Inter",

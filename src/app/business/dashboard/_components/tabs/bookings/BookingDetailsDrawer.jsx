@@ -225,9 +225,9 @@ const ContentBody = styled.div`
   padding: 24px;
   flex: 1;
   overflow-y: auto;
+
   animation: ${fadeIn} 0.5s 0.1s ease-out both;
-  will-change: transform;
-  transform: translateZ(0);
+
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 

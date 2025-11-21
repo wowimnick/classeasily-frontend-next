@@ -94,7 +94,7 @@ const TagBase = styled(motion.div)`
   background: #fff;
   border-radius: 12px;
   border: 1px solid #eaeaea;
-  font-family: "Proxima Soft", sans-serif;
+  font-family: "ProximaSoft", sans-serif;
   font-weight: 500;
   font-size: 0.9375rem;
   color: #000;
@@ -156,7 +156,7 @@ const IconWrapper = styled.span`
 const ShowAllButton = styled(motion.button)`
   background-color: white;
   border: 1px solid #eaeaea;
-  font-family: "Proxima Soft", sans-serif;
+  font-family: "ProximaSoft", sans-serif;
   font-weight: 500;
   border-radius: 12px;
   padding: 1rem 1.5rem;

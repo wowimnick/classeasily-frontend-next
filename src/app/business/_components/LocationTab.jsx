@@ -72,7 +72,7 @@ const MapWrapper = styled.div`
   .leaflet-container {
     height: 100%;
     width: 100%;
-    font-family: "Proxima Soft", sans-serif;
+    font-family: "ProximaSoft", sans-serif;
   }
 
   @media (max-width: 768px) {

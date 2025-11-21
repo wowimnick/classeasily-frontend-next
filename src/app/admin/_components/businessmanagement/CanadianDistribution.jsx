@@ -34,13 +34,11 @@ const MapWrapper = styled.div`
   background-color: #f8fafc;
   border-radius: 16px;
   overflow: hidden;
-  font-family: "Proxima Soft", -apple-system, BlinkMacSystemFont, sans-serif;
 
   .leaflet-container {
     height: 100%;
     width: 100%;
     border-radius: 16px;
-    font-family: "Proxima Soft", -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
   .leaflet-control-attribution {
@@ -52,14 +50,12 @@ const MapWrapper = styled.div`
     border-radius: 8px;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     border: 1px solid rgba(0, 0, 0, 0.1);
-    font-family: "Proxima Soft", -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
   .leaflet-popup-content {
     margin: 12px 16px;
     font-size: 13px;
     color: #1f2937;
-    font-family: "Proxima Soft", -apple-system, BlinkMacSystemFont, sans-serif;
 
     strong {
       display: block;
@@ -67,7 +63,6 @@ const MapWrapper = styled.div`
       font-weight: 600;
       font-size: 14px;
       color: #111827;
-      font-family: "Proxima Soft", -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
     .metric-row {
@@ -85,13 +80,11 @@ const MapWrapper = styled.div`
       color: #64748b;
       font-size: 12px;
       margin-right: 12px;
-      font-family: "Proxima Soft", -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
     .value {
       font-weight: 600;
       color: #111827;
-      font-family: "Proxima Soft", -apple-system, BlinkMacSystemFont, sans-serif;
     }
   }
 
@@ -112,7 +105,6 @@ const ControlsContainer = styled.div`
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(0, 0, 0, 0.05);
-  font-family: "Proxima Soft", -apple-system, BlinkMacSystemFont, sans-serif;
 
   .stats-title {
     font-size: 12px;
@@ -121,14 +113,12 @@ const ControlsContainer = styled.div`
     margin-bottom: 8px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-family: "Proxima Soft", -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
   .stats-value {
     font-size: 18px;
     font-weight: 700;
     color: #111827;
-    font-family: "Proxima Soft", -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
   @media (max-width: 768px) {
@@ -144,7 +134,6 @@ const LoadingContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: "Proxima Soft", -apple-system, BlinkMacSystemFont, sans-serif;
 `;
 
 // --- Helper Functions ---

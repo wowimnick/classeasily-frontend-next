@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect, useState } from "react";
 import ReactDOM from "react-dom";
+import { usePathname } from "next/navigation"; // 1. Import usePathname
 import { motion, AnimatePresence } from "framer-motion";
 import styled, { createGlobalStyle } from "styled-components";
 import { useAuthModal } from "@/context/AuthContext";
@@ -318,49 +319,62 @@ const MenuContentContainer = styled.div`
   }
 `;
 
+// 2. Update Variants to handle pointerEvents
 const desktopMenuVariants = {
   hidden: {
     opacity: 0,
     y: 10,
     scale: 0.95,
+    pointerEvents: "none", // Prevents clicks when hidden
     transition: { duration: 0.15, ease: "easeOut" },
   },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
+    pointerEvents: "auto", // Enables clicks when visible
     transition: { duration: 0.2, ease: "easeOut" },
   },
   exit: {
     opacity: 0,
     y: 10,
     scale: 0.95,
+    pointerEvents: "none", // INSTANTLY disable clicks on exit start
     transition: { duration: 0.15, ease: "easeIn" },
   },
 };
 
 const mobileMenuVariants = {
-  hidden: { scale: 0.2, opacity: 0, x: 0, y: 0, borderRadius: "50px" },
+  hidden: { 
+    scale: 0.2, 
+    opacity: 0, 
+    x: 0, 
+    y: 0, 
+    borderRadius: "50px",
+    pointerEvents: "none" 
+  },
   visible: {
     scale: 1,
     opacity: 1,
     x: 0,
     y: 0,
     borderRadius: "20px",
+    pointerEvents: "auto",
     transition: { type: "spring", damping: 25, stiffness: 300, duration: 0.4 },
   },
   exit: {
     scale: 0.2,
     opacity: 0,
     borderRadius: "50px",
+    pointerEvents: "none",
     transition: { duration: 0.25, ease: "easeIn" },
   },
 };
 
 const overlayVariants = {
-  hidden: { opacity: 0, transition: { duration: 0.2 } },
-  visible: { opacity: 1, transition: { duration: 0.2 } },
-  exit: { opacity: 0, transition: { duration: 0.3 } },
+  hidden: { opacity: 0, pointerEvents: "none", transition: { duration: 0.2 } },
+  visible: { opacity: 1, pointerEvents: "auto", transition: { duration: 0.2 } },
+  exit: { opacity: 0, pointerEvents: "none", transition: { duration: 0.3 } },
 };
 
 const closeButtonVariants = {
@@ -404,6 +418,8 @@ const MenuContents = React.forwardRef(
     },
     ref
   ) => {
+    // ... (No changes needed in MenuContents logic, just rendering) ...
+    
     const handleMenuItemEnter = (e) => {
       const icon = e.currentTarget.querySelector("lord-icon");
       if (icon) {
@@ -731,10 +747,22 @@ const CustomUserMenu = ({
   const [transformOrigin, setTransformOrigin] = useState("center");
   const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  
+  // 3. Grab the pathname
+  const pathname = usePathname();
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // 4. Force close on route change
+  // This ensures that even if the user navigates via Back button or other means,
+  // or if the manual navigation logic glitches, the menu closes.
+  useEffect(() => {
+    if (isOpen) {
+      onClose();
+    }
+  }, [pathname]);
 
   const hasPermission = (perm) =>
     currentUser?.permissions?.includes(perm) ?? false;
@@ -848,7 +876,6 @@ const CustomUserMenu = ({
     return null;
   }
 
-  // SIMPLER: Just portal directly to document.body, let React handle cleanup
   return ReactDOM.createPortal(
     <>
       <AnimatePresence mode="wait">
