@@ -204,6 +204,8 @@ const SearchContainer = styled.div`
   position: relative;
   width: 100%;
 `;
+
+// --- UPDATED MOBILE STYLES ---
 const StyledInput = styled(Input)`
   height: ${(props) => props.theme.token.controlHeight}px;
   border-radius: ${(props) => props.theme.token.borderRadius}px;
@@ -216,7 +218,15 @@ const StyledInput = styled(Input)`
     margin-right: 8px;
     color: ${(props) => props.theme.token.colorTextTertiary};
   }
+
+  @media (max-width: 768px) {
+    font-size: 16px !important;
+    input {
+      font-size: 16px !important;
+    }
+  }
 `;
+
 const SearchResults = styled(motion.div)`
   position: absolute;
   top: 100%;

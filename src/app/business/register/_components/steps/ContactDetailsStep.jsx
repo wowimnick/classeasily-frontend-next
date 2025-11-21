@@ -122,6 +122,7 @@ const HelpText = styled.div`
   gap: 0.5rem;
 `;
 
+// --- UPDATED MOBILE STYLES ---
 const StyledInput = styled(Input)`
   height: ${(props) => props.theme.token.controlHeight}px;
   border-radius: ${(props) => props.theme.token.borderRadius}px;
@@ -130,6 +131,13 @@ const StyledInput = styled(Input)`
 
   &:focus {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 16px !important;
+    input {
+      font-size: 16px !important;
+    }
   }
 `;
 
@@ -150,6 +158,18 @@ const StyledSelect = styled(Select)`
 
   &.ant-select-focused .ant-select-selector {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20 !important;
+  }
+
+  @media (max-width: 768px) {
+    .ant-select-selector {
+       font-size: 16px !important;
+    }
+    .ant-select-selection-item, .ant-select-selection-placeholder {
+       font-size: 16px !important;
+    }
+    input {
+       font-size: 16px !important;
+    }
   }
 `;
 

@@ -115,6 +115,7 @@ const HelpText = styled.div`
   gap: 0.5rem;
 `;
 
+// --- UPDATED MOBILE STYLES ---
 const StyledSelect = styled(Select)`
   .ant-select-selector {
     min-height: ${(props) => props.theme.token.controlHeight}px !important;
@@ -181,6 +182,17 @@ const StyledSelect = styled(Select)`
 
   &:hover .ant-select-selector {
     border-color: ${(props) => props.theme.token.colorPrimary} !important;
+  }
+
+  @media (max-width: 768px) {
+    .ant-select-selection-search-input,
+    .ant-select-selection-placeholder,
+    .ant-select-selection-item {
+        font-size: 16px !important;
+    }
+    input {
+      font-size: 16px !important;
+    }
   }
 `;
 

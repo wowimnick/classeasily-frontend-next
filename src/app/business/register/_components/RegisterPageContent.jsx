@@ -280,7 +280,7 @@ async function preloadAnimation(url) {
   }
 }
 
-const useLottieAnimation = (stepConfig, currentStep) => {
+const useLottieAnimation = (stepConfig, currentStep, isMobile) => {
   const lottieRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
   const [playbackState, setPlaybackState] = useState("idle");
@@ -294,8 +294,10 @@ const useLottieAnimation = (stepConfig, currentStep) => {
   const isMountedRef = useRef(true);
   const readyCheckTimeoutRef = useRef(null);
 
-  // Preload animation data
+  // Preload animation data - SKIP IF MOBILE
   useEffect(() => {
+    if (isMobile) return; // Performance optimization: Don't fetch Lotties on mobile
+
     if (stepConfig?.animationData) {
       preloadAnimation(stepConfig.animationData)
         .then((data) => {
@@ -305,7 +307,7 @@ const useLottieAnimation = (stepConfig, currentStep) => {
         })
         .catch(console.error);
     }
-  }, [stepConfig?.animationData]);
+  }, [stepConfig?.animationData, isMobile]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -323,6 +325,8 @@ const useLottieAnimation = (stepConfig, currentStep) => {
 
   // Reset state when step changes
   useEffect(() => {
+    if (isMobile) return; // Skip logic on mobile
+
     if (lottieRef.current?.animationItem) {
       lottieRef.current.animationItem.destroy();
       lottieRef.current = null;
@@ -342,9 +346,11 @@ const useLottieAnimation = (stepConfig, currentStep) => {
       pauseFrame: null,
       currentPhase: "idle",
     };
-  }, [currentStep]);
+  }, [currentStep, isMobile]);
 
   const handleDOMLoaded = useCallback(() => {
+    if (isMobile) return;
+
     let attempts = 0;
     const maxAttempts = 40;
 
@@ -374,10 +380,10 @@ const useLottieAnimation = (stepConfig, currentStep) => {
     };
 
     checkAnimationReady();
-  }, [stepConfig]);
+  }, [stepConfig, isMobile]);
 
   const handleComplete = useCallback(() => {
-    if (!isMountedRef.current) return;
+    if (!isMountedRef.current || isMobile) return;
 
     const state = animationStateRef.current;
     if (state.currentPhase === "first-half") {
@@ -399,10 +405,11 @@ const useLottieAnimation = (stepConfig, currentStep) => {
         });
       }
     }
-  }, [pendingAction]);
+  }, [pendingAction, isMobile]);
 
   useEffect(() => {
     if (
+      isMobile ||
       !isReady ||
       !lottieRef.current?.animationItem ||
       !stepConfig ||
@@ -436,25 +443,34 @@ const useLottieAnimation = (stepConfig, currentStep) => {
     }, 100);
 
     return () => clearTimeout(startTimeout);
-  }, [isReady, stepConfig, currentStep]);
+  }, [isReady, stepConfig, currentStep, isMobile]);
 
-  const continueAnimation = useCallback((onCompleteCallback) => {
-    const state = animationStateRef.current;
-    if (
-      !lottieRef.current?.animationItem ||
-      state.currentPhase !== "paused" ||
-      state.pauseFrame === null
-    ) {
-      if (onCompleteCallback) onCompleteCallback();
-      return;
-    }
+  const continueAnimation = useCallback(
+    (onCompleteCallback) => {
+      // Immediately callback if mobile to avoid hanging
+      if (isMobile) {
+        if (onCompleteCallback) onCompleteCallback();
+        return;
+      }
 
-    setPendingAction(() => onCompleteCallback);
-    const animCtrl = lottieRef.current;
-    animationStateRef.current.currentPhase = "second-half";
-    animCtrl.playSegments([state.pauseFrame, state.totalFrames - 1], false);
-    setPlaybackState("second-half");
-  }, []);
+      const state = animationStateRef.current;
+      if (
+        !lottieRef.current?.animationItem ||
+        state.currentPhase !== "paused" ||
+        state.pauseFrame === null
+      ) {
+        if (onCompleteCallback) onCompleteCallback();
+        return;
+      }
+
+      setPendingAction(() => onCompleteCallback);
+      const animCtrl = lottieRef.current;
+      animationStateRef.current.currentPhase = "second-half";
+      animCtrl.playSegments([state.pauseFrame, state.totalFrames - 1], false);
+      setPlaybackState("second-half");
+    },
+    [isMobile]
+  );
 
   return {
     lottieRef,
@@ -478,7 +494,7 @@ const getStepId = (stepIndex) => {
 const RegisterPageContent = () => {
   const [currentStep, setCurrentStep] = useState(-1);
   const [direction, setDirection] = useState(1);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(true); // Default to true to be safe
   const [pageStatus, setPageStatus] = useState("loading");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [gaInitialized, setGaInitialized] = useState(false);
@@ -599,7 +615,7 @@ const RegisterPageContent = () => {
     handleComplete,
     handleDOMLoaded,
     animationData,
-  } = useLottieAnimation(currentStepConfig, currentStep);
+  } = useLottieAnimation(currentStepConfig, currentStep, isMobile);
 
   useEffect(() => {
     const contentColumn = document.querySelector(
@@ -878,7 +894,7 @@ const RegisterPageContent = () => {
         } finally {
           // Don't set false here if we triggered modal, relying on logic inside handleFinalApiSubmit
           if (!error?.response || error.response.status !== 401) {
-             setIsSubmitting(false);
+            setIsSubmitting(false);
           }
         }
       } else {
@@ -892,17 +908,25 @@ const RegisterPageContent = () => {
   const handleStepSubmit = useCallback(
     (stepData) => {
       const shouldWaitForAnimation =
+        !isMobile &&
         currentStepConfig &&
         !currentStepConfig.loop &&
         currentStepConfig.hasTwoPartAnimation &&
         canContinue;
+
       if (shouldWaitForAnimation) {
         continueAnimation(() => executeStepSubmit(stepData));
       } else {
         executeStepSubmit(stepData);
       }
     },
-    [currentStepConfig, canContinue, continueAnimation, executeStepSubmit]
+    [
+      currentStepConfig,
+      canContinue,
+      continueAnimation,
+      executeStepSubmit,
+      isMobile,
+    ]
   );
 
   const handleStepSubmitFailed = useCallback(

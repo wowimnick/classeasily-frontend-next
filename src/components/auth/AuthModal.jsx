@@ -69,7 +69,6 @@ const AnimatedModalContent = ({ children }) => {
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
     >
       <div ref={ref}>
-        {/* We add a tiny border to prevent margin collapse issues which cause jumpiness */}
         <div style={{ border: '1px solid transparent', margin: '-1px' }}>
           {children}
         </div>
@@ -78,8 +77,6 @@ const AnimatedModalContent = ({ children }) => {
   );
 };
 
-
-// --- MODIFIED: Simplified DesktopModalContent for animation ---
 const DesktopModalContent = styled(motion.div)`
   padding: 1.5rem;
 
@@ -101,7 +98,6 @@ const StyledDrawerContent = styled(Drawer.Content)`
   display: flex;
   flex-direction: column;
   border-radius: 24px 24px 0 0;
-  /* Dynamic height settings for mobile */
   height: auto;
   max-height: 90vh;
   position: fixed;
@@ -110,8 +106,6 @@ const StyledDrawerContent = styled(Drawer.Content)`
   right: 0;
   z-index: 1050;
   outline: none;
-
-  /* Respect safe area */
   padding-bottom: env(safe-area-inset-bottom);
 `;
 
@@ -125,11 +119,9 @@ const DrawerHandle = styled.div`
 `;
 
 const DrawerBody = styled.div`
-  /* Remove flex: 1 so it doesn't force height */
   width: 100%;
   overflow-y: auto;
   padding: 1.5rem;
-
   &::-webkit-scrollbar {
     display: none;
   }
@@ -162,12 +154,6 @@ const StyledForm = styled(Form)`
   .ant-form-item {
     margin-bottom: 1rem;
   }
-  
-  /* 
-     iOS Zoom Fix:
-     Targeting affix wrappers, password inputs, and standard inputs.
-     Forcing font-size to 16px prevents iOS from zooming in on focus.
-  */
   .ant-input-affix-wrapper,
   .ant-input-password,
   .ant-input {
@@ -175,7 +161,7 @@ const StyledForm = styled(Form)`
     height: 48px;
     border-radius: 12px;
     border: 1px solid #e8e8e8;
-    font-size: 16px !important; /* CHANGED: 14px -> 16px to prevent zoom */
+    font-size: 16px !important;
     
     &:hover,
     &.ant-input-affix-wrapper-focused,
@@ -185,13 +171,10 @@ const StyledForm = styled(Form)`
       box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
     }
   }
-
-  /* Ensure nested inputs inside affix wrappers also inherit the size */
   .ant-input-affix-wrapper > input.ant-input {
     font-size: 16px !important;
     height: 100%;
   }
-
   @media (max-width: 768px) {
     .ant-input-affix-wrapper,
     .ant-input-password,
@@ -374,6 +357,7 @@ const AuthModal = ({
   onClose,
   defaultMode = "login",
   onLoginSuccessAction,
+  onModeChange, // <--- ADDED PROP
 }) => {
   const router = useRouter();
   const [loginForm] = Form.useForm();
@@ -392,6 +376,14 @@ const AuthModal = ({
     () => Intl.DateTimeFormat().resolvedOptions().timeZone,
     []
   );
+
+  // Helper to handle mode switching and notify parent
+  const handleModeSwitch = (newMode) => {
+    setModalView(newMode);
+    if (onModeChange) {
+      onModeChange(newMode);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -419,7 +411,6 @@ const AuthModal = ({
     setError("");
     setLoading(true);
     try {
-      // Pass router to signInWithDjango for automatic redirect handling
       const result = await signInWithDjango(
         values.email,
         values.password,
@@ -440,7 +431,6 @@ const AuthModal = ({
         localStorage.removeItem("prefillEmailForRegistration");
       }
 
-      // Execute custom callback if provided
       if (typeof onLoginSuccessAction === "function") {
         onLoginSuccessAction();
       }
@@ -462,7 +452,6 @@ const AuthModal = ({
     setError("");
 
     try {
-      // Pass router to signInWithGoogle for automatic redirect handling
       const result = await signInWithGoogle(tokenResponse.access_token, router);
 
       message.success("Welcome!");
@@ -475,7 +464,6 @@ const AuthModal = ({
         });
       }
 
-      // Execute custom callback if provided
       if (typeof onLoginSuccessAction === "function") {
         onLoginSuccessAction();
       }
@@ -604,7 +592,7 @@ const AuthModal = ({
           type="button"
           onClick={(e) => {
             e.preventDefault();
-            setModalView("forgotPassword");
+            handleModeSwitch("forgotPassword"); // <--- Use helper
           }}
         >
           Forgot password?
@@ -629,7 +617,7 @@ const AuthModal = ({
       />
       <ToggleText>
         Don't have an account?{" "}
-        <button type="button" onClick={() => setModalView("register")}>
+        <button type="button" onClick={() => handleModeSwitch("register")}> {/* <--- Use helper */}
           Sign up
         </button>
       </ToggleText>
@@ -641,7 +629,6 @@ const AuthModal = ({
       <Title>Create an account</Title>
       <Subtitle>Join our community today</Subtitle>
       
-      {/* Explicitly check !isMobile in JS to ensure Stepper is removed */}
       {!isMobile && (
         <StyledSteps current={currentStep} size="small">
           {steps.map((item) => (
@@ -817,7 +804,7 @@ const AuthModal = ({
       )}
       <ToggleText>
         Already have an account?{" "}
-        <button type="button" onClick={() => setModalView("login")}>
+        <button type="button" onClick={() => handleModeSwitch("login")}> {/* <--- Use helper */}
           Sign in
         </button>
       </ToggleText>
@@ -830,17 +817,15 @@ const AuthModal = ({
     if (modalView === "forgotPassword") {
       return (
         <ForgotPasswordForm
-          onSwitchToLogin={() => setModalView("login")}
+          onSwitchToLogin={() => handleModeSwitch("login")} // <--- Use helper
           formInstance={forgotPasswordForm}
         />
       );
     }
   };
 
-  // Prevent rendering on server to avoid Date.now() error
   if (!mounted) return null;
 
-  // Mobile: Use Vaul Drawer
   if (isMobile) {
     return (
       <ConfigProvider theme={theme}>
@@ -850,7 +835,6 @@ const AuthModal = ({
             <StyledDrawerContent>
               <DrawerHandle />
               <DrawerBody>
-                {/* Wrapped in AnimatedModalContent for dynamic height on mobile */}
                 <AnimatedModalContent>
                   {renderContent()}
                 </AnimatedModalContent>
@@ -862,7 +846,6 @@ const AuthModal = ({
     );
   }
 
-  // --- MODIFIED: Desktop Modal with animated wrapper ---
   return (
     <ConfigProvider theme={theme}>
       <Modal

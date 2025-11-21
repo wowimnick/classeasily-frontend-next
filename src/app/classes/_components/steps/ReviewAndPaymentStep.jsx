@@ -44,7 +44,7 @@ const PaymentSection = styled.div`
   flex-direction: column;
   gap: 24px;
   @media (max-width: 968px) {
-    padding-bottom: 70px;
+    padding-bottom: 180px; 
   }
 `;
 const SummarySection = styled.div`

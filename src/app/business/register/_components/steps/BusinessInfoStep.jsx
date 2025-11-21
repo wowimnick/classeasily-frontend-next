@@ -195,6 +195,7 @@ const HelpText = styled.div`
   gap: 0.5rem;
 `;
 
+// --- INPUT STYLES UPDATED FOR MOBILE (16px) ---
 const StyledInput = styled(Input)`
   height: ${(props) => props.theme.token.controlHeight}px;
   border-radius: ${(props) => props.theme.token.borderRadius}px;
@@ -203,6 +204,30 @@ const StyledInput = styled(Input)`
 
   &:focus {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 16px !important;
+    input {
+      font-size: 16px !important;
+    }
+  }
+`;
+
+const StyledTextArea = styled(Input.TextArea)`
+  font-size: ${(props) => props.theme.token.fontSize}px;
+  transition: all 0.3s ease;
+  border-radius: ${(props) => props.theme.token.borderRadius}px;
+
+  &:focus {
+    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 16px !important;
+    textarea {
+      font-size: 16px !important;
+    }
   }
 `;
 
@@ -223,6 +248,12 @@ const StyledInputNumber = styled(InputNumber)`
   &:focus-within {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
   }
+
+  @media (max-width: 768px) {
+    input {
+      font-size: 16px !important;
+    }
+  }
 `;
 
 const StyledSelect = styled(Select)`
@@ -242,6 +273,18 @@ const StyledSelect = styled(Select)`
 
   &.ant-select-focused .ant-select-selector {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20 !important;
+  }
+
+  @media (max-width: 768px) {
+    .ant-select-selector {
+       font-size: 16px !important;
+    }
+    .ant-select-selection-item, .ant-select-selection-placeholder {
+       font-size: 16px !important;
+    }
+    input {
+       font-size: 16px !important;
+    }
   }
 `;
 
@@ -311,6 +354,17 @@ const StyledTagsSelect = styled(Select)`
 
   &:hover .ant-select-selector {
     border-color: ${(props) => props.theme.token.colorPrimary} !important;
+  }
+
+  @media (max-width: 768px) {
+    .ant-select-selection-search-input,
+    .ant-select-selection-placeholder,
+    .ant-select-selection-item {
+        font-size: 16px !important;
+    }
+    input {
+      font-size: 16px !important;
+    }
   }
 `;
 
@@ -896,7 +950,7 @@ const BusinessInfoStep = ({
                 },
               ]}
             >
-              <StyledInput.TextArea
+              <StyledTextArea
                 placeholder="Tell students about your teaching experience, methods, and what they can expect..."
                 maxLength={750}
                 showCount

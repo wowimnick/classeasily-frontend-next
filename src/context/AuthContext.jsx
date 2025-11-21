@@ -1,3 +1,5 @@
+// app/context/AuthContext.jsx
+
 "use client";
 
 import React, {
@@ -6,7 +8,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
-  useMemo, // <-- IMPORT useMemo
+  useMemo,
 } from "react";
 import { useRouter } from "next/navigation";
 import AuthModal from "@/components/auth/AuthModal";
@@ -48,6 +50,14 @@ export const AuthProvider = ({ children }) => {
   // Handle post-login redirect
   useEffect(() => {
     if (isAuthenticated && user && isAuthModalVisible) {
+      // FIX: Do not redirect if the user is in the "Forgot Password" flow.
+      // This prevents phantom redirects if background auth refreshes/initializes
+      // while the user is trying to reset their password.
+      if (authModalMode === 'forgotPassword') {
+        console.log("[AuthContext] User authenticated but in Forgot Password mode. Preventing redirect.");
+        return;
+      }
+
       console.log("[AuthContext] User authenticated, checking for redirect...");
 
       // Get redirect data
@@ -70,33 +80,15 @@ export const AuthProvider = ({ children }) => {
         clearRedirectPath();
         router.push("/business/dashboard/overview");
       } else if (redirectPath && redirectPath !== "/") {
-        console.log("[AuthContext] Checking redirect:", {
-          redirectPath,
-          requiredPermission,
-        });
-
-        // If a permission was required, verify user has it
+        // ... existing redirect logic ...
         if (requiredPermission) {
           if (user?.permissions?.includes(requiredPermission)) {
-            console.log(
-              "[AuthContext] User has permission, redirecting to:",
-              redirectPath
-            );
             clearRedirectPath();
             router.push(redirectPath);
           } else {
-            console.log(
-              "[AuthContext] User lacks permission, staying on current page"
-            );
             clearRedirectPath();
-            // User authenticated but lacks permission - they'll stay where they are
           }
         } else {
-          // No permission required - redirect to original path
-          console.log(
-            "[AuthContext] No permission required, redirecting to:",
-            redirectPath
-          );
           clearRedirectPath();
           router.push(redirectPath);
         }
@@ -105,7 +97,7 @@ export const AuthProvider = ({ children }) => {
         clearRedirectPath();
       }
     }
-  }, [isAuthenticated, user, isAuthModalVisible, onSuccessCallback, router]);
+  }, [isAuthenticated, user, isAuthModalVisible, onSuccessCallback, router, authModalMode]); // Added authModalMode dependency
 
   const openLoginModal = useCallback((onSuccess = null) => {
     if (typeof window !== "undefined") {
@@ -141,15 +133,12 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const executeLoginSuccessAction = useCallback(() => {
-    // This is now handled by the useEffect above
-    // but we keep this for backwards compatibility
     if (typeof onSuccessCallback === "function") {
       onSuccessCallback();
       setOnSuccessCallback(null);
     }
   }, [onSuccessCallback]);
 
-  // --- SOLUTION: Memoize the context value ---
   const authModalValue = useMemo(
     () => ({
       openLoginModal,
@@ -159,7 +148,6 @@ export const AuthProvider = ({ children }) => {
     }),
     [openLoginModal, openRegisterModal, openForgotPasswordModal, closeAuthModal]
   );
-  // ---------------------------------------------
 
   return (
     <AuthContext.Provider value={authModalValue}>
@@ -169,12 +157,12 @@ export const AuthProvider = ({ children }) => {
         onClose={closeAuthModal}
         defaultMode={authModalMode}
         onLoginSuccessAction={executeLoginSuccessAction}
+        onModeChange={setAuthModalMode} // <--- Sync modal internal state with context
       />
     </AuthContext.Provider>
   );
 };
 
-// Renamed to avoid conflict with auth-client's useAuth
 export const useAuthModal = () => {
   const context = useContext(AuthContext);
   if (!context) {

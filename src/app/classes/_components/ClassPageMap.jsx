@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Circle } from "react-leaflet";
 import styled, { createGlobalStyle } from "styled-components";
 import { Building } from "lucide-react";
@@ -37,7 +37,14 @@ const MapWrapper = styled.div`
   position: relative;
   height: 100%;
   width: 100%;
-  /* This ensures the map fits perfectly inside its rounded container on ClassPage.jsx */
+  
+  /* Ensure the wrapper div for the key takes up full space */
+  .map-instance-wrapper {
+    height: 100%;
+    width: 100%;
+  }
+
+  /* This ensures the map fits perfectly inside its rounded container */
   .leaflet-container {
     height: 100%;
     width: 100%;
@@ -54,13 +61,13 @@ const LocationNotice = styled.div`
   background: white;
   color: #222;
   padding: 14px 14px;
-  border-radius: 14px; /* As requested */
+  border-radius: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   font-size: 1rem;
   font-weight: 500;
-  z-index: 401; /* Ensures it's above map tiles */
+  z-index: 401;
   white-space: nowrap;
-  pointer-events: none; /* Allows map interaction underneath */
+  pointer-events: none;
 `;
 
 const LocationLink = styled.a`
@@ -113,6 +120,20 @@ const ClassPageMap = ({
   businessName,
   fullAddress,
 }) => {
+  // --- FIX: State to force unique map instances ---
+  const [isMounted, setIsMounted] = useState(false);
+  const [mapKey, setMapKey] = useState(null);
+
+  useEffect(() => {
+    // Generate a unique key based on time to ensure a fresh DOM node on mount
+    setMapKey(`map-instance-${Date.now()}`);
+    setIsMounted(true);
+    
+    return () => {
+      setIsMounted(false);
+    };
+  }, []);
+
   const position = useMemo(() => {
     if (!coordinates || typeof coordinates !== "string") return null;
     const parts = coordinates.split(",");
@@ -128,14 +149,13 @@ const ClassPageMap = ({
   // Use the fullAddress for the Google Maps link if available, otherwise fallback to coordinates
   const googleMapsUrl = useMemo(() => {
     if (!saltLocation && fullAddress) {
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        fullAddress
-      )}`;
+      // Fixed syntax error in template literal
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
     }
     if (position) {
       return `https://www.google.com/maps/search/?api=1&query=${position[0]},${position[1]}`;
     }
-    return "#"; // Fallback URL
+    return "#";
   }, [saltLocation, fullAddress, position]);
 
   if (!position) {
@@ -165,29 +185,35 @@ const ClassPageMap = ({
   return (
     <MapWrapper>
       <LeafletMarkerStyles />
-      <MapContainer
-        center={position}
-        zoom={zoomLevel}
-        scrollWheelZoom={true}
-        attributionControl={false}
-        zoomControl={false}
-        aria-label={`Map showing location for ${businessName}`}
-      >
-        <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
-        {saltLocation ? (
-          <Circle
+      
+      {/* --- FIX: Conditional rendering with unique Key --- */}
+      {isMounted && mapKey && (
+        <div key={mapKey} className="map-instance-wrapper">
+          <MapContainer
             center={position}
-            radius={approximateRadius}
-            pathOptions={approximateAreaStyles}
-          />
-        ) : (
-          <Marker
-            position={position}
-            icon={brandIcon}
-            alt={`Location of ${businessName}`}
-          />
-        )}
-      </MapContainer>
+            zoom={zoomLevel}
+            scrollWheelZoom={true}
+            attributionControl={false}
+            zoomControl={false}
+            aria-label={`Map showing location for ${businessName}`}
+          >
+            <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+            {saltLocation ? (
+              <Circle
+                center={position}
+                radius={approximateRadius}
+                pathOptions={approximateAreaStyles}
+              />
+            ) : (
+              <Marker
+                position={position}
+                icon={brandIcon}
+                alt={`Location of ${businessName}`}
+              />
+            )}
+          </MapContainer>
+        </div>
+      )}
 
       {/* Conditionally render the notice if the location is salted */}
       {saltLocation ? (
