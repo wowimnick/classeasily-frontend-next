@@ -1259,7 +1259,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                   disabledDate={(c) => c && c < dayjs().startOf("day")} 
                   onChange={handleDateRangeChange} 
                   disabled={editingSchedule && editingSchedule.has_confirmed_bookings}
-                  getPopupContainer={(trigger) => trigger.parentElement}
+                  getPopupContainer={isMobile ? (trigger) => trigger.parentElement : undefined}
                 />
               </Form.Item>
             </FormGroup>
@@ -1287,14 +1287,14 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                     minuteStep={15} 
                     inputReadOnly
                     disabled={editingSchedule && editingSchedule.has_confirmed_bookings}
-                    getPopupContainer={(trigger) => trigger.parentElement}
+                    getPopupContainer={isMobile ? (trigger) => trigger.parentElement : undefined}
                   />
                 </Form.Item>
               </FormGroup>
               <FormGroup>
                 <FormLabel><Clock size={16} /> Duration</FormLabel>
                 <Form.Item name="duration" initialValue={60} rules={[{ required: true, message: "Please select duration" }]}>
-                  <StyledSelect size="large" getPopupContainer={(trigger) => trigger.parentElement}>
+                  <StyledSelect size="large" getPopupContainer={isMobile ? (trigger) => trigger.parentElement : undefined}>
                     <Option value={15}>15 mins</Option>
                     <Option value={30}>30 mins</Option>
                     <Option value={45}>45 mins</Option>
@@ -1375,7 +1375,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
           value={statusFilter} 
           onChange={(value) => setStatusFilter(value)} 
           style={{ width: 150 }}
-          getPopupContainer={(trigger) => trigger.parentElement}
+          getPopupContainer={isMobile ? (trigger) => trigger.parentElement : undefined}
         >
           <Option value="all">All Statuses</Option>
           <Option value="upcoming">Upcoming</Option>

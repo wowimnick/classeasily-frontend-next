@@ -1208,6 +1208,11 @@ const ScheduleEditDrawer = ({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  // Define props for Antd fields to handle mobile overlay positioning
+  const mobilePopupProps = isMobile
+    ? { getPopupContainer: (trigger) => trigger.parentNode }
+    : {};
+
   useEffect(() => {
     if (open) {
       if (startInEditMode && directEditingSchedule) {
@@ -1236,6 +1241,7 @@ const ScheduleEditDrawer = ({
   const isSingleSession = optionType === "Single Session";
   const bulkFormDays = Form.useWatch("days_of_week", bulkForm) || [];
 
+  // --- MODIFIED: Removed form and bulkForm from dependency array to prevent reset on re-render ---
   useEffect(() => {
     if (activeView !== "form") return;
 
@@ -1281,7 +1287,7 @@ const ScheduleEditDrawer = ({
         },
       });
     }
-  }, [activeView, editingSchedule, form, bulkForm, prefillDate]);
+  }, [activeView, editingSchedule, prefillDate]); // Removed form and bulkForm from here
 
   const handleFormSuccess = () => {
     onSchedulesUpdate();
@@ -1477,6 +1483,7 @@ const ScheduleEditDrawer = ({
                   disabled={isLoading}
                   inputReadOnly
                   disabledDate={(c) => c && c < dayjs().startOf("day")}
+                  {...mobilePopupProps}
                 />
               </Form.Item>
             </FormGroup>
@@ -1499,6 +1506,7 @@ const ScheduleEditDrawer = ({
                     inputReadOnly
                     disabled={isLoading}
                     style={{ width: "100%" }}
+                    {...mobilePopupProps}
                   />
                 </Form.Item>
               </FormGroup>
@@ -1515,6 +1523,7 @@ const ScheduleEditDrawer = ({
                   <StyledSelect
                     placeholder="Select duration"
                     disabled={isLoading}
+                    {...mobilePopupProps}
                   >
                     <Option value={30}>30 minutes</Option>
                     <Option value={60}>1 hour</Option>
@@ -1753,7 +1762,11 @@ const ScheduleEditDrawer = ({
             name="date_range"
             rules={[{ required: true, message: "Select a date range." }]}
           >
-            <StyledRangePicker inputReadOnly style={{ width: "100%" }} />
+            <StyledRangePicker 
+                inputReadOnly 
+                style={{ width: "100%" }} 
+                {...mobilePopupProps}
+            />
           </NoMarginFormItem>
         </FormGroup>
 
@@ -1811,6 +1824,7 @@ const ScheduleEditDrawer = ({
                         format="h:mm A"
                         minuteStep={15}
                         style={{ flex: 1 }}
+                        {...mobilePopupProps}
                       />
                     </Form.Item>
                     {fields.length > 1 && (
@@ -1854,7 +1868,7 @@ const ScheduleEditDrawer = ({
               </FormLabel>
               <HelpText>Set the duration for all generated sessions.</HelpText>
               <NoMarginFormItem name={["commonDetails", "duration"]}>
-                <StyledSelect>
+                <StyledSelect {...mobilePopupProps}>
                   <Option value={30}>30 minutes</Option>
                   <Option value={60}>1 hour</Option>
                   <Option value={90}>1.5 hours</Option>

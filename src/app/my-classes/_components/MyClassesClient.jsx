@@ -9,20 +9,9 @@ import React, {
 } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
-import { Typography, Empty, ConfigProvider, Alert, Spin } from "antd";
+import { Typography, ConfigProvider, Alert } from "antd";
 import message from "@/lib/message";
-import {
-  Clock,
-  CalendarDays,
-  CheckCircle,
-  XCircle,
-  Info,
-  Star,
-  Frown,
-  History,
-  Calendar,
-  X,
-} from "lucide-react";
+import { CheckCircle, Calendar, X, Frown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthUser } from "@/hooks/useAuthUser";
 
@@ -32,7 +21,7 @@ import BookingsListSkeleton from "./BookingsListSkeleton";
 import FooterClient from "@/components/homepage/FooterClient";
 import BookingListItem from "./BookingClassCard";
 import ReviewModal from "./ReviewModal";
-import { bookingService, reviewService } from "@/services/apiService";
+import { bookingService } from "@/services/apiService";
 import { formatBusinessLocalToUserDisplay } from "@/services/utils";
 import { theme } from "@/components/theme";
 
@@ -50,114 +39,89 @@ const PageContainer = styled.div`
   max-width: 1200px;
   min-height: 100vh;
   margin: 0 auto;
-  padding: 48px 24px 96px;
+  padding: 32px 24px 64px; /* Reduced padding */
 
   @media (max-width: 768px) {
-    padding: 24px 16px 96px;
-  }
-
-  @media (max-width: 480px) {
-    padding: 24px 12px 96px;
+    padding: 24px 16px 48px;
   }
 `;
 
 const HeaderSection = styled.div`
-  margin-bottom: 32px;
+  margin-bottom: 24px; /* Compact margin */
   text-align: center;
 
   @media (max-width: 768px) {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     text-align: left;
   }
 `;
 
 const PageTitle = styled(Title)`
   &.ant-typography {
-    font-size: 36px;
+    font-size: 28px; /* Reduced from 36px */
     font-weight: 800;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     color: rgb(34, 34, 34);
-    line-height: 1.2;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 30px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 26px;
   }
 `;
 
 const SubTitle = styled(Text)`
-  font-size: 18px;
+  font-size: 15px; /* Reduced from 18px */
   color: #717171;
   display: block;
-  line-height: 1.4;
   max-width: 600px;
   margin: 0 auto;
-
-  @media (max-width: 768px) {
-    font-size: 16px;
-    margin: 0;
-  }
 `;
 
 const TabContainer = styled.div`
   display: flex;
   justify-content: center;
-  margin-bottom: 32px;
+  margin-bottom: 24px; /* Reduced margin */
 
   @media (max-width: 768px) {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     justify-content: flex-start;
   }
 `;
 
 const TabNavigation = styled.div`
   background: white;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid #e8e8e8;
-  padding: 6px;
+  padding: 4px;
   display: inline-flex;
   gap: 4px;
   position: relative;
   overflow-x: auto;
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 
   &::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, and Opera */
+    display: none;
   }
 
   @media (max-width: 768px) {
     width: 100%;
-    padding: 4px;
     justify-content: space-between;
   }
 `;
 
 const TabIndicator = styled(motion.div)`
   position: absolute;
-  top: 6px;
-  bottom: 6px;
+  top: 4px;
+  bottom: 4px;
   background: ${theme.token.colorPrimary};
-  border-radius: 8px;
+  border-radius: 6px;
   z-index: 1;
   box-shadow: 0 2px 8px rgba(255, 38, 65, 0.2);
-
-  @media (max-width: 768px) {
-    top: 4px;
-    bottom: 4px;
-  }
 `;
 
 const TabButton = styled(motion.button)`
-  padding: 10px 20px;
+  padding: 8px 16px; /* Reduced padding */
   border: none;
   background: transparent;
   color: ${(props) => (props.$active ? "white" : "#6b7280")};
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: color 0.2s ease;
@@ -166,20 +130,19 @@ const TabButton = styled(motion.button)`
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 6px;
+  font-size: 13px; /* Smaller text */
 
   &:hover {
     color: ${(props) => (props.$active ? "white" : "#374151")};
   }
 
   svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
   }
 
   @media (max-width: 768px) {
-    padding: 10px 16px;
     flex: 1;
     justify-content: center;
   }
@@ -193,90 +156,60 @@ const ContentContainer = styled.div`
 `;
 
 const ContentHeader = styled.div`
-  padding: 20px 24px;
+  padding: 16px 20px;
   border-bottom: 1px solid #e8e8e8;
   background: white;
-
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
 `;
 
-const SectionTitle = styled.h3`
-  font-size: 20px;
-  font-weight: 700;
-  color: #222;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  svg {
-    color: ${theme.token.colorPrimary};
-  }
+// NEW COMPACT GRID SYSTEM
+const BookingsGrid = styled(motion.div)`
+  display: grid;
+  /* Smaller min-width (280px) allows more cards per row */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px; /* Reduced gap (was 24px) */
+  padding: 0;
 
   @media (max-width: 768px) {
-    font-size: 18px;
-  }
-`;
-
-const BookingsList = styled(motion.div)`
-  padding: 24px;
-
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-  @media (max-width: 480px) {
-    padding: 12px;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 `;
 
 const EmptyStateContainer = styled(motion.div)`
   text-align: center;
-  padding: 80px 24px;
+  padding: 60px 24px;
   background: white;
 
   .empty-icon {
-    width: 64px;
-    height: 64px;
-    margin: 0 auto 24px;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 16px;
     color: #d1d5db;
-  }
-
-  @media (max-width: 768px) {
-    padding: 60px 16px;
   }
 `;
 
 const EmptyTitle = styled.h4`
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #374151;
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
 `;
 
 const EmptyDescription = styled.p`
-  font-size: 15px;
+  font-size: 14px;
   color: #6b7280;
   margin: 0;
-  line-height: 1.5;
-`;
-
-const LoaderContainer = styled(motion.div)`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 80px 24px;
-  background: white;
 `;
 
 const ErrorContainer = styled(motion.div)`
-  padding: 40px 24px;
+  padding: 24px;
   background: white;
+  border-radius: 12px;
+  border: 1px solid #e8e8e8;
 `;
 
 const MyScheduleAndBookings = () => {
-  const { user: currentUser, isLoading: userLoading } = useAuthUser();
+  const { user: currentUser } = useAuthUser();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("upcoming");
   const [bookingsData, setBookingsData] = useState({
@@ -302,8 +235,6 @@ const MyScheduleAndBookings = () => {
 
   const [reviewBooking, setReviewBooking] = useState(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-
-  // --- State for the new cancellation flow ---
   const [cancellingBooking, setCancellingBooking] = useState(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancellationDetails, setCancellationDetails] = useState(null);
@@ -311,7 +242,6 @@ const MyScheduleAndBookings = () => {
   const [isProcessingCancellation, setIsProcessingCancellation] =
     useState(false);
 
-  // Refs for tab positioning
   const tabRefs = useRef({});
   const [tabIndicatorStyle, setTabIndicatorStyle] = useState({});
 
@@ -322,14 +252,12 @@ const MyScheduleAndBookings = () => {
     );
   }, [currentUser]);
 
-  // Tab configuration with icons
   const tabs = [
-    { key: "upcoming", label: "Upcoming", icon: <Calendar size={16} /> },
-    { key: "completed", label: "Completed", icon: <CheckCircle size={16} /> },
-    { key: "cancelled", label: "Cancelled", icon: <X size={16} /> },
+    { key: "upcoming", label: "Upcoming", icon: <Calendar size={14} /> },
+    { key: "completed", label: "Completed", icon: <CheckCircle size={14} /> },
+    { key: "cancelled", label: "Cancelled", icon: <X size={14} /> },
   ];
 
-  // Update tab indicator position
   useEffect(() => {
     const activeTabElement = tabRefs.current[activeTab];
     if (activeTabElement) {
@@ -358,7 +286,6 @@ const MyScheduleAndBookings = () => {
           apiStatus = "cancelled";
           break;
         default:
-          console.warn("Invalid tab key for fetching:", tabKey);
           return;
       }
 
@@ -367,9 +294,7 @@ const MyScheduleAndBookings = () => {
 
       try {
         const filters = { status: apiStatus };
-        if (apiWhen) {
-          filters.when = apiWhen;
-        }
+        if (apiWhen) filters.when = apiWhen;
         const response = await bookingService.getMyBookings(filters);
 
         if (
@@ -413,15 +338,8 @@ const MyScheduleAndBookings = () => {
                   timePart !== "Invalid Time"
                 ) {
                   displayableDateTime = `${datePart} at ${timePart} (${tzAbbreviation})`;
-                } else {
-                  throw new Error("Failed to format date or time part.");
                 }
               } catch (e) {
-                console.error(
-                  "Error formatting student booking time:",
-                  e,
-                  booking
-                );
                 const businessTZDisplay =
                   booking.business_timezone?.replace("_", " ") || "TZ N/A";
                 displayableDateTime = `${dayjs(booking.date).format(
@@ -431,10 +349,6 @@ const MyScheduleAndBookings = () => {
                 )} (${businessTZDisplay})`;
               }
             } else {
-              console.warn(
-                "Missing data for student booking time display:",
-                booking
-              );
               if (booking.date && booking.time) {
                 displayableDateTime = `${dayjs(booking.date).format(
                   "ddd, MMM d, yyyy"
@@ -455,8 +369,6 @@ const MyScheduleAndBookings = () => {
             [tabKey]: transformedBookings,
           }));
         } else {
-          console.error(`Failed to fetch ${tabKey} bookings:`, response.error);
-          message.error(response.error || `Failed to fetch ${tabKey} bookings`);
           setError((prev) => ({
             ...prev,
             [tabKey]: response.error || `Failed to load ${tabKey} bookings`,
@@ -464,8 +376,6 @@ const MyScheduleAndBookings = () => {
           setBookingsData((prev) => ({ ...prev, [tabKey]: [] }));
         }
       } catch (err) {
-        console.error(`Unexpected error fetching ${tabKey} bookings:`, err);
-        message.error(`An error occurred while loading ${tabKey} bookings`);
         setError((prev) => ({
           ...prev,
           [tabKey]: `An error occurred loading ${tabKey} bookings`,
@@ -489,14 +399,13 @@ const MyScheduleAndBookings = () => {
     setActiveTab(tabKey);
   };
 
-  // --- This function now fetches cancellation info before opening the modal ---
   const handleShowCancellationInfoModal = async (booking) => {
     if (!booking || !booking.booking_id) return;
 
     setCancellingBooking(booking);
     setIsCancelModalOpen(true);
     setIsFetchingCancelInfo(true);
-    setCancellationDetails(null); // Clear previous details while loading
+    setCancellationDetails(null);
 
     const response = await bookingService.getBookingCancellationInfo(
       booking.booking_id
@@ -543,18 +452,13 @@ const MyScheduleAndBookings = () => {
         setIsCancelModalOpen(false);
         setCancellingBooking(null);
         setCancellationDetails(null);
-        // Refresh data for the relevant tabs
         fetchBookings("upcoming");
         fetchBookings("cancelled");
       } else {
         let errorMsg = "Failed to cancel booking.";
-        if (typeof response.error === "string") {
-          errorMsg = response.error;
-        } else if (response.error?.detail) {
-          errorMsg = response.error.detail;
-        } else if (response.error?.policy) {
-          errorMsg = response.error.policy;
-        }
+        if (typeof response.error === "string") errorMsg = response.error;
+        else if (response.error?.detail) errorMsg = response.error.detail;
+        else if (response.error?.policy) errorMsg = response.error.policy;
         message.error({
           content: errorMsg,
           key: `cancel-${bookingIdToSubmit}`,
@@ -562,7 +466,6 @@ const MyScheduleAndBookings = () => {
         });
       }
     } catch (error) {
-      console.error("Error executing student cancellation:", error);
       message.error({
         content: "An unexpected error occurred during cancellation.",
         key: `cancel-${bookingIdToSubmit}`,
@@ -583,7 +486,6 @@ const MyScheduleAndBookings = () => {
       key: "reviewMsg",
       duration: 3,
     });
-
     setIsReviewModalOpen(false);
     setReviewBooking(null);
     fetchBookings("completed");
@@ -596,39 +498,9 @@ const MyScheduleAndBookings = () => {
 
   const handleBookAgain = (booking) => {
     if (booking && booking.slug) {
-      message.info(`Navigating to class page...`);
       router.push(`/classes/${booking.slug}`);
     } else {
       message.error("Could not find class information to book again.");
-      console.error(
-        "Book again failed: slug missing from booking object",
-        booking
-      );
-    }
-  };
-
-  const getSectionInfo = () => {
-    switch (activeTab) {
-      case "upcoming":
-        return {
-          title: "Upcoming Classes",
-          icon: <Calendar size={20} />,
-        };
-      case "completed":
-        return {
-          title: "Completed Classes",
-          icon: <CheckCircle size={20} />,
-        };
-      case "cancelled":
-        return {
-          title: "Cancelled Classes",
-          icon: <X size={20} />,
-        };
-      default:
-        return {
-          title: "Classes",
-          icon: <History size={20} />,
-        };
     }
   };
 
@@ -636,85 +508,62 @@ const MyScheduleAndBookings = () => {
     const currentLoading = loading[activeTab];
     const currentError = error[activeTab];
     const currentBookings = bookingsData[activeTab] || [];
-    const sectionInfo = getSectionInfo();
 
     if (currentLoading) {
       return (
-        <ContentContainer>
-          <ContentHeader>
-            <SectionTitle>
-              {sectionInfo.icon}
-              {sectionInfo.title}
-            </SectionTitle>
-          </ContentHeader>
-          <BookingsList>
-            <BookingsListSkeleton count={3} />
-          </BookingsList>
-        </ContentContainer>
+        <BookingsGrid>
+          <BookingsListSkeleton count={8} />
+        </BookingsGrid>
       );
     }
 
     if (currentError) {
       return (
-        <ContentContainer>
-          <ContentHeader>
-            <SectionTitle>
-              {sectionInfo.icon}
-              {sectionInfo.title}
-            </SectionTitle>
-          </ContentHeader>
-          <ErrorContainer
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Alert
-              message="Error Loading Bookings"
-              description={currentError}
-              type="error"
-              showIcon
-            />
-          </ErrorContainer>
-        </ContentContainer>
+        <ErrorContainer
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Alert
+            message="Error"
+            description={currentError}
+            type="error"
+            showIcon
+          />
+        </ErrorContainer>
       );
     }
 
     if (currentBookings.length === 0) {
       let emptyIcon = <Frown className="empty-icon" />;
-      let emptyTitle = "No classes here";
-      let emptyText = "Check other tabs or explore classes.";
+      let emptyTitle = "No classes";
+      let emptyText = "Check other tabs.";
 
       if (activeTab === "upcoming") {
         emptyTitle = "No upcoming classes";
-        emptyText =
-          "Ready to learn something new? Explore available classes and book your next session!";
+        emptyText = "Book your next session!";
         emptyIcon = <Calendar className="empty-icon" />;
       } else if (activeTab === "completed") {
-        emptyTitle = "No completed classes yet";
-        emptyText =
-          "Once you complete a class, it will appear here. You'll also be able to leave reviews for your instructors.";
+        emptyTitle = "No completed classes";
+        emptyText = "Your history will appear here.";
         emptyIcon = <CheckCircle className="empty-icon" />;
       } else if (activeTab === "cancelled") {
         emptyTitle = "No cancelled classes";
-        emptyText =
-          "Any classes that get cancelled will appear here for your reference.";
+        emptyText = "Cancellations appear here.";
         emptyIcon = <X className="empty-icon" />;
       }
 
       return (
         <ContentContainer>
           <ContentHeader>
-            <SectionTitle>
-              {sectionInfo.icon}
-              {sectionInfo.title}
-            </SectionTitle>
+            <div style={{ fontWeight: "bold" }}>
+              {tabs.find((t) => t.key === activeTab)?.label}
+            </div>
           </ContentHeader>
           <EmptyStateContainer
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
+            transition={{ duration: 0.3 }}
           >
             {emptyIcon}
             <EmptyTitle>{emptyTitle}</EmptyTitle>
@@ -725,52 +574,39 @@ const MyScheduleAndBookings = () => {
     }
 
     return (
-      <ContentContainer>
-        <ContentHeader>
-          <SectionTitle>
-            {sectionInfo.icon}
-            {sectionInfo.title}
-          </SectionTitle>
-        </ContentHeader>
-        <BookingsList
-          key={activeTab}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <AnimatePresence>
-            {currentBookings.map((booking, index) => (
-              <motion.div
-                layout
-                key={booking.id || `booking-item-${index}`}
-                initial={{ opacity: 0 }}
-                animate={{
-                  opacity: 1,
-                  transition: {
-                    delay: index * 0.05, // Subtle stagger
-                    duration: 0.3,
-                    ease: "easeOut",
-                  },
-                }}
-                exit={{
-                  opacity: 0,
-                  y: -10,
-                  transition: { duration: 0.2 },
-                }}
-              >
-                <BookingListItem
-                  booking={booking}
-                  onMessageInstructor={handleMessageInstructor}
-                  onLeaveReview={() => handleLeaveReviewClick(booking)}
-                  onBookAgain={handleBookAgain}
-                  onShowCancellationInfo={handleShowCancellationInfoModal}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </BookingsList>
-      </ContentContainer>
+      <BookingsGrid
+        key={activeTab}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <AnimatePresence mode="popLayout">
+          {currentBookings.map((booking, index) => (
+            <motion.div
+              layout
+              key={booking.id || `booking-item-${index}`}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                transition: {
+                  delay: index * 0.03,
+                  duration: 0.2,
+                },
+              }}
+              exit={{ opacity: 0, scale: 0.95 }}
+            >
+              <BookingListItem
+                booking={booking}
+                onMessageInstructor={handleMessageInstructor}
+                onLeaveReview={() => handleLeaveReviewClick(booking)}
+                onBookAgain={handleBookAgain}
+                onShowCancellationInfo={handleShowCancellationInfoModal}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </BookingsGrid>
     );
   };
 
@@ -780,21 +616,14 @@ const MyScheduleAndBookings = () => {
       <PageContainer>
         <HeaderSection>
           <PageTitle>My Bookings</PageTitle>
-          <SubTitle>
-            Manage your upcoming classes, review completed sessions, and track
-            your learning journey.
-          </SubTitle>
+          <SubTitle>Manage your classes and track your progress.</SubTitle>
         </HeaderSection>
 
         <TabContainer>
           <TabNavigation>
             <TabIndicator
               animate={tabIndicatorStyle}
-              transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 30,
-              }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
             />
             {tabs.map((tab) => (
               <TabButton
@@ -802,14 +631,6 @@ const MyScheduleAndBookings = () => {
                 ref={(el) => (tabRefs.current[tab.key] = el)}
                 $active={activeTab === tab.key}
                 onClick={() => handleTabChange(tab.key)}
-                whileHover={{
-                  scale: 1.02,
-                  transition: { duration: 0.2 },
-                }}
-                whileTap={{
-                  scale: 0.98,
-                  transition: { duration: 0.1 },
-                }}
               >
                 {tab.icon}
                 {tab.label}

@@ -1,9 +1,7 @@
-// app/my-tickets/_components/MyTicketsContent.jsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
 import {
   Typography,
   Button,
@@ -13,7 +11,6 @@ import {
   ConfigProvider,
   Modal,
   Form,
-  Radio,
   Select,
 } from "antd";
 import message from "@/lib/message";
@@ -27,7 +24,7 @@ import {
   CheckCircle,
   XCircle,
   ChevronRight,
-  Filter,
+  MessageSquare,
 } from "lucide-react";
 import styled, { ThemeProvider } from "styled-components";
 import ExploreHeader from "@/components/explore/ExploreHeader";
@@ -35,12 +32,13 @@ import { CustomerSupportTicketService } from "@/services/apiService";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { theme as globalTheme } from "@/components/theme";
 import FooterClient from "@/components/homepage/FooterClient";
+import { motion, AnimatePresence } from "framer-motion";
 
-const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
-// Keep all styled components exactly the same...
+// --- Styled Components ---
+
 const PageWrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -49,23 +47,23 @@ const PageWrapper = styled.div`
 
 const PageContainer = styled.div`
   flex-grow: 1;
-  max-width: 1400px;
+  max-width: 1200px;
   min-height: 90vh;
   width: 100%;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 32px 24px 64px;
 
   @media (max-width: 768px) {
-    padding: 24px 16px;
+    padding: 24px 16px 48px;
   }
 `;
 
-const PageHeader = styled.header`
+const HeaderSection = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -74,22 +72,19 @@ const PageHeader = styled.header`
   }
 `;
 
-const HeaderContent = styled.div`
-  flex: 1;
-
+const HeaderTexts = styled.div`
   h1 {
-    font-size: 32px;
-    font-weight: 700;
-    color: ${(props) => props.theme.token.colorText};
-    margin: 0 0 8px;
+    font-size: 28px;
+    font-weight: 800;
+    color: #222;
+    margin: 0 0 4px;
     line-height: 1.2;
   }
 
   p {
-    font-size: 16px;
-    color: ${(props) => props.theme.token.colorTextSecondary};
+    font-size: 15px;
+    color: #717171;
     margin: 0;
-    line-height: 1.5;
   }
 `;
 
@@ -98,220 +93,214 @@ const CreateTicketButton = styled(Button)`
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-width: 180px;
-  height: 44px;
-  border-radius: 14px;
-  font-weight: 500;
+  height: 40px;
+  border-radius: 10px;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 
   @media (max-width: 768px) {
     width: 100%;
   }
 `;
 
-const ControlsSection = styled.div`
-  background: ${(props) => props.theme.token.colorBgContainer};
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border-radius: 14px;
-  padding: 24px;
+const ControlsContainer = styled.div`
   margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 `;
 
-const ControlsHeader = styled.div`
+const SearchRow = styled.div`
   display: flex;
+  gap: 12px;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 20px;
 
-  h3 {
-    font-size: 16px;
-    font-weight: 600;
-    color: ${(props) => props.theme.token.colorText};
-    margin: 0;
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: stretch;
   }
 `;
 
-const ControlsContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-`;
-
-const FilterGroup = styled.div`
+const FilterScrollContainer = styled.div`
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 const FilterButton = styled.button`
-  padding: 8px 16px;
-  border-radius: 14px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
   border: 1px solid
     ${(props) =>
       props.$active
         ? props.theme.token.colorPrimary
         : props.theme.token.colorBorder};
   background-color: ${(props) =>
-    props.$active ? props.theme.token.colorPrimary : "transparent"};
+    props.$active ? props.theme.token.colorPrimary : "white"};
   color: ${(props) =>
     props.$active ? "#ffffff" : props.theme.token.colorTextSecondary};
-  font-weight: 500;
-  font-size: 14px;
+  font-weight: 600;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    border-color: ${(props) =>
-      props.$active
-        ? props.theme.token.colorPrimary
-        : props.theme.token.colorText};
+    border-color: ${(props) => props.theme.token.colorPrimary};
     color: ${(props) =>
-      props.$active ? "#ffffff" : props.theme.token.colorText};
+      props.$active ? "#ffffff" : props.theme.token.colorPrimary};
   }
 `;
 
-const SearchInput = styled(Input)`
-  max-width: 400px;
-
-  .ant-input {
-    border-radius: 8px;
-    border-color: ${(props) => props.theme.token.colorBorder};
-
-    &:focus,
+const StyledSearchInput = styled(Input)`
+  flex: 1;
+  .ant-input-prefix {
+    margin-right: 8px;
+  }
+  &.ant-input-affix-wrapper {
+    border-radius: 10px;
+    padding: 8px 11px;
+    border-color: #e8e8e8;
+    &:hover,
     &:focus-within {
-      border-color: ${(props) => props.theme.token.colorPrimary};
-      box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.25);
+      border-color: ${globalTheme.token.colorPrimary};
     }
   }
 `;
 
-const TicketList = styled.div`
-  display: flex;
-  flex-direction: column;
+// --- Grid System ---
+const TicketsGrid = styled(motion.div)`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
 `;
 
-const TicketCard = styled.div`
-  background: ${(props) => props.theme.token.colorBgContainer};
+const TicketCard = styled(motion.div)`
+  background: white;
+  border: 1px solid #e8e8e8;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  padding: 24px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    border-color: ${(props) => props.theme.token.colorPrimary};
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+    border-color: #d9d9d9;
   }
 `;
 
 const CardHeader = styled.div`
+  padding: 16px 16px 12px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 16px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 12px;
-  }
 `;
 
-const CardTitle = styled.h3`
-  font-size: 18px;
-  font-weight: 600;
-  color: ${(props) => props.theme.token.colorText};
-  margin: 0;
-  line-height: 1.4;
-  flex: 1;
-`;
-
-const StatusTag = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+const TicketIdBadge = styled.div`
+  font-size: 11px;
+  font-weight: 700;
+  color: #717171;
+  background: #f5f5f5;
+  padding: 4px 8px;
   border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  color: ${(props) => props.color};
-  background-color: ${(props) => props.background};
-  flex-shrink: 0;
-
-  svg {
-    stroke-width: 2.5;
-  }
-`;
-
-const TicketId = styled.div`
-  font-size: 12px;
-  color: ${(props) => props.theme.token.colorTextTertiary};
-  font-weight: 500;
-  margin-bottom: 8px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
 `;
 
-const CardBody = styled.p`
-  color: ${(props) => props.theme.token.colorTextSecondary};
-  margin: 0 0 20px 0;
-  line-height: 1.6;
+const StatusBadge = styled.div`
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: ${(props) => props.$color};
+  background: ${(props) => props.$background};
+`;
+
+const CardContent = styled.div`
+  padding: 0 16px 16px;
+  flex: 1;
+`;
+
+const TicketSubject = styled.h3`
+  font-size: 16px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 8px 0;
+  line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+`;
+
+const TicketDescription = styled.p`
+  font-size: 13px;
+  color: #717171;
+  margin: 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`;
+
+const Divider = styled.div`
+  height: 1px;
+  background: #f0f0f0;
+  margin-top: auto;
 `;
 
 const CardFooter = styled.div`
+  padding: 12px 16px;
+  background: #fafafa;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 16px;
-  border-top: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
 `;
 
-const TicketInfo = styled.div`
+const FooterDetail = styled.div`
   display: flex;
   align-items: center;
-  gap: 20px;
-  font-size: 13px;
-  color: ${(props) => props.theme.token.colorTextSecondary};
-
-  @media (max-width: 768px) {
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-
-  span {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-`;
-
-const ViewDetailsLink = styled.div`
-  color: ${(props) => props.theme.token.colorPrimary};
-  font-weight: 600;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  gap: 6px;
+  font-size: 12px;
+  color: #555;
+  font-weight: 500;
 
   svg {
-    transition: transform 0.2s ease;
+    color: ${globalTheme.token.colorPrimary};
   }
+`;
 
-  ${TicketCard}:hover & svg {
-    transform: translateX(3px);
+const ActionIcon = styled.div`
+  color: ${globalTheme.token.colorPrimary};
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  gap: 4px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+
+  ${TicketCard}:hover & {
+    opacity: 1;
   }
 `;
 
@@ -322,69 +311,58 @@ const CenteredState = styled.div`
   padding: 80px 24px;
   background-color: ${(props) => props.theme.token.colorBgContainer};
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e8e8e8;
 `;
 
 const StyledModal = styled(Modal)`
   .ant-modal-content {
-    border-radius: 12px;
+    border-radius: 16px;
+    overflow: hidden;
   }
-
   .ant-modal-header {
-    border-radius: 12px 12px 0 0;
     padding: 20px 24px;
-    border-bottom: 1px solid ${(props) => props.theme.token.colorBorder};
+    border-bottom: 1px solid #f0f0f0;
   }
-
   .ant-modal-body {
     padding: 24px;
   }
 `;
 
-// Helper Functions
+// --- Helpers ---
 const statusMap = {
   open: {
     label: "Open",
-    icon: <AlertCircle size={14} />,
+    icon: <AlertCircle size={12} strokeWidth={3} />,
     color: "#3b82f6",
     background: "#eff6ff",
   },
   in_progress: {
     label: "In Progress",
-    icon: <Clock size={14} />,
+    icon: <Clock size={12} strokeWidth={3} />,
     color: "#d97706",
     background: "#fef3c7",
   },
   resolved: {
     label: "Resolved",
-    icon: <CheckCircle size={14} />,
+    icon: <CheckCircle size={12} strokeWidth={3} />,
     color: "#10b981",
     background: "#ecfdf5",
   },
   closed: {
     label: "Closed",
-    icon: <XCircle size={14} />,
+    icon: <XCircle size={12} strokeWidth={3} />,
     color: "#64748b",
     background: "#f1f5f9",
   },
 };
 
-const formatDate = (dateString) => {
-  if (!dateString) return "N/A";
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(dateString));
-};
-
 const getCategoryDisplay = (category) => {
   const categories = {
-    account: "Account Issues",
-    booking: "Booking Problems",
-    payment: "Payment Issues",
-    technical: "Technical Support",
-    feature: "Feature Request",
+    account: "Account",
+    booking: "Bookings",
+    payment: "Payments",
+    technical: "Tech Support",
+    feature: "Feature Req",
     other: "Other",
   };
   return categories[category] || category;
@@ -445,9 +423,7 @@ export default function MyTicketsContent() {
         const newTickets = await CustomerSupportTicketService.getUserTickets();
         if (newTickets.success) setTickets(newTickets.data);
       } else {
-        message.error(
-          "Failed to create ticket: " + (response.message || "Unknown error")
-        );
+        message.error(response.message || "Failed to create ticket");
       }
     } catch (error) {
       message.error("An error occurred. Please try again.");
@@ -459,83 +435,75 @@ export default function MyTicketsContent() {
   const renderEmptyState = () => (
     <CenteredState>
       <Empty
-        image={
-          <TicketIcon size={64} color={globalTheme.token.colorTextTertiary} />
-        }
+        image={<TicketIcon size={48} color="#d9d9d9" />}
         description={
-          <Space direction="vertical" align="center" size="middle">
-            <Title level={3} style={{ margin: 0 }}>
-              No Support Tickets Yet
-            </Title>
-            <Text style={{ fontSize: 16, textAlign: "center", maxWidth: 400 }}>
-              Get help from our support team by creating your first ticket.
-              We're here to help with any questions or issues you may have.
-            </Text>
-          </Space>
-        }
-      />
-    </CenteredState>
-  );
-
-  const renderNoMatches = () => (
-    <CenteredState>
-      <Empty
-        image={<Search size={64} color={globalTheme.token.colorTextTertiary} />}
-        description={
-          <Space direction="vertical" align="center">
-            <Title level={4} style={{ margin: 0 }}>
-              No Matching Tickets
-            </Title>
-            <Text>Try adjusting your search terms or filter settings.</Text>
-          </Space>
+          <div style={{ maxWidth: 300, margin: "0 auto" }}>
+            <h4 style={{ margin: "0 0 8px", fontSize: 16, color: "#333" }}>
+              No Support Tickets
+            </h4>
+            <p style={{ margin: 0, color: "#777", fontSize: 14 }}>
+              Need help? Create a ticket to start a conversation with our
+              support team.
+            </p>
+          </div>
         }
       />
     </CenteredState>
   );
 
   const renderTickets = () => (
-    <TicketList>
-      {filteredTickets.map((ticket) => {
-        const statusInfo = statusMap[ticket.status] || statusMap.closed;
-        return (
-          <TicketCard
-            key={ticket.ticket_id}
-            onClick={() => router.push(`/my-tickets/${ticket.ticket_id}`)}
-          >
-            <TicketId>
-              <TicketIcon size={12} />
-              Ticket #{ticket.ticket_id}
-            </TicketId>
-            <CardHeader>
-              <CardTitle>{ticket.subject}</CardTitle>
-              <StatusTag
-                color={statusInfo.color}
-                background={statusInfo.background}
-              >
-                {statusInfo.icon}
-                {statusInfo.label}
-              </StatusTag>
-            </CardHeader>
-            <CardBody>{ticket.description}</CardBody>
-            <CardFooter>
-              <TicketInfo>
-                <span>
+    <TicketsGrid
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <AnimatePresence mode="popLayout">
+        {filteredTickets.map((ticket) => {
+          const statusInfo = statusMap[ticket.status] || statusMap.closed;
+          return (
+            <TicketCard
+              layout
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              key={ticket.ticket_id}
+              onClick={() => router.push(`/my-tickets/${ticket.ticket_id}`)}
+            >
+              <CardHeader>
+                <TicketIdBadge>#{ticket.ticket_id}</TicketIdBadge>
+                <StatusBadge
+                  $color={statusInfo.color}
+                  $background={statusInfo.background}
+                >
+                  {statusInfo.icon}
+                  {statusInfo.label}
+                </StatusBadge>
+              </CardHeader>
+
+              <CardContent>
+                <TicketSubject title={ticket.subject}>
+                  {ticket.subject}
+                </TicketSubject>
+                <TicketDescription>{ticket.description}</TicketDescription>
+              </CardContent>
+
+              <Divider />
+
+              <CardFooter>
+                <FooterDetail>
                   <TagIcon size={14} />
                   {getCategoryDisplay(ticket.category)}
-                </span>
-                <span>
-                  <Clock size={14} />
-                  Updated: {formatDate(ticket.updated_at)}
-                </span>
-              </TicketInfo>
-              <ViewDetailsLink>
-                View Details <ChevronRight size={16} />
-              </ViewDetailsLink>
-            </CardFooter>
-          </TicketCard>
-        );
-      })}
-    </TicketList>
+                </FooterDetail>
+                <ActionIcon>
+                  Open <ChevronRight size={14} />
+                </ActionIcon>
+              </CardFooter>
+            </TicketCard>
+          );
+        })}
+      </AnimatePresence>
+    </TicketsGrid>
   );
 
   return (
@@ -544,70 +512,58 @@ export default function MyTicketsContent() {
         <PageWrapper>
           <ExploreHeader showOptionsWrapper={false} />
           <PageContainer>
-            <PageHeader>
-              <HeaderContent>
-                <Title level={1}>Support Center</Title>
-                <Paragraph>
-                  Manage your support tickets and get help from our team.
-                </Paragraph>
-              </HeaderContent>
+            <HeaderSection>
+              <HeaderTexts>
+                <h1>Support Center</h1>
+                <p>Track your inquiries and get help.</p>
+              </HeaderTexts>
               <CreateTicketButton
                 type="primary"
-                size="middle"
-                icon={<PlusCircle size={20} />}
+                icon={<PlusCircle size={18} />}
                 onClick={() => setCreateModalVisible(true)}
               >
-                Create New Ticket
+                New Ticket
               </CreateTicketButton>
-            </PageHeader>
+            </HeaderSection>
 
             {tickets.length > 0 && (
-              <ControlsSection>
-                <ControlsHeader>
-                  <Filter size={16} />
-                  <h3>Filter & Search</h3>
-                </ControlsHeader>
-                <ControlsContent>
-                  <FilterGroup>
-                    <FilterButton
-                      $active={filter === "all"}
-                      onClick={() => setFilter("all")}
-                    >
-                      All ({tickets.length})
-                    </FilterButton>
-                    <FilterButton
-                      $active={filter === "open"}
-                      onClick={() => setFilter("open")}
-                    >
-                      Open ({stats.open})
-                    </FilterButton>
-                    <FilterButton
-                      $active={filter === "in_progress"}
-                      onClick={() => setFilter("in_progress")}
-                    >
-                      In Progress ({stats.inProgress})
-                    </FilterButton>
-                    <FilterButton
-                      $active={filter === "resolved"}
-                      onClick={() => setFilter("resolved")}
-                    >
-                      Resolved ({stats.resolved})
-                    </FilterButton>
-                  </FilterGroup>
-                  <SearchInput
-                    placeholder="Search tickets by subject or description..."
+              <ControlsContainer>
+                <SearchRow>
+                  <StyledSearchInput
+                    placeholder="Search tickets..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    prefix={
-                      <Search
-                        size={18}
-                        color={globalTheme.token.colorTextTertiary}
-                      />
-                    }
+                    prefix={<Search size={16} color="#bfbfbf" />}
                     allowClear
                   />
-                </ControlsContent>
-              </ControlsSection>
+                </SearchRow>
+                <FilterScrollContainer>
+                  <FilterButton
+                    $active={filter === "all"}
+                    onClick={() => setFilter("all")}
+                  >
+                    All
+                  </FilterButton>
+                  <FilterButton
+                    $active={filter === "open"}
+                    onClick={() => setFilter("open")}
+                  >
+                    Open ({stats.open})
+                  </FilterButton>
+                  <FilterButton
+                    $active={filter === "in_progress"}
+                    onClick={() => setFilter("in_progress")}
+                  >
+                    In Progress ({stats.inProgress})
+                  </FilterButton>
+                  <FilterButton
+                    $active={filter === "resolved"}
+                    onClick={() => setFilter("resolved")}
+                  >
+                    Resolved ({stats.resolved})
+                  </FilterButton>
+                </FilterScrollContainer>
+              </ControlsContainer>
             )}
 
             {isLoading ? (
@@ -617,7 +573,9 @@ export default function MyTicketsContent() {
             ) : tickets.length === 0 ? (
               renderEmptyState()
             ) : filteredTickets.length === 0 ? (
-              renderNoMatches()
+              <CenteredState>
+                <Empty description="No tickets found matching your filters." />
+              </CenteredState>
             ) : (
               renderTickets()
             )}
@@ -628,17 +586,16 @@ export default function MyTicketsContent() {
         <StyledModal
           title={
             <Space align="center">
-              <TicketIcon size={20} />
-              <span style={{ fontWeight: 600, fontSize: 18 }}>
-                Create Support Ticket
-              </span>
+              <MessageSquare size={20} color={globalTheme.token.colorPrimary} />
+              <span style={{ fontWeight: 700 }}>Create Ticket</span>
             </Space>
           }
           open={createModalVisible}
           onCancel={() => setCreateModalVisible(false)}
           footer={null}
-          width={600}
+          width={520}
           destroyOnClose
+          centered
         >
           <Form
             form={createForm}
@@ -648,67 +605,65 @@ export default function MyTicketsContent() {
             <Form.Item
               name="subject"
               label="Subject"
-              rules={[{ required: true, message: "Please enter a subject" }]}
+              rules={[{ required: true, message: "Subject required" }]}
             >
-              <Input
-                placeholder="e.g., Issue with booking confirmation"
-                style={{ borderRadius: "8px" }}
-              />
+              <Input placeholder="Brief summary of issue" />
             </Form.Item>
-            <Form.Item
-              name="category"
-              label="Category"
-              rules={[{ required: true, message: "Please select a category" }]}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 16,
+              }}
             >
-              <Select
-                placeholder="Select the most relevant category"
-                style={{ borderRadius: "8px" }}
+              <Form.Item
+                name="category"
+                label="Category"
+                rules={[{ required: true, message: "Select category" }]}
               >
-                <Option value="account">Account Issues</Option>
-                <Option value="booking">Booking Problems</Option>
-                <Option value="payment">Payment Issues</Option>
-                <Option value="technical">Technical Support</Option>
-                <Option value="feature">Feature Request</Option>
-                <Option value="other">Other</Option>
-              </Select>
-            </Form.Item>
-            <Form.Item name="priority" label="Priority" initialValue="medium">
-              <Radio.Group>
-                <Radio.Button value="low">Low</Radio.Button>
-                <Radio.Button value="medium">Medium</Radio.Button>
-                <Radio.Button value="high">High</Radio.Button>
-                <Radio.Button value="urgent">Urgent</Radio.Button>
-              </Radio.Group>
-            </Form.Item>
+                <Select placeholder="Select...">
+                  <Option value="booking">Booking</Option>
+                  <Option value="payment">Payment</Option>
+                  <Option value="account">Account</Option>
+                  <Option value="technical">Technical</Option>
+                  <Option value="other">Other</Option>
+                </Select>
+              </Form.Item>
+
+              <Form.Item name="priority" label="Priority" initialValue="medium">
+                <Select>
+                  <Option value="low">Low</Option>
+                  <Option value="medium">Medium</Option>
+                  <Option value="high">High</Option>
+                  <Option value="urgent">Urgent</Option>
+                </Select>
+              </Form.Item>
+            </div>
+
             <Form.Item
               name="description"
-              label="Description"
-              rules={[{ required: true, message: "Please provide details" }]}
+              label="Details"
+              rules={[{ required: true, message: "Details required" }]}
             >
               <TextArea
-                placeholder="Please describe your issue in detail..."
-                autoSize={{ minRows: 4, maxRows: 8 }}
-                style={{ borderRadius: "8px" }}
+                placeholder="Describe your issue..."
+                rows={5}
+                showCount
+                maxLength={1000}
               />
             </Form.Item>
-            <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
-              <Space>
-                <Button
-                  onClick={() => setCreateModalVisible(false)}
-                  style={{ borderRadius: "8px" }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={isCreatingTicket}
-                  style={{ borderRadius: "8px" }}
-                >
-                  Submit Ticket
-                </Button>
-              </Space>
-            </Form.Item>
+
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={isCreatingTicket}
+              block
+              size="large"
+              style={{ marginTop: 8, fontWeight: 600 }}
+            >
+              Submit Ticket
+            </Button>
           </Form>
         </StyledModal>
       </ConfigProvider>

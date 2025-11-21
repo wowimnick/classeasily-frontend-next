@@ -1,19 +1,13 @@
-// app/my-tickets/_components/TicketsLoadingSkeleton.jsx
 "use client";
 
 import styled, { keyframes, ThemeProvider } from "styled-components";
 import { theme as globalTheme } from "@/components/theme";
 import ExploreHeader from "@/components/explore/ExploreHeader";
-import dynamic from "next/dynamic";
 import FooterClient from "@/components/homepage/FooterClient";
 
 const shimmer = keyframes`
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
+  0% { background-position: -468px 0; }
+  100% { background-position: 468px 0; }
 `;
 
 const PageWrapper = styled.div`
@@ -24,158 +18,81 @@ const PageWrapper = styled.div`
 
 const PageContainer = styled.div`
   flex-grow: 1;
-  max-width: 1400px;
+  max-width: 1200px;
   min-height: 90vh;
   width: 100%;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 32px 24px 64px;
 
   @media (max-width: 768px) {
-    padding: 24px 16px;
+    padding: 24px 16px 48px;
   }
 `;
 
-const PageHeader = styled.header`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 24px;
-  margin-bottom: 32px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-  }
-`;
-
-const HeaderContent = styled.div`
-  flex: 1;
-`;
-
-const SkeletonElement = styled.div`
-  background: linear-gradient(90deg, #f0f0f0 0%, #f8f8f8 50%, #f0f0f0 100%);
-  background-size: 1000px 100%;
-  animation: ${shimmer} 2s infinite linear;
-  border-radius: ${(props) => props.$radius || "8px"};
-  height: ${(props) => props.$height || "20px"};
+const SkeletonBase = styled.div`
+  background: #f6f7f8;
+  background-image: linear-gradient(
+    to right,
+    #f6f7f8 0%,
+    #edeef1 20%,
+    #f6f7f8 40%,
+    #f6f7f8 100%
+  );
+  background-repeat: no-repeat;
+  background-size: 800px 100%;
+  animation: ${shimmer} 1.5s infinite linear;
+  border-radius: ${(props) => props.$radius || "6px"};
   width: ${(props) => props.$width || "100%"};
+  height: ${(props) => props.$height || "20px"};
   margin-bottom: ${(props) => props.$mb || "0"};
 `;
 
-const TitleSkeleton = styled(SkeletonElement)`
-  height: 38px;
-  width: 300px;
-  margin-bottom: 12px;
-
-  @media (max-width: 768px) {
-    width: 200px;
-  }
+const HeaderSkeleton = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 32px;
 `;
 
-const SubtitleSkeleton = styled(SkeletonElement)`
-  height: 20px;
-  width: 400px;
-
-  @media (max-width: 768px) {
-    width: 280px;
-  }
-`;
-
-const ButtonSkeleton = styled(SkeletonElement)`
-  height: 44px;
-  width: 180px;
-  border-radius: 14px;
-
-  @media (max-width: 768px) {
-    width: 100%;
-  }
-`;
-
-const ControlsSection = styled.div`
-  background: ${(props) => props.theme.token.colorBgContainer};
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border-radius: 14px;
-  padding: 24px;
+const ControlsSkeleton = styled.div`
   margin-bottom: 24px;
-`;
-
-const ControlsHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 20px;
-`;
-
-const FilterGroup = styled.div`
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-`;
-
-const FilterButtonSkeleton = styled(SkeletonElement)`
-  height: 36px;
-  width: 100px;
-  border-radius: 14px;
-`;
-
-const SearchSkeleton = styled(SkeletonElement)`
-  height: 40px;
-  max-width: 400px;
-  border-radius: 8px;
-`;
-
-const TicketList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
 `;
 
-const TicketCardSkeleton = styled.div`
-  background: ${(props) => props.theme.token.colorBgContainer};
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  padding: 24px;
-`;
-
-const CardHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+const GridSkeleton = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
-  margin-bottom: 16px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 12px;
-  }
 `;
 
-const CardFooter = styled.div`
+const CardSkeleton = styled.div`
+  background: white;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  padding: 0;
+  height: 180px;
+  display: flex;
+  flex-direction: column;
+`;
+
+const CardSkeletonHeader = styled.div`
+  padding: 16px 16px 12px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding-top: 16px;
-  border-top: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
-  margin-top: 20px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
 `;
 
-const FooterInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 20px;
+const CardSkeletonBody = styled.div`
+  padding: 0 16px;
+  flex: 1;
+`;
 
-  @media (max-width: 768px) {
-    flex-wrap: wrap;
-    gap: 16px;
-  }
+const CardSkeletonFooter = styled.div`
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
 `;
 
 export function TicketsListLoadingSkeleton() {
@@ -184,52 +101,50 @@ export function TicketsListLoadingSkeleton() {
       <PageWrapper>
         <ExploreHeader showOptionsWrapper={false} />
         <PageContainer>
-          <PageHeader>
-            <HeaderContent>
-              <TitleSkeleton />
-              <SubtitleSkeleton />
-            </HeaderContent>
-            <ButtonSkeleton />
-          </PageHeader>
+          {/* Header */}
+          <HeaderSkeleton>
+            <div>
+              <SkeletonBase $width="200px" $height="32px" $mb="8px" />
+              <SkeletonBase $width="300px" $height="16px" />
+            </div>
+            <SkeletonBase $width="120px" $height="40px" $radius="10px" />
+          </HeaderSkeleton>
 
-          <ControlsSection>
-            <ControlsHeader>
-              <SkeletonElement $height="16px" $width="140px" $mb="0" />
-            </ControlsHeader>
-            <FilterGroup>
-              <FilterButtonSkeleton />
-              <FilterButtonSkeleton />
-              <FilterButtonSkeleton />
-              <FilterButtonSkeleton />
-            </FilterGroup>
-            <SearchSkeleton />
-          </ControlsSection>
+          {/* Controls */}
+          <ControlsSkeleton>
+            <SkeletonBase $width="100%" $height="40px" $radius="10px" />
+            <div style={{ display: "flex", gap: 8 }}>
+              {[1, 2, 3, 4].map((i) => (
+                <SkeletonBase
+                  key={i}
+                  $width="80px"
+                  $height="32px"
+                  $radius="20px"
+                />
+              ))}
+            </div>
+          </ControlsSkeleton>
 
-          <TicketList>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <TicketCardSkeleton key={i}>
-                <SkeletonElement $height="12px" $width="120px" $mb="8px" />
-                <CardHeader>
-                  <SkeletonElement $height="22px" $width="70%" $mb="0" />
-                  <SkeletonElement
-                    $height="28px"
-                    $width="100px"
-                    $mb="0"
-                    $radius="6px"
-                  />
-                </CardHeader>
-                <SkeletonElement $height="16px" $width="100%" $mb="8px" />
-                <SkeletonElement $height="16px" $width="85%" $mb="0" />
-                <CardFooter>
-                  <FooterInfo>
-                    <SkeletonElement $height="14px" $width="120px" $mb="0" />
-                    <SkeletonElement $height="14px" $width="150px" $mb="0" />
-                  </FooterInfo>
-                  <SkeletonElement $height="14px" $width="100px" $mb="0" />
-                </CardFooter>
-              </TicketCardSkeleton>
+          {/* Grid */}
+          <GridSkeleton>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <CardSkeleton key={i}>
+                <CardSkeletonHeader>
+                  <SkeletonBase $width="60px" $height="20px" />
+                  <SkeletonBase $width="80px" $height="20px" $radius="12px" />
+                </CardSkeletonHeader>
+                <CardSkeletonBody>
+                  <SkeletonBase $width="90%" $height="20px" $mb="8px" />
+                  <SkeletonBase $width="60%" $height="14px" $mb="6px" />
+                  <SkeletonBase $width="40%" $height="14px" />
+                </CardSkeletonBody>
+                <CardSkeletonFooter>
+                  <SkeletonBase $width="80px" $height="16px" />
+                  <SkeletonBase $width="20px" $height="16px" />
+                </CardSkeletonFooter>
+              </CardSkeleton>
             ))}
-          </TicketList>
+          </GridSkeleton>
         </PageContainer>
         <FooterClient />
       </PageWrapper>
@@ -237,7 +152,8 @@ export function TicketsListLoadingSkeleton() {
   );
 }
 
-// Detail page skeleton
+// --- Detail Page Skeleton Components ---
+
 const DetailPageContainer = styled.div`
   flex-grow: 1;
   max-width: 1400px;
@@ -275,7 +191,7 @@ const Sidebar = styled.div`
   }
 `;
 
-const BackButtonSkeleton = styled(SkeletonElement)`
+const BackButtonSkeleton = styled(SkeletonBase)`
   height: 16px;
   width: 140px;
   margin-bottom: 16px;
@@ -334,7 +250,7 @@ const MessageBubbleSkeleton = styled.div`
   order: ${(props) => (props.$isUser ? "2" : "1")};
 `;
 
-const AvatarSkeleton = styled(SkeletonElement)`
+const AvatarSkeleton = styled(SkeletonBase)`
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -399,35 +315,35 @@ export function TicketDetailLoadingSkeleton() {
             <div>
               <BackButtonSkeleton />
               <TicketHeader>
-                <SkeletonElement $height="28px" $width="80%" $mb="16px" />
+                <SkeletonBase $height="28px" $width="80%" $mb="16px" />
                 <MetaSection>
-                  <SkeletonElement $height="14px" $width="140px" $mb="0" />
-                  <SkeletonElement $height="14px" $width="180px" $mb="0" />
-                  <SkeletonElement $height="14px" $width="160px" $mb="0" />
+                  <SkeletonBase $height="14px" $width="140px" $mb="0" />
+                  <SkeletonBase $height="14px" $width="180px" $mb="0" />
+                  <SkeletonBase $height="14px" $width="160px" $mb="0" />
                 </MetaSection>
               </TicketHeader>
             </div>
 
             <ConversationCard>
               <ConversationHeader>
-                <SkeletonElement $height="20px" $width="180px" $mb="0" />
+                <SkeletonBase $height="20px" $width="180px" $mb="0" />
               </ConversationHeader>
               <MessagesContainer>
                 {[1, 2, 3, 4].map((i) => (
                   <MessageSkeleton key={i} $isUser={i % 2 === 0}>
                     <AvatarSkeleton $isUser={i % 2 === 0} />
                     <MessageBubbleSkeleton $isUser={i % 2 === 0}>
-                      <SkeletonElement $height="12px" $width="60px" $mb="4px" />
-                      <SkeletonElement $height="16px" $width="100%" $mb="4px" />
-                      <SkeletonElement $height="16px" $width="90%" $mb="4px" />
-                      <SkeletonElement $height="11px" $width="80px" $mb="0" />
+                      <SkeletonBase $height="12px" $width="60px" $mb="4px" />
+                      <SkeletonBase $height="16px" $width="100%" $mb="4px" />
+                      <SkeletonBase $height="16px" $width="90%" $mb="4px" />
+                      <SkeletonBase $height="11px" $width="80px" $mb="0" />
                     </MessageBubbleSkeleton>
                   </MessageSkeleton>
                 ))}
               </MessagesContainer>
               <ReplyInputArea>
-                <SkeletonElement $height="44px" $width="100%" $radius="8px" />
-                <SkeletonElement $height="44px" $width="44px" $radius="8px" />
+                <SkeletonBase $height="44px" $width="100%" $radius="8px" />
+                <SkeletonBase $height="44px" $width="44px" $radius="8px" />
               </ReplyInputArea>
             </ConversationCard>
           </MainContent>
@@ -435,32 +351,32 @@ export function TicketDetailLoadingSkeleton() {
           <Sidebar>
             <InfoCard>
               <InfoCardHeader>
-                <SkeletonElement $height="18px" $width="120px" $mb="0" />
+                <SkeletonBase $height="18px" $width="120px" $mb="0" />
               </InfoCardHeader>
               <InfoItem>
-                <SkeletonElement $height="14px" $width="60px" $mb="0" />
-                <SkeletonElement $height="24px" $width="80px" $mb="0" />
+                <SkeletonBase $height="14px" $width="60px" $mb="0" />
+                <SkeletonBase $height="24px" $width="80px" $mb="0" />
               </InfoItem>
               <InfoItem>
-                <SkeletonElement $height="14px" $width="60px" $mb="0" />
-                <SkeletonElement $height="24px" $width="70px" $mb="0" />
+                <SkeletonBase $height="14px" $width="60px" $mb="0" />
+                <SkeletonBase $height="24px" $width="70px" $mb="0" />
               </InfoItem>
               <InfoItem>
-                <SkeletonElement $height="14px" $width="70px" $mb="0" />
-                <SkeletonElement $height="24px" $width="100px" $mb="0" />
+                <SkeletonBase $height="14px" $width="70px" $mb="0" />
+                <SkeletonBase $height="24px" $width="100px" $mb="0" />
               </InfoItem>
             </InfoCard>
 
             <AgentCard>
-              <SkeletonElement
+              <SkeletonBase
                 $height="40px"
                 $width="40px"
                 $radius="50%"
                 $mb="0"
               />
               <div style={{ flex: 1 }}>
-                <SkeletonElement $height="14px" $width="120px" $mb="8px" />
-                <SkeletonElement $height="12px" $width="90px" $mb="0" />
+                <SkeletonBase $height="14px" $width="120px" $mb="8px" />
+                <SkeletonBase $height="12px" $width="90px" $mb="0" />
               </div>
             </AgentCard>
           </Sidebar>
