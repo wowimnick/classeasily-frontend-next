@@ -70,24 +70,44 @@ const GlobalStyles = createGlobalStyle`
   @media (max-width: 768px) {
     .ant-picker-dropdown {
       position: fixed !important;
-      top: 50% !important;
-      left: 50% !important;
-      transform: translate(-50%, -50%) !important;
-      /* Reset generic positioning */
-      inset: auto !important; 
-      width: 320px !important;
+      top: auto !important; /* Override AntD top calculation */
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      min-width: 100% !important;
+      transform: none !important; /* Remove center transforms */
+      inset: auto !important; /* Reset inset if AntD sets it */
+      pointer-events: none; /* Allow clicks to pass through wrapper */
+      padding: 0 !important;
     }
 
     .ant-picker-panel-container {
-      box-shadow: 0 4px 20px rgba(0,0,0,0.25) !important;
-      border-radius: 16px !important;
-      overflow: hidden;
+      width: 100% !important;
+      border-radius: 20px 20px 0 0 !important;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.15) !important;
+      padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+      pointer-events: auto; /* Re-enable clicks on the actual picker */
+      display: flex;
+      justify-content: center;
+      background: white;
     }
     
-    /* Fix TimePicker columns being too narrow on mobile */
+    /* Ensure the inner calendar fits the screen width */
+    .ant-picker-panel {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    
+    .ant-picker-date-panel,
+    .ant-picker-content {
+      width: 100% !important;
+    }
+    
+    /* Make time picker columns wider and touch-friendly */
     .ant-picker-time-panel-column {
-      width: 60px !important;
-      padding: 0 !important;
+      width: 100% !important;
+      flex: 1;
     }
   }
 
