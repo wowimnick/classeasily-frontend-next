@@ -493,12 +493,52 @@ const InfoValue = styled(Text)`
 `;
 
 // --- Styled Antd Components ---
-const StyledInput = styled(Input)``;
-const StyledSelect = styled(Select)``;
-const StyledTimePicker = styled(TimePicker)``;
-const StyledDatePicker = styled(DatePicker)``;
-const StyledRangePicker = styled(DatePicker.RangePicker)``;
-const StyledInputNumber = styled(InputNumber)``;
+const StyledInput = styled(Input)`
+  @media (max-width: 768px) {
+    font-size: 16px !important;
+  }
+`;
+
+const StyledSelect = styled(Select)`
+  @media (max-width: 768px) {
+    .ant-select-selection-item,
+    .ant-select-selection-placeholder {
+      font-size: 16px !important;
+    }
+  }
+`;
+
+const StyledTimePicker = styled(TimePicker)`
+  @media (max-width: 768px) {
+    .ant-picker-input > input {
+      font-size: 16px !important;
+    }
+  }
+`;
+
+const StyledDatePicker = styled(DatePicker)`
+  @media (max-width: 768px) {
+    .ant-picker-input > input {
+      font-size: 16px !important;
+    }
+  }
+`;
+
+const StyledRangePicker = styled(DatePicker.RangePicker)`
+  @media (max-width: 768px) {
+    .ant-picker-input > input {
+      font-size: 16px !important;
+    }
+  }
+`;
+
+const StyledInputNumber = styled(InputNumber)`
+  @media (max-width: 768px) {
+    .ant-input-number-input {
+      font-size: 16px !important;
+    }
+  }
+`;
 
 // --- Bulk Form Components ---
 const DaysContainer = styled.div`
@@ -1532,6 +1572,7 @@ const ScheduleEditDrawer = ({
                     placeholder="e.g., 10"
                     disabled={isLoading}
                     style={{ width: "100%" }}
+                    inputMode="numeric"
                   />
                 </Form.Item>
               </FormGroup>
@@ -1570,6 +1611,7 @@ const ScheduleEditDrawer = ({
                   placeholder="e.g., 1"
                   disabled={isLoading}
                   style={{ width: "100%" }}
+                  inputMode="numeric"
                 />
               </Form.Item>
             </FormGroup>
@@ -1836,7 +1878,7 @@ const ScheduleEditDrawer = ({
               </FormLabel>
               <HelpText>The total number of spots available.</HelpText>
               <NoMarginFormItem name={["commonDetails", "maxParticipants"]}>
-                <StyledInputNumber style={{ width: "100%" }} />
+                <StyledInputNumber style={{ width: "100%" }} inputMode="numeric" />
               </NoMarginFormItem>
             </FormGroup>
             <FormGroup>
@@ -1850,7 +1892,7 @@ const ScheduleEditDrawer = ({
                 The minimum number of people required per booking.
               </HelpText>
               <NoMarginFormItem name={["commonDetails", "minParticipants"]}>
-                <StyledInputNumber style={{ width: "100%" }} />
+                <StyledInputNumber style={{ width: "100%" }} inputMode="numeric" />
               </NoMarginFormItem>
             </FormGroup>
           </FormGrid>

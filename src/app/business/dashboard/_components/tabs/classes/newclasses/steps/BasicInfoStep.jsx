@@ -44,6 +44,7 @@ const ALLOWED_IMAGE_TYPES = [
 const MAX_IMAGE_SIZE_MB = 30;
 const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 const ACCEPTED_IMAGE_FORMATS_STRING = ALLOWED_IMAGE_TYPES.join(",");
+
 const StyledForm = styled(Form)`
   overflow-x: hidden;
   .ant-form-item {
@@ -137,6 +138,7 @@ const HelpText = styled.div`
   align-items: flex-start;
   gap: 0.5rem;
 `;
+
 const StyledInput = styled(Input)`
   height: ${(props) => props.theme.token.controlHeight}px;
   border-radius: ${(props) => props.theme.token.borderRadius}px;
@@ -145,7 +147,23 @@ const StyledInput = styled(Input)`
   &:focus {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
   }
+  @media (max-width: 768px) {
+    font-size: 16px !important;
+  }
 `;
+
+const StyledTextArea = styled(Input.TextArea)`
+  border-radius: ${(props) => props.theme.token.borderRadius}px;
+  font-size: ${(props) => props.theme.token.fontSize}px;
+  transition: all 0.3s ease;
+  &:focus {
+    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
+  }
+  @media (max-width: 768px) {
+    font-size: 16px !important;
+  }
+`;
+
 const StyledSelect = styled(Select)`
   .ant-select-selector {
     height: ${(props) => props.theme.token.controlHeight}px !important;
@@ -159,11 +177,24 @@ const StyledSelect = styled(Select)`
   .ant-select-selection-placeholder {
     line-height: ${(props) => props.theme.token.controlHeight - 2}px !important;
     font-size: ${(props) => props.theme.token.fontSize}px;
+
+    @media (max-width: 768px) {
+      font-size: 16px !important;
+    }
   }
+
+  /* Mobile: Ensure search input is 16px */
+  @media (max-width: 768px) {
+    .ant-select-selection-search-input {
+      font-size: 16px !important;
+    }
+  }
+
   &.ant-select-focused .ant-select-selector {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20 !important;
   }
 `;
+
 const StyledTagsSelect = styled(Select)`
   .ant-select-selector {
     min-height: ${(props) => props.theme.token.controlHeight}px !important;
@@ -191,6 +222,10 @@ const StyledTagsSelect = styled(Select)`
     height: auto !important;
     display: flex;
     align-items: center;
+
+    @media (max-width: 768px) {
+      font-size: 14px !important;
+    }
   }
   .ant-select-selection-item-content {
     color: ${(props) => props.theme.token.colorPrimary} !important;
@@ -210,7 +245,19 @@ const StyledTagsSelect = styled(Select)`
       props.theme.token.controlHeight - 12}px !important;
     font-size: ${(props) => props.theme.token.fontSize}px;
     color: ${(props) => props.theme.token.colorTextPlaceholder};
+
+    @media (max-width: 768px) {
+      font-size: 16px !important;
+    }
   }
+
+  /* Mobile: Ensure search input for tags is 16px */
+  @media (max-width: 768px) {
+    .ant-select-selection-search-input {
+      font-size: 16px !important;
+    }
+  }
+
   &.ant-select-focused .ant-select-selector {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20 !important;
   }
@@ -793,7 +840,7 @@ const BasicInfoStep = ({ onValidatedNext }) => {
                 },
               ]}
             >
-              <StyledInput.TextArea
+              <StyledTextArea
                 placeholder="Tell students about what they'll learn, your teaching style, and what makes this class unique..."
                 maxLength={4000}
                 showCount

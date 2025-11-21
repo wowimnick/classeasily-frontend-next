@@ -284,7 +284,7 @@ const commonInputStyles = (props) => `
   }
   @media (max-width: 768px) {
     height: ${props.theme.token.controlHeightSM}px;
-    font-size: ${props.theme.token.fontSize}px;
+    font-size: 16px !important; /* Prevent Zoom on Mobile */
   }
 `;
 
@@ -302,6 +302,9 @@ const StyledTextArea = styled(TextArea)`
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
     border-color: ${(props) => props.theme.token.colorPrimaryBorderHover};
   }
+  @media (max-width: 768px) {
+    font-size: 16px !important; /* Prevent Zoom on Mobile */
+  }
 `;
 
 const StyledSelect = styled(Select)`
@@ -317,7 +320,19 @@ const StyledSelect = styled(Select)`
   .ant-select-selection-placeholder {
     line-height: ${(props) => props.theme.token.controlHeight - 2}px !important;
     font-size: ${(props) => props.theme.token.fontSize}px;
+    
+    @media (max-width: 768px) {
+      font-size: 16px !important; /* Prevent Zoom on Mobile */
+    }
   }
+  
+  /* Mobile: Ensure search input is 16px */
+  @media (max-width: 768px) {
+    .ant-select-selection-search-input {
+      font-size: 16px !important;
+    }
+  }
+
   &.ant-select-focused .ant-select-selector {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20 !important;
     border-color: ${(props) =>
@@ -353,6 +368,10 @@ const StyledTagsSelect = styled(Select)`
     height: auto !important;
     display: flex;
     align-items: center;
+    
+    @media (max-width: 768px) {
+      font-size: 14px !important; /* Tags can be smaller, but input must be 16px */
+    }
   }
   .ant-select-selection-item-content {
     color: ${(props) => props.theme.token.colorPrimary} !important;
@@ -372,7 +391,19 @@ const StyledTagsSelect = styled(Select)`
       props.theme.token.controlHeight - 12}px !important;
     font-size: ${(props) => props.theme.token.fontSize}px;
     color: ${(props) => props.theme.token.colorTextPlaceholder};
+    
+    @media (max-width: 768px) {
+      font-size: 16px !important;
+    }
   }
+
+  /* Mobile: Ensure search input for tags is 16px */
+  @media (max-width: 768px) {
+    .ant-select-selection-search-input {
+      font-size: 16px !important;
+    }
+  }
+
   &.ant-select-focused .ant-select-selector {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20 !important;
     border-color: ${(props) =>
@@ -391,6 +422,10 @@ const StyledInputNumber = styled(InputNumber)`
     height: 100% !important;
     display: flex;
     align-items: center;
+
+    @media (max-width: 768px) {
+      font-size: 16px !important; /* Prevent Zoom on Mobile */
+    }
   }
 `;
 
@@ -1962,6 +1997,7 @@ const ClassEditDrawer = ({
                                   <Mail size={16} style={{ color: "#adb5bd" }} />
                                 }
                                 placeholder="you@example.com"
+                                inputMode="email"
                               />
                             </FormItemAntd>
                           </FormGroup>
@@ -1994,6 +2030,7 @@ const ClassEditDrawer = ({
                                   <Phone size={16} style={{ color: "#adb5bd" }} />
                                 }
                                 placeholder="+1 555-123-4567"
+                                inputMode="tel"
                               />
                             </FormItemAntd>
                           </FormGroup>
@@ -2125,6 +2162,7 @@ const ClassEditDrawer = ({
                                 parser={(value) => String(value).replace("%", "")}
                                 placeholder="e.g., 100"
                                 disabled={watchedCancellationPolicy === "strict"}
+                                inputMode="decimal"
                               />
                             </FormItemAntd>
                           </FormGroup>
@@ -2243,6 +2281,7 @@ const ClassEditDrawer = ({
                                           disabled={
                                             watchedMidCoursePolicy === "strict"
                                           }
+                                          inputMode="decimal"
                                         />
                                       </FormItemAntd>
                                     </FormGroup>
@@ -2270,6 +2309,7 @@ const ClassEditDrawer = ({
                                             id="edit_midCourseCancellationCustomHours"
                                             min={1}
                                             style={{ width: "100%" }}
+                                            inputMode="numeric"
                                           />
                                         </FormItemAntd>
                                       </FormGroup>
@@ -2321,6 +2361,7 @@ const ClassEditDrawer = ({
                                   min={1}
                                   placeholder="e.g., 36"
                                   style={{ width: "100%" }}
+                                  inputMode="numeric"
                                 />
                               </FormItemAntd>
                             </FormGroup>

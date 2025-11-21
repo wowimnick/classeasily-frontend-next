@@ -146,6 +146,9 @@ const StyledInput = styled(Input)`
   &:focus {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
   }
+  @media (max-width: 768px) {
+    font-size: 16px !important;
+  }
 `;
 const SearchWrapper = styled(motion.div)`
   position: relative;
@@ -793,6 +796,7 @@ const LocationContactStep = ({ onValidatedNext }) => {
                   prefix={<Mail size={16} style={{ color: "#adb5bd" }} />}
                   placeholder="you@example.com"
                   size="large"
+                  inputMode="email"
                 />
               </Form.Item>
             </FormGroup>
@@ -821,6 +825,7 @@ const LocationContactStep = ({ onValidatedNext }) => {
                   prefix={<Phone size={16} style={{ color: "#adb5bd" }} />}
                   placeholder="(e.g., +1 555-123-4567)"
                   size="large"
+                  inputMode="tel"
                 />
               </Form.Item>
             </FormGroup>

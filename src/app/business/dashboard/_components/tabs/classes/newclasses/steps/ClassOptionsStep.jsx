@@ -195,6 +195,17 @@ const StyledSelect = styled(Select)`
   .ant-select-selection-placeholder {
     line-height: ${(props) => props.theme.token.controlHeight - 2}px !important;
     font-size: ${(props) => props.theme.token.fontSize}px;
+
+    @media (max-width: 768px) {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Mobile: Ensure search input is 16px */
+  @media (max-width: 768px) {
+    .ant-select-selection-search-input {
+      font-size: 16px !important;
+    }
   }
 
   &.ant-select-focused .ant-select-selector {
@@ -231,6 +242,10 @@ const StyledTagsSelect = styled(Select)`
     height: auto !important;
     display: flex;
     align-items: center;
+
+    @media (max-width: 768px) {
+      font-size: 14px !important;
+    }
   }
 
   .ant-select-selection-item-content {
@@ -254,6 +269,17 @@ const StyledTagsSelect = styled(Select)`
       props.theme.token.controlHeight - 12}px !important;
     font-size: ${(props) => props.theme.token.fontSize}px;
     color: ${(props) => props.theme.token.colorTextPlaceholder};
+
+    @media (max-width: 768px) {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Mobile: Ensure search input for tags is 16px */
+  @media (max-width: 768px) {
+    .ant-select-selection-search-input {
+      font-size: 16px !important;
+    }
   }
 
   &.ant-select-focused .ant-select-selector {
@@ -277,6 +303,9 @@ const StyledInputNumber = styled(InputNumber)`
     height: 100% !important;
     display: flex;
     align-items: center;
+    @media (max-width: 768px) {
+      font-size: 16px !important;
+    }
   }
 
   &:focus-within {
@@ -544,8 +573,7 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                   <IconWrapper>
                     <Info size={14} />
                   </IconWrapper>
-                  What skill level should students have to get the most from
-                  your class?
+                  What skill level should students have?
                 </HelpText>
                 <Form.Item
                   name="level"
@@ -740,6 +768,7 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                       placeholder="e.g., 100 for full refund"
                       size="large"
                       disabled={watchedPolicy === "strict"}
+                      inputMode="decimal"
                     />
                   </Form.Item>
                 </FormGroup>
@@ -784,6 +813,7 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                         placeholder="e.g., 36 for 36 hours"
                         size="large"
                         style={{ width: "100%" }}
+                        inputMode="numeric"
                       />
                     </Form.Item>
                   </FormGroup>
@@ -941,6 +971,7 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                                 placeholder="e.g., 100 for full refund"
                                 size="large"
                                 disabled={watchedMidCoursePolicy === "strict"}
+                                inputMode="decimal"
                               />
                             </Form.Item>
                           </FormGroup>
@@ -991,6 +1022,7 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                                   placeholder="e.g., 36 for 36 hours"
                                   size="large"
                                   style={{ width: "100%" }}
+                                  inputMode="numeric"
                                 />
                               </Form.Item>
                             </FormGroup>

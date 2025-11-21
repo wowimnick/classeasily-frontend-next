@@ -22,6 +22,9 @@ const colors = Object.freeze({
   }),
 });
 
+// Common font stack to be used across token and components
+const fontStack = 'var(--font-proxima-soft), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
 // 🔥 FIX 2: Create theme config once and freeze it
 const themeConfig = {
   token: {
@@ -47,7 +50,7 @@ const themeConfig = {
     colorBgLayout: colors.lightBg,
     colorBgElevated: '#FFFFFF',
 
-    fontFamily: 'var(--font-proxima-soft), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    fontFamily: fontStack, // Set globally
     fontSize: 14,
 
     borderRadius: 16,
@@ -79,9 +82,11 @@ const themeConfig = {
       controlHeight: 40,
       borderRadius: 12,
       paddingInline: 16,
+      fontFamily: fontStack, // 🔥 Explicitly enforce font
     },
     Modal: {
       borderRadiusLG: 16,
+      fontFamily: fontStack,
     },
     Input: {
       controlHeight: 44,
@@ -89,54 +94,75 @@ const themeConfig = {
       borderRadius: 12,
       paddingInline: 16,
       paddingBlock: 12,
+      fontFamily: fontStack, // 🔥 Explicitly enforce font
     },
     Select: {
       controlHeight: 44,
       controlHeightLG: 44,
       borderRadius: 12,
+      fontFamily: fontStack, // 🔥 Explicitly enforce font
     },
     DatePicker: {
       controlHeight: 44,
       borderRadius: 12,
+      fontFamily: fontStack,
     },
     TimePicker: {
       controlHeight: 44,
       borderRadius: 12,
+      fontFamily: fontStack,
     },
     InputNumber: {
       controlHeight: 44,
       borderRadius: 12,
+      fontFamily: fontStack,
     },
     Checkbox: {
       borderRadius: 4,
+      fontFamily: fontStack,
+    },
+    Radio: {
+      fontFamily: fontStack,
     },
     Card: {
       borderRadiusLG: 16,
+      fontFamily: fontStack,
     },
     Table: {
       borderRadiusLG: 0,
+      fontFamily: fontStack,
     },
     Tag: {
       borderRadius: 6,
+      fontFamily: fontStack,
     },
     Switch: {
       borderRadius: 20,
+      fontFamily: fontStack,
     },
     Dropdown: {
       borderRadiusLG: 12,
+      fontFamily: fontStack,
     },
     Popover: {
       borderRadiusLG: 12,
+      fontFamily: fontStack,
     },
     Tooltip: {
       borderRadius: 8,
+      fontFamily: fontStack,
     },
     Notification: {
       borderRadiusLG: 12,
+      fontFamily: fontStack,
     },
     Message: {
       borderRadius: 8,
+      fontFamily: fontStack,
     },
+    Typography: {
+      fontFamily: fontStack,
+    }
   },
 };
 

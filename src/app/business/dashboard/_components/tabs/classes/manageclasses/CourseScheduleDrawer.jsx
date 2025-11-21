@@ -50,6 +50,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const { Option } = Select;
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
+
 // --- ADDED: HOOK AND COMPONENT FOR MODAL ANIMATION ---
 
 const useElementSize = () => {
@@ -333,6 +334,11 @@ const StyledInput = styled(Input)`
   &:focus {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
   }
+
+  /* Prevent zoom on mobile */
+  @media (max-width: 768px) {
+    font-size: 16px !important;
+  }
 `;
 
 const StyledSelect = styled(Select)`
@@ -348,6 +354,11 @@ const StyledSelect = styled(Select)`
   .ant-select-selection-placeholder {
     line-height: ${(props) => props.theme.token.controlHeight - 2}px !important;
     font-size: ${(props) => props.theme.token.fontSize}px;
+    
+    /* Prevent zoom on mobile */
+    @media (max-width: 768px) {
+      font-size: 16px !important;
+    }
   }
   &.ant-select-focused .ant-select-selector {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20 !important;
@@ -366,6 +377,11 @@ const StyledInputNumber = styled(InputNumber)`
     display: flex;
     align-items: center;
     font-size: ${(props) => props.theme.token.fontSize}px !important;
+
+    /* Prevent zoom on mobile */
+    @media (max-width: 768px) {
+      font-size: 16px !important;
+    }
   }
   &:focus-within {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
@@ -378,6 +394,11 @@ const StyledTimePicker = styled(TimePicker)`
   border-radius: ${(props) => props.theme.token.borderRadius}px;
   .ant-picker-input > input {
     font-size: ${(props) => props.theme.token.fontSize}px;
+    
+    /* Prevent zoom on mobile */
+    @media (max-width: 768px) {
+      font-size: 16px !important;
+    }
   }
   &:focus-within {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
@@ -390,6 +411,11 @@ const StyledRangePicker = styled(RangePicker)`
   border-radius: ${(props) => props.theme.token.borderRadius}px;
   .ant-picker-input > input {
     font-size: ${(props) => props.theme.token.fontSize}px;
+
+    /* Prevent zoom on mobile */
+    @media (max-width: 768px) {
+      font-size: 16px !important;
+    }
   }
   &:focus-within {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
@@ -417,7 +443,7 @@ const DayButton = styled(Button)`
   
   @media (max-width: 768px) {
     height: 40px;
-    font-size: 13px;
+    font-size: 14px; /* Increased from 13px for better touch/readability */
   }
 `;
 
@@ -1294,14 +1320,26 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
               <FormLabel><DollarSign size={16} /> Course Price</FormLabel>
               <HelpText><Info size={14} /> This is the total price per participant for all {formData.totalSessions} sessions.</HelpText>
               <Form.Item name="price" rules={[{ required: true, message: "Please enter a price" }, { validator: (_, v) => v && parseFloat(v) <= 0 ? Promise.reject("Price > 0") : Promise.resolve() }]}>
-                <StyledInputNumber min={0} step={1} precision={2} prefix="$" size="large" />
+                <StyledInputNumber 
+                  min={0} 
+                  step={1} 
+                  precision={2} 
+                  prefix="$" 
+                  size="large"
+                  inputMode="decimal" 
+                />
               </Form.Item>
             </FormGroup>
             <FormGroup>
               <FormLabel><Users size={16} /> Max Participants</FormLabel>
               <HelpText><Info size={14} /> The maximum number of students that can enroll in this course.</HelpText>
               <Form.Item name="maxParticipants" initialValue={10} rules={[{ required: true, message: "Please enter max participants" }, { validator: (_, v) => v && v < 1 ? Promise.reject("Min 1") : Promise.resolve() }]}>
-                <StyledInputNumber min={1} max={100} size="large" />
+                <StyledInputNumber 
+                  min={1} 
+                  max={100} 
+                  size="large"
+                  inputMode="numeric"
+                />
               </Form.Item>
             </FormGroup>
           </FormSection>
