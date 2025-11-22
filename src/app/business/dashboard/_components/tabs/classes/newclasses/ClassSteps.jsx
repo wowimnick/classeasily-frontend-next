@@ -166,6 +166,7 @@ const ClassSteps = ({
         });
 
         const currentOptionState = state.options?.[0] || {};
+        const isCourse = currentOptionState.booking_type === "Full Course";
 
         const finalPayload = {
           // Basic Info
@@ -192,7 +193,7 @@ const ClassSteps = ({
           cover_image_s3_key: coverImageS3Key,
 
           // Options (JSON stringified)
-          options: JSON.stringify([
+                    options: JSON.stringify([
             {
               booking_type: currentOptionState.booking_type || "Single Session",
               level: currentOptionState.level || "all",
@@ -205,15 +206,22 @@ const ClassSteps = ({
               cancellationRefundPercentage:
                 currentOptionState.cancellationRefundPercentage ?? 100,
               price_type: currentOptionState.price_type || "per_session",
-              // Mid-course drop fields
-              allowMidCourseDrops:
-                currentOptionState.allowMidCourseDrops ?? true,
-              midCourseCancellationPolicy:
-                currentOptionState.midCourseCancellationPolicy,
-              midCourseCancellationCustomHours:
-                currentOptionState.midCourseCancellationCustomHours,
-              midCourseCancellationRefundPercentage:
-                currentOptionState.midCourseCancellationRefundPercentage,
+              
+              allowMidCourseDrops: isCourse 
+                ? (currentOptionState.allowMidCourseDrops ?? false) // Change default to false
+                : false,
+              
+              midCourseCancellationPolicy: isCourse
+                ? currentOptionState.midCourseCancellationPolicy
+                : null,
+                
+              midCourseCancellationCustomHours: isCourse
+                ? currentOptionState.midCourseCancellationCustomHours
+                : null,
+                
+              midCourseCancellationRefundPercentage: isCourse
+                ? currentOptionState.midCourseCancellationRefundPercentage
+                : null,
             },
           ]),
         };
