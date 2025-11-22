@@ -1234,7 +1234,7 @@ const ClassEditDrawer = ({
     );
   };
 
-  const handleSubmit = async () => {
+const handleSubmit = async () => {
     try {
       setLoading(true);
       const values = await form.validateFields();
@@ -1245,6 +1245,7 @@ const ClassEditDrawer = ({
       let uploadedImageKeys = [];
       let uploadResults = [];
 
+      // 1. Handle Image Uploads
       if (newImageFiles.length > 0) {
         message.loading({
           content: `Uploading ${newImageFiles.length} image(s)...`,
@@ -1270,9 +1271,11 @@ const ClassEditDrawer = ({
         uploadedImageKeys = uploadResults.map((res) => res.s3_key);
       }
 
+      // 2. Prepare Base Payload
       const payload = { ...values };
       payload.saltLocation = hideExactLocation;
 
+      // 3. Handle Deleted/New Images
       const initialImageIds = (initialClassDataRef.current?.images || []).map(
         (img) => img.imageId
       );
@@ -1283,6 +1286,7 @@ const ClassEditDrawer = ({
 
       payload.new_image_s3_keys = JSON.stringify(uploadedImageKeys);
 
+      // 4. Handle Cover Image
       const coverImage = mainImages.find((img) => img.isCover);
       if (coverImage) {
         if (coverImage.file) {
@@ -1303,12 +1307,22 @@ const ClassEditDrawer = ({
         }
       }
 
+      // 5. Prepare Options Data (CRITICAL FIXES HERE)
+      const originalOption = initialClassDataRef.current?.options?.[0] || {};
+      const isCourse = originalOption.booking_type === "Full Course";
+
       const optionData = {
-        optionId: initialClassDataRef.current?.options?.[0]?.optionId,
-        booking_type: values.booking_type || "Single Session",
+        optionId: originalOption.optionId,
+        
+        // FIX: Use original booking_type. Do NOT read from form values which might be undefined.
+        booking_type: originalOption.booking_type,
+        price_type: isCourse ? "full_course" : "per_session",
+
         level: values.level,
         equipment: values.equipment || [],
         tags: values.tags || [],
+        
+        // Standard Policy
         cancellationPolicy: values.cancellationPolicy,
         cancellationCustomHours:
           values.cancellationPolicy === "custom"
@@ -1316,22 +1330,27 @@ const ClassEditDrawer = ({
             : null,
         cancellationRefundPercentage:
           values.cancellationRefundPercentage ?? 100,
-        price_type: values.price_type || "per_session",
-        allowMidCourseDrops: values.allowMidCourseDrops || false,
-        midCourseCancellationPolicy: values.allowMidCourseDrops
+
+        // Mid-Course Drop Policy (Only if it is a course)
+        allowMidCourseDrops: isCourse ? (values.allowMidCourseDrops || false) : false,
+        
+        midCourseCancellationPolicy: (isCourse && values.allowMidCourseDrops)
           ? values.midCourseCancellationPolicy
           : null,
+          
         midCourseCancellationCustomHours:
-          values.allowMidCourseDrops &&
-          values.midCourseCancellationPolicy === "custom"
-            ? values.cancellationCustomHours
+          (isCourse && values.allowMidCourseDrops && values.midCourseCancellationPolicy === "custom")
+            ? values.midCourseCancellationCustomHours // Corrected field mapping
             : null,
-        midCourseCancellationRefundPercentage: values.allowMidCourseDrops
-          ? values.cancellationRefundPercentage ?? 100
+            
+        midCourseCancellationRefundPercentage: (isCourse && values.allowMidCourseDrops)
+          ? (values.midCourseCancellationRefundPercentage ?? 100) // Corrected field mapping
           : null,
       };
+      
       payload.options = JSON.stringify([optionData]);
 
+      // 6. Send Update
       const result = await businessClassService.updateClass(
         initialClassDataProp.classId,
         payload
@@ -1386,6 +1405,8 @@ const ClassEditDrawer = ({
             "level",
             "cancellationPolicy",
             "cancellationRefundPercentage",
+            "midCourseCancellationPolicy",
+            "midCourseCancellationRefundPercentage"
           ].includes(firstErrorField)
         ) {
           setActiveTab("3");

@@ -969,14 +969,23 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
 
       if (response?.success && Array.isArray(response.data)) {
         const groupedSchedules = response.data.reduce((acc, schedule) => {
+          // Create a key based on common attributes (excluding ID and Day)
           const groupKey = `${schedule.name}-${schedule.start_date}-${schedule.end_date}-${schedule.time}-${schedule.duration}-${schedule.price}`;
+          
           if (!acc[groupKey]) {
-            acc[groupKey] = { ...schedule, ids: [schedule.id], day: [schedule.day] };
+            acc[groupKey] = { 
+                ...schedule, 
+                // FIX: Store pairs of { id, day } so we never lose the link
+                schedulePairs: [{ id: schedule.id, day: schedule.day }],
+                // Keep these for display summaries
+                booked_participants: schedule.booked_participants,
+                total_revenue: parseFloat(schedule.total_revenue),
+                has_confirmed_bookings: schedule.has_confirmed_bookings 
+            };
           } else {
-            acc[groupKey].ids.push(schedule.id);
-            acc[groupKey].day.push(schedule.day);
+            acc[groupKey].schedulePairs.push({ id: schedule.id, day: schedule.day });
             acc[groupKey].booked_participants += schedule.booked_participants;
-            acc[groupKey].total_revenue = (parseFloat(acc[groupKey].total_revenue) + parseFloat(schedule.total_revenue)).toFixed(2);
+            acc[groupKey].total_revenue += parseFloat(schedule.total_revenue);
             acc[groupKey].has_confirmed_bookings = acc[groupKey].has_confirmed_bookings || schedule.has_confirmed_bookings;
           }
           return acc;
@@ -984,7 +993,15 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
 
         const finalSchedules = Object.values(groupedSchedules).map((schedule) => {
           const dayOrder = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
-          schedule.day = schedule.day.sort((a, b) => dayOrder[a] - dayOrder[b]).join(", ");
+          
+          // Sort the pairs so the display text (Mon, Wed) matches the logical order
+          schedule.schedulePairs.sort((a, b) => dayOrder[a.day] - dayOrder[b.day]);
+          
+          // Helper arrays for easier access later
+          schedule.ids = schedule.schedulePairs.map(p => p.id);
+          schedule.day = schedule.schedulePairs.map(p => p.day).join(", ");
+          schedule.total_revenue = schedule.total_revenue.toFixed(2);
+          
           return schedule;
         });
         setSchedules(finalSchedules);
@@ -997,7 +1014,6 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
       setLoading(false);
     }
   };
-
   const calculateSessionCount = (startDate, endDate, selectedDays) => {
     if (!startDate || !endDate || selectedDays.length === 0) return 0;
     let count = 0;
@@ -1078,42 +1094,96 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
-      const courseOption = classData.options?.find((opt) => opt.booking_type === "Full Course");
-      if (!courseOption) throw new Error("Could not find a valid course option for this class.");
+      const courseOption = classData.options?.find(
+        (opt) => opt.booking_type === "Full Course"
+      );
+      
+      if (!courseOption) throw new Error("Could not find a valid course option.");
+
+      // --- Common Payload for Updates & Creation ---
+      const commonPayload = {
+        name: formData.name,
+        start_date: formData.startDate.format("YYYY-MM-DD"),
+        end_date: formData.endDate.format("YYYY-MM-DD"),
+        time: formData.time.format("HH:mm:ss"),
+        duration: formData.duration,
+        maxParticipants: formData.maxParticipants,
+        price: parseFloat(formData.price),
+      };
 
       if (editingSchedule) {
-        const firstScheduleId = editingSchedule.ids[0];
-        const payload = {
-          name: formData.name,
-          start_date: formData.startDate.format("YYYY-MM-DD"),
-          end_date: formData.endDate.format("YYYY-MM-DD"),
-          time: formData.time.format("HH:mm:ss"),
-          duration: formData.duration,
-          maxParticipants: formData.maxParticipants,
-          price: parseFloat(formData.price),
-        };
-        const result = await scheduleService.updateSchedule(firstScheduleId, payload);
-        if (result?.success) {
-          message.success("Course schedule updated successfully!");
-          await fetchSchedules();
-          if (isMobile) setCreateOpen(false); else setView("list");
-        } else {
-          throw new Error("Failed to update course schedule.");
+        // 1. Map existing schedules: { "Mon": 101, "Wed": 102 }
+        const existingMap = {};
+        editingSchedule.schedulePairs.forEach(pair => {
+            existingMap[pair.day] = pair.id;
+        });
+
+        // 2. Calculate Deltas based on selected days (e.g., ["Mon", "Fri"])
+        // Note: Form usually gives full names ("Monday"), convert to "Mon"
+        const selectedDaysShort = formData.selectedDays.map(d => d.substring(0, 3));
+
+        const daysToUpdate = []; // Exists in both -> Update ID
+        const daysToAdd = [];    // New in form -> Create
+        const daysToDelete = []; // Missing in form -> Delete ID
+
+        // Find additions and updates
+        selectedDaysShort.forEach(day => {
+            if (existingMap[day]) {
+                daysToUpdate.push({ id: existingMap[day], day });
+            } else {
+                daysToAdd.push(day);
+            }
+        });
+
+        // Find deletions
+        Object.keys(existingMap).forEach(existingDay => {
+            if (!selectedDaysShort.includes(existingDay)) {
+                daysToDelete.push(existingMap[existingDay]);
+            }
+        });
+
+        // 3. Execute Operations
+        const promises = [];
+
+        // A. Update existing (Price, Time, etc)
+        daysToUpdate.forEach(item => {
+            promises.push(scheduleService.updateSchedule(item.id, commonPayload));
+        });
+
+        // B. Create new days
+        daysToAdd.forEach(day => {
+            promises.push(scheduleService.createSchedule({
+                ...commonPayload,
+                option: courseOption.optionId,
+                day: day 
+            }));
+        });
+
+        // C. Delete removed days
+        daysToDelete.forEach(id => {
+            promises.push(scheduleService.deleteSchedule(id));
+        });
+
+        const results = await Promise.all(promises);
+        const failed = results.filter(res => res && !res.success);
+
+        if (failed.length > 0) {
+             throw new Error(`Action completed with ${failed.length} errors. Please check the schedule.`);
         }
+
+        message.success("Course schedule updated successfully!");
+        await fetchSchedules();
+        
+        if (isMobile) setCreateOpen(false); else setView("list");
+
       } else {
+        // --- CREATE MODE (Simple loop) ---
         const creationPromises = formData.selectedDays.map((day) => {
-          const payload = {
+          return scheduleService.createSchedule({
+            ...commonPayload,
             option: courseOption.optionId,
-            name: formData.name,
-            start_date: formData.startDate.format("YYYY-MM-DD"),
-            end_date: formData.endDate.format("YYYY-MM-DD"),
             day: day.substring(0, 3),
-            time: formData.time.format("HH:mm:ss"),
-            duration: formData.duration,
-            maxParticipants: formData.maxParticipants,
-            price: parseFloat(formData.price),
-          };
-          return scheduleService.createSchedule(payload);
+          });
         });
 
         const results = await Promise.all(creationPromises);
@@ -1124,16 +1194,19 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
           await fetchSchedules();
           if (isMobile) setCreateOpen(false); else setView("list");
         }
-        if (successfulCreations < results.length) throw new Error("Some schedules could not be created.");
+        
+        if (successfulCreations < results.length) {
+          throw new Error("Some schedules could not be created. Check for conflicts.");
+        }
       }
     } catch (error) {
-      message.error(error.message || `Failed to ${editingSchedule ? "update" : "create"} course schedule(s)`);
+      console.error("Submit Error:", error);
+      message.error(error.message || "Failed to save course schedule");
     } finally {
       setSubmitting(false);
       setEditingSchedule(null);
     }
   };
-
   const handleDeleteGroup = async (scheduleGroup) => {
     const scheduleIdsToDelete = scheduleGroup.ids;
     if (!scheduleIdsToDelete || scheduleIdsToDelete.length === 0) {
