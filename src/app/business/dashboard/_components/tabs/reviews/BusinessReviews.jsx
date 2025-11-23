@@ -1,9 +1,38 @@
+// src/app/business/dashboard/_components/tabs/reviews/BusinessReviews.jsx
+
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import styled from "styled-components";
-import { Card, Avatar, Rate, Tag, Button, Modal, Form, Input, Select, DatePicker, Typography, ConfigProvider, Empty, Pagination, Tooltip, Alert, Row, Col, Image as AntImage, Skeleton, Table, Dropdown, Menu, Divider, Grid, Space,  } from 'antd';
-import message from '@/lib/message';
+import styled, { keyframes } from "styled-components";
+import {
+  Card,
+  Avatar,
+  Rate,
+  Tag,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  Typography,
+  ConfigProvider,
+  Empty,
+  Pagination,
+  Tooltip,
+  Alert,
+  Row,
+  Col,
+  Image as AntImage,
+  Skeleton,
+  Table,
+  Dropdown,
+  Menu,
+  Divider,
+  Grid,
+  Space,
+} from "antd";
+import message from "@/lib/message";
 import {
   Star,
   MessageSquare,
@@ -13,10 +42,8 @@ import {
   Eye,
   EyeOff,
   CheckCircle,
-  XCircle,
   BarChart2,
   Percent,
-  TrendingUp,
   MoreVertical,
   Globe,
 } from "lucide-react";
@@ -39,7 +66,6 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { Drawer } from "vaul";
 
 import { reviewService } from "@/services/apiService";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
 
 dayjs.extend(relativeTime);
@@ -390,6 +416,7 @@ const ChartContainer = styled.div`
   flex-grow: 1;
   height: 300px;
   margin-top: 16px;
+  position: relative;
 
   @media (max-width: 768px) {
     height: 250px;
@@ -529,8 +556,10 @@ const SourceBadge = styled.span`
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
-  background: ${(props) => (props.source === "google" ? "#f0f9ff" : "#fef3f2")};
-  color: ${(props) => (props.source === "google" ? "#0369a1" : colors.primary)};
+  background: ${(props) =>
+    props.source === "google" ? "#f0f9ff" : "#fef3f2"};
+  color: ${(props) =>
+    props.source === "google" ? "#0369a1" : colors.primary};
 `;
 
 const EmptyStateContainer = styled.div`
@@ -608,6 +637,248 @@ const EmptyStateSubtext = styled.div`
     max-width: 200px;
   }
 `;
+
+/* --- Custom Skeletons --- */
+
+const shimmer = keyframes`
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+`;
+
+const SkeletonBase = styled.div`
+  background: linear-gradient(
+    90deg,
+    ${colors.lightBg} 25%,
+    #eef1f5 50%,
+    ${colors.lightBg} 75%
+  );
+  background-size: 200% 100%;
+  animation: ${shimmer} 1.5s infinite;
+  border-radius: ${(props) => props.$borderRadius || "6px"};
+  width: ${(props) => props.$width || "100%"};
+  height: ${(props) => props.$height || "16px"};
+  margin-bottom: ${(props) => props.$marginBottom || "0"};
+`;
+
+// Generic Chart Skeleton
+const ChartSkeletonContainer = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  padding: 10px 0;
+`;
+
+const ChartYAxis = styled.div`
+  width: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-right: 10px;
+  border-right: 1px solid ${colors.border};
+`;
+
+const ChartGridArea = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-left: 10px;
+  position: relative;
+`;
+
+const ChartGridLine = styled.div`
+  width: 100%;
+  height: 1px;
+  background-color: ${colors.border};
+`;
+
+const GeneralChartSkeleton = () => (
+  <ChartSkeletonContainer>
+    <ChartYAxis>
+      {[...Array(5)].map((_, i) => (
+        <SkeletonBase key={i} $width="20px" $height="8px" />
+      ))}
+    </ChartYAxis>
+    <ChartGridArea>
+      {[...Array(5)].map((_, i) => (
+        <ChartGridLine key={i} />
+      ))}
+      {/* Simulate some bars/data */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "30px",
+          left: "20px",
+          right: "10px",
+          height: "60%",
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-around",
+          opacity: 0.5,
+        }}
+      >
+        {[...Array(7)].map((_, i) => (
+          <SkeletonBase
+            key={i}
+            $width="8%"
+            $height={`${Math.random() * 60 + 20}%`}
+            $borderRadius="4px 4px 0 0"
+          />
+        ))}
+      </div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginTop: "10px",
+        }}
+      >
+        {[...Array(6)].map((_, i) => (
+          <SkeletonBase key={i} $width="30px" $height="8px" />
+        ))}
+      </div>
+    </ChartGridArea>
+  </ChartSkeletonContainer>
+);
+
+// Desktop Table Skeleton
+const TableRowSkeletonWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid ${colors.border};
+  gap: 16px;
+`;
+
+const DesktopTableSkeleton = () => (
+  <div>
+    {/* Table Header Simulation */}
+    <div
+      style={{
+        display: "flex",
+        background: "#f8fafc",
+        padding: "16px 20px",
+        marginBottom: "0",
+        gap: "16px",
+      }}
+    >
+      {[...Array(6)].map((_, i) => (
+        <SkeletonBase
+          key={i}
+          $width={i === 3 ? "200px" : "80px"}
+          $height="12px"
+        />
+      ))}
+    </div>
+    {/* Rows */}
+    {[...Array(5)].map((_, i) => (
+      <TableRowSkeletonWrapper key={i}>
+        {/* User Info */}
+        <div style={{ display: "flex", gap: "12px", width: "240px" }}>
+          <SkeletonBase $width="40px" $height="40px" $borderRadius="50%" />
+          <div style={{ flex: 1 }}>
+            <SkeletonBase
+              $width="70%"
+              $height="14px"
+              $marginBottom="4px"
+            />
+            <SkeletonBase $width="40%" $height="12px" />
+          </div>
+        </div>
+        {/* Class Info */}
+        <div style={{ width: "190px" }}>
+          <SkeletonBase
+            $width="80%"
+            $height="14px"
+            $marginBottom="4px"
+          />
+          <SkeletonBase $width="50%" $height="12px" />
+        </div>
+        {/* Rating */}
+        <div style={{ width: "160px" }}>
+          <SkeletonBase $width="80px" $height="16px" />
+        </div>
+        {/* Comment */}
+        <div style={{ width: "350px" }}>
+          <SkeletonBase
+            $width="90%"
+            $height="12px"
+            $marginBottom="6px"
+          />
+          <SkeletonBase
+            $width="80%"
+            $height="12px"
+            $marginBottom="6px"
+          />
+          <SkeletonBase $width="40%" $height="12px" />
+        </div>
+        {/* Response */}
+        <div style={{ width: "300px" }}>
+          <SkeletonBase $width="60%" $height="12px" />
+        </div>
+        {/* Status */}
+        <div style={{ width: "130px" }}>
+          <SkeletonBase $width="70px" $height="22px" $borderRadius="12px" />
+        </div>
+        {/* Actions */}
+        <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+          <SkeletonBase $width="20px" $height="20px" />
+        </div>
+      </TableRowSkeletonWrapper>
+    ))}
+  </div>
+);
+
+// Mobile List Skeleton
+const MobileCardSkeletonWrapper = styled(StatCardBase)`
+  min-height: auto;
+  margin-bottom: 12px;
+  .ant-card-body {
+    padding: 16px !important;
+  }
+`;
+
+const MobileReviewSkeletonList = () => (
+  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+    {[...Array(3)].map((_, i) => (
+      <MobileCardSkeletonWrapper key={i}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: "12px",
+          }}
+        >
+          <div style={{ display: "flex", gap: "12px", flex: 1 }}>
+            <SkeletonBase $width="40px" $height="40px" $borderRadius="50%" />
+            <div style={{ flex: 1 }}>
+              <SkeletonBase
+                $width="60%"
+                $height="14px"
+                $marginBottom="4px"
+              />
+              <SkeletonBase $width="40%" $height="12px" />
+            </div>
+          </div>
+          <SkeletonBase $width="60px" $height="14px" />
+        </div>
+        <SkeletonBase $width="100px" $height="12px" $marginBottom="12px" />
+        <SkeletonBase $width="100%" $height="12px" $marginBottom="6px" />
+        <SkeletonBase $width="90%" $height="12px" $marginBottom="6px" />
+        <SkeletonBase $width="80%" $height="12px" $marginBottom="12px" />
+        <div style={{ display: "flex", gap: "8px" }}>
+          <SkeletonBase $width="48%" $height="36px" $borderRadius="8px" />
+          <SkeletonBase $width="48%" $height="36px" $borderRadius="8px" />
+        </div>
+      </MobileCardSkeletonWrapper>
+    ))}
+  </div>
+);
 
 // --- Tooltip Components ---
 const CustomRechartsTooltip = ({ active, payload }) => {
@@ -1426,9 +1697,7 @@ const BusinessReviews = () => {
               </CardTitle>
               <ChartContainer>
                 {loadingAnalytics ? (
-                  <LoaderWrapper>
-                    <GlobalLoaderWithoutInlineStyles />
-                  </LoaderWrapper>
+                  <GeneralChartSkeleton />
                 ) : !analyticsData?.rating_distribution?.length ? (
                   <Empty />
                 ) : (
@@ -1487,9 +1756,7 @@ const BusinessReviews = () => {
               </CardTitle>
               <ChartContainer>
                 {loadingAnalytics ? (
-                  <LoaderWrapper>
-                    <GlobalLoaderWithoutInlineStyles />
-                  </LoaderWrapper>
+                  <GeneralChartSkeleton />
                 ) : !analyticsData?.reviews_over_time?.length ? (
                   <EmptyStateContainer>
                     <EmptyStateIcon>
@@ -1613,9 +1880,15 @@ const BusinessReviews = () => {
         )}
 
         {loadingReviews && reviews.length === 0 ? (
-          <LoaderWrapper>
-            <GlobalLoaderWithoutInlineStyles />
-          </LoaderWrapper>
+          isMobile ? (
+            <MobileReviewList style={{ marginTop: 24 }}>
+              <MobileReviewSkeletonList />
+            </MobileReviewList>
+          ) : (
+            <ReviewTableContainer style={{ marginTop: 24 }}>
+              <DesktopTableSkeleton />
+            </ReviewTableContainer>
+          )
         ) : !loadingReviews && reviews.length === 0 ? (
           <EmptyStateContainer>
             <EmptyStateIcon>

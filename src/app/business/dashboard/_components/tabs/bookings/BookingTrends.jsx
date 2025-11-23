@@ -1,5 +1,9 @@
+// src/app/business/dashboard/_components/tabs/booking/BookingTrends.jsx
+
+"use client";
+
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import {
   Calendar,
   TrendingUp,
@@ -44,7 +48,6 @@ import NumberFlow from "@number-flow/react";
 import debounce from "lodash/debounce";
 import dayjs from "dayjs";
 import { bookingAnalyticsService } from "@/services/apiService";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { theme } from "@/components/theme";
 import { LordIcon } from "@/services/ReactUtils";
 
@@ -291,14 +294,7 @@ const ChartDescription = styled.p`
 
 const ChartContainer = styled.div`
   flex-grow: 1;
-`;
-
-const LoaderWrapper = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  min-height: 250px;
+  position: relative;
 `;
 
 const TableWrapper = styled(Card)`
@@ -424,6 +420,260 @@ const EmptyStateSubtext = styled.div`
     max-width: 200px;
   }
 `;
+
+/* --- Custom Skeletons --- */
+
+const shimmer = keyframes`
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+`;
+
+const SkeletonBase = styled.div`
+  background: linear-gradient(
+    90deg,
+    ${colors.lightBg} 25%,
+    #eef1f5 50%,
+    ${colors.lightBg} 75%
+  );
+  background-size: 200% 100%;
+  animation: ${shimmer} 1.5s infinite;
+  border-radius: ${(props) => props.$borderRadius || "6px"};
+  width: ${(props) => props.$width || "100%"};
+  height: ${(props) => props.$height || "16px"};
+  margin-bottom: ${(props) => props.$marginBottom || "0"};
+`;
+
+// Chart Skeleton Containers
+const ChartSkeletonContainer = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  padding: 10px 0;
+`;
+
+const ChartYAxis = styled.div`
+  width: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-right: 10px;
+  border-right: 1px solid ${colors.border};
+`;
+
+const ChartGridArea = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-left: 10px;
+  position: relative;
+`;
+
+const ChartGridLine = styled.div`
+  width: 100%;
+  height: 1px;
+  background-color: ${colors.border};
+`;
+
+const ChartLinePath = styled.div`
+  position: absolute;
+  top: 30%;
+  left: 10px;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 56, 92, 0) 0%,
+    rgba(255, 56, 92, 0.1) 50%,
+    rgba(255, 56, 92, 0) 100%
+  );
+  clip-path: polygon(
+    0 100%,
+    10% 80%,
+    20% 85%,
+    30% 60%,
+    40% 70%,
+    50% 40%,
+    60% 50%,
+    70% 30%,
+    80% 45%,
+    90% 20%,
+    100% 30%,
+    100% 100%
+  );
+  opacity: 0.5;
+`;
+
+// 1. Daily Activity Skeleton (Composed Chart)
+const DailyActivitySkeleton = () => (
+  <ChartSkeletonContainer>
+    <ChartYAxis>
+      {[...Array(5)].map((_, i) => (
+        <SkeletonBase key={i} $width="20px" $height="8px" />
+      ))}
+    </ChartYAxis>
+    <ChartGridArea>
+      {[...Array(5)].map((_, i) => (
+        <ChartGridLine key={i} />
+      ))}
+      {/* Simulated Bars */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 30,
+          left: 10,
+          right: 0,
+          display: "flex",
+          justifyContent: "space-around",
+          alignItems: "flex-end",
+          height: "60%",
+        }}
+      >
+        {[...Array(10)].map((_, i) => (
+          <SkeletonBase
+            key={i}
+            $width="5%"
+            $height={`${Math.random() * 80 + 10}%`}
+            $borderRadius="4px 4px 0 0"
+          />
+        ))}
+      </div>
+      {/* Simulated Line Overlay */}
+      <ChartLinePath />
+      {/* X-Axis Labels */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginTop: "10px",
+        }}
+      >
+        {[...Array(6)].map((_, i) => (
+          <SkeletonBase key={i} $width="30px" $height="8px" />
+        ))}
+      </div>
+    </ChartGridArea>
+  </ChartSkeletonContainer>
+);
+
+// 2. Time Distribution Skeleton (Bar Chart)
+const TimeBarSkeleton = () => (
+  <ChartSkeletonContainer>
+    <ChartYAxis>
+      {[...Array(5)].map((_, i) => (
+        <SkeletonBase key={i} $width="20px" $height="8px" />
+      ))}
+    </ChartYAxis>
+    <ChartGridArea>
+      {[...Array(5)].map((_, i) => (
+        <ChartGridLine key={i} />
+      ))}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 30,
+          left: 10,
+          right: 0,
+          display: "flex",
+          justifyContent: "space-around",
+          alignItems: "flex-end",
+          height: "80%",
+        }}
+      >
+        {[...Array(8)].map((_, i) => (
+          <SkeletonBase
+            key={i}
+            $width="8%"
+            $height={`${Math.random() * 70 + 20}%`}
+            $borderRadius="4px 4px 0 0"
+          />
+        ))}
+      </div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginTop: "10px",
+        }}
+      >
+        {[...Array(6)].map((_, i) => (
+          <SkeletonBase key={i} $width="25px" $height="8px" />
+        ))}
+      </div>
+    </ChartGridArea>
+  </ChartSkeletonContainer>
+);
+
+// 3. Pie Chart Skeleton (Generic)
+const PieSkeleton = () => (
+  <div
+    style={{
+      width: "100%",
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+  >
+    <div style={{ position: "relative", width: "180px", height: "180px" }}>
+      <SkeletonBase
+        $width="180px"
+        $height="180px"
+        $borderRadius="50%"
+        style={{ border: `4px solid white` }}
+      />
+    </div>
+    <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
+      <SkeletonBase $width="80px" $height="12px" />
+      <SkeletonBase $width="80px" $height="12px" />
+    </div>
+  </div>
+);
+
+// 4. Table Skeleton
+const TableSkeleton = () => (
+  <div>
+    {/* Header */}
+    <div
+      style={{
+        display: "flex",
+        background: colors.lightBg,
+        padding: "16px 20px",
+        gap: "10px",
+      }}
+    >
+      <SkeletonBase $width="30%" $height="14px" />
+      <SkeletonBase $width="15%" $height="14px" />
+      <SkeletonBase $width="15%" $height="14px" />
+      <SkeletonBase $width="20%" $height="14px" />
+      <SkeletonBase $width="10%" $height="14px" />
+    </div>
+    {/* Rows */}
+    {[...Array(5)].map((_, i) => (
+      <div
+        key={i}
+        style={{
+          display: "flex",
+          padding: "16px 20px",
+          gap: "10px",
+          borderBottom: `1px solid ${colors.border}`,
+        }}
+      >
+        <SkeletonBase $width="30%" $height="12px" />
+        <SkeletonBase $width="15%" $height="12px" />
+        <SkeletonBase $width="15%" $height="12px" />
+        <SkeletonBase $width="20%" $height="12px" />
+        <SkeletonBase $width="10%" $height="12px" />
+      </div>
+    ))}
+  </div>
+);
 
 const CustomTooltip = ({ active, payload, label, type }) => {
   if (active && payload && payload.length) {
@@ -687,9 +937,7 @@ const BookingTrends = () => {
           </ChartDescription>
           <ChartContainer>
             {loading ? (
-              <LoaderWrapper>
-                <GlobalLoaderWithoutInlineStyles />
-              </LoaderWrapper>
+              <DailyActivitySkeleton />
             ) : !analytics.trends?.length ||
               analytics.trends.every(
                 (day) =>
@@ -803,9 +1051,7 @@ const BookingTrends = () => {
               </ChartDescription>
               <ChartContainer>
                 {loading ? (
-                  <LoaderWrapper>
-                    <GlobalLoaderWithoutInlineStyles />
-                  </LoaderWrapper>
+                  <TimeBarSkeleton />
                 ) : !analytics.booking_patterns?.time_distribution?.length ||
                   analytics.booking_patterns.time_distribution.every(
                     (hour) =>
@@ -898,9 +1144,7 @@ const BookingTrends = () => {
               </ChartDescription>
               <ChartContainer>
                 {loading ? (
-                  <LoaderWrapper>
-                    <GlobalLoaderWithoutInlineStyles />
-                  </LoaderWrapper>
+                  <PieSkeleton />
                 ) : !studentTypeData.some((d) => d.value > 0) ? (
                   <EmptyStateContainer>
                     <EmptyStateIcon>
@@ -962,9 +1206,7 @@ const BookingTrends = () => {
                 </ChartDescription>
               </TableHeader>
               {loading ? (
-                <LoaderWrapper>
-                  <GlobalLoaderWithoutInlineStyles />
-                </LoaderWrapper>
+                <TableSkeleton />
               ) : !analytics.class_insights?.popular_classes?.length ? (
                 <EmptyStateContainer>
                   <EmptyStateIcon>
@@ -1048,9 +1290,7 @@ const BookingTrends = () => {
               </ChartDescription>
               <ChartContainer>
                 {loading ? (
-                  <LoaderWrapper>
-                    <GlobalLoaderWithoutInlineStyles />
-                  </LoaderWrapper>
+                  <PieSkeleton />
                 ) : !analytics.booking_patterns?.booking_types?.length ? (
                   <EmptyStateContainer>
                     <EmptyStateIcon>

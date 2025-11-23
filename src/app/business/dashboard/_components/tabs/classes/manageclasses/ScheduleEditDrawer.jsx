@@ -638,11 +638,37 @@ const DateStripHeader = styled.div`
   padding: 0 20px;
 `;
 
+const DateStripWrapper = styled.div`
+  position: relative;
+  width: 100%;
+  /* Ensure context for absolute positioning of fades/arrows */
+`;
+
+const ScrollFade = styled.div`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 60px;
+  z-index: 1;
+  pointer-events: none; /* Allow clicks to pass through to scroll/dates if needed, though arrows are on top */
+  
+  &.left {
+    left: 0;
+    background: linear-gradient(to right, rgba(255,255,255,1) 30%, rgba(255,255,255,0));
+    border-top-left-radius: 12px; /* Match container if needed */
+  }
+  
+  &.right {
+    right: 0;
+    background: linear-gradient(to left, rgba(255,255,255,1) 30%, rgba(255,255,255,0));
+  }
+`;
+
 const ScrollButton = styled(Button)`
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 2;
+  z-index: 10; /* Higher than fade */
   border-radius: 50%;
   width: 32px;
   height: 32px;
@@ -650,18 +676,20 @@ const ScrollButton = styled(Button)`
   align-items: center;
   justify-content: center;
   background: white;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   border: 1px solid #e2e8f0;
   padding: 0;
+  transition: all 0.2s ease;
   
   &:hover {
     background: #f8fafc;
     color: ${colors.primary};
     border-color: ${colors.primary};
+    transform: translateY(-50%) scale(1.05);
   }
 
-  &.left { left: 10px; }
-  &.right { right: 10px; }
+  &.left { left: 12px; }
+  &.right { right: 12px; }
   
   &:disabled {
     opacity: 0;
@@ -669,11 +697,22 @@ const ScrollButton = styled(Button)`
   }
 `;
 
-const DateStripWrapper = styled.div`
-  position: relative;
-  width: 100%;
+const DatesScrollArea = styled.div`
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  /* Added padding to prevent arrows from overlapping date cards */
+  padding: 4px 54px 12px 54px; 
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  
+  scroll-snap-type: x mandatory;
 `;
-
 const MonthNavigation = styled.div`
   display: flex;
   align-items: center;
@@ -700,21 +739,6 @@ const NavBtn = styled(Button)`
   &:hover {
     background: #e2e8f0 !important;
   }
-`;
-
-const DatesScrollArea = styled.div`
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 4px 20px 12px 20px;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 10+ */
-  
-  &::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
-  }
-  
-  scroll-snap-type: x mandatory;
 `;
 
 const DateCard = styled.button`
@@ -947,20 +971,17 @@ const ScheduleManagementView = React.memo(({
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(dayjs());
-  // CHANGE: Default to null to show ALL schedules initially
+  // Default to null to show ALL schedules initially
   const [selectedDate, setSelectedDate] = useState(null); 
   const [groupFilter, setGroupFilter] = useState(undefined);
   
-  // NEW: Ref for scrolling
   const scrollRef = useRef(null);
 
   const optionId = classData?.option?.optionId;
 
   const refreshSchedules = useCallback(async () => {
     if (!optionId) return;
-    
     setLoading((prev) => (prev === true ? true : false)); 
-    
     try {
       const result = await scheduleService.fetchSchedules({
         option_id: optionId,
@@ -986,10 +1007,9 @@ const ScheduleManagementView = React.memo(({
     }
   }, [optionId, refreshSchedules]);
 
-  // NEW: Scroll handler
   const handleScroll = (direction) => {
     if (scrollRef.current) {
-      const scrollAmount = 200;
+      const scrollAmount = 240; // Approximate width of 3-4 cards
       scrollRef.current.scrollBy({
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
@@ -1023,7 +1043,7 @@ const ScheduleManagementView = React.memo(({
   const scheduleDatesMap = useMemo(() => {
     const map = {};
     schedules.forEach(s => {
-      const dateStr = s.date; // YYYY-MM-DD
+      const dateStr = s.date;
       if (!map[dateStr]) map[dateStr] = 0;
       map[dateStr]++;
     });
@@ -1031,7 +1051,6 @@ const ScheduleManagementView = React.memo(({
   }, [schedules]);
 
   const filteredSchedules = useMemo(() => {
-    // CHANGE: If selectedDate is null, include ALL schedules
     let filtered = schedules;
 
     if (selectedDate) {
@@ -1045,7 +1064,6 @@ const ScheduleManagementView = React.memo(({
           : filtered.filter((s) => s.name === groupFilter);
     }
 
-    // Sort by Date then Time
     return filtered.sort((a, b) => {
         const dateA = dayjs(`${a.date}T${a.time}`);
         const dateB = dayjs(`${b.date}T${b.time}`);
@@ -1059,7 +1077,6 @@ const ScheduleManagementView = React.memo(({
   }, [schedules]);
 
   const renderScheduleCard = (schedule) => {
-    // Logic to visually separate days if showing ALL
     const isPast = dayjs(schedule.date).isBefore(dayjs(), "day");
     const hasConfirmedBookings = schedule.has_confirmed_bookings || false;
     const canDelete = !isPast && !hasConfirmedBookings;
@@ -1069,7 +1086,7 @@ const ScheduleManagementView = React.memo(({
       <ScheduleCard key={schedule.id} $isPast={isPast} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <CardTop>
           <CardInfo>
-            {/* Show Date in Card if viewing All */}
+             {/* Show Date Header if viewing All */}
             {!selectedDate && (
                 <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>
                     {dateObj.format('ddd, MMM D')}
@@ -1148,27 +1165,24 @@ const ScheduleManagementView = React.memo(({
                 <MonthTitle>{currentMonth.format('MMMM YYYY')}</MonthTitle>
                 <NavBtn onClick={() => setCurrentMonth(currentMonth.add(1, 'month'))}><ChevronRight size={16} /></NavBtn>
             </MonthNavigation>
-            <Button size="small" onClick={() => {
-                const today = dayjs();
-                setCurrentMonth(today);
-                setSelectedDate(today);
-            }}>Today</Button>
+
         </DateStripHeader>
         
-        {/* ADDED: Scroll Wrapper with Arrows */}
         <DateStripWrapper>
+            {/* FADE & ARROWS */}
+            <ScrollFade className="left" />
             <ScrollButton className="left" onClick={() => handleScroll('left')}>
                 <ChevronLeft size={16} />
             </ScrollButton>
 
             <DatesScrollArea ref={scrollRef}>
-                {/* ADDED: "View All" Option */}
+                {/* View All Card */}
                 <DateCard 
                     $selected={selectedDate === null}
                     onClick={() => setSelectedDate(null)}
                     style={{ minWidth: 60 }}
                 >
-                    <span className="day-name">VIEW</span>
+                    <span className="day-name" style={{ opacity: 0.6 }}>VIEW</span>
                     <span className="day-number" style={{ fontSize: 14 }}>ALL</span>
                 </DateCard>
 
@@ -1191,6 +1205,7 @@ const ScheduleManagementView = React.memo(({
                 })}
             </DatesScrollArea>
 
+            <ScrollFade className="right" />
             <ScrollButton className="right" onClick={() => handleScroll('right')}>
                 <ChevronRight size={16} />
             </ScrollButton>
@@ -1213,7 +1228,6 @@ const ScheduleManagementView = React.memo(({
         </Select>
         <div style={{ flex: 1 }} />
         <Text type="secondary" style={{ fontSize: 12 }}>
-            {/* UPDATED: Dynamic Text */}
             {selectedDate 
                 ? `${filteredSchedules.length} session${filteredSchedules.length !== 1 ? 's' : ''} on ${selectedDate.format('MMM D')}`
                 : `Showing all ${filteredSchedules.length} session${filteredSchedules.length !== 1 ? 's' : ''}`
@@ -1232,7 +1246,6 @@ const ScheduleManagementView = React.memo(({
             filteredSchedules.map(renderScheduleCard)
         ) : (
             <EmptyStateContainer>
-                {/* UPDATED: Empty state logic */}
                 <EmptyStateIcon>
                     <LordIcon
                         src="https://cdn.lordicon.com/uoljexdg.json"
@@ -1249,7 +1262,7 @@ const ScheduleManagementView = React.memo(({
                 </EmptyStateSubtext>
                 
                 <Button 
-                    type="primary"
+                    type="primary" 
                     icon={<Plus size={14} />} 
                     onClick={() => onAdd(selectedDate || dayjs())}
                     style={{ marginTop: 16 }}

@@ -1,3 +1,5 @@
+// src/app/business/dashboard/_components/tabs/revenue/Revenue.jsx
+
 "use client";
 
 import React, {
@@ -8,7 +10,7 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import {
   Calendar,
   TrendingUp,
@@ -23,10 +25,27 @@ import {
   Percent,
   DollarSign,
   TrendingDown,
-  LineChart as LineChartIcon, // Renamed to avoid conflict
+  LineChart as LineChartIcon,
 } from "lucide-react";
-import { DatePicker, Typography, ConfigProvider, Card, Tooltip, Badge, Space, Select, Button, Empty, Statistic, Spin, Skeleton, Row, Col, Divider,  } from 'antd';
-import message from '@/lib/message';
+import {
+  DatePicker,
+  Typography,
+  ConfigProvider,
+  Card,
+  Tooltip,
+  Badge,
+  Space,
+  Select,
+  Button,
+  Empty,
+  Statistic,
+  Spin,
+  Skeleton,
+  Row,
+  Col,
+  Divider,
+} from "antd";
+import message from "@/lib/message";
 import {
   ResponsiveContainer,
   Area,
@@ -51,7 +70,6 @@ const ComposedChart = dynamic(
 import NumberFlow from "@number-flow/react";
 import dayjs from "dayjs";
 import { revenueService, businessClassService } from "@/services/apiService";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
 import { theme } from "@/components/theme";
 
@@ -78,6 +96,8 @@ const colors = {
     yellow: "#eab308",
   },
 };
+
+/* --- Styled Components --- */
 
 const DashboardWrapper = styled.div`
   display: flex;
@@ -113,7 +133,6 @@ const Controls = styled.div`
   }
   @media (max-width: 768px) {
     width: 100%;
-
     flex-wrap: wrap;
     margin-top: 0;
   }
@@ -307,17 +326,12 @@ const ChartContainer = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  position: relative;
   @media (max-width: 768px) {
     height: 250px;
   }
 `;
-const LoaderWrapper = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-grow: 1;
-  min-height: 250px;
-`;
+
 const EmptyStateContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -393,6 +407,177 @@ const EmptyStateSubtext = styled.div`
     max-width: 200px;
   }
 `;
+
+/* --- Custom Skeletons --- */
+
+const shimmer = keyframes`
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+`;
+
+const SkeletonBase = styled.div`
+  background: linear-gradient(
+    90deg,
+    ${colors.lightBg} 25%,
+    #eef1f5 50%,
+    ${colors.lightBg} 75%
+  );
+  background-size: 200% 100%;
+  animation: ${shimmer} 1.5s infinite;
+  border-radius: ${(props) => props.$borderRadius || "6px"};
+  width: ${(props) => props.$width || "100%"};
+  height: ${(props) => props.$height || "16px"};
+  margin-bottom: ${(props) => props.$marginBottom || "0"};
+`;
+
+// Chart Skeleton Containers
+const ChartSkeletonContainer = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  padding: 10px 0;
+`;
+
+const ChartYAxis = styled.div`
+  width: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-right: 10px;
+  border-right: 1px solid ${colors.border};
+`;
+
+const ChartGridArea = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-left: 10px;
+  position: relative;
+`;
+
+const ChartGridLine = styled.div`
+  width: 100%;
+  height: 1px;
+  background-color: ${colors.border};
+`;
+
+const ChartLinePath = styled.div`
+  position: absolute;
+  top: 30%;
+  left: 10px;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 56, 92, 0) 0%,
+    rgba(255, 56, 92, 0.1) 50%,
+    rgba(255, 56, 92, 0) 100%
+  );
+  clip-path: polygon(
+    0 100%,
+    10% 80%,
+    20% 85%,
+    30% 60%,
+    40% 70%,
+    50% 40%,
+    60% 50%,
+    70% 30%,
+    80% 45%,
+    90% 20%,
+    100% 30%,
+    100% 100%
+  );
+  opacity: 0.5;
+`;
+
+// 1. Revenue Trends Skeleton
+const RevenueTrendsSkeleton = () => (
+  <ChartSkeletonContainer>
+    <ChartYAxis>
+      {[...Array(5)].map((_, i) => (
+        <SkeletonBase key={i} $width="20px" $height="8px" />
+      ))}
+    </ChartYAxis>
+    <ChartGridArea>
+      {[...Array(5)].map((_, i) => (
+        <ChartGridLine key={i} />
+      ))}
+      <ChartLinePath />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginTop: "10px",
+        }}
+      >
+        {[...Array(6)].map((_, i) => (
+          <SkeletonBase key={i} $width="30px" $height="8px" />
+        ))}
+      </div>
+    </ChartGridArea>
+  </ChartSkeletonContainer>
+);
+
+// 2. Class Revenue Skeleton (Horizontal Bar)
+const ClassRevenueSkeleton = () => (
+  <div
+    style={{
+      width: "100%",
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "space-between",
+      padding: "10px 0",
+    }}
+  >
+    {[...Array(6)].map((_, i) => (
+      <div
+        key={i}
+        style={{ display: "flex", alignItems: "center", marginBottom: "15px" }}
+      >
+        <SkeletonBase $width="15%" $height="12px" style={{ marginRight: 15 }} />
+        <SkeletonBase
+          $width={`${Math.floor(Math.random() * (90 - 30) + 30)}%`}
+          $height="24px"
+          $borderRadius="0 4px 4px 0"
+        />
+      </div>
+    ))}
+  </div>
+);
+
+// 3. Booking Type Skeleton (Pie Chart)
+const BookingTypeSkeleton = () => (
+  <div
+    style={{
+      width: "100%",
+      height: "100%",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+  >
+    <div style={{ position: "relative", width: "180px", height: "180px" }}>
+      <SkeletonBase
+        $width="180px"
+        $height="180px"
+        $borderRadius="50%"
+        style={{ border: `4px solid white` }}
+      />
+    </div>
+    <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
+      <SkeletonBase $width="80px" $height="12px" />
+      <SkeletonBase $width="80px" $height="12px" />
+    </div>
+  </div>
+);
 
 const CustomTooltip = ({ active, payload, label, type, isMobile }) => {
   if (active && payload && payload.length) {
@@ -841,9 +1026,7 @@ const Revenue = forwardRef((props, ref) => {
           </div>
           <ChartContainer>
             {loading ? (
-              <LoaderWrapper>
-                <GlobalLoaderWithoutInlineStyles />
-              </LoaderWrapper>
+              <RevenueTrendsSkeleton />
             ) : !analytics.revenue_trends ||
               analytics.revenue_trends.length === 0 ||
               analytics.revenue_trends.every(
@@ -997,9 +1180,7 @@ const Revenue = forwardRef((props, ref) => {
               </div>
               <ChartContainer>
                 {loading ? (
-                  <LoaderWrapper>
-                    <GlobalLoaderWithoutInlineStyles />
-                  </LoaderWrapper>
+                  <ClassRevenueSkeleton />
                 ) : !analytics.class_revenue ||
                   analytics.class_revenue.length === 0 ? (
                   <LoaderWrapper>
@@ -1121,9 +1302,7 @@ const Revenue = forwardRef((props, ref) => {
               </div>
               <ChartContainer>
                 {loading ? (
-                  <LoaderWrapper>
-                    <GlobalLoaderWithoutInlineStyles />
-                  </LoaderWrapper>
+                  <BookingTypeSkeleton />
                 ) : !analytics.revenue_by_booking_type ||
                   analytics.revenue_by_booking_type.length === 0 ? (
                   <LoaderWrapper>

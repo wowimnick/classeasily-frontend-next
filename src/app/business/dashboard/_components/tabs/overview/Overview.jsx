@@ -11,7 +11,7 @@ import React, {
   forwardRef,
   useCallback,
 } from "react";
-import styled, { css } from "styled-components";
+import styled, { css, keyframes } from "styled-components";
 import {
   Users,
   BookOpen,
@@ -147,6 +147,8 @@ const getErrorMessage = (error) => {
   if (typeof error === "string") return error;
   return "An unexpected error occurred. Please try again.";
 };
+
+/* --- Styled Components --- */
 
 const DashboardWrapper = styled.div`
   display: flex;
@@ -718,6 +720,208 @@ const EnrollmentMetric = styled.div`
   font-weight: 600;
   color: ${colors.chart.blue};
 `;
+
+/* --- Custom Skeletons --- */
+
+const shimmer = keyframes`
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+`;
+
+const SkeletonBase = styled.div`
+  background: linear-gradient(
+    90deg,
+    ${colors.lightBg} 25%,
+    #eef1f5 50%,
+    ${colors.lightBg} 75%
+  );
+  background-size: 200% 100%;
+  animation: ${shimmer} 1.5s infinite;
+  border-radius: ${(props) => props.$borderRadius || "6px"};
+  width: ${(props) => props.$width || "100%"};
+  height: ${(props) => props.$height || "16px"};
+  margin-bottom: ${(props) => props.$marginBottom || "0"};
+`;
+
+// Chart Skeleton
+const ChartSkeletonContainer = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  padding: 10px 0;
+`;
+
+const ChartYAxis = styled.div`
+  width: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-right: 10px;
+  border-right: 1px solid ${colors.border};
+`;
+
+const ChartGridArea = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-left: 10px;
+  position: relative;
+`;
+
+const ChartGridLine = styled.div`
+  width: 100%;
+  height: 1px;
+  background-color: ${colors.border};
+`;
+
+const ChartLinePath = styled.div`
+  position: absolute;
+  top: 30%;
+  left: 10px;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 56, 92, 0) 0%,
+    rgba(255, 56, 92, 0.1) 50%,
+    rgba(255, 56, 92, 0) 100%
+  );
+  clip-path: polygon(
+    0 100%,
+    10% 80%,
+    20% 85%,
+    30% 60%,
+    40% 70%,
+    50% 40%,
+    60% 50%,
+    70% 30%,
+    80% 45%,
+    90% 20%,
+    100% 30%,
+    100% 100%
+  );
+  opacity: 0.5;
+`;
+
+const RevenueChartSkeleton = () => (
+  <ChartSkeletonContainer>
+    <ChartYAxis>
+      {[...Array(5)].map((_, i) => (
+        <SkeletonBase key={i} $width="20px" $height="8px" />
+      ))}
+    </ChartYAxis>
+    <ChartGridArea>
+      {[...Array(5)].map((_, i) => (
+        <ChartGridLine key={i} />
+      ))}
+      <ChartLinePath />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginTop: "10px",
+        }}
+      >
+        {[...Array(6)].map((_, i) => (
+          <SkeletonBase key={i} $width="30px" $height="8px" />
+        ))}
+      </div>
+    </ChartGridArea>
+  </ChartSkeletonContainer>
+);
+
+// List Item Skeletons
+const ListItemSkeletonWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 8px;
+  gap: 16px;
+  width: 100%;
+`;
+
+const LeftContent = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const RightContent = styled.div`
+  flex-shrink: 0;
+`;
+
+const UpcomingClassesSkeletonList = () => (
+  <div style={{ paddingRight: "8px" }}>
+    {[...Array(4)].map((_, i) => (
+      <React.Fragment key={i}>
+        <ListItemSkeletonWrapper>
+          <LeftContent>
+            <SkeletonBase $width="60%" $height="14px" />
+            <div style={{ display: "flex", gap: "8px" }}>
+              <SkeletonBase $width="16px" $height="12px" />
+              <SkeletonBase $width="80px" $height="12px" />
+            </div>
+          </LeftContent>
+          <RightContent>
+            <SkeletonBase
+              $width="40px"
+              $height="40px"
+              $borderRadius="50%"
+              style={{ border: `2px solid ${colors.border}` }}
+            />
+          </RightContent>
+        </ListItemSkeletonWrapper>
+        {i < 3 && <Divider style={{ margin: "0" }} />}
+      </React.Fragment>
+    ))}
+  </div>
+);
+
+const PopularClassesSkeletonList = () => (
+  <div style={{ paddingRight: "8px" }}>
+    {[...Array(5)].map((_, i) => (
+      <React.Fragment key={i}>
+        <ListItemSkeletonWrapper>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1 }}>
+             <SkeletonBase $width="24px" $height="18px" $borderRadius="6px" />
+             <SkeletonBase $width="70%" $height="14px" />
+          </div>
+          <RightContent>
+             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+               <SkeletonBase $width="14px" $height="14px" $borderRadius="4px" />
+               <SkeletonBase $width="20px" $height="14px" />
+             </div>
+          </RightContent>
+        </ListItemSkeletonWrapper>
+        {i < 4 && <Divider style={{ margin: "0" }} />}
+      </React.Fragment>
+    ))}
+  </div>
+);
+
+const RecentActivitySkeletonList = () => (
+  <div style={{ paddingRight: "8px" }}>
+    {[...Array(4)].map((_, i) => (
+      <React.Fragment key={i}>
+        <ListItemSkeletonWrapper style={{ padding: "16px 0" }}>
+          <div style={{ display: "flex", gap: "12px", flex: 1, alignItems: "center" }}>
+            <SkeletonBase $width="36px" $height="36px" $borderRadius="8px" />
+            <SkeletonBase $width="75%" $height="14px" />
+          </div>
+          <SkeletonBase $width="40px" $height="12px" />
+        </ListItemSkeletonWrapper>
+        {i < 3 && <Divider style={{ margin: "0" }} />}
+      </React.Fragment>
+    ))}
+  </div>
+);
 
 const getOccupancyColor = (percentage) => {
   if (percentage < 50) return colors.success;
@@ -1294,9 +1498,7 @@ const Overview = forwardRef((props, ref) => {
               </CardTitle>
               <ChartContainer>
                 {loading ? (
-                  <LoaderWrapper>
-                    <GlobalLoaderWithoutInlineStyles />
-                  </LoaderWrapper>
+                  <RevenueChartSkeleton />
                 ) : revenueAccessDenied ? (
                   <PermissionDeniedContainer
                     style={{ marginTop: 0, height: "100%" }}
@@ -1402,9 +1604,9 @@ const Overview = forwardRef((props, ref) => {
                 Upcoming Classes (Next 7 Days)
               </CardTitle>
               {loading ? (
-                <LoaderWrapper>
-                  <Skeleton active paragraph={{ rows: 4 }} />
-                </LoaderWrapper>
+                <ScrollableList>
+                  <UpcomingClassesSkeletonList />
+                </ScrollableList>
               ) : (
                 <ScrollableList>
                   <List
@@ -1564,9 +1766,9 @@ const Overview = forwardRef((props, ref) => {
                 Most Popular Classes
               </CardTitle>
               {loading ? (
-                <LoaderWrapper>
-                  <Skeleton active paragraph={{ rows: 4 }} />
-                </LoaderWrapper>
+                <ScrollableList>
+                  <PopularClassesSkeletonList />
+                </ScrollableList>
               ) : (
                 <ScrollableList>
                   <List
@@ -1685,9 +1887,9 @@ const Overview = forwardRef((props, ref) => {
                 Recent Activity
               </CardTitle>
               {loading ? (
-                <LoaderWrapper>
-                  <Skeleton active avatar paragraph={{ rows: 4 }} />
-                </LoaderWrapper>
+                <ScrollableList>
+                  <RecentActivitySkeletonList />
+                </ScrollableList>
               ) : (
                 <ScrollableList>
                   <List

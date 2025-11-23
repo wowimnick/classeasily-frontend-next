@@ -160,17 +160,6 @@ const TableSkeleton = () => {
       ),
     },
     {
-      title: "Rating",
-      key: "rating",
-      width: 150,
-      render: () => (
-        <Skeleton.Input
-          active
-          style={{ width: 100, height: 32, borderRadius: "8px" }}
-        />
-      ),
-    },
-    {
       title: "Status",
       key: "status",
       width: 150,
@@ -1304,89 +1293,6 @@ function ClassManagementContent(props) {
                 </Text>
               )}
             </div>
-          </div>
-        );
-      },
-    },
-    {
-      title: "Rating",
-      key: "rating",
-      width: 150,
-      render: (_, record) => {
-        if (record.review_count > 0) {
-          const rating = record.average_rating;
-          // Use consistent gold/yellow color scheme for all ratings
-          const colors = {
-            bg: "#fef3c7",
-            border: "#fcd34d",
-            text: "#92400e",
-            star: "#f59e0b",
-          };
-
-          return (
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "6px 12px",
-                background: colors.bg,
-                borderRadius: "8px",
-              }}
-            >
-              <Star
-                size={16}
-                fill={colors.star}
-                color={colors.star}
-                style={{ flexShrink: 0 }}
-              />
-              <Text
-                strong
-                style={{
-                  fontSize: "14px",
-                  color: colors.text,
-                  lineHeight: "1",
-                }}
-              >
-                {rating.toFixed(1)}
-              </Text>
-              <Text
-                type="secondary"
-                style={{
-                  fontSize: "12px",
-                  color: colors.text,
-                  opacity: 0.7,
-                  lineHeight: "1",
-                }}
-              >
-                ({record.review_count})
-              </Text>
-            </div>
-          );
-        }
-        return (
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "6px 12px",
-              background: "#f3f4f6",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
-              borderRadius: "8px",
-            }}
-          >
-            <MessageSquare
-              size={16}
-              color="#9ca3af"
-              style={{ flexShrink: 0 }}
-            />
-            <Text
-              type="secondary"
-              style={{ fontSize: "13px", lineHeight: "1" }}
-            >
-              No reviews
-            </Text>
           </div>
         );
       },
