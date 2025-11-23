@@ -638,6 +638,42 @@ const DateStripHeader = styled.div`
   padding: 0 20px;
 `;
 
+const ScrollButton = styled(Button)`
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 1px solid #e2e8f0;
+  padding: 0;
+  
+  &:hover {
+    background: #f8fafc;
+    color: ${colors.primary};
+    border-color: ${colors.primary};
+  }
+
+  &.left { left: 10px; }
+  &.right { right: 10px; }
+  
+  &:disabled {
+    opacity: 0;
+    pointer-events: none;
+  }
+`;
+
+const DateStripWrapper = styled.div`
+  position: relative;
+  width: 100%;
+`;
+
 const MonthNavigation = styled.div`
   display: flex;
   align-items: center;
@@ -911,8 +947,12 @@ const ScheduleManagementView = React.memo(({
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(dayjs());
-  const [selectedDate, setSelectedDate] = useState(dayjs());
+  // CHANGE: Default to null to show ALL schedules initially
+  const [selectedDate, setSelectedDate] = useState(null); 
   const [groupFilter, setGroupFilter] = useState(undefined);
+  
+  // NEW: Ref for scrolling
+  const scrollRef = useRef(null);
 
   const optionId = classData?.option?.optionId;
 
@@ -945,6 +985,17 @@ const ScheduleManagementView = React.memo(({
         refreshSchedules();
     }
   }, [optionId, refreshSchedules]);
+
+  // NEW: Scroll handler
+  const handleScroll = (direction) => {
+    if (scrollRef.current) {
+      const scrollAmount = 200;
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const handleDelete = async (scheduleId) => {
     try {
@@ -980,9 +1031,13 @@ const ScheduleManagementView = React.memo(({
   }, [schedules]);
 
   const filteredSchedules = useMemo(() => {
-    const targetDateStr = selectedDate.format('YYYY-MM-DD');
-    
-    let filtered = schedules.filter(s => s.date === targetDateStr);
+    // CHANGE: If selectedDate is null, include ALL schedules
+    let filtered = schedules;
+
+    if (selectedDate) {
+        const targetDateStr = selectedDate.format('YYYY-MM-DD');
+        filtered = filtered.filter(s => s.date === targetDateStr);
+    }
 
     if (groupFilter) {
        filtered = groupFilter === "##__INDIVIDUAL__##"
@@ -990,7 +1045,12 @@ const ScheduleManagementView = React.memo(({
           : filtered.filter((s) => s.name === groupFilter);
     }
 
-    return filtered.sort((a, b) => dayjs(`T${a.time}`).diff(dayjs(`T${b.time}`)));
+    // Sort by Date then Time
+    return filtered.sort((a, b) => {
+        const dateA = dayjs(`${a.date}T${a.time}`);
+        const dateB = dayjs(`${b.date}T${b.time}`);
+        return dateA.diff(dateB);
+    });
   }, [schedules, selectedDate, groupFilter]);
 
   const uniqueGroups = useMemo(() => {
@@ -999,14 +1059,22 @@ const ScheduleManagementView = React.memo(({
   }, [schedules]);
 
   const renderScheduleCard = (schedule) => {
+    // Logic to visually separate days if showing ALL
     const isPast = dayjs(schedule.date).isBefore(dayjs(), "day");
     const hasConfirmedBookings = schedule.has_confirmed_bookings || false;
     const canDelete = !isPast && !hasConfirmedBookings;
+    const dateObj = dayjs(schedule.date);
 
     return (
       <ScheduleCard key={schedule.id} $isPast={isPast} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <CardTop>
           <CardInfo>
+            {/* Show Date in Card if viewing All */}
+            {!selectedDate && (
+                <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>
+                    {dateObj.format('ddd, MMM D')}
+                </div>
+            )}
             <div className="time">
               {formatTime(schedule.time)}
               <span className="duration">{schedule.duration} min</span>
@@ -1086,25 +1154,47 @@ const ScheduleManagementView = React.memo(({
                 setSelectedDate(today);
             }}>Today</Button>
         </DateStripHeader>
-        <DatesScrollArea>
-            {datesInMonth.map(date => {
-                const dateStr = date.format('YYYY-MM-DD');
-                const isSelected = selectedDate.isSame(date, 'day');
-                const hasSchedule = scheduleDatesMap[dateStr] > 0;
-                
-                return (
-                    <DateCard 
-                        key={dateStr} 
-                        $selected={isSelected}
-                        onClick={() => setSelectedDate(date)}
-                    >
-                        <span className="day-name">{date.format('ddd')}</span>
-                        <span className="day-number">{date.format('D')}</span>
-                        <MarkerDot $visible={hasSchedule} $selected={isSelected} />
-                    </DateCard>
-                )
-            })}
-        </DatesScrollArea>
+        
+        {/* ADDED: Scroll Wrapper with Arrows */}
+        <DateStripWrapper>
+            <ScrollButton className="left" onClick={() => handleScroll('left')}>
+                <ChevronLeft size={16} />
+            </ScrollButton>
+
+            <DatesScrollArea ref={scrollRef}>
+                {/* ADDED: "View All" Option */}
+                <DateCard 
+                    $selected={selectedDate === null}
+                    onClick={() => setSelectedDate(null)}
+                    style={{ minWidth: 60 }}
+                >
+                    <span className="day-name">VIEW</span>
+                    <span className="day-number" style={{ fontSize: 14 }}>ALL</span>
+                </DateCard>
+
+                {datesInMonth.map(date => {
+                    const dateStr = date.format('YYYY-MM-DD');
+                    const isSelected = selectedDate && selectedDate.isSame(date, 'day');
+                    const hasSchedule = scheduleDatesMap[dateStr] > 0;
+                    
+                    return (
+                        <DateCard 
+                            key={dateStr} 
+                            $selected={isSelected}
+                            onClick={() => setSelectedDate(date)}
+                        >
+                            <span className="day-name">{date.format('ddd')}</span>
+                            <span className="day-number">{date.format('D')}</span>
+                            <MarkerDot $visible={hasSchedule} $selected={isSelected} />
+                        </DateCard>
+                    )
+                })}
+            </DatesScrollArea>
+
+            <ScrollButton className="right" onClick={() => handleScroll('right')}>
+                <ChevronRight size={16} />
+            </ScrollButton>
+        </DateStripWrapper>
       </DateStripContainer>
 
       <FilterBar>
@@ -1123,7 +1213,11 @@ const ScheduleManagementView = React.memo(({
         </Select>
         <div style={{ flex: 1 }} />
         <Text type="secondary" style={{ fontSize: 12 }}>
-            {filteredSchedules.length} session{filteredSchedules.length !== 1 && 's'}
+            {/* UPDATED: Dynamic Text */}
+            {selectedDate 
+                ? `${filteredSchedules.length} session${filteredSchedules.length !== 1 ? 's' : ''} on ${selectedDate.format('MMM D')}`
+                : `Showing all ${filteredSchedules.length} session${filteredSchedules.length !== 1 ? 's' : ''}`
+            }
         </Text>
       </FilterBar>
 
@@ -1138,39 +1232,29 @@ const ScheduleManagementView = React.memo(({
             filteredSchedules.map(renderScheduleCard)
         ) : (
             <EmptyStateContainer>
-                {schedules.length === 0 ? (
-                    // Global empty state
-                    <>
-                        <EmptyStateIcon>
-                            <LordIcon
-                              src="https://cdn.lordicon.com/uoljexdg.json"
-                              trigger="in"
-                              colors="primary:#94a3b8"
-                              style={{ width: 64, height: 64 }}
-                            />
-                        </EmptyStateIcon>
-                        <EmptyStateText>No Schedules Found</EmptyStateText>
-                        <EmptyStateSubtext>
-                          Try creating a new schedule.
-                        </EmptyStateSubtext>
-                    </>
-                ) : (
-                    // Specific date empty state
-                    <>
-                        <EmptyStateIcon>
-                          <Calendar size={48} color="#e2e8f0" />
-                        </EmptyStateIcon>
-                        <EmptyStateText>No sessions on {selectedDate.format('MMM D')}</EmptyStateText>
-                    </>
-                )}
+                {/* UPDATED: Empty state logic */}
+                <EmptyStateIcon>
+                    <LordIcon
+                        src="https://cdn.lordicon.com/uoljexdg.json"
+                        trigger="in"
+                        colors="primary:#94a3b8"
+                        style={{ width: 64, height: 64 }}
+                    />
+                </EmptyStateIcon>
+                <EmptyStateText>No Schedules Found</EmptyStateText>
+                <EmptyStateSubtext>
+                    {selectedDate 
+                        ? `No sessions found on ${selectedDate.format('MMMM D')}.`
+                        : "You haven't created any schedules yet."}
+                </EmptyStateSubtext>
                 
                 <Button 
-                    type={schedules.length === 0 ? "primary" : "link"} 
+                    type="primary"
                     icon={<Plus size={14} />} 
-                    onClick={() => onAdd(selectedDate)}
+                    onClick={() => onAdd(selectedDate || dayjs())}
                     style={{ marginTop: 16 }}
                 >
-                    Add Session for {selectedDate.format('MMM D')}
+                    Add Session {selectedDate ? `for ${selectedDate.format('MMM D')}` : ''}
                 </Button>
             </EmptyStateContainer>
         )}
