@@ -609,7 +609,6 @@ const BookingModal = ({
           />
         );
       case 2:
-        // NO <Elements> wrapper here - moved to parent level
         return (
           <ReviewAndPaymentStep
             bookingData={bookingData}
@@ -642,31 +641,25 @@ const BookingModal = ({
     }
   };
 
-  // --- WRAPPER: Wrap everything in Elements here to persist Stripe context ---
-  const ModalContentWithStripe = (
-    <Elements stripe={stripePromise}>
-       <ScrollableContent id="booking-modal-scroll-container">
-          <AnimatedModalContent>
-            <StepContentWrapper>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentStep}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{
-                    duration: 0.3,
-                    ease: [0.25, 0.46, 0.45, 0.94],
-                  }}
-                >
-                  {renderStepContent()}
-                </motion.div>
-              </AnimatePresence>
-            </StepContentWrapper>
-          </AnimatedModalContent>
-        </ScrollableContent>
-    </Elements>
-  );
+const ModalContent = (
+   <ScrollableContent id="booking-modal-scroll-container">
+      <AnimatedModalContent>
+        <StepContentWrapper>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {renderStepContent()}
+            </motion.div>
+          </AnimatePresence>
+        </StepContentWrapper>
+      </AnimatedModalContent>
+    </ScrollableContent>
+);
 
   if (isMobile) {
     return (
@@ -777,7 +770,7 @@ const BookingModal = ({
             </CloseButton>
 
             {/* Use the content wrapped in Elements */}
-            {ModalContentWithStripe}
+            {ModalContent}
 
             <ModalFooter
               currentStep={currentStep}

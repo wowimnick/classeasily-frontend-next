@@ -1,25 +1,30 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { ConfigProvider, Form, Input, Alert, Button, Divider } from "antd";
+import { ConfigProvider, Form, Input, Alert, Button } from "antd";
 import message from "@/lib/message";
-import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import {
+  PaymentElement,
+  useStripe,
+  useElements,
+  Elements,
+} from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar as CalendarIcon,
-  Users,
-  Info,
-  Lock,
+  Shield,
   Clock,
   Tag,
-  Shield,
-  UserCheck,
-  Percent,
+  ChevronDown,
+  ShoppingCart,
   CheckCircle,
+  Lock,
+  Percent,
+  UserCheck,
 } from "lucide-react";
 import {
   getCancellationPolicyText,
   getDurationText,
-  getCourseDuration,
 } from "./utils";
 import { businessDiscountService } from "@/services/apiService";
 import { theme as appTheme } from "@/components/theme";
@@ -27,35 +32,110 @@ import { formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
 
 const HST_RATE = 0.13;
 
-// Styles omitted for brevity - they are unchanged from original file //
+// Initialize Stripe outside to avoid recreation on renders
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
+
+// --- STYLED COMPONENTS ---
+
 const StepContainer = styled.div`
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
   padding: 0 4px;
+  padding-bottom: 100px;
+
   @media (min-width: 969px) {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
     gap: 32px;
     align-items: flex-start;
+    padding-bottom: 0;
   }
 `;
+
 const PaymentSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  @media (max-width: 968px) {
-    padding-bottom: 180px; 
-  }
+  gap: 8px;
 `;
+
 const SummarySection = styled.div`
-  @media (max-width: 968px) {
-    display: none;
-  }
+  display: none;
   @media (min-width: 969px) {
+    display: block;
     position: sticky;
     top: 1px;
   }
 `;
+
+// --- Redesigned Mobile Summary ---
+const MobileSummaryContainer = styled.div`
+  display: block;
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+
+  @media (min-width: 969px) {
+    display: none;
+  }
+`;
+
+const MobileSummaryHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  cursor: pointer;
+  background: white;
+  transition: background-color 0.2s;
+
+  &:active {
+    background-color: #f9fafb;
+  }
+
+  .title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    
+    svg {
+      color: #ff385c;
+    }
+  }
+
+  .price-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .total-price {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .toggle-icon {
+    color: #9ca3af;
+    transition: transform 0.3s ease;
+  }
+`;
+
+const MobileSummaryContent = styled(motion.div)`
+  background: #fafafa;
+  overflow: hidden; /* Crucial for smooth height animation */
+`;
+
+const MobileSummaryInner = styled.div`
+  border-top: 1px solid #f0f0f0;
+  padding: 20px;
+`;
+// --- End Redesign ---
+
 const Card = styled.div`
   background: white;
   border-radius: 16px;
@@ -64,24 +144,20 @@ const Card = styled.div`
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
     0 2px 4px -2px rgba(0, 0, 0, 0.05);
   @media (max-width: 968px) {
-    padding: 20px;
+    padding: 16px;
   }
 `;
+
 const SummaryCard = styled(Card)``;
 const FormCard = styled(Card)``;
+
 const SectionTitle = styled.h4`
   margin: 0 0 16px 0;
   font-size: 18px;
   font-weight: 600;
   color: #111827;
 `;
-const SummaryHeader = styled.div`
-  display: flex;
-  gap: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 16px;
-`;
+
 const SummaryClassImage = styled.img`
   width: 90px;
   height: 60px;
@@ -89,9 +165,11 @@ const SummaryClassImage = styled.img`
   border-radius: 8px;
   flex-shrink: 0;
 `;
+
 const SummaryClassDetails = styled.div`
   flex: 1;
 `;
+
 const SummaryTitle = styled.h3`
   margin: 0 0 6px 0;
   font-size: 16px;
@@ -99,6 +177,7 @@ const SummaryTitle = styled.h3`
   font-weight: 600;
   line-height: 1.3;
 `;
+
 const ClassDetail = styled.div`
   display: flex;
   align-items: center;
@@ -115,11 +194,13 @@ const ClassDetail = styled.div`
     flex-shrink: 0;
   }
 `;
+
 const PriceBreakdown = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
 `;
+
 const PriceRow = styled.div`
   display: flex;
   justify-content: space-between;
@@ -135,6 +216,7 @@ const PriceRow = styled.div`
     border-top: 1px solid #e5e7eb;
   }
 `;
+
 const InfoPanel = styled.div`
   display: flex;
   gap: 12px;
@@ -165,26 +247,7 @@ const InfoPanel = styled.div`
     }
   }
 `;
-const CardElementContainer = styled.div`
-  padding: 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: white;
-  margin-top: 4px;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  &:focus-within {
-    border-color: #ff385c;
-    box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.2);
-  }
-`;
-const ParticipantSection = styled.div`
-  padding-top: 8px;
-`;
-const ParticipantEntry = styled.div`
-  .ant-form-item {
-    margin-bottom: 12px;
-  }
-`;
+
 const CouponInputWrapper = styled.div`
   display: flex;
   gap: 8px;
@@ -195,6 +258,7 @@ const CouponInputWrapper = styled.div`
     }
   }
 `;
+
 const AppliedCouponDisplay = styled.div`
   display: flex;
   justify-content: space-between;
@@ -207,47 +271,42 @@ const AppliedCouponDisplay = styled.div`
   color: #005f9e;
   font-weight: 500;
 `;
+
 const MobilePaymentFooter = styled(motion.div)`
   display: none;
   @media (max-width: 968px) {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
     gap: 12px;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 16px 20px 20px;
+    background: white;
+    padding: 12px 20px;
     border-top: 1px solid #e0e0e0;
-    backdrop-filter: blur(10px);
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
     z-index: 100;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 `;
-const MobilePriceRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 16px;
-  color: #111827;
-  font-weight: 600;
-`;
-const mobileFooterVariants = {
-  hidden: { y: "100%", opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { type: "spring", damping: 25, stiffness: 200 },
-  },
-  exit: {
-    y: "100%",
-    opacity: 0,
-    transition: { duration: 0.2, ease: "easeIn" },
-  },
-};
 
-// Helper component for participant names
+const MobileTotalDisplay = styled.div`
+  display: flex;
+  flex-direction: column;
+  span.label {
+    font-size: 12px;
+    color: #6b7280;
+  }
+  span.amount {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+  }
+`;
+
 const ParticipantNameInputs = ({
   count,
   form,
@@ -274,53 +333,118 @@ const ParticipantNameInputs = ({
   if (count <= 0) return null;
 
   return (
-    <ParticipantSection>
-      <SectionTitle>Participant Information</SectionTitle>
+    <div style={{ paddingTop: 8 }}>
+      <SectionTitle>Participants</SectionTitle>
       {Array.from({ length: count }).map((_, index) => (
-        <ParticipantEntry key={index}>
-          <Form.Item
-            label={
-              <span style={{ fontWeight: 500 }}>
-                {`Participant ${index + 1} Full Name`}
-                {index === 0 &&
-                  isUserLoggedIn &&
-                  !!bookerNameFromBookingData &&
-                  form.getFieldValue(["participant_details", index, "name"]) ===
-                    bookerNameFromBookingData && (
-                    <UserCheck
-                      size={14}
-                      style={{
-                        marginLeft: "8px",
-                        color: appTheme.token.colorPrimary,
-                      }}
-                    />
-                  )}
-              </span>
+        <Form.Item
+          key={index}
+          name={["participant_details", index, "name"]}
+          rules={[
+            { required: true, message: `P.${index + 1} name is required` },
+          ]}
+          style={{ marginBottom: 12 }}
+        >
+          <Input
+            placeholder={`Participant ${index + 1} Full Name`}
+            readOnly={
+              index === 0 && isUserLoggedIn && !!bookerNameFromBookingData
             }
-            name={["participant_details", index, "name"]}
-            rules={[
-              { required: true, message: `P.${index + 1} name is required` },
-            ]}
-          >
-            <Input
-              placeholder="Full Name"
-              readOnly={
-                index === 0 && isUserLoggedIn && !!bookerNameFromBookingData
-              }
-              style={
-                index === 0 && isUserLoggedIn && !!bookerNameFromBookingData
-                  ? {
-                      backgroundColor: "#f0f0f0",
-                      cursor: "not-allowed",
-                      color: "#555",
-                    }
-                  : {}
-              }
-            />
-          </Form.Item>
-        </ParticipantEntry>
+            style={
+              index === 0 && isUserLoggedIn && !!bookerNameFromBookingData
+                ? {
+                    backgroundColor: "#f0f0f0",
+                    cursor: "not-allowed",
+                    color: "#555",
+                  }
+                : {}
+            }
+            suffix={
+              index === 0 &&
+              isUserLoggedIn &&
+              !!bookerNameFromBookingData && (
+                <UserCheck size={16} color="#52c41a" />
+              )
+            }
+          />
+        </Form.Item>
       ))}
-    </ParticipantSection>
+    </div>
+  );
+};
+
+const PaymentFormContent = ({
+  form,
+  handleSubmit,
+  loading,
+  isFree,
+  isFormValid,
+  finalTotal,
+  clientSecret,
+  onPaymentAction,
+}) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const canSubmit = isFree
+      ? !loading && isFormValid
+      : stripe && elements && !loading && isFormValid && isReady;
+
+    onPaymentAction?.({
+      handleSubmit: () => handleSubmit(stripe, elements),
+      loading,
+      canSubmit,
+      finalTotal,
+    });
+  }, [
+    onPaymentAction,
+    handleSubmit,
+    loading,
+    stripe,
+    elements,
+    finalTotal,
+    isFormValid,
+    isReady,
+    isFree,
+  ]);
+
+  return (
+    <>
+      {!isFree && clientSecret && (
+        <div
+          style={{
+            marginTop: 24,
+            borderTop: "1px solid #e5e7eb",
+            paddingTop: 24,
+          }}
+        >
+          <SectionTitle>Payment Method</SectionTitle>
+          <PaymentElement
+            options={{
+              layout: "tabs",
+              // Force default to Canada
+              defaultValues: {
+                billingDetails: {
+                  address: {
+                    country: "CA",
+                  },
+                },
+              },
+              // Hide the country field from the UI
+              fields: {
+                billingDetails: {
+                  address: {
+                    country: "never",
+                  },
+                },
+              },
+            }}
+            onReady={() => setIsReady(true)}
+          />
+        </div>
+      )}
+    </>
   );
 };
 
@@ -336,19 +460,15 @@ const ReviewAndPaymentStep = ({
   businessTimeZone,
 }) => {
   const [form] = Form.useForm();
-  const stripe = useStripe();
-  const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
+  const [clientSecret, setClientSecret] = useState(null);
+  const [isFormValid, setIsFormValid] = useState(false);
+  const [showMobileSummary, setShowMobileSummary] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
 
-  const [isFormValid, setIsFormValid] = useState(false);
-  const [isCardComplete, setIsCardComplete] = useState(false);
-
-  // --- OPTIMIZATION: Debounce Timer Ref ---
   const debounceTimerRef = useRef(null);
 
   useEffect(() => {
@@ -360,32 +480,22 @@ const ReviewAndPaymentStep = ({
           guest_full_name: "",
         });
       } else {
-        // Keep existing values if present to avoid clearing on unnecessary re-renders
         const currentValues = form.getFieldsValue();
         if (!currentValues.email) {
-             form.resetFields([
-              "email",
-              "phone",
-              "guest_full_name",
-              "fullName",
-              "address",
-              "city",
-              "state",
-              "zipCode",
-            ]);
+          form.resetFields(["email", "phone", "guest_full_name"]);
         }
       }
     }
-  }, [isUserLoggedIn, bookingData.userEmail, bookingData.userPhone, form]);
+  }, [isUserLoggedIn, bookingData, form]);
 
   useEffect(() => {
     if (form) {
       const currentNotes = form.getFieldValue("notes");
       if (currentNotes !== bookingData.notes) {
-          form.setFieldsValue({
-            participant_details: bookingData.participant_details || [],
-            notes: bookingData.notes || "",
-          });
+        form.setFieldsValue({
+          participant_details: bookingData.participant_details || [],
+          notes: bookingData.notes || "",
+        });
       }
     }
   }, [bookingData.participant_details, bookingData.notes, form]);
@@ -409,10 +519,50 @@ const ReviewAndPaymentStep = ({
     };
   }, [subtotal, appliedDiscount]);
 
-  // Determine if the order is free (100% off or free class)
   const isFree = finalTotal === 0;
-
   const taxAmount = (subtotal - discountAmount) * HST_RATE;
+
+  const fetchPaymentIntent = useCallback(
+    async (currentDiscountId = null) => {
+      if (isFree) return;
+      if (
+        !bookingData.selectedSlots ||
+        bookingData.selectedSlots.length === 0
+      ) {
+        return;
+      }
+
+      try {
+        const values = form.getFieldsValue();
+        const payload = {
+          selectedSlots: bookingData.selectedSlots,
+          participants: participantsCount,
+          notes: values.notes || "",
+          participant_details: values.participant_details?.map((d) => ({
+            name: d?.name || "Guest",
+          })) || [],
+          applied_discount_id: currentDiscountId,
+          guest_email: values.email || "pending@example.com",
+          guest_full_name: values.guest_full_name || "Pending Guest",
+          guest_phone: values.phone || "555-555-5555",
+        };
+
+        const response = await paymentService.createPaymentIntent(payload);
+
+        if (response.clientSecret) {
+          setClientSecret(response.clientSecret);
+        }
+      } catch (err) {
+        console.error("Error creating draft intent:", err);
+      }
+    },
+    [bookingData, participantsCount, isFree, form, paymentService]
+  );
+
+  useEffect(() => {
+    fetchPaymentIntent(appliedDiscount?.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliedDiscount?.id]);
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -429,12 +579,13 @@ const ReviewAndPaymentStep = ({
       if (result.success) {
         setAppliedDiscount(result.data);
         message.success(`Coupon "${result.data.code}" applied!`);
+        // fetchPaymentIntent triggered by dependency change on appliedDiscount?.id
       } else {
-        message.error(result.error?.detail || "This coupon is not valid.");
+        message.error(result.error?.detail || "Invalid coupon.");
         setAppliedDiscount(null);
       }
     } catch (err) {
-      message.error("An error occurred while applying the coupon.");
+      message.error("Error applying coupon.");
     } finally {
       setCouponLoading(false);
     }
@@ -447,165 +598,113 @@ const ReviewAndPaymentStep = ({
   };
 
   const handleFormValuesChange = (changedValues, allValues) => {
-    // --- OPTIMIZATION: Debounce the parent state update ---
-    // This prevents the entire modal from re-rendering on every keystroke
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     debounceTimerRef.current = setTimeout(() => {
-       onUpdateBookingData(allValues);
-    }, 300); // Wait 300ms after typing stops
+      onUpdateBookingData(allValues);
+    }, 300);
 
-    // Local validation runs immediately
-    const {
-      email,
-      phone,
-      fullName,
-      guest_full_name,
-      address,
-      city,
-      state,
-      zipCode,
-      participant_details,
-    } = allValues;
+    const { email, phone, guest_full_name, participant_details } = allValues;
     const contactFields = isUserLoggedIn
       ? [email, phone]
       : [email, phone, guest_full_name];
-    
-    // If free, billing fields are NOT required
-    const billingFields = isFree ? [] : [fullName, address, city, state, zipCode];
-    
-    const allTextFieldsFilled = [...contactFields, ...billingFields].every(
+
+    const allTextFieldsFilled = contactFields.every(
       (val) => val && String(val).trim()
     );
+
     const participantsFilled =
       participant_details?.length === bookingData.participants &&
       participant_details.every((p) => p?.name?.trim());
+
     setIsFormValid(allTextFieldsFilled && participantsFilled);
   };
 
-  // Re-run local validation if isFree changes (e.g. coupon applied making it free)
-  useEffect(() => {
-    if (form) {
-        const values = form.getFieldsValue();
-        handleFormValuesChange({}, values);
-    }
-  }, [isFree, form]);
-
-  const handleSubmit = useCallback(async () => {
-    // Check for payment system readiness only if NOT free
-    if (!isFree && (!stripe || !elements)) {
-      setError("Payment system not ready.");
-      return;
-    }
-    if (!selectedSlot) {
+  const handleSubmit = useCallback(
+    async (stripe, elements) => {
+      if (!selectedSlot) {
         setError("Slot not selected.");
         return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const values = await form.validateFields();
-      const paymentIntentPayload = {
-        selectedSlots: bookingData.selectedSlots,
-        participants: participantsCount,
-        notes: values.notes || "",
-        participant_details: values.participant_details.map((d) => ({
-          name: d.name.trim(),
-        })),
-        applied_discount_id: appliedDiscount?.id || null,
-      };
-
-      if (!isUserLoggedIn) {
-        paymentIntentPayload.guest_email = values.email;
-        paymentIntentPayload.guest_full_name = values.guest_full_name;
-        paymentIntentPayload.guest_phone = values.phone;
       }
 
-      const intentResponse = await paymentService.createPaymentIntent(
-        paymentIntentPayload
-      );
-      
-      // If the response contains a booking_id, it means the booking was confirmed immediately (Free booking)
-      if (intentResponse.booking_id) {
-        onPaymentComplete(intentResponse);
-        return;
-      }
+      setLoading(true);
+      setError(null);
 
-      const clientSecret = intentResponse.clientSecret;
-      const cardElement = elements.getElement(CardElement);
-      const paymentResult = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: {
-            name: values.fullName,
-            email: values.email,
-            phone: values.phone,
-            address: {
-              line1: values.address,
-              city: values.city,
-              state: values.state,
-              postal_code: values.zipCode,
-              country: "CA",
+      try {
+        const values = await form.validateFields();
+
+        if (isFree) {
+          const payload = {
+            selectedSlots: bookingData.selectedSlots,
+            participants: participantsCount,
+            notes: values.notes || "",
+            participant_details: values.participant_details,
+            applied_discount_id: appliedDiscount?.id || null,
+            guest_email: values.email,
+            guest_full_name: values.guest_full_name,
+            guest_phone: values.phone,
+          };
+          const res = await paymentService.createPaymentIntent(payload);
+          if (res.booking_id) {
+            onPaymentComplete(res);
+            return;
+          }
+        }
+
+        if (!stripe || !elements) return;
+
+        const { error: submitError } = await elements.submit();
+        if (submitError) {
+          setError(submitError.message);
+          setLoading(false);
+          return;
+        }
+
+        const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+          elements,
+          clientSecret,
+          confirmParams: {
+            return_url: `${window.location.origin}/booking/status`,
+            payment_method_data: {
+              billing_details: {
+                name: isUserLoggedIn
+                  ? bookingData.userName
+                  : values.guest_full_name,
+                email: values.email,
+                phone: values.phone,
+                address: { country: "CA" },
+              },
             },
           },
-        },
-      });
-
-      if (paymentResult.error) throw new Error(paymentResult.error.message);
-      if (paymentResult.paymentIntent.status === "succeeded") {
-        onPaymentComplete({
-          payment_intent_id: paymentResult.paymentIntent.id,
-          client_secret: clientSecret,
+          redirect: "if_required",
         });
-      } else {
-        throw new Error(
-          `Payment status: ${paymentResult.paymentIntent.status}`
-        );
+
+        if (confirmError) {
+          throw new Error(confirmError.message);
+        } else if (paymentIntent && paymentIntent.status === "succeeded") {
+          onPaymentComplete({
+            payment_intent_id: paymentIntent.id,
+            client_secret: clientSecret,
+          });
+        }
+      } catch (err) {
+        setError(err.message || "Payment processing failed.");
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err.message || "Payment failed. Please check your details.");
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    isFree,
-    stripe,
-    elements,
-    form,
-    bookingData,
-    onPaymentComplete,
-    isUserLoggedIn,
-    participantsCount,
-    appliedDiscount,
-    selectedSlot,
-  ]);
-
-  useEffect(() => {
-    // For free bookings, we don't need card completion
-    const canSubmit = isFree 
-        ? (!loading && isFormValid) 
-        : (stripe && elements && !loading && isFormValid && isCardComplete);
-
-    onPaymentAction?.({
-      handleSubmit,
-      loading,
-      canSubmit,
-      finalTotal,
-    });
-  }, [
-    onPaymentAction,
-    handleSubmit,
-    loading,
-    stripe,
-    elements,
-    finalTotal,
-    isFormValid,
-    isCardComplete,
-    isFree
-  ]);
+    },
+    [
+      selectedSlot,
+      form,
+      isFree,
+      bookingData,
+      participantsCount,
+      appliedDiscount,
+      paymentService,
+      onPaymentComplete,
+      isUserLoggedIn,
+      clientSecret,
+    ]
+  );
 
   const renderBookingDetails = () => {
     if (!selectedSlot) return null;
@@ -696,381 +795,414 @@ const ReviewAndPaymentStep = ({
     );
   };
 
-  const cardElementOptions = {
-    style: {
-      base: {
-        iconColor: "#6b7280",
-        color: "#111827",
-        fontWeight: "500",
-        fontFamily: "Proxima Soft, sans-serif",
-        fontSize: "16px",
-        "::placeholder": { color: "#9ca3af" },
-      },
-      invalid: { iconColor: "#ef4444", color: "#ef4444" },
-    },
-    hidePostalCode: true,
-  };
+  const renderSummaryContent = () => (
+    <>
+      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+        <SummaryClassImage
+          src={classData?.images?.[0]?.thumbnail_url || "/placeholder.jpg"}
+          alt={classData?.title}
+        />
+        <SummaryClassDetails>
+          <SummaryTitle>{classData?.title}</SummaryTitle>
+          {renderBookingDetails()}
+        </SummaryClassDetails>
+      </div>
 
-  const PayButton = (props) => (
-    <Button
-      type="primary"
-      size="large"
-      block
-      htmlType="button"
-      onClick={handleSubmit}
-      loading={loading}
-      disabled={
-        loading || !isFormValid || (!isFree && (!stripe || !elements || !isCardComplete))
-      }
-      {...props}
-    >
-      {loading 
-        ? "Processing..." 
-        : (isFree ? "Confirm Booking" : `Confirm & Pay $${finalTotal.toFixed(2)}`)}
-    </Button>
+      <PriceBreakdown>
+        <PriceRow>
+          <span>
+            Price &times; {participantsCount}{" "}
+            {participantsCount > 1 ? "people" : "person"}
+          </span>
+          <span>{subtotal === 0 ? "Free" : `$${subtotal.toFixed(2)}`}</span>
+        </PriceRow>
+        {appliedDiscount && (
+          <PriceRow $success>
+            <span>Discount ({appliedDiscount.code})</span>
+            <span>-${discountAmount.toFixed(2)}</span>
+          </PriceRow>
+        )}
+        <PriceRow>
+          <span>HST (13%)</span>
+          <span>${taxAmount.toFixed(2)}</span>
+        </PriceRow>
+        <PriceRow className="total">
+          <span>Total</span>
+          <span>{finalTotal === 0 ? "Free" : `$${finalTotal.toFixed(2)}`}</span>
+        </PriceRow>
+      </PriceBreakdown>
+    </>
+  );
+
+  const cancellationPolicyText = useMemo(() => {
+    return getCancellationPolicyText(
+      option?.cancellationPolicy,
+      option?.cancellationRefundPercentage,
+      option?.cancellationCustomHours,
+      selectedSlot?.date && selectedSlot?.time
+        ? `${selectedSlot.date}T${selectedSlot.time}`
+        : null,
+      userTimeZone,
+      businessTimeZone
+    );
+  }, [
+    option?.cancellationPolicy,
+    option?.cancellationRefundPercentage,
+    option?.cancellationCustomHours,
+    selectedSlot,
+    userTimeZone,
+    businessTimeZone,
+  ]);
+
+  // --- STRIPE APPEARANCE TUNING (Match Antd) ---
+  const stripeAppearance = useMemo(
+    () => ({
+      theme: "flat",
+      variables: {
+        borderRadius: "12px",
+        colorPrimary: appTheme.token.colorPrimary,
+        colorBackground: "#ffffff",
+        colorText: "#222222",
+        colorDanger: "#ff4d4f",
+        spacingUnit: "4px",
+        gridRowSpacing: "16px",
+        fontFamily: '"ProximaSoft" !important',
+      },
+      rules: {
+        ".Input": {
+          border: "1px solid #d9d9d9",
+          boxShadow: "none",
+          backgroundColor: "#ffffff",
+          transition: "all 0.2s",
+          fontSize: "14px",
+        },
+        ".Input:hover": {
+          borderColor: appTheme.token.colorPrimary, // Hover color (blue/primary)
+        },
+        ".Input:focus": {
+          borderColor: appTheme.token.colorPrimary,
+          boxShadow: `0 0 0 2px rgba(255, 56, 92, 0.2)`, // Antd focus ring
+        },
+        ".Input--invalid": {
+          borderColor: "#ff4d4f",
+          color: "#ff4d4f",
+          boxShadow: "none",
+        },
+        ".Input--invalid:focus": {
+          boxShadow: "0 0 0 2px rgba(255, 77, 79, 0.2)",
+        },
+        ".Label": {
+          fontWeight: "500",
+          color: "#222222",
+          marginBottom: "6px",
+          fontSize: "14px",
+        },
+        ".Tab": {
+          border: "1px solid #d9d9d9",
+          backgroundColor: "#ffffff",
+          padding: "10px",
+        },
+        ".Tab:hover": {
+          borderColor: appTheme.token.colorPrimary,
+          color: appTheme.token.colorPrimary,
+        },
+        ".Tab--selected": {
+          borderColor: appTheme.token.colorPrimary,
+          color: appTheme.token.colorPrimary,
+          backgroundColor: "#fff5f7", // Light primary bg
+        },
+        ".TabIcon": {
+          color: "#6b7280",
+        },
+        ".TabIcon--selected": {
+          color: appTheme.token.colorPrimary,
+        },
+      },
+    }),
+    []
   );
 
   return (
     <ConfigProvider theme={appTheme}>
-      <StepContainer>
-        <PaymentSection>
-          {error && (
-            <Alert
-              message={error}
-              type="error"
-              showIcon
-              closable
-              onClose={() => setError(null)}
-            />
-          )}
-          <FormCard>
-            <Form
-              form={form}
-              layout="vertical"
-              requiredMark={false}
-              onValuesChange={handleFormValuesChange}
-            >
-              <ParticipantNameInputs
-                count={bookingData.participants}
-                bookerNameFromBookingData={bookingData.userName}
-                form={form}
-                isUserLoggedIn={isUserLoggedIn}
-              />
+      {!isFree && !clientSecret ? (
+        <div style={{ padding: 60, textAlign: "center", color: "#6b7280" }}>
+          Preparing payment details...
+        </div>
+      ) : (
+        <Elements
+          stripe={stripePromise}
+          key={clientSecret || "free-mode"}
+          options={
+            isFree
+              ? undefined
+              : {
+                  clientSecret,
+                  appearance: stripeAppearance,
+                  // IMPORTANT: If "ProximaSoft" is a custom font (not standard),
+                  // you MUST provide the CSS URL here for it to work in the Stripe iframe.
+                  // fonts: [{ cssSrc: "https://your-site.com/fonts/proxima-soft.css" }],
+                }
+          }
+        >
+          <StepContainer>
+            <PaymentSection>
+              {error && (
+                <Alert
+                  message={error}
+                  type="error"
+                  showIcon
+                  closable
+                  onClose={() => setError(null)}
+                  style={{ marginBottom: 16 }}
+                />
+              )}
 
-              <div
-                style={{ paddingTop: "16px", borderTop: "1px solid #e5e7eb" }}
-              >
-                <SectionTitle>Your Contact Information</SectionTitle>
-                {!isUserLoggedIn && (
-                  <Form.Item
-                    name="guest_full_name"
-                    label="Full Name"
-                    rules={[
-                      { required: true, message: "Full name is required" },
-                    ]}
-                  >
-                    <Input placeholder="e.g., Jane Doe" />
-                  </Form.Item>
-                )}
-                <Form.Item
-                  name="email"
-                  label="Email Address"
-                  rules={[
-                    {
-                      required: true,
-                      type: "email",
-                      message: "A valid email is required",
-                    },
-                  ]}
+              {/* Enhanced Mobile Summary Accordion */}
+              <MobileSummaryContainer>
+                <MobileSummaryHeader
+                  onClick={() => setShowMobileSummary(!showMobileSummary)}
                 >
-                  <Input
-                    placeholder="e.g., you@example.com"
-                    readOnly={isUserLoggedIn && !!bookingData.userEmail}
-                    style={
-                      isUserLoggedIn && !!bookingData.userEmail
-                        ? {
-                            backgroundColor: "#f0f0f0",
-                            cursor: "not-allowed",
-                            color: "#555",
-                          }
-                        : {}
-                    }
-                  />
-                </Form.Item>
-                <Form.Item
-                  name="phone"
-                  label="Phone Number"
-                  rules={[
-                    { required: true, message: "Phone number is required" },
-                  ]}
-                >
-                  <Input
-                    placeholder="e.g., (416) 555-1234"
-                    readOnly={isUserLoggedIn && !!bookingData.userPhone}
-                    style={
-                      isUserLoggedIn && !!bookingData.userPhone
-                        ? {
-                            backgroundColor: "#f0f0f0",
-                            cursor: "not-allowed",
-                            color: "#555",
-                          }
-                        : {}
-                    }
-                  />
-                </Form.Item>
-              </div>
+                  <div className="title-group">
+                    <ShoppingCart size={20} />
+                    <span>Booking Summary</span>
+                  </div>
+                  <div className="price-group">
+                    <span className="total-price">
+                      ${finalTotal.toFixed(2)}
+                    </span>
+                    <ChevronDown
+                      className="toggle-icon"
+                      size={20}
+                      style={{
+                        transform: showMobileSummary ? "rotate(180deg)" : "none",
+                      }}
+                    />
+                  </div>
+                </MobileSummaryHeader>
+                <AnimatePresence initial={false}>
+                  {showMobileSummary && (
+                    <MobileSummaryContent
+                      key="content"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      {/* The padding/border is now inside the animating wrapper */}
+                      <MobileSummaryInner>
+                        {renderSummaryContent()}
+                      </MobileSummaryInner>
+                    </MobileSummaryContent>
+                  )}
+                </AnimatePresence>
+              </MobileSummaryContainer>
 
-              {/* Hide Payment Fields if the booking is FREE */}
-              {!isFree && (
-                <div
-                  style={{ paddingTop: "16px", borderTop: "1px solid #e5e7eb" }}
+              <FormCard>
+                <Form
+                  form={form}
+                  layout="vertical"
+                  requiredMark={false}
+                  onValuesChange={handleFormValuesChange}
                 >
-                  <SectionTitle>Payment & Billing</SectionTitle>
-                  <Form.Item
-                    name="fullName"
-                    label="Full Name on Card"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Cardholder's name is required",
-                      },
-                    ]}
-                  >
-                    <Input placeholder="e.g., John Doe" />
-                  </Form.Item>
-                  <Form.Item
-                    name="address"
-                    label="Billing Address"
-                    rules={[
-                      { required: true, message: "Billing address is required" },
-                    ]}
-                  >
-                    <Input placeholder="e.g., 123 Main Street" />
-                  </Form.Item>
+                  <ParticipantNameInputs
+                    count={bookingData.participants}
+                    bookerNameFromBookingData={bookingData.userName}
+                    form={form}
+                    isUserLoggedIn={isUserLoggedIn}
+                  />
+
                   <div
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
-                      gap: "16px",
+                      paddingTop: "16px",
+                      borderTop: "1px solid #e5e7eb",
+                      marginTop: 16,
                     }}
                   >
-                    <Form.Item
-                      name="city"
-                      label="City"
-                      rules={[{ required: true }]}
-                    >
-                      <Input placeholder="e.g., Toronto" />
-                    </Form.Item>
-                    <Form.Item
-                      name="state"
-                      label="Province"
-                      rules={[{ required: true }]}
-                    >
-                      <Input placeholder="e.g., Ontario" />
-                    </Form.Item>
-                    <Form.Item
-                      name="zipCode"
-                      label="Postal Code"
-                      rules={[{ required: true }]}
-                    >
-                      <Input placeholder="e.g., M5V 2T6" />
-                    </Form.Item>
-                  </div>
-                  <Form.Item label="Credit or Debit Card">
-                    <CardElementContainer>
-                      <CardElement
-                        options={cardElementOptions}
-                        onChange={(e) => setIsCardComplete(e.complete)}
-                      />
-                    </CardElementContainer>
-                  </Form.Item>
-                </div>
-              )}
-
-              <div
-                style={{ paddingTop: "16px", borderTop: "1px solid #e5e7eb" }}
-              >
-                <SectionTitle>Add-ons</SectionTitle>
-                {!appliedDiscount ? (
-                  <Form.Item label="Have a Coupon?">
-                    <CouponInputWrapper>
-                      <Input
-                        placeholder="COUPONCODE"
-                        value={couponCode}
-                        onChange={(e) =>
-                          setCouponCode(e.target.value.toUpperCase())
-                        }
-                        disabled={couponLoading}
-                      />
-                      <Button
-                        type="primary"
-                        onClick={handleApplyCoupon}
-                        loading={couponLoading}
-                        ghost
-                        style={{ height: "48px" }}
+                    <SectionTitle>Contact Info</SectionTitle>
+                    {!isUserLoggedIn && (
+                      <Form.Item
+                        name="guest_full_name"
+                        rules={[{ required: true, message: "Required" }]}
                       >
-                        Apply
-                      </Button>
-                    </CouponInputWrapper>
-                  </Form.Item>
-                ) : (
-                  <AppliedCouponDisplay>
+                        <Input placeholder="Full Name" />
+                      </Form.Item>
+                    )}
                     <div
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: 12,
                       }}
                     >
-                      <Percent size={16} />
-                      <span>{appliedDiscount.code.toUpperCase()} Applied</span>
+                      <Form.Item
+                        name="email"
+                        rules={[{ required: true, type: "email" }]}
+                      >
+                        <Input placeholder="Email" readOnly={isUserLoggedIn} />
+                      </Form.Item>
+                      <Form.Item name="phone" rules={[{ required: true }]}>
+                        <Input placeholder="Phone" readOnly={isUserLoggedIn} />
+                      </Form.Item>
                     </div>
-                    <Button
-                      type="link"
-                      danger
-                      onClick={handleRemoveCoupon}
-                      size="small"
-                    >
-                      Remove
-                    </Button>
-                  </AppliedCouponDisplay>
-                )}
-                <Form.Item name="notes" label="Additional Notes (Optional)">
-                  <Input.TextArea
-                    rows={3}
-                    placeholder="Any special requests for the instructor?"
+                  </div>
+
+                  <div
+                    style={{
+                      paddingTop: "16px",
+                      borderTop: "1px solid #e5e7eb",
+                    }}
+                  >
+                    {!appliedDiscount ? (
+                      <Form.Item label="Have a Coupon?">
+                        <CouponInputWrapper>
+                          <Input
+                            placeholder="PROMO CODE"
+                            value={couponCode}
+                            onChange={(e) =>
+                              setCouponCode(e.target.value.toUpperCase())
+                            }
+                          />
+                          <Button
+                            onClick={handleApplyCoupon}
+                            loading={couponLoading}
+                            size="large"
+                          >
+                            Apply
+                          </Button>
+                        </CouponInputWrapper>
+                      </Form.Item>
+                    ) : (
+                      <AppliedCouponDisplay>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <Percent size={16} />
+                          <span>
+                            {appliedDiscount.code.toUpperCase()} Applied
+                          </span>
+                        </div>
+                        <Button
+                          type="text"
+                          danger
+                          onClick={handleRemoveCoupon}
+                          size="small"
+                        >
+                          Remove
+                        </Button>
+                      </AppliedCouponDisplay>
+                    )}
+                  </div>
+
+                  <PaymentFormContent
+                    form={form}
+                    handleSubmit={handleSubmit}
+                    loading={loading}
+                    isFree={isFree}
+                    isFormValid={isFormValid}
+                    finalTotal={finalTotal}
+                    clientSecret={clientSecret}
+                    onPaymentAction={onPaymentAction}
                   />
-                </Form.Item>
-              </div>
-            </Form>
-          </FormCard>
-        </PaymentSection>
 
-        <SummarySection>
-          <SummaryCard>
-            <SummaryHeader>
-              <SummaryClassImage
-                src={
-                  classData?.images?.[0]?.thumbnail_url || "/placeholder.jpg"
-                }
-                alt={classData?.title}
-              />
-              <SummaryClassDetails>
-                <SummaryTitle>{classData?.title || "Class Title"}</SummaryTitle>
-                {renderBookingDetails()}
-              </SummaryClassDetails>
-            </SummaryHeader>
-            <SectionTitle>Order Summary</SectionTitle>
-            <PriceBreakdown>
-              <PriceRow>
-                <span>
-                  Price &times; {participantsCount}{" "}
-                  {participantsCount > 1 ? "people" : "person"}
-                </span>
-                <span>
-                  {subtotal === 0 ? "Free" : `$${subtotal.toFixed(2)}`}
-                </span>
-              </PriceRow>
-              {appliedDiscount && (
-                <PriceRow $success>
-                  <span>Discount ({appliedDiscount.code.toUpperCase()})</span>
-                  <span>-${discountAmount.toFixed(2)}</span>
-                </PriceRow>
+                  <div style={{ marginTop: 24 }}>
+                    <Form.Item name="notes" label="Additional Notes">
+                      <Input.TextArea
+                        placeholder="Any special requests?"
+                        rows={2}
+                      />
+                    </Form.Item>
+                  </div>
+                </Form>
+              </FormCard>
+            </PaymentSection>
+
+            <SummarySection>
+              <SummaryCard>
+                <SectionTitle>Order Summary</SectionTitle>
+                {renderSummaryContent()}
+
+                <InfoPanel
+                  $bgColor="#f9fafb"
+                  $borderColor="#e5e7eb"
+                  $iconColor="#6b7280"
+                  $titleColor="#111827"
+                  $textColor="#4b5563"
+                >
+                  <Shield />
+                  <div>
+                    <h5>Cancellation Policy</h5>
+                    <p>{cancellationPolicyText}</p>
+                  </div>
+                </InfoPanel>
+
+                {isFree ? (
+                  <InfoPanel
+                    $bgColor="#f0fdf4"
+                    $borderColor="#bbf7d0"
+                    $iconColor="#22c55e"
+                    $titleColor="#15803d"
+                    $textColor="#166534"
+                  >
+                    <CheckCircle />
+                    <div>
+                      <h5>No Payment Required</h5>
+                      <p>This booking is free. No card needed.</p>
+                    </div>
+                  </InfoPanel>
+                ) : (
+                  <InfoPanel
+                    $bgColor="#f0fdf4"
+                    $borderColor="#bbf7d0"
+                    $iconColor="#22c55e"
+                    $titleColor="#15803d"
+                    $textColor="#166534"
+                  >
+                    <Lock />
+                    <div>
+                      <h5>Secure Payment</h5>
+                      <p>Your payment is encrypted and processed securely.</p>
+                    </div>
+                  </InfoPanel>
+                )}
+              </SummaryCard>
+            </SummarySection>
+
+            <AnimatePresence>
+              {isFormValid && (
+                <MobilePaymentFooter
+                  initial={{ y: 100 }}
+                  animate={{ y: 0 }}
+                  exit={{ y: 100 }}
+                >
+                  <MobileTotalDisplay>
+                    <span className="label">Total</span>
+                    <span className="amount">${finalTotal.toFixed(2)}</span>
+                  </MobileTotalDisplay>
+                  <Button
+                    type="primary"
+                    size="large"
+                    loading={loading}
+                    onClick={() => onPaymentAction.handleSubmit()}
+                    style={{
+                      minWidth: 140,
+                      background: "#ff385c",
+                      border: "none",
+                      height: "48px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {isFree ? "Confirm" : "Pay Now"}
+                  </Button>
+                </MobilePaymentFooter>
               )}
-              <PriceRow>
-                <span>HST (13%)</span>
-                <span>${taxAmount.toFixed(2)}</span>
-              </PriceRow>
-              <PriceRow className="total">
-                <span>Grand Total (CAD)</span>
-                <span>
-                  {finalTotal === 0 ? "Free" : `$${finalTotal.toFixed(2)}`}
-                </span>
-              </PriceRow>
-            </PriceBreakdown>
-
-            <InfoPanel
-              $bgColor="#eef2ff"
-              $borderColor="#c7d2fe"
-              $iconColor="#4f46e5"
-              $titleColor="#3730a3"
-              $textColor="#4338ca"
-            >
-              <Shield />
-              <div>
-                <h5>Cancellation Policy</h5>
-                <p>
-                  {getCancellationPolicyText(
-                    option?.cancellationPolicy,
-                    option?.cancellationRefundPercentage,
-                    option?.cancellationCustomHours,
-                    selectedSlot?.date && selectedSlot?.time
-                      ? `${selectedSlot.date}T${selectedSlot.time}`
-                      : null,
-                    userTimeZone,
-                    businessTimeZone
-                  )}
-                </p>
-              </div>
-            </InfoPanel>
-
-            {/* Free Booking Note */}
-            {isFree && (
-              <InfoPanel
-                $bgColor="#f0fdf4"
-                $borderColor="#bbf7d0"
-                $iconColor="#22c55e"
-                $titleColor="#15803d"
-                $textColor="#166534"
-              >
-                <CheckCircle />
-                <div>
-                  <h5>No Payment Required</h5>
-                  <p>This booking is free. No credit card is required.</p>
-                </div>
-              </InfoPanel>
-            )}
-
-            {!isFree && (
-              <InfoPanel
-                $bgColor="#f0fdf4"
-                $borderColor="#bbf7d0"
-                $iconColor="#22c55e"
-                $titleColor="#15803d"
-                $textColor="#166534"
-              >
-                <Lock />
-                <div>
-                  <h5>Secure Payment</h5>
-                  <p>
-                    Your payment is encrypted and processed securely by Stripe.
-                  </p>
-                </div>
-              </InfoPanel>
-            )}
-          </SummaryCard>
-        </SummarySection>
-      </StepContainer>
-
-      <AnimatePresence>
-        {isFormValid && (isFree || isCardComplete) && (
-          <MobilePaymentFooter
-            $visible={true}
-            variants={mobileFooterVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-          >
-            <MobilePriceRow>
-              <span>Grand Total (CAD)</span>
-              <span>
-                {finalTotal === 0 ? "Free" : `$${finalTotal.toFixed(2)}`}
-              </span>
-            </MobilePriceRow>
-            <PayButton style={{ width: "100%" }} />
-          </MobilePaymentFooter>
-        )}
-      </AnimatePresence>
+            </AnimatePresence>
+          </StepContainer>
+        </Elements>
+      )}
     </ConfigProvider>
   );
 };

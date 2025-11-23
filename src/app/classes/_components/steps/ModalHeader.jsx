@@ -1,18 +1,14 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Clock,
   Users,
   Check,
   Calendar,
-  ArrowRight,
-  ChevronDown,
-  ChevronUp,
-  MapPin,
 } from "lucide-react";
 import styled from "styled-components";
 import { getScheduleSummary, getDurationText } from "./utils";
-import { motion, AnimatePresence } from "framer-motion";
-import { formatTimeRangeForDisplay, formatNaiveDate } from "@/services/utils";
+import { AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const theme = {
   primary: "#ff385c",
@@ -84,7 +80,7 @@ const ClassMeta = styled.div`
   }
 `;
 
-// --- New Progress Bar Styles ---
+// --- Progress Bar Styles ---
 const ProgressContainer = styled.div`
   position: relative;
   display: flex;
@@ -162,109 +158,6 @@ const StepLabel = styled.span`
       : theme.textSecondary};
   white-space: nowrap;
   transition: color 0.3s ease;
-`;
-
-// --- Booking Summary Styles ---
-const BookingSummaryContainer = styled.div`
-  margin-top: 16px;
-  border-top: 1px solid ${theme.borderLight};
-  padding-top: 16px;
-
-  @media (min-width: 969px) {
-    display: none;
-  }
-`;
-
-const SummaryHeader = styled.button`
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: transparent;
-  border: none;
-  padding: 12px 16px;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #f9fafb;
-  }
-`;
-
-const SummaryHeaderLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-const SummaryCompact = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  text-align: left;
-`;
-
-const SummaryDate = styled.div`
-  font-size: 14px;
-  font-weight: 600;
-  color: ${theme.textPrimary};
-  display: flex;
-  align-items: center;
-  gap: 6px;
-`;
-
-const SummaryDetails = styled.div`
-  font-size: 12px;
-  color: ${theme.textSecondary};
-`;
-
-const ExpandIcon = styled(motion.div)`
-  color: ${theme.textSecondary};
-`;
-
-const SummaryExpanded = styled(motion.div)`
-  background-color: #f9fafb;
-  border-radius: 8px;
-  overflow: hidden;
-`;
-
-const SummaryRow = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 8px 0;
-
-  &:not(:last-child) {
-    border-bottom: 1px solid ${theme.borderLight};
-  }
-
-  svg {
-    flex-shrink: 0;
-    width: 16px;
-    height: 16px;
-    color: ${theme.primary};
-    margin-top: 2px;
-  }
-`;
-
-const SummaryRowContent = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-`;
-
-const SummaryRowLabel = styled.div`
-  font-size: 12px;
-  color: ${theme.textSecondary};
-  font-weight: 500;
-`;
-
-const SummaryRowValue = styled.div`
-  font-size: 14px;
-  color: ${theme.textPrimary};
-  font-weight: 500;
 `;
 
 // --- Footer Styles ---
@@ -387,126 +280,9 @@ const DesktopPayButton = styled(Button)`
   }
 `;
 
-// --- Booking Summary Component ---
-const BookingSummary = ({
-  bookingData,
-  classData,
-  businessTimeZone,
-  userTimeZone,
-}) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  if (!bookingData?.selectedSlots?.[0]) {
-    return null;
-  }
-
-  const selectedSlot = bookingData.selectedSlots[0];
-  const selectedOption = classData?.selectedOption;
-  const participantsCount = bookingData.participants || 1;
-  const schedule = selectedOption?.schedules?.find(
-    (s) => s.scheduleId === selectedSlot.scheduleId
-  );
-
-  const dateDisplay = formatNaiveDate(selectedSlot.date, "EEE, MMM d, yyyy");
-  const timeDisplay = formatTimeRangeForDisplay(
-    selectedSlot.date,
-    selectedSlot.time,
-    selectedSlot.duration,
-    businessTimeZone,
-    userTimeZone
-  );
-
-  return (
-    <BookingSummaryContainer>
-      <SummaryHeader onClick={() => setIsExpanded(!isExpanded)}>
-        <SummaryHeaderLeft>
-          <Calendar size={20} style={{ color: theme.primary }} />
-          <SummaryCompact>
-            <SummaryDate>
-              {formatNaiveDate(selectedSlot.date, "MMM d, yyyy")}
-            </SummaryDate>
-            <SummaryDetails>
-              {timeDisplay} • {participantsCount}{" "}
-              {participantsCount > 1 ? "people" : "person"}
-            </SummaryDetails>
-          </SummaryCompact>
-        </SummaryHeaderLeft>
-        <ExpandIcon
-          animate={{ rotate: isExpanded ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <ChevronDown size={20} />
-        </ExpandIcon>
-      </SummaryHeader>
-
-      <AnimatePresence initial={false}>
-        {isExpanded && (
-          <SummaryExpanded
-            initial={{ maxHeight: 0, opacity: 0, marginTop: 0 }}
-            animate={{ maxHeight: 500, opacity: 1, marginTop: 8 }}
-            exit={{ maxHeight: 0, opacity: 0, marginTop: 0 }}
-            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-          >
-            <div style={{ padding: "16px" }}>
-              <SummaryRow>
-                <Calendar size={16} />
-                <SummaryRowContent>
-                  <SummaryRowLabel>Date & Time</SummaryRowLabel>
-                  <SummaryRowValue>{dateDisplay}</SummaryRowValue>
-                  <SummaryRowValue
-                    style={{ fontSize: "13px", color: theme.textSecondary }}
-                  >
-                    {timeDisplay}
-                  </SummaryRowValue>
-                </SummaryRowContent>
-              </SummaryRow>
-
-              <SummaryRow>
-                <Users size={16} />
-                <SummaryRowContent>
-                  <SummaryRowLabel>Participants</SummaryRowLabel>
-                  <SummaryRowValue>
-                    {participantsCount}{" "}
-                    {participantsCount > 1 ? "people" : "person"}
-                  </SummaryRowValue>
-                </SummaryRowContent>
-              </SummaryRow>
-
-              <SummaryRow>
-                <Clock size={16} />
-                <SummaryRowContent>
-                  <SummaryRowLabel>Duration</SummaryRowLabel>
-                  <SummaryRowValue>
-                    {getDurationText(
-                      selectedSlot.duration || schedule?.duration
-                    )}
-                  </SummaryRowValue>
-                </SummaryRowContent>
-              </SummaryRow>
-
-              {schedule?.location && (
-                <SummaryRow>
-                  <MapPin size={16} />
-                  <SummaryRowContent>
-                    <SummaryRowLabel>Location</SummaryRowLabel>
-                    <SummaryRowValue>{schedule.location}</SummaryRowValue>
-                  </SummaryRowContent>
-                </SummaryRow>
-              )}
-            </div>
-          </SummaryExpanded>
-        )}
-      </AnimatePresence>
-    </BookingSummaryContainer>
-  );
-};
-
 export const ModalHeader = ({
   classData,
   currentStep,
-  bookingData = null,
-  businessTimeZone = "Etc/UTC",
-  userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone,
 }) => {
   const selectedOption = classData?.selectedOption;
   const summary = getScheduleSummary(selectedOption?.schedules);
@@ -578,16 +354,6 @@ export const ModalHeader = ({
           );
         })}
       </ProgressContainer>
-
-      {/* Show booking summary on step 2 */}
-      {currentStep === 2 && bookingData && (
-        <BookingSummary
-          bookingData={bookingData}
-          classData={classData}
-          businessTimeZone={businessTimeZone}
-          userTimeZone={userTimeZone}
-        />
-      )}
     </HeaderContainer>
   );
 };
@@ -627,6 +393,7 @@ export const ModalFooter = ({
 
   const isPaymentDisabled = !paymentAction?.canSubmit || paymentAction?.loading;
   const showBackButton = currentStep > 1 && !hideBackButton;
+  // Show slot info in footer only on step 1 to avoid clutter on payment step
   const showSelectedSlotInfo = currentStep === 1 && selectedSlot;
 
   return (
@@ -650,23 +417,19 @@ export const ModalFooter = ({
                 transition={{ duration: 0.2 }}
               >
                 <Calendar size={16} />
-                <strong>{formatNaiveDate(selectedSlot.date, "MMM d")}</strong>
-                <span>
-                  {formatTimeRangeForDisplay(
-                    selectedSlot.date,
-                    selectedSlot.time,
-                    selectedSlot.duration,
-                    businessTimeZone,
-                    userTimeZone
-                  )}
-                </span>
+                <strong>
+                  {/* Reuse utils format if needed, simplistic check here */}
+                  {new Date(selectedSlot.date).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </strong>
               </SelectedSlotInfo>
             )}
           </AnimatePresence>
         </FooterLeft>
 
         <FooterRight>
-          {/* MODIFICATION: Conditionally render Step 1 Next button based on hideNextButton */}
           {currentStep === 1 && !hideNextButton && (
             <Button $primary onClick={onNext} disabled={isNextDisabled}>
               {getButtonText()}
