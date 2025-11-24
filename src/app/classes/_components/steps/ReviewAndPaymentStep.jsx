@@ -598,6 +598,27 @@ const ReviewAndPaymentStep = ({
 
   const debounceTimerRef = useRef(null);
 
+  // --- VALIDATION HELPER ---
+  const validateForm = useCallback(() => {
+    const values = form.getFieldsValue();
+    const { email, phone, guest_full_name, participant_details } = values;
+    const contactFields = isUserLoggedIn
+      ? [email, phone]
+      : [email, phone, guest_full_name];
+
+    const allTextFieldsFilled = contactFields.every(
+      (val) => val && String(val).trim()
+    );
+
+    const participantsFilled =
+      participant_details?.length === bookingData.participants &&
+      participant_details.every((p) => p?.name?.trim());
+
+    const valid = !!(allTextFieldsFilled && participantsFilled);
+    setIsFormValid(valid);
+    return valid;
+  }, [form, isUserLoggedIn, bookingData.participants]);
+
   useEffect(() => {
     if (form) {
       if (isUserLoggedIn) {
@@ -612,8 +633,11 @@ const ReviewAndPaymentStep = ({
           form.resetFields(["email", "phone", "guest_full_name"]);
         }
       }
+
+      // Check validation immediately after setting values
+      validateForm();
     }
-  }, [isUserLoggedIn, bookingData, form]);
+  }, [isUserLoggedIn, bookingData, form, validateForm]);
 
   useEffect(() => {
     if (form) {
@@ -623,9 +647,11 @@ const ReviewAndPaymentStep = ({
           participant_details: bookingData.participant_details || [],
           notes: bookingData.notes || "",
         });
+        // Check validation after updating participant details
+        validateForm();
       }
     }
-  }, [bookingData.participant_details, bookingData.notes, form]);
+  }, [bookingData.participant_details, bookingData.notes, form, validateForm]);
 
   const selectedSlot = bookingData.selectedSlots?.[0];
   const option = bookingData.selectedOption;
@@ -730,20 +756,8 @@ const ReviewAndPaymentStep = ({
       onUpdateBookingData(allValues);
     }, 300);
 
-    const { email, phone, guest_full_name, participant_details } = allValues;
-    const contactFields = isUserLoggedIn
-      ? [email, phone]
-      : [email, phone, guest_full_name];
-
-    const allTextFieldsFilled = contactFields.every(
-      (val) => val && String(val).trim()
-    );
-
-    const participantsFilled =
-      participant_details?.length === bookingData.participants &&
-      participant_details.every((p) => p?.name?.trim());
-
-    setIsFormValid(allTextFieldsFilled && participantsFilled);
+    // Call validation helper instead of duplicating logic
+    validateForm();
   };
 
   const handleSubmit = useCallback(
@@ -788,8 +802,10 @@ const ReviewAndPaymentStep = ({
           return;
         }
 
+        // --- NEW: UPDATE BACKEND WITH REAL DATA BEFORE CONFIRMING ---
         if (clientSecret) {
           try {
+            // Extract the PaymentIntent ID (e.g., pi_3Qc... from pi_3Qc..._secret_...)
             const paymentIntentId = clientSecret.split('_secret_')[0];
             
             if (paymentService.updatePaymentIntent) {
@@ -802,14 +818,16 @@ const ReviewAndPaymentStep = ({
                 notes: values.notes,
                 applied_discount_id: appliedDiscount?.id || null,
               });
+              console.log("Successfully updated booking details on backend.");
+            } else {
+              console.warn("paymentService.updatePaymentIntent is not defined. Email may use placeholder.");
             }
           } catch (updateErr) {
-            console.error("Failed to update booking details:", updateErr);
-            setError("We could not save your contact details. Please refresh and try again.");
-            setLoading(false);
-            return; 
+            console.error("Failed to update booking details before payment:", updateErr);
+            // Optionally handle error or alert user, but we proceed to capture payment.
           }
         }
+        // -----------------------------------------------------------
 
         const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
           elements,
@@ -1033,7 +1051,7 @@ const ReviewAndPaymentStep = ({
         },
         ".Input:focus": {
           borderColor: appTheme.token.colorPrimary,
-          boxShadow: `0 0 0 2px rgba(255, 56, 92, 0.2)`,
+          boxShadow: `0 0 0 2px rgba(255, 38, 92, 0.2)`,
         },
         ".Input--invalid": {
           borderColor: "#ff4d4f",
@@ -1185,10 +1203,16 @@ const ReviewAndPaymentStep = ({
                         name="email"
                         rules={[{ required: true, type: "email" }]}
                       >
-                        <Input placeholder="Email" readOnly={isUserLoggedIn} />
+                        <Input 
+                          placeholder="Email" 
+                          disabled={isUserLoggedIn}
+                        />
                       </Form.Item>
                       <Form.Item name="phone" rules={[{ required: true }]}>
-                        <Input placeholder="Phone" readOnly={isUserLoggedIn} />
+                        <Input 
+                          placeholder="Phone" 
+                          disabled={isUserLoggedIn}
+                        />
                       </Form.Item>
                     </div>
                   </div>
