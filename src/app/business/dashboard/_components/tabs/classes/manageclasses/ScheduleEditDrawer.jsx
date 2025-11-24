@@ -1957,7 +1957,6 @@ const ScheduleEditDrawer = ({
           </StepDescription>
         </StepHeader>
 
-        <Form.Item name="commonDetails" noStyle>
           <FormGrid>
             <FormGroup>
               <FormLabel>
@@ -2007,7 +2006,6 @@ const ScheduleEditDrawer = ({
               </NoMarginFormItem>
             </FormGroup>
           </FormGrid>
-        </Form.Item>
       </FormSection>
     );
 
