@@ -788,10 +788,8 @@ const ReviewAndPaymentStep = ({
           return;
         }
 
-        // --- NEW: UPDATE BACKEND WITH REAL DATA BEFORE CONFIRMING ---
         if (clientSecret) {
           try {
-            // Extract the PaymentIntent ID (e.g., pi_3Qc... from pi_3Qc..._secret_...)
             const paymentIntentId = clientSecret.split('_secret_')[0];
             
             if (paymentService.updatePaymentIntent) {
@@ -804,16 +802,14 @@ const ReviewAndPaymentStep = ({
                 notes: values.notes,
                 applied_discount_id: appliedDiscount?.id || null,
               });
-              console.log("Successfully updated booking details on backend.");
-            } else {
-              console.warn("paymentService.updatePaymentIntent is not defined. Email may use placeholder.");
             }
           } catch (updateErr) {
-            console.error("Failed to update booking details before payment:", updateErr);
-            // Optionally handle error or alert user, but we proceed to capture payment.
+            console.error("Failed to update booking details:", updateErr);
+            setError("We could not save your contact details. Please refresh and try again.");
+            setLoading(false);
+            return; 
           }
         }
-        // -----------------------------------------------------------
 
         const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
           elements,

@@ -192,7 +192,7 @@ export const paymentService = {
       throw error.response?.data || error;
     }
   },
-    updatePaymentIntent: async (payload) => {
+  updatePaymentIntent: async (payload) => {
     try {
       const response = await axiosInstance.post(
         API_ENDPOINTS.PAYMENTS_UPDATE_INTENT, 
@@ -201,9 +201,7 @@ export const paymentService = {
       return response.data;
     } catch (error) {
       console.error('Error updating payment intent:', error);
-      // We don't throw here to ensure the payment flow attempts to continue 
-      // even if the metadata update fails (though ideal is to stop).
-      return { success: false }; 
+      throw error.response?.data || error; 
     }
   }
 };
