@@ -701,8 +701,14 @@ const DatesScrollArea = styled.div`
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  /* Added padding to prevent arrows from overlapping date cards */
-  padding: 4px 54px 12px 54px; 
+  
+  /* Vertical padding only - horizontal spacing is handled by spacers below */
+  padding: 4px 0 12px 0;
+  
+  /* Critical: Tells scroll-snap to align items 72px from the edges, 
+     preventing them from snapping under the fade/arrows */
+  scroll-padding: 0 72px;
+
   scrollbar-width: none;
   -ms-overflow-style: none;
   scroll-behavior: smooth;
@@ -712,6 +718,17 @@ const DatesScrollArea = styled.div`
   }
   
   scroll-snap-type: x mandatory;
+
+  /* Physical spacers to guarantee content starts/ends after the fade area */
+  &::before,
+  &::after {
+    content: '';
+    display: block;
+    /* 64px spacer + 8px flex gap = 72px total visual space */
+    flex: 0 0 64px; 
+    min-width: 64px;
+    height: 1px;
+  }
 `;
 const MonthNavigation = styled.div`
   display: flex;
@@ -1276,6 +1293,11 @@ const ScheduleManagementView = React.memo(({
   );
 });
 
+ const NoMarginFormItem = (props) => (
+    <Form.Item {...props} style={{ marginBottom: 0 }} />
+  );
+
+
 const ScheduleEditDrawer = ({
   open,
   onClose,
@@ -1437,7 +1459,19 @@ const ScheduleEditDrawer = ({
 
   const handleBulkSubmit = async () => {
     try {
-      const values = await bulkForm.validateFields();
+      // FIX: validateFields() only returns fields currently in the DOM (Step 2),
+      // so it misses 'date_range' from Step 0.
+      // We assume previous steps were validated by handleBulkNext.
+      // We construct 'values' by merging the accumulated formData with the current form store.
+      
+      const values = { ...formData, ...bulkForm.getFieldsValue(true) };
+      
+      // Basic check to ensure critical data isn't missing
+      if (!values.date_range || !values.date_range[0]) {
+         message.error("Date range is missing. Please go back and select dates.");
+         return;
+      }
+
       setIsBulkLoading(true);
 
       const payload = {
@@ -1447,10 +1481,10 @@ const ScheduleEditDrawer = ({
         end_date: values.date_range[1].format("YYYY-MM-DD"),
         days_of_week: values.days_of_week,
         times: values.times.map((t) => t.format("HH:mm")),
-        duration: values.commonDetails.duration,
-        price: parseFloat(values.commonDetails.price).toFixed(2),
-        maxParticipants: values.commonDetails.maxParticipants,
-        minParticipants: values.commonDetails.minParticipants || 1,
+        duration: values.commonDetails?.duration,
+        price: parseFloat(values.commonDetails?.price || 0).toFixed(2),
+        maxParticipants: values.commonDetails?.maxParticipants,
+        minParticipants: values.commonDetails?.minParticipants || 1,
       };
 
       const result = await scheduleService.bulkCreateSchedules(payload);
@@ -1468,7 +1502,6 @@ const ScheduleEditDrawer = ({
       setIsBulkLoading(false);
     }
   };
-  
   const validateStep = async (step) => {
     try {
       switch (step) {
@@ -1518,6 +1551,10 @@ const ScheduleEditDrawer = ({
           ["commonDetails", "minParticipants"],
         ]);
       }
+      
+      const currentValues = bulkForm.getFieldsValue(true);
+      setFormData((prev) => ({ ...prev, ...currentValues }));
+
       setBulkCurrentStep(bulkCurrentStep + 1);
     } catch (error) {
       console.error("Validation failed:", error);
@@ -1528,10 +1565,7 @@ const ScheduleEditDrawer = ({
     if (bulkCurrentStep > 0) setBulkCurrentStep(bulkCurrentStep - 1);
   };
 
-  const NoMarginFormItem = (props) => (
-    <Form.Item {...props} style={{ marginBottom: 0 }} />
-  );
-
+ 
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
@@ -2010,9 +2044,12 @@ const ScheduleEditDrawer = ({
     );
 
     const renderBulkStep2 = () => {
-      const times = bulkFormData.times || [];
-      const daysOfWeek = bulkFormData.days_of_week || [];
-      const dateRange = bulkFormData.date_range || [];
+      const times = formData.times || [];
+      const daysOfWeek = formData.days_of_week || [];
+      const dateRange = formData.date_range || [];
+      
+      // Use formData for commonDetails as well
+      const commonDetails = formData.commonDetails || {};
 
       return (
         <FormSection key="bulk-step2">
@@ -2025,7 +2062,7 @@ const ScheduleEditDrawer = ({
           <ReviewSection>
             <InfoRow>
               <InfoLabel>Group Name</InfoLabel>
-              <InfoValue>{bulkFormData.name || "Not Specified"}</InfoValue>
+              <InfoValue>{formData.name || "Not Specified"}</InfoValue>
             </InfoRow>
             <InfoRow>
               <InfoLabel>Date Range</InfoLabel>
@@ -2059,8 +2096,8 @@ const ScheduleEditDrawer = ({
             <InfoRow>
               <InfoLabel>Duration</InfoLabel>
               <InfoValue>
-                {bulkFormData.commonDetails?.duration
-                  ? `${bulkFormData.commonDetails.duration} minutes`
+                {commonDetails.duration
+                  ? `${commonDetails.duration} minutes`
                   : "Not set"}
               </InfoValue>
             </InfoRow>
@@ -2068,10 +2105,10 @@ const ScheduleEditDrawer = ({
               <InfoLabel>Price</InfoLabel>
               <InfoValue>
                 <DollarSign size={16} />
-                {parseFloat(bulkFormData.commonDetails?.price) === 0
+                {parseFloat(commonDetails.price) === 0
                   ? "Free"
                   : `$${parseFloat(
-                      bulkFormData.commonDetails?.price || 0
+                      commonDetails.price || 0
                     ).toFixed(2)}`}
               </InfoValue>
             </InfoRow>
@@ -2079,14 +2116,14 @@ const ScheduleEditDrawer = ({
               <InfoLabel>Max Capacity</InfoLabel>
               <InfoValue>
                 <Users size={16} />
-                {bulkFormData.commonDetails?.maxParticipants || 0} participants
+                {commonDetails.maxParticipants || 0} participants
               </InfoValue>
             </InfoRow>
             <InfoRow>
               <InfoLabel>Min Participants</InfoLabel>
               <InfoValue>
                 <Users size={16} />
-                {bulkFormData.commonDetails?.minParticipants || 1} participants
+                {commonDetails.minParticipants || 1} participants
               </InfoValue>
             </InfoRow>
           </ReviewSection>
