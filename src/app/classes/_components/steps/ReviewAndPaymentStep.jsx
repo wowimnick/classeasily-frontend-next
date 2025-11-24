@@ -6,7 +6,7 @@ import {
   useStripe,
   useElements,
   Elements,
-  PaymentRequestButtonElement, // Kept this for the black button
+  PaymentRequestButtonElement,
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import styled from "styled-components";
@@ -33,11 +33,9 @@ import { formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
 
 const HST_RATE = 0.13;
 
-// Initialize Stripe outside to avoid recreation on renders
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
-// --- STYLED COMPONENTS ---
-
+// --- STYLED COMPONENTS (Keep as is) ---
 const StepContainer = styled.div`
   display: grid;
   grid-template-columns: 1fr;
@@ -68,7 +66,6 @@ const SummarySection = styled.div`
   }
 `;
 
-// --- Redesigned Mobile Summary ---
 const MobileSummaryContainer = styled.div`
   display: block;
   background: white;
@@ -135,7 +132,6 @@ const MobileSummaryInner = styled.div`
   border-top: 1px solid #f0f0f0;
   padding: 20px;
 `;
-// --- End Redesign ---
 
 const Card = styled.div`
   background: white;
@@ -308,6 +304,7 @@ const MobileTotalDisplay = styled.div`
   }
 `;
 
+// --- HELPERS (Keep as is) ---
 const ParticipantNameInputs = ({
   count,
   form,
@@ -373,8 +370,7 @@ const ParticipantNameInputs = ({
   );
 };
 
-// --- EXPRESS CHECKOUT COMPONENT (Kept to render the Black Button) ---
-const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete }) => {
+const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, paymentService, bookingData }) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
 
@@ -382,44 +378,76 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete }) 
     if (!stripe || !finalTotal) return;
 
     const pr = stripe.paymentRequest({
-      country: 'CA', // Match your stripe account country
+      country: 'CA',
       currency: 'cad',
       total: {
         label: 'Booking Total',
-        amount: Math.round(finalTotal * 100), // Amount in cents
+        amount: Math.round(finalTotal * 100),
       },
+      // We request these so Apple Pay asks the user for them
       requestPayerName: true,
       requestPayerEmail: true,
-      requestPayerPhone: true,
+      requestPayerPhone: true, 
     });
 
     pr.canMakePayment().then((result) => {
-      console.log("[ExpressCheckout] canMakePayment result:", result);
       if (result) {
         setPaymentRequest(pr);
       }
     });
 
     pr.on('paymentmethod', async (ev) => {
-      console.log("[ExpressCheckout] Payment Method Received:", ev);
-      
+      // 1. Extract contact info DIRECTLY from the Apple Pay event
+      // Apple Pay returns: ev.payerName, ev.payerEmail, ev.payerPhone
+      const payerName = ev.payerName; // "John Doe"
+      const payerEmail = ev.payerEmail;
+      const payerPhone = ev.payerPhone;
+
       try {
+        // 2. Update Backend with this real info
+        if (clientSecret) {
+          const paymentIntentId = clientSecret.split('_secret_')[0];
+          
+          if (paymentService && paymentService.updatePaymentIntent) {
+            await paymentService.updatePaymentIntent({
+              payment_intent_id: paymentIntentId,
+              // Use the data from Apple Pay, NOT the empty form
+              guest_email: payerEmail, 
+              guest_full_name: payerName,
+              guest_phone: payerPhone,
+              // We still need these from props because Apple Pay doesn't know about them
+              participant_details: bookingData.participant_details || [{ name: payerName }], 
+              notes: bookingData.notes || "",
+              applied_discount_id: bookingData.applied_discount_id || null, 
+            });
+            console.log("Backend updated with Apple Pay contact info");
+          }
+        }
+
+        // 3. Confirm Payment
         const { error, paymentIntent } = await stripe.confirmCardPayment(
           clientSecret,
           {
-            payment_method: ev.paymentMethod.id, 
+            payment_method: ev.paymentMethod.id,
+            // Map Apple Pay details to Stripe billing details
+            payment_method_data: {
+              billing_details: {
+                name: payerName,
+                email: payerEmail,
+                phone: payerPhone,
+                address: ev.paymentMethod.billing_details?.address 
+              }
+            }
           },
           { handleActions: false }
         );
 
         if (error) {
-          console.error("[ExpressCheckout] Confirm Error:", error);
+          console.error("Express Checkout Error:", error);
           ev.complete('fail');
           message.error(error.message);
         } else {
-          console.log("[ExpressCheckout] Confirm Success:", paymentIntent);
           ev.complete('success');
-          
           if (paymentIntent.status === "succeeded") {
              onPaymentComplete({
               payment_intent_id: paymentIntent.id,
@@ -428,12 +456,13 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete }) 
           }
         }
       } catch (err) {
-        console.error("[ExpressCheckout] Exception:", err);
+        console.error("Exception during Apple Pay:", err);
         ev.complete('fail');
+        message.error("Payment failed. Please try again.");
       }
     });
 
-  }, [stripe, finalTotal, clientSecret, onPaymentComplete]);
+  }, [stripe, finalTotal, clientSecret, onPaymentComplete, paymentService, bookingData]);
 
   if (!paymentRequest) return null;
 
@@ -457,7 +486,6 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete }) 
     </div>
   );
 };
-// --- END EXPRESS CHECKOUT COMPONENT ---
 
 const PaymentFormContent = ({
   form,
@@ -469,6 +497,8 @@ const PaymentFormContent = ({
   clientSecret,
   onPaymentAction,
   onPaymentComplete,
+  paymentService,
+  bookingData
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -508,30 +538,20 @@ const PaymentFormContent = ({
           }}
         >
           <SectionTitle>Payment Method</SectionTitle>
-          
-          {/* 
-            1. Express Checkout Button (Black Button) is RENDERED here.
-               This contains the "Or pay with card" text as well.
-          */}
           <ExpressCheckoutButton 
             finalTotal={finalTotal} 
             clientSecret={clientSecret}
-            onPaymentComplete={onPaymentComplete} 
+            onPaymentComplete={onPaymentComplete}
+            paymentService={paymentService}
+            bookingData={bookingData}
           />
-
-          {/* 
-            2. Payment Element (The form below).
-               We set `wallets: 'never'` to hide the duplicate Apple Pay tab.
-          */}
           <PaymentElement
             options={{
               layout: "tabs",
-              // --- THIS REMOVES THE BOTTOM APPLE PAY TAB ---
               wallets: {
                 applePay: 'never',
                 googlePay: 'never',
               },
-              // ---------------------------------------------
               defaultValues: {
                 billingDetails: {
                   address: {
@@ -629,6 +649,7 @@ const ReviewAndPaymentStep = ({
   const isFree = finalTotal === 0;
   const taxAmount = (subtotal - discountAmount) * HST_RATE;
 
+  // --- INITIAL INTENT CREATION (Mounts with placeholders) ---
   const fetchPaymentIntent = useCallback(
     async (currentDiscountId = null) => {
       if (isFree) return;
@@ -641,6 +662,7 @@ const ReviewAndPaymentStep = ({
 
       try {
         const values = form.getFieldsValue();
+        // Fallbacks for initial render so Stripe Elements can load
         const payload = {
           selectedSlots: bookingData.selectedSlots,
           participants: participantsCount,
@@ -737,6 +759,7 @@ const ReviewAndPaymentStep = ({
       try {
         const values = await form.validateFields();
 
+        // 1. FREE BOOKING FLOW (No Changes needed here)
         if (isFree) {
           const payload = {
             selectedSlots: bookingData.selectedSlots,
@@ -755,6 +778,7 @@ const ReviewAndPaymentStep = ({
           }
         }
 
+        // 2. PAID BOOKING FLOW
         if (!stripe || !elements) return;
 
         const { error: submitError } = await elements.submit();
@@ -763,6 +787,33 @@ const ReviewAndPaymentStep = ({
           setLoading(false);
           return;
         }
+
+        // --- NEW: UPDATE BACKEND WITH REAL DATA BEFORE CONFIRMING ---
+        if (clientSecret) {
+          try {
+            // Extract the PaymentIntent ID (e.g., pi_3Qc... from pi_3Qc..._secret_...)
+            const paymentIntentId = clientSecret.split('_secret_')[0];
+            
+            if (paymentService.updatePaymentIntent) {
+              await paymentService.updatePaymentIntent({
+                payment_intent_id: paymentIntentId,
+                guest_email: values.email,
+                guest_full_name: isUserLoggedIn ? bookingData.userName : values.guest_full_name,
+                guest_phone: values.phone,
+                participant_details: values.participant_details,
+                notes: values.notes,
+                applied_discount_id: appliedDiscount?.id || null,
+              });
+              console.log("Successfully updated booking details on backend.");
+            } else {
+              console.warn("paymentService.updatePaymentIntent is not defined. Email may use placeholder.");
+            }
+          } catch (updateErr) {
+            console.error("Failed to update booking details before payment:", updateErr);
+            // Optionally handle error or alert user, but we proceed to capture payment.
+          }
+        }
+        // -----------------------------------------------------------
 
         const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
           elements,
@@ -812,6 +863,7 @@ const ReviewAndPaymentStep = ({
   );
 
   const renderBookingDetails = () => {
+    // ... (Keep existing implementation)
     if (!selectedSlot) return null;
     const {
       date,
@@ -1206,6 +1258,7 @@ const ReviewAndPaymentStep = ({
                     clientSecret={clientSecret}
                     onPaymentAction={onPaymentAction}
                     onPaymentComplete={onPaymentComplete}
+                    
                   />
 
                   <div style={{ marginTop: 24 }}>

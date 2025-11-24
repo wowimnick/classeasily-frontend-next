@@ -54,6 +54,7 @@ export const API_ENDPOINTS = {
 
   // Payments
   PAYMENTS_CREATE_INTENT: '/payments/create-payment-intent/',
+  PAYMENTS_UPDATE_INTENT: '/payments/update-payment-intent/',
   PAYMENTS_WEBHOOK: '/payments/webhook/',
 
   // --- CORRECTED COURSE ENDPOINTS ---
@@ -189,6 +190,20 @@ export const paymentService = {
     } catch (error) {
       console.error('Payment API error creating intent:', error.response?.data || error);
       throw error.response?.data || error;
+    }
+  },
+    updatePaymentIntent: async (payload) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.PAYMENTS_UPDATE_INTENT, 
+        payload
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error updating payment intent:', error);
+      // We don't throw here to ensure the payment flow attempts to continue 
+      // even if the metadata update fails (though ideal is to stop).
+      return { success: false }; 
     }
   }
 };

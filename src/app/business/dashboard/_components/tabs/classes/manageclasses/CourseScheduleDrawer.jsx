@@ -37,21 +37,19 @@ import {
   TrendingUp,
   Repeat,
   Edit3,
-  Filter,
 } from "lucide-react";
 import dayjs from "dayjs";
 import styled, { keyframes } from "styled-components";
 import { Drawer as VaulDrawer } from "vaul";
 import { theme as appTheme } from "@/components/theme";
 import { courseService, scheduleService } from "@/services/apiService";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { motion, AnimatePresence } from "framer-motion";
 
 const { Option } = Select;
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
-// --- ADDED: HOOK AND COMPONENT FOR MODAL ANIMATION ---
+// --- HOOK AND COMPONENT FOR MODAL ANIMATION ---
 
 const useElementSize = () => {
   const ref = useRef(null);
@@ -84,7 +82,7 @@ const AnimatedModalContent = ({ children }) => {
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
     >
       <div ref={ref}>
-        {/* We add a tiny border to prevent margin collapse issues which cause jumpiness */}
+        {/* Border to prevent margin collapse */}
         <div style={{ border: '1px solid transparent', margin: '-1px' }}>
           {children}
         </div>
@@ -103,13 +101,12 @@ const StyledDrawerOverlay = styled(VaulDrawer.Overlay)`
   z-index: 1049;
 `;
 
-// MODIFIED: Removed height transition and set a fixed height for consistency on mobile
 const StyledDrawerContent = styled(VaulDrawer.Content)`
   background: white;
   display: flex;
   flex-direction: column;
   border-radius: 16px 16px 0 0;
-  height: 96vh; /* Set fixed height */
+  height: 96vh;
   position: fixed;
   bottom: 0;
   left: 0;
@@ -117,7 +114,6 @@ const StyledDrawerContent = styled(VaulDrawer.Content)`
   z-index: 1050;
   outline: none;
   
-  /* Ensure Ant Design dropdowns appear correctly */
   .ant-picker-dropdown,
   .ant-select-dropdown,
   .ant-dropdown {
@@ -125,21 +121,19 @@ const StyledDrawerContent = styled(VaulDrawer.Content)`
   }
 `;
 
-// MODIFIED: Removed height transition and set a fixed height for consistency on mobile
 const StyledNestedDrawerContent = styled(VaulDrawer.Content)`
   background: white;
   display: flex;
   flex-direction: column;
   border-radius: 16px 16px 0 0;
-  height: 94vh; /* Set fixed height */
+  height: 94vh;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 1051; /* Higher z-index for nested */
+  z-index: 1051;
   outline: none;
   
-  /* Ensure Ant Design dropdowns appear correctly in nested drawer */
   .ant-picker-dropdown,
   .ant-select-dropdown,
   .ant-dropdown {
@@ -185,7 +179,7 @@ const DrawerBody = styled.div`
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
-  background: #f8fafc;
+  background: #ffffff;
   position: relative;
 `;
 
@@ -206,15 +200,13 @@ const CloseButton = styled(Button)`
   height: auto;
 `;
 
-// --- MODIFIED: Updated StyledModal for smooth animation ---
 const StyledModal = styled(Modal)`
   .ant-modal-content {
     border-radius: 16px;
-    overflow: hidden; /* CRITICAL for smooth resize */
+    overflow: hidden;
     display: flex;
     padding: 0 !important;
     flex-direction: column;
-    /* Removed CSS transition, Framer Motion now handles it */
   }
   .ant-modal-header {
     padding: 20px 24px;
@@ -222,12 +214,12 @@ const StyledModal = styled(Modal)`
     background: white;
     position: relative;
     z-index: 1;
+    border-bottom: 1px solid #f0f0f0;
   }
   .ant-modal-body {
     padding: 0;
-    background: #f8fafc;
+    background: #ffffff;
     position: relative;
-    /* Let the animation wrapper handle overflow */
   }
   .ant-modal-footer {
     padding: 16px 24px;
@@ -235,7 +227,7 @@ const StyledModal = styled(Modal)`
     background: white;
     flex-shrink: 0;
     margin: 0 !important;
-    position: relative; /* Keep footer visible during animation */
+    position: relative;
     z-index: 1;
   }
 `;
@@ -249,41 +241,38 @@ const StyledForm = styled(Form)`
   }
   .ant-form-item-explain-error {
     margin-top: ${(props) => props.theme.token.marginXS}px;
-    font-size: ${(props) => props.theme.token.fontSizeSM || "12px"};
+    font-size: 12px;
   }
 `;
 
 const StepHeader = styled.div`
-  text-align: center;
+  text-align: left;
   margin-bottom: 2rem;
-  position: relative;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 16px;
 `;
 
 const StepTitle = styled(Title)`
-  margin-bottom: ${(props) => props.theme.token.marginXS}px !important;
+  margin-bottom: 8px !important;
   color: ${(props) => props.theme.token.colorText};
-  font-size: 24px !important;
+  font-size: 20px !important;
   font-weight: 700 !important;
 `;
 
 const StepDescription = styled(Text)`
   display: block;
   color: ${(props) => props.theme.token.colorTextSecondary};
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.5;
 `;
 
 const FormSection = styled(motion.div)`
   background: white;
-  border-radius: 12px;
-  padding: 24px;
-  border: 1px solid #e2e8f0;
+  padding: 24px 32px;
+  width: 100%;
+  
   @media (max-width: 768px) {
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-    border-top: none;
-    padding: 20px 16px;
+    padding: 24px 20px;
   }
 `;
 
@@ -309,7 +298,7 @@ const FormLabel = styled.label`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: ${(props) => props.theme.token.colorText};
   margin-bottom: 8px;
@@ -326,10 +315,12 @@ const HelpText = styled.div`
   gap: 0.5rem;
 `;
 
+// --- INPUT STYLES WITH 14px DESKTOP / 16px MOBILE ---
+
 const StyledInput = styled(Input)`
-  height: ${(props) => props.theme.token.controlHeight}px;
-  border-radius: ${(props) => props.theme.token.borderRadius}px;
-  font-size: ${(props) => props.theme.token.fontSize}px;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 14px;
   transition: all 0.3s ease;
   &:focus {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
@@ -343,17 +334,17 @@ const StyledInput = styled(Input)`
 
 const StyledSelect = styled(Select)`
   .ant-select-selector {
-    height: ${(props) => props.theme.token.controlHeight}px !important;
-    padding: 0 ${(props) => props.theme.token.controlPaddingHorizontal}px !important;
-    border-radius: ${(props) => props.theme.token.borderRadius}px !important;
+    height: 44px !important;
+    padding: 0 11px !important;
+    border-radius: 8px !important;
     display: flex;
     align-items: center;
     transition: all 0.3s ease;
   }
   .ant-select-selection-item,
   .ant-select-selection-placeholder {
-    line-height: ${(props) => props.theme.token.controlHeight - 2}px !important;
-    font-size: ${(props) => props.theme.token.fontSize}px;
+    line-height: 42px !important;
+    font-size: 14px;
     
     /* Prevent zoom on mobile */
     @media (max-width: 768px) {
@@ -366,9 +357,9 @@ const StyledSelect = styled(Select)`
 `;
 
 const StyledInputNumber = styled(InputNumber)`
-  height: ${(props) => props.theme.token.controlHeight}px;
-  border-radius: ${(props) => props.theme.token.borderRadius}px;
-  font-size: ${(props) => props.theme.token.fontSize}px;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 14px;
   transition: all 0.3s ease;
   width: 100%;
   .ant-input-number-input-wrap,
@@ -376,7 +367,7 @@ const StyledInputNumber = styled(InputNumber)`
     height: 100% !important;
     display: flex;
     align-items: center;
-    font-size: ${(props) => props.theme.token.fontSize}px !important;
+    font-size: 14px !important;
 
     /* Prevent zoom on mobile */
     @media (max-width: 768px) {
@@ -390,10 +381,10 @@ const StyledInputNumber = styled(InputNumber)`
 
 const StyledTimePicker = styled(TimePicker)`
   width: 100%;
-  height: ${(props) => props.theme.token.controlHeight}px;
-  border-radius: ${(props) => props.theme.token.borderRadius}px;
+  height: 44px;
+  border-radius: 8px;
   .ant-picker-input > input {
-    font-size: ${(props) => props.theme.token.fontSize}px;
+    font-size: 14px;
     
     /* Prevent zoom on mobile */
     @media (max-width: 768px) {
@@ -407,10 +398,10 @@ const StyledTimePicker = styled(TimePicker)`
 
 const StyledRangePicker = styled(RangePicker)`
   width: 100%;
-  height: ${(props) => props.theme.token.controlHeight}px;
-  border-radius: ${(props) => props.theme.token.borderRadius}px;
+  height: 44px;
+  border-radius: 8px;
   .ant-picker-input > input {
-    font-size: ${(props) => props.theme.token.fontSize}px;
+    font-size: 14px;
 
     /* Prevent zoom on mobile */
     @media (max-width: 768px) {
@@ -539,18 +530,10 @@ const StatValue = styled.div`
 `;
 
 const ReviewSection = styled.div`
-  background: white;
+  background: #f8fafc;
   padding: 24px;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid #e2e8f0;
-
-  @media (max-width: 768px) {
-    padding: 20px 16px;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-    border-top: none;
-  }
 `;
 
 const InfoRow = styled.div`
@@ -575,55 +558,50 @@ const InfoValue = styled(Text)`
   gap: 6px;
 `;
 
-const ContentWrapper = styled.div`
-  flex: 1;
-  min-height: 0;
-  /* MODIFIED: Changed overflow to allow parent to control scroll */
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 32px;
-  padding-top: 80px;
-  @media (max-width: 768px) {
-    padding: 0;
-    padding-top: 0;
-  }
-`;
-
+// FLUSH STEPPER WRAPPER
 const StepsWrapper = styled.div`
-  max-width: 600px;
-  margin: 16px auto;
-  padding: 8px 16px;
-
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-
-  border-radius: 50px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  width: 100%;
+  padding: 20px 32px;
+  background: white;
+  border-bottom: 1px solid #f0f0f0;
   z-index: 10;
-  width: calc(100% - 48px);
-
+  
   .ant-steps-item-icon {
-    margin-top: -2px;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    font-size: 14px;
   }
 
   .ant-steps-item-title {
-    font-size: 13px !important;
-    line-height: 1.2 !important;
-    padding-top: 4px;
-  }
-
-  .ant-steps-item-content {
-    margin-top: 0 !important;
+    font-size: 14px !important;
+    line-height: 28px !important;
+    font-weight: 600;
   }
 
   @media (max-width: 768px) {
-    display: none;
+    padding: 16px 20px;
+    .ant-steps-item-title {
+      display: none; 
+    }
+  }
+`;
+
+// EDGE TO EDGE CONTENT WRAPPER
+const ContentWrapper = styled.div`
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.1);
+    border-radius: 3px;
   }
 `;
 
@@ -637,7 +615,7 @@ const ContentPadding = styled.div`
 const DetailedViewContainer = styled.div`
   padding: 32px;
   @media (max-width: 768px) {
-    padding: 0;
+    padding: 16px;
   }
 `;
 
@@ -806,7 +784,7 @@ const SessionBadge = styled.span`
 
 const StepContent = styled.div`
   width: 100%;
-  max-width: 700px;
+  max-width: 800px;
   margin: 0 auto;
 `;
 
@@ -1591,7 +1569,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                 <CloseButton icon={<X size={20} />} onClick={() => setCreateOpen(false)} />
               </DrawerHeader>
               <DrawerBody>
-                <ContentWrapper style={{ paddingTop: 0 }}>
+                <ContentWrapper>
                   <StepContent>
                     <StyledForm form={form} layout="vertical" onValuesChange={(c, v) => setFormData({ ...formData, ...v })}>
                       <AnimatePresence mode="wait">{renderStepContent()}</AnimatePresence>
@@ -1628,7 +1606,6 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     );
   }
 
-  // --- MODIFIED: Desktop Modal Logic with Animated Wrapper ---
   const desktopTitle = view === 'list'
     ? <Space><BookOpen size={20} /><span>Course Schedules - {classData?.title}</span></Space>
     : view === 'create'

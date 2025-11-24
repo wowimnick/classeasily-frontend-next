@@ -53,7 +53,7 @@ import { LordIcon } from "@/services/ReactUtils";
 const { Option } = Select;
 const { Title, Text } = Typography;
 
-// --- ADDED: HOOK AND COMPONENT FOR MODAL ANIMATION ---
+// --- HOOK AND COMPONENT FOR MODAL ANIMATION ---
 
 const useElementSize = () => {
   const ref = useRef(null);
@@ -259,7 +259,7 @@ const StyledTabs = styled(Tabs)`
   }
 `;
 
-// --- MODIFIED: Desktop Modal Styles for Animation ---
+// --- Desktop Modal Styles ---
 const DesktopModal = styled(Modal)`
   .ant-modal-content {
     border-radius: 12px;
@@ -267,6 +267,7 @@ const DesktopModal = styled(Modal)`
     max-height: 85vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
   .ant-modal-header {
@@ -286,7 +287,7 @@ const DesktopModal = styled(Modal)`
 
   .ant-modal-body {
     padding: 0;
-    background: #f8fafc;
+    background: #ffffff;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -387,84 +388,91 @@ const InfoContent = styled.div`
   font-weight: 500;
 `;
 
-// --- Stepper & Step Form Components ---
+// --- REDESIGNED: Flush Stepper ---
 const StepsWrapper = styled.div`
-  max-width: 500px;
-  margin: 16px auto;
-  padding: 8px 16px;
+  width: 100%;
+  padding: 20px 32px;
   background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 50px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  position: sticky;
-  top: 16px;
-  z-index: 100;
-  width: 90%;
-
+  border-bottom: 1px solid #f0f0f0;
+  z-index: 10;
+  
   .ant-steps-item-icon {
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    font-size: 14px;
     margin-top: -2px;
   }
 
   .ant-steps-item-title {
-    font-size: 13px !important;
-    line-height: 1.2 !important;
-    padding-top: 4px;
+    font-size: 14px !important;
+    line-height: 28px !important;
+    font-weight: 600;
   }
   
   @media (max-width: 768px) {
-    display: none; /* Removed on mobile */
+    display: none; 
   }
 `;
 
+// --- REDESIGNED: Edge-to-Edge Content ---
 const ContentWrapper = styled.div`
   flex: 1;
   min-height: 0;
-  padding: 24px;
-  padding-top: 0;
-
-  @media (max-width: 768px) {
-    padding: 16px;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.1);
+    border-radius: 3px;
   }
 `;
 
 const StepContent = styled.div`
   width: 100%;
-  max-width: 700px;
+  max-width: 800px;
   margin: 0 auto;
 `;
 
+// --- REDESIGNED: Flush Form Section ---
 const FormSection = styled(motion.div)`
   background: white;
-  border-radius: 12px;
-  padding: 24px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  padding: 24px 32px;
+  width: 100%;
 
   @media (max-width: 768px) {
-    padding: 20px 16px;
+    padding: 24px 20px;
   }
 `;
 
 const StepHeader = styled.div`
-  text-align: center;
+  text-align: left;
   margin-bottom: 2rem;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 16px;
 `;
 
 const StepTitle = styled(Title)`
-  margin-bottom: 4px !important;
-  font-size: 22px !important;
+  margin-bottom: 8px !important;
+  color: ${(props) => props.theme.token.colorText};
+  font-size: 20px !important;
   font-weight: 700 !important;
 `;
 
 const StepDescription = styled(Text)`
   display: block;
-  color: #64748b;
-  font-size: 15px;
-  line-height: 1.6;
+  color: ${(props) => props.theme.token.colorTextSecondary};
+  font-size: 14px;
+  line-height: 1.5;
 `;
 
 const ReviewSection = styled.div`
-  background: white;
+  background: #f8fafc;
   padding: 24px;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
@@ -492,51 +500,111 @@ const InfoValue = styled(Text)`
   gap: 6px;
 `;
 
-// --- Styled Antd Components ---
+// --- REDESIGNED: Input Styles (14px Desktop / 16px Mobile) ---
 const StyledInput = styled(Input)`
+  height: 44px;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  &:focus {
+    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
+  }
+
   @media (max-width: 768px) {
     font-size: 16px !important;
   }
 `;
 
 const StyledSelect = styled(Select)`
-  @media (max-width: 768px) {
-    .ant-select-selection-item,
-    .ant-select-selection-placeholder {
+  .ant-select-selector {
+    height: 44px !important;
+    padding: 0 11px !important;
+    border-radius: 8px !important;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+  }
+  .ant-select-selection-item,
+  .ant-select-selection-placeholder {
+    line-height: 42px !important;
+    font-size: 14px;
+    
+    @media (max-width: 768px) {
       font-size: 16px !important;
     }
+  }
+  &.ant-select-focused .ant-select-selector {
+    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20 !important;
   }
 `;
 
 const StyledTimePicker = styled(TimePicker)`
-  @media (max-width: 768px) {
-    .ant-picker-input > input {
+  width: 100%;
+  height: 44px;
+  border-radius: 8px;
+  .ant-picker-input > input {
+    font-size: 14px;
+    
+    @media (max-width: 768px) {
       font-size: 16px !important;
     }
+  }
+  &:focus-within {
+    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
   }
 `;
 
 const StyledDatePicker = styled(DatePicker)`
-  @media (max-width: 768px) {
-    .ant-picker-input > input {
+  width: 100%;
+  height: 44px;
+  border-radius: 8px;
+  .ant-picker-input > input {
+    font-size: 14px;
+
+    @media (max-width: 768px) {
       font-size: 16px !important;
     }
+  }
+  &:focus-within {
+    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
   }
 `;
 
 const StyledRangePicker = styled(DatePicker.RangePicker)`
-  @media (max-width: 768px) {
-    .ant-picker-input > input {
+  width: 100%;
+  height: 44px;
+  border-radius: 8px;
+  .ant-picker-input > input {
+    font-size: 14px;
+    
+    @media (max-width: 768px) {
       font-size: 16px !important;
     }
+  }
+  &:focus-within {
+    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
   }
 `;
 
 const StyledInputNumber = styled(InputNumber)`
-  @media (max-width: 768px) {
-    .ant-input-number-input {
+  height: 44px;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  width: 100%;
+  .ant-input-number-input-wrap,
+  .ant-input-number-input {
+    height: 100% !important;
+    display: flex;
+    align-items: center;
+    font-size: 14px !important;
+
+    @media (max-width: 768px) {
       font-size: 16px !important;
     }
+  }
+  &:focus-within {
+    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
   }
 `;
 
@@ -548,15 +616,21 @@ const DaysContainer = styled.div`
 `;
 
 const DayButton = styled(Button)`
-  height: 40px;
+  height: 44px;
   flex: 1 1 0;
   min-width: 0;
   max-width: none;
   padding: 0 8px;
+  border-radius: 8px;
+  font-weight: 500;
   
+  &.ant-btn-primary {
+    background: ${(props) => props.theme.token.colorPrimary};
+  }
+
   @media (max-width: 768px) {
-    height: 38px;
-    font-size: 13px;
+    height: 40px;
+    font-size: 14px;
   }
 `;
 
@@ -573,7 +647,7 @@ const TimeInputRow = styled.div`
 `;
 
 const AddTimeButton = styled(Button)`
-  height: 40px;
+  height: 44px;
   border-radius: 8px;
   border: 1px dashed #d1d5db;
   background: #f9fafb;
@@ -596,7 +670,7 @@ const dayLabels = {
   Sun: "Sun",
 };
 
-// --- Schedule Management Components (Redesigned) ---
+// --- Schedule Management Components ---
 const colors = {
   primary: "#ff385c",
   textSecondary: "#64748b",
@@ -641,7 +715,6 @@ const DateStripHeader = styled.div`
 const DateStripWrapper = styled.div`
   position: relative;
   width: 100%;
-  /* Ensure context for absolute positioning of fades/arrows */
 `;
 
 const ScrollFade = styled.div`
@@ -650,12 +723,12 @@ const ScrollFade = styled.div`
   bottom: 0;
   width: 60px;
   z-index: 1;
-  pointer-events: none; /* Allow clicks to pass through to scroll/dates if needed, though arrows are on top */
+  pointer-events: none;
   
   &.left {
     left: 0;
     background: linear-gradient(to right, rgba(255,255,255,1) 30%, rgba(255,255,255,0));
-    border-top-left-radius: 12px; /* Match container if needed */
+    border-top-left-radius: 12px;
   }
   
   &.right {
@@ -668,7 +741,7 @@ const ScrollButton = styled(Button)`
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 10; /* Higher than fade */
+  z-index: 10;
   border-radius: 50%;
   width: 32px;
   height: 32px;
@@ -701,14 +774,8 @@ const DatesScrollArea = styled.div`
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  
-  /* Vertical padding only - horizontal spacing is handled by spacers below */
   padding: 4px 0 12px 0;
-  
-  /* Critical: Tells scroll-snap to align items 72px from the edges, 
-     preventing them from snapping under the fade/arrows */
   scroll-padding: 0 72px;
-
   scrollbar-width: none;
   -ms-overflow-style: none;
   scroll-behavior: smooth;
@@ -719,12 +786,10 @@ const DatesScrollArea = styled.div`
   
   scroll-snap-type: x mandatory;
 
-  /* Physical spacers to guarantee content starts/ends after the fade area */
   &::before,
   &::after {
     content: '';
     display: block;
-    /* 64px spacer + 8px flex gap = 72px total visual space */
     flex: 0 0 64px; 
     min-width: 64px;
     height: 1px;
@@ -1360,14 +1425,14 @@ const ScheduleEditDrawer = ({
   const isSingleSession = optionType === "Single Session";
   const bulkFormDays = Form.useWatch("days_of_week", bulkForm) || [];
 
-  // --- MODIFIED: Removed form and bulkForm from dependency array to prevent reset on re-render ---
   useEffect(() => {
     if (activeView !== "form") return;
 
     setActiveTab("single");
     form.resetFields();
     bulkForm.resetFields();
-    setCurrentStep(0);
+    setCurrentStep(0);      // Resets Single Session Stepper
+    setBulkCurrentStep(0);  // Resets Bulk Create Stepper
 
     const defaultValues = {
       price: "0.00",
@@ -1406,7 +1471,7 @@ const ScheduleEditDrawer = ({
         },
       });
     }
-  }, [activeView, editingSchedule, prefillDate]); // Removed form and bulkForm from here
+  }, [activeView, editingSchedule, prefillDate]);
 
   const handleFormSuccess = () => {
     onSchedulesUpdate();
@@ -1726,7 +1791,7 @@ const ScheduleEditDrawer = ({
                 </Tooltip>
               </FormLabel>
               <HelpText>
-                The minimum number of people required per booking.
+                The minimum number of people per booking.
               </HelpText>
               <Form.Item
                 name="minParticipants"
@@ -1815,19 +1880,17 @@ const ScheduleEditDrawer = ({
 
   const renderSingleSessionStepperForm = () => (
     <>
-      {!isMobile && (
-        <StepsWrapper>
-          <Steps
-            size="small"
-            current={currentStep}
-            items={[
-              { title: "Details", icon: <Calendar size={16} /> },
-              { title: "Pricing", icon: <DollarSign size={16} /> },
-              { title: "Review", icon: <CheckCircle size={16} /> },
-            ]}
-          />
-        </StepsWrapper>
-      )}
+      <StepsWrapper>
+        <Steps
+          size="small"
+          current={currentStep}
+          items={[
+            { title: "Details", icon: <Calendar size={16} /> },
+            { title: "Pricing", icon: <DollarSign size={16} /> },
+            { title: "Review", icon: <CheckCircle size={16} /> },
+          ]}
+        />
+      </StepsWrapper>
       <ContentWrapper>
         <StepContent>
           <Form
@@ -2033,7 +2096,7 @@ const ScheduleEditDrawer = ({
                 </Tooltip>
               </FormLabel>
               <HelpText>
-                The minimum number of people required per booking.
+                The minimum number of people per booking.
               </HelpText>
               <NoMarginFormItem name={["commonDetails", "minParticipants"]}>
                 <StyledInputNumber style={{ width: "100%" }} inputMode="numeric" />
@@ -2133,19 +2196,17 @@ const ScheduleEditDrawer = ({
 
     return (
       <>
-        {!isMobile && (
-          <StepsWrapper>
-            <Steps
-              size="small"
-              current={bulkCurrentStep}
-              items={[
-                { title: "Setup", icon: <Calendar size={16} /> },
-                { title: "Pricing", icon: <DollarSign size={16} /> },
-                { title: "Review", icon: <CheckCircle size={16} /> },
-              ]}
-            />
-          </StepsWrapper>
-        )}
+        <StepsWrapper>
+          <Steps
+            size="small"
+            current={bulkCurrentStep}
+            items={[
+              { title: "Setup", icon: <Calendar size={16} /> },
+              { title: "Pricing", icon: <DollarSign size={16} /> },
+              { title: "Review", icon: <CheckCircle size={16} /> },
+            ]}
+          />
+        </StepsWrapper>
         <ContentWrapper>
           <StepContent>
             <Form

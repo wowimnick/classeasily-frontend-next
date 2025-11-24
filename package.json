@@ -74,6 +74,8 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@next/bundle-analyzer": "^15.5.4",
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^24.10.1",
     "aws-cdk-lib": "^2.219.0",
     "constructs": "^10.4.2",
     "eslint": "^9",
