@@ -6,7 +6,7 @@ import {
   useStripe,
   useElements,
   Elements,
-  PaymentRequestButtonElement,
+  PaymentRequestButtonElement, // Kept this for the black button
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import styled from "styled-components";
@@ -128,7 +128,7 @@ const MobileSummaryHeader = styled.div`
 
 const MobileSummaryContent = styled(motion.div)`
   background: #fafafa;
-  overflow: hidden; /* Crucial for smooth height animation */
+  overflow: hidden;
 `;
 
 const MobileSummaryInner = styled.div`
@@ -373,7 +373,7 @@ const ParticipantNameInputs = ({
   );
 };
 
-// --- EXPRESS CHECKOUT COMPONENT (WITH LOGGING) ---
+// --- EXPRESS CHECKOUT COMPONENT (Kept to render the Black Button) ---
 const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete }) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
@@ -402,17 +402,12 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete }) 
 
     pr.on('paymentmethod', async (ev) => {
       console.log("[ExpressCheckout] Payment Method Received:", ev);
-      console.log("[ExpressCheckout] Confirming Card Payment with ID:", ev.paymentMethod.id);
       
-      // --- DEBUG LOGGING END ---
-
       try {
-        // --- FIX: PASS ONLY THE ID. Do NOT pass 'payment_method_data' ---
         const { error, paymentIntent } = await stripe.confirmCardPayment(
           clientSecret,
           {
             payment_method: ev.paymentMethod.id, 
-            // Do NOT include billing_details here, they are already in the paymentMethod object from Apple
           },
           { handleActions: false }
         );
@@ -473,7 +468,7 @@ const PaymentFormContent = ({
   finalTotal,
   clientSecret,
   onPaymentAction,
-  onPaymentComplete, // Received from parent
+  onPaymentComplete,
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -514,18 +509,29 @@ const PaymentFormContent = ({
         >
           <SectionTitle>Payment Method</SectionTitle>
           
-          {/* Add Express Checkout Button (Apple Pay / Google Pay) */}
+          {/* 
+            1. Express Checkout Button (Black Button) is RENDERED here.
+               This contains the "Or pay with card" text as well.
+          */}
           <ExpressCheckoutButton 
             finalTotal={finalTotal} 
             clientSecret={clientSecret}
             onPaymentComplete={onPaymentComplete} 
           />
 
-          {/* Standard Credit Card Elements */}
+          {/* 
+            2. Payment Element (The form below).
+               We set `wallets: 'never'` to hide the duplicate Apple Pay tab.
+          */}
           <PaymentElement
             options={{
               layout: "tabs",
-              // Force default to Canada
+              // --- THIS REMOVES THE BOTTOM APPLE PAY TAB ---
+              wallets: {
+                applePay: 'never',
+                googlePay: 'never',
+              },
+              // ---------------------------------------------
               defaultValues: {
                 billingDetails: {
                   address: {
@@ -533,7 +539,6 @@ const PaymentFormContent = ({
                   },
                 },
               },
-              // Hide the country field from the UI
               fields: {
                 billingDetails: {
                   address: {
@@ -663,7 +668,6 @@ const ReviewAndPaymentStep = ({
 
   useEffect(() => {
     fetchPaymentIntent(appliedDiscount?.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appliedDiscount?.id]);
 
   const handleApplyCoupon = async () => {
@@ -681,7 +685,6 @@ const ReviewAndPaymentStep = ({
       if (result.success) {
         setAppliedDiscount(result.data);
         message.success(`Coupon "${result.data.code}" applied!`);
-        // fetchPaymentIntent triggered by dependency change on appliedDiscount?.id
       } else {
         message.error(result.error?.detail || "Invalid coupon.");
         setAppliedDiscount(null);
@@ -956,7 +959,6 @@ const ReviewAndPaymentStep = ({
     businessTimeZone,
   ]);
 
-  // --- STRIPE APPEARANCE TUNING (Match Antd) ---
   const stripeAppearance = useMemo(
     () => ({
       theme: "flat",
@@ -979,11 +981,11 @@ const ReviewAndPaymentStep = ({
           fontSize: "14px",
         },
         ".Input:hover": {
-          borderColor: appTheme.token.colorPrimary, // Hover color (blue/primary)
+          borderColor: appTheme.token.colorPrimary,
         },
         ".Input:focus": {
           borderColor: appTheme.token.colorPrimary,
-          boxShadow: `0 0 0 2px rgba(255, 56, 92, 0.2)`, // Antd focus ring
+          boxShadow: `0 0 0 2px rgba(255, 56, 92, 0.2)`,
         },
         ".Input--invalid": {
           borderColor: "#ff4d4f",
@@ -1011,7 +1013,7 @@ const ReviewAndPaymentStep = ({
         ".Tab--selected": {
           borderColor: appTheme.token.colorPrimary,
           color: appTheme.token.colorPrimary,
-          backgroundColor: "#fff5f7", // Light primary bg
+          backgroundColor: "#fff5f7",
         },
         ".TabIcon": {
           color: "#6b7280",
@@ -1040,9 +1042,6 @@ const ReviewAndPaymentStep = ({
               : {
                   clientSecret,
                   appearance: stripeAppearance,
-                  // IMPORTANT: If "ProximaSoft" is a custom font (not standard),
-                  // you MUST provide the CSS URL here for it to work in the Stripe iframe.
-                  // fonts: [{ cssSrc: "https://your-site.com/fonts/proxima-soft.css" }],
                 }
           }
         >
@@ -1059,7 +1058,6 @@ const ReviewAndPaymentStep = ({
                 />
               )}
 
-              {/* Enhanced Mobile Summary Accordion */}
               <MobileSummaryContainer>
                 <MobileSummaryHeader
                   onClick={() => setShowMobileSummary(!showMobileSummary)}
@@ -1090,7 +1088,6 @@ const ReviewAndPaymentStep = ({
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: "easeInOut" }}
                     >
-                      {/* The padding/border is now inside the animating wrapper */}
                       <MobileSummaryInner>
                         {renderSummaryContent()}
                       </MobileSummaryInner>
@@ -1208,7 +1205,7 @@ const ReviewAndPaymentStep = ({
                     finalTotal={finalTotal}
                     clientSecret={clientSecret}
                     onPaymentAction={onPaymentAction}
-                    onPaymentComplete={onPaymentComplete} // Pass the handler
+                    onPaymentComplete={onPaymentComplete}
                   />
 
                   <div style={{ marginTop: 24 }}>
