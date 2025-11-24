@@ -968,7 +968,7 @@ const ReviewAndPaymentStep = ({
         colorDanger: "#ff4d4f",
         spacingUnit: "4px",
         gridRowSpacing: "16px",
-        fontFamily: 'ProximaSoft', // Removed "!important" and quotes
+        fontFamily: '"ProximaSoft" !important',
       },
       rules: {
         ".Input": {
