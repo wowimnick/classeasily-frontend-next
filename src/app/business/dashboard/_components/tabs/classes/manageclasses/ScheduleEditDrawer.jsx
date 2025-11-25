@@ -122,6 +122,17 @@ const getErrorMessage = (error) => {
   return "An unexpected error occurred. Please try again.";
 };
 
+// --- Helper Functions ---
+const formatDuration = (minutes) => {
+  if (!minutes) return "Not set";
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  
+  if (hrs > 0 && mins > 0) return `${hrs} hr ${mins} min`;
+  if (hrs > 0) return `${hrs} hr`;
+  return `${mins} min`;
+};
+
 // --- Mobile Drawer Styles ---
 const StyledDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
@@ -759,6 +770,10 @@ const DurationPicker = ({ value, onChange, disabled }) => {
         ))}
       </PresetGrid>
       
+      <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500, marginTop: 4, marginBottom: -4 }}>
+          Or enter custom duration:
+      </div>
+      
       <CustomDurationInputs>
         <div className="input-group">
           <label>Hours</label>
@@ -784,17 +799,6 @@ const DurationPicker = ({ value, onChange, disabled }) => {
             placeholder="0"
             inputMode="numeric"
           />
-        </div>
-        <div style={{ 
-          fontSize: 13, 
-          color: '#64748b', 
-          alignSelf: 'flex-end', 
-          marginBottom: 12,
-          marginLeft: 8,
-          minWidth: 80,
-          textAlign: 'right'
-        }}>
-          = {safeValue} min
         </div>
       </CustomDurationInputs>
     </DurationContainer>
@@ -1984,7 +1988,7 @@ const ScheduleEditDrawer = ({
               </InfoRow>
               <InfoRow>
                 <InfoLabel>Duration</InfoLabel>
-                <InfoValue>{formData.duration} minutes</InfoValue>
+                <InfoValue>{formatDuration(formData.duration)}</InfoValue>
               </InfoRow>
               <InfoRow>
                 <InfoLabel>Price</InfoLabel>
@@ -2285,9 +2289,7 @@ const ScheduleEditDrawer = ({
             <InfoRow>
               <InfoLabel>Duration</InfoLabel>
               <InfoValue>
-                {commonDetails.duration
-                  ? `${commonDetails.duration} minutes`
-                  : "Not set"}
+                {formatDuration(commonDetails.duration)}
               </InfoValue>
             </InfoRow>
             <InfoRow>

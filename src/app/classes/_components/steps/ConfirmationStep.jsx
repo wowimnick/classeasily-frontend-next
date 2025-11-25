@@ -284,7 +284,7 @@ const ConfirmationStep = ({
   userTimeZone,
   businessTimeZone,
   paymentIntentId,
-  clientSecret, // --- MODIFICATION: Receive clientSecret for guest polling
+  clientSecret,
   bookingId: propBookingId,
   onBookingDetailsFetched,
   onRetryBooking,
@@ -314,7 +314,6 @@ const ConfirmationStep = ({
     const attemptFetch = async () => {
       attempts++;
       try {
-        // --- MODIFICATION: Pass clientSecret for guest auth ---
         const result = await bookingService.bookingStatusPolling(
           paymentIntentId,
           clientSecret
@@ -378,7 +377,6 @@ const ConfirmationStep = ({
     else window.location.reload();
   };
 
-  // --- MODIFICATION: Enhanced calendar event creation for courses ---
   const handleAddToCalendar = () => {
     const selectedSlot = bookingData.selectedSlots?.[0];
     if (!selectedSlot || !businessTimeZone) return;
@@ -433,7 +431,6 @@ const ConfirmationStep = ({
       };
       const byDay = days.map((d) => dayMap[d]).filter(Boolean).join(",");
 
-      // Set UNTIL date to the end of the course's last day
       const untilDate = new Date(`${naiveCourseEndDate}T23:59:59Z`);
       const untilDateFormatted = dateFnsFormat(
         untilDate,
@@ -463,7 +460,6 @@ const ConfirmationStep = ({
 
   const selectedSlot = bookingData.selectedSlots?.[0];
 
-  // --- MODIFICATION: Updated rendering for courses ---
   const renderBookingDetails = () => {
     if (!selectedSlot) return null;
 
@@ -608,7 +604,7 @@ const ConfirmationStep = ({
               {isPolling && !displayReference ? (
                 <SkeletonPlaceholder />
               ) : (
-                displayReference || "Processing..."
+                displayReference || (actualBookingId ? "Confirmed" : "Processing...")
               )}
             </strong>
           </BookingReference>
