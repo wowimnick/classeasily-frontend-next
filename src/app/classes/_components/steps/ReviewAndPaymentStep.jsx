@@ -593,62 +593,65 @@ const ReviewAndPaymentStep = ({
     return !!(allTextFieldsFilled && participantsFilled);
   }, [isUserLoggedIn, bookingData.participants]);
 
-  // --- CENTRALIZED FORM INITIALIZATION ---
-  useEffect(() => {
-    if (form) {
-      let formData = {};
+// Find this useEffect (around line 430)
+useEffect(() => {
+  if (form) {
+    let formData = {};
 
-      if (isUserLoggedIn) {
-        formData.email = bookingData.userEmail || "";
-        formData.phone = bookingData.userPhone || "";
-        formData.guest_full_name = ""; 
-        
-        const currentParticipants = bookingData.participant_details || [];
-        const newParticipants = Array.from({ length: bookingData.participants }, (_, i) => {
-          let name = currentParticipants[i]?.name || "";
-          if (i === 0 && bookingData.userName && !name) {
-            name = bookingData.userName;
-          }
-          return { name };
-        });
-        formData.participant_details = newParticipants;
-      } else {
-        // Guest Mode - preserve if exists
-        const currentValues = form.getFieldsValue(true); // true = get all values including hidden/unmounted
-        if (!currentValues.email) {
-            formData.email = "";
-            formData.phone = "";
-            formData.guest_full_name = "";
+    if (isUserLoggedIn) {
+      formData.email = bookingData.userEmail || "";
+      formData.phone = bookingData.userPhone || "";
+      formData.guest_full_name = ""; 
+      
+      const currentParticipants = bookingData.participant_details || [];
+      const newParticipants = Array.from({ length: bookingData.participants }, (_, i) => {
+        let name = currentParticipants[i]?.name || "";
+        if (i === 0 && bookingData.userName && !name) {
+          name = bookingData.userName;
         }
-        
-        const currentPart = currentValues.participant_details || [];
-        if (currentPart.length !== bookingData.participants) {
-             const newGuestParticipants = Array.from({ length: bookingData.participants }, (_, i) => {
-                 return { name: currentPart[i]?.name || "" };
-             });
-             formData.participant_details = newGuestParticipants;
-        }
-      }
-
-      const currentNotes = form.getFieldValue("notes");
-      if (currentNotes !== bookingData.notes) {
-        formData.notes = bookingData.notes || "";
-      }
-
-      // 1. SET VALUES
-      if (Object.keys(formData).length > 0) {
-        form.setFieldsValue(formData);
-      }
-
-      // 2. VALIDATE IMMEDIATELY using the data we just created.
-      // Do not wait for form.getFieldsValue() to update.
-      const isValid = validateValues({
-          ...form.getFieldsValue(true), // Get current state
-          ...formData // Overwrite with what we just set
+        return { name };
       });
-      setIsFormValid(isValid);
+      formData.participant_details = newParticipants;
+    } else {
+      // Guest Mode - preserve if exists
+      const currentValues = form.getFieldsValue(true); // true = get all values including hidden/unmounted
+      
+      // --- START OF FIX ---
+      // Previously: checked (!currentValues.email) and wiped all fields.
+      // Now: Check individual fields to ensure we don't overwrite user input.
+      if (currentValues.email === undefined) formData.email = "";
+      if (currentValues.phone === undefined) formData.phone = "";
+      if (currentValues.guest_full_name === undefined) formData.guest_full_name = "";
+      // --- END OF FIX ---
+      
+      const currentPart = currentValues.participant_details || [];
+      if (currentPart.length !== bookingData.participants) {
+           const newGuestParticipants = Array.from({ length: bookingData.participants }, (_, i) => {
+               return { name: currentPart[i]?.name || "" };
+           });
+           formData.participant_details = newGuestParticipants;
+      }
     }
-  }, [isUserLoggedIn, bookingData, form, validateValues]);
+
+    const currentNotes = form.getFieldValue("notes");
+    if (currentNotes !== bookingData.notes) {
+      formData.notes = bookingData.notes || "";
+    }
+
+    // 1. SET VALUES
+    if (Object.keys(formData).length > 0) {
+      form.setFieldsValue(formData);
+    }
+
+    // 2. VALIDATE IMMEDIATELY using the data we just created.
+    // Do not wait for form.getFieldsValue() to update.
+    const isValid = validateValues({
+        ...form.getFieldsValue(true), // Get current state
+        ...formData // Overwrite with what we just set
+    });
+    setIsFormValid(isValid);
+  }
+}, [isUserLoggedIn, bookingData, form, validateValues]);
 
   const selectedSlot = bookingData.selectedSlots?.[0];
   const option = bookingData.selectedOption;
