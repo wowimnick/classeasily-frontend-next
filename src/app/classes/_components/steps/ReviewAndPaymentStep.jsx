@@ -307,27 +307,9 @@ const MobileTotalDisplay = styled.div`
 // --- HELPERS (Keep as is) ---
 const ParticipantNameInputs = ({
   count,
-  form,
   isUserLoggedIn,
   bookerNameFromBookingData,
 }) => {
-  useEffect(() => {
-    if (form && count > 0) {
-      const currentParticipantFormValues =
-        form.getFieldValue("participant_details") || [];
-      const newParticipantDetails = Array.from({ length: count }, (_, i) => {
-        let name = currentParticipantFormValues[i]?.name || "";
-        if (i === 0 && isUserLoggedIn && bookerNameFromBookingData && !name) {
-          name = bookerNameFromBookingData;
-        }
-        return { name };
-      });
-      form.setFieldsValue({ participant_details: newParticipantDetails });
-    } else if (form && count === 0) {
-      form.setFieldsValue({ participant_details: [] });
-    }
-  }, [count, bookerNameFromBookingData, form, isUserLoggedIn]);
-
   if (count <= 0) return null;
 
   return (
@@ -344,6 +326,7 @@ const ParticipantNameInputs = ({
         >
           <Input
             placeholder={`Participant ${index + 1} Full Name`}
+            // Read-only logic is handled by parent pre-fill + disabled prop logic below
             readOnly={
               index === 0 && isUserLoggedIn && !!bookerNameFromBookingData
             }
@@ -384,7 +367,6 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
         label: 'Booking Total',
         amount: Math.round(finalTotal * 100),
       },
-      // We request these so Apple Pay asks the user for them
       requestPayerName: true,
       requestPayerEmail: true,
       requestPayerPhone: true, 
@@ -397,39 +379,31 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
     });
 
     pr.on('paymentmethod', async (ev) => {
-      // 1. Extract contact info DIRECTLY from the Apple Pay event
-      // Apple Pay returns: ev.payerName, ev.payerEmail, ev.payerPhone
-      const payerName = ev.payerName; // "John Doe"
+      const payerName = ev.payerName;
       const payerEmail = ev.payerEmail;
       const payerPhone = ev.payerPhone;
 
       try {
-        // 2. Update Backend with this real info
         if (clientSecret) {
           const paymentIntentId = clientSecret.split('_secret_')[0];
           
           if (paymentService && paymentService.updatePaymentIntent) {
             await paymentService.updatePaymentIntent({
               payment_intent_id: paymentIntentId,
-              // Use the data from Apple Pay, NOT the empty form
               guest_email: payerEmail, 
               guest_full_name: payerName,
               guest_phone: payerPhone,
-              // We still need these from props because Apple Pay doesn't know about them
               participant_details: bookingData.participant_details || [{ name: payerName }], 
               notes: bookingData.notes || "",
               applied_discount_id: bookingData.applied_discount_id || null, 
             });
-            console.log("Backend updated with Apple Pay contact info");
           }
         }
 
-        // 3. Confirm Payment
         const { error, paymentIntent } = await stripe.confirmCardPayment(
           clientSecret,
           {
             payment_method: ev.paymentMethod.id,
-            // Map Apple Pay details to Stripe billing details
             payment_method_data: {
               billing_details: {
                 name: payerName,
@@ -443,7 +417,6 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
         );
 
         if (error) {
-          console.error("Express Checkout Error:", error);
           ev.complete('fail');
           message.error(error.message);
         } else {
@@ -456,7 +429,6 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
           }
         }
       } catch (err) {
-        console.error("Exception during Apple Pay:", err);
         ev.complete('fail');
         message.error("Payment failed. Please try again.");
       }
@@ -505,6 +477,8 @@ const PaymentFormContent = ({
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    // Determine if we can submit. 
+    // Important: We rely on isReady (Stripe loaded) AND isFormValid (Inputs filled)
     const canSubmit = isFree
       ? !loading && isFormValid
       : stripe && elements && !loading && isFormValid && isReady;
@@ -599,59 +573,82 @@ const ReviewAndPaymentStep = ({
   const debounceTimerRef = useRef(null);
 
   // --- VALIDATION HELPER ---
-  const validateForm = useCallback(() => {
-    const values = form.getFieldsValue();
+  // Accepts explicit values to allow validation before the form store updates
+  const validateValues = useCallback((values) => {
     const { email, phone, guest_full_name, participant_details } = values;
+    
     const contactFields = isUserLoggedIn
       ? [email, phone]
       : [email, phone, guest_full_name];
 
     const allTextFieldsFilled = contactFields.every(
-      (val) => val && String(val).trim()
+      (val) => val && String(val).trim().length > 0
     );
 
+    const currentParticipants = participant_details || [];
     const participantsFilled =
-      participant_details?.length === bookingData.participants &&
-      participant_details.every((p) => p?.name?.trim());
+      currentParticipants.length === bookingData.participants &&
+      currentParticipants.every((p) => p?.name?.trim());
 
-    const valid = !!(allTextFieldsFilled && participantsFilled);
-    setIsFormValid(valid);
-    return valid;
-  }, [form, isUserLoggedIn, bookingData.participants]);
+    return !!(allTextFieldsFilled && participantsFilled);
+  }, [isUserLoggedIn, bookingData.participants]);
 
+  // --- CENTRALIZED FORM INITIALIZATION ---
   useEffect(() => {
     if (form) {
+      let formData = {};
+
       if (isUserLoggedIn) {
-        form.setFieldsValue({
-          email: bookingData.userEmail || "",
-          phone: bookingData.userPhone || "",
-          guest_full_name: "",
+        formData.email = bookingData.userEmail || "";
+        formData.phone = bookingData.userPhone || "";
+        formData.guest_full_name = ""; 
+        
+        const currentParticipants = bookingData.participant_details || [];
+        const newParticipants = Array.from({ length: bookingData.participants }, (_, i) => {
+          let name = currentParticipants[i]?.name || "";
+          if (i === 0 && bookingData.userName && !name) {
+            name = bookingData.userName;
+          }
+          return { name };
         });
+        formData.participant_details = newParticipants;
       } else {
-        const currentValues = form.getFieldsValue();
+        // Guest Mode - preserve if exists
+        const currentValues = form.getFieldsValue(true); // true = get all values including hidden/unmounted
         if (!currentValues.email) {
-          form.resetFields(["email", "phone", "guest_full_name"]);
+            formData.email = "";
+            formData.phone = "";
+            formData.guest_full_name = "";
+        }
+        
+        const currentPart = currentValues.participant_details || [];
+        if (currentPart.length !== bookingData.participants) {
+             const newGuestParticipants = Array.from({ length: bookingData.participants }, (_, i) => {
+                 return { name: currentPart[i]?.name || "" };
+             });
+             formData.participant_details = newGuestParticipants;
         }
       }
 
-      // Check validation immediately after setting values
-      validateForm();
-    }
-  }, [isUserLoggedIn, bookingData, form, validateForm]);
-
-  useEffect(() => {
-    if (form) {
       const currentNotes = form.getFieldValue("notes");
       if (currentNotes !== bookingData.notes) {
-        form.setFieldsValue({
-          participant_details: bookingData.participant_details || [],
-          notes: bookingData.notes || "",
-        });
-        // Check validation after updating participant details
-        validateForm();
+        formData.notes = bookingData.notes || "";
       }
+
+      // 1. SET VALUES
+      if (Object.keys(formData).length > 0) {
+        form.setFieldsValue(formData);
+      }
+
+      // 2. VALIDATE IMMEDIATELY using the data we just created.
+      // Do not wait for form.getFieldsValue() to update.
+      const isValid = validateValues({
+          ...form.getFieldsValue(true), // Get current state
+          ...formData // Overwrite with what we just set
+      });
+      setIsFormValid(isValid);
     }
-  }, [bookingData.participant_details, bookingData.notes, form, validateForm]);
+  }, [isUserLoggedIn, bookingData, form, validateValues]);
 
   const selectedSlot = bookingData.selectedSlots?.[0];
   const option = bookingData.selectedOption;
@@ -675,7 +672,6 @@ const ReviewAndPaymentStep = ({
   const isFree = finalTotal === 0;
   const taxAmount = (subtotal - discountAmount) * HST_RATE;
 
-  // --- INITIAL INTENT CREATION (Mounts with placeholders) ---
   const fetchPaymentIntent = useCallback(
     async (currentDiscountId = null) => {
       if (isFree) return;
@@ -688,14 +684,26 @@ const ReviewAndPaymentStep = ({
 
       try {
         const values = form.getFieldsValue();
-        // Fallbacks for initial render so Stripe Elements can load
+        
+        // --- FIX START ---
+        // Ensure participant_details matches the count, even if form isn't fully ready
+        let participantDetailsPayload = values.participant_details?.map((d) => ({
+            name: d?.name || "Guest",
+        })) || [];
+        
+        if (participantDetailsPayload.length < participantsCount) {
+             // Fill missing slots with placeholders to satisfy backend validator
+             participantDetailsPayload = Array.from({ length: participantsCount }, (_, i) => ({
+                 name: participantDetailsPayload[i]?.name || "Guest"
+             }));
+        }
+        // --- FIX END ---
+
         const payload = {
           selectedSlots: bookingData.selectedSlots,
           participants: participantsCount,
           notes: values.notes || "",
-          participant_details: values.participant_details?.map((d) => ({
-            name: d?.name || "Guest",
-          })) || [],
+          participant_details: participantDetailsPayload,
           applied_discount_id: currentDiscountId,
           guest_email: values.email || "pending@example.com",
           guest_full_name: values.guest_full_name || "Pending Guest",
@@ -756,8 +764,8 @@ const ReviewAndPaymentStep = ({
       onUpdateBookingData(allValues);
     }, 300);
 
-    // Call validation helper instead of duplicating logic
-    validateForm();
+    const isValid = validateValues(allValues);
+    setIsFormValid(isValid);
   };
 
   const handleSubmit = useCallback(
@@ -773,7 +781,6 @@ const ReviewAndPaymentStep = ({
       try {
         const values = await form.validateFields();
 
-        // 1. FREE BOOKING FLOW (No Changes needed here)
         if (isFree) {
           const payload = {
             selectedSlots: bookingData.selectedSlots,
@@ -792,7 +799,6 @@ const ReviewAndPaymentStep = ({
           }
         }
 
-        // 2. PAID BOOKING FLOW
         if (!stripe || !elements) return;
 
         const { error: submitError } = await elements.submit();
@@ -802,10 +808,8 @@ const ReviewAndPaymentStep = ({
           return;
         }
 
-        // --- NEW: UPDATE BACKEND WITH REAL DATA BEFORE CONFIRMING ---
         if (clientSecret) {
           try {
-            // Extract the PaymentIntent ID (e.g., pi_3Qc... from pi_3Qc..._secret_...)
             const paymentIntentId = clientSecret.split('_secret_')[0];
             
             if (paymentService.updatePaymentIntent) {
@@ -824,10 +828,8 @@ const ReviewAndPaymentStep = ({
             }
           } catch (updateErr) {
             console.error("Failed to update booking details before payment:", updateErr);
-            // Optionally handle error or alert user, but we proceed to capture payment.
           }
         }
-        // -----------------------------------------------------------
 
         const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
           elements,
@@ -877,7 +879,6 @@ const ReviewAndPaymentStep = ({
   );
 
   const renderBookingDetails = () => {
-    // ... (Keep existing implementation)
     if (!selectedSlot) return null;
     const {
       date,
@@ -1172,7 +1173,7 @@ const ReviewAndPaymentStep = ({
                   <ParticipantNameInputs
                     count={bookingData.participants}
                     bookerNameFromBookingData={bookingData.userName}
-                    form={form}
+                    form={form} 
                     isUserLoggedIn={isUserLoggedIn}
                   />
 
@@ -1278,7 +1279,8 @@ const ReviewAndPaymentStep = ({
                     clientSecret={clientSecret}
                     onPaymentAction={onPaymentAction}
                     onPaymentComplete={onPaymentComplete}
-                    
+                    paymentService={paymentService}
+                    bookingData={bookingData}
                   />
 
                   <div style={{ marginTop: 24 }}>
