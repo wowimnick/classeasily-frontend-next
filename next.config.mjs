@@ -246,6 +246,8 @@ const nextConfig = {
 
     // Aggressive package optimization
     optimizePackageImports: [
+      'antd',
+      '@ant-design/icons',
       'lucide-react',
       'react-icons',
       'lodash',
@@ -256,7 +258,8 @@ const nextConfig = {
     ],
 
     // CSS optimization
-    optimizeCss: false,
+    optimizeCss: true,
+    cssChunking: 'strict',
   },
 
   // React Compiler Support (stable in Next.js 16)

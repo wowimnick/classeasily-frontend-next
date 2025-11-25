@@ -1,3 +1,4 @@
+// components/homepage/FooterClient.jsx
 "use client";
 
 import React, { useState } from "react";
@@ -7,39 +8,39 @@ import styled from "styled-components";
 import LinkedinSvg from "@/assets/icons/homepage/linkedin.svg";
 import FacebookSvg from "@/assets/icons/homepage/facebook.svg";
 
-// Static data - no API calls needed
+// Static data - Updated to use query parameters consistent with SearchDrawer logic
 const popularLocationsByProvince = [
   {
     province: "Ontario",
     locations: [
-      { name: "Toronto", path: "/explore/ontario/toronto" },
-      { name: "Mississauga", path: "/explore/ontario/mississauga" },
-      { name: "Ottawa", path: "/explore/ontario/ottawa" },
-      { name: "Brampton", path: "/explore/ontario/brampton" },
-      { name: "Hamilton", path: "/explore/ontario/hamilton" },
-      { name: "Markham", path: "/explore/ontario/markham" },
+      { name: "Toronto", path: "/explore?location=Toronto" },
+      { name: "Mississauga", path: "/explore?location=Mississauga" },
+      { name: "Ottawa", path: "/explore?location=Ottawa" },
+      { name: "Brampton", path: "/explore?location=Brampton" },
+      { name: "Hamilton", path: "/explore?location=Hamilton" },
+      { name: "Markham", path: "/explore?location=Markham" },
     ],
   },
   {
     province: "British Columbia",
     locations: [
-      { name: "Vancouver", path: "/explore/british-columbia/vancouver" },
-      { name: "Surrey", path: "/explore/british-columbia/surrey" },
-      { name: "Victoria", path: "/explore/british-columbia/victoria" },
+      { name: "Vancouver", path: "/explore?location=Vancouver" },
+      { name: "Surrey", path: "/explore?location=Surrey" },
+      { name: "Victoria", path: "/explore?location=Victoria" },
     ],
   },
   {
     province: "Alberta",
     locations: [
-      { name: "Calgary", path: "/explore/alberta/calgary" },
-      { name: "Edmonton", path: "/explore/alberta/edmonton" },
+      { name: "Calgary", path: "/explore?location=Calgary" },
+      { name: "Edmonton", path: "/explore?location=Edmonton" },
     ],
   },
   {
     province: "Quebec",
     locations: [
-      { name: "Montreal", path: "/explore/quebec/montreal" },
-      { name: "Quebec City", path: "/explore/quebec/quebec-city" },
+      { name: "Montreal", path: "/explore?location=Montreal" },
+      { name: "Quebec City", path: "/explore?location=Quebec City" },
     ],
   },
 ];
@@ -404,12 +405,14 @@ export default function FooterClient({ categories = [] }) {
         locations: [
           {
             name: `All ${category.name}`,
-            path: `/explore/category/${category.key}`,
+            // Updated to use query params: category_key matches the API fetcher logic
+            path: `/explore?category_key=${category.key}`,
             isMainCategory: true,
           },
           ...(category.subcategories || []).map((sub) => ({
             name: sub.name,
-            path: `/explore/category/${category.key}/${sub.key}`,
+            // Updated to use query params for subcategories
+            path: `/explore?category_key=${category.key}&subcategory_key=${sub.key}`,
             isMainCategory: false,
           })),
         ],

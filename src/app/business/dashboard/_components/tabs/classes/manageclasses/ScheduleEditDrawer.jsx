@@ -19,6 +19,7 @@ import {
   Checkbox,
   Popconfirm,
   Grid,
+  Tag
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -40,10 +41,11 @@ import {
   Trash2,
   List,
   Plus,
-  Filter
+  Filter,
+  Hourglass
 } from "lucide-react";
 import dayjs from "dayjs";
-import styled, { keyframes } from "styled-components";
+import styled, { keyframes, css } from "styled-components";
 import { motion } from "framer-motion";
 import { theme as appTheme } from "@/components/theme";
 import { scheduleService } from "@/services/apiService";
@@ -659,6 +661,146 @@ const AddTimeButton = styled(Button)`
     background: #fff8f9;
   }
 `;
+
+// --- NEW: Custom Duration Picker ---
+const DurationContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+`;
+
+const PresetGrid = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+const PresetChip = styled.button`
+  border: 1px solid ${props => props.$active ? props.theme.token.colorPrimary : '#e2e8f0'};
+  background: ${props => props.$active ? `${props.theme.token.colorPrimary}10` : 'white'};
+  color: ${props => props.$active ? props.theme.token.colorPrimary : '#475569'};
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: ${props => props.theme.token.colorPrimary};
+    color: ${props => props.theme.token.colorPrimary};
+  }
+`;
+
+const CustomDurationInputs = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    
+    label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+  }
+`;
+
+const DurationPicker = ({ value, onChange, disabled }) => {
+  // value is in minutes (int)
+  const safeValue = value || 0;
+  const hours = Math.floor(safeValue / 60);
+  const minutes = safeValue % 60;
+
+  const presets = [
+    { label: "30 min", value: 30 },
+    { label: "45 min", value: 45 },
+    { label: "1 hr", value: 60 },
+    { label: "1.5 hr", value: 90 },
+    { label: "2 hr", value: 120 },
+    { label: "3 hr", value: 180 },
+  ];
+
+  const handleHoursChange = (newHours) => {
+    const total = (newHours || 0) * 60 + minutes;
+    onChange(total);
+  };
+
+  const handleMinutesChange = (newMinutes) => {
+    // Ensure minutes stay between 0-59 conceptually, but InputNumber handles min/max
+    const total = hours * 60 + (newMinutes || 0);
+    onChange(total);
+  };
+
+  return (
+    <DurationContainer>
+      <PresetGrid>
+        {presets.map(preset => (
+          <PresetChip 
+            key={preset.value}
+            type="button"
+            $active={safeValue === preset.value}
+            onClick={() => !disabled && onChange(preset.value)}
+            disabled={disabled}
+          >
+            {preset.label}
+          </PresetChip>
+        ))}
+      </PresetGrid>
+      
+      <CustomDurationInputs>
+        <div className="input-group">
+          <label>Hours</label>
+          <StyledInputNumber 
+            min={0} 
+            max={23}
+            value={hours}
+            onChange={handleHoursChange}
+            disabled={disabled}
+            placeholder="0"
+            inputMode="numeric"
+          />
+        </div>
+        <div style={{ paddingTop: 18, fontWeight: 600, color: '#cbd5e1' }}>:</div>
+        <div className="input-group">
+          <label>Minutes</label>
+          <StyledInputNumber 
+            min={0}
+            max={59}
+            value={minutes}
+            onChange={handleMinutesChange}
+            disabled={disabled}
+            placeholder="0"
+            inputMode="numeric"
+          />
+        </div>
+        <div style={{ 
+          fontSize: 13, 
+          color: '#64748b', 
+          alignSelf: 'flex-end', 
+          marginBottom: 12,
+          marginLeft: 8,
+          minWidth: 80,
+          textAlign: 'right'
+        }}>
+          = {safeValue} min
+        </div>
+      </CustomDurationInputs>
+    </DurationContainer>
+  );
+};
+
 
 const dayLabels = {
   Mon: "Mon",
@@ -1706,30 +1848,20 @@ const ScheduleEditDrawer = ({
                   />
                 </Form.Item>
               </FormGroup>
-              <FormGroup>
+            </FormGrid>
+            
+            <FormGroup style={{ marginTop: 24 }}>
                 <FormLabel>
-                  <Edit3 /> Duration (minutes)
+                  <Hourglass size={16} /> Duration
                 </FormLabel>
                 <HelpText>Specify how long this session will last.</HelpText>
                 <Form.Item
                   name="duration"
                   rules={[{ required: true, message: "Set a duration." }]}
-                  noStyle
                 >
-                  <StyledSelect
-                    placeholder="Select duration"
-                    disabled={isLoading}
-                    {...mobilePopupProps}
-                  >
-                    <Option value={30}>30 minutes</Option>
-                    <Option value={60}>1 hour</Option>
-                    <Option value={90}>1.5 hours</Option>
-                    <Option value={120}>2 hours</Option>
-                    <Option value={180}>3 hours</Option>
-                  </StyledSelect>
+                  <DurationPicker disabled={isLoading} />
                 </Form.Item>
-              </FormGroup>
-            </FormGrid>
+            </FormGroup>
           </FormSection>
         );
       case 1:
@@ -2057,17 +2189,11 @@ const ScheduleEditDrawer = ({
           <FormGrid>
             <FormGroup>
               <FormLabel>
-                <Edit3 /> Duration
+                <Hourglass size={16} /> Duration
               </FormLabel>
               <HelpText>Set the duration for all generated sessions.</HelpText>
               <NoMarginFormItem name={["commonDetails", "duration"]}>
-                <StyledSelect {...mobilePopupProps}>
-                  <Option value={30}>30 minutes</Option>
-                  <Option value={60}>1 hour</Option>
-                  <Option value={90}>1.5 hours</Option>
-                  <Option value={120}>2 hours</Option>
-                  <Option value={180}>3 hours</Option>
-                </StyledSelect>
+                  <DurationPicker disabled={isBulkLoading} />
               </NoMarginFormItem>
             </FormGroup>
             <FormGroup>
