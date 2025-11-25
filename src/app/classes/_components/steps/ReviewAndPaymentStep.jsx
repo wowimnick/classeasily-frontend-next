@@ -360,6 +360,7 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
   useEffect(() => {
     if (!stripe || !finalTotal) return;
 
+    // Create Payment Request
     const pr = stripe.paymentRequest({
       country: 'CA',
       currency: 'cad',
@@ -372,34 +373,55 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
       requestPayerPhone: true, 
     });
 
+    // Check availability
     pr.canMakePayment().then((result) => {
+      console.log("🍎 Apple/Google Pay Availability Check:", result);
       if (result) {
         setPaymentRequest(pr);
       }
     });
 
+    // Handle Payment Event
     pr.on('paymentmethod', async (ev) => {
+      console.log("🍎 Apple Pay: Event received", ev);
+      
       const payerName = ev.payerName;
       const payerEmail = ev.payerEmail;
       const payerPhone = ev.payerPhone;
+      
+      // LOGGING: Check if we are receiving the contact info required
+      if (!payerEmail || !payerName) {
+        console.error("🍎 Apple Pay: Missing Payer Info from Wallet!", { name: payerName, email: payerEmail });
+      }
 
       try {
         if (clientSecret) {
           const paymentIntentId = clientSecret.split('_secret_')[0];
           
+          // 1. Update Backend Intent
           if (paymentService && paymentService.updatePaymentIntent) {
-            await paymentService.updatePaymentIntent({
-              payment_intent_id: paymentIntentId,
-              guest_email: payerEmail, 
-              guest_full_name: payerName,
-              guest_phone: payerPhone,
-              participant_details: bookingData.participant_details || [{ name: payerName }], 
-              notes: bookingData.notes || "",
-              applied_discount_id: bookingData.applied_discount_id || null, 
-            });
+            console.log("🍎 Apple Pay: Updating backend PaymentIntent...");
+            try {
+              await paymentService.updatePaymentIntent({
+                payment_intent_id: paymentIntentId,
+                guest_email: payerEmail, 
+                guest_full_name: payerName,
+                guest_phone: payerPhone,
+                participant_details: bookingData.participant_details || [{ name: payerName }], 
+                notes: bookingData.notes || "",
+                applied_discount_id: bookingData.applied_discount_id || null, 
+              });
+              console.log("🍎 Apple Pay: Backend update SUCCESS");
+            } catch (backendErr) {
+              console.error("🍎 Apple Pay: Backend update FAILED", backendErr);
+              // We intentionally don't throw here to attempt the charge anyway, 
+              // but this might cause the receipt email to be empty on the backend.
+            }
           }
         }
 
+        // 2. Confirm Payment with Stripe
+        console.log("🍎 Apple Pay: Confirming Card Payment...");
         const { error, paymentIntent } = await stripe.confirmCardPayment(
           clientSecret,
           {
@@ -417,18 +439,32 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
         );
 
         if (error) {
+          // LOGGING: Specific Stripe Error
+          console.error("🍎 Apple Pay: CONFIRMATION ERROR OBJECT:", error);
+          console.error("🍎 Apple Pay: Error Code:", error.code);
+          console.error("🍎 Apple Pay: Decline Code:", error.decline_code);
+          console.error("🍎 Apple Pay: Message:", error.message);
+          
           ev.complete('fail');
           message.error(error.message);
         } else {
+          // Success
+          console.log("🍎 Apple Pay: PaymentIntent Status:", paymentIntent.status);
           ev.complete('success');
+          
           if (paymentIntent.status === "succeeded") {
+             console.log("🍎 Apple Pay: Full Success. Calling onPaymentComplete.");
              onPaymentComplete({
               payment_intent_id: paymentIntent.id,
               client_secret: clientSecret,
             });
+          } else {
+             console.error("🍎 Apple Pay: Payment processed but status is NOT succeeded:", paymentIntent.status);
           }
         }
       } catch (err) {
+        // LOGGING: Catch-all for JS errors or Network errors
+        console.error("🍎 Apple Pay: CRITICAL EXCEPTION:", err);
         ev.complete('fail');
         message.error("Payment failed. Please try again.");
       }
