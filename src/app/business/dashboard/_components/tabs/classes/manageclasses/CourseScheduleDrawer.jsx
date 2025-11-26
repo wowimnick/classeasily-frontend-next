@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
@@ -37,6 +38,7 @@ import {
   TrendingUp,
   Repeat,
   Edit3,
+  Hourglass,
 } from "lucide-react";
 import dayjs from "dayjs";
 import styled, { keyframes } from "styled-components";
@@ -89,6 +91,17 @@ const AnimatedModalContent = ({ children }) => {
       </div>
     </motion.div>
   );
+};
+
+// --- HELPER FUNCTIONS ---
+const formatDuration = (minutes) => {
+  if (!minutes) return "Not set";
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  
+  if (hrs > 0 && mins > 0) return `${hrs} hr ${mins} min`;
+  if (hrs > 0) return `${hrs} hr`;
+  return `${mins} min`;
 };
 
 
@@ -437,6 +450,138 @@ const DayButton = styled(Button)`
     font-size: 14px; /* Increased from 13px for better touch/readability */
   }
 `;
+
+// --- NEW: Custom Duration Picker Components ---
+const DurationContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+`;
+
+const PresetGrid = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+const PresetChip = styled.button`
+  border: 1px solid ${props => props.$active ? props.theme.token.colorPrimary : '#e2e8f0'};
+  background: ${props => props.$active ? `${props.theme.token.colorPrimary}10` : 'white'};
+  color: ${props => props.$active ? props.theme.token.colorPrimary : '#475569'};
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: ${props => props.theme.token.colorPrimary};
+    color: ${props => props.theme.token.colorPrimary};
+  }
+`;
+
+const CustomDurationInputs = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    
+    label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+  }
+`;
+
+const DurationPicker = ({ value, onChange, disabled }) => {
+  // value is in minutes (int)
+  const safeValue = value || 0;
+  const hours = Math.floor(safeValue / 60);
+  const minutes = safeValue % 60;
+
+  const presets = [
+    { label: "30 min", value: 30 },
+    { label: "45 min", value: 45 },
+    { label: "1 hr", value: 60 },
+    { label: "1.5 hr", value: 90 },
+    { label: "2 hr", value: 120 },
+    { label: "3 hr", value: 180 },
+  ];
+
+  const handleHoursChange = (newHours) => {
+    const total = (newHours || 0) * 60 + minutes;
+    onChange(total);
+  };
+
+  const handleMinutesChange = (newMinutes) => {
+    // Ensure minutes stay between 0-59 conceptually
+    const total = hours * 60 + (newMinutes || 0);
+    onChange(total);
+  };
+
+  return (
+    <DurationContainer>
+      <PresetGrid>
+        {presets.map(preset => (
+          <PresetChip 
+            key={preset.value}
+            type="button"
+            $active={safeValue === preset.value}
+            onClick={() => !disabled && onChange(preset.value)}
+            disabled={disabled}
+          >
+            {preset.label}
+          </PresetChip>
+        ))}
+      </PresetGrid>
+      
+      <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500, marginTop: 4, marginBottom: -4 }}>
+          Or enter custom duration:
+      </div>
+      
+      <CustomDurationInputs>
+        <div className="input-group">
+          <label>Hours</label>
+          <StyledInputNumber 
+            min={0} 
+            max={23}
+            value={hours}
+            onChange={handleHoursChange}
+            disabled={disabled}
+            placeholder="0"
+            inputMode="numeric"
+          />
+        </div>
+        <div style={{ paddingTop: 18, fontWeight: 600, color: '#cbd5e1' }}>:</div>
+        <div className="input-group">
+          <label>Minutes</label>
+          <StyledInputNumber 
+            min={0}
+            max={59}
+            value={minutes}
+            onChange={handleMinutesChange}
+            disabled={disabled}
+            placeholder="0"
+            inputMode="numeric"
+          />
+        </div>
+      </CustomDurationInputs>
+    </DurationContainer>
+  );
+};
 
 const ScheduleList = styled.div`
   display: grid;
@@ -1343,18 +1488,10 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                 </Form.Item>
               </FormGroup>
               <FormGroup>
-                <FormLabel><Clock size={16} /> Duration</FormLabel>
+                <FormLabel><Hourglass size={16} /> Duration</FormLabel>
                 <Form.Item name="duration" initialValue={60} rules={[{ required: true, message: "Please select duration" }]}>
-                  <StyledSelect size="large" getPopupContainer={isMobile ? (trigger) => trigger.parentElement : undefined}>
-                    <Option value={15}>15 mins</Option>
-                    <Option value={30}>30 mins</Option>
-                    <Option value={45}>45 mins</Option>
-                    <Option value={60}>1 hr</Option>
-                    <Option value={90}>1.5 hrs</Option>
-                    <Option value={120}>2 hrs</Option>
-                    <Option value={180}>3 hrs</Option>
-                    <Option value={240}>4 hrs</Option>
-                  </StyledSelect>
+                  {/* Replaced Select with DurationPicker */}
+                  <DurationPicker disabled={editingSchedule && editingSchedule.has_confirmed_bookings} />
                 </Form.Item>
               </FormGroup>
             </FormGrid>
@@ -1407,7 +1544,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
               <InfoRow><InfoLabel>Date Range</InfoLabel><InfoValue><Calendar size={16} />{formData.startDate?.format("MMM D, YYYY")} - {formData.endDate?.format("MMM D, YYYY")}</InfoValue></InfoRow>
               <InfoRow><InfoLabel>Days</InfoLabel><InfoValue><CalendarDays size={16} />{formData.selectedDays.join(", ")}</InfoValue></InfoRow>
               <InfoRow><InfoLabel>Time</InfoLabel><InfoValue><Clock size={16} />{formData.time?.format("h:mm A")}</InfoValue></InfoRow>
-              <InfoRow><InfoLabel>Duration</InfoLabel><InfoValue>{formData.duration} mins</InfoValue></InfoRow>
+              <InfoRow><InfoLabel>Duration</InfoLabel><InfoValue>{formatDuration(formData.duration)}</InfoValue></InfoRow>
               <InfoRow><InfoLabel>Total Sessions</InfoLabel><InfoValue><BookOpen size={16} />{formData.totalSessions}</InfoValue></InfoRow>
               <InfoRow><InfoLabel>Price</InfoLabel><InfoValue><DollarSign size={16} />{parseFloat(formData.price) === 0 ? "Free" : `$${parseFloat(formData.price).toFixed(2)}`}</InfoValue></InfoRow>
               <InfoRow><InfoLabel>Max Participants</InfoLabel><InfoValue><Users size={16} />{formData.maxParticipants}</InfoValue></InfoRow>
@@ -1515,7 +1652,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
         <ReviewSection>
           <Title level={5} style={{ marginBottom: 16 }}>Course Details</Title>
           <InfoRow><InfoLabel>Price per Participant</InfoLabel><InfoValue><DollarSign size={16} />${parseFloat(selectedSchedule.price || 0).toFixed(2)}</InfoValue></InfoRow>
-          <InfoRow><InfoLabel>Duration per Session</InfoLabel><InfoValue><Clock size={16} />{selectedSchedule.duration || 60} minutes</InfoValue></InfoRow>
+          <InfoRow><InfoLabel>Duration per Session</InfoLabel><InfoValue><Clock size={16} />{formatDuration(selectedSchedule.duration || 60)}</InfoValue></InfoRow>
           <InfoRow><InfoLabel>Recurring Days</InfoLabel><InfoValue><Repeat size={16} />{selectedSchedule.day}</InfoValue></InfoRow>
           <InfoRow><InfoLabel>Capacity</InfoLabel><InfoValue><Users size={16} />{selectedSchedule.booked_participants || 0} / {selectedSchedule.maxParticipants}</InfoValue></InfoRow>
         </ReviewSection>

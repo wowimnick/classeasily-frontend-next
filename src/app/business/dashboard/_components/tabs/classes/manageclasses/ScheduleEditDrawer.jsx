@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from "react";
@@ -1195,16 +1197,18 @@ const ScheduleManagementView = React.memo(({
   onAdd,
   onEdit,
   onSchedulesUpdate,
+  // --- New Props for Lifted State ---
+  currentMonth,
+  selectedDate,
+  groupFilter,
+  onViewStateChange,
 }) => {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState(dayjs());
-  // Default to null to show ALL schedules initially
-  const [selectedDate, setSelectedDate] = useState(null); 
-  const [groupFilter, setGroupFilter] = useState(undefined);
+  
+  // REMOVED: Internal state for date/month/filter
   
   const scrollRef = useRef(null);
-
   const optionId = classData?.option?.optionId;
 
   const refreshSchedules = useCallback(async () => {
@@ -1235,9 +1239,14 @@ const ScheduleManagementView = React.memo(({
     }
   }, [optionId, refreshSchedules]);
 
+  // Helpers to update parent state
+  const setCurrentMonth = (val) => onViewStateChange({ currentMonth: val });
+  const setSelectedDate = (val) => onViewStateChange({ selectedDate: val });
+  const setGroupFilter = (val) => onViewStateChange({ groupFilter: val });
+
   const handleScroll = (direction) => {
     if (scrollRef.current) {
-      const scrollAmount = 240; // Approximate width of 3-4 cards
+      const scrollAmount = 240; 
       scrollRef.current.scrollBy({
         left: direction === 'left' ? -scrollAmount : scrollAmount,
         behavior: 'smooth'
@@ -1314,7 +1323,6 @@ const ScheduleManagementView = React.memo(({
       <ScheduleCard key={schedule.id} $isPast={isPast} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <CardTop>
           <CardInfo>
-             {/* Show Date Header if viewing All */}
             {!selectedDate && (
                 <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>
                     {dateObj.format('ddd, MMM D')}
@@ -1492,6 +1500,7 @@ const ScheduleManagementView = React.memo(({
                 <Button 
                     type="primary" 
                     icon={<Plus size={14} />} 
+                    // Use selectedDate from props if available
                     onClick={() => onAdd(selectedDate || dayjs())}
                     style={{ marginTop: 16 }}
                 >
@@ -1531,6 +1540,17 @@ const ScheduleEditDrawer = ({
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [prefillDate, setPrefillDate] = useState(null);
 
+  // --- LIFTED STATE FOR VIEW PRESERVATION ---
+  const [viewState, setViewState] = useState({
+    currentMonth: dayjs(),
+    selectedDate: null,
+    groupFilter: undefined,
+  });
+
+  const updateViewState = useCallback((updates) => {
+    setViewState(prev => ({ ...prev, ...updates }));
+  }, []);
+
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 1024);
     checkMobile();
@@ -1555,6 +1575,7 @@ const ScheduleEditDrawer = ({
         setPrefillDate(null);
       }
     } else {
+      // RESET everything when closing the modal
       form.resetFields();
       bulkForm.resetFields();
       setCurrentStep(0);
@@ -1563,6 +1584,13 @@ const ScheduleEditDrawer = ({
       setEditingSchedule(null);
       setPrefillDate(null);
       setActiveView("manage");
+      
+      // Reset view state only on close
+      setViewState({
+        currentMonth: dayjs(),
+        selectedDate: null,
+        groupFilter: undefined,
+      });
     }
   }, [open, classData, startInEditMode, directEditingSchedule, form, bulkForm]);
 
@@ -1670,14 +1698,8 @@ const ScheduleEditDrawer = ({
 
   const handleBulkSubmit = async () => {
     try {
-      // FIX: validateFields() only returns fields currently in the DOM (Step 2),
-      // so it misses 'date_range' from Step 0.
-      // We assume previous steps were validated by handleBulkNext.
-      // We construct 'values' by merging the accumulated formData with the current form store.
-      
       const values = { ...formData, ...bulkForm.getFieldsValue(true) };
       
-      // Basic check to ensure critical data isn't missing
       if (!values.date_range || !values.date_range[0]) {
          message.error("Date range is missing. Please go back and select dates.");
          return;
@@ -2395,10 +2417,11 @@ const ScheduleEditDrawer = ({
 
   const handleAddNew = useCallback((date) => {
     setEditingSchedule(null);
-    // If a specific date was clicked, pass it to prefill, otherwise null
-    setPrefillDate(date && dayjs.isDayjs(date) ? date : null); 
+    // If a specific date was clicked (e.g. from empty state), use it.
+    // Otherwise fall back to the selected filter date from the view state.
+    setPrefillDate(date && dayjs.isDayjs(date) ? date : viewState.selectedDate); 
     setActiveView("form");
-  }, []);
+  }, [viewState.selectedDate]);
 
   const handleEdit = useCallback((schedule) => {
     setEditingSchedule(schedule);
@@ -2413,6 +2436,11 @@ const ScheduleEditDrawer = ({
           onAdd={handleAddNew}
           onEdit={handleEdit}
           onSchedulesUpdate={onSchedulesUpdate}
+          // Pass down the lifted state
+          currentMonth={viewState.currentMonth}
+          selectedDate={viewState.selectedDate}
+          groupFilter={viewState.groupFilter}
+          onViewStateChange={updateViewState}
         />
       );
     }
@@ -2661,6 +2689,11 @@ const ScheduleEditDrawer = ({
                     onAdd={handleAddNew}
                     onEdit={handleEdit}
                     onSchedulesUpdate={onSchedulesUpdate}
+                    // Pass down the lifted state here as well for mobile
+                    currentMonth={viewState.currentMonth}
+                    selectedDate={viewState.selectedDate}
+                    groupFilter={viewState.groupFilter}
+                    onViewStateChange={updateViewState}
                   />
               </MobileContent>
               <MobileFooter>
