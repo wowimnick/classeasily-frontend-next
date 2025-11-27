@@ -330,7 +330,7 @@ const CTASection = styled.section`
 `;
 
 const BigButton = styled(motion.a)`
-  background: #111;
+  background: #f81e3e;
   color: #fff;
   padding: 1.5rem 3rem;
   font-size: 1.25rem;
@@ -426,7 +426,7 @@ const AboutUs = () => {
               </RevealText>
               <DisplayText>
                 <RevealText delay={0.1}><span>Local learning,</span></RevealText>
-                <RevealText delay={0.2}><span>reimagined for</span></RevealText>
+                <RevealText delay={0.2}><span>focused on</span></RevealText>
                 <RevealText delay={0.3}><span style={{color: '#ff385c'}}>connection.</span></RevealText>
               </DisplayText>
             </div>
@@ -582,7 +582,7 @@ const AboutUs = () => {
               Find a workshop <ArrowUpRight size={20} />
             </BigButton>
             <BigButton 
-              href="/teach" 
+              href="/business" 
               className="outline-btn"
               style={{ background: "transparent", color: "#111", border: "1px solid #111" }}
               title="Become a workshop host"

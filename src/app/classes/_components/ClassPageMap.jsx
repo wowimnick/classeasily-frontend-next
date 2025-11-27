@@ -120,13 +120,14 @@ const ClassPageMap = ({
   businessName,
   fullAddress,
 }) => {
-  // --- FIX: State to force unique map instances ---
+  // State to force unique map instances
   const [isMounted, setIsMounted] = useState(false);
-  const [mapKey, setMapKey] = useState(null);
+  const [baseMapKey, setBaseMapKey] = useState(null);
 
   useEffect(() => {
-    // Generate a unique key based on time to ensure a fresh DOM node on mount
-    setMapKey(`map-instance-${Date.now()}`);
+    // Generate a base unique key based on time to ensure a fresh DOM node on mount.
+    // This runs every time you navigate back to this page.
+    setBaseMapKey(`map-instance-${Date.now()}`);
     setIsMounted(true);
     
     return () => {
@@ -149,7 +150,6 @@ const ClassPageMap = ({
   // Use the fullAddress for the Google Maps link if available, otherwise fallback to coordinates
   const googleMapsUrl = useMemo(() => {
     if (!saltLocation && fullAddress) {
-      // Fixed syntax error in template literal
       return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
     }
     if (position) {
@@ -157,6 +157,14 @@ const ClassPageMap = ({
     }
     return "#";
   }, [saltLocation, fullAddress, position]);
+
+  // Combine the unique base ID (time) with location data.
+  // This ensures that even if you stay on the page but the props change, 
+  // the map gets destroyed and recreated properly.
+  const dynamicMapKey = useMemo(() => {
+    if (!baseMapKey || !position) return null;
+    return `${baseMapKey}-${position[0]}-${position[1]}-${saltLocation ? 's' : 'n'}`;
+  }, [baseMapKey, position, saltLocation]);
 
   if (!position) {
     return (
@@ -186,9 +194,13 @@ const ClassPageMap = ({
     <MapWrapper>
       <LeafletMarkerStyles />
       
-      {/* --- FIX: Conditional rendering with unique Key --- */}
-      {isMounted && mapKey && (
-        <div key={mapKey} className="map-instance-wrapper">
+      {/* 
+        The key={dynamicMapKey} on this div is the critical fix.
+        It forces React to tear down this div and create a new one
+        whenever the component remounts or location changes.
+      */}
+      {isMounted && dynamicMapKey && (
+        <div key={dynamicMapKey} className="map-instance-wrapper">
           <MapContainer
             center={position}
             zoom={zoomLevel}
@@ -196,6 +208,7 @@ const ClassPageMap = ({
             attributionControl={false}
             zoomControl={false}
             aria-label={`Map showing location for ${businessName}`}
+            style={{ height: "100%", width: "100%" }}
           >
             <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
             {saltLocation ? (

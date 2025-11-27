@@ -395,18 +395,19 @@ const GiftCardsCTA = () => {
             <FeatureItem><Calendar /> Instant Delivery</FeatureItem>
           </Features>
 
-          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+          <motion.div
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            style={{ display: "inline-block" }}
+          >
             <AntButton
               type="primary"
               size="large"
               onClick={handleBuyClick}
               style={{
-                padding: "0 2.5rem",
-                height: "50px",
-                fontSize: "1rem",
-                borderRadius: "25px",
-                background: "#E92E31",
-                border: "none"
+                padding: "1rem 2.5rem",
+                height: "auto",
+                lineHeight: "1.5",
               }}
             >
               Purchase Gift Card <ArrowRight size={18} style={{marginLeft: '8px'}}/>

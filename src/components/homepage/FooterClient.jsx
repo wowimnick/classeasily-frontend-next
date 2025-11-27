@@ -581,14 +581,14 @@ export default function FooterClient({ categories = [] }) {
             <Social>
               <StyledH2>Follow us</StyledH2>
               <SocialLinks>
-                <a href="#" aria-label="Follow us on LinkedIn">
+                <a href="https://www.linkedin.com/company/classeasily/" aria-label="Follow us on LinkedIn" target="_blank" rel="noopener noreferrer">
                   <Image
                     src={LinkedinSvg}
                     alt="LinkedIn"
                     style={{ height: "32px", width: "auto" }}
                   />
                 </a>
-                <a href="#" aria-label="Follow us on Facebook">
+                <a href="https://www.facebook.com/p/ClassEasily-61577902526917/" aria-label="Follow us on Facebook" target="_blank" rel="noopener noreferrer">
                   <Image
                     src={FacebookSvg}
                     alt="Facebook"
