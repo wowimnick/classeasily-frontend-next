@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
@@ -44,7 +43,7 @@ import dayjs from "dayjs";
 import styled, { keyframes } from "styled-components";
 import { Drawer as VaulDrawer } from "vaul";
 import { theme as appTheme } from "@/components/theme";
-import { courseService, scheduleService } from "@/services/apiService";
+import { scheduleService } from "@/services/apiService";
 import { motion, AnimatePresence } from "framer-motion";
 
 const { Option } = Select;
@@ -475,6 +474,8 @@ const PresetChip = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  opacity: ${props => props.disabled ? 0.5 : 1};
+  pointer-events: ${props => props.disabled ? 'none' : 'auto'};
 
   &:hover {
     border-color: ${props => props.theme.token.colorPrimary};
@@ -490,6 +491,8 @@ const CustomDurationInputs = styled.div`
   padding: 10px;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
+  opacity: ${props => props.disabled ? 0.6 : 1};
+  pointer-events: ${props => props.disabled ? 'none' : 'auto'};
 
   .input-group {
     display: flex;
@@ -552,7 +555,7 @@ const DurationPicker = ({ value, onChange, disabled }) => {
           Or enter custom duration:
       </div>
       
-      <CustomDurationInputs>
+      <CustomDurationInputs disabled={disabled}>
         <div className="input-group">
           <label>Hours</label>
           <StyledInputNumber 
@@ -1428,6 +1431,10 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
       visible: { opacity: 1, x: 0 },
       exit: { opacity: 0, x: -20 },
     };
+    
+    // Check if we are in "Lockdown Mode"
+    const isLocked = editingSchedule && editingSchedule.has_confirmed_bookings;
+
     switch (currentStep) {
       case 0:
         const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -1444,6 +1451,14 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                 <StyledInput placeholder="Enter course schedule name" size="large" />
               </Form.Item>
             </FormGroup>
+            
+            {isLocked && (
+               <div style={{ marginBottom: 20, padding: 12, background: '#fff1f0', border: '1px solid #ffa39e', borderRadius: 8, color: '#cf1322', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}>
+                 <Info size={16} />
+                 <span>Dates and times are locked because this course has active students.</span>
+               </div>
+            )}
+
             <FormGroup>
               <FormLabel><Calendar size={16} /> Date Range</FormLabel>
               <HelpText><Info size={14} /> Select the start and end dates for the entire course.</HelpText>
@@ -1454,7 +1469,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                   inputReadOnly
                   disabledDate={(c) => c && c < dayjs().startOf("day")} 
                   onChange={handleDateRangeChange} 
-                  disabled={editingSchedule && editingSchedule.has_confirmed_bookings}
+                  disabled={isLocked} // DISABLED IF BOOKED
                   getPopupContainer={isMobile ? (trigger) => trigger.parentElement : undefined}
                 />
               </Form.Item>
@@ -1465,7 +1480,12 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
               <Form.Item name="selectedDays" rules={[{ required: true, message: "Please select at least one day" }]}>
                 <DaySelector>
                   {daysOfWeek.map((d) => (
-                    <DayButton key={d} type={formData.selectedDays?.includes(d) ? "primary" : "default"} onClick={() => handleDayToggle(d)} disabled={editingSchedule && editingSchedule.has_confirmed_bookings}>
+                    <DayButton 
+                        key={d} 
+                        type={formData.selectedDays?.includes(d) ? "primary" : "default"} 
+                        onClick={() => !isLocked && handleDayToggle(d)} // PREVENT TOGGLE IF BOOKED
+                        disabled={isLocked} // VISUALLY DISABLED
+                    >
                       {d.substring(0, 3)}
                     </DayButton>
                   ))}
@@ -1482,7 +1502,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                     size="large" 
                     minuteStep={15} 
                     inputReadOnly
-                    disabled={editingSchedule && editingSchedule.has_confirmed_bookings}
+                    disabled={isLocked} // DISABLED IF BOOKED
                     getPopupContainer={isMobile ? (trigger) => trigger.parentElement : undefined}
                   />
                 </Form.Item>
@@ -1490,8 +1510,8 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
               <FormGroup>
                 <FormLabel><Hourglass size={16} /> Duration</FormLabel>
                 <Form.Item name="duration" initialValue={60} rules={[{ required: true, message: "Please select duration" }]}>
-                  {/* Replaced Select with DurationPicker */}
-                  <DurationPicker disabled={editingSchedule && editingSchedule.has_confirmed_bookings} />
+                  {/* Pass disabled prop to custom component */}
+                  <DurationPicker disabled={isLocked} /> 
                 </Form.Item>
               </FormGroup>
             </FormGrid>
@@ -1583,7 +1603,8 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                   <Text type="secondary" style={{ fontSize: 12, letterSpacing: "0.2px" }}>{dayjs(s.start_date).format("MMM D")} - {dayjs(s.end_date).format("MMM D, YYYY")}</Text>
                 </div>
                 <ScheduleActions>
-                  <Tooltip title={s.has_confirmed_bookings ? "Cannot edit with active bookings" : "Edit"}><Button type="text" icon={<Edit3 size={14} />} disabled={s.has_confirmed_bookings} onClick={(e) => handleEditClick(e, s)} style={{ height: 32, width: 32 }} /></Tooltip>
+                  {/* EDIT BUTTON ALWAYS ENABLED - LOCKING HAPPENS IN FORM */}
+                  <Tooltip title="Edit"><Button type="text" icon={<Edit3 size={14} />} onClick={(e) => handleEditClick(e, s)} style={{ height: 32, width: 32 }} /></Tooltip>
                   <Tooltip title={s.has_confirmed_bookings ? "Cannot delete with active bookings" : "Delete"}>
                     <Popconfirm title="Delete this course schedule?" description="This will remove all recurring sessions for this course. This action cannot be undone." onConfirm={(e) => { e.stopPropagation(); handleDeleteGroup(s); }} onCancel={(e) => e.stopPropagation()} okText="Delete" cancelText="Cancel" okButtonProps={{ danger: true }} disabled={s.has_confirmed_bookings}>
                       <Button type="text" danger icon={<Trash2 size={14} />} disabled={s.has_confirmed_bookings} onClick={(e) => e.stopPropagation()} style={{ height: 32, width: 32 }} />
