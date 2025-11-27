@@ -2,14 +2,10 @@
 
 import React, { useState, useRef, useLayoutEffect } from "react";
 import styled, { keyframes } from "styled-components";
-import { Button, Typography, Tooltip } from "antd";
+import { Button, Typography, Tooltip, Divider } from "antd";
 import {
-  MessageSquare,
   Star,
   Award,
-  BookOpen,
-  Tag,
-  Sparkles,
   User,
   Heart,
   Share2,
@@ -267,9 +263,26 @@ const defaultSubcategoryIcon = {
   state: "in-reveal",
 };
 
-// --- Styled Components --- (No changes needed, but keeping for completeness)
-const growAndShrink = keyframes` 0% { transform: scale(1); } 25% { transform: scale(1.5); } 50% { transform: scale(1); } 100% { transform: scale(1); }`;
-const slideInAndFade = keyframes` 0% { opacity: 0; transform: translateX(-10px); } 100% { opacity: 1; transform: translateX(0); }`;
+// --- Animations ---
+
+// Slower, smoother pop without z-index thrashing.
+// We use translateZ to pop it visually on top without changing stacking context context abruptly.
+const popAndSettle = keyframes`
+  0% { transform: scale(0) translateZ(0); opacity: 0; }
+  40% { transform: scale(2.5) translateZ(0); opacity: 1; } 
+  75% { transform: scale(1) translateZ(0); }
+  100% { transform: scale(1) translateZ(0); opacity: 1; }
+`;
+
+// Delayed text slide-out
+const slideReveal = keyframes`
+  0% { opacity: 0; transform: translateX(-20px); max-width: 0; margin-left: 0; }
+  50% { opacity: 0; transform: translateX(-20px); max-width: 0; margin-left: 0; }
+  100% { opacity: 1; transform: translateX(0); max-width: 200px; margin-left: 8px; }
+`;
+
+// --- Styled Components ---
+
 const MobileHeaderSection = styled.div`
   display: none;
   @media (max-width: 768px) {
@@ -342,45 +355,46 @@ const InfoWrapper = styled.section`
   display: flex;
   flex-direction: column;
   width: 100%;
-  gap: 1.5rem;
   padding: 0 1rem;
   background: white;
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
+  /* Removed gap to allow Divider to control spacing */
   @media (max-width: 1024px) {
     padding-top: 1.5rem;
   }
   @media (max-width: 768px) {
     padding: 1.5rem 0 0 0;
-    gap: 1rem;
   }
   @media (max-width: 480px) {
     padding: 1rem;
   }
 `;
 const BusinessSection = styled.div`
-  padding: 0 0 1.5rem 0;
-  border-bottom: 1px solid #eaeaea;
+  /* Removed border-bottom and large padding */
+  padding: 0;
   @media (max-width: 768px) {
-    padding: 0 0.75rem 1.25rem 0.75rem;
+    padding: 0 0.75rem;
   }
   @media (max-width: 480px) {
-    padding: 1rem 0.5rem 1rem 0.5rem;
-    border-top: 1px solid #f0f0f0;
+    padding: 0 0.5rem;
+    /* Removed border-top */
   }
 `;
 const BusinessInfo = styled.button`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
   cursor: pointer;
   padding: 0.5rem 0.75rem;
-  border-radius: 50px;
+  border-radius: 16px;
   transition: background-color 0.2s ease;
   border: none;
   background-color: transparent;
   text-align: left;
   margin-left: -0.75rem;
+  width: calc(100% + 1.5rem);
+  
   &:hover:not(:disabled) {
     background-color: #f5f5f5;
   }
@@ -394,14 +408,15 @@ const BusinessInfo = styled.button`
     opacity: 0.7;
   }
   @media (max-width: 480px) {
-    gap: 0.5rem;
+    gap: 0.6rem;
     padding: 0.4rem 0.6rem;
     margin-left: -0.6rem;
+    width: calc(100% + 1.2rem);
   }
 `;
 const BusinessAvatar = styled.div`
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   overflow: hidden;
   border: 1px solid #eaeaea;
@@ -411,6 +426,10 @@ const BusinessAvatar = styled.div`
   justify-content: center;
   flex-shrink: 0;
   color: #767676;
+  @media (max-width: 480px) {
+    width: 42px;
+    height: 42px;
+  }
 `;
 const HostImg = styled.img`
   display: block;
@@ -419,139 +438,134 @@ const HostImg = styled.img`
   object-fit: cover;
 `;
 const BusinessName = styled.span`
+  display: block;
   font-size: 1rem;
   font-weight: 600;
   color: #000;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 250px;
+  margin-bottom: 2px;
   @media (max-width: 480px) {
     font-size: 0.95rem;
-    max-width: 200px;
   }
 `;
-const BusinessSubtext = styled.div`
+const BusinessMetaWrapper = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
   font-size: 0.875rem;
   color: #717171;
-  margin-top: 0.25rem;
+  line-height: 1.4;
 `;
+const MetaItem = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+`;
+const MetaSeparator = styled.span`
+  margin: 0 2px;
+  color: #717171;
+  font-size: 0.6rem;
+  opacity: 0.7;
+`;
+
+// --- New Categories/Pills Section ---
 const HeaderSection = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid #eaeaea;
+  /* Removed border-bottom and padding-bottom */
   @media (max-width: 768px) {
-    padding: 0 0.75rem 1.5rem 0.75rem;
+    padding: 0 0.75rem;
   }
   @media (max-width: 480px) {
-    padding: 0 0.5rem 1.5rem 0.5rem;
+    padding: 0 0.5rem;
   }
 `;
-const StatsRow = styled.div`
+
+const CategoriesGrid = styled.div`
   display: flex;
-  align-items: center;
-  gap: 1.5rem;
   flex-wrap: wrap;
-  @media (max-width: 768px) {
-    gap: 1rem;
-  }
-  @media (max-width: 600px) {
-    gap: 0.75rem;
-  }
+  gap: 12px;
+  align-items: flex-start;
   @media (max-width: 480px) {
-    gap: 0.5rem;
+    gap: 8px;
   }
 `;
-const StatItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #000;
-  font-size: 0.95rem;
-  flex-shrink: 0;
-  svg {
-    color: #ff385c;
-    flex-shrink: 0;
-  }
-  lord-icon {
-    animation: ${growAndShrink} 2s ease-in-out;
-    width: 14px;
-    height: 14px;
-  }
-  span {
-    animation: ${slideInAndFade} 1s ease-in-out;
-  }
-  &:not(:last-child) {
-    padding-right: 1.5rem;
-    position: relative;
-    &::after {
-      content: "•";
-      position: absolute;
-      right: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #858585;
-      pointer-events: none;
-    }
-  }
-  @media (max-width: 768px) {
-    font-size: 0.9rem;
-    gap: 0.375rem;
-    &:not(:last-child) {
-      padding-right: 1rem;
-    }
-  }
-  @media (max-width: 600px) {
-    font-size: 0.85rem;
-    &:not(:last-child) {
-      padding-right: 0.75rem;
-    }
-  }
-  @media (max-width: 480px) {
-    font-size: 0.8rem;
-    gap: 0.25rem;
-    &:not(:last-child) {
-      padding-right: 0.5rem;
-      &::after {
-        font-size: 0.75rem;
-      }
-    }
-    svg {
-      width: 14px;
-      height: 14px;
-    }
-  }
-`;
-const FoundationalPartnerBadge = styled.span`
+
+const CategoryPill = styled.div`
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  color: #b45309;
-  font-weight: 500;
+  padding: 6px 14px 6px 10px;
+  background: #fdfdfd;
+  border: 1px solid #e8e8e8;
+  border-radius: 100px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  transition: all 0.3s ease;
   overflow: visible;
-  lord-icon {
-    animation: ${growAndShrink} 3s ease-in-out;
-    width: 14px;
-    height: 14px;
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    border-color: #e0e0e0;
   }
-  span {
-    animation: ${slideInAndFade} 1s ease-in-out;
-  }
+
   @media (max-width: 480px) {
-    padding: 0.15rem 0.5rem;
-    font-size: 0.8rem;
-    gap: 0.25rem;
-    border-radius: 10px;
-    lord-icon {
-      width: 12px;
-      height: 12px;
-    }
+    padding: 5px 12px 5px 8px;
   }
 `;
+
+const AnimatedIconWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+
+  /* Use fill-mode: both so the 0% keyframe applies immediately before animation starts. */
+  /* will-change and backface-visibility prevents the snap/flicker at end of animation */
+  will-change: transform;
+  backface-visibility: hidden;
+  
+  /* Slower Duration: 1.4s */
+  animation: ${popAndSettle} 1.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+  animation-delay: ${(props) => props.$delay || "0ms"};
+  
+  lord-icon {
+    width: 100%;
+    height: 100%;
+  }
+
+  @media (max-width: 480px) {
+    width: 24px;
+    height: 24px;
+  }
+`;
+
+const AnimatedTextWrapper = styled.span`
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  
+  /* Use fill-mode: both to prevent Flash of Unstyled Content */
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  
+  /* Slower Duration: 1.6s */
+  animation: ${slideReveal} 1.6s cubic-bezier(0.215, 0.610, 0.355, 1.000) both;
+  animation-delay: ${(props) => props.$delay || "0ms"};
+
+  @media (max-width: 480px) {
+    font-size: 0.85rem;
+  }
+`;
+
+// --- Description Section ---
 const DescriptionSection = styled.div`
   display: flex;
   flex-direction: column;
@@ -754,75 +768,96 @@ const ClassInformation = React.memo(
                 <User size={22} />
               )}
             </BusinessAvatar>
-            <div>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "2px" }}
+            >
               <BusinessName>Hosted by {displayBusinessName}</BusinessName>
-              <BusinessSubtext>
-                Class Host{hostingDuration && ` · ${hostingDuration} hosting`}
-              </BusinessSubtext>
+              <BusinessMetaWrapper>
+                <MetaItem>
+                  Class Host
+                  {hostingDuration && ` · ${hostingDuration} hosting`}
+                </MetaItem>
+
+                {reviewCount > 0 && (
+                  <>
+                    <MetaSeparator>•</MetaSeparator>
+                    <MetaItem style={{ fontWeight: "500", color: "#000" }}>
+                      <Star size={12} fill="#000" strokeWidth={0} />
+                      {reviewCount} review{reviewCount !== 1 ? "s" : ""}
+                    </MetaItem>
+                  </>
+                )}
+
+                {shouldShowTopRated && (
+                  <>
+                    <MetaSeparator>•</MetaSeparator>
+                    <MetaItem style={{ fontWeight: "500", color: "#FF385C" }}>
+                      <Award size={14} /> Top Rated
+                    </MetaItem>
+                  </>
+                )}
+              </BusinessMetaWrapper>
             </div>
           </BusinessInfo>
         </BusinessSection>
 
+        <Divider style={{ margin: "12px 0" }} />
+
         <HeaderSection>
-          <StatsRow>
+          <CategoriesGrid>
             {partnerBadgeText && (
-              <StatItem>
-                <FoundationalPartnerBadge>
+              <CategoryPill>
+                <AnimatedIconWrapper $delay="0ms">
                   <lord-icon
                     src="https://cdn.lordicon.com/zopdjjjs.json"
                     trigger="in"
                     state="in-reveal"
-                    style={{ width: "30px", height: "30px" }}
+                    style={{ width: "100%", height: "100%" }}
                   />
-                  <span>{partnerBadgeText}</span>
-                </FoundationalPartnerBadge>
-              </StatItem>
+                </AnimatedIconWrapper>
+                <AnimatedTextWrapper $delay="0ms" style={{ color: "#b45309" }}>
+                  {partnerBadgeText}
+                </AnimatedTextWrapper>
+              </CategoryPill>
             )}
+
             {categoryName && (
-              <StatItem>
-                <LordIcon
-                  src={categoryIcon.src}
-                  trigger={categoryIcon.trigger}
-                  state={categoryIcon.state}
-                  delay={categoryIcon.delay || 0}
-                  style={{ width: "30px", height: "30px" }}
-                />{" "}
-                {categoryName}
-              </StatItem>
+              <CategoryPill>
+                <AnimatedIconWrapper $delay="200ms">
+                  <LordIcon
+                    src={categoryIcon.src}
+                    trigger={categoryIcon.trigger}
+                    state={categoryIcon.state}
+                    delay={categoryIcon.delay || 0}
+                    style={{ width: "100%", height: "100%" }}
+                  />
+                </AnimatedIconWrapper>
+                <AnimatedTextWrapper $delay="200ms">
+                  {categoryName}
+                </AnimatedTextWrapper>
+              </CategoryPill>
             )}
+
             {subcategoryName && (
-              <StatItem>
-                <LordIcon
-                  src={subcategoryIcon.src}
-                  trigger={subcategoryIcon.trigger}
-                  state={subcategoryIcon.state}
-                  delay={subcategoryIcon.delay || 0}
-                  style={{ width: "30px", height: "30px" }}
-                />{" "}
-                {subcategoryName}
-              </StatItem>
+              <CategoryPill>
+                <AnimatedIconWrapper $delay="400ms">
+                  <LordIcon
+                    src={subcategoryIcon.src}
+                    trigger={subcategoryIcon.trigger}
+                    state={subcategoryIcon.state}
+                    delay={subcategoryIcon.delay || 0}
+                    style={{ width: "100%", height: "100%" }}
+                  />
+                </AnimatedIconWrapper>
+                <AnimatedTextWrapper $delay="400ms">
+                  {subcategoryName}
+                </AnimatedTextWrapper>
+              </CategoryPill>
             )}
-            <StatItem>
-              <LordIcon
-                src="https://cdn.lordicon.com/fmdwwfgs.json"
-                trigger="in"
-                delay="1500"
-                state="in-chat"
-                colors="primary:#e4e4e4,secondary:#ee6d66,tertiary:#ffc738,quaternary:#e4e4e4"
-                style={{ width: "30px", height: "30px" }}
-              />
-              {reviewCount} review{reviewCount !== 1 ? "s" : ""}
-            </StatItem>
-            {shouldShowTopRated && (
-              <StatItem>
-                <Award size={18} aria-hidden="true" />
-                <span style={{ color: "#ff385c", fontWeight: "500" }}>
-                  Top Rated
-                </span>
-              </StatItem>
-            )}
-          </StatsRow>
+          </CategoriesGrid>
         </HeaderSection>
+
+        <Divider style={{ margin: "12px 0" }} />
 
         <DescriptionSection>
           <Description

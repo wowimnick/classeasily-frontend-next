@@ -1,1035 +1,598 @@
 "use client";
 
-import React, { Suspense } from "react";
-import styled, { keyframes } from "styled-components";
-import { motion } from "framer-motion";
-import {
-  Users,
-  Heart,
-  Sparkles,
-  Shield,
-  ArrowUpRight,
-  Star,
-  SearchIcon,
-} from "lucide-react";
+import React, { useRef } from "react";
+import styled from "styled-components";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { ArrowUpRight, ArrowRight } from "lucide-react";
 import Header from "@/components/header/Header";
-import dynamic from "next/dynamic";
-const Footer = dynamic(() => import("@/components/homepage/Footer"), {
-  loading: () => <div style={{ minHeight: "300px" }} />,
-});
+import FooterSmart from "@/components/homepage/FooterSmart";
+import Head from "next/head";
 
-// --- ANIMATIONS & KEYFRAMES ---
-const float = keyframes`
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(3deg); }
-`;
+// --- SEO STRUCTURED DATA ---
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  "name": "About ClassEasily",
+  "description": "Reimagining local learning through face-to-face workshops and community connections.",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ClassEasily",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://classeasily.com/logo.png"
+    }
+  }
+};
 
-const pulse = keyframes`
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-`;
+// --- GLOBAL STYLES & LAYOUT ---
 
-// --- STYLED COMPONENTS ---
 const PageWrapper = styled.div`
-  color: #1d2939;
-  overflow: hidden;
+  background-color: #ffffff;
+  color: #111111;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow-x: hidden;
   position: relative;
+`;
+
+const MainContainer = styled.main`
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  position: relative;
+
+  @media (max-width: 768px) {
+    padding: 0 1.5rem;
+  }
+`;
+
+const GridLine = styled.div`
+  position: absolute;
+  background: rgba(0, 0, 0, 0.06);
+  z-index: 0;
+  pointer-events: none;
+`;
+
+// --- TYPOGRAPHY ---
+
+const DisplayText = styled(motion.h1)`
+  font-size: clamp(3.5rem, 8vw, 7.5rem);
+  font-weight: 500;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  margin: 0;
+  color: #111;
+  position: relative;
+  z-index: 1;
+  
+  span {
+    display: block;
+    /* Ensure the span itself doesn't cause overflow issues */
+    padding: 0.1em 0; 
+  }
+`;
+
+const SectionLabel = styled.span`
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  color: #666;
+  display: block;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+  z-index: 1;
 
   &::before {
     content: "";
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(
-        circle at 20% 80%,
-        rgba(255, 56, 92, 0.03) 0%,
-        transparent 50%
-      ),
-      radial-gradient(
-        circle at 80% 20%,
-        rgba(37, 99, 235, 0.03) 0%,
-        transparent 50%
-      );
-    pointer-events: none;
-    z-index: 0;
+    width: 12px;
+    height: 12px;
+    background: #ff385c;
   }
 `;
 
-const Section = styled.section`
-  padding: clamp(4rem, 10vw, 8rem) clamp(1rem, 5vw, 4rem);
-  background: ${(props) => props.$background || "transparent"};
-  position: relative;
-  z-index: 1;
-`;
-
-const Container = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  position: relative;
-`;
-
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: ${(props) => props.$columns || "1fr"};
-  gap: ${(props) => props.$gap || "2rem"};
-  align-items: ${(props) => props.$align || "start"};
-
-  @media (max-width: 968px) {
-    grid-template-columns: 1fr;
-    gap: ${(props) => props.$mobileGap || props.$gap || "3rem"};
-  }
-`;
-
-const Content = styled(motion.div)`
-  display: flex;
-  flex-direction: column;
-  justify-content: ${(props) => props.$justify || "start"};
-  gap: 1.5rem;
-  text-align: ${(props) => props.$textAlign || "left"};
-  position: relative;
-
-  ${(props) =>
-    props.$center &&
-    `
-    margin-left: auto;
-    margin-right: auto;
-    max-width: 700px;
-  `}
-`;
-
-const Title = styled.h2`
-  font-size: clamp(2.5rem, 5vw, 3.5rem);
-  font-weight: 800;
-  line-height: 1.1;
-  color: #1d2939;
-  letter-spacing: -2px;
-  position: relative;
-
-  &::after {
-    content: "";
-    position: absolute;
-    bottom: -10px;
-    left: 0;
-    width: 60px;
-    height: 4px;
-    background: linear-gradient(90deg, #ff385c, #ff7171);
-    border-radius: 2px;
-  }
-
-  ${(props) =>
-    props.$center &&
-    `
-    text-align: center;
-    &::after {
-      left: 50%;
-      transform: translateX(-50%);
-    }
-  `}
-`;
-
-const Subtitle = styled.p`
-  font-size: clamp(1.1rem, 2vw, 1.25rem);
-  color: #475467;
-  line-height: 1.7;
-  max-width: 60ch;
-  margin: ${(props) => props.$center && "0 auto"};
-  position: relative;
-`;
-
-const Text = styled.p`
-  font-size: 1.125rem;
-  color: #475467;
-  line-height: 1.8;
-`;
-
-const AccentText = styled.span`
-  background: linear-gradient(135deg, #ff385c 0%, #ff7171 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-weight: 800;
+const LeadText = styled.p`
+  font-size: clamp(1.25rem, 2vw, 2rem);
+  line-height: 1.4;
+  font-weight: 400;
+  color: #111;
+  max-width: 40ch;
 `;
 
 // --- HERO SECTION ---
-const HeroSection = styled.section`
-  min-height: 100vh;
-  display: flex;
-  padding: clamp(4rem, 10vw, 8rem) clamp(1rem, 5vw, 4rem);
-  position: relative;
-  overflow: hidden;
 
-  &::before {
-    content: "";
-    position: absolute;
-    top: -50%;
-    right: -20%;
-    width: 60%;
-    height: 200%;
-    background: linear-gradient(
-      45deg,
-      rgba(255, 56, 92, 0.05),
-      rgba(37, 99, 235, 0.05)
-    );
-    border-radius: 50%;
-    animation: ${float} 20s ease-in-out infinite;
-    z-index: -1;
-  }
-
-  @media (max-width: 968px) {
-    min-height: 90vh;
-    flex-direction: column;
-    text-align: center;
-    gap: 4rem;
-  }
-`;
-
-const HeroContent = styled(motion.div)`
-  flex: 1;
+const HeroSection = styled.header`
+  min-height: 90vh;
+  padding-top: 140px;
+  padding-bottom: 4rem;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
-  z-index: 2;
-
-  @media (max-width: 968px) {
-    align-items: center;
-  }
-`;
-
-const HeroTitle = styled(motion.h1)`
-  font-size: clamp(3.5rem, 8vw, 5.5rem);
-  font-weight: 900;
-  line-height: 1.05;
-  letter-spacing: -3px;
-  max-width: 15ch;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   position: relative;
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: -20px;
-    left: -20px;
-    width: 40px;
-    height: 40px;
-    background: linear-gradient(135deg, #ff385c, #ff7171);
-    border-radius: 50%;
-    opacity: 0.8;
-    animation: ${pulse} 3s ease-in-out infinite;
-  }
 `;
 
-const HeroImageGrid = styled(motion.div)`
-  flex: 1;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
+const HeroVideoContainer = styled(motion.div)`
+  width: 100%;
+  height: 400px;
+  margin-top: 4rem;
   position: relative;
-  z-index: 1;
-
-  &::after {
-    content: "";
-    position: absolute;
-    top: 20%;
-    left: 20%;
-    right: 20%;
-    bottom: 20%;
-    background: linear-gradient(
-      135deg,
-      rgba(255, 56, 92, 0.1),
-      rgba(37, 99, 235, 0.1)
-    );
-    border-radius: 2rem;
-    z-index: -1;
-    filter: blur(40px);
-  }
-
-  @media (max-width: 968px) {
-    width: 100%;
-  }
-`;
-
-const ImageWrapper = styled(motion.div)`
-  border-radius: 1.5rem;
   overflow: hidden;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.5);
-  position: relative;
-  background: linear-gradient(135deg, #fff 0%, #f8f9fc 100%);
+  background: #f0f0f0;
+  z-index: 2;
+  border-radius: 4px;
 
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.4),
-      transparent
-    );
-    z-index: 1;
+  @media (min-width: 1024px) {
+    height: 600px;
   }
 
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    filter: saturate(1.1) contrast(1.1);
+    filter: grayscale(100%);
+    transition: filter 0.5s ease;
+  }
+
+  &:hover img {
+    filter: grayscale(0%);
   }
 `;
 
-const Image1 = styled(ImageWrapper)`
-  height: 450px;
-  grid-column: 1 / 2;
-  grid-row: 1 / 3;
-`;
+// --- ORIGIN STORY (The Split) ---
 
-const Image2 = styled(ImageWrapper)`
-  height: 250px;
-  grid-column: 2 / 3;
-  grid-row: 1 / 2;
-`;
-
-const Image3 = styled(ImageWrapper)`
-  height: 180px;
-  grid-column: 2 / 3;
-  grid-row: 2 / 3;
-`;
-
-// --- VALUES SECTION ---
-const ValueCard = styled(motion.div)`
-  padding: 2.5rem;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-      135deg,
-      transparent 0%,
-      rgba(255, 56, 92, 0.02) 100%
-    );
-    opacity: 0;
-    transition: opacity 0.4s ease;
-  }
-`;
-
-const IconBox = styled.div`
-  width: 4rem;
-  height: 4rem;
-  border-radius: 1rem;
-  background: ${(props) => props.$bg};
-  color: ${(props) => props.$color};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-
-  &::after {
-    content: "";
-    position: absolute;
-    inset: -2px;
-    border-radius: inherit;
-    background: linear-gradient(
-      135deg,
-      ${(props) => props.$color}20,
-      transparent
-    );
-    z-index: -1;
-  }
-`;
-
-// --- ENHANCED STEP CARD ---
-const StepCard = styled(motion.div)`
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  text-align: center;
-  align-items: center;
-  padding: 2rem;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  transition: all 0.4s ease;
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, #ff385c, #ff7171, #2563eb);
-    background-size: 200% 100%;
-  }
-`;
-
-const StepNumber = styled.div`
-  width: 4rem;
-  height: 4rem;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ff385c 0%, #ff7171 100%);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  font-weight: 800;
-  box-shadow: 0 10px 25px rgba(255, 56, 92, 0.3);
-  position: relative;
-
-  &::after {
-    content: "";
-    position: absolute;
-    inset: -3px;
-    border-radius: inherit;
-    background: linear-gradient(135deg, #ff385c, #ff7171);
-    z-index: -1;
-    filter: blur(8px);
-    opacity: 0.6;
-  }
-`;
-
-// --- ENHANCED STATS ---
-const StatsGrid = styled(motion.div)`
+const SplitSection = styled.article`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 2rem;
-  margin-top: 4rem;
-`;
+  grid-template-columns: 1fr;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: #f9f9f9;
 
-const StatItem = styled(motion.div)`
-  padding: 3rem 2rem;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(15px);
-  border-radius: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.4s ease;
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: conic-gradient(
-      from 0deg,
-      transparent,
-      rgba(255, 56, 92, 0.1),
-      transparent
-    );
-    animation: ${float} 6s linear infinite;
-    z-index: -1;
+  @media (min-width: 1024px) {
+    grid-template-columns: 0.8fr 1.2fr;
+    min-height: 100vh;
   }
 `;
 
-const StatNumber = styled.p`
-  font-size: clamp(3rem, 6vw, 4rem);
-  font-weight: 900;
-  background: linear-gradient(135deg, #ff385c 0%, #ff7171 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0;
-  letter-spacing: -2px;
-`;
+const StickySide = styled.div`
+  padding: 4rem 1.5rem;
+  background: #f9f9f9;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 
-const StatLabel = styled.p`
-  font-size: 1.25rem;
-  color: #475467;
-  margin-top: 1rem;
-  font-weight: 600;
-`;
-
-// --- ENHANCED CTA SECTION ---
-const CtaSection = styled(Section)`
-  background: linear-gradient(135deg, #1d2939 0%, #2d3748 100%);
-  color: #fff;
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: -50%;
-    right: -50%;
-    width: 100%;
-    height: 200%;
-    background: radial-gradient(
-      circle,
-      rgba(255, 56, 92, 0.1) 0%,
-      transparent 70%
-    );
-    animation: ${float} 15s ease-in-out infinite reverse;
+  @media (min-width: 768px) {
+    padding: 4rem 2rem;
   }
-`;
 
-const TestimonialCard = styled(motion.div)`
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(15px);
-  padding: 3rem;
-  border-radius: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: "";
-    position: absolute;
+  @media (min-width: 1024px) {
+    position: sticky;
     top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(255, 56, 92, 0.05), transparent);
-    z-index: -1;
+    height: 100vh;
+    padding: 6rem 3rem;
   }
 `;
 
-const TestimonialText = styled.p`
-  font-size: 1.375rem;
-  font-style: italic;
+const ScrollSide = styled.div`
+  padding: 4rem 1.5rem;
+  background: #fff;
+  
+  @media (min-width: 768px) {
+    padding: 4rem 2rem;
+  }
+
+  @media (min-width: 1024px) {
+    padding: 6rem 5rem;
+  }
+`;
+
+const Paragraph = styled(motion.p)`
+  font-size: 1.125rem;
   line-height: 1.8;
-  color: #f0f2f5;
-  margin-bottom: 2rem;
-  position: relative;
+  color: #444;
+  margin-bottom: 2.5rem;
+  max-width: 55ch;
+`;
 
-  &::before {
-    content: """;
-    font-size: 5rem;
-    color: #ff385c;
-    position: absolute;
-    margin-top: -2rem;
-    margin-left: -3rem;
-    opacity: 0.6;
-    font-weight: 900;
+// --- PROCESS SECTION (List Layout) ---
+
+const ProcessSection = styled.section`
+  padding: 6rem 0;
+  background: #111;
+  color: #fff;
+`;
+
+const ProcessRow = styled(motion.div)`
+  display: grid;
+  grid-template-columns: 1fr;
+  padding: 3rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: background 0.3s ease;
+  position: relative;
+  gap: 1rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 0.5fr 2fr 1fr;
+    align-items: baseline;
+    gap: 0;
+  }
+
+  &:last-child {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  &:hover .arrow-icon {
+    transform: translateX(5px);
+    opacity: 1;
   }
 `;
 
-const Button = styled(motion.a)`
+const StepIndex = styled.span`
+  font-family: monospace;
+  font-size: 1rem;
+  color: #ff385c;
+  margin-bottom: 0.5rem;
+  display: block;
+  
+  @media (min-width: 768px) {
+    margin-bottom: 0;
+  }
+`;
+
+const StepTitle = styled.h3`
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 400;
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+`;
+
+const StepDesc = styled.p`
+  font-size: 1rem;
+  color: #999;
+  max-width: 300px;
+  line-height: 1.6;
+  margin: 0;
+
+  @media (min-width: 768px) {
+    text-align: right;
+    justify-self: end;
+  }
+`;
+
+// --- VALUES SECTION (Grid) ---
+
+const ValuesSection = styled.section`
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+`;
+
+const ValuesGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+`;
+
+const ValueCell = styled(motion.div)`
+  padding: 4rem 2rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  min-height: 350px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  
+  @media (min-width: 768px) {
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    
+    &:nth-child(3n) {
+      border-right: none;
+    }
+  }
+`;
+
+const ValueIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  background: #111;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin-bottom: 2rem;
+`;
+
+// --- CTA ---
+
+const CTASection = styled.section`
+  padding: 8rem 1.5rem;
+  text-align: center;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  
+  @media (min-width: 768px) {
+    padding: 10rem 2rem;
+  }
+`;
+
+const BigButton = styled(motion.a)`
+  background: #111;
+  color: #fff;
+  padding: 1.5rem 3rem;
+  font-size: 1.25rem;
+  font-weight: 500;
+  text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1.25rem 2.5rem;
-  color: #fff;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 0.75rem;
-  text-decoration: none;
-  font-size: 1.125rem;
-  font-weight: 600;
-  position: relative;
+  gap: 1rem;
+  border-radius: 4px;
   overflow: hidden;
-  backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+  transition: color 0.3s ease;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 100%;
+    background: #ff385c;
+    transition: width 0.3s cubic-bezier(0.77, 0, 0.175, 1);
+    z-index: -1;
+  }
+
+  &:hover::before {
+    width: 100%;
+  }
+
+  &.outline-btn:hover {
+    color: #fff !important;
+    border-color: transparent !important;
+  }
 `;
 
-// --- FLOATING ELEMENTS ---
-const FloatingElement = styled(motion.div)`
-  position: absolute;
-  width: ${(props) => props.$size || "20px"};
-  height: ${(props) => props.$size || "20px"};
-  background: ${(props) => props.$color || "rgba(255, 56, 92, 0.1)"};
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-`;
+// --- ANIMATION UTILS ---
 
-// --- ANIMATION VARIANTS ---
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.1,
-    },
-  },
+const RevealText = ({ children, delay = 0 }) => {
+  return (
+    // FIX: Added paddingBottom and negative marginBottom to allow descenders (g, y, j) to be visible
+    <div style={{ overflow: "hidden", paddingBottom: "1.2rem", marginBottom: "-1.2rem" }}>
+      <motion.div
+        initial={{ y: "110%" }}
+        whileInView={{ y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay }}
+      >
+        {children}
+      </motion.div>
+    </div>
+  );
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      duration: 0.8,
-      ease: [0.25, 0.46, 0.45, 0.94],
-    },
-  },
-};
+// --- COMPONENTS ---
 
 const AboutUs = () => {
-  const values = [
-    {
-      icon: <Users size={28} />,
-      title: "Bring people together",
-      description:
-        "We believe the best learning happens face-to-face. There's something magical about gathering around a pottery wheel or sharing stories over coffee while learning something new.",
-      color: "#2563eb",
-      background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
-    },
-    {
-      icon: <Heart size={28} />,
-      title: "Celebrate what you love",
-      description:
-        "Everyone has something they're passionate about. We help people turn their weekday hobbies into weekend workshops, creating a win-win for teachers and students alike.",
-      color: "#e11d48",
-      background: "linear-gradient(135deg, #fff1f2 0%, #fce7f3 100%)",
-    },
-    {
-      icon: <Shield size={28} />,
-      title: "Keep everyone safe",
-      description:
-        "Trust is everything when you're meeting new people and trying new things. We handle the boring stuff, payments, reviews, so you can focus on having fun and learning.",
-      color: "#7c3aed",
-      background: "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)",
-    },
-  ];
+  const containerRef = useRef(null);
+  
+  // Parallax for hero image
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"],
+  });
+  
+  const y = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
 
   return (
     <>
-      <Header
-        hamburgerColor="#000"
-        dropdownButtonColor="#000"
-        dropdownButtonHoverColor="#fe2142"
-        dropdownButtonOutlineColor="#000"
-        logoTitleColor="#fe2142"
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      <PageWrapper>
-        {/* Floating Elements */}
-        <FloatingElement
-          $size="80px"
-          $color="rgba(255, 56, 92, 0.05)"
-          style={{ top: "10%", left: "5%" }}
-          animate={{ y: [0, -20, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <FloatingElement
-          $size="60px"
-          $color="rgba(37, 99, 235, 0.05)"
-          style={{ top: "60%", right: "8%" }}
-          animate={{ y: [0, 15, 0] }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1,
-          }}
-        />
-        <FloatingElement
-          $size="40px"
-          $color="rgba(5, 150, 105, 0.05)"
-          style={{ bottom: "20%", left: "10%" }}
-          animate={{ y: [0, -25, 0] }}
-          transition={{
-            duration: 5,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2,
-          }}
-        />
+      
+      <Header
+        hamburgerColor="#111"
+        dropdownButtonColor="#111"
+        dropdownButtonHoverColor="#ff385c"
+        dropdownButtonOutlineColor="#111"
+        logoTitleColor="#ff385c"
+      />
+      
+      <PageWrapper ref={containerRef}>
+        <GridLine style={{ left: "25%", top: 0, bottom: 0, width: "1px", zIndex: 0 }} />
+        <GridLine style={{ left: "75%", top: 0, bottom: 0, width: "1px", zIndex: 0 }} />
 
-        <HeroSection>
-          <HeroContent
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <motion.div variants={itemVariants}>
-              <motion.p
-                style={{
-                  fontSize: "1rem",
-                  color: "#ff385c",
-                  fontWeight: "600",
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  marginBottom: "1rem",
-                }}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                About ClassEasily
-              </motion.p>
-            </motion.div>
-            <HeroTitle variants={itemVariants}>
-              Where neighbors become <AccentText>teachers</AccentText>.
-            </HeroTitle>
-            <motion.div variants={itemVariants}>
-              <Subtitle>
-                Remember when learning meant showing up somewhere and figuring
-                it out together? We're bringing that back, one pottery class,
-                one woodworking workshop, one cooking lesson at a time.
-              </Subtitle>
-            </motion.div>
-          </HeroContent>
-          <HeroImageGrid
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <Image1 variants={itemVariants}>
-              <img
-                src="https://media.mcachicago.org/image/JZJXGJ17/original.jpg?auto=format&fit=crop&w=800&q=80"
-                alt="Hands working on pottery wheel in a cozy workshop"
+        <MainContainer>
+          <HeroSection>
+            <div>
+              <RevealText>
+                <SectionLabel>About ClassEasily</SectionLabel>
+              </RevealText>
+              <DisplayText>
+                <RevealText delay={0.1}><span>Local learning,</span></RevealText>
+                <RevealText delay={0.2}><span>reimagined for</span></RevealText>
+                <RevealText delay={0.3}><span style={{color: '#ff385c'}}>connection.</span></RevealText>
+              </DisplayText>
+            </div>
+            
+            <HeroVideoContainer style={{ y }}>
+              <motion.img
+                initial={{ scale: 1.1 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 1.5 }}
+                src="https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?q=80&w=2835&auto=format&fit=crop"
+                alt="Community workshop gathering with people laughing"
               />
-            </Image1>
-            <Image2 variants={itemVariants}>
-              <img
-                src="https://images.stockcake.com/public/6/5/4/6548b764-14da-4bc1-9adc-4190de4bce84_large/crafting-workshop-fun-stockcake.jpg"
-                alt="People learning woodworking together in a bright workshop"
-              />
-            </Image2>
-            <Image3 variants={itemVariants}>
-              <img
-                src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80"
-                alt="Close-up of hands kneading bread in a cooking class"
-              />
-            </Image3>
-          </HeroImageGrid>
-        </HeroSection>
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                background: '#fff',
+                padding: '1rem 2rem',
+                borderTopRightRadius: '4px'
+              }}>
+                <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>EST. 2024</span>
+              </div>
+            </HeroVideoContainer>
+          </HeroSection>
+        </MainContainer>
 
-        <Section>
-          <Container>
-            <Grid $columns="1fr 1.2fr" $gap="6rem" $align="center">
-              <motion.div
-                initial={{ opacity: 0, x: -50, scale: 0.95 }}
-                whileInView={{ opacity: 1, x: 0, scale: 1 }}
-                viewport={{ once: true, amount: 0.5 }}
-                transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-              >
-                <ImageWrapper style={{ height: "500px", position: "relative" }}>
-                  <img
-                    src="https://images.unsplash.com/photo-1531545514256-b1400bc00f31?auto=format&fit=crop&w=800&q=80"
-                    alt="Person sketching workshop ideas with coffee nearby"
-                  />
-                </ImageWrapper>
-              </motion.div>
-              <Content
-                initial={{ opacity: 0, x: 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, amount: 0.3 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-              >
-                <Title>How this all started</Title>
-                <Text>
-                  It was a simple Saturday afternoon problem: our close buddy
-                  wanted to learn woodworking. Sounds easy, right? Wrong. He
-                  spent hours scrolling through Facebook groups, checking
-                  out-of-date Craigslist posts, and calling workshops that were
-                  either booked solid or closed down months ago.
-                </Text>
-                <Text>
-                  That frustration got us thinking, there are probably dozens of
-                  skilled woodworkers in our city who'd love to teach, but they
-                  have no easy way to reach these people. And there are
-                  definitely people who want to learn but have no idea where to
-                  find these hidden local experts.
-                </Text>
-                <Text>
-                  ClassEasily started as the missing link between those two
-                  groups. Now it's grown into something bigger: a way to
-                  rediscover the joy of learning something with your hands,
-                  meeting new people, and maybe finding your next weekend
-                  obsession.
-                </Text>
-              </Content>
-            </Grid>
-          </Container>
-        </Section>
-
-        <Section $background="rgba(255, 255, 255, 0.3)">
-          <Container>
-            <Content $center $textAlign="center">
-              <Title $center>How it actually works</Title>
-              <Subtitle $center>
-                No complicated sign-ups or confusing interfaces. Just three
-                simple steps between you and your next favorite hobby.
-              </Subtitle>
-            </Content>
-            <Grid
-              $columns="repeat(3, 1fr)"
-              $gap="2rem"
-              style={{ marginTop: "4rem" }}
+        <SplitSection>
+          <StickySide>
+            <div style={{ position: "relative", zIndex: 2 }}>
+              <h2 style={{ fontSize: "2.5rem", fontWeight: 500, letterSpacing: "-0.02em", margin: 0 }}>
+                The Origin
+              </h2>
+            </div>
+            <div style={{ marginTop: "auto", position: "relative" }}>
+               <img 
+                 src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=400&q=80" 
+                 alt="Diverse group of people meeting at a table"
+                 style={{ width: "100%", height: "300px", objectFit: "cover", marginTop: "2rem", filter: "grayscale(100%)" }}
+               />
+            </div>
+          </StickySide>
+          <ScrollSide>
+            <RevealText>
+              <LeadText style={{ marginBottom: "3rem" }}>
+                It started with a simple frustration: why is it so hard to find a woodworking class that isn't booked out six months in advance?
+              </LeadText>
+            </RevealText>
+            
+            <Paragraph
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
             >
-              <StepCard
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-              >
-                <StepNumber>1</StepNumber>
-                <IconBox
-                  $bg="linear-gradient(135deg, #fff1f2, #fce7f3)"
-                  $color="#e11d48"
-                >
-                  <SearchIcon size={32} />
-                </IconBox>
-                <h3
-                  style={{
-                    fontSize: "1.5rem",
-                    fontWeight: "700",
-                    color: "#1d2939",
-                    margin: "0.5rem 0",
-                  }}
-                >
-                  Find something interesting
-                </h3>
-                <Text style={{ textAlign: "center", margin: 0 }}>
-                  Browse workshops happening near you this weekend. Maybe it's
-                  that pottery class you've been thinking about, or something
-                  you never knew you wanted to try.
-                </Text>
-              </StepCard>
-              <StepCard
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-              >
-                <StepNumber>2</StepNumber>
-                <IconBox
-                  $bg="linear-gradient(135deg, #fff1f2, #fce7f3)"
-                  $color="#e11d48"
-                >
-                  <Users size={32} />
-                </IconBox>
-                <h3
-                  style={{
-                    fontSize: "1.5rem",
-                    fontWeight: "700",
-                    color: "#1d2939",
-                    margin: "0.5rem 0",
-                  }}
-                >
-                  Book your spot
-                </h3>
-                <Text style={{ textAlign: "center", margin: 0 }}>
-                  Click, pay, done. We handle all the boring payment stuff so
-                  you can focus on getting excited about what you're going to
-                  learn.
-                </Text>
-              </StepCard>
-              <StepCard
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-              >
-                <StepNumber>3</StepNumber>
-                <IconBox
-                  $bg="linear-gradient(135deg, #ecfdf5, #d1fae5)"
-                  $color="#059669"
-                >
-                  <Sparkles size={32} />
-                </IconBox>
-                <h3
-                  style={{
-                    fontSize: "1.5rem",
-                    fontWeight: "700",
-                    color: "#1d2939",
-                    margin: "0.5rem 0",
-                  }}
-                >
-                  Show up and have fun
-                </h3>
-                <Text style={{ textAlign: "center", margin: 0 }}>
-                  Walk in, meet some friendly faces, get your hands dirty, and
-                  leave with something new, whether it's a skill, a project, or
-                  just a great story.
-                </Text>
-              </StepCard>
-            </Grid>
-          </Container>
-        </Section>
-
-        <Section>
-          <Container>
-            <Content $center $textAlign="center">
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
-              >
-                <Title $center>What we actually care about</Title>
-                <Subtitle $center>
-                  These aren't just nice words on a website, they're the things
-                  we think about when we make decisions.
-                </Subtitle>
-              </motion.div>
-            </Content>
-            <Grid
-              as={motion.div}
-              variants={containerVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.2 }}
-              $columns="repeat(auto-fit, minmax(300px, 1fr))"
-              $gap="2rem"
-              style={{ marginTop: "4rem" }}
+              We realized our cities are full of experts. The neighbor who makes incredible sourdough, the retired teacher who knows pottery, the barista who paints landscapes. They have the skills, but they don't have the platform.
+            </Paragraph>
+            <Paragraph
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
             >
-              {values.map((value, index) => (
-                <ValueCard key={index} variants={itemVariants}>
-                  <IconBox $bg={value.background} $color={value.color}>
-                    {value.icon}
-                  </IconBox>
-                  <h3
-                    style={{
-                      fontSize: "1.5rem",
-                      fontWeight: "700",
-                      color: "#1d2939",
-                      margin: 0,
-                    }}
-                  >
-                    {value.title}
-                  </h3>
-                  <Text
-                    style={{ fontSize: "1.125rem", margin: 0, lineHeight: 1.7 }}
-                  >
-                    {value.description}
-                  </Text>
-                </ValueCard>
-              ))}
-            </Grid>
-          </Container>
-        </Section>
+              ClassEasily isn't just a booking site. It's an attempt to rebuild the "village" aspect of learning. We're moving away from impersonal video tutorials and back to messy tables, real conversations, and hands-on guidance.
+            </Paragraph>
+            <Paragraph
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4 }}
+            >
+              Today, we're helping thousands of people step away from their screens and into local workshops, garages, and studios.
+            </Paragraph>
+          </ScrollSide>
+        </SplitSection>
 
-        <CtaSection>
-          <Container>
-            <Grid $columns="1.2fr 1fr" $gap="5rem" $align="center">
-              <Content
-                initial={{ opacity: 0, x: -50 }}
-                whileInView={{ opacity: 1, x: 0 }}
+        <ProcessSection>
+          <MainContainer>
+            <div style={{ marginBottom: "4rem", borderBottom: "1px solid #333", paddingBottom: "2rem" }}>
+              <h2 style={{ fontSize: "1.5rem", fontWeight: 400, color: "#999", margin: 0 }}>How it works</h2>
+            </div>
+            
+            {[
+              { title: "Discovery", desc: "Browse curated workshops happening in your neighborhood this weekend.", id: "01" },
+              { title: "Booking", desc: "Seamless spot reservation. No back-and-forth emails.", id: "02" },
+              { title: "Participation", desc: "Show up, meet locals, and learn with your hands.", id: "03" }
+            ].map((step, i) => (
+              <ProcessRow
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
+                transition={{ delay: i * 0.1 }}
               >
-                <Title style={{ color: "#fff" }}>
-                  Ready to try something new?
-                </Title>
-                <Text
-                  style={{
-                    color: "#d0d5dd",
-                    marginBottom: "2rem",
-                    fontSize: "1.25rem",
-                  }}
+                <StepIndex>{step.id}</StepIndex>
+                <StepTitle>{step.title}</StepTitle>
+                <StepDesc>{step.desc}</StepDesc>
+                <ArrowRight 
+                  className="arrow-icon" 
+                  style={{ 
+                    position: "absolute", 
+                    right: "0", 
+                    top: "50%", 
+                    transform: "translateY(-50%)",
+                    opacity: 0,
+                    transition: "all 0.3s ease"
+                  }} 
+                />
+              </ProcessRow>
+            ))}
+          </MainContainer>
+        </ProcessSection>
+
+        <ValuesSection>
+          <MainContainer>
+            <ValuesGrid>
+              {[
+                { title: "Face-to-Face", text: "We prioritize in-person connection over digital convenience." },
+                { title: "Local First", text: "Supporting neighborhood economies and hidden talents." },
+                { title: "Safety & Trust", text: "Verified hosts and secure transactions, always." },
+              ].map((item, i) => (
+                <ValueCell
+                  key={i}
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.2 }}
                 >
-                  Whether you want to teach your favorite skill to others or
-                  finally learn that thing you've been curious about, there's a
-                  place for you here.
-                </Text>
-                <div
-                  style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}
-                >
-                  <Button
-                    href="/business"
-                    $primary
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Start teaching <ArrowUpRight size={20} />
-                  </Button>
-                  <Button
-                    href="/explore"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Find a workshop <ArrowUpRight size={20} />
-                  </Button>
-                </div>
-              </Content>
-              <TestimonialCard
-                initial={{ opacity: 0, x: 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-              >
-                <TestimonialText>
-                  I used to post about my pottery classes on Instagram and hope
-                  someone would see it. Now I spend my time actually teaching
-                  instead of trying to figure out social media algorithms.
-                </TestimonialText>
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "1rem" }}
-                >
-                  <motion.img
-                    src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=100&h=100&q=80"
-                    alt="Maria, local pottery instructor"
-                    style={{
-                      width: "64px",
-                      height: "64px",
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      border: "3px solid rgba(255, 255, 255, 0.2)",
-                      boxShadow: "0 8px 25px rgba(0, 0, 0, 0.15)",
-                    }}
-                    whileHover={{ scale: 1.1 }}
-                  />
+                  <ValueIcon>{i + 1}</ValueIcon>
                   <div>
-                    <p
-                      style={{
-                        fontWeight: 700,
-                        margin: 0,
-                        color: "#fff",
-                        fontSize: "1.125rem",
-                      }}
-                    >
-                      Maria
-                    </p>
-                    <p
-                      style={{ margin: 0, color: "#d0d5dd", fontSize: "1rem" }}
-                    >
-                      Runs pottery workshops in her garage
-                    </p>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "2px",
-                        marginTop: "0.25rem",
-                      }}
-                    >
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          size={14}
-                          fill="#ff385c"
-                          color="#ff385c"
-                        />
-                      ))}
-                    </div>
+                    <h3 style={{ fontSize: "1.75rem", margin: "0 0 1rem 0" }}>{item.title}</h3>
+                    <p style={{ color: "#666", lineHeight: 1.6, margin: 0 }}>{item.text}</p>
                   </div>
-                </div>
-              </TestimonialCard>
-            </Grid>
-          </Container>
-        </CtaSection>
+                </ValueCell>
+              ))}
+            </ValuesGrid>
+          </MainContainer>
+        </ValuesSection>
 
-        <Suspense fallback={<div style={{ minHeight: "300px" }} />}>
-          <Footer />
-        </Suspense>
+        <CTASection>
+          <RevealText>
+            <h2 style={{ 
+              fontSize: "clamp(2.5rem, 6vw, 4.5rem)", 
+              fontWeight: 500, 
+              lineHeight: 1.1,
+              maxWidth: "15ch",
+              margin: 0
+            }}>
+              Ready to get your <span style={{ color: "#ff385c" }}>hands dirty?</span>
+            </h2>
+          </RevealText>
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
+            <BigButton href="/explore" title="Find a workshop near you">
+              Find a workshop <ArrowUpRight size={20} />
+            </BigButton>
+            <BigButton 
+              href="/teach" 
+              className="outline-btn"
+              style={{ background: "transparent", color: "#111", border: "1px solid #111" }}
+              title="Become a workshop host"
+            >
+              Become a host
+            </BigButton>
+          </div>
+        </CTASection>
+
+        <FooterSmart />
       </PageWrapper>
     </>
   );
