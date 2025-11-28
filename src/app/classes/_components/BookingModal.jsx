@@ -202,6 +202,7 @@ const DrawerHandle = styled.div`
 const DrawerHeader = styled.div`
   flex-shrink: 0;
   border-bottom: 1px solid #f0f0f0;
+  padding: 16px;
 `;
 
 const DrawerBody = styled.div`
@@ -219,6 +220,7 @@ const DrawerFooter = styled.div`
   flex-shrink: 0;
   border-top: 1px solid #f0f0f0;
   background: white;
+  padding: 16px;
 `;
 
 const overlayVariants = {
@@ -372,6 +374,12 @@ const BookingModal = ({
         if (isNaN(initialPrice)) initialPrice = 0;
       }
 
+      console.error("[BookingModal Debug] Initial State Calculated:", {
+        validInitialParticipantCount,
+        participantDetails,
+        initialPrice,
+      });
+
       return {
         selectedSlots: [],
         participants: validInitialParticipantCount,
@@ -389,7 +397,7 @@ const BookingModal = ({
         userPhone: bookerPhone,
       };
     } catch (error) {
-      console.error("Error in getInitialBookingState", error);
+      console.error("[BookingModal Debug] Error in getInitialBookingState", error);
       throw error;
     }
   }, [effectiveInitialParticipants, selectedOption, currentUserFromRedux]);
@@ -402,6 +410,12 @@ const BookingModal = ({
     if (isOpen) {
       const newInitialState = getInitialBookingState();
       setBookingData((prev) => {
+        // --- GUARD CLAUSE ---
+        if (prev.bookingId || prev.user_facing_reference || prev.paymentIntentId) {
+            console.error("[BookingModal Debug] Reset Effect Skipped: Booking in progress or confirmed.");
+            return prev;
+        }
+
         const userJustLoggedIn = !prev.userEmail && !!newInitialState.userEmail;
         const optionChanged =
           selectedOption?.optionId !== prev.selectedOption?.optionId;
@@ -410,6 +424,7 @@ const BookingModal = ({
           prev.selectedSlots.length === 0;
 
         if (userJustLoggedIn || optionChanged || participantsPropChanged) {
+          console.error("[BookingModal Debug] Resetting State due to Props/Auth change.");
           return {
             ...newInitialState,
             selectedSlots:
@@ -430,6 +445,7 @@ const BookingModal = ({
   }, [isOpen, selectedOption?.optionId, getInitialBookingState]);
 
   const resetModal = useCallback(() => {
+    console.error("[BookingModal Debug] Resetting Modal.");
     setCurrentStep(1);
     setBookingData(getInitialBookingState());
     setIsLoading(false);
@@ -447,12 +463,18 @@ const BookingModal = ({
 
   const handleUpdateBooking = useCallback(
     (data) => {
+      console.error("[BookingModal Debug] handleUpdateBooking Called. Incoming Data:", data);
       setBookingData((prev) => {
-        // If the booking is already confirmed (has ID or reference) or payment is processing (has Intent ID),
-        // we must IGNORE any delayed or stale form updates from the review step.
-        // This prevents the debounce timer in the child component from overwriting
-        // the successful booking data returned by the backend.
-        if (prev.bookingId || prev.user_facing_reference || prev.paymentIntentId) {
+        // --- SAFETY CHECK / LOGGING ---
+        console.error("[BookingModal Debug] handleUpdateBooking - Current State:", {
+            bookingId: prev.bookingId,
+            ref: prev.user_facing_reference,
+            participants: prev.participant_details
+        });
+
+        // Prevent updates from child components if booking is confirmed.
+        if (prev.bookingId || prev.user_facing_reference) {
+            console.error("[BookingModal Debug] 🛑 BLOCKING update. Booking already confirmed.");
             return prev;
         }
 
@@ -513,6 +535,8 @@ const BookingModal = ({
         ) {
           newState.participant_details = data.participant_details;
         }
+
+        console.error("[BookingModal Debug] ✅ ALLOWING update. New State Participants:", newState.participant_details);
         return newState;
       });
     },
@@ -520,15 +544,20 @@ const BookingModal = ({
   );
 
   const handlePaymentComplete = useCallback((dataFromReviewStep) => {
+    console.error("[BookingModal Debug] handlePaymentComplete Called. Payload:", dataFromReviewStep);
+    
     if (dataFromReviewStep.booking_id) {
-      setBookingData((prev) => ({
-        ...prev,
-        bookingId: dataFromReviewStep.booking_id,
-        user_facing_reference: dataFromReviewStep.user_facing_reference,
-        booking_group_id: dataFromReviewStep.booking_group_id,
-        participant_details: dataFromReviewStep.participant_details,
-        paymentIntentId: null,
-      }));
+      setBookingData((prev) => {
+        console.error("[BookingModal Debug] Setting Confirmed Booking Data. Previous State:", prev);
+        return {
+            ...prev,
+            bookingId: dataFromReviewStep.booking_id,
+            user_facing_reference: dataFromReviewStep.user_facing_reference,
+            booking_group_id: dataFromReviewStep.booking_group_id,
+            participant_details: dataFromReviewStep.participant_details, // Ensure this is being set!
+            paymentIntentId: null,
+        };
+      });
       setCurrentStep(3);
       setIsLoading(false);
     } else if (dataFromReviewStep.payment_intent_id) {
@@ -541,12 +570,13 @@ const BookingModal = ({
       setCurrentStep(3);
       setIsLoading(false);
     } else {
-      console.error("Unexpected payment data structure");
+      console.error("[BookingModal Debug] Unexpected payment data structure", dataFromReviewStep);
       setIsLoading(false);
     }
   }, []);
 
   const updateBookingDetailsFromPolling = useCallback((details) => {
+    console.error("[BookingModal Debug] updateBookingDetailsFromPolling Called:", details);
     setBookingData((prev) => ({
       ...prev,
       bookingId: details.booking_id || prev.bookingId,

@@ -326,7 +326,6 @@ const ParticipantNameInputs = ({
         >
           <Input
             placeholder={`Participant ${index + 1} Full Name`}
-            // Read-only logic is handled by parent pre-fill + disabled prop logic below
             readOnly={
               index === 0 && isUserLoggedIn && !!bookerNameFromBookingData
             }
@@ -373,15 +372,12 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
     });
 
     pr.canMakePayment().then((result) => {
-      console.log("🍎 Apple/Google Pay Availability Check:", result);
       if (result) {
         setPaymentRequest(pr);
       }
     });
 
     pr.on('paymentmethod', async (ev) => {
-      console.log("🍎 Apple Pay: Event received", ev);
-      
       const payerName = ev.payerName;
       const payerEmail = ev.payerEmail;
       const payerPhone = ev.payerPhone;
@@ -391,9 +387,7 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
           const paymentIntentId = clientSecret.split('_secret_')[0];
           
           if (paymentService && paymentService.updatePaymentIntent) {
-            console.log("🍎 Apple Pay: Updating backend PaymentIntent...");
             try {
-              // We update the backend so the DB knows who the guest is before the charge
               await paymentService.updatePaymentIntent({
                 payment_intent_id: paymentIntentId,
                 guest_email: payerEmail, 
@@ -403,38 +397,28 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
                 notes: bookingData.notes || "",
                 applied_discount_id: bookingData.applied_discount_id || null, 
               });
-              console.log("🍎 Apple Pay: Backend update SUCCESS");
             } catch (backendErr) {
-              console.error("🍎 Apple Pay: Backend update FAILED", backendErr);
+              console.error("Apple Pay: Backend update FAILED", backendErr);
             }
           }
         }
 
-        console.log("🍎 Apple Pay: Confirming Card Payment...");
-        
         const { error, paymentIntent } = await stripe.confirmCardPayment(
           clientSecret,
           {
-            // Apple Pay already created the PaymentMethod object with all billing details.
-            // We just pass the ID here.
             payment_method: ev.paymentMethod.id,
-            
-            // Optional: attach the email for Stripe receipts
             receipt_email: payerEmail || undefined,
           },
           { handleActions: false }
         );
 
         if (error) {
-          console.error("🍎 Apple Pay: CONFIRMATION ERROR:", error);
           ev.complete('fail');
           message.error(error.message);
         } else {
-          console.log("🍎 Apple Pay: PaymentIntent Status:", paymentIntent.status);
           ev.complete('success');
           
           if (paymentIntent.status === "succeeded") {
-             console.log("🍎 Apple Pay: Full Success.");
              onPaymentComplete({
               payment_intent_id: paymentIntent.id,
               client_secret: clientSecret,
@@ -442,7 +426,6 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
           }
         }
       } catch (err) {
-        console.error("🍎 Apple Pay: EXCEPTION:", err);
         ev.complete('fail');
         message.error("Payment failed. Please try again.");
       }
@@ -491,8 +474,6 @@ const PaymentFormContent = ({
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Determine if we can submit. 
-    // Important: We rely on isReady (Stripe loaded) AND isFormValid (Inputs filled)
     const canSubmit = isFree
       ? !loading && isFormValid
       : stripe && elements && !loading && isFormValid && isReady;
@@ -586,18 +567,17 @@ const ReviewAndPaymentStep = ({
 
   const debounceTimerRef = useRef(null);
 
-  // FIX: Clear timer on unmount to prevent race condition where form updates
-  // overwrite the successful booking confirmation state.
+  // --- ADDED: Cleanup timer on unmount ---
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) {
+        console.error("[ReviewStep Debug] Unmounting - clearing debounce timer.");
         clearTimeout(debounceTimerRef.current);
       }
     };
   }, []);
 
   // --- VALIDATION HELPER ---
-  // Accepts explicit values to allow validation before the form store updates
   const validateValues = useCallback((values) => {
     const { email, phone, guest_full_name, participant_details } = values;
     
@@ -617,9 +597,9 @@ const ReviewAndPaymentStep = ({
     return !!(allTextFieldsFilled && participantsFilled);
   }, [isUserLoggedIn, bookingData.participants]);
 
-  // Find this useEffect (around line 430)
   useEffect(() => {
     if (form) {
+      console.error("[ReviewStep Debug] Form Initialization Effect Running.");
       let formData = {};
 
       if (isUserLoggedIn) {
@@ -637,16 +617,10 @@ const ReviewAndPaymentStep = ({
         });
         formData.participant_details = newParticipants;
       } else {
-        // Guest Mode - preserve if exists
-        const currentValues = form.getFieldsValue(true); // true = get all values including hidden/unmounted
-        
-        // --- START OF FIX ---
-        // Previously: checked (!currentValues.email) and wiped all fields.
-        // Now: Check individual fields to ensure we don't overwrite user input.
+        const currentValues = form.getFieldsValue(true);
         if (currentValues.email === undefined) formData.email = "";
         if (currentValues.phone === undefined) formData.phone = "";
         if (currentValues.guest_full_name === undefined) formData.guest_full_name = "";
-        // --- END OF FIX ---
         
         const currentPart = currentValues.participant_details || [];
         if (currentPart.length !== bookingData.participants) {
@@ -662,16 +636,13 @@ const ReviewAndPaymentStep = ({
         formData.notes = bookingData.notes || "";
       }
 
-      // 1. SET VALUES
       if (Object.keys(formData).length > 0) {
         form.setFieldsValue(formData);
       }
 
-      // 2. VALIDATE IMMEDIATELY using the data we just created.
-      // Do not wait for form.getFieldsValue() to update.
       const isValid = validateValues({
-          ...form.getFieldsValue(true), // Get current state
-          ...formData // Overwrite with what we just set
+          ...form.getFieldsValue(true), 
+          ...formData 
       });
       setIsFormValid(isValid);
     }
@@ -711,20 +682,15 @@ const ReviewAndPaymentStep = ({
 
       try {
         const values = form.getFieldsValue();
-        
-        // --- FIX START ---
-        // Ensure participant_details matches the count, even if form isn't fully ready
         let participantDetailsPayload = values.participant_details?.map((d) => ({
             name: d?.name || "Guest",
         })) || [];
         
         if (participantDetailsPayload.length < participantsCount) {
-             // Fill missing slots with placeholders to satisfy backend validator
              participantDetailsPayload = Array.from({ length: participantsCount }, (_, i) => ({
                  name: participantDetailsPayload[i]?.name || "Guest"
              }));
         }
-        // --- FIX END ---
 
         const payload = {
           selectedSlots: bookingData.selectedSlots,
@@ -786,8 +752,10 @@ const ReviewAndPaymentStep = ({
   };
 
   const handleFormValuesChange = (changedValues, allValues) => {
+    // console.error("[ReviewStep Debug] Form changed:", allValues);
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     debounceTimerRef.current = setTimeout(() => {
+      console.error("[ReviewStep Debug] Firing delayed update via debounce.");
       onUpdateBookingData(allValues);
     }, 300);
 
@@ -802,8 +770,9 @@ const ReviewAndPaymentStep = ({
         return;
       }
 
-      // FIX: Clear timer immediately to prevent overwriting result
+      // --- CRITICAL FIX: STOP DEBOUNCE ---
       if (debounceTimerRef.current) {
+        console.error("[ReviewStep Debug] handleSubmit: Clearing pending debounce timer.");
         clearTimeout(debounceTimerRef.current);
       }
 
@@ -812,6 +781,7 @@ const ReviewAndPaymentStep = ({
 
       try {
         const values = await form.validateFields();
+        console.error("[ReviewStep Debug] Form Validated. Values:", values);
 
         if (isFree) {
           const payload = {
@@ -824,8 +794,25 @@ const ReviewAndPaymentStep = ({
             guest_full_name: values.guest_full_name,
             guest_phone: values.phone,
           };
+          console.error("[ReviewStep Debug] Submitting Free Payload:", payload);
+          
           const res = await paymentService.createPaymentIntent(payload);
+          console.error("[ReviewStep Debug] Free Payment Response:", res);
+
+          // Check if this is a free booking by status="confirmed" or payment_intent_id starting with "pi_free_"
+          if (res.status === "confirmed" || (res.payment_intent_id && res.payment_intent_id.startsWith("pi_free_"))) {
+            console.error("[ReviewStep Debug] Calling onPaymentComplete for Free booking.");
+            // For free bookings, pass the payment_intent_id so polling can work
+            onPaymentComplete({
+              payment_intent_id: res.payment_intent_id,
+              client_secret: res.client_secret,
+            });
+            return;
+          }
+          
+          // Legacy support: if booking_id is returned directly (old behavior)
           if (res.booking_id) {
+            console.error("[ReviewStep Debug] Calling onPaymentComplete for Free booking (legacy).");
             onPaymentComplete(res);
             return;
           }
@@ -843,7 +830,6 @@ const ReviewAndPaymentStep = ({
         if (clientSecret) {
           try {
             const paymentIntentId = clientSecret.split('_secret_')[0];
-            
             if (paymentService.updatePaymentIntent) {
               await paymentService.updatePaymentIntent({
                 payment_intent_id: paymentIntentId,
@@ -854,9 +840,6 @@ const ReviewAndPaymentStep = ({
                 notes: values.notes,
                 applied_discount_id: appliedDiscount?.id || null,
               });
-              console.log("Successfully updated booking details on backend.");
-            } else {
-              console.warn("paymentService.updatePaymentIntent is not defined. Email may use placeholder.");
             }
           } catch (updateErr) {
             console.error("Failed to update booking details before payment:", updateErr);
@@ -891,6 +874,7 @@ const ReviewAndPaymentStep = ({
           });
         }
       } catch (err) {
+        console.error("[ReviewStep Debug] Submission Error:", err);
         setError(err.message || "Payment processing failed.");
       } finally {
         setLoading(false);
