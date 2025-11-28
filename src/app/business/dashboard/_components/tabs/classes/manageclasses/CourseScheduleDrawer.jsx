@@ -327,11 +327,10 @@ const HelpText = styled.div`
   gap: 0.5rem;
 `;
 
-// --- INPUT STYLES WITH 14px DESKTOP / 16px MOBILE ---
+// --- INPUT STYLES (Border radius overrides removed to inherit default) ---
 
 const StyledInput = styled(Input)`
   height: 44px;
-  border-radius: 8px;
   font-size: 14px;
   transition: all 0.3s ease;
   &:focus {
@@ -348,7 +347,6 @@ const StyledSelect = styled(Select)`
   .ant-select-selector {
     height: 44px !important;
     padding: 0 11px !important;
-    border-radius: 8px !important;
     display: flex;
     align-items: center;
     transition: all 0.3s ease;
@@ -370,7 +368,6 @@ const StyledSelect = styled(Select)`
 
 const StyledInputNumber = styled(InputNumber)`
   height: 44px;
-  border-radius: 8px;
   font-size: 14px;
   transition: all 0.3s ease;
   width: 100%;
@@ -394,7 +391,6 @@ const StyledInputNumber = styled(InputNumber)`
 const StyledTimePicker = styled(TimePicker)`
   width: 100%;
   height: 44px;
-  border-radius: 8px;
   .ant-picker-input > input {
     font-size: 14px;
     
@@ -411,7 +407,6 @@ const StyledTimePicker = styled(TimePicker)`
 const StyledRangePicker = styled(RangePicker)`
   width: 100%;
   height: 44px;
-  border-radius: 8px;
   .ant-picker-input > input {
     font-size: 14px;
 
@@ -436,7 +431,6 @@ const DayButton = styled(Button)`
   min-width: 0;
   max-width: none;
   height: 44px;
-  border-radius: 8px;
   font-weight: 500;
   padding: 0 8px;
   
@@ -446,7 +440,7 @@ const DayButton = styled(Button)`
   
   @media (max-width: 768px) {
     height: 40px;
-    font-size: 14px; /* Increased from 13px for better touch/readability */
+    font-size: 14px;
   }
 `;
 
@@ -468,8 +462,8 @@ const PresetChip = styled.button`
   border: 1px solid ${props => props.$active ? props.theme.token.colorPrimary : '#e2e8f0'};
   background: ${props => props.$active ? `${props.theme.token.colorPrimary}10` : 'white'};
   color: ${props => props.$active ? props.theme.token.colorPrimary : '#475569'};
-  padding: 6px 14px;
-  border-radius: 20px;
+  padding: 6px;
+  border-radius: 14px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -489,7 +483,7 @@ const CustomDurationInputs = styled.div`
   gap: 8px;
   background: #f8fafc;
   padding: 10px;
-  border-radius: 8px;
+  border-radius: 16px;
   border: 1px solid #e2e8f0;
   opacity: ${props => props.disabled ? 0.6 : 1};
   pointer-events: ${props => props.disabled ? 'none' : 'auto'};
@@ -680,7 +674,7 @@ const StatValue = styled.div`
 const ReviewSection = styled.div`
   background: #f8fafc;
   padding: 24px;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid #e2e8f0;
 `;
 
@@ -1575,63 +1569,98 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
     }
   };
 
-  const renderList = () => (
-    <ContentPadding>
-      <FilterBar>
-        <StyledInput placeholder="Search by name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ flex: 1, minWidth: 200 }} allowClear />
-        <StyledSelect 
-          value={statusFilter} 
-          onChange={(value) => setStatusFilter(value)} 
-          style={{ width: 150 }}
-          getPopupContainer={isMobile ? (trigger) => trigger.parentElement : undefined}
-        >
-          <Option value="all">All Statuses</Option>
-          <Option value="upcoming">Upcoming</Option>
-          <Option value="ongoing">Ongoing</Option>
-          <Option value="completed">Completed</Option>
-        </StyledSelect>
-      </FilterBar>
-      {loading ? (
-        <CourseScheduleListSkeleton />
-      ) : schedulesWithSessions.length > 0 ? (
-        <ScheduleList>
-            {schedulesWithSessions.map((s) => (
-              <ScheduleCard key={s.name || s.ids.join("-")} onClick={() => { setSelectedSchedule(s); if (isMobile) setDetailOpen(true); else setView("detail"); }} style={{ cursor: "pointer" }}>
-                <ScheduleHeader>
-                  <div>
-                  <ScheduleTitle level={5}><CalendarDays size={16} />{s.name || `Every ${s.day}`}</ScheduleTitle>
-                  <Text type="secondary" style={{ fontSize: 12, letterSpacing: "0.2px" }}>{dayjs(s.start_date).format("MMM D")} - {dayjs(s.end_date).format("MMM D, YYYY")}</Text>
+  const renderList = () => {
+    // Shared content logic
+    const content = (
+      <>
+        {loading ? (
+          <CourseScheduleListSkeleton />
+        ) : schedulesWithSessions.length > 0 ? (
+          <ScheduleList>
+              {schedulesWithSessions.map((s) => (
+                <ScheduleCard key={s.name || s.ids.join("-")} onClick={() => { setSelectedSchedule(s); if (isMobile) setDetailOpen(true); else setView("detail"); }} style={{ cursor: "pointer" }}>
+                  <ScheduleHeader>
+                    <div>
+                    <ScheduleTitle level={5}><CalendarDays size={16} />{s.name || `Every ${s.day}`}</ScheduleTitle>
+                    <Text type="secondary" style={{ fontSize: 12, letterSpacing: "0.2px" }}>{dayjs(s.start_date).format("MMM D")} - {dayjs(s.end_date).format("MMM D, YYYY")}</Text>
+                  </div>
+                  <ScheduleActions>
+                    <Tooltip title="Edit"><Button type="text" icon={<Edit3 size={14} />} onClick={(e) => handleEditClick(e, s)} style={{ height: 32, width: 32 }} /></Tooltip>
+                    <Tooltip title={s.has_confirmed_bookings ? "Cannot delete with active bookings" : "Delete"}>
+                      <Popconfirm title="Delete this course schedule?" description="This will remove all recurring sessions for this course. This action cannot be undone." onConfirm={(e) => { e.stopPropagation(); handleDeleteGroup(s); }} onCancel={(e) => e.stopPropagation()} okText="Delete" cancelText="Cancel" okButtonProps={{ danger: true }} disabled={s.has_confirmed_bookings}>
+                        <Button type="text" danger icon={<Trash2 size={14} />} disabled={s.has_confirmed_bookings} onClick={(e) => e.stopPropagation()} style={{ height: 32, width: 32 }} />
+                      </Popconfirm>
+                    </Tooltip>
+                  </ScheduleActions>
+                </ScheduleHeader>
+                <StatsRow>
+                  <StatItem><StatValue><BookOpen size={16} /> {s.sessionDates.length}</StatValue><StatLabel>Sessions</StatLabel></StatItem>
+                  <StatItem><StatValue><Users size={16} /> {s.booked_participants || 0}/{s.maxParticipants}</StatValue><StatLabel>Enrolled</StatLabel></StatItem>
+                  <StatItem><StatValue><TrendingUp size={16} /> ${parseFloat(s.total_revenue || 0).toFixed(0)}</StatValue><StatLabel>Revenue</StatLabel></StatItem>
+                </StatsRow>
+                <div style={{ padding: "12px 16px" }}>
+                  <SessionsTitle style={{ fontSize: "14px", margin: "0 0 8px 0" }}>Upcoming Sessions:</SessionsTitle>
+                  {s.sessionPreview.map((date, idx) => (<SessionItem key={idx} $isPast={false} $isToday={dayjs(date).isSame(dayjs(), "day")} style={{ padding: "6px 8px", marginBottom: "4px", background: "transparent", border: "none" }}><SessionDate style={{ fontSize: "13px" }}><Calendar size={14} />{dayjs(date).format("ddd, MMM D, YYYY")}</SessionDate></SessionItem>))}
+                  {s.sessionDates.length > 4 && (<Text type="secondary" style={{ fontSize: 12, display: "block", textAlign: "center", marginTop: "8px" }}>+ {s.sessionDates.length - 4} more sessions</Text>)}
                 </div>
-                <ScheduleActions>
-                  {/* EDIT BUTTON ALWAYS ENABLED - LOCKING HAPPENS IN FORM */}
-                  <Tooltip title="Edit"><Button type="text" icon={<Edit3 size={14} />} onClick={(e) => handleEditClick(e, s)} style={{ height: 32, width: 32 }} /></Tooltip>
-                  <Tooltip title={s.has_confirmed_bookings ? "Cannot delete with active bookings" : "Delete"}>
-                    <Popconfirm title="Delete this course schedule?" description="This will remove all recurring sessions for this course. This action cannot be undone." onConfirm={(e) => { e.stopPropagation(); handleDeleteGroup(s); }} onCancel={(e) => e.stopPropagation()} okText="Delete" cancelText="Cancel" okButtonProps={{ danger: true }} disabled={s.has_confirmed_bookings}>
-                      <Button type="text" danger icon={<Trash2 size={14} />} disabled={s.has_confirmed_bookings} onClick={(e) => e.stopPropagation()} style={{ height: 32, width: 32 }} />
-                    </Popconfirm>
-                  </Tooltip>
-                </ScheduleActions>
-              </ScheduleHeader>
-              <StatsRow>
-                <StatItem><StatValue><BookOpen size={16} /> {s.sessionDates.length}</StatValue><StatLabel>Sessions</StatLabel></StatItem>
-                <StatItem><StatValue><Users size={16} /> {s.booked_participants || 0}/{s.maxParticipants}</StatValue><StatLabel>Enrolled</StatLabel></StatItem>
-                <StatItem><StatValue><TrendingUp size={16} /> ${parseFloat(s.total_revenue || 0).toFixed(0)}</StatValue><StatLabel>Revenue</StatLabel></StatItem>
-              </StatsRow>
-              <div style={{ padding: "12px 16px" }}>
-                <SessionsTitle style={{ fontSize: "14px", margin: "0 0 8px 0" }}>Upcoming Sessions:</SessionsTitle>
-                {s.sessionPreview.map((date, idx) => (<SessionItem key={idx} $isPast={false} $isToday={dayjs(date).isSame(dayjs(), "day")} style={{ padding: "6px 8px", marginBottom: "4px", background: "transparent", border: "none" }}><SessionDate style={{ fontSize: "13px" }}><Calendar size={14} />{dayjs(date).format("ddd, MMM D, YYYY")}</SessionDate></SessionItem>))}
-                {s.sessionDates.length > 4 && (<Text type="secondary" style={{ fontSize: 12, display: "block", textAlign: "center", marginTop: "8px" }}>+ {s.sessionDates.length - 4} more sessions</Text>)}
-              </div>
-            </ScheduleCard>
-          ))}
-        </ScheduleList>
-      ) : schedules.length > 0 ? (
-            <Empty description={<span>No course schedules match your filters.<br />Try adjusting your search.</span>} />
-      ) : (
-        <Empty description={<span>No course schedules yet</span>} />
-      )}
-    </ContentPadding>
-  );
+              </ScheduleCard>
+            ))}
+          </ScheduleList>
+        ) : schedules.length > 0 ? (
+              <Empty description={<span>No course schedules match your filters.<br />Try adjusting your search.</span>} />
+        ) : (
+          <Empty description={<span>No course schedules yet</span>} />
+        )}
+      </>
+    );
+
+    // Render with split layout for Desktop, allowing only list to scroll
+    if (!isMobile) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '65vh' }}>
+            <div style={{ padding: '32px 32px 16px 32px', flexShrink: 0 }}>
+              <FilterBar>
+                <StyledInput placeholder="Search by name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ flex: 1, minWidth: 200 }} allowClear />
+                <StyledSelect 
+                  value={statusFilter} 
+                  onChange={(value) => setStatusFilter(value)} 
+                  style={{ width: 150 }}
+                >
+                  <Option value="all">All Statuses</Option>
+                  <Option value="upcoming">Upcoming</Option>
+                  <Option value="ongoing">Ongoing</Option>
+                  <Option value="completed">Completed</Option>
+                </StyledSelect>
+              </FilterBar>
+            </div>
+            <div style={{ overflowY: 'auto', padding: '0 32px 32px 32px', flex: 1 }}>
+                {content}
+            </div>
+        </div>
+      );
+    }
+
+    // Standard mobile render (Drawer handles scroll)
+    return (
+      <ContentPadding>
+        <FilterBar>
+          <StyledInput placeholder="Search by name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ flex: 1, minWidth: 200 }} allowClear />
+          <StyledSelect 
+            value={statusFilter} 
+            onChange={(value) => setStatusFilter(value)} 
+            style={{ width: 150 }}
+            getPopupContainer={(trigger) => trigger.parentElement}
+          >
+            <Option value="all">All Statuses</Option>
+            <Option value="upcoming">Upcoming</Option>
+            <Option value="ongoing">Ongoing</Option>
+            <Option value="completed">Completed</Option>
+          </StyledSelect>
+        </FilterBar>
+        {content}
+      </ContentPadding>
+    );
+  };
 
   const renderDetailedView = () => {
     if (!selectedSchedule) return null;
