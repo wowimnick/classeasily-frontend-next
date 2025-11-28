@@ -167,7 +167,7 @@ const StepContentWrapper = styled.div`
   padding: 32px;
 `;
 
-// Vaul Drawer Styles (Omitted for brevity, keeping existing styles)
+// Vaul Drawer Styles
 const StyledDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
   inset: 0;
@@ -448,6 +448,14 @@ const BookingModal = ({
   const handleUpdateBooking = useCallback(
     (data) => {
       setBookingData((prev) => {
+        // If the booking is already confirmed (has ID or reference) or payment is processing (has Intent ID),
+        // we must IGNORE any delayed or stale form updates from the review step.
+        // This prevents the debounce timer in the child component from overwriting
+        // the successful booking data returned by the backend.
+        if (prev.bookingId || prev.user_facing_reference || prev.paymentIntentId) {
+            return prev;
+        }
+
         const newState = { ...prev, ...data };
         
         // Price updating logic
@@ -459,7 +467,6 @@ const BookingModal = ({
           const newSlotPrice = parseFloat(data.selectedSlots[0].price);
           newState.price = isNaN(newSlotPrice) ? prev.price || 0 : newSlotPrice;
         } else if (data.selectedSlots && data.selectedSlots.length === 0) {
-           // ... (existing reset logic)
            const firstActiveSchedule = newState.selectedOption?.schedules?.find(
             (s) => s.is_active === true
           );
@@ -694,7 +701,6 @@ const ModalContent = (
               />
             </DrawerHeader>
             <DrawerBody>
-                 {/* Wrap Drawer Body content in Elements */}
                  <Elements stripe={stripePromise}>
                    <AnimatePresence mode="wait">
                     <motion.div
@@ -769,7 +775,6 @@ const ModalContent = (
               <X size={20} />
             </CloseButton>
 
-            {/* Use the content wrapped in Elements */}
             {ModalContent}
 
             <ModalFooter
