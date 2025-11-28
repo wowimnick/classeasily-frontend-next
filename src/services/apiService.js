@@ -174,19 +174,13 @@ export const blogService = {
 };
 // --- Payment Service ---
 export const paymentService = {
-  createPaymentIntent: async (bookingPayload) => { // Changed param name for clarity
+  createPaymentIntent: async (bookingPayload) => {
     try {
-      // The bookingPayload should contain selectedSlots, participants, notes, and participant_details
       const response = await axiosInstance.post(
         API_ENDPOINTS.PAYMENTS_CREATE_INTENT,
-        bookingPayload // Send the whole payload as received
+        bookingPayload
       );
-      return {
-        clientSecret: response.data.clientSecret,
-        amount: response.data.amount,
-        service_fee: response.data.service_fee,
-        booking_id: response.data.booking_id, // Pass booking_id if returned by this endpoint
-      };
+      return response.data;
     } catch (error) {
       console.error('Payment API error creating intent:', error.response?.data || error);
       throw error.response?.data || error;

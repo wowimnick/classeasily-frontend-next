@@ -286,9 +286,20 @@ const ConfirmationStep = ({
   paymentIntentId,
   clientSecret,
   bookingId: propBookingId,
+  reference: propReference,
   onBookingDetailsFetched,
   onRetryBooking,
 }) => {
+  // --- LOGGING ---
+  console.error("[ConfirmationStep Debug] Props Received:", {
+    bookingId: propBookingId,
+    bookingDataId: bookingData?.bookingId,
+    propReference: propReference,
+    reference: bookingData?.user_facing_reference,
+    participants: bookingData?.participant_details,
+    paymentIntentId
+  });
+
   const [fetchedReference, setFetchedReference] = useState(null);
   const [isPolling, setIsPolling] = useState(false);
   const [pollingError, setPollingError] = useState(null);
@@ -296,7 +307,7 @@ const ConfirmationStep = ({
 
   const actualBookingId = propBookingId || bookingData.bookingId;
   const displayReference =
-    fetchedReference || bookingData.user_facing_reference;
+    propReference || fetchedReference || bookingData.user_facing_reference;
 
   const pollForBookingReference = useCallback(async () => {
     if (!paymentIntentId || actualBookingId) {

@@ -946,6 +946,7 @@ const DiscountEditTabs = ({ onFinalSubmit, businessId }) => {
   const [activeTab, setActiveTab] = useState("1");
   const [loading, setLoading] = useState(false);
   const { state, isLoaded } = useDiscount();
+  const isMobile = useIsMobile();
 
   const fieldToTabMap = {
       name: '1', code: '1',
