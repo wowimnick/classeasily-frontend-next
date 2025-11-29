@@ -11,17 +11,19 @@ import {
 import { loadStripe } from "@stripe/stripe-js";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
+import NumberFlow, { NumberFlowGroup } from '@number-flow/react';
 import {
   Calendar as CalendarIcon,
   Shield,
   Clock,
-  Tag,
   ChevronDown,
   ShoppingCart,
   CheckCircle,
   Lock,
   Percent,
   UserCheck,
+  RefreshCw,
+  Ticket,
 } from "lucide-react";
 import {
   getCancellationPolicyText,
@@ -35,13 +37,16 @@ const HST_RATE = 0.13;
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
-// --- STYLED COMPONENTS (Keep as is) ---
+// --- STYLED COMPONENTS ---
+
 const StepContainer = styled.div`
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
   padding: 0 4px;
+  padding-top: 4px;
   padding-bottom: 100px;
+  position: relative; /* Needed for Overlay positioning */
 
   @media (min-width: 969px) {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
@@ -96,7 +101,7 @@ const MobileSummaryHeader = styled.div`
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     color: #111827;
     
@@ -155,62 +160,78 @@ const SectionTitle = styled.h4`
   color: #111827;
 `;
 
-const SummaryClassImage = styled.img`
-  width: 90px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 8px;
-  flex-shrink: 0;
+// --- UPDATED SUMMARY STYLES ---
+
+const SummaryItemContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 20px;
 `;
 
-const SummaryClassDetails = styled.div`
-  flex: 1;
-`;
-
-const SummaryTitle = styled.h3`
-  margin: 0 0 6px 0;
-  font-size: 16px;
+const SummaryItemTitle = styled.h3`
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
   color: #111827;
-  font-weight: 600;
   line-height: 1.3;
 `;
 
-const ClassDetail = styled.div`
+const SummaryMetaBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+`;
+
+const SummaryMetaRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #4b5563;
+  gap: 6px;
   font-size: 13px;
-  &:not(:last-child) {
-    margin-bottom: 6px;
-  }
+  color: #6b7280;
+  line-height: 1.4;
+
   svg {
+    width: 14px;
+    height: 14px;
     color: #9ca3af;
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
   }
+`;
+
+const ReceiptDivider = styled.div`
+  height: 1px;
+  background-image: linear-gradient(to right, #e5e7eb 50%, rgba(255,255,255,0) 0%);
+  background-position: bottom;
+  background-size: 8px 1px;
+  background-repeat: repeat-x;
+  margin: 20px 0;
 `;
 
 const PriceBreakdown = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 `;
 
 const PriceRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 14px;
-  color: ${(props) => (props.$success ? "#10b981" : "#4b5563")};
+  font-size: 13px;
+  color: ${(props) => (props.$success ? "#059669" : "#4b5563")};
+  
   &.total {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 700;
     color: #111827;
-    margin-top: 8px;
+    margin-top: 12px;
     padding-top: 16px;
     border-top: 1px solid #e5e7eb;
+  }
+
+  span:first-child {
+    color: ${(props) => (props.$success ? "#059669" : "#6b7280")};
   }
 `;
 
@@ -232,7 +253,7 @@ const InfoPanel = styled.div`
     flex: 1;
     h5 {
       margin: 0 0 4px 0;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       color: ${(props) => props.$titleColor || "#111827"};
     }
@@ -261,11 +282,11 @@ const AppliedCouponDisplay = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background-color: #e6f7ff;
-  border: 1px solid #91d5ff;
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
   margin-bottom: 12px;
   border-radius: 8px;
-  color: #005f9e;
+  color: #047857;
   font-weight: 500;
 `;
 
@@ -304,7 +325,134 @@ const MobileTotalDisplay = styled.div`
   }
 `;
 
+// --- NEW STYLES FOR TIMER & EXPIRATION ---
+
+const TimerBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  
+  /* Badge Appearance */
+  color: ${(props) => (props.$urgent ? "#dc2626" : "#4b5563")};
+  white-space: nowrap;
+
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.8; }
+    100% { opacity: 1; }
+  }
+`;
+
+// Wrapper to center the badge on mobile
+const MobileTimerContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  
+  @media (min-width: 969px) {
+    display: none;
+  }
+`;
+
+// Wrapper to show/hide on desktop
+const DesktopTimerContainer = styled.div`
+  display: none;
+  @media (min-width: 969px) {
+    display: block;
+  }
+`;
+
+const ExpiredOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  text-align: center;
+  padding: 32px;
+`;
+
+const ExpiredContent = styled.div`
+  background: white;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  max-width: 320px;
+  width: 100%;
+
+  h3 {
+    margin: 16px 0 8px;
+    color: #111827;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  p {
+    color: #6b7280;
+    margin-bottom: 24px;
+    line-height: 1.5;
+    font-size: 13px;
+  }
+`;
+
+const ExpiredIconWrapper = styled.div`
+  width: 48px;
+  height: 48px;
+  background: #fee2e2;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  color: #dc2626;
+`;
+
 // --- HELPERS (Keep as is) ---
+const Countdown = ({ seconds }) => {
+  const mm = Math.floor((seconds % 3600) / 60);
+  const ss = seconds % 60;
+  return (
+    <NumberFlowGroup>
+      <div
+        style={{
+          fontVariantNumeric: "tabular-nums",
+          "--number-flow-char-height": "0.85em",
+          display: "flex",
+          alignItems: "baseline",
+          fontWeight: 600,
+          fontSize: "1.1em",
+        }}
+      >
+        <NumberFlow
+          trend={-1}
+          value={mm}
+          format={{ minimumIntegerDigits: 2 }}
+        />
+        <NumberFlow
+          prefix=":"
+          trend={-1}
+          value={ss}
+          digits={{ 1: { max: 5 } }}
+          format={{ minimumIntegerDigits: 2 }}
+        />
+      </div>
+    </NumberFlowGroup>
+  );
+};
+
 const ParticipantNameInputs = ({
   count,
   isUserLoggedIn,
@@ -576,6 +724,10 @@ const ReviewAndPaymentStep = ({
   const [appliedDiscount, setAppliedDiscount] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
 
+  // --- TIMER STATE ---
+  const [timeRemaining, setTimeRemaining] = useState(15 * 60); // 15 minutes
+  const [isExpired, setIsExpired] = useState(false);
+
   const debounceTimerRef = useRef(null);
 
   // FIX: Clear timer on unmount to prevent race condition where form updates
@@ -691,6 +843,32 @@ const ReviewAndPaymentStep = ({
   const isFree = finalTotal === 0;
   const taxAmount = (subtotal - discountAmount) * HST_RATE;
 
+  // --- TIMER EFFECT ---
+  useEffect(() => {
+    // Start countdown when clientSecret exists (meaning a hold is in DB)
+    // Don't run for free bookings as they confirm instantly on submit
+    if (!clientSecret || isFree || isExpired) return;
+
+    const timer = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setIsExpired(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [clientSecret, isFree, isExpired]);
+
+  const handleSessionExpired = () => {
+    // Reload is the cleanest way to clear frontend state + Stripe Elements
+    // and force user to pick a new slot (generating new intent)
+    window.location.reload();
+  };
+
   const fetchPaymentIntent = useCallback(
     async (currentDiscountId = null) => {
       if (isFree) return;
@@ -789,6 +967,7 @@ const ReviewAndPaymentStep = ({
 
   const handleSubmit = useCallback(
     async (stripe, elements) => {
+      if (isExpired) return;
       if (!selectedSlot) {
         setError("Slot not selected.");
         return;
@@ -898,10 +1077,11 @@ const ReviewAndPaymentStep = ({
       onPaymentComplete,
       isUserLoggedIn,
       clientSecret,
+      isExpired,
     ]
   );
 
-  const renderBookingDetails = () => {
+  const renderBookingDetailsText = () => {
     if (!selectedSlot) return null;
     const {
       date,
@@ -910,117 +1090,69 @@ const ReviewAndPaymentStep = ({
       isCourse,
       end_date,
       days,
-      price,
-      minParticipants,
     } = selectedSlot;
-
-    const numericPrice = parseFloat(price || 0);
 
     if (isCourse) {
       return (
-        <>
-          <ClassDetail>
-            <CalendarIcon />
-            <span>
-              <strong>Course:</strong> {formatNaiveDate(date, "MMM d")} -{" "}
-              {formatNaiveDate(end_date, "MMM d, yyyy")}
-            </span>
-          </ClassDetail>
-          <ClassDetail>
-            <Clock />
-            <span>
-              Every {days.join(", ")} at{" "}
-              {formatTimeRangeForDisplay(
-                date,
-                time,
-                duration,
-                businessTimeZone,
-                userTimeZone
-              )}
-            </span>
-          </ClassDetail>
-          <ClassDetail>
-            <Tag />
-            <span>
-              {numericPrice === 0
-                ? "Free for the course"
-                : `$${numericPrice.toFixed(2)} for the course`}
-            </span>
-          </ClassDetail>
-        </>
+        <SummaryMetaBlock>
+          <SummaryMetaRow>
+            {formatNaiveDate(date, "MMM d")} - {formatNaiveDate(end_date, "MMM d, yyyy")}
+          </SummaryMetaRow>
+          <SummaryMetaRow>
+            Every {days.join(", ")} at {formatTimeRangeForDisplay(date, time, duration, businessTimeZone, userTimeZone)}
+          </SummaryMetaRow>
+          <SummaryMetaRow>
+            {participantsCount} Participant{participantsCount > 1 ? 's' : ''}
+          </SummaryMetaRow>
+        </SummaryMetaBlock>
       );
     }
 
+    // Single Class
     return (
-      <>
-        <ClassDetail>
-          <CalendarIcon />
-          <span>
-            {formatNaiveDate(date, "MMMM d, yyyy")} at{" "}
-            {formatTimeRangeForDisplay(
-              date,
-              time,
-              duration,
-              businessTimeZone,
-              userTimeZone
-            )}
-          </span>
-        </ClassDetail>
-        <ClassDetail>
-          <Clock />
-          <span>Duration: {getDurationText(duration)}</span>
-        </ClassDetail>
-        <ClassDetail>
-          <Tag />
-          <span>
-            {numericPrice === 0
-              ? "Free per person"
-              : `$${numericPrice.toFixed(2)} per person`}
-          </span>
-        </ClassDetail>
-        {minParticipants > 1 && (
-          <ClassDetail>
-            <UserCheck />
-            <span style={{ fontWeight: 500, color: "#111827" }}>
-              Requires minimum {minParticipants} participants
-            </span>
-          </ClassDetail>
-        )}
-      </>
+      <SummaryMetaBlock>
+        <SummaryMetaRow>
+          {formatNaiveDate(date, "EEEE, MMMM d, yyyy")}
+        </SummaryMetaRow>
+        <SummaryMetaRow>
+          {formatTimeRangeForDisplay(date, time, duration, businessTimeZone, userTimeZone)}
+        </SummaryMetaRow>
+        <SummaryMetaRow>
+          {getDurationText(duration)} • {participantsCount} Participant{participantsCount > 1 ? 's' : ''}
+        </SummaryMetaRow>
+      </SummaryMetaBlock>
     );
   };
 
   const renderSummaryContent = () => (
     <>
-      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-        <SummaryClassImage
-          src={classData?.images?.[0]?.thumbnail_url || "/placeholder.jpg"}
-          alt={classData?.title}
-        />
-        <SummaryClassDetails>
-          <SummaryTitle>{classData?.title}</SummaryTitle>
-          {renderBookingDetails()}
-        </SummaryClassDetails>
-      </div>
+      <SummaryItemContainer>
+        <SummaryItemTitle>{classData?.title}</SummaryItemTitle>
+        {renderBookingDetailsText()}
+      </SummaryItemContainer>
+
+      <ReceiptDivider />
 
       <PriceBreakdown>
         <PriceRow>
           <span>
-            Price &times; {participantsCount}{" "}
-            {participantsCount > 1 ? "people" : "person"}
+            {participantsCount} {participantsCount > 1 ? "people" : "person"} &times; ${basePrice.toFixed(2)}
           </span>
           <span>{subtotal === 0 ? "Free" : `$${subtotal.toFixed(2)}`}</span>
         </PriceRow>
+        
         {appliedDiscount && (
           <PriceRow $success>
             <span>Discount ({appliedDiscount.code})</span>
             <span>-${discountAmount.toFixed(2)}</span>
           </PriceRow>
         )}
+        
         <PriceRow>
           <span>HST (13%)</span>
           <span>${taxAmount.toFixed(2)}</span>
         </PriceRow>
+        
         <PriceRow className="total">
           <span>Total</span>
           <span>{finalTotal === 0 ? "Free" : `$${finalTotal.toFixed(2)}`}</span>
@@ -1116,6 +1248,19 @@ const ReviewAndPaymentStep = ({
     []
   );
 
+  // Helper to render the compact timer content
+  const renderTimerContent = () => {
+    if (isFree || isExpired) return null;
+    return (
+      <TimerBadge $urgent={timeRemaining < 120}>
+        <span>
+          {timeRemaining < 120 ? "Expires in:" : "Spot reserved:"}
+        </span>
+        <Countdown seconds={timeRemaining} />
+      </TimerBadge>
+    );
+  };
+
   return (
     <ConfigProvider theme={appTheme}>
       {!isFree && !clientSecret ? (
@@ -1136,6 +1281,37 @@ const ReviewAndPaymentStep = ({
           }
         >
           <StepContainer>
+            {/* OVERLAY WHEN EXPIRED */}
+            {isExpired && (
+              <ExpiredOverlay>
+                <ExpiredContent>
+                  <ExpiredIconWrapper>
+                    <Clock size={24} />
+                  </ExpiredIconWrapper>
+                  <h3>Session Expired</h3>
+                  <p>
+                    To ensure fairness for all students, we only hold spots for
+                    15 minutes. Please find a spot again to check availability.
+                  </p>
+                  <Button
+                    type="primary"
+                    size="large"
+                    onClick={handleSessionExpired}
+                    icon={<RefreshCw size={16} />}
+                    style={{
+                      width: "100%",
+                      background: "#ff385c",
+                      border: "none",
+                      height: "44px",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Find a Spot
+                  </Button>
+                </ExpiredContent>
+              </ExpiredOverlay>
+            )}
+
             <PaymentSection>
               {error && (
                 <Alert
@@ -1147,6 +1323,11 @@ const ReviewAndPaymentStep = ({
                   style={{ marginBottom: 16 }}
                 />
               )}
+
+              {/* TIMER: Mobile Only (Centered above form) */}
+              <MobileTimerContainer>
+                {renderTimerContent()}
+              </MobileTimerContainer>
 
               <MobileSummaryContainer>
                 <MobileSummaryHeader
@@ -1187,140 +1368,154 @@ const ReviewAndPaymentStep = ({
               </MobileSummaryContainer>
 
               <FormCard>
-                <Form
-                  form={form}
-                  layout="vertical"
-                  requiredMark={false}
-                  onValuesChange={handleFormValuesChange}
+                {/* Disable form when expired */}
+                <fieldset
+                  disabled={isExpired}
+                  style={{ border: "none", padding: 0, margin: 0 }}
                 >
-                  <ParticipantNameInputs
-                    count={bookingData.participants}
-                    bookerNameFromBookingData={bookingData.userName}
-                    form={form} 
-                    isUserLoggedIn={isUserLoggedIn}
-                  />
-
-                  <div
-                    style={{
-                      paddingTop: "16px",
-                      borderTop: "1px solid #e5e7eb",
-                      marginTop: 16,
-                    }}
+                  <Form
+                    form={form}
+                    layout="vertical"
+                    requiredMark={false}
+                    onValuesChange={handleFormValuesChange}
                   >
-                    <SectionTitle>Contact Info</SectionTitle>
-                    {!isUserLoggedIn && (
-                      <Form.Item
-                        name="guest_full_name"
-                        rules={[{ required: true, message: "Required" }]}
-                      >
-                        <Input placeholder="Full Name" />
-                      </Form.Item>
-                    )}
+                    <ParticipantNameInputs
+                      count={bookingData.participants}
+                      bookerNameFromBookingData={bookingData.userName}
+                      form={form} 
+                      isUserLoggedIn={isUserLoggedIn}
+                    />
+
                     <div
                       style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
-                        gap: 12,
+                        paddingTop: "16px",
+                        borderTop: "1px solid #e5e7eb",
+                        marginTop: 16,
                       }}
                     >
-                      <Form.Item
-                        name="email"
-                        rules={[{ required: true, type: "email" }]}
+                      <SectionTitle>Contact Info</SectionTitle>
+                      {!isUserLoggedIn && (
+                        <Form.Item
+                          name="guest_full_name"
+                          rules={[{ required: true, message: "Required" }]}
+                        >
+                          <Input placeholder="Full Name" />
+                        </Form.Item>
+                      )}
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 12,
+                        }}
                       >
-                        <Input 
-                          placeholder="Email" 
-                          disabled={isUserLoggedIn}
-                        />
-                      </Form.Item>
-                      <Form.Item name="phone" rules={[{ required: true }]}>
-                        <Input 
-                          placeholder="Phone" 
-                          disabled={isUserLoggedIn}
+                        <Form.Item
+                          name="email"
+                          rules={[{ required: true, type: "email" }]}
+                        >
+                          <Input 
+                            placeholder="Email" 
+                            disabled={isUserLoggedIn}
+                          />
+                        </Form.Item>
+                        <Form.Item name="phone" rules={[{ required: true }]}>
+                          <Input 
+                            placeholder="Phone" 
+                            disabled={isUserLoggedIn}
+                          />
+                        </Form.Item>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        paddingTop: "16px",
+                        borderTop: "1px solid #e5e7eb",
+                      }}
+                    >
+                      {!appliedDiscount ? (
+                        <Form.Item label="Have a Coupon?">
+                          <CouponInputWrapper>
+                            <Input
+                              placeholder="PROMO CODE"
+                              value={couponCode}
+                              onChange={(e) =>
+                                setCouponCode(e.target.value.toUpperCase())
+                              }
+                            />
+                            <Button
+                              onClick={handleApplyCoupon}
+                              loading={couponLoading}
+                              size="large"
+                            >
+                              Apply
+                            </Button>
+                          </CouponInputWrapper>
+                        </Form.Item>
+                      ) : (
+                        <AppliedCouponDisplay>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                            }}
+                          >
+                            <Percent size={16} />
+                            <span>
+                              {appliedDiscount.code.toUpperCase()} Applied
+                            </span>
+                          </div>
+                          <Button
+                            type="text"
+                            danger
+                            onClick={handleRemoveCoupon}
+                            size="small"
+                          >
+                            Remove
+                          </Button>
+                        </AppliedCouponDisplay>
+                      )}
+                    </div>
+
+                    <PaymentFormContent
+                      form={form}
+                      handleSubmit={handleSubmit}
+                      loading={loading}
+                      isFree={isFree}
+                      isFormValid={isFormValid}
+                      finalTotal={finalTotal}
+                      clientSecret={clientSecret}
+                      onPaymentAction={onPaymentAction}
+                      onPaymentComplete={onPaymentComplete}
+                      paymentService={paymentService}
+                      bookingData={bookingData}
+                    />
+
+                    <div style={{ marginTop: 24 }}>
+                      <Form.Item name="notes" label="Additional Notes">
+                        <Input.TextArea
+                          placeholder="Any special requests?"
+                          rows={2}
                         />
                       </Form.Item>
                     </div>
-                  </div>
-
-                  <div
-                    style={{
-                      paddingTop: "16px",
-                      borderTop: "1px solid #e5e7eb",
-                    }}
-                  >
-                    {!appliedDiscount ? (
-                      <Form.Item label="Have a Coupon?">
-                        <CouponInputWrapper>
-                          <Input
-                            placeholder="PROMO CODE"
-                            value={couponCode}
-                            onChange={(e) =>
-                              setCouponCode(e.target.value.toUpperCase())
-                            }
-                          />
-                          <Button
-                            onClick={handleApplyCoupon}
-                            loading={couponLoading}
-                            size="large"
-                          >
-                            Apply
-                          </Button>
-                        </CouponInputWrapper>
-                      </Form.Item>
-                    ) : (
-                      <AppliedCouponDisplay>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                          }}
-                        >
-                          <Percent size={16} />
-                          <span>
-                            {appliedDiscount.code.toUpperCase()} Applied
-                          </span>
-                        </div>
-                        <Button
-                          type="text"
-                          danger
-                          onClick={handleRemoveCoupon}
-                          size="small"
-                        >
-                          Remove
-                        </Button>
-                      </AppliedCouponDisplay>
-                    )}
-                  </div>
-
-                  <PaymentFormContent
-                    form={form}
-                    handleSubmit={handleSubmit}
-                    loading={loading}
-                    isFree={isFree}
-                    isFormValid={isFormValid}
-                    finalTotal={finalTotal}
-                    clientSecret={clientSecret}
-                    onPaymentAction={onPaymentAction}
-                    onPaymentComplete={onPaymentComplete}
-                    paymentService={paymentService}
-                    bookingData={bookingData}
-                  />
-
-                  <div style={{ marginTop: 24 }}>
-                    <Form.Item name="notes" label="Additional Notes">
-                      <Input.TextArea
-                        placeholder="Any special requests?"
-                        rows={2}
-                      />
-                    </Form.Item>
-                  </div>
-                </Form>
+                  </Form>
+                </fieldset>
               </FormCard>
             </PaymentSection>
 
             <SummarySection>
               <SummaryCard>
-                <SectionTitle>Order Summary</SectionTitle>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', marginBottom: 16 }}>
+                  <SectionTitle style={{ marginBottom: 0 }}>Order Summary</SectionTitle>
+                  
+                  {/* TIMER: Desktop Only (Inside Summary Card) */}
+                  <DesktopTimerContainer>
+                    {renderTimerContent()}
+                  </DesktopTimerContainer>
+                </div>
+
                 {renderSummaryContent()}
 
                 <InfoPanel
@@ -1370,7 +1565,7 @@ const ReviewAndPaymentStep = ({
             </SummarySection>
 
             <AnimatePresence>
-              {isFormValid && (
+              {isFormValid && !isExpired && (
                 <MobilePaymentFooter
                   initial={{ y: 100 }}
                   animate={{ y: 0 }}

@@ -26,7 +26,7 @@ const HeaderContainer = styled.div`
   background: ${theme.white};
 
   @media (max-width: 640px) {
-    padding: 16px;
+    padding: 0px;
   }
 `;
 
