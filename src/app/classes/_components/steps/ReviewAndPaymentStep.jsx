@@ -46,7 +46,7 @@ const StepContainer = styled.div`
   padding: 0 4px;
   padding-top: 4px;
   padding-bottom: 100px;
-  position: relative; /* Needed for Overlay positioning */
+  position: relative; /* Needed for Overlay positioning context if using absolute, but we use fixed now */
 
   @media (min-width: 969px) {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
@@ -366,15 +366,16 @@ const DesktopTimerContainer = styled.div`
   }
 `;
 
+// UPDATED: Changed from absolute to fixed to cover the entire view
 const ExpiredOverlay = styled.div`
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(4px);
-  z-index: 50;
+  z-index: 200; /* Increased z-index to cover footer */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -382,6 +383,7 @@ const ExpiredOverlay = styled.div`
   border-radius: 16px;
   text-align: center;
   padding: 32px;
+  overflow: hidden;
 `;
 
 const ExpiredContent = styled.div`
@@ -728,6 +730,9 @@ const ReviewAndPaymentStep = ({
   const [timeRemaining, setTimeRemaining] = useState(15 * 60); // 15 minutes
   const [isExpired, setIsExpired] = useState(false);
 
+  // UPDATED: Ref to store the absolute timestamp when the hold should expire
+  const expirationTimestampRef = useRef(null);
+
   const debounceTimerRef = useRef(null);
 
   // FIX: Clear timer on unmount to prevent race condition where form updates
@@ -843,21 +848,31 @@ const ReviewAndPaymentStep = ({
   const isFree = finalTotal === 0;
   const taxAmount = (subtotal - discountAmount) * HST_RATE;
 
-  // --- TIMER EFFECT ---
+  // --- UPDATED TIMER EFFECT ---
+  // Uses absolute timestamps so it works accurately even when tab is backgrounded
   useEffect(() => {
     // Start countdown when clientSecret exists (meaning a hold is in DB)
     // Don't run for free bookings as they confirm instantly on submit
     if (!clientSecret || isFree || isExpired) return;
 
+    // Set the target time ONLY ONCE when we first get the clientSecret
+    // If we haven't set a target yet, set it for 15 minutes from now.
+    if (!expirationTimestampRef.current) {
+      expirationTimestampRef.current = Date.now() + 15 * 60 * 1000;
+    }
+
     const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setIsExpired(true);
-          return 0;
-        }
-        return prev - 1;
-      });
+      const now = Date.now();
+      // Calculate seconds remaining based on the difference in time, not tick counts
+      const secondsLeft = Math.ceil((expirationTimestampRef.current - now) / 1000);
+
+      if (secondsLeft <= 0) {
+        clearInterval(timer);
+        setTimeRemaining(0);
+        setIsExpired(true);
+      } else {
+        setTimeRemaining(secondsLeft);
+      }
     }, 1000);
 
     return () => clearInterval(timer);
