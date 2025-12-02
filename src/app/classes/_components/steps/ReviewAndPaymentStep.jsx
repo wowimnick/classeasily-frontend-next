@@ -948,6 +948,15 @@ const ReviewAndPaymentStep = ({
         const values = await form.validateFields();
 
         if (isFree) {
+          if (bookingData.paymentIntentId) {
+            try {
+              await paymentService.cancelPaymentIntent(bookingData.paymentIntentId);
+              console.log("Cancelled previous pending booking to free capacity for 100% discount.");
+            } catch (cancelErr) {
+              console.warn("Failed to cancel previous pending booking, proceeding anyway:", cancelErr);
+            }
+          }
+
           const payload = {
             selectedSlots: bookingData.selectedSlots,
             participants: participantsCount,
