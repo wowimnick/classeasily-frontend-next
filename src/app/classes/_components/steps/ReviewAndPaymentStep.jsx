@@ -13,7 +13,6 @@ import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow, { NumberFlowGroup } from '@number-flow/react';
 import {
-  Calendar as CalendarIcon,
   Shield,
   Clock,
   ChevronDown,
@@ -23,7 +22,6 @@ import {
   Percent,
   UserCheck,
   RefreshCw,
-  Ticket,
 } from "lucide-react";
 import {
   getCancellationPolicyText,
@@ -46,7 +44,7 @@ const StepContainer = styled.div`
   padding: 0 4px;
   padding-top: 4px;
   padding-bottom: 100px;
-  position: relative; /* Needed for Overlay positioning context if using absolute, but we use fixed now */
+  position: relative;
 
   @media (min-width: 969px) {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
@@ -159,8 +157,6 @@ const SectionTitle = styled.h4`
   font-weight: 600;
   color: #111827;
 `;
-
-// --- UPDATED SUMMARY STYLES ---
 
 const SummaryItemContainer = styled.div`
   display: flex;
@@ -325,8 +321,6 @@ const MobileTotalDisplay = styled.div`
   }
 `;
 
-// --- NEW STYLES FOR TIMER & EXPIRATION ---
-
 const TimerBadge = styled.div`
   display: inline-flex;
   align-items: center;
@@ -336,29 +330,18 @@ const TimerBadge = styled.div`
   font-weight: 600;
   border-radius: 20px;
   transition: all 0.3s ease;
-  
-  /* Badge Appearance */
   color: ${(props) => (props.$urgent ? "#dc2626" : "#4b5563")};
   white-space: nowrap;
-
-  @keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.8; }
-    100% { opacity: 1; }
-  }
 `;
 
-// Wrapper to center the badge on mobile
 const MobileTimerContainer = styled.div`
   display: flex;
   justify-content: center;
-  
   @media (min-width: 969px) {
     display: none;
   }
 `;
 
-// Wrapper to show/hide on desktop
 const DesktopTimerContainer = styled.div`
   display: none;
   @media (min-width: 969px) {
@@ -366,7 +349,6 @@ const DesktopTimerContainer = styled.div`
   }
 `;
 
-// UPDATED: Changed from absolute to fixed to cover the entire view
 const ExpiredOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -375,7 +357,7 @@ const ExpiredOverlay = styled.div`
   bottom: 0;
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(4px);
-  z-index: 200; /* Increased z-index to cover footer */
+  z-index: 200;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -422,7 +404,7 @@ const ExpiredIconWrapper = styled.div`
   color: #dc2626;
 `;
 
-// --- HELPERS (Keep as is) ---
+// --- HELPERS ---
 const Countdown = ({ seconds }) => {
   const mm = Math.floor((seconds % 3600) / 60);
   const ss = seconds % 60;
@@ -476,7 +458,6 @@ const ParticipantNameInputs = ({
         >
           <Input
             placeholder={`Participant ${index + 1} Full Name`}
-            // Read-only logic is handled by parent pre-fill + disabled prop logic below
             readOnly={
               index === 0 && isUserLoggedIn && !!bookerNameFromBookingData
             }
@@ -529,7 +510,6 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
     });
 
     pr.on('paymentmethod', async (ev) => {
-      
       const payerName = ev.payerName;
       const payerEmail = ev.payerEmail;
       const payerPhone = ev.payerPhone;
@@ -540,7 +520,6 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
           
           if (paymentService && paymentService.updatePaymentIntent) {
             try {
-              // We update the backend so the DB knows who the guest is before the charge
               await paymentService.updatePaymentIntent({
                 payment_intent_id: paymentIntentId,
                 guest_email: payerEmail, 
@@ -556,15 +535,10 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
           }
         }
 
-        
         const { error, paymentIntent } = await stripe.confirmCardPayment(
           clientSecret,
           {
-            // Apple Pay already created the PaymentMethod object with all billing details.
-            // We just pass the ID here.
             payment_method: ev.paymentMethod.id,
-            
-            // Optional: attach the email for Stripe receipts
             receipt_email: payerEmail || undefined,
           },
           { handleActions: false }
@@ -575,7 +549,6 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
           message.error(error.message);
         } else {
           ev.complete('success');
-          
           if (paymentIntent.status === "succeeded") {
              onPaymentComplete({
               payment_intent_id: paymentIntent.id,
@@ -633,8 +606,6 @@ const PaymentFormContent = ({
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Determine if we can submit. 
-    // Important: We rely on isReady (Stripe loaded) AND isFormValid (Inputs filled)
     const canSubmit = isFree
       ? !loading && isFormValid
       : stripe && elements && !loading && isFormValid && isReady;
@@ -727,16 +698,11 @@ const ReviewAndPaymentStep = ({
   const [couponLoading, setCouponLoading] = useState(false);
 
   // --- TIMER STATE ---
-  const [timeRemaining, setTimeRemaining] = useState(15 * 60); // 15 minutes
+  const [timeRemaining, setTimeRemaining] = useState(15 * 60); 
   const [isExpired, setIsExpired] = useState(false);
-
-  // UPDATED: Ref to store the absolute timestamp when the hold should expire
   const expirationTimestampRef = useRef(null);
-
   const debounceTimerRef = useRef(null);
 
-  // FIX: Clear timer on unmount to prevent race condition where form updates
-  // overwrite the successful booking confirmation state.
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) {
@@ -745,8 +711,6 @@ const ReviewAndPaymentStep = ({
     };
   }, []);
 
-  // --- VALIDATION HELPER ---
-  // Accepts explicit values to allow validation before the form store updates
   const validateValues = useCallback((values) => {
     const { email, phone, guest_full_name, participant_details } = values;
     
@@ -766,7 +730,6 @@ const ReviewAndPaymentStep = ({
     return !!(allTextFieldsFilled && participantsFilled);
   }, [isUserLoggedIn, bookingData.participants]);
 
-  // Find this useEffect (around line 430)
   useEffect(() => {
     if (form) {
       let formData = {};
@@ -786,16 +749,10 @@ const ReviewAndPaymentStep = ({
         });
         formData.participant_details = newParticipants;
       } else {
-        // Guest Mode - preserve if exists
-        const currentValues = form.getFieldsValue(true); // true = get all values including hidden/unmounted
-        
-        // --- START OF FIX ---
-        // Previously: checked (!currentValues.email) and wiped all fields.
-        // Now: Check individual fields to ensure we don't overwrite user input.
+        const currentValues = form.getFieldsValue(true); 
         if (currentValues.email === undefined) formData.email = "";
         if (currentValues.phone === undefined) formData.phone = "";
         if (currentValues.guest_full_name === undefined) formData.guest_full_name = "";
-        // --- END OF FIX ---
         
         const currentPart = currentValues.participant_details || [];
         if (currentPart.length !== bookingData.participants) {
@@ -811,16 +768,13 @@ const ReviewAndPaymentStep = ({
         formData.notes = bookingData.notes || "";
       }
 
-      // 1. SET VALUES
       if (Object.keys(formData).length > 0) {
         form.setFieldsValue(formData);
       }
 
-      // 2. VALIDATE IMMEDIATELY using the data we just created.
-      // Do not wait for form.getFieldsValue() to update.
       const isValid = validateValues({
-          ...form.getFieldsValue(true), // Get current state
-          ...formData // Overwrite with what we just set
+          ...form.getFieldsValue(true), 
+          ...formData 
       });
       setIsFormValid(isValid);
     }
@@ -848,22 +802,16 @@ const ReviewAndPaymentStep = ({
   const isFree = finalTotal === 0;
   const taxAmount = (subtotal - discountAmount) * HST_RATE;
 
-  // --- UPDATED TIMER EFFECT ---
-  // Uses absolute timestamps so it works accurately even when tab is backgrounded
+  // --- TIMER EFFECT ---
   useEffect(() => {
-    // Start countdown when clientSecret exists (meaning a hold is in DB)
-    // Don't run for free bookings as they confirm instantly on submit
     if (!clientSecret || isFree || isExpired) return;
 
-    // Set the target time ONLY ONCE when we first get the clientSecret
-    // If we haven't set a target yet, set it for 15 minutes from now.
     if (!expirationTimestampRef.current) {
       expirationTimestampRef.current = Date.now() + 15 * 60 * 1000;
     }
 
     const timer = setInterval(() => {
       const now = Date.now();
-      // Calculate seconds remaining based on the difference in time, not tick counts
       const secondsLeft = Math.ceil((expirationTimestampRef.current - now) / 1000);
 
       if (secondsLeft <= 0) {
@@ -879,8 +827,6 @@ const ReviewAndPaymentStep = ({
   }, [clientSecret, isFree, isExpired]);
 
   const handleSessionExpired = () => {
-    // Reload is the cleanest way to clear frontend state + Stripe Elements
-    // and force user to pick a new slot (generating new intent)
     window.location.reload();
   };
 
@@ -896,20 +842,15 @@ const ReviewAndPaymentStep = ({
 
       try {
         const values = form.getFieldsValue();
-        
-        // --- FIX START ---
-        // Ensure participant_details matches the count, even if form isn't fully ready
         let participantDetailsPayload = values.participant_details?.map((d) => ({
             name: d?.name || "Guest",
         })) || [];
         
         if (participantDetailsPayload.length < participantsCount) {
-             // Fill missing slots with placeholders to satisfy backend validator
              participantDetailsPayload = Array.from({ length: participantsCount }, (_, i) => ({
                  name: participantDetailsPayload[i]?.name || "Guest"
              }));
         }
-        // --- FIX END ---
 
         const payload = {
           selectedSlots: bookingData.selectedSlots,
@@ -926,12 +867,20 @@ const ReviewAndPaymentStep = ({
 
         if (response.clientSecret) {
           setClientSecret(response.clientSecret);
+          
+          if (onUpdateBookingData) {
+            const paymentIntentId = response.clientSecret.split('_secret_')[0];
+            onUpdateBookingData({
+              paymentIntentId: paymentIntentId,
+              clientSecret: response.clientSecret
+            });
+          }
         }
       } catch (err) {
         console.error("Error creating draft intent:", err);
       }
     },
-    [bookingData, participantsCount, isFree, form, paymentService]
+    [bookingData, participantsCount, isFree, form, paymentService, onUpdateBookingData]
   );
 
   useEffect(() => {
@@ -988,7 +937,6 @@ const ReviewAndPaymentStep = ({
         return;
       }
 
-      // FIX: Clear timer immediately to prevent overwriting result
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
@@ -1123,7 +1071,6 @@ const ReviewAndPaymentStep = ({
       );
     }
 
-    // Single Class
     return (
       <SummaryMetaBlock>
         <SummaryMetaRow>
@@ -1263,7 +1210,6 @@ const ReviewAndPaymentStep = ({
     []
   );
 
-  // Helper to render the compact timer content
   const renderTimerContent = () => {
     if (isFree || isExpired) return null;
     return (
@@ -1296,7 +1242,6 @@ const ReviewAndPaymentStep = ({
           }
         >
           <StepContainer>
-            {/* OVERLAY WHEN EXPIRED */}
             {isExpired && (
               <ExpiredOverlay>
                 <ExpiredContent>
@@ -1339,7 +1284,6 @@ const ReviewAndPaymentStep = ({
                 />
               )}
 
-              {/* TIMER: Mobile Only (Centered above form) */}
               <MobileTimerContainer>
                 {renderTimerContent()}
               </MobileTimerContainer>
@@ -1383,7 +1327,6 @@ const ReviewAndPaymentStep = ({
               </MobileSummaryContainer>
 
               <FormCard>
-                {/* Disable form when expired */}
                 <fieldset
                   disabled={isExpired}
                   style={{ border: "none", padding: 0, margin: 0 }}
@@ -1524,8 +1467,6 @@ const ReviewAndPaymentStep = ({
               <SummaryCard>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', marginBottom: 16 }}>
                   <SectionTitle style={{ marginBottom: 0 }}>Order Summary</SectionTitle>
-                  
-                  {/* TIMER: Desktop Only (Inside Summary Card) */}
                   <DesktopTimerContainer>
                     {renderTimerContent()}
                   </DesktopTimerContainer>
