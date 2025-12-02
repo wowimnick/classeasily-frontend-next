@@ -629,24 +629,23 @@ const BookingModal = ({
     if (currentStep < 3) setCurrentStep((prev) => prev + 1);
   }, [currentStep]);
 
-  // --- UPDATED BACK HANDLER ---
   const handleBack = useCallback(async () => {
     if (currentStep > 1) {
-      // If leaving the payment step and a hold (PI) exists, cancel it instantly.
       if (currentStep === 2 && bookingData.paymentIntentId) {
-         setIsLoading(true);
-         await cancelPendingIntent(bookingData.paymentIntentId);
-         // Clear the payment state so a fresh booking starts next time
-         setBookingData(prev => ({
-            ...prev,
-            paymentIntentId: null,
-            clientSecret: null
-         }));
-         setIsLoading(false);
+        
+        // FIX: Pass the ID directly as a string, not an object
+        await paymentService.cancelPaymentIntent(bookingData.paymentIntentId);
+        
+        // Reset state so we don't hold onto a cancelled ID
+        setBookingData((prev) => ({
+          ...prev,
+          paymentIntentId: null,
+          clientSecret: null,
+        }));
       }
       setCurrentStep((prev) => prev - 1);
     }
-  }, [currentStep, bookingData.paymentIntentId, cancelPendingIntent]);
+  }, [currentStep, bookingData.paymentIntentId]);
 
   const businessTimeZone = classData?.business_timezone || "Etc/UTC";
   const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
