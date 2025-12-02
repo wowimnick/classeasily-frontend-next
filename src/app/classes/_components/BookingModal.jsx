@@ -406,6 +406,18 @@ const BookingModal = ({
     getInitialBookingState()
   );
 
+  // --- HELPER: Delete pending booking from DB ---
+  const cancelPendingIntent = useCallback(async (intentId) => {
+    if (!intentId) return;
+    try {
+      console.log("[BookingModal] Releasing held spot (deleting pending booking):", intentId);
+      // Calls the new 'delete' logic in backend
+      await paymentService.cancelPaymentIntent({ payment_intent_id: intentId });
+    } catch (error) {
+      console.error("[BookingModal] Failed to release spot:", error);
+    }
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       const newInitialState = getInitialBookingState();
@@ -445,16 +457,25 @@ const BookingModal = ({
   }, [isOpen, selectedOption?.optionId, getInitialBookingState]);
 
   const resetModal = useCallback(() => {
+    // If user closes completely and there was a pending payment, delete it instantly.
+    if (bookingData.paymentIntentId && !bookingData.bookingId) {
+       cancelPendingIntent(bookingData.paymentIntentId);
+    }
+
     console.error("[BookingModal Debug] Resetting Modal.");
     setCurrentStep(1);
     setBookingData(getInitialBookingState());
     setIsLoading(false);
     setPaymentAction(null);
-  }, [getInitialBookingState]);
+  }, [getInitialBookingState, bookingData.paymentIntentId, bookingData.bookingId, cancelPendingIntent]);
 
   const handleClose = useCallback(() => {
+    // Also trigger cleanup on close click
+    if (bookingData.paymentIntentId && !bookingData.bookingId) {
+       cancelPendingIntent(bookingData.paymentIntentId);
+    }
     setIsVisible(false);
-  }, []);
+  }, [bookingData.paymentIntentId, bookingData.bookingId, cancelPendingIntent]);
 
   const handleAnimationComplete = useCallback(() => {
     resetModal();
@@ -608,9 +629,24 @@ const BookingModal = ({
     if (currentStep < 3) setCurrentStep((prev) => prev + 1);
   }, [currentStep]);
 
-  const handleBack = useCallback(() => {
-    if (currentStep > 1) setCurrentStep((prev) => prev - 1);
-  }, [currentStep]);
+  // --- UPDATED BACK HANDLER ---
+  const handleBack = useCallback(async () => {
+    if (currentStep > 1) {
+      // If leaving the payment step and a hold (PI) exists, cancel it instantly.
+      if (currentStep === 2 && bookingData.paymentIntentId) {
+         setIsLoading(true);
+         await cancelPendingIntent(bookingData.paymentIntentId);
+         // Clear the payment state so a fresh booking starts next time
+         setBookingData(prev => ({
+            ...prev,
+            paymentIntentId: null,
+            clientSecret: null
+         }));
+         setIsLoading(false);
+      }
+      setCurrentStep((prev) => prev - 1);
+    }
+  }, [currentStep, bookingData.paymentIntentId, cancelPendingIntent]);
 
   const businessTimeZone = classData?.business_timezone || "Etc/UTC";
   const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;

@@ -27,6 +27,7 @@ const HeaderContainer = styled.div`
 
   @media (max-width: 640px) {
     padding: 0px;
+    border-bottom: none;
   }
 `;
 

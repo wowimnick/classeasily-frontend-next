@@ -55,6 +55,7 @@ export const API_ENDPOINTS = {
   // Payments
   PAYMENTS_CREATE_INTENT: '/payments/create-payment-intent/',
   PAYMENTS_UPDATE_INTENT: '/payments/update-payment-intent/',
+  PAYMENTS_CANCEL_INTENT: '/payments/cancel-payment-intent/',
   PAYMENTS_WEBHOOK: '/payments/webhook/',
 
   // --- CORRECTED COURSE ENDPOINTS ---
@@ -197,7 +198,19 @@ export const paymentService = {
       console.error('Error updating payment intent:', error);
       throw error.response?.data || error; 
     }
-  }
+  },
+    cancelPaymentIntent: async (paymentIntentId) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.PAYMENTS_CANCEL_INTENT, 
+        { payment_intent_id: paymentIntentId }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error canceling booking:', error);
+      throw error.response?.data || error;
+    }
+  },
 };
 
 // --- Auth & User Services ---
