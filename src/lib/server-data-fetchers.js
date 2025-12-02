@@ -420,7 +420,7 @@ export async function fetchClassDetail(classIdOrSlug) {
       },
       cache: 'force-cache',
       next: { 
-        revalidate: 86400,
+        revalidate: 3600,
         tags: ['classes', `class-${classIdOrSlug}`]
       }
     });
