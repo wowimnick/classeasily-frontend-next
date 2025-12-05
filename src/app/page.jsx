@@ -1,172 +1,104 @@
 import dynamic from "next/dynamic";
 import SharedMainClientHeader from "@/components/layout/SharedMainClientHeader";
-import BannerSearch from "./(homepage)/_components/BannerSearch";
+import BannerSearch, { AnnouncementBanner } from "./(homepage)/_components/BannerSearch";
 import { Suspense } from "react";
 import "./(homepage)/_components/homepage.css";
-import {
-  preloadHomepageData,
-  generateClassesStructuredData,
-} from "@/lib/server-data-fetchers";
-import FindClassClientWrapper from "./(homepage)/_components/FindClassClientWrapper";
+import { preloadHomepageData } from "@/lib/server-data-fetchers";
+import { FindClassSkeleton, CategorySkeleton } from "./(homepage)/_components/FindClassSkeleton";
 
-// Import Specific Skeletons
-import { 
-  FindClassSkeleton, 
-  CategorySkeleton, 
-  TestimonialSkeleton, 
-  GiftCardSkeleton 
-} from "./(homepage)/_components/FindClassSkeleton";
-
-// Lazy load all homepage components
+// Lazy Load Components
 const Footer = dynamic(() => import("@/components/homepage/Footer"), {
-  loading: () => <div style={{ height: "300px", background: "#f9f9f9" }} />,
+  loading: () => <div style={{ minHeight: "300px" }} />,
 });
 
-const HomepageCategories = dynamic(
-  () => import("./(homepage)/_components/HomepageCategories"),
-  {
-    loading: () => <CategorySkeleton />,
-  }
-);
-
-const HowItWorks = dynamic(
-  () => import("./(homepage)/_components/HowItWorks"),
-  {
-    // Since HowItWorks is a full-screen colored section, a simple placeholder 
-    // often looks better than a complex skeleton until it pops in, 
-    // but we can add a block loader if preferred.
-    loading: () => <div style={{ height: "800px", background: "#f0f0f0" }} />,
-  }
-);
-
-const ForHosts = dynamic(() => import("./(homepage)/_components/ForHosts"), {
-  loading: () => <div style={{ height: "400px", margin: "4rem auto", maxWidth: "1200px", background: "#ffecee", borderRadius: "1.5rem" }} />,
+const HomepageCategories = dynamic(() => import("./(homepage)/_components/HomepageCategories"), {
+  loading: () => <CategorySkeleton />,
 });
 
-const Testimonials = dynamic(
-  () => import("./(homepage)/_components/Testimonials"),
-  {
-    loading: () => <TestimonialSkeleton />,
-  }
-);
+const ClassRow = dynamic(() => import("./(homepage)/_components/FindClass"), {
+  loading: () => <FindClassSkeleton />,
+});
 
-const GiftCardsCTA = dynamic(
-  () => import("./(homepage)/_components/GiftCardsCTA"),
-  {
-    loading: () => <GiftCardSkeleton />,
-  }
-);
+const HowItWorks = dynamic(() => import("./(homepage)/_components/HowItWorks"));
+const ForHosts = dynamic(() => import("./(homepage)/_components/ForHosts"));
+const Testimonials = dynamic(() => import("./(homepage)/_components/Testimonials"));
+const GiftCardsCTA = dynamic(() => import("./(homepage)/_components/GiftCardsCTA"));
 
 export const metadata = {
   title: "Classeasily - Find Local Classes & Workshops Near You",
-  description:
-    "Discover and book local classes and workshops in your area. Join a community of learners and hosts today!",
-  openGraph: {
-    title: "Classeasily - Find Local Classes & Workshops Near You",
-    description: "Discover and book local classes and workshops in your area.",
-    url: "https://classeasily.com",
-    siteName: "Classeasily",
-    images: [
-      {
-        url: "https://classeasily.com/og-image.jpg",
-        width: 1200,
-        height: 630,
-      },
-    ],
-    locale: "en_US",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Classeasily - Find Local Classes & Workshops Near You",
-    description: "Discover and book local classes and workshops in your area.",
-    images: ["https://classeasily.com/twitter-image.jpg"],
-  },
-  alternates: {
-    canonical: "https://classeasily.com",
-  },
-  other: {
-    "application/ld+json": JSON.stringify([
-      {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        name: "Classeasily",
-        url: "https://classeasily.com",
-        logo: "https://classeasily.com/logo.png",
-        sameAs: [
-          "https://facebook.com/classeasily",
-          "https://linkedin.com/company/classeasily",
-        ],
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        name: "Classeasily",
-        url: "https://classeasily.com",
-        potentialAction: {
-          "@type": "SearchAction",
-          target:
-            "https://classeasily.com/explore?keyword={search_term_string}",
-          "query-input": "required name=search_term_string",
-        },
-      },
-    ]),
-  },
+  description: "Discover and book local classes and workshops in your area.",
 };
 
 export default async function HomePage() {
-  const preloadedData = await preloadHomepageData();
-  const initialClasses = preloadedData.classes.classes;
-  const initialNextPageUrl = preloadedData.classes.nextPageUrl;
-  const initialCategories = preloadedData.categories.data;
-
-  const structuredData = generateClassesStructuredData(initialClasses);
+  const { trending, newClasses, featuredCategory, categories } = await preloadHomepageData();
 
   return (
     <>
-      {structuredData && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(structuredData),
-          }}
-        />
-      )}
-      <SharedMainClientHeader />
+      <AnnouncementBanner />
+      {/* 
+        Pass a topOffset prop to the Header. 
+        Assuming SharedMainClientHeader passes props down to the Header component.
+        48px is the height of the AnnouncementBanner.
+      */}
+      <SharedMainClientHeader topOffset={48} />
 
       <div className="homepage-style">
         <main className="main-content">
           <BannerSearch />
 
+          {/* First Row: Added top margin to create gap from Banner */}
+          <Suspense fallback={<FindClassSkeleton style={{ marginTop: "3rem" }} />}>
+            <ClassRow 
+              title="Trending this Week" 
+              subtitle="Most booked classes by people near you"
+              classes={trending}
+              seeAllLink="/explore?sort=popularity"
+              style={{ marginTop: "3rem" }}
+            />
+          </Suspense>
+
           <Suspense fallback={<FindClassSkeleton />}>
-            <FindClassClientWrapper
-              initialClasses={initialClasses}
-              initialNextPageUrl={initialNextPageUrl}
+            <ClassRow 
+              title="Get Creative" 
+              subtitle="Popular art, design, and pottery workshops"
+              classes={featuredCategory}
+              seeAllLink="/explore?category=arts-design"
+            />
+          </Suspense>
+
+          <Suspense fallback={<FindClassSkeleton />}>
+            <ClassRow 
+              title="New & Noteworthy" 
+              subtitle="Just added classes you shouldn't miss"
+              classes={newClasses}
+              seeAllLink="/explore?sort=newest"
             />
           </Suspense>
 
           <Suspense fallback={<CategorySkeleton />}>
-            <HomepageCategories initialCategories={initialCategories} />
+             <HomepageCategories initialCategories={categories} />
           </Suspense>
 
-          <Suspense fallback={<div style={{ height: "800px", background: "#fafafa" }} />}>
-            <HowItWorks />
+          <Suspense fallback={<div style={{ minHeight: "800px" }} />}>
+            <section id="how-it-works">
+              <HowItWorks />
+            </section>
           </Suspense>
 
-          <Suspense fallback={<div style={{ height: "400px", background: "#fff" }} />}>
+          <Suspense fallback={<div style={{ minHeight: "400px" }} />}>
             <ForHosts />
           </Suspense>
 
-          <Suspense fallback={<GiftCardSkeleton />}>
+          <Suspense fallback={<div style={{ minHeight: "600px" }} />}>
             <GiftCardsCTA />
           </Suspense>
 
-          <Suspense fallback={<TestimonialSkeleton />}>
+          <Suspense fallback={<div style={{ minHeight: "500px" }} />}>
             <Testimonials />
           </Suspense>
         </main>
 
-        <Suspense fallback={<div style={{ height: "200px" }} />}>
+        <Suspense fallback={<div style={{ minHeight: "300px" }} />}>
           <Footer />
         </Suspense>
       </div>

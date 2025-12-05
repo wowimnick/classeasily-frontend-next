@@ -12,7 +12,6 @@ import dynamic from "next/dynamic";
 import { Menu, Search } from "lucide-react";
 import dayjs from "dayjs";
 import { useSearch } from "@/context/SearchContext";
-import SearchDrawer from "@/components/common/SearchDrawer";
 
 // --- DYNAMIC IMPORTS ---
 const CustomUserMenu = dynamic(() => import("./CustomUserMenu"), { ssr: false });
@@ -40,20 +39,44 @@ const HeaderWrapper = styled.header`
   text-align: center;
   display: grid;
   grid-template-columns: auto 1fr auto;
-  position: fixed;
-  width: 100%;
-  font-weight: bold;
-  top: ${(props) => (props.$isImpersonating ? "40px" : "0")};
+  
+  /* 
+   * POSITION LOGIC:
+   * Absolute initially (sits below banner).
+   * Fixed when scrolled (sticks to top).
+   */
+  position: ${(props) => (props.$isScrolled ? "fixed" : "absolute")};
+  
+  /* 
+   * DESKTOP TOP LOGIC (> 768px):
+   * Includes topOffset because banner is visible.
+   */
+  top: ${(props) => {
+    const baseTop = props.$isImpersonating ? 40 : 0;
+    const offset = props.$isScrolled ? 0 : (props.$topOffset || 0);
+    return `${baseTop + offset}px`;
+  }};
+  
   left: 0;
   right: 0;
   align-items: center;
-  transition: all 0.3s ease-in-out;
+  
+  transition: background-color 0.3s ease, padding 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
   z-index: 999;
+
+  /* 
+   * FIX: INTERMEDIATE TABLET RANGE (757px - 768px)
+   * The Banner hides at 768px. Even if we are in "Desktop Style" header mode,
+   * we must remove the topOffset here because the banner is gone.
+   */
+  @media (min-width: 757px) and (max-width: 768px) {
+    top: ${(props) => (props.$isImpersonating ? "40px" : "0px")};
+  }
 
   @media (min-width: 757px) {
     ${(props) =>
-      props.$isScrolled &&
-      `
+    props.$isScrolled &&
+    `
       background-color: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(12px) saturate(180%);
       -webkit-backdrop-filter: blur(12px) saturate(180%);
@@ -63,17 +86,29 @@ const HeaderWrapper = styled.header`
     `}
   }
 
+  /* MOBILE STYLES */
   @media (max-width: 756px) {
     width: calc(100% - 2rem);
     left: 1rem;
     right: 1rem;
-    top: ${(props) => (props.$isImpersonating ? "48px" : "0.5rem")};
+    
+    /* 
+     * FIX: MOBILE TOP LOGIC (<= 756px)
+     * We purposefully ignore props.$topOffset here because the banner
+     * is hidden via display:none on mobile.
+     */
+    top: ${(props) => {
+    const baseTop = props.$isImpersonating ? 48 : 8;
+    // Offset ignored, banner is hidden
+    return `${baseTop}px`;
+  }};
+
     border-radius: 9999px;
     padding: 0.5rem 1rem;
     background-color: ${(props) =>
-      props.$isScrolled
-        ? "rgba(255, 255, 255, 0.4)"
-        : "rgba(255, 255, 255, 0.15)"};
+    props.$isScrolled
+      ? "rgba(255, 255, 255, 0.4)"
+      : "rgba(255, 255, 255, 0.15)"};
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04),
@@ -87,7 +122,7 @@ const NotchContainer = styled(motion.div)`
   position: fixed;
   left: 50%;
   transform: translateX(-50%); 
-  top: 75px; 
+  top: 75px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -115,7 +150,7 @@ const NotchText = styled.div`
   text-align: left;
   line-height: 1.2;
   flex: 1;
-  min-width: 0; /* Allows children to truncate correctly within flex container */
+  min-width: 0;
 `;
 
 const NotchTitle = styled.span`
@@ -126,7 +161,7 @@ const NotchTitle = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: block; /* Required for ellipsis */
+  display: block; 
 `;
 
 const NotchSubtitle = styled.span`
@@ -146,7 +181,7 @@ const NotchIcon = styled.div`
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   color: #222;
-  flex-shrink: 0; /* Prevent icon from squishing */
+  flex-shrink: 0; 
 `;
 
 const LogoLink = styled(Link)`
@@ -225,7 +260,7 @@ const UserAvatar = ({ size = 28 }) => {
 
   if (!currentUser?.avatar_thumb_url || imageFailed) {
     return (
-      <div style={{ width: size, height: size, borderRadius: '50%', backgroundColor: '#ff385c', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600, fontSize: size/2.5 }}>
+      <div style={{ width: size, height: size, borderRadius: '50%', backgroundColor: '#ff385c', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600, fontSize: size / 2.5 }}>
         {initials}
       </div>
     );
@@ -242,6 +277,7 @@ const Header = ({
   dropdownButtonColor = "#fff",
   dropdownButtonHoverColor = "#d3000e",
   dropdownButtonOutlineColor = "#fff",
+  topOffset = 0, // PROP: Height of the banner
 }) => {
   const router = useRouter();
   const { user: currentUser } = useAuthUser();
@@ -253,23 +289,30 @@ const Header = ({
   const isImpersonating = currentUser?.is_impersonating || false;
 
   // --- SHARED SEARCH STATE ---
-  const { 
-    searchTerm, 
-    datePickerValue, 
+  const {
+    searchTerm,
+    datePickerValue,
     participantCount,
-    setIsDrawerOpen 
+    setIsDrawerOpen
   } = useSearch();
 
   // Scroll Listener
   useEffect(() => {
+    // If topOffset is 0, we default to 100px so the glass effect doesn't start instantly.
+    // We stick to the passed offset even on mobile for consistency in scroll behavior,
+    // though the layout positioning is handled by CSS.
+    const scrollThreshold = topOffset > 0 ? topOffset : 100;
+
     const checkScrollPosition = () => {
-        setIsScrolled(window.pageYOffset > 100);
+      setIsScrolled(window.pageYOffset >= scrollThreshold);
     };
     checkScrollPosition();
-    const handleScroll = debounce(checkScrollPosition, 10);
+    // Using 5ms debounce for smoother response to fast scrolls
+    const handleScroll = debounce(checkScrollPosition, 5);
+
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [topOffset]);
 
   // Computed Colors
   const currentIconColor = isScrolled ? scrolledStyling.outlineAndIconColor : dropdownButtonColor;
@@ -278,7 +321,12 @@ const Header = ({
 
   return (
     <>
-      <HeaderWrapper $isScrolled={isScrolled} $initialColor={logoTitleColor} $isImpersonating={isImpersonating}>
+      <HeaderWrapper
+        $isScrolled={isScrolled}
+        $initialColor={logoTitleColor}
+        $isImpersonating={isImpersonating}
+        $topOffset={topOffset}
+      >
         {/* LOGO */}
         <LogoLink href="/">
           <LogoContainer $isScrolled={isScrolled}>
@@ -293,55 +341,55 @@ const Header = ({
 
         {/* AUTH / MENU */}
         <Selection>
-            <AnimatePresence mode="wait">
-                {currentUser ? (
-                  <AuthContainer key="auth">
-                    <RoundedButton 
-                        onClick={() => setIsMenuOpen(!isMenuOpen)} 
-                        ref={menuTriggerRef}
-                        color={currentTextColor} 
-                        $borderColor={currentBorderColor} 
-                        $isScrolled={isScrolled}
-                    >
-                      <MenuIconStyled $iconColor={currentIconColor} />
-                      <AvatarWrapper><UserAvatar size={32} /></AvatarWrapper>
-                    </RoundedButton>
-                    <CustomUserMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} onNavigate={(p) => { setIsMenuOpen(false); router.push(p); }} onShowSettings={() => { setIsMenuOpen(false); setIsSettingsModalOpen(true); }} triggerRef={menuTriggerRef} />
-                  </AuthContainer>
-                ) : (
-                  <AuthContainer key="guest">
-                    <AuthLink onClick={openLoginModal} color={currentTextColor} $borderColor={currentBorderColor} $hoverColor={dropdownButtonHoverColor} $isScrolled={isScrolled}>Log In</AuthLink>
-                    <AuthLink onClick={openRegisterModal} color={currentTextColor} $borderColor={currentBorderColor} $hoverColor={dropdownButtonHoverColor} $isScrolled={isScrolled}>Sign Up</AuthLink>
-                  </AuthContainer>
-                )}
-            </AnimatePresence>
+          <AnimatePresence mode="wait">
+            {currentUser ? (
+              <AuthContainer key="auth">
+                <RoundedButton
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  ref={menuTriggerRef}
+                  color={currentTextColor}
+                  $borderColor={currentBorderColor}
+                  $isScrolled={isScrolled}
+                >
+                  <MenuIconStyled $iconColor={currentIconColor} />
+                  <AvatarWrapper><UserAvatar size={32} /></AvatarWrapper>
+                </RoundedButton>
+                <CustomUserMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} onNavigate={(p) => { setIsMenuOpen(false); router.push(p); }} onShowSettings={() => { setIsMenuOpen(false); setIsSettingsModalOpen(true); }} triggerRef={menuTriggerRef} />
+              </AuthContainer>
+            ) : (
+              <AuthContainer key="guest">
+                <AuthLink onClick={openLoginModal} color={currentTextColor} $borderColor={currentBorderColor} $hoverColor={dropdownButtonHoverColor} $isScrolled={isScrolled}>Log In</AuthLink>
+                <AuthLink onClick={openRegisterModal} color={currentTextColor} $borderColor={currentBorderColor} $hoverColor={dropdownButtonHoverColor} $isScrolled={isScrolled}>Sign Up</AuthLink>
+              </AuthContainer>
+            )}
+          </AnimatePresence>
         </Selection>
       </HeaderWrapper>
 
       {/* NOTCH SEARCH PILL */}
       <AnimatePresence>
-          {isScrolled && (
-              <NotchContainer
-                  initial={{ y: -40, scale: 0.85, opacity: 0, x: "-50%" }}
-                  animate={{ y: 0, scale: 1, opacity: 1, x: "-50%" }}
-                  exit={{ y: -20, scale: 0.9, opacity: 0, x: "-50%" }}
-                  transition={{ type: "spring", stiffness: 400, damping: 18, mass: 0.8 }}
-                  onClick={() => setIsDrawerOpen(true)}
-                  whileTap={{ scale: 0.98 }}
-              >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-                      <NotchText>
-                          <NotchTitle>{searchTerm || "Find a class?"}</NotchTitle>
-                          <NotchSubtitle>
-                              {datePickerValue ? dayjs(datePickerValue).format("MMM D") : "Any week"} • {participantCount} guests
-                          </NotchSubtitle>
-                      </NotchText>
-                      <NotchIcon>
-                          <Search size={18} strokeWidth={2.5} />
-                      </NotchIcon>
-                  </div>
-              </NotchContainer>
-          )}
+        {isScrolled && (
+          <NotchContainer
+            initial={{ y: -40, scale: 0.85, opacity: 0, x: "-50%" }}
+            animate={{ y: 0, scale: 1, opacity: 1, x: "-50%" }}
+            exit={{ y: -20, scale: 0.9, opacity: 0, x: "-50%" }}
+            transition={{ type: "spring", stiffness: 400, damping: 18, mass: 0.8 }}
+            onClick={() => setIsDrawerOpen(true)}
+            whileTap={{ scale: 0.98 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+              <NotchText>
+                <NotchTitle>{searchTerm || "Find a class?"}</NotchTitle>
+                <NotchSubtitle>
+                  {datePickerValue ? dayjs(datePickerValue).format("MMM D") : "Any week"} • {participantCount} guests
+                </NotchSubtitle>
+              </NotchText>
+              <NotchIcon>
+                <Search size={18} strokeWidth={2.5} />
+              </NotchIcon>
+            </div>
+          </NotchContainer>
+        )}
       </AnimatePresence>
 
       <SettingsModal open={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />

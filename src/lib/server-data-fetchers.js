@@ -863,28 +863,43 @@ export function generateBusinessBreadcrumbStructuredData(businessData) {
  */
 export async function preloadHomepageData() {
   try {
-    const [classesData, categoriesData] = await Promise.allSettled([
-      fetchInitialClasses(),
-      fetchHomepageCategories(),
-    ]);
+    // Determine the API URL based on environment
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    
+    // Fetch the aggregated homepage content
+    const res = await fetch(`${API_URL}/classes/homepage-content/?featured_category=art-drawing`, { 
+      next: { revalidate: 3600 } // Revalidate every hour
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to fetch homepage data');
+    }
+
+    const data = await res.json();
+    
+    // Fetch categories for the pills menu
+    const catRes = await fetch(`${API_URL}/categories/`, {
+      next: { revalidate: 86400 } // Cache categories for 24h
+    });
+    const categories = catRes.ok ? await catRes.json() : [];
 
     return {
-      classes: classesData.status === 'fulfilled' 
-        ? classesData.value 
-        : { classes: [], nextPageUrl: null },
-      categories: categoriesData.status === 'fulfilled' 
-        ? categoriesData.value 
-        : { success: false, data: [] },
+      trending: data.trending || [],
+      newClasses: data.new || [],
+      featuredCategory: data.featured_category || [],
+      categories: categories
     };
   } catch (error) {
-    console.error('Error preloading homepage data:', error);
+    console.error("Homepage data fetch error:", error);
     return {
-      classes: { classes: [], nextPageUrl: null },
-      categories: { success: false, data: [] },
+      trending: [],
+      newClasses: [],
+      featuredCategory: [],
+      categories: []
     };
   }
 }
-5
+
 /**
  * Fetch business categories for footer
  * Endpoint: /business/all-categories/

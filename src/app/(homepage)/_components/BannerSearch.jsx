@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import styled, { createGlobalStyle } from "styled-components";
 import { Typography, Select, DatePicker, AutoComplete } from "antd";
 import {
   Search,
-  CalendarSearch,
-  Users,
   MapPin,
+  ChevronDown,
+  ArrowRight,
+  Star
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -16,13 +17,15 @@ import Image from "next/image";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 import { useSearch, SUGGESTED_AREAS } from "@/context/SearchContext";
 import SearchDrawer from "@/components/common/SearchDrawer";
+import Link from "next/link";
 
 // --- GLOBAL STYLES (Desktop Specific) ---
 
 const BannerSearchDropdownStyles = createGlobalStyle`
   /* Desktop Styles */
   .banner-search-location-dropdown.ant-select-dropdown,
-  .banner-search-datepicker.ant-picker-dropdown {
+  .banner-search-datepicker.ant-picker-dropdown,
+  .participant-count-dropdown {
     z-index: 10005 !important;
   }
 
@@ -124,7 +127,7 @@ const SecondaryText = styled.div`
 const Banner = styled.section`
   display: flex;
   position: relative;
-  min-height: 85vh;
+  min-height: 55vh;
   background-color: #000;
   overflow: hidden;
   justify-content: center;
@@ -153,7 +156,6 @@ const FilteredBackgroundImage = styled.div`
   animation: fadeIn 0.6s ease-in forwards;
   animation-delay: 0.1s;
   
-  /* CSS-based visibility toggling */
   display: none;
   @media (max-width: 1088px) {
     display: block;
@@ -187,7 +189,6 @@ const Video = styled.video`
   background-color: #000;
   z-index: 0;
 
-  /* CSS-based visibility toggling */
   display: block;
   @media (max-width: 1088px) {
     display: none;
@@ -201,7 +202,6 @@ const DesktopContainer = styled.div`
   display: flex;
   justify-content: center;
   
-  /* Controlled via CSS to match SSR */
   @media (max-width: 1088px) {
     display: none;
   }
@@ -211,7 +211,7 @@ const MainWrapper = styled.div`
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: left;
+  justify-content: center;
   gap: 5rem;
   color: ${(props) => props.theme.token.colorHeaderText};
   z-index: 1;
@@ -223,16 +223,19 @@ const MainWrapper = styled.div`
 const MainContent = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
+  text-align: center;
   color: ${(props) => props.theme.token.colorHeaderText};
   z-index: 1;
   padding: 5rem 0;
+  width: 100%;
 `;
 
 const HeroText = styled.h1`
   font-weight: 900;
-  font-size: 6.5rem;
+  letter-spacing: -1px;
+  font-size: 4rem;
   margin: 0;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
   line-height: 1.1;
@@ -241,154 +244,114 @@ const HeroText = styled.h1`
 
 const SubText = styled.p`
   margin: 0;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
   font-size: 1.4rem;
   font-weight: 500;
+  letter-spacing: -1px;
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
   max-width: 600px;
   color: inherit;
+  margin-left: auto;
+  margin-right: auto;
+`;
+
+const HowItWorksButton = styled.button`
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  text-underline-offset: 2px;
+  justify-content: center;
+  gap: 6px;
+  transition: opacity 0.3s ease;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+
+  /* Ensures the icon sits perfectly centered relative to the text cap-height */
+  svg {
+    display: block;
+    transform: translateY(1px); 
+  }
+
+  &:hover {
+    opacity: 0.8;
+  }
 `;
 
 const InputsWrapper = styled.form`
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   position: relative;
   gap: 0.4rem;
   z-index: 1;
+  width: 100%;
 `;
 
-const ClippedBackground = styled.div`
-  position: absolute;
-  top: -5px;
-  left: -20px;
-  width: calc(100% + 40px);
-  height: calc(100% + 10px);
-  background-color: ${(props) => props.theme.token.colorBgContainer};
-  z-index: -1;
-  border-radius: 10px;
-  clip-path: path(
-    "M 230,65 L 170,65 A 30,30 0 0,1 151,45 L 150,30 A 30,30 0 0,0 125,0 L 10,0 A 10,10 0 0,0 0,10 L 0,190 A 10,10 0 0,0 10,200 L 190,210 A 10,10 0 0,0 240,190 L 240,65 A 10,10 0 0,0 270,65 Z"
-  );
-
-  @supports not (clip-path: path("")) {
-    border-radius: 30px;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-  }
-`;
-
-const ParticipantInputContainer = styled.div`
-  display: flex;
-  flex-direction: row;
-  width: fit-content;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.4rem;
-  padding-left: 1.8rem;
-  top: 7px;
-  background: ${(props) => props.theme.token.colorBgContainer};
-  border-radius: 10rem;
-  color: ${(props) => props.theme.token.colorText};
-  z-index: 1;
-  position: relative;
-`;
-
-const StyledParticipantSelect = styled(Select)`
-  border: none !important;
-  box-shadow: none !important;
-  outline: none !important;
-  background: transparent !important;
-  top: 7px !important;
-  min-width: 40px;
-  color: ${(props) => props.theme.token.colorText} !important;
-
-  .ant-select-selector {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-    padding: 0 0 0 3px !important;
-    height: 25px !important;
-    padding-left: 9px !important;
-    min-height: 25px !important;
-    border-bottom: 1px solid ${(props) => props.theme.token.colorBorder} !important;
-    border-radius: 0 !important;
-    display: flex;
-    align-items: center;
-    font-size: 14px !important;
-  }
-
-  .ant-select-arrow {
-    top: 35% !important; 
-    right: 0px !important;
-  }
-`;
-
-// Placeholder for SSR to avoid FOUC
-const ParticipantPlaceholder = styled.div`
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  height: 25px;
-  padding-left: 12px;
-  min-width: 80px;
-  color: ${(props) => props.theme.token.colorText};
-  border-bottom: 1px solid transparent; /* Maintains height consistency */
-`;
-
-const SelectorsWrapper = styled.div`
+const SearchBarContainer = styled.div`
   display: flex;
   justify-content: left;
-  gap: 1rem;
+  gap: 0;
   align-items: center;
   background: ${(props) => props.theme.token.colorBgContainer};
   width: fit-content;
   padding: 0.5rem;
-  padding-right: 1rem;
-  border-radius: 10rem;
+  padding-right: 0.5rem;
+  border-radius: 100px;
   position: relative;
   z-index: 1;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 `;
 
+const LabelText = styled.div`
+  font-size: 0.75rem; /* Smaller size */
+  font-weight: 500; /* Reduced weight from 700 */
+  color: #5e5e5e; /* Lighter gray */
+  margin-bottom: 0px;
+  line-height: 1.2;
+`;
+
+/* Location Field Styles */
 const LocationSearchWrapper = styled.div`
   flex-grow: 1;
 `;
 
 const LocationWrapper = styled.div`
   display: flex;
-  flex-direction: row;
+  flex-direction: column; /* Stack label and input */
   align-items: flex-start;
-  padding: 0.9rem;
-  padding-left: 1.4rem;
-  border-radius: 40px;
-  background-color: #fff;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  padding-left: 1.5rem; /* Extra padding since icon is gone */
+  background-color: transparent;
   color: #000;
-  overflow: hidden;
-  min-width: 220px;
-  max-width: 220px;
+  overflow: visible;
+  min-width: 240px;
+  max-width: 240px;
   transition: 0.3s all;
 
-  /* HIDE THE X (CLEAR ICON) */
   .ant-select-clear {
     display: none !important;
   }
 
-  /* Ant Select Reset */
   .ant-select {
     width: 100%;
-    height: 25px !important;
+    height: 24px !important;
     border: none !important;
     box-shadow: none !important;
     outline: none !important;
     background: transparent !important;
     border-radius: 0 !important;
-    border-bottom: 1px solid ${(props) => props.theme.token.colorBorder} !important;
+    /* Removed border-bottom to match clean style */
+    border-bottom: 1px solid transparent !important; 
     transition: border-bottom-color 0.3s;
 
-    /* Added &:hover to ensure consistency */
     &.ant-select-focused,
     &:focus-within,
     &:hover {
@@ -409,46 +372,30 @@ const LocationWrapper = styled.div`
     background: transparent;
     outline: none;
     padding: 0;
-    font-size: 14px !important;
+    font-size: 15px !important; /* Slightly larger input text */
+    font-weight: 600; /* Bold input text */
     font-family: inherit !important;
     color: ${(props) => props.theme.token.colorText} !important;
 
     &::placeholder {
       color: #bfbfbf !important; 
-      font-family: inherit !important;
+      font-weight: 400;
       opacity: 1;
     }
   }
 `;
 
-// Placeholder that looks exactly like the input
-const InputPlaceholder = styled.div`
-  width: 100%;
-  height: 25px;
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid ${(props) => props.theme.token.colorBorder};
-  font-size: 14px;
-  color: #bfbfbf; /* Placeholder color */
-`;
-
-const DateAndSearchWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  border-left: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
-  padding-left: 0.7rem;
-`;
-
+/* Date Field Styles */
 const DatePickerWrapper = styled.div`
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.7rem;
-  border-radius: 10rem;
-  background: ${(props) => props.theme.token.colorBgContainer};
-  padding: 1rem;
+  flex-direction: column; /* Stack label and input */
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background: transparent;
   width: auto;
+  min-width: 150px;
+  border-left: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
 `;
 
 const DatePickerInputArea = styled.div`
@@ -456,53 +403,160 @@ const DatePickerInputArea = styled.div`
   flex-direction: column;
   align-items: flex-start;
   flex-grow: 1;
+  width: 100%;
 
   .ant-picker {
-    padding-left: 2px !important;
+    padding-left: 0px !important;
     border-radius: 0rem !important;
-    height: 25px !important;
-    width: 120px !important;
+    height: 24px !important;
+    width: 100% !important;
     box-shadow: none !important;
     background: transparent !important;
     border: none !important;
-    border-bottom: 1px solid ${(props) => props.theme.token.colorBorder} !important;
-    transition: border-bottom-color 0.3s;
+    border-bottom: 1px solid transparent !important;
 
-    /* Added &:hover to match Location field */
     &.ant-picker-focused,
     &:focus,
     &:focus-within,
     &:hover {
-      border-bottom-color: ${(props) => props.theme.token.colorPrimary} !important;
       box-shadow: none !important;
       outline: none !important;
     }
   }
 
   .ant-picker-input > input {
-    height: 23px !important;
-    padding-bottom: 2px;
-    font-size: 14px !important;
+    height: 24px !important;
+    font-size: 15px !important;
+    font-weight: 600;
     font-family: inherit !important;
     color: ${(props) => props.theme.token.colorText} !important;
 
     &::placeholder {
       color: #bfbfbf !important;
-      font-family: inherit !important;
-      opacity: 1;
+      font-weight: 400;
     }
   }
 `;
 
-// Changed from styled(Typography.Text) to styled.label to avoid Theme Context dependency during SSR
-const DatePickerLabel = styled.label`
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #1a1a1a; /* Hardcoded fallback to ensure visibility */
-  margin-bottom: 0;
+const DatePickerLabel = styled(LabelText)`
   cursor: pointer;
   display: block;
   font-family: "ProximaSoft", sans-serif;
+`;
+
+/* Participants Field Styles */
+const ParticipantInputContainer = styled.div`
+  display: flex;
+  flex-direction: column; /* Stack label and input */
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  color: ${(props) => props.theme.token.colorText};
+  position: relative;
+  min-width: 120px;
+  border-left: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
+`;
+
+const StyledParticipantSelect = styled(Select)`
+  width: 100%;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+  color: ${(props) => props.theme.token.colorText} !important;
+  font-family: inherit !important;
+
+  /* Fix for alignment and height */
+  &.ant-select-single {
+    height: 24px !important; 
+    margin-left: -1px; /* Micro-adjustment to align perfectly with plain text labels */
+  }
+
+  /* Target the selector container */
+  .ant-select-selector {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    
+    /* Reset all padding variations */
+    padding: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-inline-start: 0 !important;
+    padding-inline-end: 0 !important;
+    
+    height: 24px !important;
+    border-bottom: 1px solid transparent !important;
+    display: flex;
+    align-items: center;
+    font-size: 15px !important;
+    font-family: inherit !important;
+  }
+
+  /* Target the visible text */
+  .ant-select-selection-item {
+    /* Remove internal offsets */
+    padding: 0 !important;
+    padding-inline-start: 0 !important;
+    padding-left: 0 !important;
+    margin: 0 !important;
+    
+    /* Force position to left */
+    inset-inline-start: 0 !important;
+    left: 0 !important;
+    
+    line-height: 24px !important;
+    font-family: inherit !important;
+    font-weight: 600 !important;
+    color: ${(props) => props.theme.token.colorText} !important;
+    
+    /* Ensure flex alignment behavior */
+    display: flex !important;
+    align-items: center;
+  }
+
+  /* Target the hidden search input which sometimes reserves space */
+  .ant-select-selection-search {
+    inset-inline-start: 0 !important;
+    left: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 0 !important; /* Collapse width if not searching */
+  }
+
+  .ant-select-selection-search-input {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .ant-select-arrow {
+    right: -5px !important;
+    color: #bfbfbf;
+  }
+`;
+
+// Placeholder for SSR to avoid FOUC
+const ParticipantPlaceholder = styled.div`
+  display: flex;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 600;
+  height: 24px;
+  padding-left: 0;
+  min-width: 80px;
+  color: ${(props) => props.theme.token.colorText};
+  font-family: inherit;
+`;
+
+const InputPlaceholder = styled.div`
+  width: 100%;
+  height: 24px;
+  display: flex;
+  align-items: left;
+  font-size: 15px;
+  color: #bfbfbf; 
 `;
 
 const RoundedSearchButton = styled(motion.button)`
@@ -519,7 +573,7 @@ const RoundedSearchButton = styled(motion.button)`
   );
   color: ${(props) => props.theme.token.colorHeaderText};
   cursor: pointer;
-  scale: 1.3;
+  scale: 1.1;
   margin-left: 0.5rem;
   overflow: hidden;
   flex-shrink: 0;
@@ -527,7 +581,7 @@ const RoundedSearchButton = styled(motion.button)`
   outline: none;
 
   &:hover {
-    scale: 1.35;
+    scale: 1.15;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
 `;
@@ -535,6 +589,7 @@ const RoundedSearchButton = styled(motion.button)`
 const ButtonText = styled.div`
   display: flex;
   justify-content: space-between;
+  width: 100%;
 `;
 
 // --- MOBILE SPECIFIC COMPONENTS ---
@@ -542,7 +597,6 @@ const ButtonText = styled.div`
 const MobileContainer = styled.div`
   width: 100%;
   padding: 1rem 1.5rem;
-  /* Controlled via CSS to match SSR */
   display: none;
   flex-direction: column;
   align-items: center;
@@ -637,11 +691,394 @@ const BLACK_PIXEL =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
 // ------------------------------------------------------------------------
-//  INTERNAL COMPONENTS: Separating Dynamic Logic from Static Layout
+//  ANNOUNCEMENT BANNER COMPONENTS
 // ------------------------------------------------------------------------
 
-// 1. Desktop Logic
-//    Contains useSearch() and other hooks that might fail SSR
+const BannerWrapper = styled.div`
+  position: relative;
+  width: 100%;
+  background-color: #7a1f2e; /* Muted deep red */
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Centered content max-width container */
+  z-index: 1001;
+  padding: 10px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-height: 56px;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const BannerContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1200px;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const LeftContent = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  font-family: "ProximaSoft", sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+
+  @media (max-width: 900px) {
+    font-size: 13px;
+  }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const IconBox = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  margin-top: 2px; /* Visual alignment fix */
+`;
+
+const TextContent = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+
+  strong {
+    font-weight: 700;
+  }
+  
+  span {
+    opacity: 0.95;
+  }
+`;
+
+const DesktopDescription = styled.span`
+  display: inline;
+  @media (max-width: 600px) {
+    display: none; /* Hide long text on very small screens to save space */
+  }
+`;
+
+const ActionGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+const PillButton = styled(Link)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 100px;
+  padding: 6px 20px;
+  font-family: "ProximaSoft", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  background: transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: #ffffff;
+    color: #7a1f2e;
+    border-color: #ffffff;
+  }
+`;
+
+const SecondaryLink = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "ProximaSoft", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+
+  &:hover {
+    opacity: 1;
+    color: #ffffff;
+    text-decoration: underline;
+  }
+
+  svg {
+    transition: transform 0.2s ease;
+  }
+
+  &:hover svg {
+    transform: translateX(3px);
+  }
+`;
+
+export const AnnouncementBanner = () => {
+  return (
+    <BannerWrapper>
+      <BannerContainer>
+        {/* Left Side: Icon + Text */}
+        <LeftContent>
+          <IconBox>
+            <lord-icon
+              src="https://cdn.lordicon.com/yxsbonud.json"
+              trigger="in"
+              state="in-reveal"
+              style={{ width: "24px", height: "24px" }}>
+              
+          </lord-icon>
+          </IconBox>
+          <TextContent>
+            <strong>Introducing Courses</strong>
+            <span>&mdash;</span>
+            <DesktopDescription>
+              Book courses with multiple sessions at once. Perfect for learning new skills. 🔥
+            </DesktopDescription>
+          </TextContent>
+        </LeftContent>
+
+        {/* Right Side: Buttons */}
+        <ActionGroup>
+          {/* Main Call to Action (The Pill Button) */}
+          <PillButton href="/explore?type=course">
+            Find a Course
+          </PillButton>
+
+          {/* Secondary Action (Text Link) */}
+          <SecondaryLink href="/host/courses">
+            Business? <ArrowRight size={14} />
+          </SecondaryLink>
+        </ActionGroup>
+      </BannerContainer>
+    </BannerWrapper>
+  );
+};
+
+// ------------------------------------------------------------------------
+//  BOTTOM TRUST BANNER STYLES
+// ------------------------------------------------------------------------
+
+const TrustStripWrapper = styled.div`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 10;
+  /* Glassmorphism base for the rectangle part */
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 1.25rem 1.5rem;
+  
+  @media (max-width: 600px) {
+    padding: 1rem;
+  }
+`;
+
+const WaveContainer = styled.div`
+  position: absolute;
+  top: -25px; 
+  left: 0;
+  width: 100%;
+  height: 25px;
+  overflow: hidden;
+  z-index: 11;
+  pointer-events: none;
+  
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    
+    fill: rgba(0, 0, 0, 0.45); 
+  }
+`;
+
+const TrustContent = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  max-width: 1200px;
+  width: 100%;
+  position: relative;
+
+  @media (max-width: 800px) {
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+`;
+
+// -- AVATAR PILE STYLES --
+
+const AvatarPile = styled.div`
+  display: flex;
+  align-items: center;
+  /* Add padding to account for the jittery offsets not getting cut off */
+  padding: 5px 0;
+  
+  /* On very small screens, hide avatars to reduce clutter */
+  @media (max-width: 600px) {
+    display: none; 
+  }
+`;
+
+const AvatarItem = styled.div`
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.8);
+  overflow: hidden;
+  margin-left: -12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  
+  &:first-child {
+    margin-left: 0;
+  }
+`;
+
+// -- CENTER TEXT STYLES --
+
+const CenterInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  
+  @media (max-width: 600px) {
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+  }
+`;
+
+const StarCluster = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  
+  svg {
+    fill: #FFD700;
+    color: #FFD700;
+    filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.5));
+  }
+`;
+
+const TrustText = styled.div`
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+
+  .title {
+    color: #fff;
+    font-family: 'ProximaSoft', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .subtitle {
+    color: rgba(255, 255, 255, 0.8);
+    font-family: 'ProximaSoft', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+  }
+`;
+
+const BottomTrustBanner = () => {
+  // Placeholder images for the "Community" vibe
+  const avatarsLeft = [
+    "https://i.pravatar.cc/150?img=32",
+    "https://i.pravatar.cc/150?img=12",
+    "https://i.pravatar.cc/150?img=5"
+  ];
+  
+  const avatarsRight = [
+    "https://i.pravatar.cc/150?img=9",
+    "https://i.pravatar.cc/150?img=24",
+    "https://i.pravatar.cc/150?img=68"
+  ];
+
+  // Helper to jitter avatars so they aren't a straight line
+  const getRandomOffset = (index) => {
+    // Simple deterministic pattern to avoid hydration mismatch random() issues
+    const offsets = [0, -4, 3, -2, 5, -3]; 
+    return offsets[index % offsets.length];
+  };
+
+  return (
+    <TrustStripWrapper>
+      {/* Decorative Uneven Glass Wave on Top */}
+      <WaveContainer>
+         <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+             <path d="M0,100 C150,200 350,0 500,100 C650,200 800,0 1000,100 C1100,150 1200,100 1200,100 V120 H0 V100 Z"></path>
+         </svg>
+      </WaveContainer>
+
+      <TrustContent>
+        {/* Left Side Faces */}
+        <AvatarPile>
+          {avatarsLeft.map((src, i) => (
+            <AvatarItem key={i} style={{ transform: `translateY(${getRandomOffset(i)}px)` }}>
+              <Image src={src} alt="User" width={36} height={36} style={{objectFit:'cover'}} />
+            </AvatarItem>
+          ))}
+        </AvatarPile>
+
+        {/* Center Text & Stars */}
+        <CenterInfo>
+          <StarCluster>
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} size={20} strokeWidth={0} />
+            ))}
+          </StarCluster>
+          <TrustText>
+            {/* Swapped to a Statement of Fact (Social Proof) instead of an Invitation */}
+            <span className="title">Thousands of 5-star experiences</span>
+            <span className="subtitle">A growing community of learners & hosts</span>
+          </TrustText>
+        </CenterInfo>
+
+        {/* Right Side Faces */}
+        <AvatarPile>
+          {avatarsRight.map((src, i) => (
+            <AvatarItem key={i} style={{ transform: `translateY(${getRandomOffset(i + 3)}px)` }}>
+              <Image src={src} alt="User" width={36} height={36} style={{objectFit:'cover'}} />
+            </AvatarItem>
+          ))}
+        </AvatarPile>
+      </TrustContent>
+    </TrustStripWrapper>
+  );
+};
+
+
+// ------------------------------------------------------------------------
+//  INTERNAL COMPONENTS
+// ------------------------------------------------------------------------
+
 const DesktopSearchForm = () => {
   const {
     searchTerm,
@@ -713,42 +1150,14 @@ const DesktopSearchForm = () => {
 
   return (
     <InputsWrapper onSubmit={handleDesktopSubmit}>
-      <ClippedBackground />
-      
-      <ParticipantInputContainer>
-        <Users size={20} color="#000" aria-hidden="true" />
-        <StyledParticipantSelect
-          id="participant-count"
-          value={participantCount}
-          onChange={setParticipantCount}
-          aria-label="Number of participants"
-          options={participantOptions}
-          variant="borderless"
-          popupClassName="participant-count-dropdown"
-          popupMatchSelectWidth={false}
-          dropdownStyle={{ minWidth: "80px" }}
-        />
-      </ParticipantInputContainer>
-
-      <SelectorsWrapper>
+      <SearchBarContainer>
+        {/* SECTION 1: LOCATION */}
         <LocationSearchWrapper>
           <LocationWrapper>
-            <MapPin
-              style={{
-                marginRight: "0.5rem",
-                marginTop: "0.5rem",
-                flexShrink: 0,
-              }}
-              color="black"
-              size={25}
-            />
+            {/* REMOVED MapPin ICON */}
             <div style={{ width: "100%" }}>
               <ButtonText>
-                <Typography.Text
-                  style={{ fontSize: "0.9rem", fontWeight: "700" }}
-                >
-                  Location
-                </Typography.Text>
+                <LabelText>Location</LabelText>
               </ButtonText>
               
               <AutoComplete
@@ -759,7 +1168,7 @@ const DesktopSearchForm = () => {
                 filterOption={false}
                 style={{
                   width: "100%",
-                  height: "25px",
+                  height: "24px",
                 }}
                 popupClassName="banner-search-location-dropdown"
                 notFoundContent={
@@ -779,52 +1188,67 @@ const DesktopSearchForm = () => {
               >
                 <input
                   className="banner-search-input"
-                  placeholder="City or address"
+                  placeholder="Where are you looking?"
                 />
               </AutoComplete>
             </div>
           </LocationWrapper>
         </LocationSearchWrapper>
 
-        <DateAndSearchWrapper>
-          <DatePickerWrapper>
-            <CalendarSearch color="#000" size={20} aria-hidden="true" />
-            <DatePickerInputArea>
-              <DatePickerLabel htmlFor="date-picker">
-                Date
-              </DatePickerLabel>
-              <DatePicker
-                id="date-picker"
-                name="date-picker"
-                variant="borderless"
-                placeholder="Whenever"
-                disabledDate={(current) =>
-                  current && current < dayjs().startOf("day")
-                }
-                onChange={setDatePickerValue}
-                format="YYYY-MM-DD"
-                value={datePickerValue}
-                allowClear={true}
-                inputReadOnly={false}
-                popupClassName="banner-search-datepicker"
-              />
-            </DatePickerInputArea>
-          </DatePickerWrapper>
+        {/* SECTION 2: DATE */}
+        <DatePickerWrapper>
+          {/* REMOVED CalendarSearch ICON */}
+          <DatePickerInputArea>
+            <DatePickerLabel htmlFor="date-picker">
+              Date
+            </DatePickerLabel>
+            <DatePicker
+              id="date-picker"
+              name="date-picker"
+              variant="borderless"
+              placeholder="Any date"
+              disabledDate={(current) =>
+                current && current < dayjs().startOf("day")
+              }
+              onChange={setDatePickerValue}
+              format="YYYY-MM-DD"
+              value={datePickerValue}
+              allowClear={true}
+              inputReadOnly={false}
+              popupClassName="banner-search-datepicker"
+            />
+          </DatePickerInputArea>
+        </DatePickerWrapper>
 
-          <RoundedSearchButton
-            type="submit"
-            aria-label="Search classes"
-          >
-            <Search size={20} />
-          </RoundedSearchButton>
-        </DateAndSearchWrapper>
-      </SelectorsWrapper>
+        {/* SECTION 3: PARTICIPANTS */}
+        <ParticipantInputContainer>
+          <LabelText>Participants</LabelText>
+          <StyledParticipantSelect
+            id="participant-count"
+            value={participantCount}
+            onChange={setParticipantCount}
+            aria-label="Number of participants"
+            options={participantOptions}
+            variant="borderless"
+            popupClassName="participant-count-dropdown"
+            popupMatchSelectWidth={false}
+            dropdownStyle={{ minWidth: "80px" }}
+          />
+        </ParticipantInputContainer>
+
+        {/* SECTION 4: BUTTON */}
+        <RoundedSearchButton
+          type="submit"
+          aria-label="Search classes"
+        >
+          <Search size={20} />
+        </RoundedSearchButton>
+      </SearchBarContainer>
     </InputsWrapper>
   );
 };
 
 // 2. Mobile Logic
-//    Uses useSearch() for the Drawer interaction
 const MobileSearchPill = () => {
   const {
     searchTerm,
@@ -873,42 +1297,45 @@ const BannerSearch = () => {
     setIsMounted(true);
   }, []);
 
+  const scrollToHowItWorks = () => {
+    const section = document.getElementById("how-it-works");
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   // 3. Fallbacks (STATIC HTML ONLY)
-  //    These match the styled components exactly but contain NO Logic/Hooks.
-  //    This prevents "Uncached data accessed outside Suspense" errors on the server.
   
   const DesktopFallback = () => (
     <InputsWrapper>
-      <ClippedBackground />
-      <ParticipantInputContainer>
-        <Users size={20} color="#000" />
-        <ParticipantPlaceholder>1 Person</ParticipantPlaceholder>
-      </ParticipantInputContainer>
-      <SelectorsWrapper>
+      <SearchBarContainer>
         <LocationSearchWrapper>
           <LocationWrapper>
-            <MapPin style={{ marginRight: "0.5rem", marginTop: "0.5rem" }} color="black" size={25} />
             <div style={{ width: "100%" }}>
                <ButtonText>
-                 <span style={{ fontSize: "0.9rem", fontWeight: "700", color: "#1a1a1a" }}>Location</span>
+                 <LabelText>Location</LabelText>
                </ButtonText>
-               <InputPlaceholder>City or address</InputPlaceholder>
+               <InputPlaceholder>Where are you looking?</InputPlaceholder>
             </div>
           </LocationWrapper>
         </LocationSearchWrapper>
-        <DateAndSearchWrapper>
-          <DatePickerWrapper>
-            <CalendarSearch color="#000" size={20} />
-            <DatePickerInputArea>
-               <DatePickerLabel>Date</DatePickerLabel>
-               <InputPlaceholder style={{ width: '120px' }}>Whenever</InputPlaceholder>
-            </DatePickerInputArea>
-          </DatePickerWrapper>
-          <RoundedSearchButton type="button">
-             <Search size={20} />
-          </RoundedSearchButton>
-        </DateAndSearchWrapper>
-      </SelectorsWrapper>
+        
+        <DatePickerWrapper>
+          <DatePickerInputArea>
+             <DatePickerLabel>Date</DatePickerLabel>
+             <InputPlaceholder style={{ width: '120px' }}>Any date</InputPlaceholder>
+          </DatePickerInputArea>
+        </DatePickerWrapper>
+
+        <ParticipantInputContainer>
+          <LabelText>Participants</LabelText>
+          <ParticipantPlaceholder>1 Person</ParticipantPlaceholder>
+        </ParticipantInputContainer>
+
+        <RoundedSearchButton type="button">
+           <Search size={20} />
+        </RoundedSearchButton>
+      </SearchBarContainer>
     </InputsWrapper>
   );
 
@@ -963,12 +1390,16 @@ const BannerSearch = () => {
               Learn locally
             </HeroText>
             <SubText>
-              Explore What Ignites Your Mind. Discover Countless Local Classes &
-              Workshops.
+              Book unique classes & workshops near you. Instantly.
             </SubText>
+
             
             {/* SWAP: Fallback (SSR) vs Real Form (CSR) */}
             {isMounted ? <DesktopSearchForm /> : <DesktopFallback />}
+
+            <HowItWorksButton onClick={scrollToHowItWorks}>
+              How ClassEasily works <ChevronDown size={16} />
+            </HowItWorksButton>
 
           </MainContent>
         </MainWrapper>
@@ -981,6 +1412,9 @@ const BannerSearch = () => {
         {/* SWAP: Fallback (SSR) vs Real Pill (CSR) */}
         {isMounted ? <MobileSearchPill /> : <MobileFallback />}
       </MobileContainer>
+
+      {/* NEW: Bottom Trust Strip */}
+      <BottomTrustBanner />
     </Banner>
   );
 };
