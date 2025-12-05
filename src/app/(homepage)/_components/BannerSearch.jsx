@@ -699,7 +699,7 @@ const BLACK_PIXEL =
 const BannerWrapper = styled.div`
   position: relative;
   width: 100%;
-  background-color: #7a1f2e; /* Muted deep red */
+  background-color: rgb(85 13 25);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -889,7 +889,7 @@ const TrustStripWrapper = styled.div`
   align-items: center;
   z-index: 10;
   /* Glassmorphism base for the rectangle part */
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.27);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   padding: 1.25rem 1.5rem;
@@ -914,7 +914,7 @@ const WaveContainer = styled.div`
     width: 100%;
     height: 100%;
     
-    fill: rgba(0, 0, 0, 0.45); 
+    fill: rgba(0, 0, 0, 0.27); 
   }
 `;
 
@@ -940,7 +940,7 @@ const AvatarPile = styled.div`
   display: flex;
   align-items: center;
   /* Add padding to account for the jittery offsets not getting cut off */
-  padding: 5px 0;
+  padding: 10px 0;
   
   /* On very small screens, hide avatars to reduce clutter */
   @media (max-width: 600px) {
@@ -955,11 +955,12 @@ const AvatarItem = styled.div`
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.8);
   overflow: hidden;
-  margin-left: -12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  transition: transform 0.3s ease;
   
-  &:first-child {
-    margin-left: 0;
+  &:hover {
+    z-index: 50 !important;
+    transform: scale(1.1) translateY(-2px) !important;
   }
 `;
 
@@ -1010,25 +1011,22 @@ const TrustText = styled.div`
 `;
 
 const BottomTrustBanner = () => {
-  // Placeholder images for the "Community" vibe
-  const avatarsLeft = [
-    "https://i.pravatar.cc/150?img=32",
-    "https://i.pravatar.cc/150?img=12",
-    "https://i.pravatar.cc/150?img=5"
+  // Use RandomUser.me (free) and hardcode specific interesting avatars so it doesn't flicker on re-renders (SSR safe)
+  // Left side configuration: Random scattering
+  const leftSideAvatars = [
+    { src: "https://randomuser.me/api/portraits/women/44.jpg", x: 0, y: 0, z: 1 },
+    { src: "https://randomuser.me/api/portraits/men/32.jpg", x: -8, y: -6, z: 3 },
+    { src: "https://randomuser.me/api/portraits/women/68.jpg", x: -12, y: 5, z: 2 },
+    { src: "https://randomuser.me/api/portraits/men/11.jpg", x: -16, y: -3, z: 4 },
   ];
   
-  const avatarsRight = [
-    "https://i.pravatar.cc/150?img=9",
-    "https://i.pravatar.cc/150?img=24",
-    "https://i.pravatar.cc/150?img=68"
+  // Right side configuration: Different scattering pattern so it's not a mirror image
+  const rightSideAvatars = [
+    { src: "https://randomuser.me/api/portraits/men/85.jpg", x: 0, y: 4, z: 2 },
+    { src: "https://randomuser.me/api/portraits/women/12.jpg", x: -10, y: -5, z: 4 },
+    { src: "https://randomuser.me/api/portraits/men/22.jpg", x: -14, y: 2, z: 1 },
+    { src: "https://randomuser.me/api/portraits/women/90.jpg", x: -20, y: -2, z: 3 },
   ];
-
-  // Helper to jitter avatars so they aren't a straight line
-  const getRandomOffset = (index) => {
-    // Simple deterministic pattern to avoid hydration mismatch random() issues
-    const offsets = [0, -4, 3, -2, 5, -3]; 
-    return offsets[index % offsets.length];
-  };
 
   return (
     <TrustStripWrapper>
@@ -1042,9 +1040,16 @@ const BottomTrustBanner = () => {
       <TrustContent>
         {/* Left Side Faces */}
         <AvatarPile>
-          {avatarsLeft.map((src, i) => (
-            <AvatarItem key={i} style={{ transform: `translateY(${getRandomOffset(i)}px)` }}>
-              <Image src={src} alt="User" width={36} height={36} style={{objectFit:'cover'}} />
+          {leftSideAvatars.map((person, i) => (
+            <AvatarItem 
+              key={i} 
+              style={{ 
+                zIndex: person.z,
+                marginLeft: i === 0 ? 0 : `${person.x}px`,
+                transform: `translateY(${person.y}px)` 
+              }}
+            >
+              <Image src={person.src} alt="User" width={36} height={36} style={{objectFit:'cover'}} />
             </AvatarItem>
           ))}
         </AvatarPile>
@@ -1065,9 +1070,16 @@ const BottomTrustBanner = () => {
 
         {/* Right Side Faces */}
         <AvatarPile>
-          {avatarsRight.map((src, i) => (
-            <AvatarItem key={i} style={{ transform: `translateY(${getRandomOffset(i + 3)}px)` }}>
-              <Image src={src} alt="User" width={36} height={36} style={{objectFit:'cover'}} />
+          {rightSideAvatars.map((person, i) => (
+            <AvatarItem 
+              key={i} 
+              style={{ 
+                zIndex: person.z,
+                marginLeft: i === 0 ? 0 : `${person.x}px`, // Negative margins to pull them together
+                transform: `translateY(${person.y}px)` 
+              }}
+            >
+              <Image src={person.src} alt="User" width={36} height={36} style={{objectFit:'cover'}} />
             </AvatarItem>
           ))}
         </AvatarPile>
