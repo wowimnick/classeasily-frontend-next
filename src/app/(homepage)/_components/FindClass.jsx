@@ -13,7 +13,7 @@ const { Title: AntTitle } = Typography;
 const MainWrapper = styled.section`
   display: flex;
   flex-direction: column;
-  padding: 0 14rem;
+  padding: 0 4rem;
   margin: 1rem auto; 
   width: 100%;
   box-sizing: border-box;

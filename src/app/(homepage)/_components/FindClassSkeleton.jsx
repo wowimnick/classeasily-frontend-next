@@ -27,7 +27,7 @@ const SkeletonBase = styled.div`
 const SkeletonWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 0 14rem;
+  padding: 0 4rem;
   margin: 1rem auto;
   width: 100%;
   margin-top: 3rem;

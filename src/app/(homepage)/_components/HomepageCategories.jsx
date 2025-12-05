@@ -18,7 +18,7 @@ const MainWrapper = styled.section`
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  padding: 0 14rem;
+  padding: 0 4rem;
   margin: 4rem auto;
   color: ${(props) => props.theme.token.colorText};
   z-index: 1;
@@ -103,8 +103,8 @@ const ButtonContainer = styled(motion.div)`
 `;
 
 const ScrollButton = styled(motion.button)`
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   background-color: ${(props) => props.theme.token.colorBgElevated};
   border: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
   border-radius: 50%;

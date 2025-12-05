@@ -127,7 +127,7 @@ const SecondaryText = styled.div`
 const Banner = styled.section`
   display: flex;
   position: relative;
-  min-height: 55vh;
+  min-height: 65vh;
   background-color: #000;
   overflow: hidden;
   justify-content: center;
@@ -135,7 +135,7 @@ const Banner = styled.section`
   flex-direction: column;
   box-sizing: border-box;
 
-  @media (max-width: 1088px) {
+  @media (max-width: 760px) {
     min-height: 45vh;
     padding-top: 5rem;
     justify-content: flex-start;
@@ -157,7 +157,7 @@ const FilteredBackgroundImage = styled.div`
   animation-delay: 0.1s;
   
   display: none;
-  @media (max-width: 1088px) {
+  @media (max-width: 760px) {
     display: block;
   }
 
@@ -190,7 +190,7 @@ const Video = styled.video`
   z-index: 0;
 
   display: block;
-  @media (max-width: 1088px) {
+  @media (max-width: 760px) {
     display: none;
   }
 `;
@@ -202,7 +202,7 @@ const DesktopContainer = styled.div`
   display: flex;
   justify-content: center;
   
-  @media (max-width: 1088px) {
+  @media (max-width: 760px) {
     display: none;
   }
 `;
@@ -262,7 +262,7 @@ const HowItWorksButton = styled.button`
   padding: 0;
   font-size: 1.15rem;
   font-weight: 600;
-  margin-top: 1rem;
+  margin-top: 2rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -414,6 +414,7 @@ const DatePickerInputArea = styled.div`
     background: transparent !important;
     border: none !important;
     border-bottom: 1px solid transparent !important;
+    transition: border-bottom-color 0.3s;
 
     &.ant-picker-focused,
     &:focus,
@@ -421,6 +422,7 @@ const DatePickerInputArea = styled.div`
     &:hover {
       box-shadow: none !important;
       outline: none !important;
+      border-bottom-color: ${(props) => props.theme.token.colorPrimary} !important;
     }
   }
 
@@ -604,7 +606,7 @@ const MobileContainer = styled.div`
   z-index: 2;
   margin-top: 1rem;
   
-  @media (max-width: 1088px) {
+  @media (max-width: 760px) {
     display: flex;
   }
 `;
