@@ -1,125 +1,38 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import styled, { createGlobalStyle } from "styled-components";
-import { Typography, Select, DatePicker, AutoComplete } from "antd";
-import {
-  Search,
-  MapPin,
-  ChevronDown,
-  ArrowRight,
-  Star
-} from "lucide-react";
-import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { Search, MapPin, ChevronLeft, ChevronRight, Star, Minus, Plus, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import Image from "next/image";
-import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 import { useSearch, SUGGESTED_AREAS } from "@/context/SearchContext";
-import SearchDrawer from "@/components/common/SearchDrawer";
 import Link from "next/link";
 
-// --- GLOBAL STYLES (Desktop Specific) ---
+// --- HELPER HOOK: CLICK OUTSIDE ---
+function useClickOutside(ref, handler) {
+  useEffect(() => {
+    const listener = (event) => {
+      if (!ref.current || ref.current.contains(event.target)) return;
+      handler(event);
+    };
+    document.addEventListener("mousedown", listener);
+    document.addEventListener("touchstart", listener);
+    return () => {
+      document.removeEventListener("mousedown", listener);
+      document.removeEventListener("touchstart", listener);
+    };
+  }, [ref, handler]);
+}
 
-const BannerSearchDropdownStyles = createGlobalStyle`
-  /* Desktop Styles */
-  .banner-search-location-dropdown.ant-select-dropdown,
-  .banner-search-datepicker.ant-picker-dropdown,
-  .participant-count-dropdown {
-    z-index: 10005 !important;
+// --- GLOBAL STYLES ---
+
+const GlobalOverrides = createGlobalStyle`
+  .banner-search-container {
+    --primary: ${(props) => props.theme.token.colorPrimary || '#e11d48'};
+    --text: #222222;
+    --gray: #717171;
   }
-
-  .banner-search-location-dropdown {
-    min-width: 450px !important;
-    max-width: 90vw !important;
-    border-radius: 16px !important;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12),
-      0 4px 8px rgba(0, 0, 0, 0.08) !important;
-    border: 1px solid #e5e7eb !important;
-    padding: 8px !important;
-  }
-
-  .banner-search-location-dropdown .rc-virtual-list-holder {
-    padding-bottom: 8px;
-  }
-
-  .banner-search-location-dropdown .ant-select-item-group {
-    font-weight: 700;
-    font-size: 13px;
-    color: #374151;
-    padding: 12px 12px 8px 12px;
-    background: transparent !important;
-    cursor: default !important;
-  }
-
-  .banner-search-location-dropdown .ant-select-item {
-    border-radius: 12px !important;
-    padding: 4px !important;
-  }
-
-  .banner-search-location-dropdown .ant-select-item-option-selected {
-    background: #eff6ff !important;
-  }
-
-  /* Shared Utilities */
-  .dropdown-loader-container {
-    padding: 24px 20px !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    min-height: 80px !important;
-  }
-
-  .dropdown-no-results {
-    padding: 24px 20px !important;
-    text-align: center !important;
-    color: #6b7280 !important;
-  }
-`;
-
-// --- SHARED STYLED COMPONENTS ---
-
-const IconWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  border-radius: 10px;
-  background: ${(props) => props.bg || "#f3f4f6"};
-  margin-right: 12px;
-`;
-
-const OptionContainer = styled.div`
-  display: flex;
-  align-items: center;
-  padding: 8px 4px !important;
-  width: 100%;
-`;
-
-const OptionText = styled.div`
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  gap: 2px;
-`;
-
-const PrimaryText = styled.div`
-  font-weight: 600;
-  color: #1a1a1a;
-  font-size: 15px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
-const SecondaryText = styled.div`
-  font-size: 13px;
-  color: #6b7280;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 `;
 
 // --- LAYOUT COMPONENTS ---
@@ -129,7 +42,7 @@ const Banner = styled.section`
   position: relative;
   min-height: 65vh;
   background-color: #000;
-  overflow: hidden;
+  overflow: visible; 
   justify-content: center;
   align-items: center;
   flex-direction: column;
@@ -140,80 +53,61 @@ const Banner = styled.section`
     padding-top: 5rem;
     justify-content: flex-start;
     padding-bottom: 2rem;
+    overflow: hidden; 
   }
+`;
+
+const BackgroundMediaWrapper = styled.div`
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  overflow: hidden;
+  z-index: 0;
 `;
 
 const FilteredBackgroundImage = styled.div`
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0; width: 100%; height: 100%;
   filter: blur(2px) hue-rotate(350deg) saturate(1.5);
   scale: 1.05;
   z-index: 0;
   opacity: 0;
   animation: fadeIn 0.6s ease-in forwards;
   animation-delay: 0.1s;
-  
   display: none;
-  @media (max-width: 760px) {
-    display: block;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
+  @media (max-width: 760px) { display: block; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   &::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 100px;
-    background: linear-gradient(to bottom, transparent, white);
-    z-index: 1;
+    content: ""; position: absolute; bottom: 0; left: 0; width: 100%; height: 100px;
+    background: linear-gradient(to bottom, transparent, white); z-index: 1;
   }
 `;
 
 const Video = styled.video`
   position: absolute;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: top;
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: top;
   transform: scale(1.1);
   filter: brightness(0.8) blur(5px);
   background-color: #000;
   z-index: 0;
-
   display: block;
-  @media (max-width: 760px) {
-    display: none;
-  }
+  @media (max-width: 760px) { display: none; }
 `;
-
-// --- DESKTOP COMPONENT STYLES ---
 
 const DesktopContainer = styled.div`
   width: 100%;
   display: flex;
   justify-content: center;
-  
-  @media (max-width: 760px) {
-    display: none;
-  }
+  position: relative; 
+  z-index: 20;
+  @media (max-width: 760px) { display: none; }
 `;
 
 const MainWrapper = styled.div`
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5rem;
-  color: ${(props) => props.theme.token.colorHeaderText};
   z-index: 1;
   width: 100%;
   max-width: 1200px;
@@ -226,7 +120,7 @@ const MainContent = styled.div`
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: ${(props) => props.theme.token.colorHeaderText};
+  color: white;
   z-index: 1;
   padding: 5rem 0;
   width: 100%;
@@ -251,8 +145,6 @@ const SubText = styled.p`
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
   max-width: 600px;
   color: inherit;
-  margin-left: auto;
-  margin-right: auto;
 `;
 
 const HowItWorksButton = styled.button`
@@ -266,335 +158,628 @@ const HowItWorksButton = styled.button`
   cursor: pointer;
   display: flex;
   align-items: center;
-  text-underline-offset: 2px;
   justify-content: center;
   gap: 6px;
   transition: opacity 0.3s ease;
   text-decoration: underline;
   text-underline-offset: 5px;
+  &:hover { opacity: 0.8; }
+`;
 
-  /* Ensures the icon sits perfectly centered relative to the text cap-height */
-  svg {
-    display: block;
-    transform: translateY(1px); 
-  }
+// ------------------------------------------------------------------------
+//  CUSTOM SEARCH COMPONENT STYLES
+// ------------------------------------------------------------------------
+
+const SearchFormWrapper = styled(motion.form)`
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  border-radius: 100px;
+  /* Fix 1: Removed padding to allow edge-to-edge pill */
+  padding: 0; 
+  /* Fix 1: Fixed height to maintain pill size without padding */
+  height: 76px; 
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  width: auto;
+  z-index: 50;
+`;
+
+// New Active Pill Component
+const ActivePill = styled(motion.div)`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ffffff;
+  border-radius: 64px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  z-index: 0; 
+`;
+
+const Divider = styled.div`
+  width: 1px;
+  height: 32px;
+  background-color: #e5e7eb;
+  margin: 0; /* Adjusted margin since parent has no padding */
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+  opacity: ${props => props.$isHidden ? 0 : 1};
+`;
+
+const SectionButton = styled.div`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  text-align: left;
+  height: 100%; 
+  padding: 0 24px; 
+  border-radius: 32px;
+  cursor: pointer;
+  background-color: transparent; 
+  isolation: isolate;
 
   &:hover {
-    opacity: 0.8;
+    background-color: ${props => props.$isActive ? 'transparent' : '#f3f4f6'}; 
+    border-radius: 64px; 
   }
 `;
 
-const InputsWrapper = styled.form`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+const Label = styled.div`
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 2px;
   position: relative;
-  gap: 0.4rem;
-  z-index: 1;
-  width: 100%;
+  z-index: 1; 
 `;
 
-const SearchBarContainer = styled.div`
-  display: flex;
-  justify-content: left;
-  gap: 0;
-  align-items: center;
-  background: ${(props) => props.theme.token.colorBgContainer};
-  width: fit-content;
-  padding: 0.5rem;
-  padding-right: 0.5rem;
-  border-radius: 100px;
-  position: relative;
-  z-index: 1;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-`;
-
-const LabelText = styled.div`
-  font-size: 0.75rem; /* Smaller size */
-  font-weight: 500; /* Reduced weight from 700 */
-  color: #5e5e5e; /* Lighter gray */
-  margin-bottom: 0px;
-  line-height: 1.2;
-`;
-
-/* Location Field Styles */
-const LocationSearchWrapper = styled.div`
-  flex-grow: 1;
-`;
-
-const LocationWrapper = styled.div`
-  display: flex;
-  flex-direction: column; /* Stack label and input */
-  align-items: flex-start;
-  justify-content: center;
-  padding: 0.5rem 1rem;
-  padding-left: 1.5rem; /* Extra padding since icon is gone */
-  background-color: transparent;
-  color: #000;
-  overflow: visible;
-  min-width: 240px;
-  max-width: 240px;
-  transition: 0.3s all;
-
-  .ant-select-clear {
-    display: none !important;
-  }
-
-  .ant-select {
-    width: 100%;
-    height: 24px !important;
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-    background: transparent !important;
-    border-radius: 0 !important;
-    /* Removed border-bottom to match clean style */
-    border-bottom: 1px solid transparent !important; 
-    transition: border-bottom-color 0.3s;
-
-    &.ant-select-focused,
-    &:focus-within,
-    &:hover {
-      border-bottom-color: ${(props) => props.theme.token.colorPrimary} !important;
-    }
-
-    .ant-select-selector {
-      background-color: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      padding: 0 !important;
-    }
-  }
-
-  .banner-search-input {
-    width: 100%;
-    border: none;
-    background: transparent;
-    outline: none;
-    padding: 0;
-    font-size: 15px !important; /* Slightly larger input text */
-    font-weight: 600; /* Bold input text */
-    font-family: inherit !important;
-    color: ${(props) => props.theme.token.colorText} !important;
-
-    &::placeholder {
-      color: #bfbfbf !important; 
-      font-weight: 400;
-      opacity: 1;
-    }
-  }
-`;
-
-/* Date Field Styles */
-const DatePickerWrapper = styled.div`
-  display: flex;
-  flex-direction: column; /* Stack label and input */
-  align-items: flex-start;
-  justify-content: center;
-  padding: 0.5rem 1rem;
-  background: transparent;
-  width: auto;
-  min-width: 150px;
-  border-left: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
-`;
-
-const DatePickerInputArea = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  flex-grow: 1;
-  width: 100%;
-
-  .ant-picker {
-    padding-left: 0px !important;
-    border-radius: 0rem !important;
-    height: 24px !important;
-    width: 100% !important;
-    box-shadow: none !important;
-    background: transparent !important;
-    border: none !important;
-    border-bottom: 1px solid transparent !important;
-    transition: border-bottom-color 0.3s;
-
-    &.ant-picker-focused,
-    &:focus,
-    &:focus-within,
-    &:hover {
-      box-shadow: none !important;
-      outline: none !important;
-      border-bottom-color: ${(props) => props.theme.token.colorPrimary} !important;
-    }
-  }
-
-  .ant-picker-input > input {
-    height: 24px !important;
-    font-size: 15px !important;
-    font-weight: 600;
-    font-family: inherit !important;
-    color: ${(props) => props.theme.token.colorText} !important;
-
-    &::placeholder {
-      color: #bfbfbf !important;
-      font-weight: 400;
-    }
-  }
-`;
-
-const DatePickerLabel = styled(LabelText)`
-  cursor: pointer;
-  display: block;
-  font-family: "ProximaSoft", sans-serif;
-`;
-
-/* Participants Field Styles */
-const ParticipantInputContainer = styled.div`
-  display: flex;
-  flex-direction: column; /* Stack label and input */
-  align-items: flex-start;
-  justify-content: center;
-  padding: 0.5rem 1rem;
-  background: transparent;
-  color: ${(props) => props.theme.token.colorText};
-  position: relative;
-  min-width: 120px;
-  border-left: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
-`;
-
-const StyledParticipantSelect = styled(Select)`
-  width: 100%;
-  border: none !important;
-  box-shadow: none !important;
-  outline: none !important;
-  background: transparent !important;
-  color: ${(props) => props.theme.token.colorText} !important;
-  font-family: inherit !important;
-
-  /* Fix for alignment and height */
-  &.ant-select-single {
-    height: 24px !important; 
-    margin-left: -1px; /* Micro-adjustment to align perfectly with plain text labels */
-  }
-
-  /* Target the selector container */
-  .ant-select-selector {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-    
-    /* Reset all padding variations */
-    padding: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    padding-inline-start: 0 !important;
-    padding-inline-end: 0 !important;
-    
-    height: 24px !important;
-    border-bottom: 1px solid transparent !important;
-    display: flex;
-    align-items: center;
-    font-size: 15px !important;
-    font-family: inherit !important;
-  }
-
-  /* Target the visible text */
-  .ant-select-selection-item {
-    /* Remove internal offsets */
-    padding: 0 !important;
-    padding-inline-start: 0 !important;
-    padding-left: 0 !important;
-    margin: 0 !important;
-    
-    /* Force position to left */
-    inset-inline-start: 0 !important;
-    left: 0 !important;
-    
-    line-height: 24px !important;
-    font-family: inherit !important;
-    font-weight: 600 !important;
-    color: ${(props) => props.theme.token.colorText} !important;
-    
-    /* Ensure flex alignment behavior */
-    display: flex !important;
-    align-items: center;
-  }
-
-  /* Target the hidden search input which sometimes reserves space */
-  .ant-select-selection-search {
-    inset-inline-start: 0 !important;
-    left: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 0 !important; /* Collapse width if not searching */
-  }
-
-  .ant-select-selection-search-input {
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  .ant-select-arrow {
-    right: -5px !important;
-    color: #bfbfbf;
-  }
-`;
-
-// Placeholder for SSR to avoid FOUC
-const ParticipantPlaceholder = styled.div`
-  display: flex;
-  align-items: center;
+const ValueDisplay = styled.div`
   font-size: 15px;
-  font-weight: 600;
-  height: 24px;
-  padding-left: 0;
-  min-width: 80px;
-  color: ${(props) => props.theme.token.colorText};
-  font-family: inherit;
-`;
-
-const InputPlaceholder = styled.div`
-  width: 100%;
-  height: 24px;
-  display: flex;
-  align-items: left;
-  font-size: 15px;
-  color: #bfbfbf; 
-`;
-
-const RoundedSearchButton = styled(motion.button)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.3s ease;
-  padding: 1rem;
-  background: linear-gradient(
-    135deg,
-    ${(props) => props.theme.token.colorPrimary} 0%,
-    ${(props) => props.theme.token.colorPrimaryHover} 100%
-  );
-  color: ${(props) => props.theme.token.colorHeaderText};
-  cursor: pointer;
-  scale: 1.1;
-  margin-left: 0.5rem;
+  color: ${props => props.$hasValue ? '#111' : '#9ca3af'};
+  font-weight: 500;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  position: relative;
+  z-index: 1; 
+`;
+
+const SearchButton = styled(motion.button)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, ${(props) => props.theme.token.colorPrimary} 0%, ${(props) => props.theme.token.colorPrimaryHover} 100%);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  width: 60px; 
+  height: 60px;
+  /* Fix 1: Adjusted margin since Wrapper padding is gone */
+  margin-right: 8px; 
+  margin-left: 8px;
+  cursor: pointer;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+  overflow: hidden;
+  z-index: 2;
+`;
+
+// --- UNIFIED POPUP CONTAINER ---
+const UnifiedPopupContainer = styled(motion.div)`
+  position: absolute;
+  top: 115%; 
+  background: white;
+  border-radius: 32px;
+  padding: 0;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  border: 1px solid rgba(0,0,0,0.05);
+  overflow: hidden;
+  z-index: 100;
+`;
+
+const PopupContentPadding = styled.div`
+  padding: 24px;
+`;
+
+// --- LOCATION CUSTOM COMPONENTS ---
+
+const LocationInput = styled.input`
+  width: 100%;
   border: none;
   outline: none;
-
-  &:hover {
-    scale: 1.15;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  }
+  font-size: 15px;
+  font-weight: 500;
+  background: transparent;
+  color: #111;
+  padding: 0;
+  position: relative;
+  z-index: 2;
+  &::placeholder { color: #9ca3af; }
 `;
 
-const ButtonText = styled.div`
+const LocationList = styled.div`
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  max-height: 300px;
+  overflow-y: auto;
   width: 100%;
 `;
 
-// --- MOBILE SPECIFIC COMPONENTS ---
+const LocationOption = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+  &:hover { background: #f3f4f6; }
+`;
+
+const IconBox = styled.div`
+  width: 40px; height: 40px;
+  background: #f3f4f6;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin-right: 16px;
+  color: #374151;
+  flex-shrink: 0;
+`;
+
+// --- CALENDAR CUSTOM COMPONENTS ---
+
+const CalendarWrapper = styled.div`
+  width: 100%;
+`;
+
+const CalendarHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  font-weight: 700;
+  font-size: 16px;
+  color: #111;
+`;
+
+const NavBtn = styled.button`
+  background: transparent; border: none; cursor: pointer;
+  padding: 8px; border-radius: 50%;
+  &:hover { background: #f3f4f6; }
+`;
+
+const WeekGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 12px;
+  color: #9ca3af;
+`;
+
+const DayGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  row-gap: 4px;
+`;
+
+const DayBtn = styled.button`
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: ${props => props.$isSelected ? props.theme.token.colorPrimary : 'transparent'};
+  color: ${props => props.$isSelected ? 'white' : props.$isDisabled ? '#e5e7eb' : '#374151'};
+  cursor: ${props => props.$isDisabled ? 'not-allowed' : 'pointer'};
+  font-weight: 600;
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto;
+
+  &:hover {
+    background: ${props => !props.$isSelected && !props.$isDisabled && '#f3f4f6'};
+  }
+`;
+
+// --- PARTICIPANT CUSTOM COMPONENTS ---
+
+const ParticipantRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%; /* Fill container */
+  padding: 8px 0;
+`;
+
+const CounterBtn = styled.button`
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 1px solid #d1d5db;
+  background: white;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: #374151;
+  &:disabled { opacity: 0.3; cursor: not-allowed; }
+  &:hover:not(:disabled) { border-color: #111; color: #111; }
+`;
+
+// ------------------------------------------------------------------------
+//  SUB-COMPONENTS (Functionality)
+// ------------------------------------------------------------------------
+
+const CustomCalendar = ({ value, onChange, onClose }) => {
+  const [currentDate, setCurrentDate] = useState(value ? dayjs(value) : dayjs());
+  
+  const daysInMonth = currentDate.daysInMonth();
+  const startDay = currentDate.startOf('month').day();
+  
+  const blanks = Array(startDay).fill(null);
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  const handleDateClick = (day) => {
+    const newDate = currentDate.date(day);
+    onChange(newDate);
+    onClose();
+  };
+
+  const nextMonth = () => setCurrentDate(currentDate.add(1, 'month'));
+  const prevMonth = () => setCurrentDate(currentDate.subtract(1, 'month'));
+
+  return (
+    <CalendarWrapper>
+      <CalendarHeader>
+        <NavBtn onClick={prevMonth} type="button"><ChevronLeft size={20} /></NavBtn>
+        <span>{currentDate.format("MMMM YYYY")}</span>
+        <NavBtn onClick={nextMonth} type="button"><ChevronRight size={20} /></NavBtn>
+      </CalendarHeader>
+      
+      <WeekGrid>
+        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <div key={d}>{d}</div>)}
+      </WeekGrid>
+      
+      <DayGrid>
+        {blanks.map((_, i) => <div key={`blank-${i}`} />)}
+        {days.map(d => {
+          const thisDate = currentDate.date(d);
+          const isSelected = value && dayjs(value).isSame(thisDate, 'day');
+          const isPast = thisDate.isBefore(dayjs().startOf('day'));
+          
+          return (
+            <DayBtn 
+              key={d} 
+              type="button"
+              $isSelected={isSelected}
+              $isDisabled={isPast}
+              disabled={isPast}
+              onClick={() => handleDateClick(d)}
+            >
+              {d}
+            </DayBtn>
+          );
+        })}
+      </DayGrid>
+    </CalendarWrapper>
+  );
+};
+
+const CustomParticipant = ({ count, onChange }) => {
+  return (
+    <ParticipantRow>
+      <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+        <span style={{ fontWeight: 700, color: '#111', fontSize: 16 }}>Participants</span>
+        <span style={{ fontSize: 13, color: '#717171' }}>Join the class</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <CounterBtn 
+          type="button" 
+          disabled={count <= 1} 
+          onClick={() => onChange(Math.max(1, count - 1))}
+        >
+          <Minus size={16} />
+        </CounterBtn>
+        <span style={{ width: 24, textAlign: 'center', fontWeight: 600, fontSize: 16 }}>{count}</span>
+        <CounterBtn 
+          type="button" 
+          disabled={count >= 20} 
+          onClick={() => onChange(count + 1)}
+        >
+          <Plus size={16} />
+        </CounterBtn>
+      </div>
+    </ParticipantRow>
+  );
+};
+
+// Fix 2: Updated variants to start invisible and wait for container to settle
+const contentVariants = {
+  enter: { 
+    opacity: 0, 
+    scale: 0.98,
+  },
+  center: { 
+    opacity: 1, 
+    scale: 1,
+    transition: { 
+      delay: 0.1, // Wait for container to start resizing
+      duration: 0.3, 
+      ease: "easeOut" 
+    } 
+  },
+  exit: { 
+    opacity: 0, 
+    transition: { duration: 0 } 
+  }
+};
+
+const DesktopSearchForm = () => {
+  const {
+    searchTerm,
+    datePickerValue, setDatePickerValue,
+    participantCount, setParticipantCount,
+    geocodedAddressResults,
+    handleLocationChange, handleLocationSelect,
+    performSearch
+  } = useSearch();
+
+  const [activeField, setActiveField] = useState(null); 
+  const [popupConfig, setPopupConfig] = useState({ left: 0, width: 400 });
+  const [isSwitching, setIsSwitching] = useState(false); 
+
+  const containerRef = useRef(null);
+  const locationRef = useRef(null);
+  const dateRef = useRef(null);
+  const participantsRef = useRef(null);
+
+  useClickOutside(containerRef, () => {
+    setActiveField(null);
+    setIsSwitching(false);
+  });
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    performSearch();
+    setActiveField(null);
+    setIsSwitching(false);
+  };
+  
+  const handleFieldClick = (field) => {
+    if (activeField && activeField !== field) {
+        setIsSwitching(true); 
+    } else {
+        setIsSwitching(false); 
+    }
+    setActiveField(field);
+  };
+
+  const participantDisplay = participantCount === 1 
+    ? '1 participant' 
+    : `${participantCount} participants`;
+
+  // --- POSITION & VIEWPORT CHECK LOGIC ---
+  useLayoutEffect(() => {
+    if (!activeField || !containerRef.current) return;
+
+    const updatePosition = () => {
+      const refs = { location: locationRef, date: dateRef, participants: participantsRef };
+      const targetRef = refs[activeField];
+
+      if (targetRef?.current && containerRef.current) {
+        const buttonRect = targetRef.current.getBoundingClientRect();
+        const containerRect = containerRef.current.getBoundingClientRect();
+        
+        let width = 400;
+        if (activeField === 'date') width = 360;
+        if (activeField === 'participants') width = 340;
+
+        let left = 0;
+        if (activeField === 'location') {
+          left = buttonRect.left - containerRect.left;
+        } else if (activeField === 'date') {
+          left = (buttonRect.left - containerRect.left) + (buttonRect.width / 2) - (width / 2);
+        } else if (activeField === 'participants') {
+          left = (buttonRect.right - containerRect.left) - width;
+        }
+
+        const absoluteLeft = containerRect.left + left;
+        const viewportPadding = 24;
+        const windowWidth = window.innerWidth;
+
+        if (absoluteLeft + width > windowWidth - viewportPadding) {
+          const overflow = (absoluteLeft + width) - (windowWidth - viewportPadding);
+          left -= overflow;
+        }
+
+        if (absoluteLeft < viewportPadding) {
+           const underflow = viewportPadding - absoluteLeft;
+           left += underflow;
+        }
+
+        setPopupConfig({ left, width });
+      }
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    return () => window.removeEventListener('resize', updatePosition);
+  }, [activeField, searchTerm, datePickerValue, participantCount]);
+
+  const renderLocationSuggestions = () => {
+    const safeResults = Array.isArray(geocodedAddressResults) ? geocodedAddressResults : [];
+    
+    if (searchTerm && safeResults.length > 0) {
+      return safeResults.map((result, idx) => (
+        <LocationOption key={idx} onClick={() => { handleLocationSelect(result.displayName); setActiveField(null); setIsSwitching(false); }}>
+          <IconBox><MapPin size={20} /></IconBox>
+          <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+            <span style={{ fontWeight: 600, color: '#111' }}>{result.displayName.split(',')[0]}</span>
+            <span style={{ fontSize: 13, color: '#717171' }}>{result.displayName}</span>
+          </div>
+        </LocationOption>
+      ));
+    }
+    return SUGGESTED_AREAS.map((area, idx) => (
+      <LocationOption key={idx} onClick={() => { handleLocationSelect(area.name); setActiveField(null); setIsSwitching(false); }}>
+        <IconBox>{area.icon}</IconBox>
+        <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+          <span style={{ fontWeight: 600, color: '#111' }}>{area.name}</span>
+          <span style={{ fontSize: 13, color: '#717171' }}>{area.description}</span>
+        </div>
+      </LocationOption>
+    ));
+  };
+
+  return (
+    <SearchFormWrapper 
+      ref={containerRef} 
+      onSubmit={handleSearchSubmit}
+      layout 
+      animate={{ 
+        backgroundColor: activeField ? "#ebebeb" : "#ffffff" 
+      }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    >
+      {/* 1. LOCATION SECTION */}
+      <SectionButton 
+        ref={locationRef}
+        $isActive={activeField === 'location'} 
+        onClick={() => handleFieldClick('location')}
+        style={{ width: '280px', flexShrink: 0 }} 
+      >
+        {activeField === 'location' && (
+          <ActivePill layoutId="search-pill" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+        )}
+
+        <Label>Location</Label>
+        {activeField === 'location' ? (
+            <LocationInput 
+              autoFocus
+              value={searchTerm}
+              onChange={handleLocationChange}
+              placeholder="Where are you looking?"
+            />
+        ) : (
+          <ValueDisplay $hasValue={!!searchTerm}>
+            {searchTerm || "Where are you looking?"}
+          </ValueDisplay>
+        )}
+      </SectionButton>
+      
+      <Divider $isHidden={activeField === 'location' || activeField === 'date'} />
+
+      {/* 2. DATE SECTION */}
+      <SectionButton 
+        ref={dateRef}
+        $isActive={activeField === 'date'} 
+        onClick={() => handleFieldClick('date')}
+        style={{ minWidth: '150px' }}
+      >
+        {activeField === 'date' && (
+          <ActivePill layoutId="search-pill" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+        )}
+        <Label>Date</Label>
+        <ValueDisplay $hasValue={!!datePickerValue}>
+          {datePickerValue ? dayjs(datePickerValue).format("MMM DD, YYYY") : "Any date"}
+        </ValueDisplay>
+      </SectionButton>
+
+      <Divider $isHidden={activeField === 'date' || activeField === 'participants'} />
+
+      {/* 3. PARTICIPANTS SECTION */}
+      <SectionButton 
+        ref={participantsRef}
+        $isActive={activeField === 'participants'} 
+        onClick={() => handleFieldClick('participants')}
+        style={{ minWidth: '150px' }}
+      >
+         {activeField === 'participants' && (
+          <ActivePill layoutId="search-pill" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+        )}
+        <Label>Who</Label>
+        <ValueDisplay $hasValue={true}>
+          {participantDisplay}
+        </ValueDisplay>
+      </SectionButton>
+
+      {/* SEARCH BUTTON */}
+      <SearchButton 
+        type="submit"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        layout
+      >
+        <Search size={22} strokeWidth={2.5} />
+      </SearchButton>
+
+      {/* UNIFIED POPUP CONTAINER */}
+      <AnimatePresence>
+        {activeField && (
+          <UnifiedPopupContainer
+            key="popup-container"
+            layout // Enables automatic layout animation
+            initial={{ opacity: 0, y: 10, scale: 0.95, left: popupConfig.left, width: popupConfig.width }}
+            animate={{ 
+              opacity: 1, 
+              y: 0, 
+              scale: 1,
+              left: popupConfig.left,
+              width: popupConfig.width
+            }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ 
+              layout: { duration: 0.4, ease: "easeInOut" },
+              left: { duration: isSwitching ? 0.4 : 0, ease: "easeInOut" },
+              width: { duration: isSwitching ? 0.4 : 0, ease: "easeInOut" },
+              opacity: { duration: 0.25 },
+              scale: { duration: 0.25 }
+            }}
+          >
+            <PopupContentPadding>
+              <AnimatePresence mode="popLayout">
+                {/* Fix 2: Wrap content in a div with fixed width to prevent squashing during transition */}
+                <motion.div
+                  key={activeField} 
+                  variants={contentVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  style={{ width: popupConfig.width - 48 }} // Subtract padding (24*2) from width
+                >
+                  {activeField === 'location' && (
+                    <>
+                      <Label style={{ paddingBottom: 8, color: '#999', textAlign: 'left' }}>SUGGESTED</Label>
+                      <LocationList>{renderLocationSuggestions()}</LocationList>
+                    </>
+                  )}
+                  {activeField === 'date' && (
+                    <CustomCalendar 
+                      value={datePickerValue} 
+                      onChange={setDatePickerValue} 
+                      onClose={() => handleFieldClick('participants')} 
+                    />
+                  )}
+                  {activeField === 'participants' && (
+                    <CustomParticipant 
+                      count={Math.max(1, participantCount)} 
+                      onChange={setParticipantCount} 
+                    />
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </PopupContentPadding>
+          </UnifiedPopupContainer>
+        )}
+      </AnimatePresence>
+
+    </SearchFormWrapper>
+  );
+};
+
+// ------------------------------------------------------------------------
+//  MOBILE / SHARED COMPONENTS
+// ------------------------------------------------------------------------
 
 const MobileContainer = styled.div`
   width: 100%;
@@ -684,16 +869,10 @@ const PillSubtext = styled.div`
   text-overflow: ellipsis;
 `;
 
-const participantOptions = Array.from({ length: 9 }, (_, i) => ({
-  value: i + 1,
-  label: i === 0 ? "1 Person" : i === 8 ? "9+ People" : `${i + 1} People`,
-}));
-
-const BLACK_PIXEL =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+const BLACK_PIXEL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
 // ------------------------------------------------------------------------
-//  ANNOUNCEMENT BANNER COMPONENTS
+//  BANNER WRAPPER & EXPORT
 // ------------------------------------------------------------------------
 
 const BannerWrapper = styled.div`
@@ -703,324 +882,115 @@ const BannerWrapper = styled.div`
   color: #ffffff;
   display: flex;
   align-items: center;
-  justify-content: center; /* Centered content max-width container */
+  justify-content: center;
   z-index: 1001;
   padding: 10px 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   min-height: 56px;
-
-  @media (max-width: 768px) {
-    display: none;
-  }
+  @media (max-width: 768px) { display: none; }
 `;
-
 const BannerContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  max-width: 1200px;
-  gap: 16px;
-
-  @media (max-width: 768px) {
-    display: none;
-  }
+  display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 1200px; gap: 16px;
+  @media (max-width: 768px) { display: none; }
 `;
-
 const LeftContent = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  font-family: "ProximaSoft", sans-serif;
-  font-size: 15px;
-  line-height: 1.4;
-
-  @media (max-width: 900px) {
-    font-size: 13px;
-  }
-
-  @media (max-width: 768px) {
-    display: none;
-  }
+  display: flex; align-items: center; gap: 12px; flex: 1; font-family: "ProximaSoft", sans-serif; font-size: 15px; line-height: 1.4;
+  @media (max-width: 900px) { font-size: 13px; }
+  @media (max-width: 768px) { display: none; }
 `;
-
-const IconBox = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  margin-top: 2px; /* Visual alignment fix */
+const IconBoxBanner = styled.div`
+  display: flex; align-items: center; justify-content: center; min-width: 24px; margin-top: 2px;
 `;
-
 const TextContent = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-
-  strong {
-    font-weight: 700;
-  }
-  
-  span {
-    opacity: 0.95;
-  }
+  display: flex; flex-wrap: wrap; gap: 4px;
+  strong { font-weight: 700; }
+  span { opacity: 0.95; }
 `;
-
 const DesktopDescription = styled.span`
   display: inline;
-  @media (max-width: 600px) {
-    display: none; /* Hide long text on very small screens to save space */
-  }
+  @media (max-width: 600px) { display: none; }
 `;
-
 const ActionGroup = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-shrink: 0;
-
-  @media (max-width: 768px) {
-    display: none;
-  }
+  display: flex; align-items: center; gap: 16px; flex-shrink: 0;
+  @media (max-width: 768px) { display: none; }
 `;
-
 const PillButton = styled(Link)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 100px;
-  padding: 6px 20px;
-  font-family: "ProximaSoft", sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: #ffffff;
-  background: transparent;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-
-  &:hover {
-    background: #ffffff;
-    color: #7a1f2e;
-    border-color: #ffffff;
-  }
+  display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 100px; padding: 6px 20px; font-family: "ProximaSoft", sans-serif; font-size: 14px; font-weight: 700; color: #ffffff; background: transparent; transition: all 0.2s ease; white-space: nowrap;
+  &:hover { background: #ffffff; color: #7a1f2e; border-color: #ffffff; }
 `;
-
 const SecondaryLink = styled(Link)`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: "ProximaSoft", sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  text-decoration: none;
-  transition: opacity 0.2s;
-  white-space: nowrap;
-
-  &:hover {
-    opacity: 1;
-    color: #ffffff;
-    text-decoration: underline;
-  }
-
-  svg {
-    transition: transform 0.2s ease;
-  }
-
-  &:hover svg {
-    transform: translateX(3px);
-  }
+  display: flex; align-items: center; gap: 6px; font-family: "ProximaSoft", sans-serif; font-size: 14px; font-weight: 600; color: rgba(255, 255, 255, 0.9); text-decoration: none; transition: opacity 0.2s; white-space: nowrap;
+  &:hover { opacity: 1; color: #ffffff; text-decoration: underline; }
+  svg { transition: transform 0.2s ease; }
+  &:hover svg { transform: translateX(3px); }
 `;
 
 export const AnnouncementBanner = () => {
   return (
     <BannerWrapper>
       <BannerContainer>
-        {/* Left Side: Icon + Text */}
         <LeftContent>
-          <IconBox>
-            <lord-icon
-              src="https://cdn.lordicon.com/yxsbonud.json"
-              trigger="in"
-              state="in-reveal"
-              style={{ width: "24px", height: "24px" }}>
-              
-          </lord-icon>
-          </IconBox>
+          <IconBoxBanner>
+            <lord-icon src="https://cdn.lordicon.com/yxsbonud.json" trigger="in" state="in-reveal" style={{ width: "24px", height: "24px" }}></lord-icon>
+          </IconBoxBanner>
           <TextContent>
-            <strong>Introducing Courses</strong>
-            <span>&mdash;</span>
-            <DesktopDescription>
-              Book courses with multiple sessions at once. Perfect for learning new skills. 🔥
-            </DesktopDescription>
+            <strong>Introducing Courses</strong><span>&mdash;</span>
+            <DesktopDescription>Book courses with multiple sessions at once. Perfect for learning new skills. 🔥</DesktopDescription>
           </TextContent>
         </LeftContent>
-
-        {/* Right Side: Buttons */}
         <ActionGroup>
-          {/* Main Call to Action (The Pill Button) */}
-          <PillButton href="/explore?type=course">
-            Find a Course
-          </PillButton>
-
-          {/* Secondary Action (Text Link) */}
-          <SecondaryLink href="/host/courses">
-            Business? <ArrowRight size={14} />
-          </SecondaryLink>
+          <PillButton href="/explore?type=course">Find a Course</PillButton>
+          <SecondaryLink href="/host/courses">Business? <ArrowRight size={14} /></SecondaryLink>
         </ActionGroup>
       </BannerContainer>
     </BannerWrapper>
   );
 };
 
-// ------------------------------------------------------------------------
-//  BOTTOM TRUST BANNER STYLES
-// ------------------------------------------------------------------------
+// --- TRUST BANNER ---
 
 const TrustStripWrapper = styled.div`
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  z-index: 10;
-  /* Glassmorphism base for the rectangle part */
-  background: rgba(0, 0, 0, 0.27);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding: 1.25rem 1.5rem;
-  
-  @media (max-width: 600px) {
-    padding: 1rem;
-  }
+  position: absolute; bottom: 0; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 10;
+  background: rgba(0, 0, 0, 0.27); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 1.25rem 1.5rem;
+  @media (max-width: 600px) { padding: 1rem; }
 `;
-
 const WaveContainer = styled.div`
-  position: absolute;
-  top: -25px; 
-  left: 0;
-  width: 100%;
-  height: 25px;
-  overflow: hidden;
-  z-index: 11;
-  pointer-events: none;
-  
-  svg {
-    display: block;
-    width: 100%;
-    height: 100%;
-    
-    fill: rgba(0, 0, 0, 0.27); 
-  }
+  position: absolute; top: -25px; left: 0; width: 100%; height: 25px; overflow: hidden; z-index: 11; pointer-events: none;
+  svg { display: block; width: 100%; height: 100%; fill: rgba(0, 0, 0, 0.27); }
 `;
-
 const TrustContent = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 32px;
-  max-width: 1200px;
-  width: 100%;
-  position: relative;
-
-  @media (max-width: 800px) {
-    gap: 16px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
+  display: flex; align-items: center; justify-content: center; gap: 32px; max-width: 1200px; width: 100%; position: relative;
+  @media (max-width: 800px) { gap: 16px; flex-wrap: wrap; justify-content: center; }
 `;
-
-// -- AVATAR PILE STYLES --
-
 const AvatarPile = styled.div`
-  display: flex;
-  align-items: center;
-  /* Add padding to account for the jittery offsets not getting cut off */
-  padding: 10px 0;
-  
-  /* On very small screens, hide avatars to reduce clutter */
-  @media (max-width: 600px) {
-    display: none; 
-  }
+  display: flex; align-items: center; padding: 10px 0;
+  @media (max-width: 600px) { display: none; }
 `;
-
 const AvatarItem = styled.div`
-  position: relative;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.8);
-  overflow: hidden;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-  transition: transform 0.3s ease;
-  
-  &:hover {
-    z-index: 50 !important;
-    transform: scale(1.1) translateY(-2px) !important;
-  }
+  position: relative; width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.8); overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.3s ease;
+  &:hover { z-index: 50 !important; transform: scale(1.1) translateY(-2px) !important; }
 `;
-
-// -- CENTER TEXT STYLES --
-
 const CenterInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  
-  @media (max-width: 600px) {
-    flex-direction: column;
-    gap: 4px;
-    text-align: center;
-  }
+  display: flex; align-items: center; gap: 16px;
+  @media (max-width: 600px) { flex-direction: column; gap: 4px; text-align: center; }
 `;
-
 const StarCluster = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  
-  svg {
-    fill: #FFD700;
-    color: #FFD700;
-    filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.5));
-  }
+  display: flex; align-items: center; gap: 2px;
+  svg { fill: #FFD700; color: #FFD700; filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.5)); }
 `;
-
 const TrustText = styled.div`
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-
-  .title {
-    color: #fff;
-    font-family: 'ProximaSoft', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-  }
-
-  .subtitle {
-    color: rgba(255, 255, 255, 0.8);
-    font-family: 'ProximaSoft', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-  }
+  display: flex; flex-direction: column; line-height: 1.2;
+  .title { color: #fff; font-family: 'ProximaSoft', sans-serif; font-size: 16px; font-weight: 700; }
+  .subtitle { color: rgba(255, 255, 255, 0.8); font-family: 'ProximaSoft', sans-serif; font-size: 13px; font-weight: 500; }
 `;
 
 const BottomTrustBanner = () => {
-  // Use RandomUser.me (free) and hardcode specific interesting avatars so it doesn't flicker on re-renders (SSR safe)
-  // Left side configuration: Random scattering
   const leftSideAvatars = [
     { src: "https://randomuser.me/api/portraits/women/44.jpg", x: 0, y: 0, z: 1 },
     { src: "https://randomuser.me/api/portraits/men/32.jpg", x: -8, y: -6, z: 3 },
     { src: "https://randomuser.me/api/portraits/women/68.jpg", x: -12, y: 5, z: 2 },
     { src: "https://randomuser.me/api/portraits/men/11.jpg", x: -16, y: -3, z: 4 },
   ];
-  
-  // Right side configuration: Different scattering pattern so it's not a mirror image
   const rightSideAvatars = [
     { src: "https://randomuser.me/api/portraits/men/85.jpg", x: 0, y: 4, z: 2 },
     { src: "https://randomuser.me/api/portraits/women/12.jpg", x: -10, y: -5, z: 4 },
@@ -1030,55 +1000,29 @@ const BottomTrustBanner = () => {
 
   return (
     <TrustStripWrapper>
-      {/* Decorative Uneven Glass Wave on Top */}
       <WaveContainer>
          <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
              <path d="M0,100 C150,200 350,0 500,100 C650,200 800,0 1000,100 C1100,150 1200,100 1200,100 V120 H0 V100 Z"></path>
          </svg>
       </WaveContainer>
-
       <TrustContent>
-        {/* Left Side Faces */}
         <AvatarPile>
           {leftSideAvatars.map((person, i) => (
-            <AvatarItem 
-              key={i} 
-              style={{ 
-                zIndex: person.z,
-                marginLeft: i === 0 ? 0 : `${person.x}px`,
-                transform: `translateY(${person.y}px)` 
-              }}
-            >
+            <AvatarItem key={i} style={{ zIndex: person.z, marginLeft: i === 0 ? 0 : `${person.x}px`, transform: `translateY(${person.y}px)` }}>
               <Image src={person.src} alt="User" width={36} height={36} style={{objectFit:'cover'}} />
             </AvatarItem>
           ))}
         </AvatarPile>
-
-        {/* Center Text & Stars */}
         <CenterInfo>
-          <StarCluster>
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} size={20} strokeWidth={0} />
-            ))}
-          </StarCluster>
+          <StarCluster>{[...Array(5)].map((_, i) => <Star key={i} size={20} strokeWidth={0} />)}</StarCluster>
           <TrustText>
-            {/* Swapped to a Statement of Fact (Social Proof) instead of an Invitation */}
             <span className="title">Thousands of 5-star experiences</span>
             <span className="subtitle">A growing community of learners & hosts</span>
           </TrustText>
         </CenterInfo>
-
-        {/* Right Side Faces */}
         <AvatarPile>
           {rightSideAvatars.map((person, i) => (
-            <AvatarItem 
-              key={i} 
-              style={{ 
-                zIndex: person.z,
-                marginLeft: i === 0 ? 0 : `${person.x}px`, // Negative margins to pull them together
-                transform: `translateY(${person.y}px)` 
-              }}
-            >
+            <AvatarItem key={i} style={{ zIndex: person.z, marginLeft: i === 0 ? 0 : `${person.x}px`, transform: `translateY(${person.y}px)` }}>
               <Image src={person.src} alt="User" width={36} height={36} style={{objectFit:'cover'}} />
             </AvatarItem>
           ))}
@@ -1088,210 +1032,29 @@ const BottomTrustBanner = () => {
   );
 };
 
-
 // ------------------------------------------------------------------------
-//  INTERNAL COMPONENTS
+//  MOBILE SEARCH PILL LOGIC
 // ------------------------------------------------------------------------
 
-const DesktopSearchForm = () => {
-  const {
-    searchTerm,
-    datePickerValue, setDatePickerValue,
-    participantCount, setParticipantCount,
-    geocoding, geocodedAddressResults,
-    handleLocationChange, handleLocationSelect,
-    performSearch
-  } = useSearch();
-
-  const [locationOptions, setLocationOptions] = useState([]);
-
-  const generateLocationOptions = useCallback(() => {
-    let options = [];
-    if (searchTerm && geocodedAddressResults.length > 0) {
-      options.push({
-        label: "Search Results",
-        options: geocodedAddressResults.map((result, index) => ({
-          value: result.displayName,
-          label: (
-            <OptionContainer>
-              <IconWrapper bg="#f0f9ff">
-                <MapPin size={20} color="#545454" />
-              </IconWrapper>
-              <OptionText>
-                <PrimaryText>{result.displayName}</PrimaryText>
-                <SecondaryText>Address</SecondaryText>
-              </OptionText>
-            </OptionContainer>
-          ),
-          coordinates: result.coordinates,
-          key: `geocoded-${index}`,
-        })),
-      });
-    } else if (!searchTerm) {
-      options.push({
-        label: "Popular Areas",
-        options: SUGGESTED_AREAS.map((dest, index) => ({
-          value: dest.name,
-          label: (
-            <OptionContainer>
-              <IconWrapper>
-                {dest.icon}
-              </IconWrapper>
-              <OptionText>
-                <PrimaryText>{dest.name}</PrimaryText>
-                <SecondaryText>{dest.description}</SecondaryText>
-              </OptionText>
-            </OptionContainer>
-          ),
-          coordinates: dest.coords,
-          citySlug: dest.citySlug,
-          provinceSlug: dest.provinceSlug,
-          key: `suggested-${index}`,
-        })),
-      });
-    }
-    setLocationOptions(options);
-  }, [searchTerm, geocodedAddressResults]);
-
-  useEffect(() => {
-    generateLocationOptions();
-  }, [generateLocationOptions]);
-
-  const handleDesktopSubmit = (e) => {
-    e.preventDefault();
-    performSearch();
-  };
-
-  return (
-    <InputsWrapper onSubmit={handleDesktopSubmit}>
-      <SearchBarContainer>
-        {/* SECTION 1: LOCATION */}
-        <LocationSearchWrapper>
-          <LocationWrapper>
-            {/* REMOVED MapPin ICON */}
-            <div style={{ width: "100%" }}>
-              <ButtonText>
-                <LabelText>Location</LabelText>
-              </ButtonText>
-              
-              <AutoComplete
-                value={searchTerm}
-                options={locationOptions}
-                onSelect={handleLocationSelect}
-                onChange={handleLocationChange}
-                filterOption={false}
-                style={{
-                  width: "100%",
-                  height: "24px",
-                }}
-                popupClassName="banner-search-location-dropdown"
-                notFoundContent={
-                  geocoding ? (
-                    <div className="dropdown-loader-container">
-                      <GlobalLoaderWithInlineStyles />
-                    </div>
-                  ) : searchTerm &&
-                    !locationOptions.some(
-                      (group) => group.options.length > 0
-                    ) ? (
-                    <div className="dropdown-no-results">
-                      No results found for &quot;{searchTerm}&quot;
-                    </div>
-                  ) : null
-                }
-              >
-                <input
-                  className="banner-search-input"
-                  placeholder="Where are you looking?"
-                />
-              </AutoComplete>
-            </div>
-          </LocationWrapper>
-        </LocationSearchWrapper>
-
-        {/* SECTION 2: DATE */}
-        <DatePickerWrapper>
-          {/* REMOVED CalendarSearch ICON */}
-          <DatePickerInputArea>
-            <DatePickerLabel htmlFor="date-picker">
-              Date
-            </DatePickerLabel>
-            <DatePicker
-              id="date-picker"
-              name="date-picker"
-              variant="borderless"
-              placeholder="Any date"
-              disabledDate={(current) =>
-                current && current < dayjs().startOf("day")
-              }
-              onChange={setDatePickerValue}
-              format="YYYY-MM-DD"
-              value={datePickerValue}
-              allowClear={true}
-              inputReadOnly={false}
-              popupClassName="banner-search-datepicker"
-            />
-          </DatePickerInputArea>
-        </DatePickerWrapper>
-
-        {/* SECTION 3: PARTICIPANTS */}
-        <ParticipantInputContainer>
-          <LabelText>Participants</LabelText>
-          <StyledParticipantSelect
-            id="participant-count"
-            value={participantCount}
-            onChange={setParticipantCount}
-            aria-label="Number of participants"
-            options={participantOptions}
-            variant="borderless"
-            popupClassName="participant-count-dropdown"
-            popupMatchSelectWidth={false}
-            dropdownStyle={{ minWidth: "80px" }}
-          />
-        </ParticipantInputContainer>
-
-        {/* SECTION 4: BUTTON */}
-        <RoundedSearchButton
-          type="submit"
-          aria-label="Search classes"
-        >
-          <Search size={20} />
-        </RoundedSearchButton>
-      </SearchBarContainer>
-    </InputsWrapper>
-  );
-};
-
-// 2. Mobile Logic
 const MobileSearchPill = () => {
-  const {
-    searchTerm,
-    datePickerValue,
-    participantCount,
-    setIsDrawerOpen
-  } = useSearch();
+  const { searchTerm, datePickerValue, participantCount, setIsDrawerOpen } = useSearch();
 
-  const getPillLabel = () => {
-    if (searchTerm) return searchTerm;
-    return "Find a class?";
-  };
-
+  const getPillLabel = () => searchTerm || "Find a class?";
   const getPillSubLabel = () => {
     let parts = [];
     if (datePickerValue) parts.push(dayjs(datePickerValue).format("MMM D"));
     else parts.push("Any week");
-
-    if (participantCount > 1) parts.push(`${participantCount} people`);
-    else parts.push("Add people");
-
+    
+    const pCount = Math.max(1, participantCount);
+    if (pCount > 1) parts.push(`${pCount} people`);
+    else parts.push("1 person");
+    
     return parts.join(" • ");
   };
 
   return (
     <StaticSearchPill onClick={() => setIsDrawerOpen(true)} whileTap={{ scale: 0.95 }}>
-      <div className="icon-circle">
-        <Search size={22} strokeWidth={2.5} />
-      </div>
+      <div className="icon-circle"><Search size={22} strokeWidth={2.5} /></div>
       <div className="content">
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
           <PillText>{getPillLabel()}</PillText>
@@ -1302,7 +1065,9 @@ const MobileSearchPill = () => {
   );
 };
 
-// --- MAIN EXPORT ---
+// ------------------------------------------------------------------------
+//  MAIN COMPONENT
+// ------------------------------------------------------------------------
 
 const BannerSearch = () => {
   const [isMounted, setIsMounted] = useState(false);
@@ -1313,55 +1078,28 @@ const BannerSearch = () => {
 
   const scrollToHowItWorks = () => {
     const section = document.getElementById("how-it-works");
-    if (section) {
-      section.scrollIntoView({ behavior: "smooth" });
-    }
+    if (section) section.scrollIntoView({ behavior: "smooth" });
   };
 
-  // 3. Fallbacks (STATIC HTML ONLY)
-  
+  // SSR Fallbacks
   const DesktopFallback = () => (
-    <InputsWrapper>
-      <SearchBarContainer>
-        <LocationSearchWrapper>
-          <LocationWrapper>
-            <div style={{ width: "100%" }}>
-               <ButtonText>
-                 <LabelText>Location</LabelText>
-               </ButtonText>
-               <InputPlaceholder>Where are you looking?</InputPlaceholder>
-            </div>
-          </LocationWrapper>
-        </LocationSearchWrapper>
-        
-        <DatePickerWrapper>
-          <DatePickerInputArea>
-             <DatePickerLabel>Date</DatePickerLabel>
-             <InputPlaceholder style={{ width: '120px' }}>Any date</InputPlaceholder>
-          </DatePickerInputArea>
-        </DatePickerWrapper>
-
-        <ParticipantInputContainer>
-          <LabelText>Participants</LabelText>
-          <ParticipantPlaceholder>1 Person</ParticipantPlaceholder>
-        </ParticipantInputContainer>
-
-        <RoundedSearchButton type="button">
-           <Search size={20} />
-        </RoundedSearchButton>
-      </SearchBarContainer>
-    </InputsWrapper>
+    <SearchFormWrapper as="div">
+       <SectionButton><Label>Location</Label><ValueDisplay>Where are you looking?</ValueDisplay></SectionButton>
+       <Divider />
+       <SectionButton><Label>Date</Label><ValueDisplay>Any date</ValueDisplay></SectionButton>
+       <Divider />
+       <SectionButton><Label>Who</Label><ValueDisplay>1 participant</ValueDisplay></SectionButton>
+       <SearchButton><Search size={22} /></SearchButton>
+    </SearchFormWrapper>
   );
 
   const MobileFallback = () => (
     <StaticSearchPill>
-      <div className="icon-circle">
-        <Search size={22} strokeWidth={2.5} />
-      </div>
+      <div className="icon-circle"><Search size={22} strokeWidth={2.5} /></div>
       <div className="content">
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
           <PillText>Find a class?</PillText>
-          <PillSubtext>Any week • Add people</PillSubtext>
+          <PillSubtext>Any week • 1 person</PillSubtext>
         </div>
       </div>
     </StaticSearchPill>
@@ -1369,52 +1107,39 @@ const BannerSearch = () => {
 
   return (
     <Banner aria-labelledby="banner-heading">
-      <BannerSearchDropdownStyles />
+      <GlobalOverrides />
 
-      <FilteredBackgroundImage>
-        <Image
-          src="/homepageMobile.webp"
-          alt="Background"
-          fill
-          priority
-          fetchPriority="high"
-          quality={85}
-          sizes="100vw"
-          placeholder="blur"
-          blurDataURL={BLACK_PIXEL}
-          style={{ objectFit: "cover" }}
-        />
-      </FilteredBackgroundImage>
-
-      <Video
-        autoPlay
-        loop
-        muted
-        playsInline
-        poster="/videos/1.png"
-        preload="none"
-      >
-        <source src="/videos/Classes.mp4" type="video/mp4" />
-      </Video>
+      <BackgroundMediaWrapper>
+        <FilteredBackgroundImage>
+          <Image
+            src="/homepageMobile.webp"
+            alt="Background"
+            fill
+            priority
+            fetchPriority="high"
+            quality={85}
+            sizes="100vw"
+            placeholder="blur"
+            blurDataURL={BLACK_PIXEL}
+            style={{ objectFit: "cover" }}
+          />
+        </FilteredBackgroundImage>
+        <Video autoPlay loop muted playsInline poster="/videos/1.png" preload="none">
+          <source src="/videos/Classes.mp4" type="video/mp4" />
+        </Video>
+      </BackgroundMediaWrapper>
 
       <DesktopContainer>
         <MainWrapper>
           <MainContent>
-            <HeroText id="banner-heading">
-              Learn locally
-            </HeroText>
-            <SubText>
-              Book unique classes & workshops near you. Instantly.
-            </SubText>
+            <HeroText id="banner-heading">Learn locally</HeroText>
+            <SubText>Book unique classes & workshops near you. Instantly.</SubText>
 
-            
-            {/* SWAP: Fallback (SSR) vs Real Form (CSR) */}
             {isMounted ? <DesktopSearchForm /> : <DesktopFallback />}
 
             <HowItWorksButton onClick={scrollToHowItWorks}>
-              How ClassEasily works <ChevronDown size={16} />
+              How ClassEasily works <ChevronRight size={16} />
             </HowItWorksButton>
-
           </MainContent>
         </MainWrapper>
       </DesktopContainer>
@@ -1422,12 +1147,9 @@ const BannerSearch = () => {
       <MobileContainer>
         <HeroTextMobile>Learn locally</HeroTextMobile>
         <SubTextMobile>Discover unique classes & workshops near you.</SubTextMobile>
-
-        {/* SWAP: Fallback (SSR) vs Real Pill (CSR) */}
         {isMounted ? <MobileSearchPill /> : <MobileFallback />}
       </MobileContainer>
 
-      {/* NEW: Bottom Trust Strip */}
       <BottomTrustBanner />
     </Banner>
   );
