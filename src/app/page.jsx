@@ -57,14 +57,14 @@ export default async function HomePage() {
             />
           </Suspense>
 
-          <Suspense fallback={<FindClassSkeleton />}>
+          {/* <Suspense fallback={<FindClassSkeleton />}>
             <ClassRow 
               title="Get Creative" 
               subtitle="Popular art, design, and pottery workshops"
               classes={featuredCategory}
               seeAllLink="/explore?category=arts-design"
             />
-          </Suspense>
+          </Suspense> */}
 
           <Suspense fallback={<FindClassSkeleton />}>
             <ClassRow 

@@ -412,10 +412,10 @@ const CounterBtn = styled.button`
 
 const CustomCalendar = ({ value, onChange, onClose }) => {
   const [currentDate, setCurrentDate] = useState(value ? dayjs(value) : dayjs());
-  
+
   const daysInMonth = currentDate.daysInMonth();
   const startDay = currentDate.startOf('month').day();
-  
+
   const blanks = Array(startDay).fill(null);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
@@ -435,21 +435,21 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
         <span>{currentDate.format("MMMM YYYY")}</span>
         <NavBtn onClick={nextMonth} type="button"><ChevronRight size={20} /></NavBtn>
       </CalendarHeader>
-      
+
       <WeekGrid>
         {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <div key={d}>{d}</div>)}
       </WeekGrid>
-      
+
       <DayGrid>
         {blanks.map((_, i) => <div key={`blank-${i}`} />)}
         {days.map(d => {
           const thisDate = currentDate.date(d);
           const isSelected = value && dayjs(value).isSame(thisDate, 'day');
           const isPast = thisDate.isBefore(dayjs().startOf('day'));
-          
+
           return (
-            <DayBtn 
-              key={d} 
+            <DayBtn
+              key={d}
               type="button"
               $isSelected={isSelected}
               $isDisabled={isPast}
@@ -473,17 +473,17 @@ const CustomParticipant = ({ count, onChange }) => {
         <span style={{ fontSize: 13, color: '#717171' }}>Join the class</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <CounterBtn 
-          type="button" 
-          disabled={count <= 1} 
+        <CounterBtn
+          type="button"
+          disabled={count <= 1}
           onClick={() => onChange(Math.max(1, count - 1))}
         >
           <Minus size={16} />
         </CounterBtn>
         <span style={{ width: 24, textAlign: 'center', fontWeight: 600, fontSize: 16 }}>{count}</span>
-        <CounterBtn 
-          type="button" 
-          disabled={count >= 20} 
+        <CounterBtn
+          type="button"
+          disabled={count >= 20}
           onClick={() => onChange(count + 1)}
         >
           <Plus size={16} />
@@ -495,22 +495,22 @@ const CustomParticipant = ({ count, onChange }) => {
 
 // Fix 2: Updated variants to start invisible and wait for container to settle
 const contentVariants = {
-  enter: { 
-    opacity: 0, 
+  enter: {
+    opacity: 0,
     scale: 0.98,
   },
-  center: { 
-    opacity: 1, 
+  center: {
+    opacity: 1,
     scale: 1,
-    transition: { 
+    transition: {
       delay: 0.1, // Wait for container to start resizing
-      duration: 0.3, 
-      ease: "easeOut" 
-    } 
+      duration: 0.3,
+      ease: "easeOut"
+    }
   },
-  exit: { 
-    opacity: 0, 
-    transition: { duration: 0 } 
+  exit: {
+    opacity: 0,
+    transition: { duration: 0 }
   }
 };
 
@@ -524,9 +524,9 @@ const DesktopSearchForm = () => {
     performSearch
   } = useSearch();
 
-  const [activeField, setActiveField] = useState(null); 
+  const [activeField, setActiveField] = useState(null);
   const [popupConfig, setPopupConfig] = useState({ left: 0, width: 400 });
-  const [isSwitching, setIsSwitching] = useState(false); 
+  const [isSwitching, setIsSwitching] = useState(false);
 
   const containerRef = useRef(null);
   const locationRef = useRef(null);
@@ -544,18 +544,18 @@ const DesktopSearchForm = () => {
     setActiveField(null);
     setIsSwitching(false);
   };
-  
+
   const handleFieldClick = (field) => {
     if (activeField && activeField !== field) {
-        setIsSwitching(true); 
+      setIsSwitching(true);
     } else {
-        setIsSwitching(false); 
+      setIsSwitching(false);
     }
     setActiveField(field);
   };
 
-  const participantDisplay = participantCount === 1 
-    ? '1 participant' 
+  const participantDisplay = participantCount === 1
+    ? '1 participant'
     : `${participantCount} participants`;
 
   // --- POSITION & VIEWPORT CHECK LOGIC ---
@@ -569,7 +569,7 @@ const DesktopSearchForm = () => {
       if (targetRef?.current && containerRef.current) {
         const buttonRect = targetRef.current.getBoundingClientRect();
         const containerRect = containerRef.current.getBoundingClientRect();
-        
+
         let width = 400;
         if (activeField === 'date') width = 360;
         if (activeField === 'participants') width = 340;
@@ -593,8 +593,8 @@ const DesktopSearchForm = () => {
         }
 
         if (absoluteLeft < viewportPadding) {
-           const underflow = viewportPadding - absoluteLeft;
-           left += underflow;
+          const underflow = viewportPadding - absoluteLeft;
+          left += underflow;
         }
 
         setPopupConfig({ left, width });
@@ -608,7 +608,7 @@ const DesktopSearchForm = () => {
 
   const renderLocationSuggestions = () => {
     const safeResults = Array.isArray(geocodedAddressResults) ? geocodedAddressResults : [];
-    
+
     if (searchTerm && safeResults.length > 0) {
       return safeResults.map((result, idx) => (
         <LocationOption key={idx} onClick={() => { handleLocationSelect(result.displayName); setActiveField(null); setIsSwitching(false); }}>
@@ -632,21 +632,21 @@ const DesktopSearchForm = () => {
   };
 
   return (
-    <SearchFormWrapper 
-      ref={containerRef} 
+    <SearchFormWrapper
+      ref={containerRef}
       onSubmit={handleSearchSubmit}
-      layout 
-      animate={{ 
-        backgroundColor: activeField ? "#ebebeb" : "#ffffff" 
+      layout
+      animate={{
+        backgroundColor: activeField ? "#ebebeb" : "#ffffff"
       }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
       {/* 1. LOCATION SECTION */}
-      <SectionButton 
+      <SectionButton
         ref={locationRef}
-        $isActive={activeField === 'location'} 
+        $isActive={activeField === 'location'}
         onClick={() => handleFieldClick('location')}
-        style={{ width: '280px', flexShrink: 0 }} 
+        style={{ width: '280px', flexShrink: 0 }}
       >
         {activeField === 'location' && (
           <ActivePill layoutId="search-pill" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
@@ -654,25 +654,25 @@ const DesktopSearchForm = () => {
 
         <Label>Location</Label>
         {activeField === 'location' ? (
-            <LocationInput 
-              autoFocus
-              value={searchTerm}
-              onChange={handleLocationChange}
-              placeholder="Where are you looking?"
-            />
+          <LocationInput
+            autoFocus
+            value={searchTerm}
+            onChange={(e) => handleLocationChange(e.target.value)}
+            placeholder="Where are you looking?"
+          />
         ) : (
           <ValueDisplay $hasValue={!!searchTerm}>
             {searchTerm || "Where are you looking?"}
           </ValueDisplay>
         )}
       </SectionButton>
-      
+
       <Divider $isHidden={activeField === 'location' || activeField === 'date'} />
 
       {/* 2. DATE SECTION */}
-      <SectionButton 
+      <SectionButton
         ref={dateRef}
-        $isActive={activeField === 'date'} 
+        $isActive={activeField === 'date'}
         onClick={() => handleFieldClick('date')}
         style={{ minWidth: '150px' }}
       >
@@ -688,13 +688,13 @@ const DesktopSearchForm = () => {
       <Divider $isHidden={activeField === 'date' || activeField === 'participants'} />
 
       {/* 3. PARTICIPANTS SECTION */}
-      <SectionButton 
+      <SectionButton
         ref={participantsRef}
-        $isActive={activeField === 'participants'} 
+        $isActive={activeField === 'participants'}
         onClick={() => handleFieldClick('participants')}
         style={{ minWidth: '150px' }}
       >
-         {activeField === 'participants' && (
+        {activeField === 'participants' && (
           <ActivePill layoutId="search-pill" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
         )}
         <Label>Who</Label>
@@ -704,7 +704,7 @@ const DesktopSearchForm = () => {
       </SectionButton>
 
       {/* SEARCH BUTTON */}
-      <SearchButton 
+      <SearchButton
         type="submit"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -720,15 +720,15 @@ const DesktopSearchForm = () => {
             key="popup-container"
             layout // Enables automatic layout animation
             initial={{ opacity: 0, y: 10, scale: 0.95, left: popupConfig.left, width: popupConfig.width }}
-            animate={{ 
-              opacity: 1, 
-              y: 0, 
+            animate={{
+              opacity: 1,
+              y: 0,
               scale: 1,
               left: popupConfig.left,
               width: popupConfig.width
             }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ 
+            transition={{
               layout: { duration: 0.4, ease: "easeInOut" },
               left: { duration: isSwitching ? 0.4 : 0, ease: "easeInOut" },
               width: { duration: isSwitching ? 0.4 : 0, ease: "easeInOut" },
@@ -740,7 +740,7 @@ const DesktopSearchForm = () => {
               <AnimatePresence mode="popLayout">
                 {/* Fix 2: Wrap content in a div with fixed width to prevent squashing during transition */}
                 <motion.div
-                  key={activeField} 
+                  key={activeField}
                   variants={contentVariants}
                   initial="enter"
                   animate="center"
@@ -754,16 +754,16 @@ const DesktopSearchForm = () => {
                     </>
                   )}
                   {activeField === 'date' && (
-                    <CustomCalendar 
-                      value={datePickerValue} 
-                      onChange={setDatePickerValue} 
-                      onClose={() => handleFieldClick('participants')} 
+                    <CustomCalendar
+                      value={datePickerValue}
+                      onChange={setDatePickerValue}
+                      onClose={() => handleFieldClick('participants')}
                     />
                   )}
                   {activeField === 'participants' && (
-                    <CustomParticipant 
-                      count={Math.max(1, participantCount)} 
-                      onChange={setParticipantCount} 
+                    <CustomParticipant
+                      count={Math.max(1, participantCount)}
+                      onChange={setParticipantCount}
                     />
                   )}
                 </motion.div>
@@ -793,6 +793,7 @@ const MobileContainer = styled.div`
   
   @media (max-width: 760px) {
     display: flex;
+    padding-bottom: 4rem;
   }
 `;
 
@@ -1001,15 +1002,15 @@ const BottomTrustBanner = () => {
   return (
     <TrustStripWrapper>
       <WaveContainer>
-         <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
-             <path d="M0,100 C150,200 350,0 500,100 C650,200 800,0 1000,100 C1100,150 1200,100 1200,100 V120 H0 V100 Z"></path>
-         </svg>
+        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+          <path d="M0,100 C150,200 350,0 500,100 C650,200 800,0 1000,100 C1100,150 1200,100 1200,100 V120 H0 V100 Z"></path>
+        </svg>
       </WaveContainer>
       <TrustContent>
         <AvatarPile>
           {leftSideAvatars.map((person, i) => (
             <AvatarItem key={i} style={{ zIndex: person.z, marginLeft: i === 0 ? 0 : `${person.x}px`, transform: `translateY(${person.y}px)` }}>
-              <Image src={person.src} alt="User" width={36} height={36} style={{objectFit:'cover'}} />
+              <Image src={person.src} alt="User" width={36} height={36} style={{ objectFit: 'cover' }} />
             </AvatarItem>
           ))}
         </AvatarPile>
@@ -1023,7 +1024,7 @@ const BottomTrustBanner = () => {
         <AvatarPile>
           {rightSideAvatars.map((person, i) => (
             <AvatarItem key={i} style={{ zIndex: person.z, marginLeft: i === 0 ? 0 : `${person.x}px`, transform: `translateY(${person.y}px)` }}>
-              <Image src={person.src} alt="User" width={36} height={36} style={{objectFit:'cover'}} />
+              <Image src={person.src} alt="User" width={36} height={36} style={{ objectFit: 'cover' }} />
             </AvatarItem>
           ))}
         </AvatarPile>
@@ -1044,11 +1045,11 @@ const MobileSearchPill = () => {
     let parts = [];
     if (datePickerValue) parts.push(dayjs(datePickerValue).format("MMM D"));
     else parts.push("Any week");
-    
+
     const pCount = Math.max(1, participantCount);
     if (pCount > 1) parts.push(`${pCount} people`);
     else parts.push("1 person");
-    
+
     return parts.join(" • ");
   };
 
@@ -1084,12 +1085,12 @@ const BannerSearch = () => {
   // SSR Fallbacks
   const DesktopFallback = () => (
     <SearchFormWrapper as="div">
-       <SectionButton><Label>Location</Label><ValueDisplay>Where are you looking?</ValueDisplay></SectionButton>
-       <Divider />
-       <SectionButton><Label>Date</Label><ValueDisplay>Any date</ValueDisplay></SectionButton>
-       <Divider />
-       <SectionButton><Label>Who</Label><ValueDisplay>1 participant</ValueDisplay></SectionButton>
-       <SearchButton><Search size={22} /></SearchButton>
+      <SectionButton><Label>Location</Label><ValueDisplay>Where are you looking?</ValueDisplay></SectionButton>
+      <Divider />
+      <SectionButton><Label>Date</Label><ValueDisplay>Any date</ValueDisplay></SectionButton>
+      <Divider />
+      <SectionButton><Label>Who</Label><ValueDisplay>1 participant</ValueDisplay></SectionButton>
+      <SearchButton><Search size={22} /></SearchButton>
     </SearchFormWrapper>
   );
 
@@ -1099,7 +1100,7 @@ const BannerSearch = () => {
       <div className="content">
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
           <PillText>Find a class?</PillText>
-          <PillSubtext>Any week • 1 person</PillSubtext>
+          <PillSubtext>Any Date • 1 person</PillSubtext>
         </div>
       </div>
     </StaticSearchPill>
