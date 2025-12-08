@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
-import styled, { createGlobalStyle } from "styled-components";
+import styled from "styled-components";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { motion, AnimatePresence } from "framer-motion";
 import { debounce } from "lodash";
 import { useAuthModal } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Menu, Search } from "lucide-react";
 import dayjs from "dayjs";
@@ -40,17 +40,8 @@ const HeaderWrapper = styled.header`
   display: grid;
   grid-template-columns: auto 1fr auto;
   
-  /* 
-   * POSITION LOGIC:
-   * Absolute initially (sits below banner).
-   * Fixed when scrolled (sticks to top).
-   */
   position: ${(props) => (props.$isScrolled ? "fixed" : "absolute")};
   
-  /* 
-   * DESKTOP TOP LOGIC (> 768px):
-   * Includes topOffset because banner is visible.
-   */
   top: ${(props) => {
     const baseTop = props.$isImpersonating ? 40 : 0;
     const offset = props.$isScrolled ? 0 : (props.$topOffset || 0);
@@ -64,11 +55,6 @@ const HeaderWrapper = styled.header`
   transition: background-color 0.3s ease, padding 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
   z-index: 999;
 
-  /* 
-   * FIX: INTERMEDIATE TABLET RANGE (757px - 768px)
-   * The Banner hides at 768px. Even if we are in "Desktop Style" header mode,
-   * we must remove the topOffset here because the banner is gone.
-   */
   @media (min-width: 757px) and (max-width: 768px) {
     top: ${(props) => (props.$isImpersonating ? "40px" : "0px")};
   }
@@ -86,20 +72,13 @@ const HeaderWrapper = styled.header`
     `}
   }
 
-  /* MOBILE STYLES */
   @media (max-width: 756px) {
     width: calc(100% - 2rem);
     left: 1rem;
     right: 1rem;
     
-    /* 
-     * FIX: MOBILE TOP LOGIC (<= 756px)
-     * We purposefully ignore props.$topOffset here because the banner
-     * is hidden via display:none on mobile.
-     */
     top: ${(props) => {
     const baseTop = props.$isImpersonating ? 48 : 8;
-    // Offset ignored, banner is hidden
     return `${baseTop}px`;
   }};
 
@@ -137,10 +116,10 @@ const NotchContainer = styled(motion.div)`
   z-index: 990;
   width: max-content;
   max-width: 85vw;
-  padding-right: 8px; /* Ensure icon has space */
+  padding-right: 8px;
 
   @media (min-width: 1089px) {
-    display: none; /* Only show on mobile/tablet */
+    display: none; 
   }
 `;
 
@@ -272,14 +251,16 @@ const UserAvatar = ({ size = 28 }) => {
   );
 };
 
-const Header = ({
+// --- MAIN HEADER CONTENT ---
+const HeaderContent = ({
   logoTitleColor = "#fff",
   dropdownButtonColor = "#fff",
   dropdownButtonHoverColor = "#d3000e",
   dropdownButtonOutlineColor = "#fff",
-  topOffset = 0, // PROP: Height of the banner
+  topOffset = 0,
 }) => {
   const router = useRouter();
+  const pathname = usePathname(); // For closing menu on route change
   const { user: currentUser } = useAuthUser();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -288,7 +269,6 @@ const Header = ({
   const { openLoginModal, openRegisterModal } = useAuthModal();
   const isImpersonating = currentUser?.is_impersonating || false;
 
-  // --- SHARED SEARCH STATE ---
   const {
     searchTerm,
     datePickerValue,
@@ -298,23 +278,22 @@ const Header = ({
 
   // Scroll Listener
   useEffect(() => {
-    // If topOffset is 0, we default to 100px so the glass effect doesn't start instantly.
-    // We stick to the passed offset even on mobile for consistency in scroll behavior,
-    // though the layout positioning is handled by CSS.
     const scrollThreshold = topOffset > 0 ? topOffset : 100;
-
     const checkScrollPosition = () => {
       setIsScrolled(window.pageYOffset >= scrollThreshold);
     };
     checkScrollPosition();
-    // Using 5ms debounce for smoother response to fast scrolls
     const handleScroll = debounce(checkScrollPosition, 5);
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [topOffset]);
 
-  // Computed Colors
+  // FIX: Force menu close on route change to avoid "Double Menu"
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
+
   const currentIconColor = isScrolled ? scrolledStyling.outlineAndIconColor : dropdownButtonColor;
   const currentBorderColor = isScrolled ? scrolledStyling.outlineAndIconColor : dropdownButtonOutlineColor;
   const currentTextColor = isScrolled ? scrolledStyling.textColor : dropdownButtonColor;
@@ -327,7 +306,6 @@ const Header = ({
         $isImpersonating={isImpersonating}
         $topOffset={topOffset}
       >
-        {/* LOGO */}
         <LogoLink href="/">
           <LogoContainer $isScrolled={isScrolled}>
             <LogoIcon isScrolled={isScrolled} activeColor={scrolledStyling.logoColor} restingColor={logoTitleColor} />
@@ -339,7 +317,6 @@ const Header = ({
 
         <Spacer />
 
-        {/* AUTH / MENU */}
         <Selection>
           <AnimatePresence mode="wait">
             {currentUser ? (
@@ -354,7 +331,13 @@ const Header = ({
                   <MenuIconStyled $iconColor={currentIconColor} />
                   <AvatarWrapper><UserAvatar size={32} /></AvatarWrapper>
                 </RoundedButton>
-                <CustomUserMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} onNavigate={(p) => { setIsMenuOpen(false); router.push(p); }} onShowSettings={() => { setIsMenuOpen(false); setIsSettingsModalOpen(true); }} triggerRef={menuTriggerRef} />
+                <CustomUserMenu 
+                  isOpen={isMenuOpen} 
+                  onClose={() => setIsMenuOpen(false)} 
+                  onNavigate={(p) => router.push(p)} 
+                  onShowSettings={() => { setIsMenuOpen(false); setIsSettingsModalOpen(true); }} 
+                  triggerRef={menuTriggerRef} 
+                />
               </AuthContainer>
             ) : (
               <AuthContainer key="guest">
@@ -366,7 +349,6 @@ const Header = ({
         </Selection>
       </HeaderWrapper>
 
-      {/* NOTCH SEARCH PILL */}
       <AnimatePresence>
         {isScrolled && (
           <NotchContainer
@@ -394,6 +376,31 @@ const Header = ({
 
       <SettingsModal open={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
     </>
+  );
+};
+
+// --- FALLBACK COMPONENT ---
+const HeaderFallback = ({ logoTitleColor = "#fff", topOffset = 0 }) => {
+  return (
+    <HeaderWrapper 
+       $isScrolled={false} 
+       $initialColor={logoTitleColor} 
+       $isImpersonating={false} 
+       $topOffset={topOffset}
+    >
+      <div style={{ gridColumn: "1 / 2" }}>
+         <Title color={logoTitleColor}>classeasily</Title>
+      </div>
+    </HeaderWrapper>
+  );
+};
+
+// --- EXPORTED COMPONENT WITH SUSPENSE ---
+const Header = (props) => {
+  return (
+    <Suspense fallback={<HeaderFallback {...props} />}>
+      <HeaderContent {...props} />
+    </Suspense>
   );
 };
 

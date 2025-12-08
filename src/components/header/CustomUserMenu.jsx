@@ -2,7 +2,6 @@
 
 import React, { useRef, useEffect, useState } from "react";
 import ReactDOM from "react-dom";
-import { usePathname } from "next/navigation"; // 1. Import usePathname
 import { motion, AnimatePresence } from "framer-motion";
 import styled, { createGlobalStyle } from "styled-components";
 import { useAuthModal } from "@/context/AuthContext";
@@ -319,27 +318,26 @@ const MenuContentContainer = styled.div`
   }
 `;
 
-// 2. Update Variants to handle pointerEvents
 const desktopMenuVariants = {
   hidden: {
     opacity: 0,
     y: 10,
     scale: 0.95,
-    pointerEvents: "none", // Prevents clicks when hidden
+    pointerEvents: "none",
     transition: { duration: 0.15, ease: "easeOut" },
   },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
-    pointerEvents: "auto", // Enables clicks when visible
+    pointerEvents: "auto",
     transition: { duration: 0.2, ease: "easeOut" },
   },
   exit: {
     opacity: 0,
     y: 10,
     scale: 0.95,
-    pointerEvents: "none", // INSTANTLY disable clicks on exit start
+    pointerEvents: "none",
     transition: { duration: 0.15, ease: "easeIn" },
   },
 };
@@ -418,8 +416,6 @@ const MenuContents = React.forwardRef(
     },
     ref
   ) => {
-    // ... (No changes needed in MenuContents logic, just rendering) ...
-    
     const handleMenuItemEnter = (e) => {
       const icon = e.currentTarget.querySelector("lord-icon");
       if (icon) {
@@ -731,7 +727,6 @@ const MenuContents = React.forwardRef(
 );
 MenuContents.displayName = "MenuContents";
 
-// SIMPLIFIED VERSION: Just use document.body and let React handle cleanup
 const CustomUserMenu = ({
   isOpen,
   onClose,
@@ -747,22 +742,10 @@ const CustomUserMenu = ({
   const [transformOrigin, setTransformOrigin] = useState("center");
   const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  
-  // 3. Grab the pathname
-  const pathname = usePathname();
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  // 4. Force close on route change
-  // This ensures that even if the user navigates via Back button or other means,
-  // or if the manual navigation logic glitches, the menu closes.
-  useEffect(() => {
-    if (isOpen) {
-      onClose();
-    }
-  }, [pathname]);
 
   const hasPermission = (perm) =>
     currentUser?.permissions?.includes(perm) ?? false;
@@ -831,7 +814,7 @@ const CustomUserMenu = ({
 
   const handleActualNavigate = (path) => {
     onClose();
-    setTimeout(() => onNavigate(path), 150);
+    onNavigate(path);
   };
 
   const handleActualShowSettings = () => {

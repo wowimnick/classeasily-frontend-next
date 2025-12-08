@@ -1,4 +1,3 @@
-// components/explore/ExploreClient.jsx
 "use client";
 
 import React, {
@@ -41,11 +40,6 @@ const BreadcrumbContainer = styled.div`
     padding: 0 1rem;
   }
 `;
-
-const unslugify = (slug) => {
-  if (!slug) return "";
-  return slug.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-};
 
 function ExploreClientContent({
   initialCategories,
@@ -220,7 +214,8 @@ function ExploreClientContent({
       console.log(
         "[ExploreClient] Category/subcategory changed - relying on server-side data"
       );
-      previousSearchParamsRef.current = currentParams;
+      // BUG FIX: Do NOT update previousSearchParamsRef here. 
+      // We must let the prop-sync effect handle the update once data arrives.
       return;
     }
 
@@ -432,7 +427,9 @@ function ExploreClientContent({
 
   // Update display when server provides new initial data
   useEffect(() => {
-    if (!loading && !isNavigating && initialClasses.length > 0) {
+    // BUG FIX: Removed restrictive conditions that prevented updates if props changed
+    // but ref was already updated.
+    if (!loading && !isNavigating && initialClasses) {
       const currentParams = searchParams.toString();
       const previousParams = previousSearchParamsRef.current;
 
@@ -441,6 +438,8 @@ function ExploreClientContent({
         setDisplayClasses(initialClasses);
         setTotalClassesCount(initialTotalCount);
         setNextPageUrl(initialNextPageUrl);
+        // Sync ref here to verify we have displayed the data for this URL
+        previousSearchParamsRef.current = currentParams;
       }
     }
   }, [

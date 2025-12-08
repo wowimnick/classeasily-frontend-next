@@ -420,6 +420,9 @@ const HomeClassCard = ({
         if (result.success) {
           if (onFavoriteChange) onFavoriteChange(newState);
           if (newState && favoriteButtonRef.current) {
+            // 2. DYNAMIC IMPORT HERE
+            const confetti = (await import("canvas-confetti")).default;
+            
             const rect = favoriteButtonRef.current.getBoundingClientRect();
             const origin = {
               x: (rect.left + rect.width / 2) / window.innerWidth,

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import styled from "styled-components";
-import { Form, Select, Switch, Button, TimePicker, Alert, Radio, Spin, Checkbox, Row, Col,  } from 'antd';
+import { Form, Select, Switch, Button, TimePicker, Alert, Radio, Spin, Checkbox, Row, Col } from 'antd';
 import message from '@/lib/message';
 import { InfoCircleOutlined } from "@ant-design/icons";
 import {
@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import {
   FormGroup,
-  FormGrid,
   FormLabel,
   HelpText,
   SectionDivider,
@@ -159,11 +158,6 @@ const HoursRow = styled(Row)`
     font-weight: 600;
     color: ${(props) => props.theme.token.colorTextSecondary};
   }
-`;
-
-const ApplyAllCheckbox = styled(Checkbox)`
-  margin-top: 1rem;
-  font-weight: 500;
 `;
 
 const statusMap = {
@@ -451,7 +445,7 @@ function PreferencesSettingsTabContent({
                         minuteStep={15}
                         disabled={!day.isOpen}
                         style={{ width: "100%" }}
-      />
+                      />
                     </Form.Item>
                   </Col>
                 </HoursRow>
@@ -476,7 +470,7 @@ function PreferencesSettingsTabContent({
               placeholder="Select Time Zone"
               optionFilterProp="children"
               options={timezones}
-      />
+            />
           </Form.Item>
         </FormGroup>
 
@@ -506,55 +500,74 @@ function PreferencesSettingsTabContent({
             <Bell size={16} /> Notification Preferences
           </span>
         </SectionDivider>
+        
+        {/* CORRECTED: SwitchLabelContainer wraps Form.Item (with noStyle) */}
         <FormGroup>
-          <Form.Item name="newBookingNotification" valuePropName="checked">
-            <SwitchLabelContainer>
-              <SwitchInfo>
-                <div className="title">New Booking Notifications</div>
-                <div className="desc">Receive email for new bookings</div>
-              </SwitchInfo>
+          <SwitchLabelContainer>
+            <SwitchInfo>
+              <div className="title">New Booking Notifications</div>
+              <div className="desc">Receive email for new bookings</div>
+            </SwitchInfo>
+            <Form.Item name="newBookingNotification" valuePropName="checked" noStyle>
               <Switch />
-            </SwitchLabelContainer>
-          </Form.Item>
+            </Form.Item>
+          </SwitchLabelContainer>
         </FormGroup>
+
         <FormGroup>
-          <Form.Item name="cancellationNotification" valuePropName="checked">
-            <SwitchLabelContainer>
-              <SwitchInfo>
-                <div className="title">Cancellation Notifications</div>
-                <div className="desc">
-                  Receive email when bookings are cancelled
-                </div>
-              </SwitchInfo>
+          <SwitchLabelContainer>
+            <SwitchInfo>
+              <div className="title">Cancellation Notifications</div>
+              <div className="desc">
+                Receive email when bookings are cancelled
+              </div>
+            </SwitchInfo>
+            <Form.Item name="cancellationNotification" valuePropName="checked" noStyle>
               <Switch />
-            </SwitchLabelContainer>
-          </Form.Item>
+            </Form.Item>
+          </SwitchLabelContainer>
         </FormGroup>
+
         <FormGroup>
-          <Form.Item name="reminderNotification" valuePropName="checked">
-            <SwitchLabelContainer>
-              <SwitchInfo>
-                <div className="title">Class Reminders</div>
-                <div className="desc">
-                  Receive email reminders before classes start
-                </div>
-              </SwitchInfo>
+          <SwitchLabelContainer>
+            <SwitchInfo>
+              <div className="title">Student Reminders</div>
+              <div className="desc">
+                Automatically email students 24 hours before class
+              </div>
+            </SwitchInfo>
+            <Form.Item name="reminderNotification" valuePropName="checked" noStyle>
               <Switch />
-            </SwitchLabelContainer>
-          </Form.Item>
+            </Form.Item>
+          </SwitchLabelContainer>
         </FormGroup>
+
         <FormGroup>
-          <Form.Item name="smsNotifications" valuePropName="checked">
-            <SwitchLabelContainer>
-              <SwitchInfo>
-                <div className="title">SMS Notifications (Future)</div>
-                <div className="desc">
-                  Receive critical notifications via SMS
-                </div>
-              </SwitchInfo>
+          <SwitchLabelContainer>
+            <SwitchInfo>
+              <div className="title">Schedule Expiry Warnings</div>
+              <div className="desc">
+                Receive alerts when classes are running out of scheduled sessions
+              </div>
+            </SwitchInfo>
+            <Form.Item name="scheduleExpiryNotification" valuePropName="checked" noStyle>
+              <Switch />
+            </Form.Item>
+          </SwitchLabelContainer>
+        </FormGroup>
+
+        <FormGroup>
+          <SwitchLabelContainer>
+            <SwitchInfo>
+              <div className="title">SMS Notifications (Future)</div>
+              <div className="desc">
+                Receive critical notifications via SMS
+              </div>
+            </SwitchInfo>
+            <Form.Item name="smsNotifications" valuePropName="checked" noStyle>
               <Switch disabled />
-            </SwitchLabelContainer>
-          </Form.Item>
+            </Form.Item>
+          </SwitchLabelContainer>
           <HelpText>
             <InfoCircleOutlined /> SMS requires phone verification and setup
             (feature coming soon).

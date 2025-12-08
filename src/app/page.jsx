@@ -35,18 +35,12 @@ export default async function HomePage() {
   return (
     <>
       <AnnouncementBanner />
-      {/* 
-        Pass a topOffset prop to the Header. 
-        Assuming SharedMainClientHeader passes props down to the Header component.
-        48px is the height of the AnnouncementBanner.
-      */}
       <SharedMainClientHeader topOffset={48} />
 
       <div className="homepage-style">
         <main className="main-content">
           <BannerSearch />
 
-          {/* First Row: Added top margin to create gap from Banner */}
           <Suspense fallback={<FindClassSkeleton style={{ marginTop: "3rem" }} />}>
             <ClassRow 
               title="Trending this Week" 
@@ -56,15 +50,6 @@ export default async function HomePage() {
               style={{ marginTop: "3rem" }}
             />
           </Suspense>
-
-          {/* <Suspense fallback={<FindClassSkeleton />}>
-            <ClassRow 
-              title="Get Creative" 
-              subtitle="Popular art, design, and pottery workshops"
-              classes={featuredCategory}
-              seeAllLink="/explore?category=arts-design"
-            />
-          </Suspense> */}
 
           <Suspense fallback={<FindClassSkeleton />}>
             <ClassRow 

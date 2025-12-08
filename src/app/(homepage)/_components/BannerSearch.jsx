@@ -941,7 +941,7 @@ export const AnnouncementBanner = () => {
         </LeftContent>
         <ActionGroup>
           <PillButton href="/explore?type=course">Find a Course</PillButton>
-          <SecondaryLink href="/host/courses">Business? <ArrowRight size={14} /></SecondaryLink>
+          <SecondaryLink href="/business">Business? <ArrowRight size={14} /></SecondaryLink>
         </ActionGroup>
       </BannerContainer>
     </BannerWrapper>

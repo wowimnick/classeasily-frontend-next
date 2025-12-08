@@ -1,4 +1,3 @@
-// src/components/businessDashboard/settings/BusinessSettings.jsx
 import React, {
   useState,
   useEffect,
@@ -440,6 +439,7 @@ const BusinessSettingsContent = forwardRef(
             newBookingNotification: data.newBookingNotification !== false,
             cancellationNotification: data.cancellationNotification !== false,
             reminderNotification: data.reminderNotification !== false,
+            scheduleExpiryNotification: data.scheduleExpiryNotification !== false,
             smsNotifications: data.smsNotifications === true,
           });
 
@@ -622,6 +622,10 @@ const BusinessSettingsContent = forwardRef(
         masterFormData.append(
           "reminderNotification",
           String(preferencesValues.reminderNotification)
+        );
+        masterFormData.append(
+          "scheduleExpiryNotification",
+          String(preferencesValues.scheduleExpiryNotification)
         );
         masterFormData.append(
           "smsNotifications",
