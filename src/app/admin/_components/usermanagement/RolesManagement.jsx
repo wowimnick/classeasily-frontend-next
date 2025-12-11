@@ -8,9 +8,32 @@ import React, {
   useCallback,
 } from "react";
 import { useAuthStore } from "@/lib/auth-client";
-import styled from "styled-components";
-import { Skeleton, Table, Card, Select, Button, Modal, Form, Input, Space, Tag, Alert, Tooltip, ConfigProvider, Divider, Checkbox, Col, ColorPicker, Grid, Empty, Row as AntRow, Typography, Collapse,  } from 'antd';
-import message from '@/lib/message';
+import styled, { keyframes } from "styled-components";
+import {
+  Table,
+  Card,
+  Select,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Space,
+  Tag,
+  Alert,
+  Tooltip,
+  ConfigProvider,
+  Divider,
+  Checkbox,
+  Col,
+  ColorPicker,
+  Grid,
+  Empty,
+  Row as AntRow,
+  Typography,
+  Collapse,
+  Avatar,
+} from "antd";
+import message from "@/lib/message";
 import {
   Shield,
   Users,
@@ -18,10 +41,10 @@ import {
   Edit,
   Trash2,
   Copy,
-  Search,
   Save,
   GripVertical,
-  ListOrdered,
+  X,
+  Briefcase,
 } from "lucide-react";
 import { roleService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme.js";
@@ -43,16 +66,16 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
 import { motion } from "framer-motion";
+import { Drawer } from "vaul";
 
 const { Option } = Select;
 const { useBreakpoint } = Grid;
 const { Title, Text, Paragraph } = Typography;
 const { Panel } = Collapse;
 
-// --- STYLING & THEME (FROM BOOKINGSLIST) ---
+// --- STYLING & THEME ---
 const colors = {
   primary: "#ff385c",
   success: "#10b981",
@@ -145,6 +168,112 @@ const RefreshButton = styled(Button)`
   }
 `;
 
+// --- SKELETON COMPONENTS ---
+const SkeletonWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+`;
+
+const SkeletonLine = styled.div`
+  height: ${(props) => props.height || "16px"};
+  width: ${(props) => props.width || "100%"};
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  margin-bottom: ${(props) => props.marginBottom || "0"};
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+`;
+
+const SkeletonCircle = styled(SkeletonLine)`
+  border-radius: 50%;
+  width: ${(props) => props.size || "36px"};
+  height: ${(props) => props.size || "36px"};
+  margin-bottom: 0;
+  flex-shrink: 0;
+`;
+
+const SkeletonTag = styled(SkeletonLine)`
+  height: 24px;
+  width: ${(props) => props.width || "80px"};
+  border-radius: 6px;
+  display: inline-block;
+  margin-bottom: 0;
+`;
+
+// --- VAUL DRAWER STYLES ---
+const StyledDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1049;
+`;
+
+const StyledDrawerContent = styled(Drawer.Content)`
+  background: white;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  height: 90%;
+  max-height: 90vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  outline: none;
+`;
+
+const DrawerHandle = styled.div`
+  width: 36px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  margin: 12px auto 8px;
+  flex-shrink: 0;
+`;
+
+const DrawerHeader = styled.div`
+  background: white;
+  border-bottom: 1px solid ${colors.border};
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+`;
+
+const DrawerTitle = styled.div`
+  font-size: 18px;
+  font-weight: 600;
+  color: ${colors.textPrimary};
+`;
+
+const DrawerBody = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+`;
+
+const DrawerFooter = styled.div`
+  padding: 16px 20px;
+  border-top: 1px solid ${colors.border};
+  background: white;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+`;
+
 // --- TABLE SECTION ---
 const TableSection = styled(motion.div)`
   background: white;
@@ -216,6 +345,10 @@ const StyledTable = styled(Table)`
   }
   .ant-table-tbody > tr:hover > td {
     background: #fafcff;
+  }
+  /* Prevent table collapse on empty/loading */
+  .ant-table-tbody > tr.ant-table-placeholder:hover > td {
+    background: white;
   }
 `;
 const RoleTag = styled(Tag)`
@@ -306,6 +439,18 @@ const MobileCardFooter = styled.div`
   border-top: 1px solid ${colors.border};
 `;
 
+// --- GENERATORS ---
+const generateSkeletonData = (count = 5) => {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `skeleton-${i}`,
+    name: <SkeletonTag width="120px" />,
+    description: <SkeletonLine width="200px" />,
+    user_count: <SkeletonLine width="30px" />,
+    updated_at: <SkeletonLine width="100px" />,
+    actions: <SkeletonCircle size="32px" />,
+  }));
+};
+
 // --- DND & UTILITIES ---
 const RowContext = React.createContext({});
 const formatDate = (dateString) =>
@@ -365,8 +510,12 @@ const Row = (props) => {
 const RolesManagement = () => {
   const user = useAuthStore((state) => state.user);
   const [searchText, setSearchText] = useState("");
-  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  // Combined state for modal/drawer visibility
+  const [modalState, setModalState] = useState({
+    visible: false,
+    mode: "create", // 'create' or 'edit'
+  });
+
   const [selectedRole, setSelectedRole] = useState(null);
   const [editedPermissions, setEditedPermissions] = useState([]);
   const [permissionSearchText, setPermissionSearchText] = useState("");
@@ -459,7 +608,8 @@ const RolesManagement = () => {
       initial_position: "bottom",
     });
     setEditedPermissions([]);
-    setIsCreateModalVisible(true);
+    setSelectedRole(null);
+    setModalState({ visible: true, mode: "create" });
   };
 
   const handleEditRole = async (role) => {
@@ -472,7 +622,7 @@ const RolesManagement = () => {
           response.data;
         form.setFieldsValue({ name, description, is_default, color });
         setEditedPermissions(permissions || []);
-        setIsEditModalVisible(true);
+        setModalState({ visible: true, mode: "edit" });
       } else message.error("Failed to fetch role details");
     } catch (error) {
       message.error("Error fetching role details");
@@ -524,7 +674,8 @@ const RolesManagement = () => {
     }
   };
 
-  const handleFormSubmit = async (isEditing) => {
+  const handleFormSubmit = async () => {
+    const isEditing = modalState.mode === "edit";
     try {
       const values = await form.validateFields();
       setActionLoading(true);
@@ -557,8 +708,7 @@ const RolesManagement = () => {
           `Role "${values.name}" ${isEditing ? "updated" : "created"}`
         );
         fetchAllData();
-        setIsEditModalVisible(false);
-        setIsCreateModalVisible(false);
+        setModalState({ ...modalState, visible: false });
       } else {
         message.error(
           response.error || `Failed to ${isEditing ? "update" : "create"} role`
@@ -596,6 +746,8 @@ const RolesManagement = () => {
       .filter(Boolean);
   }, [permissionGroups, permissionSearchText]);
 
+  // --- RENDERERS ---
+
   const columns = [
     { key: "sort", width: 50, fixed: "left", render: () => <DragHandle /> },
     {
@@ -604,12 +756,15 @@ const RolesManagement = () => {
       key: "name",
       width: 200,
       fixed: "left",
-      render: (name, role) => (
-        <Space>
-          <RoleTag color={role.color || colors.textSecondary}>{name}</RoleTag>
-          {role.is_default && <Tag color="blue">Default</Tag>}
-        </Space>
-      ),
+      render: (name, role) => {
+        if (React.isValidElement(name)) return name; // Skeleton check
+        return (
+          <Space>
+            <RoleTag color={role.color || colors.textSecondary}>{name}</RoleTag>
+            {role.is_default && <Tag color="blue">Default</Tag>}
+          </Space>
+        );
+      },
     },
     {
       title: "Description",
@@ -617,6 +772,10 @@ const RolesManagement = () => {
       key: "description",
       responsive: ["md"],
       ellipsis: true,
+      render: (desc) => {
+        if (React.isValidElement(desc)) return desc;
+        return desc;
+      },
     },
     {
       title: "Users",
@@ -624,18 +783,24 @@ const RolesManagement = () => {
       key: "user_count",
       width: 100,
       align: "center",
-      render: (count) => (
-        <UserCount>
-          <Users size={16} />
-          {count}
-        </UserCount>
-      ),
+      render: (count) => {
+        if (React.isValidElement(count)) return count;
+        return (
+          <UserCount>
+            <Users size={16} />
+            {count}
+          </UserCount>
+        );
+      },
     },
     {
       title: "Last Updated",
       dataIndex: "updated_at",
       key: "updated_at",
-      render: formatDate,
+      render: (date) => {
+        if (React.isValidElement(date)) return date;
+        return formatDate(date);
+      },
       responsive: ["lg"],
       width: 150,
     },
@@ -646,6 +811,7 @@ const RolesManagement = () => {
       align: "center",
       fixed: "right",
       render: (_, role) => {
+        if (React.isValidElement(role.actions)) return role.actions;
         const canEdit = user?.role?.hierarchy_level > role.hierarchy_level;
         const canDelete =
           !role.is_system &&
@@ -699,12 +865,42 @@ const RolesManagement = () => {
   ];
 
   const renderMobileRoleCard = (role) => {
+    // Check if it's a skeleton object
+    if (React.isValidElement(role.name)) {
+      return (
+        <MobileCard key={role.id}>
+          <MobileCardContent>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "12px",
+              }}
+            >
+              {role.name}
+              {role.user_count}
+            </div>
+            <MobileCardRow>
+              <SkeletonLine width="100%" height="14px" />
+            </MobileCardRow>
+            <MobileCardFooter>
+              <SkeletonCircle size="28px" />
+              <SkeletonCircle size="28px" />
+            </MobileCardFooter>
+          </MobileCardContent>
+        </MobileCard>
+      );
+    }
+
+    // Real Data Card
     const canEdit = user?.role?.hierarchy_level > role.hierarchy_level;
     const canDelete =
       !role.is_system &&
       role.user_count === 0 &&
       user?.role?.hierarchy_level > role.hierarchy_level;
     const actionsDisabled = actionLoading || loading;
+
     return (
       <MobileCard key={role.id}>
         <MobileCardContent>
@@ -824,6 +1020,120 @@ const RolesManagement = () => {
     );
   };
 
+  const renderFormContent = () => (
+    <Form form={form} layout="vertical">
+      <StyledFormItem name="name" label="Role Name" rules={[{ required: true }]}>
+        <Input
+          placeholder="e.g., Content Moderator"
+          disabled={modalState.mode === "edit" && selectedRole?.is_system}
+        />
+      </StyledFormItem>
+      <HelpText>
+        A clear and concise name for the role (e.g., 'Content Moderator').
+      </HelpText>
+
+      <StyledFormItem
+        name="description"
+        label="Description"
+        rules={[{ required: true }]}
+      >
+        <Input.TextArea
+          rows={2}
+          placeholder="e.g., Responsible for reviewing and managing user-generated content."
+        />
+      </StyledFormItem>
+      <HelpText>
+        Briefly describe the role's purpose and main responsibilities.
+      </HelpText>
+
+      <AntRow gutter={24}>
+        <Col xs={24} sm={12}>
+          <StyledFormItem
+            name="color"
+            label="Role Color"
+            rules={[{ required: true }]}
+            valuePropName="color"
+            getValueFromEvent={(color) => color.toHexString()}
+          >
+            <ColorPicker
+              format="hex"
+              presets={[{ label: "Recommended", colors: roleColorOptions }]}
+              showText
+            />
+          </StyledFormItem>
+          <HelpText>
+            This color is used throughout the UI to identify the role visually.
+          </HelpText>
+        </Col>
+        {modalState.mode === "create" && (
+          <Col xs={24} sm={12}>
+            <StyledFormItem
+              name="initial_position"
+              label="Initial Position"
+              rules={[{ required: true }]}
+            >
+              <Select>
+                <Option value="top">Top (Higher Privilege)</Option>
+                <Option value="bottom">Bottom (Lower Privilege)</Option>
+              </Select>
+            </StyledFormItem>
+            <HelpText>Top is for higher privilege, bottom is for lower.</HelpText>
+          </Col>
+        )}
+      </AntRow>
+      <StyledFormItem name="is_default" valuePropName="checked">
+        <Checkbox>Make this the default role for new users</Checkbox>
+      </StyledFormItem>
+      <HelpText>
+        If checked, all new users will be assigned this role upon registration.
+      </HelpText>
+
+      <Divider orientation="left" plain>
+        Permissions
+      </Divider>
+      <HelpText>
+        Grant specific permissions to define what users with this role can access
+        and do.
+      </HelpText>
+
+      <PermissionsContainer>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 16,
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
+          <Input.Search
+            placeholder="Search permissions..."
+            allowClear
+            onChange={(e) => setPermissionSearchText(e.target.value)}
+            style={{ flexGrow: 1, minWidth: "200px", maxWidth: "300px" }}
+          />
+          <Checkbox
+            checked={
+              editedPermissions.length === allPermissionIds.length &&
+              allPermissionIds.length > 0
+            }
+            indeterminate={
+              editedPermissions.length > 0 &&
+              editedPermissions.length < allPermissionIds.length
+            }
+            onChange={(e) =>
+              setEditedPermissions(e.target.checked ? allPermissionIds : [])
+            }
+          >
+            Select All
+          </Checkbox>
+        </div>
+        {renderPermissionGroups()}
+      </PermissionsContainer>
+    </Form>
+  );
+
   return (
     <ConfigProvider theme={appTheme}>
       <DashboardWrapper>
@@ -886,19 +1196,17 @@ const RolesManagement = () => {
               />
             </SearchFilterContainer>
             <Tag color="cyan" style={{ width: "fit-content" }}>
-              {roles.length} Roles
+              {loading ? <SkeletonLine width="20px" /> : roles.length} Roles
             </Tag>
           </FilterBar>
 
           {isMobile ? (
             <div style={{ padding: "8px" }}>
-              {loading ? (
-                <Skeleton active paragraph={{ rows: 5 }} />
-              ) : roles.length > 0 ? (
-                roles.map(renderMobileRoleCard)
-              ) : (
-                <Empty description="No roles found" />
-              )}
+              {loading
+                ? generateSkeletonData(5).map(renderMobileRoleCard)
+                : roles.length > 0
+                ? roles.map(renderMobileRoleCard)
+                : <Empty description="No roles found" />}
             </div>
           ) : (
             <DndContext
@@ -913,181 +1221,103 @@ const RolesManagement = () => {
               >
                 <StyledTable
                   columns={columns}
-                  dataSource={roles}
+                  dataSource={
+                    loading ? generateSkeletonData(roles.length || 5) : roles
+                  }
                   rowKey="id"
-                  loading={{
-                    spinning: loading,
-                    indicator: <GlobalLoaderWithInlineStyles />,
-                  }}
                   pagination={false}
                   components={{ body: { row: Row } }}
                   scroll={{ x: 1000 }}
+                  loading={false}
                 />
               </SortableContext>
             </DndContext>
           )}
         </TableSection>
 
-        <Modal
-          title={
-            isEditModalVisible
-              ? `Edit Role: ${selectedRole?.name}`
-              : "Create New Role"
-          }
-          open={isCreateModalVisible || isEditModalVisible}
-          onCancel={() => {
-            setIsCreateModalVisible(false);
-            setIsEditModalVisible(false);
-          }}
-          width={isMobile ? "95%" : 900}
-          destroyOnClose
-          footer={[
-            <Button
-              key="back"
-              onClick={() => {
-                setIsCreateModalVisible(false);
-                setIsEditModalVisible(false);
-              }}
-            >
-              Cancel
-            </Button>,
-            <Button
-              key="submit"
-              type="primary"
-              icon={<Save size={16} />}
-              loading={actionLoading}
-              onClick={() => handleFormSubmit(isEditModalVisible)}
-            >
-              Save Changes
-            </Button>,
-          ]}
-        >
-          <Form form={form} layout="vertical">
-            <StyledFormItem
-              name="name"
-              label="Role Name"
-              rules={[{ required: true }]}
-            >
-              <Input
-                placeholder="e.g., Content Moderator"
-                disabled={isEditModalVisible && selectedRole?.is_system}
-              />
-            </StyledFormItem>
-            <HelpText>
-              A clear and concise name for the role (e.g., 'Content Moderator').
-            </HelpText>
-
-            <StyledFormItem
-              name="description"
-              label="Description"
-              rules={[{ required: true }]}
-            >
-              <Input.TextArea
-                rows={2}
-                placeholder="e.g., Responsible for reviewing and managing user-generated content."
-              />
-            </StyledFormItem>
-            <HelpText>
-              Briefly describe the role's purpose and main responsibilities.
-            </HelpText>
-
-            <AntRow gutter={24}>
-              <Col xs={24} sm={12}>
-                <StyledFormItem
-                  name="color"
-                  label="Role Color"
-                  rules={[{ required: true }]}
-                  valuePropName="color"
-                  getValueFromEvent={(color) => color.toHexString()}
-                >
-                  <ColorPicker
-                    format="hex"
-                    presets={[
-                      { label: "Recommended", colors: roleColorOptions },
-                    ]}
-                    showText
+        {/* Edit/Create Form - Responsive (Drawer on Mobile, Modal on Desktop) */}
+        {isMobile ? (
+          <Drawer.Root
+            open={modalState.visible}
+            onOpenChange={(open) =>
+              setModalState((prev) => ({ ...prev, visible: open }))
+            }
+          >
+            <Drawer.Portal>
+              <StyledDrawerOverlay />
+              <StyledDrawerContent>
+                <DrawerHandle />
+                <DrawerHeader>
+                  <DrawerTitle>
+                    {modalState.mode === "edit"
+                      ? `Edit Role: ${selectedRole?.name}`
+                      : "Create New Role"}
+                  </DrawerTitle>
+                  <Button
+                    type="text"
+                    icon={<X size={20} />}
+                    onClick={() =>
+                      setModalState((prev) => ({ ...prev, visible: false }))
+                    }
                   />
-                </StyledFormItem>
-                <HelpText>
-                  This color is used throughout the UI to identify the role
-                  visually.
-                </HelpText>
-              </Col>
-              {!isEditModalVisible && (
-                <Col xs={24} sm={12}>
-                  <StyledFormItem
-                    name="initial_position"
-                    label="Initial Position in Hierarchy"
-                    rules={[{ required: true }]}
+                </DrawerHeader>
+                <DrawerBody>{renderFormContent()}</DrawerBody>
+                <DrawerFooter>
+                  <Button
+                    onClick={() =>
+                      setModalState((prev) => ({ ...prev, visible: false }))
+                    }
                   >
-                    <Select>
-                      <Option value="top">At the top (Higher Privilege)</Option>
-                      <Option value="bottom">
-                        At the bottom (Lower Privilege)
-                      </Option>
-                    </Select>
-                  </StyledFormItem>
-                  <HelpText>
-                    Top is for higher privilege, bottom is for lower.
-                  </HelpText>
-                </Col>
-              )}
-            </AntRow>
-            <StyledFormItem name="is_default" valuePropName="checked">
-              <Checkbox>Make this the default role for new users</Checkbox>
-            </StyledFormItem>
-            <HelpText>
-              If checked, all new users will be assigned this role upon
-              registration.
-            </HelpText>
-
-            <Divider orientation="left" plain>
-              Permissions
-            </Divider>
-            <HelpText>
-              Grant specific permissions to define what users with this role can
-              access and do.
-            </HelpText>
-
-            <PermissionsContainer>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 16,
-                  flexWrap: "wrap",
-                  gap: 12,
-                }}
+                    Cancel
+                  </Button>
+                  <Button
+                    type="primary"
+                    icon={<Save size={16} />}
+                    loading={actionLoading}
+                    onClick={handleFormSubmit}
+                  >
+                    Save Changes
+                  </Button>
+                </DrawerFooter>
+              </StyledDrawerContent>
+            </Drawer.Portal>
+          </Drawer.Root>
+        ) : (
+          <Modal
+            title={
+              modalState.mode === "edit"
+                ? `Edit Role: ${selectedRole?.name}`
+                : "Create New Role"
+            }
+            open={modalState.visible}
+            onCancel={() =>
+              setModalState((prev) => ({ ...prev, visible: false }))
+            }
+            width={900}
+            destroyOnClose
+            footer={[
+              <Button
+                key="back"
+                onClick={() =>
+                  setModalState((prev) => ({ ...prev, visible: false }))
+                }
               >
-                <Input.Search
-                  placeholder="Search permissions..."
-                  allowClear
-                  onChange={(e) => setPermissionSearchText(e.target.value)}
-                  style={{ flexGrow: 1, minWidth: "200px", maxWidth: "300px" }}
-                />
-                <Checkbox
-                  checked={
-                    editedPermissions.length === allPermissionIds.length &&
-                    allPermissionIds.length > 0
-                  }
-                  indeterminate={
-                    editedPermissions.length > 0 &&
-                    editedPermissions.length < allPermissionIds.length
-                  }
-                  onChange={(e) =>
-                    setEditedPermissions(
-                      e.target.checked ? allPermissionIds : []
-                    )
-                  }
-                >
-                  Select All
-                </Checkbox>
-              </div>
-              {renderPermissionGroups()}
-            </PermissionsContainer>
-          </Form>
-        </Modal>
+                Cancel
+              </Button>,
+              <Button
+                key="submit"
+                type="primary"
+                icon={<Save size={16} />}
+                loading={actionLoading}
+                onClick={handleFormSubmit}
+              >
+                Save Changes
+              </Button>,
+            ]}
+          >
+            {renderFormContent()}
+          </Modal>
+        )}
 
         <Modal
           title="Confirm Deletion"
@@ -1109,7 +1339,6 @@ const RolesManagement = () => {
           ]}
         >
           <Space align="start" size="middle">
-            {" "}
             <Shield color={colors.error} size={32} />
             <div>
               <p>
@@ -1122,6 +1351,7 @@ const RolesManagement = () => {
                   message="System roles cannot be deleted."
                   type="error"
                   showIcon
+                  style={{ marginBottom: 8 }}
                 />
               )}
               {selectedRole?.user_count > 0 && (
@@ -1129,6 +1359,7 @@ const RolesManagement = () => {
                   message={`This role is assigned to ${selectedRole.user_count} user(s). Reassign them first.`}
                   type="warning"
                   showIcon
+                  style={{ marginBottom: 8 }}
                 />
               )}
               {user?.role?.hierarchy_level <= selectedRole?.hierarchy_level &&

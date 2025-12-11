@@ -2,10 +2,26 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import dayjs from "dayjs";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { motion } from "framer-motion";
-import { Table, Card, DatePicker, Select, Input, Button, ConfigProvider, Tag, Space, Badge, Timeline, Drawer, Tabs, Divider, Grid, Empty, Typography, Skeleton,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Table,
+  Card,
+  DatePicker,
+  Select,
+  Input,
+  Button,
+  ConfigProvider,
+  Tag,
+  Space,
+  Timeline,
+  Tabs,
+  Divider,
+  Grid,
+  Empty,
+  Typography,
+} from "antd";
+import message from "@/lib/message";
 import {
   Activity,
   User,
@@ -15,12 +31,13 @@ import {
   FileText,
   Shield,
   Key,
-  MessageSquare,
+  X,
+  Clock,
 } from "lucide-react";
 import { auditService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
-import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
+import { Drawer } from "vaul";
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -42,7 +59,7 @@ const colors = {
   textTertiary: "#94a3b8",
 };
 
-// --- MAIN PAGE COMPONENTS ---
+// --- LAYOUT COMPONENTS ---
 const DashboardWrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -118,6 +135,153 @@ const ExportButton = styled(Button)`
   justify-content: center;
   gap: 8px;
   padding: 0 16px;
+`;
+
+// --- SKELETON COMPONENTS ---
+const SkeletonWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+`;
+
+const SkeletonLine = styled.div`
+  height: ${(props) => props.height || "16px"};
+  width: ${(props) => props.width || "100%"};
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+  border-radius: 4px;
+  margin-bottom: ${(props) => props.marginBottom || "0"};
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+`;
+
+const SkeletonCircle = styled(SkeletonLine)`
+  border-radius: 50%;
+  width: ${(props) => props.size || "36px"};
+  height: ${(props) => props.size || "36px"};
+  margin-bottom: 0;
+  flex-shrink: 0;
+`;
+
+const SkeletonTag = styled(SkeletonLine)`
+  height: 24px;
+  width: ${(props) => props.width || "80px"};
+  border-radius: 6px;
+  display: inline-block;
+  margin-bottom: 0;
+`;
+
+// --- VAUL DRAWER STYLES ---
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0px); }
+`;
+
+const StyledDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1049;
+`;
+
+const StyledDrawerContent = styled(Drawer.Content)`
+  background: white;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  height: 90%;
+  max-height: 90vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  outline: none;
+`;
+
+const DrawerHandle = styled.div`
+  width: 36px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  margin: 12px auto 8px;
+  flex-shrink: 0;
+`;
+
+const DesktopDrawerContent = styled(Drawer.Content)`
+  right: 8px;
+  top: 8px;
+  bottom: 8px;
+  position: fixed;
+  z-index: 1050;
+  outline: none;
+  width: 600px;
+  display: flex;
+`;
+
+const DesktopDrawerInner = styled.div`
+  background: white;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  will-change: transform;
+  transform: translateZ(0);
+`;
+
+const DrawerHeader = styled.div`
+  background: white;
+  border-bottom: 1px solid ${colors.border};
+  padding: 20px 24px;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  @media (max-width: 480px) {
+    padding: 16px;
+  }
+`;
+
+const DrawerHeaderTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: ${colors.textPrimary};
+  font-size: 20px;
+  font-weight: 600;
+  @media (max-width: 480px) {
+    font-size: 18px;
+  }
+`;
+
+const CloseButton = styled(Button)`
+  padding: 8px;
+  height: auto;
+  border: none;
+  background: none;
+  &:hover {
+    background: ${colors.border};
+  }
+`;
+
+const DrawerBody = styled.div`
+  padding: 0;
+  flex: 1;
+  overflow-y: auto;
+  background-color: ${colors.lightBg};
+  animation: ${fadeIn} 0.5s 0.1s ease-out both;
 `;
 
 // --- TABLE SECTION ---
@@ -203,6 +367,10 @@ const StyledTable = styled(Table)`
   .ant-table-tbody > tr:hover > td {
     background: #fafcff;
   }
+  /* Prevent table collapse */
+  .ant-table-tbody > tr.ant-table-placeholder:hover > td {
+    background: white;
+  }
 `;
 
 // --- MOBILE COMPONENTS ---
@@ -227,13 +395,16 @@ const MobileCardLabel = styled(Text)`
   color: ${colors.textSecondary};
   font-weight: 500;
 `;
-// --- DRAWER & DETAIL COMPONENTS ---
+
+// --- DETAIL COMPONENTS ---
 const ActionTag = styled(Tag)`
   font-weight: 500;
   border: none !important;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  border-radius: 6px;
+  padding: 3px 10px;
 `;
 const IpAddress = styled.span`
   font-family: monospace;
@@ -272,15 +443,7 @@ const TimelineItemContent = styled.div`
     font-size: 13px;
   }
 `;
-const StyledDetailsDrawer = styled(Drawer)`
-  .ant-drawer-header {
-    display: none;
-  }
-  .ant-drawer-body {
-    padding: 0;
-    background-color: ${colors.lightBg};
-  }
-`;
+
 const DetailsHero = styled.div`
   padding: 24px;
   background: white;
@@ -369,6 +532,55 @@ const eventTypeConfig = {
     label: "Activity",
   },
 };
+
+// --- GENERATORS ---
+const generateSkeletonData = (count = 10) => {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `skeleton-${i}`,
+    user_name: (
+      <Space>
+        <SkeletonCircle size="36px" />
+        <SkeletonWrapper>
+          <SkeletonLine width="100px" height="14px" />
+          <SkeletonLine width="140px" height="12px" />
+        </SkeletonWrapper>
+      </Space>
+    ),
+    action: <SkeletonTag width="90px" />,
+    details: <SkeletonLine width="180px" />,
+    ip_address: <SkeletonLine width="100px" />,
+    timestamp: <SkeletonLine width="140px" />,
+    actions: <SkeletonTag width="80px" />,
+  }));
+};
+
+const DrawerSkeleton = () => (
+  <>
+    <DetailsHero>
+      <SkeletonLine width="120px" height="24px" marginBottom="12px" />
+      <SkeletonWrapper>
+        <SkeletonLine width="180px" height="14px" />
+        <SkeletonLine width="140px" height="14px" />
+      </SkeletonWrapper>
+    </DetailsHero>
+    <DetailsContent>
+      <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
+        <SkeletonLine width="80px" height="20px" />
+        <SkeletonLine width="80px" height="20px" />
+      </div>
+      <ProfileGrid>
+        <ProfileItem>
+          <SkeletonLine width="80px" height="12px" marginBottom="8px" />
+          <SkeletonLine width="100%" height="16px" />
+        </ProfileItem>
+        <ProfileItem>
+          <SkeletonLine width="60px" height="12px" marginBottom="8px" />
+          <SkeletonLine width="120px" height="16px" />
+        </ProfileItem>
+      </ProfileGrid>
+    </DetailsContent>
+  </>
+);
 
 // --- UTILITY FUNCTIONS ---
 const formatDate = (dateString) => {
@@ -526,18 +738,22 @@ const UserAuditLog = () => {
       title: "User",
       key: "user",
       width: 220,
-      render: (_, log) => (
-        <Space direction="vertical" size={0}>
-          <Text strong>{log.user_name || "System"}</Text>
-          {log.user_email && <Text type="secondary">{log.user_email}</Text>}
-        </Space>
-      ),
+      render: (_, log) => {
+        if (React.isValidElement(log.user_name)) return log.user_name;
+        return (
+          <Space direction="vertical" size={0}>
+            <Text strong>{log.user_name || "System"}</Text>
+            {log.user_email && <Text type="secondary">{log.user_email}</Text>}
+          </Space>
+        );
+      },
     },
     {
       title: "Action",
       key: "action",
       width: 200,
       render: (_, log) => {
+        if (React.isValidElement(log.action)) return log.action;
         const config = eventTypeConfig[log.action] || eventTypeConfig.default;
         return (
           <ActionTag color={config.color}>
@@ -551,21 +767,30 @@ const UserAuditLog = () => {
       dataIndex: "details",
       key: "details",
       ellipsis: true,
-      render: (details) => <Text type="secondary">{details}</Text>,
+      render: (details) => {
+        if (React.isValidElement(details)) return details;
+        return <Text type="secondary">{details}</Text>;
+      },
     },
     {
       title: "IP Address",
       dataIndex: "ip_address",
       key: "ip_address",
       responsive: ["lg"],
-      render: (ip) => (ip ? <IpAddress>{ip}</IpAddress> : "N/A"),
+      render: (ip) => {
+        if (React.isValidElement(ip)) return ip;
+        return ip ? <IpAddress>{ip}</IpAddress> : "N/A";
+      },
       width: 130,
     },
     {
       title: "Timestamp",
       dataIndex: "timestamp",
       key: "timestamp",
-      render: formatDate,
+      render: (ts) => {
+        if (React.isValidElement(ts)) return ts;
+        return formatDate(ts);
+      },
       width: 220,
       sorter: (a, b) => dayjs(a.timestamp).unix() - dayjs(b.timestamp).unix(),
     },
@@ -575,18 +800,50 @@ const UserAuditLog = () => {
       fixed: "right",
       width: 120,
       align: "center",
-      render: (_, log) => (
-        <Button
-          icon={<Eye size={14} />}
-          onClick={() => handleViewDetails(log)}
-          size="middle"
-        >
-          Details
-        </Button>
-      ),
+      render: (_, log) => {
+        if (React.isValidElement(log.actions)) return log.actions;
+        return (
+          <Button
+            icon={<Eye size={14} />}
+            onClick={() => handleViewDetails(log)}
+            size="middle"
+          >
+            Details
+          </Button>
+        );
+      },
     },
   ];
+
   const renderMobileCard = (log) => {
+    if (React.isValidElement(log.user_name)) {
+      return (
+        <MobileCard key={log.id}>
+          <MobileCardContent>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              {log.user_name}
+              {log.action}
+            </div>
+            <MobileCardRow>
+              <SkeletonLine width="100%" />
+            </MobileCardRow>
+            <MobileCardRow>
+              <SkeletonLine width="50%" />
+            </MobileCardRow>
+            <div style={{ marginTop: 12, borderTop: `1px solid ${colors.border}`, paddingTop: 12 }}>
+                 <SkeletonTag width="100%" />
+            </div>
+          </MobileCardContent>
+        </MobileCard>
+      );
+    }
+
     const config = eventTypeConfig[log.action] || eventTypeConfig.default;
     return (
       <MobileCard key={log.id}>
@@ -644,8 +901,9 @@ const UserAuditLog = () => {
       </MobileCard>
     );
   };
+
   const renderUserDetailsContent = () => {
-    if (!selectedLog) return <Skeleton active />;
+    if (!selectedLog) return <DrawerSkeleton />;
     const config =
       eventTypeConfig[selectedLog.action] || eventTypeConfig.default;
     return (
@@ -707,7 +965,7 @@ const UserAuditLog = () => {
               <TabPane
                 tab={
                   <>
-                    <User size={14} /> User History
+                    <Clock size={14} /> User History
                   </>
                 }
                 key="2"
@@ -717,7 +975,12 @@ const UserAuditLog = () => {
                 </Paragraph>
                 {activityLoading ? (
                   <div style={{ textAlign: "center", padding: 40 }}>
-                    <GlobalLoaderWithInlineStyles />
+                     <SkeletonWrapper>
+                        <SkeletonLine width="60%" height="20px" marginBottom="12px" />
+                        <SkeletonLine width="80%" height="16px" marginBottom="24px" />
+                        <SkeletonLine width="50%" height="20px" marginBottom="12px" />
+                        <SkeletonLine width="70%" height="16px" />
+                     </SkeletonWrapper>
                   </div>
                 ) : !userActivity.length ? (
                   <Empty description="No recent activity found for this user." />
@@ -856,44 +1119,42 @@ const UserAuditLog = () => {
 
           {isMobile ? (
             <div style={{ padding: "8px" }}>
-              {loading ? (
-                <Skeleton active paragraph={{ rows: 5 }} />
-              ) : auditLogs.length > 0 ? (
-                <>
-                  {auditLogs.map(renderMobileCard)}
-                  {pagination.total > pagination.pageSize && (
-                    <div style={{ textAlign: "center", marginTop: "20px" }}>
-                      <Button
-                        onClick={() =>
-                          handleTableChange({
-                            ...pagination,
-                            current: pagination.current + 1,
-                          })
-                        }
-                        disabled={
-                          pagination.current * pagination.pageSize >=
-                          pagination.total
-                        }
-                      >
-                        Load More
-                      </Button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <Empty description="No logs found." />
-              )}
+              {loading
+                ? generateSkeletonData(5).map(renderMobileCard)
+                : auditLogs.length > 0
+                ? (
+                  <>
+                    {auditLogs.map(renderMobileCard)}
+                    {pagination.total > pagination.pageSize && (
+                      <div style={{ textAlign: "center", marginTop: "20px" }}>
+                        <Button
+                          onClick={() =>
+                            handleTableChange({
+                              ...pagination,
+                              current: pagination.current + 1,
+                            })
+                          }
+                          disabled={
+                            pagination.current * pagination.pageSize >=
+                            pagination.total
+                          }
+                        >
+                          Load More
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Empty description="No logs found." />
+                )}
             </div>
           ) : (
             <StyledTable
               columns={columns}
-              dataSource={auditLogs}
+              dataSource={loading ? generateSkeletonData(pagination.pageSize) : auditLogs}
               rowKey="id"
-              loading={{
-                spinning: loading,
-                indicator: <GlobalLoaderWithInlineStyles />,
-              }}
-              pagination={{
+              loading={false}
+              pagination={loading ? false : {
                 ...pagination,
                 showSizeChanger: true,
                 showQuickJumper: true,
@@ -911,15 +1172,41 @@ const UserAuditLog = () => {
           )}
         </TableSection>
 
-        <StyledDetailsDrawer
-          placement="right"
-          onClose={() => setIsDrawerVisible(false)}
-          open={isDrawerVisible}
-          width={isMobile ? "85%" : 600}
-          destroyOnClose
-        >
-          {renderUserDetailsContent()}
-        </StyledDetailsDrawer>
+        {/* VAUL DRAWER IMPLEMENTATION */}
+        {isMobile ? (
+          <Drawer.Root open={isDrawerVisible} onOpenChange={setIsDrawerVisible}>
+            <Drawer.Portal>
+              <StyledDrawerOverlay />
+              <StyledDrawerContent>
+                <DrawerHandle />
+                <DrawerHeader>
+                   <DrawerHeaderTitle><Activity size={20} /> Event Details</DrawerHeaderTitle>
+                   <CloseButton onClick={() => setIsDrawerVisible(false)} icon={<X size={20} />} />
+                </DrawerHeader>
+                <DrawerBody>
+                   {renderUserDetailsContent()}
+                </DrawerBody>
+              </StyledDrawerContent>
+            </Drawer.Portal>
+          </Drawer.Root>
+        ) : (
+          <Drawer.Root open={isDrawerVisible} onOpenChange={setIsDrawerVisible} direction="right" dismissible>
+            <Drawer.Portal>
+               <StyledDrawerOverlay />
+               <DesktopDrawerContent style={{ "--initial-transform": "calc(100% + 8px)" }}>
+                 <DesktopDrawerInner>
+                    <DrawerHeader>
+                        <DrawerHeaderTitle><Activity size={20} /> Event Details</DrawerHeaderTitle>
+                        <CloseButton onClick={() => setIsDrawerVisible(false)} icon={<X size={20} />} />
+                    </DrawerHeader>
+                    <DrawerBody>
+                       {renderUserDetailsContent()}
+                    </DrawerBody>
+                 </DesktopDrawerInner>
+               </DesktopDrawerContent>
+            </Drawer.Portal>
+          </Drawer.Root>
+        )}
       </DashboardWrapper>
     </ConfigProvider>
   );

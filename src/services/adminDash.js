@@ -311,6 +311,26 @@ impersonateUser: async (userId) => {
     }
   },
 
+    getUserHistory: async (userId) => {
+    try {
+      const response = await axiosInstance.get(`/admin/users/${userId}/history/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(`Error fetching user history ${userId}:`, error);
+      return { success: false, error: error.response?.data };
+    }
+  },
+
+  getUserCommunications: async (userId, params = {}) => {
+    try {
+      const response = await axiosInstance.get(`/admin/users/${userId}/communications/`, { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(`Error fetching user communications ${userId}:`, error);
+      return { success: false, error: error.response?.data };
+    }
+  },
+
   /**
    * Get details for a specific user
    * @param {number} userId - User ID to fetch
@@ -833,7 +853,7 @@ export const auditService = {
   exportAuditLogs: async (params) => {
     try {
       const queryString = new URLSearchParams(params).toString();
-      const response = await api.get(`/admin/audit-logs/export/?${queryString}`, {
+      const response = await axiosInstance.get(`/admin/audit-logs/export/?${queryString}`, {
         responseType: 'blob', // IMPORTANT: Expect a blob response
       });
       
