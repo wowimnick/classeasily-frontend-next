@@ -176,16 +176,13 @@ const SearchFormWrapper = styled(motion.form)`
   align-items: center;
   background-color: #ffffff;
   border-radius: 100px;
-  /* Fix 1: Removed padding to allow edge-to-edge pill */
   padding: 0; 
-  /* Fix 1: Fixed height to maintain pill size without padding */
   height: 76px; 
   box-shadow: 0 6px 20px rgba(0,0,0,0.2);
   width: auto;
   z-index: 50;
 `;
 
-// New Active Pill Component
 const ActivePill = styled(motion.div)`
   position: absolute;
   top: 0;
@@ -202,7 +199,7 @@ const Divider = styled.div`
   width: 1px;
   height: 32px;
   background-color: #e5e7eb;
-  margin: 0; /* Adjusted margin since parent has no padding */
+  margin: 0;
   flex-shrink: 0;
   transition: opacity 0.2s;
   opacity: ${props => props.$isHidden ? 0 : 1};
@@ -259,7 +256,6 @@ const SearchButton = styled(motion.button)`
   border-radius: 50px;
   width: 60px; 
   height: 60px;
-  /* Fix 1: Adjusted margin since Wrapper padding is gone */
   margin-right: 8px; 
   margin-left: 8px;
   cursor: pointer;
@@ -480,7 +476,8 @@ const CustomParticipant = ({ count, onChange }) => {
         >
           <Minus size={16} />
         </CounterBtn>
-        <span style={{ width: 24, textAlign: 'center', fontWeight: 600, fontSize: 16 }}>{count}</span>
+        {/* Added explicit color: #222 to prevent inheritance of white text from Banner */}
+        <span style={{ width: 24, textAlign: 'center', fontWeight: 600, fontSize: 16, color: '#222' }}>{count}</span>
         <CounterBtn
           type="button"
           disabled={count >= 20}
@@ -493,7 +490,13 @@ const CustomParticipant = ({ count, onChange }) => {
   );
 };
 
-// Fix 2: Updated variants to start invisible and wait for container to settle
+// Define sizes in a constant for consistent referencing
+const POPUP_SIZES = {
+  location: 400,
+  date: 360,
+  participants: 340
+};
+
 const contentVariants = {
   enter: {
     opacity: 0,
@@ -503,7 +506,7 @@ const contentVariants = {
     opacity: 1,
     scale: 1,
     transition: {
-      delay: 0.1, // Wait for container to start resizing
+      delay: 0.1,
       duration: 0.3,
       ease: "easeOut"
     }
@@ -570,9 +573,8 @@ const DesktopSearchForm = () => {
         const buttonRect = targetRef.current.getBoundingClientRect();
         const containerRect = containerRef.current.getBoundingClientRect();
 
-        let width = 400;
-        if (activeField === 'date') width = 360;
-        if (activeField === 'participants') width = 340;
+        // Use static size mapping
+        const width = POPUP_SIZES[activeField] || 400;
 
         let left = 0;
         if (activeField === 'location') {
@@ -738,14 +740,16 @@ const DesktopSearchForm = () => {
           >
             <PopupContentPadding>
               <AnimatePresence mode="popLayout">
-                {/* Fix 2: Wrap content in a div with fixed width to prevent squashing during transition */}
                 <motion.div
                   key={activeField}
+                  // Fix: Added layout="position" to prevent squashing during transition
+                  layout="position"
                   variants={contentVariants}
                   initial="enter"
                   animate="center"
                   exit="exit"
-                  style={{ width: popupConfig.width - 48 }} // Subtract padding (24*2) from width
+                  // Fix: Fixed width calculation based on activeField to prevent content resize issues
+                  style={{ width: (POPUP_SIZES[activeField] || 400) - 48 }}
                 >
                   {activeField === 'location' && (
                     <>
