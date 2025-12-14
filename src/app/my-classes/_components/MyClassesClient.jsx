@@ -10,7 +10,7 @@ import React, {
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { Typography, ConfigProvider, Alert } from "antd";
-import message from "@/lib/message";
+import message from '@/lib/message';
 import { CheckCircle, Calendar, X, Frown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -39,7 +39,7 @@ const PageContainer = styled.div`
   max-width: 1200px;
   min-height: 100vh;
   margin: 0 auto;
-  padding: 32px 24px 64px; /* Reduced padding */
+  padding: 32px 24px 64px;
 
   @media (max-width: 768px) {
     padding: 24px 16px 48px;
@@ -47,7 +47,7 @@ const PageContainer = styled.div`
 `;
 
 const HeaderSection = styled.div`
-  margin-bottom: 24px; /* Compact margin */
+  margin-bottom: 24px;
   text-align: center;
 
   @media (max-width: 768px) {
@@ -58,7 +58,7 @@ const HeaderSection = styled.div`
 
 const PageTitle = styled(Title)`
   &.ant-typography {
-    font-size: 28px; /* Reduced from 36px */
+    font-size: 28px;
     font-weight: 800;
     margin-bottom: 4px;
     color: rgb(34, 34, 34);
@@ -66,7 +66,7 @@ const PageTitle = styled(Title)`
 `;
 
 const SubTitle = styled(Text)`
-  font-size: 15px; /* Reduced from 18px */
+  font-size: 15px;
   color: #717171;
   display: block;
   max-width: 600px;
@@ -76,7 +76,7 @@ const SubTitle = styled(Text)`
 const TabContainer = styled.div`
   display: flex;
   justify-content: center;
-  margin-bottom: 24px; /* Reduced margin */
+  margin-bottom: 24px;
 
   @media (max-width: 768px) {
     margin-bottom: 16px;
@@ -117,7 +117,7 @@ const TabIndicator = styled(motion.div)`
 `;
 
 const TabButton = styled(motion.button)`
-  padding: 8px 16px; /* Reduced padding */
+  padding: 8px 16px;
   border: none;
   background: transparent;
   color: ${(props) => (props.$active ? "white" : "#6b7280")};
@@ -131,7 +131,7 @@ const TabButton = styled(motion.button)`
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px; /* Smaller text */
+  font-size: 13px;
 
   &:hover {
     color: ${(props) => (props.$active ? "white" : "#374151")};
@@ -161,12 +161,10 @@ const ContentHeader = styled.div`
   background: white;
 `;
 
-// NEW COMPACT GRID SYSTEM
 const BookingsGrid = styled(motion.div)`
   display: grid;
-  /* Smaller min-width (280px) allows more cards per row */
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px; /* Reduced gap (was 24px) */
+  gap: 16px;
   padding: 0;
 
   @media (max-width: 768px) {
@@ -269,6 +267,82 @@ const MyScheduleAndBookings = () => {
     }
   }, [activeTab]);
 
+  /**
+   * Helper to collapse multiple course sessions into a single card.
+   */
+  const groupBookings = (rawBookings, tabKey) => {
+    const groups = {};
+    const singles = [];
+
+    // 1. Separate singles and groups
+    rawBookings.forEach((b) => {
+      const isCourse = b.enrollment_type === "Full Course";
+
+      let groupId = b.booking_group_id;
+      if (isCourse && !groupId) {
+        // Create a unique fallback key if ID is missing (though backend fixed now)
+        groupId = `fallback_group_${b.class_id || b.class_name}`;
+      }
+
+      if (isCourse && groupId) {
+        if (!groups[groupId]) {
+          groups[groupId] = [];
+        }
+        groups[groupId].push(b);
+      } else {
+        singles.push(b);
+      }
+    });
+
+    const collapsedGroups = [];
+
+    // 2. Process groups
+    Object.values(groups).forEach((groupBookings) => {
+      // Sort by date ascending
+      groupBookings.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const totalSessions = groupBookings.length;
+      const isCourseReviewed = groupBookings.some(b => b.has_review);
+
+      let bookingToDisplay = null;
+
+      if (tabKey === "upcoming") {
+        // Find the first confirmed booking that is in the future/today
+        bookingToDisplay = groupBookings[0];
+      } else if (tabKey === "completed") {
+        // Show the last session
+        bookingToDisplay = groupBookings[groupBookings.length - 1];
+      } else {
+        bookingToDisplay = groupBookings[0];
+      }
+
+      if (bookingToDisplay) {
+        const currentSessionIndex = groupBookings.findIndex(b => b.id === bookingToDisplay.id);
+
+        const collapsedBooking = {
+          ...bookingToDisplay,
+          session_info: {
+            current_session: currentSessionIndex + 1,
+            total_sessions: totalSessions
+          },
+          has_review: isCourseReviewed,
+          // --- NEW: Pass all sessions to the card for the popup ---
+          all_sessions: groupBookings
+        };
+        collapsedGroups.push(collapsedBooking);
+      }
+    });
+
+    const combined = [...singles, ...collapsedGroups];
+    combined.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    if (tabKey !== "upcoming") {
+      combined.reverse();
+    }
+
+    return combined;
+  };
+
   const fetchBookings = useCallback(
     async (tabKey) => {
       let apiStatus;
@@ -304,6 +378,7 @@ const MyScheduleAndBookings = () => {
         ) {
           const transformedBookings = response.data.bookings.map((booking) => {
             let displayableDateTime = "Date/Time N/A";
+            // Pre-calculate display time for every session here
             if (
               booking.date &&
               booking.time &&
@@ -364,9 +439,12 @@ const MyScheduleAndBookings = () => {
               userLocalSessionTime: displayableDateTime,
             };
           });
+
+          const groupedData = groupBookings(transformedBookings, tabKey);
+
           setBookingsData((prev) => ({
             ...prev,
-            [tabKey]: transformedBookings,
+            [tabKey]: groupedData,
           }));
         } else {
           setError((prev) => ({
