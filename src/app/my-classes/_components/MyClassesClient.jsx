@@ -12,15 +12,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Typography, ConfigProvider, Alert } from "antd";
 import message from '@/lib/message';
 import { CheckCircle, Calendar, X, Frown } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthUser } from "@/hooks/useAuthUser";
 
-import CancellationInfoModal from "./CancellationInfoModal";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import BookingsListSkeleton from "./BookingsListSkeleton";
 import FooterClient from "@/components/homepage/FooterClient";
 import BookingListItem from "./BookingClassCard";
-import ReviewModal from "./ReviewModal";
 import { bookingService } from "@/services/apiService";
 import { formatBusinessLocalToUserDisplay } from "@/services/utils";
 import { theme } from "@/components/theme";
@@ -209,7 +207,13 @@ const ErrorContainer = styled(motion.div)`
 const MyScheduleAndBookings = () => {
   const { user: currentUser } = useAuthUser();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("upcoming");
+  const searchParams = useSearchParams();
+
+  // Initialize tab from URL or default to 'upcoming'
+  const [activeTab, setActiveTab] = useState(() => {
+    return searchParams.get('tab') || "upcoming";
+  });
+
   const [bookingsData, setBookingsData] = useState({
     upcoming: [],
     completed: [],
@@ -231,15 +235,6 @@ const MyScheduleAndBookings = () => {
     cancelled: false,
   });
 
-  const [reviewBooking, setReviewBooking] = useState(null);
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [cancellingBooking, setCancellingBooking] = useState(null);
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [cancellationDetails, setCancellationDetails] = useState(null);
-  const [isFetchingCancelInfo, setIsFetchingCancelInfo] = useState(false);
-  const [isProcessingCancellation, setIsProcessingCancellation] =
-    useState(false);
-
   const tabRefs = useRef({});
   const [tabIndicatorStyle, setTabIndicatorStyle] = useState({});
 
@@ -255,6 +250,20 @@ const MyScheduleAndBookings = () => {
     { key: "completed", label: "Completed", icon: <CheckCircle size={14} /> },
     { key: "cancelled", label: "Cancelled", icon: <X size={14} /> },
   ];
+
+  // --- Effect: Handle highlighting deep links from email ---
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    if (highlightId && !loading[activeTab] && bookingsData[activeTab].length > 0) {
+      const element = document.getElementById(`booking-card-${highlightId}`);
+      if (element) {
+        // Delay slighty to ensure layout is stable
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+      }
+    }
+  }, [searchParams, loading, activeTab, bookingsData]);
 
   useEffect(() => {
     const activeTabElement = tabRefs.current[activeTab];
@@ -274,13 +283,11 @@ const MyScheduleAndBookings = () => {
     const groups = {};
     const singles = [];
 
-    // 1. Separate singles and groups
     rawBookings.forEach((b) => {
       const isCourse = b.enrollment_type === "Full Course";
 
       let groupId = b.booking_group_id;
       if (isCourse && !groupId) {
-        // Create a unique fallback key if ID is missing (though backend fixed now)
         groupId = `fallback_group_${b.class_id || b.class_name}`;
       }
 
@@ -296,9 +303,7 @@ const MyScheduleAndBookings = () => {
 
     const collapsedGroups = [];
 
-    // 2. Process groups
     Object.values(groups).forEach((groupBookings) => {
-      // Sort by date ascending
       groupBookings.sort((a, b) => new Date(a.date) - new Date(b.date));
 
       const totalSessions = groupBookings.length;
@@ -307,10 +312,8 @@ const MyScheduleAndBookings = () => {
       let bookingToDisplay = null;
 
       if (tabKey === "upcoming") {
-        // Find the first confirmed booking that is in the future/today
         bookingToDisplay = groupBookings[0];
       } else if (tabKey === "completed") {
-        // Show the last session
         bookingToDisplay = groupBookings[groupBookings.length - 1];
       } else {
         bookingToDisplay = groupBookings[0];
@@ -326,7 +329,6 @@ const MyScheduleAndBookings = () => {
             total_sessions: totalSessions
           },
           has_review: isCourseReviewed,
-          // --- NEW: Pass all sessions to the card for the popup ---
           all_sessions: groupBookings
         };
         collapsedGroups.push(collapsedBooking);
@@ -378,7 +380,7 @@ const MyScheduleAndBookings = () => {
         ) {
           const transformedBookings = response.data.bookings.map((booking) => {
             let displayableDateTime = "Date/Time N/A";
-            // Pre-calculate display time for every session here
+
             if (
               booking.date &&
               booking.time &&
@@ -468,6 +470,8 @@ const MyScheduleAndBookings = () => {
   );
 
   useEffect(() => {
+    // Only fetch if we haven't fetched this tab yet, 
+    // or if it's the very first load and we need to respect the URL tab
     if (!hasFetched[activeTab]) {
       fetchBookings(activeTab);
     }
@@ -475,103 +479,14 @@ const MyScheduleAndBookings = () => {
 
   const handleTabChange = (tabKey) => {
     setActiveTab(tabKey);
-  };
-
-  const handleShowCancellationInfoModal = async (booking) => {
-    if (!booking || !booking.booking_id) return;
-
-    setCancellingBooking(booking);
-    setIsCancelModalOpen(true);
-    setIsFetchingCancelInfo(true);
-    setCancellationDetails(null);
-
-    const response = await bookingService.getBookingCancellationInfo(
-      booking.booking_id
-    );
-
-    if (response.success) {
-      setCancellationDetails(response.data);
-    } else {
-      setCancellationDetails({
-        error:
-          response.error ||
-          "Could not retrieve cancellation details. Please try again.",
-      });
-      message.error("Could not load cancellation policy details.");
-    }
-    setIsFetchingCancelInfo(false);
-  };
-
-  const executeStudentCancellation = async (bookingToCancel) => {
-    if (!bookingToCancel || !bookingToCancel.booking_id) {
-      message.error("Booking information is missing. Cannot cancel.");
-      return;
-    }
-
-    const bookingIdToSubmit = bookingToCancel.booking_id;
-    setIsProcessingCancellation(true);
-    message.loading({
-      content: "Processing cancellation...",
-      key: `cancel-${bookingIdToSubmit}`,
-      duration: 0,
-    });
-    try {
-      const response = await bookingService.studentCancelBooking(
-        bookingIdToSubmit,
-        "Cancelled by student."
-      );
-
-      if (response.success) {
-        message.success({
-          content: "Class cancelled successfully",
-          key: `cancel-${bookingIdToSubmit}`,
-          duration: 2,
-        });
-        setIsCancelModalOpen(false);
-        setCancellingBooking(null);
-        setCancellationDetails(null);
-        fetchBookings("upcoming");
-        fetchBookings("cancelled");
-      } else {
-        let errorMsg = "Failed to cancel booking.";
-        if (typeof response.error === "string") errorMsg = response.error;
-        else if (response.error?.detail) errorMsg = response.error.detail;
-        else if (response.error?.policy) errorMsg = response.error.policy;
-        message.error({
-          content: errorMsg,
-          key: `cancel-${bookingIdToSubmit}`,
-          duration: 4,
-        });
-      }
-    } catch (error) {
-      message.error({
-        content: "An unexpected error occurred during cancellation.",
-        key: `cancel-${bookingIdToSubmit}`,
-        duration: 3,
-      });
-    } finally {
-      setIsProcessingCancellation(false);
-    }
+    // Update URL without full reload
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', tabKey);
+    router.replace(`?${newParams.toString()}`, { scroll: false });
   };
 
   const handleMessageInstructor = (booking) => {
     message.info("Messaging feature coming soon!");
-  };
-
-  const handleReviewSubmit = () => {
-    message.success({
-      content: "Review submitted successfully!",
-      key: "reviewMsg",
-      duration: 3,
-    });
-    setIsReviewModalOpen(false);
-    setReviewBooking(null);
-    fetchBookings("completed");
-  };
-
-  const handleLeaveReviewClick = (booking) => {
-    setReviewBooking(booking);
-    setIsReviewModalOpen(true);
   };
 
   const handleBookAgain = (booking) => {
@@ -586,6 +501,7 @@ const MyScheduleAndBookings = () => {
     const currentLoading = loading[activeTab];
     const currentError = error[activeTab];
     const currentBookings = bookingsData[activeTab] || [];
+    const highlightId = searchParams.get('highlight');
 
     if (currentLoading) {
       return (
@@ -659,30 +575,47 @@ const MyScheduleAndBookings = () => {
         exit={{ opacity: 0 }}
       >
         <AnimatePresence mode="popLayout">
-          {currentBookings.map((booking, index) => (
-            <motion.div
-              layout
-              key={booking.id || `booking-item-${index}`}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{
-                opacity: 1,
-                scale: 1,
-                transition: {
-                  delay: index * 0.03,
-                  duration: 0.2,
-                },
-              }}
-              exit={{ opacity: 0, scale: 0.95 }}
-            >
-              <BookingListItem
-                booking={booking}
-                onMessageInstructor={handleMessageInstructor}
-                onLeaveReview={() => handleLeaveReviewClick(booking)}
-                onBookAgain={handleBookAgain}
-                onShowCancellationInfo={handleShowCancellationInfoModal}
-              />
-            </motion.div>
-          ))}
+          {currentBookings.map((booking, index) => {
+            // Check if this booking (or its group) matches the highlight ID
+            const isHighlighted = highlightId && (
+              String(booking.id) === highlightId ||
+              (booking.booking_group_id && String(booking.booking_group_id) === highlightId)
+            );
+
+            return (
+              <motion.div
+                layout
+                key={booking.id || `booking-item-${index}`}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{
+                  opacity: 1,
+                  scale: 1,
+                  transition: {
+                    delay: index * 0.03,
+                    duration: 0.2,
+                  },
+                }}
+                exit={{ opacity: 0, scale: 0.95 }}
+              >
+                <BookingListItem
+                  id={booking.id}
+                  booking={booking}
+                  highlighted={isHighlighted}
+                  onMessageInstructor={handleMessageInstructor}
+                  onBookAgain={handleBookAgain}
+                  // Refresh list on success
+                  onCancelSuccess={() => {
+                    setHasFetched(prev => ({ ...prev, upcoming: false, cancelled: false }));
+                    fetchBookings(activeTab);
+                  }}
+                  onReviewSuccess={() => {
+                    setHasFetched(prev => ({ ...prev, completed: false }));
+                    fetchBookings(activeTab);
+                  }}
+                />
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </BookingsGrid>
     );
@@ -719,31 +652,6 @@ const MyScheduleAndBookings = () => {
 
         <AnimatePresence mode="wait">{renderContent()}</AnimatePresence>
       </PageContainer>
-
-      <ReviewModal
-        booking={reviewBooking}
-        isOpen={isReviewModalOpen}
-        onClose={() => {
-          setIsReviewModalOpen(false);
-          setReviewBooking(null);
-        }}
-        onSubmit={handleReviewSubmit}
-      />
-
-      <CancellationInfoModal
-        isOpen={isCancelModalOpen}
-        onClose={() => {
-          setIsCancelModalOpen(false);
-          setCancellingBooking(null);
-          setCancellationDetails(null);
-        }}
-        booking={cancellingBooking}
-        userTimeZone={studentEffectiveTimeZone}
-        cancellationDetails={cancellationDetails}
-        isLoading={isFetchingCancelInfo}
-        onConfirmCancel={executeStudentCancellation}
-        isCancelling={isProcessingCancellation}
-      />
 
       <FooterClient />
     </ConfigProvider>

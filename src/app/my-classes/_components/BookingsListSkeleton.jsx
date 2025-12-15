@@ -17,38 +17,47 @@ const SkeletonBase = styled.div`
     #f6f7f8 100%
   );
   background-repeat: no-repeat;
-  background-size: 800px 104px;
+  background-size: 800px 100%;
   animation: ${shimmer} 1.5s infinite linear;
   border-radius: ${(props) => props.$radius || "6px"};
 `;
 
+// Matches FlippableCard / FaceBase styles
 const SkeletonCard = styled.div`
   background: white;
   border: 1px solid #e8e8e8;
-  border-radius: 12px;
+  border-radius: 20px; /* Matched to BookingClassCard */
   overflow: hidden;
-  height: 340px; /* Significantly shorter to match compact card */
   display: flex;
   flex-direction: column;
+  height: 100%;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 `;
 
 const SkeletonImageArea = styled(SkeletonBase)`
   width: 100%;
-  height: 140px; /* Matches new compact image height */
+  height: 150px; /* Matched to ImageContainer */
   border-radius: 0;
+  flex-shrink: 0;
 `;
 
 const SkeletonContent = styled.div`
-  padding: 12px 16px;
+  padding: 16px;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+`;
+
+const Divider = styled.div`
+  height: 1px;
+  background: #f3f4f6;
+  margin: 10px 0;
 `;
 
 const SkeletonFooter = styled.div`
-  padding: 10px 16px;
-  border-top: 1px solid #f0f0f0;
+  padding: 12px 16px;
+  border-top: 1px solid #f3f4f6;
+  background: #f9fafb;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -58,26 +67,43 @@ const CardSkeleton = () => (
   <SkeletonCard>
     <SkeletonImageArea />
     <SkeletonContent>
+      {/* Session Tag (optional usually, but placeholder space) */}
       <SkeletonBase
-        style={{ width: "40px", height: "20px", marginBottom: "4px" }}
+        style={{ width: "30%", height: "16px", marginBottom: "8px", borderRadius: "12px" }}
       />
-      {/* Badge/Price */}
-      <SkeletonBase style={{ width: "90%", height: "20px" }} /> {/* Title */}
-      <SkeletonBase
-        style={{ width: "50%", height: "14px", marginBottom: "8px" }}
-      />
-      {/* Business */}
-      <div style={{ display: "flex", gap: 8 }}>
-        <SkeletonBase style={{ width: 16, height: 16 }} />
-        <SkeletonBase style={{ flex: 1, height: 16 }} />
+
+      {/* Title */}
+      <SkeletonBase style={{ width: "90%", height: "20px", marginBottom: "6px" }} />
+
+      {/* Business Name */}
+      <SkeletonBase style={{ width: "60%", height: "14px", marginBottom: "12px" }} />
+
+      {/* Price Tag */}
+      <SkeletonBase style={{ width: "40px", height: "18px", borderRadius: "4px" }} />
+
+      <Divider />
+
+      {/* Date/Time Row */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "center" }}>
+        <SkeletonBase style={{ width: 16, height: 16, borderRadius: "50%" }} />
+        <SkeletonBase style={{ flex: 1, height: 14 }} />
       </div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <SkeletonBase style={{ width: 16, height: 16 }} />
-        <SkeletonBase style={{ flex: 1, height: 16 }} />
+
+      {/* Location Row */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 8, alignItems: "center" }}>
+        <SkeletonBase style={{ width: 16, height: 16, borderRadius: "50%" }} />
+        <SkeletonBase style={{ width: "70%", height: 14 }} />
+      </div>
+
+      {/* Participants Row */}
+      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <SkeletonBase style={{ width: 16, height: 16, borderRadius: "50%" }} />
+        <SkeletonBase style={{ width: "40%", height: 14 }} />
       </div>
     </SkeletonContent>
+
     <SkeletonFooter>
-      <SkeletonBase style={{ width: "80px", height: "32px" }} />
+      <SkeletonBase style={{ width: "80px", height: "28px", borderRadius: "14px" }} />
     </SkeletonFooter>
   </SkeletonCard>
 );
