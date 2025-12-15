@@ -588,11 +588,8 @@ const BookingClassCard = ({
 
       let imageS3Key = null;
 
-      // 1. Upload Image First (if exists)
       if (reviewImage) {
-        // You might need to check with your backend team what the valid 'uploadType' string is. 
-        // Common examples: 'review', 'general', 'booking_review'
-        const uploadResult = await uploadService.uploadFile(reviewImage, "review");
+        const uploadResult = await uploadService.uploadFile(reviewImage, "review_image");
 
         if (!uploadResult.success) {
           message.error(uploadResult.error || "Failed to upload image");
@@ -607,7 +604,7 @@ const BookingClassCard = ({
         booking_id: booking.id,
         rating: rating,
         comment: values.comment,
-        image_s3_key: imageS3Key, // Send the key, not the file
+        image_s3_key: imageS3Key,
       };
 
       // 3. Submit Review
