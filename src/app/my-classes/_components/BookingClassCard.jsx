@@ -9,9 +9,9 @@ import {
   Trash2, UploadCloud, Loader2
 } from "lucide-react";
 import { Button, Tooltip, Dropdown, Alert, Tag, Form, Input, Upload, message } from "antd";
-import imageCompression from "browser-image-compression"; // INSTALL THIS: npm install browser-image-compression
+import imageCompression from "browser-image-compression";
 import { theme } from "@/components/theme";
-import { bookingService } from "@/services/apiService";
+import { bookingService, reviewService, uploadService } from "@/services/apiService";
 
 // --- Styled Components ---
 
@@ -586,16 +586,32 @@ const BookingClassCard = ({
 
       setLoading(true);
 
-      const formData = new FormData();
-      formData.append("booking_id", booking.id);
-      formData.append("rating", rating);
-      formData.append("comment", values.comment);
+      let imageS3Key = null;
+
+      // 1. Upload Image First (if exists)
       if (reviewImage) {
-        formData.append("image", reviewImage);
+        // You might need to check with your backend team what the valid 'uploadType' string is. 
+        // Common examples: 'review', 'general', 'booking_review'
+        const uploadResult = await uploadService.uploadFile(reviewImage, "review");
+
+        if (!uploadResult.success) {
+          message.error(uploadResult.error || "Failed to upload image");
+          setLoading(false);
+          return;
+        }
+        imageS3Key = uploadResult.s3_key;
       }
 
-      // PRODUCTION API CALL
-      const response = await bookingService.submitReview(formData);
+      // 2. Create JSON Payload
+      const payload = {
+        booking_id: booking.id,
+        rating: rating,
+        comment: values.comment,
+        image_s3_key: imageS3Key, // Send the key, not the file
+      };
+
+      // 3. Submit Review
+      const response = await reviewService.submitReview(payload);
 
       if (response.success) {
         message.success("Review submitted successfully!");
@@ -608,7 +624,6 @@ const BookingClassCard = ({
         message.error(response.error || "Failed to submit review.");
       }
     } catch (e) {
-      // validation error or api error
       console.error(e);
       if (!e.errorFields) message.error("An error occurred submitting the review.");
     } finally {
