@@ -1,63 +1,67 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Init
-  
+
   compiler: {
     styledComponents: true,
     styledJsx: false,
-    removeConsole: process.env.STAGE === 'test' ? false : (process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn'],
-    } : false),
+    removeConsole:
+      process.env.STAGE === "test"
+        ? false
+        : process.env.NODE_ENV === "production"
+        ? {
+            exclude: ["error", "warn"],
+          }
+        : false,
   },
 
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'i.imgur.com',
+        protocol: "https",
+        hostname: "i.imgur.com",
       },
       {
-        protocol: 'https',
-        hostname: 'randomuser.me',
+        protocol: "https",
+        hostname: "randomuser.me",
       },
       {
-        protocol: 'https',
-        hostname: 'bradfrost.com',
+        protocol: "https",
+        hostname: "bradfrost.com",
       },
       {
-        protocol: 'https',
-        hostname: 'cdn.lordicon.com',
+        protocol: "https",
+        hostname: "cdn.lordicon.com",
       },
       {
-        protocol: 'https',
-        hostname: 'd2mzhwd15ea85i.cloudfront.net',
+        protocol: "https",
+        hostname: "d2mzhwd15ea85i.cloudfront.net",
       },
       {
-        protocol: 'https',
-        hostname: 'cdn.hswstatic.com',
+        protocol: "https",
+        hostname: "cdn.hswstatic.com",
       },
       {
-        protocol: 'https',
-        hostname: 'lh3.googleusercontent.com',
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
       },
       {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
+        protocol: "https",
+        hostname: "images.unsplash.com",
       },
       {
-        protocol: 'https',
-        hostname: '**',
+        protocol: "https",
+        hostname: "**",
       },
     ],
-    formats: ['image/avif', 'image/webp'],
+    formats: ["image/avif", "image/webp"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [32, 48, 64, 96, 128, 256, 384], // Removed 16 per Next.js 16 defaults
     minimumCacheTTL: 60 * 60 * 4, // 4 hours (Next.js 16 default, changed from 1 year)
     dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
+    contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  
 
   reactStrictMode: true,
 
@@ -65,87 +69,87 @@ const nextConfig = {
     return [
       // Global security headers - MUST BE FIRST
       {
-        source: '/:path*',
+        source: "/:path*",
         headers: [
           {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on'
+            key: "X-DNS-Prefetch-Control",
+            value: "on",
           },
           {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block'
+            key: "X-XSS-Protection",
+            value: "1; mode=block",
           },
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff'
+            key: "X-Content-Type-Options",
+            value: "nosniff",
           },
           {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN'
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
           },
           {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin'
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
           },
         ],
       },
-      
+
       // Static assets from /public folder - 1 YEAR CACHE, IMMUTABLE
       {
-        source: '/assets/:path*',
+        source: "/assets/:path*",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
           },
         ],
       },
       {
-        source: '/images/:path*',
+        source: "/images/:path*",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
           },
         ],
       },
       {
-        source: '/videos/:path*',
+        source: "/videos/:path*",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
           },
         ],
       },
-      
+
       // Next.js internal static assets - 1 YEAR CACHE (Vercel handles this, but explicit is better)
       {
-        source: '/_next/static/:path*',
+        source: "/_next/static/:path*",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
           },
         ],
       },
       {
-        source: '/_next/image/:path*',
+        source: "/_next/image/:path*",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
           },
         ],
       },
-      
+
       // Favicon - 1 YEAR CACHE
       {
-        source: '/favicon.ico',
+        source: "/favicon.ico",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
           },
         ],
       },
@@ -154,18 +158,21 @@ const nextConfig = {
 
   async rewrites() {
     // Backend API URL (without /api suffix) for robots.txt and sitemap - DJANGO
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-    const backendUrl = apiUrl.replace(/\/api$/, '');
-    
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+    const backendUrl = apiUrl.replace(/\/api$/, "");
+
     // CloudFront URL for static files from S3
-    const cloudFrontUrl = process.env.NEXT_PUBLIC_CLOUDFRONT_URL || 'https://d1uuoquc68y10e.cloudfront.net';
+    const cloudFrontUrl =
+      process.env.NEXT_PUBLIC_CLOUDFRONT_URL ||
+      "https://d1uuoquc68y10e.cloudfront.net";
 
     return {
       beforeFiles: [
         // These run BEFORE Next.js checks for pages/static files
         // Proxy /widget/* to CloudFront (widget static files)
         {
-          source: '/widget/:path*',
+          source: "/widget/:path*",
           destination: `${cloudFrontUrl}/widget/:path*`,
         },
       ],
@@ -173,16 +180,16 @@ const nextConfig = {
         // These run AFTER Next.js checks for pages/static files
         // Proxy robots.txt and sitemap to Django backend (dynamically generated)
         {
-          source: '/robots.txt',
+          source: "/robots.txt",
           destination: `${backendUrl}/robots.txt`,
         },
         {
-          source: '/sitemap.xml',
+          source: "/sitemap.xml",
           destination: `${backendUrl}/sitemap.xml`,
         },
         // Proxy /public/* to CloudFront (S3 static files)
         {
-          source: '/public/:path*',
+          source: "/public/:path*",
           destination: `${cloudFrontUrl}/public/:path*`,
         },
       ],
@@ -190,7 +197,13 @@ const nextConfig = {
   },
 
   async redirects() {
-    return [];
+    return [
+      {
+        source: "/business/classes",
+        destination: "/business/dashboard/classes",
+        permanent: false, // Set to false if this is temporary
+      },
+    ];
   },
 
   webpack: (config, { dev, isServer }) => {
@@ -200,14 +213,14 @@ const nextConfig = {
         aggregateTimeout: 300,
       };
     }
-    
+
     if (!isServer) {
       config.optimization.splitChunks = {
-        chunks: 'all',
+        chunks: "all",
         cacheGroups: {
           framework: {
             test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
-            name: 'framework',
+            name: "framework",
             priority: 40,
           },
           lib: {
@@ -216,7 +229,7 @@ const nextConfig = {
               const packageName = module.context.match(
                 /[\\/]node_modules[\\/](.*?)([\\/]|$)/
               )?.[1];
-              return `npm.${packageName?.replace('@', '')}`;
+              return `npm.${packageName?.replace("@", "")}`;
             },
             priority: 30,
             minChunks: 1,
@@ -229,16 +242,18 @@ const nextConfig = {
   },
 
   // NEXT.JS 16: Turbopack is now stable and default (moved out of experimental)
-  turbopack: process.env.NODE_ENV === 'development' ? {
-    rules: {
-      '*.svg': {
-        loaders: ['@svgr/webpack'],
-        as: '*.js',
-      },
-    },
-  } : undefined,
+  turbopack:
+    process.env.NODE_ENV === "development"
+      ? {
+          rules: {
+            "*.svg": {
+              loaders: ["@svgr/webpack"],
+              as: "*.js",
+            },
+          },
+        }
+      : undefined,
   cacheComponents: true,
-
 
   experimental: {
     // NEXT.JS 16: Enable Turbopack file system caching for faster dev startup
@@ -246,29 +261,29 @@ const nextConfig = {
 
     // Aggressive package optimization
     optimizePackageImports: [
-      'antd',
-      '@ant-design/icons',
-      'lucide-react',
-      'react-icons',
-      'lodash',
-      'date-fns',
-      'recharts',
-      'react-redux',
-      '@reduxjs/toolkit',
+      "antd",
+      "@ant-design/icons",
+      "lucide-react",
+      "react-icons",
+      "lodash",
+      "date-fns",
+      "recharts",
+      "react-redux",
+      "@reduxjs/toolkit",
     ],
 
     // CSS optimization
     optimizeCss: true,
-    cssChunking: 'strict',
+    cssChunking: "strict",
   },
 
   // React Compiler Support (stable in Next.js 16)
   // NOTE: Increases build times due to Babel dependency
   // reactCompiler: true,
 
-  pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'md', 'mdx'],
+  pageExtensions: ["js", "jsx", "ts", "tsx", "md", "mdx"],
   poweredByHeader: false,
-  compress: process.env.STAGE !== 'test',
+  compress: process.env.STAGE !== "test",
   generateEtags: true,
 
   httpAgentOptions: {
@@ -283,7 +298,8 @@ const nextConfig = {
   },
 
   // Source maps only in development and test
-  productionBrowserSourceMaps: process.env.STAGE === 'test' || process.env.NODE_ENV === 'development',
+  productionBrowserSourceMaps:
+    process.env.STAGE === "test" || process.env.NODE_ENV === "development",
 };
 
 export default nextConfig;
