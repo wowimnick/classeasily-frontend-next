@@ -270,7 +270,7 @@ const CustomGalleryModalOverlay = styled(motion.div)`
   bottom: 0;
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(8px);
-  z-index: 1000;
+  z-index: 3000; 
   display: flex;
   align-items: center;
   justify-content: center;
@@ -635,8 +635,8 @@ const ClassPageImagesTitle = React.memo(
       const imageUrl = usePlaceholders
         ? image
         : isLarge
-        ? image?.large_url || image?.medium_url
-        : image?.medium_url || image?.thumbnail_url;
+          ? image?.large_url || image?.medium_url
+          : image?.medium_url || image?.thumbnail_url;
       const ImageComponent = isLarge ? LargeImage : SmallImage;
       return (
         <ImageComponent
