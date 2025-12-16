@@ -152,8 +152,10 @@ const CloseButton = styled(motion.button)`
 const ScrollableContent = styled.div`
   flex: 1 1 auto;
   overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
   background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+  
   &::-webkit-scrollbar {
     width: 6px;
   }
@@ -201,8 +203,6 @@ const DrawerHandle = styled.div`
 
 const DrawerHeader = styled.div`
   flex-shrink: 0;
-  border-bottom: 1px solid #f0f0f0;
-  padding: 16px;
 `;
 
 const DrawerBody = styled.div`
@@ -218,9 +218,7 @@ const DrawerBody = styled.div`
 
 const DrawerFooter = styled.div`
   flex-shrink: 0;
-  border-top: 1px solid #f0f0f0;
   background: white;
-  padding: 16px;
 `;
 
 const overlayVariants = {
@@ -341,7 +339,7 @@ const BookingModal = ({
     try {
       const validInitialParticipantCount =
         Number.isInteger(effectiveInitialParticipants) &&
-        effectiveInitialParticipants > 0
+          effectiveInitialParticipants > 0
           ? effectiveInitialParticipants
           : 1;
       let bookerName = "";
@@ -349,9 +347,8 @@ const BookingModal = ({
       let bookerPhone = "";
 
       if (currentUserFromRedux) {
-        bookerName = `${currentUserFromRedux.first_name || ""} ${
-          currentUserFromRedux.last_name || ""
-        }`.trim();
+        bookerName = `${currentUserFromRedux.first_name || ""} ${currentUserFromRedux.last_name || ""
+          }`.trim();
         bookerEmail = currentUserFromRedux.email || "";
         bookerPhone = currentUserFromRedux.phone_number || "";
       }
@@ -424,8 +421,8 @@ const BookingModal = ({
       setBookingData((prev) => {
         // --- GUARD CLAUSE ---
         if (prev.bookingId || prev.user_facing_reference || prev.paymentIntentId) {
-            console.error("[BookingModal Debug] Reset Effect Skipped: Booking in progress or confirmed.");
-            return prev;
+          console.error("[BookingModal Debug] Reset Effect Skipped: Booking in progress or confirmed.");
+          return prev;
         }
 
         const userJustLoggedIn = !prev.userEmail && !!newInitialState.userEmail;
@@ -459,7 +456,7 @@ const BookingModal = ({
   const resetModal = useCallback(() => {
     // If user closes completely and there was a pending payment, delete it instantly.
     if (bookingData.paymentIntentId && !bookingData.bookingId) {
-       cancelPendingIntent(bookingData.paymentIntentId);
+      cancelPendingIntent(bookingData.paymentIntentId);
     }
 
     console.error("[BookingModal Debug] Resetting Modal.");
@@ -472,7 +469,7 @@ const BookingModal = ({
   const handleClose = useCallback(() => {
     // Also trigger cleanup on close click
     if (bookingData.paymentIntentId && !bookingData.bookingId) {
-       cancelPendingIntent(bookingData.paymentIntentId);
+      cancelPendingIntent(bookingData.paymentIntentId);
     }
     setIsVisible(false);
   }, [bookingData.paymentIntentId, bookingData.bookingId, cancelPendingIntent]);
@@ -488,19 +485,19 @@ const BookingModal = ({
       setBookingData((prev) => {
         // --- SAFETY CHECK / LOGGING ---
         console.error("[BookingModal Debug] handleUpdateBooking - Current State:", {
-            bookingId: prev.bookingId,
-            ref: prev.user_facing_reference,
-            participants: prev.participant_details
+          bookingId: prev.bookingId,
+          ref: prev.user_facing_reference,
+          participants: prev.participant_details
         });
 
         // Prevent updates from child components if booking is confirmed.
         if (prev.bookingId || prev.user_facing_reference) {
-            console.error("[BookingModal Debug] 🛑 BLOCKING update. Booking already confirmed.");
-            return prev;
+          console.error("[BookingModal Debug] 🛑 BLOCKING update. Booking already confirmed.");
+          return prev;
         }
 
         const newState = { ...prev, ...data };
-        
+
         // Price updating logic
         if (
           data.selectedSlots &&
@@ -510,7 +507,7 @@ const BookingModal = ({
           const newSlotPrice = parseFloat(data.selectedSlots[0].price);
           newState.price = isNaN(newSlotPrice) ? prev.price || 0 : newSlotPrice;
         } else if (data.selectedSlots && data.selectedSlots.length === 0) {
-           const firstActiveSchedule = newState.selectedOption?.schedules?.find(
+          const firstActiveSchedule = newState.selectedOption?.schedules?.find(
             (s) => s.is_active === true
           );
           let resetPrice = parseFloat(
@@ -535,9 +532,8 @@ const BookingModal = ({
             const currentDetails = prev.participant_details || [];
             let bookerNameForPrefill = prev.userName;
             if (!bookerNameForPrefill && currentUserFromRedux) {
-              bookerNameForPrefill = `${
-                currentUserFromRedux.first_name || ""
-              } ${currentUserFromRedux.last_name || ""}`.trim();
+              bookerNameForPrefill = `${currentUserFromRedux.first_name || ""
+                } ${currentUserFromRedux.last_name || ""}`.trim();
             }
             newState.participant_details = Array.from(
               { length: newCount },
@@ -566,17 +562,17 @@ const BookingModal = ({
 
   const handlePaymentComplete = useCallback((dataFromReviewStep) => {
     console.error("[BookingModal Debug] handlePaymentComplete Called. Payload:", dataFromReviewStep);
-    
+
     if (dataFromReviewStep.booking_id) {
       setBookingData((prev) => {
         console.error("[BookingModal Debug] Setting Confirmed Booking Data. Previous State:", prev);
         return {
-            ...prev,
-            bookingId: dataFromReviewStep.booking_id,
-            user_facing_reference: dataFromReviewStep.user_facing_reference,
-            booking_group_id: dataFromReviewStep.booking_group_id,
-            participant_details: dataFromReviewStep.participant_details, // Ensure this is being set!
-            paymentIntentId: null,
+          ...prev,
+          bookingId: dataFromReviewStep.booking_id,
+          user_facing_reference: dataFromReviewStep.user_facing_reference,
+          booking_group_id: dataFromReviewStep.booking_group_id,
+          participant_details: dataFromReviewStep.participant_details, // Ensure this is being set!
+          paymentIntentId: null,
         };
       });
       setCurrentStep(3);
@@ -613,11 +609,11 @@ const BookingModal = ({
     (step, dataToValidate) => {
       if (step === 1) {
         if (isCourseBooking) {
-            const courseSlot = dataToValidate.selectedSlots?.[0];
-            return !!(courseSlot && courseSlot.id);
+          const courseSlot = dataToValidate.selectedSlots?.[0];
+          return !!(courseSlot && courseSlot.id);
         } else {
-            const slot = dataToValidate.selectedSlots?.[0];
-            return !!(slot && slot.id && slot.date && slot.time);
+          const slot = dataToValidate.selectedSlots?.[0];
+          return !!(slot && slot.id && slot.date && slot.time);
         }
       }
       return true;
@@ -632,10 +628,10 @@ const BookingModal = ({
   const handleBack = useCallback(async () => {
     if (currentStep > 1) {
       if (currentStep === 2 && bookingData.paymentIntentId) {
-        
+
         // FIX: Pass the ID directly as a string, not an object
         await paymentService.cancelPaymentIntent(bookingData.paymentIntentId);
-        
+
         // Reset state so we don't hold onto a cancelled ID
         setBookingData((prev) => ({
           ...prev,
@@ -654,7 +650,7 @@ const BookingModal = ({
 
   const shouldHideNextButton =
     currentStep === 1 ? !isCourseBooking : currentStep >= 2;
-  
+
   // Render specific step content based on currentStep
   const renderStepContent = () => {
     switch (currentStep) {
@@ -713,8 +709,8 @@ const BookingModal = ({
     }
   };
 
-const ModalContent = (
-   <ScrollableContent id="booking-modal-scroll-container">
+  const ModalContent = (
+    <ScrollableContent id="booking-modal-scroll-container">
       <AnimatedModalContent>
         <StepContentWrapper>
           <AnimatePresence mode="wait">
@@ -731,7 +727,7 @@ const ModalContent = (
         </StepContentWrapper>
       </AnimatedModalContent>
     </ScrollableContent>
-);
+  );
 
   if (isMobile) {
     return (
@@ -742,7 +738,7 @@ const ModalContent = (
           if (!open) {
             setIsVisible(false);
             setTimeout(() => {
-                handleAnimationComplete();
+              handleAnimationComplete();
             }, 300);
           }
         }}
@@ -766,19 +762,19 @@ const ModalContent = (
               />
             </DrawerHeader>
             <DrawerBody>
-                 <Elements stripe={stripePromise}>
-                   <AnimatePresence mode="wait">
-                    <motion.div
-                      key={currentStep}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-                    >
-                      {renderStepContent()}
-                    </motion.div>
-                  </AnimatePresence>
-                 </Elements>
+              <Elements stripe={stripePromise}>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentStep}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  >
+                    {renderStepContent()}
+                  </motion.div>
+                </AnimatePresence>
+              </Elements>
             </DrawerBody>
             <DrawerFooter>
               <ModalFooter

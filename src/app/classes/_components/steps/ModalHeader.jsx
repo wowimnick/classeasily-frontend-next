@@ -4,11 +4,11 @@ import {
   Users,
   Check,
   Calendar,
+  ChevronLeft
 } from "lucide-react";
 import styled from "styled-components";
 import { getScheduleSummary, getDurationText } from "./utils";
-import { AnimatePresence } from "framer-motion";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 const theme = {
   primary: "#ff385c",
@@ -26,8 +26,8 @@ const HeaderContainer = styled.div`
   background: ${theme.white};
 
   @media (max-width: 640px) {
-    padding: 0px;
-    border-bottom: none;
+    padding: 16px;
+    border-bottom: 1px solid #f0f0f0;
   }
 `;
 
@@ -45,7 +45,7 @@ const ClassImage = styled.img`
 
   @media (max-width: 480px) {
     width: 80px;
-    height: 54px;
+    height: 60px;
   }
 `;
 
@@ -137,15 +137,15 @@ const StepCircle = styled.div`
     props.$active
       ? theme.primary
       : props.$completed
-      ? theme.success
-      : "#e5e7eb"};
+        ? theme.success
+        : "#e5e7eb"};
   color: white;
   border: 2px solid white;
   box-shadow: 0 0 0 1px
     ${(props) =>
-      props.$active
-        ? theme.primary
-        : props.$completed
+    props.$active
+      ? theme.primary
+      : props.$completed
         ? theme.success
         : "transparent"};
 `;
@@ -165,36 +165,47 @@ const StepLabel = styled.span`
 const FooterContainer = styled.div`
   padding: 16px 24px;
   border-top: 1px solid ${theme.borderLight};
-  display: flex;
-  align-items: center;
   background: ${theme.white};
-
+  
+  /* Mobile Safe Area & Grid */
   @media (max-width: 640px) {
-    padding: 12px 16px;
+    padding: 16px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: ${(props) => props.$hasBack ? "auto 1fr" : "1fr"};
+    gap: 12px;
+    align-items: center;
+  }
+  
+  /* Desktop Flex */
+  @media (min-width: 641px) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 `;
 
-const FooterContent = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  gap: 16px;
-`;
-
-const FooterLeft = styled.div`
+const DesktopLeftSlot = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-shrink: 1;
-  min-width: 0;
+  @media (max-width: 640px) {
+    display: contents; 
+  }
 `;
 
-const FooterRight = styled.div`
+const DesktopRightSlot = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-shrink: 0;
+  justify-content: flex-end;
+  
+  @media (max-width: 640px) {
+    width: 100%;
+    button {
+      width: 100%; 
+    }
+  }
 `;
 
 const SelectedSlotInfo = styled(motion.div)`
@@ -221,13 +232,13 @@ const SelectedSlotInfo = styled(motion.div)`
     font-weight: 500;
   }
 
-  @media (min-width: 969px) {
+  @media (max-width: 968px) {
     display: none;
   }
 `;
 
 const Button = styled(motion.button)`
-  padding: 10px 20px;
+  padding: 12px 24px;
   border-radius: 8px;
   border: 1px solid transparent;
   cursor: pointer;
@@ -239,6 +250,14 @@ const Button = styled(motion.button)`
   justify-content: center;
   gap: 8px;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  
+  @media (max-width: 640px) {
+    padding: 14px 16px;
+    font-size: 15px;
+    /* FIX: Ensure standard border radius on mobile for all buttons */
+    border-radius: 12px; 
+  }
 
   ${(props) =>
     props.$primary
@@ -275,9 +294,15 @@ const Button = styled(motion.button)`
   }
 `;
 
-const DesktopPayButton = styled(Button)`
-  @media (max-width: 968px) {
-    display: none;
+const MobileBackButton = styled(Button)`
+  @media (max-width: 640px) {
+    min-width: auto;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    
+    span { display: none; }
+    svg { margin: 0; }
   }
 `;
 
@@ -389,28 +414,31 @@ export const ModalFooter = ({
   };
 
   const handlePaymentClick = () => {
-    paymentAction?.handleSubmit?.();
+    if (paymentAction?.handleSubmit) {
+      paymentAction.handleSubmit();
+    }
   };
 
   const isPaymentDisabled = !paymentAction?.canSubmit || paymentAction?.loading;
   const showBackButton = currentStep > 1 && !hideBackButton;
-  // Show slot info in footer only on step 1 to avoid clutter on payment step
   const showSelectedSlotInfo = currentStep === 1 && selectedSlot;
 
   return (
-    <FooterContainer>
-      <FooterContent>
-        <FooterLeft>
-          {showBackButton && (
-            <Button
-              onClick={onBack}
-              disabled={loading || paymentAction?.loading}
-            >
-              Back
-            </Button>
-          )}
-          <AnimatePresence>
-            {showSelectedSlotInfo && (
+    <FooterContainer $hasBack={showBackButton}>
+      <DesktopLeftSlot>
+        {showBackButton && (
+          <MobileBackButton
+            onClick={onBack}
+            disabled={loading || paymentAction?.loading}
+          >
+            <ChevronLeft size={20} />
+            <span>Back</span>
+          </MobileBackButton>
+        )}
+
+        <AnimatePresence>
+          {showSelectedSlotInfo && (
+            <div style={{ display: showBackButton ? 'none' : 'block' }}>
               <SelectedSlotInfo
                 initial={{ opacity: 0, width: 0 }}
                 animate={{ opacity: 1, width: "auto" }}
@@ -419,43 +447,42 @@ export const ModalFooter = ({
               >
                 <Calendar size={16} />
                 <strong>
-                  {/* Reuse utils format if needed, simplistic check here */}
                   {new Date(selectedSlot.date).toLocaleDateString(undefined, {
                     month: "short",
                     day: "numeric",
                   })}
                 </strong>
               </SelectedSlotInfo>
-            )}
-          </AnimatePresence>
-        </FooterLeft>
-
-        <FooterRight>
-          {currentStep === 1 && !hideNextButton && (
-            <Button $primary onClick={onNext} disabled={isNextDisabled}>
-              {getButtonText()}
-            </Button>
+            </div>
           )}
+        </AnimatePresence>
+      </DesktopLeftSlot>
 
-          {currentStep === 2 && (
-            <DesktopPayButton
-              $primary
-              onClick={handlePaymentClick}
-              disabled={isPaymentDisabled}
-            >
-              {paymentAction?.loading
-                ? "Processing..."
-                : `Pay $${paymentAction?.finalTotal?.toFixed(2) || "0.00"}`}
-            </DesktopPayButton>
-          )}
+      <DesktopRightSlot>
+        {currentStep === 1 && !hideNextButton && (
+          <Button $primary onClick={onNext} disabled={isNextDisabled}>
+            {getButtonText()}
+          </Button>
+        )}
 
-          {currentStep === 3 && (
-            <Button $primary onClick={onClose}>
-              {getButtonText()}
-            </Button>
-          )}
-        </FooterRight>
-      </FooterContent>
+        {currentStep === 2 && (
+          <Button
+            $primary
+            onClick={handlePaymentClick}
+            disabled={isPaymentDisabled}
+          >
+            {paymentAction?.loading
+              ? "Processing..."
+              : `Pay $${paymentAction?.finalTotal?.toFixed(2) || "0.00"}`}
+          </Button>
+        )}
+
+        {currentStep === 3 && (
+          <Button $primary onClick={onClose}>
+            {getButtonText()}
+          </Button>
+        )}
+      </DesktopRightSlot>
     </FooterContainer>
   );
 };

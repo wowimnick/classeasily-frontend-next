@@ -43,7 +43,7 @@ const StepContainer = styled.div`
   gap: 24px;
   padding: 0 4px;
   padding-top: 4px;
-  padding-bottom: 100px;
+  padding-bottom: 20px; /* Reduced padding since we removed the internal footer */
   position: relative;
 
   @media (min-width: 969px) {
@@ -286,41 +286,6 @@ const AppliedCouponDisplay = styled.div`
   font-weight: 500;
 `;
 
-const MobilePaymentFooter = styled(motion.div)`
-  display: none;
-  @media (max-width: 968px) {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    padding: 12px 20px;
-    border-top: 1px solid #e0e0e0;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
-    z-index: 100;
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-  }
-`;
-
-const MobileTotalDisplay = styled.div`
-  display: flex;
-  flex-direction: column;
-  span.label {
-    font-size: 12px;
-    color: #6b7280;
-  }
-  span.amount {
-    font-size: 18px;
-    font-weight: 700;
-    color: #111827;
-  }
-`;
-
 const TimerBadge = styled.div`
   display: inline-flex;
   align-items: center;
@@ -464,10 +429,10 @@ const ParticipantNameInputs = ({
             style={
               index === 0 && isUserLoggedIn && !!bookerNameFromBookingData
                 ? {
-                    backgroundColor: "#f0f0f0",
-                    cursor: "not-allowed",
-                    color: "#555",
-                  }
+                  backgroundColor: "#f0f0f0",
+                  cursor: "not-allowed",
+                  color: "#555",
+                }
                 : {}
             }
             suffix={
@@ -500,7 +465,7 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
       },
       requestPayerName: true,
       requestPayerEmail: true,
-      requestPayerPhone: true, 
+      requestPayerPhone: true,
     });
 
     pr.canMakePayment().then((result) => {
@@ -517,17 +482,17 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
       try {
         if (clientSecret) {
           const paymentIntentId = clientSecret.split('_secret_')[0];
-          
+
           if (paymentService && paymentService.updatePaymentIntent) {
             try {
               await paymentService.updatePaymentIntent({
                 payment_intent_id: paymentIntentId,
-                guest_email: payerEmail, 
+                guest_email: payerEmail,
                 guest_full_name: payerName,
                 guest_phone: payerPhone,
-                participant_details: bookingData.participant_details || [{ name: payerName }], 
+                participant_details: bookingData.participant_details || [{ name: payerName }],
                 notes: bookingData.notes || "",
-                applied_discount_id: bookingData.applied_discount_id || null, 
+                applied_discount_id: bookingData.applied_discount_id || null,
               });
             } catch (backendErr) {
               console.error("Error:", backendErr);
@@ -550,7 +515,7 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
         } else {
           ev.complete('success');
           if (paymentIntent.status === "succeeded") {
-             onPaymentComplete({
+            onPaymentComplete({
               payment_intent_id: paymentIntent.id,
               client_secret: clientSecret,
             });
@@ -570,10 +535,10 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
   return (
     <div style={{ marginBottom: 24 }}>
       <PaymentRequestButtonElement options={{ paymentRequest }} />
-      <div style={{ 
-        textAlign: 'center', 
-        margin: '16px 0', 
-        color: '#6b7280', 
+      <div style={{
+        textAlign: 'center',
+        margin: '16px 0',
+        color: '#6b7280',
         fontSize: '13px',
         fontWeight: 500,
         display: 'flex',
@@ -639,8 +604,8 @@ const PaymentFormContent = ({
           }}
         >
           <SectionTitle>Payment Method</SectionTitle>
-          <ExpressCheckoutButton 
-            finalTotal={finalTotal} 
+          <ExpressCheckoutButton
+            finalTotal={finalTotal}
             clientSecret={clientSecret}
             onPaymentComplete={onPaymentComplete}
             paymentService={paymentService}
@@ -698,7 +663,7 @@ const ReviewAndPaymentStep = ({
   const [couponLoading, setCouponLoading] = useState(false);
 
   // --- TIMER STATE ---
-  const [timeRemaining, setTimeRemaining] = useState(15 * 60); 
+  const [timeRemaining, setTimeRemaining] = useState(15 * 60);
   const [isExpired, setIsExpired] = useState(false);
   const expirationTimestampRef = useRef(null);
   const debounceTimerRef = useRef(null);
@@ -713,7 +678,7 @@ const ReviewAndPaymentStep = ({
 
   const validateValues = useCallback((values) => {
     const { email, phone, guest_full_name, participant_details } = values;
-    
+
     const contactFields = isUserLoggedIn
       ? [email, phone]
       : [email, phone, guest_full_name];
@@ -737,8 +702,8 @@ const ReviewAndPaymentStep = ({
       if (isUserLoggedIn) {
         formData.email = bookingData.userEmail || "";
         formData.phone = bookingData.userPhone || "";
-        formData.guest_full_name = ""; 
-        
+        formData.guest_full_name = "";
+
         const currentParticipants = bookingData.participant_details || [];
         const newParticipants = Array.from({ length: bookingData.participants }, (_, i) => {
           let name = currentParticipants[i]?.name || "";
@@ -749,17 +714,17 @@ const ReviewAndPaymentStep = ({
         });
         formData.participant_details = newParticipants;
       } else {
-        const currentValues = form.getFieldsValue(true); 
+        const currentValues = form.getFieldsValue(true);
         if (currentValues.email === undefined) formData.email = "";
         if (currentValues.phone === undefined) formData.phone = "";
         if (currentValues.guest_full_name === undefined) formData.guest_full_name = "";
-        
+
         const currentPart = currentValues.participant_details || [];
         if (currentPart.length !== bookingData.participants) {
-             const newGuestParticipants = Array.from({ length: bookingData.participants }, (_, i) => {
-                 return { name: currentPart[i]?.name || "" };
-             });
-             formData.participant_details = newGuestParticipants;
+          const newGuestParticipants = Array.from({ length: bookingData.participants }, (_, i) => {
+            return { name: currentPart[i]?.name || "" };
+          });
+          formData.participant_details = newGuestParticipants;
         }
       }
 
@@ -773,8 +738,8 @@ const ReviewAndPaymentStep = ({
       }
 
       const isValid = validateValues({
-          ...form.getFieldsValue(true), 
-          ...formData 
+        ...form.getFieldsValue(true),
+        ...formData
       });
       setIsFormValid(isValid);
     }
@@ -843,13 +808,13 @@ const ReviewAndPaymentStep = ({
       try {
         const values = form.getFieldsValue();
         let participantDetailsPayload = values.participant_details?.map((d) => ({
-            name: d?.name || "Guest",
+          name: d?.name || "Guest",
         })) || [];
-        
+
         if (participantDetailsPayload.length < participantsCount) {
-             participantDetailsPayload = Array.from({ length: participantsCount }, (_, i) => ({
-                 name: participantDetailsPayload[i]?.name || "Guest"
-             }));
+          participantDetailsPayload = Array.from({ length: participantsCount }, (_, i) => ({
+            name: participantDetailsPayload[i]?.name || "Guest"
+          }));
         }
 
         const payload = {
@@ -867,7 +832,7 @@ const ReviewAndPaymentStep = ({
 
         if (response.clientSecret) {
           setClientSecret(response.clientSecret);
-          
+
           if (onUpdateBookingData) {
             const paymentIntentId = response.clientSecret.split('_secret_')[0];
             onUpdateBookingData({
@@ -986,7 +951,7 @@ const ReviewAndPaymentStep = ({
         if (clientSecret) {
           try {
             const paymentIntentId = clientSecret.split('_secret_')[0];
-            
+
             if (paymentService.updatePaymentIntent) {
               await paymentService.updatePaymentIntent({
                 payment_intent_id: paymentIntentId,
@@ -1111,19 +1076,19 @@ const ReviewAndPaymentStep = ({
           </span>
           <span>{subtotal === 0 ? "Free" : `$${subtotal.toFixed(2)}`}</span>
         </PriceRow>
-        
+
         {appliedDiscount && (
           <PriceRow $success>
             <span>Discount ({appliedDiscount.code})</span>
             <span>-${discountAmount.toFixed(2)}</span>
           </PriceRow>
         )}
-        
+
         <PriceRow>
           <span>HST (13%)</span>
           <span>${taxAmount.toFixed(2)}</span>
         </PriceRow>
-        
+
         <PriceRow className="total">
           <span>Total</span>
           <span>{finalTotal === 0 ? "Free" : `$${finalTotal.toFixed(2)}`}</span>
@@ -1245,9 +1210,9 @@ const ReviewAndPaymentStep = ({
             isFree
               ? undefined
               : {
-                  clientSecret,
-                  appearance: stripeAppearance,
-                }
+                clientSecret,
+                appearance: stripeAppearance,
+              }
           }
         >
           <StepContainer>
@@ -1349,7 +1314,7 @@ const ReviewAndPaymentStep = ({
                     <ParticipantNameInputs
                       count={bookingData.participants}
                       bookerNameFromBookingData={bookingData.userName}
-                      form={form} 
+                      form={form}
                       isUserLoggedIn={isUserLoggedIn}
                     />
 
@@ -1380,14 +1345,14 @@ const ReviewAndPaymentStep = ({
                           name="email"
                           rules={[{ required: true, type: "email" }]}
                         >
-                          <Input 
-                            placeholder="Email" 
+                          <Input
+                            placeholder="Email"
                             disabled={isUserLoggedIn}
                           />
                         </Form.Item>
                         <Form.Item name="phone" rules={[{ required: true }]}>
-                          <Input 
-                            placeholder="Phone" 
+                          <Input
+                            placeholder="Phone"
                             disabled={isUserLoggedIn}
                           />
                         </Form.Item>
@@ -1529,35 +1494,6 @@ const ReviewAndPaymentStep = ({
               </SummaryCard>
             </SummarySection>
 
-            <AnimatePresence>
-              {isFormValid && !isExpired && (
-                <MobilePaymentFooter
-                  initial={{ y: 100 }}
-                  animate={{ y: 0 }}
-                  exit={{ y: 100 }}
-                >
-                  <MobileTotalDisplay>
-                    <span className="label">Total</span>
-                    <span className="amount">${finalTotal.toFixed(2)}</span>
-                  </MobileTotalDisplay>
-                  <Button
-                    type="primary"
-                    size="large"
-                    loading={loading}
-                    onClick={() => onPaymentAction.handleSubmit()}
-                    style={{
-                      minWidth: 140,
-                      background: "#ff385c",
-                      border: "none",
-                      height: "48px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {isFree ? "Confirm" : "Pay Now"}
-                  </Button>
-                </MobilePaymentFooter>
-              )}
-            </AnimatePresence>
           </StepContainer>
         </Elements>
       )}
