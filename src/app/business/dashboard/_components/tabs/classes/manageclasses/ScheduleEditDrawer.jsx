@@ -51,14 +51,18 @@ import {
 } from "lucide-react";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
-import styled, { css } from "styled-components";
+import styled, { css, keyframes } from "styled-components";
 import { motion } from "framer-motion";
 import { theme as appTheme } from "@/components/theme";
 import { scheduleService } from "@/services/apiService";
 import { Drawer } from "vaul";
 import { LordIcon } from "@/services/ReactUtils";
 
-import { MobileDatePicker, MobileTimePicker, MobileRangePicker } from "@/components/common/mobile/MobilePickers";
+import {
+  MobileDatePicker,
+  MobileTimePicker,
+  MobileRangePicker,
+} from "@/components/common/mobile/MobilePickers";
 
 dayjs.extend(isBetween);
 
@@ -118,7 +122,8 @@ const getErrorMessage = (error) => {
         const formattedKey = key
           .replace(/_/g, " ")
           .replace(/\b\w/g, (l) => l.toUpperCase());
-        return `${formattedKey}: ${Array.isArray(value) ? value.join(", ") : value}`;
+        return `${formattedKey}: ${Array.isArray(value) ? value.join(", ") : value
+          }`;
       });
       if (messages.length > 0) return messages.join("; ");
     }
@@ -141,6 +146,67 @@ const formatDuration = (minutes) => {
   return `${mins} min`;
 };
 
+// --- SKELETON LOADER STYLES ---
+const shimmer = keyframes`
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+`;
+
+const SkeletonBase = styled.div`
+  background: #f1f5f9;
+  background-image: linear-gradient(
+    90deg,
+    #f1f5f9 0%,
+    #e2e8f0 50%,
+    #f1f5f9 100%
+  );
+  background-size: 200% 100%;
+  animation: ${shimmer} 1.5s infinite;
+  border-radius: 6px;
+`;
+
+const SkeletonCardWrapper = styled.div`
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const SkeletonRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const ScheduleSkeleton = () => {
+  return (
+    <SkeletonCardWrapper>
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <div style={{ width: "70%" }}>
+          {/* Date/Time Placeholder */}
+          <SkeletonBase style={{ width: "60%", height: 20, marginBottom: 8 }} />
+          {/* Tag Placeholder */}
+          <SkeletonBase style={{ width: "30%", height: 16 }} />
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {/* Actions Placeholder */}
+          <SkeletonBase style={{ width: 28, height: 28, borderRadius: 6 }} />
+          <SkeletonBase style={{ width: 28, height: 28, borderRadius: 6 }} />
+        </div>
+      </div>
+      <SkeletonRow>
+        {/* Participants Placeholder */}
+        <SkeletonBase style={{ width: "25%", height: 14 }} />
+        {/* Price Placeholder */}
+        <SkeletonBase style={{ width: "15%", height: 14 }} />
+      </SkeletonRow>
+    </SkeletonCardWrapper>
+  );
+};
+
 // --- Mobile Drawer Styles ---
 const StyledDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
@@ -155,7 +221,20 @@ const StyledDrawerContent = styled(Drawer.Content)`
   display: flex;
   flex-direction: column;
   border-radius: 16px 16px 0 0;
-  max-height: 96%;
+  
+  /* 
+     Update: Fixed height on mobile for management view to prevent jumping.
+     If a specific prop $height is passed, use it, otherwise fallback to max-height logic
+  */
+  ${(props) =>
+    props.$fixedHeight
+      ? css`
+          height: ${props.$fixedHeight};
+        `
+      : css`
+          max-height: 96%;
+        `}
+  
   position: fixed;
   bottom: 0;
   left: 0;
@@ -300,8 +379,6 @@ const StyledInputNumber = styled(InputNumber)`
 
 // --- Modern Form Layout Components ---
 
-// COMPACT VALIDATION WRAPPER
-// This replaces 'noStyle' to provide a tight layout but WITH error messages
 const CompactFormItem = styled(Form.Item)`
   margin-bottom: 0; /* Remove default large margin */
   
@@ -318,7 +395,6 @@ const CompactFormItem = styled(Form.Item)`
     align-items: stretch;
   }
 
-  /* Make error input borders red by default via Antd, but ensure custom inputs respect it */
   &.ant-form-item-has-error {
     input, .ant-input-number, .ant-picker, div[class*="MobileInputTrigger"] {
       border-color: ${props => props.theme.token.colorError} !important;
@@ -465,7 +541,7 @@ const DurationPicker = ({ value, onChange, disabled }) => {
         <PresetChip
           type="button"
           $active={!presets.includes(safeValue) && safeValue > 0}
-          onClick={() => { }} // Just visual
+          onClick={() => { }}
           style={{ cursor: "default", borderStyle: "dashed" }}
         >
           Custom
@@ -630,7 +706,59 @@ const DateStripContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: relative;
 `;
+
+const DateScrollWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding: 0 20px;
+  gap: 4px;
+
+  .scroll-btn {
+    width: 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: white;
+    color: #64748b;
+    cursor: pointer;
+    flex-shrink: 0;
+    z-index: 2;
+    transition: color 0.2s;
+    
+    &:hover {
+      color: #1e293b;
+      background: #f8fafc;
+    }
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+  }
+
+  .scroll-container {
+    flex: 1;
+    overflow-x: auto;
+    display: flex;
+    gap: 8px;
+    padding-bottom: 8px;
+    margin-bottom: -8px; /* Hide scrollbar spacing */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE */
+    
+    &::-webkit-scrollbar {
+      display: none; /* Chrome/Safari */
+    }
+    
+    scroll-behavior: smooth;
+  }
+`;
+
 const ScheduleListArea = styled.div`
   flex: 1;
   overflow-y: auto;
@@ -693,6 +821,7 @@ const ScheduleManagementView = React.memo(
   }) => {
     const [schedules, setSchedules] = useState([]);
     const [loading, setLoading] = useState(true);
+    const scrollRef = useRef(null);
     const optionId = classData?.option?.optionId;
 
     const refreshSchedules = useCallback(async () => {
@@ -780,6 +909,16 @@ const ScheduleManagementView = React.memo(
       }
     };
 
+    const handleScroll = (direction) => {
+      if (scrollRef.current) {
+        const scrollAmount = 200;
+        scrollRef.current.scrollBy({
+          left: direction === "left" ? -scrollAmount : scrollAmount,
+          behavior: "smooth",
+        });
+      }
+    };
+
     if (!classData?.option)
       return (
         <EmptyStateContainer>
@@ -823,46 +962,49 @@ const ScheduleManagementView = React.memo(
               View All
             </Button>
           </div>
-          <div
-            style={{
-              overflowX: "auto",
-              display: "flex",
-              gap: 8,
-              padding: "0 20px",
-              paddingBottom: 8,
-            }}
-          >
-            {datesInMonth.map((date) => {
-              const isSel = selectedDate && selectedDate.isSame(date, "day");
-              const hasSch = schedules.some(
-                (s) => s.date === date.format("YYYY-MM-DD")
-              );
-              return (
-                <Button
-                  key={date.toString()}
-                  type={isSel ? "primary" : "default"}
-                  style={{
-                    height: 56,
-                    minWidth: 50,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: 0,
-                    borderColor: hasSch && !isSel ? "#ff385c" : undefined,
-                  }}
-                  onClick={() => setSelectedDate(date)}
-                >
-                  <span style={{ fontSize: 10, opacity: 0.8 }}>
-                    {date.format("ddd")}
-                  </span>
-                  <span style={{ fontSize: 16, fontWeight: 700 }}>
-                    {date.format("D")}
-                  </span>
-                </Button>
-              );
-            })}
-          </div>
+
+          <DateScrollWrapper>
+            <button className="scroll-btn" onClick={() => handleScroll("left")}>
+              <ChevronLeft size={16} />
+            </button>
+            <div className="scroll-container" ref={scrollRef}>
+              {datesInMonth.map((date) => {
+                const isSel = selectedDate && selectedDate.isSame(date, "day");
+                const hasSch = schedules.some(
+                  (s) => s.date === date.format("YYYY-MM-DD")
+                );
+                return (
+                  <Button
+                    key={date.toString()}
+                    type={isSel ? "primary" : "default"}
+                    style={{
+                      height: 56,
+                      minWidth: 50,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 0,
+                      borderColor: hasSch && !isSel ? "#ff385c" : undefined,
+                      flexShrink: 0,
+                    }}
+                    onClick={() => setSelectedDate(date)}
+                  >
+                    <span style={{ fontSize: 10, opacity: 0.8 }}>
+                      {date.format("ddd")}
+                    </span>
+                    <span style={{ fontSize: 16, fontWeight: 700 }}>
+                      {date.format("D")}
+                    </span>
+                  </Button>
+                );
+              })}
+            </div>
+            <button className="scroll-btn" onClick={() => handleScroll("right")}>
+              <ChevronRight size={16} />
+            </button>
+          </DateScrollWrapper>
+
         </DateStripContainer>
 
         <div
@@ -911,7 +1053,8 @@ const ScheduleManagementView = React.memo(
 
         <ScheduleListArea>
           {loading ? (
-            <Text style={{ padding: 20 }}>Loading...</Text>
+            // Render Skeleton Loader
+            Array.from({ length: 6 }).map((_, i) => <ScheduleSkeleton key={i} />)
           ) : filteredSchedules.length > 0 ? (
             filteredSchedules.map((s) => (
               <ScheduleCard
@@ -2091,7 +2234,7 @@ const ScheduleEditDrawer = ({
         >
           <Drawer.Portal>
             <StyledDrawerOverlay />
-            <StyledDrawerContent>
+            <StyledDrawerContent $fixedHeight="85vh">
               <DrawerHandle />
               <MobileHeader>
                 <MobileTitle>{`Manage Schedules`}</MobileTitle>
