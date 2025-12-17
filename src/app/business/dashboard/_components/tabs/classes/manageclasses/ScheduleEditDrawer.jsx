@@ -1,8 +1,13 @@
-
-
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  useLayoutEffect,
+} from "react";
 import {
   Modal,
   Form,
@@ -18,10 +23,8 @@ import {
   Tooltip,
   Steps,
   Space,
-  Checkbox,
   Popconfirm,
-  Grid,
-  Tag
+  Tag,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -44,15 +47,20 @@ import {
   List,
   Plus,
   Filter,
-  Hourglass
+  Hourglass,
 } from "lucide-react";
 import dayjs from "dayjs";
-import styled, { keyframes, css } from "styled-components";
+import isBetween from "dayjs/plugin/isBetween";
+import styled, { css } from "styled-components";
 import { motion } from "framer-motion";
 import { theme as appTheme } from "@/components/theme";
 import { scheduleService } from "@/services/apiService";
 import { Drawer } from "vaul";
 import { LordIcon } from "@/services/ReactUtils";
+
+import { MobileDatePicker, MobileTimePicker, MobileRangePicker } from "@/components/common/mobile/MobilePickers";
+
+dayjs.extend(isBetween);
 
 const { Option } = Select;
 const { Title, Text } = Typography;
@@ -65,14 +73,14 @@ const useElementSize = () => {
 
   useLayoutEffect(() => {
     if (!ref.current) return;
-    
+
     const observer = new ResizeObserver(([entry]) => {
       setSize({
         width: entry.contentRect.width,
-        height: entry.contentRect.height
+        height: entry.contentRect.height,
       });
     });
-    
+
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
@@ -90,7 +98,7 @@ const AnimatedModalContent = ({ children }) => {
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
     >
       <div ref={ref}>
-        <div style={{ border: '1px solid transparent', margin: '-1px' }}>
+        <div style={{ border: "1px solid transparent", margin: "-1px" }}>
           {children}
         </div>
       </div>
@@ -110,9 +118,7 @@ const getErrorMessage = (error) => {
         const formattedKey = key
           .replace(/_/g, " ")
           .replace(/\b\w/g, (l) => l.toUpperCase());
-        return `${formattedKey}: ${
-          Array.isArray(value) ? value.join(", ") : value
-        }`;
+        return `${formattedKey}: ${Array.isArray(value) ? value.join(", ") : value}`;
       });
       if (messages.length > 0) return messages.join("; ");
     }
@@ -129,7 +135,7 @@ const formatDuration = (minutes) => {
   if (!minutes) return "Not set";
   const hrs = Math.floor(minutes / 60);
   const mins = minutes % 60;
-  
+
   if (hrs > 0 && mins > 0) return `${hrs} hr ${mins} min`;
   if (hrs > 0) return `${hrs} hr`;
   return `${mins} min`;
@@ -156,6 +162,7 @@ const StyledDrawerContent = styled(Drawer.Content)`
   right: 0;
   z-index: 1011;
   outline: none;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
 `;
 
 const DrawerHandle = styled.div`
@@ -193,12 +200,6 @@ const MobileTitle = styled(Title)`
     white-space: nowrap;
     max-width: calc(100% - 40px);
   }
-  
-  @media (max-width: 768px) {
-    &.ant-typography {
-      font-size: 16px;
-    }
-  }
 `;
 
 const CloseButton = styled(Button)`
@@ -232,468 +233,189 @@ const MobileFooter = styled.div`
   display: flex;
   justify-content: space-between;
   gap: 12px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
 `;
 
-const StyledTabs = styled(Tabs)`
-  display: flex;
-  flex-direction: column;
-
-  .ant-tabs-nav {
-    margin: 0 !important;
-    padding: 0 24px;
-    background: white;
-    flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  }
-
-  .ant-tabs-tab {
-    padding: 12px 16px !important;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .ant-tabs-content-holder {
-    flex: 1;
-    background: #f8fafc;
-  }
-
-  .ant-tabs-tabpane {
-    padding: 0;
-    position: relative;
-  }
-
-  @media (max-width: 768px) {
-    .ant-tabs-nav {
-      padding: 0 20px;
-    }
-  }
-`;
-
-// --- Desktop Modal Styles ---
-const DesktopModal = styled(Modal)`
-  .ant-modal-content {
-    border-radius: 12px;
-    padding: 0;
-    max-height: 85vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .ant-modal-header {
-    border-radius: 12px 12px 0 0;
-    padding: 20px 24px;
-    border-bottom: 1px solid #f0f0f0;
-    margin-bottom: 0;
-    flex-shrink: 0;
-    position: relative;
-    z-index: 1;
-  }
-
-  .ant-modal-title {
-    font-weight: 600;
-    font-size: 18px;
-  }
-
-  .ant-modal-body {
-    padding: 0;
-    background: #ffffff;
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    position: relative;
-  }
-  .ant-modal-footer {
-    padding: 12px 24px;
-    margin-top: 0;
-    border-top: 1px solid #f0f0f0;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
-    flex-shrink: 0;
-    position: relative;
-    z-index: 1;
-  }
-`;
-
-const FormGroup = styled.div`
-  margin-bottom: 24px;
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-const FormLabel = styled.label`
-  display: flex;
-  align-items: center;
-  gap: 8px;
+// --- Styled Inputs (Modernized) ---
+const commonInputStyles = css`
+  height: 48px;
+  border-radius: 10px;
   font-size: 14px;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 8px;
-
-  svg {
-    width: 16px;
-    height: 16px;
-    color: #ff385c;
-  }
-
-  .tooltip-icon {
-    color: #9ca3af;
-    cursor: help;
-  }
-`;
-
-const HelpText = styled.div`
-  font-size: 13px;
-  color: #64748b;
-  margin: -4px 0 8px 0;
-  line-height: 1.4;
-`;
-
-const FormGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
-
-  @media (min-width: 769px) {
-    grid-template-columns: 1fr 1fr;
-  }
-`;
-
-const InfoBox = styled.div`
-  background: #fef7ff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 24px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  position: relative;
-
-  &::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: #ff385c;
-    border-radius: 8px 0 0 8px;
-  }
-
-  svg {
-    color: #ff385c;
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-  }
-`;
-
-const InfoContent = styled.div`
-  flex: 1;
-  min-width: 0;
-  color: #4b5563;
-  font-size: 13px;
-  line-height: 1.4;
-  font-weight: 500;
-`;
-
-// --- REDESIGNED: Flush Stepper ---
-const StepsWrapper = styled.div`
-  width: 100%;
-  padding: 20px 32px;
-  background: white;
-  border-bottom: 1px solid #f0f0f0;
-  z-index: 10;
-  
-  .ant-steps-item-icon {
-    width: 28px;
-    height: 28px;
-    line-height: 28px;
-    font-size: 14px;
-    margin-top: -2px;
-  }
-
-  .ant-steps-item-title {
-    font-size: 14px !important;
-    line-height: 28px !important;
-    font-weight: 600;
-  }
-  
-  @media (max-width: 768px) {
-    display: none; 
-  }
-`;
-
-// --- REDESIGNED: Edge-to-Edge Content ---
-const ContentWrapper = styled.div`
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0;
-  
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background-color: rgba(0,0,0,0.1);
-    border-radius: 3px;
-  }
-`;
-
-const StepContent = styled.div`
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-`;
-
-// --- REDESIGNED: Flush Form Section ---
-const FormSection = styled(motion.div)`
-  background: white;
-  padding: 24px 32px;
-  width: 100%;
-
-  @media (max-width: 768px) {
-    padding: 24px 20px;
-  }
-`;
-
-const StepHeader = styled.div`
-  text-align: left;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid #f0f0f0;
-  padding-bottom: 16px;
-`;
-
-const StepTitle = styled(Title)`
-  margin-bottom: 8px !important;
-  color: ${(props) => props.theme.token.colorText};
-  font-size: 20px !important;
-  font-weight: 700 !important;
-`;
-
-const StepDescription = styled(Text)`
-  display: block;
-  color: ${(props) => props.theme.token.colorTextSecondary};
-  font-size: 14px;
-  line-height: 1.5;
-`;
-
-const ReviewSection = styled.div`
-  background: #f8fafc;
-  padding: 24px;
-  border-radius: 12px;
   border: 1px solid #e2e8f0;
-`;
-
-const InfoRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const InfoLabel = styled(Text)`
-  color: #64748b;
-  font-weight: 500;
-`;
-
-const InfoValue = styled(Text)`
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-`;
-
-// --- REDESIGNED: Input Styles (14px Desktop / 16px Mobile) ---
-const StyledInput = styled(Input)`
-  height: 44px;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  &:focus {
-    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
-  }
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 
   @media (max-width: 768px) {
-    font-size: 16px !important;
+    font-size: 16px; /* Prevent Zoom on Mobile */
+  }
+
+  &:hover {
+    border-color: #cbd5e1;
+  }
+  &:focus,
+  &:focus-within {
+    border-color: ${(props) => props.theme.token.colorPrimary};
+    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}15;
   }
 `;
 
-const StyledSelect = styled(Select)`
-  .ant-select-selector {
-    height: 44px !important;
-    padding: 0 11px !important;
-    border-radius: 8px !important;
-    display: flex;
-    align-items: center;
-    transition: all 0.3s ease;
-  }
-  .ant-select-selection-item,
-  .ant-select-selection-placeholder {
-    line-height: 42px !important;
-    font-size: 14px;
-    
-    @media (max-width: 768px) {
-      font-size: 16px !important;
-    }
-  }
-  &.ant-select-focused .ant-select-selector {
-    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20 !important;
-  }
+const StyledInput = styled(Input)`
+  ${commonInputStyles}
 `;
 
 const StyledTimePicker = styled(TimePicker)`
   width: 100%;
-  height: 44px;
-  border-radius: 8px;
+  ${commonInputStyles}
   .ant-picker-input > input {
     font-size: 14px;
-    
-    @media (max-width: 768px) {
-      font-size: 16px !important;
-    }
-  }
-  &:focus-within {
-    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
   }
 `;
 
 const StyledDatePicker = styled(DatePicker)`
   width: 100%;
-  height: 44px;
-  border-radius: 8px;
+  ${commonInputStyles}
   .ant-picker-input > input {
     font-size: 14px;
-
-    @media (max-width: 768px) {
-      font-size: 16px !important;
-    }
-  }
-  &:focus-within {
-    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
   }
 `;
 
 const StyledRangePicker = styled(DatePicker.RangePicker)`
   width: 100%;
-  height: 44px;
-  border-radius: 8px;
+  ${commonInputStyles}
   .ant-picker-input > input {
     font-size: 14px;
-    
-    @media (max-width: 768px) {
-      font-size: 16px !important;
-    }
-  }
-  &:focus-within {
-    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
   }
 `;
 
 const StyledInputNumber = styled(InputNumber)`
-  height: 44px;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.3s ease;
   width: 100%;
-  .ant-input-number-input-wrap,
-  .ant-input-number-input {
-    height: 100% !important;
+  ${commonInputStyles}
+  .ant-input-number-input-wrap, .ant-input-number-input {
+    height: 100%;
     display: flex;
     align-items: center;
-    font-size: 14px !important;
+    @media (max-width: 768px) { font-size: 16px; }
+  }
+`;
 
-    @media (max-width: 768px) {
-      font-size: 16px !important;
+// --- Modern Form Layout Components ---
+
+// COMPACT VALIDATION WRAPPER
+// This replaces 'noStyle' to provide a tight layout but WITH error messages
+const CompactFormItem = styled(Form.Item)`
+  margin-bottom: 0; /* Remove default large margin */
+  
+  .ant-form-item-explain {
+    font-size: 11px;
+    color: ${props => props.theme.token.colorError};
+    line-height: 1.2;
+    margin-top: 4px;
+    min-height: 0;
+  }
+  
+  .ant-form-item-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Make error input borders red by default via Antd, but ensure custom inputs respect it */
+  &.ant-form-item-has-error {
+    input, .ant-input-number, .ant-picker, div[class*="MobileInputTrigger"] {
+      border-color: ${props => props.theme.token.colorError} !important;
     }
   }
-  &:focus-within {
-    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
+`;
+
+const ModernFormLayout = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 8px 0;
+`;
+
+const FormSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`;
+
+const SectionHeader = styled.div`
+  margin-bottom: 4px;
+  h4 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  p {
+    margin: 4px 0 0 0;
+    font-size: 13px;
+    color: #64748b;
   }
 `;
 
-// --- Bulk Form Components ---
-const DaysContainer = styled.div`
+const TwoColGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
-  gap: 8px;
-`;
-
-const DayButton = styled(Button)`
-  height: 44px;
-  flex: 1 1 0;
-  min-width: 0;
-  max-width: none;
-  padding: 0 8px;
-  border-radius: 8px;
-  font-weight: 500;
-  
-  &.ant-btn-primary {
-    background: ${(props) => props.theme.token.colorPrimary};
-  }
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
 
   @media (max-width: 768px) {
-    height: 40px;
-    font-size: 14px;
+    grid-template-columns: 1fr;
   }
 `;
 
-const TimeListContainer = styled.div`
+const FieldContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
-`;
-
-const TimeInputRow = styled.div`
-  display: flex;
   gap: 8px;
-  align-items: center;
 `;
 
-const AddTimeButton = styled(Button)`
-  height: 44px;
-  border-radius: 8px;
-  border: 1px dashed #d1d5db;
-  background: #f9fafb;
-  color: #64748b;
-  font-weight: 500;
-  &:hover {
-    border-color: #ff385c;
-    color: #ff385c;
-    background: #fff8f9;
+const Label = styled.label`
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  svg {
+    color: #94a3b8;
+    width: 14px;
+    height: 14px;
   }
 `;
 
-// --- NEW: Custom Duration Picker ---
-const DurationContainer = styled.div`
+const HelpLabel = styled.span`
+  font-size: 12px;
+  font-weight: 400;
+  color: #94a3b8;
+  margin-left: auto;
+`;
+
+// --- Custom Duration Picker ---
+const DurationWrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: 100%;
 `;
 
-const PresetGrid = styled.div`
+const DurationPresets = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 `;
 
 const PresetChip = styled.button`
-  border: 1px solid ${props => props.$active ? props.theme.token.colorPrimary : '#e2e8f0'};
-  background: ${props => props.$active ? `${props.theme.token.colorPrimary}10` : 'white'};
-  color: ${props => props.$active ? props.theme.token.colorPrimary : '#475569'};
-  padding: 6px 14px;
+  border: 1px solid
+    ${(props) => (props.$active ? props.theme.token.colorPrimary : "#e2e8f0")};
+  background: ${(props) =>
+    props.$active ? `${props.theme.token.colorPrimary}10` : "white"};
+  color: ${(props) =>
+    props.$active ? props.theme.token.colorPrimary : "#64748b"};
+  padding: 6px 16px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 500;
@@ -701,148 +423,205 @@ const PresetChip = styled.button`
   transition: all 0.2s;
 
   &:hover {
-    border-color: ${props => props.theme.token.colorPrimary};
-    color: ${props => props.theme.token.colorPrimary};
+    border-color: ${(props) => props.theme.token.colorPrimary};
+    color: ${(props) => props.theme.token.colorPrimary};
   }
 `;
 
-const CustomDurationInputs = styled.div`
+const CustomDurationInput = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 12px;
   background: #f8fafc;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  border: 1px solid #f1f5f9;
 
-  .input-group {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    
-    label {
-      font-size: 11px;
-      font-weight: 600;
-      color: #64748b;
-      margin-bottom: 2px;
-      text-transform: uppercase;
-    }
+  .unit {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
   }
 `;
 
 const DurationPicker = ({ value, onChange, disabled }) => {
-  // value is in minutes (int)
   const safeValue = value || 0;
-  const hours = Math.floor(safeValue / 60);
-  const minutes = safeValue % 60;
-
-  const presets = [
-    { label: "30 min", value: 30 },
-    { label: "45 min", value: 45 },
-    { label: "1 hr", value: 60 },
-    { label: "1.5 hr", value: 90 },
-    { label: "2 hr", value: 120 },
-    { label: "3 hr", value: 180 },
-  ];
-
-  const handleHoursChange = (newHours) => {
-    const total = (newHours || 0) * 60 + minutes;
-    onChange(total);
-  };
-
-  const handleMinutesChange = (newMinutes) => {
-    // Ensure minutes stay between 0-59 conceptually, but InputNumber handles min/max
-    const total = hours * 60 + (newMinutes || 0);
-    onChange(total);
-  };
+  const presets = [30, 45, 60, 90, 120];
 
   return (
-    <DurationContainer>
-      <PresetGrid>
-        {presets.map(preset => (
-          <PresetChip 
-            key={preset.value}
+    <DurationWrapper>
+      <DurationPresets>
+        {presets.map((min) => (
+          <PresetChip
+            key={min}
             type="button"
-            $active={safeValue === preset.value}
-            onClick={() => !disabled && onChange(preset.value)}
+            $active={safeValue === min}
+            onClick={() => !disabled && onChange(min)}
             disabled={disabled}
           >
-            {preset.label}
+            {min} min
           </PresetChip>
         ))}
-      </PresetGrid>
-      
-      <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500, marginTop: 4, marginBottom: -4 }}>
-          Or enter custom duration:
-      </div>
-      
-      <CustomDurationInputs>
-        <div className="input-group">
-          <label>Hours</label>
-          <StyledInputNumber 
-            min={0} 
-            max={23}
-            value={hours}
-            onChange={handleHoursChange}
-            disabled={disabled}
-            placeholder="0"
-            inputMode="numeric"
-          />
-        </div>
-        <div style={{ paddingTop: 18, fontWeight: 600, color: '#cbd5e1' }}>:</div>
-        <div className="input-group">
-          <label>Minutes</label>
-          <StyledInputNumber 
+        <PresetChip
+          type="button"
+          $active={!presets.includes(safeValue) && safeValue > 0}
+          onClick={() => { }} // Just visual
+          style={{ cursor: "default", borderStyle: "dashed" }}
+        >
+          Custom
+        </PresetChip>
+      </DurationPresets>
+
+      <CustomDurationInput>
+        <div style={{ flex: 1 }}>
+          <StyledInputNumber
             min={0}
-            max={59}
-            value={minutes}
-            onChange={handleMinutesChange}
+            value={safeValue}
+            onChange={onChange}
             disabled={disabled}
-            placeholder="0"
-            inputMode="numeric"
+            style={{ height: 40 }}
           />
         </div>
-      </CustomDurationInputs>
-    </DurationContainer>
+        <span className="unit">Total Minutes</span>
+      </CustomDurationInput>
+    </DurationWrapper>
   );
 };
 
+// --- Bulk Days Selector ---
+const DaysGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+  gap: 8px;
+`;
 
-const dayLabels = {
-  Mon: "Mon",
-  Tue: "Tue",
-  Wed: "Wed",
-  Thu: "Thu",
-  Fri: "Fri",
-  Sat: "Sat",
-  Sun: "Sun",
-};
+const DayChip = styled.button`
+  height: 44px;
+  border-radius: 8px;
+  background: ${(props) =>
+    props.$selected ? props.theme.token.colorPrimary : "white"};
+  color: ${(props) => (props.$selected ? "white" : "#64748b")};
+  border: 1px solid
+    ${(props) => (props.$selected ? props.theme.token.colorPrimary : "#e2e8f0")};
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
 
-// --- Schedule Management Components ---
-const colors = {
-  primary: "#ff385c",
-  textSecondary: "#64748b",
-  warning: "#f59e0b",
-};
-
-const StatItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-
-  .lucide-star {
-    color: ${colors.warning};
+  &:hover {
+    border-color: ${(props) => props.theme.token.colorPrimary};
+    color: ${(props) =>
+    props.$selected ? "white" : props.theme.token.colorPrimary};
   }
 `;
 
+// --- Desktop Modal Styles ---
+const DesktopModal = styled(Modal)`
+  .ant-modal-content {
+    border-radius: 16px;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .ant-modal-header {
+    border-bottom: 1px solid #f0f0f0;
+    padding: 20px 24px;
+    margin: 0;
+  }
+
+  .ant-modal-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .ant-modal-body {
+    padding: 0;
+    max-height: 75vh;
+    overflow-y: auto;
+  }
+
+  .ant-modal-footer {
+    border-top: 1px solid #f0f0f0;
+    padding: 16px 24px;
+    margin: 0;
+    background: #ffffff;
+  }
+`;
+
+// --- Stepper Styles ---
+const ModernSteps = styled(Steps)`
+  padding: 24px 32px;
+  border-bottom: 1px solid #f0f0f0;
+  background: white;
+
+  .ant-steps-item-process .ant-steps-item-icon {
+    background: ${(props) => props.theme.token.colorPrimary};
+    border-color: ${(props) => props.theme.token.colorPrimary};
+  }
+`;
+
+const ContentPadding = styled.div`
+  padding: 32px;
+
+  @media (max-width: 768px) {
+    padding: 20px;
+  }
+`;
+
+// --- Review Section Styles ---
+const ReviewCard = styled.div`
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 8px;
+`;
+
+const ReviewRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #e2e8f0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  span.label {
+    color: #64748b;
+    font-size: 14px;
+  }
+  span.value {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+`;
+
+// --- Tabs Styling ---
+const ModernTabs = styled(Tabs)`
+  .ant-tabs-nav {
+    padding: 0 32px;
+    margin: 0 !important;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .ant-tabs-tab {
+    padding: 16px 0 !important;
+    margin: 0 24px 0 0 !important;
+    font-size: 14px;
+    font-weight: 500;
+  }
+`;
+
+// --- Management View Styles ---
 const ManagementContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden;
 `;
-
-// --- NEW: Date Strip Components ---
 const DateStripContainer = styled.div`
   background: white;
   padding: 16px 0;
@@ -852,171 +631,6 @@ const DateStripContainer = styled.div`
   flex-direction: column;
   gap: 12px;
 `;
-
-const DateStripHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 20px;
-`;
-
-const DateStripWrapper = styled.div`
-  position: relative;
-  width: 100%;
-`;
-
-const ScrollFade = styled.div`
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 60px;
-  z-index: 1;
-  pointer-events: none;
-  
-  &.left {
-    left: 0;
-    background: linear-gradient(to right, rgba(255,255,255,1) 30%, rgba(255,255,255,0));
-    border-top-left-radius: 12px;
-  }
-  
-  &.right {
-    right: 0;
-    background: linear-gradient(to left, rgba(255,255,255,1) 30%, rgba(255,255,255,0));
-  }
-`;
-
-const ScrollButton = styled(Button)`
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  border: 1px solid #e2e8f0;
-  padding: 0;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: #f8fafc;
-    color: ${colors.primary};
-    border-color: ${colors.primary};
-    transform: translateY(-50%) scale(1.05);
-  }
-
-  &.left { left: 12px; }
-  &.right { right: 12px; }
-  
-  &:disabled {
-    opacity: 0;
-    pointer-events: none;
-  }
-`;
-
-const DatesScrollArea = styled.div`
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 4px 0 12px 0;
-  scroll-padding: 0 72px;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  scroll-behavior: smooth;
-  
-  &::-webkit-scrollbar {
-    display: none;
-  }
-  
-  scroll-snap-type: x mandatory;
-
-  &::before,
-  &::after {
-    content: '';
-    display: block;
-    flex: 0 0 64px; 
-    min-width: 64px;
-    height: 1px;
-  }
-`;
-const MonthNavigation = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-const MonthTitle = styled.h3`
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
-`;
-
-const NavBtn = styled(Button)`
-  border: none;
-  box-shadow: none;
-  background: #f1f5f9;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  &:hover {
-    background: #e2e8f0 !important;
-  }
-`;
-
-const DateCard = styled.button`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: 56px;
-  height: 70px;
-  border-radius: 12px;
-  border: 1px solid ${(props) => props.$selected ? props.theme.token.colorPrimary : "#e2e8f0"};
-  background: ${(props) => props.$selected ? props.theme.token.colorPrimary : "white"};
-  color: ${(props) => props.$selected ? "white" : "#475569"};
-  cursor: pointer;
-  transition: all 0.2s ease;
-  scroll-snap-align: start;
-  position: relative;
-  padding: 4px;
-
-  &:hover {
-    border-color: ${(props) => props.$selected ? props.theme.token.colorPrimary : "#cbd5e1"};
-    background: ${(props) => props.$selected ? props.theme.token.colorPrimary : "#f8fafc"};
-  }
-
-  .day-name {
-    font-size: 11px;
-    font-weight: 500;
-    text-transform: uppercase;
-    opacity: 0.8;
-    margin-bottom: 2px;
-  }
-
-  .day-number {
-    font-size: 18px;
-    font-weight: 700;
-  }
-`;
-
-const MarkerDot = styled.div`
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background-color: ${(props) => props.$selected ? "white" : props.theme.token.colorPrimary};
-  position: absolute;
-  bottom: 6px;
-  opacity: ${(props) => props.$visible ? 1 : 0};
-`;
-
 const ScheduleListArea = styled.div`
   flex: 1;
   overflow-y: auto;
@@ -1027,7 +641,6 @@ const ScheduleListArea = styled.div`
   gap: 12px;
   align-content: start;
 `;
-
 const ScheduleCard = styled(motion.div)`
   background: white;
   border: 1px solid #e5e7eb;
@@ -1037,65 +650,12 @@ const ScheduleCard = styled(motion.div)`
   flex-direction: column;
   gap: 10px;
   transition: all 0.2s ease;
-  position: relative;
-  height: 100%;
-  
   &:hover {
-    border-color: ${colors.primary};
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border-color: #ff385c;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   }
-  
   ${(props) => props.$isPast && `opacity: 0.7; background: #f9fafb;`}
 `;
-
-const CardTop = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-`;
-
-const CardInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  .time {
-    font-size: 15px;
-    font-weight: 700;
-    color: #1f2937;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .duration {
-    font-size: 11px;
-    font-weight: 500;
-    color: #64748b;
-    background: #f1f5f9;
-    padding: 2px 6px;
-    border-radius: 4px;
-  }
-  .group {
-    font-size: 12px;
-    color: ${colors.primary};
-    font-weight: 600;
-  }
-`;
-
-const CardActions = styled(Space)`
-  flex-shrink: 0;
-`;
-
-const CardBottom = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 10px;
-  border-top: 1px solid #f1f5f9;
-  font-size: 12px;
-  color: #475569;
-  margin-top: auto;
-`;
-
 const EmptyStateContainer = styled.div`
   grid-column: 1 / -1;
   display: flex;
@@ -1107,416 +667,328 @@ const EmptyStateContainer = styled.div`
   gap: 16px;
 `;
 
-const EmptyStateIcon = styled.div`
-  opacity: 0.3;
-  filter: grayscale(100%);
+// --- Helper for Day Labels ---
+const dayLabels = {
+  Mon: "Mon",
+  Tue: "Tue",
+  Wed: "Wed",
+  Thu: "Thu",
+  Fri: "Fri",
+  Sat: "Sat",
+  Sun: "Sun",
+};
 
-  lord-icon {
-    width: 80px;
-    height: 80px;
-  }
-`;
+// --- Schedule Management View Component ---
+const ScheduleManagementView = React.memo(
+  ({
+    classData,
+    onAdd,
+    onEdit,
+    onEditGroup,
+    onSchedulesUpdate,
+    currentMonth,
+    selectedDate,
+    groupFilter,
+    onViewStateChange,
+  }) => {
+    const [schedules, setSchedules] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const optionId = classData?.option?.optionId;
 
-const EmptyStateText = styled.div`
-  color: ${colors.textSecondary};
-  font-size: 15px;
-  font-weight: 500;
-`;
+    const refreshSchedules = useCallback(async () => {
+      if (!optionId) return;
+      setLoading((prev) => (prev === true ? true : false));
+      try {
+        const result = await scheduleService.fetchSchedules({
+          option_id: optionId,
+        });
+        if (result.success) setSchedules(result.data || []);
+        else
+          message.error(
+            getErrorMessage(result.error || "Failed to refresh schedules.")
+          );
+      } catch (error) {
+        message.error(getErrorMessage(error));
+      } finally {
+        setLoading(false);
+      }
+    }, [optionId]);
 
-const EmptyStateSubtext = styled.div`
-  color: ${colors.textSecondary};
-  font-size: 13px;
-  opacity: 0.7;
-  max-width: 300px;
-`;
+    useEffect(() => {
+      if (optionId) {
+        setLoading(true);
+        refreshSchedules();
+      }
+    }, [optionId, refreshSchedules]);
 
-const FilterBar = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
-  border-bottom: 1px solid #f0f0f0;
-  background: white;
-  flex-shrink: 0;
-  overflow-x: auto;
-  
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`;
+    const setCurrentMonth = (val) => onViewStateChange({ currentMonth: val });
+    const setSelectedDate = (val) => onViewStateChange({ selectedDate: val });
+    const setGroupFilter = (val) => onViewStateChange({ groupFilter: val });
 
-const formatTime = (timeStr) =>
-  timeStr ? dayjs(`2000-01-01T${timeStr}`).format("h:mm A") : "N/A";
+    const datesInMonth = useMemo(() => {
+      const start = currentMonth.startOf("month");
+      const end = currentMonth.endOf("month");
+      const dates = [];
+      let curr = start;
+      while (curr.isBefore(end) || curr.isSame(end, "day")) {
+        dates.push(curr);
+        curr = curr.add(1, "day");
+      }
+      return dates;
+    }, [currentMonth]);
 
-// --- Skeleton Loader Components ---
-const skeletonKeyframes = keyframes`
-  0% { background-position: -200px 0; }
-  100% { background-position: calc(200px + 100%) 0; }
-`;
+    const filteredSchedules = useMemo(() => {
+      let filtered = schedules;
 
-const SkeletonPrimitive = styled.div`
-  background-color: #f0f2f5;
-  background-image: linear-gradient(90deg, #f0f2f5, #e6e8eb, #f0f2f5);
-  background-size: 200px 100%;
-  background-repeat: no-repeat;
-  border-radius: 4px;
-  animation: ${skeletonKeyframes} 1.3s ease-in-out infinite;
-  display: inline-block;
-  line-height: 1;
-  width: 100%;
-`;
-
-const ScheduleCardSkeleton = () => (
-  <div style={{ 
-    background: 'white', 
-    border: '1px solid #e5e7eb', 
-    borderRadius: '12px', 
-    padding: '12px',
-    height: '100%',
-    display: 'flex', 
-    flexDirection: 'column',
-    gap: '12px'
-  }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <div style={{ width: '60%' }}>
-        <SkeletonPrimitive style={{ height: "18px", width: "80px", marginBottom: "6px" }} />
-        <SkeletonPrimitive style={{ height: "14px", width: "100px" }} />
-      </div>
-      <SkeletonPrimitive style={{ height: "28px", width: "50px", borderRadius: "8px" }} />
-    </div>
-    <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '10px', marginTop: 'auto', display: 'flex', justifyContent: 'space-between' }}>
-      <SkeletonPrimitive style={{ height: "14px", width: "60px" }} />
-      <SkeletonPrimitive style={{ height: "14px", width: "40px" }} />
-    </div>
-  </div>
-);
-
-// --- Internal Management View ---
-const ScheduleManagementView = React.memo(({
-  classData,
-  onAdd,
-  onEdit,
-  onSchedulesUpdate,
-  // --- New Props for Lifted State ---
-  currentMonth,
-  selectedDate,
-  groupFilter,
-  onViewStateChange,
-}) => {
-  const [schedules, setSchedules] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  // REMOVED: Internal state for date/month/filter
-  
-  const scrollRef = useRef(null);
-  const optionId = classData?.option?.optionId;
-
-  const refreshSchedules = useCallback(async () => {
-    if (!optionId) return;
-    setLoading((prev) => (prev === true ? true : false)); 
-    try {
-      const result = await scheduleService.fetchSchedules({
-        option_id: optionId,
-      });
-      if (result.success) {
-        setSchedules(result.data || []);
-      } else {
-        message.error(
-          getErrorMessage(result.error || "Failed to refresh schedules.")
+      // Apply Date Filter
+      if (selectedDate) {
+        filtered = filtered.filter(
+          (s) => s.date === selectedDate.format("YYYY-MM-DD")
+        );
+        // If specific date selected, usually sort by time ascending
+        return filtered.sort((a, b) =>
+          dayjs(`${a.date}T${a.time}`).diff(dayjs(`${b.date}T${b.time}`))
         );
       }
-    } catch (error) {
-      message.error(getErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  }, [optionId]);
 
-  useEffect(() => {
-    if (optionId) {
-        setLoading(true); 
-        refreshSchedules();
-    }
-  }, [optionId, refreshSchedules]);
+      // Apply Group Filter
+      if (groupFilter)
+        filtered =
+          groupFilter === "##__INDIVIDUAL__##"
+            ? filtered.filter((s) => !s.name)
+            : filtered.filter((s) => s.name === groupFilter);
 
-  // Helpers to update parent state
-  const setCurrentMonth = (val) => onViewStateChange({ currentMonth: val });
-  const setSelectedDate = (val) => onViewStateChange({ selectedDate: val });
-  const setGroupFilter = (val) => onViewStateChange({ groupFilter: val });
+      // Default Sort: Furthest away first (Descending) for "View All"
+      return filtered.sort((a, b) =>
+        dayjs(`${b.date}T${b.time}`).diff(dayjs(`${a.date}T${a.time}`))
+      );
+    }, [schedules, selectedDate, groupFilter]);
 
-  const handleScroll = (direction) => {
-    if (scrollRef.current) {
-      const scrollAmount = 240; 
-      scrollRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      });
-    }
-  };
+    const uniqueGroups = useMemo(
+      () => [...new Set(schedules.map((s) => s.name).filter(Boolean))],
+      [schedules]
+    );
 
-  const handleDelete = async (scheduleId) => {
-    try {
-      await scheduleService.deleteSchedule(scheduleId);
-      await refreshSchedules();
-      onSchedulesUpdate();
-      message.success("Schedule deleted successfully.");
-    } catch (error) {
-      message.error(getErrorMessage(error));
-    }
-  };
+    const handleDelete = async (id) => {
+      try {
+        await scheduleService.deleteSchedule(id);
+        await refreshSchedules();
+        onSchedulesUpdate();
+        message.success("Deleted");
+      } catch (e) {
+        message.error(getErrorMessage(e));
+      }
+    };
 
-  const datesInMonth = useMemo(() => {
-    const start = currentMonth.startOf('month');
-    const end = currentMonth.endOf('month');
-    const dates = [];
-    let curr = start;
-    while(curr.isBefore(end) || curr.isSame(end, 'day')) {
-      dates.push(curr);
-      curr = curr.add(1, 'day');
-    }
-    return dates;
-  }, [currentMonth]);
-
-  const scheduleDatesMap = useMemo(() => {
-    const map = {};
-    schedules.forEach(s => {
-      const dateStr = s.date;
-      if (!map[dateStr]) map[dateStr] = 0;
-      map[dateStr]++;
-    });
-    return map;
-  }, [schedules]);
-
-  const filteredSchedules = useMemo(() => {
-    let filtered = schedules;
-
-    if (selectedDate) {
-        const targetDateStr = selectedDate.format('YYYY-MM-DD');
-        filtered = filtered.filter(s => s.date === targetDateStr);
-    }
-
-    if (groupFilter) {
-       filtered = groupFilter === "##__INDIVIDUAL__##"
-          ? filtered.filter((s) => !s.name)
-          : filtered.filter((s) => s.name === groupFilter);
-    }
-
-    return filtered.sort((a, b) => {
-        const dateA = dayjs(`${a.date}T${a.time}`);
-        const dateB = dayjs(`${b.date}T${b.time}`);
-        return dateA.diff(dateB);
-    });
-  }, [schedules, selectedDate, groupFilter]);
-
-  const uniqueGroups = useMemo(() => {
-    const groups = [...new Set(schedules.map((s) => s.name).filter(Boolean))];
-    return groups;
-  }, [schedules]);
-
-  const renderScheduleCard = (schedule) => {
-    const isPast = dayjs(schedule.date).isBefore(dayjs(), "day");
-    const hasConfirmedBookings = schedule.has_confirmed_bookings || false;
-    const canDelete = !isPast && !hasConfirmedBookings;
-    const dateObj = dayjs(schedule.date);
+    if (!classData?.option)
+      return (
+        <EmptyStateContainer>
+          <Text>Configuration Needed</Text>
+        </EmptyStateContainer>
+      );
 
     return (
-      <ScheduleCard key={schedule.id} $isPast={isPast} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <CardTop>
-          <CardInfo>
-            {!selectedDate && (
-                <div style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600, textTransform: 'uppercase', marginBottom: 2 }}>
-                    {dateObj.format('ddd, MMM D')}
-                </div>
-            )}
-            <div className="time">
-              {formatTime(schedule.time)}
-              <span className="duration">{schedule.duration} min</span>
+      <ManagementContainer>
+        <DateStripContainer>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "0 20px",
+              alignItems: "center",
+            }}
+          >
+            <div style={{ display: "flex", gap: 8 }}>
+              <Button
+                size="small"
+                onClick={() =>
+                  setCurrentMonth(currentMonth.subtract(1, "month"))
+                }
+                icon={<ChevronLeft size={14} />}
+              />
+              <span style={{ fontWeight: 600 }}>
+                {currentMonth.format("MMMM YYYY")}
+              </span>
+              <Button
+                size="small"
+                onClick={() => setCurrentMonth(currentMonth.add(1, "month"))}
+                icon={<ChevronRight size={14} />}
+              />
             </div>
-            {schedule.name && <div className="group">{schedule.name}</div>}
-          </CardInfo>
-          <CardActions>
-            <Tooltip title="Edit">
-              <Button
-                size="small"
-                icon={<Edit3 size={14} />}
-                onClick={() => onEdit(schedule)}
-                disabled={isPast}
-              />
-            </Tooltip>
-            <Popconfirm
-              title="Delete schedule?"
-              description="Action cannot be undone."
-              onConfirm={() => handleDelete(schedule.id)}
-              disabled={!canDelete}
-              okText="Yes"
-              cancelText="No"
+            <Button
+              size="small"
+              type="link"
+              onClick={() => setSelectedDate(null)}
             >
-              <Button
-                size="small"
-                danger
-                icon={<Trash2 size={14} />}
-                disabled={!canDelete}
-              />
-            </Popconfirm>
-          </CardActions>
-        </CardTop>
-        <CardBottom>
-          <StatItem>
-            <Users size={14} />{" "}
-            <b>{schedule.booked_participants}/{schedule.maxParticipants}</b>
-            &nbsp;Booked
-          </StatItem>
-          <StatItem>
-            <DollarSign size={14} />{" "}
-            <b>{parseFloat(schedule.price).toFixed(2)}</b>
-          </StatItem>
-        </CardBottom>
-      </ScheduleCard>
-    );
-  };
-
-  if (!classData?.option) {
-    return (
-      <EmptyStateContainer>
-        <EmptyStateIcon>
-          <LordIcon
-            src="https://cdn.lordicon.com/asyunleq.json"
-            trigger="in"
-            state="in-cog"
-            colors="primary:#94a3b8"
-            style={{ width: 40, height: 40 }}
-          />
-        </EmptyStateIcon>
-        <EmptyStateText>Configuration Needed</EmptyStateText>
-      </EmptyStateContainer>
-    );
-  }
-
-  return (
-    <ManagementContainer>
-      <DateStripContainer>
-        <DateStripHeader>
-            <MonthNavigation>
-                <NavBtn onClick={() => setCurrentMonth(currentMonth.subtract(1, 'month'))}><ChevronLeft size={16} /></NavBtn>
-                <MonthTitle>{currentMonth.format('MMMM YYYY')}</MonthTitle>
-                <NavBtn onClick={() => setCurrentMonth(currentMonth.add(1, 'month'))}><ChevronRight size={16} /></NavBtn>
-            </MonthNavigation>
-
-        </DateStripHeader>
-        
-        <DateStripWrapper>
-            {/* FADE & ARROWS */}
-            <ScrollFade className="left" />
-            <ScrollButton className="left" onClick={() => handleScroll('left')}>
-                <ChevronLeft size={16} />
-            </ScrollButton>
-
-            <DatesScrollArea ref={scrollRef}>
-                {/* View All Card */}
-                <DateCard 
-                    $selected={selectedDate === null}
-                    onClick={() => setSelectedDate(null)}
-                    style={{ minWidth: 60 }}
+              View All
+            </Button>
+          </div>
+          <div
+            style={{
+              overflowX: "auto",
+              display: "flex",
+              gap: 8,
+              padding: "0 20px",
+              paddingBottom: 8,
+            }}
+          >
+            {datesInMonth.map((date) => {
+              const isSel = selectedDate && selectedDate.isSame(date, "day");
+              const hasSch = schedules.some(
+                (s) => s.date === date.format("YYYY-MM-DD")
+              );
+              return (
+                <Button
+                  key={date.toString()}
+                  type={isSel ? "primary" : "default"}
+                  style={{
+                    height: 56,
+                    minWidth: 50,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                    borderColor: hasSch && !isSel ? "#ff385c" : undefined,
+                  }}
+                  onClick={() => setSelectedDate(date)}
                 >
-                    <span className="day-name" style={{ opacity: 0.6 }}>VIEW</span>
-                    <span className="day-number" style={{ fontSize: 14 }}>ALL</span>
-                </DateCard>
+                  <span style={{ fontSize: 10, opacity: 0.8 }}>
+                    {date.format("ddd")}
+                  </span>
+                  <span style={{ fontSize: 16, fontWeight: 700 }}>
+                    {date.format("D")}
+                  </span>
+                </Button>
+              );
+            })}
+          </div>
+        </DateStripContainer>
 
-                {datesInMonth.map(date => {
-                    const dateStr = date.format('YYYY-MM-DD');
-                    const isSelected = selectedDate && selectedDate.isSame(date, 'day');
-                    const hasSchedule = scheduleDatesMap[dateStr] > 0;
-                    
-                    return (
-                        <DateCard 
-                            key={dateStr} 
-                            $selected={isSelected}
-                            onClick={() => setSelectedDate(date)}
-                        >
-                            <span className="day-name">{date.format('ddd')}</span>
-                            <span className="day-number">{date.format('D')}</span>
-                            <MarkerDot $visible={hasSchedule} $selected={isSelected} />
-                        </DateCard>
-                    )
-                })}
-            </DatesScrollArea>
-
-            <ScrollFade className="right" />
-            <ScrollButton className="right" onClick={() => handleScroll('right')}>
-                <ChevronRight size={16} />
-            </ScrollButton>
-        </DateStripWrapper>
-      </DateStripContainer>
-
-      <FilterBar>
-        <Filter size={14} color="#64748b" />
-        <Select 
-            placeholder="Filter Group" 
-            style={{ width: 160 }} 
-            allowClear 
-            size="small" 
+        <div
+          style={{
+            padding: "12px 20px",
+            background: "white",
+            borderBottom: "1px solid #f0f0f0",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <Filter size={14} color="#64748b" />
+          <Select
+            placeholder="Filter Group"
+            style={{ width: 180 }}
+            allowClear
+            size="small"
+            bordered={false}
             value={groupFilter}
             onChange={setGroupFilter}
-            bordered={false}
-        >
+          >
             <Option value="##__INDIVIDUAL__##">Individual</Option>
-            {uniqueGroups.map(g => <Option key={g} value={g}>{g}</Option>)}
-        </Select>
-        <div style={{ flex: 1 }} />
-        <Text type="secondary" style={{ fontSize: 12 }}>
-            {selectedDate 
-                ? `${filteredSchedules.length} session${filteredSchedules.length !== 1 ? 's' : ''} on ${selectedDate.format('MMM D')}`
-                : `Showing all ${filteredSchedules.length} session${filteredSchedules.length !== 1 ? 's' : ''}`
-            }
-        </Text>
-      </FilterBar>
+            {uniqueGroups.map((g) => (
+              <Option key={g} value={g}>
+                {g}
+              </Option>
+            ))}
+          </Select>
+          {groupFilter && groupFilter !== "##__INDIVIDUAL__##" && (
+            <Button
+              size="small"
+              type="link"
+              icon={<Edit3 size={14} />}
+              onClick={() =>
+                onEditGroup(
+                  groupFilter,
+                  schedules.find((s) => s.name === groupFilter)
+                )
+              }
+            >
+              Edit Group
+            </Button>
+          )}
+        </div>
 
-      <ScheduleListArea>
-        {loading && schedules.length === 0 ? (
-            <>
-                <ScheduleCardSkeleton />
-                <ScheduleCardSkeleton />
-                <ScheduleCardSkeleton />
-            </>
-        ) : filteredSchedules.length > 0 ? (
-            filteredSchedules.map(renderScheduleCard)
-        ) : (
-            <EmptyStateContainer>
-                <EmptyStateIcon>
-                    <LordIcon
-                        src="https://cdn.lordicon.com/uoljexdg.json"
-                        trigger="in"
-                        colors="primary:#94a3b8"
-                        style={{ width: 64, height: 64 }}
-                    />
-                </EmptyStateIcon>
-                <EmptyStateText>No Schedules Found</EmptyStateText>
-                <EmptyStateSubtext>
-                    {selectedDate 
-                        ? `No sessions found on ${selectedDate.format('MMMM D')}.`
-                        : "You haven't created any schedules yet."}
-                </EmptyStateSubtext>
-                
-                <Button 
-                    type="primary" 
-                    icon={<Plus size={14} />} 
-                    // Use selectedDate from props if available
-                    onClick={() => onAdd(selectedDate || dayjs())}
-                    style={{ marginTop: 16 }}
+        <ScheduleListArea>
+          {loading ? (
+            <Text style={{ padding: 20 }}>Loading...</Text>
+          ) : filteredSchedules.length > 0 ? (
+            filteredSchedules.map((s) => (
+              <ScheduleCard
+                key={s.id}
+                $isPast={dayjs(s.date).isBefore(dayjs(), "day")}
+              >
+                <div
+                  style={{ display: "flex", justifyContent: "space-between" }}
                 >
-                    Add Session {selectedDate ? `for ${selectedDate.format('MMM D')}` : ''}
-                </Button>
+                  <div>
+                    <div style={{ fontWeight: 700 }}>
+                      {dayjs(s.date).format("MMM D")} •{" "}
+                      {dayjs(`2000-01-01T${s.time}`).format("h:mm A")}
+                    </div>
+                    {s.name && (
+                      <Tag color="blue" style={{ marginTop: 4 }}>
+                        {s.name}
+                      </Tag>
+                    )}
+                  </div>
+                  <Space>
+                    <Button
+                      size="small"
+                      icon={<Edit3 size={14} />}
+                      onClick={() => onEdit(s)}
+                    />
+                    <Popconfirm
+                      title="Delete?"
+                      onConfirm={() => handleDelete(s.id)}
+                    >
+                      <Button size="small" danger icon={<Trash2 size={14} />} />
+                    </Popconfirm>
+                  </Space>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: 12,
+                    color: "#64748b",
+                    marginTop: 8,
+                  }}
+                >
+                  <span>
+                    <Users size={12} style={{ marginRight: 4 }} />
+                    {s.booked_participants}/{s.maxParticipants}
+                  </span>
+                  <span>${parseFloat(s.price).toFixed(2)}</span>
+                </div>
+              </ScheduleCard>
+            ))
+          ) : (
+            <EmptyStateContainer>
+              <LordIcon
+                src="https://cdn.lordicon.com/uoljexdg.json"
+                trigger="in"
+                colors="primary:#94a3b8"
+                style={{ width: 64, height: 64 }}
+              />
+              <Text type="secondary">No schedules found.</Text>
+              <Button
+                type="primary"
+                icon={<Plus size={14} />}
+                onClick={() => onAdd(selectedDate || dayjs())}
+                style={{ marginTop: 16 }}
+              >
+                Add Session
+              </Button>
             </EmptyStateContainer>
-        )}
-      </ScheduleListArea>
-    </ManagementContainer>
-  );
-});
+          )}
+        </ScheduleListArea>
+      </ManagementContainer>
+    );
+  }
+);
 
- const NoMarginFormItem = (props) => (
-    <Form.Item {...props} style={{ marginBottom: 0 }} />
-  );
-
+// --- MAIN DRAWER COMPONENT ---
 
 const ScheduleEditDrawer = ({
   open,
@@ -1539,17 +1011,18 @@ const ScheduleEditDrawer = ({
   const [activeView, setActiveView] = useState("manage");
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [prefillDate, setPrefillDate] = useState(null);
+  const [editingGroup, setEditingGroup] = useState(null);
 
-  // --- LIFTED STATE FOR VIEW PRESERVATION ---
   const [viewState, setViewState] = useState({
     currentMonth: dayjs(),
     selectedDate: null,
     groupFilter: undefined,
   });
 
-  const updateViewState = useCallback((updates) => {
-    setViewState(prev => ({ ...prev, ...updates }));
-  }, []);
+  const updateViewState = useCallback(
+    (updates) => setViewState((prev) => ({ ...prev, ...updates })),
+    []
+  );
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 1024);
@@ -1557,11 +1030,6 @@ const ScheduleEditDrawer = ({
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
-
-  // Define props for Antd fields to handle mobile overlay positioning
-  const mobilePopupProps = isMobile
-    ? { getPopupContainer: (trigger) => trigger.parentNode }
-    : {};
 
   useEffect(() => {
     if (open) {
@@ -1575,17 +1043,15 @@ const ScheduleEditDrawer = ({
         setPrefillDate(null);
       }
     } else {
-      // RESET everything when closing the modal
       form.resetFields();
       bulkForm.resetFields();
       setCurrentStep(0);
       setBulkCurrentStep(0);
       setFormData({});
       setEditingSchedule(null);
+      setEditingGroup(null);
       setPrefillDate(null);
       setActiveView("manage");
-      
-      // Reset view state only on close
       setViewState({
         currentMonth: dayjs(),
         selectedDate: null,
@@ -1601,12 +1067,11 @@ const ScheduleEditDrawer = ({
 
   useEffect(() => {
     if (activeView !== "form") return;
-
     setActiveTab("single");
     form.resetFields();
     bulkForm.resetFields();
-    setCurrentStep(0);      // Resets Single Session Stepper
-    setBulkCurrentStep(0);  // Resets Bulk Create Stepper
+    setCurrentStep(0);
+    setBulkCurrentStep(0);
 
     const defaultValues = {
       price: "0.00",
@@ -1614,7 +1079,6 @@ const ScheduleEditDrawer = ({
       maxParticipants: 10,
       minParticipants: 1,
       time: dayjs("09:00", "HH:mm"),
-      // Use the prefillDate if available, otherwise tomorrow
       date: prefillDate || dayjs().add(1, "day"),
     };
 
@@ -1657,12 +1121,62 @@ const ScheduleEditDrawer = ({
     }
   };
 
+  const handleEditGroup = useCallback(
+    (groupName, sampleSchedule = null) => {
+      setEditingGroup(groupName);
+      setActiveView("group-form");
+      form.resetFields();
+      if (sampleSchedule) {
+        form.setFieldsValue({
+          duration: sampleSchedule.duration,
+          price: sampleSchedule.price,
+          maxParticipants: sampleSchedule.maxParticipants,
+          minParticipants: sampleSchedule.minParticipants || 1,
+        });
+      } else {
+        form.setFieldsValue({
+          duration: 60,
+          price: "0.00",
+          maxParticipants: 10,
+          minParticipants: 1,
+        });
+      }
+    },
+    [form]
+  );
+
+  const handleGroupSubmit = async () => {
+    try {
+      await form.validateFields();
+      const values = form.getFieldsValue(true);
+      setIsLoading(true);
+      const updates = {
+        price: parseFloat(values.price).toFixed(2),
+        maxParticipants: values.maxParticipants,
+        minParticipants: values.minParticipants || 1,
+        duration: values.duration,
+      };
+      await scheduleService.groupUpdate({
+        option_id: optionId,
+        name: editingGroup,
+        updates: updates,
+      });
+      message.success(`Group '${editingGroup}' updated successfully.`);
+      onSchedulesUpdate();
+      setActiveView("manage");
+      setEditingGroup(null);
+    } catch (error) {
+      message.error(getErrorMessage(error));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       await form.validateFields();
       const values = form.getFieldsValue(true);
       setIsLoading(true);
-
       const scheduleData = {
         name: values.name,
         option: optionId,
@@ -1675,10 +1189,7 @@ const ScheduleEditDrawer = ({
       };
 
       if (editingSchedule) {
-        await scheduleService.updateSchedule(
-          editingSchedule.id,
-          scheduleData
-        );
+        await scheduleService.updateSchedule(editingSchedule.id, scheduleData);
         message.success("Schedule updated successfully.");
       } else {
         await scheduleService.createSchedule(scheduleData);
@@ -1686,11 +1197,7 @@ const ScheduleEditDrawer = ({
       }
       handleFormSuccess();
     } catch (errorInfo) {
-      if (errorInfo?.errorFields) {
-        message.error("Please review the form for errors.");
-      } else {
-        message.error(getErrorMessage(errorInfo));
-      }
+      message.error(getErrorMessage(errorInfo));
     } finally {
       setIsLoading(false);
     }
@@ -1699,14 +1206,11 @@ const ScheduleEditDrawer = ({
   const handleBulkSubmit = async () => {
     try {
       const values = { ...formData, ...bulkForm.getFieldsValue(true) };
-      
       if (!values.date_range || !values.date_range[0]) {
-         message.error("Date range is missing. Please go back and select dates.");
-         return;
+        message.error("Date range is missing.");
+        return;
       }
-
       setIsBulkLoading(true);
-
       const payload = {
         name: values.name,
         option: optionId,
@@ -1719,22 +1223,20 @@ const ScheduleEditDrawer = ({
         maxParticipants: values.commonDetails?.maxParticipants,
         minParticipants: values.commonDetails?.minParticipants || 1,
       };
-
       const result = await scheduleService.bulkCreateSchedules(payload);
-
       if (result && result.created_count > 0) {
         message.success(result.message);
         handleFormSuccess();
       } else {
-        message.warning(result.message || "No new schedules were created.");
+        message.warning(result.message || "No schedules created.");
       }
     } catch (errorInfo) {
-      console.error("Error during bulk creation:", errorInfo);
       message.error(getErrorMessage(errorInfo));
     } finally {
       setIsBulkLoading(false);
     }
   };
+
   const validateStep = async (step) => {
     try {
       switch (step) {
@@ -1769,28 +1271,23 @@ const ScheduleEditDrawer = ({
 
   const handleBulkNext = async () => {
     try {
-      if (bulkCurrentStep === 0) {
+      if (bulkCurrentStep === 0)
         await bulkForm.validateFields([
           "name",
           "date_range",
           "days_of_week",
           "times",
         ]);
-      } else if (bulkCurrentStep === 1) {
+      else if (bulkCurrentStep === 1)
         await bulkForm.validateFields([
           ["commonDetails", "duration"],
           ["commonDetails", "price"],
           ["commonDetails", "maxParticipants"],
-          ["commonDetails", "minParticipants"],
         ]);
-      }
-      
-      const currentValues = bulkForm.getFieldsValue(true);
-      setFormData((prev) => ({ ...prev, ...currentValues }));
-
+      setFormData((prev) => ({ ...prev, ...bulkForm.getFieldsValue(true) }));
       setBulkCurrentStep(bulkCurrentStep + 1);
     } catch (error) {
-      console.error("Validation failed:", error);
+      console.error(error);
     }
   };
 
@@ -1798,238 +1295,257 @@ const ScheduleEditDrawer = ({
     if (bulkCurrentStep > 0) setBulkCurrentStep(bulkCurrentStep - 1);
   };
 
- 
+  // --- REDESIGNED FORM RENDERERS ---
+
+  const renderGroupEditForm = () => (
+    <ContentPadding>
+      <Form form={form} layout="vertical">
+        <ModernFormLayout>
+          <FormSection>
+            <SectionHeader>
+              <h4>
+                <Edit3 size={16} /> Edit Group Settings: {editingGroup}
+              </h4>
+              <p>
+                Updating these settings will affect all future sessions in this
+                group.
+              </p>
+            </SectionHeader>
+
+            <TwoColGrid>
+              <FieldContainer>
+                <Label>
+                  <DollarSign /> Price (CAD)
+                  <Tooltip title="The cost per person to attend.">
+                    <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                  </Tooltip>
+                </Label>
+                <CompactFormItem name="price" rules={[{ required: true }]}>
+                  <StyledInput prefix="$" type="number" step="0.01" />
+                </CompactFormItem>
+              </FieldContainer>
+              <FieldContainer>
+                <Label>
+                  <Users /> Max Capacity
+                  <Tooltip title="Maximum number of attendees allowed.">
+                    <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                  </Tooltip>
+                </Label>
+                <CompactFormItem
+                  name="maxParticipants"
+                  rules={[{ required: true }]}
+                >
+                  <StyledInputNumber inputMode="numeric" />
+                </CompactFormItem>
+              </FieldContainer>
+            </TwoColGrid>
+
+            <FieldContainer>
+              <Label>
+                <Hourglass size={14} /> Duration
+                <Tooltip title="How long the session lasts.">
+                  <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                </Tooltip>
+              </Label>
+              <CompactFormItem name="duration" rules={[{ required: true }]}>
+                <DurationPicker />
+              </CompactFormItem>
+            </FieldContainer>
+          </FormSection>
+        </ModernFormLayout>
+      </Form>
+    </ContentPadding>
+  );
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
         return (
-          <FormSection key="step0">
-            <StepHeader>
-              <StepTitle>Session Details</StepTitle>
-              <StepDescription>
-                Set the core details for your schedule.
-              </StepDescription>
-            </StepHeader>
+          <ModernFormLayout>
+            <FormSection>
+              <SectionHeader>
+                <h4>
+                  <Calendar size={18} /> Schedule & Timing
+                </h4>
+                <p>When is this session taking place?</p>
+              </SectionHeader>
 
-            <FormGroup>
-              <FormLabel>
-                <Type /> Schedule Name{" "}
-                <span style={{ fontWeight: 400, color: "#6b7280" }}>
-                  (Optional)
-                </span>
-                <Tooltip title="A name like 'Weekend Mornings' can help you group similar schedules.">
-                  <HelpCircle size={14} className="tooltip-icon" />
-                </Tooltip>
-              </FormLabel>
-              <HelpText>This name helps you organize your schedule.</HelpText>
-              <Form.Item name="name" noStyle>
-                <StyledInput
-                  placeholder="e.g., Morning Pottery"
-                  disabled={isLoading}
-                />
-              </Form.Item>
-            </FormGroup>
+              <TwoColGrid>
+                <FieldContainer>
+                  <Label>Date</Label>
+                  <CompactFormItem name="date" rules={[{ required: true }]}>
+                    {isMobile ? (
+                      <MobileDatePicker disabledDate={(c) => c && c < dayjs().startOf("day")} />
+                    ) : (
+                      <StyledDatePicker
+                        disabledDate={(c) => c && c < dayjs().startOf("day")}
+                        inputReadOnly
+                      />
+                    )}
+                  </CompactFormItem>
+                </FieldContainer>
+                <FieldContainer>
+                  <Label>Start Time</Label>
+                  <CompactFormItem name="time" rules={[{ required: true }]}>
+                    {isMobile ? (
+                      <MobileTimePicker />
+                    ) : (
+                      <StyledTimePicker
+                        use12Hours
+                        format="h:mm A"
+                        minuteStep={15}
+                        inputReadOnly
+                      />
+                    )}
+                  </CompactFormItem>
+                </FieldContainer>
+              </TwoColGrid>
 
-            <FormGroup>
-              <FormLabel>
-                <Calendar /> Session Date
-              </FormLabel>
-              <HelpText>
-                Pick the specific date this session will happen.
-              </HelpText>
-              <Form.Item
-                name="date"
-                rules={[{ required: true, message: "Please select a date." }]}
-                noStyle
-              >
-                <StyledDatePicker
-                  style={{ width: "100%" }}
-                  disabled={isLoading}
-                  inputReadOnly
-                  disabledDate={(c) => c && c < dayjs().startOf("day")}
-                  {...mobilePopupProps}
-                />
-              </Form.Item>
-            </FormGroup>
-
-            <FormGrid>
-              <FormGroup>
-                <FormLabel>
-                  <Clock /> Start Time
-                </FormLabel>
-                <HelpText>Select the time this session will begin.</HelpText>
-                <Form.Item
-                  name="time"
-                  rules={[{ required: true, message: "Select a start time." }]}
-                  noStyle
-                >
-                  <StyledTimePicker
-                    use12Hours
-                    format="h:mm A"
-                    minuteStep={15}
-                    inputReadOnly
-                    disabled={isLoading}
-                    style={{ width: "100%" }}
-                    {...mobilePopupProps}
-                  />
-                </Form.Item>
-              </FormGroup>
-            </FormGrid>
-            
-            <FormGroup style={{ marginTop: 24 }}>
-                <FormLabel>
-                  <Hourglass size={16} /> Duration
-                </FormLabel>
-                <HelpText>Specify how long this session will last.</HelpText>
-                <Form.Item
-                  name="duration"
-                  rules={[{ required: true, message: "Set a duration." }]}
-                >
+              <FieldContainer>
+                <Label>
+                  Duration
+                  <Tooltip title="The total length of the session in minutes.">
+                    <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                  </Tooltip>
+                </Label>
+                <CompactFormItem name="duration" rules={[{ required: true }]}>
                   <DurationPicker disabled={isLoading} />
-                </Form.Item>
-            </FormGroup>
-          </FormSection>
+                </CompactFormItem>
+              </FieldContainer>
+            </FormSection>
+
+            <FormSection>
+              <SectionHeader>
+                <h4>
+                  <Type size={18} /> Identification
+                </h4>
+                <p>Helpful for grouping similar sessions together.</p>
+              </SectionHeader>
+              <FieldContainer>
+                <Label>
+                  Session Name <HelpLabel>(Optional)</HelpLabel>
+                </Label>
+                <CompactFormItem name="name">
+                  <StyledInput placeholder="e.g., Morning Pottery Class" />
+                </CompactFormItem>
+              </FieldContainer>
+            </FormSection>
+          </ModernFormLayout>
         );
       case 1:
         return (
-          <FormSection key="step1">
-            <StepHeader>
-              <StepTitle>Pricing & Capacity</StepTitle>
-              <StepDescription>
-                Define the price and participant limits for this session.
-              </StepDescription>
-            </StepHeader>
+          <ModernFormLayout>
+            <FormSection>
+              <SectionHeader>
+                <h4>
+                  <DollarSign size={18} /> Pricing & Capacity
+                </h4>
+                <p>Set the financials and limits for this session.</p>
+              </SectionHeader>
 
-            <FormGrid>
-              <FormGroup>
-                <FormLabel>
-                  <DollarSign /> Price (CAD)
-                </FormLabel>
-                <HelpText>Cost per person. Use 0 for a free session.</HelpText>
-                <Form.Item
-                  name="price"
-                  rules={[{ required: true, message: "Set a price." }]}
-                  noStyle
-                >
-                  <StyledInput
-                    prefix="$"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    disabled={isLoading}
-                  />
-                </Form.Item>
-              </FormGroup>
-              <FormGroup>
-                <FormLabel>
-                  <Users /> Maximum Capacity
-                </FormLabel>
-                <HelpText>The total number of spots available.</HelpText>
-                <Form.Item
-                  name="maxParticipants"
-                  rules={[{ required: true, message: "Set capacity." }]}
-                  noStyle
-                >
-                  <StyledInputNumber
-                    min={1}
-                    placeholder="e.g., 10"
-                    disabled={isLoading}
-                    style={{ width: "100%" }}
-                    inputMode="numeric"
-                  />
-                </Form.Item>
-              </FormGroup>
-            </FormGrid>
+              <TwoColGrid>
+                <FieldContainer>
+                  <Label>
+                    Price (CAD) <HelpLabel>0 for free</HelpLabel>
+                  </Label>
+                  <CompactFormItem name="price" rules={[{ required: true }]}>
+                    <StyledInput prefix="$" type="number" step="0.01" min="0" />
+                  </CompactFormItem>
+                </FieldContainer>
+                <FieldContainer>
+                  <Label>
+                    Total Capacity
+                    <Tooltip title="The maximum number of people who can book this session.">
+                      <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                    </Tooltip>
+                  </Label>
+                  <CompactFormItem
+                    name="maxParticipants"
+                    rules={[{ required: true }]}
+                  >
+                    <StyledInputNumber min={1} inputMode="numeric" />
+                  </CompactFormItem>
+                </FieldContainer>
+              </TwoColGrid>
 
-            <FormGroup>
-              <FormLabel>
-                <Users /> Minimum Participants
-                <Tooltip title="The minimum number of participants required for a single booking.">
-                  <HelpCircle size={14} className="tooltip-icon" />
-                </Tooltip>
-              </FormLabel>
-              <HelpText>
-                The minimum number of people per booking.
-              </HelpText>
-              <Form.Item
-                name="minParticipants"
-                rules={[
-                  { required: true, message: "Set min participants." },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      if (!value || value <= getFieldValue("maxParticipants")) {
-                        return Promise.resolve();
-                      }
-                      return Promise.reject(
-                        new Error("Min must not exceed Max Capacity!")
-                      );
-                    },
-                  }),
-                ]}
-                dependencies={["maxParticipants"]}
-                noStyle
-              >
-                <StyledInputNumber
-                  min={1}
-                  placeholder="e.g., 1"
-                  disabled={isLoading}
-                  style={{ width: "100%" }}
-                  inputMode="numeric"
-                />
-              </Form.Item>
-            </FormGroup>
-          </FormSection>
+              <FieldContainer>
+                <Label>
+                  Minimum Participants{" "}
+                  <Tooltip title="The minimum number of participants required for a person to book this session.">
+                    <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                  </Tooltip>
+                </Label>
+                <CompactFormItem
+                  name="minParticipants"
+                  rules={[
+                    { required: true },
+                    ({ getFieldValue }) => ({
+                      validator(_, val) {
+                        return !val || val <= getFieldValue("maxParticipants")
+                          ? Promise.resolve()
+                          : Promise.reject(new Error("Min > Max"));
+                      },
+                    }),
+                  ]}
+                >
+                  <StyledInputNumber min={1} />
+                </CompactFormItem>
+              </FieldContainer>
+            </FormSection>
+          </ModernFormLayout>
         );
       case 2:
         return (
-          <FormSection key="step2">
-            <StepHeader>
-              <StepTitle>Review & Confirm</StepTitle>
-              <StepDescription>
-                Please review the details below before creating the schedule.
-              </StepDescription>
-            </StepHeader>
-            <ReviewSection>
-              <InfoRow>
-                <InfoLabel>Name</InfoLabel>
-                <InfoValue>{formData.name || "Not Specified"}</InfoValue>
-              </InfoRow>
-              <InfoRow>
-                <InfoLabel>Date</InfoLabel>
-                <InfoValue>
-                  <Calendar size={16} />
-                  {formData.date?.format("MMMM D, YYYY")}
-                </InfoValue>
-              </InfoRow>
-              <InfoRow>
-                <InfoLabel>Time</InfoLabel>
-                <InfoValue>
-                  <Clock size={16} />
-                  {formData.time?.format("h:mm A")}
-                </InfoValue>
-              </InfoRow>
-              <InfoRow>
-                <InfoLabel>Duration</InfoLabel>
-                <InfoValue>{formatDuration(formData.duration)}</InfoValue>
-              </InfoRow>
-              <InfoRow>
-                <InfoLabel>Price</InfoLabel>
-                <InfoValue>
-                  <DollarSign size={16} />
-                  {parseFloat(formData.price) === 0
-                    ? "Free"
-                    : `$${parseFloat(formData.price).toFixed(2)}`}
-                </InfoValue>
-              </InfoRow>
-              <InfoRow>
-                <InfoLabel>Capacity</InfoLabel>
-                <InfoValue>
-                  <Users size={16} />
-                  {formData.minParticipants} - {formData.maxParticipants}
-                </InfoValue>
-              </InfoRow>
-            </ReviewSection>
-          </FormSection>
+          <ModernFormLayout>
+            <FormSection>
+              <SectionHeader>
+                <h4>
+                  <CheckCircle size={18} /> Review Details
+                </h4>
+                <p>Verify everything is correct before saving.</p>
+              </SectionHeader>
+              <ReviewCard>
+                <ReviewRow>
+                  <span className="label">Name</span>
+                  <span className="value">{formData.name || "N/A"}</span>
+                </ReviewRow>
+                <ReviewRow>
+                  <span className="label">Date</span>
+                  <span className="value">
+                    <Calendar size={14} />
+                    {formData.date?.format("MMM D, YYYY")}
+                  </span>
+                </ReviewRow>
+                <ReviewRow>
+                  <span className="label">Time</span>
+                  <span className="value">
+                    <Clock size={14} />
+                    {formData.time?.format("h:mm A")}
+                  </span>
+                </ReviewRow>
+                <ReviewRow>
+                  <span className="label">Duration</span>
+                  <span className="value">
+                    {formatDuration(formData.duration)}
+                  </span>
+                </ReviewRow>
+                <ReviewRow>
+                  <span className="label">Price</span>
+                  <span className="value">
+                    <DollarSign size={14} />
+                    {formData.price}
+                  </span>
+                </ReviewRow>
+                <ReviewRow>
+                  <span className="label">Capacity</span>
+                  <span className="value">
+                    <Users size={14} />
+                    {formData.maxParticipants} spots
+                  </span>
+                </ReviewRow>
+              </ReviewCard>
+            </FormSection>
+          </ModernFormLayout>
         );
       default:
         return null;
@@ -2038,390 +1554,345 @@ const ScheduleEditDrawer = ({
 
   const renderSingleSessionStepperForm = () => (
     <>
-      <StepsWrapper>
-        <Steps
+      {!isMobile && (
+        <ModernSteps
           size="small"
           current={currentStep}
           items={[
-            { title: "Details", icon: <Calendar size={16} /> },
+            { title: "Time & Date", icon: <Calendar size={16} /> },
             { title: "Pricing", icon: <DollarSign size={16} /> },
             { title: "Review", icon: <CheckCircle size={16} /> },
           ]}
         />
-      </StepsWrapper>
-      <ContentWrapper>
-        <StepContent>
-          <Form
-            form={form}
-            layout="vertical"
-            onValuesChange={(changedValues) =>
-              setFormData({ ...formData, ...changedValues })
-            }
-          >
-            {renderStepContent()}
-          </Form>
-        </StepContent>
-      </ContentWrapper>
+      )}
+      <ContentPadding>
+        <Form
+          form={form}
+          layout="vertical"
+          onValuesChange={(c) => setFormData({ ...formData, ...c })}
+        >
+          {renderStepContent()}
+        </Form>
+      </ContentPadding>
     </>
   );
 
   const renderBulkForm = () => {
-    const bulkFormData = bulkForm.getFieldsValue();
-
-    const renderBulkStep0 = () => (
-      <FormSection key="bulk-step0">
-        <StepHeader>
-          <StepTitle>Bulk Schedule Setup</StepTitle>
-          <StepDescription>
-            Define the time period and pattern for generating sessions
-          </StepDescription>
-        </StepHeader>
-
-        <InfoBox>
-          <Copy />
-          <InfoContent>
-            Quickly generate many individual sessions over a period of time.
-            This is perfect for drop-in classes.
-          </InfoContent>
-        </InfoBox>
-
-        <FormGroup>
-          <FormLabel>
-            <Type /> Group Name{" "}
-            <span style={{ fontWeight: 400, color: "#6b7280" }}>
-              (Optional)
-            </span>
-            <Tooltip title="Using a name like 'Fall Drop-ins' will group all schedules created here, making them easy to filter or delete together later.">
-              <HelpCircle size={14} className="tooltip-icon" />
-            </Tooltip>
-          </FormLabel>
-          <HelpText>
-            This name helps organize all schedules generated in this batch.
-          </HelpText>
-          <NoMarginFormItem name="name">
-            <StyledInput placeholder="e.g., Fall Series" />
-          </NoMarginFormItem>
-        </FormGroup>
-
-        <FormGroup>
-          <FormLabel>
-            <Calendar /> Date Range to Create Schedules In
-          </FormLabel>
-          <HelpText>
-            Schedules will be created on the selected days within this period.
-          </HelpText>
-          <NoMarginFormItem
-            name="date_range"
-            rules={[{ required: true, message: "Select a date range." }]}
-          >
-            <StyledRangePicker 
-                inputReadOnly 
-                style={{ width: "100%" }} 
-                {...mobilePopupProps}
-            />
-          </NoMarginFormItem>
-        </FormGroup>
-
-        <FormGroup>
-          <FormLabel>
-            <ListChecks /> Days of the Week
-          </FormLabel>
-          <HelpText>
-            Select which days you want to generate sessions on.
-          </HelpText>
-          <NoMarginFormItem
-            name="days_of_week"
-            rules={[{ required: true, message: "Select at least one day." }]}
-          >
-            <DaysContainer>
-              {Object.entries(dayLabels).map(([key, label]) => (
-                <DayButton
-                  key={key}
-                  type={bulkFormDays.includes(key) ? "primary" : "default"}
-                  onClick={() => {
-                    const newDays = bulkFormDays.includes(key)
-                      ? bulkFormDays.filter((d) => d !== key)
-                      : [...bulkFormDays, key];
-                    bulkForm.setFieldsValue({ days_of_week: newDays });
-                  }}
-                >
-                  {label}
-                </DayButton>
-              ))}
-            </DaysContainer>
-          </NoMarginFormItem>
-        </FormGroup>
-
-        <FormGroup>
-          <FormLabel>
-            <Clock /> Times to Create on Each Selected Day
-          </FormLabel>
-          <HelpText>
-            A session will be created for each time listed below.
-          </HelpText>
-          <Form.List name="times">
-            {(fields, { add, remove }) => (
-              <TimeListContainer>
-                {fields.map(({ key, name, ...restField }) => (
-                  <TimeInputRow key={key}>
-                    <Form.Item
-                      {...restField}
-                      name={name}
-                      noStyle
-                      rules={[{ required: true, message: "Time is required" }]}
-                    >
-                      <StyledTimePicker
-                        use12Hours
-                        inputReadOnly
-                        format="h:mm A"
-                        minuteStep={15}
-                        style={{ flex: 1 }}
-                        {...mobilePopupProps}
-                      />
-                    </Form.Item>
-                    {fields.length > 1 && (
-                      <Button
-                        type="text"
-                        danger
-                        onClick={() => remove(name)}
-                        icon={<X size={16} />}
-                      />
-                    )}
-                  </TimeInputRow>
-                ))}
-                <AddTimeButton
-                  onClick={() => add(dayjs("09:00", "HH:mm"))}
-                  block
-                  icon={<PlusCircle size={16} />}
-                >
-                  Add Another Time
-                </AddTimeButton>
-              </TimeListContainer>
-            )}
-          </Form.List>
-        </FormGroup>
-      </FormSection>
-    );
-
-    const renderBulkStep1 = () => (
-      <FormSection key="bulk-step1">
-        <StepHeader>
-          <StepTitle>Pricing & Capacity</StepTitle>
-          <StepDescription>
-            Set common details that will apply to all generated sessions
-          </StepDescription>
-        </StepHeader>
-
-          <FormGrid>
-            <FormGroup>
-              <FormLabel>
-                <Hourglass size={16} /> Duration
-              </FormLabel>
-              <HelpText>Set the duration for all generated sessions.</HelpText>
-              <NoMarginFormItem name={["commonDetails", "duration"]}>
-                  <DurationPicker disabled={isBulkLoading} />
-              </NoMarginFormItem>
-            </FormGroup>
-            <FormGroup>
-              <FormLabel>
-                <DollarSign /> Price (CAD)
-              </FormLabel>
-              <HelpText>Cost per person. Use 0 for a free session.</HelpText>
-              <NoMarginFormItem name={["commonDetails", "price"]}>
-                <StyledInput prefix="$" type="number" />
-              </NoMarginFormItem>
-            </FormGroup>
-            <FormGroup>
-              <FormLabel>
-                <Users /> Maximum Capacity
-              </FormLabel>
-              <HelpText>The total number of spots available.</HelpText>
-              <NoMarginFormItem name={["commonDetails", "maxParticipants"]}>
-                <StyledInputNumber style={{ width: "100%" }} inputMode="numeric" />
-              </NoMarginFormItem>
-            </FormGroup>
-            <FormGroup>
-              <FormLabel>
-                <Users /> Minimum Participants
-                <Tooltip title="The minimum number of participants required for a single booking.">
-                  <HelpCircle size={14} className="tooltip-icon" />
-                </Tooltip>
-              </FormLabel>
-              <HelpText>
-                The minimum number of people per booking.
-              </HelpText>
-              <NoMarginFormItem name={["commonDetails", "minParticipants"]}>
-                <StyledInputNumber style={{ width: "100%" }} inputMode="numeric" />
-              </NoMarginFormItem>
-            </FormGroup>
-          </FormGrid>
-      </FormSection>
-    );
-
-    const renderBulkStep2 = () => {
-      const times = formData.times || [];
-      const daysOfWeek = formData.days_of_week || [];
-      const dateRange = formData.date_range || [];
-      
-      // Use formData for commonDetails as well
-      const commonDetails = formData.commonDetails || {};
-
-      return (
-        <FormSection key="bulk-step2">
-          <StepHeader>
-            <StepTitle>Review & Generate</StepTitle>
-            <StepDescription>
-              Please review the details below before generating schedules.
-            </StepDescription>
-          </StepHeader>
-          <ReviewSection>
-            <InfoRow>
-              <InfoLabel>Group Name</InfoLabel>
-              <InfoValue>{formData.name || "Not Specified"}</InfoValue>
-            </InfoRow>
-            <InfoRow>
-              <InfoLabel>Date Range</InfoLabel>
-              <InfoValue>
-                <Calendar size={16} />
-                {dateRange[0] && dateRange[1]
-                  ? `${dateRange[0].format("MMM D")} - ${dateRange[1].format(
-                      "MMM D, YYYY"
-                    )}`
-                  : "Not set"}
-              </InfoValue>
-            </InfoRow>
-            <InfoRow>
-              <InfoLabel>Days of Week</InfoLabel>
-              <InfoValue>
-                <ListChecks size={16} />
-                {daysOfWeek.length > 0
-                  ? daysOfWeek.map((d) => dayLabels[d]).join(", ")
-                  : "None selected"}
-              </InfoValue>
-            </InfoRow>
-            <InfoRow>
-              <InfoLabel>Times</InfoLabel>
-              <InfoValue>
-                <Clock size={16} />
-                {times.length > 0
-                  ? times.map((t) => t.format("h:mm A")).join(", ")
-                  : "None set"}
-              </InfoValue>
-            </InfoRow>
-            <InfoRow>
-              <InfoLabel>Duration</InfoLabel>
-              <InfoValue>
-                {formatDuration(commonDetails.duration)}
-              </InfoValue>
-            </InfoRow>
-            <InfoRow>
-              <InfoLabel>Price</InfoLabel>
-              <InfoValue>
-                <DollarSign size={16} />
-                {parseFloat(commonDetails.price) === 0
-                  ? "Free"
-                  : `$${parseFloat(
-                      commonDetails.price || 0
-                    ).toFixed(2)}`}
-              </InfoValue>
-            </InfoRow>
-            <InfoRow>
-              <InfoLabel>Max Capacity</InfoLabel>
-              <InfoValue>
-                <Users size={16} />
-                {commonDetails.maxParticipants || 0} participants
-              </InfoValue>
-            </InfoRow>
-            <InfoRow>
-              <InfoLabel>Min Participants</InfoLabel>
-              <InfoValue>
-                <Users size={16} />
-                {commonDetails.minParticipants || 1} participants
-              </InfoValue>
-            </InfoRow>
-          </ReviewSection>
-        </FormSection>
-      );
-    };
+    const commonDetails = formData.commonDetails || {};
 
     return (
       <>
-        <StepsWrapper>
-          <Steps
+        {!isMobile && (
+          <ModernSteps
             size="small"
             current={bulkCurrentStep}
             items={[
               { title: "Setup", icon: <Calendar size={16} /> },
-              { title: "Pricing", icon: <DollarSign size={16} /> },
+              { title: "Details", icon: <DollarSign size={16} /> },
               { title: "Review", icon: <CheckCircle size={16} /> },
             ]}
           />
-        </StepsWrapper>
-        <ContentWrapper>
-          <StepContent>
-            <Form
-              form={bulkForm}
-              layout="vertical"
-              onValuesChange={(changedValues) =>
-                setFormData({ ...formData, ...changedValues })
-              }
-            >
-              {bulkCurrentStep === 0 && renderBulkStep0()}
-              {bulkCurrentStep === 1 && renderBulkStep1()}
-              {bulkCurrentStep === 2 && renderBulkStep2()}
-            </Form>
-          </StepContent>
-        </ContentWrapper>
+        )}
+        <ContentPadding>
+          <Form
+            form={bulkForm}
+            layout="vertical"
+            onValuesChange={(c) => setFormData({ ...formData, ...c })}
+          >
+            {bulkCurrentStep === 0 && (
+              <ModernFormLayout>
+                <FormSection>
+                  <SectionHeader>
+                    <h4>
+                      <Copy size={18} /> Bulk Generation
+                    </h4>
+                    <p>
+                      Create multiple sessions at once based on a repeating
+                      pattern.
+                    </p>
+                  </SectionHeader>
+                  <FieldContainer>
+                    <Label>
+                      Group Name <HelpLabel>Required for bulk</HelpLabel>
+                      <Tooltip title="A unique name to identify this batch of schedules (e.g. 'Summer Bootcamp').">
+                        <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                      </Tooltip>
+                    </Label>
+                    <CompactFormItem
+                      name="name"
+                      rules={[
+                        { required: true, message: "Group name is required" },
+                      ]}
+                    >
+                      <StyledInput placeholder="e.g. Summer Drop-ins" />
+                    </CompactFormItem>
+                  </FieldContainer>
+                  <FieldContainer>
+                    <Label>Date Range</Label>
+                    <CompactFormItem
+                      name="date_range"
+                      rules={[{ required: true }]}
+                    >
+                      {isMobile ? (
+                        <MobileRangePicker />
+                      ) : (
+                        <StyledRangePicker inputReadOnly />
+                      )}
+                    </CompactFormItem>
+                  </FieldContainer>
+                </FormSection>
+
+                <FormSection>
+                  <SectionHeader>
+                    <h4>
+                      <ListChecks size={18} /> Pattern
+                    </h4>
+                  </SectionHeader>
+                  <FieldContainer>
+                    <Label>Repeat on Days</Label>
+                    <CompactFormItem
+                      name="days_of_week"
+                      rules={[{ required: true }]}
+                    >
+                      <DaysGrid>
+                        {Object.entries(dayLabels).map(([key, label]) => (
+                          <DayChip
+                            key={key}
+                            type="button"
+                            $selected={bulkFormDays.includes(key)}
+                            onClick={() => {
+                              const newDays = bulkFormDays.includes(key)
+                                ? bulkFormDays.filter((d) => d !== key)
+                                : [...bulkFormDays, key];
+                              bulkForm.setFieldsValue({
+                                days_of_week: newDays,
+                              });
+                            }}
+                          >
+                            {label}
+                          </DayChip>
+                        ))}
+                      </DaysGrid>
+                    </CompactFormItem>
+                  </FieldContainer>
+
+                  <FieldContainer>
+                    <Label>At Times</Label>
+                    <Form.List name="times">
+                      {(fields, { add, remove }) => (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 12,
+                          }}
+                        >
+                          {fields.map(({ key, name, ...restField }) => (
+                            <div key={key} style={{ display: "flex", gap: 8 }}>
+                              <CompactFormItem
+                                {...restField}
+                                name={name}
+                                rules={[{ required: true }]}
+                                style={{ flex: 1 }}
+                              >
+                                {isMobile ? (
+                                  <MobileTimePicker />
+                                ) : (
+                                  <StyledTimePicker
+                                    use12Hours
+                                    format="h:mm A"
+                                    minuteStep={15}
+                                  />
+                                )}
+                              </CompactFormItem>
+                              <Button
+                                danger
+                                icon={<X size={16} />}
+                                onClick={() => remove(name)}
+                              />
+                            </div>
+                          ))}
+                          <Button
+                            type="dashed"
+                            onClick={() => add(dayjs("09:00", "HH:mm"))}
+                            icon={<PlusCircle size={14} />}
+                          >
+                            Add Time
+                          </Button>
+                        </div>
+                      )}
+                    </Form.List>
+                  </FieldContainer>
+                </FormSection>
+              </ModernFormLayout>
+            )}
+
+            {bulkCurrentStep === 1 && (
+              <ModernFormLayout>
+                <FormSection>
+                  <SectionHeader>
+                    <h4>
+                      <DollarSign size={18} /> Common Details
+                    </h4>
+                    <p>These settings apply to every generated session.</p>
+                  </SectionHeader>
+
+                  <TwoColGrid>
+                    <FieldContainer>
+                      <Label>
+                        Price (CAD)
+                        <Tooltip title="Price per attendee.">
+                          <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                        </Tooltip>
+                      </Label>
+                      <CompactFormItem
+                        name={["commonDetails", "price"]}
+                        rules={[{ required: true }]}
+                      >
+                        <StyledInput prefix="$" type="number" step="0.01" />
+                      </CompactFormItem>
+                    </FieldContainer>
+                    <FieldContainer>
+                      <Label>
+                        Max Capacity
+                        <Tooltip title="Maximum attendees allowed per session.">
+                          <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                        </Tooltip>
+                      </Label>
+                      <CompactFormItem
+                        name={["commonDetails", "maxParticipants"]}
+                        rules={[{ required: true }]}
+                      >
+                        <StyledInputNumber min={1} inputMode="numeric" />
+                      </CompactFormItem>
+                    </FieldContainer>
+                  </TwoColGrid>
+                  <FieldContainer>
+                    <Label>Duration</Label>
+                    <CompactFormItem
+                      name={["commonDetails", "duration"]}
+                      rules={[{ required: true }]}
+                    >
+                      <DurationPicker disabled={isBulkLoading} />
+                    </CompactFormItem>
+                  </FieldContainer>
+                  <FieldContainer>
+                    <Label>
+                      Min Participants
+                      <Tooltip title="The minimum number of bookings required for this session to go ahead. If not met, you might need to cancel.">
+                        <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                      </Tooltip>
+                    </Label>
+                    <CompactFormItem
+                      name={["commonDetails", "minParticipants"]}
+                    >
+                      <StyledInputNumber min={1} />
+                    </CompactFormItem>
+                  </FieldContainer>
+                </FormSection>
+              </ModernFormLayout>
+            )}
+
+            {bulkCurrentStep === 2 && (
+              <ModernFormLayout>
+                <FormSection>
+                  <SectionHeader>
+                    <h4>
+                      <CheckCircle size={18} /> Summary
+                    </h4>
+                    <p>Ready to generate these schedules?</p>
+                  </SectionHeader>
+                  <ReviewCard>
+                    <ReviewRow>
+                      <span className="label">Pattern</span>
+                      <span className="value">
+                        {formData.days_of_week
+                          ?.map((d) => dayLabels[d])
+                          .join(", ")}
+                      </span>
+                    </ReviewRow>
+                    <ReviewRow>
+                      <span className="label">Times</span>
+                      <span className="value">
+                        {(formData.times || [])
+                          .map((t) => t.format("h:mm A"))
+                          .join(", ")}
+                      </span>
+                    </ReviewRow>
+                    <ReviewRow>
+                      <span className="label">Date Range</span>
+                      <span className="value">
+                        {formData.date_range?.[0]?.format("MMM D")} -{" "}
+                        {formData.date_range?.[1]?.format("MMM D, YYYY")}
+                      </span>
+                    </ReviewRow>
+                    <ReviewRow>
+                      <span className="label">Price</span>
+                      <span className="value">${commonDetails.price}</span>
+                    </ReviewRow>
+                    <ReviewRow>
+                      <span className="label">Capacity</span>
+                      <span className="value">
+                        {commonDetails.maxParticipants} spots
+                      </span>
+                    </ReviewRow>
+                  </ReviewCard>
+                </FormSection>
+              </ModernFormLayout>
+            )}
+          </Form>
+        </ContentPadding>
       </>
     );
   };
-
-  const tabItems = [
-    {
-      label: (
-        <Space>
-          <File size={14} />
-          <span>Single Session</span>
-        </Space>
-      ),
-      key: "single",
-      children: renderSingleSessionStepperForm(),
-    },
-    ...(!editingSchedule && isSingleSession
-      ? [
-          {
-            label: (
-              <Space>
-                <Copy size={14} />
-                <span>Bulk Create</span>
-              </Space>
-            ),
-            key: "bulk",
-            children: renderBulkForm(),
-          },
-        ]
-      : []),
-  ];
 
   const renderFormContent = () => {
     return editingSchedule ? (
       renderSingleSessionStepperForm()
     ) : (
-      <StyledTabs
+      <ModernTabs
         activeKey={activeTab}
         onChange={setActiveTab}
-        items={tabItems}
+        items={[
+          {
+            label: (
+              <Space>
+                <File size={16} />
+                Single Session
+              </Space>
+            ),
+            key: "single",
+            children: renderSingleSessionStepperForm(),
+          },
+          ...(!editingSchedule && isSingleSession
+            ? [
+              {
+                label: (
+                  <Space>
+                    <Copy size={16} />
+                    Bulk Create
+                  </Space>
+                ),
+                key: "bulk",
+                children: renderBulkForm(),
+              },
+            ]
+            : []),
+        ]}
       />
     );
   };
 
-  const handleAddNew = useCallback((date) => {
-    setEditingSchedule(null);
-    // If a specific date was clicked (e.g. from empty state), use it.
-    // Otherwise fall back to the selected filter date from the view state.
-    setPrefillDate(date && dayjs.isDayjs(date) ? date : viewState.selectedDate); 
-    setActiveView("form");
-  }, [viewState.selectedDate]);
+  const handleAddNew = useCallback(
+    (date) => {
+      setEditingSchedule(null);
+      setPrefillDate(
+        date && dayjs.isDayjs(date) ? date : viewState.selectedDate
+      );
+      setActiveView("form");
+    },
+    [viewState.selectedDate]
+  );
 
   const handleEdit = useCallback((schedule) => {
     setEditingSchedule(schedule);
@@ -2429,28 +1900,28 @@ const ScheduleEditDrawer = ({
   }, []);
 
   const renderContent = () => {
-    if (activeView === "manage") {
+    if (activeView === "manage")
       return (
         <ScheduleManagementView
           classData={classData}
           onAdd={handleAddNew}
           onEdit={handleEdit}
+          onEditGroup={handleEditGroup}
           onSchedulesUpdate={onSchedulesUpdate}
-          // Pass down the lifted state
           currentMonth={viewState.currentMonth}
           selectedDate={viewState.selectedDate}
           groupFilter={viewState.groupFilter}
           onViewStateChange={updateViewState}
         />
       );
-    }
-    if (activeView === "form") {
-      return renderFormContent();
-    }
+    if (activeView === "form") return renderFormContent();
+    if (activeView === "group-form") return renderGroupEditForm();
     return null;
   };
 
   const renderFooterButtons = (isMobileLayout = false) => {
+    const btnStyle = isMobileLayout ? { height: 44 } : { height: 40 };
+
     if (activeView === "manage") {
       return (
         <Button
@@ -2459,184 +1930,138 @@ const ScheduleEditDrawer = ({
           icon={<Plus size={16} />}
           onClick={() => handleAddNew(null)}
           block={isMobileLayout}
-          style={isMobileLayout ? { height: 44 } : {}}
+          style={btnStyle}
         >
           Add New Schedule
         </Button>
       );
     }
-
+    if (activeView === "group-form") {
+      return (
+        <div style={{ display: "flex", gap: 12, width: "100%" }}>
+          <Button
+            onClick={() => setActiveView("manage")}
+            disabled={isLoading}
+            block={isMobileLayout}
+            style={btnStyle}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="primary"
+            onClick={handleGroupSubmit}
+            loading={isLoading}
+            block={isMobileLayout}
+            style={{ ...btnStyle, flex: 1 }}
+          >
+            Update Group
+          </Button>
+        </div>
+      );
+    }
+    // Bulk Form Footer
     if (activeTab === "bulk" && !editingSchedule) {
-      const backButton = (
-        <Button
-          key="back"
-          icon={<ChevronLeft size={16} />}
-          onClick={handleBulkBack}
-          disabled={isBulkLoading}
-        >
-          Back
-        </Button>
-      );
-
-      const nextButton = (
-        <Button
-          key="next"
-          type="primary"
-          icon={<ChevronRight size={16} />}
-          iconPosition="end"
-          onClick={handleBulkNext}
-        >
-          Next
-        </Button>
-      );
-
-      const submitButton = (
-        <Button
-          key="submit-bulk"
-          type="primary"
-          icon={<CheckCircle size={16} />}
-          block={isMobileLayout}
-          onClick={handleBulkSubmit}
-          loading={isBulkLoading}
-          style={isMobileLayout ? { height: 44 } : {}}
-        >
-          Generate Schedules
-        </Button>
-      );
-
-      if (isMobileLayout) {
-        return (
-          <>
-            <div>
-              {/* Fix: Just go back to 'manage' view, don't close drawer */}
-              {classData && bulkCurrentStep === 0 && !hideBackButton && (
-                 <Button icon={<List size={16} />} onClick={() => setActiveView("manage")}>
-                   Back to List
-                 </Button>
-              )}
-              {bulkCurrentStep > 0 && (
-                <span style={{ marginLeft: classData && !hideBackButton ? 8 : 0 }}>{backButton}</span>
-              )}
-            </div>
-            {bulkCurrentStep < 2 ? nextButton : submitButton}
-          </>
-        );
-      }
-
       return (
         <div
           style={{
             display: "flex",
-            width: "100%",
             justifyContent: "space-between",
+            width: "100%",
+            gap: 12,
           }}
         >
-          <div>
-            {classData && bulkCurrentStep === 0 && !hideBackButton && (
-              <Button onClick={() => setActiveView("manage")}>
-                Back to List
-              </Button>
-            )}
-            {bulkCurrentStep > 0 && (
-              <span style={{ marginLeft: classData && bulkCurrentStep === 0 && !hideBackButton ? 8 : 0 }}>{backButton}</span>
-            )}
-          </div>
-          <div>{bulkCurrentStep < 2 ? nextButton : <>{submitButton}</>}</div>
+          {bulkCurrentStep === 0 ? (
+            <Button
+              onClick={() => setActiveView("manage")}
+              style={btnStyle}
+              icon={<List size={16} />}
+            >
+              {isMobileLayout ? "List" : "Back to List"}
+            </Button>
+          ) : (
+            <Button
+              onClick={handleBulkBack}
+              disabled={isBulkLoading}
+              style={btnStyle}
+            >
+              Back
+            </Button>
+          )}
+          {bulkCurrentStep < 2 ? (
+            <Button
+              type="primary"
+              onClick={handleBulkNext}
+              style={btnStyle}
+              icon={<ChevronRight size={16} />}
+              iconPosition="end"
+            >
+              Next
+            </Button>
+          ) : (
+            <Button
+              type="primary"
+              onClick={handleBulkSubmit}
+              loading={isBulkLoading}
+              style={btnStyle}
+            >
+              Generate
+            </Button>
+          )}
         </div>
       );
     }
-
-    const backButton = (
-      <Button
-        key="back"
-        icon={<ChevronLeft size={16} />}
-        onClick={handleBack}
-        disabled={isLoading}
-      >
-        Back
-      </Button>
-    );
-
-    const nextButton = (
-      <Button
-        key="next"
-        type="primary"
-        icon={<ChevronRight size={16} />}
-        iconPosition="end"
-        onClick={handleNext}
-      >
-        Next
-      </Button>
-    );
-
-    const submitButtonText = editingSchedule
-      ? "Save Changes"
-      : "Create Schedule";
-    const submitButton = (
-      <Button
-        key="submit"
-        type="primary"
-        icon={<CheckCircle size={16} />}
-        onClick={handleSubmit}
-        loading={isLoading}
-        block={isMobileLayout}
-        style={isMobileLayout ? { height: 44 } : {}}
-      >
-        {submitButtonText}
-      </Button>
-    );
-
-    if (isMobileLayout) {
-      return (
-        <>
-          <div>
-            {/* Fix: Just go back to 'manage' view, don't close drawer */}
-            {classData && activeTab === "single" && currentStep === 0 && !hideBackButton && (
-                <Button icon={<List size={16} />} onClick={() => setActiveView("manage")}>
-                  Back to List
-                </Button>
-            )}
-            {currentStep > 0 && (
-              <span style={{ marginLeft: classData && activeTab === "single" && currentStep === 0 && !hideBackButton ? 8 : 0 }}>
-                {backButton}
-              </span>
-            )}
-          </div>
-          {currentStep < 2 ? nextButton : submitButton}
-        </>
-      );
-    }
-
+    // Single Form Footer
     return (
       <div
         style={{
           display: "flex",
-          width: "100%",
           justifyContent: "space-between",
+          width: "100%",
+          gap: 12,
         }}
       >
-        <div>
-          {classData && activeTab === "single" && currentStep === 0 && !hideBackButton && (
-            <Button onClick={() => setActiveView("manage")}>
-              Back to List
-            </Button>
-          )}
-          {currentStep > 0 && (
-            <span style={{ marginLeft: classData && activeTab === "single" && currentStep === 0 && !hideBackButton ? 8 : 0 }}>
-              {backButton}
-            </span>
-          )}
-        </div>
-        <div>{currentStep < 2 ? nextButton : <>{submitButton}</>}</div>
+        {currentStep === 0 ? (
+          <Button
+            onClick={() => setActiveView("manage")}
+            style={btnStyle}
+            icon={<List size={16} />}
+          >
+            {isMobileLayout ? "List" : "Back to List"}
+          </Button>
+        ) : (
+          <Button onClick={handleBack} disabled={isLoading} style={btnStyle}>
+            Back
+          </Button>
+        )}
+        {currentStep < 2 ? (
+          <Button
+            type="primary"
+            onClick={handleNext}
+            style={btnStyle}
+            icon={<ChevronRight size={16} />}
+            iconPosition="end"
+          >
+            Next
+          </Button>
+        ) : (
+          <Button
+            type="primary"
+            onClick={handleSubmit}
+            loading={isLoading}
+            style={btnStyle}
+          >
+            {editingSchedule ? "Save Changes" : "Create"}
+          </Button>
+        )}
       </div>
     );
   };
 
   const getTitle = () => {
-    if (activeView === "form") {
-      return `${editingSchedule ? "Edit" : "Create"} Schedule`;
-    }
-    return `Manage Schedules - ${classData?.title}`;
+    if (activeView === "form")
+      return `${editingSchedule ? "Edit" : "New"} Schedule`;
+    if (activeView === "group-form") return "Edit Group";
+    return `Manage Schedules`;
   };
 
   return (
@@ -2647,25 +2072,20 @@ const ScheduleEditDrawer = ({
           title={getTitle()}
           open={open}
           onCancel={onClose}
-          width={activeView === "manage" ? "800px" : "600px"}
+          width={activeView === "manage" ? "800px" : "720px"}
           destroyOnClose
           maskClosable={!isLoading && !isBulkLoading}
           closable={!isLoading && !isBulkLoading}
           footer={renderFooterButtons(false)}
         >
-          <AnimatedModalContent>
-            {renderContent()}
-          </AnimatedModalContent>
+          <AnimatedModalContent>{renderContent()}</AnimatedModalContent>
         </DesktopModal>
       )}
-
       {isMobile && (
         <Drawer.Root
           open={open}
-          onOpenChange={(isOpen) => {
-            if (!isOpen && !isLoading && !isBulkLoading) {
-              onClose();
-            }
+          onOpenChange={(o) => {
+            if (!o) onClose();
           }}
           repositionInputs={false}
         >
@@ -2674,31 +2094,24 @@ const ScheduleEditDrawer = ({
             <StyledDrawerContent>
               <DrawerHandle />
               <MobileHeader>
-                <MobileTitle>
-                  {`Manage Schedules - ${classData?.title}`}
-                </MobileTitle>
-                <CloseButton
-                  icon={<X size={20} />}
-                  onClick={onClose}
-                  disabled={isLoading || isBulkLoading}
-                />
+                <MobileTitle>{`Manage Schedules`}</MobileTitle>
+                <CloseButton icon={<X size={20} />} onClick={onClose} />
               </MobileHeader>
               <MobileContent>
-                 <ScheduleManagementView
-                    classData={classData}
-                    onAdd={handleAddNew}
-                    onEdit={handleEdit}
-                    onSchedulesUpdate={onSchedulesUpdate}
-                    // Pass down the lifted state here as well for mobile
-                    currentMonth={viewState.currentMonth}
-                    selectedDate={viewState.selectedDate}
-                    groupFilter={viewState.groupFilter}
-                    onViewStateChange={updateViewState}
-                  />
+                <ScheduleManagementView
+                  classData={classData}
+                  onAdd={handleAddNew}
+                  onEdit={handleEdit}
+                  onEditGroup={handleEditGroup}
+                  onSchedulesUpdate={onSchedulesUpdate}
+                  currentMonth={viewState.currentMonth}
+                  selectedDate={viewState.selectedDate}
+                  groupFilter={viewState.groupFilter}
+                  onViewStateChange={updateViewState}
+                />
               </MobileContent>
               <MobileFooter>
-                 <Button
-                  key="add"
+                <Button
                   type="primary"
                   icon={<Plus size={16} />}
                   onClick={() => handleAddNew(null)}
@@ -2710,19 +2123,29 @@ const ScheduleEditDrawer = ({
               </MobileFooter>
             </StyledDrawerContent>
           </Drawer.Portal>
-          
-          <Drawer.NestedRoot open={activeView === "form"} onOpenChange={(o) => !o && setActiveView("manage")} repositionInputs={false}>
+          <Drawer.NestedRoot
+            open={activeView === "form" || activeView === "group-form"}
+            onOpenChange={(o) => !o && setActiveView("manage")}
+            repositionInputs={false}
+          >
             <Drawer.Portal>
-               <StyledDrawerOverlay />
-               <StyledDrawerContent style={{ height: '96%' }}>
-                  <DrawerHandle />
-                  <MobileHeader>
-                     <MobileTitle>{editingSchedule ? "Edit Schedule" : "New Schedule"}</MobileTitle>
-                     <CloseButton icon={<X size={20} />} onClick={() => setActiveView("manage")} />
-                  </MobileHeader>
-                  <MobileContent>{renderFormContent()}</MobileContent>
-                  <MobileFooter>{renderFooterButtons(true)}</MobileFooter>
-               </StyledDrawerContent>
+              <StyledDrawerOverlay />
+              <StyledDrawerContent style={{ height: "96%" }}>
+                <DrawerHandle />
+                <MobileHeader>
+                  <MobileTitle>{getTitle()}</MobileTitle>
+                  <CloseButton
+                    icon={<X size={20} />}
+                    onClick={() => setActiveView("manage")}
+                  />
+                </MobileHeader>
+                <MobileContent>
+                  {activeView === "group-form"
+                    ? renderGroupEditForm()
+                    : renderFormContent()}
+                </MobileContent>
+                <MobileFooter>{renderFooterButtons(true)}</MobileFooter>
+              </StyledDrawerContent>
             </Drawer.Portal>
           </Drawer.NestedRoot>
         </Drawer.Root>
