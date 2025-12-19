@@ -83,7 +83,7 @@ const HeaderWrapper = styled.header`
   padding: 0 2rem;
   transition: background-color 0.3s, border-bottom 0.3s;
   /* Ensure Header is above other page content like maps/heros */
-  z-index: 1001;
+  z-index: 100;
   /* Allow popups to flow outside the header bounds */
   overflow: visible;
 
@@ -91,7 +91,7 @@ const HeaderWrapper = styled.header`
     height: 60px;
     padding: 0 1rem;
     gap: 0.5rem;
-    z-index: 999;
+    z-index: 90;
   }
 `;
 
@@ -284,7 +284,7 @@ const UnifiedPopupContainer = styled(motion.div)`
   border: 1px solid rgba(0, 0, 0, 0.05);
   overflow: hidden;
   /* Very high Z-index to ensure it sits on top of everything */
-  z-index: 2000;
+  z-index: 110;
 `;
 
 const PopupContentPadding = styled.div`
