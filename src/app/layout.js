@@ -1,24 +1,31 @@
-import '@ant-design/v5-patch-for-react-19';
-
-import { proximaSoft } from './fonts.js';
-import { SpeedInsights } from "@vercel/speed-insights/next"
-import { Analytics } from "@vercel/analytics/next"
-import Script from 'next/script';
-import ClientProviders from './ClientProviders';
-import { OrganizationSchema, WebsiteSchema } from './StructuredData';
-import './globals.css';
+import { proximaSoft } from "./fonts.js";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
+import Script from "next/script";
+import ClientProviders from "./ClientProviders";
+import { OrganizationSchema, WebsiteSchema } from "./StructuredData";
+import "./globals.css";
 
 export const metadata = {
-  metadataBase: new URL('https://classeasily.com'),
+  metadataBase: new URL("https://classeasily.com"),
   title: {
     default: "Classeasily - Discover Local Classes & Workshops",
-    template: "%s | Classeasily"
+    template: "%s | Classeasily",
   },
-  description: "Explore thousands of local classes and workshops in art, cooking, fitness, and more. Find your passion and connect with expert hosts on Classeasily.",
-  keywords: ['classes', 'workshops', 'local classes', 'art classes', 'cooking classes', 'fitness classes', 'learn new skills'],
-  authors: [{ name: 'Classeasily' }],
-  creator: 'Classeasily',
-  publisher: 'Classeasily',
+  description:
+    "Explore thousands of local classes and workshops in art, cooking, fitness, and more. Find your passion and connect with expert hosts on Classeasily.",
+  keywords: [
+    "classes",
+    "workshops",
+    "local classes",
+    "art classes",
+    "cooking classes",
+    "fitness classes",
+    "learn new skills",
+  ],
+  authors: [{ name: "Classeasily" }],
+  creator: "Classeasily",
+  publisher: "Classeasily",
   formatDetection: {
     email: false,
     address: false,
@@ -26,33 +33,37 @@ export const metadata = {
   },
   openGraph: {
     title: "Classeasily - Discover Local Classes & Workshops",
-    description: "Explore thousands of local classes and workshops in art, cooking, fitness, and more.",
-    images: [{ 
-      url: 'https://i.imgur.com/biTTckW.png',
-      width: 1200,
-      height: 630,
-      alt: 'Classeasily - Discover Local Classes'
-    }],
+    description:
+      "Explore thousands of local classes and workshops in art, cooking, fitness, and more.",
+    images: [
+      {
+        url: "https://i.imgur.com/biTTckW.png",
+        width: 1200,
+        height: 630,
+        alt: "Classeasily - Discover Local Classes",
+      },
+    ],
     url: "https://classeasily.com",
     siteName: "Classeasily",
     type: "website",
     locale: "en_US",
   },
   twitter: {
-    card: 'summary_large_image',
+    card: "summary_large_image",
     title: "Classeasily - Discover Local Classes & Workshops",
-    description: "Explore thousands of local classes and workshops in art, cooking, fitness, and more.",
-    images: ['https://i.imgur.com/biTTckW.png'],
-    creator: '@classeasily',
+    description:
+      "Explore thousands of local classes and workshops in art, cooking, fitness, and more.",
+    images: ["https://i.imgur.com/biTTckW.png"],
+    creator: "@classeasily",
   },
-  manifest: '/favicon/site.webmanifest',
+  manifest: "/favicon/site.webmanifest",
   appleWebApp: {
-    title: 'Classeasily',
-    statusBarStyle: 'default',
+    title: "Classeasily",
+    statusBarStyle: "default",
     capable: true,
   },
   alternates: {
-    canonical: 'https://classeasily.com',
+    canonical: "https://classeasily.com",
   },
   robots: {
     index: true,
@@ -62,9 +73,9 @@ export const metadata = {
       index: true,
       follow: true,
       noimageindex: false,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
   verification: {
@@ -74,10 +85,10 @@ export const metadata = {
 
 export const viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#000000' }
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
-  width: 'device-width',
+  width: "device-width",
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
@@ -90,28 +101,36 @@ export default function RootLayout({ children }) {
         {/* Favicon */}
         <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
         <link rel="shortcut icon" href="/favicon/favicon.ico" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
-        
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/favicon/apple-touch-icon.png"
+        />
+
         {/* Critical CSS inline - add your above-the-fold styles here */}
-        <style dangerouslySetInnerHTML={{__html: `
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
           body{margin:0;padding:0;font-family:var(--font-proxima-soft),system-ui,-apple-system,sans-serif}
           .homepage-style{background-color:#fff;min-height:100vh}
           .main-content{display:flex;flex-direction:column;padding:0}
-        `}} />
-        
+        `,
+          }}
+        />
+
         {/* DNS Prefetch for third-party domains */}
         <link rel="dns-prefetch" href="https://accounts.google.com" />
         <link rel="dns-prefetch" href="https://cdn.lordicon.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-        
-          <link
-            rel="preload"
-            as="image"
-            href="/homepageMobile.webp"
-            fetchPriority="high"
-            type="image/webp"
-          />
-        
+
+        <link
+          rel="preload"
+          as="image"
+          href="/homepageMobile.webp"
+          fetchPriority="high"
+          type="image/webp"
+        />
+
         {/* Structured Data */}
         <OrganizationSchema />
         <WebsiteSchema />
@@ -119,12 +138,13 @@ export default function RootLayout({ children }) {
       <body>
         <SpeedInsights />
         <Analytics />
-        
-        <Script src="https://cdn.lordicon.com/lordicon.js" strategy="lazyOnload" />
 
-        <ClientProviders>
-          {children}
-        </ClientProviders>
+        <Script
+          src="https://cdn.lordicon.com/lordicon.js"
+          strategy="lazyOnload"
+        />
+
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );

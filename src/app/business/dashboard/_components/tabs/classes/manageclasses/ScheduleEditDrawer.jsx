@@ -318,7 +318,7 @@ const MobileFooter = styled.div`
 // --- Styled Inputs (Modernized) ---
 const commonInputStyles = css`
   height: 48px;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 14px;
   border: 1px solid #e2e8f0;
   transition: all 0.2s ease;
@@ -573,7 +573,7 @@ const DaysGrid = styled.div`
 
 const DayChip = styled.button`
   height: 44px;
-  border-radius: 8px;
+  border-radius: 12px;
   background: ${(props) =>
     props.$selected ? props.theme.token.colorPrimary : "white"};
   color: ${(props) => (props.$selected ? "white" : "#64748b")};
@@ -599,6 +599,10 @@ const DesktopModal = styled(Modal)`
     overflow: hidden;
   }
 
+  .ant-modal-container {
+    padding: 0 !important;
+  }
+
   .ant-modal-header {
     border-bottom: 1px solid #f0f0f0;
     padding: 20px 24px;
@@ -621,6 +625,8 @@ const DesktopModal = styled(Modal)`
     padding: 16px 24px;
     margin: 0;
     background: #ffffff;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
   }
 `;
 
@@ -631,7 +637,6 @@ const ModernSteps = styled(Steps)`
   background: white;
 
   .ant-steps-item-process .ant-steps-item-icon {
-    background: ${(props) => props.theme.token.colorPrimary};
     border-color: ${(props) => props.theme.token.colorPrimary};
   }
 `;
