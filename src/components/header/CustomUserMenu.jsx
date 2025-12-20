@@ -12,6 +12,7 @@ import { LordIcon } from "@/services/ReactUtils.jsx";
 import message from "@/lib/message";
 import FavoritesModal from "@/components/MyFavoritesPage";
 import { ChevronRight, LogOutIcon, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const MOBILE_BREAKPOINT = "768px";
 
@@ -343,13 +344,13 @@ const desktopMenuVariants = {
 };
 
 const mobileMenuVariants = {
-  hidden: { 
-    scale: 0.2, 
-    opacity: 0, 
-    x: 0, 
-    y: 0, 
+  hidden: {
+    scale: 0.2,
+    opacity: 0,
+    x: 0,
+    y: 0,
     borderRadius: "50px",
-    pointerEvents: "none" 
+    pointerEvents: "none"
   },
   visible: {
     scale: 1,
@@ -416,7 +417,14 @@ const MenuContents = React.forwardRef(
     },
     ref
   ) => {
-    const handleMenuItemEnter = (e) => {
+    const router = useRouter();
+
+    const handleMenuItemEnter = (e, path = null) => {
+      // Prefetch the route immediately on hover to eliminate the "pause" on click
+      if (path && path.startsWith("/")) {
+        router.prefetch(path);
+      }
+
       const icon = e.currentTarget.querySelector("lord-icon");
       if (icon) {
         if (icon.playerInstance) icon.playerInstance.play();
@@ -450,7 +458,7 @@ const MenuContents = React.forwardRef(
           <GroupLabel>Admin</GroupLabel>
           <MenuItem
             onClick={() => onNavigate("/admin")}
-            onMouseEnter={handleMenuItemEnter}
+            onMouseEnter={(e) => handleMenuItemEnter(e, "/admin")}
             onMouseLeave={handleMenuItemLeave}
           >
             <LordIcon
@@ -476,7 +484,7 @@ const MenuContents = React.forwardRef(
           <GroupLabel>Business Management</GroupLabel>
           <MenuItem
             onClick={() => onNavigate("/business/dashboard/overview")}
-            onMouseEnter={handleMenuItemEnter}
+            onMouseEnter={(e) => handleMenuItemEnter(e, "/business/dashboard/overview")}
             onMouseLeave={handleMenuItemLeave}
           >
             <LordIcon
@@ -562,7 +570,7 @@ const MenuContents = React.forwardRef(
                   <GroupLabel>Academic</GroupLabel>
                   <MenuItem
                     onClick={() => onNavigate("/my-classes")}
-                    onMouseEnter={handleMenuItemEnter}
+                    onMouseEnter={(e) => handleMenuItemEnter(e, "/my-classes")}
                     onMouseLeave={handleMenuItemLeave}
                   >
                     <LordIcon
@@ -574,7 +582,7 @@ const MenuContents = React.forwardRef(
                   </MenuItem>
                   <MenuItem
                     onClick={onShowFavorites}
-                    onMouseEnter={handleMenuItemEnter}
+                    onMouseEnter={(e) => handleMenuItemEnter(e)}
                     onMouseLeave={handleMenuItemLeave}
                   >
                     <LordIcon
@@ -589,7 +597,7 @@ const MenuContents = React.forwardRef(
                   <GroupLabel>Personal</GroupLabel>
                   <MenuItem
                     onClick={onShowSettings}
-                    onMouseEnter={handleMenuItemEnter}
+                    onMouseEnter={(e) => handleMenuItemEnter(e)}
                     onMouseLeave={handleMenuItemLeave}
                   >
                     <LordIcon
@@ -604,7 +612,7 @@ const MenuContents = React.forwardRef(
                   <GroupLabel>Support & Actions</GroupLabel>
                   <MenuItem
                     onClick={() => onNavigate("/business")}
-                    onMouseEnter={handleMenuItemEnter}
+                    onMouseEnter={(e) => handleMenuItemEnter(e, "/business")}
                     onMouseLeave={handleMenuItemLeave}
                   >
                     <LordIcon
@@ -616,7 +624,7 @@ const MenuContents = React.forwardRef(
                   </MenuItem>
                   <MenuItem
                     onClick={() => onNavigate("/my-tickets")}
-                    onMouseEnter={handleMenuItemEnter}
+                    onMouseEnter={(e) => handleMenuItemEnter(e, "/my-tickets")}
                     onMouseLeave={handleMenuItemLeave}
                   >
                     <LordIcon
@@ -628,7 +636,7 @@ const MenuContents = React.forwardRef(
                   </MenuItem>
                   <MenuItem
                     onClick={handleLogout}
-                    onMouseEnter={handleMenuItemEnter}
+                    onMouseEnter={(e) => handleMenuItemEnter(e)}
                     onMouseLeave={handleMenuItemLeave}
                   >
                     <LogOutIcon
@@ -667,7 +675,7 @@ const MenuContents = React.forwardRef(
                   <GroupLabel>Account</GroupLabel>
                   <MenuItem
                     onClick={handleLogin}
-                    onMouseEnter={handleMenuItemEnter}
+                    onMouseEnter={(e) => handleMenuItemEnter(e)}
                     onMouseLeave={handleMenuItemLeave}
                   >
                     <LordIcon
@@ -679,7 +687,7 @@ const MenuContents = React.forwardRef(
                   </MenuItem>
                   <MenuItem
                     onClick={handleRegister}
-                    onMouseEnter={handleMenuItemEnter}
+                    onMouseEnter={(e) => handleMenuItemEnter(e)}
                     onMouseLeave={handleMenuItemLeave}
                   >
                     <LordIcon
@@ -694,7 +702,7 @@ const MenuContents = React.forwardRef(
                   <GroupLabel>Information</GroupLabel>
                   <MenuItem
                     onClick={() => onNavigate("/about-us")}
-                    onMouseEnter={handleMenuItemEnter}
+                    onMouseEnter={(e) => handleMenuItemEnter(e, "/about-us")}
                     onMouseLeave={handleMenuItemLeave}
                   >
                     <LordIcon
@@ -706,7 +714,7 @@ const MenuContents = React.forwardRef(
                   </MenuItem>
                   <MenuItem
                     onClick={() => onNavigate("/my-tickets")}
-                    onMouseEnter={handleMenuItemEnter}
+                    onMouseEnter={(e) => handleMenuItemEnter(e, "/my-tickets")}
                     onMouseLeave={handleMenuItemLeave}
                   >
                     <LordIcon
@@ -813,7 +821,9 @@ const CustomUserMenu = ({
   }, [isOpen, isMobile]);
 
   const handleActualNavigate = (path) => {
-    onClose();
+    // Navigate immediately. 
+    // We don't call onClose() here because Header.jsx closes the menu 
+    // automatically via [pathname] useEffect, making navigation feel instant.
     onNavigate(path);
   };
 

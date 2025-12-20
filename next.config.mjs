@@ -201,7 +201,12 @@ const nextConfig = {
       {
         source: "/business/classes",
         destination: "/business/dashboard/classes",
-        permanent: false, // Set to false if this is temporary
+        permanent: false,
+      },
+      {
+        source: "/guest/cancel/:token",
+        destination: "/?cancel_token=:token",
+        permanent: false,
       },
     ];
   },

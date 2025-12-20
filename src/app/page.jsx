@@ -6,6 +6,8 @@ import "./(homepage)/_components/homepage.css";
 import { preloadHomepageData } from "@/lib/server-data-fetchers";
 import { FindClassSkeleton, CategorySkeleton } from "./(homepage)/_components/FindClassSkeleton";
 
+const CancellationOverlay = dynamic(() => import("./(homepage)/_components/CancellationOverlay"));
+
 // Lazy Load Components
 const Footer = dynamic(() => import("@/components/homepage/Footer"), {
   loading: () => <div style={{ minHeight: "300px" }} />,
@@ -42,8 +44,8 @@ export default async function HomePage() {
           <BannerSearch />
 
           <Suspense fallback={<FindClassSkeleton style={{ marginTop: "3rem" }} />}>
-            <ClassRow 
-              title="Trending this Week" 
+            <ClassRow
+              title="Trending this Week"
               subtitle="Most booked classes by people near you"
               classes={trending}
               seeAllLink="/explore?sort=popularity"
@@ -52,8 +54,8 @@ export default async function HomePage() {
           </Suspense>
 
           <Suspense fallback={<FindClassSkeleton />}>
-            <ClassRow 
-              title="New & Noteworthy" 
+            <ClassRow
+              title="New & Noteworthy"
               subtitle="Just added classes you shouldn't miss"
               classes={newClasses}
               seeAllLink="/explore?sort=newest"
@@ -61,7 +63,7 @@ export default async function HomePage() {
           </Suspense>
 
           <Suspense fallback={<CategorySkeleton />}>
-             <HomepageCategories initialCategories={categories} />
+            <HomepageCategories initialCategories={categories} />
           </Suspense>
 
           <Suspense fallback={<div style={{ minHeight: "800px" }} />}>
@@ -86,6 +88,8 @@ export default async function HomePage() {
         <Suspense fallback={<div style={{ minHeight: "300px" }} />}>
           <Footer />
         </Suspense>
+
+        <CancellationOverlay />
       </div>
     </>
   );

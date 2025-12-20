@@ -5,7 +5,7 @@ import React from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Button as AntButton } from "antd";
+import { Button } from "antd";
 import Image from "next/image";
 
 const MainWrapper = styled.section`
@@ -131,7 +131,7 @@ const ForHosts = () => {
           style={{ display: "inline-block" }}
         >
           <Link href="/business" passHref legacyBehavior>
-            <AntButton
+            <Button
               type="primary"
               size="large"
               style={{
@@ -141,7 +141,7 @@ const ForHosts = () => {
               }}
             >
               Try Hosting
-            </AntButton>
+            </Button>
           </Link>
         </motion.div>
       </RightWrapper>

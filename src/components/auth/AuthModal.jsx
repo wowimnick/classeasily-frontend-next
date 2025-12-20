@@ -44,14 +44,14 @@ const useElementSize = () => {
 
   useLayoutEffect(() => {
     if (!ref.current) return;
-    
+
     const observer = new ResizeObserver(([entry]) => {
       setSize({
         width: entry.contentRect.width,
         height: entry.contentRect.height
       });
     });
-    
+
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
@@ -598,11 +598,12 @@ const AuthModal = ({
           Forgot password?
         </ForgotPasswordLink>
         <Button
+          key={`btn-${loading}`}
           type="primary"
           htmlType="submit"
           size="large"
           block
-          loading={loading}
+          loading={Boolean(loading)}
         >
           Sign in
         </Button>
@@ -628,7 +629,7 @@ const AuthModal = ({
     <>
       <Title>Create an account</Title>
       <Subtitle>Join our community today</Subtitle>
-      
+
       {!isMobile && (
         <StyledSteps current={currentStep} size="small">
           {steps.map((item) => (
@@ -855,9 +856,9 @@ const AuthModal = ({
         footer={null}
         centered
         maskClosable={!loading}
-        styles={{ 
+        styles={{
           body: { padding: 0 },
-          content: { borderRadius: '24px', overflow: 'hidden' } 
+          content: { borderRadius: '24px', overflow: 'hidden' }
         }}
       >
         <AnimatedModalContent>

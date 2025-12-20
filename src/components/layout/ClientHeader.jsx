@@ -283,7 +283,6 @@ const UnifiedPopupContainer = styled(motion.div)`
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   border: 1px solid rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  /* Very high Z-index to ensure it sits on top of everything */
   z-index: 110;
 `;
 
