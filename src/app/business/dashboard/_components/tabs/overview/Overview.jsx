@@ -1654,7 +1654,7 @@ const Overview = forwardRef((props, ref) => {
                               editingScheduleId === cls.schedule_instance_id
                             }
                             disabled={isCourseSession}
-                          />
+                            key={`btn-${editingScheduleId === cls.schedule_instance_id}`} />
                         );
                         if (isCourseSession) {
                           return (

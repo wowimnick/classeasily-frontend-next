@@ -632,7 +632,7 @@ const ReassignmentModal = ({
           Cancel
         </Button>,
         <Button
-          key="submit"
+          key={`btn-${loading}`}
           type="primary"
           danger
           disabled={!newId}
@@ -887,7 +887,7 @@ const CategoryEditDrawer = ({
           htmlType="submit"
           form="category-edit-form"
           loading={isLoading}
-        >
+          key={`btn-${isLoading}`}>
           {categoryData ? "Update Category" : "Create Category"}
         </Button>
       </DrawerFooter>
@@ -2081,7 +2081,7 @@ const ClassCategories = () => {
                       type="primary"
                       htmlType="submit"
                       loading={actionLoading}
-                    >
+                      key={`btn-${actionLoading}`}>
                       Add Subcategory
                     </Button>
                   </Space>
@@ -2207,7 +2207,7 @@ const ClassCategories = () => {
                       type="primary"
                       htmlType="submit"
                       loading={actionLoading}
-                    >
+                      key={`btn-${actionLoading}`}>
                       Update Subcategory
                     </Button>
                   </Space>

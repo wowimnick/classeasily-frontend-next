@@ -1011,7 +1011,6 @@ const ScheduleManagementView = React.memo(
           </DateScrollWrapper>
 
         </DateStripContainer>
-
         <div
           style={{
             padding: "12px 20px",
@@ -1055,11 +1054,10 @@ const ScheduleManagementView = React.memo(
             </Button>
           )}
         </div>
-
         <ScheduleListArea>
           {loading ? (
             // Render Skeleton Loader
-            Array.from({ length: 6 }).map((_, i) => <ScheduleSkeleton key={i} />)
+            (Array.from({ length: 6 }).map((_, i) => <ScheduleSkeleton key={i} />))
           ) : filteredSchedules.length > 0 ? (
             filteredSchedules.map((s) => (
               <ScheduleCard
@@ -2101,7 +2099,7 @@ const ScheduleEditDrawer = ({
             loading={isLoading}
             block={isMobileLayout}
             style={{ ...btnStyle, flex: 1 }}
-          >
+            key={`btn-${isLoading}`}>
             Update Group
           </Button>
         </div>
@@ -2151,7 +2149,7 @@ const ScheduleEditDrawer = ({
               onClick={handleBulkSubmit}
               loading={isBulkLoading}
               style={btnStyle}
-            >
+              key={`btn-${isBulkLoading}`}>
               Generate
             </Button>
           )}
@@ -2197,7 +2195,7 @@ const ScheduleEditDrawer = ({
             onClick={handleSubmit}
             loading={isLoading}
             style={btnStyle}
-          >
+            key={`btn-${isLoading}`}>
             {editingSchedule ? "Save Changes" : "Create"}
           </Button>
         )}

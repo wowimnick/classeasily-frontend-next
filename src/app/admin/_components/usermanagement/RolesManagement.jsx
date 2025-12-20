@@ -1275,7 +1275,7 @@ const RolesManagement = () => {
                     icon={<Save size={16} />}
                     loading={actionLoading}
                     onClick={handleFormSubmit}
-                  >
+                    key={`btn-${actionLoading}`}>
                     Save Changes
                   </Button>
                 </DrawerFooter>
@@ -1305,7 +1305,7 @@ const RolesManagement = () => {
                 Cancel
               </Button>,
               <Button
-                key="submit"
+                key={`btn-${actionLoading}`}
                 type="primary"
                 icon={<Save size={16} />}
                 loading={actionLoading}
@@ -1328,7 +1328,7 @@ const RolesManagement = () => {
               Cancel
             </Button>,
             <Button
-              key="delete"
+              key={`btn-${actionLoading}`}
               danger
               type="primary"
               onClick={handleConfirmDelete}

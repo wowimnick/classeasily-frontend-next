@@ -208,6 +208,26 @@ const nextConfig = {
         destination: "/?cancel_token=:token",
         permanent: false,
       },
+      {
+        source: "/join-business",
+        destination: "/",
+        permanent: false,
+      },
+      {
+        source: "/business/join",
+        destination: "/",
+        permanent: false,
+      },
+      {
+        source: "/business/accept-invite",
+        destination: "/",
+        permanent: false,
+      },
+      {
+        source: "/reset-password/:uid/:token",
+        destination: "/?reset_uid=:uid&reset_token=:token",
+        permanent: false,
+      },
     ];
   },
 

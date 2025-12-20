@@ -337,7 +337,7 @@ const ForgotPasswordForm = ({ onSwitchToLogin, formInstance }) => {
           block
           loading={loading}
           disabled={!!successMessage}
-        >
+          key={`btn-${loading}`}>
           Send Reset Link
         </Button>
       </StyledForm>
@@ -786,7 +786,7 @@ const AuthModal = ({
               currentStep < steps.length - 1 ? <ArrowRight size={16} /> : null
             }
             iconPosition="end"
-          >
+            key={`btn-${loading}`}>
             {currentStep === steps.length - 1 ? "Create Account" : "Next"}
           </Button>
         </ButtonGroup>

@@ -675,7 +675,7 @@ const DetailDrawerContent = ({ business, onAction, actionLoading }) => {
                   danger
                   icon={<Trash2 size={16} />}
                   loading={actionLoading}
-                >
+                  key={`btn-${actionLoading}`}>
                   Delete
                 </Button>
               </Popconfirm>
@@ -691,7 +691,7 @@ const DetailDrawerContent = ({ business, onAction, actionLoading }) => {
                   onAction("toggleActive", business.businessId, !isActive)
                 }
                 loading={actionLoading}
-              >
+                key={`btn-${actionLoading}`}>
                 {isActive ? "Deactivate" : "Activate"}
               </Button>
               <Button
@@ -702,7 +702,7 @@ const DetailDrawerContent = ({ business, onAction, actionLoading }) => {
                   onAction("toggleFeature", business.businessId, !featured)
                 }
                 loading={actionLoading}
-              >
+                key={`btn-${actionLoading}`}>
                 {featured ? "Unfeature" : "Feature"}
               </Button>
             </Space>
@@ -1419,7 +1419,7 @@ const BusinessManagement = () => {
               icon={<RefreshCw size={14} />}
               onClick={refreshAllData}
               loading={loading || metricsLoading}
-            >
+              key={`btn-${loading || metricsLoading}`}>
               Refresh
             </Button>
           </ActionButtonsContainer>

@@ -640,7 +640,7 @@ function PreferencesSettingsTabContent({
                   onClick={stripeButtonInfo.action}
                   loading={connectLoading}
                   style={{ marginTop: 8 }}
-                >
+                  key={`btn-${connectLoading}`}>
                   {stripeButtonInfo.text}
                 </Button>
                 <HelpText

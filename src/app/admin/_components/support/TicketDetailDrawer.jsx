@@ -511,7 +511,7 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
                         htmlType="submit"
                         icon={<Send size={16} />}
                         loading={actionLoading}
-                      >
+                        key={`btn-${actionLoading}`}>
                         Send
                       </Button>
                     </Form.Item>
@@ -835,7 +835,7 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
               htmlType="submit"
               block
               loading={actionLoading}
-            >
+              key={`btn-${actionLoading}`}>
               Confirm Resolution
             </Button>
           </Form.Item>

@@ -661,7 +661,7 @@ export default function MyTicketsContent() {
               block
               size="large"
               style={{ marginTop: 8, fontWeight: 600 }}
-            >
+              key={`btn-${isCreatingTicket}`}>
               Submit Ticket
             </Button>
           </Form>

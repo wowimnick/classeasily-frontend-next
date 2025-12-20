@@ -836,7 +836,7 @@ const BusinessSettings = forwardRef((props, ref) => {
                     onClick={handleSave}
                     loading={saving}
                     block
-                  >
+                    key={`btn-${saving}`}>
                     {saving ? "Saving..." : "Save All Settings"}
                   </Button>
                   <Button onClick={onClose} disabled={saving} block>
@@ -865,7 +865,7 @@ const BusinessSettings = forwardRef((props, ref) => {
                     icon={<Save size={16} />}
                     onClick={handleSave}
                     loading={saving}
-                  >
+                    key={`btn-${saving}`}>
                     {saving ? "Saving..." : "Save All Settings"}
                   </Button>
                 </SettingsDrawerFooter>

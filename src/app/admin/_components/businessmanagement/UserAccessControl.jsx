@@ -1386,7 +1386,7 @@ const UserAccessControl = () => {
               Cancel
             </Button>,
             <Button
-              key="submit"
+              key={`btn-${actionLoading}`}
               type="primary"
               loading={actionLoading}
               onClick={() => decisionForm.submit()}

@@ -15,7 +15,7 @@ const Button = forwardRef(({ loading, ...props }, ref) => {
       ? { delay: 0, indicator: loadingIcon, ...loading }
       : loading;
 
-  return <AntButton ref={ref} loading={loadingConfig} {...props} />;
+  return <AntButton ref={ref} loading={loadingConfig} {...props} key={`btn-${loadingConfig}`} />;
 });
 
 Button.displayName = "Button";

@@ -1465,7 +1465,6 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
             Back
           </Button>
         )}
-
         {currentStep < 2 ? (
           <Button
             type="primary"
@@ -1482,7 +1481,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
             onClick={handleSubmit}
             loading={isLoading}
             style={btnStyle}
-          >
+            key={`btn-${isLoading}`}>
             {editingSchedule ? "Update Course" : "Create Course"}
           </Button>
         )}

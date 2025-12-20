@@ -1109,7 +1109,6 @@ const ReviewsTab = ({ slug, totalReviews, ratingAsNumber }) => {
           </>
         )}
       </SectionBlock>
-
       <AnimatePresence>
         {isModalVisible && (
           <ModalOverlay
@@ -1162,7 +1161,7 @@ const ReviewsTab = ({ slug, totalReviews, ratingAsNumber }) => {
                     onClick={handleLoadMore}
                     loading={loadingMore}
                     style={{ borderColor: "#ff385c", color: "#ff385c" }}
-                  >
+                    key={`btn-${loadingMore}`}>
                     {loadingMore ? "Loading..." : "Load More Reviews"}
                   </Button>
                 </ModalFooter>
@@ -1171,7 +1170,6 @@ const ReviewsTab = ({ slug, totalReviews, ratingAsNumber }) => {
           </ModalOverlay>
         )}
       </AnimatePresence>
-
       <AnimatePresence>
         {selectedImage && (
           <ImageModalOverlay

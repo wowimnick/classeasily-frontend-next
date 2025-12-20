@@ -261,7 +261,7 @@ const RescheduleBookingModal = ({ visible, booking, onSuccess, onCancel }) => {
           Cancel
         </Button>,
         <Button
-          key="submit"
+          key={`btn-${isConfirming}`}
           type="primary"
           loading={isConfirming}
           onClick={handleConfirm}

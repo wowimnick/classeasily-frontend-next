@@ -933,7 +933,7 @@ const ImportStudentsModal = ({ visible, onClose, onImportComplete }) => {
             Back
           </Button>,
           <Button
-            key="import"
+            key={`btn-${isLoading}`}
             type="primary"
             onClick={handleStartImport}
             disabled={!isMappingValid}
@@ -968,7 +968,7 @@ const ImportStudentsModal = ({ visible, onClose, onImportComplete }) => {
           <Space style={{ width: "100%", flexDirection: "column" }}>
             <Button
               block
-              key="import"
+              key={`btn-${isLoading}`}
               type="primary"
               onClick={handleStartImport}
               disabled={!isMappingValid}

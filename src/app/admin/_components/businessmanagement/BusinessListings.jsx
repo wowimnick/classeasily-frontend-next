@@ -584,7 +584,6 @@ const BusinessDetailDrawerContent = ({
           <Text type="secondary">{location}</Text>
         </div>
       </DrawerHeader>
-
       <>
         <InfoGroup>
           <InfoGroupTitle>
@@ -601,7 +600,7 @@ const BusinessDetailDrawerContent = ({
                 danger
                 icon={<Trash2 size={16} />}
                 loading={isActionLoading}
-              >
+                key={`btn-${isActionLoading}`}>
                 Delete
               </Button>
             </Popconfirm>
@@ -611,7 +610,7 @@ const BusinessDetailDrawerContent = ({
               }
               onClick={() => handleToggleActive(business.businessId, !isActive)}
               loading={isActionLoading}
-            >
+              key={`btn-${isActionLoading}`}>
               {isActive ? "Deactivate" : "Activate"}
             </Button>
             <Button
@@ -622,7 +621,7 @@ const BusinessDetailDrawerContent = ({
                 handleFeatureBusiness(business.businessId, !featured)
               }
               loading={isActionLoading}
-            >
+              key={`btn-${isActionLoading}`}>
               {featured ? "Unfeature" : "Feature"}
             </Button>
           </Space>

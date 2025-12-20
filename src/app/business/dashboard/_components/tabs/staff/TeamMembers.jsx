@@ -1043,9 +1043,7 @@ const TeamMembers = () => {
           Invite Staff
         </ActionButton>
       </TableHeader>
-      
       {renderContent()}
-
       {isMobile ? (
         <Drawer.Root
           open={isModalVisible}
@@ -1120,7 +1118,7 @@ const TeamMembers = () => {
                   onClick={() => form.submit()}
                   loading={loading}
                   block
-                >
+                  key={`btn-${loading}`}>
                   {editingStaff ? "Save Changes" : "Send Invitation"}
                 </Button>
                 <Button onClick={onModalClose} block>
@@ -1142,7 +1140,7 @@ const TeamMembers = () => {
               Cancel
             </Button>,
             <Button
-              key="submit"
+              key={`btn-${loading}`}
               type="primary"
               onClick={() => form.submit()}
               loading={loading}

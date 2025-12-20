@@ -782,7 +782,7 @@ const BookingClassCard = ({
               style={{ marginTop: 16, borderRadius: 12, fontWeight: 600, height: 40 }}
               loading={loading || isProcessingImage}
               onClick={handleSubmitReview}
-            >
+              key={`btn-${loading || isProcessingImage}`}>
               Submit Review
             </Button>
           </ReviewWrapper>
@@ -855,7 +855,6 @@ const BookingClassCard = ({
               </InfoBox>
             </PolicyContainer>
           </ScrollArea>
-
           <BackFooter>
             {cancelPolicy?.can_cancel ? (
               <Button
@@ -865,7 +864,7 @@ const BookingClassCard = ({
                 style={{ borderRadius: 12, height: 40 }}
                 loading={loading}
                 onClick={handleConfirmCancel}
-              >
+                key={`btn-${loading}`}>
                 Confirm Cancellation
               </Button>
             ) : (

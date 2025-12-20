@@ -1264,7 +1264,7 @@ const BookingDetailsDrawer = ({
                 danger
                 icon={<XCircle size={16} />}
                 loading={isCancelling}
-              >
+                key={`btn-${isCancelling}`}>
                 Cancel Booking
               </Button>
             </Popconfirm>

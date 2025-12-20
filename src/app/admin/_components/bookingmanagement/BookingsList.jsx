@@ -2116,7 +2116,7 @@ const BookingsList = () => {
                   htmlType="submit"
                   loading={isActionLoading}
                   block
-                >
+                  key={`btn-${isActionLoading}`}>
                   Submit Refund
                 </Button>
               </Form.Item>

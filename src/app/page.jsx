@@ -1,21 +1,37 @@
 import dynamic from "next/dynamic";
 import SharedMainClientHeader from "@/components/layout/SharedMainClientHeader";
-import BannerSearch, { AnnouncementBanner } from "./(homepage)/_components/BannerSearch";
+import BannerSearch, {
+  AnnouncementBanner,
+} from "./(homepage)/_components/BannerSearch";
 import { Suspense } from "react";
 import "./(homepage)/_components/homepage.css";
 import { preloadHomepageData } from "@/lib/server-data-fetchers";
-import { FindClassSkeleton, CategorySkeleton } from "./(homepage)/_components/FindClassSkeleton";
+import {
+  FindClassSkeleton,
+  CategorySkeleton,
+} from "./(homepage)/_components/FindClassSkeleton";
 
-const CancellationOverlay = dynamic(() => import("./(homepage)/_components/CancellationOverlay"));
+const CancellationOverlay = dynamic(() =>
+  import("./(homepage)/_components/CancellationOverlay")
+);
+const InviteOverlay = dynamic(() =>
+  import("./(homepage)/_components/InviteOverlay")
+);
+const PasswordResetOverlay = dynamic(() =>
+  import("./(homepage)/_components/PasswordResetOverlay")
+);
 
 // Lazy Load Components
 const Footer = dynamic(() => import("@/components/homepage/Footer"), {
   loading: () => <div style={{ minHeight: "300px" }} />,
 });
 
-const HomepageCategories = dynamic(() => import("./(homepage)/_components/HomepageCategories"), {
-  loading: () => <CategorySkeleton />,
-});
+const HomepageCategories = dynamic(
+  () => import("./(homepage)/_components/HomepageCategories"),
+  {
+    loading: () => <CategorySkeleton />,
+  }
+);
 
 const ClassRow = dynamic(() => import("./(homepage)/_components/FindClass"), {
   loading: () => <FindClassSkeleton />,
@@ -23,8 +39,12 @@ const ClassRow = dynamic(() => import("./(homepage)/_components/FindClass"), {
 
 const HowItWorks = dynamic(() => import("./(homepage)/_components/HowItWorks"));
 const ForHosts = dynamic(() => import("./(homepage)/_components/ForHosts"));
-const Testimonials = dynamic(() => import("./(homepage)/_components/Testimonials"));
-const GiftCardsCTA = dynamic(() => import("./(homepage)/_components/GiftCardsCTA"));
+const Testimonials = dynamic(() =>
+  import("./(homepage)/_components/Testimonials")
+);
+const GiftCardsCTA = dynamic(() =>
+  import("./(homepage)/_components/GiftCardsCTA")
+);
 
 export const metadata = {
   title: "Classeasily - Find Local Classes & Workshops Near You",
@@ -32,7 +52,8 @@ export const metadata = {
 };
 
 export default async function HomePage() {
-  const { trending, newClasses, featuredCategory, categories } = await preloadHomepageData();
+  const { trending, newClasses, featuredCategory, categories } =
+    await preloadHomepageData();
 
   return (
     <>
@@ -43,7 +64,9 @@ export default async function HomePage() {
         <main className="main-content">
           <BannerSearch />
 
-          <Suspense fallback={<FindClassSkeleton style={{ marginTop: "3rem" }} />}>
+          <Suspense
+            fallback={<FindClassSkeleton style={{ marginTop: "3rem" }} />}
+          >
             <ClassRow
               title="Trending this Week"
               subtitle="Most booked classes by people near you"
@@ -90,6 +113,8 @@ export default async function HomePage() {
         </Suspense>
 
         <CancellationOverlay />
+        <InviteOverlay />
+        <PasswordResetOverlay />
       </div>
     </>
   );

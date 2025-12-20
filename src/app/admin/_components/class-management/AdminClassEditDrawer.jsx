@@ -2358,7 +2358,7 @@ const AdminClassEditDrawer = ({
                 loading={loading}
                 disabled={shouldShowLoader}
                 size="middle"
-              >
+                key={`btn-${loading}`}>
                 Save Changes
               </Button>
             </DrawerFooter>

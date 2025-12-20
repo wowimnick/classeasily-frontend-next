@@ -585,7 +585,7 @@ const SettingsModal = ({ open, onClose }) => {
           icon={<Save size={16} />}
           loading={isSubmitting}
           disabled={initialLoading || isSubmitting}
-        >
+          key={`btn-${isSubmitting}`}>
           Save Changes
         </Button>
       </DrawerFooter>

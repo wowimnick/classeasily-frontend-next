@@ -1074,9 +1074,7 @@ const Roles = () => {
           </Tooltip>
         )}
       </TableHeader>
-      
       {renderContent()}
-
       {/* Single Vaul Drawer for both mobile and desktop */}
       <VaulDrawer.Root
         open={isDrawerVisible}
@@ -1269,7 +1267,7 @@ const Roles = () => {
                   type="primary"
                   loading={drawerLoading}
                   block
-                >
+                  key={`btn-${drawerLoading}`}>
                   {editingRole ? "Save Changes" : "Create Role"}
                 </Button>
                 <Button onClick={onDrawerClose} block>
@@ -1446,7 +1444,7 @@ const Roles = () => {
                   onClick={() => form.submit()}
                   type="primary"
                   loading={drawerLoading}
-                >
+                  key={`btn-${drawerLoading}`}>
                   {editingRole ? "Save Changes" : "Create Role"}
                 </Button>
               </DesktopDrawerFooter>

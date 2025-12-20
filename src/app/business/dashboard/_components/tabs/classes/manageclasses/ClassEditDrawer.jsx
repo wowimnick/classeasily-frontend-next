@@ -2462,7 +2462,7 @@ const handleSubmit = async () => {
           loading={loading}
           disabled={dataLoading}
           size="middle"
-        >
+          key={`btn-${loading}`}>
           Save Changes
         </Button>
       </DrawerFooter>

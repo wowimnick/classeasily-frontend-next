@@ -1379,7 +1379,7 @@ const ReviewAndPaymentStep = ({
                               onClick={handleApplyCoupon}
                               loading={couponLoading}
                               size="large"
-                            >
+                              key={`btn-${couponLoading}`}>
                               Apply
                             </Button>
                           </CouponInputWrapper>

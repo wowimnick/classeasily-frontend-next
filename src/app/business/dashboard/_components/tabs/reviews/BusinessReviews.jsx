@@ -1964,7 +1964,7 @@ const BusinessReviews = () => {
                     type="primary"
                     onClick={handleRespondSubmit}
                     loading={loadingReviews}
-                  >
+                    key={`btn-${loadingReviews}`}>
                     Submit Response
                   </Button>
                 </DrawerFooter>
@@ -2008,7 +2008,7 @@ const BusinessReviews = () => {
                     danger
                     onClick={handleReportSubmit}
                     loading={loadingReviews}
-                  >
+                    key={`btn-${loadingReviews}`}>
                     Submit Report
                   </Button>
                 </DrawerFooter>

@@ -220,7 +220,7 @@ const DeleteClassModal = ({
         Cancel
       </Button>
       <Button
-        key="delete"
+        key={`btn-${isDeleting}`}
         danger
         type="primary"
         onClick={onConfirm}

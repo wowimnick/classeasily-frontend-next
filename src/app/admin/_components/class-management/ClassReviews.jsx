@@ -1183,7 +1183,7 @@ const ClassReviews = () => {
               Cancel
             </Button>,
             <Button
-              key="submit"
+              key={`btn-${loading}`}
               type="primary"
               loading={loading}
               onClick={handleModAction}
