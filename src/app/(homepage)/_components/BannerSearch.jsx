@@ -259,7 +259,7 @@ const SectionButton = styled.div`
 
   &:hover {
     background-color: ${(props) =>
-    props.$isActive ? "transparent" : "#f3f4f6"};
+      props.$isActive ? "transparent" : "#f3f4f6"};
     border-radius: 64px;
   }
 `;
@@ -437,7 +437,7 @@ const DayBtn = styled.button`
 
   &:hover {
     background: ${(props) =>
-    !props.$isSelected && !props.$isDisabled && "#f3f4f6"};
+      !props.$isSelected && !props.$isDisabled && "#f3f4f6"};
   }
 `;
 
@@ -1064,25 +1064,28 @@ const BannerWrapper = styled.div`
   padding: 0 24px;
   min-height: 52px;
   /* Subtle inner glow and shadow */
-  box-shadow: inset 0 -1px 0 0 rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.12);
-  
-  @media (max-width: 768px) { display: none; }
+  box-shadow: inset 0 -1px 0 0 rgba(255, 255, 255, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.12);
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const BannerContainer = styled.div`
   display: flex;
-  align-items: center; 
-  justify-content: space-between; 
-  width: 100%; 
-  max-width: 1200px; 
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1200px;
   gap: 20px;
 `;
 
 const LeftContent = styled.div`
-  display: flex; 
-  align-items: center; 
-  gap: 14px; 
-  flex: 1; 
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
   font-family: "ProximaSoft", sans-serif;
 `;
 
@@ -1095,69 +1098,82 @@ const NewBadge = styled.span`
   border-radius: 4px;
   letter-spacing: 0.5px;
   margin-right: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   text-transform: uppercase;
 `;
 
 const TextContent = styled.div`
-  display: flex; 
+  display: flex;
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  
-  strong { font-weight: 700; letter-spacing: -0.2px; }
-  span.sep { opacity: 0.4; font-weight: 300; }
-  span.desc { opacity: 0.9; font-weight: 400; }
+
+  strong {
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+  span.sep {
+    opacity: 0.4;
+    font-weight: 300;
+  }
+  span.desc {
+    opacity: 0.9;
+    font-weight: 400;
+  }
 `;
 
 const ActionGroup = styled.div`
-  display: flex; 
-  align-items: center; 
-  gap: 20px; 
+  display: flex;
+  align-items: center;
+  gap: 20px;
   flex-shrink: 0;
 `;
 
 const PillButton = styled(Link)`
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.25); 
-  border-radius: 100px; 
-  padding: 5px 16px; 
-  font-family: "ProximaSoft", sans-serif; 
-  font-size: 13px; 
-  font-weight: 700; 
-  color: #ffffff; 
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 100px;
+  padding: 5px 16px;
+  font-family: "ProximaSoft", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
-  
-  &:hover { 
-    background: #ffffff; 
-    color: #850d19; 
+
+  &:hover {
+    background: #ffffff;
+    color: #850d19;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
 `;
 
 const SecondaryLink = styled(Link)`
-  display: flex; 
-  align-items: center; 
-  gap: 4px; 
-  font-family: "ProximaSoft", sans-serif; 
-  font-size: 13px; 
-  font-weight: 600; 
-  color: rgba(255, 255, 255, 0.8); 
-  text-decoration: none; 
-  transition: all 0.2s; 
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: "ProximaSoft", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: all 0.2s;
   white-space: nowrap;
-  
-  &:hover { 
-    color: #ffffff; 
-    svg { transform: translateX(2px); }
+
+  &:hover {
+    color: #ffffff;
+    svg {
+      transform: translateX(2px);
+    }
   }
-  
-  svg { transition: transform 0.2s ease; }
+
+  svg {
+    transition: transform 0.2s ease;
+  }
 `;
 
 // --- UPDATED COMPONENT ---
@@ -1178,7 +1194,10 @@ export const AnnouncementBanner = () => {
             <NewBadge>New</NewBadge>
             <strong>Introducing Courses</strong>
             <span className="sep">|</span>
-            <span className="desc">Book multiple sessions at once. Perfect for learning new skills. 🔥</span>
+            <span className="desc">
+              Book multiple sessions at once. Perfect for learning new skills.
+              🔥
+            </span>
           </TextContent>
         </LeftContent>
         <ActionGroup>
@@ -1204,11 +1223,11 @@ const TrustStripWrapper = styled.div`
   align-items: center;
   z-index: 10;
   background: rgba(0, 0, 0, 0.27);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   padding: 1.25rem 1.5rem;
   @media (max-width: 600px) {
-    padding: 1rem;
+    padding: 0.6rem;
   }
 `;
 const WaveContainer = styled.div`
@@ -1290,7 +1309,7 @@ const TrustText = styled.div`
   .title {
     color: #fff;
     font-family: "ProximaSoft", sans-serif;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
   }
   .subtitle {

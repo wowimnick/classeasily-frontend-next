@@ -1,124 +1,114 @@
-
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import styled from "styled-components";
-import { Button, Typography, Modal } from "antd";
+import { Button, Typography, Modal, ConfigProvider } from "antd";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
-  MoreOutlined,
-  CloseOutlined,
-  ExclamationCircleOutlined,
-} from "@ant-design/icons";
+  Cookie,
+  X,
+  Ellipsis,
+  ShieldCheck,
+  AlertTriangle,
+  Settings,
+  ArrowLeft,
+} from "lucide-react";
+import { Drawer } from "vaul";
+import { theme } from "@/components/theme";
+
+// --- UTILS & HOOKS (Matching your existing overlays) ---
+
+const useElementSize = () => {
+  const ref = useRef(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      });
+    });
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, size];
+};
 
 // --- STYLED COMPONENTS ---
 
-const PopupWrapper = styled.div`
+const PopupWrapper = styled(motion.div)`
   position: fixed;
-  z-index: 990; 
-  
-  bottom: 20px;
-  right: 20px;
+  z-index: 990;
+  bottom: 24px;
+  right: 24px;
   background: #ffffff;
   border: 1px solid #e8e8e8;
-  border-radius: 16px; /* Slightly more rounded for modern iOS feel */
-  padding: 1.5rem;
-  max-width: 380px;
-  min-width: 320px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  animation: slideUp 0.3s ease-out;
+  border-radius: 20px;
+  width: 380px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  overflow: hidden; /* Vital for height animation */
 
-  @keyframes slideUp {
-    from {
-      transform: translateY(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-
-  /* --- COMPACT IOS / MOBILE STYLING --- */
-  @media (max-width: 480px) {
+  @media (max-width: 768px) {
     left: 12px;
-    /* Ensure full width minus margins */
-    width: calc(100% - 24px); 
-    min-width: 0;
-    max-width: none;
-    
-    /* Respect iOS Home Bar Safe Area */
+    right: 12px;
+    width: auto;
     bottom: max(12px, env(safe-area-inset-bottom));
-    
-    padding: 12px 16px;
-    border-radius: 14px;
-    
-    /* Tighter shadow for mobile */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border-radius: 24px;
   }
+`;
+
+const ContentContainer = styled.div`
+  padding: 1.25rem;
 `;
 
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: center; /* Center alignment for tighter vertical space */
-  margin-bottom: 0.75rem;
-
-  @media (max-width: 480px) {
-    margin-bottom: 0.25rem; /* Much tighter on mobile */
-  }
+  align-items: center;
+  margin-bottom: 12px;
 `;
 
 const Title = styled.h2`
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: #111827;
   display: flex;
   align-items: center;
-  gap: 6px;
-
-  @media (max-width: 480px) {
-    font-size: 0.95rem; /* Smaller title */
-  }
+  gap: 10px;
 `;
 
-const CloseButton = styled.button`
+const IconButton = styled.button`
   background: #f3f4f6;
   border: none;
   cursor: pointer;
-  color: #9ca3af;
-  width: 24px;
-  height: 24px;
+  color: #6b7280;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
   transition: all 0.2s;
-
   &:hover {
-    color: #4b5563;
     background: #e5e7eb;
+    color: #111827;
   }
 `;
 
 const TextContent = styled.div`
-  margin-bottom: 1.25rem;
+  margin-bottom: 20px;
   line-height: 1.5;
-
-  @media (max-width: 480px) {
-    margin-bottom: 0.75rem;
-    font-size: 0.8rem; /* Smaller text */
-    line-height: 1.35;
-    color: #6b7280;
-  }
+  color: #4b5563;
+  font-size: 0.9rem;
 `;
 
 const StyledLink = styled(Link)`
-  color: #3498db;
+  color: ${theme.token.colorPrimary};
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
   &:hover {
     text-decoration: underline;
   }
@@ -126,188 +116,345 @@ const StyledLink = styled(Link)`
 
 const ButtonGroup = styled.div`
   display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
+  gap: 10px;
   align-items: center;
-
-  @media (max-width: 480px) {
-    gap: 0.5rem;
-    padding-top: 4px;
-  }
-`;
-
-const OptionsMenu = styled.div`
-  position: absolute;
-  right: 0;
-  bottom: 3.5rem; /* Moved up slightly */
-  background: white;
-  border: 1px solid #e8e8e8;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
-  padding: 8px;
-  z-index: 991; /* Just above the wrapper */
-  animation: fadeIn 0.2s ease-out;
-  min-width: 160px;
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: scale(0.9) translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-
-  @media (max-width: 480px) {
-    bottom: 100%; /* Sit on top of the banner on mobile */
-    right: 0;
-    margin-bottom: 8px;
-    width: 100%;
-  }
 `;
 
 const OptionsButton = styled.button`
-  background: transparent;
+  background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 12px;
   color: #6b7280;
   cursor: pointer;
-  padding: 0;
-  width: 36px;
-  height: 36px; /* Square button saves width */
+  height: 44px;
+  width: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   transition: all 0.2s;
-
   &:hover {
     background: #f9fafb;
     border-color: #d1d5db;
-    color: #374151;
-  }
-
-  @media (max-width: 480px) {
-    height: 32px;
-    width: 32px;
   }
 `;
 
-const AcceptButton = styled(Button)`
-  border-radius: 8px;
-  font-weight: 600;
-  
-  @media (max-width: 480px) {
-    font-size: 0.85rem;
-    height: 32px;
-    padding: 0 16px;
-    flex: 1; /* Make accept button take remaining space on mobile */
-  }
+const SettingsOption = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: #f9fafb;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  border: 1px solid #f3f4f6;
 `;
 
-// --- COMPONENT ---
+const OptionTextWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* Fixed the "no spacing" text issue */
+  flex: 1;
+`;
+
+// --- DRAWER COMPONENTS (Mobile) ---
+
+const DrawerInner = styled.div`
+  padding: 1.5rem;
+  background: white;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  outline: none;
+`;
+
+const DrawerHandle = styled.div`
+  width: 40px;
+  height: 5px;
+  background: #e5e7eb;
+  border-radius: 10px;
+  margin: 0 auto 24px;
+`;
 
 const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
-  const [showOptions, setShowOptions] = useState(false);
+  const [view, setView] = useState("main");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const handleOptionsClick = () => {
-    setShowOptions(!showOptions);
+  // Height morphing logic
+  const [contentRef, { height }] = useElementSize();
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  const handleMoreClick = () => {
+    if (isMobile) setIsDrawerOpen(true);
+    else setView("settings");
   };
 
-  const handleDeclineClick = () => {
-    setShowOptions(false);
+  const handleDeclineIntent = () => {
+    setIsDrawerOpen(false);
     setShowDeclineModal(true);
   };
 
-  const handleFinalDecline = () => {
-    setShowDeclineModal(false);
-    onDecline();
-  };
-
-  const handleCancelDecline = () => {
-    setShowDeclineModal(false);
-  };
-
   return (
-    <PopupWrapper>
-      {showOptions && (
-        <OptionsMenu>
-          <Button 
-            size="middle" 
-            onClick={handleDeclineClick} 
-            danger 
-            block
-            type="text"
-            style={{ textAlign: 'left', fontWeight: 500 }}
+    <ConfigProvider theme={theme}>
+      <PopupWrapper
+        animate={{ height: height || "auto" }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+      >
+        <div ref={contentRef}>
+          <ContentContainer>
+            <AnimatePresence mode="wait">
+              {view === "main" ? (
+                <motion.div
+                  key="main"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Header>
+                    <Title>
+                      <Cookie
+                        size={20}
+                        color={theme.token.colorPrimary}
+                        fill={theme.token.colorPrimary}
+                        fillOpacity={0.1}
+                      />
+                      Cookie Settings
+                    </Title>
+                    <IconButton onClick={onClose}>
+                      <X size={16} />
+                    </IconButton>
+                  </Header>
+
+                  <TextContent>
+                    We use cookies to analyze traffic and site speed. See our{" "}
+                    <StyledLink href="/cookie-policy">Policy</StyledLink>.
+                  </TextContent>
+
+                  <ButtonGroup>
+                    <OptionsButton
+                      onClick={handleMoreClick}
+                      aria-label="More options"
+                    >
+                      <Ellipsis size={20} />
+                    </OptionsButton>
+                    <Button
+                      type="primary"
+                      onClick={onAccept}
+                      block
+                      style={{
+                        height: "44px",
+                        borderRadius: "12px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Accept All
+                    </Button>
+                  </ButtonGroup>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="settings"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Header>
+                    <Title>
+                      <IconButton
+                        onClick={() => setView("main")}
+                        style={{
+                          width: 28,
+                          height: 28,
+                          background: "transparent",
+                        }}
+                      >
+                        <ArrowLeft size={18} />
+                      </IconButton>
+                      Preferences
+                    </Title>
+                  </Header>
+
+                  <SettingsOption>
+                    <OptionTextWrapper>
+                      <Typography.Text strong>
+                        Essential Cookies
+                      </Typography.Text>
+                      <Typography.Text
+                        type="secondary"
+                        style={{ fontSize: "12px" }}
+                      >
+                        Required for the site to function.
+                      </Typography.Text>
+                    </OptionTextWrapper>
+                    <ShieldCheck size={20} color="#10b981" />
+                  </SettingsOption>
+
+                  <SettingsOption>
+                    <OptionTextWrapper>
+                      <Typography.Text strong>Analytics</Typography.Text>
+                      <Typography.Text
+                        type="secondary"
+                        style={{ fontSize: "12px" }}
+                      >
+                        Helps us fix bugs and improve UI.
+                      </Typography.Text>
+                    </OptionTextWrapper>
+                    <Button
+                      size="small"
+                      type="text"
+                      danger
+                      onClick={handleDeclineIntent}
+                    >
+                      Decline
+                    </Button>
+                  </SettingsOption>
+
+                  <Button
+                    type="primary"
+                    block
+                    onClick={onAccept}
+                    style={{ marginTop: 4, height: 44, borderRadius: 12 }}
+                  >
+                    Save & Accept All
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </ContentContainer>
+        </div>
+      </PopupWrapper>
+
+      {/* Mobile Drawer */}
+      <Drawer.Root open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+        <Drawer.Portal>
+          <Drawer.Overlay
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              zIndex: 1000,
+            }}
+          />
+          <Drawer.Content
+            style={{
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 1001,
+              outline: "none",
+            }}
           >
-            Manage / Decline
-          </Button>
-        </OptionsMenu>
-      )}
+            <DrawerInner>
+              <DrawerHandle />
+              <div style={{ textAlign: "center", marginBottom: 24 }}>
+                <Settings
+                  size={32}
+                  color={theme.token.colorPrimary}
+                  style={{ margin: "0 auto 12px" }}
+                />
+                <Typography.Title level={3} style={{ margin: 0 }}>
+                  Privacy Settings
+                </Typography.Title>
+              </div>
 
-      <Header>
-        <Title>
-          <span>🍪</span> Cookie Settings
-        </Title>
-        <CloseButton onClick={onClose} aria-label="Close cookie banner">
-          <CloseOutlined style={{ fontSize: '12px' }} />
-        </CloseButton>
-      </Header>
+              <SettingsOption style={{ padding: 16 }}>
+                <OptionTextWrapper>
+                  <Typography.Text strong>Analytics Tracking</Typography.Text>
+                  <Typography.Text
+                    type="secondary"
+                    style={{ fontSize: "13px" }}
+                  >
+                    Anonymized data to improve performance.
+                  </Typography.Text>
+                </OptionTextWrapper>
+                <Button danger type="link" onClick={handleDeclineIntent}>
+                  Decline
+                </Button>
+              </SettingsOption>
 
-      <TextContent>
-        <Typography.Text style={{ color: "inherit", fontSize: "0.9rem" }}>
-          We use cookies to analyze traffic. See our{" "}
-          <StyledLink href="/cookie-policy">Policy</StyledLink>.
-        </Typography.Text>
-      </TextContent>
+              <Button
+                type="primary"
+                size="large"
+                block
+                onClick={() => {
+                  onAccept();
+                  setIsDrawerOpen(false);
+                }}
+                style={{
+                  height: 54,
+                  borderRadius: 16,
+                  marginTop: 12,
+                  fontWeight: 600,
+                }}
+              >
+                Accept All
+              </Button>
+            </DrawerInner>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
 
-      <ButtonGroup>
-        <OptionsButton onClick={handleOptionsClick} aria-label="More options">
-          <MoreOutlined />
-        </OptionsButton>
-        <AcceptButton type="primary" onClick={onAccept} size="middle">
-          Accept All
-        </AcceptButton>
-      </ButtonGroup>
-
-      {/* Modal inherits default Ant Z-Index (1000), so it will appear ABOVE the banner (990) */}
+      {/* Decline Confirmation */}
       <Modal
         title={
-          <span style={{ color: "#d32f2f" }}>
-            <ExclamationCircleOutlined style={{ marginRight: "8px" }} />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              color: "#dc2626",
+            }}
+          >
+            <AlertTriangle size={22} />
             Are you sure?
-          </span>
+          </div>
         }
         open={showDeclineModal}
-        onCancel={handleCancelDecline}
-        zIndex={1001} // Ensure Modal is definitely above banner
+        onCancel={() => setShowDeclineModal(false)}
+        zIndex={1100}
+        centered
         footer={[
-          <Button key="cancel" type="primary" onClick={handleCancelDecline}>
+          <Button
+            key="keep"
+            type="primary"
+            block
+            size="large"
+            onClick={() => setShowDeclineModal(false)}
+            style={{ borderRadius: 12, height: 48 }}
+          >
             Keep Cookies
           </Button>,
           <Button
             key="decline"
-            onClick={handleFinalDecline}
-            danger
             type="text"
+            danger
+            block
+            onClick={() => {
+              setShowDeclineModal(false);
+              onDecline();
+            }}
+            style={{ marginTop: 8 }}
           >
             Decline All
           </Button>,
         ]}
-        width={400}
-        centered
-        styles={{ mask: { backdropFilter: 'blur(2px)' } }}
       >
-        <div style={{ padding: "8px 0" }}>
-          <Typography.Text type="secondary" style={{ fontSize: '0.9rem' }}>
-            Declining cookies may result in a degraded experience, including functionality issues and slower loading times.
-          </Typography.Text>
-        </div>
+        <Typography.Paragraph type="secondary">
+          Declining cookies may cause slower loading times and some features
+          might not work as intended.
+        </Typography.Paragraph>
       </Modal>
-    </PopupWrapper>
+    </ConfigProvider>
   );
 };
 

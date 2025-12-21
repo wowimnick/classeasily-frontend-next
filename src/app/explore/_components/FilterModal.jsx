@@ -580,7 +580,11 @@ export default function FilterModal({
   if (isMobile) {
     return (
       <ConfigProvider theme={{ token: themeToken }}>
-        <Drawer.Root open={isOpen} onOpenChange={(open) => !open && onClose()} repositionInputs={false}>
+        <Drawer.Root
+          open={isOpen}
+          onOpenChange={(open) => !open && onClose()}
+          repositionInputs={false}
+        >
           <Drawer.Portal>
             <StyledDrawerOverlay />
             <StyledDrawerContent>
