@@ -2,8 +2,8 @@
 
 import React, { useState, useRef, useCallback } from "react";
 import styled from "styled-components";
-import { Button as AntButton } from 'antd';
-import message from '@/lib/message';
+import { Button as AntButton } from "antd";
+import message from "@/lib/message";
 import { motion } from "framer-motion";
 import {
   Gift,
@@ -12,7 +12,7 @@ import {
   Calendar,
   DollarSign,
   Clock,
-  Wifi
+  Wifi,
 } from "lucide-react";
 import LogoIcon from "@/components/common/logoIcon";
 
@@ -21,10 +21,10 @@ const GiftCardSection = styled.section`
   position: relative;
   overflow: hidden;
   background: radial-gradient(
-      circle at top center,
-      rgba(255, 255, 255, 0.8),
-      #ffffff 60%
-    );
+    circle at top center,
+    rgba(255, 255, 255, 0.8),
+    #ffffff 60%
+  );
 
   @media (max-width: 1024px) {
     padding: 5rem 1.5rem;
@@ -55,7 +55,7 @@ const TextContent = styled(motion.div)`
     display: flex;
     flex-direction: column;
     align-items: center;
-    order: 1; 
+    order: 1;
   }
 `;
 
@@ -102,7 +102,7 @@ const Features = styled.div`
   gap: 1rem 2rem;
   margin-bottom: 2.5rem;
   flex-wrap: wrap;
-  
+
   @media (max-width: 1024px) {
     justify-content: center;
   }
@@ -115,7 +115,7 @@ const FeatureItem = styled.div`
   color: #444;
   font-weight: 500;
   font-size: 0.95rem;
-  
+
   svg {
     color: #e52e31;
     width: 18px;
@@ -132,17 +132,17 @@ const CardContainer = styled(motion.div)`
   border-radius: 16px;
   transform-style: preserve-3d;
   cursor: default;
-  
+
   /* Default positioning for Classic Card */
   top: 50%;
   left: 50%;
   z-index: 2;
-  
+
   @media (max-width: 1024px) {
     width: 340px;
     height: 215px;
   }
-  
+
   @media (max-width: 480px) {
     width: 280px;
     height: 176px;
@@ -155,26 +155,25 @@ const CardFace = styled.div`
   border-radius: 16px;
   overflow: hidden;
   /* Glass/Plastic texture base */
-  background: ${props => props.$bgColor || '#1a1a1a'};
-  box-shadow: 
-    0 20px 50px rgba(0,0,0,0.3),
-    inset 0 0 0 1px rgba(255,255,255,0.15);
+  background: ${(props) => props.$bgColor || "#1a1a1a"};
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.15);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 24px;
   color: white;
-  
+
   /* Texture Overlay */
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
     opacity: 0.6;
     mix-blend-mode: overlay;
   }
-  
+
   /* Dynamic Glare Effect */
   &::after {
     content: "";
@@ -209,25 +208,25 @@ const CardChip = styled.div`
   border-radius: 6px;
   position: relative;
   overflow: hidden;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
 
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 50%;
     left: 0;
     width: 100%;
     height: 1px;
-    background: rgba(0,0,0,0.2);
+    background: rgba(0, 0, 0, 0.2);
   }
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     left: 35%;
     top: 15%;
     width: 30%;
     height: 70%;
-    border: 1px solid rgba(0,0,0,0.2);
+    border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 4px;
   }
 `;
@@ -238,14 +237,14 @@ const WirelessIcon = styled(Wifi)`
 `;
 
 const CardAmount = styled.div`
-  font-family: 'Courier New', Courier, monospace; /* Monospace for card feel */
+  font-family: "Courier New", Courier, monospace; /* Monospace for card feel */
   font-size: 2.5rem;
   font-weight: 700;
   letter-spacing: -1px;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: baseline;
-  
+
   span {
     font-size: 1rem;
     margin-left: 8px;
@@ -278,10 +277,10 @@ const CardLabel = styled.span`
 `;
 
 const CardNumber = styled.span`
-  font-family: 'Courier New', Courier, monospace;
+  font-family: "Courier New", Courier, monospace;
   font-size: 1.1rem;
   letter-spacing: 2px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 `;
 
 const BrandLogo = styled.div`
@@ -291,7 +290,7 @@ const BrandLogo = styled.div`
   font-weight: 700;
   font-size: 1.1rem;
   opacity: 0.9;
-  
+
   svg path {
     fill: white !important;
   }
@@ -299,14 +298,14 @@ const BrandLogo = styled.div`
 
 // --- Component Logic ---
 
-const InteractiveCard = ({ 
-  style, 
-  initial, 
+const InteractiveCard = ({
+  style,
+  initial,
   animate,
   bgColor,
   amount,
   code,
-  type
+  type,
 }) => {
   const cardRef = useRef(null);
 
@@ -315,17 +314,19 @@ const InteractiveCard = ({
     const rect = cardRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
-    cardRef.current.style.setProperty('--mouse-x', `${x}px`);
-    cardRef.current.style.setProperty('--mouse-y', `${y}px`);
+
+    cardRef.current.style.setProperty("--mouse-x", `${x}px`);
+    cardRef.current.style.setProperty("--mouse-y", `${y}px`);
   };
 
   const handleMouseEnter = () => {
-    if(cardRef.current) cardRef.current.style.setProperty('--glare-opacity', '1');
+    if (cardRef.current)
+      cardRef.current.style.setProperty("--glare-opacity", "1");
   };
 
   const handleMouseLeave = () => {
-    if(cardRef.current) cardRef.current.style.setProperty('--glare-opacity', '0');
+    if (cardRef.current)
+      cardRef.current.style.setProperty("--glare-opacity", "0");
   };
 
   return (
@@ -335,8 +336,8 @@ const InteractiveCard = ({
       animate={animate}
       transition={{ duration: 0.8, ease: "easeOut" }}
     >
-      <CardFace 
-        ref={cardRef} 
+      <CardFace
+        ref={cardRef}
         $bgColor={bgColor}
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
@@ -348,7 +349,8 @@ const InteractiveCard = ({
         </CardTop>
 
         <CardAmount>
-          ${amount}<span>CAD</span>
+          ${amount}
+          <span>CAD</span>
         </CardAmount>
 
         <CardBottom>
@@ -356,10 +358,12 @@ const InteractiveCard = ({
             <CardLabel>Digital Gift Code</CardLabel>
             <CardNumber>•••• {code}</CardNumber>
           </CardDetails>
-          <div style={{ textAlign: 'right' }}>
-            <CardLabel style={{ display: 'block', marginBottom: '4px' }}>{type}</CardLabel>
+          <div style={{ textAlign: "right" }}>
+            <CardLabel style={{ display: "block", marginBottom: "4px" }}>
+              {type}
+            </CardLabel>
             <BrandLogo>
-               <LogoIcon size="1.5rem" /> ClassEasily
+              <LogoIcon size="1.5rem" /> ClassEasily
             </BrandLogo>
           </div>
         </CardBottom>
@@ -370,29 +374,37 @@ const InteractiveCard = ({
 
 const GiftCardsCTA = () => {
   const handleBuyClick = () => {
-    message.info("Gift Cards are currently in development. They will be released by launch.");
+    message.info(
+      "Gift Cards are currently in development. They will be released by launch."
+    );
   };
 
   return (
     <GiftCardSection aria-labelledby="giftcard-title">
       <ContentWrapper>
-        
         <TextContent
-           initial={{ opacity: 0, x: -20 }}
-           whileInView={{ opacity: 1, x: 0 }}
-           viewport={{ once: true }}
-           transition={{ duration: 0.6 }}
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
         >
-          <Title id="giftcard-title">Give the gift of learning</Title>
+          <Title id="giftcard-title">Gift a good time</Title>
           <Description>
-            Perfect for any occasion. ClassEasily gift cards unlock thousands of local experiences, 
-            from pottery workshops to cooking classes. Delivered instantly via email.
+            The best gifts aren't things, they're moments. Let them pick their
+            own vibe, from salsa dancing to sushi rolling. Instant delivery,
+            zero wrapping paper required.
           </Description>
-          
+
           <Features>
-            <FeatureItem><Clock /> Never Expires</FeatureItem>
-            <FeatureItem><DollarSign /> Any Amount</FeatureItem>
-            <FeatureItem><Calendar /> Instant Delivery</FeatureItem>
+            <FeatureItem>
+              <Clock /> Never Expires
+            </FeatureItem>
+            <FeatureItem>
+              <DollarSign /> Any Amount
+            </FeatureItem>
+            <FeatureItem>
+              <Calendar /> Instant Delivery
+            </FeatureItem>
           </Features>
 
           <motion.div
@@ -410,18 +422,19 @@ const GiftCardsCTA = () => {
                 lineHeight: "1.5",
               }}
             >
-              Purchase Gift Card <ArrowRight size={18} style={{marginLeft: '8px'}}/>
+              Purchase Gift Card{" "}
+              <ArrowRight size={18} style={{ marginLeft: "8px" }} />
             </AntButton>
           </motion.div>
         </TextContent>
 
         <CardsArea>
           {/* Background Premium Card (Black) */}
-          <InteractiveCard 
-            style={{ 
+          <InteractiveCard
+            style={{
               // Centered Y (-55%), Centered X (-50%), Rotated
-              transform: 'translate(-50%, -60%) rotate(-15deg) scale(0.9)', 
-              zIndex: 1 
+              transform: "translate(-50%, -60%) rotate(-15deg) scale(0.9)",
+              zIndex: 1,
             }}
             bgColor="linear-gradient(135deg, #232526 0%, #414345 100%)"
             amount="250"
@@ -429,18 +442,17 @@ const GiftCardsCTA = () => {
           />
 
           {/* Foreground Classic Card (Red) */}
-          <InteractiveCard 
-            style={{ 
+          <InteractiveCard
+            style={{
               // Centered Y (-45%), Centered X (-50%), Rotated
-              transform: 'translate(-50%, -40%) rotate(5deg)', 
-              zIndex: 2 
+              transform: "translate(-50%, -40%) rotate(5deg)",
+              zIndex: 2,
             }}
             bgColor="linear-gradient(135deg, #E92E31 0%, #c41e21 100%)"
             amount="100"
             code="4291"
           />
         </CardsArea>
-
       </ContentWrapper>
     </GiftCardSection>
   );

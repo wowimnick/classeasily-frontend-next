@@ -17,7 +17,6 @@ import HomeClassCard from "../../../components/homepage/HomeClassCard.jsx";
 import ExploreCategories from "./ExploreCategories.jsx";
 import {
   ClassesContentSkeleton,
-  ClassesHeaderSkeleton,
   SkeletonClassSingleCard,
 } from "./ExplorePageSkeleton.jsx";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader.jsx";
@@ -32,11 +31,6 @@ const MapDisplay = dynamic(() => import("./MapDisplay.jsx"), {
   ),
 });
 
-const unslugify = (slug) => {
-  if (!slug) return "";
-  return slug.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-};
-
 const GridContainer = styled.div`
   display: grid;
   grid-template-columns: ${({ $isMapVisible }) =>
@@ -46,6 +40,7 @@ const GridContainer = styled.div`
   position: relative;
   overflow: hidden;
   transition: grid-template-columns 0.4s ease-in-out;
+  will-change: grid-template-columns;
 
   @media (max-width: 1100px) {
     grid-template-columns: ${({ $isMapVisible }) =>
@@ -72,7 +67,7 @@ const CategoriesWrapper = styled.div`
   flex-shrink: 0;
   position: sticky;
   top: 0;
-  z-index: 101;
+  z-index: 90;
   background-color: #fff;
 `;
 
@@ -88,32 +83,56 @@ const ClassGridWrapper = styled.div`
   }
 
   @media (max-width: 1048px) {
-    padding: 0.5rem !important;
+    padding: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    padding: 0.75rem;
   }
 `;
 
 const ClassGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(
-    auto-fill,
-    minmax(max(140px, calc((100% - 72px) / 4)), 1fr)
-  );
-  gap: clamp(16px, 3vw, 24px);
+  width: 100%;
 
-  @media (max-width: 1048px) {
-    gap: 12px;
-    grid-template-columns: repeat(
-      auto-fill,
-      minmax(max(140px, calc((100% - 36px) / 3)), 1fr)
-    );
+  /* 
+     DESKTOP DEFAULT:
+     Reduced from 270px to 240px to fit more cards per row on standard monitors.
+  */
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 24px;
+
+  /* 
+     COMPACT LAPTOP:
+     Reduced from 240px to 210px.
+  */
+  @media (max-width: 1400px) {
+    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   }
 
+  /* 
+     TABLET:
+     Reduced from 220px to 180px.
+     This ensures 3-4 columns on tablets instead of snapping to 2.
+  */
+  @media (max-width: 1048px) {
+    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+
+  /* 
+     MOBILE:
+     Reduced from 165px to 150px.
+     This guarantees 2 columns on almost all mobile screens (including 360px width Androids).
+  */
   @media (max-width: 600px) {
-    gap: 10px;
-    grid-template-columns: repeat(
-      auto-fill,
-      minmax(max(140px, calc((100% - 10px) / 2)), 1fr)
-    );
+    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  @media (max-width: 360px) {
+    grid-template-columns: 1fr;
   }
 `;
 
@@ -255,6 +274,7 @@ const NoResultsAnimation = ({ onReset }) => {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { delay: 0.3, duration: 0.5 } },
   };
+
   const icons = [
     { Icon: BookOpen, color: "#FF385C" },
     { Icon: Palette, color: "#00A699" },

@@ -47,8 +47,8 @@ const GiftCardsCTA = dynamic(() =>
 );
 
 export const metadata = {
-  title: "Classeasily - Find Local Classes & Workshops Near You",
-  description: "Discover and book local classes and workshops in your area.",
+  title: "Classeasily - Find Local Classes & Experiences Near You",
+  description: "Discover and book local classes and experiences in your area.",
 };
 
 export default async function HomePage() {
@@ -69,7 +69,7 @@ export default async function HomePage() {
           >
             <ClassRow
               title="Trending this Week"
-              subtitle="Most booked classes by people near you"
+              subtitle="Most booked experiences by people near you"
               classes={trending}
               seeAllLink="/explore?sort=popularity"
               style={{ marginTop: "3rem" }}
@@ -79,7 +79,7 @@ export default async function HomePage() {
           <Suspense fallback={<FindClassSkeleton />}>
             <ClassRow
               title="New & Noteworthy"
-              subtitle="Just added classes you shouldn't miss"
+              subtitle="Just added experiences you shouldn't miss"
               classes={newClasses}
               seeAllLink="/explore?sort=newest"
             />

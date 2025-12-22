@@ -20,7 +20,7 @@ const ContentContainer = styled.div`
   justify-content: center;
   padding: 2rem;
   /* Pull content up slightly on desktop, less on mobile */
-  margin-top: -5rem; 
+  margin-top: -5rem;
   position: relative;
   overflow: hidden;
   width: 100%;
@@ -73,7 +73,7 @@ const AnimationSection = styled.div`
 
   @media (max-width: 1024px) {
     /* Visuals at the top */
-    order: -1; 
+    order: -1;
     padding: 0 1rem 1rem 1rem;
   }
 `;
@@ -109,7 +109,7 @@ const StepsContainer = styled.div`
     gap: 0.5rem;
     /* Make steps more compact on mobile */
     display: grid;
-    grid-template-columns: 1fr 1fr; 
+    grid-template-columns: 1fr 1fr;
   }
 `;
 
@@ -154,7 +154,7 @@ const StepText = styled.span`
   font-size: 0.85rem;
   color: ${theme.token.colorTextBase};
   font-weight: 500;
-  
+
   @media (max-width: 768px) {
     font-size: 0.75rem;
     white-space: nowrap;
@@ -311,7 +311,7 @@ const LandingPage = ({ steps, startForm, isMobile }) => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
-                style={isMobile ? { width: '100%' } : {}}
+                style={isMobile ? { width: "100%" } : {}}
               >
                 <StepItem>
                   <StepNumber>{index + 1}</StepNumber>

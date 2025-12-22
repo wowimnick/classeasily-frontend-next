@@ -9,14 +9,17 @@ import "./globals.css";
 export const metadata = {
   metadataBase: new URL("https://classeasily.com"),
   title: {
-    default: "Classeasily - Discover Local Classes & Workshops",
+    default: "Classeasily - Discover Local Classes & Experiences",
     template: "%s | Classeasily",
   },
   description:
-    "Explore thousands of local classes and workshops in art, cooking, fitness, and more. Find your passion and connect with expert hosts on Classeasily.",
+    "Explore thousands of local classes and fun experiences. Go out with your friends or family for a memorable experience.",
   keywords: [
     "classes",
     "workshops",
+    "experiences",
+    "fun experiences",
+    "local experiences",
     "local classes",
     "art classes",
     "cooking classes",
@@ -32,9 +35,9 @@ export const metadata = {
     telephone: false,
   },
   openGraph: {
-    title: "Classeasily - Discover Local Classes & Workshops",
+    title: "Classeasily - Discover Local Classes & Experiences",
     description:
-      "Explore thousands of local classes and workshops in art, cooking, fitness, and more.",
+      "Explore thousands of local classes and fun experiences. Go out with your friends or family for a memorable experience.",
     images: [
       {
         url: "https://i.imgur.com/biTTckW.png",
@@ -50,9 +53,9 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Classeasily - Discover Local Classes & Workshops",
+    title: "Classeasily - Discover Local Classes & Experiences",
     description:
-      "Explore thousands of local classes and workshops in art, cooking, fitness, and more.",
+      "Explore thousands of local classes and fun experiences. Go out with your friends or family for a memorable experience.",
     images: ["https://i.imgur.com/biTTckW.png"],
     creator: "@classeasily",
   },

@@ -38,7 +38,7 @@ const StepHeader = styled.div`
   text-align: center;
   margin-bottom: 2rem;
   position: relative;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1rem;
   }
@@ -103,10 +103,10 @@ const SectionDivider = styled.div`
     border-radius: 20px;
     padding: 0.5rem 1rem;
     border: 1px solid ${(props) => props.theme.token.colorBorder};
-    
+
     @media (max-width: 768px) {
-       font-size: 13px;
-       padding: 0.4rem 0.8rem;
+      font-size: 13px;
+      padding: 0.4rem 0.8rem;
     }
   }
 `;
@@ -124,7 +124,7 @@ const FormGroup = styled.div`
   margin-bottom: ${(props) =>
     props.theme.token.marginLG || props.theme.token.margin}px;
   width: 100%;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1rem;
   }
@@ -192,13 +192,14 @@ const StyledSelect = styled(Select)`
 
   @media (max-width: 768px) {
     .ant-select-selector {
-       font-size: 16px !important;
+      font-size: 16px !important;
     }
-    .ant-select-selection-item, .ant-select-selection-placeholder {
-       font-size: 16px !important;
+    .ant-select-selection-item,
+    .ant-select-selection-placeholder {
+      font-size: 16px !important;
     }
     input {
-       font-size: 16px !important;
+      font-size: 16px !important;
     }
   }
 `;
@@ -255,7 +256,7 @@ const InfoText = styled.p`
   font-size: ${(props) => props.theme.token.fontSize}px;
   margin: 0;
   line-height: 1.6;
-  
+
   @media (max-width: 768px) {
     font-size: 13px;
   }
@@ -264,18 +265,18 @@ const InfoText = styled.p`
 const StyledRadioGroup = styled(Radio.Group)`
   display: flex;
   flex-direction: row;
-  
+
   @media (max-width: 500px) {
     flex-direction: column;
     width: 100%;
-    
+
     .ant-radio-button-wrapper {
       width: 100%;
       text-align: center;
       border-radius: 6px !important;
       margin-bottom: 4px;
       border-left-width: 1px !important;
-      
+
       &:before {
         display: none !important;
       }

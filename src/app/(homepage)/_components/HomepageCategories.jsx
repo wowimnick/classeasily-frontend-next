@@ -220,10 +220,10 @@ const HomepageCategories = ({ initialCategories = [] }) => {
       <HeaderContainer>
         <SectionHeader>
           <StyledTitle id="categories-title-h" level={2}>
-            Learn something exciting
+            Find an activity
           </StyledTitle>
           <StyledSubtitle>
-            Browse categories to discover your next passion.
+            Browse fun experiences to do with friends and family.
           </StyledSubtitle>
         </SectionHeader>
         <AnimatePresence>

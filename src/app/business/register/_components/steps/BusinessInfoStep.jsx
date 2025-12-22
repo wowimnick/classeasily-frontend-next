@@ -1,8 +1,21 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { Form, Input, Select, Typography, TimePicker, Checkbox, ConfigProvider, InputNumber, Upload, Spin, Row, Col,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Form,
+  Input,
+  Select,
+  Typography,
+  TimePicker,
+  Checkbox,
+  ConfigProvider,
+  InputNumber,
+  Upload,
+  Spin,
+  Row,
+  Col,
+} from "antd";
+import message from "@/lib/message";
 import styled from "styled-components";
 import {
   Star,
@@ -187,7 +200,7 @@ const SectionDivider = styled.div`
 const FormSection = styled(motion.div)`
   margin-bottom: 2rem;
   border-radius: 12px;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1rem;
   }
@@ -307,13 +320,14 @@ const StyledSelect = styled(Select)`
 
   @media (max-width: 768px) {
     .ant-select-selector {
-       font-size: 16px !important;
+      font-size: 16px !important;
     }
-    .ant-select-selection-item, .ant-select-selection-placeholder {
-       font-size: 16px !important;
+    .ant-select-selection-item,
+    .ant-select-selection-placeholder {
+      font-size: 16px !important;
     }
     input {
-       font-size: 16px !important;
+      font-size: 16px !important;
     }
   }
 `;
@@ -390,7 +404,7 @@ const StyledTagsSelect = styled(Select)`
     .ant-select-selection-search-input,
     .ant-select-selection-placeholder,
     .ant-select-selection-item {
-        font-size: 16px !important;
+      font-size: 16px !important;
     }
     input {
       font-size: 16px !important;
@@ -1198,7 +1212,7 @@ const BusinessInfoStep = ({
                           minuteStep={15}
                           disabled={!day.isOpen}
                           style={{ width: "100%" }}
-      />
+                        />
                       </Form.Item>
                     </Col>
                   </HoursRow>

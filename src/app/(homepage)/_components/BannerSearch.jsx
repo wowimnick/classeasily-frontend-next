@@ -1192,11 +1192,10 @@ export const AnnouncementBanner = () => {
           />
           <TextContent>
             <NewBadge>New</NewBadge>
-            <strong>Introducing Courses</strong>
+            <strong>Introducing Short Courses</strong>
             <span className="sep">|</span>
             <span className="desc">
-              Book multiple sessions at once. Perfect for learning new skills.
-              🔥
+              Master a skill in a few weeks. Perfect for meeting new people. 🔥
             </span>
           </TextContent>
         </LeftContent>
@@ -1270,16 +1269,17 @@ const AvatarPile = styled.div`
 `;
 const AvatarItem = styled.div`
   position: relative;
-  width: 36px;
-  height: 36px;
+  width: 44px; /* Slightly larger to make activities visible */
+  height: 44px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.9);
   overflow: hidden;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   transition: transform 0.3s ease;
+  background: #333; /* Fallback */
   &:hover {
     z-index: 50 !important;
-    transform: scale(1.1) translateY(-2px) !important;
+    transform: scale(1.15) translateY(-4px) !important;
   }
 `;
 const CenterInfo = styled.div`
@@ -1321,51 +1321,39 @@ const TrustText = styled.div`
 `;
 
 const BottomTrustBanner = () => {
-  const leftSideAvatars = [
+  // Using high-quality Unsplash images representing "Classes" and "Activities"
+  // Pottery, Cooking, Painting, Yoga, Music, etc.
+  const activityImagesLeft = [
     {
-      src: "https://randomuser.me/api/portraits/women/44.jpg",
+      src: "https://polarart.ca/cdn/shop/products/Claythrowing-3-1.png?v=1682656534&width=1500", // Painting/Art
+      alt: "Pottery Workshop",
       x: 0,
-      y: 0,
-      z: 1,
-    },
-    {
-      src: "https://randomuser.me/api/portraits/men/32.jpg",
-      x: -8,
-      y: -6,
-      z: 3,
-    },
-    {
-      src: "https://randomuser.me/api/portraits/women/68.jpg",
-      x: -12,
-      y: 5,
+      y: -3,
       z: 2,
     },
     {
-      src: "https://randomuser.me/api/portraits/men/11.jpg",
-      x: -16,
-      y: -3,
+      src: "https://rollthisway.com/cdn/shop/files/corporate_class.png?v=1762635482&width=878", // Music/Instruments
+      alt: "Sushi Making",
+      x: -14,
+      y: 3,
       z: 4,
     },
   ];
-  const rightSideAvatars = [
-    { src: "https://randomuser.me/api/portraits/men/85.jpg", x: 0, y: 4, z: 2 },
+
+  const activityImagesRight = [
     {
-      src: "https://randomuser.me/api/portraits/women/12.jpg",
-      x: -10,
-      y: -5,
-      z: 4,
+      src: "https://media.istockphoto.com/id/1413388346/vector/white-maple-leaf-on-a-red-background-the-symbol-of-canada.jpg?s=170667a&w=0&k=20&c=n9Vf1HXscEwD-4lAbnZvfhHW0Mdi6sL2wYGPHpQ344I=", // Yoga/Wellness
+      alt: "Maple Leaf",
+      x: 0,
+      y: 3,
+      z: 2,
     },
     {
-      src: "https://randomuser.me/api/portraits/men/22.jpg",
+      src: "https://res.cloudinary.com/hz3gmuqw6/image/upload/c_fill,h_310,q_auto,w_450,f_auto,q_auto/f_auto/cooking-class-holiday-cookie-decorating-728016B",
+      alt: "Baking Class",
       x: -14,
-      y: 2,
-      z: 1,
-    },
-    {
-      src: "https://randomuser.me/api/portraits/women/90.jpg",
-      x: -20,
-      y: -2,
-      z: 3,
+      y: -3,
+      z: 4,
     },
   ];
 
@@ -1378,20 +1366,20 @@ const BottomTrustBanner = () => {
       </WaveContainer>
       <TrustContent>
         <AvatarPile>
-          {leftSideAvatars.map((person, i) => (
+          {activityImagesLeft.map((item, i) => (
             <AvatarItem
               key={i}
               style={{
-                zIndex: person.z,
-                marginLeft: i === 0 ? 0 : `${person.x}px`,
-                transform: `translateY(${person.y}px)`,
+                zIndex: item.z,
+                marginLeft: i === 0 ? 0 : `${item.x}px`,
+                transform: `translateY(${item.y}px)`,
               }}
             >
               <Image
-                src={person.src}
-                alt="User"
-                width={36}
-                height={36}
+                src={item.src}
+                alt={item.alt}
+                width={44}
+                height={44}
                 style={{ objectFit: "cover" }}
               />
             </AvatarItem>
@@ -1404,27 +1392,27 @@ const BottomTrustBanner = () => {
             ))}
           </StarCluster>
           <TrustText>
-            <span className="title">Thousands of 5-star experiences</span>
+            <span className="title">Thousands of 5-star reviews</span>
             <span className="subtitle">
-              A growing community of learners & hosts
+              A growing community of bookers and hosts.
             </span>
           </TrustText>
         </CenterInfo>
         <AvatarPile>
-          {rightSideAvatars.map((person, i) => (
+          {activityImagesRight.map((item, i) => (
             <AvatarItem
               key={i}
               style={{
-                zIndex: person.z,
-                marginLeft: i === 0 ? 0 : `${person.x}px`,
-                transform: `translateY(${person.y}px)`,
+                zIndex: item.z,
+                marginLeft: i === 0 ? 0 : `${item.x}px`,
+                transform: `translateY(${item.y}px)`,
               }}
             >
               <Image
-                src={person.src}
-                alt="User"
-                width={36}
-                height={36}
+                src={item.src}
+                alt={item.alt}
+                width={44}
+                height={44}
                 style={{ objectFit: "cover" }}
               />
             </AvatarItem>
@@ -1443,7 +1431,7 @@ const MobileSearchPill = () => {
   const { searchTerm, datePickerValue, participantCount, setIsDrawerOpen } =
     useSearch();
 
-  const getPillLabel = () => searchTerm || "Find a class?";
+  const getPillLabel = () => searchTerm || "Search around?";
   const getPillSubLabel = () => {
     let parts = [];
     if (datePickerValue) parts.push(dayjs(datePickerValue).format("MMM D"));
@@ -1524,7 +1512,7 @@ const BannerSearch = () => {
         <div
           style={{ display: "flex", flexDirection: "column", width: "100%" }}
         >
-          <PillText>Find a class?</PillText>
+          <PillText>Search around?</PillText>
           <PillSubtext>Any Date • 1 person</PillSubtext>
         </div>
       </div>
@@ -1565,9 +1553,9 @@ const BannerSearch = () => {
       <DesktopContainer>
         <MainWrapper>
           <MainContent>
-            <HeroText id="banner-heading">Learn locally</HeroText>
+            <HeroText id="banner-heading">Experience locally.</HeroText>
             <SubText>
-              Book unique classes & workshops near you. Instantly.
+              Book fun experiences & classes near you. Instantly.
             </SubText>
 
             {isMounted ? <DesktopSearchForm /> : <DesktopFallback />}
@@ -1580,9 +1568,9 @@ const BannerSearch = () => {
       </DesktopContainer>
 
       <MobileContainer>
-        <HeroTextMobile>Learn locally</HeroTextMobile>
+        <HeroTextMobile>Experience locally.</HeroTextMobile>
         <SubTextMobile>
-          Discover unique classes & workshops near you.
+          Book fun experiences & classes near you. Instantly.
         </SubTextMobile>
         {isMounted ? <MobileSearchPill /> : <MobileFallback />}
       </MobileContainer>

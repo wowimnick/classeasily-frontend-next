@@ -117,12 +117,12 @@ const ForHosts = () => {
 
       <RightWrapper>
         <StyledH2 id="for-hosts-title">
-          Host your own class on Classeasily
+          Host an experience on ClassEasily
         </StyledH2>
         <StyledP>
-          Expand your reach by tapping into our community of curious learners
-          and local businesses. We'll handle the bookings, payments, and admin —
-          you focus on what you do best.
+          Expand your reach by tapping into our community of experience seekers.
+          We'll handle the bookings, payments, and admin - you focus on what you
+          do best.
         </StyledP>
 
         <motion.div

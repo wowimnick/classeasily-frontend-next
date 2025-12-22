@@ -1,7 +1,16 @@
+// components/explore/MapDisplay.jsx
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
-import { MapContainer, TileLayer, useMap, Marker, Popup, ZoomControl } from "react-leaflet";
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  useMap,
+  Marker,
+  Popup,
+  ZoomControl,
+} from "react-leaflet";
+import MarkerClusterGroup from "react-leaflet-cluster";
 import styled, { createGlobalStyle } from "styled-components";
 import { Star, Navigation, MapPin } from "lucide-react";
 import L from "leaflet";
@@ -10,6 +19,7 @@ import "leaflet/dist/leaflet.css";
 // --- STYLES ---
 
 const LeafletMarkerStyles = createGlobalStyle`
+  /* Standard Price Marker */
   .leaflet-price-marker {
     display: flex;
     justify-content: center;
@@ -20,29 +30,71 @@ const LeafletMarkerStyles = createGlobalStyle`
     border-radius: 20px;
     font-weight: 700;
     font-size: 14px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-    border: 1px solid white;
-    transition: all 0.2s ease-in-out;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s;
     cursor: pointer;
     white-space: nowrap;
   }
 
   .leaflet-price-marker.selected,
   .leaflet-price-marker:hover {
-    background: #ff385c;
-    border-color: #ff385c;
+    background: #222; /* Darker contrast on hover like Airbnb */
+    border-color: #222;
     color: white;
     transform: scale(1.1);
     z-index: 1000 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+  
+  .leaflet-price-marker.selected {
+    background: #222;
   }
 
-  /* Ensure the container has a defined height */
+  /* --- IMPROVED CLUSTER STYLES --- */
+  .marker-cluster-custom {
+    background: #ff385c; /* Brand Color */
+    color: #fff;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-weight: 700;
+    
+    /* Perfect Centering */
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .marker-cluster-custom span {
+    line-height: 1;
+    display: block;
+    /* Optical adjustment: numbers often look slightly high without this */
+    padding-top: 1px; 
+  }
+
+  .marker-cluster-custom:hover {
+    transform: scale(1.15);
+    z-index: 1000 !important;
+    background: #ff1447;
+  }
+
+  /* Dynamic Text Sizing based on cluster size */
+  .marker-cluster-small { font-size: 14px; }
+  .marker-cluster-medium { font-size: 15px; }
+  .marker-cluster-large { font-size: 16px; }
+
+  /* Map Container Reset */
   .map-root-container {
     height: 100%;
     width: 100%;
   }
 
-  /* --- CUSTOM ZOOM CONTROL STYLES --- */
+  /* --- ZOOM CONTROL STYLES --- */
   .leaflet-control-zoom {
     border: none !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
@@ -64,7 +116,7 @@ const LeafletMarkerStyles = createGlobalStyle`
 
   .leaflet-control-zoom a:hover {
     background: #f7f7f7 !important;
-    color: #000 !important;
+    color: #f81e3e !important;
   }
 
   .leaflet-control-zoom a:first-child {
@@ -87,13 +139,13 @@ const MapWrapper = styled.div`
   border-radius: 30px;
   overflow: hidden;
 
-  /* Target the immediate child div created by React Leaflet */
   .leaflet-container {
     font-family: "ProximaSoft", sans-serif;
     height: 100%;
     width: 100%;
+    outline: none;
   }
-  
+
   .leaflet-popup-content-wrapper {
     padding: 0;
     border-radius: 12px;
@@ -120,24 +172,25 @@ const HideMapButton = styled.button`
     top: 12px;
     left: 12px;
     background: white;
-    padding: 16px 20px;
+    padding: 10px 16px;
     border-radius: 20px;
-    border: 1px solid #e0e0e0;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
     z-index: 401;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 14px;
-    color: #333;
+    color: #222;
     transition: all 0.2s ease;
 
     &:hover {
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.18);
       transform: translateY(-1px);
     }
   }
 `;
 
+// ... [Popup Styled Components remain exactly the same as previous file] ...
 const PopupContent = styled.div`
   display: flex;
   flex-direction: column;
@@ -157,18 +210,13 @@ const PopupImage = styled.div`
   background-position: center;
   background-color: #f7f7f7;
   background-repeat: no-repeat;
-
-  ${(props) =>
-    !props.$src || props.$src.trim() === ""
-      ? `background: #f7f7f7;`
-      : ""}
 `;
 
 const PopupRating = styled.div`
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: #222;
   position: absolute;
@@ -176,20 +224,13 @@ const PopupRating = styled.div`
   right: 8px;
   background: rgba(255, 255, 255, 0.95);
   padding: 4px 8px;
-  border-radius: 16px;
+  border-radius: 12px;
   backdrop-filter: blur(4px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-
-  svg {
-    color: #222;
-    fill: #222;
-    stroke-width: 0;
-  }
 `;
 
 const ReviewCount = styled.span`
   color: #717171;
-  font-size: 13px;
   font-weight: 400;
 `;
 
@@ -205,7 +246,7 @@ const PopupTitle = styled.h3`
   font-weight: 600;
   color: #222;
   margin: 0 0 2px 0;
-  line-height: 1.25;
+  line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -222,10 +263,6 @@ const PopupCompanyInfo = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-
-  svg {
-    flex-shrink: 0;
-  }
 `;
 
 const PopupLocationRow = styled.div`
@@ -299,7 +336,7 @@ const ViewButton = styled.button`
   }
 `;
 
-// --- HELPER FUNCTIONS ---
+// --- MARKER & CLUSTER GENERATORS ---
 
 const createPriceIcon = (price, isSelected) => {
   const priceText = price ? `$${Math.round(price)}` : "View";
@@ -308,9 +345,34 @@ const createPriceIcon = (price, isSelected) => {
   return L.divIcon({
     html: `<span>${priceText}</span>`,
     className: className.trim(),
-    iconSize: null,
-    iconAnchor: [30, 15],
+    iconSize: null, // Let CSS handle auto width
+    iconAnchor: [24, 16], // Approximate center for the pill
     popupAnchor: [0, -20],
+  });
+};
+
+const createClusterCustomIcon = function (cluster) {
+  const count = cluster.getChildCount();
+
+  // Dynamic Sizing Logic
+  let size = 40;
+  let sizeClass = "marker-cluster-small";
+
+  if (count >= 10 && count < 100) {
+    size = 48;
+    sizeClass = "marker-cluster-medium";
+  } else if (count >= 100) {
+    size = 56;
+    sizeClass = "marker-cluster-large";
+  }
+
+  return L.divIcon({
+    html: `<span>${count}</span>`,
+    className: `marker-cluster-custom ${sizeClass}`,
+    iconSize: L.point(size, size, true),
+    // CRITICAL FIX: Anchor center-point to the coordinate
+    // otherwise the top-left of the bubble sits on the coordinate
+    iconAnchor: [size / 2, size / 2],
   });
 };
 
@@ -349,10 +411,10 @@ function MapController({ bounds, onMapReady }) {
 
         if (leafletBounds.isValid()) {
           map.fitBounds(leafletBounds, {
-            padding: [50, 50],
+            padding: [80, 80], // Increased padding for better view
             maxZoom: 15,
             animate: true,
-            duration: 0.5,
+            duration: 0.8,
           });
         }
       } catch (error) {
@@ -405,12 +467,12 @@ const MarkerComponent = React.memo(
         icon={icon}
         eventHandlers={{ click: () => onClick(id) }}
       >
-        <Popup autoPan={false}>
+        <Popup autoPan={true} autoPanPadding={[50, 50]}>
           <PopupContent>
             <PopupImage $src={imageUrl}>
               {classInfo.rating > 0 && (
                 <PopupRating>
-                  <Star size={12} />
+                  <Star size={12} fill="#222" />
                   {Number(classInfo.rating).toFixed(1)}
                   {classInfo.totalReviews > 0 && (
                     <ReviewCount>({classInfo.totalReviews})</ReviewCount>
@@ -498,14 +560,11 @@ const MapDisplay = ({
 }) => {
   const [isMounted, setIsMounted] = useState(false);
   const [mapBounds, setMapBounds] = useState(null);
-  // We use a key on the PARENT div to force React to rebuild the DOM node
-  const [mapKey, setMapKey] = useState(null); 
+  const [mapKey, setMapKey] = useState(null);
 
-  // Initialize on mount
   useEffect(() => {
     setMapKey(`map-instance-${Date.now()}`);
     setIsMounted(true);
-    
     return () => {
       setIsMounted(false);
     };
@@ -607,8 +666,7 @@ const MapDisplay = ({
       <HideMapButton onClick={onHideMap}>
         <MapPin size={16} /> Hide Map
       </HideMapButton>
-      
-      {/* Key is applied to the Wrapper DIV, forcing a full DOM tear-down */}
+
       {isMounted && mapKey && (
         <div key={mapKey} className="map-root-container">
           <MapContainer
@@ -619,33 +677,40 @@ const MapDisplay = ({
             zoomControl={false}
             style={{ height: "100%", width: "100%" }}
           >
-            {/* Added ZoomControl here */}
             <ZoomControl position="topright" />
-            
+
             <TileLayer
               attribution='© <a href="https://carto.com/">CARTO</a> contributors'
               url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
             />
-            {/* Use Child Component to control map instance */}
+
             <MapController bounds={mapBounds} />
             <InvalidateSizeOnShow isVisible={showMap} />
-            
-            {markers.map(
-              (marker) =>
-                typeof marker.lat === "number" &&
-                typeof marker.lng === "number" &&
-                !isNaN(marker.lat) &&
-                !isNaN(marker.lng) && (
-                  <MarkerComponent
-                    key={marker.id}
-                    position={[marker.lat, marker.lng]}
-                    id={marker.id}
-                    isSelected={selectedClassId === marker.id}
-                    onClick={onMarkerClick}
-                    classInfo={marker}
-                  />
-                )
-            )}
+
+            <MarkerClusterGroup
+              chunkedLoading
+              iconCreateFunction={createClusterCustomIcon}
+              maxClusterRadius={40}
+              spiderfyOnMaxZoom={true}
+              showCoverageOnHover={false}
+            >
+              {markers.map(
+                (marker) =>
+                  typeof marker.lat === "number" &&
+                  typeof marker.lng === "number" &&
+                  !isNaN(marker.lat) &&
+                  !isNaN(marker.lng) && (
+                    <MarkerComponent
+                      key={marker.id}
+                      position={[marker.lat, marker.lng]}
+                      id={marker.id}
+                      isSelected={selectedClassId === marker.id}
+                      onClick={onMarkerClick}
+                      classInfo={marker}
+                    />
+                  )
+              )}
+            </MarkerClusterGroup>
           </MapContainer>
         </div>
       )}

@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
-  Filter,
   X,
   TrendingUp,
   ArrowDownUp,
@@ -11,27 +9,35 @@ import {
   Star,
   Navigation,
   Clock,
+  Sunrise,
+  Sun,
+  Moon,
 } from "lucide-react";
-import { ConfigProvider, Tag } from "antd";
-import SliderNumberFlow from "../../../components/explore/Slider";
+import { ConfigProvider, Modal } from "antd";
+import Slider from "@/components/explore/Slider";
 import ReactGA from "react-ga4";
 import styled from "styled-components";
 import { Drawer } from "vaul";
 
+// --- Theme & Styled Components ---
+
+const PRIMARY_COLOR = "#f81e3e"; // Updated theme color
+
 const themeToken = {
-  colorPrimary: "#ff385c",
-  colorBgContainer: "#ffffff",
-  borderRadius: 8,
-  colorBorder: "#dddddd",
+  colorPrimary: PRIMARY_COLOR,
   colorText: "#222222",
   colorTextSecondary: "#717171",
+  bgSelected: "#fff0f0", // Light red tint for selected items
+  borderDefault: "#dddddd",
+  borderActive: PRIMARY_COLOR,
 };
 
-// Vaul Drawer Styles
+// Vaul Drawer (Mobile)
 const StyledDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
   z-index: 999;
 `;
 
@@ -39,337 +45,269 @@ const StyledDrawerContent = styled(Drawer.Content)`
   background: white;
   display: flex;
   flex-direction: column;
-  border-radius: 24px 24px 0 0;
-  height: 90%;
-  max-height: 90vh;
+  border-radius: 20px 20px 0 0;
+  height: 85vh; /* Slightly shorter for better reachability */
+  max-height: 85vh;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 1000;
   outline: none;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.1);
 `;
 
 const DrawerHandle = styled.div`
-  width: 36px;
+  width: 40px;
   height: 4px;
-  background: rgba(0, 0, 0, 0.2);
+  background: #e0e0e0;
   border-radius: 2px;
-  margin: 12px auto 8px;
+  margin: 12px auto;
   flex-shrink: 0;
 `;
 
-// Desktop Modal Styles
-const ModalOverlay = styled(motion.div)`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: 60px;
-`;
-
-const ModalContent = styled(motion.div)`
-  background: white;
-  width: 100%;
-  max-width: 780px;
-  border-radius: 16px;
-  position: relative;
-  max-height: calc(100vh - 80px);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-`;
-
+// Desktop Components
 const ModalHeader = styled.div`
-  padding: 20px 24px;
-  border-bottom: 1px solid #ebebeb;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
   display: flex;
   justify-content: center;
   align-items: center;
-  position: sticky;
-  top: 0;
-  background: white;
-  z-index: 1;
+  position: relative;
   flex-shrink: 0;
+`;
+
+const CloseButton = styled.button`
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #222;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #f7f7f7;
+  }
+`;
+
+const Title = styled.h2`
+  font-size: 16px;
+  font-weight: 700;
+  color: #222;
+  margin: 0;
 `;
 
 const ModalBody = styled.div`
   flex-grow: 1;
   overflow-y: auto;
   padding: 0;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  -webkit-overflow-scrolling: touch;
 
+  /* Custom Scrollbar for desktop consistency */
   &::-webkit-scrollbar {
-    display: none;
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
   }
 `;
 
-const CloseButton = styled.button`
-  position: absolute;
-  left: 24px;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 32px;
-  width: 32px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #484848;
-  transition: all 0.2s;
-  touch-action: manipulation;
-
-  &:hover {
-    background: #fff0f0;
-    color: #ff385c;
-  }
-`;
-
-const Title = styled.h2`
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #222222;
-`;
-
-const FilterSection = styled.div`
-  padding: 28px 24px;
-  border-bottom: 1px solid #ebebeb;
-  overflow: hidden;
+const Section = styled.div`
+  padding: 32px 24px;
+  border-bottom: 1px solid #f0f0f0;
 
   &:last-child {
     border-bottom: none;
   }
 
   @media (max-width: 768px) {
-    padding: 20px 20px;
+    padding: 24px 20px;
   }
 `;
 
 const SectionTitle = styled.h3`
-  margin: 0 0 16px 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
-  color: #222222;
-
-  @media (max-width: 768px) {
-    font-size: 18px;
-    margin-bottom: 14px;
-  }
+  color: #222;
+  margin: 0 0 20px 0;
 `;
 
-const SliderContainer = styled.div`
-  padding: 0 12px;
-  margin: 32px 0;
+// -- Filters --
 
-  @media (max-width: 768px) {
-    padding: 0 8px;
-    margin: 24px 0;
-  }
-`;
-
-const TimeGrid = styled.div`
+const SortGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 12px;
-  margin-bottom: 24px;
+`;
 
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 10px;
-    margin-bottom: 16px;
+const SortCard = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 12px;
+  border: 1px solid
+    ${(props) => (props.$selected ? PRIMARY_COLOR : themeToken.borderDefault)};
+  background: ${(props) => (props.$selected ? themeToken.bgSelected : "white")};
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: ${PRIMARY_COLOR};
+  }
+
+  span {
+    font-size: 14px;
+    font-weight: ${(props) => (props.$selected ? "600" : "500")};
+    color: #222;
+    text-align: center;
+  }
+
+  svg {
+    color: ${(props) => (props.$selected ? PRIMARY_COLOR : "#717171")};
   }
 `;
 
 const TimeOption = styled.button`
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 12px;
   width: 100%;
-  padding: 14px 16px;
+  padding: 12px 16px;
   border: 1px solid
-    ${(props) => (props.$selected ? themeToken.colorPrimary : "#dddddd")};
+    ${(props) => (props.$selected ? PRIMARY_COLOR : themeToken.borderDefault)};
   border-radius: 12px;
-  background: ${(props) => (props.$selected ? "#fff0f0" : "white")};
+  background: ${(props) => (props.$selected ? themeToken.bgSelected : "white")};
   cursor: pointer;
   transition: all 0.2s;
-  font-weight: ${(props) => (props.$selected ? "600" : "500")};
-  color: ${(props) => (props.$selected ? themeToken.colorPrimary : "#222222")};
-  text-align: left;
-  touch-action: manipulation;
+  margin-bottom: 12px;
 
   &:hover {
-    border-color: ${themeToken.colorPrimary};
-    background: #fff0f0;
+    border-color: ${PRIMARY_COLOR};
   }
 
-  @media (max-width: 768px) {
-    padding: 12px 14px;
+  .icon-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${PRIMARY_COLOR};
+  }
+
+  .text-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .label {
     font-size: 15px;
+    font-weight: 600;
+    color: #222;
+  }
+
+  .sub-label {
+    font-size: 13px;
+    color: #717171;
   }
 `;
 
 const Footer = styled.div`
   padding: 16px 24px;
+  border-top: 1px solid #f0f0f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid #ebebeb;
-  position: sticky;
-  bottom: 0;
   background: white;
-  z-index: 1;
+  z-index: 10;
   flex-shrink: 0;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
-
-  @media (max-width: 768px) {
-    padding: 16px 20px;
-    gap: 12px;
-  }
 `;
 
 const ClearButton = styled.button`
   background: none;
   border: none;
-  padding: 8px 16px;
   font-size: 15px;
   font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
-  color: #222222;
-  touch-action: manipulation;
+  color: #222;
+  padding: 8px 12px;
+  border-radius: 8px;
 
   &:hover {
-    color: ${themeToken.colorPrimary};
-  }
-
-  @media (max-width: 768px) {
-    font-size: 14px;
-    padding: 8px 12px;
+    background: #f7f7f7;
   }
 `;
 
 const ApplyButton = styled.button`
-  background: ${themeToken.colorPrimary};
+  background: ${PRIMARY_COLOR};
   color: white;
   border: none;
-  padding: 12px 24px;
+  padding: 14px 32px;
   border-radius: 8px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  touch-action: manipulation;
+  transition: transform 0.1s, background 0.2s;
 
   &:hover {
-    background: #ff1447;
-    transform: scale(1.02);
+    background: ${PRIMARY_COLOR}; /* Keep primary color on hover */
+    opacity: 0.9;
   }
-
   &:active {
     transform: scale(0.98);
   }
-
-  @media (max-width: 768px) {
-    padding: 12px 20px;
-    font-size: 14px;
-    flex: 1;
-    max-width: 180px;
-  }
 `;
 
-const SortOptionGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
-  @media (max-width: 480px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-`;
-
-const SortButton = styled.button`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 14px 10px;
-  border: 1px solid
-    ${(props) => (props.$selected ? themeToken.colorPrimary : "#dddddd")};
-  background: ${(props) => (props.$selected ? "#fff0f0" : "white")};
-  color: ${(props) => (props.$selected ? themeToken.colorPrimary : "#222222")};
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 13px;
-  font-weight: 500;
-  text-align: center;
-  min-height: 70px;
-  touch-action: manipulation;
-
-  svg {
-    margin-bottom: 2px;
-    width: 18px;
-    height: 18px;
-    color: ${(props) =>
-      props.$selected ? themeToken.colorPrimary : "#717171"};
-  }
-
-  &:hover {
-    border-color: ${themeToken.colorPrimary};
-    background: ${(props) => (props.$selected ? "#fff0f0" : "#f7f7f7")};
-  }
-
-  @media (max-width: 768px) {
-    padding: 12px 8px;
-    font-size: 12px;
-    min-height: 64px;
-    gap: 4px;
-
-    svg {
-      width: 16px;
-      height: 16px;
-      margin-bottom: 1px;
-    }
-  }
-`;
+// --- Configuration Lists ---
 
 const sortOptionsList = [
-  { key: "relevance", label: "Relevance", icon: <TrendingUp /> },
-  { key: "distance", label: "Distance", icon: <Navigation /> },
-  { key: "price", label: "Price", icon: <DollarSign /> },
-  { key: "rating", label: "Rating", icon: <Star /> },
-  { key: "reviews", label: "Most Reviewed", icon: <ArrowDownUp /> },
-  { key: "newest", label: "Newest", icon: <Clock /> },
+  { key: "relevance", label: "Relevance", icon: <TrendingUp size={20} /> },
+  { key: "distance", label: "Distance", icon: <Navigation size={20} /> },
+  { key: "price", label: "Price", icon: <DollarSign size={20} /> },
+  { key: "rating", label: "Top Rated", icon: <Star size={20} /> },
+  { key: "reviews", label: "Popular", icon: <ArrowDownUp size={20} /> },
+  { key: "newest", label: "Newest", icon: <Clock size={20} /> },
 ];
 
 const timePreferencesList = [
-  "Morning (6am-12pm)",
-  "Afternoon (12pm-5pm)",
-  "Evening (5pm-10pm)",
+  {
+    id: "Morning (6am-12pm)",
+    label: "Morning",
+    sub: "6:00 AM - 12:00 PM",
+    icon: <Sunrise size={18} />,
+  },
+  {
+    id: "Afternoon (12pm-5pm)",
+    label: "Afternoon",
+    sub: "12:00 PM - 5:00 PM",
+    icon: <Sun size={18} />,
+  },
+  {
+    id: "Evening (5pm-10pm)",
+    label: "Evening",
+    sub: "5:00 PM - 10:00 PM",
+    icon: <Moon size={18} />,
+  },
 ];
 
 export default function FilterModal({
   isOpen,
   onClose,
-  onOpen,
   filters,
   currentSortBy,
   onApplyChanges,
@@ -388,54 +326,16 @@ export default function FilterModal({
   useEffect(() => {
     if (isOpen) {
       setTempFilters(filters);
-      if (typeof window !== "undefined") {
-        document.addEventListener("touchstart", handleTouchStart, {
-          passive: false,
-        });
-        document.addEventListener("gesturestart", handleGestureStart, {
-          passive: false,
-        });
-      }
-    }
-
-    return () => {
-      if (typeof window !== "undefined") {
-        document.removeEventListener("touchstart", handleTouchStart);
-        document.removeEventListener("gesturestart", handleGestureStart);
-      }
-    };
-  }, [filters, isOpen]);
-
-  useEffect(() => {
-    if (isOpen) {
       setTempSortBy(currentSortBy || "relevance");
     }
-  }, [currentSortBy, isOpen]);
-
-  const handleTouchStart = (e) => {
-    if (e.touches.length > 1) {
-      e.preventDefault();
-    }
-  };
-
-  const handleGestureStart = (e) => {
-    e.preventDefault();
-  };
+  }, [filters, currentSortBy, isOpen]);
 
   const handleApply = () => {
     if (ReactGA.isInitialized) {
-      const appliedFilterDetails = {
-        sort_by: tempSortBy,
-        price_max: tempFilters.pricePerClass[1],
-        distance_max: tempFilters.distance[1],
-        time_preferences: tempFilters.timePreference.join(", ") || "none",
-      };
-
       ReactGA.event("apply_filters", {
         category: "Explore Page",
         action: "Apply Filters & Sort",
         label: `Sort: ${tempSortBy}`,
-        ...appliedFilterDetails,
       });
     }
     onApplyChanges(tempFilters, tempSortBy);
@@ -443,158 +343,133 @@ export default function FilterModal({
   };
 
   const clearFiltersAndSort = () => {
-    const defaultFilters = {
+    setTempFilters({
+      ...filters, // Keep basic structure
       pricePerClass: [0, 500],
-      distance: [0, 0],
+      distance: [0, 50],
       timePreference: [],
-      days: [],
-      classType: "class",
-      keyword: "",
-      date: filters.date || "",
-      participants: filters.participants || 0,
-    };
-    setTempFilters(defaultFilters);
+    });
     setTempSortBy("relevance");
   };
 
   const renderContent = () => (
     <>
-      <FilterSection>
+      <Section>
         <SectionTitle>Sort by</SectionTitle>
-        <SortOptionGrid>
+        <SortGrid>
           {sortOptionsList.map((option) => {
-            if (option.key === "price") {
-              const isPriceSort = tempSortBy.startsWith("price");
-              const isAsc = tempSortBy === "price_asc";
+            const isPriceKey = option.key === "price";
+            const isSelected = isPriceKey
+              ? tempSortBy.startsWith("price")
+              : tempSortBy === option.key;
 
-              return (
-                <SortButton
-                  key={option.key}
-                  type="button"
-                  $selected={isPriceSort}
-                  onClick={() => {
-                    const newSort = isAsc ? "price_desc" : "price_asc";
-                    setTempSortBy(newSort);
-                  }}
-                  aria-pressed={isPriceSort}
-                >
-                  {option.icon}
-                  {isPriceSort
-                    ? isAsc
-                      ? "Price: Low-High"
-                      : "Price: High-Low"
-                    : "Price"}
-                </SortButton>
-              );
+            // Determine display label for price toggle
+            let label = option.label;
+            if (isPriceKey && isSelected) {
+              label =
+                tempSortBy === "price_asc" ? "Low to High" : "High to Low";
             }
 
             return (
-              <SortButton
+              <SortCard
                 key={option.key}
-                type="button"
-                $selected={tempSortBy === option.key}
-                onClick={() => setTempSortBy(option.key)}
-                aria-pressed={tempSortBy === option.key}
+                $selected={isSelected}
+                onClick={() => {
+                  if (isPriceKey) {
+                    setTempSortBy(
+                      tempSortBy === "price_asc" ? "price_desc" : "price_asc"
+                    );
+                  } else {
+                    setTempSortBy(option.key);
+                  }
+                }}
               >
                 {option.icon}
-                {option.label}
-              </SortButton>
+                <span>{label}</span>
+              </SortCard>
             );
           })}
-        </SortOptionGrid>
-      </FilterSection>
+        </SortGrid>
+      </Section>
 
-      <FilterSection>
-        <SectionTitle>Price per class</SectionTitle>
-        <SliderContainer>
-          <SliderNumberFlow
-            min={0}
-            max={500}
-            suffix="max"
-            value={tempFilters.pricePerClass[1]}
-            onChange={(value) =>
-              setTempFilters((prev) => ({
-                ...prev,
-                pricePerClass: [prev.pricePerClass[0], Math.round(value)],
-              }))
-            }
-            format={{
-              style: "currency",
-              currency: "USD",
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 0,
-            }}
-          />
-        </SliderContainer>
-      </FilterSection>
+      <Section>
+        <Slider
+          label="Price Range"
+          min={0}
+          max={500}
+          value={tempFilters.pricePerClass[1]}
+          onChange={(val) =>
+            setTempFilters((prev) => ({ ...prev, pricePerClass: [0, val] }))
+          }
+          format={{
+            style: "currency",
+            currency: "USD",
+            maximumFractionDigits: 0,
+          }}
+          prefix="Up to "
+          suffix={tempFilters.pricePerClass[1] >= 500 ? "+" : ""}
+        />
+      </Section>
 
-      <FilterSection>
-        <SectionTitle>Distance range</SectionTitle>
-        <SliderContainer>
-          <SliderNumberFlow
-            min={0}
-            max={50}
-            suffix="km"
-            value={tempFilters.distance[1]}
-            onChange={(value) =>
-              setTempFilters((prev) => ({
-                ...prev,
-                distance: [prev.distance[0], value],
-              }))
-            }
-            format={{
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 1,
-            }}
-          />
-        </SliderContainer>
-      </FilterSection>
+      <Section>
+        <Slider
+          label="Max Distance"
+          min={1}
+          max={50}
+          value={tempFilters.distance[1]}
+          onChange={(val) =>
+            setTempFilters((prev) => ({ ...prev, distance: [0, val] }))
+          }
+          suffix=" km"
+        />
+      </Section>
 
-      <FilterSection>
-        <SectionTitle>Time Preference</SectionTitle>
-        <TimeGrid>
-          {timePreferencesList.map((time) => (
-            <TimeOption
-              key={time}
-              $selected={tempFilters.timePreference.includes(time)}
-              onClick={() =>
-                setTempFilters((prev) => ({
-                  ...prev,
-                  timePreference: prev.timePreference.includes(time)
-                    ? prev.timePreference.filter((t) => t !== time)
-                    : [...prev.timePreference, time],
-                }))
-              }
-            >
-              {time}
-            </TimeOption>
-          ))}
-        </TimeGrid>
-      </FilterSection>
+      <Section>
+        <SectionTitle>Time of day</SectionTitle>
+        <div>
+          {timePreferencesList.map((time) => {
+            const isSelected = tempFilters.timePreference.includes(time.id);
+            return (
+              <TimeOption
+                key={time.id}
+                $selected={isSelected}
+                onClick={() => {
+                  const newPrefs = isSelected
+                    ? tempFilters.timePreference.filter((t) => t !== time.id)
+                    : [...tempFilters.timePreference, time.id];
+                  setTempFilters({ ...tempFilters, timePreference: newPrefs });
+                }}
+              >
+                <div className="icon-box">{time.icon}</div>
+                <div className="text-content">
+                  <span className="label">{time.label}</span>
+                  <span className="sub-label">{time.sub}</span>
+                </div>
+              </TimeOption>
+            );
+          })}
+        </div>
+      </Section>
     </>
   );
 
-  if (!isOpen) return null;
-
-  // Mobile: Use Vaul Drawer
+  // --- Mobile Drawer (Vaul) ---
   if (isMobile) {
     return (
       <ConfigProvider theme={{ token: themeToken }}>
-        <Drawer.Root
-          open={isOpen}
-          onOpenChange={(open) => !open && onClose()}
-          repositionInputs={false}
-        >
+        <Drawer.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
           <Drawer.Portal>
             <StyledDrawerOverlay />
             <StyledDrawerContent>
               <DrawerHandle />
-
               <ModalHeader>
-                <CloseButton onClick={onClose} aria-label="Close filters">
-                  <X size={18} />
+                <Title>Filters</Title>
+                <CloseButton
+                  onClick={onClose}
+                  style={{ right: 20, left: "auto" }}
+                >
+                  <X size={20} />
                 </CloseButton>
-                <Title>Filters & Sort</Title>
               </ModalHeader>
 
               <ModalBody>{renderContent()}</ModalBody>
@@ -612,47 +487,54 @@ export default function FilterModal({
     );
   }
 
-  // Desktop: Use Framer Motion Modal
-  const desktopAnimation = {
-    initial: { scale: 0.95, opacity: 0, y: -20 },
-    animate: { scale: 1, opacity: 1, y: 0 },
-    exit: { scale: 0.95, opacity: 0, y: -20 },
-    transition: { type: "tween", ease: "anticipate", duration: 0.3 },
-  };
-
+  // --- Desktop Modal (Ant Design) ---
   return (
     <ConfigProvider theme={{ token: themeToken }}>
-      <AnimatePresence>
-        <ModalOverlay
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          onClick={onClose}
-        >
-          <ModalContent
-            initial={desktopAnimation.initial}
-            animate={desktopAnimation.animate}
-            exit={desktopAnimation.exit}
-            transition={desktopAnimation.transition}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <ModalHeader>
-              <CloseButton onClick={onClose} aria-label="Close filters">
-                <X size={18} />
-              </CloseButton>
-              <Title>Filters & Sort</Title>
-            </ModalHeader>
+      <Modal
+        open={isOpen}
+        onCancel={onClose}
+        width={680}
+        centered
+        footer={null} // We use our custom Footer
+        title={null} // We use our custom Header
+        closable={false} // We use our custom CloseButton
+        maskStyle={{
+          backgroundColor: "rgba(0, 0, 0, 0.4)",
+          backdropFilter: "blur(2px)",
+        }}
+        styles={{
+          content: {
+            padding: 0,
+            borderRadius: "24px",
+            overflow: "hidden", // Ensures children don't overflow border-radius
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+            maxHeight: "85vh",
+            display: "flex",
+            flexDirection: "column",
+          },
+          body: {
+            padding: 0,
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden", // Prevents double scrollbar
+          },
+        }}
+      >
+        <ModalHeader>
+          <CloseButton onClick={onClose} aria-label="Close">
+            <X size={18} />
+          </CloseButton>
+          <Title>Filters & Sort</Title>
+        </ModalHeader>
 
-            <ModalBody>{renderContent()}</ModalBody>
+        <ModalBody>{renderContent()}</ModalBody>
 
-            <Footer>
-              <ClearButton onClick={clearFiltersAndSort}>Clear all</ClearButton>
-              <ApplyButton onClick={handleApply}>Show results</ApplyButton>
-            </Footer>
-          </ModalContent>
-        </ModalOverlay>
-      </AnimatePresence>
+        <Footer>
+          <ClearButton onClick={clearFiltersAndSort}>Clear all</ClearButton>
+          <ApplyButton onClick={handleApply}>Show results</ApplyButton>
+        </Footer>
+      </Modal>
     </ConfigProvider>
   );
 }

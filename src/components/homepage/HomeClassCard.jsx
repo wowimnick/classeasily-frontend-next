@@ -11,12 +11,7 @@ import { useSearchParams } from "next/navigation";
 import styled, { keyframes, useTheme } from "styled-components";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import {
-  Heart,
-  Star,
-  Navigation,
-  AlertCircle,
-} from "lucide-react";
+import { Heart, Star, Navigation, AlertCircle } from "lucide-react";
 import message from "@/lib/message";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import confetti from "canvas-confetti";
@@ -56,7 +51,7 @@ const CardContainer = styled(motion.div)`
   padding: ${(props) => (props.$isSelected ? "2px" : "0")};
   transition: padding 0.2s ease;
 
-  @media (max-width: 600px) {
+  @media (max-width: 800px) {
     font-size: 0.9em;
   }
 `;
@@ -70,7 +65,7 @@ const ImageContainer = styled.div`
   margin-bottom: 6px;
   background: #f7f7f7;
 
-  @media (max-width: 600px) {
+  @media (max-width: 800px) {
     margin-bottom: 4px;
     border-radius: 8px;
   }
@@ -422,7 +417,7 @@ const HomeClassCard = ({
           if (newState && favoriteButtonRef.current) {
             // 2. DYNAMIC IMPORT HERE
             const confetti = (await import("canvas-confetti")).default;
-            
+
             const rect = favoriteButtonRef.current.getBoundingClientRect();
             const origin = {
               x: (rect.left + rect.width / 2) / window.innerWidth,
@@ -569,8 +564,7 @@ const HomeClassCard = ({
               {prices.singleSession !== null && prices.course !== null && (
                 <PriceSeparator>•</PriceSeparator>
               )}
-              {prices.course !== null &&
-                renderPrice(prices.course, "/ course")}
+              {prices.course !== null && renderPrice(prices.course, "/ course")}
             </>
           )}
         </PriceRow>

@@ -7,7 +7,7 @@ export function OrganizationSchema() {
     url: "https://classeasily.com",
     logo: "https://i.imgur.com/biTTckW.png",
     description:
-      "Discover and book local classes and workshops in art, cooking, fitness, and more.",
+      "Classeasily is a platform designed to help find the best experiences and activities in the area. We offer a wide range of options, from workshops to fun and engaging events, all tailored to make your time enjoyable and memorable. Whether you're looking for a fun activity to do with friends or family, or just want to explore new experiences, Classeasily has got you covered.",
     sameAs: [
       // Add your social media profiles
       // "https://facebook.com/classeasily",

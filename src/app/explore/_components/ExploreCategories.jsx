@@ -1,3 +1,4 @@
+// components/explore/ExploreCategories.jsx
 "use client";
 
 import React, {
@@ -12,18 +13,17 @@ import React, {
 } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
-  Filter,
   ChevronRight,
   ChevronLeft,
   Map as MapIcon,
   Settings2,
+  Layers,
 } from "lucide-react";
 import ReactGA from "react-ga4";
 import FilterModal from "./FilterModal";
 import styled from "styled-components";
-import { Layers } from "lucide-react";
 
-// Icon loading logic stays the same
+// Icon loading logic
 const IconFallback = (props) => (
   <div {...props} style={{ width: 22, height: 22, ...props.style }} />
 );
@@ -168,7 +168,6 @@ const ScrollWrapper = styled.div`
   width: 100%;
   background: #ffffff;
 
-  /* CHANGED: Only show fade gradients when scroll buttons are visible AND content is scrollable */
   &::before,
   &::after {
     content: "";
@@ -182,14 +181,12 @@ const ScrollWrapper = styled.div`
     transition: opacity 300ms ease-in-out;
   }
 
-  /* Show left fade only when not at start */
   &::before {
     left: 0;
     background: linear-gradient(to right, #ffffff 45%, rgba(255, 255, 255, 0));
     opacity: ${({ $showLeftFade }) => ($showLeftFade ? 1 : 0)};
   }
 
-  /* Show right fade only when not at end */
   &::after {
     right: 0;
     background: linear-gradient(to left, #ffffff 45%, rgba(255, 255, 255, 0));
@@ -198,7 +195,6 @@ const ScrollWrapper = styled.div`
 `;
 const ScrollButton = styled.button`
   position: absolute;
-  /* CHANGED: Use display none instead of hiding with opacity */
   display: ${({ $show }) => ($show ? "flex" : "none")};
   align-items: center;
   justify-content: center;
@@ -372,7 +368,6 @@ function ExploreCategoriesContent({
   isMapVisible,
   onShowMap,
 }) {
-  // --- OPTIMISTIC UI STATE ---
   const [optimisticCategory, setOptimisticCategory] = useState(currentCategory);
   const [optimisticSubcategory, setOptimisticSubcategory] =
     useState(currentSubcategory);
@@ -382,20 +377,13 @@ function ExploreCategoriesContent({
     setOptimisticSubcategory(currentSubcategory);
   }, [currentCategory, currentSubcategory]);
 
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
   const subcatWrapperRef = useRef(null);
   const categoriesRef = useRef(null);
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [categoryScrollPosition, setCategoryScrollPosition] = useState(0);
   const [isSubcategoriesVisible, setIsSubcategoriesVisible] = useState(false);
   const [shouldShowScrollButtons, setShouldShowScrollButtons] = useState(false);
   const [showCategoryScrollButtons, setShowCategoryScrollButtons] =
     useState(false);
 
-  // CHANGED: Add new state for tracking scroll boundaries
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [canScrollCategoryLeft, setCanScrollCategoryLeft] = useState(false);
@@ -489,11 +477,9 @@ function ExploreCategoriesContent({
     );
   }, [optimisticCategory, displayedSubcategories]);
 
-  // CHANGED: Update the scroll position tracking functions
   const updateScrollPosition = useCallback(() => {
     if (subcatWrapperRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = subcatWrapperRef.current;
-      setScrollPosition(scrollLeft);
       setCanScrollLeft(scrollLeft > 1);
       setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
     }
@@ -502,13 +488,11 @@ function ExploreCategoriesContent({
   const updateCategoryScrollPosition = useCallback(() => {
     if (categoriesRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = categoriesRef.current;
-      setCategoryScrollPosition(scrollLeft);
       setCanScrollCategoryLeft(scrollLeft > 1);
       setCanScrollCategoryRight(scrollLeft < scrollWidth - clientWidth - 1);
     }
   }, []);
 
-  // CHANGED: Update useEffect for checking if subcategories are scrollable
   useEffect(() => {
     const checkScrollable = () => {
       if (subcatWrapperRef.current) {
@@ -573,7 +557,6 @@ function ExploreCategoriesContent({
     }
   }, [updateCategoryScrollPosition]);
 
-  // CHANGED: Update useEffect for checking if categories are scrollable
   useEffect(() => {
     const checkCatScrollable = () => {
       if (categoriesRef.current) {

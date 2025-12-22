@@ -311,32 +311,32 @@ const StyledIcon = styled.div`
 
 // --- HowItWorks Component ---
 const HowItWorks = () => {
-  const [selectedButton, setSelectedButton] = useState("forStudents");
+  const [selectedButton, setSelectedButton] = useState("forExplorers");
 
   const handleButtonClick = (button) => {
     setSelectedButton(button);
   };
 
   const getStepTitle = (stepNumber) => {
-    if (selectedButton === "forTutors") {
+    if (selectedButton === "forHosts") {
       switch (stepNumber) {
         case 1:
-          return "List your classes";
+          return "Share your passion";
         case 2:
-          return "Accept bookings";
+          return "Fill your spots";
         case 3:
-          return "Receive payment";
+          return "Get paid to host";
         default:
           return "";
       }
     } else {
       switch (stepNumber) {
         case 1:
-          return "Discover";
+          return "Find your thing";
         case 2:
-          return "Book";
+          return "Grab a spot";
         case 3:
-          return "Enjoy";
+          return "Have a blast";
         default:
           return "";
       }
@@ -344,25 +344,25 @@ const HowItWorks = () => {
   };
 
   const getStepDescription = (stepNumber) => {
-    if (selectedButton === "forTutors") {
+    if (selectedButton === "forHosts") {
       switch (stepNumber) {
         case 1:
-          return "Create a listing for your class with detailed information about the subject, schedule, pricing, and subclasses.";
+          return "Create a listing for your class or experience with detailed information about what you're offering.";
         case 2:
-          return "Review and approve student bookings. You can also communicate with them directly for any clarifications.";
+          return "You will recieve a notification instantly when a student books your class. You can also communicate with them directly for any clarifications.";
         case 3:
-          return "Conduct your class as scheduled. Once completed, receive payment directly to your bank account.";
+          return "Conduct your session as scheduled. Once completed, receive payment directly to your bank account.";
         default:
           return "";
       }
     } else {
       switch (stepNumber) {
         case 1:
-          return "Search for nearby classes, explore their features, read reviews, and find the best match for you.";
+          return "Search for fun nearby experiences and classes, read reviews, and find the best match for you.";
         case 2:
-          return "Once your booking is approved by the class provider, you're good to go. Some classes may even offer instant booking.";
+          return "Once you've found what you like, book your spot by selecting a date and time that works for you, and you're good to go.";
         case 3:
-          return "You will receive the precise address, entry instructions, and everything you need for your class.";
+          return "You will receive the precise address, entry instructions, and everything you need for your booking.";
         default:
           return "";
       }
@@ -370,7 +370,7 @@ const HowItWorks = () => {
   };
 
   const getStepIcon = (step) => {
-    if (selectedButton === "forTutors") {
+    if (selectedButton === "forHosts") {
       switch (step) {
         case 1:
           return <ImagePlus />;
@@ -406,20 +406,20 @@ const HowItWorks = () => {
           </StyledH1>
           <ButtonWrapper>
             <RoundedButton
-              onClick={() => handleButtonClick("forStudents")}
-              $isSelected={selectedButton === "forStudents"}
+              onClick={() => handleButtonClick("forExplorers")}
+              $isSelected={selectedButton === "forExplorers"}
               whileTap={{ scale: 0.97 }}
-              aria-pressed={selectedButton === "forStudents"}
+              aria-pressed={selectedButton === "forExplorers"}
             >
-              for Students
+              for Explorers
             </RoundedButton>
             <RoundedButton
-              onClick={() => handleButtonClick("forTutors")}
-              $isSelected={selectedButton === "forTutors"}
+              onClick={() => handleButtonClick("forHosts")}
+              $isSelected={selectedButton === "forHosts"}
               whileTap={{ scale: 0.97 }}
-              aria-pressed={selectedButton === "forTutors"}
+              aria-pressed={selectedButton === "forHosts"}
             >
-              for Businesses
+              for Hosts
             </RoundedButton>
           </ButtonWrapper>
         </FirstElement>
