@@ -439,8 +439,10 @@ function InviteOverlayInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const isClaimMode = searchParams.get("mode") === "claim-account";
   const rawToken =
-    searchParams.get("invite_token") || searchParams.get("token");
+    searchParams.get("invite_token") ||
+    (!isClaimMode ? searchParams.get("token") : null);
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
