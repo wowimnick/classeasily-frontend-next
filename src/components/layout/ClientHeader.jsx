@@ -201,7 +201,7 @@ const SectionButton = styled.div`
 
   &:hover {
     background-color: ${(props) =>
-    props.$isActive ? "transparent" : "#f9fafb"};
+      props.$isActive ? "transparent" : "#f9fafb"};
     border-radius: 32px;
   }
 `;
@@ -346,7 +346,7 @@ const DayBtn = styled.button`
   margin: 0 auto;
   &:hover {
     background: ${(props) =>
-    !props.$isSelected && !props.$isDisabled && "#f3f4f6"};
+      !props.$isSelected && !props.$isDisabled && "#f3f4f6"};
   }
 `;
 
@@ -834,8 +834,8 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
                 <FieldLabel>Who</FieldLabel>
                 <ValueDisplay $hasValue={true}>
                   {participantCount === 1
-                    ? "1 Guest"
-                    : `${participantCount} Guests`}
+                    ? "1 Person"
+                    : `${participantCount} People`}
                 </ValueDisplay>
               </SectionButton>
 

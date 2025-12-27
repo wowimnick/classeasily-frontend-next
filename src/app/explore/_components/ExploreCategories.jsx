@@ -11,7 +11,6 @@ import React, {
   memo,
   Suspense,
 } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   ChevronRight,
   ChevronLeft,
@@ -25,7 +24,7 @@ import styled from "styled-components";
 
 // Icon loading logic
 const IconFallback = (props) => (
-  <div {...props} style={{ width: 22, height: 22, ...props.style }} />
+  <div {...props} style={{ width: 18, height: 18, ...props.style }} />
 );
 
 const loadIcon = (iconName) => {
@@ -54,33 +53,40 @@ const CategoriesWrapper = styled.div`
   z-index: 100;
   top: 0;
   border-bottom: 1px solid #f0f0f0;
-  box-shadow: 0px 8px 17px 5px rgb(0 0 0 / 2%);
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.03);
 `;
+
 const Categories = styled.div`
   display: flex;
   position: relative;
   flex-direction: row;
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  gap: 0.5rem;
-  padding: 1rem 1.5rem 0rem 1.5rem;
+  gap: 0.25rem;
+  padding: 0 1.5rem;
   align-items: center;
   background: #ffffff;
+  height: 72px;
+  z-index: 2;
+
   &::-webkit-scrollbar {
     display: none;
   }
   @media (max-width: 767px) {
-    padding: 0.75rem 1rem;
-    gap: 0.75rem;
+    padding: 0 1rem;
+    gap: 0.5rem;
+    height: 64px;
   }
 `;
+
 const SubCategories = styled.div`
   display: flex;
   position: relative;
   flex-direction: row;
   padding: 0.5rem 1.5rem;
-  gap: 0.75rem;
+  gap: 0.5rem;
   width: 100%;
   overflow-x: ${({ $shouldScroll }) => ($shouldScroll ? "auto" : "hidden")};
   scrollbar-width: none;
@@ -93,10 +99,12 @@ const SubCategories = styled.div`
     display: none;
   }
   @media (max-width: 768px) {
-    padding: 0.5rem 1rem;
-    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    gap: 0.4rem;
   }
 `;
+
+// --- COMPACT CATEGORY STYLES ---
 const CategoryGroup = styled.div`
   display: flex;
   flex-direction: column;
@@ -105,43 +113,124 @@ const CategoryGroup = styled.div`
   transition: all 0.2s ease-in-out;
   cursor: ${({ isSelected }) => (isSelected ? "default" : "pointer")};
   flex-shrink: 0;
-  border-bottom: 3px solid transparent;
+  border-bottom: 1px solid transparent;
   border-bottom-color: ${({ isSelected }) =>
     isSelected ? "#ff385c" : "transparent"};
-  width: 80px;
-  min-height: 48px;
-  padding: 8px 4px;
+  width: 64px;
+  height: 100%;
+  padding-top: 8px;
+  position: relative;
+  z-index: 2;
 
   @media (max-width: 768px) {
-    padding: 0.25rem;
-    gap: 0.25rem;
-    width: 75px;
-    min-height: 48px;
+    width: 60px;
   }
 `;
+
 const CategoryFont = styled.p`
-  font-size: 12px;
-  font-weight: ${({ isSelected }) => (isSelected ? "500" : "500")};
-  color: ${({ isSelected }) => (isSelected ? "#ff385c" : "#484848")};
-  margin: 0;
+  font-size: 11px;
+  font-weight: ${({ isSelected }) => (isSelected ? "700" : "500")};
+  color: ${({ isSelected }) => (isSelected ? "#000000" : "#717171")};
+  margin: 4px 0 0 0;
   transition: all 0.2s ease;
   text-align: center;
   line-height: 1;
-  min-height: 2.2em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    font-size: 10px;
+  }
+`;
+
+const ImageBackground = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 24px;
+  height: 24px;
+
   @media (max-width: 768px) {
-    font-size: 11px;
+    width: 20px;
+    height: 20px;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+    color: ${({ isSelected }) => (isSelected ? "#000000" : "#717171")};
+    stroke-width: ${({ isSelected }) => (isSelected ? 2.5 : 2)};
+    transition: all 0.2s ease;
+  }
+
+  @media (max-width: 768px) {
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  ${CategoryGroup}:hover & svg {
+    color: #222;
   }
 `;
+
+// --- COMPACT COLLECTION PILLS ---
+const CollectionPill = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: ${({ $isSelected }) => ($isSelected ? "#222" : "#fff")};
+  color: ${({ $isSelected }) => ($isSelected ? "#fff" : "#222")};
+  border: 1px solid ${({ $isSelected }) => ($isSelected ? "#222" : "#e0e0e0")};
+  white-space: nowrap;
+  border-radius: 20px;
+  padding: 0 12px;
+  height: 32px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: ${({ $isSelected }) =>
+    $isSelected ? "0 2px 8px rgba(0,0,0,0.15)" : "0 1px 3px rgba(0,0,0,0.05)"};
+  position: relative;
+  z-index: 2;
+
+  &:hover {
+    background-color: ${({ $isSelected }) =>
+      $isSelected ? "#000" : "#f7f7f7"};
+    border-color: ${({ $isSelected }) => ($isSelected ? "#000" : "#d0d0d0")};
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 768px) {
+    height: 30px;
+    font-size: 11px;
+    padding: 0 10px;
+  }
+`;
+
+const VerticalSeparator = styled.div`
+  width: 1px;
+  height: 24px;
+  background-color: #eaeaea;
+  margin: 0 8px;
+  flex-shrink: 0;
+  z-index: 2;
+`;
+
+// --- SUB-CATEGORY PILLS ---
 const SubCategoryGroup = styled.div`
   display: flex;
   background-color: ${({ isSelected }) => (isSelected ? "#ffebee" : "#f5f5f5")};
   color: ${({ isSelected }) => (isSelected ? "#ff385c" : "#595959")};
   white-space: nowrap;
-  border-radius: 20px;
-  padding: 0.5rem 1rem;
+  border-radius: 16px;
+  padding: 0 12px;
+  height: 32px;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease-in-out;
@@ -156,10 +245,12 @@ const SubCategoryGroup = styled.div`
     border-color: ${({ isSelected }) => (isSelected ? "#ffb2b2" : "#bdbdbd")};
   }
   @media (max-width: 768px) {
-    padding: 0.4rem 0.8rem;
-    font-size: 12px;
+    height: 30px;
+    padding: 0 10px;
+    font-size: 11px;
   }
 `;
+
 const ScrollWrapper = styled.div`
   display: flex;
   position: relative;
@@ -167,6 +258,7 @@ const ScrollWrapper = styled.div`
   align-items: center;
   width: 100%;
   background: #ffffff;
+  height: 100%;
 
   &::before,
   &::after {
@@ -174,7 +266,7 @@ const ScrollWrapper = styled.div`
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 80px;
+    width: 40px;
     z-index: 1;
     pointer-events: none;
     opacity: 0;
@@ -193,101 +285,80 @@ const ScrollWrapper = styled.div`
     opacity: ${({ $showRightFade }) => ($showRightFade ? 1 : 0)};
   }
 `;
+
 const ScrollButton = styled.button`
   position: absolute;
   display: ${({ $show }) => ($show ? "flex" : "none")};
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  background-color: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(2px);
-  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  width: 24px;
+  height: 24px;
+  background-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
   border: 1px solid #eee;
   border-radius: 50%;
   cursor: pointer;
-  z-index: 2;
-  transition: background-color 0.2s ease;
-  color: #595959;
+  z-index: 5;
+  transition: all 0.2s ease;
+  color: #222;
 
   &:hover {
     background-color: #fff;
-    color: #ff385c;
+    transform: scale(1.1);
+    color: #000;
   }
 
   svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
+  }
+
+  @media (max-width: 768px) {
+    display: none;
   }
 `;
+
 const PrevButton = styled(ScrollButton)`
-  left: 0.5rem;
+  left: 0.25rem;
 `;
 const NextButton = styled(ScrollButton)`
-  right: 0.5rem;
+  right: 0.25rem;
 `;
-const ImageBackground = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
-  background: ${({ isSelected }) =>
-    isSelected
-      ? "linear-gradient(135deg, #ff7171 0%, #ff5252 100%)"
-      : "#f5f5f5"};
-  transition: all 0.2s ease;
-  margin-bottom: 4px;
-  @media (max-width: 768px) {
-    width: 40px;
-    height: 40px;
-    svg {
-      width: 18px;
-      height: 18px;
-    }
-  }
-  svg {
-    width: 22px;
-    height: 22px;
-    color: ${({ isSelected }) => (isSelected ? "#fff" : "#595959")};
-    transition: color 0.2s ease;
-  }
-  ${CategoryGroup}:hover & {
-    background: ${({ isSelected }) =>
-      isSelected
-        ? "linear-gradient(135deg, #ff7171 0%, #ff5252 100%)"
-        : "#eeeeee"};
-  }
-`;
+
 const TopSection = styled.div`
   display: flex;
-  align-items: stretch;
+  align-items: center;
   background: #ffffff;
   position: relative;
 `;
+
 const CategoriesScrollArea = styled.div`
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: stretch;
+  height: 100%;
 `;
+
 const ScrollFilterWrapper = styled.div`
   display: flex;
   align-items: center;
   padding: 0 1.5rem;
   flex-shrink: 0;
   gap: 12px;
+  height: 100%;
+
   @media (max-width: 768px) {
     padding: 0 1rem;
   }
 `;
+
 const FilterButton = styled.button`
   display: flex;
   align-items: center;
   gap: 8px;
   height: 44px;
-  padding: 24px;
+  padding: 0 24px;
   background: #ffffff;
   box-shadow: 0px 8px 11px 0px rgba(0, 0, 0, 0.06);
   border: 1px solid #dddddd;
@@ -297,11 +368,13 @@ const FilterButton = styled.button`
   color: #222222;
   cursor: pointer;
   transition: all 0.2s ease;
+
   &:hover {
     background: #f7f7f7;
     border-color: #c2c2c2;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
+
   @media (max-width: 768px) {
     height: 40px;
     padding: 0 12px;
@@ -311,6 +384,7 @@ const FilterButton = styled.button`
     }
   }
 `;
+
 const ShowMapButton = styled(FilterButton)`
   @media (max-width: 1048px) {
     display: none;
@@ -322,7 +396,6 @@ const getCachedMap = () => {
   if (typeof window === "undefined") {
     return {};
   }
-
   try {
     const cachedData = sessionStorage.getItem(SUBCATEGORY_CACHE_KEY);
     return cachedData ? JSON.parse(cachedData) : {};
@@ -336,7 +409,6 @@ const setCachedMap = (map) => {
   if (typeof window === "undefined") {
     return;
   }
-
   try {
     sessionStorage.setItem(SUBCATEGORY_CACHE_KEY, JSON.stringify(map));
   } catch (e) {
@@ -353,9 +425,24 @@ const CategoryItem = memo(({ category, isSelected, onClick }) => (
   </CategoryGroup>
 ));
 
+const CollectionItem = memo(({ collection, isSelected, onClick }) => (
+  <CollectionPill
+    onClick={onClick}
+    $isSelected={isSelected}
+    aria-pressed={isSelected}
+  >
+    {collection.name}
+  </CollectionPill>
+));
+
 function ExploreCategoriesContent({
   categories = [],
+  collections = [],
   onCategoryChange,
+
+  currentCollection,
+  onCollectionChange,
+
   classes = [],
   filters,
   onFiltersChange,
@@ -380,6 +467,7 @@ function ExploreCategoriesContent({
   const subcatWrapperRef = useRef(null);
   const categoriesRef = useRef(null);
   const [isSubcategoriesVisible, setIsSubcategoriesVisible] = useState(false);
+
   const [shouldShowScrollButtons, setShouldShowScrollButtons] = useState(false);
   const [showCategoryScrollButtons, setShowCategoryScrollButtons] =
     useState(false);
@@ -393,11 +481,13 @@ function ExploreCategoriesContent({
     useState(getCachedMap);
   const [displayedSubcategories, setDisplayedSubcategories] = useState([]);
 
+  // Combine "All" with categories
   const dynamicCategoryConfig = useMemo(() => {
     const allCategory = { key: "all", icon_name: "Layers", name: "All" };
     return [allCategory, ...categories];
   }, [categories]);
 
+  // Subcategory extraction logic
   const subcategoriesFromClasses = useMemo(() => {
     const subcategoryMap = {};
     classes.forEach((classItem) => {
@@ -471,12 +561,16 @@ function ExploreCategoriesContent({
     setDisplayedSubcategories(subcats);
   }, [optimisticCategory, masterSubcategoryMap]);
 
+  // Visibility logic
   useEffect(() => {
     setIsSubcategoriesVisible(
-      optimisticCategory !== "all" && displayedSubcategories.length > 0
+      !currentCollection &&
+        optimisticCategory !== "all" &&
+        displayedSubcategories.length > 0
     );
-  }, [optimisticCategory, displayedSubcategories]);
+  }, [optimisticCategory, displayedSubcategories, currentCollection]);
 
+  // --- Scroll Logic ---
   const updateScrollPosition = useCallback(() => {
     if (subcatWrapperRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = subcatWrapperRef.current;
@@ -499,39 +593,14 @@ function ExploreCategoriesContent({
         const elem = subcatWrapperRef.current;
         const isScrollable = elem.scrollWidth > elem.clientWidth;
         setShouldShowScrollButtons(isScrollable);
-
-        if (isScrollable) {
-          updateScrollPosition();
-        } else {
-          setCanScrollLeft(false);
-          setCanScrollRight(false);
-        }
-      } else {
-        setShouldShowScrollButtons(false);
-        setCanScrollLeft(false);
-        setCanScrollRight(false);
+        if (isScrollable) updateScrollPosition();
       }
     };
 
     if (isSubcategoriesVisible) {
       checkScrollable();
-      const observer = new MutationObserver(checkScrollable);
-      if (subcatWrapperRef.current) {
-        observer.observe(subcatWrapperRef.current, {
-          childList: true,
-          subtree: true,
-          characterData: true,
-        });
-      }
       window.addEventListener("resize", checkScrollable);
-      return () => {
-        window.removeEventListener("resize", checkScrollable);
-        observer.disconnect();
-      };
-    } else {
-      setShouldShowScrollButtons(false);
-      setCanScrollLeft(false);
-      setCanScrollRight(false);
+      return () => window.removeEventListener("resize", checkScrollable);
     }
   }, [isSubcategoriesVisible, displayedSubcategories, updateScrollPosition]);
 
@@ -563,35 +632,17 @@ function ExploreCategoriesContent({
         const elem = categoriesRef.current;
         const isScrollable = elem.scrollWidth > elem.clientWidth;
         setShowCategoryScrollButtons(isScrollable);
-
-        if (isScrollable) {
-          updateCategoryScrollPosition();
-        } else {
-          setCanScrollCategoryLeft(false);
-          setCanScrollCategoryRight(false);
-        }
-      } else {
-        setShowCategoryScrollButtons(false);
-        setCanScrollCategoryLeft(false);
-        setCanScrollCategoryRight(false);
+        if (isScrollable) updateCategoryScrollPosition();
       }
     };
 
     const timeoutId = setTimeout(checkCatScrollable, 100);
     window.addEventListener("resize", checkCatScrollable);
-    const observer = new MutationObserver(checkCatScrollable);
-    if (categoriesRef.current) {
-      observer.observe(categoriesRef.current, {
-        childList: true,
-        subtree: true,
-      });
-    }
     return () => {
       clearTimeout(timeoutId);
       window.removeEventListener("resize", checkCatScrollable);
-      observer.disconnect();
     };
-  }, [dynamicCategoryConfig, updateCategoryScrollPosition]);
+  }, [dynamicCategoryConfig, collections, updateCategoryScrollPosition]);
 
   const handleScroll = (direction) => {
     if (subcatWrapperRef.current) {
@@ -615,59 +666,34 @@ function ExploreCategoriesContent({
     }
   }, [isSubcategoriesVisible, updateScrollPosition]);
 
+  // --- Handlers ---
+
   const handleCategoryClick = useCallback(
     (categoryKey) => {
-      if (categoryKey === optimisticCategory) {
-        return;
-      }
-      setOptimisticCategory(categoryKey);
-      setOptimisticSubcategory("");
-
-      const categoryName =
-        dynamicCategoryConfig.find((c) => c.key === categoryKey)?.name ||
-        "Unknown Category";
-
-      if (ReactGA.isInitialized) {
-        ReactGA.event({
-          category: "Explore Page",
-          action: "Select Category",
-          label: categoryName,
-        });
-      }
-
+      // Logic: Just tell parent to change category.
+      // Parent handles clearing collection.
       onCategoryChange(categoryKey, "");
     },
-    [optimisticCategory, dynamicCategoryConfig, onCategoryChange]
+    [onCategoryChange]
+  );
+
+  const handleCollectionClick = useCallback(
+    (collectionSlug) => {
+      if (currentCollection === collectionSlug) return;
+      // Logic: Just tell parent to change collection.
+      // Parent handles clearing category.
+      onCollectionChange(collectionSlug);
+    },
+    [currentCollection, onCollectionChange]
   );
 
   const handleSubcategoryClick = useCallback(
     (subcategoryKey) => {
       const isDeselecting = optimisticSubcategory === subcategoryKey;
-
       setOptimisticSubcategory(isDeselecting ? "" : subcategoryKey);
-
-      const subcategoryName =
-        displayedSubcategories.find((s) => s.key === subcategoryKey)?.name ||
-        "Unknown Subcategory";
-
-      if (ReactGA.isInitialized) {
-        ReactGA.event({
-          category: "Explore Page",
-          action: "Select Subcategory",
-          label: `${subcategoryName} (${
-            isDeselecting ? "Deselect" : "Select"
-          })`,
-        });
-      }
-
       onCategoryChange(optimisticCategory, isDeselecting ? "" : subcategoryKey);
     },
-    [
-      optimisticCategory,
-      optimisticSubcategory,
-      displayedSubcategories,
-      onCategoryChange,
-    ]
+    [optimisticCategory, optimisticSubcategory, onCategoryChange]
   );
 
   return (
@@ -681,35 +707,62 @@ function ExploreCategoriesContent({
             <PrevButton
               $show={showCategoryScrollButtons && canScrollCategoryLeft}
               onClick={() => handleCategoryScroll("left")}
-              aria-label="Scroll previous categories"
+              aria-label="Scroll previous"
             >
               <ChevronLeft size={16} />
             </PrevButton>
+
             <Categories ref={categoriesRef}>
+              {/* --- SECTION 1: COLLECTIONS (VIBES) --- */}
+              {collections.map((collection, index) => {
+                const id =
+                  collection.key || collection.slug || `collection-${index}`;
+                return (
+                  <CollectionItem
+                    key={id}
+                    collection={collection}
+                    isSelected={
+                      currentCollection === (collection.key || collection.slug)
+                    }
+                    onClick={() =>
+                      handleCollectionClick(collection.key || collection.slug)
+                    }
+                  />
+                );
+              })}
+
+              {/* --- VISUAL SEPARATOR --- */}
+              {collections.length > 0 && <VerticalSeparator />}
+
+              {/* --- SECTION 2: CATEGORIES --- */}
               {dynamicCategoryConfig.map((category) => (
                 <CategoryItem
                   key={category.key}
                   category={category}
-                  isSelected={optimisticCategory === category.key}
+                  isSelected={
+                    !currentCollection && optimisticCategory === category.key
+                  }
                   onClick={() => handleCategoryClick(category.key)}
                 />
               ))}
             </Categories>
+
             <NextButton
               $show={showCategoryScrollButtons && canScrollCategoryRight}
               onClick={() => handleCategoryScroll("right")}
-              aria-label="Scroll next categories"
+              aria-label="Scroll next"
             >
               <ChevronRight size={16} />
             </NextButton>
           </ScrollWrapper>
         </CategoriesScrollArea>
+
         <ScrollFilterWrapper>
           <FilterButton
             onClick={() => setIsFilterModalOpen(true)}
             aria-label="Open filters"
           >
-            <Settings2 size={17} /> <span>Filters</span>
+            <Settings2 size={16} /> <span>Filters</span>
           </FilterButton>
           {!isMapVisible && (
             <ShowMapButton onClick={onShowMap} aria-label="Show map">
@@ -719,6 +772,7 @@ function ExploreCategoriesContent({
           )}
         </ScrollFilterWrapper>
       </TopSection>
+
       {isSubcategoriesVisible && (
         <ScrollWrapper
           $showLeftFade={shouldShowScrollButtons && canScrollLeft}
@@ -756,6 +810,7 @@ function ExploreCategoriesContent({
           </NextButton>
         </ScrollWrapper>
       )}
+
       <FilterModal
         isOpen={isFilterModalOpen}
         onClose={() => setIsFilterModalOpen(false)}
@@ -771,7 +826,7 @@ function ExploreCategoriesContent({
 
 const ExploreCategories = (props) => {
   return (
-    <Suspense fallback={<div style={{ height: "100px" }} />}>
+    <Suspense fallback={<div style={{ height: "72px" }} />}>
       <ExploreCategoriesContent {...props} />
     </Suspense>
   );

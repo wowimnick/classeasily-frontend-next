@@ -26,17 +26,17 @@ import {
   ColorPicker,
   Grid,
   Popconfirm,
-  Spin,
   Skeleton,
   Select,
   Switch,
   Upload,
+  Tabs,
+  Radio,
 } from "antd";
 import message from "@/lib/message";
 import * as allIcons from "lucide-react";
 import { theme as antdComponentTheme } from "@/components/theme";
 import {
-  Search,
   Plus,
   Edit,
   Trash2,
@@ -50,10 +50,14 @@ import {
   Edit2,
   PieChart as PieChartIcon,
   ArrowLeft,
-  Book,
   PenLine,
   GripVertical,
   X,
+  Sparkles,
+  Layers,
+  Bot,
+  BrainCircuit,
+  Search,
 } from "lucide-react";
 import {
   PieChart,
@@ -65,10 +69,7 @@ import {
 } from "recharts";
 import { classManagementService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
-import {
-  GlobalLoaderWithInlineStyles,
-  GlobalLoaderWithoutInlineStyles,
-} from "@/components/common/GlobalLoader";
+import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { uploadService } from "@/services/apiService";
 import { motion } from "framer-motion";
 import { Drawer } from "vaul";
@@ -120,13 +121,14 @@ const CategoryIcon = ({ iconName, ...props }) => {
   return <IconComponent {...props} />;
 };
 
-// --- STYLING & THEME (FROM BOOKINGSLIST) ---
+// --- STYLING & THEME ---
 const colors = {
   primary: "#ff385c",
   success: "#10b981",
   warning: "#f59e0b",
   error: "#ef4444",
   info: "#3b82f6",
+  purple: "#8b5cf6", // Added for AI features
   lightBg: "#f8fafc",
   border: "#f1f5f9",
   textPrimary: "#334155",
@@ -142,7 +144,7 @@ const hexToRgba = (hex, alpha = 1) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-// --- MAIN PAGE COMPONENTS ---
+// --- DASHBOARD COMPONENTS (Restored to Original Design) ---
 const DashboardWrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -186,12 +188,6 @@ const HeaderSubtitle = styled(Text)`
   @media (max-width: 480px) {
     font-size: 14px;
   }
-`;
-
-const ActionButtonsContainer = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
 `;
 
 const StatsGrid = styled.div`
@@ -251,6 +247,7 @@ const StatLabel = styled.div`
   font-size: 13px;
   color: ${colors.textSecondary};
   display: block;
+  margin-top: 4px;
 `;
 
 const ChartCard = styled(Card)`
@@ -269,7 +266,6 @@ const ChartHeader = styled.div`
   margin-bottom: 4px;
 `;
 
-// --- TABLE SECTION ---
 const TableSection = styled(motion.div)`
   background: white;
   border-radius: 16px;
@@ -281,25 +277,14 @@ const TableSection = styled(motion.div)`
 
 const TableHeader = styled.div`
   padding: 20px 24px 16px;
-  border-bottom: 1px solid ${colors.border};
   background: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
   @media (max-width: 768px) {
     padding: 16px;
-  }
-`;
-
-const TableTitle = styled(AntTitle).attrs({ level: 4 })`
-  margin: 0 0 4px 0 !important;
-  color: ${colors.textPrimary};
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  svg {
-    color: ${colors.primary};
-    width: 18px;
-    height: 18px;
   }
 `;
 
@@ -307,6 +292,7 @@ const TableDescription = styled(Paragraph)`
   margin: 0 !important;
   color: ${colors.textSecondary};
   font-size: 14px;
+  max-width: 600px;
 `;
 
 const FilterBar = styled.div`
@@ -358,59 +344,6 @@ const SubcategoryItem = styled.div`
   transition: all 0.2s ease-in-out;
 `;
 
-const CategoryCard = styled(Card)`
-  margin-bottom: 12px;
-  border-radius: 12px;
-  border: 1px solid ${colors.border};
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  .ant-card-body {
-    padding: 16px !important;
-  }
-`;
-const CategoryCardHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-`;
-const CategoryInfo = styled.div`
-  flex: 1;
-`;
-const CategoryName = styled.div`
-  font-weight: 600;
-  color: ${colors.textPrimary};
-  font-size: 15px;
-`;
-const CategoryKey = styled.div`
-  font-size: 13px;
-  color: ${colors.textSecondary};
-`;
-const CategoryCardRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  font-size: 13px;
-  &:not(:last-child) {
-    border-bottom: 1px solid ${colors.border};
-  }
-`;
-const CategoryCardLabel = styled.div`
-  color: ${colors.textSecondary};
-`;
-const CategoryCardValue = styled.div`
-  font-weight: 500;
-  text-align: right;
-  color: ${colors.textPrimary};
-`;
-const CategoryCardFooter = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid ${colors.border};
-  gap: 8px;
-`;
 const ModalTitleWrapper = styled.div`
   display: flex;
   align-items: center;
@@ -420,27 +353,128 @@ const ModalTitleWrapper = styled.div`
   color: ${colors.textPrimary};
 `;
 
-// --- VAUL DRAWER STYLES ---
+// --- NEW REDESIGNED DRAWER STYLES (Only these are changed) ---
 const StyledDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(4px);
   z-index: 1049;
+  animation: fadeIn 0.2s ease-out;
 `;
+
 const StyledDrawerContent = styled(Drawer.Content)`
   background: white;
   display: flex;
   flex-direction: column;
-  border-radius: 24px 24px 0 0;
-  height: 90%;
-  max-height: 90vh;
+  border-radius: 28px 28px 0 0;
+  height: 92%;
+  max-height: 96vh;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 1050;
   outline: none;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.12);
+
+  &:after {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 2px;
+  }
 `;
+
+const DesktopDrawerContent = styled(Drawer.Content)`
+  right: 20px;
+  top: 20px;
+  bottom: 20px;
+  position: fixed;
+  z-index: 1050;
+  outline: none;
+  width: 650px; /* Wider width */
+  display: flex;
+  max-width: calc(100vw - 40px);
+`;
+
+const DesktopDrawerInner = styled.div`
+  background: white;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid ${colors.border};
+  overflow: hidden;
+`;
+
+const DrawerHeader = styled.div`
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid ${colors.border};
+  padding: 24px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  z-index: 10;
+`;
+
+const DrawerHeaderTitle = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: ${colors.textPrimary};
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+`;
+
+const CloseButton = styled.button`
+  padding: 8px;
+  border-radius: 50%;
+  border: 1px solid ${colors.border};
+  background: white;
+  color: ${colors.textSecondary};
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: ${colors.lightBg};
+    color: ${colors.textPrimary};
+    transform: scale(1.05);
+  }
+  &:active {
+    transform: scale(0.95);
+  }
+`;
+
+const DrawerFormContainer = styled.div`
+  padding: 32px;
+  overflow-y: auto;
+  flex: 1;
+`;
+
+const DrawerFooter = styled.div`
+  padding: 24px 32px;
+  border-top: 1px solid ${colors.border};
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  flex-shrink: 0;
+  background: #fcfcfc;
+`;
+
 const DrawerHandle = styled.div`
   width: 36px;
   height: 4px;
@@ -448,66 +482,6 @@ const DrawerHandle = styled.div`
   border-radius: 2px;
   margin: 12px auto 8px;
   flex-shrink: 0;
-`;
-const DesktopDrawerContent = styled(Drawer.Content)`
-  right: 8px;
-  top: 8px;
-  bottom: 8px;
-  position: fixed;
-  z-index: 1050;
-  outline: none;
-  width: 500px;
-  display: flex;
-`;
-const DesktopDrawerInner = styled.div`
-  background: white;
-  height: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-`;
-const DrawerHeader = styled.div`
-  background: white;
-  border-bottom: 1px solid ${colors.border};
-  padding: 20px 24px;
-  border-radius: 16px 16px 0 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-`;
-const DrawerHeaderTitle = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: ${colors.textPrimary};
-  font-size: 20px;
-  font-weight: 600;
-`;
-const CloseButton = styled(Button)`
-  padding: 8px;
-  height: auto;
-  border: none;
-  background: none;
-  &:hover {
-    background: ${colors.border};
-  }
-`;
-const DrawerFormContainer = styled.div`
-  padding: 24px;
-  overflow-y: auto;
-  flex: 1;
-`;
-const DrawerFooter = styled.div`
-  padding: 16px 24px;
-  border-top: 1px solid ${colors.border};
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  flex-shrink: 0;
-  background: white;
 `;
 
 // --- DND & UTILITIES ---
@@ -596,6 +570,7 @@ const CustomRechartsTooltip = ({ active, payload }) => {
   return null;
 };
 
+// --- Reassignment Modal ---
 const ReassignmentModal = ({
   open,
   onCancel,
@@ -684,16 +659,19 @@ const ReassignmentModal = ({
   );
 };
 
-const CategoryEditDrawer = ({
+// --- Universal Edit Drawer (Updated Design with AI Features) ---
+const UniversalEditDrawer = ({
   isVisible,
   onClose,
-  categoryData,
+  data,
+  type = "category", // 'category' or 'collection'
   onSave,
   isLoading,
   form,
 }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
+  const typeValue = Form.useWatch("type", form);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -713,37 +691,50 @@ const CategoryEditDrawer = ({
 
   if (!shouldRender) return null;
 
+  const isCategory = type === "category";
+  const entityName = isCategory ? "Category" : "Collection";
+
   const renderDrawerContent = () => (
     <>
       <DrawerHeader>
         <DrawerHeaderTitle>
-          {categoryData ? <Edit2 size={20} /> : <Plus size={20} />}{" "}
-          {categoryData ? `Edit Category` : "Add New Category"}
+          {data ? `Edit ${entityName}` : `Add New ${entityName}`}
         </DrawerHeaderTitle>
-        <CloseButton icon={<X size={20} />} onClick={onClose} />
+        <CloseButton onClick={onClose} aria-label="Close">
+          <X size={20} />
+        </CloseButton>
       </DrawerHeader>
+
       <DrawerFormContainer>
         <Form
           form={form}
           layout="vertical"
-          id="category-edit-form"
+          id="universal-edit-form"
           onFinish={onSave}
+          initialValues={{
+            type: "manual",
+            is_active: true,
+          }}
+          requiredMark={false}
         >
           <Form.Item
             name="name"
-            label="Category Name"
+            label={<span style={{ fontWeight: 600 }}>{entityName} Name</span>}
             rules={[{ required: true }]}
           >
-            <Input placeholder="e.g., Music, Art" />
+            <Input size="middle" placeholder="e.g., Music, Date Night" />
           </Form.Item>
+
           <Form.Item
             name="slug"
-            label="Category Slug"
-            tooltip={{
-              title:
-                "URL-friendly identifier (e.g., 'digital-art'). Auto-generates from name if left blank.",
-              icon: <InfoIcon size={13} />,
-            }}
+            label={
+              <Space>
+                <span style={{ fontWeight: 600 }}>Slug</span>
+                <Tooltip title="URL-friendly identifier. Auto-generated if left blank.">
+                  <InfoIcon size={14} color={colors.textTertiary} />
+                </Tooltip>
+              </Space>
+            }
             rules={[
               {
                 pattern: /^[a-z0-9-]+$/,
@@ -752,19 +743,14 @@ const CategoryEditDrawer = ({
             ]}
           >
             <Input
+              size="middle"
               placeholder="e.g., music, digital-art"
               suffix={
                 <Tooltip title="Auto-generate from name">
                   <Button
                     type="text"
                     size="small"
-                    icon={<allIcons.Bot size={20} />}
-                    style={{
-                      margin: 0,
-                      padding: 0,
-                      height: 22,
-                      lineHeight: 1,
-                    }}
+                    icon={<Bot size={18} color={colors.primary} />}
                     onClick={() => {
                       const n = form.getFieldValue("name");
                       if (n)
@@ -780,27 +766,30 @@ const CategoryEditDrawer = ({
               }
             />
           </Form.Item>
+
           <Form.Item
             name="description"
-            label="Homepage Description"
-            tooltip="Short, catchy description for the category card on the homepage."
+            label={
+              <span style={{ fontWeight: 600 }}>Homepage Description</span>
+            }
             rules={[{ required: true, message: "A description is required." }]}
           >
             <Input.TextArea
-              rows={2}
-              placeholder="e.g., Unleash your inner creative genius"
+              rows={3}
+              placeholder="e.g., Unleash your inner creative genius with our art classes"
+              style={{ resize: "none" }}
             />
           </Form.Item>
+
           <Form.Item
             name="image"
-            label="Homepage Image"
-            tooltip="Image for the category card (e.g., 500x500px). Uploading a new image will replace the old one."
+            label={<span style={{ fontWeight: 600 }}>Cover Image</span>}
             valuePropName="fileList"
             getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
             rules={[
               {
-                required: !categoryData,
-                message: "An image is required for new categories.",
+                required: !data,
+                message: "An image is required for new items.",
               },
             ]}
           >
@@ -809,86 +798,271 @@ const CategoryEditDrawer = ({
               listType="picture-card"
               maxCount={1}
               beforeUpload={() => false}
+              showUploadList={{ showPreviewIcon: false }}
             >
-              <div>
-                <Plus />
-                <div style={{ marginTop: 8 }}>Upload</div>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <Plus size={20} color={colors.textSecondary} />
+                <span style={{ fontSize: 13, color: colors.textSecondary }}>
+                  Upload
+                </span>
               </div>
             </Upload>
           </Form.Item>
-          <Form.Item
-            name="is_featured"
-            label="Feature on Homepage"
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
-          <Divider>Admin Panel Display</Divider>
-          <Form.Item
-            name="icon_name"
-            label="Icon (for Admin Panel)"
-            tooltip="Select an icon that represents this category in the admin panel."
-            rules={[{ required: true, message: "Please select an icon." }]}
-          >
-            <Select
-              showSearch
-              placeholder="Search for an icon..."
-              optionFilterProp="label"
-            >
-              {iconOptions.map((opt) => (
-                <Select.Option
-                  key={opt.value}
-                  value={opt.value}
-                  label={opt.label}
+
+          {/* Conditional Fields based on Type */}
+          {!isCategory ? (
+            <div style={{ marginTop: 32 }}>
+              <Divider
+                orientation="left"
+                style={{ borderColor: colors.border }}
+              >
+                <span
+                  style={{
+                    fontSize: 14,
+                    color: colors.textSecondary,
+                    fontWeight: 600,
+                  }}
                 >
-                  <Space>
-                    <opt.component size={16} />
-                    {opt.label}
-                  </Space>
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="color"
-            label="Category Color (for Admin Panel)"
-            rules={[{ required: true }]}
-          >
-            <ColorPicker
-              format="hex"
-              presets={[
-                {
-                  label: "Recommended",
-                  colors: [
-                    "#3b82f6",
-                    "#8b5cf6",
-                    "#ec4899",
-                    "#10b981",
-                    "#f97316",
-                    "#0ea5e9",
-                    "#ef4444",
-                    "#64748b",
-                  ],
-                },
-              ]}
-              style={{ padding: "10px 10px" }}
-              showText
-              getPopupContainer={(trigger) => trigger.parentElement}
-            />
-          </Form.Item>
+                  Collection Settings
+                </span>
+              </Divider>
+
+              <Form.Item
+                name="type"
+                label={<span style={{ fontWeight: 600 }}>Curation Method</span>}
+                tooltip="How should classes be added to this collection?"
+              >
+                <Radio.Group
+                  buttonStyle="solid"
+                  size="middle"
+                  style={{ width: "100%" }}
+                >
+                  <Radio.Button
+                    value="manual"
+                    style={{ width: "50%", textAlign: "center" }}
+                  >
+                    Manual
+                  </Radio.Button>
+                  <Radio.Button
+                    value="automated"
+                    style={{ width: "50%", textAlign: "center" }}
+                  >
+                    <Space size={6}>
+                      <BrainCircuit size={16} /> AI Automated
+                    </Space>
+                  </Radio.Button>
+                </Radio.Group>
+              </Form.Item>
+
+              {typeValue === "automated" && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  style={{ overflow: "hidden" }}
+                >
+                  <div
+                    style={{
+                      background: hexToRgba(colors.purple, 0.04),
+                      padding: 20,
+                      borderRadius: 16,
+                      marginBottom: 24,
+                      border: `1px solid ${hexToRgba(colors.purple, 0.15)}`,
+                    }}
+                  >
+                    <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+                      <div
+                        style={{
+                          background: colors.purple,
+                          color: "white",
+                          padding: 6,
+                          borderRadius: 8,
+                          height: "fit-content",
+                        }}
+                      >
+                        <Bot size={18} />
+                      </div>
+                      <div>
+                        <Text
+                          strong
+                          style={{ color: colors.purple, fontSize: 15 }}
+                        >
+                          AI Curator Active
+                        </Text>
+                        <Paragraph
+                          style={{
+                            margin: 0,
+                            color: colors.textSecondary,
+                            fontSize: 13,
+                            marginTop: 4,
+                          }}
+                        >
+                          The system will automatically find and add classes
+                          matching your criteria.
+                        </Paragraph>
+                      </div>
+                    </div>
+
+                    <Form.Item
+                      name="ai_criteria"
+                      label={
+                        <span
+                          style={{ fontWeight: 600, color: colors.textPrimary }}
+                        >
+                          Criteria Instructions
+                        </span>
+                      }
+                      rules={[
+                        {
+                          required: true,
+                          message: "Please describe the criteria for the AI.",
+                        },
+                      ]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <Input.TextArea
+                        rows={4}
+                        placeholder="e.g. 'Classes suitable for romantic dates, involving wine tasting, pottery, or salsa dancing. Should be for adults.'"
+                        style={{
+                          borderRadius: 12,
+                          borderColor: hexToRgba(colors.purple, 0.2),
+                        }}
+                      />
+                    </Form.Item>
+                  </div>
+                </motion.div>
+              )}
+
+              <Form.Item
+                name="is_active"
+                label={<span style={{ fontWeight: 600 }}>Visibility</span>}
+                valuePropName="checked"
+                style={{ marginTop: 24 }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "12px 16px",
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: 12,
+                  }}
+                >
+                  <span style={{ fontSize: 14 }}>Show on Homepage</span>
+                  <Switch />
+                </div>
+              </Form.Item>
+            </div>
+          ) : (
+            <div style={{ marginTop: 32 }}>
+              <Divider
+                orientation="left"
+                style={{ borderColor: colors.border }}
+              >
+                <span
+                  style={{
+                    fontSize: 14,
+                    color: colors.textSecondary,
+                    fontWeight: 600,
+                  }}
+                >
+                  Admin Display
+                </span>
+              </Divider>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 16,
+                }}
+              >
+                <Form.Item
+                  name="icon_name"
+                  label={<span style={{ fontWeight: 600 }}>Icon</span>}
+                  rules={[{ required: true, message: "Select an icon." }]}
+                >
+                  <Select
+                    size="middle"
+                    showSearch
+                    placeholder="Select icon..."
+                    optionFilterProp="label"
+                    virtual={false}
+                  >
+                    {iconOptions.map((opt) => (
+                      <Select.Option
+                        key={opt.value}
+                        value={opt.value}
+                        label={opt.label}
+                      >
+                        <Space>
+                          <opt.component size={16} />
+                          {opt.label}
+                        </Space>
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+
+                <Form.Item
+                  name="color"
+                  label={<span style={{ fontWeight: 600 }}>Color Label</span>}
+                  rules={[{ required: true }]}
+                >
+                  <ColorPicker
+                    size="middle"
+                    format="hex"
+                    presets={[
+                      {
+                        label: "Recommended",
+                        colors: [
+                          "#3b82f6",
+                          "#8b5cf6",
+                          "#ec4899",
+                          "#10b981",
+                          "#f97316",
+                          "#0ea5e9",
+                          "#ef4444",
+                          "#64748b",
+                        ],
+                      },
+                    ]}
+                    style={{ width: "100%", justifyContent: "flex-start" }}
+                    showText
+                  />
+                </Form.Item>
+              </div>
+            </div>
+          )}
         </Form>
       </DrawerFormContainer>
+
       <DrawerFooter>
-        <Button onClick={onClose} disabled={isLoading}>
+        <Button
+          onClick={onClose}
+          disabled={isLoading}
+          size="middle"
+          style={{ borderRadius: 10 }}
+        >
           Cancel
         </Button>
         <Button
           type="primary"
           htmlType="submit"
-          form="category-edit-form"
+          form="universal-edit-form"
           loading={isLoading}
-          key={`btn-${isLoading}`}>
-          {categoryData ? "Update Category" : "Create Category"}
+          key={`btn-${isLoading}`}
+          size="middle"
+          style={{ borderRadius: 10, padding: "0 32px" }}
+        >
+          {data ? "Save Changes" : `Create ${entityName}`}
         </Button>
       </DrawerFooter>
     </>
@@ -918,16 +1092,23 @@ const CategoryEditDrawer = ({
   );
 };
 
+// --- Main Component ---
 const ClassCategories = () => {
   const [categories, setCategories] = useState([]);
+  const [collections, setCollections] = useState([]);
+  const [activeTab, setActiveTab] = useState("categories");
+
   const [dashboardStats, setDashboardStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
   const [chartLoading, setChartLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(null);
+
+  // Generic state for editing either category or collection
+  const [selectedItem, setSelectedItem] = useState(null);
   const [isEditDrawerVisible, setIsEditDrawerVisible] = useState(false);
+
   const [isAddSubcategoryModalVisible, setIsAddSubcategoryModalVisible] =
     useState(false);
   const [isEditSubcategoryModalVisible, setIsEditSubcategoryModalVisible] =
@@ -994,51 +1175,89 @@ const ClassCategories = () => {
     }
   }, [searchText]);
 
+  const fetchCollections = useCallback(async () => {
+    if (activeTab !== "collections") return;
+    setLoading(true);
+    try {
+      const response = await classManagementService.getCollections();
+      if (response.success) {
+        setCollections(response.data || []);
+      } else {
+        message.error(response.error || "Failed to fetch collections");
+        setCollections([]);
+      }
+    } catch (e) {
+      console.error("Fetch collections error:", e);
+      message.error("Error fetching collections");
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab]);
+
   useEffect(() => {
     fetchDashboardStats();
   }, [fetchDashboardStats]);
 
   useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
+    if (activeTab === "categories") {
+      fetchCategories();
+    } else {
+      fetchCollections();
+    }
+  }, [fetchCategories, fetchCollections, activeTab]);
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
     if (active && over && active.id !== over.id) {
-      setCategories((prev) => {
-        const oldIndex = prev.findIndex((cat) => cat.id === active.id);
-        const newIndex = prev.findIndex((cat) => cat.id === over.id);
-        if (oldIndex === -1 || newIndex === -1) return prev;
-
-        const newArray = arrayMove(prev, oldIndex, newIndex);
-
-        // Optimistically update UI, then send update to backend
-        updateCategoryOrder(newArray);
-
-        return newArray;
-      });
+      if (activeTab === "categories") {
+        setCategories((prev) => {
+          const oldIndex = prev.findIndex((cat) => cat.id === active.id);
+          const newIndex = prev.findIndex((cat) => cat.id === over.id);
+          if (oldIndex === -1 || newIndex === -1) return prev;
+          const newArray = arrayMove(prev, oldIndex, newIndex);
+          updateOrder(newArray, "category");
+          return newArray;
+        });
+      } else {
+        setCollections((prev) => {
+          const oldIndex = prev.findIndex((c) => c.id === active.id);
+          const newIndex = prev.findIndex((c) => c.id === over.id);
+          if (oldIndex === -1 || newIndex === -1) return prev;
+          const newArray = arrayMove(prev, oldIndex, newIndex);
+          updateOrder(newArray, "collection");
+          return newArray;
+        });
+      }
     }
   };
 
-  const updateCategoryOrder = async (reorderedCategories) => {
+  const updateOrder = async (items, type) => {
     setActionLoading(true);
     try {
-      const updatePayload = reorderedCategories.map((cat, index) => ({
-        id: cat.id,
-        order: index, // Send the new index as the sort_order
+      const updatePayload = items.map((item, index) => ({
+        id: item.id,
+        order: index,
       }));
-      const response = await classManagementService.updateCategoryOrder(
-        updatePayload
-      );
+
+      const apiCall =
+        type === "category"
+          ? classManagementService.updateCategoryOrder(updatePayload)
+          : classManagementService.updateCollectionOrder(updatePayload);
+
+      const response = await apiCall;
       if (response?.success) {
-        message.success("Category order updated successfully.");
+        message.success(
+          `${type === "category" ? "Category" : "Collection"} order updated.`
+        );
       } else {
-        message.error("Failed to update category order. Reverting changes.");
-        fetchCategories(); // Re-fetch to revert optimistic update on failure
+        message.error("Failed to update order. Reverting changes.");
+        if (type === "category") fetchCategories();
+        else fetchCollections();
       }
     } catch (error) {
-      message.error("An error occurred while updating category order.");
-      fetchCategories(); // Re-fetch on error
+      message.error("An error occurred while updating order.");
+      if (type === "category") fetchCategories();
+      else fetchCollections();
     } finally {
       setActionLoading(false);
     }
@@ -1064,7 +1283,6 @@ const ClassCategories = () => {
     setActionLoading(false);
   };
 
-  // Direct delete handlers for Popconfirm
   const confirmDeleteCategory = (cat) => {
     if (cat.class_count > 0) {
       setReassignmentData({ type: "category", target: cat, parent: null });
@@ -1081,24 +1299,42 @@ const ClassCategories = () => {
     }
   };
 
-  const handleSaveCategory = async () => {
+  const confirmDeleteCollection = (col) => {
+    Modal.confirm({
+      title: "Delete Collection?",
+      content: `Are you sure you want to delete "${col.name}"? Classes will remain but won't be in this collection anymore.`,
+      okText: "Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        setActionLoading(true);
+        const res = await classManagementService.deleteCollection(col.id);
+        if (res.success) {
+          message.success("Collection deleted");
+          fetchCollections();
+        } else {
+          message.error(res.error || "Failed to delete");
+        }
+        setActionLoading(false);
+      },
+    });
+  };
+
+  const handleSaveItem = async () => {
     try {
       const values = await editForm.validateFields();
       setActionLoading(true);
       message.loading({
         content: "Saving...",
-        key: "categoryAction",
+        key: "saveAction",
         duration: 0,
       });
 
-      // --- S3 UPLOAD LOGIC ---
-      let imageS3Key = undefined; // Use undefined to avoid sending the key if no change
-
+      let imageS3Key = undefined;
       const imageFileObject = values.image?.[0];
 
       if (imageFileObject && imageFileObject.originFileObj) {
         const fileToUpload = imageFileObject.originFileObj;
-
         message.loading({
           content: "Uploading image...",
           key: "imageUpload",
@@ -1123,67 +1359,80 @@ const ClassCategories = () => {
             duration: 3,
           });
           setActionLoading(false);
-          message.destroy("categoryAction");
+          message.destroy("saveAction");
           return;
         }
       } else if (values.image === undefined || values.image.length === 0) {
         imageS3Key = null;
       }
 
-      // --- JSON PAYLOAD CONSTRUCTION ---
       const payload = {
         name: values.name,
         description: values.description,
-        is_featured: values.is_featured,
-        color:
-          typeof values.color === "object" && values.color.toHexString
-            ? values.color.toHexString()
-            : values.color,
-        icon_name: values.icon_name,
-        ...(values.slug && { key: values.slug }),
+        ...(values.slug && {
+          [activeTab === "categories" ? "key" : "slug"]: values.slug,
+        }),
       };
 
       if (imageS3Key !== undefined) {
         payload.image_s3_key = imageS3Key;
       }
 
-      // --- API CALL ---
-      const serviceCall = selectedCategory
-        ? classManagementService.updateCategory(selectedCategory.id, payload)
-        : classManagementService.createCategory(payload);
+      if (activeTab === "categories") {
+        payload.color =
+          typeof values.color === "object" && values.color.toHexString
+            ? values.color.toHexString()
+            : values.color;
+        payload.icon_name = values.icon_name;
+      } else {
+        payload.is_active = values.is_active;
+        payload.type = values.type;
+        // Handle Automation Rules
+        if (values.type === "automated") {
+          payload.automation_rules = {
+            ai_criteria: values.ai_criteria,
+          };
+        } else {
+          payload.automation_rules = {};
+        }
+      }
 
-      const response = await serviceCall;
+      let response;
+      if (activeTab === "categories") {
+        response = selectedItem
+          ? await classManagementService.updateCategory(
+              selectedItem.id,
+              payload
+            )
+          : await classManagementService.createCategory(payload);
+      } else {
+        response = selectedItem
+          ? await classManagementService.updateCollection(
+              selectedItem.id,
+              payload
+            )
+          : await classManagementService.createCollection(payload);
+      }
 
       if (response.success) {
         message.success({
-          content: `Category ${selectedCategory ? "updated" : "created"}`,
-          key: "categoryAction",
+          content: "Saved successfully",
+          key: "saveAction",
           duration: 2,
         });
         setIsEditDrawerVisible(false);
-        fetchCategories();
+        activeTab === "categories" ? fetchCategories() : fetchCollections();
         fetchDashboardStats();
       } else {
-        const errorMessage =
-          typeof response.error === "object"
-            ? Object.values(response.error).flat().join(" ")
-            : response.error;
         message.error({
-          content:
-            errorMessage ||
-            `Failed to ${selectedCategory ? "update" : "create"} category`,
-          key: "categoryAction",
+          content: response.error || "Failed to save",
+          key: "saveAction",
           duration: 4,
         });
       }
     } catch (e) {
-      console.error("Save category error:", e);
-      if (e.errorFields)
-        message.error({
-          content: "Please fill all required fields.",
-          key: "categoryAction",
-          duration: 2,
-        });
+      console.error("Save error:", e);
+      if (e.errorFields) message.error("Please fill all required fields.");
     } finally {
       setActionLoading(false);
       message.destroy("imageUpload");
@@ -1196,7 +1445,7 @@ const ClassCategories = () => {
       setActionLoading(true);
       message.loading({ content: "Adding...", key: "subcategoryAction" });
       const response = await classManagementService.addSubcategory(
-        selectedCategory.id,
+        selectedItem.id,
         values
       );
       if (response.success) {
@@ -1215,11 +1464,6 @@ const ClassCategories = () => {
       }
     } catch (e) {
       console.error("Add subcategory error:", e);
-      if (e.errorFields)
-        message.error({
-          content: "Please fill all required fields.",
-          key: "subcategoryAction",
-        });
     } finally {
       setActionLoading(false);
     }
@@ -1231,7 +1475,7 @@ const ClassCategories = () => {
       setActionLoading(true);
       message.loading({ content: "Updating...", key: "subcategoryAction" });
       const response = await classManagementService.updateSubcategory(
-        selectedCategory.id,
+        selectedItem.id,
         editingSubcategory.id,
         values
       );
@@ -1250,11 +1494,6 @@ const ClassCategories = () => {
       }
     } catch (e) {
       console.error("Update subcategory error:", e);
-      if (e.errorFields)
-        message.error({
-          content: "Please fill all required fields.",
-          key: "subcategoryAction",
-        });
     } finally {
       setActionLoading(false);
     }
@@ -1275,27 +1514,6 @@ const ClassCategories = () => {
       });
     }
     setActionLoading(false);
-  };
-
-  const handleInitiateDelete = (item, type, parentCategory = null) => {
-    if (item.class_count > 0) {
-      setReassignmentData({ type, target: item, parent: parentCategory });
-    } else {
-      Modal.confirm({
-        title: `Delete this ${type}?`,
-        content: `Are you sure you want to delete "${item.name}"? This action cannot be undone.`,
-        okText: "Delete",
-        okType: "danger",
-        cancelText: "Cancel",
-        onOk: () => {
-          if (type === "category") {
-            handleDeleteCategory(item.id);
-          } else {
-            handleDeleteSubcategory(parentCategory.id, item.id);
-          }
-        },
-      });
-    }
   };
 
   const handleConfirmReassignment = async (newId) => {
@@ -1324,11 +1542,7 @@ const ClassCategories = () => {
 
     if (response.success) {
       message.success({
-        content:
-          response.data?.detail ||
-          `${
-            type.charAt(0).toUpperCase() + type.slice(1)
-          } deleted successfully.`,
+        content: "Deleted successfully.",
         key: "reassignAction",
       });
       setReassignmentData(null);
@@ -1343,35 +1557,46 @@ const ClassCategories = () => {
     setActionLoading(false);
   };
 
-  const openCategoryDrawer = (category = null) => {
-    setSelectedCategory(category);
-    if (category) {
-      const fileList = category.image_medium_url
+  const openDrawer = (item = null) => {
+    setSelectedItem(item);
+    if (item) {
+      const fileList = item.image_medium_url
         ? [
             {
               uid: "-1",
               name: "current_image.webp",
               status: "done",
-              url: category.image_medium_url,
+              url: item.image_medium_url,
             },
           ]
         : [];
 
-      editForm.setFieldsValue({
-        name: category.name,
-        slug: category.key,
-        description: category.description,
-        is_featured: category.is_featured,
+      const initialValues = {
+        name: item.name,
+        slug: activeTab === "categories" ? item.key : item.slug,
+        description: item.description,
         image: fileList,
-        color: category.color || colors.primary,
-        icon_name: category.icon_name || "Bookmark",
-      });
+      };
+
+      if (activeTab === "categories") {
+        initialValues.color = item.color || colors.primary;
+        initialValues.icon_name = item.icon_name || "Bookmark";
+      } else {
+        initialValues.is_active = item.is_active;
+        initialValues.type = item.type || "manual";
+        if (item.automation_rules?.ai_criteria) {
+          initialValues.ai_criteria = item.automation_rules.ai_criteria;
+        }
+      }
+
+      editForm.setFieldsValue(initialValues);
     } else {
       editForm.resetFields();
       editForm.setFieldsValue({
         color: colors.primary,
         icon_name: "Bookmark",
-        is_featured: false,
+        is_active: true,
+        type: "manual",
         image: [],
       });
     }
@@ -1379,13 +1604,13 @@ const ClassCategories = () => {
   };
 
   const showAddSubcategoryModal = (category) => {
-    setSelectedCategory(category);
+    setSelectedItem(category);
     subcategoryForm.resetFields();
     setIsAddSubcategoryModalVisible(true);
   };
 
   const openEditSubcategoryModal = (subcategory, category) => {
-    setSelectedCategory(category);
+    setSelectedItem(category);
     setEditingSubcategory(subcategory);
     editSubcategoryForm.setFieldsValue({
       name: subcategory.name,
@@ -1395,7 +1620,7 @@ const ClassCategories = () => {
     setIsEditSubcategoryModalVisible(true);
   };
 
-  const columns = [
+  const categoryColumns = [
     { key: "sort", width: 50, fixed: "left", render: () => <DragHandle /> },
     {
       title: "Category",
@@ -1445,67 +1670,45 @@ const ClassCategories = () => {
     {
       title: "Subcategories",
       key: "subcategories",
-      render: (_, cat) => {
-        const subs = cat.subcategories || [];
-        return (
-          <div
-            style={{
-              maxWidth: 450,
-            }}
-          >
-            <Space size={[4, 8]} wrap>
-              {subs.map((s) => (
-                <SubcategoryItem key={s.id} color={cat.color}>
-                  <span>
-                    {s.name} ({s.class_count})
-                  </span>
-                  <Tooltip title="Edit Subcategory">
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<PenLine size={12} />}
-                      onClick={() => openEditSubcategoryModal(s, cat)}
-                      style={{
-                        padding: "0 2px",
-                        height: "auto",
-                        marginLeft: 4,
-                      }}
-                    />
-                  </Tooltip>
-                  <Popconfirm
-                    title="Delete subcategory?"
-                    description={`Delete "${s.name}"?${
-                      s.class_count > 0 ? " Classes need reassignment." : ""
-                    }`}
-                    onConfirm={() => confirmDeleteSubcategory(s, cat)}
-                    okText="Delete"
-                    cancelText="Cancel"
-                    okButtonProps={{ danger: true }}
-                  >
-                    <Tooltip title="Delete Subcategory">
-                      <Button
-                        type="text"
-                        size="small"
-                        danger
-                        icon={<Trash2 size={12} />}
-                        style={{ padding: "0 2px", height: "auto" }}
-                      />
-                    </Tooltip>
-                  </Popconfirm>
-                </SubcategoryItem>
-              ))}
-              <Tooltip title="Add New Subcategory">
+      render: (_, cat) => (
+        <div style={{ maxWidth: 450 }}>
+          <Space size={[4, 8]} wrap>
+            {cat.subcategories.map((s) => (
+              <SubcategoryItem key={s.id} color={cat.color}>
+                <span>
+                  {s.name} ({s.class_count})
+                </span>
                 <Button
-                  type="dashed"
-                  icon={<Plus size={12} />}
+                  type="text"
                   size="small"
-                  onClick={() => showAddSubcategoryModal(cat)}
+                  icon={<PenLine size={12} />}
+                  onClick={() => openEditSubcategoryModal(s, cat)}
+                  style={{ padding: "0 2px", height: "auto", marginLeft: 4 }}
                 />
-              </Tooltip>
-            </Space>
-          </div>
-        );
-      },
+                <Popconfirm
+                  title="Delete?"
+                  onConfirm={() => confirmDeleteSubcategory(s, cat)}
+                  okButtonProps={{ danger: true }}
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    danger
+                    icon={<Trash2 size={12} />}
+                    style={{ padding: "0 2px", height: "auto" }}
+                  />
+                </Popconfirm>
+              </SubcategoryItem>
+            ))}
+            <Button
+              type="dashed"
+              icon={<Plus size={12} />}
+              size="small"
+              onClick={() => showAddSubcategoryModal(cat)}
+            />
+          </Space>
+        </div>
+      ),
     },
     {
       title: "Actions",
@@ -1514,143 +1717,107 @@ const ClassCategories = () => {
       align: "right",
       render: (_, cat) => (
         <Space>
-          <Tooltip title="Edit Category">
-            <Button
-              icon={<Edit size={16} />}
-              onClick={() => openCategoryDrawer(cat)}
-            />
-          </Tooltip>
+          <Button icon={<Edit size={16} />} onClick={() => openDrawer(cat)} />
           <Popconfirm
-            title="Delete category?"
-            description={`Delete "${cat.name}"?${
-              cat.class_count > 0 ? " Classes need reassignment." : ""
-            }`}
+            title="Delete?"
             onConfirm={() => confirmDeleteCategory(cat)}
-            okText="Delete"
-            cancelText="Cancel"
             okButtonProps={{ danger: true }}
           >
-            <Tooltip title="Delete Category">
-              <Button danger icon={<Trash2 size={16} />} />
-            </Tooltip>
+            <Button danger icon={<Trash2 size={16} />} />
           </Popconfirm>
         </Space>
       ),
     },
   ];
 
-  const renderCategoryCard = (cat) => {
-    const subs = cat.subcategories || [];
-    return (
-      <CategoryCard key={cat.id}>
-        <CategoryCardHeader>
+  const collectionColumns = [
+    { key: "sort", width: 50, fixed: "left", render: () => <DragHandle /> },
+    {
+      title: "Collection",
+      key: "name",
+      render: (_, col) => (
+        <Space>
           <div
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              backgroundColor: cat.color,
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              backgroundColor: col.is_active
+                ? colors.success
+                : colors.textTertiary,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               color: "#fff",
             }}
           >
-            <CategoryIcon iconName={cat.icon_name} size={20} />
+            <Sparkles size={14} />
           </div>
-          <CategoryInfo>
-            <CategoryName>{cat.name}</CategoryName>
-            <CategoryKey>{cat.key}</CategoryKey>
-          </CategoryInfo>
-        </CategoryCardHeader>
-        <div>
-          <CategoryCardRow>
-            <CategoryCardLabel>Total Classes</CategoryCardLabel>
-            <CategoryCardValue>{cat.class_count || 0}</CategoryCardValue>
-          </CategoryCardRow>
-          <CategoryCardRow>
-            <CategoryCardLabel>Subcategories</CategoryCardLabel>
-            <CategoryCardValue>{subs.length}</CategoryCardValue>
-          </CategoryCardRow>
-          {subs.length > 0 && (
+          <div>
             <div
               style={{
-                marginTop: 12,
+                fontWeight: 500,
+                fontSize: 14,
+                color: colors.textPrimary,
                 display: "flex",
-                flexWrap: "wrap",
+                alignItems: "center",
                 gap: 8,
               }}
             >
-              {subs.map((s) => (
-                <SubcategoryItem key={s.id} color={cat.color}>
-                  <span>
-                    {s.name} ({s.class_count})
-                  </span>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<PenLine size={12} />}
-                    onClick={() => openEditSubcategoryModal(s, cat)}
-                    style={{ padding: 0, height: "auto", minWidth: "auto" }}
-                  />
-                  <Popconfirm
-                    title="Delete subcategory?"
-                    description={`Are you sure you want to delete "${s.name}"?${
-                      s.class_count > 0
-                        ? " Classes will need to be reassigned."
-                        : ""
-                    }`}
-                    onConfirm={() => confirmDeleteSubcategory(s, cat)}
-                    okText="Delete"
-                    cancelText="Cancel"
-                    okButtonProps={{ danger: true }}
-                  >
-                    <Button
-                      type="text"
-                      size="small"
-                      danger
-                      icon={<Trash2 size={12} />}
-                      style={{ padding: 0, height: "auto", minWidth: "auto" }}
-                    />
-                  </Popconfirm>
-                </SubcategoryItem>
-              ))}
+              {col.name}
+              {col.type === "automated" && (
+                <Tag
+                  color="purple"
+                  style={{ margin: 0, fontSize: 10, lineHeight: "16px" }}
+                >
+                  <Bot size={10} style={{ marginRight: 4 }} />
+                  Auto
+                </Tag>
+              )}
             </div>
-          )}
-        </div>
-        <CategoryCardFooter>
+            <div style={{ fontSize: 12, color: colors.textSecondary }}>
+              /{col.slug}
+            </div>
+          </div>
+        </Space>
+      ),
+    },
+    {
+      title: "Classes",
+      dataIndex: "class_count",
+      key: "class_count",
+      align: "center",
+      render: (val) => <Tag color="blue">{val || 0} classes</Tag>,
+    },
+    {
+      title: "Status",
+      dataIndex: "is_active",
+      key: "is_active",
+      width: 100,
+      render: (isActive) =>
+        isActive ? (
+          <Tag color="success">Active</Tag>
+        ) : (
+          <Tag color="default">Hidden</Tag>
+        ),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      width: 100,
+      align: "right",
+      render: (_, col) => (
+        <Space>
+          <Button icon={<Edit size={16} />} onClick={() => openDrawer(col)} />
           <Button
-            icon={<Plus size={14} />}
-            onClick={() => showAddSubcategoryModal(cat)}
-            size="small"
-          >
-            Subcategory
-          </Button>
-          <Button
-            icon={<Edit size={14} />}
-            onClick={() => openCategoryDrawer(cat)}
-            size="small"
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Delete category?"
-            description={`Are you sure you want to delete "${cat.name}"?${
-              cat.class_count > 0 ? " Classes will need to be reassigned." : ""
-            }`}
-            onConfirm={() => confirmDeleteCategory(cat)}
-            okText="Delete"
-            cancelText="Cancel"
-            okButtonProps={{ danger: true }}
-          >
-            <Button danger icon={<Trash2 size={14} />} size="small">
-              Delete
-            </Button>
-          </Popconfirm>
-        </CategoryCardFooter>
-      </CategoryCard>
-    );
-  };
+            danger
+            icon={<Trash2 size={16} />}
+            onClick={() => confirmDeleteCollection(col)}
+          />
+        </Space>
+      ),
+    },
+  ];
 
   const pieChartData =
     chartView.type === "categories"
@@ -1727,21 +1894,11 @@ const ClassCategories = () => {
         <DashboardWrapper>
           <DashboardHeader>
             <div>
-              <PageTitle>Class Categories</PageTitle>
+              <PageTitle>Class Organization</PageTitle>
               <HeaderSubtitle>
-                Organize classes by defining broad categories and specific
-                subcategories for better discovery.
+                Manage taxonomy (Categories) and curated lists (Collections).
               </HeaderSubtitle>
             </div>
-            <ActionButtonsContainer>
-              <Button
-                type="primary"
-                icon={<Plus size={16} />}
-                onClick={() => openCategoryDrawer()}
-              >
-                Add New Category
-              </Button>
-            </ActionButtonsContainer>
           </DashboardHeader>
 
           <Divider />
@@ -1878,72 +2035,133 @@ const ClassCategories = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <TableHeader>
-              <TableTitle>
-                <Book size={20} />
-                Manage Categories
-              </TableTitle>
-              <TableDescription>
-                Create, edit, and manage all class categories and their
-                associated subcategories. Drag and drop to reorder.
-              </TableDescription>
-            </TableHeader>
+            <Tabs
+              activeKey={activeTab}
+              onChange={setActiveTab}
+              type="card"
+              tabBarStyle={{
+                margin: 0,
+                padding: "12px 24px 0",
+                borderBottom: `1px solid ${colors.border}`,
+              }}
+              items={[
+                {
+                  key: "categories",
+                  label: (
+                    <span
+                      style={{ display: "flex", alignItems: "center", gap: 8 }}
+                    >
+                      <Layers size={16} /> Categories (Taxonomy)
+                    </span>
+                  ),
+                  children: (
+                    <>
+                      <TableHeader>
+                        <div style={{ flex: 1 }}>
+                          <TableDescription>
+                            Define the core hierarchy. Every class must belong
+                            to one Category.
+                          </TableDescription>
+                        </div>
+                        <Button
+                          type="primary"
+                          icon={<Plus size={16} />}
+                          onClick={() => openDrawer(null)}
+                        >
+                          Add Category
+                        </Button>
+                      </TableHeader>
+                      <FilterBar>
+                        <SearchFilterContainer>
+                          <Input
+                            placeholder="Search categories..."
+                            allowClear
+                            prefix={
+                              <Search size={16} color={colors.textTertiary} />
+                            }
+                            value={searchText}
+                            onChange={(e) => setSearchText(e.target.value)}
+                            onSearch={fetchCategories}
+                            style={{ width: isMobile ? "100%" : 280 }}
+                          />
+                        </SearchFilterContainer>
+                      </FilterBar>
 
-            <FilterBar>
-              <SearchFilterContainer>
-                <Input
-                  placeholder="Search categories..."
-                  allowClear
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  onSearch={fetchCategories}
-                  style={{ width: isMobile ? "100%" : 280 }}
-                />
-              </SearchFilterContainer>
-            </FilterBar>
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        modifiers={[restrictToVerticalAxis]}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={categories.map((c) => c.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <Table
+                            columns={categoryColumns}
+                            dataSource={categories}
+                            rowKey="id"
+                            loading={loading}
+                            components={{ body: { row: Row } }}
+                            pagination={false}
+                          />
+                        </SortableContext>
+                      </DndContext>
+                    </>
+                  ),
+                },
+                {
+                  key: "collections",
+                  label: (
+                    <span
+                      style={{ display: "flex", alignItems: "center", gap: 8 }}
+                    >
+                      <Sparkles size={16} /> Collections
+                    </span>
+                  ),
+                  children: (
+                    <>
+                      <TableHeader>
+                        <div style={{ flex: 1 }}>
+                          <TableDescription>
+                            Curated lists like "Date Night" or "Under $50". Can
+                            be manual or AI automated.
+                          </TableDescription>
+                        </div>
+                        <Button
+                          type="primary"
+                          icon={<Plus size={16} />}
+                          onClick={() => openDrawer(null)}
+                        >
+                          Add Collection
+                        </Button>
+                      </TableHeader>
 
-            {isMobile ? (
-              <div style={{ padding: "0 8px 8px" }}>
-                {loading ? (
-                  <Skeleton active paragraph={{ rows: 4 }} />
-                ) : categories.length > 0 ? (
-                  categories.map(renderCategoryCard)
-                ) : (
-                  <Empty description="No categories found" />
-                )}
-              </div>
-            ) : (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                modifiers={[restrictToVerticalAxis]}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={categories.map((c) => c.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <Table
-                    columns={columns}
-                    dataSource={categories}
-                    rowKey="id"
-                    loading={{
-                      spinning: loading,
-                      indicator: <GlobalLoaderWithInlineStyles />,
-                    }}
-                    components={{ body: { row: Row } }}
-                    pagination={{
-                      pageSize: 10,
-                      showSizeChanger: true,
-                      pageSizeOptions: ["5", "10", "20"],
-                    }}
-                    locale={{
-                      emptyText: <Empty description="No categories found" />,
-                    }}
-                  />
-                </SortableContext>
-              </DndContext>
-            )}
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        modifiers={[restrictToVerticalAxis]}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={collections.map((c) => c.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          <Table
+                            columns={collectionColumns}
+                            dataSource={collections}
+                            rowKey="id"
+                            loading={loading}
+                            components={{ body: { row: Row } }}
+                            pagination={false}
+                          />
+                        </SortableContext>
+                      </DndContext>
+                    </>
+                  ),
+                },
+              ]}
+            />
           </TableSection>
 
           <ReassignmentModal
@@ -1955,11 +2173,12 @@ const ClassCategories = () => {
             loading={actionLoading}
           />
 
-          <CategoryEditDrawer
+          <UniversalEditDrawer
             isVisible={isEditDrawerVisible}
             onClose={() => setIsEditDrawerVisible(false)}
-            categoryData={selectedCategory}
-            onSave={handleSaveCategory}
+            data={selectedItem}
+            type={activeTab === "categories" ? "category" : "collection"}
+            onSave={handleSaveItem}
             isLoading={actionLoading}
             form={editForm}
           />
@@ -1968,7 +2187,7 @@ const ClassCategories = () => {
             title={
               <ModalTitleWrapper>
                 <Plus size={20} />
-                Add Subcategory to: {selectedCategory?.name || ""}
+                Add Subcategory to: {selectedItem?.name || ""}
               </ModalTitleWrapper>
             }
             open={isAddSubcategoryModalVisible}
@@ -1977,7 +2196,7 @@ const ClassCategories = () => {
             width={isMobile ? "95%" : 500}
             destroyOnClose
           >
-            {selectedCategory && (
+            {selectedItem && (
               <Form
                 form={subcategoryForm}
                 layout="vertical"
@@ -1987,7 +2206,7 @@ const ClassCategories = () => {
                   style={{
                     marginBottom: 20,
                     padding: 12,
-                    background: hexToRgba(selectedCategory.color, 0.1),
+                    background: hexToRgba(selectedItem.color, 0.1),
                     borderRadius: 12,
                   }}
                 >
@@ -1997,7 +2216,7 @@ const ClassCategories = () => {
                         width: 24,
                         height: 24,
                         borderRadius: 6,
-                        backgroundColor: selectedCategory.color,
+                        backgroundColor: selectedItem.color,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -2005,15 +2224,15 @@ const ClassCategories = () => {
                       }}
                     >
                       <CategoryIcon
-                        iconName={selectedCategory.icon_name}
+                        iconName={selectedItem.icon_name}
                         size={14}
                       />
                     </div>
                     <Text
                       strong
-                      style={{ fontSize: 16, color: selectedCategory.color }}
+                      style={{ fontSize: 16, color: selectedItem.color }}
                     >
-                      {selectedCategory.name}
+                      {selectedItem.name}
                     </Text>
                   </Space>
                 </div>
@@ -2081,7 +2300,8 @@ const ClassCategories = () => {
                       type="primary"
                       htmlType="submit"
                       loading={actionLoading}
-                      key={`btn-${actionLoading}`}>
+                      key={`btn-${actionLoading}`}
+                    >
                       Add Subcategory
                     </Button>
                   </Space>
@@ -2094,7 +2314,7 @@ const ClassCategories = () => {
             title={
               <ModalTitleWrapper>
                 <PenLine size={20} />
-                Edit Subcategory in: {selectedCategory?.name || ""}
+                Edit Subcategory in: {selectedItem?.name || ""}
               </ModalTitleWrapper>
             }
             open={isEditSubcategoryModalVisible}
@@ -2113,7 +2333,7 @@ const ClassCategories = () => {
                   style={{
                     marginBottom: 20,
                     padding: 12,
-                    background: hexToRgba(selectedCategory?.color, 0.1),
+                    background: hexToRgba(selectedItem?.color, 0.1),
                     borderRadius: 12,
                   }}
                 >
@@ -2123,7 +2343,7 @@ const ClassCategories = () => {
                         width: 24,
                         height: 24,
                         borderRadius: 6,
-                        backgroundColor: selectedCategory?.color,
+                        backgroundColor: selectedItem?.color,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -2131,15 +2351,15 @@ const ClassCategories = () => {
                       }}
                     >
                       <CategoryIcon
-                        iconName={selectedCategory?.icon_name}
+                        iconName={selectedItem?.icon_name}
                         size={14}
                       />
                     </div>
                     <Text
                       strong
-                      style={{ fontSize: 16, color: selectedCategory?.color }}
+                      style={{ fontSize: 16, color: selectedItem?.color }}
                     >
-                      {selectedCategory?.name}
+                      {selectedItem?.name}
                     </Text>
                   </Space>
                 </div>
@@ -2207,7 +2427,8 @@ const ClassCategories = () => {
                       type="primary"
                       htmlType="submit"
                       loading={actionLoading}
-                      key={`btn-${actionLoading}`}>
+                      key={`btn-${actionLoading}`}
+                    >
                       Update Subcategory
                     </Button>
                   </Space>

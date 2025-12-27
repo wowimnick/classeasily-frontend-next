@@ -1184,23 +1184,26 @@ export const AnnouncementBanner = () => {
       <BannerContainer>
         <LeftContent>
           <lord-icon
-            src="https://cdn.lordicon.com/yxsbonud.json"
+            src="https://cdn.lordicon.com/xzvgfwwv.json"
             trigger="in"
             state="in-reveal"
-            colors="primary:#ffffff"
+            colors="primary:#ebe6ef,secondary:#ee6d66"
             style={{ width: "22px", height: "22px" }}
           />
           <TextContent>
             <NewBadge>New</NewBadge>
-            <strong>Introducing Short Courses</strong>
+            <strong>Introducing Collections</strong>
             <span className="sep">|</span>
             <span className="desc">
-              Master a skill in a few weeks. Perfect for meeting new people. 🔥
+              Discover classes organized by theme: Date Nights, For Groups &
+              Trending. 🔥
             </span>
           </TextContent>
         </LeftContent>
         <ActionGroup>
-          <PillButton href="/explore?type=course">Find a Course</PillButton>
+          <PillButton href="/explore?collection=trending">
+            Explore Collections
+          </PillButton>
           <SecondaryLink href="/business">
             For Business <ArrowRight size={14} />
           </SecondaryLink>
@@ -1394,7 +1397,7 @@ const BottomTrustBanner = () => {
           <TrustText>
             <span className="title">Thousands of 5-star reviews</span>
             <span className="subtitle">
-              A growing community of bookers and hosts.
+              A growing community of people booking fun local experiences.
             </span>
           </TrustText>
         </CenterInfo>

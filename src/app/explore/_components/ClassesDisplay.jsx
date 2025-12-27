@@ -1,4 +1,3 @@
-// components/explore/ClassesDisplay.jsx
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
@@ -317,6 +316,7 @@ const NoResultsAnimation = ({ onReset }) => {
 const ClassesDisplay = ({
   classes = [],
   categories = [],
+  collections = [], // NEW PROP
   loading,
   isNavigating,
   userLocation,
@@ -325,6 +325,10 @@ const ClassesDisplay = ({
   currentCategory,
   currentSubcategory,
   onCategoryChange,
+
+  currentCollection, // NEW PROP
+  onCollectionChange, // NEW PROP
+
   currentSortBy,
   onApplyModalChanges,
   observerTargetRef,
@@ -499,7 +503,9 @@ const ClassesDisplay = ({
         "relevance"
       );
     }
+    // Reset both categories and collections
     onCategoryChange("all", "");
+    if (onCollectionChange) onCollectionChange("");
   };
 
   const renderContent = () => {
@@ -564,11 +570,15 @@ const ClassesDisplay = ({
           <ExploreCategories
             classes={classesWithDistance}
             categories={categories}
+            collections={collections} // Pass collections
             filters={filters}
             onFiltersChange={onFiltersChange}
             currentCategory={currentCategory}
             currentSubcategory={currentSubcategory}
             onCategoryChange={onCategoryChange}
+            // Pass collection logic
+            currentCollection={currentCollection}
+            onCollectionChange={onCollectionChange}
             currentSortBy={currentSortBy}
             onApplyModalChanges={onApplyModalChanges}
             isFilterModalOpen={isFilterModalOpen}

@@ -7,7 +7,6 @@ import React, {
   useMemo,
   useRef,
   Suspense,
-  useTransition,
 } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import styled from "styled-components";
@@ -16,7 +15,6 @@ import ClassesDisplay from "./ClassesDisplay";
 import { classService } from "@/services/apiService";
 import Breadcrumbs from "@/services/Breadcrumbs";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
-import { searchClassesAction } from "../actions";
 
 const PageLayout = styled.div`
   display: flex;
@@ -46,52 +44,37 @@ function ExploreClientContent({
   initialClasses,
   initialTotalCount,
   initialNextPageUrl,
+  initialCollections = [],
   routeParams,
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
 
-  const { location: userLocation, loading: locationLoading } =
-    useIpGeolocation();
+  const { location: userLocation } = useIpGeolocation();
 
+  // --- STATE ---
+  // We initialize state with Server Data (initialClasses)
   const [displayClasses, setDisplayClasses] = useState(initialClasses);
   const [totalClassesCount, setTotalClassesCount] = useState(initialTotalCount);
-
-  const availableCategories = useMemo(
-    () => initialCategories,
-    [initialCategories]
-  );
+  const [nextPageUrl, setNextPageUrl] = useState(initialNextPageUrl);
 
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
 
-  const [nextPageUrl, setNextPageUrl] = useState(initialNextPageUrl);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  // Refs for tracking previous state and infinite scroll
   const observerTarget = useRef(null);
   const apiParamsRef = useRef({});
   const isInitialMount = useRef(true);
   const previousSearchParamsRef = useRef(searchParams.toString());
 
-  const currentCategory = useMemo(
-    () => searchParams.get("category") || "all",
-    [searchParams]
-  );
-  const currentSubcategory = useMemo(
-    () => searchParams.get("subcategory") || "",
-    [searchParams]
-  );
-  const tag = useMemo(() => searchParams.get("tag") || "", [searchParams]);
-  const currentSortBy = useMemo(
-    () => searchParams.get("sort_by") || "relevance",
-    [searchParams]
-  );
-  const currentParticipants = useMemo(() => {
-    const p = parseInt(searchParams.get("participants") || "1", 10);
-    return Number.isInteger(p) && p > 0 ? p : 1;
-  }, [searchParams]);
+  // --- DERIVED DATA FROM URL ---
+  const currentCategory = searchParams.get("category") || "all";
+  const currentSubcategory = searchParams.get("subcategory") || "";
+  const currentCollection = searchParams.get("collection") || "";
+  const tag = searchParams.get("tag") || "";
+  const currentSortBy = searchParams.get("sort_by") || "relevance";
 
   const currentFilters = useMemo(() => {
     const defaultMaxPrice = 500;
@@ -115,20 +98,34 @@ function ExploreClientContent({
       classType: searchParams.get("class_type") || "class",
       keyword: searchParams.get("keyword") || "",
       date: searchParams.get("date") || "",
-      participants: currentParticipants,
+      participants: parseInt(searchParams.get("participants") || "1", 10),
     };
-  }, [searchParams, currentParticipants]);
+  }, [searchParams]);
 
+  // --- EFFECT 1: SYNC WITH SERVER DATA ---
+  // When the URL changes via router.push, the Server Component re-runs,
+  // passes new `initialClasses` props, and this effect syncs the local state.
+  // This restores native Next.js caching and Back/Forward button functionality.
+  useEffect(() => {
+    if (initialClasses) {
+      setDisplayClasses(initialClasses);
+      setTotalClassesCount(initialTotalCount);
+      setNextPageUrl(initialNextPageUrl);
+      setIsNavigating(false);
+      setLoading(false);
+
+      // Sync the ref so the Client-Side Fetch effect doesn't fire unnecessarily
+      previousSearchParamsRef.current = searchParams.toString();
+    }
+  }, [initialClasses, initialTotalCount, initialNextPageUrl, searchParams]);
+
+  // --- API FETCH FUNCTION (Client Side) ---
   const fetchClassesApi = useCallback(
     async (params, pageToFetch, isLoadMoreRequest, signal) => {
       if (isLoadMoreRequest) {
         setLoadingMore(true);
       } else {
         setLoading(true);
-        setDisplayClasses([]);
-        setCurrentPage(1);
-        setNextPageUrl(null);
-        setTotalClassesCount(0);
       }
 
       const apiCallParams = { ...params, page: pageToFetch };
@@ -146,96 +143,70 @@ function ExploreClientContent({
           setTotalClassesCount(response.count || 0);
         }
         setNextPageUrl(response.next);
-        setCurrentPage(pageToFetch);
       } catch (error) {
-        if (error.name === "AbortError" || error.name === "CanceledError") {
-          console.log("Fetch request was aborted.");
-          return;
-        }
-        console.error("Error fetching classes:", error);
-        if (!isLoadMoreRequest) {
-          setDisplayClasses([]);
-          setTotalClassesCount(0);
+        if (error.name !== "AbortError" && error.name !== "CanceledError") {
+          console.error("Error fetching classes:", error);
         }
       } finally {
         if (signal && signal.aborted) return;
-
+        setLoading(false);
+        setLoadingMore(false);
         setIsNavigating(false);
-        if (isLoadMoreRequest) {
-          setLoadingMore(false);
-        } else {
-          setTimeout(() => setLoading(false), 150);
-        }
       }
     },
     []
   );
 
-  // CRITICAL FIX: Only fetch on filter changes, NOT on category/subcategory changes
-  // Category/subcategory changes should trigger server-side navigation
+  // --- EFFECT 2: CLIENT-SIDE FILTERING ---
+  // Detects changes in Filters (Price, Distance, etc.) that should happen client-side
+  // without a full page reload (if that is the desired UX).
   useEffect(() => {
     const controller = new AbortController();
 
     if (isInitialMount.current) {
       isInitialMount.current = false;
-      if (initialClasses.length > 0) {
-        previousSearchParamsRef.current = searchParams.toString();
-        return;
-      }
-    }
-
-    // Check what changed
-    const currentParams = searchParams.toString();
-    const previousParams = previousSearchParamsRef.current;
-
-    if (currentParams === previousParams) {
       return;
     }
 
-    const currentParamsObj = Object.fromEntries(searchParams.entries());
-    const previousParamsObj = Object.fromEntries(
-      new URLSearchParams(previousParams).entries()
+    const currentParamsStr = searchParams.toString();
+    const prevParamsStr = previousSearchParamsRef.current;
+
+    if (currentParamsStr === prevParamsStr) return;
+
+    const currentObj = Object.fromEntries(searchParams.entries());
+    const prevObj = Object.fromEntries(
+      new URLSearchParams(prevParamsStr).entries()
     );
 
-    // Check if only category or subcategory changed
-    const categoryChanged =
-      currentParamsObj.category !== previousParamsObj.category;
-    const subcategoryChanged =
-      currentParamsObj.subcategory !== previousParamsObj.subcategory;
+    // Check if this is a "Navigation" change (Category, Subcategory, Collection)
+    const isNavChange =
+      currentObj.category !== prevObj.category ||
+      currentObj.subcategory !== prevObj.subcategory ||
+      currentObj.collection !== prevObj.collection;
 
-    // If ONLY category/subcategory changed, DON'T fetch client-side
-    // The page will be re-rendered server-side with fresh cached data
-    const otherParamsChanged = Object.keys(currentParamsObj).some((key) => {
-      if (key === "category" || key === "subcategory") return false;
-      return currentParamsObj[key] !== previousParamsObj[key];
-    });
-
-    if ((categoryChanged || subcategoryChanged) && !otherParamsChanged) {
-      console.log(
-        "[ExploreClient] Category/subcategory changed - relying on server-side data"
-      );
-      // BUG FIX: Do NOT update previousSearchParamsRef here. 
-      // We must let the prop-sync effect handle the update once data arrives.
+    // If it is a Navigation change, return early.
+    // The Server Component will handle data fetching and pass it via props (Effect 1).
+    if (isNavChange) {
       return;
     }
 
-    // For other filter changes, fetch client-side
+    // If we are here, it's a Filter change (Price, Sort, Map Move). Fetch Client-Side.
     const apiParams = {};
 
-    const latFromUrl = searchParams.get("lat");
-    const lngFromUrl = searchParams.get("lng");
-    const locationDisplayNameFromUrl = searchParams.get("location");
+    // Reconstruct API params from current state/URL
+    const lat = searchParams.get("lat");
+    const lng = searchParams.get("lng");
+    const location = searchParams.get("location");
 
-    if (latFromUrl && lngFromUrl) {
-      apiParams.lat = parseFloat(latFromUrl);
-      apiParams.lng = parseFloat(lngFromUrl);
+    if (lat && lng) {
+      apiParams.lat = parseFloat(lat);
+      apiParams.lng = parseFloat(lng);
     }
+    if (location) apiParams.location_search = location;
 
-    if (locationDisplayNameFromUrl) {
-      apiParams.location_search = locationDisplayNameFromUrl;
-    }
-
-    if (currentCategory && currentCategory !== "all") {
+    if (currentCollection) {
+      apiParams.collection = currentCollection;
+    } else if (currentCategory && currentCategory !== "all") {
       apiParams.category_key = currentCategory;
       if (currentSubcategory) {
         apiParams.subcategory_key = currentSubcategory;
@@ -253,32 +224,29 @@ function ExploreClientContent({
       apiParams.participants = currentFilters.participants;
     if (currentFilters.timePreference.length > 0)
       apiParams.time_preference = currentFilters.timePreference;
-
     if (currentSortBy && currentSortBy !== "relevance") {
       apiParams.sort_by = currentSortBy;
     }
 
     apiParamsRef.current = apiParams;
+    previousSearchParamsRef.current = currentParamsStr;
 
-    console.log("[ExploreClient] Fetching with filters:", apiParams);
-    setCurrentPage(1);
-    setNextPageUrl(null);
-    previousSearchParamsRef.current = currentParams;
-
+    // Trigger Fetch
     fetchClassesApi(apiParams, 1, false, controller.signal);
 
     return () => controller.abort();
   }, [
     searchParams,
-    fetchClassesApi,
     currentCategory,
     currentSubcategory,
+    currentCollection,
     tag,
     currentSortBy,
     currentFilters,
-    initialClasses.length,
+    fetchClassesApi,
   ]);
 
+  // --- EFFECT 3: INFINITE SCROLL ---
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -287,7 +255,6 @@ function ExploreClientContent({
           const url = new URL(nextPageUrl);
           const nextPageToFetch = parseInt(url.searchParams.get("page"), 10);
           if (!isNaN(nextPageToFetch)) {
-            console.log(`[ExploreClient] Loading page ${nextPageToFetch}`);
             fetchClassesApi(apiParamsRef.current, nextPageToFetch, true, null);
           }
         }
@@ -303,11 +270,15 @@ function ExploreClientContent({
     };
   }, [nextPageUrl, loadingMore, fetchClassesApi]);
 
-  const handleCategoryChange = useCallback(
-    async (newCategoryKey, newSubcategoryKey) => {
-      setIsNavigating(true);
+  // --- HANDLERS ---
 
+  const handleCategoryChange = useCallback(
+    (newCategoryKey, newSubcategoryKey) => {
+      setIsNavigating(true);
       const newParams = new URLSearchParams(searchParams.toString());
+
+      // If switching to category, remove collection
+      newParams.delete("collection");
 
       if (newCategoryKey && newCategoryKey !== "all") {
         newParams.set("category", newCategoryKey);
@@ -321,65 +292,39 @@ function ExploreClientContent({
         newParams.delete("subcategory");
       }
 
-      // Build API params for server action
-      const apiParams = {};
-
-      const latFromUrl = searchParams.get("lat");
-      const lngFromUrl = searchParams.get("lng");
-      const locationDisplayNameFromUrl = searchParams.get("location");
-
-      if (latFromUrl && lngFromUrl) {
-        apiParams.lat = parseFloat(latFromUrl);
-        apiParams.lng = parseFloat(lngFromUrl);
-      }
-
-      if (locationDisplayNameFromUrl) {
-        apiParams.location_search = locationDisplayNameFromUrl;
-      }
-
-      if (newCategoryKey && newCategoryKey !== "all") {
-        apiParams.category_key = newCategoryKey;
-        if (newSubcategoryKey) {
-          apiParams.subcategory_key = newSubcategoryKey;
-        }
-      }
-
-      console.log(
-        "[ExploreClient] Fetching category data via server action:",
-        apiParams
-      );
-
-      // Use server action to get cached data
-      startTransition(async () => {
-        try {
-          const result = await searchClassesAction(apiParams);
-
-          if (result.success) {
-            setDisplayClasses(result.results);
-            setTotalClassesCount(result.count);
-            setNextPageUrl(result.next);
-            setCurrentPage(1);
-            apiParamsRef.current = apiParams;
-          }
-        } catch (error) {
-          console.error("[ExploreClient] Server action error:", error);
-        } finally {
-          setIsNavigating(false);
-        }
-      });
-
-      // Update URL without navigation
+      // Just update URL. Server Component + Effect 1 will handle data.
       router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
     },
-    [searchParams, router, pathname, startTransition]
+    [searchParams, router, pathname]
+  );
+
+  const handleCollectionChange = useCallback(
+    (collectionSlug) => {
+      setIsNavigating(true);
+      const newParams = new URLSearchParams(searchParams.toString());
+
+      // If switching to collection, remove categories
+      newParams.delete("category");
+      newParams.delete("subcategory");
+
+      if (collectionSlug) {
+        newParams.set("collection", collectionSlug);
+      } else {
+        newParams.delete("collection");
+      }
+
+      // Just update URL. Server Component + Effect 1 will handle data.
+      router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
+    },
+    [searchParams, router, pathname]
   );
 
   const handleApplyModalChanges = useCallback(
     (newFilters, newSort) => {
       setIsNavigating(true);
-
       const newParams = new URLSearchParams(searchParams.toString());
 
+      // Clear existing filter keys
       [
         "price_min",
         "price_max",
@@ -390,8 +335,11 @@ function ExploreClientContent({
         "class_type",
         "keyword",
         "sort_by",
+        "date",
+        "participants",
       ].forEach((key) => newParams.delete(key));
 
+      // Re-populate keys
       const defaultMaxPrice = 500;
       const defaultMaxDistance = 0;
 
@@ -425,32 +373,6 @@ function ExploreClientContent({
     [searchParams, pathname, router]
   );
 
-  // Update display when server provides new initial data
-  useEffect(() => {
-    // BUG FIX: Removed restrictive conditions that prevented updates if props changed
-    // but ref was already updated.
-    if (!loading && !isNavigating && initialClasses) {
-      const currentParams = searchParams.toString();
-      const previousParams = previousSearchParamsRef.current;
-
-      if (currentParams !== previousParams) {
-        console.log("[ExploreClient] Using fresh server data");
-        setDisplayClasses(initialClasses);
-        setTotalClassesCount(initialTotalCount);
-        setNextPageUrl(initialNextPageUrl);
-        // Sync ref here to verify we have displayed the data for this URL
-        previousSearchParamsRef.current = currentParams;
-      }
-    }
-  }, [
-    initialClasses,
-    initialTotalCount,
-    initialNextPageUrl,
-    loading,
-    isNavigating,
-    searchParams,
-  ]);
-
   return (
     <PageLayout>
       <ExploreHeader showOptionsWrapper={true} />
@@ -460,7 +382,8 @@ function ExploreClientContent({
       <ContentArea>
         <ClassesDisplay
           classes={displayClasses}
-          categories={availableCategories}
+          categories={initialCategories}
+          collections={initialCollections}
           loading={loading && !loadingMore}
           isNavigating={isNavigating}
           userLocation={userLocation}
@@ -469,6 +392,8 @@ function ExploreClientContent({
           currentCategory={currentCategory}
           currentSubcategory={currentSubcategory}
           onCategoryChange={handleCategoryChange}
+          currentCollection={currentCollection}
+          onCollectionChange={handleCollectionChange}
           currentSortBy={currentSortBy}
           onApplyModalChanges={handleApplyModalChanges}
           observerTargetRef={observerTarget}

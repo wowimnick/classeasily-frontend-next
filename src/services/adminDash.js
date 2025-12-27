@@ -1,28 +1,29 @@
-import axiosInstance from '@/lib/axiosInstance';
-import axios from 'axios';
+import axiosInstance from "@/lib/axiosInstance";
+import axios from "axios";
 
 export const adminService = {
   getAdminMetrics: async () => {
     try {
-      const response = await axiosInstance.get('/admin/metrics/'); // Endpoint defined in urls.py
+      const response = await axiosInstance.get("/admin/metrics/"); // Endpoint defined in urls.py
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching admin metrics:', error);
+      console.error("Error fetching admin metrics:", error);
       // Try to return a more specific error message if available
-      const errorMessage = error.response?.data?.detail || // Check DRF detail first
-                         error.response?.data?.error ||  // Check for custom error field
-                         error.message ||                // Fallback to Axios error message
-                         'Failed to fetch metrics data';
+      const errorMessage =
+        error.response?.data?.detail || // Check DRF detail first
+        error.response?.data?.error || // Check for custom error field
+        error.message || // Fallback to Axios error message
+        "Failed to fetch metrics data";
       return {
         success: false,
         error: errorMessage,
-        status: error.response?.status // Optionally include status code
+        status: error.response?.status, // Optionally include status code
       };
     }
-  }
+  },
 };
 
 export const businessManagementService = {
@@ -36,27 +37,35 @@ export const businessManagementService = {
    */
   getBusinesses: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/businesses/', { params });
+      const response = await axiosInstance.get("/admin/businesses/", {
+        params,
+      });
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching businesses:', error);
+      console.error("Error fetching businesses:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch businesses'
+        error: error.response?.data?.error || "Failed to fetch businesses",
       };
     }
   },
   getGeographicalData: async () => {
     try {
-      const response = await axiosInstance.get('/admin/geographical-data/');
+      const response = await axiosInstance.get("/admin/geographical-data/");
       // The backend view returns an object with two keys: { province_data, city_data }
       return { success: true, data: response.data };
     } catch (error) {
-      console.error('Error fetching geographical data:', error.response?.data || error);
-      return { success: false, error: error.response?.data?.detail || 'Failed to fetch map data' };
+      console.error(
+        "Error fetching geographical data:",
+        error.response?.data || error
+      );
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to fetch map data",
+      };
     }
   },
 
@@ -65,16 +74,17 @@ export const businessManagementService = {
    */
   getPlatformMetrics: async () => {
     try {
-      const response = await axiosInstance.get('/admin/businesses/metrics/');
+      const response = await axiosInstance.get("/admin/businesses/metrics/");
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching platform metrics:', error);
+      console.error("Error fetching platform metrics:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch platform metrics'
+        error:
+          error.response?.data?.error || "Failed to fetch platform metrics",
       };
     }
   },
@@ -84,43 +94,47 @@ export const businessManagementService = {
    * @param {string} viewType - 'province' or 'city'
    * @param {string} dataType - 'count', 'revenue', or 'growth'
    */
-  getGeographicalData: async (viewType = 'province', dataType = 'count') => {
+  getGeographicalData: async (viewType = "province", dataType = "count") => {
     try {
-      const response = await axiosInstance.get('/admin/businesses/geographical/', { 
-        params: { view_type: viewType, data_type: dataType } 
-      });
+      const response = await axiosInstance.get(
+        "/admin/businesses/geographical/",
+        {
+          params: { view_type: viewType, data_type: dataType },
+        }
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching geographical data:', error);
+      console.error("Error fetching geographical data:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch geographical data'
+        error:
+          error.response?.data?.error || "Failed to fetch geographical data",
       };
     }
   },
 
   /**
    * Get business growth trends
-   * @param {string} timeframe - 'week', 'month', 'quarter', or 'year' 
+   * @param {string} timeframe - 'week', 'month', 'quarter', or 'year'
    */
-  getGrowthTrends: async (timeframe = 'month') => {
+  getGrowthTrends: async (timeframe = "month") => {
     try {
-      const response = await axiosInstance.get('/admin/businesses/growth/', { 
-        params: { timeframe } 
+      const response = await axiosInstance.get("/admin/businesses/growth/", {
+        params: { timeframe },
       });
       console.log(response.data);
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching growth trends:', error);
+      console.error("Error fetching growth trends:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch growth trends'
+        error: error.response?.data?.error || "Failed to fetch growth trends",
       };
     }
   },
@@ -131,16 +145,19 @@ export const businessManagementService = {
    */
   getBusinessDetails: async (businessId) => {
     try {
-      const response = await axiosInstance.get(`/admin/businesses/${businessId}/`);
+      const response = await axiosInstance.get(
+        `/admin/businesses/${businessId}/`
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching business ${businessId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch business details'
+        error:
+          error.response?.data?.error || "Failed to fetch business details",
       };
     }
   },
@@ -152,16 +169,19 @@ export const businessManagementService = {
    */
   updateBusiness: async (businessId, businessData) => {
     try {
-      const response = await axiosInstance.patch(`/admin/businesses/${businessId}/`, businessData);
+      const response = await axiosInstance.patch(
+        `/admin/businesses/${businessId}/`,
+        businessData
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error updating business ${businessId}:`, error);
       return {
         success: false,
-        error: error.response?.data || 'Failed to update business'
+        error: error.response?.data || "Failed to update business",
       };
     }
   },
@@ -173,18 +193,24 @@ export const businessManagementService = {
    */
   toggleFeatureStatus: async (businessId, featured) => {
     try {
-      const response = await axiosInstance.post(`/admin/businesses/${businessId}/toggle_feature/`, {
-        featured
-      });
+      const response = await axiosInstance.post(
+        `/admin/businesses/${businessId}/toggle_feature/`,
+        {
+          featured,
+        }
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error(`Error toggling feature status for business ${businessId}:`, error);
+      console.error(
+        `Error toggling feature status for business ${businessId}:`,
+        error
+      );
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to toggle feature status'
+        error: error.response?.data?.error || "Failed to toggle feature status",
       };
     }
   },
@@ -197,13 +223,13 @@ export const businessManagementService = {
     try {
       await axiosInstance.delete(`/admin/businesses/${businessId}/`);
       return {
-        success: true
+        success: true,
       };
     } catch (error) {
       console.error(`Error deleting business ${businessId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to delete business'
+        error: error.response?.data?.error || "Failed to delete business",
       };
     }
   },
@@ -214,16 +240,19 @@ export const businessManagementService = {
    */
   sendAnnouncement: async (announcementData) => {
     try {
-      const response = await axiosInstance.post('/admin/businesses/announcements/', announcementData);
+      const response = await axiosInstance.post(
+        "/admin/businesses/announcements/",
+        announcementData
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error sending announcement:', error);
+      console.error("Error sending announcement:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to send announcement'
+        error: error.response?.data?.error || "Failed to send announcement",
       };
     }
   },
@@ -234,58 +263,60 @@ export const businessManagementService = {
    */
   exportBusinessesData: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/businesses/export/', { 
+      const response = await axiosInstance.get("/admin/businesses/export/", {
         params,
-        responseType: 'blob'
+        responseType: "blob",
       });
-      
+
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', 'businesses_data.csv');
+      link.setAttribute("download", "businesses_data.csv");
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       return {
-        success: true
+        success: true,
       };
     } catch (error) {
-      console.error('Error exporting businesses data:', error);
+      console.error("Error exporting businesses data:", error);
       return {
         success: false,
-        error: 'Failed to export businesses data'
+        error: "Failed to export businesses data",
       };
     }
-  }
+  },
 };
 
 export const userAdminService = {
-impersonateUser: async (userId) => {
-  
-  if (!userId) {
-    return {
-      success: false,
-      error: "User ID is required for impersonation"
-    };
-  }
-  
-  try {
-    const response = await axiosInstance.post(`/admin/users/${userId}/impersonate/`);
-    
-    return {
-      success: true,
-      data: response.data
-    };
-  } catch (error) {
-    
-    return {
-      success: false,
-      error: error.response?.data?.detail || 'Failed to start impersonation session.'
-    };
-  }
-},
+  impersonateUser: async (userId) => {
+    if (!userId) {
+      return {
+        success: false,
+        error: "User ID is required for impersonation",
+      };
+    }
+
+    try {
+      const response = await axiosInstance.post(
+        `/admin/users/${userId}/impersonate/`
+      );
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail ||
+          "Failed to start impersonation session.",
+      };
+    }
+  },
   /**
    * Get a list of users with optional filtering
    * @param {Object} params - Query parameters
@@ -296,24 +327,26 @@ impersonateUser: async (userId) => {
    */
   getUsers: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/users/', { params });
+      const response = await axiosInstance.get("/admin/users/", { params });
       console.log(response.data);
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error("Error fetching users:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch users'
+        error: error.response?.data?.error || "Failed to fetch users",
       };
     }
   },
 
-    getUserHistory: async (userId) => {
+  getUserHistory: async (userId) => {
     try {
-      const response = await axiosInstance.get(`/admin/users/${userId}/history/`);
+      const response = await axiosInstance.get(
+        `/admin/users/${userId}/history/`
+      );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(`Error fetching user history ${userId}:`, error);
@@ -323,7 +356,10 @@ impersonateUser: async (userId) => {
 
   getUserCommunications: async (userId, params = {}) => {
     try {
-      const response = await axiosInstance.get(`/admin/users/${userId}/communications/`, { params });
+      const response = await axiosInstance.get(
+        `/admin/users/${userId}/communications/`,
+        { params }
+      );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(`Error fetching user communications ${userId}:`, error);
@@ -340,52 +376,55 @@ impersonateUser: async (userId) => {
       const response = await axiosInstance.get(`/admin/users/${userId}/`);
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching user ${userId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch user details'
+        error: error.response?.data?.error || "Failed to fetch user details",
       };
     }
   },
 
-      /**
-     * Get bookings for a specific user
-     * @param {number} userId - User ID
-     * @param {Object} params - Query parameters (e.g., for pagination: { page: 1, page_size: 10 })
-     */
-      getUserBookings: async (userId, params = {}) => {
-        if (!userId) {
-            return { success: false, error: 'User ID is required' };
-        }
-        try {
-            // Construct the URL using the userId and optional params
-            const endpoint = `/admin/users/${userId}/bookings/`;
-            const response = await axiosInstance.get(endpoint, { params });
-            console.log(`Bookings fetched for user ${userId}:`, response.data);
-            return {
-                success: true,
-                // The response might already be paginated by DRF,
-                // return the whole response object to access 'results', 'count', 'next', 'previous'
-                data: response.data
-            };
-        } catch (error) {
-            console.error(`Error fetching bookings for user ${userId}:`, error);
-            return {
-                success: false,
-                error: error.response?.data?.detail || error.response?.data?.error || 'Failed to fetch user bookings'
-            };
-        }
-    },
+  /**
+   * Get bookings for a specific user
+   * @param {number} userId - User ID
+   * @param {Object} params - Query parameters (e.g., for pagination: { page: 1, page_size: 10 })
+   */
+  getUserBookings: async (userId, params = {}) => {
+    if (!userId) {
+      return { success: false, error: "User ID is required" };
+    }
+    try {
+      // Construct the URL using the userId and optional params
+      const endpoint = `/admin/users/${userId}/bookings/`;
+      const response = await axiosInstance.get(endpoint, { params });
+      console.log(`Bookings fetched for user ${userId}:`, response.data);
+      return {
+        success: true,
+        // The response might already be paginated by DRF,
+        // return the whole response object to access 'results', 'count', 'next', 'previous'
+        data: response.data,
+      };
+    } catch (error) {
+      console.error(`Error fetching bookings for user ${userId}:`, error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail ||
+          error.response?.data?.error ||
+          "Failed to fetch user bookings",
+      };
+    }
+  },
 
   getRoles: async () => {
     try {
-      const response = await axiosInstance.get('admin/roles/');
+      const response = await axiosInstance.get("admin/roles/");
       return { success: true, data: response.data };
     } catch (error) {
-      console.error('Error fetching roles:', error);
+      console.error("Error fetching roles:", error);
       return { success: false, error: error.message };
     }
   },
@@ -396,16 +435,16 @@ impersonateUser: async (userId) => {
    */
   createUser: async (userData) => {
     try {
-      const response = await axiosInstance.post('/admin/users/', userData);
+      const response = await axiosInstance.post("/admin/users/", userData);
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error("Error creating user:", error);
       return {
         success: false,
-        error: error.response?.data || 'Failed to create user'
+        error: error.response?.data || "Failed to create user",
       };
     }
   },
@@ -417,16 +456,19 @@ impersonateUser: async (userId) => {
    */
   updateUser: async (userId, userData) => {
     try {
-      const response = await axiosInstance.patch(`/admin/users/${userId}/`, userData);
+      const response = await axiosInstance.patch(
+        `/admin/users/${userId}/`,
+        userData
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error updating user ${userId}:`, error);
       return {
         success: false,
-        error: error.response?.data || 'Failed to update user'
+        error: error.response?.data || "Failed to update user",
       };
     }
   },
@@ -439,13 +481,13 @@ impersonateUser: async (userId) => {
     try {
       await axiosInstance.delete(`/admin/users/${userId}/`);
       return {
-        success: true
+        success: true,
       };
     } catch (error) {
       console.error(`Error deleting user ${userId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to delete user'
+        error: error.response?.data?.error || "Failed to delete user",
       };
     }
   },
@@ -459,13 +501,13 @@ impersonateUser: async (userId) => {
       const response = await axiosInstance.post(`/admin/users/${userId}/lock/`);
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error locking account ${userId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to lock account'
+        error: error.response?.data?.error || "Failed to lock account",
       };
     }
   },
@@ -476,16 +518,18 @@ impersonateUser: async (userId) => {
    */
   unlockAccount: async (userId) => {
     try {
-      const response = await axiosInstance.post(`/admin/users/${userId}/unlock/`);
+      const response = await axiosInstance.post(
+        `/admin/users/${userId}/unlock/`
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error unlocking account ${userId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to unlock account'
+        error: error.response?.data?.error || "Failed to unlock account",
       };
     }
   },
@@ -496,16 +540,63 @@ impersonateUser: async (userId) => {
    */
   resetPassword: async (userId) => {
     try {
-      const response = await axiosInstance.post(`/admin/users/${userId}/reset-password/`);
+      const response = await axiosInstance.post(
+        `/admin/users/${userId}/reset-password/`
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error resetting password for user ${userId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to reset password'
+        error: error.response?.data?.error || "Failed to reset password",
+      };
+    }
+  },
+
+  /**
+   * Create a Shadow User (Concierge Onboarding)
+   * @param {Object} userData - { email, first_name, last_name }
+   */
+  createShadowUser: async (userData) => {
+    try {
+      const response = await axiosInstance.post(
+        "/admin/users/create-shadow/",
+        userData
+      );
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      console.error("Error creating shadow user:", error);
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to create shadow user",
+      };
+    }
+  },
+
+  /**
+   * Send the Account Claim email to a shadow user
+   * @param {number} userId
+   */
+  sendHandoverEmail: async (userId) => {
+    try {
+      const response = await axiosInstance.post(
+        `/admin/users/${userId}/send-handover/`
+      );
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      console.error("Error sending handover email:", error);
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to send email",
       };
     }
   },
@@ -515,19 +606,19 @@ impersonateUser: async (userId) => {
    */
   getUserMetrics: async () => {
     try {
-      const response = await axiosInstance.get('/admin/users/metrics/');
+      const response = await axiosInstance.get("/admin/users/metrics/");
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching user metrics:', error);
+      console.error("Error fetching user metrics:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch user metrics'
+        error: error.response?.data?.error || "Failed to fetch user metrics",
       };
     }
-  }
+  },
 };
 
 // src/api/user-management/roles.js
@@ -539,16 +630,16 @@ export const roleService = {
    */
   getRoles: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/roles/', { params });
+      const response = await axiosInstance.get("/admin/roles/", { params });
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching roles:', error);
+      console.error("Error fetching roles:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch roles'
+        error: error.response?.data?.error || "Failed to fetch roles",
       };
     }
   },
@@ -562,13 +653,13 @@ export const roleService = {
       const response = await axiosInstance.get(`/admin/roles/${roleId}/`);
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching role ${roleId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch role'
+        error: error.response?.data?.error || "Failed to fetch role",
       };
     }
   },
@@ -579,16 +670,16 @@ export const roleService = {
    */
   createRole: async (roleData) => {
     try {
-      const response = await axiosInstance.post('/admin/roles/', roleData);
+      const response = await axiosInstance.post("/admin/roles/", roleData);
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error creating role:', error);
+      console.error("Error creating role:", error);
       return {
         success: false,
-        error: error.response?.data || 'Failed to create role'
+        error: error.response?.data || "Failed to create role",
       };
     }
   },
@@ -600,16 +691,19 @@ export const roleService = {
    */
   updateRole: async (roleId, roleData) => {
     try {
-      const response = await axiosInstance.patch(`/admin/roles/${roleId}/`, roleData);
+      const response = await axiosInstance.patch(
+        `/admin/roles/${roleId}/`,
+        roleData
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error updating role ${roleId}:`, error);
       return {
         success: false,
-        error: error.response?.data || 'Failed to update role'
+        error: error.response?.data || "Failed to update role",
       };
     }
   },
@@ -622,13 +716,13 @@ export const roleService = {
     try {
       await axiosInstance.delete(`/admin/roles/${roleId}/`);
       return {
-        success: true
+        success: true,
       };
     } catch (error) {
       console.error(`Error deleting role ${roleId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to delete role'
+        error: error.response?.data?.error || "Failed to delete role",
       };
     }
   },
@@ -640,16 +734,19 @@ export const roleService = {
    */
   duplicateRole: async (roleId, data) => {
     try {
-      const response = await axiosInstance.post(`/admin/roles/${roleId}/duplicate/`, data);
+      const response = await axiosInstance.post(
+        `/admin/roles/${roleId}/duplicate/`,
+        data
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error duplicating role ${roleId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to duplicate role'
+        error: error.response?.data?.error || "Failed to duplicate role",
       };
     }
   },
@@ -659,34 +756,37 @@ export const roleService = {
    */
   getPermissions: async () => {
     try {
-      const response = await axiosInstance.get('/admin/roles/permissions/');
+      const response = await axiosInstance.get("/admin/roles/permissions/");
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching permissions:', error);
+      console.error("Error fetching permissions:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch permissions'
+        error: error.response?.data?.error || "Failed to fetch permissions",
       };
     }
   },
   updateRoleOrder: async (rolesData) => {
     try {
-      const response = await axiosInstance.post('/admin/roles/update_order/', rolesData);
+      const response = await axiosInstance.post(
+        "/admin/roles/update_order/",
+        rolesData
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error updating role order:', error);
+      console.error("Error updating role order:", error);
       return {
         success: false,
-        error: error.response?.data?.detail || 'Failed to update role order'
+        error: error.response?.data?.detail || "Failed to update role order",
       };
     }
-  }
+  },
 };
 
 // src/api/user-management/verification.js
@@ -699,16 +799,20 @@ export const verificationService = {
    */
   getVerificationRequests: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/verification/', { params });
+      const response = await axiosInstance.get("/admin/verification/", {
+        params,
+      });
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching verification requests:', error);
+      console.error("Error fetching verification requests:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch verification requests'
+        error:
+          error.response?.data?.error ||
+          "Failed to fetch verification requests",
       };
     }
   },
@@ -719,16 +823,19 @@ export const verificationService = {
    */
   getVerificationRequest: async (requestId) => {
     try {
-      const response = await axiosInstance.get(`/admin/verification/${requestId}/`);
+      const response = await axiosInstance.get(
+        `/admin/verification/${requestId}/`
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching verification request ${requestId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch verification request'
+        error:
+          error.response?.data?.error || "Failed to fetch verification request",
       };
     }
   },
@@ -740,20 +847,20 @@ export const verificationService = {
    */
   submitVerification: async (data) => {
     try {
-      const response = await axiosInstance.post('/verification/submit/', data, {
+      const response = await axiosInstance.post("/verification/submit/", data, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          "Content-Type": "multipart/form-data",
+        },
       });
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error submitting verification:', error);
+      console.error("Error submitting verification:", error);
       return {
         success: false,
-        error: error.response?.data || 'Failed to submit verification'
+        error: error.response?.data || "Failed to submit verification",
       };
     }
   },
@@ -765,16 +872,19 @@ export const verificationService = {
    */
   processVerification: async (requestId, data) => {
     try {
-      const response = await axiosInstance.post(`/admin/verification/${requestId}/process_verification/`, data);
+      const response = await axiosInstance.post(
+        `/admin/verification/${requestId}/process_verification/`,
+        data
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error processing verification ${requestId}:`, error);
       return {
         success: false,
-        error: error.response?.data || 'Failed to process verification'
+        error: error.response?.data || "Failed to process verification",
       };
     }
   },
@@ -785,19 +895,26 @@ export const verificationService = {
    */
   getVerificationDocuments: async (requestId) => {
     try {
-      const response = await axiosInstance.get(`/admin/verification/${requestId}/documents/`);
+      const response = await axiosInstance.get(
+        `/admin/verification/${requestId}/documents/`
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error(`Error fetching verification documents for ${requestId}:`, error);
+      console.error(
+        `Error fetching verification documents for ${requestId}:`,
+        error
+      );
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch verification documents'
+        error:
+          error.response?.data?.error ||
+          "Failed to fetch verification documents",
       };
     }
-  }
+  },
 };
 
 export const auditService = {
@@ -812,16 +929,18 @@ export const auditService = {
    */
   getAuditLogs: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/audit-logs/', { params });
+      const response = await axiosInstance.get("/admin/audit-logs/", {
+        params,
+      });
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching audit logs:', error);
+      console.error("Error fetching audit logs:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch audit logs'
+        error: error.response?.data?.error || "Failed to fetch audit logs",
       };
     }
   },
@@ -835,13 +954,13 @@ export const auditService = {
       const response = await axiosInstance.get(`/admin/audit-logs/${logId}/`);
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching audit log ${logId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch audit log'
+        error: error.response?.data?.error || "Failed to fetch audit log",
       };
     }
   },
@@ -853,44 +972,53 @@ export const auditService = {
   exportAuditLogs: async (params) => {
     try {
       const queryString = new URLSearchParams(params).toString();
-      const response = await axiosInstance.get(`/admin/audit-logs/export/?${queryString}`, {
-        responseType: 'blob', // IMPORTANT: Expect a blob response
-      });
-      
+      const response = await axiosInstance.get(
+        `/admin/audit-logs/export/?${queryString}`,
+        {
+          responseType: "blob", // IMPORTANT: Expect a blob response
+        }
+      );
+
       // Create a URL for the blob
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      
+
       // Get filename from content-disposition header if available, otherwise fallback
-      const contentDisposition = response.headers['content-disposition'];
-      let filename = 'audit_logs_export.csv';
+      const contentDisposition = response.headers["content-disposition"];
+      let filename = "audit_logs_export.csv";
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename="(.+)"/);
         if (filenameMatch.length === 2) {
           filename = filenameMatch[1];
         }
       }
-      
-      link.setAttribute('download', filename);
+
+      link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
-      
+
       // Clean up
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
 
       return { success: true }; // Indicate success to the component
-
     } catch (error) {
-      console.error('API Error in exportAuditLogs:', error);
+      console.error("API Error in exportAuditLogs:", error);
       // Try to parse error from blob if it's a JSON error response
-      if (error.response && error.response.data instanceof Blob && error.response.data.type.includes('json')) {
+      if (
+        error.response &&
+        error.response.data instanceof Blob &&
+        error.response.data.type.includes("json")
+      ) {
         const errorText = await error.response.data.text();
         const errorJson = JSON.parse(errorText);
-        return { success: false, error: errorJson.detail || 'Failed to export logs.' };
+        return {
+          success: false,
+          error: errorJson.detail || "Failed to export logs.",
+        };
       }
-      return { success: false, error: 'Failed to export logs.' };
+      return { success: false, error: "Failed to export logs." };
     }
   },
 
@@ -901,19 +1029,23 @@ export const auditService = {
    */
   getActivitySummary: async (params = { days: 30 }) => {
     try {
-      const response = await axiosInstance.get('/admin/audit-logs/activity-summary/', { params });
+      const response = await axiosInstance.get(
+        "/admin/audit-logs/activity-summary/",
+        { params }
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching activity summary:', error);
+      console.error("Error fetching activity summary:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch activity summary'
+        error:
+          error.response?.data?.error || "Failed to fetch activity summary",
       };
     }
-  }
+  },
 };
 
 export const classManagementService = {
@@ -927,21 +1059,21 @@ export const classManagementService = {
    */
   getClasses: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/classes/', { params });
+      const response = await axiosInstance.get("/admin/classes/", { params });
       return {
         success: true,
-        data: response.data // This correctly returns the raw API response object
+        data: response.data, // This correctly returns the raw API response object
       };
     } catch (error) {
-      console.error('Error fetching classes:', error);
+      console.error("Error fetching classes:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch classes'
+        error: error.response?.data?.error || "Failed to fetch classes",
       };
     }
   },
 
-    /**
+  /**
    * Updates a class with the provided data payload.
    * @param {number} classId The ID of the class to update.
    * @param {object} payload The data to update.
@@ -950,12 +1082,98 @@ export const classManagementService = {
   updateClass: async (classId, payload) => {
     try {
       // The backend expects a PATCH request for partial updates.
-      const response = await axiosInstance.patch(`/admin/classes/${classId}/`, payload);
+      const response = await axiosInstance.patch(
+        `/admin/classes/${classId}/`,
+        payload
+      );
       return { success: true, data: response.data };
     } catch (error) {
-      console.error(`Error updating class ${classId}:`, error.response?.data || error);
-      const errorMsg = error.response?.data?.error || error.response?.data?.detail || 'Failed to update the class.';
+      console.error(
+        `Error updating class ${classId}:`,
+        error.response?.data || error
+      );
+      const errorMsg =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to update the class.";
       return { success: false, error: errorMsg };
+    }
+  },
+  getCollections: async () => {
+    try {
+      const response = await axiosInstance.get("/admin/collections/");
+      // Handle both paginated and non-paginated responses
+      const data = response.data.results || response.data;
+
+      if (!Array.isArray(data)) {
+        return { success: true, data: [] };
+      }
+      return { success: true, data: data };
+    } catch (error) {
+      console.error("Error fetching collections:", error);
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to fetch collections",
+      };
+    }
+  },
+
+  createCollection: async (data) => {
+    try {
+      const response = await axiosInstance.post("/admin/collections/", data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error creating collection:", error);
+      return {
+        success: false,
+        error: error.response?.data || "Failed to create collection",
+      };
+    }
+  },
+
+  updateCollection: async (id, data) => {
+    try {
+      const response = await axiosInstance.patch(
+        `/admin/collections/${id}/`,
+        data
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(`Error updating collection ${id}:`, error);
+      return {
+        success: false,
+        error: error.response?.data || "Failed to update collection",
+      };
+    }
+  },
+
+  deleteCollection: async (id) => {
+    try {
+      await axiosInstance.delete(`/admin/collections/${id}/`);
+      return { success: true };
+    } catch (error) {
+      console.error(`Error deleting collection ${id}:`, error);
+      return {
+        success: false,
+        error: error.response?.data?.error || "Failed to delete collection",
+      };
+    }
+  },
+
+  updateCollectionOrder: async (orderedCollections) => {
+    try {
+      const response = await axiosInstance.post(
+        "/admin/collections/update-order/",
+        orderedCollections
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error updating collection order:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.error || "Failed to update collection order",
+      };
     }
   },
 
@@ -967,16 +1185,16 @@ export const classManagementService = {
     try {
       // Use admin endpoint for class details
       const response = await axiosInstance.get(`/admin/classes/${classId}/`);
-      
+
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching class details for ${classId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch class details'
+        error: error.response?.data?.error || "Failed to fetch class details",
       };
     }
   },
@@ -988,19 +1206,22 @@ export const classManagementService = {
    */
   updateClassStatus: async (classId, status) => {
     try {
-      const response = await axiosInstance.patch(`/admin/classes/${classId}/update_class_status/`, { 
-        status: status 
-      });
-      
+      const response = await axiosInstance.patch(
+        `/admin/classes/${classId}/update_class_status/`,
+        {
+          status: status,
+        }
+      );
+
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error updating class status for ${classId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to update class status'
+        error: error.response?.data?.error || "Failed to update class status",
       };
     }
   },
@@ -1013,13 +1234,19 @@ export const classManagementService = {
    * @example updateCategoryOrder([{ id: 3, order: 0 }, { id: 1, order: 1 }, { id: 2, order: 2 }])
    */
   updateCategoryOrder: async (orderedCategories) => {
-    try { 
+    try {
       // The endpoint is a collection-level action, not on a specific resource.
-      const response = await axiosInstance.post(`/admin/categories/update-order/`, orderedCategories);
+      const response = await axiosInstance.post(
+        `/admin/categories/update-order/`,
+        orderedCategories
+      );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(`Error updating category order:`, error);
-      return { success: false, error: error.response?.data?.error || 'Failed to update category order' };
+      return {
+        success: false,
+        error: error.response?.data?.error || "Failed to update category order",
+      };
     }
   },
 
@@ -1030,19 +1257,26 @@ export const classManagementService = {
    */
   toggleClassFeatured: async (classId, featured) => {
     try {
-      const response = await axiosInstance.post(`/admin/classes/${classId}/toggle-feature/`, { 
-        featured 
-      });
-      
+      const response = await axiosInstance.post(
+        `/admin/classes/${classId}/toggle-feature/`,
+        {
+          featured,
+        }
+      );
+
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error(`Error toggling featured status for class ${classId}:`, error);
+      console.error(
+        `Error toggling featured status for class ${classId}:`,
+        error
+      );
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to toggle featured status'
+        error:
+          error.response?.data?.error || "Failed to toggle featured status",
       };
     }
   },
@@ -1054,21 +1288,23 @@ export const classManagementService = {
    */
   getCategories: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/categories/', { params });
-      const data = response.data.results || response.data; 
-      
+      const response = await axiosInstance.get("/admin/categories/", {
+        params,
+      });
+      const data = response.data.results || response.data;
+
       // Ensure we always return an array
       if (!Array.isArray(data)) {
-          console.error("getCategories did not receive an array:", response.data);
-          return { success: true, data: [] };
+        console.error("getCategories did not receive an array:", response.data);
+        return { success: true, data: [] };
       }
-      
+
       return { success: true, data: data };
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error("Error fetching categories:", error);
       return {
         success: false,
-        error: error.response?.data?.detail || 'Failed to fetch categories'
+        error: error.response?.data?.detail || "Failed to fetch categories",
       };
     }
   },
@@ -1081,17 +1317,17 @@ export const classManagementService = {
     try {
       // REMOVED FormData logic and multipart/form-data header.
       // We are now sending a standard JSON object.
-      const response = await axiosInstance.post('/admin/categories/', data);
-      
+      const response = await axiosInstance.post("/admin/categories/", data);
+
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error creating category:', error);
+      console.error("Error creating category:", error);
       return {
         success: false,
-        error: error.response?.data || 'Failed to create category'
+        error: error.response?.data || "Failed to create category",
       };
     }
   },
@@ -1104,46 +1340,54 @@ export const classManagementService = {
   updateCategory: async (categoryId, data) => {
     try {
       // REMOVED FormData logic and multipart/form-data header.
-      const response = await axiosInstance.patch(`/admin/categories/${categoryId}/`, data);
-      
+      const response = await axiosInstance.patch(
+        `/admin/categories/${categoryId}/`,
+        data
+      );
+
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error updating category ${categoryId}:`, error);
       return {
         success: false,
-        error: error.response?.data || 'Failed to update category'
+        error: error.response?.data || "Failed to update category",
       };
     }
   },
 
   deleteCategory: async (categoryId) => {
     try {
-      const response = await axiosInstance.delete(`/admin/categories/${categoryId}/`);
-      
+      const response = await axiosInstance.delete(
+        `/admin/categories/${categoryId}/`
+      );
+
       return {
-        success: true
+        success: true,
       };
     } catch (error) {
       console.error(`Error deleting category ${categoryId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to delete category'
+        error: error.response?.data?.error || "Failed to delete category",
       };
     }
   },
-  
+
   addSubcategory: async (categoryId, subcategoryData) => {
     try {
-      const response = await axiosInstance.post(`/admin/categories/${categoryId}/subcategories/`, subcategoryData);
+      const response = await axiosInstance.post(
+        `/admin/categories/${categoryId}/subcategories/`,
+        subcategoryData
+      );
       return { success: true, data: response.data };
     } catch (error) {
-      console.error('Error adding subcategory:', error);
+      console.error("Error adding subcategory:", error);
       return {
         success: false,
-        error: error.response?.data || 'Failed to add subcategory'
+        error: error.response?.data || "Failed to add subcategory",
       };
     }
   },
@@ -1151,31 +1395,54 @@ export const classManagementService = {
   deleteCategoryWithReassignment: async (categoryId, newId) => {
     try {
       // This sends a simple JSON object which is fine.
-      const response = await axiosInstance.post(`/admin/categories/${categoryId}/delete-with-reassignment/`, { new_id: newId });
+      const response = await axiosInstance.post(
+        `/admin/categories/${categoryId}/delete-with-reassignment/`,
+        { new_id: newId }
+      );
       return { success: true, data: response.data };
     } catch (error) {
-      console.error(`Error reassigning and deleting category ${categoryId}:`, error.response);
-      return { success: false, error: error.response?.data?.error || "Reassignment failed." };
+      console.error(
+        `Error reassigning and deleting category ${categoryId}:`,
+        error.response
+      );
+      return {
+        success: false,
+        error: error.response?.data?.error || "Reassignment failed.",
+      };
     }
   },
 
   /**
    * FIX: Changed to send FormData instead of a JSON object.
    */
-  deleteSubcategoryWithReassignment: async (categoryId, subcategoryId, newId) => {
+  deleteSubcategoryWithReassignment: async (
+    categoryId,
+    subcategoryId,
+    newId
+  ) => {
     try {
       const formData = new FormData();
-      formData.append('new_id', newId);
+      formData.append("new_id", newId);
 
-      const response = await axiosInstance.post(`/admin/categories/${categoryId}/subcategories/${subcategoryId}/`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await axiosInstance.post(
+        `/admin/categories/${categoryId}/subcategories/${subcategoryId}/`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
       return { success: true, data: response.data };
     } catch (error) {
-      console.error(`Error reassigning and deleting subcategory ${subcategoryId}:`, error.response);
-      return { success: false, error: error.response?.data?.error || "Reassignment failed." };
+      console.error(
+        `Error reassigning and deleting subcategory ${subcategoryId}:`,
+        error.response
+      );
+      return {
+        success: false,
+        error: error.response?.data?.error || "Reassignment failed.",
+      };
     }
   },
 
@@ -1189,68 +1456,88 @@ export const classManagementService = {
         formData.append(key, subcategoryData[key]);
       }
 
-      const response = await axiosInstance.patch(`/admin/categories/${categoryId}/subcategories/${subcategoryId}/`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await axiosInstance.patch(
+        `/admin/categories/${categoryId}/subcategories/${subcategoryId}/`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error(`Error updating subcategory ${subcategoryId}:`, error.response);
+      console.error(
+        `Error updating subcategory ${subcategoryId}:`,
+        error.response
+      );
       return {
         success: false,
-        error: error.response?.data || `Failed to update subcategory.`
+        error: error.response?.data || `Failed to update subcategory.`,
       };
     }
   },
 
   deleteSubcategory: async (categoryId, subcategoryId) => {
     try {
-      const response = await axiosInstance.delete(`/admin/categories/${categoryId}/subcategories/${subcategoryId}/`);
+      const response = await axiosInstance.delete(
+        `/admin/categories/${categoryId}/subcategories/${subcategoryId}/`
+      );
       return { success: true };
     } catch (error) {
       console.error("Delete subcategory error:", error.response);
-      return { success: false, error: error.response?.data?.detail || "Could not delete subcategory." };
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Could not delete subcategory.",
+      };
     }
   },
   getReviewAnalytics: async () => {
     try {
-      const response = await axiosInstance.get('/admin/reviews/analytics/');
+      const response = await axiosInstance.get("/admin/reviews/analytics/");
       return { success: true, data: response.data };
     } catch (error) {
-      console.error('Error fetching review analytics:', error);
-      return { success: false, error: error.response?.data?.error || 'Failed to fetch review analytics' };
+      console.error("Error fetching review analytics:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.error || "Failed to fetch review analytics",
+      };
     }
   },
 
   moderateReview: async (reviewId, data) => {
     try {
-      const response = await axiosInstance.patch(`/admin/reviews/${reviewId}/`, data);
+      const response = await axiosInstance.patch(
+        `/admin/reviews/${reviewId}/`,
+        data
+      );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(`Error moderating review ${reviewId}:`, error);
-      return { success: false, error: error.response?.data || 'Failed to moderate review' };
+      return {
+        success: false,
+        error: error.response?.data || "Failed to moderate review",
+      };
     }
   },
 
-
   getReviews: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/reviews/', { params });
+      const response = await axiosInstance.get("/admin/reviews/", { params });
       return {
         success: true,
-        data: response.data 
+        data: response.data,
       };
-
     } catch (error) {
-      console.error('Error fetching reviews:', error);
+      console.error("Error fetching reviews:", error);
       // Also return on error!
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch reviews'
+        error: error.response?.data?.error || "Failed to fetch reviews",
       };
     }
   },
@@ -1262,17 +1549,20 @@ export const classManagementService = {
    */
   updateReviewStatus: async (reviewId, status) => {
     try {
-      const response = await axiosInstance.post(`/admin/reviews/${reviewId}/update_status/`, { status });
-      
+      const response = await axiosInstance.post(
+        `/admin/reviews/${reviewId}/update_status/`,
+        { status }
+      );
+
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error updating review status for ${reviewId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to update review status'
+        error: error.response?.data?.error || "Failed to update review status",
       };
     }
   },
@@ -1289,18 +1579,19 @@ export const classManagementService = {
         businessId,
         classId,
         message,
-        messageType: 'inquiry'
+        messageType: "inquiry",
       });
-      
+
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error sending message to business:', error);
+      console.error("Error sending message to business:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to send message to business'
+        error:
+          error.response?.data?.error || "Failed to send message to business",
       };
     }
   },
@@ -1311,17 +1602,17 @@ export const classManagementService = {
   getClassAnalytics: async () => {
     try {
       // Use the new admin endpoint
-      const response = await axiosInstance.get('/admin/classes/analytics/');
-      
+      const response = await axiosInstance.get("/admin/classes/analytics/");
+
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching class analytics:', error);
+      console.error("Error fetching class analytics:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch class analytics'
+        error: error.response?.data?.error || "Failed to fetch class analytics",
       };
     }
   },
@@ -1333,25 +1624,25 @@ export const classManagementService = {
   exportClassData: async (params = {}) => {
     try {
       const queryParams = new URLSearchParams();
-      
-      if (params.search) queryParams.append('search', params.search);
-      if (params.category) queryParams.append('category', params.category);
-      if (params.status) queryParams.append('status', params.status);
-      if (params.featured) queryParams.append('featured', 'true');
-      
+
+      if (params.search) queryParams.append("search", params.search);
+      if (params.category) queryParams.append("category", params.category);
+      if (params.status) queryParams.append("status", params.status);
+      if (params.featured) queryParams.append("featured", "true");
+
       // Use the new admin endpoint
       const endpoint = `/admin/classes/export/?${queryParams.toString()}`;
-      
+
       const response = await axiosInstance.get(endpoint);
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error exporting class data:', error);
+      console.error("Error exporting class data:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to export class data'
+        error: error.response?.data?.error || "Failed to export class data",
       };
     }
   },
@@ -1365,13 +1656,13 @@ export const classManagementService = {
       const response = await axiosInstance.get(`/classes/${classId}/options/`);
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching options for class ${classId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch class options'
+        error: error.response?.data?.error || "Failed to fetch class options",
       };
     }
   },
@@ -1382,16 +1673,19 @@ export const classManagementService = {
    */
   getOptionSchedules: async (optionId) => {
     try {
-      const response = await axiosInstance.get(`/schedules/?option_id=${optionId}`);
+      const response = await axiosInstance.get(
+        `/schedules/?option_id=${optionId}`
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching schedules for option ${optionId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch option schedules'
+        error:
+          error.response?.data?.error || "Failed to fetch option schedules",
       };
     }
   },
@@ -1406,26 +1700,31 @@ export const classManagementService = {
   getScheduleInstances: async (scheduleId, params = {}) => {
     try {
       const queryParams = new URLSearchParams();
-      
-      queryParams.append('schedule_id', scheduleId);
-      if (params.start_date) queryParams.append('start_date', params.start_date);
-      if (params.end_date) queryParams.append('end_date', params.end_date);
-      
+
+      queryParams.append("schedule_id", scheduleId);
+      if (params.start_date)
+        queryParams.append("start_date", params.start_date);
+      if (params.end_date) queryParams.append("end_date", params.end_date);
+
       const endpoint = `/schedule-instances/?${queryParams.toString()}`;
-      
+
       const response = await axiosInstance.get(endpoint);
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error(`Error fetching schedule instances for schedule ${scheduleId}:`, error);
+      console.error(
+        `Error fetching schedule instances for schedule ${scheduleId}:`,
+        error
+      );
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch schedule instances'
+        error:
+          error.response?.data?.error || "Failed to fetch schedule instances",
       };
     }
-  }
+  },
 };
 
 export const paymentService = {
@@ -1440,16 +1739,16 @@ export const paymentService = {
    */
   getPayments: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/payments/', { params });
+      const response = await axiosInstance.get("/admin/payments/", { params });
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching payments:', error);
+      console.error("Error fetching payments:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch payments'
+        error: error.response?.data?.error || "Failed to fetch payments",
       };
     }
   },
@@ -1459,16 +1758,17 @@ export const paymentService = {
    */
   getPaymentStats: async () => {
     try {
-      const response = await axiosInstance.get('/admin/payments/stats/');
+      const response = await axiosInstance.get("/admin/payments/stats/");
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching payment statistics:', error);
+      console.error("Error fetching payment statistics:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch payment statistics'
+        error:
+          error.response?.data?.error || "Failed to fetch payment statistics",
       };
     }
   },
@@ -1482,13 +1782,13 @@ export const paymentService = {
       const response = await axiosInstance.get(`/admin/payments/${paymentId}/`);
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching payment ${paymentId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch payment details'
+        error: error.response?.data?.error || "Failed to fetch payment details",
       };
     }
   },
@@ -1501,7 +1801,10 @@ export const paymentService = {
    * @param {string} refundData.reason - Refund reason
    */
   processRefund: async (paymentId, refundData) => {
-    console.log("[paymentService.processRefund] Received paymentId:", paymentId);
+    console.log(
+      "[paymentService.processRefund] Received paymentId:",
+      paymentId
+    );
     if (!paymentId) {
       const errorMsg = "Payment ID is required to process a refund.";
       console.error(`[paymentService.processRefund] Error: ${errorMsg}`);
@@ -1512,21 +1815,31 @@ export const paymentService = {
     }
     const url = `/admin/payments/${paymentId}/refund/`;
     console.log(`[paymentService.processRefund] Constructing URL: ${url}`);
-    console.log("[paymentService.processRefund] Sending refundData:", refundData);
+    console.log(
+      "[paymentService.processRefund] Sending refundData:",
+      refundData
+    );
     try {
       const response = await axiosInstance.post(url, refundData);
-      console.log("[paymentService.processRefund] API call successful:", response.data);
+      console.log(
+        "[paymentService.processRefund] API call successful:",
+        response.data
+      );
 
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      console.error(`[paymentService.processRefund] Error processing refund for payment ${paymentId}:`, error.response || error);
-      const errorMsg = error.response?.data?.error ||    // Specific 'error' field
-                       error.response?.data?.detail ||   // DRF standard 'detail' field
-                       error.message ||                  // Axios or network error message
-                       'An unknown error occurred while processing the refund.'; // Fallback
+      console.error(
+        `[paymentService.processRefund] Error processing refund for payment ${paymentId}:`,
+        error.response || error
+      );
+      const errorMsg =
+        error.response?.data?.error || // Specific 'error' field
+        error.response?.data?.detail || // DRF standard 'detail' field
+        error.message || // Axios or network error message
+        "An unknown error occurred while processing the refund."; // Fallback
 
       return {
         success: false,
@@ -1557,18 +1870,25 @@ export const paymentService = {
       // Send POST request to the specific payment's mark_paid endpoint
       // No request body is typically needed for this action
       const response = await axiosInstance.post(url);
-      console.log("[paymentService.markAsPaid] API call successful:", response.data);
+      console.log(
+        "[paymentService.markAsPaid] API call successful:",
+        response.data
+      );
 
       return {
         success: true,
         data: response.data, // Backend should return the updated payment details
       };
     } catch (error) {
-      console.error(`[paymentService.markAsPaid] Error marking payment ${paymentId} as paid:`, error.response || error);
-      const errorMsg = error.response?.data?.error ||
-                       error.response?.data?.detail ||
-                       error.message ||
-                       'An unknown error occurred while marking the payment as paid.';
+      console.error(
+        `[paymentService.markAsPaid] Error marking payment ${paymentId} as paid:`,
+        error.response || error
+      );
+      const errorMsg =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        error.message ||
+        "An unknown error occurred while marking the payment as paid.";
 
       return {
         success: false,
@@ -1582,7 +1902,10 @@ export const paymentService = {
    * @param {string} paymentId - Payment ID
    */
   getPaymentHistory: async (paymentId) => {
-    console.log("[paymentService.getPaymentHistory] Received paymentId:", paymentId);
+    console.log(
+      "[paymentService.getPaymentHistory] Received paymentId:",
+      paymentId
+    );
     if (!paymentId) {
       const errorMsg = "Payment ID is required to fetch history.";
       console.error(`[paymentService.getPaymentHistory] Error: ${errorMsg}`);
@@ -1594,14 +1917,21 @@ export const paymentService = {
 
     try {
       const response = await axiosInstance.get(url);
-      console.log("[paymentService.getPaymentHistory] API call successful:", response.data);
+      console.log(
+        "[paymentService.getPaymentHistory] API call successful:",
+        response.data
+      );
       return { success: true, data: response.data };
     } catch (error) {
-      console.error(`[paymentService.getPaymentHistory] Error fetching history for payment ${paymentId}:`, error.response || error);
-      const errorMsg = error.response?.data?.error ||
-                       error.response?.data?.detail ||
-                       error.message ||
-                       'An unknown error occurred while fetching payment history.';
+      console.error(
+        `[paymentService.getPaymentHistory] Error fetching history for payment ${paymentId}:`,
+        error.response || error
+      );
+      const errorMsg =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        error.message ||
+        "An unknown error occurred while fetching payment history.";
       return { success: false, error: errorMsg };
     }
   },
@@ -1612,16 +1942,18 @@ export const paymentService = {
    */
   getReceiptUrl: async (paymentId) => {
     try {
-      const response = await axiosInstance.get(`/admin/payments/${paymentId}/receipt/`);
+      const response = await axiosInstance.get(
+        `/admin/payments/${paymentId}/receipt/`
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching receipt for payment ${paymentId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch receipt'
+        error: error.response?.data?.error || "Failed to fetch receipt",
       };
     }
   },
@@ -1632,31 +1964,31 @@ export const paymentService = {
    */
   exportPaymentsData: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/payments/export/', { 
+      const response = await axiosInstance.get("/admin/payments/export/", {
         params,
-        responseType: 'blob'
+        responseType: "blob",
       });
-      
+
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', 'payments_data.csv');
+      link.setAttribute("download", "payments_data.csv");
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       return {
-        success: true
+        success: true,
       };
     } catch (error) {
-      console.error('Error exporting payments data:', error);
+      console.error("Error exporting payments data:", error);
       return {
         success: false,
-        error: 'Failed to export payments data'
+        error: "Failed to export payments data",
       };
     }
-  }
+  },
 };
 
 export const adminBookingService = {
@@ -1668,50 +2000,55 @@ export const adminBookingService = {
    * @param {string} params.start_date - Filter by start date
    * @param {string} params.end_date - Filter by end date
    */
-getBookings: async (params = {}, axiosConfig = {}) => {
-  try {
-    const response = await axiosInstance.get('/admin/bookings/', {
-      params,
-      signal: axiosConfig.signal,
-    });
-    return { success: true, data: response.data };
-  } catch (error) {
-    // Check if the error is a cancellation error before logging it as a failure.
-    if (axios.isCancel(error)) {
-      console.log('Bookings fetch request was canceled as it is no longer needed.');
-      return { success: false, error: 'Request cancelled', cancelled: true };
+  getBookings: async (params = {}, axiosConfig = {}) => {
+    try {
+      const response = await axiosInstance.get("/admin/bookings/", {
+        params,
+        signal: axiosConfig.signal,
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      // Check if the error is a cancellation error before logging it as a failure.
+      if (axios.isCancel(error)) {
+        console.log(
+          "Bookings fetch request was canceled as it is no longer needed."
+        );
+        return { success: false, error: "Request cancelled", cancelled: true };
+      }
+      // If it's a different kind of error, log it as a real problem.
+      console.error("Error fetching bookings:", error);
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to fetch bookings",
+      };
     }
-    // If it's a different kind of error, log it as a real problem.
-    console.error('Error fetching bookings:', error);
-    return {
-      success: false,
-      error: error.response?.data?.detail || 'Failed to fetch bookings',
-    };
-  }
-},
+  },
 
   /**
    * Get booking analytics
    * @param {Object} params - Query parameters (e.g., { start_date: 'YYYY-MM-DD', end_date: 'YYYY-MM-DD' })
    * @param {Object} axiosConfig - Optional Axios config (e.g., for cancellation)
    */
-  getBookingAnalytics: async (params = {}, axiosConfig = {}) => { // Accept params
+  getBookingAnalytics: async (params = {}, axiosConfig = {}) => {
+    // Accept params
     try {
       console.log("Service: Fetching booking analytics with params:", params); // Add log here
-      const response = await axiosInstance.get('/admin/bookings/analytics/', { // Ensure correct endpoint
+      const response = await axiosInstance.get("/admin/bookings/analytics/", {
+        // Ensure correct endpoint
         params: params, // Pass the params object here!
-        signal: axiosConfig.signal // Pass the signal here if using cancellation
+        signal: axiosConfig.signal, // Pass the signal here if using cancellation
       });
       return { success: true, data: response.data };
     } catch (error) {
-      console.error('Error fetching booking analytics:', error);
+      console.error("Error fetching booking analytics:", error);
       if (axios.isCancel(error)) {
-          console.log('Analytics request canceled', error.message);
-          return { success: false, error: 'Request cancelled', cancelled: true };
+        console.log("Analytics request canceled", error.message);
+        return { success: false, error: "Request cancelled", cancelled: true };
       }
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch booking analytics'
+        error:
+          error.response?.data?.error || "Failed to fetch booking analytics",
       };
     }
   },
@@ -1725,13 +2062,13 @@ getBookings: async (params = {}, axiosConfig = {}) => {
       const response = await axiosInstance.get(`/admin/bookings/${bookingId}/`);
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching booking ${bookingId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch booking details'
+        error: error.response?.data?.error || "Failed to fetch booking details",
       };
     }
   },
@@ -1745,16 +2082,19 @@ getBookings: async (params = {}, axiosConfig = {}) => {
    */
   cancelBooking: async (bookingId, data) => {
     try {
-      const response = await axiosInstance.post(`/admin/bookings/${bookingId}/cancel/`, data);
+      const response = await axiosInstance.post(
+        `/admin/bookings/${bookingId}/cancel/`,
+        data
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error cancelling booking ${bookingId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to cancel booking'
+        error: error.response?.data?.error || "Failed to cancel booking",
       };
     }
   },
@@ -1765,31 +2105,31 @@ getBookings: async (params = {}, axiosConfig = {}) => {
    */
   exportBookingsData: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/bookings/export/', { 
+      const response = await axiosInstance.get("/admin/bookings/export/", {
         params,
-        responseType: 'blob'
+        responseType: "blob",
       });
-      
+
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', 'bookings_data.csv');
+      link.setAttribute("download", "bookings_data.csv");
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       return {
-        success: true
+        success: true,
       };
     } catch (error) {
-      console.error('Error exporting bookings data:', error);
+      console.error("Error exporting bookings data:", error);
       return {
         success: false,
-        error: 'Failed to export bookings data'
+        error: "Failed to export bookings data",
       };
     }
-  }
+  },
 };
 
 export const adminPayoutService = {
@@ -1799,16 +2139,16 @@ export const adminPayoutService = {
    */
   getPayouts: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/payouts/', { params });
+      const response = await axiosInstance.get("/admin/payouts/", { params });
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching payouts:', error);
+      console.error("Error fetching payouts:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch payouts'
+        error: error.response?.data?.error || "Failed to fetch payouts",
       };
     }
   },
@@ -1822,13 +2162,13 @@ export const adminPayoutService = {
       const response = await axiosInstance.get(`/admin/payouts/${payoutId}/`);
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching payout details for ${payoutId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch payout details'
+        error: error.response?.data?.error || "Failed to fetch payout details",
       };
     }
   },
@@ -1839,16 +2179,19 @@ export const adminPayoutService = {
    */
   getPayoutAnalytics: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/payouts/analytics/', { params });
+      const response = await axiosInstance.get("/admin/payouts/analytics/", {
+        params,
+      });
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching payout analytics:', error);
+      console.error("Error fetching payout analytics:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch payout analytics'
+        error:
+          error.response?.data?.error || "Failed to fetch payout analytics",
       };
     }
   },
@@ -1859,20 +2202,20 @@ export const adminPayoutService = {
    */
   exportPayouts: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/payouts/export/', {
+      const response = await axiosInstance.get("/admin/payouts/export/", {
         params,
-        responseType: 'blob' // Important to handle the file download correctly
+        responseType: "blob", // Important to handle the file download correctly
       });
       // The component will handle the download logic
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error exporting payouts data:', error);
+      console.error("Error exporting payouts data:", error);
       return {
         success: false,
-        error: 'Failed to export payouts data'
+        error: "Failed to export payouts data",
       };
     }
   },
@@ -1883,16 +2226,18 @@ export const adminPayoutService = {
    */
   retryFailedPayout: async (payoutId) => {
     try {
-      const response = await axiosInstance.post(`/admin/payouts/${payoutId}/retry/`);
+      const response = await axiosInstance.post(
+        `/admin/payouts/${payoutId}/retry/`
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error retrying payout ${payoutId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to retry payout'
+        error: error.response?.data?.error || "Failed to retry payout",
       };
     }
   },
@@ -1902,11 +2247,16 @@ export const blogAdminService = {
   // Post Management
   getPosts: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/blog/posts/', { params });
+      const response = await axiosInstance.get("/admin/blog/posts/", {
+        params,
+      });
       return { success: true, data: response.data };
     } catch (error) {
-      console.error('Error fetching blog posts:', error);
-      return { success: false, error: error.response?.data?.detail || 'Failed to fetch posts' };
+      console.error("Error fetching blog posts:", error);
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to fetch posts",
+      };
     }
   },
   getPost: async (id) => {
@@ -1915,25 +2265,37 @@ export const blogAdminService = {
       return { success: true, data: response.data };
     } catch (error) {
       console.error(`Error fetching post ${id}:`, error);
-      return { success: false, error: error.response?.data?.detail || 'Failed to fetch post' };
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to fetch post",
+      };
     }
   },
   createPost: async (data) => {
     try {
-      const response = await axiosInstance.post('/admin/blog/posts/', data);
+      const response = await axiosInstance.post("/admin/blog/posts/", data);
       return { success: true, data: response.data };
     } catch (error) {
-      console.error('Error creating post:', error);
-      return { success: false, error: error.response?.data || 'Failed to create post' };
+      console.error("Error creating post:", error);
+      return {
+        success: false,
+        error: error.response?.data || "Failed to create post",
+      };
     }
   },
   updatePost: async (id, data) => {
     try {
-      const response = await axiosInstance.patch(`/admin/blog/posts/${id}/`, data);
+      const response = await axiosInstance.patch(
+        `/admin/blog/posts/${id}/`,
+        data
+      );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(`Error updating post ${id}:`, error);
-      return { success: false, error: error.response?.data || 'Failed to update post' };
+      return {
+        success: false,
+        error: error.response?.data || "Failed to update post",
+      };
     }
   },
   deletePost: async (id) => {
@@ -1942,7 +2304,10 @@ export const blogAdminService = {
       return { success: true };
     } catch (error) {
       console.error(`Error deleting post ${id}:`, error);
-      return { success: false, error: error.response?.data?.detail || 'Failed to delete post' };
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to delete post",
+      };
     }
   },
 
@@ -1950,29 +2315,44 @@ export const blogAdminService = {
   getCategories: async () => {
     try {
       // This endpoint returns a flat array, not paginated data
-      const response = await axiosInstance.get('/admin/blog/categories/');
+      const response = await axiosInstance.get("/admin/blog/categories/");
       return { success: true, data: response.data };
     } catch (error) {
-      console.error('Error fetching blog categories:', error);
-      return { success: false, error: error.response?.data?.detail || 'Failed to fetch categories' };
+      console.error("Error fetching blog categories:", error);
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to fetch categories",
+      };
     }
   },
   createCategory: async (data) => {
     try {
-      const response = await axiosInstance.post('/admin/blog/categories/', data);
+      const response = await axiosInstance.post(
+        "/admin/blog/categories/",
+        data
+      );
       return { success: true, data: response.data };
     } catch (error) {
-      console.error('Error creating category:', error);
-      return { success: false, error: error.response?.data || 'Failed to create category' };
+      console.error("Error creating category:", error);
+      return {
+        success: false,
+        error: error.response?.data || "Failed to create category",
+      };
     }
   },
   updateCategory: async (id, data) => {
     try {
-      const response = await axiosInstance.patch(`/admin/blog/categories/${id}/`, data);
+      const response = await axiosInstance.patch(
+        `/admin/blog/categories/${id}/`,
+        data
+      );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(`Error updating category ${id}:`, error);
-      return { success: false, error: error.response?.data || 'Failed to update category' };
+      return {
+        success: false,
+        error: error.response?.data || "Failed to update category",
+      };
     }
   },
   deleteCategory: async (id) => {
@@ -1981,7 +2361,10 @@ export const blogAdminService = {
       return { success: true };
     } catch (error) {
       console.error(`Error deleting category ${id}:`, error);
-      return { success: false, error: error.response?.data?.detail || 'Failed to delete category' };
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to delete category",
+      };
     }
   },
 };
@@ -1989,90 +2372,135 @@ export const blogAdminService = {
 export const supportTicketService = {
   getTickets: async (params = {}, axiosConfig = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/support-tickets/', {
+      const response = await axiosInstance.get("/admin/support-tickets/", {
         params,
         signal: axiosConfig.signal,
       });
-      return { success: true, data: response.data.results, pagination: response.data };
+      return {
+        success: true,
+        data: response.data.results,
+        pagination: response.data,
+      };
     } catch (error) {
       if (axios.isCancel(error)) {
-        return { success: false, error: 'Request cancelled', cancelled: true };
+        return { success: false, error: "Request cancelled", cancelled: true };
       }
-      console.error('Error fetching support tickets:', error);
-      return { success: false, error: error.response?.data?.error || 'Failed to fetch support tickets' };
+      console.error("Error fetching support tickets:", error);
+      return {
+        success: false,
+        error: error.response?.data?.error || "Failed to fetch support tickets",
+      };
     }
   },
 
   getTicketDetails: async (ticketId) => {
     try {
-      const response = await axiosInstance.get(`/admin/support-tickets/${ticketId}/`);
+      const response = await axiosInstance.get(
+        `/admin/support-tickets/${ticketId}/`
+      );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(`Error fetching ticket ${ticketId}:`, error);
-      return { success: false, error: error.response?.data?.error || 'Failed to fetch ticket details' };
+      return {
+        success: false,
+        error: error.response?.data?.error || "Failed to fetch ticket details",
+      };
     }
   },
 
   replyToTicket: async (ticketId, data) => {
     try {
-      const response = await axiosInstance.post(`/admin/support-tickets/${ticketId}/reply/`, data);
+      const response = await axiosInstance.post(
+        `/admin/support-tickets/${ticketId}/reply/`,
+        data
+      );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(`Error replying to ticket ${ticketId}:`, error);
-      return { success: false, error: error.response?.data?.detail || 'Failed to reply to ticket' };
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to reply to ticket",
+      };
     }
   },
-  
+
   getTicketHistory: async (ticketId) => {
-    if (!ticketId) return { success: false, error: 'Ticket ID is required' };
+    if (!ticketId) return { success: false, error: "Ticket ID is required" };
     try {
-        const response = await axiosInstance.get(`/admin/support-tickets/${ticketId}/history/`);
-        return { success: true, data: response.data };
+      const response = await axiosInstance.get(
+        `/admin/support-tickets/${ticketId}/history/`
+      );
+      return { success: true, data: response.data };
     } catch (error) {
-        console.error(`Error fetching history for ticket ${ticketId}:`, error);
-        return { success: false, error: error.response?.data?.error || 'Failed to fetch ticket history' };
+      console.error(`Error fetching history for ticket ${ticketId}:`, error);
+      return {
+        success: false,
+        error: error.response?.data?.error || "Failed to fetch ticket history",
+      };
     }
   },
 
   getAssignableAgents: async () => {
     try {
-      const response = await axiosInstance.get('/admin/support-tickets/assignable-agents/');
+      const response = await axiosInstance.get(
+        "/admin/support-tickets/assignable-agents/"
+      );
       return { success: true, data: response.data };
     } catch (error) {
-      console.error('Error fetching assignable agents:', error);
-      return { success: false, error: error.response?.data?.error || 'Failed to fetch assignable agents' };
+      console.error("Error fetching assignable agents:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.error || "Failed to fetch assignable agents",
+      };
     }
   },
 
   assignTicket: async (ticketId, payload) => {
     try {
-      const response = await axiosInstance.post(`/admin/support-tickets/${ticketId}/assign/`, payload);
+      const response = await axiosInstance.post(
+        `/admin/support-tickets/${ticketId}/assign/`,
+        payload
+      );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(`Error assigning ticket ${ticketId}:`, error);
-      return { success: false, error: error.response?.data?.detail || 'Failed to assign ticket' };
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to assign ticket",
+      };
     }
   },
 
   resolveTicket: async (ticketId, data) => {
     try {
-      const response = await axiosInstance.post(`/admin/support-tickets/${ticketId}/resolve/`, data);
+      const response = await axiosInstance.post(
+        `/admin/support-tickets/${ticketId}/resolve/`,
+        data
+      );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(`Error resolving ticket ${ticketId}:`, error);
-      return { success: false, error: error.response?.data?.detail || 'Failed to resolve ticket' };
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to resolve ticket",
+      };
     }
   },
 
   getTicketStats: async () => {
     try {
-      const response = await axiosInstance.get('/admin/support-tickets/stats/');
+      const response = await axiosInstance.get("/admin/support-tickets/stats/");
       return { success: true, data: response.data };
     } catch (error) {
-      console.error('Error fetching ticket statistics:', error);
-      return { success: false, error: error.response?.data?.error || 'Failed to fetch ticket statistics' };
+      console.error("Error fetching ticket statistics:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.error || "Failed to fetch ticket statistics",
+      };
     }
-  }
+  },
 };
 
 export const notificationService = {
@@ -2087,16 +2515,18 @@ export const notificationService = {
    */
   getNotifications: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/notifications/', { params });
+      const response = await axiosInstance.get("/admin/notifications/", {
+        params,
+      });
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error("Error fetching notifications:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch notifications'
+        error: error.response?.data?.error || "Failed to fetch notifications",
       };
     }
   },
@@ -2107,16 +2537,19 @@ export const notificationService = {
    */
   getNotificationDetails: async (notificationId) => {
     try {
-      const response = await axiosInstance.get(`/admin/notifications/${notificationId}/`);
+      const response = await axiosInstance.get(
+        `/admin/notifications/${notificationId}/`
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching notification ${notificationId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch notification details'
+        error:
+          error.response?.data?.error || "Failed to fetch notification details",
       };
     }
   },
@@ -2127,16 +2560,19 @@ export const notificationService = {
    */
   createNotification: async (notificationData) => {
     try {
-      const response = await axiosInstance.post('/admin/notifications/', notificationData);
+      const response = await axiosInstance.post(
+        "/admin/notifications/",
+        notificationData
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error creating notification:', error);
+      console.error("Error creating notification:", error);
       return {
         success: false,
-        error: error.response?.data || 'Failed to create notification'
+        error: error.response?.data || "Failed to create notification",
       };
     }
   },
@@ -2148,16 +2584,19 @@ export const notificationService = {
    */
   updateNotification: async (notificationId, notificationData) => {
     try {
-      const response = await axiosInstance.patch(`/admin/notifications/${notificationId}/`, notificationData);
+      const response = await axiosInstance.patch(
+        `/admin/notifications/${notificationId}/`,
+        notificationData
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error updating notification ${notificationId}:`, error);
       return {
         success: false,
-        error: error.response?.data || 'Failed to update notification'
+        error: error.response?.data || "Failed to update notification",
       };
     }
   },
@@ -2170,13 +2609,13 @@ export const notificationService = {
     try {
       await axiosInstance.delete(`/admin/notifications/${notificationId}/`);
       return {
-        success: true
+        success: true,
       };
     } catch (error) {
       console.error(`Error deleting notification ${notificationId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to delete notification'
+        error: error.response?.data?.error || "Failed to delete notification",
       };
     }
   },
@@ -2188,10 +2627,13 @@ export const notificationService = {
   sendNotification: async (notificationId, extraData = {}) => {
     try {
       console.log("Sending notification:", notificationId, extraData);
-      const response = await axiosInstance.post(`/admin/notifications/${notificationId}/send/`, extraData);
+      const response = await axiosInstance.post(
+        `/admin/notifications/${notificationId}/send/`,
+        extraData
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error sending notification ${notificationId}:`, error);
@@ -2201,7 +2643,7 @@ export const notificationService = {
       }
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to send notification'
+        error: error.response?.data?.error || "Failed to send notification",
       };
     }
   },
@@ -2212,16 +2654,18 @@ export const notificationService = {
    */
   cancelNotification: async (notificationId) => {
     try {
-      const response = await axiosInstance.post(`/admin/notifications/${notificationId}/cancel/`);
+      const response = await axiosInstance.post(
+        `/admin/notifications/${notificationId}/cancel/`
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error cancelling notification ${notificationId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to cancel notification'
+        error: error.response?.data?.error || "Failed to cancel notification",
       };
     }
   },
@@ -2232,16 +2676,19 @@ export const notificationService = {
    */
   duplicateNotification: async (notificationId) => {
     try {
-      const response = await axiosInstance.post(`/admin/notifications/${notificationId}/duplicate/`);
+      const response = await axiosInstance.post(
+        `/admin/notifications/${notificationId}/duplicate/`
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error duplicating notification ${notificationId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to duplicate notification'
+        error:
+          error.response?.data?.error || "Failed to duplicate notification",
       };
     }
   },
@@ -2251,19 +2698,20 @@ export const notificationService = {
    */
   getNotificationMetrics: async () => {
     try {
-      const response = await axiosInstance.get('/admin/notifications/metrics/');
+      const response = await axiosInstance.get("/admin/notifications/metrics/");
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching notification metrics:', error);
+      console.error("Error fetching notification metrics:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch notification metrics'
+        error:
+          error.response?.data?.error || "Failed to fetch notification metrics",
       };
     }
-  }
+  },
 };
 
 export const userSegmentService = {
@@ -2274,64 +2722,73 @@ export const userSegmentService = {
    */
   getUserSegments: async (params = {}) => {
     try {
-      const response = await axiosInstance.get('/admin/user-segments/', { params });
+      const response = await axiosInstance.get("/admin/user-segments/", {
+        params,
+      });
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error fetching user segments:', error);
+      console.error("Error fetching user segments:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch user segments'
+        error: error.response?.data?.error || "Failed to fetch user segments",
       };
     }
   },
 
   getUsers: async (segmentId) => {
     try {
-      const response = await axiosInstance.get(`/admin/user-segments/${segmentId}/users/`);
+      const response = await axiosInstance.get(
+        `/admin/user-segments/${segmentId}/users/`
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching users for segment ${segmentId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch segment users'
+        error: error.response?.data?.error || "Failed to fetch segment users",
       };
     }
   },
 
   calculateCounts: async () => {
     try {
-      const response = await axiosInstance.post('/admin/user-segments/calculate-counts/');
+      const response = await axiosInstance.post(
+        "/admin/user-segments/calculate-counts/"
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error calculating segment counts:', error);
+      console.error("Error calculating segment counts:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to calculate segment counts'
+        error:
+          error.response?.data?.error || "Failed to calculate segment counts",
       };
     }
   },
 
   getSegmentDetails: async (segmentId) => {
     try {
-      const response = await axiosInstance.get(`/admin/user-segments/${segmentId}/`);
+      const response = await axiosInstance.get(
+        `/admin/user-segments/${segmentId}/`
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching segment ${segmentId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch segment details'
+        error: error.response?.data?.error || "Failed to fetch segment details",
       };
     }
   },
@@ -2342,16 +2799,19 @@ export const userSegmentService = {
    */
   createSegment: async (segmentData) => {
     try {
-      const response = await axiosInstance.post('/admin/user-segments/', segmentData);
+      const response = await axiosInstance.post(
+        "/admin/user-segments/",
+        segmentData
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error creating segment:', error);
+      console.error("Error creating segment:", error);
       return {
         success: false,
-        error: error.response?.data || 'Failed to create segment'
+        error: error.response?.data || "Failed to create segment",
       };
     }
   },
@@ -2363,16 +2823,19 @@ export const userSegmentService = {
    */
   updateSegment: async (segmentId, segmentData) => {
     try {
-      const response = await axiosInstance.patch(`/admin/user-segments/${segmentId}/`, segmentData);
+      const response = await axiosInstance.patch(
+        `/admin/user-segments/${segmentId}/`,
+        segmentData
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error updating segment ${segmentId}:`, error);
       return {
         success: false,
-        error: error.response?.data || 'Failed to update segment'
+        error: error.response?.data || "Failed to update segment",
       };
     }
   },
@@ -2385,13 +2848,13 @@ export const userSegmentService = {
     try {
       await axiosInstance.delete(`/admin/user-segments/${segmentId}/`);
       return {
-        success: true
+        success: true,
       };
     } catch (error) {
       console.error(`Error deleting segment ${segmentId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to delete segment'
+        error: error.response?.data?.error || "Failed to delete segment",
       };
     }
   },
@@ -2402,16 +2865,18 @@ export const userSegmentService = {
    */
   getSegmentUsers: async (segmentId) => {
     try {
-      const response = await axiosInstance.get(`/admin/user-segments/${segmentId}/users/`);
+      const response = await axiosInstance.get(
+        `/admin/user-segments/${segmentId}/users/`
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
       console.error(`Error fetching users for segment ${segmentId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch segment users'
+        error: error.response?.data?.error || "Failed to fetch segment users",
       };
     }
   },
@@ -2421,19 +2886,22 @@ export const userSegmentService = {
    */
   calculateCounts: async () => {
     try {
-      const response = await axiosInstance.post('/admin/user-segments/calculate-counts/');
+      const response = await axiosInstance.post(
+        "/admin/user-segments/calculate-counts/"
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error calculating segment counts:', error);
+      console.error("Error calculating segment counts:", error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to calculate segment counts'
+        error:
+          error.response?.data?.error || "Failed to calculate segment counts",
       };
     }
-  }
+  },
 };
 
 export const attachmentService = {
@@ -2443,20 +2911,24 @@ export const attachmentService = {
    */
   uploadAttachment: async (formData) => {
     try {
-      const response = await axiosInstance.post('/admin/notification-attachments/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+      const response = await axiosInstance.post(
+        "/admin/notification-attachments/",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         }
-      });
+      );
       return {
         success: true,
-        data: response.data
+        data: response.data,
       };
     } catch (error) {
-      console.error('Error uploading attachment:', error);
+      console.error("Error uploading attachment:", error);
       return {
         success: false,
-        error: error.response?.data || 'Failed to upload attachment'
+        error: error.response?.data || "Failed to upload attachment",
       };
     }
   },
@@ -2467,16 +2939,18 @@ export const attachmentService = {
    */
   deleteAttachment: async (attachmentId) => {
     try {
-      await axiosInstance.delete(`/admin/notification-attachments/${attachmentId}/`);
+      await axiosInstance.delete(
+        `/admin/notification-attachments/${attachmentId}/`
+      );
       return {
-        success: true
+        success: true,
       };
     } catch (error) {
       console.error(`Error deleting attachment ${attachmentId}:`, error);
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to delete attachment'
+        error: error.response?.data?.error || "Failed to delete attachment",
       };
     }
-  }
+  },
 };

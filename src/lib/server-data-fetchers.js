@@ -1,6 +1,4 @@
-// lib/server-data-fetchers.js - COMPLETE FILE WITH CORRECT ENDPOINTS
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // ==================== CACHE TAG GENERATORS ====================
 
@@ -9,18 +7,23 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL
  * This allows granular revalidation based on what changed
  */
 function generateSearchCacheTags(params) {
-  const tags = ['classes-search'];
-  
+  const tags = ["classes-search"];
+
   // Add category-specific tags
-  if (params.category_key && params.category_key !== 'all') {
+  if (params.category_key && params.category_key !== "all") {
     tags.push(`category-${params.category_key}`);
-    
+
     // Add subcategory tag if present
     if (params.subcategory_key) {
       tags.push(`subcategory-${params.subcategory_key}`);
     }
   }
-  
+
+  // ADDED: Add collection-specific tags
+  if (params.collection) {
+    tags.push(`collection-${params.collection}`);
+  }
+
   // Add location-based tags if coordinates provided
   if (params.lat && params.lng) {
     // Round to 1 decimal to group nearby searches
@@ -28,12 +31,12 @@ function generateSearchCacheTags(params) {
     const lngRounded = Math.round(params.lng * 10) / 10;
     tags.push(`location-${latRounded}-${lngRounded}`);
   }
-  
+
   // Add tag-based searches
   if (params.tag) {
     tags.push(`tag-${params.tag}`);
   }
-  
+
   return tags;
 }
 
@@ -46,42 +49,55 @@ function generateSearchCacheTags(params) {
 export async function searchClasses(params = {}) {
   try {
     const queryParams = new URLSearchParams();
-    
+
     // Standardize page_size if not provided
     if (!params.page_size) {
-      queryParams.append('page_size', '24'); // Default to 24 for better grid fill
+      queryParams.append("page_size", "24");
     }
+
+    // Explicitly log the params coming in for debugging
+    console.log(
+      "[server-data-fetchers] searchClasses params:",
+      JSON.stringify(params)
+    );
 
     Object.entries(params).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        value.forEach(v => queryParams.append(key, v));
-      } else if (value !== null && value !== undefined && value !== '') {
+        value.forEach((v) => queryParams.append(key, v));
+      } else if (value !== null && value !== undefined && value !== "") {
         queryParams.append(key, value);
       }
     });
 
     const url = `${BASE_URL}/classes/search/?${queryParams.toString()}`;
     const cacheTags = generateSearchCacheTags(params);
-    
-    const isLocationSearch = params.lat && params.lng;
-    const cacheStrategy = isLocationSearch ? 'no-store' : 'force-cache';
-    const nextConfig = isLocationSearch 
-      ? {} // No tags/revalidate for live location search
-      : { revalidate: 3600, tags: cacheTags };
+
+    // Remove the condition that disables caching for location searches.
+    // We want to cache based on the rounded location tags generated above.
+
+    const cacheStrategy = "force-cache";
+
+    // You can adjust revalidate time (e.g., 3600 = 1 hour)
+    const nextConfig = { revalidate: 3600, tags: cacheTags };
 
     console.log(`[Server] Fetching classes: ${url}`);
+    console.log(
+      `[Server] Cache Strategy: ${cacheStrategy}, Tags: ${JSON.stringify(
+        cacheTags
+      )}`
+    );
 
     const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
       cache: cacheStrategy,
-      next: nextConfig
+      next: nextConfig,
     });
 
     if (!response.ok) throw new Error(`API request failed: ${response.status}`);
 
     const data = await response.json();
-    
+
     return {
       success: true,
       results: data?.results || [],
@@ -90,7 +106,7 @@ export async function searchClasses(params = {}) {
       previous: data?.previous || null,
     };
   } catch (error) {
-    console.error('Error searching classes:', error);
+    console.error("Error searching classes:", error);
     return { success: false, results: [], count: 0, next: null };
   }
 }
@@ -98,17 +114,52 @@ export async function searchClasses(params = {}) {
 /**
  * Fetch classes by category (convenience function)
  */
-export async function fetchClassesByCategory(categoryKey, subcategoryKey = null, additionalParams = {}) {
+export async function fetchClassesByCategory(
+  categoryKey,
+  subcategoryKey = null,
+  additionalParams = {}
+) {
   const params = {
     category_key: categoryKey,
-    ...additionalParams
+    ...additionalParams,
   };
-  
+
   if (subcategoryKey) {
     params.subcategory_key = subcategoryKey;
   }
-  
+
   return searchClasses(params);
+}
+
+/**
+ * Fetch Collections
+ * Uses the homepage-content endpoint in 'collections' mode to get the list
+ */
+export async function fetchClassCollections() {
+  try {
+    // We reuse the homepage content endpoint but only extract collections
+    const response = await fetch(
+      `${BASE_URL}/classes/homepage-content/?mode=collections`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "force-cache",
+        next: { revalidate: 3600, tags: ["collections"] },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // The endpoint returns { collections: [...], trending: [...], new: [...] }
+    return data.collections || [];
+  } catch (error) {
+    console.error("Error fetching collections:", error);
+    return [];
+  }
 }
 
 /**
@@ -117,7 +168,7 @@ export async function fetchClassesByCategory(categoryKey, subcategoryKey = null,
 export async function fetchClassesByTag(tag, additionalParams = {}) {
   return searchClasses({
     tag,
-    ...additionalParams
+    ...additionalParams,
   });
 }
 
@@ -129,24 +180,27 @@ export async function fetchClassesByTag(tag, additionalParams = {}) {
  */
 export async function fetchBlogPosts(pageSize = 50) {
   try {
-    const response = await fetch(`${BASE_URL}/blog/posts/?page_size=${pageSize}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      cache: 'force-cache',
-      next: { 
-        revalidate: 3600,
-        tags: ['blog-posts']
+    const response = await fetch(
+      `${BASE_URL}/blog/posts/?page_size=${pageSize}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "force-cache",
+        next: {
+          revalidate: 3600,
+          tags: ["blog-posts"],
+        },
       }
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     return {
       success: true,
       posts: data?.results || [],
@@ -154,7 +208,7 @@ export async function fetchBlogPosts(pageSize = 50) {
       next: data?.next || null,
     };
   } catch (error) {
-    console.error('Error fetching blog posts:', error);
+    console.error("Error fetching blog posts:", error);
     return {
       success: false,
       posts: [],
@@ -170,26 +224,26 @@ export async function fetchBlogPosts(pageSize = 50) {
 export async function fetchBlogPostBySlug(slug) {
   try {
     const response = await fetch(`${BASE_URL}/blog/posts/${slug}/`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      cache: 'force-cache',
-      next: { 
+      cache: "force-cache",
+      next: {
         revalidate: 86400,
-        tags: ['blog-posts', `blog-post-${slug}`]
-      }
+        tags: ["blog-posts", `blog-post-${slug}`],
+      },
     });
 
     if (!response.ok) {
       if (response.status === 404) {
-        return { success: false, error: 'Post not found', status: 404 };
+        return { success: false, error: "Post not found", status: 404 };
       }
       throw new Error(`API request failed: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     return {
       success: true,
       data: data,
@@ -198,7 +252,7 @@ export async function fetchBlogPostBySlug(slug) {
     console.error(`Error fetching blog post ${slug}:`, error);
     return {
       success: false,
-      error: error.message || 'Failed to fetch blog post',
+      error: error.message || "Failed to fetch blog post",
     };
   }
 }
@@ -210,15 +264,15 @@ export async function fetchBlogPostBySlug(slug) {
 export async function fetchBlogCategories() {
   try {
     const response = await fetch(`${BASE_URL}/blog/categories/`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      cache: 'force-cache',
-      next: { 
+      cache: "force-cache",
+      next: {
         revalidate: 86400,
-        tags: ['blog-categories']
-      }
+        tags: ["blog-categories"],
+      },
     });
 
     if (!response.ok) {
@@ -226,13 +280,13 @@ export async function fetchBlogCategories() {
     }
 
     const data = await response.json();
-    
+
     return {
       success: true,
       categories: Array.isArray(data) ? data : [],
     };
   } catch (error) {
-    console.error('Error fetching blog categories:', error);
+    console.error("Error fetching blog categories:", error);
     return {
       success: false,
       categories: [],
@@ -247,15 +301,15 @@ export async function fetchBlogCategories() {
 export async function fetchRecentBlogPosts(limit = 4) {
   try {
     const response = await fetch(`${BASE_URL}/blog/posts/?page_size=${limit}`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      cache: 'force-cache',
-      next: { 
+      cache: "force-cache",
+      next: {
         revalidate: 86400,
-        tags: ['blog-recent']
-      }
+        tags: ["blog-recent"],
+      },
     });
 
     if (!response.ok) {
@@ -263,13 +317,13 @@ export async function fetchRecentBlogPosts(limit = 4) {
     }
 
     const data = await response.json();
-    
+
     return {
       success: true,
       posts: data?.results || [],
     };
   } catch (error) {
-    console.error('Error fetching recent blog posts:', error);
+    console.error("Error fetching recent blog posts:", error);
     return {
       success: false,
       posts: [],
@@ -286,15 +340,15 @@ export async function fetchBlogPostsByCategory(categorySlug, pageSize = 50) {
     const response = await fetch(
       `${BASE_URL}/blog/posts/?category=${categorySlug}&page_size=${pageSize}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        cache: 'force-cache',
-        next: { 
+        cache: "force-cache",
+        next: {
           revalidate: 86400,
-          tags: ['blog-posts', `category-${categorySlug}`]
-        }
+          tags: ["blog-posts", `category-${categorySlug}`],
+        },
       }
     );
 
@@ -306,7 +360,7 @@ export async function fetchBlogPostsByCategory(categorySlug, pageSize = 50) {
     }
 
     const data = await response.json();
-    
+
     return {
       success: true,
       posts: data?.results || [],
@@ -331,15 +385,15 @@ export async function fetchBlogPostsByCategory(categorySlug, pageSize = 50) {
 export async function fetchInitialClasses() {
   try {
     const response = await fetch(`${BASE_URL}/classes/`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      cache: 'force-cache',
-      next: { 
+      cache: "force-cache",
+      next: {
         revalidate: 3600,
-        tags: ['classes', 'homepage-classes']
-      }
+        tags: ["classes", "homepage-classes"],
+      },
     });
 
     if (!response.ok) {
@@ -348,21 +402,21 @@ export async function fetchInitialClasses() {
     }
 
     const data = await response.json();
-    
-    if (!data || typeof data !== 'object') {
-      console.error('Invalid response structure:', data);
+
+    if (!data || typeof data !== "object") {
+      console.error("Invalid response structure:", data);
       return {
         classes: [],
         nextPageUrl: null,
       };
     }
-    
+
     return {
       classes: data?.results || [],
       nextPageUrl: data?.next || null,
     };
   } catch (error) {
-    console.error('Error fetching initial classes:', error);
+    console.error("Error fetching initial classes:", error);
     return {
       classes: [],
       nextPageUrl: null,
@@ -377,15 +431,15 @@ export async function fetchInitialClasses() {
 export async function fetchHomepageCategories() {
   try {
     const response = await fetch(`${BASE_URL}/categories/`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      cache: 'force-cache',
-      next: { 
+      cache: "force-cache",
+      next: {
         revalidate: 7200,
-        tags: ['categories']
-      }
+        tags: ["categories"],
+      },
     });
 
     if (!response.ok) {
@@ -393,13 +447,13 @@ export async function fetchHomepageCategories() {
     }
 
     const data = await response.json();
-    
+
     return {
       success: true,
-      data: Array.isArray(data) ? data : (data?.data || []),
+      data: Array.isArray(data) ? data : data?.data || [],
     };
   } catch (error) {
-    console.error('Error fetching categories:', error);
+    console.error("Error fetching categories:", error);
     return {
       success: false,
       data: [],
@@ -414,26 +468,26 @@ export async function fetchHomepageCategories() {
 export async function fetchClassDetail(classIdOrSlug) {
   try {
     const response = await fetch(`${BASE_URL}/classes/${classIdOrSlug}/`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      cache: 'force-cache',
-      next: { 
+      cache: "force-cache",
+      next: {
         revalidate: 3600,
-        tags: ['classes', `class-${classIdOrSlug}`]
-      }
+        tags: ["classes", `class-${classIdOrSlug}`],
+      },
     });
 
     if (!response.ok) {
       if (response.status === 404) {
-        return { success: false, error: 'Class not found', status: 404 };
+        return { success: false, error: "Class not found", status: 404 };
       }
       throw new Error(`API request failed: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     return {
       success: true,
       data: data,
@@ -442,7 +496,7 @@ export async function fetchClassDetail(classIdOrSlug) {
     console.error(`Error fetching class detail ${classIdOrSlug}:`, error);
     return {
       success: false,
-      error: error.message || 'Failed to fetch class details',
+      error: error.message || "Failed to fetch class details",
     };
   }
 }
@@ -456,15 +510,15 @@ export async function fetchClassDetail(classIdOrSlug) {
 export async function fetchPublicBusinesses() {
   try {
     const response = await fetch(`${BASE_URL}/businesses/`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      cache: 'force-cache',
-      next: { 
+      cache: "force-cache",
+      next: {
         revalidate: 86400, // 2 hours
-        tags: ['businesses', 'public-businesses']
-      }
+        tags: ["businesses", "public-businesses"],
+      },
     });
 
     if (!response.ok) {
@@ -472,14 +526,14 @@ export async function fetchPublicBusinesses() {
     }
 
     const data = await response.json();
-    
+
     return {
       success: true,
       data: data,
       results: data?.results || [],
     };
   } catch (error) {
-    console.error('Error fetching public businesses:', error);
+    console.error("Error fetching public businesses:", error);
     return {
       success: false,
       data: null,
@@ -495,31 +549,31 @@ export async function fetchPublicBusinesses() {
 export async function fetchBusinessDetail(slug) {
   try {
     const response = await fetch(`${BASE_URL}/businesses/${slug}/`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      cache: 'force-cache',
-      next: { 
+      cache: "force-cache",
+      next: {
         revalidate: 86400, // 1 day
-        tags: ['businesses', `business-${slug}`]
-      }
+        tags: ["businesses", `business-${slug}`],
+      },
     });
 
     if (!response.ok) {
       if (response.status === 404) {
-        return { 
-          success: false, 
-          error: 'Business not found', 
-          status: 404, 
-          data: null 
+        return {
+          success: false,
+          error: "Business not found",
+          status: 404,
+          data: null,
         };
       }
       throw new Error(`API request failed: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     return {
       success: true,
       data: data,
@@ -528,7 +582,7 @@ export async function fetchBusinessDetail(slug) {
     console.error(`Error fetching business detail ${slug}:`, error);
     return {
       success: false,
-      error: error.message || 'Failed to fetch business details',
+      error: error.message || "Failed to fetch business details",
       data: null,
     };
   }
@@ -548,32 +602,32 @@ export async function fetchBusinessReviews(slug, page = 1, pageSize = 10) {
     const response = await fetch(
       `${BASE_URL}/businesses/${slug}/reviews/?${params.toString()}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        cache: 'force-cache',
-        next: { 
-          revalidate: 86400, 
-          tags: ['reviews', `business-${slug}-reviews`, `reviews-page-${page}`]
-        }
+        cache: "force-cache",
+        next: {
+          revalidate: 86400,
+          tags: ["reviews", `business-${slug}-reviews`, `reviews-page-${page}`],
+        },
       }
     );
 
     if (!response.ok) {
       if (response.status === 404) {
-        return { 
-          success: true, 
-          data: [], 
+        return {
+          success: true,
+          data: [],
           hasMore: false,
-          total: 0 
+          total: 0,
         };
       }
       throw new Error(`API request failed: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     return {
       success: true,
       data: data?.results || [],
@@ -601,34 +655,41 @@ export function generateClassesStructuredData(classes) {
   if (!classes || classes.length === 0) return null;
 
   return {
-    '@context': 'https://schema.org',
-    '@type': 'ItemList',
-    'itemListElement': classes.slice(0, 10).map((classItem, index) => ({
-      '@type': 'ListItem',
-      'position': index + 1,
-      'item': {
-        '@type': 'Course',
-        '@id': `https://classeasily.com/classes/${classItem.slug || classItem.classId}`,
-        'name': classItem.title || 'Class',
-        'description': classItem.description || '',
-        'provider': {
-          '@type': 'Organization',
-          'name': classItem.business_name || 'Local Business',
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: classes.slice(0, 10).map((classItem, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      item: {
+        "@type": "Course",
+        "@id": `https://classeasily.com/classes/${
+          classItem.slug || classItem.classId
+        }`,
+        name: classItem.title || "Class",
+        description: classItem.description || "",
+        provider: {
+          "@type": "Organization",
+          name: classItem.business_name || "Local Business",
         },
-        'offers': classItem.min_session_price ? {
-          '@type': 'Offer',
-          'price': classItem.min_session_price,
-          'priceCurrency': 'CAD',
-          'availability': 'https://schema.org/InStock',
-        } : undefined,
-        'image': classItem.images && classItem.images.length > 0 
-          ? classItem.images[0].medium_url || classItem.images[0].original_url 
+        offers: classItem.min_session_price
+          ? {
+              "@type": "Offer",
+              price: classItem.min_session_price,
+              priceCurrency: "CAD",
+              availability: "https://schema.org/InStock",
+            }
           : undefined,
-        'aggregateRating': classItem.average_rating ? {
-          '@type': 'AggregateRating',
-          'ratingValue': classItem.average_rating,
-          'reviewCount': classItem.review_count || 0,
-        } : undefined,
+        image:
+          classItem.images && classItem.images.length > 0
+            ? classItem.images[0].medium_url || classItem.images[0].original_url
+            : undefined,
+        aggregateRating: classItem.average_rating
+          ? {
+              "@type": "AggregateRating",
+              ratingValue: classItem.average_rating,
+              reviewCount: classItem.review_count || 0,
+            }
+          : undefined,
       },
     })),
   };
@@ -641,31 +702,38 @@ export function generateClassStructuredData(classData) {
   if (!classData) return null;
 
   return {
-    '@context': 'https://schema.org',
-    '@type': 'Course',
-    '@id': `https://classeasily.com/classes/${classData.slug || classData.classId}`,
-    'name': classData.title || 'Class',
-    'description': classData.description || '',
-    'provider': {
-      '@type': 'Organization',
-      'name': classData.business_name || 'Local Business',
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "@id": `https://classeasily.com/classes/${
+      classData.slug || classData.classId
+    }`,
+    name: classData.title || "Class",
+    description: classData.description || "",
+    provider: {
+      "@type": "Organization",
+      name: classData.business_name || "Local Business",
     },
-    'offers': classData.min_session_price ? {
-      '@type': 'Offer',
-      'price': classData.min_session_price,
-      'priceCurrency': 'CAD',
-      'availability': 'https://schema.org/InStock',
-    } : undefined,
-    'image': classData.images && classData.images.length > 0 
-      ? classData.images.map(img => img.medium_url || img.original_url) 
+    offers: classData.min_session_price
+      ? {
+          "@type": "Offer",
+          price: classData.min_session_price,
+          priceCurrency: "CAD",
+          availability: "https://schema.org/InStock",
+        }
       : undefined,
-    'aggregateRating': classData.average_rating ? {
-      '@type': 'AggregateRating',
-      'ratingValue': classData.average_rating,
-      'reviewCount': classData.review_count || 0,
-      'bestRating': 5,
-      'worstRating': 1,
-    } : undefined,
+    image:
+      classData.images && classData.images.length > 0
+        ? classData.images.map((img) => img.medium_url || img.original_url)
+        : undefined,
+    aggregateRating: classData.average_rating
+      ? {
+          "@type": "AggregateRating",
+          ratingValue: classData.average_rating,
+          reviewCount: classData.review_count || 0,
+          bestRating: 5,
+          worstRating: 1,
+        }
+      : undefined,
   };
 }
 
@@ -675,45 +743,50 @@ export function generateClassStructuredData(classData) {
 export function generateBusinessStructuredData(businessData) {
   if (!businessData) return null;
 
-  const ratingValue = businessData.average_rating 
-    ? parseFloat(businessData.average_rating) 
+  const ratingValue = businessData.average_rating
+    ? parseFloat(businessData.average_rating)
     : null;
 
   return {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "@id": `https://classeasily.com/businesses/${businessData.slug}`,
-    "name": businessData.businessName,
-    "description": businessData.businessDescription,
-    "image": businessData.business_image_medium_url,
-    "url": `https://classeasily.com/businesses/${businessData.slug}`,
-    "telephone": businessData.studentContactPhone,
-    "email": businessData.studentContactEmail,
-    "address": {
+    name: businessData.businessName,
+    description: businessData.businessDescription,
+    image: businessData.business_image_medium_url,
+    url: `https://classeasily.com/businesses/${businessData.slug}`,
+    telephone: businessData.studentContactPhone,
+    email: businessData.studentContactEmail,
+    address: {
       "@type": "PostalAddress",
-      "streetAddress": businessData.businessAddress,
-      "addressLocality": businessData.businessCity,
-      "addressRegion": businessData.businessState,
-      "addressCountry": "CA"
+      streetAddress: businessData.businessAddress,
+      addressLocality: businessData.businessCity,
+      addressRegion: businessData.businessState,
+      addressCountry: "CA",
     },
-    "geo": businessData.classes?.[0]?.coordinates ? {
-      "@type": "GeoCoordinates",
-      "latitude": businessData.classes[0].coordinates.split(',')[0],
-      "longitude": businessData.classes[0].coordinates.split(',')[1]
-    } : undefined,
-    "aggregateRating": ratingValue ? {
-      "@type": "AggregateRating",
-      "ratingValue": ratingValue,
-      "reviewCount": businessData.totalReviews || 0,
-      "bestRating": 5,
-      "worstRating": 1
-    } : undefined,
-    "openingHoursSpecification": businessData.businessHours?.map(hours => ({
-      "@type": "OpeningHoursSpecification",
-      "dayOfWeek": hours.day,
-      "opens": hours.isOpen ? hours.open : undefined,
-      "closes": hours.isOpen ? hours.close : undefined
-    })) || undefined,
+    geo: businessData.classes?.[0]?.coordinates
+      ? {
+          "@type": "GeoCoordinates",
+          latitude: businessData.classes[0].coordinates.split(",")[0],
+          longitude: businessData.classes[0].coordinates.split(",")[1],
+        }
+      : undefined,
+    aggregateRating: ratingValue
+      ? {
+          "@type": "AggregateRating",
+          ratingValue: ratingValue,
+          reviewCount: businessData.totalReviews || 0,
+          bestRating: 5,
+          worstRating: 1,
+        }
+      : undefined,
+    openingHoursSpecification:
+      businessData.businessHours?.map((hours) => ({
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: hours.day,
+        opens: hours.isOpen ? hours.open : undefined,
+        closes: hours.isOpen ? hours.close : undefined,
+      })) || undefined,
   };
 }
 
@@ -727,27 +800,29 @@ export function generateBlogStructuredData(posts) {
     "@context": "https://schema.org",
     "@type": "Blog",
     "@id": "https://classeasily.com/blog",
-    "name": "ClassEasily Blog",
-    "description": "Inspiration and insights for learners and instructors",
-    "url": "https://classeasily.com/blog",
-    "blogPost": posts.slice(0, 10).map(post => ({
+    name: "ClassEasily Blog",
+    description: "Inspiration and insights for learners and instructors",
+    url: "https://classeasily.com/blog",
+    blogPost: posts.slice(0, 10).map((post) => ({
       "@type": "BlogPosting",
       "@id": `https://classeasily.com/blog/${post.slug}`,
-      "headline": post.title,
-      "description": post.excerpt,
-      "image": post.imageUrl,
-      "datePublished": post.publishedDate,
-      "author": post.author ? {
-        "@type": "Person",
-        "name": post.author.name,
-        "image": post.author.avatarUrl,
-      } : undefined,
-      "publisher": {
+      headline: post.title,
+      description: post.excerpt,
+      image: post.imageUrl,
+      datePublished: post.publishedDate,
+      author: post.author
+        ? {
+            "@type": "Person",
+            name: post.author.name,
+            image: post.author.avatarUrl,
+          }
+        : undefined,
+      publisher: {
         "@type": "Organization",
-        "name": "ClassEasily",
-        "logo": {
+        name: "ClassEasily",
+        logo: {
           "@type": "ImageObject",
-          "url": "https://classeasily.com/logo.png",
+          url: "https://classeasily.com/logo.png",
         },
       },
     })),
@@ -764,35 +839,37 @@ export function generateBlogPostStructuredData(post) {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "@id": `https://classeasily.com/blog/${post.slug}`,
-    "headline": post.title,
-    "description": post.excerpt || post.title,
-    "image": post.imageUrl,
-    "datePublished": post.publishedDate,
-    "dateModified": post.updatedDate || post.publishedDate,
-    "author": post.author ? {
-      "@type": "Person",
-      "name": post.author.name,
-      "image": post.author.avatarUrl,
-    } : {
+    headline: post.title,
+    description: post.excerpt || post.title,
+    image: post.imageUrl,
+    datePublished: post.publishedDate,
+    dateModified: post.updatedDate || post.publishedDate,
+    author: post.author
+      ? {
+          "@type": "Person",
+          name: post.author.name,
+          image: post.author.avatarUrl,
+        }
+      : {
+          "@type": "Organization",
+          name: "ClassEasily",
+        },
+    publisher: {
       "@type": "Organization",
-      "name": "ClassEasily",
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "ClassEasily",
-      "logo": {
+      name: "ClassEasily",
+      logo: {
         "@type": "ImageObject",
-        "url": "https://classeasily.com/logo.png",
+        url: "https://classeasily.com/logo.png",
       },
     },
-    "mainEntityOfPage": {
+    mainEntityOfPage: {
       "@type": "WebPage",
       "@id": `https://classeasily.com/blog/${post.slug}`,
     },
-    "articleSection": post.category?.name,
-    "keywords": Array.isArray(post.tags) ? post.tags.join(", ") : post.tags,
-    "wordCount": post.content ? post.content.split(/\s+/).length : undefined,
-    "timeRequired": post.readTime ? `PT${post.readTime}M` : undefined,
+    articleSection: post.category?.name,
+    keywords: Array.isArray(post.tags) ? post.tags.join(", ") : post.tags,
+    wordCount: post.content ? post.content.split(/\s+/).length : undefined,
+    timeRequired: post.readTime ? `PT${post.readTime}M` : undefined,
   };
 }
 
@@ -803,26 +880,26 @@ export function generateBlogBreadcrumbStructuredData(post) {
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    "itemListElement": [
+    itemListElement: [
       {
         "@type": "ListItem",
-        "position": 1,
-        "name": "Home",
-        "item": "https://classeasily.com"
+        position: 1,
+        name: "Home",
+        item: "https://classeasily.com",
       },
       {
         "@type": "ListItem",
-        "position": 2,
-        "name": "Blog",
-        "item": "https://classeasily.com/blog"
+        position: 2,
+        name: "Blog",
+        item: "https://classeasily.com/blog",
       },
       {
         "@type": "ListItem",
-        "position": 3,
-        "name": post.title,
-        "item": `https://classeasily.com/blog/${post.slug}`
-      }
-    ]
+        position: 3,
+        name: post.title,
+        item: `https://classeasily.com/blog/${post.slug}`,
+      },
+    ],
   };
 }
 
@@ -833,26 +910,26 @@ export function generateBusinessBreadcrumbStructuredData(businessData) {
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    "itemListElement": [
+    itemListElement: [
       {
         "@type": "ListItem",
-        "position": 1,
-        "name": "Home",
-        "item": "https://classeasily.com"
+        position: 1,
+        name: "Home",
+        item: "https://classeasily.com",
       },
       {
         "@type": "ListItem",
-        "position": 2,
-        "name": "Businesses",
-        "item": "https://classeasily.com/businesses"
+        position: 2,
+        name: "Businesses",
+        item: "https://classeasily.com/businesses",
       },
       {
         "@type": "ListItem",
-        "position": 3,
-        "name": businessData.businessName,
-        "item": `https://classeasily.com/businesses/${businessData.slug}`
-      }
-    ]
+        position: 3,
+        name: businessData.businessName,
+        item: `https://classeasily.com/businesses/${businessData.slug}`,
+      },
+    ],
   };
 }
 
@@ -864,38 +941,32 @@ export function generateBusinessBreadcrumbStructuredData(businessData) {
 export async function preloadHomepageData() {
   try {
     // Determine the API URL based on environment
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    
-    // Fetch the aggregated homepage content
-    const res = await fetch(`${API_URL}/classes/homepage-content/?featured_category=art-drawing`, { 
-      next: { revalidate: 3600 } // Revalidate every hour
-    });
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+    const res = await fetch(
+      `${API_URL}/classes/homepage-content/?mode=collections`,
+      {
+        next: { revalidate: 3600 }, // Revalidate every hour
+      }
+    );
 
     if (!res.ok) {
-      throw new Error('Failed to fetch homepage data');
+      throw new Error("Failed to fetch homepage data");
     }
 
     const data = await res.json();
-    
-    // Fetch categories for the pills menu
-    const catRes = await fetch(`${API_URL}/categories/`, {
-      next: { revalidate: 86400 } // Cache categories for 24h
-    });
-    const categories = catRes.ok ? await catRes.json() : [];
 
     return {
       trending: data.trending || [],
       newClasses: data.new || [],
-      featuredCategory: data.featured_category || [],
-      categories: categories
+      categories: data.collections || [],
     };
   } catch (error) {
     console.error("Homepage data fetch error:", error);
     return {
       trending: [],
       newClasses: [],
-      featuredCategory: [],
-      categories: []
+      categories: [],
     };
   }
 }
@@ -907,15 +978,15 @@ export async function preloadHomepageData() {
 export async function fetchBusinessCategories() {
   try {
     const response = await fetch(`${BASE_URL}/business/all-categories/`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      cache: 'force-cache',
-      next: { 
+      cache: "force-cache",
+      next: {
         revalidate: 86400, // 24 hours
-        tags: ['business-categories']
-      }
+        tags: ["business-categories"],
+      },
     });
 
     if (!response.ok) {
@@ -923,13 +994,13 @@ export async function fetchBusinessCategories() {
     }
 
     const data = await response.json();
-    
+
     return {
       success: true,
       data: data,
     };
   } catch (error) {
-    console.error('Error fetching business categories:', error);
+    console.error("Error fetching business categories:", error);
     return {
       success: false,
       data: [],
@@ -942,21 +1013,21 @@ export async function fetchBusinessCategories() {
  * Updated for Next.js 15+ API changes
  */
 export function revalidateTags(tags) {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     try {
-      const { revalidateTag } = require('next/cache');
-      
+      const { revalidateTag } = require("next/cache");
+
       // FIX: Add 'max' as second argument for each tag
-      tags.forEach(tag => {
-        revalidateTag(tag, 'max');
+      tags.forEach((tag) => {
+        revalidateTag(tag, "max");
         console.log(`✅ Revalidated tag: ${tag}`);
       });
-      
+
       return { success: true, revalidated: tags };
     } catch (error) {
-      console.error('❌ Error revalidating tags:', error);
+      console.error("❌ Error revalidating tags:", error);
       return { success: false, error: error.message };
     }
   }
-  return { success: false, error: 'Client-side revalidation not supported' };
+  return { success: false, error: "Client-side revalidation not supported" };
 }

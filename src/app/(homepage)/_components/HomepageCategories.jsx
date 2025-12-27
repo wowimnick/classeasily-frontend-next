@@ -1,3 +1,4 @@
+// --- START OF FILE HomepageCategories.jsx ---
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -10,7 +11,7 @@ import { debounce } from "lodash";
 import useEmblaCarousel from "embla-carousel-react";
 import CategoryCard from "./CategoryCard";
 
-const { Title: AntTitle, Paragraph } = Typography;
+const { Title: AntTitle } = Typography;
 
 // --- Styled Components ---
 const MainWrapper = styled.section`
@@ -30,7 +31,7 @@ const MainWrapper = styled.section`
   }
   @media (max-width: 768px) {
     padding: 0 1.5rem;
-    margin: 0 auto;
+    margin: 3rem auto;
   }
   @media (max-width: 616px) {
     padding: 0 1rem;
@@ -42,7 +43,7 @@ const HeaderContainer = styled.div`
   justify-content: space-between;
   align-items: flex-end;
   width: 100%;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem; /* Increased margin for better separation */
   gap: 1rem;
 `;
 
@@ -50,91 +51,105 @@ const SectionHeader = styled.div``;
 
 const StyledTitle = styled(AntTitle)`
   &.ant-typography {
-    font-size: clamp(1.8rem, 4vw, 2.2rem);
+    font-size: 1.75rem; /* Slightly larger heading */
     font-weight: 700;
-    margin-bottom: 0.5rem !important;
-    color: #000;
-    line-height: 1.3;
+    color: #222222;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 0;
+  }
+
+  @media (max-width: 768px) {
+    &.ant-typography {
+      font-size: 1.5rem;
+    }
   }
 `;
 
-const StyledSubtitle = styled(Paragraph)`
-  &.ant-typography {
-    padding-left: 2px;
-    font-size: clamp(1rem, 2.5vw, 1.1rem);
-    font-weight: 400;
-    color: ${(props) => props.theme.token.colorTextSecondary};
-    margin-bottom: 0 !important;
-    max-width: 70ch;
+const StyledSubtitle = styled.p`
+  font-size: 1rem;
+  color: #717171;
+  margin: 0;
+  line-height: 1.5;
+  font-weight: 400;
+
+  @media (max-width: 768px) {
+    font-size: 0.9rem;
   }
 `;
 
 const CarouselContainer = styled.div`
   position: relative;
   width: 100%;
-  padding: 0.5rem 0;
 `;
 
 const EmblaViewport = styled.div`
   overflow: hidden;
   width: 100%;
+  /* Optional: adds a fade effect to the right edge if needed */
+  /* mask-image: linear-gradient(to right, black 95%, transparent 100%); */
 `;
 
 const EmblaContainer = styled.div`
   display: flex;
-  gap: 20px;
-  padding: 1rem 0.5rem;
-  margin: 0 -0.5rem;
-  min-height: 280px;
-  scroll-padding: 0.5rem;
+  gap: 24px; /* Slightly wider gap for modern feel */
+  padding: 0.5rem 0.25rem 1.5rem 0.25rem; /* Bottom padding for hover shadows */
+  margin: 0 -0.25rem;
 
+  /* Flex settings ensure slides don't shrink */
   .embla__slide {
     flex: 0 0 auto;
     position: relative;
+    /* Width is handled by the Card itself, but we can enforce min-width here if needed */
   }
 `;
 
 const ButtonContainer = styled(motion.div)`
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  padding-bottom: 8px; /* Align with text baseline */
+
   @media (max-width: 768px) {
     display: none;
   }
 `;
 
 const ScrollButton = styled(motion.button)`
-  width: 32px;
-  height: 32px;
-  background-color: ${(props) => props.theme.token.colorBgElevated};
-  border: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
+  width: 40px; /* Larger buttons */
+  height: 40px;
+  background-color: #fff;
+  border: 1px solid #e5e5e5;
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
   z-index: 10;
-  transition: all 0.2s ease-in-out;
-  color: ${(props) => props.theme.token.colorTextSecondary};
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  color: #222;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 
   &:hover:not(:disabled) {
-    background-color: ${(props) => props.theme.token.colorBgContainer};
-    color: ${(props) => props.theme.token.colorPrimary};
-    border-color: ${(props) => props.theme.token.colorBorder};
+    background-color: #fff;
+    border-color: #222;
     transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
   &:active:not(:disabled) {
-    transform: scale(0.98);
-    background-color: ${(props) => props.theme.token.colorBgSpotlight};
+    transform: scale(0.95);
   }
   &:disabled {
-    opacity: 0.4;
+    opacity: 0.3;
     cursor: default;
+    border-color: #f0f0f0;
+    box-shadow: none;
   }
 
   svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
+    stroke-width: 2px;
   }
 `;
 
@@ -147,11 +162,6 @@ const HomepageCategories = ({ initialCategories = [] }) => {
     dragFree: true,
   });
 
-  // Logic simplified: We trust the server props.
-  // If initialCategories is empty, we consider it "loading" or empty state depending on context.
-  // However, usually with SSR, empty array means no categories found.
-  // For smoother UX, we can show skeleton if array is empty to prevent layout shift,
-  // or just render nothing if we are sure data should be there.
   const categories = initialCategories;
   const isLoading = !categories || categories.length === 0;
 
@@ -204,9 +214,9 @@ const HomepageCategories = ({ initialCategories = [] }) => {
     };
   }, [emblaApi, checkScrollabilityAndVisibility, updateButtonStates]);
 
-  const handleCategoryClick = (categoryKey) => {
+  const handleCategoryClick = (categorySlug) => {
     const params = new URLSearchParams({
-      category: categoryKey,
+      collection: categorySlug,
       participants: "1",
       location: "Toronto, ON",
       lat: "43.6532",
@@ -222,9 +232,7 @@ const HomepageCategories = ({ initialCategories = [] }) => {
           <StyledTitle id="categories-title-h" level={2}>
             Find an activity
           </StyledTitle>
-          <StyledSubtitle>
-            Browse fun experiences to do with friends and family.
-          </StyledSubtitle>
+          <StyledSubtitle>Browse experiences by category.</StyledSubtitle>
         </SectionHeader>
         <AnimatePresence>
           {showButtons && !isLoading && (
@@ -256,14 +264,15 @@ const HomepageCategories = ({ initialCategories = [] }) => {
         <EmblaViewport ref={emblaRef}>
           <EmblaContainer>
             {isLoading
-              ? Array.from({ length: 6 }).map((_, index) => (
+              ? Array.from({ length: 5 }).map((_, index) => (
                   <div className="embla__slide" key={`skeleton-${index}`}>
+                    {/* Updated Skeleton to match new Card dimensions */}
                     <Skeleton.Node
                       active
                       style={{
-                        width: 250,
-                        height: 250,
-                        borderRadius: "0.75rem",
+                        width: 280,
+                        height: 380,
+                        borderRadius: "1rem",
                       }}
                     >
                       <div />

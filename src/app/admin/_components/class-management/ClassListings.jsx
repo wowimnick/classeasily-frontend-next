@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import styled, { keyframes } from "styled-components";
 import {
   Table,
@@ -15,23 +14,22 @@ import {
   Modal,
   Form,
   Empty,
-  Badge,
-  Alert,
-  Grid,
-  Checkbox,
   Typography,
-  Spin,
   Tooltip,
   Tag,
   Space,
   Divider,
   Card,
   Skeleton,
-  Tabs,
-  Rate,
   List,
+  message,
+  Grid,
+  Rate,
+  Checkbox,
+  Popover,
+  Popconfirm,
+  Badge,
 } from "antd";
-import message from "@/lib/message";
 import {
   Search,
   MoreHorizontal,
@@ -43,12 +41,6 @@ import {
   Lock,
   Unlock,
   Download,
-  BarChart2,
-  CheckCircle,
-  XCircle,
-  HelpCircle,
-  Briefcase,
-  DollarSign,
   BookOpen,
   User as UserIcon,
   Tag as TagIcon,
@@ -58,6 +50,13 @@ import {
   List as ListIcon,
   FileText,
   X,
+  Layers,
+  CheckCircle,
+  HelpCircle,
+  XCircle,
+  Briefcase,
+  DollarSign,
+  Plus,
 } from "lucide-react";
 import { classManagementService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
@@ -1148,6 +1147,7 @@ export default function ClassListings() {
   const [classToModify, setClassToModify] = useState(null);
   const [lockForm] = Form.useForm();
   const [categories, setCategories] = useState([]);
+  const [allCollections, setAllCollections] = useState([]);
   const [classStats, setClassStats] = useState({});
   const [pagination, setPagination] = useState({
     current: 1,
@@ -1157,6 +1157,21 @@ export default function ClassListings() {
   const [sortedInfo, setSortedInfo] = useState({});
   const screens = useBreakpoint();
   const isMobile = !screens.md;
+
+  // Collection Management State
+  const [isCollectionModalVisible, setIsCollectionModalVisible] =
+    useState(false);
+  const [selectedClassForCollections, setSelectedClassForCollections] =
+    useState(null);
+  const [collectionForm] = Form.useForm();
+  const [collectionSaving, setCollectionSaving] = useState(false);
+
+  // Optimizations for collection lookup
+  const collectionsMap = useMemo(() => {
+    const map = new Map();
+    allCollections.forEach((c) => map.set(c.id, c.name));
+    return map;
+  }, [allCollections]);
 
   const handleFilterChange = (updates) => {
     setFilterParams((prev) => ({ ...prev, ...updates }));
@@ -1231,22 +1246,30 @@ export default function ClassListings() {
       .finally(() => setStatsLoading(false));
   }, []);
 
+  const fetchCollections = useCallback(async () => {
+    const res = await classManagementService.getCollections();
+    if (res.success) {
+      setAllCollections(res.data || []);
+    }
+  }, []);
+
   useEffect(() => {
     classManagementService
       .getCategories()
       .then((res) => res.success && setCategories(res.data || []));
     fetchStats();
-  }, [fetchStats]);
+    fetchCollections();
+  }, [fetchStats, fetchCollections]);
 
   const handleTableChange = (newPagination, filters, sorter) => {
-    // antd sorter can be an array in multi-sort, ensure we handle a single object
     const singleSorter = Array.isArray(sorter) ? sorter[0] : sorter;
     setSortedInfo(singleSorter);
     setPagination(newPagination);
   };
 
   const handleUpdateClassStatus = async (classId, newStatus, reason = "") => {
-    message.loading({ content: "Updating...", key: "statusUpdate" });
+    const key = "statusUpdate";
+    message.loading({ content: "Updating...", key });
     try {
       const response = await classManagementService.updateClassStatus(
         classId,
@@ -1254,7 +1277,7 @@ export default function ClassListings() {
         reason
       );
       if (response.success) {
-        message.success({ content: "Status updated!", key: "statusUpdate" });
+        message.success({ content: "Status updated!", key });
         setIsLockModalVisible(false);
         fetchClasses(filterParams, pagination, sortedInfo);
         fetchStats();
@@ -1267,11 +1290,11 @@ export default function ClassListings() {
       } else {
         message.error({
           content: response.error || "Failed to update status",
-          key: "statusUpdate",
+          key,
         });
       }
     } catch (error) {
-      message.error({ content: "An error occurred", key: "statusUpdate" });
+      message.error({ content: "An error occurred", key });
     }
   };
 
@@ -1383,6 +1406,9 @@ export default function ClassListings() {
   }, []);
 
   const showLockModal = (classItem) => {
+    // If we are just activating, do it via confirm (no modal needed usually for simple activation)
+    // But since "Suspension" requires a reason, we keep the modal for that logic mostly.
+    // However, if the user explicitly clicked "Suspend" in dropdown, we show modal.
     setClassToModify(classItem);
     setIsLockModalVisible(true);
     lockForm.resetFields();
@@ -1403,6 +1429,155 @@ export default function ClassListings() {
   const refreshData = () => {
     fetchClasses(filterParams, { ...pagination, current: 1 }, sortedInfo);
     fetchStats();
+    fetchCollections();
+  };
+
+  // --- Collection Modal Handlers ---
+  const openCollectionModal = (record) => {
+    setSelectedClassForCollections(record);
+    const currentIds = record.collections
+      ? record.collections.map((c) => (typeof c === "object" ? c.id : c))
+      : [];
+    collectionForm.setFieldsValue({ collections: currentIds });
+    setIsCollectionModalVisible(true);
+  };
+
+  const handleSaveCollections = async () => {
+    try {
+      const values = await collectionForm.validateFields();
+      setCollectionSaving(true);
+
+      const response = await classManagementService.updateClass(
+        selectedClassForCollections.classId,
+        { collections: values.collections }
+      );
+
+      if (response.success) {
+        message.success("Collections updated successfully");
+        setIsCollectionModalVisible(false);
+        refreshData();
+      } else {
+        message.error(response.error || "Failed to update collections");
+      }
+    } catch (e) {
+      console.error("Save collections error:", e);
+    } finally {
+      setCollectionSaving(false);
+    }
+  };
+
+  // --- Render Collections Cell ---
+  const renderCollectionsCell = (record) => {
+    const classCollections = record.collections || [];
+
+    if (classCollections.length === 0) {
+      return (
+        <Tooltip title="Click to add to collections">
+          <Tag
+            style={{
+              borderStyle: "dashed",
+              background: "transparent",
+              cursor: "pointer",
+              color: colors.textSecondary,
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              openCollectionModal(record);
+            }}
+          >
+            <Plus
+              size={10}
+              style={{ marginRight: 4, verticalAlign: "middle" }}
+            />{" "}
+            Add
+          </Tag>
+        </Tooltip>
+      );
+    }
+
+    // Map IDs to Names safely
+    const names = classCollections.map((c) => {
+      if (typeof c === "object") return c.name;
+      return collectionsMap.get(c) || "Unknown Collection";
+    });
+
+    const content = (
+      <div style={{ maxWidth: 250 }}>
+        <Text
+          strong
+          style={{
+            display: "block",
+            marginBottom: 8,
+            borderBottom: `1px solid ${colors.border}`,
+            paddingBottom: 4,
+          }}
+        >
+          Assigned Collections
+        </Text>
+        <Space wrap size={[0, 6]}>
+          {names.map((name, idx) => (
+            <Tag key={idx} color="blue">
+              {name}
+            </Tag>
+          ))}
+        </Space>
+      </div>
+    );
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Popover
+          content={content}
+          title={null}
+          trigger="hover"
+          placement="topLeft"
+        >
+          <div
+            style={{ display: "flex", alignItems: "center", cursor: "default" }}
+          >
+            <Tag
+              color="blue"
+              style={{
+                margin: 0,
+                maxWidth: 110,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {names[0]}
+            </Tag>
+            {names.length > 1 && (
+              <Badge
+                count={`+${names.length - 1}`}
+                style={{
+                  backgroundColor: colors.lightBg,
+                  color: colors.textSecondary,
+                  border: `1px solid ${colors.border}`,
+                  marginLeft: 4,
+                }}
+              />
+            )}
+          </div>
+        </Popover>
+
+        <Button
+          type="text"
+          size="small"
+          icon={<Edit size={14} />}
+          style={{ color: colors.textSecondary }}
+          onClick={(e) => {
+            e.stopPropagation();
+            openCollectionModal(record);
+          }}
+        />
+      </div>
+    );
   };
 
   const columns = [
@@ -1456,6 +1631,12 @@ export default function ClassListings() {
           {getCategoryName(c.category)}
         </Tag>
       ),
+    },
+    {
+      title: "Collections",
+      key: "collections",
+      width: 190,
+      render: (_, record) => renderCollectionsCell(record),
     },
     {
       title: "Price",
@@ -1528,15 +1709,47 @@ export default function ClassListings() {
               >
                 Edit Class
               </Menu.Item>
-              <Menu.Divider />
               <Menu.Item
-                key="4"
-                icon={<Lock size={14} />}
-                danger={record.status === "active"}
-                onClick={() => showLockModal(record)}
+                key="3"
+                icon={<Layers size={14} />}
+                onClick={() => openCollectionModal(record)}
               >
-                {record.status === "active" ? "Suspend" : "Activate"}
+                Manage Collections
               </Menu.Item>
+              <Menu.Divider />
+              {/* Frictionless Activation vs Modal Suspension */}
+              {record.status !== "active" ? (
+                <Menu.Item key="4">
+                  <Popconfirm
+                    title="Activate this class?"
+                    description="This will make the class visible to the public."
+                    onConfirm={() =>
+                      handleUpdateClassStatus(
+                        record.classId,
+                        "active",
+                        "Manual activation via admin list"
+                      )
+                    }
+                    okText="Activate"
+                    cancelText="Cancel"
+                    placement="left"
+                  >
+                    <Space>
+                      <Unlock size={14} color={colors.success} />
+                      <span style={{ color: colors.success }}>Activate</span>
+                    </Space>
+                  </Popconfirm>
+                </Menu.Item>
+              ) : (
+                <Menu.Item
+                  key="4"
+                  icon={<Lock size={14} />}
+                  danger
+                  onClick={() => showLockModal(record)}
+                >
+                  Suspend
+                </Menu.Item>
+              )}
             </Menu>
           }
         >
@@ -1572,6 +1785,14 @@ export default function ClassListings() {
             <Tag color={getCategoryColor(item.category)}>
               {getCategoryName(item.category)}
             </Tag>
+          </MobileCardValue>
+        </MobileCardRow>
+        <MobileCardRow>
+          <MobileCardLabel>Collections</MobileCardLabel>
+          <MobileCardValue
+            style={{ display: "flex", justifyContent: "flex-end" }}
+          >
+            {renderCollectionsCell(item)}
           </MobileCardValue>
         </MobileCardRow>
         <MobileCardRow>
@@ -1924,20 +2145,51 @@ export default function ClassListings() {
           onShowLockModal={showLockModal}
         />
 
+        {/* Collection Management Modal */}
+        <Modal
+          title={
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Layers size={20} color={colors.primary} />
+              <span>
+                Manage Collections for: {selectedClassForCollections?.title}
+              </span>
+            </div>
+          }
+          open={isCollectionModalVisible}
+          onCancel={() => setIsCollectionModalVisible(false)}
+          onOk={handleSaveCollections}
+          confirmLoading={collectionSaving}
+          destroyOnClose
+        >
+          <Form form={collectionForm} layout="vertical">
+            <Paragraph type="secondary">
+              Assign this class to one or more curated collections (vibes). This
+              helps students find classes based on themes like "Date Night" or
+              "Beginner Friendly".
+            </Paragraph>
+            <Form.Item name="collections" label="Select Collections">
+              <Select
+                mode="multiple"
+                placeholder="Select collections..."
+                optionFilterProp="children"
+                style={{ width: "100%" }}
+                showSearch
+              >
+                {allCollections.map((col) => (
+                  <Option key={col.id} value={col.id}>
+                    {col.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Form>
+        </Modal>
+
         <EnhancedModal
           title={
             <Space>
-              {classToModify?.status === "active" ? (
-                <Lock size={20} color={colors.error} />
-              ) : (
-                <Unlock size={20} color={colors.success} />
-              )}
-              <span>
-                Confirm{" "}
-                {classToModify?.status === "active"
-                  ? "Suspension"
-                  : "Activation"}
-              </span>
+              <Lock size={20} color={colors.error} />
+              <span>Confirm Suspension</span>
             </Space>
           }
           open={isLockModalVisible}
@@ -1953,13 +2205,11 @@ export default function ClassListings() {
             <Button
               key="submit"
               type="primary"
-              danger={classToModify?.status === "active"}
+              danger
               onClick={handleLockSubmit}
               size="large"
             >
-              {classToModify?.status === "active"
-                ? "Suspend Class"
-                : "Activate Class"}
+              Suspend Class
             </Button>,
           ]}
           destroyOnClose
@@ -1970,22 +2220,17 @@ export default function ClassListings() {
               <Alert
                 message={
                   <span>
-                    You are about to{" "}
-                    <strong>
-                      {classToModify.status === "active"
-                        ? "suspend"
-                        : "activate"}
-                    </strong>{" "}
-                    the class: <strong>{classToModify.title}</strong>
+                    You are about to <strong>suspend</strong> the class:{" "}
+                    <strong>{classToModify.title}</strong>
                   </span>
                 }
-                type={classToModify.status === "active" ? "warning" : "info"}
+                type="warning"
                 showIcon
                 style={{ marginBottom: 20 }}
               />
               <Form.Item
                 name="reason"
-                label="Reason (Internal Note)"
+                label="Reason for Suspension"
                 rules={[{ required: true, message: "Please provide a reason" }]}
               >
                 <Input.TextArea

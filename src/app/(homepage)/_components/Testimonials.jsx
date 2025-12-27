@@ -5,95 +5,95 @@ import styled from "styled-components";
 import { Star, ArrowLeft, ArrowRight, Play, Pause } from "lucide-react";
 import { motion, useMotionValue } from "framer-motion";
 
-// --- Testimonial Data (can be moved to a separate file for SSG) ---
+// --- Testimonial Data ---
 const testimonialData = [
   {
     id: 1,
     rating: 5,
-    date: "15 May 2024",
+    date: "20 April 2023",
     quote:
-      "This platform has completely transformed how I manage my yoga studio. The scheduling system is intuitive and my students love the mobile app. Revenue increased by 40% in just 3 months!",
-    userName: "Sarah Johnson",
+      "My friend and I attended their cocktail making class and it was out of this world fantastic! The mixologist Scott is amazing—fun, funny and knowledgeable! We made three cocktails, and I was very happy with my experience. I will definitely be back in a few months.",
+    userName: "Leia Tomson",
     avatarUrl:
-      "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=80&h=80&fit=crop&crop=face",
-    userTitle: "Yoga Studio Owner",
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face",
+    userTitle: "Cocktail Class Attendee",
   },
   {
     id: 2,
     rating: 5,
-    date: "8 May 2024",
+    date: "2 July 2024",
     quote:
-      "As a dance instructor, I needed something that could handle complex scheduling and payments. This solution exceeded my expectations. The automated reminders alone have saved me hours each week.",
-    userName: "Marcus Rodriguez",
+      "If you're looking to book a private event for a hands-on experience in pottery, this studio is the place to go! The instructors were so helpful, patient, kind and professional. My friends and I now have our own creations we can call ours.",
+    userName: "Kat",
     avatarUrl:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face",
-    userTitle: "Dance Academy Director",
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face",
+    userTitle: "Birthday Event Host",
   },
   {
     id: 3,
     rating: 5,
-    date: "2 May 2024",
+    date: "17 March 2021",
     quote:
-      "The analytics dashboard gives me insights I never had before. I can see which classes are most popular, track student progress, and optimize my pricing. It's like having a business consultant built-in.",
-    userName: "Emily Chen",
+      "I just took a virtual sushi making class with my colleagues and it definitely exceeded my expectations! Our sushi kits were delivered right to our homes with fresh ingredients. It was a perfect way to stay connected. I got major credits from my team for organizing this!",
+    userName: "Adrianna Ho",
     avatarUrl:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face",
-    userTitle: "Music School Principal",
+      "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=80&h=80&fit=crop&crop=face",
+    userTitle: "Corporate Team Event",
   },
   {
     id: 4,
     rating: 5,
-    date: "28 April 2024",
+    date: "15 August 2023",
     quote:
-      "Managing my martial arts dojo became so much easier. The student management system helps me track belt progressions, and the payment processing is seamless. My students appreciate the convenience.",
-    userName: "David Kim",
+      "I have been a fan of this bar for years. Not only is their menu artful, the drinks are creative and tasteful without seeming gimmicky. The staff were so patient and helpful. It was like I was visiting an old friend's bar. This place is something special.",
+    userName: "Vee",
     avatarUrl:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face",
-    userTitle: "Martial Arts Instructor",
+      "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=80&h=80&fit=crop&crop=face",
+    userTitle: "Cocktail Enthusiast",
   },
   {
     id: 5,
     rating: 5,
-    date: "22 April 2024",
+    date: "19 February 2024",
     quote:
-      "The mobile app feature is a game-changer. My art students can book classes, make payments, and even submit their work portfolios all in one place. Professional and user-friendly.",
-    userName: "Isabella Martinez",
+      "What a fantastic day! Kingi is a great teacher, an artist, and a beautiful human. You dive right into hands-on actions while learning step by step. The space is inspiring and oozes creativity. I am very pleased with the workshop.",
+    userName: "Crypto Biker",
     avatarUrl:
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=face",
-    userTitle: "Art Studio Owner",
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&crop=face",
+    userTitle: "Silkscreen Workshop Student",
   },
   {
     id: 6,
     rating: 5,
-    date: "18 April 2024",
+    date: "14 April 2024",
     quote:
-      "The customer support is outstanding, and the platform grows with your business. Started with basic features and now use advanced analytics. It's been instrumental in scaling my cooking school.",
-    userName: "James Thompson",
+      "I recently attended a glass bowl workshop and it was an absolutely fantastic experience. The workshop provided the perfect balance of structure and creativity. I left the workshop feeling not only accomplished but also deeply inspired.",
+    userName: "Giuliana Mariani",
     avatarUrl:
-      "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=80&h=80&fit=crop&crop=face",
-    userTitle: "Culinary School Chef",
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=face",
+    userTitle: "Glass Art Student",
   },
   {
     id: 7,
     rating: 5,
-    date: "12 April 2024",
+    date: "28 October 2023",
     quote:
-      "Integration with social media and marketing tools helped me reach new students effortlessly. The SEO optimization features brought organic traffic I didn't expect. Highly recommended!",
-    userName: "Sophia Williams",
+      "My colleagues and I worked together to make a delicious taco feast. We learned new recipes and skills, and there were very clear instructions that allowed us to work independently. It was a perfect activity for our group and suited all skill levels.",
+    userName: "Michelle",
     avatarUrl:
-      "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=80&h=80&fit=crop&crop=face",
-    userTitle: "Language School Director",
+      "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=80&h=80&fit=crop&crop=face",
+    userTitle: "Cooking Class Participant",
   },
   {
     id: 8,
     rating: 5,
-    date: "5 April 2024",
+    date: "3 September 2024",
     quote:
-      "The reporting features help me understand my business better than ever. I can track everything from attendance patterns to revenue trends. It's like having a crystal ball for my fitness studio.",
-    userName: "Alex Parker",
+      "The studio itself is a vibrant, welcoming space. The teachers are not only exceptionally skilled but also incredibly patient and supportive. They took the time to understand each student’s individual goals. Highly recommend!",
+    userName: "Christopher Kwan",
     avatarUrl:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&crop=face",
-    userTitle: "Fitness Studio Manager",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face",
+    userTitle: "Art Student",
   },
 ];
 

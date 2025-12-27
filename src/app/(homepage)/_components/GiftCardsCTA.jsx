@@ -34,7 +34,7 @@ const GiftCardSection = styled.section`
 // --- Layouts ---
 
 const ContentWrapper = styled.div`
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr 1.5fr;
@@ -388,7 +388,7 @@ const GiftCardsCTA = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <Title id="giftcard-title">Gift a good time</Title>
+          <Title id="giftcard-title">Gift a fun experience</Title>
           <Description>
             The best gifts aren't things, they're moments. Let them pick their
             own vibe, from salsa dancing to sushi rolling. Instant delivery,

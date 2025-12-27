@@ -1,11 +1,6 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-} from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import styled, { keyframes } from "styled-components";
 import { motion } from "framer-motion";
@@ -60,6 +55,7 @@ import {
   MapPin,
   CheckCircle,
   AlertTriangle,
+  Send,
 } from "lucide-react";
 import {
   LineChart,
@@ -74,12 +70,13 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { userAdminService } from "@/services/adminDash"; 
+import { userAdminService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
 import dayjs from "dayjs";
 import NumberFlow from "@number-flow/react";
 import { useAuthStore } from "@/lib/auth-client";
-import { Drawer } from "vaul"; 
+import { Drawer } from "vaul";
+import ShadowUserModal from "./ShadowUserModal";
 
 const { RangePicker } = DatePicker;
 const { TabPane } = Tabs;
@@ -168,31 +165,35 @@ const SkeletonWrapper = styled.div`
 `;
 
 const SkeletonLine = styled.div`
-  height: ${props => props.height || '16px'};
-  width: ${props => props.width || '100%'};
+  height: ${(props) => props.height || "16px"};
+  width: ${(props) => props.width || "100%"};
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: loading 1.5s ease-in-out infinite;
   border-radius: 4px;
-  margin-bottom: ${props => props.marginBottom || '0'};
+  margin-bottom: ${(props) => props.marginBottom || "0"};
 
   @keyframes loading {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
   }
 `;
 
 const SkeletonCircle = styled(SkeletonLine)`
   border-radius: 50%;
-  width: ${props => props.size || '36px'};
-  height: ${props => props.size || '36px'};
+  width: ${(props) => props.size || "36px"};
+  height: ${(props) => props.size || "36px"};
   margin-bottom: 0;
   flex-shrink: 0;
 `;
 
 const SkeletonTag = styled(SkeletonLine)`
   height: 24px;
-  width: ${props => props.width || '80px'};
+  width: ${(props) => props.width || "80px"};
   border-radius: 6px;
   display: inline-block;
   margin-bottom: 0;
@@ -489,25 +490,29 @@ const UserDetailSkeleton = () => (
   <>
     <DrawerSkeletonHeader />
     <ContentBody>
-      <div style={{ display: 'flex', gap: 20, marginBottom: 24 }}>
+      <div style={{ display: "flex", gap: 20, marginBottom: 24 }}>
         <SkeletonLine width="80px" height="24px" />
         <SkeletonLine width="80px" height="24px" />
         <SkeletonLine width="80px" height="24px" />
       </div>
       <InfoGroup>
         <InfoGroupTitle style={{ opacity: 0.5 }}>
-           <User /> Personal Information
+          <User /> Personal Information
         </InfoGroupTitle>
         <InfoGrid>
-          {Array.from({ length: 4 }).map((_, i) => <DrawerSkeletonInfoItem key={i} />)}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <DrawerSkeletonInfoItem key={i} />
+          ))}
         </InfoGrid>
       </InfoGroup>
       <InfoGroup style={{ marginTop: 20 }}>
         <InfoGroupTitle style={{ opacity: 0.5 }}>
-           <Activity /> Account Stats
+          <Activity /> Account Stats
         </InfoGroupTitle>
         <InfoGrid>
-           {Array.from({ length: 2 }).map((_, i) => <DrawerSkeletonInfoItem key={i} />)}
+          {Array.from({ length: 2 }).map((_, i) => (
+            <DrawerSkeletonInfoItem key={i} />
+          ))}
         </InfoGrid>
       </InfoGroup>
     </ContentBody>
@@ -699,7 +704,7 @@ const StyledTable = styled(Table)`
   .ant-table-tbody > tr:hover > td {
     background: #fafcff;
   }
-  
+
   /* Loading override to keep table height */
   .ant-table-tbody > tr.ant-table-placeholder:hover > td {
     background: white;
@@ -789,7 +794,9 @@ const UserManagementDashboard = () => {
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
-  
+  const [isShadowModalVisible, setIsShadowModalVisible] = useState(false);
+  const [shadowLoading, setShadowLoading] = useState(false);
+
   // Filters & Search
   const [searchText, setSearchText] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -803,15 +810,19 @@ const UserManagementDashboard = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isDetailsDrawerOpen, setIsDetailsDrawerOpen] = useState(false);
-  
+
   // Tab Data States
   const [selectedUserBookings, setSelectedUserBookings] = useState([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
-  const [bookingPagination, setBookingPagination] = useState({ current: 1, pageSize: 5, total: 0 });
-  
+  const [bookingPagination, setBookingPagination] = useState({
+    current: 1,
+    pageSize: 5,
+    total: 0,
+  });
+
   const [userHistory, setUserHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  
+
   const [userEmails, setUserEmails] = useState([]);
   const [emailsLoading, setEmailsLoading] = useState(false);
 
@@ -842,36 +853,45 @@ const UserManagementDashboard = () => {
     if ("status" in updates) setStatusFilter(updates.status);
   };
 
-  const fetchUsers = useCallback(async (page, pageSize) => {
-    setLoading(true);
-    const params = {
-      page: page || pagination.current,
-      page_size: pageSize || pagination.pageSize,
-      ...(roleFilter !== "all" && { role_id: roleFilter }),
-      ...(statusFilter !== "all" && { status: statusFilter }),
-      ...(searchText && { search: searchText }),
-    };
-    try {
-      const response = await userAdminService.getUsers(params);
-      if (response.success && response.data) {
-        setUsers(response.data.results || []);
-        setPagination((prev) => ({ 
-          ...prev, 
-          current: page || prev.current,
-          pageSize: pageSize || prev.pageSize,
-          total: response.data.count || 0 
-        }));
-      } else {
+  const fetchUsers = useCallback(
+    async (page, pageSize) => {
+      setLoading(true);
+      const params = {
+        page: page || pagination.current,
+        page_size: pageSize || pagination.pageSize,
+        ...(roleFilter !== "all" && { role_id: roleFilter }),
+        ...(statusFilter !== "all" && { status: statusFilter }),
+        ...(searchText && { search: searchText }),
+      };
+      try {
+        const response = await userAdminService.getUsers(params);
+        if (response.success && response.data) {
+          setUsers(response.data.results || []);
+          setPagination((prev) => ({
+            ...prev,
+            current: page || prev.current,
+            pageSize: pageSize || prev.pageSize,
+            total: response.data.count || 0,
+          }));
+        } else {
+          setUsers([]);
+          message.error(response.error?.detail || "Failed to fetch users");
+        }
+      } catch (error) {
+        message.error("Failed to fetch users");
         setUsers([]);
-        message.error(response.error?.detail || "Failed to fetch users");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      message.error("Failed to fetch users");
-      setUsers([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [roleFilter, statusFilter, searchText, pagination.current, pagination.pageSize]);
+    },
+    [
+      roleFilter,
+      statusFilter,
+      searchText,
+      pagination.current,
+      pagination.pageSize,
+    ]
+  );
 
   useEffect(() => {
     fetchUsers(1, pagination.pageSize);
@@ -999,7 +1019,7 @@ const UserManagementDashboard = () => {
       if (response.success && response.data) {
         const fullUser = response.data;
         setSelectedUser(fullUser);
-        
+
         // Initial Fetch for Tabs
         fetchUserBookings(fullUser.userId, 1, 5);
         fetchUserHistory(fullUser.userId);
@@ -1049,6 +1069,37 @@ const UserManagementDashboard = () => {
     } catch (e) {
       console.error("Impersonation error:", e);
       message.error("An unexpected error occurred.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateShadowUser = async (values) => {
+    setShadowLoading(true);
+    try {
+      const response = await userAdminService.createShadowUser(values);
+      if (response.success) {
+        message.success("Shadow account created.");
+        fetchUsers(pagination.current, pagination.pageSize); // Refresh the list
+        return response.data;
+      } else {
+        message.error(response.error);
+        return null;
+      }
+    } finally {
+      setShadowLoading(false);
+    }
+  };
+
+  const handleSendHandover = async (userId) => {
+    setLoading(true);
+    try {
+      const response = await userAdminService.sendHandoverEmail(userId);
+      if (response.success) {
+        message.success("Handover email sent successfully!");
+      } else {
+        message.error(response.error);
+      }
     } finally {
       setLoading(false);
     }
@@ -1106,17 +1157,41 @@ const UserManagementDashboard = () => {
   };
 
   const handleLockAccount = (userId) =>
-    userAction(userAdminService.lockAccount, userId, "Account disabled", "Error disabling account.");
+    userAction(
+      userAdminService.lockAccount,
+      userId,
+      "Account disabled",
+      "Error disabling account."
+    );
   const handleUnlockAccount = (userId) =>
-    userAction(userAdminService.unlockAccount, userId, "Account enabled", "Error enabling account.");
+    userAction(
+      userAdminService.unlockAccount,
+      userId,
+      "Account enabled",
+      "Error enabling account."
+    );
   const handleDeleteUser = (userId) =>
-    userAction(userAdminService.deleteUser, userId, "User deleted", "Error deleting user.");
+    userAction(
+      userAdminService.deleteUser,
+      userId,
+      "User deleted",
+      "Error deleting user."
+    );
 
   const handleExportData = () => {
     if (!users || users.length === 0)
       return message.warning("No data to export.");
     try {
-      const headers = ["User ID", "First Name", "Last Name", "Email", "Role", "Status", "Registration Date", "Last Login"];
+      const headers = [
+        "User ID",
+        "First Name",
+        "Last Name",
+        "Email",
+        "Role",
+        "Status",
+        "Registration Date",
+        "Last Login",
+      ];
       const rows = users.map((user) => [
         user.userId,
         user.first_name,
@@ -1127,7 +1202,17 @@ const UserManagementDashboard = () => {
         formatDate(user.createdAt),
         formatDate(user.last_login_date),
       ]);
-      let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map((e) => e.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+      let csvContent =
+        "data:text/csv;charset=utf-8," +
+        headers.join(",") +
+        "\n" +
+        rows
+          .map((e) =>
+            e
+              .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
+              .join(",")
+          )
+          .join("\n");
       const link = document.createElement("a");
       link.setAttribute("href", encodeURI(csvContent));
       link.setAttribute("download", "user_data.csv");
@@ -1173,7 +1258,16 @@ const UserManagementDashboard = () => {
       key: "status",
       width: 120,
       render: (statusText, record) => (
-        <Tag color={{ confirmed: "blue", completed: "green", cancelled: "red", pending: "orange" }[record.status] || "default"}>
+        <Tag
+          color={
+            {
+              confirmed: "blue",
+              completed: "green",
+              cancelled: "red",
+              pending: "orange",
+            }[record.status] || "default"
+          }
+        >
           {statusText || record.status}
         </Tag>
       ),
@@ -1189,15 +1283,20 @@ const UserManagementDashboard = () => {
         fixed: "left",
         width: 250,
         render: (_, user) => {
-           if (React.isValidElement(user.first_name)) return user.first_name;
-           return (
+          if (React.isValidElement(user.first_name)) return user.first_name;
+          return (
             <Space>
-              <Avatar src={user.avatar_thumb_url} style={{ backgroundColor: colors.primary, color: "white" }}>
+              <Avatar
+                src={user.avatar_thumb_url}
+                style={{ backgroundColor: colors.primary, color: "white" }}
+              >
                 {user.first_name?.[0]}
                 {user.last_name?.[0]}
               </Avatar>
               <div>
-                <div style={{ fontWeight: 500 }}>{user.first_name} {user.last_name}</div>
+                <div style={{ fontWeight: 500 }}>
+                  {user.first_name} {user.last_name}
+                </div>
                 <Text type="secondary">{user.email}</Text>
               </div>
             </Space>
@@ -1226,7 +1325,14 @@ const UserManagementDashboard = () => {
         render: (status) => {
           if (React.isValidElement(status)) return status;
           return (
-            <Badge status={{ active: "success", inactive: "error", pending: "warning" }[status]} text={status.charAt(0).toUpperCase() + status.slice(1)} />
+            <Badge
+              status={
+                { active: "success", inactive: "error", pending: "warning" }[
+                  status
+                ]
+              }
+              text={status.charAt(0).toUpperCase() + status.slice(1)}
+            />
           );
         },
       },
@@ -1237,7 +1343,11 @@ const UserManagementDashboard = () => {
         width: 200,
         render: (name) => {
           if (React.isValidElement(name)) return name;
-          return name ? <Text>{name}</Text> : <Text type="secondary">None</Text>;
+          return name ? (
+            <Text>{name}</Text>
+          ) : (
+            <Text type="secondary">None</Text>
+          );
         },
       },
       {
@@ -1250,7 +1360,9 @@ const UserManagementDashboard = () => {
         },
         responsive: ["lg"],
         width: 150,
-        sorter: (a, b) => dayjs(a.last_login_date || 0).unix() - dayjs(b.last_login_date || 0).unix(),
+        sorter: (a, b) =>
+          dayjs(a.last_login_date || 0).unix() -
+          dayjs(b.last_login_date || 0).unix(),
       },
       {
         title: "Actions",
@@ -1265,14 +1377,52 @@ const UserManagementDashboard = () => {
               overlay={
                 <Menu
                   items={[
-                    { key: "1", icon: <Eye size={14} />, label: "View Details", onClick: () => showUserDetails(user) },
-                    { key: "2", icon: <Edit size={14} />, label: "Edit Role", onClick: () => showEditModal(user) },
-                    { key: "5", icon: <LogIn size={14} />, label: "Login as User", onClick: () => handleImpersonateUser(user.userId) },
+                    {
+                      key: "1",
+                      icon: <Eye size={14} />,
+                      label: "View Details",
+                      onClick: () => showUserDetails(user),
+                    },
+                    {
+                      key: "2",
+                      icon: <Edit size={14} />,
+                      label: "Edit Role",
+                      onClick: () => showEditModal(user),
+                    },
+                    {
+                      key: "handover",
+                      icon: <Send size={14} />,
+                      label: "Send Invite/Handover",
+                      onClick: () => handleSendHandover(user.userId),
+                    },
+                    {
+                      key: "5",
+                      icon: <LogIn size={14} />,
+                      label: "Login as User",
+                      onClick: () => handleImpersonateUser(user.userId),
+                    },
                     { type: "divider" },
                     user.status === "active"
-                      ? { key: "3", icon: <Lock size={14} />, label: "Disable Account", danger: true, onClick: () => handleLockAccount(user.userId) }
-                      : { key: "3", icon: <Unlock size={14} />, label: "Enable Account", onClick: () => handleUnlockAccount(user.userId) },
-                    { key: "4", icon: <Trash2 size={14} />, label: "Delete User", danger: true, onClick: () => handleDeleteUser(user.userId) },
+                      ? {
+                          key: "3",
+                          icon: <Lock size={14} />,
+                          label: "Disable Account",
+                          danger: true,
+                          onClick: () => handleLockAccount(user.userId),
+                        }
+                      : {
+                          key: "3",
+                          icon: <Unlock size={14} />,
+                          label: "Enable Account",
+                          onClick: () => handleUnlockAccount(user.userId),
+                        },
+                    {
+                      key: "4",
+                      icon: <Trash2 size={14} />,
+                      label: "Delete User",
+                      danger: true,
+                      onClick: () => handleDeleteUser(user.userId),
+                    },
                   ]}
                 />
               }
@@ -1289,60 +1439,122 @@ const UserManagementDashboard = () => {
 
   const renderMobileUserCard = (user) => (
     <MobileUserCard key={user.userId}>
-       {React.isValidElement(user.first_name) ? (
-          // SKELETON CARD FOR MOBILE
-          <>
-             <MobileCardHeader>
-                <SkeletonCircle size="48px" />
-                <SkeletonWrapper>
-                    <SkeletonLine width="100px" height="16px" />
-                    <SkeletonLine width="140px" height="14px" />
-                </SkeletonWrapper>
-             </MobileCardHeader>
-             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <SkeletonLine width="100%" height="20px" />
-                <SkeletonLine width="100%" height="20px" />
-             </div>
-          </>
-       ) : (
+      {React.isValidElement(user.first_name) ? (
+        // SKELETON CARD FOR MOBILE
         <>
-            <MobileCardHeader>
-                <Avatar src={user.avatar_thumb_url} size={48} style={{ backgroundColor: colors.primary, color: "white" }}>
-                {user.first_name?.[0]}{user.last_name?.[0]}
-                </Avatar>
-                <div>
-                <Title level={5} style={{ margin: 0 }}>{user.first_name} {user.last_name}</Title>
-                <Text type="secondary">{user.email}</Text>
-                </div>
-            </MobileCardHeader>
-            <MobileCardRow>
-                <MobileCardLabel>Role</MobileCardLabel>
-                <UserRoleTag color={user.role_color || getColorForRole(user.role_name)}>{user.role_name || "N/A"}</UserRoleTag>
-            </MobileCardRow>
-            <MobileCardRow>
-                <MobileCardLabel>Status</MobileCardLabel>
-                <Badge status={{ active: "success", inactive: "error", pending: "warning" }[user.status]} text={user.status.charAt(0).toUpperCase() + user.status.slice(1)} />
-            </MobileCardRow>
-            <MobileCardRow>
-                <MobileCardLabel>Business</MobileCardLabel>
-                <Text>{user.owned_business_name || "None"}</Text>
-            </MobileCardRow>
-            <MobileCardFooter>
-                <Button size="middle" icon={<Eye size={14} />} onClick={(e) => { e.stopPropagation(); showUserDetails(user); }}>View</Button>
-                <Button size="middle" icon={<Edit size={14} />} onClick={(e) => { e.stopPropagation(); showEditModal(user); }}>Edit Role</Button>
-            </MobileCardFooter>
+          <MobileCardHeader>
+            <SkeletonCircle size="48px" />
+            <SkeletonWrapper>
+              <SkeletonLine width="100px" height="16px" />
+              <SkeletonLine width="140px" height="14px" />
+            </SkeletonWrapper>
+          </MobileCardHeader>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <SkeletonLine width="100%" height="20px" />
+            <SkeletonLine width="100%" height="20px" />
+          </div>
         </>
-       )}
+      ) : (
+        <>
+          <MobileCardHeader>
+            <Avatar
+              src={user.avatar_thumb_url}
+              size={48}
+              style={{ backgroundColor: colors.primary, color: "white" }}
+            >
+              {user.first_name?.[0]}
+              {user.last_name?.[0]}
+            </Avatar>
+            <div>
+              <Title level={5} style={{ margin: 0 }}>
+                {user.first_name} {user.last_name}
+              </Title>
+              <Text type="secondary">{user.email}</Text>
+            </div>
+          </MobileCardHeader>
+          <MobileCardRow>
+            <MobileCardLabel>Role</MobileCardLabel>
+            <UserRoleTag
+              color={user.role_color || getColorForRole(user.role_name)}
+            >
+              {user.role_name || "N/A"}
+            </UserRoleTag>
+          </MobileCardRow>
+          <MobileCardRow>
+            <MobileCardLabel>Status</MobileCardLabel>
+            <Badge
+              status={
+                { active: "success", inactive: "error", pending: "warning" }[
+                  user.status
+                ]
+              }
+              text={user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+            />
+          </MobileCardRow>
+          <MobileCardRow>
+            <MobileCardLabel>Business</MobileCardLabel>
+            <Text>{user.owned_business_name || "None"}</Text>
+          </MobileCardRow>
+          <MobileCardFooter>
+            <Button
+              size="middle"
+              icon={<Eye size={14} />}
+              onClick={(e) => {
+                e.stopPropagation();
+                showUserDetails(user);
+              }}
+            >
+              View
+            </Button>
+            <Button
+              size="middle"
+              icon={<Edit size={14} />}
+              onClick={(e) => {
+                e.stopPropagation();
+                showEditModal(user);
+              }}
+            >
+              Edit Role
+            </Button>
+          </MobileCardFooter>
+        </>
+      )}
     </MobileUserCard>
   );
 
-  const daysInPeriod = dateRange ? dayjs(dateRange[1]).diff(dayjs(dateRange[0]), "day") + 1 : 30;
+  const daysInPeriod = dateRange
+    ? dayjs(dateRange[1]).diff(dayjs(dateRange[0]), "day") + 1
+    : 30;
 
   const statsData = [
-    { key: "total_users", title: "Total Users", value: metrics.total_users, icon: Users, color: colors.info },
-    { key: "active_users", title: `Active Users (${daysInPeriod}d)`, value: metrics.active_users_in_period, icon: Activity, color: colors.success },
-    { key: "new_users", title: `New Users (${daysInPeriod}d)`, value: metrics.new_users_in_period, icon: UserPlus, color: colors.warning },
-    { key: "business_accounts", title: "Business Accounts", value: metrics.business_accounts || 0, icon: Shield, color: colors.primary },
+    {
+      key: "total_users",
+      title: "Total Users",
+      value: metrics.total_users,
+      icon: Users,
+      color: colors.info,
+    },
+    {
+      key: "active_users",
+      title: `Active Users (${daysInPeriod}d)`,
+      value: metrics.active_users_in_period,
+      icon: Activity,
+      color: colors.success,
+    },
+    {
+      key: "new_users",
+      title: `New Users (${daysInPeriod}d)`,
+      value: metrics.new_users_in_period,
+      icon: UserPlus,
+      color: colors.warning,
+    },
+    {
+      key: "business_accounts",
+      title: "Business Accounts",
+      value: metrics.business_accounts || 0,
+      icon: Shield,
+      color: colors.primary,
+    },
   ];
 
   // --- RENDER USER DETAILS (INSIDE DRAWER) ---
@@ -1354,10 +1566,7 @@ const UserManagementDashboard = () => {
     return (
       <>
         <HeaderSection>
-          <UserAvatar
-            src={selectedUser.avatar_medium_url}
-            size={60}
-          >
+          <UserAvatar src={selectedUser.avatar_medium_url} size={60}>
             {(selectedUser.first_name?.[0] || "U").toUpperCase()}
           </UserAvatar>
           <UserInfo>
@@ -1365,15 +1574,30 @@ const UserManagementDashboard = () => {
               {selectedUser.first_name} {selectedUser.last_name}
             </UserName>
             <UserEmailText>{selectedUser.email}</UserEmailText>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <UserRoleTag color={selectedUser.role_color || getColorForRole(selectedUser.role_name)}>
-                    {selectedUser.role_name || "N/A"}
-                </UserRoleTag>
-                {selectedUser.status === 'active' ? (
-                     <StatusTag style={{ backgroundColor: '#d1fae5', color: '#047857' }} icon={<CheckCircle size={12} />}>ACTIVE</StatusTag>
-                ) : (
-                    <StatusTag style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }} icon={<AlertTriangle size={12} />}>{selectedUser.status?.toUpperCase()}</StatusTag>
-                )}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <UserRoleTag
+                color={
+                  selectedUser.role_color ||
+                  getColorForRole(selectedUser.role_name)
+                }
+              >
+                {selectedUser.role_name || "N/A"}
+              </UserRoleTag>
+              {selectedUser.status === "active" ? (
+                <StatusTag
+                  style={{ backgroundColor: "#d1fae5", color: "#047857" }}
+                  icon={<CheckCircle size={12} />}
+                >
+                  ACTIVE
+                </StatusTag>
+              ) : (
+                <StatusTag
+                  style={{ backgroundColor: "#fee2e2", color: "#b91c1c" }}
+                  icon={<AlertTriangle size={12} />}
+                >
+                  {selectedUser.status?.toUpperCase()}
+                </StatusTag>
+              )}
             </div>
           </UserInfo>
         </HeaderSection>
@@ -1382,136 +1606,260 @@ const UserManagementDashboard = () => {
           <Tabs defaultActiveKey="1">
             <TabPane tab="Profile" key="1">
               <InfoGroup>
-                  <InfoGroupTitle><User /> Personal Details</InfoGroupTitle>
-                  <InfoGrid>
-                    <InfoItem>
-                        <InfoIcon><Mail /></InfoIcon>
-                        <InfoContent>
-                            <InfoLabel>Email</InfoLabel>
-                            <InfoValue>{selectedUser.email || "N/A"}</InfoValue>
-                        </InfoContent>
-                    </InfoItem>
-                    <InfoItem>
-                        <InfoIcon><Phone /></InfoIcon>
-                        <InfoContent>
-                            <InfoLabel>Phone</InfoLabel>
-                            <InfoValue>{selectedUser.phone_number || "Not Provided"}</InfoValue>
-                        </InfoContent>
-                    </InfoItem>
-                    <InfoItem>
-                        <InfoIcon><Briefcase /></InfoIcon>
-                        <InfoContent>
-                            <InfoLabel>Business</InfoLabel>
-                            <InfoValue>{selectedUser.owned_businesses_info?.[0]?.businessName || "None"}</InfoValue>
-                        </InfoContent>
-                    </InfoItem>
-                     <InfoItem>
-                        <InfoIcon><MapPin /></InfoIcon>
-                        <InfoContent>
-                            <InfoLabel>Location</InfoLabel>
-                            <InfoValue>{selectedUser.city ? `${selectedUser.city}, ${selectedUser.country}` : "Unknown"}</InfoValue>
-                        </InfoContent>
-                    </InfoItem>
-                  </InfoGrid>
+                <InfoGroupTitle>
+                  <User /> Personal Details
+                </InfoGroupTitle>
+                <InfoGrid>
+                  <InfoItem>
+                    <InfoIcon>
+                      <Mail />
+                    </InfoIcon>
+                    <InfoContent>
+                      <InfoLabel>Email</InfoLabel>
+                      <InfoValue>{selectedUser.email || "N/A"}</InfoValue>
+                    </InfoContent>
+                  </InfoItem>
+                  <InfoItem>
+                    <InfoIcon>
+                      <Phone />
+                    </InfoIcon>
+                    <InfoContent>
+                      <InfoLabel>Phone</InfoLabel>
+                      <InfoValue>
+                        {selectedUser.phone_number || "Not Provided"}
+                      </InfoValue>
+                    </InfoContent>
+                  </InfoItem>
+                  <InfoItem>
+                    <InfoIcon>
+                      <Briefcase />
+                    </InfoIcon>
+                    <InfoContent>
+                      <InfoLabel>Business</InfoLabel>
+                      <InfoValue>
+                        {selectedUser.owned_businesses_info?.[0]
+                          ?.businessName || "None"}
+                      </InfoValue>
+                    </InfoContent>
+                  </InfoItem>
+                  <InfoItem>
+                    <InfoIcon>
+                      <MapPin />
+                    </InfoIcon>
+                    <InfoContent>
+                      <InfoLabel>Location</InfoLabel>
+                      <InfoValue>
+                        {selectedUser.city
+                          ? `${selectedUser.city}, ${selectedUser.country}`
+                          : "Unknown"}
+                      </InfoValue>
+                    </InfoContent>
+                  </InfoItem>
+                </InfoGrid>
               </InfoGroup>
 
               <InfoGroup>
-                 <InfoGroupTitle><Activity /> Activity</InfoGroupTitle>
-                 <InfoGrid>
-                     <InfoItem>
-                        <InfoIcon><Calendar /></InfoIcon>
-                        <InfoContent>
-                            <InfoLabel>Joined On</InfoLabel>
-                            <InfoValue>{formatDate(selectedUser.createdAt)}</InfoValue>
-                        </InfoContent>
-                    </InfoItem>
-                    <InfoItem>
-                        <InfoIcon><Clock /></InfoIcon>
-                        <InfoContent>
-                            <InfoLabel>Last Login</InfoLabel>
-                            <InfoValue>{formatDate(selectedUser.last_login)}</InfoValue>
-                        </InfoContent>
-                    </InfoItem>
-                 </InfoGrid>
+                <InfoGroupTitle>
+                  <Activity /> Activity
+                </InfoGroupTitle>
+                <InfoGrid>
+                  <InfoItem>
+                    <InfoIcon>
+                      <Calendar />
+                    </InfoIcon>
+                    <InfoContent>
+                      <InfoLabel>Joined On</InfoLabel>
+                      <InfoValue>
+                        {formatDate(selectedUser.createdAt)}
+                      </InfoValue>
+                    </InfoContent>
+                  </InfoItem>
+                  <InfoItem>
+                    <InfoIcon>
+                      <Clock />
+                    </InfoIcon>
+                    <InfoContent>
+                      <InfoLabel>Last Login</InfoLabel>
+                      <InfoValue>
+                        {formatDate(selectedUser.last_login)}
+                      </InfoValue>
+                    </InfoContent>
+                  </InfoItem>
+                </InfoGrid>
               </InfoGroup>
             </TabPane>
-            
+
             <TabPane tab="Security" key="security">
               <InfoGroup>
-                <InfoGroupTitle><Shield /> Recent Login Activity</InfoGroupTitle>
-                <div style={{ overflowX: 'auto' }}>
-                    <Table 
-                        dataSource={userHistory}
-                        loading={historyLoading}
-                        rowKey="id"
-                        size="small"
-                        pagination={false}
-                        columns={[
-                        { title: 'Date', dataIndex: 'timestamp', render: t => <Text style={{ fontSize: 13 }}>{dayjs(t).format('MMM D, h:mm A')}</Text>, width: 140 },
-                        { title: 'Action', dataIndex: 'action_display', render: t => <Tag style={{ fontSize: 11 }}>{t}</Tag> },
-                        { title: 'IP', dataIndex: 'ip_address', render: t => <Text style={{ fontSize: 13 }}>{t}</Text> },
-                        { title: 'Device', dataIndex: 'user_agent', ellipsis: true, render: (agent) => (<span title={agent} style={{ fontSize: 12, fontFamily: 'monospace', color: colors.textSecondary }}>{agent ? agent.substring(0, 20) + '...' : 'Unknown'}</span>) }
-                        ]}
-                    />
+                <InfoGroupTitle>
+                  <Shield /> Recent Login Activity
+                </InfoGroupTitle>
+                <div style={{ overflowX: "auto" }}>
+                  <Table
+                    dataSource={userHistory}
+                    loading={historyLoading}
+                    rowKey="id"
+                    size="small"
+                    pagination={false}
+                    columns={[
+                      {
+                        title: "Date",
+                        dataIndex: "timestamp",
+                        render: (t) => (
+                          <Text style={{ fontSize: 13 }}>
+                            {dayjs(t).format("MMM D, h:mm A")}
+                          </Text>
+                        ),
+                        width: 140,
+                      },
+                      {
+                        title: "Action",
+                        dataIndex: "action_display",
+                        render: (t) => <Tag style={{ fontSize: 11 }}>{t}</Tag>,
+                      },
+                      {
+                        title: "IP",
+                        dataIndex: "ip_address",
+                        render: (t) => (
+                          <Text style={{ fontSize: 13 }}>{t}</Text>
+                        ),
+                      },
+                      {
+                        title: "Device",
+                        dataIndex: "user_agent",
+                        ellipsis: true,
+                        render: (agent) => (
+                          <span
+                            title={agent}
+                            style={{
+                              fontSize: 12,
+                              fontFamily: "monospace",
+                              color: colors.textSecondary,
+                            }}
+                          >
+                            {agent ? agent.substring(0, 20) + "..." : "Unknown"}
+                          </span>
+                        ),
+                      },
+                    ]}
+                  />
                 </div>
               </InfoGroup>
             </TabPane>
 
             <TabPane tab="Communications" key="comms">
-               <InfoGroup>
-                <InfoGroupTitle><Mail /> Email History</InfoGroupTitle>
-                 <Table 
-                    dataSource={userEmails}
-                    loading={emailsLoading}
-                    rowKey="id"
-                    size="small"
-                    pagination={{ pageSize: 5 }}
-                    columns={[
-                    { title: 'Sent At', dataIndex: 'timestamp', render: t => <Text style={{ fontSize: 13 }}>{dayjs(t).format('MMM D, h:mm A')}</Text>, width: 140 },
-                    { title: 'Subject', dataIndex: 'details', ellipsis: true, render: t => <Text style={{ fontSize: 13 }}>{t ? t.replace('Email: ', '') : 'Notification'}</Text> },
-                    { title: 'Status', key: 'status', render: () => <Tag color="green" style={{ fontSize: 11 }}>Sent</Tag> }
-                    ]}
+              <InfoGroup>
+                <InfoGroupTitle>
+                  <Mail /> Email History
+                </InfoGroupTitle>
+                <Table
+                  dataSource={userEmails}
+                  loading={emailsLoading}
+                  rowKey="id"
+                  size="small"
+                  pagination={{ pageSize: 5 }}
+                  columns={[
+                    {
+                      title: "Sent At",
+                      dataIndex: "timestamp",
+                      render: (t) => (
+                        <Text style={{ fontSize: 13 }}>
+                          {dayjs(t).format("MMM D, h:mm A")}
+                        </Text>
+                      ),
+                      width: 140,
+                    },
+                    {
+                      title: "Subject",
+                      dataIndex: "details",
+                      ellipsis: true,
+                      render: (t) => (
+                        <Text style={{ fontSize: 13 }}>
+                          {t ? t.replace("Email: ", "") : "Notification"}
+                        </Text>
+                      ),
+                    },
+                    {
+                      title: "Status",
+                      key: "status",
+                      render: () => (
+                        <Tag color="green" style={{ fontSize: 11 }}>
+                          Sent
+                        </Tag>
+                      ),
+                    },
+                  ]}
                 />
-               </InfoGroup>
+              </InfoGroup>
             </TabPane>
 
             <TabPane tab={`Bookings (${bookingPagination.total})`} key="2">
               <InfoGroup>
-                  <InfoGroupTitle><FileText /> Booking History</InfoGroupTitle>
-                  <Table
-                    columns={bookingColumns}
-                    dataSource={selectedUserBookings}
-                    rowKey="booking_id"
-                    loading={{ spinning: bookingsLoading }}
-                    pagination={{
+                <InfoGroupTitle>
+                  <FileText /> Booking History
+                </InfoGroupTitle>
+                <Table
+                  columns={bookingColumns}
+                  dataSource={selectedUserBookings}
+                  rowKey="booking_id"
+                  loading={{ spinning: bookingsLoading }}
+                  pagination={{
                     ...bookingPagination,
-                    onChange: (page, pageSize) => handleBookingTableChange({ current: page, pageSize }),
-                    }}
-                    scroll={{ x: 400 }}
-                    size="small"
-                    locale={{ emptyText: <Empty description="No bookings for this user" /> }}
+                    onChange: (page, pageSize) =>
+                      handleBookingTableChange({ current: page, pageSize }),
+                  }}
+                  scroll={{ x: 400 }}
+                  size="small"
+                  locale={{
+                    emptyText: (
+                      <Empty description="No bookings for this user" />
+                    ),
+                  }}
                 />
               </InfoGroup>
             </TabPane>
-            
+
             <TabPane tab="Business Ownership" key="3">
               <InfoGroup>
-                 <InfoGroupTitle><Briefcase /> Owned Businesses</InfoGroupTitle>
-                 {selectedUser.owned_businesses_info?.length > 0 ? (
-                    <List
+                <InfoGroupTitle>
+                  <Briefcase /> Owned Businesses
+                </InfoGroupTitle>
+                {selectedUser.owned_businesses_info?.length > 0 ? (
+                  <List
                     dataSource={selectedUser.owned_businesses_info}
                     renderItem={(item) => (
-                        <List.Item style={{ padding: '12px 0', borderBottom: `1px solid ${colors.border}` }}>
+                      <List.Item
+                        style={{
+                          padding: "12px 0",
+                          borderBottom: `1px solid ${colors.border}`,
+                        }}
+                      >
                         <List.Item.Meta
-                            avatar={<Avatar icon={<Briefcase size={16} />} style={{ backgroundColor: colors.info }} />}
-                            title={<Text strong style={{ fontSize: 14 }}>{item.businessName}</Text>}
-                            description={<Text type="secondary" style={{ fontSize: 12 }}>ID: {item.businessId}</Text>}
+                          avatar={
+                            <Avatar
+                              icon={<Briefcase size={16} />}
+                              style={{ backgroundColor: colors.info }}
+                            />
+                          }
+                          title={
+                            <Text strong style={{ fontSize: 14 }}>
+                              {item.businessName}
+                            </Text>
+                          }
+                          description={
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              ID: {item.businessId}
+                            </Text>
+                          }
                         />
-                        </List.Item>
+                      </List.Item>
                     )}
-                    />
+                  />
                 ) : (
-                    <Empty description="No businesses owned" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                  <Empty
+                    description="No businesses owned"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
                 )}
               </InfoGroup>
             </TabPane>
@@ -1527,17 +1875,46 @@ const UserManagementDashboard = () => {
         <DashboardHeader>
           <div>
             <PageTitle>User Management</PageTitle>
-            <HeaderSubtitle>Monitor, manage, and analyze all platform users.</HeaderSubtitle>
+            <HeaderSubtitle>
+              Monitor, manage, and analyze all platform users.
+            </HeaderSubtitle>
           </div>
           <ActionButtonsContainer>
             <RangePicker value={dateRange} onChange={setDateRange} />
-            <Button icon={<Download size={16} />} onClick={handleExportData} disabled={users.length === 0}>Export</Button>
+            <Button
+              type="primary"
+              icon={<UserPlus size={16} />}
+              onClick={() => setIsShadowModalVisible(true)}
+              style={{
+                backgroundColor: colors.purple,
+                borderColor: colors.purple,
+              }}
+            >
+              Concierge Onboard
+            </Button>
+            <Button
+              icon={<Download size={16} />}
+              onClick={handleExportData}
+              disabled={users.length === 0}
+            >
+              Export
+            </Button>
           </ActionButtonsContainer>
         </DashboardHeader>
 
         <Divider />
         <div style={{ marginBottom: "20px" }}>
-          <Text style={{ fontSize: isMobile ? "16px" : "17px", fontWeight: 600, color: colors.textPrimary, display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+          <Text
+            style={{
+              fontSize: isMobile ? "16px" : "17px",
+              fontWeight: 600,
+              color: colors.textPrimary,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              marginBottom: "16px",
+            }}
+          >
             <BarChart2 size={20} color={colors.primary} /> Period Overview
           </Text>
         </div>
@@ -1546,19 +1923,25 @@ const UserManagementDashboard = () => {
           {statsData.map((stat) => (
             <StatCard key={stat.key}>
               {metricsLoading ? (
-                 <Skeleton active paragraph={{ rows: 2 }} />
+                <Skeleton active paragraph={{ rows: 2 }} />
               ) : (
                 <>
                   <div>
                     <StatCardHeader>
-                      <IconContainer background={hexToRgba(stat.color, 0.1)} color={stat.color}>
+                      <IconContainer
+                        background={hexToRgba(stat.color, 0.1)}
+                        color={stat.color}
+                      >
                         <stat.icon size={18} />
                       </IconContainer>
                     </StatCardHeader>
                     <StatLabel>{stat.title}</StatLabel>
                   </div>
                   <StatValue>
-                    <NumberFlow value={isReadyForAnimation ? stat.value : 0} duration={800} />
+                    <NumberFlow
+                      value={isReadyForAnimation ? stat.value : 0}
+                      duration={800}
+                    />
                   </StatValue>
                 </>
               )}
@@ -1570,23 +1953,84 @@ const UserManagementDashboard = () => {
 
         <GridRow>
           <ChartCard>
-            <CardTitle><BarChart2 size={20} color={colors.primary} /> User Registrations Trend</CardTitle>
-            <HelpText>Daily count of new user registrations over the selected period.</HelpText>
+            <CardTitle>
+              <BarChart2 size={20} color={colors.primary} /> User Registrations
+              Trend
+            </CardTitle>
+            <HelpText>
+              Daily count of new user registrations over the selected period.
+            </HelpText>
             <ChartContainer>
               {metricsLoading ? (
-                <div style={{ padding: 20, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: 10 }}>
-                   <div style={{ height: '40%', width: '100%', background: '#f8fafc' }} />
-                   <div style={{ height: '70%', width: '100%', background: '#f8fafc' }} />
-                   <div style={{ height: '30%', width: '100%', background: '#f8fafc' }} />
+                <div
+                  style={{
+                    padding: 20,
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "flex-end",
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "40%",
+                      width: "100%",
+                      background: "#f8fafc",
+                    }}
+                  />
+                  <div
+                    style={{
+                      height: "70%",
+                      width: "100%",
+                      background: "#f8fafc",
+                    }}
+                  />
+                  <div
+                    style={{
+                      height: "30%",
+                      width: "100%",
+                      background: "#f8fafc",
+                    }}
+                  />
                 </div>
               ) : metrics.registration_trend?.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={metrics.registration_trend} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={colors.border} vertical={false} />
-                    <XAxis dataKey="day" stroke={colors.textTertiary} tick={{ fontSize: 11 }} tickFormatter={(tick) => dayjs(tick).format("MMM D")} />
-                    <YAxis stroke={colors.textTertiary} tick={{ fontSize: 11 }} allowDecimals={false} />
-                    <RechartsTooltip content={renderLineChartTooltip} cursor={{ stroke: colors.primary, strokeDasharray: "3 3" }} />
-                    <Line type="monotone" dataKey="registrations" stroke={colors.primary} strokeWidth={2} dot={false} activeDot={{ r: 6 }} />
+                  <LineChart
+                    data={metrics.registration_trend}
+                    margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke={colors.border}
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="day"
+                      stroke={colors.textTertiary}
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={(tick) => dayjs(tick).format("MMM D")}
+                    />
+                    <YAxis
+                      stroke={colors.textTertiary}
+                      tick={{ fontSize: 11 }}
+                      allowDecimals={false}
+                    />
+                    <RechartsTooltip
+                      content={renderLineChartTooltip}
+                      cursor={{
+                        stroke: colors.primary,
+                        strokeDasharray: "3 3",
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="registrations"
+                      stroke={colors.primary}
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 6 }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
@@ -1595,22 +2039,63 @@ const UserManagementDashboard = () => {
             </ChartContainer>
           </ChartCard>
           <ChartCard>
-            <CardTitle><PieChartIcon size={20} color={colors.primary} /> User Role Distribution</CardTitle>
-            <HelpText>The breakdown of all users by their assigned role.</HelpText>
+            <CardTitle>
+              <PieChartIcon size={20} color={colors.primary} /> User Role
+              Distribution
+            </CardTitle>
+            <HelpText>
+              The breakdown of all users by their assigned role.
+            </HelpText>
             <ChartContainer>
               {metricsLoading ? (
-                 <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ width: 150, height: 150, borderRadius: '50%', border: '20px solid #f8fafc' }} />
-                 </div>
+                <div
+                  style={{
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 150,
+                      height: 150,
+                      borderRadius: "50%",
+                      border: "20px solid #f8fafc",
+                    }}
+                  />
+                </div>
               ) : metrics.role_distribution?.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={metrics.role_distribution} nameKey="role__name" dataKey="count" cx="50%" cy="50%" innerRadius={isMobile ? 50 : 60} outerRadius={isMobile ? 70 : 85} paddingAngle={2} onClick={handlePieClick}>
+                    <Pie
+                      data={metrics.role_distribution}
+                      nameKey="role__name"
+                      dataKey="count"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={isMobile ? 50 : 60}
+                      outerRadius={isMobile ? 70 : 85}
+                      paddingAngle={2}
+                      onClick={handlePieClick}
+                    >
                       {metrics.role_distribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.role__color || PIE_COLORS[index % PIE_COLORS.length]} style={{ cursor: "pointer" }} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={
+                            entry.role__color ||
+                            PIE_COLORS[index % PIE_COLORS.length]
+                          }
+                          style={{ cursor: "pointer" }}
+                        />
                       ))}
                     </Pie>
-                    <RechartsTooltip contentStyle={{ borderRadius: "12px", border: `1px solid ${colors.border}` }} />
+                    <RechartsTooltip
+                      contentStyle={{
+                        borderRadius: "12px",
+                        border: `1px solid ${colors.border}`,
+                      }}
+                    />
                     <Legend iconSize={10} wrapperStyle={{ fontSize: "12px" }} />
                   </PieChart>
                 </ResponsiveContainer>
@@ -1623,19 +2108,46 @@ const UserManagementDashboard = () => {
 
         <Divider />
 
-        <TableSection initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+        <TableSection
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
           <TableHeader>
-            <TableTitle><Users /> All Platform Users</TableTitle>
-            <TableDescription>Search, filter, and manage all users on the platform.</TableDescription>
+            <TableTitle>
+              <Users /> All Platform Users
+            </TableTitle>
+            <TableDescription>
+              Search, filter, and manage all users on the platform.
+            </TableDescription>
           </TableHeader>
           <FilterBar>
             <SearchFilterContainer>
-              <Input placeholder="Search by name or email" allowClear value={searchText} onChange={(e) => handleFilterChange({ search: e.target.value })} style={{ width: isMobile ? "100%" : 280 }} />
-              <Select value={roleFilter} style={{ width: isMobile ? "100%" : 180 }} onChange={(value) => handleFilterChange({ role: value })} loading={!roles.length}>
+              <Input
+                placeholder="Search by name or email"
+                allowClear
+                value={searchText}
+                onChange={(e) => handleFilterChange({ search: e.target.value })}
+                style={{ width: isMobile ? "100%" : 280 }}
+              />
+              <Select
+                value={roleFilter}
+                style={{ width: isMobile ? "100%" : 180 }}
+                onChange={(value) => handleFilterChange({ role: value })}
+                loading={!roles.length}
+              >
                 <Option value="all">All Roles</Option>
-                {roles.map((role) => <Option key={role.id} value={role.id}>{role.name}</Option>)}
+                {roles.map((role) => (
+                  <Option key={role.id} value={role.id}>
+                    {role.name}
+                  </Option>
+                ))}
               </Select>
-              <Select value={statusFilter} style={{ width: isMobile ? "100%" : 150 }} onChange={(value) => handleFilterChange({ status: value })}>
+              <Select
+                value={statusFilter}
+                style={{ width: isMobile ? "100%" : 150 }}
+                onChange={(value) => handleFilterChange({ status: value })}
+              >
                 <Option value="all">All Statuses</Option>
                 <Option value="active">Active</Option>
                 <Option value="inactive">Inactive</Option>
@@ -1646,22 +2158,38 @@ const UserManagementDashboard = () => {
 
           {isMobile ? (
             <MobileCardList>
-              {loading ? generateSkeletonData(5).map(renderMobileUserCard) : users.length > 0 ? users.map(renderMobileUserCard) : <Empty />}
+              {loading ? (
+                generateSkeletonData(5).map(renderMobileUserCard)
+              ) : users.length > 0 ? (
+                users.map(renderMobileUserCard)
+              ) : (
+                <Empty />
+              )}
             </MobileCardList>
           ) : (
             <StyledTable
               columns={columns}
-              dataSource={loading ? generateSkeletonData(pagination.pageSize) : users}
+              dataSource={
+                loading ? generateSkeletonData(pagination.pageSize) : users
+              }
               rowKey={loading ? "userId" : "userId"}
               loading={false}
-              pagination={loading ? false : {
-                ...pagination,
-                showSizeChanger: true,
-                pageSizeOptions: ["10", "20", "50"],
-              }}
+              pagination={
+                loading
+                  ? false
+                  : {
+                      ...pagination,
+                      showSizeChanger: true,
+                      pageSizeOptions: ["10", "20", "50"],
+                    }
+              }
               onChange={handleTableChange}
               scroll={{ x: 1200 }}
-              locale={{ emptyText: <Empty description="No users found with the current filters." /> }}
+              locale={{
+                emptyText: (
+                  <Empty description="No users found with the current filters." />
+                ),
+              }}
             />
           )}
         </TableSection>
@@ -1677,39 +2205,70 @@ const UserManagementDashboard = () => {
           width={isMobile ? "95%" : 520}
         >
           <Form form={form} layout="vertical">
-            <Form.Item name="role" label="User Role" rules={[{ required: true, message: "Please select a role." }]}>
+            <Form.Item
+              name="role"
+              label="User Role"
+              rules={[{ required: true, message: "Please select a role." }]}
+            >
               <Select placeholder="Select a new role" loading={!roles.length}>
-                {roles.map((r) => <Option key={r.id} value={r.id}>{r.name}</Option>)}
+                {roles.map((r) => (
+                  <Option key={r.id} value={r.id}>
+                    {r.name}
+                  </Option>
+                ))}
               </Select>
             </Form.Item>
-            <HelpText>Changing a user's role will alter their permissions and access across the platform.</HelpText>
+            <HelpText>
+              Changing a user's role will alter their permissions and access
+              across the platform.
+            </HelpText>
           </Form>
         </Modal>
 
         {/* VAUL DRAWER - MOBILE & DESKTOP IMPLEMENTATION */}
         {isMobile ? (
-          <Drawer.Root open={isDetailsDrawerOpen} onOpenChange={setIsDetailsDrawerOpen}>
+          <Drawer.Root
+            open={isDetailsDrawerOpen}
+            onOpenChange={setIsDetailsDrawerOpen}
+          >
             <Drawer.Portal>
               <StyledDrawerOverlay />
               <StyledDrawerContent>
                 <DrawerHandle />
                 <DrawerHeader>
-                  <DrawerHeaderTitle><FileText size={20} /> User Details</DrawerHeaderTitle>
-                  <CloseButton onClick={() => setIsDetailsDrawerOpen(false)} icon={<X size={20} />} />
+                  <DrawerHeaderTitle>
+                    <FileText size={20} /> User Details
+                  </DrawerHeaderTitle>
+                  <CloseButton
+                    onClick={() => setIsDetailsDrawerOpen(false)}
+                    icon={<X size={20} />}
+                  />
                 </DrawerHeader>
                 {renderUserDetailsContent()}
               </StyledDrawerContent>
             </Drawer.Portal>
           </Drawer.Root>
         ) : (
-          <Drawer.Root open={isDetailsDrawerOpen} onOpenChange={setIsDetailsDrawerOpen} direction="right" dismissible>
+          <Drawer.Root
+            open={isDetailsDrawerOpen}
+            onOpenChange={setIsDetailsDrawerOpen}
+            direction="right"
+            dismissible
+          >
             <Drawer.Portal>
               <StyledDrawerOverlay />
-              <DesktopDrawerContent style={{ "--initial-transform": "calc(100% + 8px)" }}>
+              <DesktopDrawerContent
+                style={{ "--initial-transform": "calc(100% + 8px)" }}
+              >
                 <DesktopDrawerInner>
                   <DrawerHeader>
-                    <DrawerHeaderTitle><FileText size={20} /> User Details</DrawerHeaderTitle>
-                    <CloseButton onClick={() => setIsDetailsDrawerOpen(false)} icon={<X size={20} />} />
+                    <DrawerHeaderTitle>
+                      <FileText size={20} /> User Details
+                    </DrawerHeaderTitle>
+                    <CloseButton
+                      onClick={() => setIsDetailsDrawerOpen(false)}
+                      icon={<X size={20} />}
+                    />
                   </DrawerHeader>
                   {renderUserDetailsContent()}
                 </DesktopDrawerInner>
@@ -1718,6 +2277,13 @@ const UserManagementDashboard = () => {
           </Drawer.Root>
         )}
       </DashboardWrapper>
+      <ShadowUserModal
+        open={isShadowModalVisible}
+        onCancel={() => setIsShadowModalVisible(false)}
+        onCreate={handleCreateShadowUser}
+        onImpersonate={handleImpersonateUser}
+        loading={shadowLoading}
+      />
     </ConfigProvider>
   );
 };
@@ -1726,9 +2292,21 @@ const UserManagementDashboard = () => {
 const renderLineChartTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div style={{ background: "white", padding: "8px 12px", border: `1px solid ${colors.border}`, borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
-        <p style={{ margin: 0, color: colors.textSecondary, fontSize: 12 }}>{dayjs(label).format("MMM D, YYYY")}</p>
-        <p style={{ margin: 0, color: colors.textPrimary, fontWeight: 500 }}>Registrations: <strong>{payload[0].value}</strong></p>
+      <div
+        style={{
+          background: "white",
+          padding: "8px 12px",
+          border: `1px solid ${colors.border}`,
+          borderRadius: "12px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+        }}
+      >
+        <p style={{ margin: 0, color: colors.textSecondary, fontSize: 12 }}>
+          {dayjs(label).format("MMM D, YYYY")}
+        </p>
+        <p style={{ margin: 0, color: colors.textPrimary, fontWeight: 500 }}>
+          Registrations: <strong>{payload[0].value}</strong>
+        </p>
       </div>
     );
   }

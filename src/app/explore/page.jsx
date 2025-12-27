@@ -1,9 +1,9 @@
-// app/explore/page.jsx
 import { Suspense } from "react";
 import ExploreClient from "@/app/explore/_components/ExploreClient";
 import {
   searchClasses,
   fetchHomepageCategories,
+  fetchClassCollections,
 } from "@/lib/server-data-fetchers";
 import ExplorePageSkeleton from "./_components/ExplorePageSkeleton";
 
@@ -34,8 +34,12 @@ async function fetchServerData(searchParams) {
   // Handle category and subcategory from URL
   const category = searchParams.category;
   const subcategory = searchParams.subcategory;
+  const collection = searchParams.collection; // Capture collection param
 
-  if (category && category !== "all") {
+  // Logic to prioritize Collection or Category
+  if (collection) {
+    apiParams.collection = collection;
+  } else if (category && category !== "all") {
     apiParams.category_key = category;
     if (subcategory) {
       apiParams.subcategory_key = subcategory;
@@ -72,16 +76,19 @@ async function fetchServerData(searchParams) {
 
   console.log("[Server] Fetching classes with params:", apiParams);
 
-  // Use the new searchClasses function with category-aware caching
-  const [categoriesResponse, classesResponse] = await Promise.all([
-    fetchHomepageCategories(),
-    searchClasses(apiParams),
-  ]);
+  // UPDATED: Parallel fetch categories, classes, AND collections
+  const [categoriesResponse, classesResponse, collectionsList] =
+    await Promise.all([
+      fetchHomepageCategories(),
+      searchClasses(apiParams),
+      fetchClassCollections(),
+    ]);
 
   console.log(
     "[Server] Classes fetched:",
     classesResponse.results?.length || 0
   );
+  console.log("[Server] Collections fetched:", collectionsList?.length || 0);
 
   return {
     categories: categoriesResponse.success ? categoriesResponse.data : [],
@@ -89,6 +96,7 @@ async function fetchServerData(searchParams) {
     totalCount: classesResponse.count || 0,
     nextPageUrl: classesResponse.next || null,
     locationName: locationDisplayNameFromUrl || "",
+    collections: collectionsList || [], // Return collections to client
     routeParams: {
       province: null,
       city: null,
@@ -107,6 +115,7 @@ async function ExplorePageContent({ searchParams }) {
       initialClasses={serverData.initialClasses}
       initialTotalCount={serverData.totalCount}
       initialNextPageUrl={serverData.nextPageUrl}
+      initialCollections={serverData.collections} // Pass collections prop
       routeParams={serverData.routeParams}
     />
   );

@@ -411,7 +411,7 @@ const HowItWorks = () => {
               whileTap={{ scale: 0.97 }}
               aria-pressed={selectedButton === "forExplorers"}
             >
-              for Explorers
+              for Adventurers
             </RoundedButton>
             <RoundedButton
               onClick={() => handleButtonClick("forHosts")}
