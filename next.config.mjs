@@ -199,6 +199,16 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        source: "/verify-email/:key",
+        destination: "/?verify_email_key=:key",
+        permanent: false,
+      },
+      {
+        source: "/account-confirm-email/:key",
+        destination: "/?verify_email_key=:key",
+        permanent: false,
+      },
+      {
         source: "/business/classes",
         destination: "/business/dashboard/classes",
         permanent: false,

@@ -25,6 +25,10 @@ const ClaimAccountOverlay = dynamic(() =>
   import("./(homepage)/_components/ClaimAccountOverlay")
 );
 
+const VerifyEmailOverlay = dynamic(() =>
+  import("./(homepage)/_components/VerifyEmailOverlay")
+);
+
 // Lazy Load Components
 const Footer = dynamic(() => import("@/components/homepage/Footer"), {
   loading: () => <div style={{ minHeight: "300px" }} />,
@@ -120,6 +124,7 @@ export default async function HomePage() {
         <InviteOverlay />
         <PasswordResetOverlay />
         <ClaimAccountOverlay />
+        <VerifyEmailOverlay />
       </div>
     </>
   );
