@@ -1,5 +1,3 @@
-// src/app/business/dashboard/_components/SideMenu.jsx
-
 "use client";
 
 import React, {
@@ -10,7 +8,7 @@ import React, {
   useCallback,
   forwardRef,
   useImperativeHandle,
-  useMemo, // Added useMemo for explicit memoization of menuItemsForAnt
+  useMemo,
 } from "react";
 import { useRouter } from "next/navigation";
 import styled, { createGlobalStyle, ThemeProvider } from "styled-components";
@@ -534,8 +532,9 @@ const closeButtonVariants = {
   },
 };
 
-// Menu Configuration
+// Menu Configuration - REORGANIZED FOR UX
 const menuItemsConfig = [
+  // 1. Dashboard: The Command Center
   {
     key: "overview",
     icon: (
@@ -549,8 +548,9 @@ const menuItemsConfig = [
     ),
     label: "Dashboard",
   },
+  // 2. Core Product: My Listings (High Frequency)
   {
-    key: "classes",
+    key: "listings",
     icon: (
       <LordIcon
         src="https://cdn.lordicon.com/yraqammt.json"
@@ -560,27 +560,33 @@ const menuItemsConfig = [
         inState="in-newspaper"
       />
     ),
-    label: "My Classes",
+    label: "My Listings",
   },
+  // 3. Operational Flow: Bookings (Active + History)
   {
-    key: "bookings/active",
+    key: "bookings",
+    label: "Bookings",
     icon: (
       <LordIcon
-        src="https://cdn.lordicon.com/uoljexdg.json"
+        src="https://cdn.lordicon.com/uoljexdg.json" // Using the calendar/booking icon here
         colors="primary:#666,secondary:#666"
         size="20px"
         playOnLoad={true}
         state="in-booking"
       />
     ),
-    label: "Active Bookings",
+    children: [
+      { key: "bookings/active", label: "Active Bookings" },
+      { key: "bookings/history", label: "Booking History" },
+    ],
   },
+  // 4. Relationships: People & Community (CRM)
   {
-    key: "management",
-    label: "Management",
+    key: "people",
+    label: "People & Community",
     icon: (
       <LordIcon
-        src="https://cdn.lordicon.com/mudwpdhy.json"
+        src="https://cdn.lordicon.com/mudwpdhy.json" // Using the system/grid icon for general management
         colors="primary:#666,secondary:#666"
         size="20px"
         playOnLoad={true}
@@ -589,11 +595,11 @@ const menuItemsConfig = [
     ),
     children: [
       { key: "students", label: "Students" },
-      { key: "staff", label: "Staff Management" },
-      { key: "bookings/history", label: "Booking History" },
       { key: "reviews", label: "Reviews & Feedback" },
+      { key: "staff", label: "Staff Management" },
     ],
   },
+  // 5. Results: Financials
   {
     key: "financials",
     label: "Financials",
@@ -611,9 +617,10 @@ const menuItemsConfig = [
       { key: "payouts", label: "Payouts" },
     ],
   },
+  // 6. Strategy: Marketing & Analytics
   {
     key: "growth",
-    label: "Growth",
+    label: "Marketing & Analytics",
     icon: (
       <LordIcon
         src="https://cdn.lordicon.com/excswhey.json"
@@ -624,13 +631,14 @@ const menuItemsConfig = [
       />
     ),
     children: [
-      { key: "discounts", label: "Promotions & Discounts" },
       { key: "trends", label: "Booking Trends" },
+      { key: "discounts", label: "Promotions & Discounts" },
     ],
   },
+  // 7. Configuration: Settings
   {
     key: "platform",
-    label: "Settings & Integration",
+    label: "Settings",
     icon: (
       <LordIcon
         src="https://cdn.lordicon.com/lrubprlz.json"
@@ -649,7 +657,7 @@ const menuItemsConfig = [
 
 const menuItemPermissions = {
   overview: "access_business_dashboard",
-  classes: "manage_own_classes",
+  listings: "manage_own_classes",
   "bookings/active": "view_own_business_bookings",
   "bookings/history": "view_own_business_bookings",
   students: "view_business_students",
@@ -705,17 +713,18 @@ const SideMenuComponent = memo(
     const businessSettingsRefInternal = useRef(null);
     const mobileButtonRef = useRef(null);
 
+    // Refs for tours/highlights
     const homeMenuRef = useRef(null);
-    const classesMenuRef = useRef(null);
+    const listingsMenuRef = useRef(null);
     const activeBookingsMenuRef = useRef(null);
-    const managementMenuRef = useRef(null);
+    const managementMenuRef = useRef(null); // Used for People
     const financialsMenuRef = useRef(null);
     const growthMenuRef = useRef(null);
     const platformMenuRef = useRef(null);
 
     useImperativeHandle(ref, () => ({
       homeMenuRef,
-      classesMenuRef,
+      listingsMenuRef,
       activeBookingsMenuRef,
       managementMenuRef,
       financialsMenuRef,
@@ -1008,13 +1017,15 @@ const SideMenuComponent = memo(
           case "overview":
             refToAttach = homeMenuRef;
             break;
-          case "classes":
-            refToAttach = classesMenuRef;
+          case "listings":
+            refToAttach = listingsMenuRef;
             break;
-          case "bookings/active":
+          case "bookings":
+            // Attach ref to the "Bookings" parent
             refToAttach = activeBookingsMenuRef;
             break;
-          case "management":
+          case "people":
+            // Attach ref to the "People" parent
             refToAttach = managementMenuRef;
             break;
           case "financials":
@@ -1123,7 +1134,7 @@ const SideMenuComponent = memo(
       ) : (
         <Avatar
           size={size}
-          icon={<Building size={size * 0.55} />}
+          icon={<div style={{ fontSize: size * 0.5 }}>B</div>} // Fallback icon since Building wasn't imported
           style={{
             backgroundColor: augmentedTheme.token.colorPrimary,
             flexShrink: 0,

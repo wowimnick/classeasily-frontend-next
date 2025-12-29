@@ -130,7 +130,7 @@ const CardSkeleton = () => (
 const TableSkeleton = () => {
   const skeletonColumns = [
     {
-      title: "Class",
+      title: "Listing",
       key: "class",
       width: 400,
       render: () => (
@@ -225,8 +225,9 @@ const getErrorMessage = (error) => {
         const formattedKey = key
           .replace(/_/g, " ")
           .replace(/\b\w/g, (l) => l.toUpperCase());
-        return `${formattedKey}: ${Array.isArray(value) ? value.join(", ") : value
-          }`;
+        return `${formattedKey}: ${
+          Array.isArray(value) ? value.join(", ") : value
+        }`;
       });
       if (messages.length > 0) return messages.join("; ");
     }
@@ -382,15 +383,15 @@ const StyledSearchInput = styled(Input)`
   @media (max-width: 768px) {
     width: 100%;
     height: 42px;
-    
+
     .ant-input {
       font-size: 14px;
     }
   }
-  
+
   @media (max-width: 480px) {
     height: 40px;
-    
+
     .ant-input {
       font-size: 13px;
     }
@@ -418,25 +419,25 @@ const StyledSelect = styled(Select)`
     line-height: 42px !important;
     font-size: 15px;
   }
-  
+
   @media (max-width: 768px) {
     width: 100% !important;
-    
+
     .ant-select-selector {
       height: 42px !important;
     }
-    
+
     .ant-select-selection-item {
       line-height: 40px !important;
       font-size: 14px;
     }
   }
-  
+
   @media (max-width: 480px) {
     .ant-select-selector {
       height: 40px !important;
     }
-    
+
     .ant-select-selection-item {
       line-height: 38px !important;
       font-size: 13px;
@@ -455,26 +456,26 @@ const ActionButton = styled(Button)`
   font-weight: 500;
   font-size: 15px;
   white-space: nowrap;
-  
+
   svg {
     width: 18px;
     height: 18px;
     flex-shrink: 0;
   }
-  
+
   @media (max-width: 768px) {
     width: 100%;
     height: 42px;
     font-size: 14px;
     padding: 0 16px;
   }
-  
+
   @media (max-width: 480px) {
     height: 40px;
     font-size: 13px;
     padding: 0 12px;
     gap: 6px;
-    
+
     svg {
       width: 16px;
       height: 16px;
@@ -530,11 +531,11 @@ const CustomSwitch = styled.div`
 
   &:hover {
     background-color: ${(props) =>
-    props.$disabled
-      ? props.$checked
-        ? "#10b981"
-        : "#e5e7eb"
-      : props.$checked
+      props.$disabled
+        ? props.$checked
+          ? "#10b981"
+          : "#e5e7eb"
+        : props.$checked
         ? "#059669"
         : "#d1d5db"};
   }
@@ -671,7 +672,7 @@ const MobileCardContainer = styled(motion.div)`
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
-  
+
   @media (max-width: 480px) {
     gap: 12px;
   }
@@ -697,7 +698,7 @@ const CardHeader = styled.div`
   gap: 12px;
   padding: 16px;
   align-items: center;
-  
+
   @media (max-width: 480px) {
     padding: 12px;
     gap: 10px;
@@ -720,11 +721,11 @@ const CardTitle = styled(Text)`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  
+
   @media (max-width: 768px) {
     font-size: 15px;
   }
-  
+
   @media (max-width: 480px) {
     font-size: 14px;
   }
@@ -738,7 +739,7 @@ const CardBody = styled.div`
   border-bottom: 1px solid #f1f5f9;
   gap: 12px;
   flex-wrap: wrap;
-  
+
   @media (max-width: 480px) {
     padding: 0 12px 12px;
     gap: 8px;
@@ -751,11 +752,11 @@ const CardStats = styled.div`
   font-size: 13px;
   color: ${colors.textSecondary};
   flex-wrap: wrap;
-  
+
   @media (max-width: 768px) {
     gap: 12px;
   }
-  
+
   @media (max-width: 480px) {
     font-size: 12px;
     gap: 10px;
@@ -779,11 +780,11 @@ const CardFooter = styled.div`
   align-items: center;
   background: #f8fafc;
   gap: 8px;
-  
+
   @media (max-width: 480px) {
     padding: 10px 12px;
     flex-wrap: wrap;
-    
+
     button:first-child {
       flex: 1;
       min-width: 0;
@@ -1379,7 +1380,7 @@ function ClassManagementContent(props) {
               icon={<Edit size={16} />}
               onClick={() => handleEditClass(record)}
             >
-              Edit Class Details
+              Edit Listing Details
             </Menu.Item>
             <Menu.Item
               key="delete"
@@ -1387,7 +1388,7 @@ function ClassManagementContent(props) {
               onClick={() => openDeleteModal(record)}
               danger
             >
-              Delete Class
+              Delete Listing
             </Menu.Item>
           </StyledMenu>
         );
@@ -1444,9 +1445,9 @@ function ClassManagementContent(props) {
           style={{ width: 40, height: 40 }}
         />
       </EmptyStateIcon>
-      <EmptyStateText>No Classes Found</EmptyStateText>
+      <EmptyStateText>No Listings Found</EmptyStateText>
       <EmptyStateSubtext>
-        You haven't created any classes yet. Click 'Create New Class' to get
+        You haven't created any listings yet. Click 'Create New Listing' to get
         started!
       </EmptyStateSubtext>
     </EmptyStateContainer>
@@ -1483,7 +1484,7 @@ function ClassManagementContent(props) {
           icon={<Edit size={16} />}
           onClick={() => handleEditClass(classItem)}
         >
-          Edit Class Details
+          Edit Listing Details
         </Menu.Item>
         <Menu.Item
           key="delete"
@@ -1491,7 +1492,7 @@ function ClassManagementContent(props) {
           danger
           onClick={() => openDeleteModal(classItem)}
         >
-          Delete Class
+          Delete Listing
         </Menu.Item>
       </StyledMenu>
     );
@@ -1599,10 +1600,9 @@ function ClassManagementContent(props) {
     <ConfigProvider theme={theme}>
       <PageContainer>
         <PageHeader>
-          <HeaderTitle>Class Management</HeaderTitle>
+          <HeaderTitle>Listing Management</HeaderTitle>
           <HeaderSubtitle>
-            Oversee, edit, and manage all your class offerings and their
-            schedules.
+            Oversee, edit, and manage all your listings and their schedules.
           </HeaderSubtitle>
         </PageHeader>
         <Divider />
@@ -1641,7 +1641,7 @@ function ClassManagementContent(props) {
             icon={<Plus size={18} />}
             onClick={() => setCreateDrawerVisible(true)}
           >
-            Create New Class
+            Create New Listing
           </ActionButton>
         </Controls>
 
@@ -1660,7 +1660,7 @@ function ClassManagementContent(props) {
               dataSource={filteredClasses}
               rowKey="classId"
               pagination={false}
-              scroll={{ x: 'max-content' }} 
+              scroll={{ x: "max-content" }}
               onRow={(record) => ({
                 onClick: () => {
                   if (record.option) {
@@ -1725,7 +1725,7 @@ function ClassManagementContent(props) {
 
                 <DrawerHeader>
                   <Title level={4} style={{ margin: 0 }}>
-                    Create New Class
+                    Create New Listing
                   </Title>
                   <CloseButton
                     icon={<X size={20} />}
@@ -1755,7 +1755,7 @@ function ClassManagementContent(props) {
               <DesktopDrawerContent>
                 <DrawerHeader>
                   <Title level={4} style={{ margin: 0 }}>
-                    Create New Class
+                    Create New Listing
                   </Title>
                   <CloseButton
                     icon={<X size={20} />}

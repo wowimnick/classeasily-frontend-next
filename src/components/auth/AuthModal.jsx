@@ -1,16 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useLayoutEffect,
+} from "react";
 import styled from "styled-components";
-import {
-  Modal,
-  Form,
-  Input,
-  Button,
-  Steps,
-  ConfigProvider,
-  Alert,
-} from "antd";
+import { Modal, Form, Input, Button, Steps, ConfigProvider, Alert } from "antd";
 import message from "@/lib/message";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, Phone, ArrowLeft, ArrowRight } from "lucide-react";
@@ -48,7 +46,7 @@ const useElementSize = () => {
     const observer = new ResizeObserver(([entry]) => {
       setSize({
         width: entry.contentRect.width,
-        height: entry.contentRect.height
+        height: entry.contentRect.height,
       });
     });
 
@@ -69,7 +67,7 @@ const AnimatedModalContent = ({ children }) => {
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
     >
       <div ref={ref}>
-        <div style={{ border: '1px solid transparent', margin: '-1px' }}>
+        <div style={{ border: "1px solid transparent", margin: "-1px" }}>
           {children}
         </div>
       </div>
@@ -162,7 +160,7 @@ const StyledForm = styled(Form)`
     border-radius: 12px;
     border: 1px solid #e8e8e8;
     font-size: 16px !important;
-    
+
     &:hover,
     &.ant-input-affix-wrapper-focused,
     &.ant-input-password-focused,
@@ -337,7 +335,8 @@ const ForgotPasswordForm = ({ onSwitchToLogin, formInstance }) => {
           block
           loading={loading}
           disabled={!!successMessage}
-          key={`btn-${loading}`}>
+          key={`btn-${loading}`}
+        >
           Send Reset Link
         </Button>
       </StyledForm>
@@ -357,7 +356,7 @@ const AuthModal = ({
   onClose,
   defaultMode = "login",
   onLoginSuccessAction,
-  onModeChange, // <--- ADDED PROP
+  onModeChange,
 }) => {
   const router = useRouter();
   const [loginForm] = Form.useForm();
@@ -377,7 +376,6 @@ const AuthModal = ({
     []
   );
 
-  // Helper to handle mode switching and notify parent
   const handleModeSwitch = (newMode) => {
     setModalView(newMode);
     if (onModeChange) {
@@ -404,18 +402,16 @@ const AuthModal = ({
       setCurrentStep(0);
       setFormData({});
       setError("");
+      registerForm.resetFields();
+      loginForm.resetFields();
     }
-  }, [visible, defaultMode]);
+  }, [visible, defaultMode, registerForm, loginForm]);
 
   const handleLogin = async (values) => {
     setError("");
     setLoading(true);
     try {
-      const result = await signInWithDjango(
-        values.email,
-        values.password,
-        router
-      );
+      await signInWithDjango(values.email, values.password, router);
 
       message.success("Welcome back!");
 
@@ -452,7 +448,7 @@ const AuthModal = ({
     setError("");
 
     try {
-      const result = await signInWithGoogle(tokenResponse.access_token, router);
+      await signInWithGoogle(tokenResponse.access_token, router);
 
       message.success("Welcome!");
 
@@ -477,18 +473,37 @@ const AuthModal = ({
     }
   };
 
+  // --- Step Navigation & Registration Logic ---
+
+  const handleNextStep = async () => {
+    try {
+      // Explicitly validate ONLY step 0 fields
+      const values = await registerForm.validateFields([
+        "email",
+        "password",
+        "confirmPassword",
+      ]);
+
+      setFormData((prev) => ({ ...prev, ...values }));
+      setCurrentStep(1);
+      setError(""); // Clear previous errors
+    } catch (error) {
+      // Validation failed - Ant Design handles UI highlights automatically
+    }
+  };
+
   const handleRegister = async () => {
     setError("");
+
     try {
-      const values = await registerForm.validateFields();
+      // Explicitly validate Step 1 fields before submission
+      const values = await registerForm.validateFields([
+        "firstName",
+        "lastName",
+        "phone",
+      ]);
+
       const currentFormData = { ...formData, ...values };
-      setFormData(currentFormData);
-
-      if (currentStep < steps.length - 1) {
-        setCurrentStep(currentStep + 1);
-        return;
-      }
-
       setLoading(true);
 
       const payload = {
@@ -502,7 +517,9 @@ const AuthModal = ({
       };
 
       await signUpWithDjango(payload);
-      const loginResult = await signInWithDjango(
+
+      // Auto-login after registration
+      await signInWithDjango(
         currentFormData.email,
         currentFormData.password,
         router
@@ -525,24 +542,78 @@ const AuthModal = ({
       onClose();
       setCurrentStep(0);
       setFormData({});
+      registerForm.resetFields();
     } catch (errorInfo) {
-      if (errorInfo.errorFields?.length) return;
+      // Handle Validation Errors
+      if (errorInfo.errorFields) {
+        // This is a client-side validation error, Ant Design handles it.
+        return;
+      }
 
-      const errorData = errorInfo;
-      if (errorData) {
-        if (typeof errorData.detail === "string") {
-          setError(errorData.detail);
-        } else if (typeof errorData === "object") {
-          const errorMessages = Object.entries(errorData).map(
-            ([key, value]) => {
-              const message = Array.isArray(value) ? value.join(" ") : value;
-              return `${key}: ${message}`;
-            }
+      // Handle Backend API Errors
+      const errorData = errorInfo; // Assuming this is the rejected payload
+      let globalErrorMsg = "";
+
+      if (errorData && typeof errorData === "object") {
+        // Map backend snake_case keys to frontend form camelCase names
+        const fieldMap = {
+          first_name: "firstName",
+          last_name: "lastName",
+          phone_number: "phone",
+          email: "email",
+          password: "password", // or 'password1' if backend sends that
+        };
+
+        const fieldErrors = [];
+        let hasFieldErrors = false;
+
+        Object.keys(errorData).forEach((key) => {
+          const fieldName = fieldMap[key] || key;
+          const errorMsg = Array.isArray(errorData[key])
+            ? errorData[key].join(" ")
+            : errorData[key];
+
+          // If the key maps to a form field, set it on the form
+          if (
+            ["firstName", "lastName", "phone", "email", "password"].includes(
+              fieldName
+            )
+          ) {
+            fieldErrors.push({
+              name: fieldName,
+              errors: [errorMsg],
+            });
+            hasFieldErrors = true;
+          } else if (key === "detail" || key === "non_field_errors") {
+            globalErrorMsg = errorMsg;
+          }
+        });
+
+        if (fieldErrors.length > 0) {
+          registerForm.setFields(fieldErrors);
+          // If the error is on Step 1 (email/password) but we are on Step 2, go back?
+          // Usually step 1 fields are validated before step 2, but duplicate email checks happen at submit.
+          const hasStep0Error = fieldErrors.some((f) =>
+            ["email", "password"].includes(f.name)
           );
-          setError(errorMessages.join(" | "));
+          if (hasStep0Error) {
+            setCurrentStep(0);
+            globalErrorMsg = "Please correct the errors in the previous step.";
+          }
         }
+
+        if (!hasFieldErrors && !globalErrorMsg) {
+          // Fallback if we couldn't map anything
+          globalErrorMsg = "Registration failed. Please try again.";
+        }
+      } else if (typeof errorData === "string") {
+        globalErrorMsg = errorData;
       } else {
-        setError("Registration failed. Please try again.");
+        globalErrorMsg = "An unexpected error occurred.";
+      }
+
+      if (globalErrorMsg) {
+        setError(globalErrorMsg);
       }
     } finally {
       setLoading(false);
@@ -592,7 +663,7 @@ const AuthModal = ({
           type="button"
           onClick={(e) => {
             e.preventDefault();
-            handleModeSwitch("forgotPassword"); // <--- Use helper
+            handleModeSwitch("forgotPassword");
           }}
         >
           Forgot password?
@@ -618,7 +689,7 @@ const AuthModal = ({
       />
       <ToggleText>
         Don't have an account?{" "}
-        <button type="button" onClick={() => handleModeSwitch("register")}> {/* <--- Use helper */}
+        <button type="button" onClick={() => handleModeSwitch("register")}>
           Sign up
         </button>
       </ToggleText>
@@ -638,11 +709,11 @@ const AuthModal = ({
         </StyledSteps>
       )}
 
+      {/* Note: We do NOT put onFinish here because we handle steps manually with buttons */}
       <StyledForm
         form={registerForm}
         layout="vertical"
         initialValues={formData}
-        onFinish={handleRegister}
       >
         <AnimatePresence mode="wait">
           <motion.div
@@ -655,7 +726,10 @@ const AuthModal = ({
               <>
                 <Form.Item
                   name="email"
-                  rules={[{ required: true, type: "email" }]}
+                  rules={[
+                    { required: true, message: "Email is required" },
+                    { type: "email", message: "Enter a valid email" },
+                  ]}
                 >
                   <Input
                     prefix={
@@ -671,7 +745,7 @@ const AuthModal = ({
                 <Form.Item
                   name="password"
                   rules={[
-                    { required: true },
+                    { required: true, message: "Password is required" },
                     {
                       pattern: /^(?=.*[A-Za-z])(?=.*\d).{8,}$/,
                       message: "8+ chars, 1 letter, 1 number",
@@ -693,7 +767,7 @@ const AuthModal = ({
                   name="confirmPassword"
                   dependencies={["password"]}
                   rules={[
-                    { required: true },
+                    { required: true, message: "Please confirm your password" },
                     ({ getFieldValue }) => ({
                       validator(_, value) {
                         if (!value || getFieldValue("password") === value)
@@ -718,7 +792,12 @@ const AuthModal = ({
             )}
             {currentStep === 1 && (
               <>
-                <Form.Item name="firstName" rules={[{ required: true }]}>
+                <Form.Item
+                  name="firstName"
+                  rules={[
+                    { required: true, message: "First name is required" },
+                  ]}
+                >
                   <Input
                     prefix={
                       <IconWrapper>
@@ -730,7 +809,10 @@ const AuthModal = ({
                     autoComplete="given-name"
                   />
                 </Form.Item>
-                <Form.Item name="lastName" rules={[{ required: true }]}>
+                <Form.Item
+                  name="lastName"
+                  rules={[{ required: true, message: "Last name is required" }]}
+                >
                   <Input
                     prefix={
                       <IconWrapper>
@@ -745,8 +827,11 @@ const AuthModal = ({
                 <Form.Item
                   name="phone"
                   rules={[
-                    { required: true },
-                    { pattern: /^[\d\s().+-xX]{7,25}$/ },
+                    { required: true, message: "Phone number is required" },
+                    {
+                      pattern: /^[\d\s().+-xX]{7,25}$/,
+                      message: "Invalid phone format",
+                    },
                   ]}
                 >
                   <Input
@@ -764,29 +849,34 @@ const AuthModal = ({
             )}
           </motion.div>
         </AnimatePresence>
+
+        {/* Only show generic errors that don't belong to a specific field */}
         {error && <ErrorMessage message={error} type="error" showIcon />}
+
         <ButtonGroup $singleButton={currentStep === 0}>
           {currentStep > 0 && (
             <Button
               type="button"
               onClick={() => setCurrentStep(currentStep - 1)}
               icon={<ArrowLeft size={16} />}
+              disabled={loading}
             >
               Back
             </Button>
           )}
           <Button
             type="primary"
-            htmlType={currentStep === steps.length - 1 ? "submit" : "button"}
+            // Use specific handlers for Next vs Submit to ensure proper scoped validation
             onClick={
-              currentStep < steps.length - 1 ? handleRegister : undefined
+              currentStep === steps.length - 1 ? handleRegister : handleNextStep
             }
             loading={loading}
             icon={
               currentStep < steps.length - 1 ? <ArrowRight size={16} /> : null
             }
             iconPosition="end"
-            key={`btn-${loading}`}>
+            key={`btn-${loading}`}
+          >
             {currentStep === steps.length - 1 ? "Create Account" : "Next"}
           </Button>
         </ButtonGroup>
@@ -805,7 +895,7 @@ const AuthModal = ({
       )}
       <ToggleText>
         Already have an account?{" "}
-        <button type="button" onClick={() => handleModeSwitch("login")}> {/* <--- Use helper */}
+        <button type="button" onClick={() => handleModeSwitch("login")}>
           Sign in
         </button>
       </ToggleText>
@@ -818,7 +908,7 @@ const AuthModal = ({
     if (modalView === "forgotPassword") {
       return (
         <ForgotPasswordForm
-          onSwitchToLogin={() => handleModeSwitch("login")} // <--- Use helper
+          onSwitchToLogin={() => handleModeSwitch("login")}
           formInstance={forgotPasswordForm}
         />
       );
@@ -836,9 +926,7 @@ const AuthModal = ({
             <StyledDrawerContent>
               <DrawerHandle />
               <DrawerBody>
-                <AnimatedModalContent>
-                  {renderContent()}
-                </AnimatedModalContent>
+                <AnimatedModalContent>{renderContent()}</AnimatedModalContent>
               </DrawerBody>
             </StyledDrawerContent>
           </Drawer.Portal>
@@ -858,13 +946,11 @@ const AuthModal = ({
         maskClosable={!loading}
         styles={{
           body: { padding: 0 },
-          content: { borderRadius: '24px', overflow: 'hidden' }
+          content: { borderRadius: "24px", overflow: "hidden" },
         }}
       >
         <AnimatedModalContent>
-          <DesktopModalContent>
-            {renderContent()}
-          </DesktopModalContent>
+          <DesktopModalContent>{renderContent()}</DesktopModalContent>
         </AnimatedModalContent>
       </Modal>
     </ConfigProvider>
