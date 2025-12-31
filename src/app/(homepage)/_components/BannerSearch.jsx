@@ -725,7 +725,11 @@ const DesktopSearchForm = () => {
         <LocationOption
           key={idx}
           onClick={() => {
-            handleLocationSelect(result.displayName);
+            handleLocationSelect(result.displayName, {
+              coordinates: result.coordinates,
+              citySlug: result.citySlug,
+              provinceSlug: result.provinceSlug,
+            });
             setActiveField(null);
             setIsSwitching(false);
           }}
@@ -754,7 +758,11 @@ const DesktopSearchForm = () => {
       <LocationOption
         key={idx}
         onClick={() => {
-          handleLocationSelect(area.name);
+          handleLocationSelect(area.name, {
+            coordinates: area.coords,
+            citySlug: area.citySlug,
+            provinceSlug: area.provinceSlug,
+          });
           setActiveField(null);
           setIsSwitching(false);
         }}
