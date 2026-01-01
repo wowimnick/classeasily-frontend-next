@@ -60,8 +60,7 @@ export const metadata = {
 };
 
 export default async function HomePage() {
-  const { trending, newClasses, featuredCategory, categories } =
-    await preloadHomepageData();
+  const { row_collections, categories } = await preloadHomepageData();
 
   return (
     <>
@@ -72,27 +71,27 @@ export default async function HomePage() {
         <main className="main-content">
           <BannerSearch />
 
-          <Suspense
-            fallback={<FindClassSkeleton style={{ marginTop: "3rem" }} />}
-          >
-            <ClassRow
-              title="Trending this Week"
-              subtitle="Most booked experiences by people near you"
-              classes={trending}
-              seeAllLink="/explore?sort=popularity"
-              style={{ marginTop: "3rem" }}
-            />
-          </Suspense>
+          {/* TRENDING & DATE NIGHT ROWS */}
+          {row_collections?.map((collection, index) => (
+            <Suspense
+              key={collection.slug}
+              fallback={
+                <FindClassSkeleton
+                  style={{ marginTop: index === 0 ? "3rem" : "1rem" }}
+                />
+              }
+            >
+              <ClassRow
+                title={collection.title}
+                subtitle={collection.subtitle}
+                classes={collection.classes}
+                seeAllLink={`/explore?collection=${collection.slug}`}
+                style={{ marginTop: index === 0 ? "3rem" : "0" }}
+              />
+            </Suspense>
+          ))}
 
-          <Suspense fallback={<FindClassSkeleton />}>
-            <ClassRow
-              title="New & Noteworthy"
-              subtitle="Just added experiences you shouldn't miss"
-              classes={newClasses}
-              seeAllLink="/explore?sort=newest"
-            />
-          </Suspense>
-
+          {/* VIBE PILLS (Collections) */}
           <Suspense fallback={<CategorySkeleton />}>
             <HomepageCategories initialCategories={categories} />
           </Suspense>

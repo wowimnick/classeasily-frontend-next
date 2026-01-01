@@ -943,29 +943,51 @@ export async function preloadHomepageData() {
     // Determine the API URL based on environment
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-    const res = await fetch(
-      `${API_URL}/classes/homepage-content/?mode=collections`,
-      {
-        next: { revalidate: 3600 }, // Revalidate every hour
-      }
-    );
+    // Fetch homepage content and specific collections in parallel
+    const [homepageRes, dateNightRes] = await Promise.all([
+      fetch(`${API_URL}/classes/homepage-content/?mode=collections`, {
+        next: { revalidate: 3600, tags: ["homepage-content"] },
+      }),
+      fetch(`${API_URL}/classes/search/?collection=date-night&page_size=12`, {
+        next: {
+          revalidate: 3600,
+          tags: ["classes-search", "collection-date-night"],
+        },
+      }),
+    ]);
 
-    if (!res.ok) {
+    if (!homepageRes.ok) {
       throw new Error("Failed to fetch homepage data");
     }
 
-    const data = await res.json();
+    const data = await homepageRes.json();
+    const dateNightData = dateNightRes.ok
+      ? await dateNightRes.json()
+      : { results: [] };
+
+    const row_collections = [
+      {
+        title: "Trending",
+        subtitle: "Most popular classes right now",
+        slug: "trending",
+        classes: data.trending || [],
+      },
+      {
+        title: "Date Night",
+        subtitle: "Perfect experiences for couples",
+        slug: "date-night",
+        classes: dateNightData.results || [],
+      },
+    ];
 
     return {
-      trending: data.trending || [],
-      newClasses: data.new || [],
+      row_collections,
       categories: data.collections || [],
     };
   } catch (error) {
     console.error("Homepage data fetch error:", error);
     return {
-      trending: [],
-      newClasses: [],
+      row_collections: [],
       categories: [],
     };
   }
