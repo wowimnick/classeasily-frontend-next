@@ -47,7 +47,7 @@ export default function DashboardPage() {
       componentToRender = <BookingHistory />;
       componentName = "BookingHistory";
       break;
-    case "classes":
+    case "listings":
       componentToRender = <ClassManagement />;
       componentName = "ClassManagement";
       break;

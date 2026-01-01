@@ -7,7 +7,6 @@ import {
   Users,
   MessageSquareQuote,
   Ticket,
-  AppWindow,
 } from "lucide-react";
 
 export const helpCenterData = [
@@ -29,7 +28,7 @@ export const helpCenterData = [
           { type: "h3", text: "1. Connect Stripe for Payouts" },
           {
             type: "p",
-            text: "This is the most critical step. You cannot receive money until you connect a Stripe account. Navigate to <strong>Settings</strong> &rarr; <strong>Payouts</strong> to link your bank account securely. This automatically enables credit card, Apple Pay, and Google Pay processing for your students.",
+            text: "This is the most critical step. You cannot receive money until you connect a Stripe account. Navigate to <strong>Settings</strong> &rarr; <strong>Payouts</strong> to link your bank account securely. This automatically enables credit card, <strong>Apple Pay</strong>, and <strong>Google Pay</strong> processing for your bookers.",
           },
           { type: "h3", text: "2. Complete Your Business Profile" },
           {
@@ -41,19 +40,19 @@ export const helpCenterData = [
             items: [
               "<strong>Basic Info:</strong> Add your business name, description, and logo.",
               "<strong>Location:</strong> Set your address. You can choose to show the exact location map or just a general area for privacy.",
-              "<strong>Contact Info:</strong> Add a phone number and email for students to reach you.",
+              "<strong>Contact Info:</strong> Add a phone number and email for bookers to reach you.",
               "<strong>Social Links:</strong> Connect your Instagram or Facebook to cross-promote.",
             ],
           },
-          { type: "h3", text: "3. Create Your First Class" },
+          { type: "h3", text: "3. Create Your First Experience" },
           {
             type: "p",
-            text: "A 'Class' is the template for what you teach (e.g., 'Beginner Yoga'). It holds descriptions and photos but <strong>not dates</strong>. You only need to create this once.",
+            text: "An 'Experience' is the template for what you teach or host (e.g., 'Beginner Yoga' or 'Pottery Workshop'). It holds descriptions and photos but <strong>not dates</strong>. You only need to create this once.",
           },
           { type: "h3", text: "4. Schedule Sessions" },
           {
             type: "p",
-            text: "Once you have a Class, you add 'Schedules' to it. These are the actual dates and times that appear on the calendar for students to book.",
+            text: "Once you have an Experience, you add 'Schedules' to it. These are the actual dates and times that appear on the calendar for bookers to reserve.",
           },
           {
             type: "blockquote",
@@ -63,11 +62,15 @@ export const helpCenterData = [
       },
       {
         slug: "connecting-to-stripe",
-        title: "Getting Paid: Stripe & Apple Pay",
+        title: "Getting Paid: Stripe, Apple Pay & Google Pay",
         content: [
           {
             type: "p",
-            text: "We partner with Stripe to handle all payments securely. When you click 'Connect Payouts', you will be redirected to a secure Stripe Express page to verify your identity and link your payout method.",
+            text: "We partner with Stripe to handle all payments securely. We support major credit cards as well as seamless one-tap checkout via Apple Pay and Google Pay.",
+          },
+          {
+            type: "p",
+            text: "When you click 'Connect Payouts', you will be redirected to a secure Stripe Express page to verify your identity and link your payout method.",
           },
           { type: "h3", text: "The Stripe Setup Walkthrough (Canada)" },
           {
@@ -136,24 +139,24 @@ export const helpCenterData = [
     ],
   },
   {
-    slug: "classes-and-scheduling",
-    title: "Classes & Scheduling",
+    slug: "experiences-and-scheduling",
+    title: "Experiences & Scheduling",
     icon: CalendarDays,
     description:
-      "Learn the difference between classes and schedules, and how to set up single sessions or full courses.",
+      "Learn the difference between experiences and schedules, and how to set up single sessions or full courses.",
     articles: [
       {
-        slug: "class-vs-schedule",
-        title: "Concept: Class vs. Schedule",
+        slug: "experience-vs-schedule",
+        title: "Concept: Experience vs. Schedule",
         content: [
           {
             type: "p",
-            text: "Understanding the difference between a Class and a Schedule is the key to using ClassEasily effectively.",
+            text: "Understanding the difference between an Experience and a Schedule is the key to using ClassEasily effectively.",
           },
-          { type: "h3", text: "The Class (The 'What')" },
+          { type: "h3", text: "The Experience (The 'What')" },
           {
             type: "p",
-            text: "Think of a <strong>Class</strong> as your menu item or catalog entry. It contains the static details that don't change often:",
+            text: "Think of an <strong>Experience</strong> as your menu item or catalog entry. It contains the static details that don't change often:",
           },
           {
             type: "ul",
@@ -167,19 +170,15 @@ export const helpCenterData = [
           { type: "h3", text: "The Schedule (The 'When')" },
           {
             type: "p",
-            text: "A <strong>Schedule</strong> is the actual event on the calendar. You attach schedules to a Class to make it bookable. A schedule includes:",
+            text: "A <strong>Schedule</strong> is the actual event on the calendar. You attach schedules to an Experience to make it bookable. A schedule includes:",
           },
           {
             type: "ul",
-            items: [
-              "Date & Time",
-              "Price",
-              "Capacity (Max students)",
-            ],
+            items: ["Date & Time", "Price", "Capacity (Max bookers)"],
           },
           {
             type: "blockquote",
-            text: "<strong>Example:</strong> You create one Class called 'Pottery 101'. You then add two Schedules to it: one on Tuesday evenings for $50, and one on Saturday mornings for $60. Both share the same description and photos.",
+            text: "<strong>Example:</strong> You create one Experience called 'Pottery 101'. You then add two Schedules to it: one on Tuesday evenings for $50, and one on Saturday mornings for $60. Both share the same description and photos.",
           },
         ],
       },
@@ -189,17 +188,17 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "When creating a Schedule, you can choose between two booking types. This setting changes how students book and how you get paid.",
+            text: "When creating a Schedule, you can choose between two booking types. This setting changes how bookers book and how you get paid.",
           },
           { type: "h3", text: "Single Session" },
           {
             type: "p",
-            text: "Students book one date at a time. This is perfect for drop-in classes like Yoga, Gym slots, or one-off workshops.",
+            text: "Bookers reserve one date at a time. This is perfect for drop-in experiences like Yoga, Gym slots, or one-off workshops.",
           },
           { type: "h3", text: "Full Course" },
           {
             type: "p",
-            text: "A Full Course is a bundle of sessions that must be booked together. Students pay one price for the entire series. This is ideal for:",
+            text: "A Full Course is a bundle of sessions that must be booked together. Bookers pay one price for the entire series. This is ideal for:",
           },
           {
             type: "ul",
@@ -223,9 +222,10 @@ export const helpCenterData = [
             type: "p",
             text: "Don't want to create sessions one by one? Use the Bulk Create tool to fill your calendar in seconds.",
           },
-          { type: "ol",
+          {
+            type: "ol",
             items: [
-              "Go to <strong>Class Management</strong> and click 'Manage Schedules' on a class.",
+              "Go to <strong>Experience Management</strong> and click 'Manage Schedules' on an experience.",
               "Select the <strong>Bulk Create</strong> tab.",
               "Choose a date range (e.g., Sept 1 to Dec 31).",
               "Select repeating days (e.g., every Monday and Friday).",
@@ -241,10 +241,11 @@ export const helpCenterData = [
     ],
   },
   {
-    slug: "bookings-and-students",
-    title: "Bookings & Students",
+    slug: "bookings-and-bookers",
+    title: "Bookings & Bookers",
     icon: Users,
-    description: "Manage your roster, handle cancellations, and import student lists.",
+    description:
+      "Manage your roster, handle cancellations, and import booker lists.",
     articles: [
       {
         slug: "managing-bookings",
@@ -252,22 +253,22 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "The <strong>Bookings</strong> tab is your command center. Here you can see who is coming to class, check payment statuses, handle cancellations, and rescheduling.",
+            text: "The <strong>Bookings</strong> tab is your command center. Here you can see who is coming to your experience, check payment statuses, handle cancellations, and rescheduling.",
           },
           { type: "h3", text: "Booking Statuses" },
           {
             type: "ul",
             items: [
-              "<strong>Confirmed:</strong> The student has booked and paid. They are on the roster.",
+              "<strong>Confirmed:</strong> The booker has reserved and paid. They are on the roster.",
               "<strong>Pending:</strong> The booking is reserved but payment is processing (rare).",
-              "<strong>Cancelled:</strong> The booking was cancelled by you or the student.",
-              "<strong>Completed:</strong> The class date has passed.",
+              "<strong>Cancelled:</strong> The booking was cancelled by you or the booker.",
+              "<strong>Completed:</strong> The experience date has passed.",
             ],
           },
           { type: "h3", text: "Cancelling a Booking" },
           {
             type: "p",
-            text: "If you need to cancel a booking for a student, simply find the booking and click 'Cancel'. You will be asked for a reason, which is sent to the student via email.",
+            text: "If you need to cancel a booking for a booker, simply find the booking and click 'Cancel'. You will be asked for a reason, which is sent to the booker via email.",
           },
           {
             type: "blockquote",
@@ -276,18 +277,18 @@ export const helpCenterData = [
         ],
       },
       {
-        slug: "importing-students",
-        title: "Importing Students (CRM)",
+        slug: "importing-bookers",
+        title: "Importing Bookers (CRM)",
         content: [
           {
             type: "p",
-            text: "Moving from another system? You can bulk import your existing student list into ClassEasily using a CSV or Excel file.",
+            text: "Moving from another system? You can bulk import your existing booker list into ClassEasily using a CSV or Excel file.",
           },
           { type: "h3", text: "How to Import" },
           {
             type: "ol",
             items: [
-              "Navigate to the <strong>Students</strong> tab.",
+              "Navigate to the <strong>Bookers</strong> tab.",
               "Click the <strong>Import</strong> button.",
               "Upload your file (.csv or .xlsx).",
               "Map the columns (tell us which column is 'First Name', 'Email', etc.).",
@@ -295,7 +296,7 @@ export const helpCenterData = [
           },
           {
             type: "p",
-            text: "The system will create profile records for these students. If they sign up for the app later with the same email address, their account will automatically link to the history you imported.",
+            text: "The system will create profile records for these bookers. If they sign up for the app later with the same email address, their account will automatically link to the history you imported.",
           },
         ],
       },
@@ -305,7 +306,7 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Not every student needs to create an account to book with you. We support <strong>Guest Checkout</strong>.",
+            text: "Not every booker needs to create an account to book with you. We support <strong>Guest Checkout</strong>.",
           },
           {
             type: "p",
@@ -319,7 +320,8 @@ export const helpCenterData = [
     slug: "finances",
     title: "Finances & Payouts",
     icon: Banknote,
-    description: "Understand fees, track revenue trends, and manage your bank transfers.",
+    description:
+      "Understand fees, track revenue trends, and manage your bank transfers.",
     articles: [
       {
         slug: "revenue-dashboard",
@@ -333,7 +335,7 @@ export const helpCenterData = [
           {
             type: "ul",
             items: [
-              "<strong>Gross Revenue:</strong> Total money paid by students (before fees/taxes).",
+              "<strong>Gross Revenue:</strong> Total money paid by bookers (before fees/taxes).",
               "<strong>Net Revenue:</strong> The actual amount you take home.",
               "<strong>Platform Fees:</strong> The service fee charged by ClassEasily (includes credit card processing costs).",
             ],
@@ -347,7 +349,7 @@ export const helpCenterData = [
       },
       {
         slug: "payout-schedule",
-        title: "Payout Schedules",
+        title: "Payout Schedules & Course Payouts",
         content: [
           {
             type: "p",
@@ -356,12 +358,25 @@ export const helpCenterData = [
           { type: "h3", text: "When do I get paid?" },
           {
             type: "p",
-            text: "Funds for a class are released to your payout balance approximately 24-48 hours after the class is <strong>completed</strong>. This ensures that if a class is cancelled last minute, refunds can be processed easily.",
+            text: "Funds for a session are released to your payout balance approximately 24-48 hours after the experience is <strong>completed</strong>.",
           },
-          { type: "h3", text: "Daily Payouts" },
+          { type: "h3", text: "Payouts for Courses (Important)" },
           {
             type: "p",
-            text: "Once funds are released to your balance, Stripe automatically transfers them to your bank account on a rolling daily basis. Depending on your bank, it may take 1-3 business days for the funds to appear in your statement.",
+            text: "If you are running a multi-session <strong>Full Course</strong> (e.g., a 10-week bootcamp where bookers pay upfront), you do not receive the entire lump sum immediately.",
+          },
+          {
+            type: "p",
+            text: "Instead, the system takes the total amount paid by the booker and divides it by the number of sessions in the course. The funds for each specific session are released <strong>after that specific session takes place</strong>.",
+          },
+          {
+            type: "blockquote",
+            text: "<strong>Example:</strong> A booker pays $100 for a 4-week course. You will receive $25 after Week 1 is completed, $25 after Week 2, and so on. This ensures that if a course is cancelled mid-way, refunds are easier to manage.",
+          },
+          { type: "h3", text: "Daily Bank Transfers" },
+          {
+            type: "p",
+            text: "Once funds are released to your balance (post-completion), Stripe automatically transfers them to your bank account on a rolling daily basis. Depending on your bank, it may take 1-3 business days for the funds to appear in your statement.",
           },
         ],
       },
@@ -389,9 +404,9 @@ export const helpCenterData = [
           {
             type: "ul",
             items: [
-              "Can manage classes",
+              "Can manage experiences",
               "Can view revenue (sensitive)",
-              "Can view student contact info",
+              "Can view booker contact info",
               "Can refund bookings",
             ],
           },
@@ -416,7 +431,7 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Turn your own website into a booking engine. Our widget allows students to book classes without leaving your site.",
+            text: "Turn your own website into a booking engine. Our widget allows bookers to reserve experiences without leaving your site.",
           },
           { type: "h3", text: "Setup" },
           {
@@ -446,7 +461,7 @@ export const helpCenterData = [
           {
             type: "ul",
             items: [
-              "<strong>Coupon Codes:</strong> Requires the student to type a code (e.g., 'SUMMER20') at checkout.",
+              "<strong>Coupon Codes:</strong> Requires the booker to type a code (e.g., 'SUMMER20') at checkout.",
             ],
           },
           { type: "h3", text: "Discount Scopes" },
@@ -457,8 +472,8 @@ export const helpCenterData = [
           {
             type: "ul",
             items: [
-              "<strong>Entire Business:</strong> Works on any class you offer.",
-              "<strong>Specific Class:</strong> Works only for a specific type of class.",
+              "<strong>Entire Business:</strong> Works on any experience you offer.",
+              "<strong>Specific Experience:</strong> Works only for a specific type of experience.",
               "<strong>Specific Session:</strong> Works only for a specific schedule (e.g., fill up a Tuesday morning slot).",
             ],
           },
