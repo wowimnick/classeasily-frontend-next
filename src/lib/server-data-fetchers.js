@@ -943,28 +943,23 @@ export async function preloadHomepageData() {
     // Determine the API URL based on environment
     const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-    // Fetch homepage content and specific collections in parallel
-    const [homepageRes, dateNightRes] = await Promise.all([
-      fetch(`${API_URL}/classes/homepage-content/?mode=collections`, {
+    // 1. Fetch ONLY homepage-content
+    // This endpoint now returns:
+    // { trending: [...], new: [...], collections: [{ slug: 'date-night', classes: [...] (filtered & shuffled) }] }
+    const homepageRes = await fetch(
+      `${API_URL}/classes/homepage-content/?mode=collections`,
+      {
         next: { revalidate: 3600, tags: ["homepage-content"] },
-      }),
-      fetch(`${API_URL}/classes/search/?collection=date-night&page_size=12`, {
-        next: {
-          revalidate: 3600,
-          tags: ["classes-search", "collection-date-night"],
-        },
-      }),
-    ]);
+      }
+    );
 
     if (!homepageRes.ok) {
       throw new Error("Failed to fetch homepage data");
     }
 
     const data = await homepageRes.json();
-    const dateNightData = dateNightRes.ok
-      ? await dateNightRes.json()
-      : { results: [] };
 
+    // 2. Extract "Trending"
     const row_collections = [
       {
         title: "Trending",
@@ -972,14 +967,25 @@ export async function preloadHomepageData() {
         slug: "trending",
         classes: data.trending || [],
       },
-      {
-        title: "Date Night",
-        subtitle: "Perfect experiences for couples",
-        slug: "date-night",
-        classes: dateNightData.results || [],
-      },
     ];
 
+    // 3. Find "Date Night" specifically from the backend response
+    // The backend has already filtered out trending items and shuffled this list
+    const dateNightData = data.collections?.find(
+      (c) => c.slug === "date-night"
+    );
+
+    if (dateNightData && dateNightData.classes?.length > 0) {
+      row_collections.push({
+        title: dateNightData.name || "Date Night", // Use backend name or fallback
+        subtitle:
+          dateNightData.description || "Perfect experiences for couples",
+        slug: "date-night",
+        classes: dateNightData.classes,
+      });
+    }
+
+    // 4. Return row_collections (for the rows) and categories (for the pills)
     return {
       row_collections,
       categories: data.collections || [],
