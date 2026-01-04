@@ -978,8 +978,7 @@ export async function preloadHomepageData() {
     if (dateNightData && dateNightData.classes?.length > 0) {
       row_collections.push({
         title: dateNightData.name || "Date Night", // Use backend name or fallback
-        subtitle:
-          dateNightData.description || "Perfect experiences for couples",
+        subtitle: "Perfect experiences for couples",
         slug: "date-night",
         classes: dateNightData.classes,
       });
