@@ -431,7 +431,7 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Turn your own website into a booking engine. Our widget allows bookers to reserve experiences without leaving your site.",
+            text: "Turn your own website into a booking engine. Our widget (beta) allows bookers to reserve experiences without leaving your site.",
           },
           { type: "h3", text: "Setup" },
           {
