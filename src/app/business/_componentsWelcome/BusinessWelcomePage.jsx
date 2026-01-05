@@ -7,12 +7,10 @@ import React, {
   useCallback,
   useMemo,
   memo,
-  Suspense,
 } from "react";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import styled from "styled-components";
+import styled, { createGlobalStyle, keyframes } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
@@ -20,282 +18,269 @@ import {
   Check,
   X,
   ArrowRight,
-  Quote,
-  Sparkles,
   Calculator,
   PiggyBank,
   TrendingUp,
+  MapPin,
+  Users,
+  Calendar,
+  BookOpen,
+  BarChart,
+  DollarSign,
+  CreditCard,
+  Briefcase,
+  Sparkles,
 } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
-
-// Lazy load heavy components
-const Lottie = dynamic(() => import("lottie-react"), {
-  ssr: false,
-  loading: () => (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        backgroundColor: "#f0f0f0",
-        borderRadius: "34px",
-      }}
-    />
-  ),
-});
-
-const GradientCanvas = dynamic(() => import("@/components/Gradient"), {
-  ssr: false,
-  loading: () => (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        zIndex: -1,
-        background: "#fff",
-      }}
-    />
-  ),
-});
 
 // Import components (adjust paths as needed)
 import Header from "@/components/layout/SharedMainClientHeader";
 import FooterClient from "@/components/homepage/FooterClient";
-import { LordIcon } from "@/services/ReactUtils";
 
-// --- Styled Components ---
-const PageWrapper = styled.div`
-  position: relative;
-  isolation: isolate;
-  color: #1d1d1f;
+// --- Global Animations & Styles ---
+
+const GlobalStyle = createGlobalStyle`
+  :root {
+    --glass-border: 1px solid rgba(255, 255, 255, 0.4);
+    --glass-bg: rgba(255, 255, 255, 0.65);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    --primary-color: #222222;
+    --accent-red: #dc2626;
+  }
 `;
 
-const HeroSection = styled.section`
-  position: relative;
-  min-height: 90vh;
-  padding: 8rem 2rem 4rem;
-  color: white;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
+const float = keyframes`
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+`;
 
+const gradientAnimation = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+`;
+
+// --- Styled Components ---
+
+const PageWrapper = styled.div`
+  position: relative;
+  background-color: #ffffff;
+  color: #222222;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+
+  /* Apple-style subtle mesh background */
   &::before {
     content: "";
     position: absolute;
-    top: -200px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: url("https://bradfrost.com/wp-content/uploads/2017/05/workshop.jpg");
-    background-size: cover;
-    background-position: center;
-    filter: blur(8px) brightness(0.7);
-    transform: scale(1.1);
+    top: -10%;
+    left: -10%;
+    width: 120%;
+    height: 120%;
+    background: radial-gradient(
+        circle at 15% 50%,
+        rgba(255, 200, 200, 0.15),
+        transparent 25%
+      ),
+      radial-gradient(
+        circle at 85% 30%,
+        rgba(200, 220, 255, 0.15),
+        transparent 25%
+      );
+    z-index: 0;
+    pointer-events: none;
   }
+`;
+
+const SectionContainer = styled.div`
+  max-width: 1100px; /* Slightly tighter container for compact look */
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 1;
 
   @media (max-width: 768px) {
-    padding: 6rem 1rem 4rem;
+    padding: 0 20px;
+  }
+`;
+
+// --- Glassmorphism Card Mixin ---
+const GlassCard = styled(motion.div)`
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 24px;
+`;
+
+// --- Hero Section ---
+const HeroSection = styled.section`
+  min-height: 85vh;
+  padding-top: 140px;
+  padding-bottom: 60px;
+  display: flex;
+  align-items: center;
+  position: relative;
+
+  @media (max-width: 1024px) {
+    padding-top: 120px;
+    min-height: auto;
+    text-align: center;
   }
 `;
 
 const HeroGrid = styled.div`
-  max-width: 1500px;
-  margin: 0 auto;
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: 1fr 1.1fr;
   align-items: center;
   gap: 4rem;
   width: 100%;
-  position: relative;
-  z-index: 1;
 
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
-    text-align: center;
-    gap: 2rem;
+    gap: 3rem;
   }
 `;
 
 const HeroTextContainer = styled(motion.div)`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
   @media (max-width: 1024px) {
-    order: 2;
+    align-items: center;
   }
 `;
 
-const HeroAnimationContainer = styled(motion.div)`
-  display: flex;
-  justify-content: center;
-  align-items: center;
+const HeroVisualContainer = styled(GlassCard)`
   position: relative;
   width: 100%;
-  height: auto;
-
-  @media (max-width: 1024px) {
-    order: 1;
-    margin-bottom: 2rem;
-  }
-`;
-
-// Updated to iOS Glass style
-const PromoTag = styled(motion.div)`
-  display: inline-flex;
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  display: flex;
   align-items: center;
-  gap: 12px;
-  
-  /* iOS Glassmorphism base */
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(25px) saturate(180%);
-  -webkit-backdrop-filter: blur(25px) saturate(180%);
-  
-  /* Subtle border */
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  
-  /* Layout & Typography */
-  padding: 10px 20px;
-  border-radius: 100px;
-  color: #fff;
-  font-weight: 500;
-  font-size: 0.95rem;
-  margin-bottom: 1.5rem;
-  
-  /* Depth */
-  box-shadow: 
-    0 4px 30px rgba(0, 0, 0, 0.1),
-    inset 0 0 20px rgba(255, 255, 255, 0.05);
+  justify-content: center;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.4);
 
-  @media (max-width: 1024px) {
-    margin: 0 auto 1.5rem;
+  img {
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    height: auto;
+    object-fit: cover;
   }
 `;
 
 const HeroTitle = styled.h1`
-  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
   font-weight: 700;
-  margin-bottom: 1.5rem;
-  letter-spacing: -0.035em;
-  line-height: 1.1;
-  color: #ffffff;
+  margin-bottom: 16px;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: #1d1d1f;
 
-  @media (max-width: 768px) {
-    margin-bottom: 1rem;
+  span {
+    background: linear-gradient(135deg, #222, #555);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 `;
 
 const HeroSubtitle = styled.p`
-  font-size: clamp(1rem, 2.5vw, 1.25rem);
-  color: rgba(255, 255, 255, 0.85);
-  max-width: 550px;
-  margin-bottom: 2.5rem;
-  line-height: 1.6;
-  @media (max-width: 1024px) {
-    margin: 0 auto 2.5rem;
-  }
+  font-size: 1.125rem; /* ~18px */
+  color: #6e6e73; /* Apple gray */
+  max-width: 460px;
+  margin-bottom: 32px;
+  line-height: 1.5;
+  font-weight: 400;
 
   @media (max-width: 768px) {
-    margin-bottom: 2rem;
+    font-size: 0.95rem; /* ~15px on mobile */
   }
 `;
 
 const StartButton = styled.button`
-  background: #dc2626;
-  color: white;
-  border: none;
-  height: 56px;
+  background: transparent;
+  color: #1d1d1f;
+  border: 2px solid #1d1d1f;
+  height: 48px;
   padding: 0 32px;
-  border-radius: 12px;
+  border-radius: 999px;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.95rem;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  will-change: transform, box-shadow, background-color;
-  &:hover {
-    background: #ef4444;
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
-  }
-
-  @media (max-width: 768px) {
-    height: 48px;
-    padding: 0 24px;
-    font-size: 0.9rem;
-  }
-`;
-
-const DashboardSection = styled.section`
-  padding: 6rem 2rem 8rem;
-  background: #ffffff;
-  mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
-
-  @media (max-width: 768px) {
-    padding: 4rem 1rem 6rem;
-  }
-`;
-
-const DashboardContainer = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  text-align: center;
-`;
-
-const TabsContainer = styled(motion.div)`
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 2.5rem;
-  flex-wrap: wrap;
   justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  width: fit-content;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
 
-  @media (max-width: 768px) {
-    gap: 0.25rem;
-    margin-top: 1.5rem;
+  &:hover {
+    background: #1d1d1f;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
+
+  &:active {
+    transform: scale(0.98);
+  }
+`;
+
+// --- Dashboard / Features Section ---
+const DashboardSection = styled.section`
+  padding: 5rem 0;
+  position: relative;
+`;
+
+const TabsWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 32px 0;
+  flex-wrap: wrap;
 `;
 
 const TabButton = styled(motion.button)`
-  padding: 0.75rem 1.25rem;
-  background: ${(props) => (props.$active ? "#dc2626" : "#ffffff")};
-  border: 1px solid ${(props) => (props.$active ? "#dc2626" : "#e5e7eb")};
-  border-radius: 12px;
-  color: ${(props) => (props.$active ? "white" : "#6b7280")};
+  padding: 10px 20px;
+  background: ${(props) =>
+    props.$active ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.5)"};
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid
+    ${(props) => (props.$active ? "transparent" : "rgba(0,0,0,0.05)")};
+  border-radius: 99px;
+  color: ${(props) => (props.$active ? "#ffffff" : "#6e6e73")};
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  font-size: 0.9rem;
-  &:hover {
-    background: ${(props) => (props.$active ? "#ef4444" : "#f9fafb")};
-    border-color: ${(props) => (props.$active ? "#ef4444" : "#d1d5db")};
-  }
+  gap: 8px;
+  font-weight: 500;
+  font-size: 0.85rem; /* Compact */
 
-  @media (max-width: 768px) {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.8rem;
-    gap: 0.25rem;
+  &:hover {
+    background: ${(props) =>
+      props.$active ? "rgba(0,0,0,0.95)" : "rgba(255,255,255,0.8)"};
   }
 `;
 
-const EmblaWrapper = styled(motion.div)`
-  margin-top: 2.5rem;
+const EmblaWrapper = styled(GlassCard)`
+  border-radius: 20px;
   overflow: hidden;
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.1);
-
-  @media (max-width: 768px) {
-    margin-top: 1.5rem;
-    border-radius: 12px;
-  }
+  padding: 8px; /* Internal frame */
+  background: rgba(255, 255, 255, 0.5);
 `;
 
 const EmblaContainer = styled.div`
   display: flex;
+  border-radius: 16px;
+  overflow: hidden;
 `;
 
 const EmblaSlide = styled.div`
@@ -303,160 +288,124 @@ const EmblaSlide = styled.div`
   min-width: 0;
   position: relative;
   width: 100%;
+
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 12px;
+  }
 `;
 
+// --- Cost & Comparison Section ---
 const TwoColumnSection = styled.section`
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4rem;
-  padding: 6rem 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
-  position: relative;
-  background: rgba(255, 255, 255, 0);
-  justify-items: center;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 60px;
+  padding: 80px 0;
+  align-items: start;
+
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
-    gap: 2rem;
-    padding: 4rem 1rem;
+    gap: 40px;
+    padding: 60px 0;
   }
 `;
 
-const LeftColumn = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8rem;
-
-  @media (max-width: 1024px) {
-    gap: 4rem;
-  }
-`;
-
-const RightColumn = styled.div`
+const StickyRightColumn = styled.div`
   position: sticky;
-  top: 120px;
-  height: 795px;
-  @media (max-width: 1024px) {
-    display: none;
+  top: 140px;
+  height: auto;
+`;
+
+const SectionHeader = styled.div`
+  margin-bottom: 32px;
+  text-align: ${(props) => (props.$center ? "center" : "left")};
+`;
+
+const SectionEyebrow = styled.p`
+  color: #007aff; /* Apple Blue or Accent Red */
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+`;
+
+const SectionTitle = styled.h2`
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #1d1d1f;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+`;
+
+const SectionSubtitle = styled.p`
+  font-size: 1.05rem; /* ~17px desktop */
+  color: #6e6e73;
+  line-height: 1.5;
+  max-width: ${(props) => (props.$center ? "600px" : "100%")};
+  margin: ${(props) => (props.$center ? "0 auto" : "0")};
+
+  @media (max-width: 768px) {
+    font-size: 0.9rem; /* ~14px mobile */
   }
 `;
 
 const ContentBlock = styled.div`
-  min-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  width: 100%;
-  @media (max-width: 1024px) {
-    min-height: auto;
-    padding: 3rem 0;
+  margin-bottom: 100px;
+  &:last-child {
+    margin-bottom: 0;
   }
 `;
 
-const SectionHeader = styled(motion.div)`
-  margin-bottom: 2.5rem;
-  @media (max-width: 768px) {
-    margin-bottom: 1.5rem;
-  }
-`;
-
-const SectionEyebrow = styled.p`
-  color: #dc2626;
-  font-weight: 600;
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-`;
-
-const SectionTitle = styled.h2`
-  font-size: clamp(2rem, 5vw, 3.5rem);
-  font-weight: 700;
-  margin-bottom: 1rem;
-  color: #1d1d1f;
-  line-height: 1.2;
-`;
-
-const SectionSubtitle = styled.p`
-  font-size: clamp(1rem, 2.5vw, 1.2rem);
-  color: #6b7280;
-  max-width: 550px;
-  line-height: 1.6;
-  @media (max-width: 768px) {
-    margin: 0 auto;
-  }
-`;
-
-const AnimationContainer = styled(motion.div)`
-  width: fit-content;
-  background-color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e5e7eb;
-  border-radius: 34px;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.34);
+// --- Modern Glass Ledger ---
+const SavingsLedger = styled(GlassCard)`
+  padding: 0;
   overflow: hidden;
-`;
-
-// --- New Savings Section Styles ---
-const SavingsLedger = styled.div`
-  display: flex;
-  flex-direction: column;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 24px;
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  margin-top: 2rem;
+  background: rgba(255, 255, 255, 0.7);
 `;
 
 const LedgerRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 2rem;
-  border-bottom: 1px solid #f3f4f6;
-  transition: background 0.3s ease;
-  position: relative;
-
-  &:hover {
-    background: #f9fafb;
-  }
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: background 0.2s;
 
   &:last-child {
     border-bottom: none;
-    background: #fdf2f2;
-    border-top: 2px dashed #e5e7eb;
   }
 
-  @media (max-width: 640px) {
-    padding: 1.25rem 1rem;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
+  &:hover {
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  &.total {
+    background: rgba(220, 38, 38, 0.03); /* Subtle tint */
+    margin-top: 0;
   }
 `;
 
 const LedgerInfo = styled.div`
   display: flex;
-  align-items: flex-start;
-  gap: 1rem;
+  align-items: center;
+  gap: 16px;
 `;
 
 const LedgerIconBox = styled.div`
-  background: #fee2e2;
-  color: #dc2626;
-  width: 44px;
-  height: 44px;
+  background: #fff;
+  color: #1d1d1f;
+  width: 40px;
+  height: 40px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-
-  svg {
-    width: 22px;
-    height: 22px;
-  }
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.04);
 `;
 
 const LedgerTextContent = styled.div`
@@ -465,458 +414,316 @@ const LedgerTextContent = styled.div`
 `;
 
 const LedgerTitle = styled.h3`
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: #111827;
-  margin: 0 0 0.25rem 0;
+  color: #1d1d1f;
+  margin: 0;
 `;
 
 const LedgerDesc = styled.p`
-  font-size: 0.9rem;
-  color: #6b7280;
-  margin: 0;
-  line-height: 1.4;
+  font-size: 0.8rem;
+  color: #6e6e73;
+  margin: 2px 0 0;
 `;
 
 const LedgerAmount = styled.div`
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #111827;
-  font-family: monospace, sans-serif;
-  letter-spacing: -0.05em;
-  white-space: nowrap;
-
-  span {
-    font-size: 1rem;
-    color: #6b7280;
-    font-weight: 500;
-    margin-right: 4px;
-    vertical-align: middle;
-  }
-
-  &.total {
-    color: #dc2626;
-    font-size: 2rem;
-  }
-
-  @media (max-width: 640px) {
-    align-self: flex-end;
-  }
-`;
-
-const ComparisonTableWrapper = styled.div`
-  border-radius: 24px;
-  overflow: hidden;
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.34);
-  margin-top: 2rem;
-  @media (max-width: 768px) {
-    border-radius: 12px;
-    margin: 1.5rem 0.5rem 0;
-  }
-`;
-
-const ComparisonHeader = styled.div`
-  display: grid;
-  grid-template-columns: 2fr 1.2fr 1.2fr;
-  padding: 1rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  gap: 0.5rem;
-  @media (min-width: 768px) {
-    grid-template-columns: 2fr 1fr 1fr;
-    padding: 1.5rem;
-    gap: 0;
-  }
-`;
-
-const HeaderCell = styled.div`
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 600;
   color: #1d1d1f;
-  text-align: center;
-  font-size: clamp(0.75rem, 2vw, 0.95rem);
-  &:first-child {
-    text-align: left;
+  font-variant-numeric: tabular-nums;
+
+  &.highlight {
+    color: #dc2626;
+    font-size: 1.15rem;
+    font-weight: 700;
   }
+`;
+
+// --- Glass Comparison Table ---
+const ComparisonTableWrapper = styled(GlassCard)`
+  padding: 0;
+  background: rgba(255, 255, 255, 0.7);
 `;
 
 const ComparisonRow = styled.div`
   display: grid;
-  grid-template-columns: 2fr 1.2fr 1.2fr;
-  padding: 1rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  transition: background-color 0.2s ease;
-  gap: 0.5rem;
+  grid-template-columns: 2fr 1fr 1fr;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   align-items: center;
-  &:hover {
-    background-color: #f9fafb;
-  }
+
   &:last-child {
     border-bottom: none;
   }
-  &.highlight-row {
-    background: linear-gradient(
-      135deg,
-      rgba(220, 38, 38, 0.03) 0%,
-      rgba(239, 68, 68, 0.03) 100%
-    );
-    border-left: 3px solid #dc2626;
-    @media (min-width: 768px) {
-      background: linear-gradient(
-        135deg,
-        rgba(220, 38, 38, 0.02) 0%,
-        rgba(239, 68, 68, 0.02) 100%
-      );
-      border-left: 4px solid #dc2626;
+
+  @media (max-width: 600px) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+`;
+
+const ComparisonFeature = styled.div`
+  font-weight: 500;
+  color: #1d1d1f;
+  font-size: 0.9rem;
+`;
+
+const ComparisonValue = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: ${(props) => (props.$good ? "#10b981" : "#6e6e73")};
+  font-weight: ${(props) => (props.$good ? "600" : "400")};
+  justify-content: center;
+
+  @media (max-width: 600px) {
+    justify-content: flex-start;
+    width: 100%;
+    padding-left: 12px;
+    border-left: 2px solid ${(props) => (props.$good ? "#10b981" : "#e5e7eb")};
+  }
+`;
+
+// --- Visual CSS-only Graphic for Comparison ---
+const SavingsVisualCard = styled(GlassCard)`
+  padding: 32px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0.4)
+  );
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  min-height: 400px;
+`;
+
+const VisualCircle = styled.div`
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e31c5f, #ff758c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 1.5rem;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 30px rgba(227, 28, 95, 0.3);
+  animation: ${float} 6s ease-in-out infinite;
+`;
+
+const VisualLabel = styled.div`
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 8px;
+`;
+
+const VisualSub = styled.div`
+  font-size: 0.8rem;
+  color: #6e6e73;
+`;
+
+// --- Tier Section ---
+const TierSection = styled.section`
+  padding: 80px 0;
+`;
+
+const TierCard = styled(GlassCard)`
+  background: rgba(255, 255, 255, 0.7);
+  overflow: hidden;
+`;
+
+const TierTable = styled.div`
+  width: 100%;
+`;
+
+const TierRow = styled.div`
+  display: grid;
+  grid-template-columns: 2.5fr 1fr 1fr 1fr;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  align-items: center;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:first-child {
+    background: rgba(0, 0, 0, 0.02);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6e6e73;
+    font-weight: 600;
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    border-bottom: 4px solid rgba(0, 0, 0, 0.02);
+
+    &:first-child {
+      display: none;
     }
   }
-  @media (min-width: 768px) {
-    grid-template-columns: 2fr 1fr 1fr;
-    padding: 1.25rem 1.5rem;
-    gap: 0;
-  }
 `;
 
-const FeatureCell = styled.div`
-  color: #374151;
-  font-weight: 500;
-  font-size: clamp(0.7rem, 1.8vw, 0.9rem);
-  line-height: 1.3;
-  @media (min-width: 768px) {
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
-`;
-
-const ValueCell = styled.div`
+const TierCell = styled.div`
+  text-align: ${(props) => (props.$align === "left" ? "left" : "center")};
+  font-weight: ${(props) => (props.$bold ? "600" : "400")};
+  color: ${(props) => (props.$bold ? "#1d1d1f" : "#4b5563")};
+  font-size: 0.9rem;
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  color: ${(props) => (props.$isPositive ? "#10b981" : "#ef4444")};
-  font-size: clamp(0.65rem, 1.6vw, 0.85rem);
-  text-align: center;
-  line-height: 1.2;
-  @media (min-width: 768px) {
+  justify-content: ${(props) =>
+    props.$align === "left" ? "flex-start" : "center"};
+  gap: 0.5rem;
+
+  @media (max-width: 768px) {
+    justify-content: space-between;
+    width: 100%;
     font-size: 0.85rem;
-    line-height: 1.3;
+
+    &::before {
+      content: attr(data-label);
+      font-weight: 600;
+      color: #9ca3af;
+      font-size: 0.8rem;
+    }
   }
 `;
 
-const CheckIcon = styled(Check)`
-  color: #10b981;
-  width: 16px;
-  height: 16px;
-  @media (min-width: 768px) {
-    width: 20px;
-    height: 20px;
-  }
-`;
-
-const XIcon = styled(X)`
-  color: #ef4444;
-  width: 16px;
-  height: 16px;
-  @media (min-width: 768px) {
-    width: 20px;
-    height: 20px;
-  }
-`;
-
-const TierComparisonSection = styled.section`
-  padding: 6rem 2rem;
-  @media (max-width: 768px) {
-    padding: 4rem 1rem;
-  }
-`;
-
-const TierComparisonWrapper = styled.div`
-  max-width: 1000px;
-  margin: 0 auto;
-`;
-
-const TierTableWrapper = styled.div`
-  background: white;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-  margin-top: 2.5rem;
-  @media (max-width: 768px) {
-    border-radius: 12px;
-  }
-`;
-
-const TierTableHeader = styled.div`
-  display: grid;
-  grid-template-columns: 2.5fr 1fr 1fr 1fr;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  padding: 1rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  gap: 1rem;
-  @media (min-width: 768px) {
-    padding: 1.5rem;
-  }
-`;
-
-const TierHeaderCell = styled.div`
-  font-weight: 700;
-  color: #1d1d1f;
-  text-align: center;
-  font-size: clamp(0.7rem, 2vw, 0.9rem);
-  line-height: 1.3;
-  &:first-child {
-    text-align: left;
-  }
-`;
-
-const TierTableRow = styled.div`
-  display: grid;
-  grid-template-columns: 2.5fr 1fr 1fr 1fr;
-  padding: 1rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  transition: background-color 0.2s ease;
-  gap: 1rem;
-  align-items: center;
-  &:hover {
-    background-color: #f9fafb;
-  }
-  &:last-child {
-    border-bottom: none;
-  }
-  @media (min-width: 768px) {
-    padding: 1.25rem 1.5rem;
-  }
-`;
-
-const TierFeatureCell = styled.div`
-  color: #374151;
-  font-weight: 500;
-  font-size: clamp(0.75rem, 1.8vw, 0.9rem);
-  line-height: 1.4;
-`;
-
-const TierValueCell = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  color: #374151;
-  font-size: clamp(0.75rem, 1.8vw, 0.9rem);
-  text-align: center;
-`;
-
-const TestimonialsWrapper = styled.section`
-  padding: 6rem 2rem 8rem;
-  background: #ffffff;
-  mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 100%);
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    black 25%,
-    black 100%
-  );
-  @media (max-width: 768px) {
-    padding: 4rem 1rem 6rem;
-  }
+// --- Testimonials ---
+const TestimonialsSection = styled.section`
+  padding: 80px 0;
 `;
 
 const TestimonialGrid = styled.div`
   display: grid;
-  gap: 2rem;
-  max-width: 1200px;
-  margin: 3rem auto 0;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  @media (max-width: 768px) {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 40px;
+
+  @media (max-width: 900px) {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
   }
 `;
 
-const TestimonialCard = styled(motion.div)`
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s ease;
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-      0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    border-color: rgba(220, 38, 38, 0.2);
-  }
-`;
-
-const TestimonialText = styled.p`
-  font-style: italic;
-  font-size: 1.1rem;
-  line-height: 1.6;
-  margin-bottom: 1.5rem;
-  position: relative;
-  color: #374151;
-`;
-
-const TestimonialQuoteIcon = styled(Quote)`
-  position: absolute;
-  top: -10px;
-  left: -15px;
-  color: rgba(220, 38, 38, 0.15);
-  width: 40px;
-  height: 40px;
-`;
-
-const TestimonialAuthor = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-`;
-
-const AuthorAvatarWrapper = styled.div`
-  position: relative;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  border: 2px solid #e5e7eb;
-  overflow: hidden;
-`;
-
-const AuthorInfo = styled.div``;
-
-const AuthorName = styled.h4`
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #1d1d1f;
-`;
-
-const AuthorTitle = styled.p`
-  margin: 0.25rem 0 0;
-  color: #6b7280;
-  font-size: 0.95rem;
-`;
-
-const FAQSection = styled.section`
-  padding: 6rem 2rem;
-  background-color: white;
-  @media (max-width: 768px) {
-    padding: 4rem 1rem;
-  }
-`;
-
-const FAQContainer = styled(motion.div)`
-  max-width: 800px;
-  margin: 3rem auto 0;
+const TestimonialCard = styled(GlassCard)`
+  padding: 32px 24px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-`;
+  justify-content: space-between;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.6);
+  transition: transform 0.3s;
 
-const FAQItem = styled(motion.div)`
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 20px;
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 8px 16px -4px rgba(0, 0, 0, 0.03);
   &:hover {
-    border-color: rgba(220, 38, 38, 0.08);
-    transform: translateY(-2px);
+    transform: translateY(-5px);
   }
 `;
 
-const FAQHeader = styled(motion.button)`
+const QuoteText = styled.p`
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #1d1d1f;
+  margin-bottom: 24px;
+  font-weight: 500;
+`;
+
+const AuthorBlock = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const AuthorImg = styled.div`
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+  background: #eee;
+`;
+
+const AuthorDetails = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const AuthorName = styled.span`
+  font-weight: 600;
+  color: #1d1d1f;
+  font-size: 0.9rem;
+`;
+
+const AuthorRole = styled.span`
+  font-size: 0.8rem;
+  color: #6e6e73;
+`;
+
+// --- FAQ ---
+const FAQSection = styled.section`
+  padding: 80px 0;
+`;
+
+const FAQContainer = styled(GlassCard)`
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 32px;
+  background: rgba(255, 255, 255, 0.7);
+
+  @media (max-width: 768px) {
+    padding: 0 20px;
+  }
+`;
+
+const FAQItem = styled.div`
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const FAQButton = styled.button`
   width: 100%;
-  padding: 1.5rem 2rem;
-  background: transparent;
+  padding: 24px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: none;
   border: none;
   text-align: left;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 500;
   color: #1d1d1f;
-`;
 
-const FAQIconWrapper = styled(motion.div)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-`;
-
-const FAQContent = styled(motion.div)`
-  overflow: hidden;
-`;
-
-const FAQContentInner = styled.div`
-  padding: 0 2rem 1.75rem;
-  color: #86868b;
-  line-height: 1.7;
-`;
-
-const ImageDescription = styled(motion.p)`
-  color: #6b7280;
-  margin: 2rem auto 0;
-  max-width: 700px;
-  line-height: 1.6;
-  font-size: 1rem;
+  &:hover {
+    color: #000;
+  }
 
   @media (max-width: 768px) {
-    font-size: 0.95rem;
-    margin: 1.5rem auto 0;
-    padding: 0 1rem;
+    font-size: 1rem;
   }
 `;
 
-// Helper component for periodic animation
-const PeriodicAnimatedText = ({ text }) => {
-  const [key, setKey] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setKey((prev) => prev + 1);
-    }, 8000); 
-    return () => clearInterval(interval);
-  }, []);
-
-  const letterVariants = {
-    initial: {
-      scale: 1,
-      color: "#ffffff",
-    },
-    animate: (i) => ({
-      scale: [1, 1.3, 1],
-      color: ["#ffffff", "#ffd700", "#ffffff"], // Changed to Gold for better contrast on dark bg
-      transition: {
-        duration: 0.3,
-        delay: i * 0.03,
-        ease: "easeInOut",
-      },
-    }),
-  };
-
-  return (
-    <span key={key} style={{ display: 'inline-flex', flexWrap: 'wrap' }}>
-      {text.split("").map((letter, index) => (
-        <motion.span
-          key={index}
-          custom={index}
-          variants={letterVariants}
-          initial="initial"
-          animate="animate"
-          style={{ display: "inline-block" }}
-        >
-          {letter === " " ? "\u00A0" : letter}
-        </motion.span>
-      ))}
-    </span>
-  );
-};
+const FAQAnswer = styled(motion.div)`
+  overflow: hidden;
+  color: #6e6e73;
+  font-size: 0.95rem;
+  line-height: 1.6;
+`;
 
 // --- Main Component ---
 const BusinessWelcomePage = () => {
@@ -924,24 +731,10 @@ const BusinessWelcomePage = () => {
 
   // --- State Hooks ---
   const [activeItems, setActiveItems] = useState(new Set(["1"]));
-  const [activeSection, setActiveSection] = useState("cost");
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [hoveredIndex, setHoveredIndex] = useState(null);
-  const [costAnimationData, setCostAnimationData] = useState(null);
-  const [comparisonAnimationData, setComparisonAnimationData] = useState(null);
-  const [comparisonAnimationComplete, setComparisonAnimationComplete] =
-    useState(false);
 
-  // --- Refs ---
-  const costRef = useRef(null);
-  const comparisonRef = useRef(null);
-  const animationRef = useRef(null);
-  const comparisonLottieRef = useRef(null);
-  const iconRefs = useRef({});
-  const comparisonIntervalRef = useRef(null);
-
-  // --- Data (Memoized for Performance) ---
+  // --- Data ---
   const {
     navigationItems,
     tabContent,
@@ -955,184 +748,148 @@ const BusinessWelcomePage = () => {
       navigationItems: [
         {
           key: "bookings",
-          src: "https://cdn.lordicon.com/abgykmtd.json",
+          icon: <BookOpen size={18} />,
           label: "Bookings",
         },
         {
-          key: "booking-trends",
-          src: "https://cdn.lordicon.com/lrzdmsmx.json",
-          label: "Analytics",
+          key: "analytics",
+          icon: <BarChart size={18} />,
+          label: "Insights",
         },
         {
           key: "revenue",
-          src: "https://cdn.lordicon.com/dnupukmh.json",
-          label: "Revenue",
+          icon: <DollarSign size={18} />,
+          label: "Earnings",
         },
         {
           key: "payouts",
-          src: "https://cdn.lordicon.com/vmztfafm.json",
+          icon: <CreditCard size={18} />,
           label: "Payouts",
         },
         {
           key: "staff",
-          src: "https://cdn.lordicon.com/mudwpdhy.json",
-          label: "Staff",
+          icon: <Briefcase size={18} />,
+          label: "Team",
         },
       ],
       tabContent: [
         {
           image: "https://i.imgur.com/v93lOsv.png",
           description:
-            "This is your command center. Instantly gauge your business's health with a powerful overview of revenue, student growth, and the real-time pulse of daily activity.",
+            "Your command center. Instantly gauge your hosting health with a powerful overview of revenue.",
         },
         {
           image: "https://i.imgur.com/DMdHsU5.png",
           description:
-            "Unlock powerful insights into what drives your business. Visualize booking trends, pinpoint your most popular classes, and optimize your schedule for maximum engagement and growth.",
+            "Visualize booking trends, pinpoint popular experiences, and optimize your schedule.",
         },
         {
           image: "https://i.imgur.com/tOAgKBg.png",
           description:
-            "Gain complete command of your finances. Track every dollar from gross to net, visualize your growth trends, and instantly identify your most profitable offerings.",
+            "Track every dollar. Visualize growth trends and instantly identify profitable workshops.",
         },
         {
           image: "https://i.imgur.com/4Mf4uee.png",
           description:
-            "Get paid with confidence and complete transparency. Track your earnings in real-time and access a clear, verifiable history of every payout to your account.",
+            "Get paid with confidence. Track earnings in real-time and access clear payout history.",
         },
         {
           image: "https://i.imgur.com/ljYW979.png",
           description:
-            "Empower your team with confidence. Effortlessly invite staff, manage access with custom roles, and maintain complete control over your business operations from one central hub.",
+            "Empower your team. Invite co-hosts, manage access roles, and maintain control.",
         },
       ],
       savingsData: [
         {
-          icon: <Calculator />,
+          icon: <Calculator size={18} />,
           title: "No Setup Costs",
-          description: "Zero upfront fees or monthly subscriptions.",
+          description: "Zero upfront fees or subscriptions.",
           amount: "$1,200",
         },
         {
-          icon: <PiggyBank />,
+          icon: <PiggyBank size={18} />,
           title: "Admin Efficiency",
-          description: "Automated bookings save you hours of work.",
+          description: "Automated bookings save you hours.",
           amount: "$4,800",
         },
         {
-          icon: <TrendingUp />,
-          title: "Increased Revenue",
-          description: "Attract more students with our marketing tools.",
+          icon: <TrendingUp size={18} />,
+          title: "Guest Reach",
+          description: "Attract more guests automatically.",
           amount: "$2,000",
         },
       ],
       comparisonData: [
         {
           feature: "Commission Rate",
-          others: "20-30% + Other Fees",
+          others: "20-30% + Fees",
           classEasily: "17% All-Inclusive",
-          highlight: true,
-        },
-        {
-          feature: "Setup Fees",
-          others: "$500 - $2,000",
-          classEasily: "Free",
           highlight: true,
         },
         {
           feature: "Monthly Subscription",
           others: "$50 - $200/mo",
-          classEasily: "Free",
-          highlight: false,
+          classEasily: "Free Forever",
+          highlight: true,
         },
         {
-          feature: "Payment Processing",
-          others: "3-5 days",
-          classEasily: "Next day",
+          feature: "Payment Speed",
+          others: "3-5 Days",
+          classEasily: "Next Day",
           highlight: false,
         },
         {
           feature: "Built-in Marketing",
-          others: <XIcon />,
-          classEasily: <CheckIcon />,
+          others: <X size={16} />,
+          classEasily: <Check size={16} color="#10b981" />,
           highlight: false,
         },
         {
-          feature: "24/7 Support",
-          others: <XIcon />,
-          classEasily: <CheckIcon />,
-          highlight: false,
-        },
-        {
-          feature: "Custom Branding",
-          others: "Premium only",
-          classEasily: <CheckIcon />,
-          highlight: false,
-        },
-        {
-          feature: "Analytics Dashboard",
-          others: "Basic",
-          classEasily: "Advanced",
+          feature: "Host Support",
+          others: "Email Only",
+          classEasily: "24/7 Priority",
           highlight: false,
         },
       ],
       tierComparisonData: [
         {
-          feature: "Contact info storage",
+          feature: "Guest CRM Storage",
           imported: true,
           widget: true,
           marketplace: true,
         },
         {
-          feature: "Notes on students",
+          feature: "Guest Notes",
           imported: true,
           widget: true,
           marketplace: true,
         },
         {
-          feature: "Scheduling (timeline/calendar)",
+          feature: "Smart Scheduling",
           imported: false,
           widget: true,
           marketplace: true,
         },
         {
-          feature: "Resource assignment",
+          feature: "Automated Reminders",
           imported: false,
           widget: true,
           marketplace: true,
         },
         {
-          feature: "Automatic reminders",
+          feature: "Payment Processing",
           imported: false,
           widget: true,
           marketplace: true,
         },
         {
-          feature: "Payment processing",
-          imported: false,
-          widget: true,
-          marketplace: true,
-        },
-        {
-          feature: "Rescheduling / cancellation",
-          imported: false,
-          widget: true,
-          marketplace: true,
-        },
-        {
-          feature: "Attendance tracking",
-          imported: false,
-          widget: true,
-          marketplace: true,
-        },
-        {
-          feature: "Marketing/discovery",
+          feature: "Marketing / Discovery",
           imported: false,
           widget: false,
           marketplace: true,
         },
         {
-          feature: "Fee model",
+          feature: "Fee Structure",
           imported: "Free",
           widget: "~6%",
           marketplace: "~17%",
@@ -1141,53 +898,46 @@ const BusinessWelcomePage = () => {
       faqData: [
         {
           key: "1",
-          question: "How does ClassEasily work?",
+          question: "How does hosting work?",
           answer:
-            "ClassEasily is a platform that connects local instructors with students seeking classes in their area. Instructors can list their classes, set their availability, and manage bookings through our intuitive dashboard. Students can search for classes, read reviews, and book sessions directly through the platform with seamless payment processing.",
+            "We connect local experts with guests seeking unique experiences. You list your workshop, set your schedule, and we handle the bookings and payments.",
         },
         {
           key: "2",
-          question:
-            "I'm already working with other online education platforms. Can I work with you, too?",
+          question: "I use other platforms. Can I host here too?",
           answer:
-            "Yes, you can certainly work with ClassEasily while maintaining relationships with other platforms. We also offer an <strong>exclusive partnership program</strong> that comes with benefits like priority placement and dedicated support.",
+            "Absolutely. Many of our hosts list on multiple platforms. However, our <strong>exclusive partner program</strong> offers lower fees for exclusive hosts.",
         },
         {
           key: "3",
-          question: "What types of classes can I list on ClassEasily?",
+          question: "What experiences can I list?",
           answer:
-            "Currently, ClassEasily supports <strong>workshop classes only</strong>. This includes hands-on, in-person workshops such as art, crafts, cooking, and similar experiences. We are expanding to other categories soon!",
+            "We focus on <strong>interactive workshops</strong>. Pottery, cooking, painting, coding bootcamps, and more.",
         },
         {
           key: "4",
-          question: "How do payments and fees work on ClassEasily?",
+          question: "When do I get paid?",
           answer:
-            "We handle all payments through our secure platform (Stripe). Funds are transferred to your account after the class is completed, minus our transparent, all-inclusive <strong>17% service fee</strong>. This fee covers all platform costs, including marketing, payment processing, and 24/7 support.",
-        },
-        {
-          key: "5",
-          question: "Is ClassEasily available in my area?",
-          answer:
-            "ClassEasily is rapidly expanding. To check if we're available in your area, simply enter your location on our homepage. If we're not there yet, you can <strong>join our waitlist</strong> to be the first to know when we launch.",
+            "Funds are transferred to your connected bank account automatically after the experience is completed.",
         },
       ],
       testimonials: [
         {
-          text: "ClassEasily has helped me fill every pottery class this season. Managing bookings and communicating with attendees is a breeze.",
+          text: "I used to spend hours on spreadsheets. Now I just focus on my pottery students. The platform handles the rest.",
           author: "Linda M.",
-          title: "Pottery Studio Owner",
+          title: "Pottery Host",
           avatar: "https://randomuser.me/api/portraits/women/45.jpg",
         },
         {
-          text: "My local cooking workshops have never been busier. The platform makes it simple to organize sessions and keep track of participants.",
+          text: "The exposure is incredible. My weekend cooking workshops are booked out weeks in advance.",
           author: "Carlos G.",
-          title: "Cooking Workshop Host",
+          title: "Culinary Host",
           avatar: "https://randomuser.me/api/portraits/men/23.jpg",
         },
         {
-          text: "ClassEasily has brought more art lovers to my painting classes. It's the perfect tool for local workshop providers like me.",
+          text: "Finally, a platform that doesn't charge me a monthly fee just to exist. I only pay when I actually earn.",
           author: "Sophie T.",
-          title: "Painting Instructor",
+          title: "Art Instructor",
           avatar: "https://randomuser.me/api/portraits/women/52.jpg",
         },
       ],
@@ -1195,14 +945,10 @@ const BusinessWelcomePage = () => {
     []
   );
 
-  // --- Callbacks (Memoized for Performance) ---
+  // --- Callbacks ---
   const handleNavigate = useCallback(() => {
     router.push("/business/register");
   }, [router]);
-
-  const triggerIconAnimation = useCallback((itemKey) => {
-    if (iconRefs.current[itemKey]?.play) iconRefs.current[itemKey].play();
-  }, []);
 
   const toggleItem = useCallback((key) => {
     setActiveItems((prev) => {
@@ -1224,20 +970,6 @@ const BusinessWelcomePage = () => {
     if (emblaApi) setSelectedIndex(emblaApi.selectedScrollSnap());
   }, [emblaApi]);
 
-  const handleComparisonComplete = useCallback(() => {
-    setComparisonAnimationComplete(true);
-  }, []);
-
-  // --- Effects ---
-  useEffect(() => {
-    import("@/assets/animations/animated-line-chart.json").then((module) =>
-      setCostAnimationData(module.default)
-    );
-    import("@/assets/animations/line-chart-difference.json").then((module) =>
-      setComparisonAnimationData(module.default)
-    );
-  }, []);
-
   useEffect(() => {
     if (!emblaApi) return;
     onSelect();
@@ -1245,526 +977,357 @@ const BusinessWelcomePage = () => {
     return () => emblaApi.off("select", onSelect).off("reInit", onSelect);
   }, [emblaApi, onSelect]);
 
-  useEffect(() => {
-    const refs = { cost: costRef, comparison: comparisonRef };
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const id = Object.keys(refs).find(
-              (key) => refs[key].current === entry.target
-            );
-            if (id) setActiveSection(id);
-          }
-        });
-      },
-      { threshold: 0.5 }
-    );
-    Object.values(refs).forEach((ref) => {
-      if (ref.current) observer.observe(ref.current);
-    });
-    return () =>
-      Object.values(refs).forEach((ref) => {
-        if (ref.current) observer.unobserve(ref.current);
-      });
-  }, []);
-
-  useEffect(() => {
-    if (
-      activeSection === "comparison" &&
-      comparisonAnimationComplete &&
-      comparisonLottieRef.current?.animationItem
-    ) {
-      const animationItem = comparisonLottieRef.current.animationItem;
-      let direction = -1;
-      let isPlaying = false;
-      const loopBetweenFrames = () => {
-        if (isPlaying) return;
-        isPlaying = true;
-        const segments =
-          direction === -1
-            ? [
-                Math.floor(3.2 * animationItem.frameRate),
-                Math.floor(2 * animationItem.frameRate),
-              ]
-            : [
-                Math.floor(2 * animationItem.frameRate),
-                Math.floor(3.2 * animationItem.frameRate),
-              ];
-        animationItem.playSegments(segments, true);
-        direction *= -1;
-        animationItem.addEventListener("complete", () => {
-          isPlaying = false;
-        });
-      };
-      const timeoutId = setTimeout(() => {
-        loopBetweenFrames();
-        comparisonIntervalRef.current = setInterval(loopBetweenFrames, 3000);
-      }, 2000);
-      return () => {
-        clearTimeout(timeoutId);
-        if (comparisonIntervalRef.current)
-          clearInterval(comparisonIntervalRef.current);
-      };
-    } else {
-      setComparisonAnimationComplete(false);
-      if (comparisonIntervalRef.current)
-        clearInterval(comparisonIntervalRef.current);
-    }
-  }, [activeSection, comparisonAnimationComplete]);
-
   return (
     <PageWrapper>
-      <Suspense fallback={null}>
-        <GradientCanvas />
-      </Suspense>
-
+      <GlobalStyle />
       <Header />
 
       <main>
+        {/* --- Hero --- */}
         <HeroSection>
-          <HeroGrid>
-            <HeroTextContainer
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-            >
-              <PromoTag
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
+          <SectionContainer>
+            <HeroGrid>
+              <HeroTextContainer
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
               >
-                <PeriodicAnimatedText text="Register now to lock in 10% fees forever" />
-              </PromoTag>
+                <HeroTitle>
+                  Host experiences,
+                  <br />
+                  <span>earn on your terms.</span>
+                </HeroTitle>
+                <HeroSubtitle>
+                  Turn your passion into a business. Join thousands of hosts who
+                  use our platform to manage bookings, reach more guests, and
+                  simplify their life.
+                </HeroSubtitle>
+                <StartButton onClick={handleNavigate}>
+                  Become a Host <ArrowRight size={18} />
+                </StartButton>
+              </HeroTextContainer>
 
-              <HeroTitle>Grow Your Teaching Business with Us</HeroTitle>
-              <HeroSubtitle>
-                Join thousands of successful schools, studios, and instructors
-                who use our platform to manage their classes, reach more
-                students, and increase their revenue.
-              </HeroSubtitle>
-              <StartButton onClick={handleNavigate}>
-                List Your Business <ArrowRight size={20} aria-hidden="true" />
-              </StartButton>
-            </HeroTextContainer>
-            <HeroAnimationContainer
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-            >
-              <Image
-                src="/Group 1.svg"
-                alt="A preview of the ClassEasily dashboard UI on a laptop"
-                width={800}
-                height={600}
-                priority
-                quality={75}
-                style={{ width: "100%", height: "auto" }}
-              />
-            </HeroAnimationContainer>
-          </HeroGrid>
+              <HeroVisualContainer
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+              >
+                <Image
+                  src="/Group 1.svg"
+                  alt="Host Dashboard Preview"
+                  width={800}
+                  height={600}
+                  priority
+                />
+              </HeroVisualContainer>
+            </HeroGrid>
+          </SectionContainer>
         </HeroSection>
 
-        {/* ... Rest of the components remain exactly identical to your original file ... */}
-        {/* I'm including the next section to ensure file continuity, but no changes are below here */}
-        
+        {/* --- Dashboard Preview --- */}
         <DashboardSection>
-          <DashboardContainer>
-            <SectionHeader>
-              <SectionEyebrow>FEATURES</SectionEyebrow>
-              <SectionTitle>Everything in one place</SectionTitle>
-              <SectionSubtitle style={{ margin: "0 auto" }}>
-                Manage your classes, track bookings, and monitor revenue with
-                our comprehensive dashboard. Make data-driven decisions to grow
-                your teaching business.
+          <SectionContainer>
+            <SectionHeader $center>
+              <SectionEyebrow>HOST TOOLS</SectionEyebrow>
+              <SectionTitle>Manage everything in one place</SectionTitle>
+              <SectionSubtitle $center>
+                From scheduling workshops to tracking your payouts, our
+                dashboard gives you the clarity you need.
               </SectionSubtitle>
             </SectionHeader>
-            <TabsContainer role="tablist" aria-label="Dashboard Features">
+
+            <TabsWrapper>
               {navigationItems.map((item, index) => (
                 <TabButton
                   key={item.key}
                   $active={index === selectedIndex}
                   onClick={() => scrollTo(index)}
-                  onMouseEnter={() => {
-                    setHoveredIndex(index);
-                    triggerIconAnimation(item.key);
-                  }}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                  role="tab"
-                  aria-selected={index === selectedIndex}
-                  aria-controls={`tabpanel-${item.key}`}
-                  id={`tab-${item.key}`}
                 >
-                  <LordIcon
-                    ref={(el) => (iconRefs.current[item.key] = el)}
-                    src={item.src}
-                    trigger="hover"
-                    size="20px"
-                    colors={
-                      index === selectedIndex
-                        ? "primary:#ffffff,secondary:#ffffff"
-                        : index === hoveredIndex
-                        ? "primary:#dc2626,secondary:#dc2626"
-                        : "primary:#333333,secondary:#666666"
-                    }
-                    playOnLoad={index === selectedIndex}
-                    aria-hidden="true"
-                  />
+                  {item.icon}
                   {item.label}
                 </TabButton>
               ))}
-            </TabsContainer>
-            <EmblaWrapper ref={emblaRef}>
-              <EmblaContainer>
+            </TabsWrapper>
+
+            <EmblaWrapper>
+              <EmblaContainer ref={emblaRef}>
                 {tabContent.map((content, index) => (
-                  <EmblaSlide
-                    key={index}
-                    role="tabpanel"
-                    id={`tabpanel-${navigationItems[index].key}`}
-                    aria-labelledby={`tab-${navigationItems[index].key}`}
-                  >
+                  <EmblaSlide key={index}>
                     <Image
                       src={content.image}
-                      alt={`Dashboard view for ${navigationItems[index].label}`}
+                      alt={navigationItems[index].label}
                       width={1440}
                       height={900}
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
-                      quality={85}
-                      style={{
-                        width: "100%",
-                        height: "auto",
-                        display: "block",
-                      }}
                     />
                   </EmblaSlide>
                 ))}
               </EmblaContainer>
             </EmblaWrapper>
-            <ImageDescription
+
+            <motion.p
               key={selectedIndex}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
+              style={{
+                textAlign: "center",
+                marginTop: 24,
+                color: "#6e6e73",
+                fontSize: "0.95rem",
+              }}
             >
               {tabContent[selectedIndex].description}
-            </ImageDescription>
-          </DashboardContainer>
+            </motion.p>
+          </SectionContainer>
         </DashboardSection>
 
-        <TwoColumnSection>
-          <LeftColumn>
-            <ContentBlock ref={costRef}>
-              <SectionHeader>
-                <SectionEyebrow>COST SAVINGS</SectionEyebrow>
-                <SectionTitle>Save thousands every year</SectionTitle>
-                <SectionSubtitle>
-                  Our all-inclusive model eliminates hidden fees. No setup
-                  costs, no monthly subscriptions—just a simple, transparent
-                  commission.
-                </SectionSubtitle>
-              </SectionHeader>
+        {/* --- Split Section (Savings & Comparison) --- */}
+        <SectionContainer>
+          <TwoColumnSection>
+            <div>
+              {/* Cost Block */}
+              <ContentBlock>
+                <SectionHeader>
+                  <SectionEyebrow>EARNINGS</SectionEyebrow>
+                  <SectionTitle>Keep more of what you earn</SectionTitle>
+                  <SectionSubtitle>
+                    No monthly subscriptions. No setup fees. We only make money
+                    when you get a booking.
+                  </SectionSubtitle>
+                </SectionHeader>
 
-              <SavingsLedger>
-                {savingsData.map((item, i) => (
-                  <LedgerRow key={i}>
+                <SavingsLedger>
+                  {savingsData.map((item, i) => (
+                    <LedgerRow key={i}>
+                      <LedgerInfo>
+                        <LedgerIconBox>{item.icon}</LedgerIconBox>
+                        <LedgerTextContent>
+                          <LedgerTitle>{item.title}</LedgerTitle>
+                          <LedgerDesc>{item.description}</LedgerDesc>
+                        </LedgerTextContent>
+                      </LedgerInfo>
+                      <LedgerAmount>{item.amount}</LedgerAmount>
+                    </LedgerRow>
+                  ))}
+                  <LedgerRow className="total">
                     <LedgerInfo>
-                      <LedgerIconBox>{item.icon}</LedgerIconBox>
+                      <LedgerIconBox
+                        style={{ color: "#dc2626", background: "#fff5f5" }}
+                      >
+                        <Sparkles size={18} />
+                      </LedgerIconBox>
                       <LedgerTextContent>
-                        <LedgerTitle>{item.title}</LedgerTitle>
-                        <LedgerDesc>{item.description}</LedgerDesc>
+                        <LedgerTitle style={{ color: "#dc2626" }}>
+                          Annual Potential Savings
+                        </LedgerTitle>
                       </LedgerTextContent>
                     </LedgerInfo>
-                    <LedgerAmount>
-                      <span>approx.</span>
-                      {item.amount}
-                    </LedgerAmount>
+                    <LedgerAmount className="highlight">$8,000+</LedgerAmount>
                   </LedgerRow>
-                ))}
-                <LedgerRow>
-                  <LedgerInfo>
-                    <div
-                      style={{
-                        width: "44px",
-                        display: "flex",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Sparkles size={24} color="#dc2626" />
-                    </div>
-                    <LedgerTextContent>
-                      <LedgerTitle>Total Potential Savings</LedgerTitle>
-                      <LedgerDesc>
-                        Money back in your pocket annually
-                      </LedgerDesc>
-                    </LedgerTextContent>
-                  </LedgerInfo>
-                  <LedgerAmount className="total">$8,000+</LedgerAmount>
-                </LedgerRow>
-              </SavingsLedger>
-            </ContentBlock>
+                </SavingsLedger>
+              </ContentBlock>
 
-            <ContentBlock ref={comparisonRef}>
-              <SectionHeader>
-                <SectionEyebrow>COMPARISON</SectionEyebrow>
-                <SectionTitle>Transparent, powerful, and fair</SectionTitle>
-                <SectionSubtitle>
-                  See how our model stacks up against the hidden costs and
-                  limitations of other platforms. We provide everything you need
-                  to succeed.
-                </SectionSubtitle>
-              </SectionHeader>
-              <ComparisonTableWrapper>
-                <ComparisonHeader>
-                  <HeaderCell>Feature</HeaderCell>
-                  <HeaderCell>Other Platforms</HeaderCell>
-                  <HeaderCell>ClassEasily</HeaderCell>
-                </ComparisonHeader>
-                {comparisonData.map((row) => (
-                  <ComparisonRow
-                    key={row.feature}
-                    className={row.highlight ? "highlight-row" : ""}
+              {/* Comparison Block */}
+              <ContentBlock>
+                <SectionHeader>
+                  <SectionEyebrow>COMPARISON</SectionEyebrow>
+                  <SectionTitle>Fairer than the rest</SectionTitle>
+                  <SectionSubtitle>
+                    See how our host-first model stacks up against traditional
+                    platforms.
+                  </SectionSubtitle>
+                </SectionHeader>
+
+                <ComparisonTableWrapper>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "2fr 1fr 1fr",
+                      padding: "16px 24px",
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      color: "#999",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      background: "rgba(0,0,0,0.02)",
+                    }}
                   >
-                    <FeatureCell>{row.feature}</FeatureCell>
-                    <ValueCell $isPositive={false}>{row.others}</ValueCell>
-                    <ValueCell $isPositive={true}>{row.classEasily}</ValueCell>
-                  </ComparisonRow>
-                ))}
-              </ComparisonTableWrapper>
-            </ContentBlock>
-          </LeftColumn>
-
-          <RightColumn>
-            <div ref={animationRef}>
-              <AnimatePresence mode="wait">
-                <Suspense fallback={null}>
-                  {activeSection === "cost" && costAnimationData && (
-                    <AnimationContainer
-                      key="cost-anim"
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      transition={{ duration: 0.4, ease: "easeOut" }}
-                    >
-                      <Lottie
-                        key="cost-lottie"
-                        animationData={costAnimationData}
-                        loop={false}
-                        style={{ width: "100%", height: "100%" }}
-                      />
-                    </AnimationContainer>
-                  )}
-                  {activeSection === "comparison" &&
-                    comparisonAnimationData && (
-                      <AnimationContainer
-                        key="comparison-anim"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        transition={{ duration: 0.4, ease: "easeOut" }}
-                      >
-                        <Lottie
-                          key="comparison-lottie"
-                          lottieRef={comparisonLottieRef}
-                          animationData={comparisonAnimationData}
-                          loop={false}
-                          autoplay={true}
-                          onComplete={handleComparisonComplete}
-                          style={{ width: "100%", height: "100%" }}
-                        />
-                      </AnimationContainer>
-                    )}
-                </Suspense>
-              </AnimatePresence>
+                    <div>Feature</div>
+                    <div style={{ textAlign: "center" }}>Others</div>
+                    <div style={{ textAlign: "center", color: "#dc2626" }}>
+                      Us
+                    </div>
+                  </div>
+                  {comparisonData.map((row) => (
+                    <ComparisonRow key={row.feature}>
+                      <ComparisonFeature>{row.feature}</ComparisonFeature>
+                      <ComparisonValue $good={false}>
+                        {row.others}
+                      </ComparisonValue>
+                      <ComparisonValue $good={true}>
+                        {row.classEasily}
+                      </ComparisonValue>
+                    </ComparisonRow>
+                  ))}
+                </ComparisonTableWrapper>
+              </ContentBlock>
             </div>
-          </RightColumn>
-        </TwoColumnSection>
 
-        <TierComparisonSection>
-          <TierComparisonWrapper>
-            <SectionHeader style={{ textAlign: "center" }}>
-              <SectionEyebrow>SOLUTIONS</SectionEyebrow>
-              <SectionTitle>Pick the Right Way to Grow</SectionTitle>
-              <SectionSubtitle style={{ margin: "0 auto" }}>
-                Start simple with free contact storage, or unlock full booking
-                tools through our website widget or marketplace. No
-                subscriptions. No hidden costs. Fees only apply when a booking
-                is made.
+            {/* Sticky Graphic - Replaced Lottie with CSS Visual */}
+            <StickyRightColumn>
+              <SavingsVisualCard
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.8 }}
+              >
+                <VisualCircle>0%</VisualCircle>
+                <VisualLabel>Listing Fees</VisualLabel>
+                <VisualSub>
+                  You keep 100% of your earnings minus standard processing.
+                </VisualSub>
+                <div
+                  style={{
+                    height: 1,
+                    width: 60,
+                    background: "#ddd",
+                    margin: "24px 0",
+                  }}
+                />
+                <VisualLabel>Next Day Payouts</VisualLabel>
+                <VisualSub>Cash flow that moves as fast as you do.</VisualSub>
+              </SavingsVisualCard>
+            </StickyRightColumn>
+          </TwoColumnSection>
+        </SectionContainer>
+
+        {/* --- Tiers --- */}
+        <TierSection>
+          <SectionContainer>
+            <SectionHeader $center>
+              <SectionEyebrow>FLEXIBILITY</SectionEyebrow>
+              <SectionTitle>Scale at your own pace</SectionTitle>
+              <SectionSubtitle $center>
+                Start with free tools to manage your contacts, or unlock the
+                full marketplace power.
               </SectionSubtitle>
             </SectionHeader>
-            <TierTableWrapper>
-              <TierTableHeader>
-                <TierHeaderCell>Feature</TierHeaderCell>
-                <TierHeaderCell>
-                  Imported
-                  <br />
-                  (Free Contacts)
-                </TierHeaderCell>
-                <TierHeaderCell>
-                  Widget
-                  <br />
-                  (6% Fee)
-                </TierHeaderCell>
-                <TierHeaderCell>
-                  Marketplace
-                  <br />
-                  (17% Fee)
-                </TierHeaderCell>
-              </TierTableHeader>
-              {tierComparisonData.map((row) => (
-                <TierTableRow key={row.feature}>
-                  <TierFeatureCell>{row.feature}</TierFeatureCell>
-                  <TierValueCell>
-                    {typeof row.imported === "boolean" ? (
-                      row.imported ? (
-                        <CheckIcon aria-label="Included" />
-                      ) : (
-                        <XIcon aria-label="Not included" />
-                      )
-                    ) : (
-                      row.imported
-                    )}
-                  </TierValueCell>
-                  <TierValueCell>
-                    {typeof row.widget === "boolean" ? (
-                      row.widget ? (
-                        <CheckIcon aria-label="Included" />
-                      ) : (
-                        <XIcon aria-label="Not included" />
-                      )
-                    ) : (
-                      row.widget
-                    )}
-                  </TierValueCell>
-                  <TierValueCell>
-                    {typeof row.marketplace === "boolean" ? (
-                      row.marketplace ? (
-                        <CheckIcon aria-label="Included" />
-                      ) : (
-                        <XIcon aria-label="Not included" />
-                      )
-                    ) : (
-                      row.marketplace
-                    )}
-                  </TierValueCell>
-                </TierTableRow>
-              ))}
-            </TierTableWrapper>
-          </TierComparisonWrapper>
-        </TierComparisonSection>
 
-        <TestimonialsWrapper>
-          <div
-            style={{
-              maxWidth: "1200px",
-              margin: "0 auto",
-              textAlign: "center",
-            }}
-          >
-            <SectionTitle>What our partners say</SectionTitle>
+            <TierCard>
+              <TierTable>
+                <TierRow>
+                  <TierCell $align="left">Feature</TierCell>
+                  <TierCell>Import Only</TierCell>
+                  <TierCell>Widget</TierCell>
+                  <TierCell>Marketplace</TierCell>
+                </TierRow>
+                {tierComparisonData.map((row) => (
+                  <TierRow key={row.feature}>
+                    <TierCell $align="left" $bold>
+                      {row.feature}
+                    </TierCell>
+                    <TierCell data-label="Import Only">
+                      {row.imported === true ? (
+                        <Check size={18} color="#10b981" />
+                      ) : row.imported === false ? (
+                        <Minus size={18} color="#e5e7eb" />
+                      ) : (
+                        row.imported
+                      )}
+                    </TierCell>
+                    <TierCell data-label="Widget">
+                      {row.widget === true ? (
+                        <Check size={18} color="#10b981" />
+                      ) : row.widget === false ? (
+                        <Minus size={18} color="#e5e7eb" />
+                      ) : (
+                        row.widget
+                      )}
+                    </TierCell>
+                    <TierCell data-label="Marketplace">
+                      {row.marketplace === true ? (
+                        <Check size={18} color="#10b981" />
+                      ) : row.marketplace === false ? (
+                        <Minus size={18} color="#e5e7eb" />
+                      ) : (
+                        row.marketplace
+                      )}
+                    </TierCell>
+                  </TierRow>
+                ))}
+              </TierTable>
+            </TierCard>
+          </SectionContainer>
+        </TierSection>
+
+        {/* --- Testimonials --- */}
+        <TestimonialsSection>
+          <SectionContainer>
+            <SectionHeader $center>
+              <SectionTitle>Hosts love us</SectionTitle>
+            </SectionHeader>
             <TestimonialGrid>
-              {testimonials.map((testimonial, index) => (
+              {testimonials.map((t, i) => (
                 <TestimonialCard
-                  key={index}
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  viewport={{ once: true, amount: 0.5 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
                 >
-                  <TestimonialText>
-                    <TestimonialQuoteIcon aria-hidden="true" />
-                    &ldquo;{testimonial.text}&rdquo;
-                  </TestimonialText>
-                  <TestimonialAuthor>
-                    <AuthorAvatarWrapper>
+                  <QuoteText>&ldquo;{t.text}&rdquo;</QuoteText>
+                  <AuthorBlock>
+                    <AuthorImg>
                       <Image
-                        src={testimonial.avatar}
-                        alt={`${testimonial.author}`}
+                        src={t.avatar}
+                        alt={t.author}
                         fill
-                        sizes="50px"
-                        quality={80}
                         style={{ objectFit: "cover" }}
                       />
-                    </AuthorAvatarWrapper>
-                    <AuthorInfo>
-                      <AuthorName>{testimonial.author}</AuthorName>
-                      <AuthorTitle>{testimonial.title}</AuthorTitle>
-                    </AuthorInfo>
-                  </TestimonialAuthor>
+                    </AuthorImg>
+                    <AuthorDetails>
+                      <AuthorName>{t.author}</AuthorName>
+                      <AuthorRole>{t.title}</AuthorRole>
+                    </AuthorDetails>
+                  </AuthorBlock>
                 </TestimonialCard>
               ))}
             </TestimonialGrid>
-          </div>
-        </TestimonialsWrapper>
+          </SectionContainer>
+        </TestimonialsSection>
 
+        {/* --- FAQ --- */}
         <FAQSection>
-          <div
-            style={{
-              maxWidth: "800px",
-              margin: "0 auto",
-              textAlign: "center",
-            }}
-          >
-            <SectionHeader>
-              <SectionTitle>Frequently asked questions</SectionTitle>
+          <SectionContainer>
+            <SectionHeader $center>
+              <SectionTitle>Your questions, answered</SectionTitle>
             </SectionHeader>
             <FAQContainer>
               {faqData.map((item) => {
-                const isActive = activeItems.has(item.key);
-                const buttonId = `faq-button-${item.key}`;
-                const contentId = `faq-content-${item.key}`;
-
+                const isOpen = activeItems.has(item.key);
                 return (
-                  <FAQItem key={item.key} layout>
-                    <FAQHeader
-                      onClick={() => toggleItem(item.key)}
-                      aria-expanded={isActive}
-                      aria-controls={contentId}
-                      id={buttonId}
-                    >
-                      <span>{item.question}</span>
-                      <FAQIconWrapper>
-                        <AnimatePresence initial={false} mode="wait">
-                          <motion.div
-                            key={isActive ? "minus" : "plus"}
-                            initial={{ rotate: -90, opacity: 0 }}
-                            animate={{ rotate: 0, opacity: 1 }}
-                            exit={{ rotate: 90, opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            {isActive ? (
-                              <Minus size={16} aria-hidden="true" />
-                            ) : (
-                              <Plus size={16} aria-hidden="true" />
-                            )}
-                          </motion.div>
-                        </AnimatePresence>
-                      </FAQIconWrapper>
-                    </FAQHeader>
+                  <FAQItem key={item.key}>
+                    <FAQButton onClick={() => toggleItem(item.key)}>
+                      {item.question}
+                      {isOpen ? <Minus size={18} /> : <Plus size={18} />}
+                    </FAQButton>
                     <AnimatePresence>
-                      {isActive && (
-                        <FAQContent
-                          initial={{ height: 0 }}
-                          animate={{ height: "auto" }}
-                          exit={{ height: 0 }}
-                          role="region"
-                          id={contentId}
-                          aria-labelledby={buttonId}
+                      {isOpen && (
+                        <FAQAnswer
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
                         >
-                          <FAQContentInner>
-                            <p
-                              dangerouslySetInnerHTML={{
-                                __html: item.answer,
-                              }}
-                            />
-                          </FAQContentInner>
-                        </FAQContent>
+                          <div
+                            style={{ paddingBottom: 24 }}
+                            dangerouslySetInnerHTML={{ __html: item.answer }}
+                          />
+                        </FAQAnswer>
                       )}
                     </AnimatePresence>
                   </FAQItem>
                 );
               })}
             </FAQContainer>
-          </div>
+          </SectionContainer>
         </FAQSection>
       </main>
 

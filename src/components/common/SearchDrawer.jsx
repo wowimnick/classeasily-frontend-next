@@ -1,11 +1,19 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import styled, { keyframes } from "styled-components";
+import styled, { keyframes, css } from "styled-components";
 import { Drawer } from "vaul";
-import { Search, X, MapPin, ChevronLeft, ChevronRight, Minus, Plus, Calendar as CalendarIcon, Users, Map } from "lucide-react";
+import { Button, Input } from "antd"; // Added Antd imports
+import {
+  Search,
+  MapPin,
+  Minus,
+  Plus,
+  Calendar as CalendarIcon,
+  Users,
+  ChevronRight,
+} from "lucide-react";
 import dayjs from "dayjs";
-import { motion, AnimatePresence } from "framer-motion";
 import { useSearch, SUGGESTED_AREAS } from "@/context/SearchContext";
 
 // --- ANIMATIONS ---
@@ -14,331 +22,392 @@ const shimmer = keyframes`
   100% { background-position: 200% 0; }
 `;
 
-// --- STYLED COMPONENTS ---
+// --- GLOBAL DRAWER STYLES ---
 
-const DrawerOverlay = styled(Drawer.Overlay)`
+const Overlay = styled(Drawer.Overlay)`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 9998;
+  z-index: 9990;
   backdrop-filter: blur(2px);
 `;
 
-const DrawerContent = styled(Drawer.Content)`
-  background: #F2F2F2;
+const ContentBase = css`
+  background: #f7f7f7;
   display: flex;
   flex-direction: column;
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
-  height: auto;
-  max-height: 94vh; 
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 9999;
   outline: none;
-  box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
   padding-bottom: env(safe-area-inset-bottom);
-  -webkit-font-smoothing: antialiased;
+  max-height: 96vh;
 `;
 
-const HandleBar = styled.div`
+const MainContent = styled(Drawer.Content)`
+  ${ContentBase};
+  z-index: 9991;
+  height: auto;
+`;
+
+const NestedContent = styled(Drawer.Content)`
+  ${ContentBase};
+  z-index: 9995;
+  height: auto;
+  max-height: 85vh; /* Slightly shorter for nested feel */
+`;
+
+const Handle = styled.div`
   width: 40px;
   height: 4px;
-  background: #D1D5DB;
+  background: #d1d5db;
   border-radius: 2px;
-  margin: 12px auto 8px;
+  margin: 10px auto 6px; /* Reduced margin */
   flex-shrink: 0;
 `;
 
-const DrawerHeader = styled.div`
+const Header = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* Centered since buttons are gone */
   align-items: center;
-  padding: 8px 20px 16px;
+  padding: 6px 16px 12px; /* Reduced padding */
+  background: #f7f7f7;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  min-height: 44px;
 `;
 
-const CloseButton = styled.button`
-  background: #E5E5E5;
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #555;
-  transition: background 0.2s;
-  &:active { background: #d4d4d4; }
+const Title = styled.span`
+  font-weight: 700;
+  font-size: 16px;
+  font-family: "ProximaSoft", sans-serif;
+  color: #111;
 `;
 
-const DrawerBody = styled.div`
-  padding: 0 16px 24px 16px;
+const Body = styled.div`
+  padding: 12px 16px; /* Reduced from 20px */
   overflow-y: auto;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  flex: 1;
+  gap: 10px; /* Reduced gap */
 `;
 
-const DrawerFooter = styled.div`
-  padding: 16px 20px;
+const Footer = styled.div`
+  padding: 12px 16px;
   background: white;
   border-top: 1px solid #f0f0f0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: max(16px, env(safe-area-inset-bottom));
-  gap: 16px;
+  gap: 12px;
 `;
 
-const ClearBtn = styled.button`
-  font-weight: 600;
-  font-size: 15px;
-  color: #717171;
-  background: transparent;
-  border: none;
-  text-decoration: underline;
+// --- COMPONENT STYLES ---
+
+const MenuRow = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: white;
+  padding: 12px 16px; /* Compact padding */
+  border-radius: 14px;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   cursor: pointer;
-  font-family: "ProximaSoft", sans-serif;
+  transition: all 0.2s;
+  text-align: left;
+
+  &:active {
+    transform: scale(0.99);
+    background: #fafafa;
+  }
 `;
 
-const SearchButtonFull = styled.button`
+const RowLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 14px;
   flex: 1;
-  background: linear-gradient(to right, #E61E4D 0%, #E31C5F 50%, #D70466 100%);
-  color: white;
-  font-weight: 700;
-  font-size: 16px;
-  padding: 14px;
-  border-radius: 12px;
-  border: none;
+  overflow: hidden;
+`;
+
+const RowIcon = styled.div`
+  color: #717171;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(230, 30, 77, 0.2);
-  font-family: "ProximaSoft", sans-serif;
-  &:active { opacity: 0.9; transform: scale(0.98); transition: transform 0.1s; }
 `;
 
-// --- FIELD CARD COMPONENTS ---
-
-const FieldCard = styled.div`
-  background: white;
-  border-radius: 20px;
+const RowText = styled.div`
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-  display: flex;
-  flex-direction: column;
+  gap: 1px;
 `;
 
-const FieldHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18px 20px;
-  cursor: pointer;
-  background: white;
-  transition: background 0.2s;
-  -webkit-tap-highlight-color: transparent;
-  &:active { background: #f9f9f9; }
-`;
-
-const LabelGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-`;
-
-const FieldLabel = styled.span`
-  font-size: 13px;
+const RowLabel = styled.span`
+  font-size: 12px;
   color: #717171;
-  font-weight: 700;
+  font-weight: 600;
   font-family: "ProximaSoft", sans-serif;
 `;
 
-const FieldValue = styled.span`
-  font-size: 16px;
-  color: ${props => props.$active ? props.theme.token?.colorPrimary || '#e11d48' : '#222'};
+const RowValue = styled.span`
+  font-size: 15px;
+  color: ${(props) => (props.$hasValue ? "#111" : "#9ca3af")};
   font-weight: 600;
   font-family: "ProximaSoft", sans-serif;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 250px;
 `;
 
-// Animation wrapper: Padding must be inside for height animation to work without snapping
-const AnimatedWrapper = styled(motion.div)`
-  overflow: hidden;
-`;
+// Replaced native button with Antd Button
+const SearchBtn = styled(Button)`
+  flex: 1;
+  background: linear-gradient(
+    to right,
+    #e61e4d 0%,
+    #e31c5f 50%,
+    #d70466 100%
+  ) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  font-size: 16px !important;
+  height: 48px !important; /* Antd buttons have fixed height usually, need to override */
+  border-radius: 12px !important;
+  border: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(230, 30, 77, 0.2) !important;
+  font-family: "ProximaSoft", sans-serif !important;
 
-const ContentPadding = styled.div`
-  padding: 0 20px 24px 20px;
-`;
-
-// --- LOCATION INPUT STYLES ---
-
-const StyledInput = styled.input`
-  width: 100%;
-  font-size: 18px;
-  padding: 12px 16px;
-  border: 1px solid #e5e5e5;
-  border-radius: 12px;
-  background: #f9fafb;
-  color: #222;
-  font-family: "ProximaSoft", sans-serif;
-  font-weight: 600;
-  outline: none;
-  margin-bottom: 16px;
-  
+  &:active,
+  &:hover,
   &:focus {
-    background: white;
-    border-color: #222;
+    opacity: 0.9;
+    transform: scale(0.98);
+    color: white !important;
+    background: linear-gradient(
+      to right,
+      #e61e4d 0%,
+      #e31c5f 50%,
+      #d70466 100%
+    ) !important;
   }
+`;
+
+// Replaced native button with Antd Button
+const ClearBtn = styled(Button)`
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  color: #717171 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: "ProximaSoft", sans-serif !important;
+  padding: 0 8px !important;
+  height: auto !important;
+
+  &:hover {
+    color: #111 !important;
+    background: transparent !important;
+  }
+`;
+
+// --- LOCATION SPECIFIC STYLES ---
+
+const LocationInputWrapper = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  border: 1px solid #e5e5e5;
+  margin-bottom: 12px;
+`;
+
+// Replaced native input with Antd Input
+const StyledInput = styled(Input)`
+  width: 100%;
+  font-size: 15px !important;
+  padding: 8px 0 !important;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  font-family: "ProximaSoft", sans-serif !important;
+  font-weight: 600 !important;
+  color: #111 !important;
+  box-shadow: none !important;
 
   &::placeholder {
-    color: #999;
-    font-weight: 500;
+    color: #9ca3af !important;
+    font-weight: 500 !important;
   }
-`;
-
-const SuggestionList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-height: 240px;
-  overflow-y: auto;
 `;
 
 const SuggestionItem = styled.div`
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px;
-  border-radius: 12px;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: white;
   cursor: pointer;
-  transition: background 0.1s;
-  
-  &:active { background: #f3f4f6; }
+  &:active {
+    background: #f0f0f0;
+  }
 `;
 
 const IconBox = styled.div`
-  width: 36px; height: 36px;
+  width: 28px;
+  height: 28px;
   background: #f3f4f6;
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  color: #555;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
   flex-shrink: 0;
 `;
 
-// --- SKELETON LOADER ---
+// --- CALENDAR STYLES ---
 
-const SkeletonItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 14px;
+const CalendarWrapper = styled.div`
+  background: white;
+  border-radius: 14px;
   padding: 12px;
 `;
 
-const SkeletonIcon = styled.div`
-  width: 36px; height: 36px; border-radius: 10px;
-  background: #f0f0f0;
-  background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: ${shimmer} 1.5s infinite;
-  flex-shrink: 0;
-`;
-
-const SkeletonTextWrapper = styled.div`
-  display: flex; flex-direction: column; gap: 6px; flex: 1;
-`;
-
-const SkeletonLine = styled.div`
-  height: ${props => props.height || '14px'};
-  width: ${props => props.width || '60%'};
-  border-radius: 4px;
-  background: #f0f0f0;
-  background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: ${shimmer} 1.5s infinite;
-`;
-
-const LocationSkeleton = () => (
-  <SuggestionList>
-    {[1, 2, 3].map((i) => (
-      <SkeletonItem key={i}>
-        <SkeletonIcon />
-        <SkeletonTextWrapper>
-          <SkeletonLine width="50%" height="14px" />
-          <SkeletonLine width="80%" height="12px" />
-        </SkeletonTextWrapper>
-      </SkeletonItem>
-    ))}
-  </SuggestionList>
-);
-
-// --- CALENDAR STYLES ---
-const CalendarWrapper = styled.div`
-  width: 100%;
-`;
 const CalHeader = styled.div`
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 16px; font-weight: 700; font-size: 16px; color: #222;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  color: #222;
   font-family: "ProximaSoft", sans-serif;
 `;
+
 const NavBtn = styled.button`
-  width: 36px; height: 36px; border-radius: 50%; border: 1px solid #eee; background: white;
-  display: flex; align-items: center; justify-content: center;
-  &:active { background: #f5f5f5; }
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #eee;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  &:active {
+    background: #f5f5f5;
+  }
 `;
+
 const WeekGrid = styled.div`
-  display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 8px;
-  text-align: center; font-size: 12px; color: #999; font-family: "ProximaSoft", sans-serif;
-`;
-const DayGrid = styled.div`
-  display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 8px;
-`;
-const DayBtn = styled.button`
-  width: 100%; aspect-ratio: 1; border-radius: 50%; border: none;
-  background: ${props => props.$isSelected ? '#e11d48' : 'transparent'};
-  color: ${props => props.$isSelected ? 'white' : props.$isDisabled ? '#ddd' : '#222'};
-  font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 6px;
+  text-align: center;
+  font-size: 11px;
+  color: #999;
   font-family: "ProximaSoft", sans-serif;
-  transition: background 0.1s;
-  &:active { background: ${props => !props.$isSelected && !props.$isDisabled && '#f0f0f0'}; }
+`;
+
+const DayGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  row-gap: 4px;
+`;
+
+const DayBtn = styled.button`
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: none;
+  background: ${(props) => (props.$isSelected ? "#e11d48" : "transparent")};
+  color: ${(props) =>
+    props.$isSelected ? "white" : props.$isDisabled ? "#ddd" : "#222"};
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "ProximaSoft", sans-serif;
+  &:active {
+    background: ${(props) =>
+      !props.$isSelected && !props.$isDisabled && "#f0f0f0"};
+  }
 `;
 
 // --- PARTICIPANT STYLES ---
-const CounterRow = styled.div`
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 8px 0;
+
+const ParticipantCard = styled.div`
+  background: white;
+  padding: 16px 20px;
+  border-radius: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 `;
-const CountBtn = styled.button`
-  width: 44px; height: 44px; border-radius: 50%; border: 1px solid #ddd; background: white;
-  display: flex; align-items: center; justify-content: center; color: #444;
-  &:disabled { opacity: 0.3; }
-  &:active:not(:disabled) { border-color: #000; color: #000; }
+
+// Replaced native button with Antd Button
+const CountBtn = styled(Button)`
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  border: 1px solid #ddd !important;
+  background: white !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #444 !important;
+  padding: 0 !important;
+  min-width: unset !important;
+  box-shadow: none !important;
+
+  &:disabled {
+    opacity: 0.3 !important;
+    background: #f9f9f9 !important;
+    border-color: #eee !important;
+  }
+  &:hover:not(:disabled) {
+    border-color: #111 !important;
+    color: #111 !important;
+  }
 `;
+
 const CountVal = styled.span`
-  width: 40px; text-align: center; font-weight: 600; font-size: 18px; font-family: "ProximaSoft", sans-serif;
+  width: 32px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 18px;
+  font-family: "ProximaSoft", sans-serif;
 `;
 
 // --- HELPER COMPONENTS ---
 
 const CustomCalendar = ({ value, onChange }) => {
-  const [currentDate, setCurrentDate] = useState(value ? dayjs(value) : dayjs());
+  const [currentDate, setCurrentDate] = useState(
+    value ? dayjs(value) : dayjs()
+  );
 
   const daysInMonth = currentDate.daysInMonth();
-  const startDay = currentDate.startOf('month').day();
+  const startDay = currentDate.startOf("month").day();
   const blanks = Array(startDay).fill(null);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  const nextMonth = () => setCurrentDate(currentDate.add(1, 'month'));
-  const prevMonth = () => setCurrentDate(currentDate.subtract(1, 'month'));
+  const nextMonth = () => setCurrentDate(currentDate.add(1, "month"));
+  const prevMonth = () => setCurrentDate(currentDate.subtract(1, "month"));
 
   const handleDayClick = (day) => {
     const selected = currentDate.date(day);
@@ -348,26 +417,35 @@ const CustomCalendar = ({ value, onChange }) => {
   return (
     <CalendarWrapper>
       <CalHeader>
-        <NavBtn onClick={prevMonth} disabled={currentDate.isSame(dayjs(), 'month')}>
-            <ChevronLeft size={18} />
+        <NavBtn
+          onClick={prevMonth}
+          disabled={currentDate.isSame(dayjs(), "month")}
+        >
+          <ChevronRight size={16} style={{ transform: "rotate(180deg)" }} />
         </NavBtn>
         <span>{currentDate.format("MMMM YYYY")}</span>
-        <NavBtn onClick={nextMonth}><ChevronRight size={18} /></NavBtn>
+        <NavBtn onClick={nextMonth}>
+          <ChevronRight size={16} />
+        </NavBtn>
       </CalHeader>
       <WeekGrid>
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => <div key={d}>{d}</div>)}
+        {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
+          <div key={d}>{d}</div>
+        ))}
       </WeekGrid>
       <DayGrid>
-        {blanks.map((_, i) => <div key={`b-${i}`} />)}
-        {days.map(d => {
+        {blanks.map((_, i) => (
+          <div key={`b-${i}`} />
+        ))}
+        {days.map((d) => {
           const thisDate = currentDate.date(d);
-          const isSelected = value && dayjs(value).isSame(thisDate, 'day');
-          const isPast = thisDate.isBefore(dayjs().startOf('day'));
+          const isSelected = value && dayjs(value).isSame(thisDate, "day");
+          const isPast = thisDate.isBefore(dayjs().startOf("day"));
           return (
-            <DayBtn 
-              key={d} 
+            <DayBtn
+              key={d}
               type="button"
-              $isSelected={isSelected} 
+              $isSelected={isSelected}
               $isDisabled={isPast}
               disabled={isPast}
               onClick={() => handleDayClick(d)}
@@ -381,250 +459,383 @@ const CustomCalendar = ({ value, onChange }) => {
   );
 };
 
-// --- MAIN DRAWER COMPONENT ---
+// --- SKELETON ---
+
+const SkeletonItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 10px;
+  margin-bottom: 10px;
+`;
+const ShimmerBox = styled.div`
+  background: #f0f0f0;
+  background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: ${shimmer} 1.5s infinite;
+  border-radius: ${(props) => props.$radius || "4px"};
+  width: ${(props) => props.$width || "100%"};
+  height: ${(props) => props.$height || "14px"};
+`;
+
+const LocationSkeleton = () => (
+  <div>
+    {[1, 2, 3].map((i) => (
+      <SkeletonItem key={i}>
+        <ShimmerBox $width="28px" $height="28px" $radius="7px" />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+            flex: 1,
+          }}
+        >
+          <ShimmerBox $width="50%" $height="12px" />
+          <ShimmerBox $width="70%" $height="10px" />
+        </div>
+      </SkeletonItem>
+    ))}
+  </div>
+);
+
+// --- MAIN SEARCH DRAWER COMPONENT ---
 
 const SearchDrawer = () => {
   const {
-    isDrawerOpen, setIsDrawerOpen,
-    searchTerm, setSearchTerm,
-    datePickerValue, setDatePickerValue,
-    participantCount, setParticipantCount,
-    geocoding, geocodedAddressResults,
-    handleLocationChange, handleLocationSelect,
-    clearAll, performSearch
+    isDrawerOpen,
+    setIsDrawerOpen,
+    searchTerm,
+    setSearchTerm,
+    datePickerValue,
+    setDatePickerValue,
+    participantCount,
+    setParticipantCount,
+    geocoding,
+    geocodedAddressResults,
+    handleLocationChange,
+    handleLocationSelect,
+    clearAll,
+    performSearch,
   } = useSearch();
 
-  const [activeStep, setActiveStep] = useState('location'); // location | date | guests
+  const [isLocationOpen, setIsLocationOpen] = useState(false);
+  const [isDateOpen, setIsDateOpen] = useState(false);
+  const [isWhoOpen, setIsWhoOpen] = useState(false);
+
   const inputRef = useRef(null);
 
-  // Focus input when location step activates
+  // Auto focus input when location drawer opens
   useEffect(() => {
-    if (activeStep === 'location' && isDrawerOpen) {
+    if (isLocationOpen && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 150);
     }
-  }, [activeStep, isDrawerOpen]);
+  }, [isLocationOpen]);
 
-  // Reset step logic on open
-  useEffect(() => {
-    if (isDrawerOpen) {
-      if (!searchTerm) setActiveStep('location');
-      else setActiveStep(null); 
+  const onSelectLocation = (result) => {
+    if (typeof result === "string") {
+      handleLocationSelect(result);
+    } else {
+      handleLocationSelect(result.displayName, {
+        coordinates: result.coordinates,
+        citySlug: result.citySlug,
+        provinceSlug: result.provinceSlug,
+      });
     }
-  }, [isDrawerOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+    setIsLocationOpen(false);
+  };
 
   const handleSearchClick = () => {
     performSearch();
     setIsDrawerOpen(false);
+    setIsLocationOpen(false);
+    setIsDateOpen(false);
+    setIsWhoOpen(false);
   };
 
-  // Helper to safely select and advance
-  const onLocationSelect = (value) => {
-    handleLocationSelect(value);
-    
-    // 1. Blur input to close keyboard on mobile
-    if (inputRef.current) inputRef.current.blur();
-
-    // 2. Immediately switch step to collapse the location field
-    setActiveStep('date');
-  };
-
-  const renderSuggestions = () => {
+  const renderLocationList = () => {
     if (geocoding) return <LocationSkeleton />;
 
     const hasTerm = searchTerm && searchTerm.length > 0;
-    
-    // Logic: If term exists, show API results. If empty, show suggested.
-    let displayResults = hasTerm ? geocodedAddressResults : SUGGESTED_AREAS;
+    const list = hasTerm ? geocodedAddressResults : SUGGESTED_AREAS;
 
-    // Handle Empty Results:
-    // Only show "No results" if the user is typing something new.
-    // If they just clicked a valid result (term matches selection), don't show error.
-    if (hasTerm && displayResults.length === 0) {
-        return (
-            <div style={{ padding: '20px 0', textAlign: 'center', color: '#717171', fontSize: 14 }}>
-                No results found
-            </div>
-        );
+    if (hasTerm && list.length === 0) {
+      return (
+        <div style={{ textAlign: "center", color: "#717171", marginTop: 20 }}>
+          No results found
+        </div>
+      );
     }
 
-    return (
-      <SuggestionList>
-        {displayResults.map((item, idx) => {
-          const label = hasTerm ? item.displayName.split(',')[0] : item.name;
-          const subLabel = hasTerm ? item.displayName : item.description;
-          const icon = hasTerm ? <MapPin size={18} /> : item.icon;
-          const valueToSelect = hasTerm ? item.displayName : item.name;
+    return list.map((item, idx) => {
+      const name = hasTerm ? item.displayName.split(",")[0] : item.name;
+      const desc = hasTerm ? item.displayName : item.description;
+      const icon = hasTerm ? <MapPin size={18} /> : item.icon;
 
-          return (
-            <SuggestionItem 
-              key={idx} 
-              onClick={() => onLocationSelect(valueToSelect)}
+      return (
+        <SuggestionItem
+          key={idx}
+          onClick={() => onSelectLocation(hasTerm ? item : item.name)}
+        >
+          <IconBox>{icon}</IconBox>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            }}
+          >
+            <span
+              style={{
+                fontWeight: 600,
+                color: "#111",
+                fontFamily: "ProximaSoft, sans-serif",
+                fontSize: 14,
+              }}
             >
-              <IconBox>{icon}</IconBox>
-              <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <span style={{ fontWeight: 600, fontSize: 15, fontFamily: 'ProximaSoft, sans-serif' }}>{label}</span>
-                <span style={{ fontSize: 13, color: '#717171', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', fontFamily: 'ProximaSoft, sans-serif' }}>{subLabel}</span>
-              </div>
-            </SuggestionItem>
-          );
-        })}
-      </SuggestionList>
-    );
+              {name}
+            </span>
+            <span
+              style={{
+                fontSize: 12,
+                color: "#717171",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                fontFamily: "ProximaSoft, sans-serif",
+              }}
+            >
+              {desc}
+            </span>
+          </div>
+        </SuggestionItem>
+      );
+    });
   };
 
   return (
-    <Drawer.Root 
-      open={isDrawerOpen} 
+    <Drawer.Root
+      open={isDrawerOpen}
       onOpenChange={setIsDrawerOpen}
-      preventScrollRestoration={false} 
       shouldScaleBackground
+      preventScrollRestoration={false}
     >
       <Drawer.Portal>
-        <DrawerOverlay />
-        <DrawerContent>
-          <HandleBar />
-          
-          <DrawerHeader>
-            <CloseButton onClick={() => setIsDrawerOpen(false)}><X size={18} /></CloseButton>
-            <span style={{ fontWeight: 700, fontSize: 16, fontFamily: 'ProximaSoft, sans-serif' }}>Search</span>
-            <div style={{ width: 32 }} />
-          </DrawerHeader>
+        <Overlay />
+        <MainContent>
+          <Handle />
+          <Header>
+            <Title>Search</Title>
+          </Header>
 
-          <DrawerBody>
-            
-            {/* 1. LOCATION CARD */}
-            <FieldCard>
-              <FieldHeader onClick={() => setActiveStep(activeStep === 'location' ? null : 'location')}>
-                <LabelGroup>
-                  <FieldLabel>Location</FieldLabel>
-                  {activeStep !== 'location' && (
-                    <FieldValue $active={!!searchTerm}>
-                      {searchTerm || "Where are you looking?"}
-                    </FieldValue>
-                  )}
-                </LabelGroup>
-                {activeStep !== 'location' && <Map size={20} color="#999" />}
-              </FieldHeader>
-              
-              <AnimatePresence initial={false}>
-                {activeStep === 'location' && (
-                  <AnimatedWrapper
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
-                  >
-                    <ContentPadding>
-                        <StyledInput 
-                          ref={inputRef}
-                          placeholder="Search destinations" 
-                          value={searchTerm}
-                          onChange={(e) => handleLocationChange(e.target.value)}
+          <Body>
+            {/* ROW 1: LOCATION */}
+            <Drawer.NestedRoot
+              open={isLocationOpen}
+              onOpenChange={setIsLocationOpen}
+            >
+              <Drawer.Trigger asChild>
+                <MenuRow onClick={() => setIsLocationOpen(true)}>
+                  <RowLeft>
+                    <RowIcon>
+                      <Search size={20} />
+                    </RowIcon>
+                    <RowText>
+                      <RowLabel>Location</RowLabel>
+                      <RowValue $hasValue={!!searchTerm}>
+                        {searchTerm || "Where to?"}
+                      </RowValue>
+                    </RowText>
+                  </RowLeft>
+                </MenuRow>
+              </Drawer.Trigger>
+              <Drawer.Portal>
+                <Overlay style={{ zIndex: 9994 }} />
+                <NestedContent style={{ height: "55vh" }}>
+                  <Handle />
+                  <Header>
+                    <Title>Location</Title>
+                  </Header>
+                  <Body>
+                    <LocationInputWrapper>
+                      <Search
+                        size={18}
+                        color="#111"
+                        style={{ marginRight: 10 }}
+                      />
+                      <StyledInput
+                        ref={inputRef}
+                        placeholder="Search destinations"
+                        value={searchTerm}
+                        onChange={(e) => handleLocationChange(e.target.value)}
+                        bordered={false}
+                      />
+                    </LocationInputWrapper>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: "#999",
+                        letterSpacing: 0.5,
+                        marginBottom: 4,
+                        paddingLeft: 4,
+                      }}
+                    >
+                      {searchTerm ? "SEARCH RESULTS" : "SUGGESTED"}
+                    </div>
+                    {renderLocationList()}
+                  </Body>
+                </NestedContent>
+              </Drawer.Portal>
+            </Drawer.NestedRoot>
+
+            {/* ROW 2: DATE */}
+            <Drawer.NestedRoot open={isDateOpen} onOpenChange={setIsDateOpen}>
+              <Drawer.Trigger asChild>
+                <MenuRow onClick={() => setIsDateOpen(true)}>
+                  <RowLeft>
+                    <RowIcon>
+                      <CalendarIcon size={20} />
+                    </RowIcon>
+                    <RowText>
+                      <RowLabel>Date</RowLabel>
+                      <RowValue $hasValue={!!datePickerValue}>
+                        {datePickerValue
+                          ? dayjs(datePickerValue).format("MMM DD, YYYY")
+                          : "Any week"}
+                      </RowValue>
+                    </RowText>
+                  </RowLeft>
+                </MenuRow>
+              </Drawer.Trigger>
+              <Drawer.Portal>
+                <Overlay style={{ zIndex: 9994 }} />
+                <NestedContent style={{ height: "auto" }}>
+                  <Handle />
+                  <Header>
+                    <Title>When</Title>
+                  </Header>
+                  <Body>
+                    <CustomCalendar
+                      value={datePickerValue}
+                      onChange={(d) => {
+                        setDatePickerValue(d);
+                        setIsDateOpen(false);
+                      }}
+                    />
+                    <div
+                      style={{
+                        textAlign: "center",
+                        marginTop: 4,
+                        paddingBottom: 10,
+                      }}
+                    >
+                      <ClearBtn
+                        type="text"
+                        onClick={() => {
+                          setDatePickerValue(null);
+                          setIsDateOpen(false);
+                        }}
+                      >
+                        Clear date
+                      </ClearBtn>
+                    </div>
+                  </Body>
+                </NestedContent>
+              </Drawer.Portal>
+            </Drawer.NestedRoot>
+
+            {/* ROW 3: PARTICIPANTS */}
+            <Drawer.NestedRoot open={isWhoOpen} onOpenChange={setIsWhoOpen}>
+              <Drawer.Trigger asChild>
+                <MenuRow onClick={() => setIsWhoOpen(true)}>
+                  <RowLeft>
+                    <RowIcon>
+                      <Users size={20} />
+                    </RowIcon>
+                    <RowText>
+                      <RowLabel>Who</RowLabel>
+                      <RowValue $hasValue={true}>
+                        {participantCount === 1
+                          ? "1 participant"
+                          : `${participantCount} participants`}
+                      </RowValue>
+                    </RowText>
+                  </RowLeft>
+                </MenuRow>
+              </Drawer.Trigger>
+              <Drawer.Portal>
+                <Overlay style={{ zIndex: 9994 }} />
+                <NestedContent style={{ height: "auto" }}>
+                  <Handle />
+                  <Header>
+                    <Title>Participants</Title>
+                  </Header>
+                  <Body>
+                    <ParticipantCard>
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            color: "#222",
+                            fontSize: 15,
+                          }}
+                        >
+                          Participants
+                        </span>
+                        <span style={{ fontSize: 13, color: "#717171" }}>
+                          Join the class
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 16,
+                        }}
+                      >
+                        <CountBtn
+                          type="default"
+                          disabled={participantCount <= 1}
+                          onClick={() =>
+                            setParticipantCount(
+                              Math.max(1, participantCount - 1)
+                            )
+                          }
+                          icon={<Minus size={18} />}
                         />
-                        <div style={{ fontSize: 11, fontWeight: 700, color: '#999', marginBottom: 8, letterSpacing: 0.5 }}>
-                          {searchTerm ? 'SEARCH RESULTS' : 'SUGGESTED'}
-                        </div>
-                        {renderSuggestions()}
-                    </ContentPadding>
-                  </AnimatedWrapper>
-                )}
-              </AnimatePresence>
-            </FieldCard>
-
-            {/* 2. DATE CARD */}
-            <FieldCard>
-              <FieldHeader onClick={() => setActiveStep(activeStep === 'date' ? null : 'date')}>
-                <LabelGroup>
-                  <FieldLabel>Date</FieldLabel>
-                  {activeStep !== 'date' && (
-                    <FieldValue $active={!!datePickerValue}>
-                      {datePickerValue ? dayjs(datePickerValue).format("MMM DD, YYYY") : "Any date"}
-                    </FieldValue>
-                  )}
-                </LabelGroup>
-                {activeStep !== 'date' && <CalendarIcon size={20} color="#999" />}
-              </FieldHeader>
-
-              <AnimatePresence initial={false}>
-                {activeStep === 'date' && (
-                  <AnimatedWrapper
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
-                  >
-                    <ContentPadding>
-                        <CustomCalendar 
-                          value={datePickerValue} 
-                          onChange={(d) => { setDatePickerValue(d); setActiveStep('guests'); }} 
+                        <CountVal>{participantCount}</CountVal>
+                        <CountBtn
+                          type="default"
+                          onClick={() =>
+                            setParticipantCount(participantCount + 1)
+                          }
+                          icon={<Plus size={18} />}
                         />
-                    </ContentPadding>
-                  </AnimatedWrapper>
-                )}
-              </AnimatePresence>
-            </FieldCard>
+                      </div>
+                    </ParticipantCard>
+                  </Body>
+                  <Footer>
+                    <SearchBtn onClick={() => setIsWhoOpen(false)}>
+                      Done
+                    </SearchBtn>
+                  </Footer>
+                </NestedContent>
+              </Drawer.Portal>
+            </Drawer.NestedRoot>
+          </Body>
 
-            {/* 3. GUESTS CARD */}
-            <FieldCard>
-              <FieldHeader onClick={() => setActiveStep(activeStep === 'guests' ? null : 'guests')}>
-                <LabelGroup>
-                  <FieldLabel>Who</FieldLabel>
-                  {activeStep !== 'guests' && (
-                    <FieldValue $active={true}>
-                      {participantCount === 1 ? '1 participant' : `${participantCount} participants`}
-                    </FieldValue>
-                  )}
-                </LabelGroup>
-                {activeStep !== 'guests' && <Users size={20} color="#999" />}
-              </FieldHeader>
-
-              <AnimatePresence initial={false}>
-                {activeStep === 'guests' && (
-                  <AnimatedWrapper
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
-                  >
-                     <ContentPadding>
-                        <CounterRow>
-                           <div style={{ display: 'flex', flexDirection: 'column' }}>
-                             <span style={{ fontWeight: 600, fontSize: 16, fontFamily: "ProximaSoft, sans-serif" }}>Participants</span>
-                             <span style={{ fontSize: 13, color: '#717171' }}>Join the class</span>
-                           </div>
-                           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                             <CountBtn 
-                               type="button"
-                               onClick={() => setParticipantCount(Math.max(1, participantCount - 1))}
-                               disabled={participantCount <= 1}
-                             >
-                               <Minus size={18} />
-                             </CountBtn>
-                             <CountVal>{participantCount}</CountVal>
-                             <CountBtn 
-                               type="button"
-                               onClick={() => setParticipantCount(participantCount + 1)}
-                             >
-                               <Plus size={18} />
-                             </CountBtn>
-                           </div>
-                        </CounterRow>
-                     </ContentPadding>
-                  </AnimatedWrapper>
-                )}
-              </AnimatePresence>
-            </FieldCard>
-
-          </DrawerBody>
-
-          <DrawerFooter>
-            <ClearBtn onClick={clearAll}>Clear all</ClearBtn>
-            <SearchButtonFull onClick={handleSearchClick}>
+          <Footer>
+            <ClearBtn type="text" onClick={clearAll}>
+              Clear all
+            </ClearBtn>
+            <SearchBtn onClick={handleSearchClick}>
               <Search size={18} /> Search
-            </SearchButtonFull>
-          </DrawerFooter>
-
-        </DrawerContent>
+            </SearchBtn>
+          </Footer>
+        </MainContent>
       </Drawer.Portal>
     </Drawer.Root>
   );

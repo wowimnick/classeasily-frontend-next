@@ -2,8 +2,8 @@
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import useEmblaCarousel from "embla-carousel-react";
-import { Modal, Typography, Tooltip } from 'antd';
-import message from '@/lib/message';
+import { Modal, Typography, Tooltip } from "antd";
+import message from "@/lib/message";
 import styled, { css } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -34,7 +34,7 @@ const PLACEHOLDER_IMAGES = [
   "https://i.imgur.com/vL2za35.png",
 ];
 
-// --- Styled Components --- (No changes needed)
+// --- Styled Components ---
 const MainContent = styled.div`
   display: flex;
   flex-direction: column;
@@ -52,23 +52,6 @@ const TitleSection = styled.div`
   margin: 1rem 0;
   @media (max-width: 768px) {
     display: none;
-  }
-`;
-
-const ImageSkeleton = styled.div`
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-
-  @keyframes loading {
-    0% {
-      background-position: 200% 0;
-    }
-    100% {
-      background-position: -200% 0;
-    }
   }
 `;
 
@@ -133,35 +116,69 @@ const ImagesContainer = styled.div`
     margin-bottom: 0;
   }
 `;
-const DesktopImagesWrapper = styled.div`
-  display: flex;
-  gap: 8px;
+
+// --- Dynamic Grid Components ---
+const DynamicGridContainer = styled.div`
+  display: grid;
   width: 100%;
-  height: 500px;
+  height: 500px; /* Fixed height container to maintain layout stability */
   max-height: 80vh;
+  gap: 8px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+
   @media (max-width: 768px) {
     display: none;
   }
+
+  /* 1 Image: Full width/height */
+  ${({ $count }) =>
+    $count === 1 &&
+    css`
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr;
+    `}
+
+  /* 2 Images: Split evenly vertical */
+  ${({ $count }) =>
+    $count === 2 &&
+    css`
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr;
+    `}
+
+  /* 3 Images: Left Large, Right Stacked */
+  ${({ $count }) =>
+    $count === 3 &&
+    css`
+      grid-template-columns: 2fr 1fr;
+      grid-template-rows: 1fr 1fr;
+    `}
+
+  /* 4 Images: 2x2 Grid */
+  ${({ $count }) =>
+    $count === 4 &&
+    css`
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+    `}
+
+  /* 5+ Images: Left Large, Right 2x2 Grid (Original Layout) */
+  ${({ $count }) =>
+    $count >= 5 &&
+    css`
+      grid-template-columns: 2fr 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+    `}
 `;
-const ClassImagesGrid = styled.div`
-  flex: 1;
-  min-width: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 8px;
-  & > div:nth-of-type(2) {
-    border-radius: 0 12px 0 0;
-  }
-  & > div:nth-of-type(4) {
-    border-radius: 0 0 12px 0;
-  }
-`;
-const ImageWrapperBase = styled.div`
-  cursor: pointer;
+
+const GridImageItem = styled.div`
   position: relative;
+  cursor: pointer;
   overflow: hidden;
   background-color: #f0f0f0;
+
   img {
     display: block;
     width: 100%;
@@ -175,17 +192,30 @@ const ImageWrapperBase = styled.div`
   &.non-clickable {
     cursor: default;
   }
+
+  /* Handle Row Spans based on layout count */
+  ${({ $index, $total }) => {
+    // 3 Images: First image spans 2 rows (Left side)
+    if ($total === 3 && $index === 0)
+      return css`
+        grid-row: span 2;
+      `;
+
+    // 5+ Images: First image spans 2 rows (Left side)
+    if ($total >= 5 && $index === 0)
+      return css`
+        grid-row: span 2;
+      `;
+
+    return "";
+  }}
 `;
-const LargeImage = styled(ImageWrapperBase)`
-  flex-basis: 60%;
-  border-radius: 12px 0 0 12px;
-`;
-const SmallImage = styled(ImageWrapperBase)``;
+
 const ViewAllPhotosButton = styled.button`
   position: absolute;
   bottom: 1rem;
   right: 1rem;
-  background: rgba(255, 255, 255, 0.52);
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
@@ -196,15 +226,16 @@ const ViewAllPhotosButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+
   &:hover {
     background: white;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-  @media (max-width: 1024px) {
-    bottom: 2rem;
+    transform: scale(1.02);
   }
 `;
+
+// --- Mobile & Modal Components ---
 const MobileCarouselWrapper = styled.div`
   display: none;
   position: relative;
@@ -270,7 +301,7 @@ const CustomGalleryModalOverlay = styled(motion.div)`
   bottom: 0;
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(8px);
-  z-index: 3000; 
+  z-index: 3000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -409,17 +440,6 @@ const GalleryFooter = styled.div`
   text-align: center;
   font-weight: 500;
   flex-shrink: 0;
-`;
-const ImageErrorFallback = styled.div`
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #eee;
-  color: #aaa;
-  position: absolute;
-  top: 0;
 `;
 const StyledModal = styled(Modal)`
   .ant-modal-content {
@@ -567,7 +587,11 @@ const ClassPageImagesTitle = React.memo(
     const classImages =
       Array.isArray(images) && images.length > 0 ? images : [];
     const usePlaceholders = classImages.length === 0;
+
+    // Logic: If using placeholders, use all 5. If real images, use up to 5 for grid, but keep all for carousel.
     const imagesToDisplay = usePlaceholders ? PLACEHOLDER_IMAGES : classImages;
+    const desktopGridImages = imagesToDisplay.slice(0, 5); // Max 5 for grid
+
     const embedCode = `<iframe src="${currentUrl}" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>`;
 
     const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -629,39 +653,6 @@ const ClassPageImagesTitle = React.memo(
       navigator.clipboard
         .writeText(text)
         .then(() => message.success(successMessage));
-    };
-
-    const renderGridImageItem = (image, index, isLarge) => {
-      const imageUrl = usePlaceholders
-        ? image
-        : isLarge
-          ? image?.large_url || image?.medium_url
-          : image?.medium_url || image?.thumbnail_url;
-      const ImageComponent = isLarge ? LargeImage : SmallImage;
-      return (
-        <ImageComponent
-          key={index}
-          className={usePlaceholders ? "non-clickable" : ""}
-          onClick={() => !usePlaceholders && showGalleryModal(index)}
-        >
-          <img
-            src={imageUrl}
-            alt={`Class image ${index + 1}`}
-            loading={isLarge ? "eager" : "lazy"}
-            fetchpriority={isLarge ? "high" : "auto"}
-          />
-          {isLarge && classImages.length > 5 && (
-            <ViewAllPhotosButton
-              onClick={(e) => {
-                e.stopPropagation();
-                showGalleryModal(0);
-              }}
-            >
-              <Grid3x3 size={16} /> Show all photos
-            </ViewAllPhotosButton>
-          )}
-        </ImageComponent>
-      );
     };
 
     const showGalleryModal = (startIndex = 0) => {
@@ -726,19 +717,47 @@ const ClassPageImagesTitle = React.memo(
             </TitleSection>
           )}
           <ImagesContainer>
-            <DesktopImagesWrapper>
-              {imagesToDisplay.length > 0 &&
-                renderGridImageItem(imagesToDisplay[0], 0, true)}
-              {imagesToDisplay.length > 1 && (
-                <ClassImagesGrid>
-                  {imagesToDisplay
-                    .slice(1, 5)
-                    .map((img, index) =>
-                      renderGridImageItem(img, index + 1, false)
-                    )}
-                </ClassImagesGrid>
+            {/* Dynamic Desktop Grid */}
+            <DynamicGridContainer $count={desktopGridImages.length}>
+              {desktopGridImages.map((image, index) => {
+                const imageUrl = usePlaceholders
+                  ? image
+                  : image?.large_url ||
+                    image?.medium_url ||
+                    image?.thumbnail_url;
+
+                return (
+                  <GridImageItem
+                    key={index}
+                    $index={index}
+                    $total={desktopGridImages.length}
+                    className={usePlaceholders ? "non-clickable" : ""}
+                    onClick={() => !usePlaceholders && showGalleryModal(index)}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`Class image ${index + 1}`}
+                      loading={index === 0 ? "eager" : "lazy"}
+                      fetchpriority={index === 0 ? "high" : "auto"}
+                    />
+                  </GridImageItem>
+                );
+              })}
+
+              {/* Show "View all photos" button only if we have more than can be comfortably shown or a full set */}
+              {classImages.length > 5 && (
+                <ViewAllPhotosButton
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    showGalleryModal(0);
+                  }}
+                >
+                  <Grid3x3 size={16} /> Show all photos
+                </ViewAllPhotosButton>
               )}
-            </DesktopImagesWrapper>
+            </DynamicGridContainer>
+
+            {/* Mobile Carousel */}
             <MobileCarouselWrapper>
               <EmblaViewport ref={emblaRef}>
                 <EmblaContainer>
