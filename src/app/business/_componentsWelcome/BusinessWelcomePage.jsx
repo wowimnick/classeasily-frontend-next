@@ -1,13 +1,6 @@
 "use client";
 
-import React, {
-  useState,
-  useRef,
-  useEffect,
-  useCallback,
-  useMemo,
-  memo,
-} from "react";
+import React, { useState, useCallback, useMemo, memo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import styled, { createGlobalStyle, keyframes } from "styled-components";
@@ -18,24 +11,22 @@ import {
   Check,
   X,
   ArrowRight,
-  Calculator,
-  PiggyBank,
-  TrendingUp,
-  MapPin,
-  Users,
-  Calendar,
   BookOpen,
   BarChart,
   DollarSign,
-  CreditCard,
   Briefcase,
-  Sparkles,
+  Zap,
+  Globe,
+  Calendar,
+  Users,
+  Layout,
+  ChevronRight,
 } from "lucide-react";
-import useEmblaCarousel from "embla-carousel-react";
 
 // Import components (adjust paths as needed)
 import Header from "@/components/layout/SharedMainClientHeader";
 import FooterClient from "@/components/homepage/FooterClient";
+import ExploreHeader from "@/components/explore/ExploreHeader";
 
 // --- Global Animations & Styles ---
 
@@ -45,20 +36,8 @@ const GlobalStyle = createGlobalStyle`
     --glass-bg: rgba(255, 255, 255, 0.65);
     --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
     --primary-color: #222222;
-    --accent-red: #dc2626;
+    --accent-red: #f81e3e; 
   }
-`;
-
-const float = keyframes`
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
-`;
-
-const gradientAnimation = keyframes`
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
 `;
 
 // --- Styled Components ---
@@ -69,16 +48,16 @@ const PageWrapper = styled.div`
   color: #222222;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
     Roboto, Helvetica, Arial, sans-serif;
-  overflow-x: hidden;
+  min-height: 100vh;
 
   /* Apple-style subtle mesh background */
   &::before {
     content: "";
     position: absolute;
-    top: -10%;
-    left: -10%;
-    width: 120%;
-    height: 120%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: radial-gradient(
         circle at 15% 50%,
         rgba(255, 200, 200, 0.15),
@@ -95,7 +74,7 @@ const PageWrapper = styled.div`
 `;
 
 const SectionContainer = styled.div`
-  max-width: 1100px; /* Slightly tighter container for compact look */
+  max-width: 1100px;
   margin: 0 auto;
   padding: 0 24px;
   position: relative;
@@ -118,9 +97,9 @@ const GlassCard = styled(motion.div)`
 
 // --- Hero Section ---
 const HeroSection = styled.section`
-  min-height: 85vh;
-  padding-top: 140px;
-  padding-bottom: 60px;
+  min-height: 60vh;
+  padding-top: 20px;
+  padding-bottom: 20px;
   display: flex;
   align-items: center;
   position: relative;
@@ -155,23 +134,19 @@ const HeroTextContainer = styled(motion.div)`
   }
 `;
 
-const HeroVisualContainer = styled(GlassCard)`
+const HeroVisualContainer = styled(motion.div)`
   position: relative;
   width: 100%;
-  aspect-ratio: 4/3;
+  aspect-ratio: 4/3.1;
+  border-radius: 24px;
+  box-shadow: rgb(0 0 0 / 1%) 0px 20px 20px 0px;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.4);
 
   img {
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     width: 100%;
-    height: auto;
+    height: 100%;
     object-fit: cover;
+    display: block;
   }
 `;
 
@@ -182,24 +157,18 @@ const HeroTitle = styled.h1`
   letter-spacing: -0.03em;
   line-height: 1.05;
   color: #1d1d1f;
-
-  span {
-    background: linear-gradient(135deg, #222, #555);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
 `;
 
 const HeroSubtitle = styled.p`
-  font-size: 1.125rem; /* ~18px */
-  color: #6e6e73; /* Apple gray */
+  font-size: 1.125rem;
+  color: #6e6e73;
   max-width: 460px;
   margin-bottom: 32px;
   line-height: 1.5;
   font-weight: 400;
 
   @media (max-width: 768px) {
-    font-size: 0.95rem; /* ~15px on mobile */
+    font-size: 14px;
   }
 `;
 
@@ -211,7 +180,7 @@ const StartButton = styled.button`
   padding: 0 32px;
   border-radius: 999px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -232,99 +201,123 @@ const StartButton = styled.button`
   }
 `;
 
-// --- Dashboard / Features Section ---
+// --- Dashboard / Mockups Section ---
 const DashboardSection = styled.section`
-  padding: 5rem 0;
+  padding: 4rem 0 !important;
   position: relative;
 `;
 
-const TabsWrapper = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin: 32px 0;
-  flex-wrap: wrap;
-`;
-
-const TabButton = styled(motion.button)`
-  padding: 10px 20px;
-  background: ${(props) =>
-    props.$active ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.5)"};
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid
-    ${(props) => (props.$active ? "transparent" : "rgba(0,0,0,0.05)")};
-  border-radius: 99px;
-  color: ${(props) => (props.$active ? "#ffffff" : "#6e6e73")};
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
-  font-size: 0.85rem; /* Compact */
-
-  &:hover {
-    background: ${(props) =>
-      props.$active ? "rgba(0,0,0,0.95)" : "rgba(255,255,255,0.8)"};
-  }
-`;
-
-const EmblaWrapper = styled(GlassCard)`
-  border-radius: 20px;
-  overflow: hidden;
-  padding: 8px; /* Internal frame */
-  background: rgba(255, 255, 255, 0.5);
-`;
-
-const EmblaContainer = styled.div`
-  display: flex;
-  border-radius: 16px;
-  overflow: hidden;
-`;
-
-const EmblaSlide = styled.div`
-  flex: 0 0 100%;
-  min-width: 0;
-  position: relative;
-  width: 100%;
-
-  img {
-    width: 100%;
-    height: auto;
-    display: block;
-    border-radius: 12px;
-  }
-`;
-
-// --- Cost & Comparison Section ---
-const TwoColumnSection = styled.section`
+const MockupGrid = styled.div`
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 60px;
-  padding: 80px 0;
-  align-items: start;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-top: 48px;
 
   @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 700px) {
     grid-template-columns: 1fr;
-    gap: 40px;
-    padding: 60px 0;
+    gap: 48px;
   }
 `;
 
-const StickyRightColumn = styled.div`
-  position: sticky;
-  top: 140px;
-  height: auto;
+const MockupItem = styled(motion.div)`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const MockupImageWrapper = styled.div`
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/10;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: #f5f5f7;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: translateY(-5px);
+  }
+
+  img {
+    object-fit: cover;
+  }
+`;
+
+const MockupTitle = styled.h3`
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+`;
+
+const MockupDesc = styled.p`
+  font-size: 0.95rem;
+  color: #6e6e73;
+  line-height: 1.5;
+  margin: 0;
+`;
+
+// --- Redesigned Cost & Comparison Section ---
+const ValuePropSection = styled.section`
+  padding: 80px 0;
+`;
+
+const GridThree = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 60px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const ValueCard = styled(GlassCard)`
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.6);
+`;
+
+const IconCircle = styled.div`
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  color: #f81e3e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+`;
+
+const ValueTitle = styled.h3`
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #1d1d1f;
+`;
+
+const ValueDesc = styled.p`
+  font-size: 14px;
+  color: #6e6e73;
+  line-height: 1.5;
 `;
 
 const SectionHeader = styled.div`
-  margin-bottom: 32px;
+  margin-bottom: 48px;
   text-align: ${(props) => (props.$center ? "center" : "left")};
 `;
 
 const SectionEyebrow = styled.p`
-  color: #007aff; /* Apple Blue or Accent Red */
+  color: #f81e3e;
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.75rem;
@@ -342,113 +335,30 @@ const SectionTitle = styled.h2`
 `;
 
 const SectionSubtitle = styled.p`
-  font-size: 1.05rem; /* ~17px desktop */
+  font-size: 1.05rem;
   color: #6e6e73;
   line-height: 1.5;
   max-width: ${(props) => (props.$center ? "600px" : "100%")};
   margin: ${(props) => (props.$center ? "0 auto" : "0")};
 
   @media (max-width: 768px) {
-    font-size: 0.9rem; /* ~14px mobile */
+    font-size: 0.9rem;
   }
 `;
 
-const ContentBlock = styled.div`
-  margin-bottom: 100px;
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-// --- Modern Glass Ledger ---
-const SavingsLedger = styled(GlassCard)`
-  padding: 0;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.7);
-`;
-
-const LedgerRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  transition: background 0.2s;
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.4);
-  }
-
-  &.total {
-    background: rgba(220, 38, 38, 0.03); /* Subtle tint */
-    margin-top: 0;
-  }
-`;
-
-const LedgerInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-`;
-
-const LedgerIconBox = styled.div`
-  background: #fff;
-  color: #1d1d1f;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-`;
-
-const LedgerTextContent = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const LedgerTitle = styled.h3`
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #1d1d1f;
-  margin: 0;
-`;
-
-const LedgerDesc = styled.p`
-  font-size: 0.8rem;
-  color: #6e6e73;
-  margin: 2px 0 0;
-`;
-
-const LedgerAmount = styled.div`
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1d1d1f;
-  font-variant-numeric: tabular-nums;
-
-  &.highlight {
-    color: #dc2626;
-    font-size: 1.15rem;
-    font-weight: 700;
-  }
-`;
-
-// --- Glass Comparison Table ---
+// --- Comparison Table ---
 const ComparisonTableWrapper = styled(GlassCard)`
   padding: 0;
   background: rgba(255, 255, 255, 0.7);
+  overflow: hidden;
+  max-width: 900px;
+  margin: 0 auto;
 `;
 
 const ComparisonRow = styled.div`
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
-  padding: 18px 24px;
+  padding: 20px 32px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   align-items: center;
 
@@ -464,20 +374,37 @@ const ComparisonRow = styled.div`
   }
 `;
 
+const ComparisonHeader = styled(ComparisonRow)`
+  background: rgba(0, 0, 0, 0.02);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6e6e73;
+  font-weight: 600;
+`;
+
 const ComparisonFeature = styled.div`
-  font-weight: 500;
+  font-weight: 600;
   color: #1d1d1f;
-  font-size: 0.9rem;
+  font-size: 14px;
 `;
 
 const ComparisonValue = styled.div`
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: ${(props) => (props.$good ? "#10b981" : "#6e6e73")};
   font-weight: ${(props) => (props.$good ? "600" : "400")};
-  justify-content: center;
+
+  /* Special Highlight Text */
+  ${(props) =>
+    props.$highlight &&
+    `
+    color: #f81e3e;
+    font-weight: 700;
+  `}
 
   @media (max-width: 600px) {
     justify-content: flex-start;
@@ -487,119 +414,135 @@ const ComparisonValue = styled.div`
   }
 `;
 
-// --- Visual CSS-only Graphic for Comparison ---
-const SavingsVisualCard = styled(GlassCard)`
-  padding: 32px;
+// --- Tier Section (Redesigned - No Cards) ---
+const TierSection = styled.section`
+  padding: 80px 0;
   background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.8),
-    rgba(255, 255, 255, 0.4)
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(248, 30, 62, 0.03) 100%
   );
+`;
+
+const TierContainer = styled.div`
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: flex-start;
+  gap: 20px;
+  margin-top: 60px;
+
+  @media (max-width: 900px) {
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+`;
+
+const TierColumn = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  min-height: 400px;
+  padding: 0 12px;
+  flex: 1;
+
+  @media (max-width: 900px) {
+    width: 100%;
+    padding: 0;
+  }
 `;
 
-const VisualCircle = styled.div`
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #e31c5f, #ff758c);
+const TierHeader = styled.div`
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const TierIconWrapper = styled.div`
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: ${(props) => props.$bg || "#f5f5f7"};
+  color: ${(props) => props.$color || "#1d1d1f"};
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-weight: 700;
-  font-size: 1.5rem;
-  margin-bottom: 24px;
-  box-shadow: 0 10px 30px rgba(227, 28, 95, 0.3);
-  animation: ${float} 6s ease-in-out infinite;
-`;
-
-const VisualLabel = styled.div`
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #1d1d1f;
   margin-bottom: 8px;
 `;
 
-const VisualSub = styled.div`
-  font-size: 0.8rem;
-  color: #6e6e73;
+const TierTitle = styled.h3`
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1d1d1f;
 `;
 
-// --- Tier Section ---
-const TierSection = styled.section`
-  padding: 80px 0;
-`;
-
-const TierCard = styled(GlassCard)`
-  background: rgba(255, 255, 255, 0.7);
-  overflow: hidden;
-`;
-
-const TierTable = styled.div`
-  width: 100%;
-`;
-
-const TierRow = styled.div`
-  display: grid;
-  grid-template-columns: 2.5fr 1fr 1fr 1fr;
-  padding: 16px 24px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  align-items: center;
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  &:first-child {
-    background: rgba(0, 0, 0, 0.02);
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #6e6e73;
-    font-weight: 600;
-  }
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-    padding: 1.25rem;
-    border-bottom: 4px solid rgba(0, 0, 0, 0.02);
-
-    &:first-child {
-      display: none;
-    }
-  }
-`;
-
-const TierCell = styled.div`
-  text-align: ${(props) => (props.$align === "left" ? "left" : "center")};
-  font-weight: ${(props) => (props.$bold ? "600" : "400")};
-  color: ${(props) => (props.$bold ? "#1d1d1f" : "#4b5563")};
+const TierPrice = styled.div`
   font-size: 0.9rem;
+  font-weight: 600;
+  color: ${(props) => props.$color || "#6e6e73"};
+  background: rgba(0, 0, 0, 0.04);
+  padding: 4px 10px;
+  border-radius: 6px;
+  width: fit-content;
+`;
+
+const TierList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const TierListItem = styled.li`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.95rem;
+  color: #4b5563;
+  line-height: 1.4;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+`;
+
+const TierSeparator = styled.div`
+  height: 200px;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(0, 0, 0, 0.1),
+    transparent
+  );
+  align-self: center;
+
+  @media (max-width: 900px) {
+    display: none; // Hide vertical lines on mobile
+  }
+`;
+
+const MobileArrow = styled.div`
+  display: none;
+  @media (max-width: 900px) {
+    display: flex;
+    justify-content: center;
+    color: #d1d5db;
+    transform: rotate(90deg);
+  }
+`;
+
+const DesktopArrow = styled.div`
   display: flex;
   align-items: center;
-  justify-content: ${(props) =>
-    props.$align === "left" ? "flex-start" : "center"};
-  gap: 0.5rem;
+  justify-content: center;
+  color: #d1d5db;
+  padding-top: 80px;
 
-  @media (max-width: 768px) {
-    justify-content: space-between;
-    width: 100%;
-    font-size: 0.85rem;
-
-    &::before {
-      content: attr(data-label);
-      font-weight: 600;
-      color: #9ca3af;
-      font-size: 0.8rem;
-    }
+  @media (max-width: 900px) {
+    display: none;
   }
 `;
 
@@ -721,7 +664,7 @@ const FAQButton = styled.button`
 const FAQAnswer = styled(motion.div)`
   overflow: hidden;
   color: #6e6e73;
-  font-size: 0.95rem;
+  font-size: 14px;
   line-height: 1.6;
 `;
 
@@ -731,219 +674,159 @@ const BusinessWelcomePage = () => {
 
   // --- State Hooks ---
   const [activeItems, setActiveItems] = useState(new Set(["1"]));
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
-  const [selectedIndex, setSelectedIndex] = useState(0);
 
   // --- Data ---
-  const {
-    navigationItems,
-    tabContent,
-    savingsData,
-    comparisonData,
-    tierComparisonData,
-    faqData,
-    testimonials,
-  } = useMemo(
-    () => ({
-      navigationItems: [
-        {
-          key: "bookings",
-          icon: <BookOpen size={18} />,
-          label: "Bookings",
-        },
-        {
-          key: "analytics",
-          icon: <BarChart size={18} />,
-          label: "Insights",
-        },
-        {
-          key: "revenue",
-          icon: <DollarSign size={18} />,
-          label: "Earnings",
-        },
-        {
-          key: "payouts",
-          icon: <CreditCard size={18} />,
-          label: "Payouts",
-        },
-        {
-          key: "staff",
-          icon: <Briefcase size={18} />,
-          label: "Team",
-        },
-      ],
-      tabContent: [
-        {
-          image: "https://i.imgur.com/v93lOsv.png",
-          description:
-            "Your command center. Instantly gauge your hosting health with a powerful overview of revenue.",
-        },
-        {
-          image: "https://i.imgur.com/DMdHsU5.png",
-          description:
-            "Visualize booking trends, pinpoint popular experiences, and optimize your schedule.",
-        },
-        {
-          image: "https://i.imgur.com/tOAgKBg.png",
-          description:
-            "Track every dollar. Visualize growth trends and instantly identify profitable workshops.",
-        },
-        {
-          image: "https://i.imgur.com/4Mf4uee.png",
-          description:
-            "Get paid with confidence. Track earnings in real-time and access clear payout history.",
-        },
-        {
-          image: "https://i.imgur.com/ljYW979.png",
-          description:
-            "Empower your team. Invite co-hosts, manage access roles, and maintain control.",
-        },
-      ],
-      savingsData: [
-        {
-          icon: <Calculator size={18} />,
-          title: "No Setup Costs",
-          description: "Zero upfront fees or subscriptions.",
-          amount: "$1,200",
-        },
-        {
-          icon: <PiggyBank size={18} />,
-          title: "Admin Efficiency",
-          description: "Automated bookings save you hours.",
-          amount: "$4,800",
-        },
-        {
-          icon: <TrendingUp size={18} />,
-          title: "Guest Reach",
-          description: "Attract more guests automatically.",
-          amount: "$2,000",
-        },
-      ],
-      comparisonData: [
-        {
-          feature: "Commission Rate",
-          others: "20-30% + Fees",
-          classEasily: "17% All-Inclusive",
-          highlight: true,
-        },
-        {
-          feature: "Monthly Subscription",
-          others: "$50 - $200/mo",
-          classEasily: "Free Forever",
-          highlight: true,
-        },
-        {
-          feature: "Payment Speed",
-          others: "3-5 Days",
-          classEasily: "Next Day",
-          highlight: false,
-        },
-        {
-          feature: "Built-in Marketing",
-          others: <X size={16} />,
-          classEasily: <Check size={16} color="#10b981" />,
-          highlight: false,
-        },
-        {
-          feature: "Host Support",
-          others: "Email Only",
-          classEasily: "24/7 Priority",
-          highlight: false,
-        },
-      ],
-      tierComparisonData: [
-        {
-          feature: "Guest CRM Storage",
-          imported: true,
-          widget: true,
-          marketplace: true,
-        },
-        {
-          feature: "Guest Notes",
-          imported: true,
-          widget: true,
-          marketplace: true,
-        },
-        {
-          feature: "Smart Scheduling",
-          imported: false,
-          widget: true,
-          marketplace: true,
-        },
-        {
-          feature: "Automated Reminders",
-          imported: false,
-          widget: true,
-          marketplace: true,
-        },
-        {
-          feature: "Payment Processing",
-          imported: false,
-          widget: true,
-          marketplace: true,
-        },
-        {
-          feature: "Marketing / Discovery",
-          imported: false,
-          widget: false,
-          marketplace: true,
-        },
-        {
-          feature: "Fee Structure",
-          imported: "Free",
-          widget: "~6%",
-          marketplace: "~17%",
-        },
-      ],
-      faqData: [
-        {
-          key: "1",
-          question: "How does hosting work?",
-          answer:
-            "We connect local experts with guests seeking unique experiences. You list your workshop, set your schedule, and we handle the bookings and payments.",
-        },
-        {
-          key: "2",
-          question: "I use other platforms. Can I host here too?",
-          answer:
-            "Absolutely. Many of our hosts list on multiple platforms. However, our <strong>exclusive partner program</strong> offers lower fees for exclusive hosts.",
-        },
-        {
-          key: "3",
-          question: "What experiences can I list?",
-          answer:
-            "We focus on <strong>interactive workshops</strong>. Pottery, cooking, painting, coding bootcamps, and more.",
-        },
-        {
-          key: "4",
-          question: "When do I get paid?",
-          answer:
-            "Funds are transferred to your connected bank account automatically after the experience is completed.",
-        },
-      ],
-      testimonials: [
-        {
-          text: "I used to spend hours on spreadsheets. Now I just focus on my pottery students. The platform handles the rest.",
-          author: "Linda M.",
-          title: "Pottery Host",
-          avatar: "https://randomuser.me/api/portraits/women/45.jpg",
-        },
-        {
-          text: "The exposure is incredible. My weekend cooking workshops are booked out weeks in advance.",
-          author: "Carlos G.",
-          title: "Culinary Host",
-          avatar: "https://randomuser.me/api/portraits/men/23.jpg",
-        },
-        {
-          text: "Finally, a platform that doesn't charge me a monthly fee just to exist. I only pay when I actually earn.",
-          author: "Sophie T.",
-          title: "Art Instructor",
-          avatar: "https://randomuser.me/api/portraits/women/52.jpg",
-        },
-      ],
-    }),
-    []
-  );
+  const { mockupItems, comparisonData, growthPathData, faqData, testimonials } =
+    useMemo(
+      () => ({
+        // Top 3 features for Mockups
+        mockupItems: [
+          {
+            title: "Bookings",
+            description:
+              "Visualize trends, pinpoint popular experiences, and optimize your schedule.",
+            image: "https://i.imgur.com/DMdHsU5.png",
+            delay: 0,
+          },
+          {
+            title: "Insights",
+            description:
+              "Track every dollar. Visualize growth trends and instantly identify profitable time slots.",
+            image: "https://i.imgur.com/v93lOsv.png",
+            delay: 0.1,
+          },
+          {
+            title: "Earnings",
+            description:
+              "Get paid with confidence. Track earnings in real-time and access clear payout history.",
+            image: "https://i.imgur.com/tOAgKBg.png",
+            delay: 0.2,
+          },
+        ],
+        comparisonData: [
+          {
+            feature: "Commission Rate",
+            others: "20-30% + Fees",
+            classEasily: "17% All-Inclusive",
+            highlight: true,
+          },
+          {
+            feature: "Monthly Subscription",
+            others: "$50 - $200/mo",
+            classEasily: "Free Forever",
+            highlight: true,
+          },
+          {
+            feature: "Payout Speed",
+            others: "3-7 Days",
+            classEasily: "Next Day",
+            highlight: false,
+          },
+          {
+            feature: "Built-in Marketing",
+            others: <X size={16} />,
+            classEasily: <Check size={16} color="#10b981" />,
+            highlight: false,
+          },
+          {
+            feature: "Host Support",
+            others: "Email Only",
+            classEasily: "24/7 Priority",
+            highlight: false,
+          },
+        ],
+        // New Data Structure for No-Card Tier Section
+        growthPathData: [
+          {
+            title: "Import Only",
+            price: "Free",
+            icon: <Users size={24} />,
+            iconBg: "#f3f4f6",
+            iconColor: "#6b7280",
+            features: [
+              "Import existing CRM contacts",
+              "Basic guest notes",
+              "Manual scheduling",
+              "Standard profile page",
+            ],
+          },
+          {
+            title: "Widget",
+            price: "~6% Fees",
+            icon: <Layout size={24} />,
+            iconBg: "#e0f2fe",
+            iconColor: "#0284c7",
+            features: [
+              "Embeddable booking widget",
+              "Automated reminders",
+              "Secure payment processing",
+              "Calendar syncing",
+            ],
+          },
+          {
+            title: "Marketplace",
+            price: "~17% Fees",
+            icon: <Globe size={24} />,
+            iconBg: "#fee2e2",
+            iconColor: "#f81e3e",
+            features: [
+              "Full marketplace listing",
+              "Active marketing & discovery",
+              "SEO optimization",
+              "Priority support",
+              "Next-day payouts",
+            ],
+          },
+        ],
+        faqData: [
+          {
+            key: "1",
+            question: "How does hosting work?",
+            answer:
+              "We connect local experts with guests seeking <strong>fun experiences</strong>. Whether it's axe throwing, wine tasting, or sushi making, you list it, set your schedule, and we handle the rest.",
+          },
+          {
+            key: "2",
+            question: "I use other platforms. Can I host here too?",
+            answer:
+              "Absolutely. Many of our hosts list on multiple platforms. However, our <strong>exclusive partner program</strong> offers lower fees for exclusive hosts.",
+          },
+          {
+            key: "3",
+            question: "What type of experiences can I list?",
+            answer:
+              "We focus on <strong>social, fun experiences</strong>. Archery, mixology classes, pottery, painting nights, and local tours perform exceptionally well.",
+          },
+          {
+            key: "4",
+            question: "When do I get paid?",
+            answer:
+              "We know cash flow is king for small businesses. Funds are transferred to your connected bank account the <strong>very next day</strong> after the experience is completed.",
+          },
+        ],
+        testimonials: [
+          {
+            text: "I used to spend hours on spreadsheets. Now I just focus on my pottery students. The platform handles the rest.",
+            author: "Linda M.",
+            title: "Pottery Host",
+            avatar: "https://randomuser.me/api/portraits/women/45.jpg",
+          },
+          {
+            text: "The exposure is incredible. My weekend cooking workshops are booked out weeks in advance.",
+            author: "Carlos G.",
+            title: "Culinary Host",
+            avatar: "https://randomuser.me/api/portraits/men/23.jpg",
+          },
+          {
+            text: "Finally, a platform that doesn't charge me a monthly fee just to exist. I only pay when I actually earn.",
+            author: "Sophie T.",
+            title: "Art Instructor",
+            avatar: "https://randomuser.me/api/portraits/women/52.jpg",
+          },
+        ],
+      }),
+      []
+    );
 
   // --- Callbacks ---
   const handleNavigate = useCallback(() => {
@@ -959,28 +842,10 @@ const BusinessWelcomePage = () => {
     });
   }, []);
 
-  const scrollTo = useCallback(
-    (index) => {
-      if (emblaApi) emblaApi.scrollTo(index);
-    },
-    [emblaApi]
-  );
-
-  const onSelect = useCallback(() => {
-    if (emblaApi) setSelectedIndex(emblaApi.selectedScrollSnap());
-  }, [emblaApi]);
-
-  useEffect(() => {
-    if (!emblaApi) return;
-    onSelect();
-    emblaApi.on("select", onSelect).on("reInit", onSelect);
-    return () => emblaApi.off("select", onSelect).off("reInit", onSelect);
-  }, [emblaApi, onSelect]);
-
   return (
     <PageWrapper>
       <GlobalStyle />
-      <Header />
+      <ExploreHeader showOptionsWrapper={false} />
 
       <main>
         {/* --- Hero --- */}
@@ -1013,10 +878,9 @@ const BusinessWelcomePage = () => {
                 transition={{ duration: 0.6, delay: 0.2 }}
               >
                 <Image
-                  src="/Group 1.svg"
+                  src="/Frame 1597880366.svg"
                   alt="Host Dashboard Preview"
-                  width={800}
-                  height={600}
+                  fill
                   priority
                 />
               </HeroVisualContainer>
@@ -1024,182 +888,125 @@ const BusinessWelcomePage = () => {
           </SectionContainer>
         </HeroSection>
 
-        {/* --- Dashboard Preview --- */}
+        {/* --- Dashboard Mockups Section (Redesigned) --- */}
         <DashboardSection>
           <SectionContainer>
             <SectionHeader $center>
               <SectionEyebrow>HOST TOOLS</SectionEyebrow>
               <SectionTitle>Manage everything in one place</SectionTitle>
               <SectionSubtitle $center>
-                From scheduling workshops to tracking your payouts, our
-                dashboard gives you the clarity you need.
+                From scheduling events to tracking your payouts, our dashboard
+                gives you the clarity you need.
               </SectionSubtitle>
             </SectionHeader>
 
-            <TabsWrapper>
-              {navigationItems.map((item, index) => (
-                <TabButton
-                  key={item.key}
-                  $active={index === selectedIndex}
-                  onClick={() => scrollTo(index)}
+            <MockupGrid>
+              {mockupItems.map((item, index) => (
+                <MockupItem
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: item.delay, duration: 0.5 }}
                 >
-                  {item.icon}
-                  {item.label}
-                </TabButton>
-              ))}
-            </TabsWrapper>
-
-            <EmblaWrapper>
-              <EmblaContainer ref={emblaRef}>
-                {tabContent.map((content, index) => (
-                  <EmblaSlide key={index}>
+                  <MockupImageWrapper>
                     <Image
-                      src={content.image}
-                      alt={navigationItems[index].label}
-                      width={1440}
-                      height={900}
+                      src={item.image}
+                      alt={item.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
                     />
-                  </EmblaSlide>
-                ))}
-              </EmblaContainer>
-            </EmblaWrapper>
-
-            <motion.p
-              key={selectedIndex}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{
-                textAlign: "center",
-                marginTop: 24,
-                color: "#6e6e73",
-                fontSize: "0.95rem",
-              }}
-            >
-              {tabContent[selectedIndex].description}
-            </motion.p>
+                  </MockupImageWrapper>
+                  <div>
+                    <MockupTitle>{item.title}</MockupTitle>
+                    <MockupDesc>{item.description}</MockupDesc>
+                  </div>
+                </MockupItem>
+              ))}
+            </MockupGrid>
           </SectionContainer>
         </DashboardSection>
 
-        {/* --- Split Section (Savings & Comparison) --- */}
-        <SectionContainer>
-          <TwoColumnSection>
-            <div>
-              {/* Cost Block */}
-              <ContentBlock>
-                <SectionHeader>
-                  <SectionEyebrow>EARNINGS</SectionEyebrow>
-                  <SectionTitle>Keep more of what you earn</SectionTitle>
-                  <SectionSubtitle>
-                    No monthly subscriptions. No setup fees. We only make money
-                    when you get a booking.
-                  </SectionSubtitle>
-                </SectionHeader>
+        {/* --- Value & Comparison Section --- */}
+        <ValuePropSection>
+          <SectionContainer>
+            <SectionHeader $center>
+              <SectionEyebrow>WHY CHOOSE US</SectionEyebrow>
+              <SectionTitle>Built for your bottom line</SectionTitle>
+              <SectionSubtitle $center>
+                We only succeed when you do. Experience a fairer way to host.
+              </SectionSubtitle>
+            </SectionHeader>
 
-                <SavingsLedger>
-                  {savingsData.map((item, i) => (
-                    <LedgerRow key={i}>
-                      <LedgerInfo>
-                        <LedgerIconBox>{item.icon}</LedgerIconBox>
-                        <LedgerTextContent>
-                          <LedgerTitle>{item.title}</LedgerTitle>
-                          <LedgerDesc>{item.description}</LedgerDesc>
-                        </LedgerTextContent>
-                      </LedgerInfo>
-                      <LedgerAmount>{item.amount}</LedgerAmount>
-                    </LedgerRow>
-                  ))}
-                  <LedgerRow className="total">
-                    <LedgerInfo>
-                      <LedgerIconBox
-                        style={{ color: "#dc2626", background: "#fff5f5" }}
-                      >
-                        <Sparkles size={18} />
-                      </LedgerIconBox>
-                      <LedgerTextContent>
-                        <LedgerTitle style={{ color: "#dc2626" }}>
-                          Annual Potential Savings
-                        </LedgerTitle>
-                      </LedgerTextContent>
-                    </LedgerInfo>
-                    <LedgerAmount className="highlight">$8,000+</LedgerAmount>
-                  </LedgerRow>
-                </SavingsLedger>
-              </ContentBlock>
+            <GridThree>
+              <ValueCard>
+                <IconCircle>
+                  <lord-icon
+                    src="https://cdn.lordicon.com/pmawqxvu.json"
+                    trigger="in"
+                    state="in-reveal"
+                    style={{ width: "44px", height: "44px" }}
+                  ></lord-icon>
+                </IconCircle>
+                <ValueTitle>0% Listing Fees</ValueTitle>
+                <ValueDesc>
+                  Keep 100% of your earnings minus standard processing fees. We
+                  don't charge you to exist on our platform.
+                </ValueDesc>
+              </ValueCard>
+              <ValueCard>
+                <IconCircle>
+                  <lord-icon
+                    src="https://cdn.lordicon.com/rhmhivzj.json"
+                    trigger="in"
+                    state="in-reveal"
+                    style={{ width: "44px", height: "44px" }}
+                  ></lord-icon>
+                </IconCircle>
+                <ValueTitle>Next Day Payouts</ValueTitle>
+                <ValueDesc>
+                  Cash flow matters. Get paid the very next day after your
+                  experience completes. No more waiting weeks for funds.
+                </ValueDesc>
+              </ValueCard>
+              <ValueCard>
+                <IconCircle>
+                  <lord-icon
+                    src="https://cdn.lordicon.com/mlwdofpz.json"
+                    trigger="hover"
+                    style={{ width: "44px", height: "44px" }}
+                  ></lord-icon>
+                </IconCircle>
+                <ValueTitle>Marketing Included</ValueTitle>
+                <ValueDesc>
+                  We actively market your experiences to thousands of local
+                  guests looking for something fun to do.
+                </ValueDesc>
+              </ValueCard>
+            </GridThree>
 
-              {/* Comparison Block */}
-              <ContentBlock>
-                <SectionHeader>
-                  <SectionEyebrow>COMPARISON</SectionEyebrow>
-                  <SectionTitle>Fairer than the rest</SectionTitle>
-                  <SectionSubtitle>
-                    See how our host-first model stacks up against traditional
-                    platforms.
-                  </SectionSubtitle>
-                </SectionHeader>
+            <ComparisonTableWrapper>
+              <ComparisonHeader>
+                <div>Feature</div>
+                <div style={{ textAlign: "center" }}>Others</div>
+                <div style={{ textAlign: "center", color: "#f81e3e" }}>
+                  ClassEasily
+                </div>
+              </ComparisonHeader>
+              {comparisonData.map((row) => (
+                <ComparisonRow key={row.feature}>
+                  <ComparisonFeature>{row.feature}</ComparisonFeature>
+                  <ComparisonValue $good={false}>{row.others}</ComparisonValue>
+                  <ComparisonValue $good={true} $highlight={row.highlight}>
+                    {row.classEasily}
+                  </ComparisonValue>
+                </ComparisonRow>
+              ))}
+            </ComparisonTableWrapper>
+          </SectionContainer>
+        </ValuePropSection>
 
-                <ComparisonTableWrapper>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "2fr 1fr 1fr",
-                      padding: "16px 24px",
-                      fontSize: "0.75rem",
-                      fontWeight: 600,
-                      color: "#999",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                      background: "rgba(0,0,0,0.02)",
-                    }}
-                  >
-                    <div>Feature</div>
-                    <div style={{ textAlign: "center" }}>Others</div>
-                    <div style={{ textAlign: "center", color: "#dc2626" }}>
-                      Us
-                    </div>
-                  </div>
-                  {comparisonData.map((row) => (
-                    <ComparisonRow key={row.feature}>
-                      <ComparisonFeature>{row.feature}</ComparisonFeature>
-                      <ComparisonValue $good={false}>
-                        {row.others}
-                      </ComparisonValue>
-                      <ComparisonValue $good={true}>
-                        {row.classEasily}
-                      </ComparisonValue>
-                    </ComparisonRow>
-                  ))}
-                </ComparisonTableWrapper>
-              </ContentBlock>
-            </div>
-
-            {/* Sticky Graphic - Replaced Lottie with CSS Visual */}
-            <StickyRightColumn>
-              <SavingsVisualCard
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8 }}
-              >
-                <VisualCircle>0%</VisualCircle>
-                <VisualLabel>Listing Fees</VisualLabel>
-                <VisualSub>
-                  You keep 100% of your earnings minus standard processing.
-                </VisualSub>
-                <div
-                  style={{
-                    height: 1,
-                    width: 60,
-                    background: "#ddd",
-                    margin: "24px 0",
-                  }}
-                />
-                <VisualLabel>Next Day Payouts</VisualLabel>
-                <VisualSub>Cash flow that moves as fast as you do.</VisualSub>
-              </SavingsVisualCard>
-            </StickyRightColumn>
-          </TwoColumnSection>
-        </SectionContainer>
-
-        {/* --- Tiers --- */}
+        {/* --- Tier Section (Redesigned - Growth Path) --- */}
         <TierSection>
           <SectionContainer>
             <SectionHeader $center>
@@ -1211,50 +1018,90 @@ const BusinessWelcomePage = () => {
               </SectionSubtitle>
             </SectionHeader>
 
-            <TierCard>
-              <TierTable>
-                <TierRow>
-                  <TierCell $align="left">Feature</TierCell>
-                  <TierCell>Import Only</TierCell>
-                  <TierCell>Widget</TierCell>
-                  <TierCell>Marketplace</TierCell>
-                </TierRow>
-                {tierComparisonData.map((row) => (
-                  <TierRow key={row.feature}>
-                    <TierCell $align="left" $bold>
-                      {row.feature}
-                    </TierCell>
-                    <TierCell data-label="Import Only">
-                      {row.imported === true ? (
-                        <Check size={18} color="#10b981" />
-                      ) : row.imported === false ? (
-                        <Minus size={18} color="#e5e7eb" />
-                      ) : (
-                        row.imported
-                      )}
-                    </TierCell>
-                    <TierCell data-label="Widget">
-                      {row.widget === true ? (
-                        <Check size={18} color="#10b981" />
-                      ) : row.widget === false ? (
-                        <Minus size={18} color="#e5e7eb" />
-                      ) : (
-                        row.widget
-                      )}
-                    </TierCell>
-                    <TierCell data-label="Marketplace">
-                      {row.marketplace === true ? (
-                        <Check size={18} color="#10b981" />
-                      ) : row.marketplace === false ? (
-                        <Minus size={18} color="#e5e7eb" />
-                      ) : (
-                        row.marketplace
-                      )}
-                    </TierCell>
-                  </TierRow>
-                ))}
-              </TierTable>
-            </TierCard>
+            <TierContainer>
+              {/* Column 1 */}
+              <TierColumn>
+                <TierHeader>
+                  <TierIconWrapper
+                    $bg={growthPathData[0].iconBg}
+                    $color={growthPathData[0].iconColor}
+                  >
+                    {growthPathData[0].icon}
+                  </TierIconWrapper>
+                  <TierTitle>{growthPathData[0].title}</TierTitle>
+                  <TierPrice $color={growthPathData[0].iconColor}>
+                    {growthPathData[0].price}
+                  </TierPrice>
+                </TierHeader>
+                <TierList>
+                  {growthPathData[0].features.map((feat, i) => (
+                    <TierListItem key={i}>
+                      <Check size={16} color="#9ca3af" /> {feat}
+                    </TierListItem>
+                  ))}
+                </TierList>
+              </TierColumn>
+
+              <DesktopArrow>
+                <ChevronRight size={24} />
+              </DesktopArrow>
+              <MobileArrow>
+                <ChevronRight size={24} />
+              </MobileArrow>
+
+              {/* Column 2 */}
+              <TierColumn>
+                <TierHeader>
+                  <TierIconWrapper
+                    $bg={growthPathData[1].iconBg}
+                    $color={growthPathData[1].iconColor}
+                  >
+                    {growthPathData[1].icon}
+                  </TierIconWrapper>
+                  <TierTitle>{growthPathData[1].title}</TierTitle>
+                  <TierPrice $color={growthPathData[1].iconColor}>
+                    {growthPathData[1].price}
+                  </TierPrice>
+                </TierHeader>
+                <TierList>
+                  {growthPathData[1].features.map((feat, i) => (
+                    <TierListItem key={i}>
+                      <Check size={16} color="#0284c7" /> {feat}
+                    </TierListItem>
+                  ))}
+                </TierList>
+              </TierColumn>
+
+              <DesktopArrow>
+                <ChevronRight size={24} />
+              </DesktopArrow>
+              <MobileArrow>
+                <ChevronRight size={24} />
+              </MobileArrow>
+
+              {/* Column 3 */}
+              <TierColumn>
+                <TierHeader>
+                  <TierIconWrapper
+                    $bg={growthPathData[2].iconBg}
+                    $color={growthPathData[2].iconColor}
+                  >
+                    {growthPathData[2].icon}
+                  </TierIconWrapper>
+                  <TierTitle>{growthPathData[2].title}</TierTitle>
+                  <TierPrice $color={growthPathData[2].iconColor}>
+                    {growthPathData[2].price}
+                  </TierPrice>
+                </TierHeader>
+                <TierList>
+                  {growthPathData[2].features.map((feat, i) => (
+                    <TierListItem key={i}>
+                      <Check size={16} color="#f81e3e" /> {feat}
+                    </TierListItem>
+                  ))}
+                </TierList>
+              </TierColumn>
+            </TierContainer>
           </SectionContainer>
         </TierSection>
 
