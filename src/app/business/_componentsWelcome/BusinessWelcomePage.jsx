@@ -3,25 +3,9 @@
 import React, { useState, useCallback, useMemo, memo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import styled, { createGlobalStyle, keyframes } from "styled-components";
+import styled, { createGlobalStyle, css } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Plus,
-  Minus,
-  Check,
-  X,
-  ArrowRight,
-  BookOpen,
-  BarChart,
-  DollarSign,
-  Briefcase,
-  Zap,
-  Globe,
-  Calendar,
-  Users,
-  Layout,
-  ChevronRight,
-} from "lucide-react";
+import { Plus, Minus, Check, X, ArrowRight } from "lucide-react";
 
 // Import components (adjust paths as needed)
 import Header from "@/components/layout/SharedMainClientHeader";
@@ -38,6 +22,16 @@ const GlobalStyle = createGlobalStyle`
     --primary-color: #222222;
     --accent-red: #f81e3e; 
   }
+
+  /* Hide scrollbar for Chrome, Safari and Opera on mobile scroll areas */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
 `;
 
 // --- Styled Components ---
@@ -49,6 +43,7 @@ const PageWrapper = styled.div`
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
     Roboto, Helvetica, Arial, sans-serif;
   min-height: 100vh;
+  overflow-x: hidden; /* Prevent horizontal overflow on mobile */
 
   /* Apple-style subtle mesh background */
   &::before {
@@ -190,7 +185,7 @@ const StartButton = styled.button`
   transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
 
   &:hover {
-    background: #1d1d1f;
+    background: #f81e3e;
     color: #fff;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -212,6 +207,7 @@ const MockupGrid = styled.div`
   grid-template-columns: repeat(3, 1fr);
   gap: 32px;
   margin-top: 48px;
+  position: relative;
 
   @media (max-width: 1024px) {
     grid-template-columns: repeat(2, 1fr);
@@ -227,25 +223,27 @@ const MockupItem = styled(motion.div)`
   display: flex;
   flex-direction: column;
   gap: 16px;
+  cursor: default;
 `;
 
 const MockupImageWrapper = styled.div`
   position: relative;
   width: 100%;
-  aspect-ratio: 16/10;
+  aspect-ratio: 9/10;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  background: #f5f5f7;
-  transition: transform 0.3s ease;
-
-  &:hover {
-    transform: translateY(-5px);
-  }
 
   img {
     object-fit: cover;
+    object-position: top center;
+    transition: object-position 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+    will-change: object-position;
+  }
+
+  @media (hover: hover) {
+    &:hover img {
+      object-position: bottom center;
+    }
   }
 `;
 
@@ -263,9 +261,13 @@ const MockupDesc = styled.p`
   margin: 0;
 `;
 
-// --- Redesigned Cost & Comparison Section ---
+// --- Value Prop Section ---
 const ValuePropSection = styled.section`
   padding: 80px 0;
+
+  @media (max-width: 768px) {
+    padding: 60px 0;
+  }
 `;
 
 const GridThree = styled.div`
@@ -274,8 +276,23 @@ const GridThree = styled.div`
   gap: 24px;
   margin-bottom: 60px;
 
+  /* Mobile: Horizontal Scroll Snap */
   @media (max-width: 900px) {
-    grid-template-columns: 1fr;
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 16px;
+    padding-bottom: 24px; /* Space for shadow/scroll */
+    margin: 0 -20px 40px -20px; /* Bleed to edges */
+    padding-left: 20px; /* Restore padding */
+    padding-right: 20px;
+
+    /* Hide scrollbar */
+    &::-webkit-scrollbar {
+      display: none;
+    }
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 `;
 
@@ -285,6 +302,12 @@ const ValueCard = styled(GlassCard)`
   flex-direction: column;
   align-items: flex-start;
   background: rgba(255, 255, 255, 0.6);
+
+  @media (max-width: 900px) {
+    min-width: 280px; /* Fixed width for carousel cards */
+    max-width: 280px;
+    scroll-snap-align: center;
+  }
 `;
 
 const IconCircle = styled.div`
@@ -295,7 +318,6 @@ const IconCircle = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
 `;
 
 const ValueTitle = styled.h3`
@@ -371,6 +393,9 @@ const ComparisonRow = styled.div`
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+    padding: 24px 20px;
+    background: ${(props) =>
+      props.$isHeader ? "rgba(0,0,0,0.02)" : "transparent"};
   }
 `;
 
@@ -381,12 +406,21 @@ const ComparisonHeader = styled(ComparisonRow)`
   letter-spacing: 0.05em;
   color: #6e6e73;
   font-weight: 600;
+
+  @media (max-width: 600px) {
+    display: none; /* Hide header row on mobile, used labeled cards instead */
+  }
 `;
 
 const ComparisonFeature = styled.div`
   font-weight: 600;
   color: #1d1d1f;
   font-size: 14px;
+
+  @media (max-width: 600px) {
+    font-size: 1rem;
+    margin-bottom: 4px;
+  }
 `;
 
 const ComparisonValue = styled.div`
@@ -398,7 +432,6 @@ const ComparisonValue = styled.div`
   color: ${(props) => (props.$good ? "#10b981" : "#6e6e73")};
   font-weight: ${(props) => (props.$good ? "600" : "400")};
 
-  /* Special Highlight Text */
   ${(props) =>
     props.$highlight &&
     `
@@ -407,212 +440,255 @@ const ComparisonValue = styled.div`
   `}
 
   @media (max-width: 600px) {
-    justify-content: flex-start;
+    justify-content: space-between;
     width: 100%;
-    padding-left: 12px;
-    border-left: 2px solid ${(props) => (props.$good ? "#10b981" : "#e5e7eb")};
+    padding-left: 0;
+    border-left: none;
+
+    /* Add labels for mobile since header is hidden */
+    &::before {
+      content: attr(data-label);
+      font-size: 0.75rem;
+      color: #9ca3af;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
   }
 `;
 
-// --- Tier Section (Redesigned - No Cards) ---
+// --- Testimonials (Enhanced Mobile) ---
+
+const TestimonialsSection = styled.section`
+  padding: 60px 0;
+  position: relative;
+`;
+
+const ReviewGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+
+  /* Mobile: Horizontal Scroll Snap */
+  @media (max-width: 900px) {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 16px;
+    padding-bottom: 24px;
+    margin: 0 -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+`;
+
+const ReviewItem = styled(motion.div)`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+  padding: 16px 20px;
+  border-radius: 16px;
+  transition: background 0.3s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  @media (max-width: 900px) {
+    min-width: 300px;
+    max-width: 300px;
+    scroll-snap-align: center;
+    background: #f9f9fa; /* Slight background for cards on mobile */
+    border: 1px solid rgba(0, 0, 0, 0.03);
+  }
+`;
+
+const AnimatedIconWrapper = styled.div`
+  width: 40px;
+  height: 40px;
+  margin-bottom: 4px;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+
+  ${ReviewItem}:hover & {
+    opacity: 1;
+  }
+`;
+
+const ReviewText = styled.h4`
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #1d1d1f;
+  letter-spacing: -0.01em;
+  margin: 0;
+`;
+
+const ReviewAuthor = styled.div`
+  margin-top: auto;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6e6e73;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  span {
+    font-weight: 400;
+    color: #9ca3af;
+  }
+`;
+
+// --- Tiers Section (Enhanced Mobile Tab Layout) ---
 const TierSection = styled.section`
-  padding: 80px 0;
+  padding: 60px 0;
   background: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0),
-    rgba(248, 30, 62, 0.03) 100%
+    rgba(255, 255, 255, 0) 0%,
+    rgba(245, 245, 247, 0.5) 100%
   );
 `;
 
-const TierContainer = styled.div`
+const CleanTierGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr auto 1fr auto 1fr;
-  align-items: flex-start;
-  gap: 20px;
-  margin-top: 60px;
+  grid-template-columns: 1fr 1fr 1fr;
+  width: 100%;
+  margin-top: 40px;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
 
   @media (max-width: 900px) {
-    display: flex;
-    flex-direction: column;
-    gap: 48px;
+    display: none; /* We will use the MobileTabs for < 900px */
   }
 `;
 
-const TierColumn = styled.div`
-  display: flex;
-  flex-direction: column;
-  padding: 0 12px;
-  flex: 1;
+// --- Mobile Tabbed Pricing Components ---
+const MobileTabContainer = styled.div`
+  display: none;
+  width: 100%;
+  margin-top: 24px;
 
   @media (max-width: 900px) {
-    width: 100%;
-    padding: 0;
+    display: block;
   }
 `;
 
-const TierHeader = styled.div`
-  margin-bottom: 24px;
+const TabList = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-`;
-
-const TierIconWrapper = styled.div`
-  width: 48px;
-  height: 48px;
+  background: #f2f2f5;
+  padding: 4px;
   border-radius: 12px;
-  background: ${(props) => props.$bg || "#f5f5f7"};
-  color: ${(props) => props.$color || "#1d1d1f"};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
+  margin-bottom: 24px;
+  position: relative;
 `;
 
-const TierTitle = styled.h3`
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1d1d1f;
-`;
-
-const TierPrice = styled.div`
+const TabButton = styled.button`
+  flex: 1;
+  padding: 10px;
   font-size: 0.9rem;
   font-weight: 600;
-  color: ${(props) => props.$color || "#6e6e73"};
-  background: rgba(0, 0, 0, 0.04);
-  padding: 4px 10px;
-  border-radius: 6px;
-  width: fit-content;
+  background: transparent;
+  color: ${(props) => (props.$active ? "#1d1d1f" : "#86868b")};
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  transition: color 0.2s;
 `;
 
-const TierList = styled.ul`
+const TabIndicator = styled(motion.div)`
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 1;
+`;
+
+const MobileTabContent = styled(motion.div)`
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+`;
+
+// --- Existing Desktop Tier Components ---
+const CleanTierColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  padding: 0 20px;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+
+  &:last-child {
+    border-right: none;
+  }
+`;
+
+const TierHeaderSimple = styled.div`
+  margin-bottom: 20px;
+`;
+
+const TierTitleDisplay = styled.h3`
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
+`;
+
+const TierPriceDisplay = styled.div`
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: ${(props) => props.$color || "#6e6e73"};
+  margin-bottom: 10px;
+`;
+
+const TierDescription = styled.p`
+  font-size: 0.85rem;
+  color: #6e6e73;
+  line-height: 1.4;
+  margin-bottom: 20px;
+  min-height: 38px;
+
+  @media (max-width: 900px) {
+    min-height: auto;
+  }
+`;
+
+const FeatureListClean = styled.ul`
   list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 `;
 
-const TierListItem = styled.li`
+const FeatureItemClean = styled.li`
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  font-size: 0.95rem;
+  gap: 10px;
+  font-size: 0.9rem;
   color: #4b5563;
-  line-height: 1.4;
+  font-weight: 400;
 
   svg {
-    flex-shrink: 0;
     margin-top: 2px;
+    flex-shrink: 0;
+    opacity: 0.8;
   }
-`;
-
-const TierSeparator = styled.div`
-  height: 200px;
-  width: 1px;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(0, 0, 0, 0.1),
-    transparent
-  );
-  align-self: center;
-
-  @media (max-width: 900px) {
-    display: none; // Hide vertical lines on mobile
-  }
-`;
-
-const MobileArrow = styled.div`
-  display: none;
-  @media (max-width: 900px) {
-    display: flex;
-    justify-content: center;
-    color: #d1d5db;
-    transform: rotate(90deg);
-  }
-`;
-
-const DesktopArrow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #d1d5db;
-  padding-top: 80px;
-
-  @media (max-width: 900px) {
-    display: none;
-  }
-`;
-
-// --- Testimonials ---
-const TestimonialsSection = styled.section`
-  padding: 80px 0;
-`;
-
-const TestimonialGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-top: 40px;
-
-  @media (max-width: 900px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const TestimonialCard = styled(GlassCard)`
-  padding: 32px 24px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.6);
-  transition: transform 0.3s;
-
-  &:hover {
-    transform: translateY(-5px);
-  }
-`;
-
-const QuoteText = styled.p`
-  font-size: 1rem;
-  line-height: 1.5;
-  color: #1d1d1f;
-  margin-bottom: 24px;
-  font-weight: 500;
-`;
-
-const AuthorBlock = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-const AuthorImg = styled.div`
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  overflow: hidden;
-  position: relative;
-  background: #eee;
-`;
-
-const AuthorDetails = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const AuthorName = styled.span`
-  font-weight: 600;
-  color: #1d1d1f;
-  font-size: 0.9rem;
-`;
-
-const AuthorRole = styled.span`
-  font-size: 0.8rem;
-  color: #6e6e73;
 `;
 
 // --- FAQ ---
@@ -674,32 +750,33 @@ const BusinessWelcomePage = () => {
 
   // --- State Hooks ---
   const [activeItems, setActiveItems] = useState(new Set(["1"]));
+  const [hoveredMockup, setHoveredMockup] = useState(null);
+  const [activeTierIndex, setActiveTierIndex] = useState(1); // Default to middle tier on mobile
 
   // --- Data ---
   const { mockupItems, comparisonData, growthPathData, faqData, testimonials } =
     useMemo(
       () => ({
-        // Top 3 features for Mockups
         mockupItems: [
           {
             title: "Bookings",
             description:
               "Visualize trends, pinpoint popular experiences, and optimize your schedule.",
-            image: "https://i.imgur.com/DMdHsU5.png",
+            image: "/Desert Titanium.svg",
             delay: 0,
           },
           {
             title: "Insights",
             description:
               "Track every dollar. Visualize growth trends and instantly identify profitable time slots.",
-            image: "https://i.imgur.com/v93lOsv.png",
+            image: "/Desert Titanium 3.svg",
             delay: 0.1,
           },
           {
             title: "Earnings",
             description:
               "Get paid with confidence. Track earnings in real-time and access clear payout history.",
-            image: "https://i.imgur.com/tOAgKBg.png",
+            image: "/Desert Titanium 2.svg",
             delay: 0.2,
           },
         ],
@@ -735,46 +812,45 @@ const BusinessWelcomePage = () => {
             highlight: false,
           },
         ],
-        // New Data Structure for No-Card Tier Section
         growthPathData: [
           {
-            title: "Import Only",
+            title: "Starter",
             price: "Free",
-            icon: <Users size={24} />,
-            iconBg: "#f3f4f6",
+            description:
+              "For managing existing contacts and organizing schedules.",
             iconColor: "#6b7280",
             features: [
-              "Import existing CRM contacts",
-              "Basic guest notes",
+              "CRM contact import",
+              "Guest notes & tags",
               "Manual scheduling",
-              "Standard profile page",
+              "Basic profile page",
             ],
           },
           {
-            title: "Widget",
-            price: "~6% Fees",
-            icon: <Layout size={24} />,
-            iconBg: "#e0f2fe",
+            title: "Growth",
+            price: "~6% Processing",
+            description:
+              "Booking widgets for your site and automated payments.",
             iconColor: "#0284c7",
             features: [
-              "Embeddable booking widget",
-              "Automated reminders",
+              "Embeddable widget",
+              "Automated SMS reminders",
               "Secure payment processing",
               "Calendar syncing",
             ],
           },
           {
-            title: "Marketplace",
-            price: "~17% Fees",
-            icon: <Globe size={24} />,
-            iconBg: "#fee2e2",
+            title: "Partner",
+            price: "~17% Marketplace",
+            description:
+              "Unlock marketplace distribution and we bring you customers.",
             iconColor: "#f81e3e",
             features: [
               "Full marketplace listing",
-              "Active marketing & discovery",
-              "SEO optimization",
-              "Priority support",
+              "Active marketing campaigns",
+              "SEO & Discovery boost",
               "Next-day payouts",
+              "Priority support",
             ],
           },
         ],
@@ -809,26 +885,25 @@ const BusinessWelcomePage = () => {
             text: "I used to spend hours on spreadsheets. Now I just focus on my pottery students. The platform handles the rest.",
             author: "Linda M.",
             title: "Pottery Host",
-            avatar: "https://randomuser.me/api/portraits/women/45.jpg",
+            iconSrc: "https://cdn.lordicon.com/jazzayho.json",
           },
           {
             text: "The exposure is incredible. My weekend cooking workshops are booked out weeks in advance.",
             author: "Carlos G.",
             title: "Culinary Host",
-            avatar: "https://randomuser.me/api/portraits/men/23.jpg",
+            iconSrc: "https://cdn.lordicon.com/xmoniccu.json",
           },
           {
-            text: "Finally, a platform that doesn't charge me a monthly fee just to exist. I only pay when I actually earn.",
+            text: "Finally, a platform that doesn't charge me a monthly fee. I only pay when I actually earn.",
             author: "Sophie T.",
             title: "Art Instructor",
-            avatar: "https://randomuser.me/api/portraits/women/52.jpg",
+            iconSrc: "https://cdn.lordicon.com/rhmhivzj.json",
           },
         ],
       }),
       []
     );
 
-  // --- Callbacks ---
   const handleNavigate = useCallback(() => {
     router.push("/business/register");
   }, [router]);
@@ -848,7 +923,7 @@ const BusinessWelcomePage = () => {
       <ExploreHeader showOptionsWrapper={false} />
 
       <main>
-        {/* --- Hero --- */}
+        {/* 1. Hero Section */}
         <HeroSection>
           <SectionContainer>
             <HeroGrid>
@@ -888,46 +963,7 @@ const BusinessWelcomePage = () => {
           </SectionContainer>
         </HeroSection>
 
-        {/* --- Dashboard Mockups Section (Redesigned) --- */}
-        <DashboardSection>
-          <SectionContainer>
-            <SectionHeader $center>
-              <SectionEyebrow>HOST TOOLS</SectionEyebrow>
-              <SectionTitle>Manage everything in one place</SectionTitle>
-              <SectionSubtitle $center>
-                From scheduling events to tracking your payouts, our dashboard
-                gives you the clarity you need.
-              </SectionSubtitle>
-            </SectionHeader>
-
-            <MockupGrid>
-              {mockupItems.map((item, index) => (
-                <MockupItem
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: item.delay, duration: 0.5 }}
-                >
-                  <MockupImageWrapper>
-                    <Image
-                      src={item.image}
-                      alt={item.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                    />
-                  </MockupImageWrapper>
-                  <div>
-                    <MockupTitle>{item.title}</MockupTitle>
-                    <MockupDesc>{item.description}</MockupDesc>
-                  </div>
-                </MockupItem>
-              ))}
-            </MockupGrid>
-          </SectionContainer>
-        </DashboardSection>
-
-        {/* --- Value & Comparison Section --- */}
+        {/* 2. Value & Comparison (Mobile: Horizontal Scroll + Cards) */}
         <ValuePropSection>
           <SectionContainer>
             <SectionHeader $center>
@@ -938,7 +974,7 @@ const BusinessWelcomePage = () => {
               </SectionSubtitle>
             </SectionHeader>
 
-            <GridThree>
+            <GridThree className="no-scrollbar">
               <ValueCard>
                 <IconCircle>
                   <lord-icon
@@ -996,8 +1032,14 @@ const BusinessWelcomePage = () => {
               {comparisonData.map((row) => (
                 <ComparisonRow key={row.feature}>
                   <ComparisonFeature>{row.feature}</ComparisonFeature>
-                  <ComparisonValue $good={false}>{row.others}</ComparisonValue>
-                  <ComparisonValue $good={true} $highlight={row.highlight}>
+                  <ComparisonValue $good={false} data-label="Others">
+                    {row.others}
+                  </ComparisonValue>
+                  <ComparisonValue
+                    $good={true}
+                    $highlight={row.highlight}
+                    data-label="ClassEasily"
+                  >
                     {row.classEasily}
                   </ComparisonValue>
                 </ComparisonRow>
@@ -1006,7 +1048,95 @@ const BusinessWelcomePage = () => {
           </SectionContainer>
         </ValuePropSection>
 
-        {/* --- Tier Section (Redesigned - Growth Path) --- */}
+        {/* 3. Dashboard Mockups (Preserved) */}
+        <DashboardSection>
+          <SectionContainer>
+            <SectionHeader $center>
+              <SectionEyebrow>HOST TOOLS</SectionEyebrow>
+              <SectionTitle>Manage everything in one place</SectionTitle>
+              <SectionSubtitle $center>
+                From scheduling events to tracking your payouts, our dashboard
+                gives you the clarity you need.
+              </SectionSubtitle>
+            </SectionHeader>
+
+            <MockupGrid onMouseLeave={() => setHoveredMockup(null)}>
+              {mockupItems.map((item, index) => {
+                const isHovered = hoveredMockup === index;
+                const isInactive = hoveredMockup !== null && !isHovered;
+
+                return (
+                  <MockupItem
+                    key={index}
+                    onMouseEnter={() => setHoveredMockup(index)}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    animate={{
+                      scale: isHovered ? 1.01 : isInactive ? 0.99 : 1,
+                      opacity: isInactive ? 0.3 : 1,
+                      y: isHovered ? -10 : 0,
+                      filter: isInactive ? "blur(0px)" : "blur(0px)",
+                      zIndex: isHovered ? 10 : 0,
+                    }}
+                    transition={{
+                      duration: 0.4,
+                      ease: [0.25, 0.1, 0.25, 1.0],
+                    }}
+                  >
+                    <MockupImageWrapper>
+                      <Image
+                        src={item.image}
+                        alt={item.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                      />
+                    </MockupImageWrapper>
+                    <div>
+                      <MockupTitle>{item.title}</MockupTitle>
+                      <MockupDesc>{item.description}</MockupDesc>
+                    </div>
+                  </MockupItem>
+                );
+              })}
+            </MockupGrid>
+          </SectionContainer>
+        </DashboardSection>
+
+        {/* 4. Testimonials (Mobile: Horizontal Scroll Snap) */}
+        <TestimonialsSection>
+          <SectionContainer>
+            <SectionHeader $center>
+              <SectionEyebrow>TESTIMONIALS</SectionEyebrow>
+              <SectionTitle>What hosts are saying</SectionTitle>
+            </SectionHeader>
+            <ReviewGrid className="no-scrollbar">
+              {testimonials.map((t, i) => (
+                <ReviewItem
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                >
+                  <AnimatedIconWrapper>
+                    <lord-icon
+                      src={t.iconSrc}
+                      trigger="hover"
+                      style={{ width: "40px", height: "40px" }}
+                    ></lord-icon>
+                  </AnimatedIconWrapper>
+                  <ReviewText>{t.text}</ReviewText>
+                  <ReviewAuthor>
+                    {t.author} <span>— {t.title}</span>
+                  </ReviewAuthor>
+                </ReviewItem>
+              ))}
+            </ReviewGrid>
+          </SectionContainer>
+        </TestimonialsSection>
+
+        {/* 5. Tiers / Growth Path (Mobile: Tabs) */}
         <TierSection>
           <SectionContainer>
             <SectionHeader $center>
@@ -1018,130 +1148,108 @@ const BusinessWelcomePage = () => {
               </SectionSubtitle>
             </SectionHeader>
 
-            <TierContainer>
-              {/* Column 1 */}
-              <TierColumn>
-                <TierHeader>
-                  <TierIconWrapper
-                    $bg={growthPathData[0].iconBg}
-                    $color={growthPathData[0].iconColor}
-                  >
-                    {growthPathData[0].icon}
-                  </TierIconWrapper>
-                  <TierTitle>{growthPathData[0].title}</TierTitle>
-                  <TierPrice $color={growthPathData[0].iconColor}>
-                    {growthPathData[0].price}
-                  </TierPrice>
-                </TierHeader>
-                <TierList>
-                  {growthPathData[0].features.map((feat, i) => (
-                    <TierListItem key={i}>
-                      <Check size={16} color="#9ca3af" /> {feat}
-                    </TierListItem>
-                  ))}
-                </TierList>
-              </TierColumn>
+            {/* Desktop Grid Layout */}
+            <CleanTierGrid>
+              {growthPathData.map((tier, i) => (
+                <CleanTierColumn key={i}>
+                  <TierHeaderSimple>
+                    <TierTitleDisplay>{tier.title}</TierTitleDisplay>
+                    <TierPriceDisplay $color={tier.iconColor}>
+                      {tier.price}
+                    </TierPriceDisplay>
+                    <TierDescription>{tier.description}</TierDescription>
+                  </TierHeaderSimple>
+                  <FeatureListClean>
+                    {tier.features.map((feat, idx) => (
+                      <FeatureItemClean key={idx}>
+                        <Check size={16} color={tier.iconColor} />
+                        {feat}
+                      </FeatureItemClean>
+                    ))}
+                  </FeatureListClean>
+                </CleanTierColumn>
+              ))}
+            </CleanTierGrid>
 
-              <DesktopArrow>
-                <ChevronRight size={24} />
-              </DesktopArrow>
-              <MobileArrow>
-                <ChevronRight size={24} />
-              </MobileArrow>
+            {/* Mobile Tabbed Layout */}
+            <MobileTabContainer>
+              <TabList>
+                {growthPathData.map((tier, i) => (
+                  <React.Fragment key={i}>
+                    {activeTierIndex === i && (
+                      <TabIndicator
+                        layoutId="tabIndicator"
+                        style={{
+                          width: `${100 / 3}%`,
+                          left: `${(i * 100) / 3}%`,
+                        }}
+                        transition={{
+                          type: "spring",
+                          bounce: 0.2,
+                          duration: 0.6,
+                        }}
+                      />
+                    )}
+                    <TabButton
+                      $active={activeTierIndex === i}
+                      onClick={() => setActiveTierIndex(i)}
+                    >
+                      {tier.title}
+                    </TabButton>
+                  </React.Fragment>
+                ))}
+              </TabList>
 
-              {/* Column 2 */}
-              <TierColumn>
-                <TierHeader>
-                  <TierIconWrapper
-                    $bg={growthPathData[1].iconBg}
-                    $color={growthPathData[1].iconColor}
-                  >
-                    {growthPathData[1].icon}
-                  </TierIconWrapper>
-                  <TierTitle>{growthPathData[1].title}</TierTitle>
-                  <TierPrice $color={growthPathData[1].iconColor}>
-                    {growthPathData[1].price}
-                  </TierPrice>
-                </TierHeader>
-                <TierList>
-                  {growthPathData[1].features.map((feat, i) => (
-                    <TierListItem key={i}>
-                      <Check size={16} color="#0284c7" /> {feat}
-                    </TierListItem>
-                  ))}
-                </TierList>
-              </TierColumn>
-
-              <DesktopArrow>
-                <ChevronRight size={24} />
-              </DesktopArrow>
-              <MobileArrow>
-                <ChevronRight size={24} />
-              </MobileArrow>
-
-              {/* Column 3 */}
-              <TierColumn>
-                <TierHeader>
-                  <TierIconWrapper
-                    $bg={growthPathData[2].iconBg}
-                    $color={growthPathData[2].iconColor}
-                  >
-                    {growthPathData[2].icon}
-                  </TierIconWrapper>
-                  <TierTitle>{growthPathData[2].title}</TierTitle>
-                  <TierPrice $color={growthPathData[2].iconColor}>
-                    {growthPathData[2].price}
-                  </TierPrice>
-                </TierHeader>
-                <TierList>
-                  {growthPathData[2].features.map((feat, i) => (
-                    <TierListItem key={i}>
-                      <Check size={16} color="#f81e3e" /> {feat}
-                    </TierListItem>
-                  ))}
-                </TierList>
-              </TierColumn>
-            </TierContainer>
+              <AnimatePresence mode="wait">
+                <MobileTabContent
+                  key={activeTierIndex}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <TierHeaderSimple>
+                    <TierPriceDisplay
+                      $color={growthPathData[activeTierIndex].iconColor}
+                      style={{
+                        marginBottom: 4,
+                        fontSize: "0.8rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      {growthPathData[activeTierIndex].price}
+                    </TierPriceDisplay>
+                    <TierTitleDisplay style={{ fontSize: "1.6rem" }}>
+                      {growthPathData[activeTierIndex].title}
+                    </TierTitleDisplay>
+                    <TierDescription style={{ marginBottom: 24 }}>
+                      {growthPathData[activeTierIndex].description}
+                    </TierDescription>
+                  </TierHeaderSimple>
+                  <FeatureListClean>
+                    {growthPathData[activeTierIndex].features.map(
+                      (feat, idx) => (
+                        <FeatureItemClean
+                          key={idx}
+                          style={{ fontSize: "1rem", gap: 12 }}
+                        >
+                          <Check
+                            size={20}
+                            color={growthPathData[activeTierIndex].iconColor}
+                          />
+                          {feat}
+                        </FeatureItemClean>
+                      )
+                    )}
+                  </FeatureListClean>
+                </MobileTabContent>
+              </AnimatePresence>
+            </MobileTabContainer>
           </SectionContainer>
         </TierSection>
 
-        {/* --- Testimonials --- */}
-        <TestimonialsSection>
-          <SectionContainer>
-            <SectionHeader $center>
-              <SectionTitle>Hosts love us</SectionTitle>
-            </SectionHeader>
-            <TestimonialGrid>
-              {testimonials.map((t, i) => (
-                <TestimonialCard
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                >
-                  <QuoteText>&ldquo;{t.text}&rdquo;</QuoteText>
-                  <AuthorBlock>
-                    <AuthorImg>
-                      <Image
-                        src={t.avatar}
-                        alt={t.author}
-                        fill
-                        style={{ objectFit: "cover" }}
-                      />
-                    </AuthorImg>
-                    <AuthorDetails>
-                      <AuthorName>{t.author}</AuthorName>
-                      <AuthorRole>{t.title}</AuthorRole>
-                    </AuthorDetails>
-                  </AuthorBlock>
-                </TestimonialCard>
-              ))}
-            </TestimonialGrid>
-          </SectionContainer>
-        </TestimonialsSection>
-
-        {/* --- FAQ --- */}
+        {/* 6. FAQ Section */}
         <FAQSection>
           <SectionContainer>
             <SectionHeader $center>
