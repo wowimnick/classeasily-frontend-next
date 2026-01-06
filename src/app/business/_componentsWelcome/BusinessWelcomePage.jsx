@@ -3,11 +3,12 @@
 import React, { useState, useCallback, useMemo, memo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import styled, { createGlobalStyle, css } from "styled-components";
-import { motion, AnimatePresence } from "framer-motion";
+import styled, { createGlobalStyle } from "styled-components";
+import { m, AnimatePresence, LazyMotion, domAnimation } from "framer-motion";
 import { Plus, Minus, Check, X, ArrowRight } from "lucide-react";
+import dynamic from "next/dynamic";
 
-// Import components (adjust paths as needed)
+// Import components
 import Header from "@/components/layout/SharedMainClientHeader";
 import FooterClient from "@/components/homepage/FooterClient";
 import ExploreHeader from "@/components/explore/ExploreHeader";
@@ -23,14 +24,12 @@ const GlobalStyle = createGlobalStyle`
     --accent-red: #f81e3e; 
   }
 
-  /* Hide scrollbar for Chrome, Safari and Opera on mobile scroll areas */
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
-  /* Hide scrollbar for IE, Edge and Firefox */
   .no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 `;
 
@@ -43,9 +42,8 @@ const PageWrapper = styled.div`
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
     Roboto, Helvetica, Arial, sans-serif;
   min-height: 100vh;
-  overflow-x: hidden; /* Prevent horizontal overflow on mobile */
+  overflow-x: hidden;
 
-  /* Apple-style subtle mesh background */
   &::before {
     content: "";
     position: absolute;
@@ -80,8 +78,8 @@ const SectionContainer = styled.div`
   }
 `;
 
-// --- Glassmorphism Card Mixin ---
-const GlassCard = styled(motion.div)`
+// Change motion.div to m.div for LazyMotion
+const GlassCard = styled(m.div)`
   background: var(--glass-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -90,7 +88,6 @@ const GlassCard = styled(motion.div)`
   border-radius: 24px;
 `;
 
-// --- Hero Section ---
 const HeroSection = styled.section`
   min-height: 60vh;
   padding-top: 20px;
@@ -98,6 +95,8 @@ const HeroSection = styled.section`
   display: flex;
   align-items: center;
   position: relative;
+  /* Prevent layout shift during font load */
+  contain: content;
 
   @media (max-width: 1024px) {
     padding-top: 120px;
@@ -119,7 +118,7 @@ const HeroGrid = styled.div`
   }
 `;
 
-const HeroTextContainer = styled(motion.div)`
+const HeroTextContainer = styled(m.div)`
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -129,13 +128,15 @@ const HeroTextContainer = styled(motion.div)`
   }
 `;
 
-const HeroVisualContainer = styled(motion.div)`
+const HeroVisualContainer = styled(m.div)`
   position: relative;
   width: 100%;
   aspect-ratio: 4/3.1;
   border-radius: 24px;
   box-shadow: rgb(0 0 0 / 1%) 0px 20px 20px 0px;
   overflow: hidden;
+  /* Hardware acceleration for smoother reveal */
+  transform: translateZ(0);
 
   img {
     width: 100%;
@@ -196,7 +197,6 @@ const StartButton = styled.button`
   }
 `;
 
-// --- Dashboard / Mockups Section ---
 const DashboardSection = styled.section`
   padding: 4rem 0 !important;
   position: relative;
@@ -219,7 +219,7 @@ const MockupGrid = styled.div`
   }
 `;
 
-const MockupItem = styled(motion.div)`
+const MockupItem = styled(m.div)`
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -261,7 +261,6 @@ const MockupDesc = styled.p`
   margin: 0;
 `;
 
-// --- Value Prop Section ---
 const ValuePropSection = styled.section`
   padding: 80px 0;
 
@@ -276,18 +275,16 @@ const GridThree = styled.div`
   gap: 24px;
   margin-bottom: 60px;
 
-  /* Mobile: Horizontal Scroll Snap */
   @media (max-width: 900px) {
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     gap: 16px;
-    padding-bottom: 24px; /* Space for shadow/scroll */
-    margin: 0 -20px 40px -20px; /* Bleed to edges */
-    padding-left: 20px; /* Restore padding */
+    padding-bottom: 24px;
+    margin: 0 -20px 40px -20px;
+    padding-left: 20px;
     padding-right: 20px;
 
-    /* Hide scrollbar */
     &::-webkit-scrollbar {
       display: none;
     }
@@ -304,7 +301,7 @@ const ValueCard = styled(GlassCard)`
   background: rgba(255, 255, 255, 0.6);
 
   @media (max-width: 900px) {
-    min-width: 280px; /* Fixed width for carousel cards */
+    min-width: 280px;
     max-width: 280px;
     scroll-snap-align: center;
   }
@@ -368,7 +365,6 @@ const SectionSubtitle = styled.p`
   }
 `;
 
-// --- Comparison Table ---
 const ComparisonTableWrapper = styled(GlassCard)`
   padding: 0;
   background: rgba(255, 255, 255, 0.7);
@@ -408,7 +404,7 @@ const ComparisonHeader = styled(ComparisonRow)`
   font-weight: 600;
 
   @media (max-width: 600px) {
-    display: none; /* Hide header row on mobile, used labeled cards instead */
+    display: none;
   }
 `;
 
@@ -445,7 +441,6 @@ const ComparisonValue = styled.div`
     padding-left: 0;
     border-left: none;
 
-    /* Add labels for mobile since header is hidden */
     &::before {
       content: attr(data-label);
       font-size: 0.75rem;
@@ -455,8 +450,6 @@ const ComparisonValue = styled.div`
     }
   }
 `;
-
-// --- Testimonials (Enhanced Mobile) ---
 
 const TestimonialsSection = styled.section`
   padding: 60px 0;
@@ -468,7 +461,6 @@ const ReviewGrid = styled.div`
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 
-  /* Mobile: Horizontal Scroll Snap */
   @media (max-width: 900px) {
     display: flex;
     overflow-x: auto;
@@ -487,7 +479,7 @@ const ReviewGrid = styled.div`
   }
 `;
 
-const ReviewItem = styled(motion.div)`
+const ReviewItem = styled(m.div)`
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -505,7 +497,7 @@ const ReviewItem = styled(motion.div)`
     min-width: 300px;
     max-width: 300px;
     scroll-snap-align: center;
-    background: #f9f9fa; /* Slight background for cards on mobile */
+    background: #f9f9fa;
     border: 1px solid rgba(0, 0, 0, 0.03);
   }
 `;
@@ -546,7 +538,6 @@ const ReviewAuthor = styled.div`
   }
 `;
 
-// --- Tiers Section (Enhanced Mobile Tab Layout) ---
 const TierSection = styled.section`
   padding: 60px 0;
   background: linear-gradient(
@@ -566,11 +557,10 @@ const CleanTierGrid = styled.div`
   margin-right: auto;
 
   @media (max-width: 900px) {
-    display: none; /* We will use the MobileTabs for < 900px */
+    display: none;
   }
 `;
 
-// --- Mobile Tabbed Pricing Components ---
 const MobileTabContainer = styled.div`
   display: none;
   width: 100%;
@@ -605,7 +595,7 @@ const TabButton = styled.button`
   transition: color 0.2s;
 `;
 
-const TabIndicator = styled(motion.div)`
+const TabIndicator = styled(m.div)`
   position: absolute;
   top: 4px;
   bottom: 4px;
@@ -616,7 +606,7 @@ const TabIndicator = styled(motion.div)`
   z-index: 1;
 `;
 
-const MobileTabContent = styled(motion.div)`
+const MobileTabContent = styled(m.div)`
   background: #fff;
   border-radius: 20px;
   padding: 24px;
@@ -624,7 +614,6 @@ const MobileTabContent = styled(motion.div)`
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
 `;
 
-// --- Existing Desktop Tier Components ---
 const CleanTierColumn = styled.div`
   display: flex;
   flex-direction: column;
@@ -691,7 +680,6 @@ const FeatureItemClean = styled.li`
   }
 `;
 
-// --- FAQ ---
 const FAQSection = styled.section`
   padding: 80px 0;
 `;
@@ -737,7 +725,7 @@ const FAQButton = styled.button`
   }
 `;
 
-const FAQAnswer = styled(motion.div)`
+const FAQAnswer = styled(m.div)`
   overflow: hidden;
   color: #6e6e73;
   font-size: 14px;
@@ -751,7 +739,7 @@ const BusinessWelcomePage = () => {
   // --- State Hooks ---
   const [activeItems, setActiveItems] = useState(new Set(["1"]));
   const [hoveredMockup, setHoveredMockup] = useState(null);
-  const [activeTierIndex, setActiveTierIndex] = useState(1); // Default to middle tier on mobile
+  const [activeTierIndex, setActiveTierIndex] = useState(1);
 
   // --- Data ---
   const { mockupItems, comparisonData, growthPathData, faqData, testimonials } =
@@ -918,376 +906,382 @@ const BusinessWelcomePage = () => {
   }, []);
 
   return (
-    <PageWrapper>
-      <GlobalStyle />
-      <ExploreHeader showOptionsWrapper={false} />
+    <LazyMotion features={domAnimation}>
+      <PageWrapper>
+        <GlobalStyle />
+        <ExploreHeader showOptionsWrapper={false} />
 
-      <main>
-        {/* 1. Hero Section */}
-        <HeroSection>
-          <SectionContainer>
-            <HeroGrid>
-              <HeroTextContainer
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-              >
-                <HeroTitle>
-                  Host experiences,
-                  <br />
-                  <span>earn on your terms.</span>
-                </HeroTitle>
-                <HeroSubtitle>
-                  Turn your passion into a business. Join thousands of hosts who
-                  use our platform to manage bookings, reach more guests, and
-                  simplify their life.
-                </HeroSubtitle>
-                <StartButton onClick={handleNavigate}>
-                  Become a Host <ArrowRight size={18} />
-                </StartButton>
-              </HeroTextContainer>
+        <main>
+          {/* 1. Hero Section */}
+          <HeroSection>
+            <SectionContainer>
+              <HeroGrid>
+                <HeroTextContainer
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                >
+                  <HeroTitle>
+                    Host experiences,
+                    <br />
+                    <span>earn on your terms.</span>
+                  </HeroTitle>
+                  <HeroSubtitle>
+                    Turn your passion into a business. Join thousands of hosts
+                    who use our platform to manage bookings, reach more guests,
+                    and simplify their life.
+                  </HeroSubtitle>
+                  <StartButton onClick={handleNavigate}>
+                    Become a Host <ArrowRight size={18} />
+                  </StartButton>
+                </HeroTextContainer>
 
-              <HeroVisualContainer
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-              >
-                <Image
-                  src="/Frame 1597880366.svg"
-                  alt="Host Dashboard Preview"
-                  fill
-                  priority
-                />
-              </HeroVisualContainer>
-            </HeroGrid>
-          </SectionContainer>
-        </HeroSection>
+                <HeroVisualContainer
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                >
+                  {/* OPTIMIZATION: sizes prop added to prevent full res load on mobile */}
+                  {/* NOTE: Convert this SVG to WebP for massive LCP improvement */}
+                  <Image
+                    src="/Frame 1597880366.svg"
+                    alt="Host Dashboard Preview"
+                    fill
+                    priority
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                </HeroVisualContainer>
+              </HeroGrid>
+            </SectionContainer>
+          </HeroSection>
 
-        {/* 2. Value & Comparison (Mobile: Horizontal Scroll + Cards) */}
-        <ValuePropSection>
-          <SectionContainer>
-            <SectionHeader $center>
-              <SectionEyebrow>WHY CHOOSE US</SectionEyebrow>
-              <SectionTitle>Built for your bottom line</SectionTitle>
-              <SectionSubtitle $center>
-                We only succeed when you do. Experience a fairer way to host.
-              </SectionSubtitle>
-            </SectionHeader>
+          {/* 2. Value & Comparison */}
+          <ValuePropSection>
+            <SectionContainer>
+              <SectionHeader $center>
+                <SectionEyebrow>WHY CHOOSE US</SectionEyebrow>
+                <SectionTitle>Built for your bottom line</SectionTitle>
+                <SectionSubtitle $center>
+                  We only succeed when you do. Experience a fairer way to host.
+                </SectionSubtitle>
+              </SectionHeader>
 
-            <GridThree className="no-scrollbar">
-              <ValueCard>
-                <IconCircle>
-                  <lord-icon
-                    src="https://cdn.lordicon.com/pmawqxvu.json"
-                    trigger="in"
-                    state="in-reveal"
-                    style={{ width: "44px", height: "44px" }}
-                  ></lord-icon>
-                </IconCircle>
-                <ValueTitle>0% Listing Fees</ValueTitle>
-                <ValueDesc>
-                  Keep 100% of your earnings minus standard processing fees. We
-                  don't charge you to exist on our platform.
-                </ValueDesc>
-              </ValueCard>
-              <ValueCard>
-                <IconCircle>
-                  <lord-icon
-                    src="https://cdn.lordicon.com/rhmhivzj.json"
-                    trigger="in"
-                    state="in-reveal"
-                    style={{ width: "44px", height: "44px" }}
-                  ></lord-icon>
-                </IconCircle>
-                <ValueTitle>Next Day Payouts</ValueTitle>
-                <ValueDesc>
-                  Cash flow matters. Get paid the very next day after your
-                  experience completes. No more waiting weeks for funds.
-                </ValueDesc>
-              </ValueCard>
-              <ValueCard>
-                <IconCircle>
-                  <lord-icon
-                    src="https://cdn.lordicon.com/mlwdofpz.json"
-                    trigger="hover"
-                    style={{ width: "44px", height: "44px" }}
-                  ></lord-icon>
-                </IconCircle>
-                <ValueTitle>Marketing Included</ValueTitle>
-                <ValueDesc>
-                  We actively market your experiences to thousands of local
-                  guests looking for something fun to do.
-                </ValueDesc>
-              </ValueCard>
-            </GridThree>
+              <GridThree className="no-scrollbar">
+                <ValueCard>
+                  <IconCircle>
+                    <lord-icon
+                      src="https://cdn.lordicon.com/pmawqxvu.json"
+                      trigger="in"
+                      state="in-reveal"
+                      style={{ width: "44px", height: "44px" }}
+                    ></lord-icon>
+                  </IconCircle>
+                  <ValueTitle>0% Listing Fees</ValueTitle>
+                  <ValueDesc>
+                    Keep 100% of your earnings minus standard processing fees.
+                    We don't charge you to exist on our platform.
+                  </ValueDesc>
+                </ValueCard>
+                <ValueCard>
+                  <IconCircle>
+                    <lord-icon
+                      src="https://cdn.lordicon.com/rhmhivzj.json"
+                      trigger="in"
+                      state="in-reveal"
+                      style={{ width: "44px", height: "44px" }}
+                    ></lord-icon>
+                  </IconCircle>
+                  <ValueTitle>Next Day Payouts</ValueTitle>
+                  <ValueDesc>
+                    Cash flow matters. Get paid the very next day after your
+                    experience completes. No more waiting weeks for funds.
+                  </ValueDesc>
+                </ValueCard>
+                <ValueCard>
+                  <IconCircle>
+                    <lord-icon
+                      src="https://cdn.lordicon.com/mlwdofpz.json"
+                      trigger="hover"
+                      style={{ width: "44px", height: "44px" }}
+                    ></lord-icon>
+                  </IconCircle>
+                  <ValueTitle>Marketing Included</ValueTitle>
+                  <ValueDesc>
+                    We actively market your experiences to thousands of local
+                    guests looking for something fun to do.
+                  </ValueDesc>
+                </ValueCard>
+              </GridThree>
 
-            <ComparisonTableWrapper>
-              <ComparisonHeader>
-                <div>Feature</div>
-                <div style={{ textAlign: "center" }}>Others</div>
-                <div style={{ textAlign: "center", color: "#f81e3e" }}>
-                  ClassEasily
-                </div>
-              </ComparisonHeader>
-              {comparisonData.map((row) => (
-                <ComparisonRow key={row.feature}>
-                  <ComparisonFeature>{row.feature}</ComparisonFeature>
-                  <ComparisonValue $good={false} data-label="Others">
-                    {row.others}
-                  </ComparisonValue>
-                  <ComparisonValue
-                    $good={true}
-                    $highlight={row.highlight}
-                    data-label="ClassEasily"
-                  >
-                    {row.classEasily}
-                  </ComparisonValue>
-                </ComparisonRow>
-              ))}
-            </ComparisonTableWrapper>
-          </SectionContainer>
-        </ValuePropSection>
+              <ComparisonTableWrapper>
+                <ComparisonHeader>
+                  <div>Feature</div>
+                  <div style={{ textAlign: "center" }}>Others</div>
+                  <div style={{ textAlign: "center", color: "#f81e3e" }}>
+                    ClassEasily
+                  </div>
+                </ComparisonHeader>
+                {comparisonData.map((row) => (
+                  <ComparisonRow key={row.feature}>
+                    <ComparisonFeature>{row.feature}</ComparisonFeature>
+                    <ComparisonValue $good={false} data-label="Others">
+                      {row.others}
+                    </ComparisonValue>
+                    <ComparisonValue
+                      $good={true}
+                      $highlight={row.highlight}
+                      data-label="ClassEasily"
+                    >
+                      {row.classEasily}
+                    </ComparisonValue>
+                  </ComparisonRow>
+                ))}
+              </ComparisonTableWrapper>
+            </SectionContainer>
+          </ValuePropSection>
 
-        {/* 3. Dashboard Mockups (Preserved) */}
-        <DashboardSection>
-          <SectionContainer>
-            <SectionHeader $center>
-              <SectionEyebrow>HOST TOOLS</SectionEyebrow>
-              <SectionTitle>Manage everything in one place</SectionTitle>
-              <SectionSubtitle $center>
-                From scheduling events to tracking your payouts, our dashboard
-                gives you the clarity you need.
-              </SectionSubtitle>
-            </SectionHeader>
+          {/* 3. Dashboard Mockups */}
+          <DashboardSection>
+            <SectionContainer>
+              <SectionHeader $center>
+                <SectionEyebrow>HOST TOOLS</SectionEyebrow>
+                <SectionTitle>Manage everything in one place</SectionTitle>
+                <SectionSubtitle $center>
+                  From scheduling events to tracking your payouts, our dashboard
+                  gives you the clarity you need.
+                </SectionSubtitle>
+              </SectionHeader>
 
-            <MockupGrid onMouseLeave={() => setHoveredMockup(null)}>
-              {mockupItems.map((item, index) => {
-                const isHovered = hoveredMockup === index;
-                const isInactive = hoveredMockup !== null && !isHovered;
+              <MockupGrid onMouseLeave={() => setHoveredMockup(null)}>
+                {mockupItems.map((item, index) => {
+                  const isHovered = hoveredMockup === index;
+                  const isInactive = hoveredMockup !== null && !isHovered;
 
-                return (
-                  <MockupItem
-                    key={index}
-                    onMouseEnter={() => setHoveredMockup(index)}
+                  return (
+                    <MockupItem
+                      key={index}
+                      onMouseEnter={() => setHoveredMockup(index)}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      animate={{
+                        scale: isHovered ? 1.01 : isInactive ? 0.99 : 1,
+                        opacity: isInactive ? 0.3 : 1,
+                        y: isHovered ? -10 : 0,
+                        filter: isInactive ? "blur(0px)" : "blur(0px)",
+                        zIndex: isHovered ? 10 : 0,
+                      }}
+                      transition={{
+                        duration: 0.4,
+                        ease: [0.25, 0.1, 0.25, 1.0],
+                      }}
+                    >
+                      <MockupImageWrapper>
+                        {/* OPTIMIZATION: sizes prop added to avoid large image downloads on mobile */}
+                        <Image
+                          src={item.image}
+                          alt={item.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                        />
+                      </MockupImageWrapper>
+                      <div>
+                        <MockupTitle>{item.title}</MockupTitle>
+                        <MockupDesc>{item.description}</MockupDesc>
+                      </div>
+                    </MockupItem>
+                  );
+                })}
+              </MockupGrid>
+            </SectionContainer>
+          </DashboardSection>
+
+          {/* 4. Testimonials */}
+          <TestimonialsSection>
+            <SectionContainer>
+              <SectionHeader $center>
+                <SectionEyebrow>TESTIMONIALS</SectionEyebrow>
+                <SectionTitle>What hosts are saying</SectionTitle>
+              </SectionHeader>
+              <ReviewGrid className="no-scrollbar">
+                {testimonials.map((t, i) => (
+                  <ReviewItem
+                    key={i}
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    animate={{
-                      scale: isHovered ? 1.01 : isInactive ? 0.99 : 1,
-                      opacity: isInactive ? 0.3 : 1,
-                      y: isHovered ? -10 : 0,
-                      filter: isInactive ? "blur(0px)" : "blur(0px)",
-                      zIndex: isHovered ? 10 : 0,
-                    }}
-                    transition={{
-                      duration: 0.4,
-                      ease: [0.25, 0.1, 0.25, 1.0],
-                    }}
+                    transition={{ delay: i * 0.1 }}
                   >
-                    <MockupImageWrapper>
-                      <Image
-                        src={item.image}
-                        alt={item.title}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                      />
-                    </MockupImageWrapper>
-                    <div>
-                      <MockupTitle>{item.title}</MockupTitle>
-                      <MockupDesc>{item.description}</MockupDesc>
-                    </div>
-                  </MockupItem>
-                );
-              })}
-            </MockupGrid>
-          </SectionContainer>
-        </DashboardSection>
-
-        {/* 4. Testimonials (Mobile: Horizontal Scroll Snap) */}
-        <TestimonialsSection>
-          <SectionContainer>
-            <SectionHeader $center>
-              <SectionEyebrow>TESTIMONIALS</SectionEyebrow>
-              <SectionTitle>What hosts are saying</SectionTitle>
-            </SectionHeader>
-            <ReviewGrid className="no-scrollbar">
-              {testimonials.map((t, i) => (
-                <ReviewItem
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                >
-                  <AnimatedIconWrapper>
-                    <lord-icon
-                      src={t.iconSrc}
-                      trigger="hover"
-                      style={{ width: "40px", height: "40px" }}
-                    ></lord-icon>
-                  </AnimatedIconWrapper>
-                  <ReviewText>{t.text}</ReviewText>
-                  <ReviewAuthor>
-                    {t.author} <span>— {t.title}</span>
-                  </ReviewAuthor>
-                </ReviewItem>
-              ))}
-            </ReviewGrid>
-          </SectionContainer>
-        </TestimonialsSection>
-
-        {/* 5. Tiers / Growth Path (Mobile: Tabs) */}
-        <TierSection>
-          <SectionContainer>
-            <SectionHeader $center>
-              <SectionEyebrow>FLEXIBILITY</SectionEyebrow>
-              <SectionTitle>Scale at your own pace</SectionTitle>
-              <SectionSubtitle $center>
-                Start with free tools to manage your contacts, or unlock the
-                full marketplace power.
-              </SectionSubtitle>
-            </SectionHeader>
-
-            {/* Desktop Grid Layout */}
-            <CleanTierGrid>
-              {growthPathData.map((tier, i) => (
-                <CleanTierColumn key={i}>
-                  <TierHeaderSimple>
-                    <TierTitleDisplay>{tier.title}</TierTitleDisplay>
-                    <TierPriceDisplay $color={tier.iconColor}>
-                      {tier.price}
-                    </TierPriceDisplay>
-                    <TierDescription>{tier.description}</TierDescription>
-                  </TierHeaderSimple>
-                  <FeatureListClean>
-                    {tier.features.map((feat, idx) => (
-                      <FeatureItemClean key={idx}>
-                        <Check size={16} color={tier.iconColor} />
-                        {feat}
-                      </FeatureItemClean>
-                    ))}
-                  </FeatureListClean>
-                </CleanTierColumn>
-              ))}
-            </CleanTierGrid>
-
-            {/* Mobile Tabbed Layout */}
-            <MobileTabContainer>
-              <TabList>
-                {growthPathData.map((tier, i) => (
-                  <React.Fragment key={i}>
-                    {activeTierIndex === i && (
-                      <TabIndicator
-                        layoutId="tabIndicator"
-                        style={{
-                          width: `${100 / 3}%`,
-                          left: `${(i * 100) / 3}%`,
-                        }}
-                        transition={{
-                          type: "spring",
-                          bounce: 0.2,
-                          duration: 0.6,
-                        }}
-                      />
-                    )}
-                    <TabButton
-                      $active={activeTierIndex === i}
-                      onClick={() => setActiveTierIndex(i)}
-                    >
-                      {tier.title}
-                    </TabButton>
-                  </React.Fragment>
+                    <AnimatedIconWrapper>
+                      <lord-icon
+                        src={t.iconSrc}
+                        trigger="hover"
+                        style={{ width: "40px", height: "40px" }}
+                      ></lord-icon>
+                    </AnimatedIconWrapper>
+                    <ReviewText>{t.text}</ReviewText>
+                    <ReviewAuthor>
+                      {t.author} <span>— {t.title}</span>
+                    </ReviewAuthor>
+                  </ReviewItem>
                 ))}
-              </TabList>
+              </ReviewGrid>
+            </SectionContainer>
+          </TestimonialsSection>
 
-              <AnimatePresence mode="wait">
-                <MobileTabContent
-                  key={activeTierIndex}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <TierHeaderSimple>
-                    <TierPriceDisplay
-                      $color={growthPathData[activeTierIndex].iconColor}
-                      style={{
-                        marginBottom: 4,
-                        fontSize: "0.8rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      {growthPathData[activeTierIndex].price}
-                    </TierPriceDisplay>
-                    <TierTitleDisplay style={{ fontSize: "1.6rem" }}>
-                      {growthPathData[activeTierIndex].title}
-                    </TierTitleDisplay>
-                    <TierDescription style={{ marginBottom: 24 }}>
-                      {growthPathData[activeTierIndex].description}
-                    </TierDescription>
-                  </TierHeaderSimple>
-                  <FeatureListClean>
-                    {growthPathData[activeTierIndex].features.map(
-                      (feat, idx) => (
-                        <FeatureItemClean
-                          key={idx}
-                          style={{ fontSize: "1rem", gap: 12 }}
-                        >
-                          <Check
-                            size={20}
-                            color={growthPathData[activeTierIndex].iconColor}
-                          />
+          {/* 5. Tiers / Growth Path */}
+          <TierSection>
+            <SectionContainer>
+              <SectionHeader $center>
+                <SectionEyebrow>FLEXIBILITY</SectionEyebrow>
+                <SectionTitle>Scale at your own pace</SectionTitle>
+                <SectionSubtitle $center>
+                  Start with free tools to manage your contacts, or unlock the
+                  full marketplace power.
+                </SectionSubtitle>
+              </SectionHeader>
+
+              {/* Desktop Grid Layout */}
+              <CleanTierGrid>
+                {growthPathData.map((tier, i) => (
+                  <CleanTierColumn key={i}>
+                    <TierHeaderSimple>
+                      <TierTitleDisplay>{tier.title}</TierTitleDisplay>
+                      <TierPriceDisplay $color={tier.iconColor}>
+                        {tier.price}
+                      </TierPriceDisplay>
+                      <TierDescription>{tier.description}</TierDescription>
+                    </TierHeaderSimple>
+                    <FeatureListClean>
+                      {tier.features.map((feat, idx) => (
+                        <FeatureItemClean key={idx}>
+                          <Check size={16} color={tier.iconColor} />
                           {feat}
                         </FeatureItemClean>
-                      )
-                    )}
-                  </FeatureListClean>
-                </MobileTabContent>
-              </AnimatePresence>
-            </MobileTabContainer>
-          </SectionContainer>
-        </TierSection>
+                      ))}
+                    </FeatureListClean>
+                  </CleanTierColumn>
+                ))}
+              </CleanTierGrid>
 
-        {/* 6. FAQ Section */}
-        <FAQSection>
-          <SectionContainer>
-            <SectionHeader $center>
-              <SectionTitle>Your questions, answered</SectionTitle>
-            </SectionHeader>
-            <FAQContainer>
-              {faqData.map((item) => {
-                const isOpen = activeItems.has(item.key);
-                return (
-                  <FAQItem key={item.key}>
-                    <FAQButton onClick={() => toggleItem(item.key)}>
-                      {item.question}
-                      {isOpen ? <Minus size={18} /> : <Plus size={18} />}
-                    </FAQButton>
-                    <AnimatePresence>
-                      {isOpen && (
-                        <FAQAnswer
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                        >
-                          <div
-                            style={{ paddingBottom: 24 }}
-                            dangerouslySetInnerHTML={{ __html: item.answer }}
-                          />
-                        </FAQAnswer>
+              {/* Mobile Tabbed Layout */}
+              <MobileTabContainer>
+                <TabList>
+                  {growthPathData.map((tier, i) => (
+                    <React.Fragment key={i}>
+                      {activeTierIndex === i && (
+                        <TabIndicator
+                          layoutId="tabIndicator"
+                          style={{
+                            width: `${100 / 3}%`,
+                            left: `${(i * 100) / 3}%`,
+                          }}
+                          transition={{
+                            type: "spring",
+                            bounce: 0.2,
+                            duration: 0.6,
+                          }}
+                        />
                       )}
-                    </AnimatePresence>
-                  </FAQItem>
-                );
-              })}
-            </FAQContainer>
-          </SectionContainer>
-        </FAQSection>
-      </main>
+                      <TabButton
+                        $active={activeTierIndex === i}
+                        onClick={() => setActiveTierIndex(i)}
+                      >
+                        {tier.title}
+                      </TabButton>
+                    </React.Fragment>
+                  ))}
+                </TabList>
 
-      <FooterClient />
-    </PageWrapper>
+                <AnimatePresence mode="wait">
+                  <MobileTabContent
+                    key={activeTierIndex}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <TierHeaderSimple>
+                      <TierPriceDisplay
+                        $color={growthPathData[activeTierIndex].iconColor}
+                        style={{
+                          marginBottom: 4,
+                          fontSize: "0.8rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                        }}
+                      >
+                        {growthPathData[activeTierIndex].price}
+                      </TierPriceDisplay>
+                      <TierTitleDisplay style={{ fontSize: "1.6rem" }}>
+                        {growthPathData[activeTierIndex].title}
+                      </TierTitleDisplay>
+                      <TierDescription style={{ marginBottom: 24 }}>
+                        {growthPathData[activeTierIndex].description}
+                      </TierDescription>
+                    </TierHeaderSimple>
+                    <FeatureListClean>
+                      {growthPathData[activeTierIndex].features.map(
+                        (feat, idx) => (
+                          <FeatureItemClean
+                            key={idx}
+                            style={{ fontSize: "1rem", gap: 12 }}
+                          >
+                            <Check
+                              size={20}
+                              color={growthPathData[activeTierIndex].iconColor}
+                            />
+                            {feat}
+                          </FeatureItemClean>
+                        )
+                      )}
+                    </FeatureListClean>
+                  </MobileTabContent>
+                </AnimatePresence>
+              </MobileTabContainer>
+            </SectionContainer>
+          </TierSection>
+
+          {/* 6. FAQ Section */}
+          <FAQSection>
+            <SectionContainer>
+              <SectionHeader $center>
+                <SectionTitle>Your questions, answered</SectionTitle>
+              </SectionHeader>
+              <FAQContainer>
+                {faqData.map((item) => {
+                  const isOpen = activeItems.has(item.key);
+                  return (
+                    <FAQItem key={item.key}>
+                      <FAQButton onClick={() => toggleItem(item.key)}>
+                        {item.question}
+                        {isOpen ? <Minus size={18} /> : <Plus size={18} />}
+                      </FAQButton>
+                      <AnimatePresence>
+                        {isOpen && (
+                          <FAQAnswer
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                          >
+                            <div
+                              style={{ paddingBottom: 24 }}
+                              dangerouslySetInnerHTML={{ __html: item.answer }}
+                            />
+                          </FAQAnswer>
+                        )}
+                      </AnimatePresence>
+                    </FAQItem>
+                  );
+                })}
+              </FAQContainer>
+            </SectionContainer>
+          </FAQSection>
+        </main>
+
+        <FooterClient />
+      </PageWrapper>
+    </LazyMotion>
   );
 };
 
