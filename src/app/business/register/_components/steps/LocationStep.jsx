@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Form, Input, Typography, Spin, ConfigProvider, Row, Col,  } from 'antd';
-import message from '@/lib/message';
+import { Form, Input, Typography, Spin, ConfigProvider, Row, Col } from "antd";
+import message from "@/lib/message";
 import styled from "styled-components";
 import {
   MapContainer,
@@ -129,9 +129,9 @@ const FormGroup = styled.div`
   margin-bottom: ${(props) =>
     props.theme.token.marginLG || props.theme.token.margin}px;
   width: 100%;
-  
+
   @media (max-width: 768px) {
-     margin-bottom: 1rem;
+    margin-bottom: 1rem;
   }
 `;
 const FormLabel = styled.label`
@@ -205,7 +205,7 @@ const InfoText = styled.p`
   margin: 0;
   line-height: 1.6;
   @media (max-width: 768px) {
-      font-size: 13px;
+    font-size: 13px;
   }
 `;
 const SearchContainer = styled.div`
@@ -269,9 +269,9 @@ const SearchResult = styled(motion.div)`
     margin-top: 2px;
     flex-shrink: 0;
   }
-  
+
   @media (max-width: 768px) {
-      padding: 1rem; /* Ensure touch target size */
+    padding: 1rem; /* Ensure touch target size */
   }
 `;
 const ResultContent = styled.div`
@@ -333,11 +333,11 @@ const NoMapAlert = styled(motion.div)`
   gap: ${(props) => props.theme.token.marginSM}px;
   text-align: center;
   padding: 1rem;
-  
+
   svg {
     color: ${(props) => props.theme.token.colorPrimary};
   }
-  
+
   @media (max-width: 768px) {
     height: 150px;
     font-size: 14px;
@@ -494,10 +494,10 @@ const LocationStep = ({ onSubmit, initialData = {}, onFormSubmitFailed }) => {
   return (
     <ConfigProvider theme={theme}>
       <StepHeader>
-        <StepTitle level={2}>Studio Location</StepTitle>
+        <StepTitle level={2}>Meeting Point / Location</StepTitle>
         <StepDescription>
-          Let's set up where you'll be teaching your classes. Your exact address
-          will be kept private until students book with you.
+          Let's set up where you'll be hosting your experience. Your exact
+          address will be kept private until guests book with you.
         </StepDescription>
       </StepHeader>
 
@@ -511,10 +511,9 @@ const LocationStep = ({ onSubmit, initialData = {}, onFormSubmitFailed }) => {
           Privacy Protection
         </InfoTitle>
         <InfoText>
-          Your exact address will only be shared with students after they book a
-          class. For public viewing, we'll show an approximate location within a
-          200-meter radius to protect your privacy and security. You can change
-          this later in class settings.
+          Your exact address will only be shared with guests after they book an
+          experience. For public viewing, we'll show an approximate location
+          within a 200-meter radius to protect your privacy and security.
         </InfoText>
       </InfoSection>
 
@@ -535,18 +534,18 @@ const LocationStep = ({ onSubmit, initialData = {}, onFormSubmitFailed }) => {
               <Col xs={24} md={12}>
                 <FormLabel>
                   <MapPin size={16} />
-                  Studio Address
+                  Meeting Point / Venue Address
                 </FormLabel>
                 <HelpText>
                   <Info size={14} />
-                  Search and select your teaching location.
+                  Search and select your hosting location.
                 </HelpText>
                 <Form.Item
                   name="location"
                   rules={[
                     {
                       required: true,
-                      message: "Please search and select your studio address",
+                      message: "Please search and select your location",
                     },
                   ]}
                   style={{ marginBottom: "1rem" }}
@@ -666,7 +665,7 @@ const LocationStep = ({ onSubmit, initialData = {}, onFormSubmitFailed }) => {
             <HelpText>
               <Info size={14} />
               This shows the approximate area where your location will be
-              displayed to students
+              displayed to guests
             </HelpText>
 
             <AnimatePresence mode="wait">

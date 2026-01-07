@@ -638,7 +638,6 @@ const BusinessInfoStep = ({
       return Upload.LIST_IGNORE;
     }
 
-    // Validate image can be loaded
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
@@ -743,11 +742,11 @@ const BusinessInfoStep = ({
   return (
     <ConfigProvider theme={theme}>
       <StepHeader>
-        <StepTitle level={2}>Business Information</StepTitle>
+        <StepTitle level={2}>Host Information</StepTitle>
         <StepDescription>
-          Let's start by learning about your teaching business. This information
-          helps students understand what you offer and builds trust in your
-          services.
+          Let's start by learning about your experience business. This
+          information helps guests understand what you offer and builds trust in
+          your services.
         </StepDescription>
       </StepHeader>
 
@@ -766,20 +765,23 @@ const BusinessInfoStep = ({
           <FormGroup>
             <FormLabel>
               <Building2 size={16} />
-              Business Name
+              Business / Host Name
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              How should your business be displayed on our platform?
+              How should you or your business be displayed on our platform?
             </HelpText>
             <Form.Item
               name="businessName"
               rules={[
-                { required: true, message: "Please enter your business name" },
+                {
+                  required: true,
+                  message: "Please enter your business or host name",
+                },
               ]}
             >
               <StyledInput
-                placeholder="e.g., Smith Music Academy, Sarah's Piano Lessons"
+                placeholder="e.g., City Food Tours, Sunset Kayaking, Pottery by Sarah"
                 size="large"
               />
             </Form.Item>
@@ -792,7 +794,7 @@ const BusinessInfoStep = ({
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              Select the type that best describes your teaching business.
+              Select the type that best describes your experience business.
             </HelpText>
             <Form.Item
               name="businessType"
@@ -804,11 +806,11 @@ const BusinessInfoStep = ({
                 placeholder="Select your business type"
                 size="large"
               >
-                <Option value="individual">Individual Teacher</Option>
-                <Option value="school">School</Option>
-                <Option value="studio">Studio</Option>
-                <Option value="academy">Academy</Option>
-                <Option value="center">Learning Center</Option>
+                <Option value="individual">Individual Host</Option>
+                <Option value="tour-operator">Tour Operator</Option>
+                <Option value="experience-group">Experience Group</Option>
+                <Option value="venue">Venue / Studio</Option>
+                <Option value="event-organizer">Event Organizer</Option>
               </StyledSelect>
             </Form.Item>
           </FormGroup>
@@ -817,7 +819,7 @@ const BusinessInfoStep = ({
             <FormLabel>Founding Year (Optional)</FormLabel>
             <HelpText>
               <Info size={14} />
-              What year was your business established?
+              What year did you start hosting experiences?
             </HelpText>
             <Form.Item
               name="founding_year"
@@ -844,7 +846,7 @@ const BusinessInfoStep = ({
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              Select the primary timezone for your business operations.
+              Select the primary timezone for your operations.
             </HelpText>
             <Form.Item
               name="business_timezone"
@@ -888,8 +890,8 @@ const BusinessInfoStep = ({
             <HelpText>
               <Info size={14} />
               Drag & drop or click to upload a photo that represents your
-              business - this could be your logo, studio space, or a
-              professional photo.
+              business - this could be your logo, a photo of you, or an action
+              shot of your experience.
             </HelpText>
             <div style={{ maxWidth: "200px" }}>
               <StyledDragger
@@ -963,7 +965,7 @@ const BusinessInfoStep = ({
         <SectionDivider>
           <span>
             <Building2 size={16} />
-            About Your Business
+            About Your Experience
           </span>
         </SectionDivider>
 
@@ -975,19 +977,19 @@ const BusinessInfoStep = ({
           <FormGroup>
             <FormLabel>
               <FileText size={16} />
-              Business Description
+              Description
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              Describe your teaching philosophy, experience, and what makes your
-              business unique. (250-750 characters)
+              Describe what you offer, your background, and what makes your
+              experiences unique. (250-750 characters)
             </HelpText>
             <Form.Item
               name="businessDescription"
               rules={[
                 {
                   required: true,
-                  message: "Please enter a business description",
+                  message: "Please enter a description",
                 },
                 {
                   min: 250,
@@ -1000,7 +1002,7 @@ const BusinessInfoStep = ({
               ]}
             >
               <StyledTextArea
-                placeholder="Tell students about your teaching experience, methods, and what they can expect..."
+                placeholder="Tell guests about your passion, what they will do, and what to expect..."
                 maxLength={750}
                 showCount
                 autoSize={{ minRows: 5, maxRows: 8 }}
@@ -1015,9 +1017,9 @@ const BusinessInfoStep = ({
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              Add relevant tags or keywords to help students find you (e.g.,
-              painting for beginners, date-night fun, pottery lessons). Press
-              Enter to add a tag.
+              Add relevant tags or keywords to help guests find you (e.g.,
+              walking tour, wine tasting, date-night fun, pottery workshop).
+              Press Enter to add a tag.
             </HelpText>
             <Form.Item name="tags_keywords">
               <StyledTagsSelect
@@ -1138,7 +1140,7 @@ const BusinessInfoStep = ({
           <FormGroup>
             <FormLabel>
               <Clock size={16} />
-              Typical Business Hours
+              Typical Availability
             </FormLabel>
             <HelpText>
               <Info size={14} />
@@ -1255,10 +1257,10 @@ const BusinessInfoStep = ({
             >
               <StyledCheckbox>
                 I understand that ClassEasily acts as a platform connecting
-                teachers and students, and is not liable for any incidents,
-                damages, or disputes that may arise between parties. I take full
-                responsibility for my teaching services and interactions with
-                students.
+                hosts and guests, and is not liable for any incidents, damages,
+                or disputes that may arise between parties. I take full
+                responsibility for my hosting services and interactions with
+                guests.
               </StyledCheckbox>
             </Form.Item>
           </FormGroup>

@@ -314,7 +314,7 @@ const ContactDetailsStep = ({
       <StepHeader>
         <StepTitle level={2}>Contact Information</StepTitle>
         <StepDescription>
-          Help students reach you by providing clear contact information. This
+          Help guests reach you by providing clear contact information. This
           builds trust and makes booking easier.
         </StepDescription>
       </StepHeader>
@@ -357,11 +357,11 @@ const ContactDetailsStep = ({
           <FormGroup>
             <FormLabel>
               <Phone size={16} />
-              Student Contact Phone
+              Guest Contact Phone
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              Primary phone number for students to reach you for bookings and
+              Primary phone number for guests to reach you for bookings and
               questions
             </HelpText>
             <Form.Item
@@ -369,7 +369,7 @@ const ContactDetailsStep = ({
               rules={[
                 {
                   required: true,
-                  message: "Please enter a phone number for students",
+                  message: "Please enter a phone number for guests",
                 },
                 {
                   pattern: /^[\d\s().+-xX]{7,25}$/,
@@ -387,18 +387,18 @@ const ContactDetailsStep = ({
           <FormGroup>
             <FormLabel>
               <Mail size={16} />
-              Student Contact Email
+              Guest Contact Email
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              Email address students can use to contact you directly
+              Email address guests can use to contact you directly
             </HelpText>
             <Form.Item
               name="studentContactEmail"
               rules={[
                 {
                   required: true,
-                  message: "Please enter an email for students",
+                  message: "Please enter an email for guests",
                 },
                 {
                   type: "email",
@@ -408,7 +408,7 @@ const ContactDetailsStep = ({
             >
               <StyledInput
                 type="email"
-                placeholder="e.g., contact@yourschool.com or your.name@email.com"
+                placeholder="e.g., contact@yourbusiness.com or your.name@email.com"
                 size="large"
               />
             </Form.Item>
@@ -434,7 +434,7 @@ const ContactDetailsStep = ({
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              How should students primarily reach you? This will be displayed on
+              How should guests primarily reach you? This will be displayed on
               your profile.
             </HelpText>
             <Form.Item
@@ -443,7 +443,7 @@ const ContactDetailsStep = ({
                 {
                   required: true,
                   message:
-                    "Please select how students should primarily contact you",
+                    "Please select how guests should primarily contact you",
                 },
               ]}
             >
@@ -524,7 +524,7 @@ const ContactDetailsStep = ({
             <HelpText>
               <Info size={14} />
               Choose who can see your phone number and email. This helps you
-              control your privacy and manage how students contact you.
+              control your privacy and manage how guests contact you.
             </HelpText>
             <Form.Item
               name="contact_privacy"
@@ -559,9 +559,9 @@ const ContactDetailsStep = ({
               </StyledRadioGroup>
             </Form.Item>
             <HelpText>
-              "Show After Booking" is recommended for most individual teachers.
-              "Show Publicly" is great for established schools that want to
-              encourage direct inquiries.
+              "Show After Booking" is recommended for most individual hosts.
+              "Show Publicly" is great for established tour operators that want
+              to encourage direct inquiries.
             </HelpText>
           </FormGroup>
         </FormSection>

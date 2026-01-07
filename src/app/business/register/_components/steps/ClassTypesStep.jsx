@@ -188,7 +188,7 @@ const StyledSelect = styled(Select)`
     .ant-select-selection-search-input,
     .ant-select-selection-placeholder,
     .ant-select-selection-item {
-        font-size: 16px !important;
+      font-size: 16px !important;
     }
     input {
       font-size: 16px !important;
@@ -322,10 +322,10 @@ const ClassTypesStep = ({ onSubmit, initialData = {}, onFormSubmitFailed }) => {
   return (
     <ConfigProvider theme={theme}>
       <StepHeader>
-        <StepTitle level={2}>Class Details & Agreements</StepTitle>
+        <StepTitle level={2}>Experience Details & Agreements</StepTitle>
         <StepDescription>
-          Define how you teach and who you teach. This helps students find the
-          right class format and sets clear expectations.
+          Define your experience format and your target audience. This helps
+          guests find the right activity and sets clear expectations.
         </StepDescription>
       </StepHeader>
 
@@ -339,7 +339,7 @@ const ClassTypesStep = ({ onSubmit, initialData = {}, onFormSubmitFailed }) => {
         <SectionDivider>
           <span>
             <Users size={16} />
-            Teaching Format
+            Experience Format
           </span>
         </SectionDivider>
 
@@ -351,36 +351,36 @@ const ClassTypesStep = ({ onSubmit, initialData = {}, onFormSubmitFailed }) => {
           <FormGroup>
             <FormLabel>
               <Users size={16} />
-              Class Formats You Offer
+              Experience Formats You Offer
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              Select all the different ways you can deliver your classes
+              Select all the different ways you can deliver your experience
             </HelpText>
             <Form.Item
               name="classFormats"
               rules={[
                 {
                   required: true,
-                  message: "Please select at least one class format",
+                  message: "Please select at least one format",
                 },
               ]}
             >
               <StyledSelect
                 mode="multiple"
                 allowClear
-                placeholder="Select formats (e.g., Private, Group, Online)"
+                placeholder="Select formats (e.g., Small Group, Private, Virtual)"
                 size="large"
                 maxTagCount="responsive"
               >
-                <Option value="private">Private Lessons (1-on-1)</Option>
-                <Option value="small-group">Small Group (2-5 students)</Option>
-                <Option value="group">Group Classes (6+ students)</Option>
-                <Option value="event">Event Friendly (15+ students)</Option>
-                <Option value="course">Multi-Session Courses</Option>
-                <Option value="online">Online Only</Option>
+                <Option value="small-group">Small Group (2-5 guests)</Option>
+                <Option value="group">Group Experience (6+ guests)</Option>
+                <Option value="private">Private Booking</Option>
+                <Option value="event">Large Event Friendly</Option>
+                <Option value="course">Multi-Day Workshop</Option>
+                <Option value="online">Virtual Experience</Option>
                 <Option value="in-person">In-Person Only</Option>
-                <Option value="hybrid">Hybrid (Online & In-Person)</Option>
+                <Option value="hybrid">Hybrid</Option>
               </StyledSelect>
             </Form.Item>
           </FormGroup>
@@ -388,33 +388,35 @@ const ClassTypesStep = ({ onSubmit, initialData = {}, onFormSubmitFailed }) => {
           <FormGroup>
             <FormLabel>
               <Award size={16} />
-              Skill Levels You Teach
+              Activity Level / Skill Requirement
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              Choose all the experience levels you're comfortable teaching
+              What experience or physical ability level is required?
             </HelpText>
             <Form.Item
               name="skillLevels"
               rules={[
                 {
                   required: true,
-                  message: "Please select skill levels you teach",
+                  message: "Please select applicable levels",
                 },
               ]}
             >
               <StyledSelect
                 mode="multiple"
                 allowClear
-                placeholder="Select skill levels"
+                placeholder="Select requirements"
                 size="large"
                 maxTagCount="responsive"
               >
-                <Option value="beginner">Beginner</Option>
+                <Option value="no-experience">No Experience Needed</Option>
+                <Option value="beginner">Beginner Friendly</Option>
                 <Option value="intermediate">Intermediate</Option>
                 <Option value="advanced">Advanced</Option>
-                <Option value="expert">Expert/Professional</Option>
-                <Option value="all">All Levels</Option>
+                <Option value="active">Moderate Physical Activity</Option>
+                <Option value="strenuous">Strenuous Activity</Option>
+                <Option value="all">Open to All Levels</Option>
               </StyledSelect>
             </Form.Item>
           </FormGroup>
@@ -422,32 +424,33 @@ const ClassTypesStep = ({ onSubmit, initialData = {}, onFormSubmitFailed }) => {
           <FormGroup>
             <FormLabel>
               <Users size={16} />
-              Age Groups You Teach
+              Target Audience
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              Select all age ranges you're experienced and comfortable teaching
+              Select the age groups suitable for your experience
             </HelpText>
             <Form.Item
               name="ageGroups"
               rules={[
                 {
                   required: true,
-                  message: "Please select age groups you teach",
+                  message: "Please select age groups",
                 },
               ]}
             >
               <StyledSelect
                 mode="multiple"
                 allowClear
-                placeholder="Select age groups"
+                placeholder="Select audience"
                 size="large"
                 maxTagCount="responsive"
               >
-                <Option value="toddlers">Toddlers (2-4 years)</Option>
+                <Option value="family">Family Friendly</Option>
                 <Option value="children">Children (5-12 years)</Option>
                 <Option value="teens">Teens (13-17 years)</Option>
                 <Option value="young-adults">Adults (18+ years)</Option>
+                <Option value="seniors">Seniors</Option>
                 <Option value="all">All Ages</Option>
               </StyledSelect>
             </Form.Item>
@@ -499,7 +502,7 @@ const ClassTypesStep = ({ onSubmit, initialData = {}, onFormSubmitFailed }) => {
                     Terms of Service
                   </a>{" "}
                   and Platform Guidelines. I understand my responsibilities as a
-                  teacher on the platform.
+                  host on the platform.
                 </StyledCheckbox>
               </Form.Item>
 
