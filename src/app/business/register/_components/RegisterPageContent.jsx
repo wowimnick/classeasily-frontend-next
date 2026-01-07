@@ -217,7 +217,7 @@ export const stepsConfig = [
   },
   {
     icon: <BookOutlined />,
-    title: "Class Types & Agreements",
+    title: "Experience Types & Agreements",
     description: "What you'll teach & final steps",
     color: "#FF8C38",
     animationData: "https://classeasily.com/public/animations/buildings.json",

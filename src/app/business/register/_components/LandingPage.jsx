@@ -1,210 +1,219 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
-import styled from "styled-components";
-import { motion } from "framer-motion";
-import { Typography } from "antd";
-import { ArrowRightOutlined } from "@ant-design/icons";
+import styled, { createGlobalStyle } from "styled-components";
+import { m, LazyMotion, domAnimation, AnimatePresence } from "framer-motion";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { theme } from "@/components/theme";
 
-// Dynamically import Lottie to avoid SSR issues
+// Dynamically import Lottie
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
-const { Title, Text } = Typography;
-
-const ContentContainer = styled.div`
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  /* Pull content up slightly on desktop, less on mobile */
-  margin-top: -5rem;
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-
-  @media (max-width: 768px) {
-    padding: 1rem;
-    margin-top: 0; /* Reset margin on mobile for natural flow */
-    align-items: flex-start; /* Align top on mobile */
-    padding-top: 2rem;
+// --- Global Styles (Matching Reference) ---
+const GlobalStyle = createGlobalStyle`
+  :root {
+    --glass-border: 1px solid rgba(255, 255, 255, 0.4);
+    --glass-bg: rgba(255, 255, 255, 0.65);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    --primary-color: #1d1d1f;
+    --accent-red: #f81e3e;
   }
 `;
 
-const LandingContainer = styled.div`
+// --- Styled Components ---
+
+const PageWrapper = styled.div`
+  position: relative;
+  background-color: #ffffff;
+  color: #1d1d1f;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  min-height: -webkit-fill-available;
+  display: flex;
+  align-items: center; // Vertically center
+  justify-content: center;
+  overflow: hidden;
+  padding: 20px;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        circle at 15% 50%,
+        rgba(255, 200, 200, 0.15),
+        transparent 25%
+      ),
+      radial-gradient(
+        circle at 85% 30%,
+        rgba(200, 220, 255, 0.15),
+        transparent 25%
+      );
+    z-index: 0;
+    pointer-events: none;
+  }
+`;
+
+const ContentContainer = styled(m.div)`
+  max-width: 1100px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
+  align-items: center;
   gap: 4rem;
-  max-width: 1400px;
-  width: 100%;
-  position: relative;
 
-  @media (max-width: 1024px) {
+  @media (max-width: 900px) {
     grid-template-columns: 1fr;
-    gap: 2rem;
-    display: flex;
-    flex-direction: column-reverse; /* Text comes after visuals on mobile usually, but here we keep visuals top (order set below) */
-  }
-`;
-
-const InfoSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 2rem;
-  z-index: 1;
-
-  @media (max-width: 1024px) {
-    align-items: center;
+    gap: 3rem;
     text-align: center;
-    padding: 0 1rem 2rem 1rem;
+    padding-top: 40px;
+    padding-bottom: 40px;
   }
 `;
 
-const AnimationSection = styled.div`
+const TextSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  @media (max-width: 900px) {
+    align-items: center;
+    order: 2; // Show text below visual on mobile if preferred, or remove to keep top
+  }
+`;
+
+const VisualSection = styled.div`
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
-  padding: 2rem;
 
-  @media (max-width: 1024px) {
-    /* Visuals at the top */
-    order: -1;
-    padding: 0 1rem 1rem 1rem;
+  @media (max-width: 900px) {
+    order: 1;
   }
 `;
 
-const LottieContainer = styled.div`
-  width: 100%;
-  max-width: 500px;
-  display: flex;
+const Title = styled.h1`
+  font-size: clamp(2rem, 3.5vw, 3.2rem);
+  font-weight: 700;
+  margin-bottom: 16px;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: #1d1d1f;
+
+  span {
+    color: #f81e3e; // Accent color from reference
+  }
+`;
+
+const Subtitle = styled.p`
+  font-size: 1.1rem;
+  color: #6e6e73;
+  max-width: 480px;
+  margin-bottom: 32px;
+  line-height: 1.5;
+
+  @media (max-width: 900px) {
+    font-size: 1rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+`;
+
+const StartButton = styled(m.button)`
+  background: transparent;
+  color: #1d1d1f;
+  border: 2px solid #1d1d1f;
+  height: 52px;
+  padding: 0 36px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 15px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 2rem;
-
-  .lottie-player-container {
-    width: 100%;
-    height: auto;
-  }
-
-  @media (max-width: 768px) {
-    max-width: 280px; /* Smaller on mobile */
-    margin-bottom: 1rem;
-  }
-`;
-
-const StepsContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: center;
-  max-width: 500px;
-  width: 100%;
-
-  @media (max-width: 768px) {
-    gap: 0.5rem;
-    /* Make steps more compact on mobile */
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-`;
-
-const StepItem = styled.div`
-  background: ${theme.token.colorBgContainer};
-  padding: 0.8rem 1.2rem;
-  border-radius: ${theme.token.borderRadius}px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid ${theme.token.colorBorder};
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
+  gap: 10px;
+  cursor: pointer;
+  width: fit-content;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
+    background: #f81e3e;
+    border-color: #f81e3e;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(248, 30, 62, 0.25);
   }
 
-  @media (max-width: 768px) {
-    padding: 0.6rem 0.8rem;
-    justify-content: center;
-    font-size: 13px;
+  &:active {
+    transform: scale(0.98);
   }
 `;
 
-const StepNumber = styled.span`
-  background: ${theme.token.colorPrimary};
-  color: ${theme.token.colorBgContainer};
-  width: 20px;
-  height: 20px;
+const StepsWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+  margin-top: 24px;
+`;
+
+const GlassStep = styled(m.div)`
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: var(--glass-border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  border-radius: 16px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: translateX(5px);
+    background: rgba(255, 255, 255, 0.85);
+  }
+`;
+
+const StepNumber = styled.div`
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  color: #1d1d1f;
+  font-weight: 700;
+  font-size: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem;
-  font-weight: 600;
   flex-shrink: 0;
 `;
 
 const StepText = styled.span`
-  font-size: 0.85rem;
-  color: ${theme.token.colorTextBase};
+  font-size: 0.95rem;
   font-weight: 500;
-
-  @media (max-width: 768px) {
-    font-size: 0.75rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  color: #1d1d1f;
 `;
 
-const HeadingText = styled.span`
-  color: ${theme.token.colorPrimary};
-  font-weight: 800;
+const LottieWrapper = styled(m.div)`
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.08));
 `;
 
-const StartButton = styled(motion.button)`
-  background: ${theme.token.colorPrimary};
-  color: ${theme.token.colorBgContainer};
-  border: none;
-  padding: 1rem 1.5rem;
-  border-radius: ${theme.components.Button.borderRadius}px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 2rem;
-  box-shadow: 0 2px 8px rgba(255, 56, 92, 0.2);
-  transition: all 0.3s ease;
-  font-family: ${theme.token.fontFamily};
+// --- Main Component ---
 
-  &:hover {
-    background: ${theme.token.colorPrimaryHover};
-    box-shadow: 0 4px 12px rgba(255, 56, 92, 0.3);
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  @media (max-width: 768px) {
-    width: 100%;
-    justify-content: center;
-    margin-top: 1.5rem;
-    padding: 0.8rem 1rem;
-    font-size: 1rem;
-  }
-`;
-
-const LandingPage = ({ steps, startForm, isMobile }) => {
+const LandingPage = ({ steps = [], startForm, isMobile }) => {
   const lottieAnimRef = useRef(null);
   const [isLottieReady, setIsLottieReady] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -213,12 +222,11 @@ const LandingPage = ({ steps, startForm, isMobile }) => {
     setIsMounted(true);
   }, []);
 
+  // Handle Lottie play segment logic
   useEffect(() => {
     const lottieWrapper = lottieAnimRef.current;
-
     if (isLottieReady && lottieWrapper && lottieWrapper.animationItem) {
       const animInstance = lottieWrapper.animationItem;
-
       if (animInstance.totalFrames && animInstance.totalFrames > 0) {
         const halfwayFrame = Math.floor(animInstance.totalFrames / 2);
         lottieWrapper.playSegments([0, halfwayFrame], true);
@@ -229,68 +237,48 @@ const LandingPage = ({ steps, startForm, isMobile }) => {
   }, [isLottieReady]);
 
   const handleLottieDOMLoaded = () => {
-    if (lottieAnimRef.current && lottieAnimRef.current.animationItem) {
+    if (lottieAnimRef.current?.animationItem) {
       setIsLottieReady(true);
     }
   };
 
   return (
-    <ContentContainer>
-      <LandingContainer>
-        <InfoSection>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <Title
-              level={1}
-              style={{
-                fontSize: isMobile ? "1.8rem" : "3.5rem", // Compact font for mobile
-                marginBottom: isMobile ? "0.5rem" : "1rem",
-                lineHeight: 1.2,
-                fontWeight: "800",
-                color: theme.token.colorTextBase,
-                fontFamily: theme.token.fontFamily,
-              }}
+    <LazyMotion features={domAnimation}>
+      <GlobalStyle />
+      <PageWrapper>
+        <ContentContainer
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          {/* Left Column: Text & CTA */}
+          <TextSection>
+            <m.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
             >
-              Share Your Knowledge on <HeadingText>ClassEasily</HeadingText>
-            </Title>
-            <Text
-              style={{
-                fontSize: isMobile ? "1rem" : "1.2rem",
-                color: theme.token.colorTextSecondary,
-                display: "block",
-                marginBottom: isMobile ? "1rem" : "2rem",
-                maxWidth: "600px",
-                fontFamily: theme.token.fontFamily,
-                marginRight: isMobile ? "auto" : "0",
-                marginLeft: isMobile ? "auto" : "0",
-                lineHeight: 1.5,
-              }}
-            >
-              Join as an educator and expand your reach into our community of
-              curious learners! List your business in just a few easy steps.
-            </Text>
-            <StartButton
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={startForm}
-            >
-              Begin Your Journey
-              <ArrowRightOutlined />
-            </StartButton>
-          </motion.div>
-        </InfoSection>
+              <Title>
+                Share Some Fun on <span>ClassEasily</span>
+              </Title>
+              <Subtitle>
+                Join as host and expand your reach into our community of
+                adventurers. List your experience in minutes.
+              </Subtitle>
 
-        <AnimationSection>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            style={{ width: "100%", display: "flex", justifyContent: "center" }}
-          >
-            <LottieContainer>
+              <StartButton onClick={startForm} whileTap={{ scale: 0.95 }}>
+                Begin Your Journey <ArrowRight size={18} />
+              </StartButton>
+            </m.div>
+          </TextSection>
+
+          {/* Right Column: Visuals & Compact Steps */}
+          <VisualSection>
+            <LottieWrapper
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
               {isMounted && (
                 <Lottie
                   lottieRef={lottieAnimRef}
@@ -301,30 +289,32 @@ const LandingPage = ({ steps, startForm, isMobile }) => {
                   style={{ width: "100%", height: "auto" }}
                 />
               )}
-            </LottieContainer>
-          </motion.div>
+            </LottieWrapper>
 
-          <StepsContainer>
-            {steps.map((step, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
-                style={isMobile ? { width: "100%" } : {}}
-              >
-                <StepItem>
+            <StepsWrapper>
+              {steps.map((step, index) => (
+                <GlassStep
+                  key={index}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
+                >
                   <StepNumber>{index + 1}</StepNumber>
                   <StepText>
                     {step.title || step.name || `Step ${index + 1}`}
                   </StepText>
-                </StepItem>
-              </motion.div>
-            ))}
-          </StepsContainer>
-        </AnimationSection>
-      </LandingContainer>
-    </ContentContainer>
+                  <CheckCircle2
+                    size={16}
+                    color="#10b981"
+                    style={{ marginLeft: "auto", opacity: 0.6 }}
+                  />
+                </GlassStep>
+              ))}
+            </StepsWrapper>
+          </VisualSection>
+        </ContentContainer>
+      </PageWrapper>
+    </LazyMotion>
   );
 };
 

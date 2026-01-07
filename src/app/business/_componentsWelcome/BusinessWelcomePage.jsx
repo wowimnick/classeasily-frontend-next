@@ -187,6 +187,7 @@ const StartButton = styled.button`
 
   &:hover {
     background: #f81e3e;
+    border-color: #f81e3e;
     color: #fff;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -927,9 +928,9 @@ const BusinessWelcomePage = () => {
                     <span>earn on your terms.</span>
                   </HeroTitle>
                   <HeroSubtitle>
-                    Turn your passion into a business. Join thousands of hosts
-                    who use our platform to manage bookings, reach more guests,
-                    and simplify their life.
+                    Turn your passion into a business. Join our other hosts who
+                    use our platform to manage bookings, reach more guests, and
+                    simplify their life.
                   </HeroSubtitle>
                   <StartButton onClick={handleNavigate}>
                     Become a Host <ArrowRight size={18} />
