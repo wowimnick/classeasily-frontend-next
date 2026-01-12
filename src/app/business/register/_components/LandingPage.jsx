@@ -290,27 +290,6 @@ const LandingPage = ({ steps = [], startForm, isMobile }) => {
                 />
               )}
             </LottieWrapper>
-
-            <StepsWrapper>
-              {steps.map((step, index) => (
-                <GlassStep
-                  key={index}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
-                >
-                  <StepNumber>{index + 1}</StepNumber>
-                  <StepText>
-                    {step.title || step.name || `Step ${index + 1}`}
-                  </StepText>
-                  <CheckCircle2
-                    size={16}
-                    color="#10b981"
-                    style={{ marginLeft: "auto", opacity: 0.6 }}
-                  />
-                </GlassStep>
-              ))}
-            </StepsWrapper>
           </VisualSection>
         </ContentContainer>
       </PageWrapper>

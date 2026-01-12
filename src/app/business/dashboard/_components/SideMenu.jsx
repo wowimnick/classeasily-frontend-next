@@ -481,7 +481,7 @@ const buttonContentVariants = {
     },
   },
   expanded: {
-    width: 140,
+    width: 56,
     transition: {
       type: "spring",
       damping: 20,

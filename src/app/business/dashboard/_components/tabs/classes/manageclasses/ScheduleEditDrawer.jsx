@@ -122,8 +122,9 @@ const getErrorMessage = (error) => {
         const formattedKey = key
           .replace(/_/g, " ")
           .replace(/\b\w/g, (l) => l.toUpperCase());
-        return `${formattedKey}: ${Array.isArray(value) ? value.join(", ") : value
-          }`;
+        return `${formattedKey}: ${
+          Array.isArray(value) ? value.join(", ") : value
+        }`;
       });
       if (messages.length > 0) return messages.join("; ");
     }
@@ -221,7 +222,7 @@ const StyledDrawerContent = styled(Drawer.Content)`
   display: flex;
   flex-direction: column;
   border-radius: 16px 16px 0 0;
-  
+
   /* 
      Update: Fixed height on mobile for management view to prevent jumping.
      If a specific prop $height is passed, use it, otherwise fallback to max-height logic
@@ -234,14 +235,14 @@ const StyledDrawerContent = styled(Drawer.Content)`
       : css`
           max-height: 96%;
         `}
-  
+
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 1011;
   outline: none;
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
 `;
 
 const DrawerHandle = styled.div`
@@ -373,7 +374,9 @@ const StyledInputNumber = styled(InputNumber)`
     height: 100%;
     display: flex;
     align-items: center;
-    @media (max-width: 768px) { font-size: 16px; }
+    @media (max-width: 768px) {
+      font-size: 16px;
+    }
   }
 `;
 
@@ -381,23 +384,26 @@ const StyledInputNumber = styled(InputNumber)`
 
 const CompactFormItem = styled(Form.Item)`
   margin-bottom: 0; /* Remove default large margin */
-  
+
   .ant-form-item-explain {
     font-size: 11px;
-    color: ${props => props.theme.token.colorError};
+    color: ${(props) => props.theme.token.colorError};
     line-height: 1.2;
     margin-top: 4px;
     min-height: 0;
   }
-  
+
   .ant-form-item-row {
     flex-direction: column;
     align-items: stretch;
   }
 
   &.ant-form-item-has-error {
-    input, .ant-input-number, .ant-picker, div[class*="MobileInputTrigger"] {
-      border-color: ${props => props.theme.token.colorError} !important;
+    input,
+    .ant-input-number,
+    .ant-picker,
+    div[class*="MobileInputTrigger"] {
+      border-color: ${(props) => props.theme.token.colorError} !important;
     }
   }
 `;
@@ -541,7 +547,7 @@ const DurationPicker = ({ value, onChange, disabled }) => {
         <PresetChip
           type="button"
           $active={!presets.includes(safeValue) && safeValue > 0}
-          onClick={() => { }}
+          onClick={() => {}}
           style={{ cursor: "default", borderStyle: "dashed" }}
         >
           Custom
@@ -587,7 +593,7 @@ const DayChip = styled.button`
   &:hover {
     border-color: ${(props) => props.theme.token.colorPrimary};
     color: ${(props) =>
-    props.$selected ? "white" : props.theme.token.colorPrimary};
+      props.$selected ? "white" : props.theme.token.colorPrimary};
   }
 `;
 
@@ -734,7 +740,7 @@ const DateScrollWrapper = styled.div`
     flex-shrink: 0;
     z-index: 2;
     transition: color 0.2s;
-    
+
     &:hover {
       color: #1e293b;
       background: #f8fafc;
@@ -755,11 +761,11 @@ const DateScrollWrapper = styled.div`
     margin-bottom: -8px; /* Hide scrollbar spacing */
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE */
-    
+
     &::-webkit-scrollbar {
       display: none; /* Chrome/Safari */
     }
-    
+
     scroll-behavior: smooth;
   }
 `;
@@ -1005,11 +1011,13 @@ const ScheduleManagementView = React.memo(
                 );
               })}
             </div>
-            <button className="scroll-btn" onClick={() => handleScroll("right")}>
+            <button
+              className="scroll-btn"
+              onClick={() => handleScroll("right")}
+            >
               <ChevronRight size={16} />
             </button>
           </DateScrollWrapper>
-
         </DateStripContainer>
         <div
           style={{
@@ -1057,7 +1065,9 @@ const ScheduleManagementView = React.memo(
         <ScheduleListArea>
           {loading ? (
             // Render Skeleton Loader
-            (Array.from({ length: 6 }).map((_, i) => <ScheduleSkeleton key={i} />))
+            Array.from({ length: 6 }).map((_, i) => (
+              <ScheduleSkeleton key={i} />
+            ))
           ) : filteredSchedules.length > 0 ? (
             filteredSchedules.map((s) => (
               <ScheduleCard
@@ -1067,18 +1077,30 @@ const ScheduleManagementView = React.memo(
                 <div
                   style={{ display: "flex", justifyContent: "space-between" }}
                 >
-                  <div>
+                  <div style={{ minWidth: 0, flex: 1, marginRight: 8 }}>
                     <div style={{ fontWeight: 700 }}>
                       {dayjs(s.date).format("MMM D")} •{" "}
                       {dayjs(`2000-01-01T${s.time}`).format("h:mm A")}
                     </div>
                     {s.name && (
-                      <Tag color="blue" style={{ marginTop: 4 }}>
-                        {s.name}
-                      </Tag>
+                      <Tooltip title={s.name}>
+                        <Tag
+                          color="blue"
+                          style={{
+                            marginTop: 4,
+                            maxWidth: "100%",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            display: "inline-block",
+                            verticalAlign: "bottom",
+                          }}
+                        >
+                          {s.name}
+                        </Tag>
+                      </Tooltip>
                     )}
                   </div>
-                  <Space>
+                  <Space style={{ alignSelf: "flex-start" }}>
                     <Button
                       size="small"
                       icon={<Edit3 size={14} />}
@@ -1463,7 +1485,10 @@ const ScheduleEditDrawer = ({
                 <Label>
                   <DollarSign /> Price (CAD)
                   <Tooltip title="The cost per person to attend.">
-                    <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                    <HelpCircle
+                      size={14}
+                      style={{ cursor: "pointer", color: "#94a3b8" }}
+                    />
                   </Tooltip>
                 </Label>
                 <CompactFormItem name="price" rules={[{ required: true }]}>
@@ -1474,7 +1499,10 @@ const ScheduleEditDrawer = ({
                 <Label>
                   <Users /> Max Capacity
                   <Tooltip title="Maximum number of attendees allowed.">
-                    <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                    <HelpCircle
+                      size={14}
+                      style={{ cursor: "pointer", color: "#94a3b8" }}
+                    />
                   </Tooltip>
                 </Label>
                 <CompactFormItem
@@ -1490,7 +1518,10 @@ const ScheduleEditDrawer = ({
               <Label>
                 <Hourglass size={14} /> Duration
                 <Tooltip title="How long the session lasts.">
-                  <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                  <HelpCircle
+                    size={14}
+                    style={{ cursor: "pointer", color: "#94a3b8" }}
+                  />
                 </Tooltip>
               </Label>
               <CompactFormItem name="duration" rules={[{ required: true }]}>
@@ -1521,7 +1552,9 @@ const ScheduleEditDrawer = ({
                   <Label>Date</Label>
                   <CompactFormItem name="date" rules={[{ required: true }]}>
                     {isMobile ? (
-                      <MobileDatePicker disabledDate={(c) => c && c < dayjs().startOf("day")} />
+                      <MobileDatePicker
+                        disabledDate={(c) => c && c < dayjs().startOf("day")}
+                      />
                     ) : (
                       <StyledDatePicker
                         disabledDate={(c) => c && c < dayjs().startOf("day")}
@@ -1551,7 +1584,10 @@ const ScheduleEditDrawer = ({
                 <Label>
                   Duration
                   <Tooltip title="The total length of the session in minutes.">
-                    <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                    <HelpCircle
+                      size={14}
+                      style={{ cursor: "pointer", color: "#94a3b8" }}
+                    />
                   </Tooltip>
                 </Label>
                 <CompactFormItem name="duration" rules={[{ required: true }]}>
@@ -1602,7 +1638,10 @@ const ScheduleEditDrawer = ({
                   <Label>
                     Total Capacity
                     <Tooltip title="The maximum number of people who can book this session.">
-                      <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                      <HelpCircle
+                        size={14}
+                        style={{ cursor: "pointer", color: "#94a3b8" }}
+                      />
                     </Tooltip>
                   </Label>
                   <CompactFormItem
@@ -1618,7 +1657,10 @@ const ScheduleEditDrawer = ({
                 <Label>
                   Minimum Participants{" "}
                   <Tooltip title="The minimum number of participants required for a person to book this session.">
-                    <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                    <HelpCircle
+                      size={14}
+                      style={{ cursor: "pointer", color: "#94a3b8" }}
+                    />
                   </Tooltip>
                 </Label>
                 <CompactFormItem
@@ -1761,7 +1803,10 @@ const ScheduleEditDrawer = ({
                     <Label>
                       Group Name <HelpLabel>Required for bulk</HelpLabel>
                       <Tooltip title="A unique name to identify this batch of schedules (e.g. 'Summer Bootcamp').">
-                        <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                        <HelpCircle
+                          size={14}
+                          style={{ cursor: "pointer", color: "#94a3b8" }}
+                        />
                       </Tooltip>
                     </Label>
                     <CompactFormItem
@@ -1888,7 +1933,10 @@ const ScheduleEditDrawer = ({
                       <Label>
                         Price (CAD)
                         <Tooltip title="Price per attendee.">
-                          <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                          <HelpCircle
+                            size={14}
+                            style={{ cursor: "pointer", color: "#94a3b8" }}
+                          />
                         </Tooltip>
                       </Label>
                       <CompactFormItem
@@ -1902,7 +1950,10 @@ const ScheduleEditDrawer = ({
                       <Label>
                         Max Capacity
                         <Tooltip title="Maximum attendees allowed per session.">
-                          <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                          <HelpCircle
+                            size={14}
+                            style={{ cursor: "pointer", color: "#94a3b8" }}
+                          />
                         </Tooltip>
                       </Label>
                       <CompactFormItem
@@ -1926,7 +1977,10 @@ const ScheduleEditDrawer = ({
                     <Label>
                       Min Participants
                       <Tooltip title="The minimum number of bookings required for this session to go ahead. If not met, you might need to cancel.">
-                        <HelpCircle size={14} style={{ cursor: 'pointer', color: '#94a3b8' }} />
+                        <HelpCircle
+                          size={14}
+                          style={{ cursor: "pointer", color: "#94a3b8" }}
+                        />
                       </Tooltip>
                     </Label>
                     <CompactFormItem
@@ -2012,17 +2066,17 @@ const ScheduleEditDrawer = ({
           },
           ...(!editingSchedule && isSingleSession
             ? [
-              {
-                label: (
-                  <Space>
-                    <Copy size={16} />
-                    Bulk Create
-                  </Space>
-                ),
-                key: "bulk",
-                children: renderBulkForm(),
-              },
-            ]
+                {
+                  label: (
+                    <Space>
+                      <Copy size={16} />
+                      Bulk Create
+                    </Space>
+                  ),
+                  key: "bulk",
+                  children: renderBulkForm(),
+                },
+              ]
             : []),
         ]}
       />
@@ -2099,7 +2153,8 @@ const ScheduleEditDrawer = ({
             loading={isLoading}
             block={isMobileLayout}
             style={{ ...btnStyle, flex: 1 }}
-            key={`btn-${isLoading}`}>
+            key={`btn-${isLoading}`}
+          >
             Update Group
           </Button>
         </div>
@@ -2149,7 +2204,8 @@ const ScheduleEditDrawer = ({
               onClick={handleBulkSubmit}
               loading={isBulkLoading}
               style={btnStyle}
-              key={`btn-${isBulkLoading}`}>
+              key={`btn-${isBulkLoading}`}
+            >
               Generate
             </Button>
           )}
@@ -2195,7 +2251,8 @@ const ScheduleEditDrawer = ({
             onClick={handleSubmit}
             loading={isLoading}
             style={btnStyle}
-            key={`btn-${isLoading}`}>
+            key={`btn-${isLoading}`}
+          >
             {editingSchedule ? "Save Changes" : "Create"}
           </Button>
         )}

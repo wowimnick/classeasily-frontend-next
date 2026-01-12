@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import styled, { keyframes, css } from "styled-components";
 import { Drawer } from "vaul";
-import { Button, Input } from "antd"; // Added Antd imports
+import { Button, Input } from "antd";
 import {
   Search,
   MapPin,
@@ -12,9 +12,11 @@ import {
   Calendar as CalendarIcon,
   Users,
   ChevronRight,
+  ChevronLeft,
 } from "lucide-react";
 import dayjs from "dayjs";
 import { useSearch, SUGGESTED_AREAS } from "@/context/SearchContext";
+import { motion } from "framer-motion";
 
 // --- ANIMATIONS ---
 const shimmer = keyframes`
@@ -66,15 +68,15 @@ const Handle = styled.div`
   height: 4px;
   background: #d1d5db;
   border-radius: 2px;
-  margin: 10px auto 6px; /* Reduced margin */
+  margin: 10px auto 6px;
   flex-shrink: 0;
 `;
 
 const Header = styled.div`
   display: flex;
-  justify-content: center; /* Centered since buttons are gone */
+  justify-content: center;
   align-items: center;
-  padding: 6px 16px 12px; /* Reduced padding */
+  padding: 6px 16px 12px;
   background: #f7f7f7;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   min-height: 44px;
@@ -88,12 +90,12 @@ const Title = styled.span`
 `;
 
 const Body = styled.div`
-  padding: 12px 16px; /* Reduced from 20px */
+  padding: 12px 16px;
   overflow-y: auto;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px; /* Reduced gap */
+  gap: 10px;
 `;
 
 const Footer = styled.div`
@@ -114,7 +116,7 @@ const MenuRow = styled.button`
   justify-content: space-between;
   width: 100%;
   background: white;
-  padding: 12px 16px; /* Compact padding */
+  padding: 12px 16px;
   border-radius: 14px;
   border: 1px solid transparent;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
@@ -167,7 +169,6 @@ const RowValue = styled.span`
   text-overflow: ellipsis;
 `;
 
-// Replaced native button with Antd Button
 const SearchBtn = styled(Button)`
   flex: 1;
   background: linear-gradient(
@@ -179,7 +180,7 @@ const SearchBtn = styled(Button)`
   color: white !important;
   font-weight: 700 !important;
   font-size: 16px !important;
-  height: 48px !important; /* Antd buttons have fixed height usually, need to override */
+  height: 48px !important;
   border-radius: 12px !important;
   border: none !important;
   display: flex;
@@ -204,7 +205,6 @@ const SearchBtn = styled(Button)`
   }
 `;
 
-// Replaced native button with Antd Button
 const ClearBtn = styled(Button)`
   font-weight: 600 !important;
   font-size: 14px !important;
@@ -236,7 +236,6 @@ const LocationInputWrapper = styled.div`
   margin-bottom: 12px;
 `;
 
-// Replaced native input with Antd Input
 const StyledInput = styled(Input)`
   width: 100%;
   font-size: 15px !important;
@@ -329,23 +328,79 @@ const DayGrid = styled.div`
   row-gap: 4px;
 `;
 
-const DayBtn = styled.button`
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 50%;
+const DayBtn = styled(motion.button)`
+  width: 40px;
+  height: 40px;
   border: none;
-  background: ${(props) => (props.$isSelected ? "#e11d48" : "transparent")};
+  position: relative;
+
+  /* Dynamic Border Radius for Range Effect */
+  border-radius: ${(props) => {
+    if (props.$isRangeStart && props.$isRangeEnd) return "50%"; // Single day range
+    if (props.$isRangeStart) return "50% 0 0 50%";
+    if (props.$isRangeEnd) return "0 50% 50% 0";
+    if (props.$isInRange) return "0";
+    return "50%"; // Default single hover
+  }};
+
+  background: ${(props) =>
+    props.$isRangeStart || props.$isRangeEnd
+      ? "#e11d48"
+      : props.$isInRange
+      ? "#ffe4e6" // Very light pink
+      : "transparent"};
+
   color: ${(props) =>
-    props.$isSelected ? "white" : props.$isDisabled ? "#ddd" : "#222"};
+    props.$isRangeStart || props.$isRangeEnd
+      ? "white"
+      : props.$isDisabled
+      ? "#e5e7eb"
+      : "#374151"};
+
+  cursor: ${(props) => (props.$isDisabled ? "not-allowed" : "pointer")};
   font-weight: 600;
   font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 0 auto;
   font-family: "ProximaSoft", sans-serif;
+
+  /* Ensure background spans full width for middle items */
+  width: ${(props) => (props.$isInRange ? "100%" : "40px")};
+
   &:active {
     background: ${(props) =>
-      !props.$isSelected && !props.$isDisabled && "#f0f0f0"};
+      !(props.$isRangeStart || props.$isRangeEnd || props.$isInRange) &&
+      !props.$isDisabled &&
+      "#f0f0f0"};
+  }
+`;
+
+const QuickChipsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 12px;
+`;
+
+const QuickChip = styled.button`
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+  font-family: "ProximaSoft", sans-serif;
+
+  &:active {
+    background: #f9fafb;
+    border-color: #111;
+    color: #111;
   }
 `;
 
@@ -360,7 +415,6 @@ const ParticipantCard = styled.div`
   align-items: center;
 `;
 
-// Replaced native button with Antd Button
 const CountBtn = styled(Button)`
   width: 40px !important;
   height: 40px !important;
@@ -397,34 +451,80 @@ const CountVal = styled.span`
 // --- HELPER COMPONENTS ---
 
 const CustomCalendar = ({ value, onChange }) => {
-  const [currentDate, setCurrentDate] = useState(
-    value ? dayjs(value) : dayjs()
-  );
+  const [currentDate, setCurrentDate] = useState(dayjs());
+
+  const selectedStart = value?.start
+    ? dayjs(value.start)
+    : value && value.isValid && value.isValid()
+    ? dayjs(value)
+    : null;
+  const selectedEnd = value?.end ? dayjs(value.end) : null;
 
   const daysInMonth = currentDate.daysInMonth();
   const startDay = currentDate.startOf("month").day();
   const blanks = Array(startDay).fill(null);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  const nextMonth = () => setCurrentDate(currentDate.add(1, "month"));
-  const prevMonth = () => setCurrentDate(currentDate.subtract(1, "month"));
+  const applyPreset = (type) => {
+    const today = dayjs();
+    let start, end;
+
+    switch (type) {
+      case "weekend":
+        start =
+          today.day() === 0 ? today.day(6).subtract(1, "week") : today.day(6);
+        // If today is Sunday(0), subtract to get past Saturday or logic depends on "This Weekend" meaning.
+        // Better logic: If today is Sun, "This Weekend" usually means the one just ending or user wants next.
+        // Standard convention: "This Weekend" = Upcoming Sat/Sun.
+        if (today.day() === 0) {
+          // It is Sunday today
+          start = today.subtract(1, "day"); // Sat
+          end = today; // Sun
+        } else {
+          start = today.day(6);
+          end = today.day(6).add(1, "day");
+        }
+        // Actually, let's keep it simple: upcoming Saturday + Sunday
+        start = today.day(6);
+        end = today.day(6).add(1, "day");
+        break;
+      case "next_weekend":
+        start = today.day(6).add(1, "week");
+        end = start.add(1, "day");
+        break;
+      case "this_week":
+        start = today;
+        end = today.endOf("week");
+        break;
+      case "next_week":
+        start = today.add(1, "week").startOf("week");
+        end = today.add(1, "week").endOf("week");
+        break;
+      default:
+        start = today;
+    }
+    onChange({
+      start: start.format("YYYY-MM-DD"),
+      end: end ? end.format("YYYY-MM-DD") : null,
+    });
+  };
 
   const handleDayClick = (day) => {
+    // Basic single selection for tap
     const selected = currentDate.date(day);
-    onChange(selected);
+    onChange(selected.format("YYYY-MM-DD"));
   };
 
   return (
     <CalendarWrapper>
       <CalHeader>
         <NavBtn
-          onClick={prevMonth}
-          disabled={currentDate.isSame(dayjs(), "month")}
+          onClick={() => setCurrentDate(currentDate.subtract(1, "month"))}
         >
-          <ChevronRight size={16} style={{ transform: "rotate(180deg)" }} />
+          <ChevronLeft size={16} />
         </NavBtn>
         <span>{currentDate.format("MMMM YYYY")}</span>
-        <NavBtn onClick={nextMonth}>
+        <NavBtn onClick={() => setCurrentDate(currentDate.add(1, "month"))}>
           <ChevronRight size={16} />
         </NavBtn>
       </CalHeader>
@@ -439,13 +539,33 @@ const CustomCalendar = ({ value, onChange }) => {
         ))}
         {days.map((d) => {
           const thisDate = currentDate.date(d);
-          const isSelected = value && dayjs(value).isSame(thisDate, "day");
           const isPast = thisDate.isBefore(dayjs().startOf("day"));
+
+          let isRangeStart = false;
+          let isRangeEnd = false;
+          let isInRange = false;
+
+          if (selectedStart && !selectedEnd) {
+            isRangeStart = thisDate.isSame(selectedStart, "day");
+            isRangeEnd = isRangeStart;
+          } else if (selectedStart && selectedEnd) {
+            const s = selectedStart.startOf("day");
+            const e = selectedEnd.startOf("day");
+            const t = thisDate.startOf("day");
+
+            isRangeStart = t.isSame(s);
+            isRangeEnd = t.isSame(e);
+            isInRange = t.isAfter(s) && t.isBefore(e);
+          }
+
           return (
             <DayBtn
               key={d}
               type="button"
-              $isSelected={isSelected}
+              layout
+              $isRangeStart={isRangeStart}
+              $isRangeEnd={isRangeEnd}
+              $isInRange={isInRange}
               $isDisabled={isPast}
               disabled={isPast}
               onClick={() => handleDayClick(d)}
@@ -455,6 +575,21 @@ const CustomCalendar = ({ value, onChange }) => {
           );
         })}
       </DayGrid>
+
+      <QuickChipsGrid>
+        <QuickChip type="button" onClick={() => applyPreset("weekend")}>
+          This Weekend
+        </QuickChip>
+        <QuickChip type="button" onClick={() => applyPreset("next_weekend")}>
+          Next Weekend
+        </QuickChip>
+        <QuickChip type="button" onClick={() => applyPreset("this_week")}>
+          This Week
+        </QuickChip>
+        <QuickChip type="button" onClick={() => applyPreset("next_week")}>
+          Next Week
+        </QuickChip>
+      </QuickChipsGrid>
     </CalendarWrapper>
   );
 };
@@ -553,6 +688,19 @@ const SearchDrawer = () => {
     setIsLocationOpen(false);
     setIsDateOpen(false);
     setIsWhoOpen(false);
+  };
+
+  const getDateDisplay = () => {
+    if (!datePickerValue) return "Any week";
+    if (datePickerValue.start && datePickerValue.end) {
+      const s = dayjs(datePickerValue.start);
+      const e = dayjs(datePickerValue.end);
+      if (s.month() === e.month()) {
+        return `${s.format("MMM D")} - ${e.format("D")}`;
+      }
+      return `${s.format("MMM D")} - ${e.format("MMM D")}`;
+    }
+    return dayjs(datePickerValue).format("MMM DD, YYYY");
   };
 
   const renderLocationList = () => {
@@ -702,9 +850,7 @@ const SearchDrawer = () => {
                     <RowText>
                       <RowLabel>Date</RowLabel>
                       <RowValue $hasValue={!!datePickerValue}>
-                        {datePickerValue
-                          ? dayjs(datePickerValue).format("MMM DD, YYYY")
-                          : "Any week"}
+                        {getDateDisplay()}
                       </RowValue>
                     </RowText>
                   </RowLeft>
@@ -722,7 +868,7 @@ const SearchDrawer = () => {
                       value={datePickerValue}
                       onChange={(d) => {
                         setDatePickerValue(d);
-                        setIsDateOpen(false);
+                        setIsDateOpen(false); // Auto close on select
                       }}
                     />
                     <div

@@ -53,7 +53,6 @@ const MainContent = styled.main`
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 8px;
 
   @media (max-width: 768px) {
     padding: 4px;

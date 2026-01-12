@@ -7,7 +7,8 @@ import { LordIcon } from "@/services/ReactUtils";
 
 const SearchContext = createContext();
 
-const AWS_LOCATION_API_URL = "https://geocoding.classeasily.com/address-autocomplete-proxy";
+const AWS_LOCATION_API_URL =
+  "https://geocoding.classeasily.com/address-autocomplete-proxy";
 
 export const SUGGESTED_AREAS = [
   {
@@ -65,7 +66,7 @@ export const SUGGESTED_AREAS = [
 
 export const SearchProvider = ({ children }) => {
   const router = useRouter();
-  
+
   // UI State
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
@@ -77,7 +78,7 @@ export const SearchProvider = ({ children }) => {
     citySlug: null,
     provinceSlug: null,
   });
-  const [datePickerValue, setDatePickerValue] = useState(null);
+  const [datePickerValue, setDatePickerValue] = useState(null); // Can be null, dayjs obj, or { start, end }
   const [participantCount, setParticipantCount] = useState(1);
 
   // Geocoding State
@@ -96,7 +97,8 @@ export const SearchProvider = ({ children }) => {
         const response = await fetch(
           `${AWS_LOCATION_API_URL}?text=${encodedAddress}`
         );
-        if (!response.ok) throw new Error(`Geocoding request failed: ${response.status}`);
+        if (!response.ok)
+          throw new Error(`Geocoding request failed: ${response.status}`);
         const data = await response.json();
         if (Array.isArray(data)) {
           setGeocodedAddressResults(data);
@@ -141,7 +143,12 @@ export const SearchProvider = ({ children }) => {
 
   const clearAll = () => {
     setSearchTerm("");
-    setSelectedLocation({ displayName: "", coordinates: null, citySlug: null, provinceSlug: null });
+    setSelectedLocation({
+      displayName: "",
+      coordinates: null,
+      citySlug: null,
+      provinceSlug: null,
+    });
     setDatePickerValue(null);
     setParticipantCount(1);
     setGeocodedAddressResults([]);
@@ -151,9 +158,20 @@ export const SearchProvider = ({ children }) => {
     const { displayName, coordinates } = selectedLocation;
     const params = new URLSearchParams();
 
+    // HANDLE DATE (Range or Single)
     if (datePickerValue) {
-      params.set("date", datePickerValue.format("YYYY-MM-DD"));
+      if (datePickerValue.start && datePickerValue.end) {
+        params.set("start_date", datePickerValue.start);
+        params.set("end_date", datePickerValue.end);
+      } else if (datePickerValue.format) {
+        // Single date object
+        params.set("date", datePickerValue.format("YYYY-MM-DD"));
+      } else {
+        // Fallback for string
+        params.set("date", datePickerValue.toString());
+      }
     }
+
     params.set("participants", participantCount.toString());
 
     // Default fallback logic if everything is empty
@@ -199,7 +217,9 @@ export const SearchProvider = ({ children }) => {
     performSearch,
   };
 
-  return <SearchContext.Provider value={value}>{children}</SearchContext.Provider>;
+  return (
+    <SearchContext.Provider value={value}>{children}</SearchContext.Provider>
+  );
 };
 
 export const useSearch = () => {

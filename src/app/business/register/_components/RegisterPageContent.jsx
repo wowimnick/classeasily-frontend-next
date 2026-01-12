@@ -44,7 +44,8 @@ const GlobalLoaderWithoutInlineStyles = dynamic(
   { ssr: false }
 );
 
-// --- STYLED COMPONENTS (keep all your existing styled components) ---
+// --- STYLED COMPONENTS ---
+
 const OverallContainer = styled.div`
   height: 100vh;
   overflow: hidden;
@@ -52,6 +53,15 @@ const OverallContainer = styled.div`
   flex-direction: column;
   background: ${(props) => props.theme.token.colorBgLayout};
   font-family: ${(props) => props.theme.token.fontFamily};
+`;
+
+// New wrapper to prevent header squishing
+const HeaderWrapper = styled.div`
+  flex-shrink: 0;
+  width: 100%;
+  position: relative;
+  z-index: 50;
+  background: ${(props) => props.theme.token.colorBgContainer};
 `;
 
 const ProgressBarContainer = styled.div`
@@ -71,7 +81,8 @@ const ProgressIndicator = styled.div`
   background: ${(props) => props.theme.token.colorPrimary};
   border-radius: 0 2px 2px 0;
   width: ${(props) => props.width || "0%"};
-  transition: width 0.5s ease-in-out;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px ${(props) => props.theme.token.colorPrimary}40;
 `;
 
 const PageLayout = styled.div`
@@ -90,19 +101,34 @@ const ContentColumn = styled.div`
   background-color: ${(props) => props.theme.token.colorBgContainer};
   overflow-y: auto;
   scroll-behavior: smooth;
+
+  /* Custom Scrollbar for better aesthetics */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: ${(props) => props.theme.token.colorBorder};
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: ${(props) => props.theme.token.colorTextSecondary};
+  }
 `;
 
 const AnimationColumn = styled.div`
   flex: 0 0 45%;
-  border-left: 1px #e9e9e9 solid;
+  border-left: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
   background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  position: sticky;
-  top: 0;
+  position: relative;
   height: 100%;
+  overflow: hidden;
 
   @media (max-width: 1024px) {
     display: none;
@@ -123,6 +149,7 @@ const NavigationFooter = styled.footer`
   padding: 1rem 2rem;
   background-color: ${(props) => props.theme.token.colorBgContainer};
   border-top: 1px solid ${(props) => props.theme.token.colorBorder};
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05); /* Added shadow for depth */
   position: sticky;
   bottom: 0;
   z-index: 10;
@@ -161,6 +188,7 @@ const FooterButton = styled.button`
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    filter: grayscale(100%);
   }
   &:not(:disabled):hover {
     background: ${(props) =>
@@ -171,6 +199,11 @@ const FooterButton = styled.button`
       props.$primary
         ? props.theme.token.colorPrimaryHover
         : props.theme.token.colorText};
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+  &:active {
+    transform: translateY(0);
   }
 `;
 
@@ -1015,7 +1048,9 @@ const RegisterPageContent = () => {
   if (pageStatus === "loading" || pageStatus === "checking") {
     return (
       <OverallContainer>
-        <ExploreHeader showOptionsWrapper={false} />
+        <HeaderWrapper>
+          <ExploreHeader showOptionsWrapper={false} />
+        </HeaderWrapper>
         <div
           style={{
             flex: 1,
@@ -1037,7 +1072,9 @@ const RegisterPageContent = () => {
   if (pageStatus === "already_registered") {
     return (
       <OverallContainer>
-        <ExploreHeader showOptionsWrapper={false} />
+        <HeaderWrapper>
+          <ExploreHeader showOptionsWrapper={false} />
+        </HeaderWrapper>
         <PageLayout>
           <ContentColumn>
             <AlreadyRegisteredContainer
@@ -1087,7 +1124,9 @@ const RegisterPageContent = () => {
 
   return (
     <OverallContainer>
-      <ExploreHeader showOptionsWrapper={false} />
+      <HeaderWrapper>
+        <ExploreHeader showOptionsWrapper={false} />
+      </HeaderWrapper>
       {currentStep >= 0 && (
         <ProgressBarContainer>
           <ProgressIndicator width={`${progressPercent}%`} />

@@ -380,16 +380,23 @@ const IconBox = styled.div`
 
 const CalendarWrapper = styled.div`
   width: 100%;
+  user-select: none;
 `;
 
 const CalendarHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   font-weight: 700;
   font-size: 16px;
   color: #111;
+  position: relative;
+`;
+
+const MonthTitle = styled.div`
+  flex: 1;
+  text-align: center;
 `;
 
 const NavBtn = styled.button`
@@ -398,9 +405,22 @@ const NavBtn = styled.button`
   cursor: pointer;
   padding: 8px;
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   &:hover {
     background: #f3f4f6;
   }
+`;
+
+const DoubleMonthGrid = styled.div`
+  display: flex;
+  gap: 32px;
+  width: 100%;
+`;
+
+const MonthSection = styled.div`
+  flex: 1;
 `;
 
 const WeekGrid = styled.div`
@@ -409,7 +429,8 @@ const WeekGrid = styled.div`
   margin-bottom: 8px;
   text-align: center;
   font-size: 12px;
-  color: #9ca3af;
+  color: #999;
+  font-weight: 600;
 `;
 
 const DayGrid = styled.div`
@@ -418,15 +439,35 @@ const DayGrid = styled.div`
   row-gap: 4px;
 `;
 
-const DayBtn = styled.button`
+const DayBtn = styled(motion.button)`
   width: 40px;
   height: 40px;
-  border-radius: 50%;
   border: none;
+  position: relative;
+
+  /* Dynamic Border Radius for Range Effect */
+  border-radius: ${(props) => {
+    if (props.$isRangeStart && props.$isRangeEnd) return "50%"; // Single day range
+    if (props.$isRangeStart) return "50% 0 0 50%";
+    if (props.$isRangeEnd) return "0 50% 50% 0";
+    if (props.$isInRange) return "0";
+    return "50%"; // Default single hover
+  }};
+
   background: ${(props) =>
-    props.$isSelected ? props.theme.token.colorPrimary : "transparent"};
+    props.$isRangeStart || props.$isRangeEnd
+      ? props.theme.token.colorPrimary
+      : props.$isInRange
+      ? `${props.theme.token.colorPrimary}15` // 15 = 8% opacity approx
+      : "transparent"};
+
   color: ${(props) =>
-    props.$isSelected ? "white" : props.$isDisabled ? "#e5e7eb" : "#374151"};
+    props.$isRangeStart || props.$isRangeEnd
+      ? "white"
+      : props.$isDisabled
+      ? "#e5e7eb"
+      : "#374151"};
+
   cursor: ${(props) => (props.$isDisabled ? "not-allowed" : "pointer")};
   font-weight: 600;
   font-size: 14px;
@@ -435,9 +476,45 @@ const DayBtn = styled.button`
   justify-content: center;
   margin: 0 auto;
 
+  /* Ensure background spans full width for middle items */
+  width: ${(props) => (props.$isInRange ? "100%" : "40px")};
+
   &:hover {
     background: ${(props) =>
-      !props.$isSelected && !props.$isDisabled && "#f3f4f6"};
+      !(props.$isRangeStart || props.$isRangeEnd || props.$isInRange) &&
+      !props.$isDisabled &&
+      "#f3f4f6"};
+  }
+`;
+
+// --- QUICK SELECT COMPONENTS ---
+
+const QuickSelectGrid = styled.div`
+  display: grid;
+  /* Changed to 4 columns to fit in one row across the dual month view */
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding-top: 20px;
+  margin-top: 12px;
+  border-top: 1px solid #f3f4f6;
+`;
+
+const QuickPill = styled.button`
+  background: ${(props) => (props.$active ? "#f3f4f6" : "white")};
+  border: 1px solid ${(props) => (props.$active ? "#111" : "#e5e7eb")};
+  border-radius: 12px;
+  padding: 8px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: #111;
+    background: #f9fafb;
   }
 `;
 
@@ -477,24 +554,112 @@ const CounterBtn = styled.button`
 // ------------------------------------------------------------------------
 
 const CustomCalendar = ({ value, onChange, onClose }) => {
-  const [currentDate, setCurrentDate] = useState(
-    value ? dayjs(value) : dayjs()
-  );
+  const [currentDate, setCurrentDate] = useState(dayjs());
 
-  const daysInMonth = currentDate.daysInMonth();
-  const startDay = currentDate.startOf("month").day();
+  const selectedStart = value?.start
+    ? dayjs(value.start)
+    : value && value.isValid && value.isValid()
+    ? dayjs(value)
+    : null;
+  const selectedEnd = value?.end ? dayjs(value.end) : null;
 
-  const blanks = Array(startDay).fill(null);
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-
-  const handleDateClick = (day) => {
-    const newDate = currentDate.date(day);
-    onChange(newDate);
+  const handleDateClick = (dateObj) => {
+    // Single date selection logic
+    onChange(dateObj); // Pass dayjs object for single date
     onClose();
   };
 
   const nextMonth = () => setCurrentDate(currentDate.add(1, "month"));
   const prevMonth = () => setCurrentDate(currentDate.subtract(1, "month"));
+
+  const applyPreset = (type) => {
+    let start, end;
+    const today = dayjs();
+
+    switch (type) {
+      case "weekend":
+        start = today.day() === 0 ? today.day(6).add(1, "week") : today.day(6);
+        end = start.add(1, "day"); // Sat + 1 = Sun
+        break;
+      case "next_weekend":
+        start = today.day(6).add(1, "week");
+        end = start.add(1, "day");
+        break;
+      case "this_week":
+        start = today;
+        end = today.endOf("week");
+        break;
+      case "next_week":
+        start = today.add(1, "week").startOf("week");
+        end = today.add(1, "week").endOf("week");
+        break;
+      default:
+        start = today;
+        end = null;
+    }
+
+    onChange({
+      start: start.format("YYYY-MM-DD"),
+      end: end ? end.format("YYYY-MM-DD") : null,
+    });
+    // Removed onClose() so it stays open
+  };
+
+  const renderMonthGrid = (baseDate) => {
+    const daysInMonth = baseDate.daysInMonth();
+    const startDay = baseDate.startOf("month").day();
+    const blanks = Array(startDay).fill(null);
+    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+    return (
+      <DayGrid>
+        {blanks.map((_, i) => (
+          <div key={`blank-${i}`} />
+        ))}
+        {days.map((d) => {
+          const thisDate = baseDate.date(d);
+          const isPast = thisDate.isBefore(dayjs().startOf("day"));
+
+          let isRangeStart = false;
+          let isRangeEnd = false;
+          let isInRange = false;
+
+          if (selectedStart && !selectedEnd) {
+            // Single date match
+            isRangeStart = thisDate.isSame(selectedStart, "day");
+            isRangeEnd = isRangeStart;
+          } else if (selectedStart && selectedEnd) {
+            // Range match
+            const s = selectedStart.startOf("day");
+            const e = selectedEnd.startOf("day");
+            const t = thisDate.startOf("day");
+
+            isRangeStart = t.isSame(s);
+            isRangeEnd = t.isSame(e);
+            isInRange = t.isAfter(s) && t.isBefore(e);
+          }
+
+          return (
+            <DayBtn
+              key={d}
+              type="button"
+              layout
+              $isRangeStart={isRangeStart}
+              $isRangeEnd={isRangeEnd}
+              $isInRange={isInRange}
+              $isDisabled={isPast}
+              disabled={isPast}
+              onClick={() => handleDateClick(thisDate)}
+            >
+              {d}
+            </DayBtn>
+          );
+        })}
+      </DayGrid>
+    );
+  };
+
+  const nextMonthDate = currentDate.add(1, "month");
 
   return (
     <CalendarWrapper>
@@ -502,41 +667,49 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
         <NavBtn onClick={prevMonth} type="button">
           <ChevronLeft size={20} />
         </NavBtn>
-        <span>{currentDate.format("MMMM YYYY")}</span>
+        <div style={{ display: "flex", flex: 1 }}>
+          <MonthTitle>{currentDate.format("MMMM YYYY")}</MonthTitle>
+          <MonthTitle>{nextMonthDate.format("MMMM YYYY")}</MonthTitle>
+        </div>
         <NavBtn onClick={nextMonth} type="button">
           <ChevronRight size={20} />
         </NavBtn>
       </CalendarHeader>
 
-      <WeekGrid>
-        {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
-          <div key={d}>{d}</div>
-        ))}
-      </WeekGrid>
+      <DoubleMonthGrid>
+        <MonthSection>
+          <WeekGrid>
+            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+              <div key={d}>{d}</div>
+            ))}
+          </WeekGrid>
+          {renderMonthGrid(currentDate)}
+        </MonthSection>
 
-      <DayGrid>
-        {blanks.map((_, i) => (
-          <div key={`blank-${i}`} />
-        ))}
-        {days.map((d) => {
-          const thisDate = currentDate.date(d);
-          const isSelected = value && dayjs(value).isSame(thisDate, "day");
-          const isPast = thisDate.isBefore(dayjs().startOf("day"));
+        <MonthSection>
+          <WeekGrid>
+            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+              <div key={d}>{d}</div>
+            ))}
+          </WeekGrid>
+          {renderMonthGrid(nextMonthDate)}
+        </MonthSection>
+      </DoubleMonthGrid>
 
-          return (
-            <DayBtn
-              key={d}
-              type="button"
-              $isSelected={isSelected}
-              $isDisabled={isPast}
-              disabled={isPast}
-              onClick={() => handleDateClick(d)}
-            >
-              {d}
-            </DayBtn>
-          );
-        })}
-      </DayGrid>
+      <QuickSelectGrid>
+        <QuickPill type="button" onClick={() => applyPreset("weekend")}>
+          This Weekend
+        </QuickPill>
+        <QuickPill type="button" onClick={() => applyPreset("next_weekend")}>
+          Next Weekend
+        </QuickPill>
+        <QuickPill type="button" onClick={() => applyPreset("this_week")}>
+          This Week
+        </QuickPill>
+        <QuickPill type="button" onClick={() => applyPreset("next_week")}>
+          Next Week
+        </QuickPill>
+      </QuickSelectGrid>
     </CalendarWrapper>
   );
 };
@@ -560,7 +733,6 @@ const CustomParticipant = ({ count, onChange }) => {
         >
           <Minus size={16} />
         </CounterBtn>
-        {/* Added explicit color: #222 to prevent inheritance of white text from Banner */}
         <span
           style={{
             width: 24,
@@ -587,7 +759,7 @@ const CustomParticipant = ({ count, onChange }) => {
 // Define sizes in a constant for consistent referencing
 const POPUP_SIZES = {
   location: 400,
-  date: 360,
+  date: 660, // Widened to fit 2 months + 1 row quick selects
   participants: 340,
 };
 
@@ -658,6 +830,20 @@ const DesktopSearchForm = () => {
     participantCount === 1
       ? "1 participant"
       : `${participantCount} participants`;
+
+  const getDateDisplay = () => {
+    if (!datePickerValue) return "Any date";
+    if (datePickerValue.start && datePickerValue.end) {
+      const s = dayjs(datePickerValue.start);
+      const e = dayjs(datePickerValue.end);
+      if (s.month() === e.month()) {
+        return `${s.format("MMM D")} - ${e.format("D")}`;
+      }
+      return `${s.format("MMM D")} - ${e.format("MMM D")}`;
+    }
+    // Single
+    return dayjs(datePickerValue).format("MMM DD");
+  };
 
   // --- POSITION & VIEWPORT CHECK LOGIC ---
   useLayoutEffect(() => {
@@ -842,9 +1028,7 @@ const DesktopSearchForm = () => {
         )}
         <Label>Date</Label>
         <ValueDisplay $hasValue={!!datePickerValue}>
-          {datePickerValue
-            ? dayjs(datePickerValue).format("MMM DD, YYYY")
-            : "Any date"}
+          {getDateDisplay()}
         </ValueDisplay>
       </SectionButton>
 
@@ -1445,8 +1629,22 @@ const MobileSearchPill = () => {
   const getPillLabel = () => searchTerm || "Search around?";
   const getPillSubLabel = () => {
     let parts = [];
-    if (datePickerValue) parts.push(dayjs(datePickerValue).format("MMM D"));
-    else parts.push("Any week");
+    if (datePickerValue) {
+      if (datePickerValue.start && datePickerValue.end) {
+        const s = dayjs(datePickerValue.start);
+        const e = dayjs(datePickerValue.end);
+        if (s.month() === e.month()) {
+          parts.push(`${s.format("MMM D")} - ${e.format("D")}`);
+        } else {
+          parts.push(`${s.format("MMM D")} - ${e.format("MMM D")}`);
+        }
+      } else {
+        // It might be a dayjs object if single date is set directly
+        parts.push(dayjs(datePickerValue).format("MMM D"));
+      }
+    } else {
+      parts.push("Any week");
+    }
 
     const pCount = Math.max(1, participantCount);
     if (pCount > 1) parts.push(`${pCount} people`);
