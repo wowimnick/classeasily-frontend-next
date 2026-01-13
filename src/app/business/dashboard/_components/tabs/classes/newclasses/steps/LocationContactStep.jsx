@@ -467,7 +467,6 @@ const LocationContactStep = ({ onValidatedNext }) => {
       businessContact.latitude &&
       businessContact.longitude
     ) {
-      // Destructure the new fields from the API response
       const {
         businessAddress,
         latitude,
@@ -486,7 +485,6 @@ const LocationContactStep = ({ onValidatedNext }) => {
       setSearchValue(businessAddress);
       setSelectedLocation(newLocation);
 
-      // Add city and state to the form values
       form.setFieldsValue({
         location: businessAddress,
         coordinates: newCoordinates,
@@ -495,7 +493,6 @@ const LocationContactStep = ({ onValidatedNext }) => {
         state: businessState || "",
       });
 
-      // Also update them in the debounced context update
       debouncedUpdateLocationContact({
         ...form.getFieldsValue(),
         searchValue: businessAddress,
@@ -531,10 +528,10 @@ const LocationContactStep = ({ onValidatedNext }) => {
   return (
     <ConfigProvider theme={theme}>
       <StepHeader>
-        <StepTitle level={2}>Location & Contact Information</StepTitle>
+        <StepTitle level={2}>Meeting Point & Contact</StepTitle>
         <StepDescription>
-          Set your class location and provide contact information for students.
-          This helps students find and reach out about your class.
+          Where will guests meet you? Provide precise details so they can find
+          you easily.
         </StepDescription>
       </StepHeader>
 
@@ -549,7 +546,7 @@ const LocationContactStep = ({ onValidatedNext }) => {
         <SectionDivider>
           <span>
             <MapPin size={16} />
-            Class Location
+            Meeting Point
           </span>
         </SectionDivider>
 
@@ -561,7 +558,7 @@ const LocationContactStep = ({ onValidatedNext }) => {
               icon={<Building size={14} />}
               disabled={!businessContact.latitude || !businessContact.longitude}
             >
-              Use Business Location
+              Use Business Address
             </Button>
           </ActionContainer>
         )}
@@ -579,12 +576,12 @@ const LocationContactStep = ({ onValidatedNext }) => {
               </FormLabel>
               <HelpText>
                 <Info size={14} />
-                Search for the main address or building location.
+                Address, landmark, or meeting spot.
               </HelpText>
               <SearchWrapper>
                 <StyledInput
                   prefix={<Search size={16} style={{ color: "#adb5bd" }} />}
-                  placeholder="Search for address or place name"
+                  placeholder="e.g. 123 Main St or 'Central Park West Entrance'"
                   value={searchValue}
                   onChange={handleSearchInputChange}
                   allowClear
@@ -614,13 +611,14 @@ const LocationContactStep = ({ onValidatedNext }) => {
             <FormGroup>
               <FormLabel>
                 <Building size={16} />
-                Apartment, suite, etc. (Optional)
+                Unit / Suite / Details (Optional)
               </FormLabel>
               <HelpText>
-                <Info size={14} />A specific unit, suite, or apartment number.
+                <Info size={14} />
+                Specific instructions (e.g. "Look for the red umbrella").
               </HelpText>
               <Form.Item name="unit_number" noStyle>
-                <StyledInput placeholder="e.g., Unit B" size="large" />
+                <StyledInput placeholder="Optional details..." size="large" />
               </Form.Item>
             </FormGroup>
           </FormGrid>
@@ -715,28 +713,25 @@ const LocationContactStep = ({ onValidatedNext }) => {
               </LocationText>
 
               <FormGroup>
-                <FormLabel>Location Privacy Settings</FormLabel>
+                <FormLabel>Privacy Settings</FormLabel>
                 <HelpText>
                   <Info size={14} />
-                  Choose how your class location is displayed to students on the
-                  map.
+                  Choose how the location is shown on the public map.
                 </HelpText>
                 <ToggleGroup>
                   <ToggleButton
                     type="button"
                     $selected={!hideExactLocation}
                     onClick={() => handlePrivacyToggle("show")}
-                    title="Show precise address"
                   >
-                    <Eye size={16} /> Show exact location
+                    <Eye size={16} /> Show Exact Location
                   </ToggleButton>
                   <ToggleButton
                     type="button"
                     $selected={hideExactLocation}
                     onClick={() => handlePrivacyToggle("hide")}
-                    title="Show general area"
                   >
-                    <EyeOff size={16} /> Hide exact (show area)
+                    <EyeOff size={16} /> Hide Exact (Show Area)
                   </ToggleButton>
                 </ToggleGroup>
               </FormGroup>
@@ -747,7 +742,7 @@ const LocationContactStep = ({ onValidatedNext }) => {
         <SectionDivider>
           <span>
             <Phone size={16} />
-            Student Contact Information
+            Guest Support Contact
           </span>
         </SectionDivider>
 
@@ -776,11 +771,11 @@ const LocationContactStep = ({ onValidatedNext }) => {
             <FormGroup>
               <FormLabel>
                 <Mail size={16} />
-                Contact Email
+                Support Email
               </FormLabel>
               <HelpText>
                 <Info size={14} />
-                Email address where students can reach you about this class.
+                Where can guests email you with questions?
               </HelpText>
               <Form.Item
                 name="studentContactEmail"
@@ -794,7 +789,7 @@ const LocationContactStep = ({ onValidatedNext }) => {
               >
                 <StyledInput
                   prefix={<Mail size={16} style={{ color: "#adb5bd" }} />}
-                  placeholder="you@example.com"
+                  placeholder="help@example.com"
                   size="large"
                   inputMode="email"
                 />
@@ -804,11 +799,11 @@ const LocationContactStep = ({ onValidatedNext }) => {
             <FormGroup>
               <FormLabel>
                 <Phone size={16} />
-                Contact Phone
+                Support Phone
               </FormLabel>
               <HelpText>
-                <Info size={14} />
-                Phone number where students can reach you regarding this class.
+                <Info size={14} />A number for guests to call or text if they
+                get lost.
               </HelpText>
               <Form.Item
                 name="studentContactPhone"

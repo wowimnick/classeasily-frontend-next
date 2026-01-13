@@ -7,27 +7,25 @@ import {
   InputNumber,
   Typography,
   ConfigProvider,
-  Segmented,
   Button,
   Switch,
   Tooltip,
 } from "antd";
 import styled from "styled-components";
 import {
-  Package,
-  UserCheck,
+  Backpack,
+  Activity,
   Info,
   FileText,
   Percent,
   Tag,
   Settings,
   Clock,
-  Book,
-  Calendar,
+  Ticket,
+  CalendarRange,
   AlertCircle,
-  Ban,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion"; // ADDED: AnimatePresence
+import { motion, AnimatePresence } from "framer-motion";
 import { theme } from "@/components/theme";
 import { useClass } from "../ClassContext";
 
@@ -40,18 +38,17 @@ const BookingTypeToggle = styled(Button.Group)`
 
   .ant-btn {
     flex: 1;
-    height: 40px;
+    height: 48px;
     border-radius: 8px;
-    font-weight: 500;
+    font-weight: 600;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    font-size: 15px;
 
     &:not(.ant-btn-primary) {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
       color: ${(props) => props.theme.token.colorText};
 
       &:hover {
@@ -62,7 +59,7 @@ const BookingTypeToggle = styled(Button.Group)`
     }
 
     &.ant-btn-primary {
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
   }
 `;
@@ -70,16 +67,13 @@ const BookingTypeToggle = styled(Button.Group)`
 const StyledForm = styled(Form)`
   .ant-form-item {
     margin-bottom: ${(props) => props.theme.token.marginLG}px;
-
     &:first-child {
       margin-bottom: 0;
     }
-
     &:last-child {
       margin-bottom: 0;
     }
   }
-
   .ant-form-item-explain-error {
     margin-top: ${(props) => props.theme.token.marginXS}px;
     font-size: ${(props) => props.theme.token.fontSizeSM || "12px"};
@@ -111,7 +105,6 @@ const SectionDivider = styled.div`
   display: flex;
   align-items: center;
   margin: 2rem 0;
-
   &::before,
   &::after {
     content: "";
@@ -125,7 +118,6 @@ const SectionDivider = styled.div`
       transparent 100%
     );
   }
-
   span {
     padding: 0 1rem;
     color: ${(props) => props.theme.token.colorTextSecondary};
@@ -183,6 +175,19 @@ const HelpText = styled.div`
   gap: 0.5rem;
 `;
 
+const IconWrapper = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+`;
+
 const StyledSelect = styled(Select)`
   .ant-select-selector {
     height: ${(props) => props.theme.token.controlHeight}px !important;
@@ -195,19 +200,7 @@ const StyledSelect = styled(Select)`
   .ant-select-selection-placeholder {
     line-height: ${(props) => props.theme.token.controlHeight - 2}px !important;
     font-size: ${(props) => props.theme.token.fontSize}px;
-
-    @media (max-width: 768px) {
-      font-size: 16px !important;
-    }
   }
-
-  /* Mobile: Ensure search input is 16px */
-  @media (max-width: 768px) {
-    .ant-select-selection-search-input {
-      font-size: 16px !important;
-    }
-  }
-
   &.ant-select-focused .ant-select-selector {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20 !important;
   }
@@ -223,7 +216,6 @@ const StyledTagsSelect = styled(Select)`
     align-items: flex-start;
     align-content: flex-start;
   }
-
   .ant-select-selection-overflow {
     display: flex;
     flex-wrap: wrap;
@@ -231,63 +223,11 @@ const StyledTagsSelect = styled(Select)`
     gap: 4px;
     align-items: center;
   }
-
   .ant-select-selection-item {
     margin: 2px 2px 2px 0 !important;
     border-radius: ${(props) => props.theme.token.borderRadius}px !important;
     background: ${(props) => props.theme.token.colorPrimary}15 !important;
     border: 1px solid ${(props) => props.theme.token.colorPrimary}30 !important;
-    font-size: ${(props) => props.theme.token.fontSize}px !important;
-    padding: 2px 8px !important;
-    height: auto !important;
-    display: flex;
-    align-items: center;
-
-    @media (max-width: 768px) {
-      font-size: 14px !important;
-    }
-  }
-
-  .ant-select-selection-item-content {
-    color: ${(props) => props.theme.token.colorPrimary} !important;
-    font-weight: 500;
-  }
-
-  .ant-select-selection-item-remove {
-    color: ${(props) => props.theme.token.colorPrimary} !important;
-    margin-left: 4px !important;
-    font-size: 12px !important;
-  }
-
-  .ant-select-selection-search {
-    margin: 2px 0 !important;
-    min-width: 80px;
-  }
-
-  .ant-select-selection-placeholder {
-    line-height: ${(props) =>
-      props.theme.token.controlHeight - 12}px !important;
-    font-size: ${(props) => props.theme.token.fontSize}px;
-    color: ${(props) => props.theme.token.colorTextPlaceholder};
-
-    @media (max-width: 768px) {
-      font-size: 16px !important;
-    }
-  }
-
-  /* Mobile: Ensure search input for tags is 16px */
-  @media (max-width: 768px) {
-    .ant-select-selection-search-input {
-      font-size: 16px !important;
-    }
-  }
-
-  &.ant-select-focused .ant-select-selector {
-    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20 !important;
-  }
-
-  &:hover .ant-select-selector {
-    border-color: ${(props) => props.theme.token.colorPrimary} !important;
   }
 `;
 
@@ -295,61 +235,27 @@ const StyledInputNumber = styled(InputNumber)`
   height: ${(props) => props.theme.token.controlHeight}px;
   border-radius: ${(props) => props.theme.token.borderRadius}px;
   font-size: ${(props) => props.theme.token.fontSize}px;
-  transition: all 0.3s ease;
   width: 100%;
-
   .ant-input-number-input-wrap,
   .ant-input-number-input {
     height: 100% !important;
     display: flex;
     align-items: center;
-    @media (max-width: 768px) {
-      font-size: 16px !important;
-    }
-  }
-
-  &:focus-within {
-    box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20;
   }
 `;
 
-const InfoBox = styled(motion.div)`
-  margin-bottom: 1.5rem;
-  padding: 12px 16px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  font-size: 12.5px;
-  color: ${(props) => props.theme.token.colorTextSecondary};
-
-  strong {
-    color: ${(props) => props.theme.token.colorText};
-  }
-
-  ul {
-    padding-left: 20px;
-    margin: 5px 0 0 0;
-    list-style: disc;
-
-    li {
-      margin: 4px 0;
-    }
-  }
-`;
-
-const IconWrapper = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 14px;
-  height: 14px;
-
-  svg {
-    width: 14px;
-    height: 14px;
-  }
-`;
+// ANIMATION VARIANTS
+// Using transitionEnd: { transform: "none" } ensures text renders crisply after animation
+const sectionVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4 },
+    transitionEnd: { transform: "none" },
+  },
+  exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
+};
 
 const ClassOptionsStep = ({ onValidatedNext }) => {
   const [form] = Form.useForm();
@@ -366,8 +272,9 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
   useEffect(() => {
     if (isLoaded && !isFormInitialized.current) {
       const contextOption = state.options?.[0];
-
       const formValues = {};
+
+      // Load all previous data if it exists
       if (contextOption) {
         if (contextOption.booking_type !== undefined)
           formValues.booking_type = contextOption.booking_type;
@@ -385,6 +292,7 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
         if (contextOption.cancellationRefundPercentage !== undefined)
           formValues.cancellationRefundPercentage =
             contextOption.cancellationRefundPercentage;
+
         // Mid-course fields
         if (contextOption.allowMidCourseDrops !== undefined)
           formValues.allowMidCourseDrops = contextOption.allowMidCourseDrops;
@@ -402,20 +310,16 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
       if (Object.keys(formValues).length > 0) {
         form.setFieldsValue(formValues);
       }
-      // Don't set a default booking_type - force user to select
-
       isFormInitialized.current = true;
     }
   }, [isLoaded, state.options, form]);
 
   useEffect(() => {
-    // Handle pre-course strict policy
     if (watchedPolicy === "strict") {
       if (form.getFieldValue("cancellationRefundPercentage") !== 0) {
         form.setFieldsValue({ cancellationRefundPercentage: 0 });
       }
     }
-    // Handle mid-course strict policy
     if (watchedMidCoursePolicy === "strict") {
       if (form.getFieldValue("midCourseCancellationRefundPercentage") !== 0) {
         form.setFieldsValue({ midCourseCancellationRefundPercentage: 0 });
@@ -434,7 +338,6 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
             : "per_session";
       }
 
-      // Handle pre-course cancellation policy
       if (changedValues.hasOwnProperty("cancellationPolicy")) {
         if (changedValues.cancellationPolicy === "strict") {
           updatedValues.cancellationRefundPercentage = 0;
@@ -446,7 +349,6 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
         }
       }
 
-      // Handle mid-course cancellation policy
       if (changedValues.hasOwnProperty("midCourseCancellationPolicy")) {
         if (changedValues.midCourseCancellationPolicy === "strict") {
           updatedValues.midCourseCancellationRefundPercentage = 0;
@@ -458,7 +360,6 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
         }
       }
 
-      // Clear mid-course fields if drops are disabled
       if (
         changedValues.hasOwnProperty("allowMidCourseDrops") &&
         !changedValues.allowMidCourseDrops
@@ -484,7 +385,6 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
       cancellationRefundPercentage:
         values.cancellationRefundPercentage ??
         (values.cancellationPolicy === "strict" ? 0 : 100),
-      // Mid-course fields
       midCourseCancellationCustomHours:
         values.midCourseCancellationPolicy === "custom"
           ? values.midCourseCancellationCustomHours
@@ -504,10 +404,9 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
   return (
     <ConfigProvider theme={theme}>
       <StepHeader>
-        <StepTitle level={2}>Class Configuration</StepTitle>
+        <StepTitle level={2}>Configuration</StepTitle>
         <StepDescription>
-          Define how your class is structured and set key policies. This is a
-          critical step to ensure students know what they are booking.
+          Structure your experience and set key policies.
         </StepDescription>
       </StepHeader>
 
@@ -519,21 +418,31 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
         id="step-2-form"
         preserve={true}
       >
-        <FormSection>
+        <FormSection
+          initial="hidden"
+          animate="visible"
+          variants={sectionVariants}
+        >
           <FormGroup>
-            <FormLabel>Class Structure</FormLabel>
+            <FormLabel>Experience Structure</FormLabel>
+            <HelpText>
+              <IconWrapper>
+                <Info size={14} />
+              </IconWrapper>
+              Choose how guests will book and attend.
+            </HelpText>
             <Form.Item
               name="booking_type"
               initialValue="Single Session"
               rules={[
                 {
                   required: true,
-                  message: "Please select a class structure",
+                  message: "Please select a structure",
                 },
               ]}
             >
               <BookingTypeToggle>
-                <Tooltip title="Students can book individual drop-in dates. You'll add specific dates and times after creating the class.">
+                <Tooltip title="Guests book a specific date for a one-off event.">
                   <Button
                     type={
                       bookingType === "Single Session" ? "primary" : "default"
@@ -542,17 +451,17 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                       form.setFieldsValue({ booking_type: "Single Session" })
                     }
                   >
-                    <Calendar size={16} /> Single Session
+                    <Ticket size={16} /> One-Time Experience
                   </Button>
                 </Tooltip>
-                <Tooltip title="Students will enroll for all sessions at once. You'll set up the course schedule after creating the class.">
+                <Tooltip title="Guests enroll in a multi-day series (e.g. a 4-week boot camp).">
                   <Button
                     type={bookingType === "Full Course" ? "primary" : "default"}
                     onClick={() =>
                       form.setFieldsValue({ booking_type: "Full Course" })
                     }
                   >
-                    <Book size={16} /> Full Course
+                    <CalendarRange size={16} /> Multi-Day Series
                   </Button>
                 </Tooltip>
               </BookingTypeToggle>
@@ -560,20 +469,23 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
           </FormGroup>
         </FormSection>
 
-        {/* Only show rest of form if booking type is selected */}
         {bookingType && (
           <>
-            <FormSection>
+            <FormSection
+              initial="hidden"
+              animate="visible"
+              variants={sectionVariants}
+            >
               <FormGroup>
                 <FormLabel>
-                  <UserCheck size={16} />
-                  Experience Level Required
+                  <Activity size={16} />
+                  Activity / Skill Level
                 </FormLabel>
                 <HelpText>
                   <IconWrapper>
                     <Info size={14} />
                   </IconWrapper>
-                  What skill level should students have?
+                  How intense or difficult is this experience?
                 </HelpText>
                 <Form.Item
                   name="level"
@@ -581,24 +493,20 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                   rules={[
                     {
                       required: true,
-                      message: "Please select an experience level",
+                      message: "Please select a level",
                     },
                   ]}
                 >
-                  <StyledSelect
-                    placeholder="Select the required experience level"
-                    size="large"
-                  >
-                    <Option value="beginner">
-                      Beginner - No prior experience needed
+                  <StyledSelect placeholder="Select level" size="middle">
+                    <Option value="all">Open to Everyone</Option>
+                    <Option value="no-experience">No Experience Needed</Option>
+                    <Option value="beginner">Beginner Friendly</Option>
+                    <Option value="active">Moderate Activity</Option>
+                    <Option value="strenuous">
+                      High Intensity / Strenuous
                     </Option>
-                    <Option value="intermediate">
-                      Intermediate - Some experience required
-                    </Option>
-                    <Option value="advanced">
-                      Advanced - Significant experience required
-                    </Option>
-                    <Option value="all">All Levels Welcome</Option>
+                    <Option value="intermediate">Intermediate Skill</Option>
+                    <Option value="advanced">Advanced Skill</Option>
                   </StyledSelect>
                 </Form.Item>
               </FormGroup>
@@ -607,124 +515,119 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
             <SectionDivider>
               <span>
                 <FileText size={16} />
-                Policies & Cancellation
+                Cancellation Policy
               </span>
             </SectionDivider>
 
-            {/* ADDED: Dynamic help text for refund policy explanation */}
             <AnimatePresence mode="wait">
               <motion.div
                 key={bookingType}
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                animate={{ opacity: 1, transitionEnd: { transform: "none" } }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <HelpText
+                <div
                   style={{
                     marginBottom: "2rem",
-                    padding: "12px 16px",
+                    padding: "16px",
                     background: "#f8fafc",
-                    borderRadius: "8px",
+                    borderRadius: "12px",
                     border: "1px solid #e2e8f0",
+                    display: "flex",
+                    gap: "12px",
+                    alignItems: "flex-start",
                   }}
                 >
-                  {bookingType === "Full Course" ? (
-                    <>
-                      <IconWrapper>
-                        <Info size={14} />
-                      </IconWrapper>
-                      <div>
-                        <strong style={{ color: theme.token.colorText }}>
-                          How Refunds Work for Courses:
+                  <IconWrapper style={{ marginTop: "4px" }}>
+                    <Info size={16} />
+                  </IconWrapper>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      lineHeight: "1.6",
+                      color: theme.token.colorTextSecondary,
+                    }}
+                  >
+                    {bookingType === "Full Course" ? (
+                      <>
+                        <strong
+                          style={{
+                            color: theme.token.colorText,
+                            display: "block",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          How Refunds Work for Series:
                         </strong>
                         <ul
                           style={{
                             paddingLeft: "20px",
-                            margin: "5px 0 0 0",
+                            margin: 0,
                             listStyle: "disc",
                           }}
                         >
-                          <li>
-                            <strong>Pre-Course Cancellations:</strong> If a
-                            student cancels{" "}
-                            <strong>before the course begins</strong>, your
-                            "Pre-Course Cancellation Policy" applies based on
-                            the start time of the very first session.
+                          <li style={{ marginBottom: "6px" }}>
+                            <strong>Pre-Start Cancellations:</strong> If a guest
+                            cancels <em>before the series begins</em>, your
+                            "Notice Required" policy applies based on the start
+                            time of the very first session.
                           </li>
                           <li>
-                            <strong>Mid-Course Drops:</strong> If you allow
-                            mid-course drops and a student drops out{" "}
-                            <strong>after the course has started</strong>, your
-                            separate "Mid-Course Drop Policy" applies. Students
-                            receive a pro-rated refund for remaining sessions
-                            based on your mid-course policy.
+                            <strong>Mid-Series Drops:</strong> If you allow
+                            drops after the start, a separate policy applies.
+                            Guests receive a pro-rated refund for remaining
+                            sessions based on the specific notice you set for
+                            upcoming sessions.
                           </li>
                         </ul>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <IconWrapper>
-                        <Info size={14} />
-                      </IconWrapper>
-                      <div>
+                      </>
+                    ) : (
+                      <>
                         <strong style={{ color: theme.token.colorText }}>
-                          How Refunds Work for Single Sessions:
+                          How Refunds Work:
                         </strong>{" "}
-                        This policy applies to each individual booking.
-                        Cancellations are refunded based on the notice period
-                        you set before the scheduled session starts.
-                      </div>
-                    </>
-                  )}
-                </HelpText>
+                        This policy applies to every individual booking. If a
+                        guest cancels within the notice period you select below
+                        (relative to the experience start time), they will be
+                        automatically refunded according to the percentage you
+                        set.
+                      </>
+                    )}
+                  </div>
+                </div>
               </motion.div>
             </AnimatePresence>
 
             <FormSection
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+              initial="hidden"
+              animate="visible"
+              variants={sectionVariants}
             >
               <FormGrid>
                 <FormGroup>
                   <FormLabel>
                     <FileText size={16} />
-                    {bookingType === "Full Course"
-                      ? "Pre-Course Cancellation Notice"
-                      : "Cancellation Notice Required"}
+                    Notice Required
                   </FormLabel>
                   <HelpText>
                     <IconWrapper>
                       <Info size={14} />
                     </IconWrapper>
-                    {bookingType === "Full Course"
-                      ? "How much notice do students need to give to cancel BEFORE the course starts?"
-                      : "How much advance notice do you require for cancellations?"}
+                    Minimum time before start for a refund.
                   </HelpText>
                   <Form.Item
                     name="cancellationPolicy"
                     initialValue="flexible"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please select a cancellation policy",
-                      },
-                    ]}
+                    rules={[{ required: true }]}
                   >
-                    <StyledSelect
-                      placeholder="Select cancellation notice period"
-                      size="large"
-                    >
-                      <Option value="flexible">
-                        Flexible (up to 1 hour before)
-                      </Option>
+                    <StyledSelect placeholder="Select notice" size="middle">
+                      <Option value="flexible">Flexible (1 hour before)</Option>
                       <Option value="24h">24 Hours Notice</Option>
                       <Option value="48h">48 Hours Notice</Option>
                       <Option value="72h">72 Hours Notice</Option>
                       <Option value="strict">Strict (Non-refundable)</Option>
-                      <Option value="custom">Custom Notice Period</Option>
+                      <Option value="custom">Custom</Option>
                     </StyledSelect>
                   </Form.Item>
                 </FormGroup>
@@ -732,31 +635,24 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                 <FormGroup>
                   <FormLabel>
                     <Percent size={16} />
-                    {bookingType === "Full Course"
-                      ? "Pre-Course Refund Percentage"
-                      : "Refund Percentage"}
+                    Refund %
                   </FormLabel>
                   <HelpText>
                     <IconWrapper>
                       <Info size={14} />
                     </IconWrapper>
-                    {bookingType === "Full Course"
-                      ? "What percentage refund for cancellations BEFORE the course starts?"
-                      : "What percentage do you refund for cancellations within your notice period?"}
+                    Percentage refunded if cancelled on time.
                   </HelpText>
                   <Form.Item
                     name="cancellationRefundPercentage"
                     initialValue={100}
                     rules={[
-                      {
-                        required: true,
-                        message: "Please enter a refund percentage",
-                      },
+                      { required: true },
                       {
                         type: "number",
                         min: 0,
                         max: 100,
-                        message: "Percentage must be between 0 and 100",
+                        message: "0-100",
                       },
                     ]}
                   >
@@ -765,10 +661,10 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                       max={100}
                       formatter={(value) => `${value}%`}
                       parser={(value) => String(value).replace("%", "")}
-                      placeholder="e.g., 100 for full refund"
-                      size="large"
+                      size="middle"
                       disabled={watchedPolicy === "strict"}
                       inputMode="decimal"
+                      placeholder="100"
                     />
                   </Form.Item>
                 </FormGroup>
@@ -777,43 +673,32 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
               {watchedPolicy === "custom" && (
                 <motion.div
                   initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                  animate={{ opacity: 1, height: "auto", marginTop: "16px" }}
-                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                  animate={{
+                    opacity: 1,
+                    height: "auto",
+                    marginTop: "16px",
+                    transitionEnd: { transform: "none" },
+                  }}
                   transition={{ duration: 0.3 }}
                 >
                   <FormGroup>
                     <FormLabel>
-                      <Clock size={16} />
-                      Custom Notice (in hours)
+                      <Clock size={16} /> Custom Notice (Hours)
                     </FormLabel>
                     <HelpText>
                       <IconWrapper>
                         <Info size={14} />
                       </IconWrapper>
-                      Enter how many hours of advance notice are required for a
-                      cancellation.
+                      Specific hours before start required for a refund.
                     </HelpText>
                     <Form.Item
                       name="cancellationCustomHours"
-                      rules={[
-                        {
-                          required: true,
-                          message:
-                            "Please enter a custom notice period in hours",
-                        },
-                        {
-                          type: "number",
-                          min: 1,
-                          message: "Notice period must be at least 1 hour",
-                        },
-                      ]}
+                      rules={[{ required: true, type: "number", min: 1 }]}
                     >
                       <StyledInputNumber
                         min={1}
-                        placeholder="e.g., 36 for 36 hours"
-                        size="large"
-                        style={{ width: "100%" }}
-                        inputMode="numeric"
+                        placeholder="Hours"
+                        size="middle"
                       />
                     </Form.Item>
                   </FormGroup>
@@ -821,28 +706,28 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
               )}
             </FormSection>
 
-            {/* Mid-Course Drop Policy - Only for Full Course */}
             {bookingType === "Full Course" && (
               <AnimatePresence mode="wait">
                 <motion.div
                   key="mid-course-policy"
                   initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.3 }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    transitionEnd: { transform: "none" },
+                  }}
                 >
                   <FormSection>
                     <FormGroup>
                       <FormLabel>
-                        <AlertCircle size={16} />
-                        Allow Mid-Course Drops?
+                        <AlertCircle size={16} /> Allow Mid-Series Drops?
                       </FormLabel>
                       <HelpText>
                         <IconWrapper>
                           <Info size={14} />
                         </IconWrapper>
-                        Can students drop out after the course has started and
-                        get a refund for remaining sessions?
+                        Can guests drop out after the series has started for a
+                        partial refund?
                       </HelpText>
                       <Form.Item
                         name="allowMidCourseDrops"
@@ -856,178 +741,62 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                     {midCourseDropsAllowed && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
+                        animate={{
+                          opacity: 1,
+                          height: "auto",
+                          transitionEnd: { transform: "none" },
+                        }}
                       >
-                        <HelpText
-                          style={{
-                            marginBottom: "1.5rem",
-                            padding: "12px 16px",
-                            background: "#fff7ed",
-                            borderRadius: "8px",
-                            border: "1px solid #fed7aa",
-                          }}
-                        >
-                          <AlertCircle
-                            size={14}
-                            style={{
-                              flexShrink: 0,
-                              marginTop: "2px",
-                              color: "#ea580c",
-                            }}
-                          />
-                          <div>
-                            <strong style={{ color: "#9a3412" }}>
-                              Mid-Course Drop Policy:
-                            </strong>{" "}
-                            This policy applies when students drop out AFTER the
-                            first session has occurred. They will receive a
-                            pro-rated refund for remaining sessions based on
-                            these settings.
-                          </div>
-                        </HelpText>
-
                         <FormGrid>
                           <FormGroup>
-                            <FormLabel>
-                              <FileText size={16} />
-                              Mid-Course Drop Notice
-                            </FormLabel>
+                            <FormLabel>Notice for Next Session</FormLabel>
                             <HelpText>
                               <IconWrapper>
                                 <Info size={14} />
                               </IconWrapper>
-                              How much notice before their NEXT session must
-                              students give to drop mid-course?
+                              Notice required before the specific session
+                              starts.
                             </HelpText>
                             <Form.Item
                               name="midCourseCancellationPolicy"
                               initialValue="24h"
-                              rules={[
-                                {
-                                  required: midCourseDropsAllowed,
-                                  message:
-                                    "Please select a mid-course drop policy",
-                                },
-                              ]}
+                              rules={[{ required: true }]}
                             >
                               <StyledSelect
-                                placeholder="Select notice period for mid-course drops"
-                                size="large"
+                                size="middle"
+                                placeholder="Select notice"
                               >
-                                <Option value="flexible">
-                                  Flexible (up to 1 hour before next session)
-                                </Option>
-                                <Option value="24h">24 Hours Notice</Option>
-                                <Option value="48h">48 Hours Notice</Option>
-                                <Option value="72h">72 Hours Notice</Option>
-                                <Option value="strict">
-                                  Strict (Non-refundable)
-                                </Option>
-                                <Option value="custom">
-                                  Custom Notice Period
-                                </Option>
+                                <Option value="flexible">Flexible</Option>
+                                <Option value="24h">24 Hours</Option>
+                                <Option value="48h">48 Hours</Option>
+                                <Option value="72h">72 Hours</Option>
+                                <Option value="strict">Strict</Option>
                               </StyledSelect>
                             </Form.Item>
                           </FormGroup>
-
                           <FormGroup>
-                            <FormLabel>
-                              <Percent size={16} />
-                              Mid-Course Refund Percentage
-                            </FormLabel>
+                            <FormLabel>Refund % (Remaining)</FormLabel>
                             <HelpText>
                               <IconWrapper>
                                 <Info size={14} />
                               </IconWrapper>
-                              What percentage of remaining sessions value will
-                              you refund?
+                              Percentage of unused sessions to be refunded.
                             </HelpText>
                             <Form.Item
                               name="midCourseCancellationRefundPercentage"
                               initialValue={100}
-                              rules={[
-                                {
-                                  required: midCourseDropsAllowed,
-                                  message: "Please enter a refund percentage",
-                                },
-                                {
-                                  type: "number",
-                                  min: 0,
-                                  max: 100,
-                                  message:
-                                    "Percentage must be between 0 and 100",
-                                },
-                              ]}
+                              rules={[{ required: true }]}
                             >
                               <StyledInputNumber
                                 min={0}
                                 max={100}
                                 formatter={(value) => `${value}%`}
-                                parser={(value) =>
-                                  String(value).replace("%", "")
-                                }
-                                placeholder="e.g., 100 for full refund"
-                                size="large"
-                                disabled={watchedMidCoursePolicy === "strict"}
-                                inputMode="decimal"
+                                size="middle"
+                                placeholder="100"
                               />
                             </Form.Item>
                           </FormGroup>
                         </FormGrid>
-
-                        {watchedMidCoursePolicy === "custom" && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                            animate={{
-                              opacity: 1,
-                              height: "auto",
-                              marginTop: "16px",
-                            }}
-                            exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <FormGroup>
-                              <FormLabel>
-                                <Clock size={16} />
-                                Custom Mid-Course Notice (in hours)
-                              </FormLabel>
-                              <HelpText>
-                                <IconWrapper>
-                                  <Info size={14} />
-                                </IconWrapper>
-                                Enter how many hours notice before the next
-                                session is required to drop mid-course.
-                              </HelpText>
-                              <Form.Item
-                                name="midCourseCancellationCustomHours"
-                                rules={[
-                                  {
-                                    required:
-                                      watchedMidCoursePolicy === "custom",
-                                    message:
-                                      "Please enter a custom notice period in hours",
-                                  },
-                                  {
-                                    type: "number",
-                                    min: 1,
-                                    message:
-                                      "Notice period must be at least 1 hour",
-                                  },
-                                ]}
-                              >
-                                <StyledInputNumber
-                                  min={1}
-                                  placeholder="e.g., 36 for 36 hours"
-                                  size="large"
-                                  style={{ width: "100%" }}
-                                  inputMode="numeric"
-                                />
-                              </Form.Item>
-                            </FormGroup>
-                          </motion.div>
-                        )}
                       </motion.div>
                     )}
                   </FormSection>
@@ -1038,36 +807,33 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
             <SectionDivider>
               <span>
                 <Settings size={16} />
-                Optional Details
+                Details (Optional)
               </span>
             </SectionDivider>
 
             <FormSection
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+              initial="hidden"
+              animate="visible"
+              variants={sectionVariants}
             >
               <FormGrid>
                 <FormGroup>
                   <FormLabel>
-                    <Package size={16} />
-                    Equipment Students Should Bring
+                    <Backpack size={16} />
+                    What to Bring / Packing List
                   </FormLabel>
                   <HelpText>
                     <IconWrapper>
                       <Info size={14} />
                     </IconWrapper>
-                    List any equipment, materials, or supplies students need to
-                    bring. Press Enter to add items.
+                    Items guests need (e.g. "Comfortable shoes", "ID").
                   </HelpText>
                   <Form.Item name="equipment">
                     <StyledTagsSelect
                       mode="tags"
                       style={{ width: "100%" }}
-                      placeholder="Type equipment and press Enter (e.g., Yoga Mat, Notebook)"
-                      tokenSeparators={[","]}
-                      size="large"
-                      maxTagCount="responsive"
+                      placeholder="Type and press Enter..."
+                      size="middle"
                     />
                   </Form.Item>
                 </FormGroup>
@@ -1075,23 +841,20 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                 <FormGroup>
                   <FormLabel>
                     <Tag size={16} />
-                    Additional Tags
+                    Search Tags
                   </FormLabel>
                   <HelpText>
                     <IconWrapper>
                       <Info size={14} />
                     </IconWrapper>
-                    Add keywords to help students find this class. Press Enter
-                    to add tags.
+                    Keywords to help guests find this.
                   </HelpText>
                   <Form.Item name="tags">
                     <StyledTagsSelect
                       mode="tags"
                       style={{ width: "100%" }}
-                      placeholder="Type tags and press Enter (e.g., Relaxing, Intensive)"
-                      tokenSeparators={[","]}
-                      size="large"
-                      maxTagCount="responsive"
+                      placeholder="Type and press Enter..."
+                      size="middle"
                     />
                   </Form.Item>
                 </FormGroup>

@@ -34,7 +34,7 @@ const testimonialData = [
     rating: 5,
     date: "17 March 2021",
     quote:
-      "I just took a virtual sushi making class with my colleagues and it definitely exceeded my expectations! Our sushi kits were delivered right to our homes with fresh ingredients. It was a perfect way to stay connected. I got major credits from my team for organizing this!",
+      "I just took a sushi making class with my colleagues and it definitely exceeded my expectations! Our sushi kits were delivered right to our homes with fresh ingredients. It was a perfect way to stay connected. I got major credits from my team for organizing this!",
     userName: "Adrianna Ho",
     avatarUrl:
       "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=80&h=80&fit=crop&crop=face",

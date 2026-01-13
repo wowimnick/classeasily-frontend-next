@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Award as AwardIcon, Plus } from "lucide-react";
 import { LordIcon } from "@/services/ReactUtils";
 
-// --- Styled Components --- (No changes needed)
+// --- Styled Components ---
 const OffersContainer = styled(motion.div)`
   background: white;
   border-radius: 16px;
@@ -268,173 +268,151 @@ const ModalSectionTitle = styled.h3`
   }
 `;
 
-// --- Feature Icons ---
-const featureIcons = {
-  "all materials provided": {
-    icon: {
-      src: "https://cdn.lordicon.com/geexelvb.json",
-      state: "hover-load",
-      trigger: "in",
-      colors:
-        "primary:#ffc738,secondary:#ee6d66,tertiary:#2ca58d,quaternary:#b26836",
-      delay: 2500,
-    },
-    highlight: true,
+// --- Feature Icons Configuration ---
+const ICONS = {
+  materials: {
+    src: "https://cdn.lordicon.com/geexelvb.json",
+    state: "hover-load",
+    trigger: "in",
+    colors:
+      "primary:#ffc738,secondary:#ee6d66,tertiary:#2ca58d,quaternary:#b26836",
+    delay: 2500,
   },
-  "hands-on experience": {
-    icon: {
-      src: "https://cdn.lordicon.com/cyrblumh.json",
-      trigger: "in",
-      state: "in-reveal",
-      delay: 2500,
-    },
-    highlight: true,
+  handsOn: {
+    src: "https://cdn.lordicon.com/cyrblumh.json",
+    trigger: "in",
+    state: "in-reveal",
+    delay: 2500,
   },
-  "take-home creation": {
-    icon: {
-      src: "https://cdn.lordicon.com/dznelzdk.json",
-      trigger: "in",
-      delay: 2000,
-    },
-    highlight: true,
+  gift: {
+    src: "https://cdn.lordicon.com/dznelzdk.json",
+    trigger: "in",
+    delay: 2000,
   },
-  "no experience necessary": {
-    icon: {
-      src: "https://cdn.lordicon.com/zlpuwiky.json",
-      trigger: "in",
-      delay: 2500,
-    },
-    highlight: true,
+  beginner: {
+    src: "https://cdn.lordicon.com/zlpuwiky.json",
+    trigger: "in",
+    delay: 2500,
   },
-  "personalized feedback": {
-    icon: {
-      src: "https://cdn.lordicon.com/hbdydiyg.json",
-      trigger: "in",
-      delay: 3000,
-      colors:
-        "primary:#f4c89c,secondary:#2ca58d,tertiary:#4bb3fd,quaternary:#ebe6ef,quinary:#ee6d66",
-    },
-    highlight: true,
+  feedback: {
+    src: "https://cdn.lordicon.com/hbdydiyg.json",
+    trigger: "in",
+    delay: 3000,
+    colors:
+      "primary:#f4c89c,secondary:#2ca58d,tertiary:#4bb3fd,quaternary:#ebe6ef,quinary:#ee6d66",
   },
-  "free on-site parking": {
-    icon: {
-      src: "https://cdn.lordicon.com/zttzteli.json",
-      trigger: "in",
-      delay: 2000,
-    },
-    highlight: true,
+  car: {
+    src: "https://cdn.lordicon.com/zttzteli.json",
+    trigger: "in",
+    delay: 2000,
   },
-  "wheelchair accessible": {
-    icon: {
-      src: "https://cdn.lordicon.com/gjitbpzd.json",
-      trigger: "in",
-      delay: 2500,
-      colors: "primary:#848484,secondary:#4bb3fd,tertiary:#3a3347",
-    },
-    highlight: true,
+  accessibility: {
+    src: "https://cdn.lordicon.com/gjitbpzd.json",
+    trigger: "in",
+    delay: 2500,
+    colors: "primary:#848484,secondary:#4bb3fd,tertiary:#3a3347",
   },
-  "date night special": {
-    icon: {
-      src: "https://cdn.lordicon.com/xryjrepg.json",
-      trigger: "in",
-      delay: 1500,
-      state: "in-love",
-      colors: "primary:#ff385c",
-    },
-    highlight: true,
+  love: {
+    src: "https://cdn.lordicon.com/xryjrepg.json",
+    trigger: "in",
+    delay: 1500,
+    state: "in-love",
+    colors: "primary:#ff385c",
   },
-  "great for team-building": {
-    icon: {
-      src: "https://cdn.lordicon.com/jjhehowc.json",
-      trigger: "in",
-      delay: 2500,
-    },
-    highlight: true,
+  team: {
+    src: "https://cdn.lordicon.com/jjhehowc.json",
+    trigger: "in",
+    delay: 2500,
   },
-  "family-friendly (all ages)": {
-    icon: {
-      src: "https://cdn.lordicon.com/ppnshiny.json",
-      trigger: "in",
-      delay: 2500,
-      colors:
-        "primary:#ebe6ef,secondary:#646e78,tertiary:#b26836,quaternary:#ffc738,quinary:#4bb3fd,senary:#92140c,septenary:#f4c89c,octonary:#3a3347",
-    },
-    highlight: true,
+  family: {
+    src: "https://cdn.lordicon.com/ppnshiny.json",
+    trigger: "in",
+    delay: 2500,
+    colors:
+      "primary:#ebe6ef,secondary:#646e78,tertiary:#b26836,quaternary:#ffc738,quinary:#4bb3fd,senary:#92140c,septenary:#f4c89c,octonary:#3a3347",
   },
-  "intimate class setting": {
-    icon: {
-      src: "https://cdn.lordicon.com/kxdxjyeh.json",
-      trigger: "in",
-      delay: 2000,
-    },
-    highlight: false,
+  intimate: {
+    src: "https://cdn.lordicon.com/kxdxjyeh.json",
+    trigger: "in",
+    delay: 2000,
   },
-  "suitable for all levels": {
-    icon: {
-      src: "https://cdn.lordicon.com/rmzgsfkm.json",
-      trigger: "in",
-      delay: 2500,
-    },
-    highlight: false,
+  certificate: {
+    src: "https://cdn.lordicon.com/zqfagoml.json",
+    trigger: "in",
+    delay: 2000,
+    colors: "primary:#b26836,secondary:#ffc738",
   },
-  "certificate of completion": {
-    icon: {
-      src: "https://cdn.lordicon.com/zqfagoml.json",
-      trigger: "in",
-      delay: 2000,
-      colors: "primary:#b26836,secondary:#ffc738",
-    },
-    highlight: false,
+  food: {
+    src: "https://cdn.lordicon.com/blouikfz.json",
+    colors: "primary:#848484,secondary:#ffc738",
+    trigger: "in",
+    delay: 2000,
   },
-  "refreshments included": {
-    icon: {
-      src: "https://cdn.lordicon.com/blouikfz.json",
-      colors: "primary:#848484,secondary:#ffc738",
-      trigger: "in",
-      delay: 2000,
-    },
-    highlight: false,
+  time: {
+    src: "https://cdn.lordicon.com/hqjsxtda.json",
+    trigger: "in",
+    delay: 2000,
   },
-  "flexible booking": {
-    icon: {
-      src: "https://cdn.lordicon.com/hqjsxtda.json",
-      trigger: "in",
-      delay: 2000,
-    },
-    highlight: false,
+  shopping: {
+    src: "https://cdn.lordicon.com/fcjhqaqo.json",
+    trigger: "in",
+    delay: 2000,
   },
-  "in-class materials for purchase": {
-    icon: {
-      src: "https://cdn.lordicon.com/fcjhqaqo.json",
-      trigger: "in",
-      delay: 2000,
-    },
-    highlight: false,
+  clothing: {
+    src: "https://cdn.lordicon.com/olxnnpiq.json",
+    trigger: "in",
+    delay: 2000,
   },
-  "wear comfortable clothes": {
-    icon: {
-      src: "https://cdn.lordicon.com/olxnnpiq.json",
-      trigger: "in",
-      delay: 2000,
-    },
-    highlight: false,
-  },
-  "bilingual instructor": {
-    icon: {
-      src: "https://cdn.lordicon.com/tpougfas.json",
-      trigger: "in",
-      delay: 2000,
-    },
-    highlight: false,
+  language: {
+    src: "https://cdn.lordicon.com/tpougfas.json",
+    trigger: "in",
+    delay: 2000,
   },
   default: {
-    icon: {
-      src: "https://cdn.lordicon.com/vjhdnjhx.json",
-      trigger: "in",
-      delay: 2000,
-    },
-    highlight: false,
+    src: "https://cdn.lordicon.com/vjhdnjhx.json",
+    trigger: "in",
+    delay: 2000,
   },
+};
+
+// Map feature text to specific icon configurations
+const featureIcons = {
+  // --- New "Local Experience" Mappings ---
+  "all supplies included": { icon: ICONS.materials, highlight: true },
+  "beginner friendly": { icon: ICONS.beginner, highlight: true },
+  "drinks included": { icon: ICONS.food, highlight: true },
+  "food included": { icon: ICONS.food, highlight: true },
+  "take-home creation": { icon: ICONS.gift, highlight: true },
+  "small group": { icon: ICONS.intimate, highlight: true },
+  "private group available": { icon: ICONS.team, highlight: true },
+  "date night": { icon: ICONS.love, highlight: true },
+  "family friendly": { icon: ICONS.family, highlight: true },
+  "great for teams": { icon: ICONS.team, highlight: true },
+  "free parking": { icon: ICONS.car, highlight: true },
+  indoor: { icon: ICONS.accessibility, highlight: false },
+  outdoor: { icon: ICONS.handsOn, highlight: false },
+  "wheelchair accessible": { icon: ICONS.accessibility, highlight: true },
+
+  // --- Legacy Mappings (Maintained for compatibility) ---
+  "all materials provided": { icon: ICONS.materials, highlight: true },
+  "hands-on experience": { icon: ICONS.handsOn, highlight: true },
+  "no experience necessary": { icon: ICONS.beginner, highlight: true },
+  "personalized feedback": { icon: ICONS.feedback, highlight: true },
+  "free on-site parking": { icon: ICONS.car, highlight: true },
+  "date night special": { icon: ICONS.love, highlight: true },
+  "great for team-building": { icon: ICONS.team, highlight: true },
+  "family-friendly (all ages)": { icon: ICONS.family, highlight: true },
+  "intimate class setting": { icon: ICONS.intimate, highlight: false },
+  "suitable for all levels": { icon: ICONS.beginner, highlight: false },
+  "certificate of completion": { icon: ICONS.certificate, highlight: false },
+  "refreshments included": { icon: ICONS.food, highlight: false },
+  "flexible booking": { icon: ICONS.time, highlight: false },
+  "in-class materials for purchase": { icon: ICONS.shopping, highlight: false },
+  "wear comfortable clothes": { icon: ICONS.clothing, highlight: false },
+  "bilingual instructor": { icon: ICONS.language, highlight: false },
+
+  // Default fallback
+  default: { icon: ICONS.default, highlight: false },
 };
 
 const FeatureTag = ({ feature, isModal = false, index }) => {
@@ -470,11 +448,13 @@ const ClassOffers = React.memo(({ features }) => {
     ? features.filter((f) => typeof f === "string" && f.trim() !== "")
     : [];
   if (validFeatures.length === 0) {
-    return null; // Don't render the section if there are no features
+    return null; // Don't render if no features
   }
 
   const visibleFeatures = validFeatures.slice(0, 6);
   const hasMoreFeatures = validFeatures.length > 6;
+
+  // Split features into Highlighted vs Others for the modal
   const highlightedFeatures = validFeatures.filter(
     (f) =>
       (featureIcons[f.toLowerCase().trim()] || featureIcons["default"])
@@ -495,7 +475,7 @@ const ClassOffers = React.memo(({ features }) => {
     >
       <Title id="class-offers-title">
         <AwardIcon size={24} aria-hidden="true" />
-        What this class offers
+        What this experience offers
       </Title>
       <TagsGrid role="list">
         <AnimatePresence>
@@ -518,13 +498,13 @@ const ClassOffers = React.memo(({ features }) => {
         </ShowAllButton>
       )}
       <StyledModal
-        title={`What this place offers`}
+        title={`What this experience offers`}
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
         width={800}
         centered
-        aria-label="All class features and amenities"
+        aria-label="All experience features and amenities"
       >
         {highlightedFeatures.length > 0 && (
           <ModalSection>

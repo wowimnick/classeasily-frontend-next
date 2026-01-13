@@ -889,15 +889,22 @@ const PopularClassesSkeletonList = () => (
     {[...Array(5)].map((_, i) => (
       <React.Fragment key={i}>
         <ListItemSkeletonWrapper>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1 }}>
-             <SkeletonBase $width="24px" $height="18px" $borderRadius="6px" />
-             <SkeletonBase $width="70%" $height="14px" />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              flex: 1,
+            }}
+          >
+            <SkeletonBase $width="24px" $height="18px" $borderRadius="6px" />
+            <SkeletonBase $width="70%" $height="14px" />
           </div>
           <RightContent>
-             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-               <SkeletonBase $width="14px" $height="14px" $borderRadius="4px" />
-               <SkeletonBase $width="20px" $height="14px" />
-             </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <SkeletonBase $width="14px" $height="14px" $borderRadius="4px" />
+              <SkeletonBase $width="20px" $height="14px" />
+            </div>
           </RightContent>
         </ListItemSkeletonWrapper>
         {i < 4 && <Divider style={{ margin: "0" }} />}
@@ -911,7 +918,14 @@ const RecentActivitySkeletonList = () => (
     {[...Array(4)].map((_, i) => (
       <React.Fragment key={i}>
         <ListItemSkeletonWrapper style={{ padding: "16px 0" }}>
-          <div style={{ display: "flex", gap: "12px", flex: 1, alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              flex: 1,
+              alignItems: "center",
+            }}
+          >
             <SkeletonBase $width="36px" $height="36px" $borderRadius="8px" />
             <SkeletonBase $width="75%" $height="14px" />
           </div>
@@ -1654,7 +1668,10 @@ const Overview = forwardRef((props, ref) => {
                               editingScheduleId === cls.schedule_instance_id
                             }
                             disabled={isCourseSession}
-                            key={`btn-${editingScheduleId === cls.schedule_instance_id}`} />
+                            key={`btn-${
+                              editingScheduleId === cls.schedule_instance_id
+                            }`}
+                          />
                         );
                         if (isCourseSession) {
                           return (
@@ -1788,7 +1805,7 @@ const Overview = forwardRef((props, ref) => {
                             No enrollment data yet
                           </EmptyStateText>
                           <EmptyStateSubtext>
-                            Popular classes will be displayed once students
+                            Popular experiences will be displayed once guests
                             start enrolling
                           </EmptyStateSubtext>
                         </EmptyStateContainer>
@@ -1796,7 +1813,7 @@ const Overview = forwardRef((props, ref) => {
                     }}
                     renderItem={(cls, index) => {
                       const EditButtonComponent = () => (
-                        <Link href={`/business/dashboard/classes`}>
+                        <Link href={`/business/dashboard/listings`}>
                           <Button
                             type="text"
                             size="small"

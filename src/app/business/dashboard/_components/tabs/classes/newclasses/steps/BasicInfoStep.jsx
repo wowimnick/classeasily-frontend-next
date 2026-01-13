@@ -16,10 +16,11 @@ import {
   Star,
   X,
   ImagePlus,
-  BookOpen,
+  Sparkles,
   Info,
   Building2,
   Hash,
+  Tent,
 } from "lucide-react";
 import heic2any from "heic2any";
 import { motion } from "framer-motion";
@@ -29,17 +30,16 @@ import { businessClassService } from "@/services/apiService";
 import debounce from "lodash/debounce";
 
 const { Option } = Select;
-const { TextArea } = Input;
 const { Title, Text } = Typography;
 const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
-  "image/jpg", // Some browsers use this
+  "image/jpg",
   "image/png",
   "image/webp",
   "image/heic",
   "image/heif",
   "image/avif",
-  "", // Empty string for cases where MIME type isn't detected
+  "",
 ];
 const MAX_IMAGE_SIZE_MB = 30;
 const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
@@ -182,8 +182,6 @@ const StyledSelect = styled(Select)`
       font-size: 16px !important;
     }
   }
-
-  /* Mobile: Ensure search input is 16px */
   @media (max-width: 768px) {
     .ant-select-selection-search-input {
       font-size: 16px !important;
@@ -250,14 +248,11 @@ const StyledTagsSelect = styled(Select)`
       font-size: 16px !important;
     }
   }
-
-  /* Mobile: Ensure search input for tags is 16px */
   @media (max-width: 768px) {
     .ant-select-selection-search-input {
       font-size: 16px !important;
     }
   }
-
   &.ant-select-focused .ant-select-selector {
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}20 !important;
   }
@@ -265,6 +260,7 @@ const StyledTagsSelect = styled(Select)`
     border-color: ${(props) => props.theme.token.colorPrimary} !important;
   }
 `;
+
 const ImageUploadSection = styled(motion.div)`
   padding: 0 0 0.5rem 0;
   border-radius: 12px;
@@ -365,52 +361,40 @@ const CoverBadge = styled.div`
 `;
 
 const presetFeatures = [
-  // --- Class Experience & Value ---
-  { value: "All Materials Provided", label: "All Materials Provided" },
-  { value: "Hands-On Experience", label: "Hands-On Experience" },
+  // --- Essentials ---
+  { value: "All Supplies Included", label: "All Supplies Included" },
+  { value: "Beginner Friendly", label: "Beginner Friendly" },
+  { value: "Drinks Included", label: "Drinks Included" },
+  { value: "Food Included", label: "Food Included" },
   { value: "Take-Home Creation", label: "Take-Home Creation" },
-  { value: "Personalized Feedback", label: "Personalized Feedback" },
-  { value: "Certificate of Completion", label: "Certificate of Completion" },
 
-  // --- Skill & Level ---
-  { value: "No Experience Necessary", label: "No Experience Necessary" },
-  { value: "Suitable for All Levels", label: "Suitable for All Levels" },
+  // --- Vibe & Audience ---
+  { value: "Small Group", label: "Small Group" },
+  { value: "Private Group Available", label: "Private Group Available" },
+  { value: "Date Night", label: "Date Night" },
+  { value: "Family Friendly", label: "Family Friendly" },
+  { value: "Great for Teams", label: "Great for Teams" },
 
-  // --- Audience & Occasion ---
-  { value: "Date Night Special", label: "Date Night Special" },
-  { value: "Great for Team-Building", label: "Great for Team-Building" },
-  { value: "Family-Friendly (All Ages)", label: "Family-Friendly (All Ages)" },
-
-  // --- Logistics & Amenities ---
-  { value: "Intimate Class Setting", label: "Intimate Class Setting" },
-  { value: "Free On-Site Parking", label: "Free On-Site Parking" },
+  // --- Logistics ---
+  { value: "Free Parking", label: "Free Parking" },
+  { value: "Indoor", label: "Indoor" },
+  { value: "Outdoor", label: "Outdoor" },
   { value: "Wheelchair Accessible", label: "Wheelchair Accessible" },
-  { value: "Refreshments Included", label: "Refreshments Included" },
-  { value: "Flexible Booking", label: "Flexible Booking" },
-  { value: "Wear Comfortable Clothes", label: "Wear Comfortable Clothes" },
-  { value: "Bilingual Instructor", label: "Bilingual Instructor" },
-
-  // --- Pricing & Post-Class ---
-  {
-    value: "In-Class Materials for Purchase",
-    label: "In-Class Materials for Purchase",
-  },
 ];
 
-// Sub-component to robustly handle subcategory rendering
 const SubcategorySelect = ({ form, categoryOptions, loadingCategories }) => {
   const categoryValue = Form.useWatch("category", form);
 
   return (
     <FormGroup>
       <FormLabel>
-        <Building2 size={16} />
+        <Hash size={16} />
         Subcategory
       </FormLabel>
       <HelpText>
         <Info size={14} />
-        Select a specific subcategory to help students find exactly what they're
-        looking for.
+        Select a specific tag to help guests find exactly what they're looking
+        for.
       </HelpText>
       <Form.Item
         name="subcategory"
@@ -485,7 +469,6 @@ const BasicInfoStep = ({ onValidatedNext }) => {
     fetchCategories();
   }, []);
 
-  // Re-introduced for auto-saving
   const handleFieldsChange = (changedFields, allFields) => {
     if (isFormInitialized.current) {
       debouncedUpdateBasicInfo(form.getFieldsValue());
@@ -510,7 +493,6 @@ const BasicInfoStep = ({ onValidatedNext }) => {
 
       conversionPromise
         .then((blobToProcess) => {
-          // Handle the result from heic2any (could be Blob or File)
           const processedFile =
             blobToProcess instanceof File
               ? blobToProcess
@@ -520,7 +502,6 @@ const BasicInfoStep = ({ onValidatedNext }) => {
                   { type: "image/jpeg" }
                 );
 
-          // Now load the converted/original image
           const img = new Image();
           const objectUrl = URL.createObjectURL(processedFile);
 
@@ -531,7 +512,6 @@ const BasicInfoStep = ({ onValidatedNext }) => {
 
             let { width, height } = img;
 
-            // Calculate new dimensions if resizing is needed
             if (width > MAX_WIDTH) {
               height = Math.round((height * MAX_WIDTH) / width);
               width = MAX_WIDTH;
@@ -541,29 +521,24 @@ const BasicInfoStep = ({ onValidatedNext }) => {
               height = MAX_HEIGHT;
             }
 
-            // Create canvas and resize if necessary
             const canvas = document.createElement("canvas");
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext("2d");
             ctx.drawImage(img, 0, 0, width, height);
 
-            // Clean up object URL
             URL.revokeObjectURL(objectUrl);
 
-            // Convert canvas to blob
             canvas.toBlob(
               (blob) => {
                 if (!blob) {
                   reject(new Error("Image processing failed"));
                   return;
                 }
-
                 const finalFile = new File([blob], processedFile.name, {
                   type: "image/jpeg",
                   lastModified: Date.now(),
                 });
-
                 resolve(finalFile);
               },
               "image/jpeg",
@@ -576,8 +551,6 @@ const BasicInfoStep = ({ onValidatedNext }) => {
             URL.revokeObjectURL(objectUrl);
             reject(new Error(`Failed to load image: ${file.name}`));
           };
-
-          // Set the source after setting up event handlers
           img.src = objectUrl;
         })
         .catch((err) => {
@@ -590,7 +563,6 @@ const BasicInfoStep = ({ onValidatedNext }) => {
   };
 
   const validateFile = (file) => {
-    // Check file extension for HEIC files since browsers might not detect MIME type correctly
     const fileExtension = file.name.toLowerCase().split(".").pop();
     const allowedExtensions = [
       "jpg",
@@ -602,28 +574,13 @@ const BasicInfoStep = ({ onValidatedNext }) => {
       "avif",
     ];
 
-    // Check both MIME type and file extension
     const isValidType =
       ALLOWED_IMAGE_TYPES.includes(file.type) ||
       allowedExtensions.includes(fileExtension);
 
     if (!isValidType) {
-      // Create a user-friendly, dynamic list of allowed formats.
-      const friendlyFormatNames = [
-        "JPEG",
-        "PNG",
-        "WEBP",
-        "HEIC",
-        "HEIF",
-        "AVIF",
-      ];
-
       message.error(
-        `Invalid file type: ${
-          file.name
-        }. Please upload one of the following: ${friendlyFormatNames.join(
-          ", "
-        )}.`
+        `Invalid file type: ${file.name}. Please upload JPEG, PNG, or WEBP.`
       );
       return false;
     }
@@ -634,9 +591,9 @@ const BasicInfoStep = ({ onValidatedNext }) => {
       );
       return false;
     }
-
     return true;
   };
+
   const handleImageUpload = useCallback(
     async (selectedFiles) => {
       if (selectedFiles.length === 0) return;
@@ -681,7 +638,6 @@ const BasicInfoStep = ({ onValidatedNext }) => {
         const currentImages = state.basicInfo?.images || [];
         let updatedImages = [...currentImages, ...successfullyProcessedImages];
 
-        // Ensure there is always a cover image if images exist
         if (
           !updatedImages.some((img) => img.isCover) &&
           updatedImages.length > 0
@@ -690,7 +646,6 @@ const BasicInfoStep = ({ onValidatedNext }) => {
         }
 
         const currentFormValues = form.getFieldsValue();
-
         debouncedUpdateBasicInfo({
           ...currentFormValues,
           images: updatedImages.slice(0, 10),
@@ -699,6 +654,7 @@ const BasicInfoStep = ({ onValidatedNext }) => {
     },
     [state.basicInfo?.images, debouncedUpdateBasicInfo, images.length, form]
   );
+
   const debouncedProcessBatch = useCallback(
     debounce((files) => {
       handleImageUpload(files);
@@ -739,22 +695,20 @@ const BasicInfoStep = ({ onValidatedNext }) => {
   };
 
   const handleSubmit = (values) => {
-    // 1. Update the global context immediately (non-debounced)
     updateBasicInfo({ ...values, images });
-    // 2. Signal to the parent to proceed
     onValidatedNext();
   };
 
   const descriptionTooltipContent = (
     <div style={{ maxWidth: "300px" }}>
-      <strong>Make your description engaging:</strong>
+      <strong>Make it engaging:</strong>
       <ul
         style={{ paddingLeft: "20px", margin: "5px 0 0 0", fontSize: "12px" }}
       >
-        <li>What will students learn or achieve?</li>
-        <li>Describe your teaching style/atmosphere.</li>
-        <li>Mention unique aspects or benefits.</li>
-        <li>Include relevant keywords.</li>
+        <li>What will guests do?</li>
+        <li>Is there a specific vibe or atmosphere?</li>
+        <li>What makes this experience unique?</li>
+        <li>Who is your host (you)?</li>
       </ul>
     </div>
   );
@@ -762,10 +716,10 @@ const BasicInfoStep = ({ onValidatedNext }) => {
   return (
     <ConfigProvider theme={theme}>
       <StepHeader>
-        <StepTitle level={2}>Class Information</StepTitle>
+        <StepTitle level={2}>The Experience</StepTitle>
         <StepDescription>
-          Tell us about your class. These core details help students find and
-          understand your workshop.
+          Showcase what makes your experience unique. Great photos and a
+          compelling story help guests imagine themselves there.
         </StepDescription>
       </StepHeader>
 
@@ -773,7 +727,7 @@ const BasicInfoStep = ({ onValidatedNext }) => {
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
-        onFieldsChange={handleFieldsChange} // Restored for auto-saving
+        onFieldsChange={handleFieldsChange}
         id="step-0-form"
         preserve={true}
       >
@@ -784,25 +738,25 @@ const BasicInfoStep = ({ onValidatedNext }) => {
         >
           <FormGroup>
             <FormLabel>
-              <BookOpen size={16} />
-              Class Title
+              <Sparkles size={16} />
+              Experience Title
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              Create a clear, descriptive title that tells students exactly what
-              you're teaching.
+              Catchy and descriptive. e.g., "Secret Jazz Club & Cocktails" or
+              "Sunset Kayak Tour".
             </HelpText>
             <Form.Item
               name="title"
               rules={[
-                { required: true, message: "Please enter a class title" },
+                { required: true, message: "Please enter a title" },
                 { min: 5, message: "Title must be at least 5 characters" },
                 { max: 100, message: "Title cannot exceed 100 characters" },
               ]}
             >
               <StyledInput
                 width={true}
-                placeholder="e.g., Introduction to Pottery Wheel Throwing"
+                placeholder="e.g., Hidden Street Art Walk"
                 size="large"
               />
             </Form.Item>
@@ -811,7 +765,7 @@ const BasicInfoStep = ({ onValidatedNext }) => {
           <FormGroup>
             <FormLabel>
               {" "}
-              <BookOpen size={16} /> Class Description{" "}
+              <Tent size={16} /> What you'll do (Description){" "}
               <Tooltip title={descriptionTooltipContent} placement="topRight">
                 {" "}
                 <Info
@@ -822,14 +776,13 @@ const BasicInfoStep = ({ onValidatedNext }) => {
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              Describe what students will learn, your teaching approach, and
-              what makes your class special. Detailed descriptions help guests
-              understand what to expect and improve discoverability.
+              Describe the itinerary, the atmosphere, and what's included. Help
+              guests understand why they should book this experience.
             </HelpText>
             <Form.Item
               name="description"
               rules={[
-                { required: true, message: "Please enter a class description" },
+                { required: true, message: "Please enter a description" },
                 {
                   min: 100,
                   message: "Description must be at least 100 characters",
@@ -841,7 +794,7 @@ const BasicInfoStep = ({ onValidatedNext }) => {
               ]}
             >
               <StyledTextArea
-                placeholder="Tell students about what they'll learn, your teaching style, and what makes this class unique..."
+                placeholder="We'll meet at... Then we'll explore..."
                 maxLength={4000}
                 showCount
                 autoSize={{ minRows: 4, maxRows: 6 }}
@@ -854,7 +807,7 @@ const BasicInfoStep = ({ onValidatedNext }) => {
           {" "}
           <span>
             <ImagePlus size={16} />
-            Class Photos
+            Gallery
           </span>{" "}
         </SectionDivider>
 
@@ -866,13 +819,12 @@ const BasicInfoStep = ({ onValidatedNext }) => {
           <FormGroup>
             <FormLabel>
               <ImagePlus size={16} />
-              Class Images (2-10 photos required)
+              Photos (2-10 required)
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              Upload high-quality photos that showcase your class environment,
-              materials, and student work. More photos help guests visualize the
-              experience and stand out in search.
+              High-quality photos are the #1 way to get bookings. Show people
+              having fun, the environment, and details.
             </HelpText>
             <Form.Item
               name="class_photos_validation"
@@ -899,12 +851,7 @@ const BasicInfoStep = ({ onValidatedNext }) => {
                 <ImageGrid>
                   {images.map((image) => (
                     <ImageCard key={image.id} $isCover={image.isCover}>
-                      <ImagePreview
-                        src={image.url}
-                        alt={`Class image ${
-                          image.file ? image.file.name : image.id
-                        }`}
-                      />
+                      <ImagePreview src={image.url} alt={`Experience image`} />
                       <ImageActions>
                         {!image.isCover && (
                           <Tooltip title="Set as cover">
@@ -950,10 +897,7 @@ const BasicInfoStep = ({ onValidatedNext }) => {
                           Add Photos
                         </span>
                         <span style={{ fontSize: "12px", color: "#64748b" }}>
-                          Drag, drop, or click
-                        </span>
-                        <span style={{ fontSize: "11px", color: "#94a3b8" }}>
-                          up to {10 - images.length} more
+                          Drag or click
                         </span>
                       </ImageCard>
                     </StyledDragger>
@@ -968,7 +912,7 @@ const BasicInfoStep = ({ onValidatedNext }) => {
           {" "}
           <span>
             <Building2 size={16} />
-            Categorization & Features
+            Categories & Tags
           </span>{" "}
         </SectionDivider>
 
@@ -980,18 +924,18 @@ const BasicInfoStep = ({ onValidatedNext }) => {
           <FormGroup>
             <FormLabel>
               <Building2 size={16} />
-              Main Category
+              Primary Category
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              Choose the primary subject area that best describes your class.
+              What type of experience is this?
             </HelpText>
             <Form.Item
               name="category"
               rules={[{ required: true, message: "Please select a category" }]}
             >
               <StyledSelect
-                placeholder="Select the main category"
+                placeholder="Select category"
                 allowClear
                 onChange={handleCategoryChange}
                 loading={loadingCategories}
@@ -1006,7 +950,6 @@ const BasicInfoStep = ({ onValidatedNext }) => {
             </Form.Item>
           </FormGroup>
 
-          {/* Using the robust sub-component */}
           <SubcategorySelect
             form={form}
             categoryOptions={categoryOptions}
@@ -1016,12 +959,12 @@ const BasicInfoStep = ({ onValidatedNext }) => {
           <FormGroup>
             <FormLabel>
               <Hash size={16} />
-              Class Features
+              Features & Highlights
             </FormLabel>
             <HelpText>
               <Info size={14} />
-              Select from our curated list of features that highlight the value
-              of your class. You can also type to add your own.
+              What's included? What's the vibe? Select matching tags or add your
+              own.
             </HelpText>
             <Form.Item
               name="features"
@@ -1035,7 +978,7 @@ const BasicInfoStep = ({ onValidatedNext }) => {
               <StyledTagsSelect
                 mode="tags"
                 style={{ width: "100%" }}
-                placeholder="Select features or type custom ones"
+                placeholder="Select tags..."
                 tokenSeparators={[","]}
                 size="large"
                 options={presetFeatures}

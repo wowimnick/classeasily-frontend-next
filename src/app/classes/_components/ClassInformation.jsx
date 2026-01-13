@@ -3,13 +3,7 @@
 import React, { useState, useRef, useLayoutEffect } from "react";
 import styled, { keyframes } from "styled-components";
 import { Button, Typography, Tooltip, Divider } from "antd";
-import {
-  Star,
-  Award,
-  User,
-  Heart,
-  Share2,
-} from "lucide-react";
+import { Star, Award, User, Heart, Share2 } from "lucide-react";
 import { LordIcon } from "@/services/ReactUtils";
 
 const { Paragraph, Title } = Typography;
@@ -394,7 +388,7 @@ const BusinessInfo = styled.button`
   text-align: left;
   margin-left: -0.75rem;
   width: calc(100% + 1.5rem);
-  
+
   &:hover:not(:disabled) {
     background-color: #f5f5f5;
   }
@@ -503,13 +497,13 @@ const CategoryPill = styled.div`
   background: #fdfdfd;
   border: 1px solid #e8e8e8;
   border-radius: 100px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
   transition: all 0.3s ease;
   overflow: visible;
-  
+
   &:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
     border-color: #e0e0e0;
   }
 
@@ -530,11 +524,11 @@ const AnimatedIconWrapper = styled.div`
   /* will-change and backface-visibility prevents the snap/flicker at end of animation */
   will-change: transform;
   backface-visibility: hidden;
-  
+
   /* Slower Duration: 1.4s */
   animation: ${popAndSettle} 1.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
   animation-delay: ${(props) => props.$delay || "0ms"};
-  
+
   lord-icon {
     width: 100%;
     height: 100%;
@@ -551,13 +545,13 @@ const AnimatedTextWrapper = styled.span`
   font-weight: 500;
   color: #333;
   white-space: nowrap;
-  
+
   /* Use fill-mode: both to prevent Flash of Unstyled Content */
   will-change: transform, opacity;
   backface-visibility: hidden;
-  
+
   /* Slower Duration: 1.6s */
-  animation: ${slideReveal} 1.6s cubic-bezier(0.215, 0.610, 0.355, 1.000) both;
+  animation: ${slideReveal} 1.6s cubic-bezier(0.215, 0.61, 0.355, 1) both;
   animation-delay: ${(props) => props.$delay || "0ms"};
 
   @media (max-width: 480px) {
@@ -774,7 +768,6 @@ const ClassInformation = React.memo(
               <BusinessName>Hosted by {displayBusinessName}</BusinessName>
               <BusinessMetaWrapper>
                 <MetaItem>
-                  Class Host
                   {hostingDuration && ` · ${hostingDuration} hosting`}
                 </MetaItem>
 

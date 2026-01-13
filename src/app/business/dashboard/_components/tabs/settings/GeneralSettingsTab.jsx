@@ -1,8 +1,7 @@
-// src/components/businessDashboard/settings/GeneralSettingsTab.jsx
 import React from "react";
 import styled, { ThemeProvider } from "styled-components";
-import { Form, Input, Select, Switch, Button, Upload, Space, InputNumber,  } from 'antd';
-import message from '@/lib/message';
+import { Form, Input, Select, Button, Upload, Space, InputNumber } from "antd";
+import message from "@/lib/message";
 import { InfoCircleOutlined, CalendarOutlined } from "@ant-design/icons";
 import {
   Building,
@@ -16,7 +15,6 @@ import {
   ExternalLink,
   Info,
   ImageIcon,
-  Settings,
 } from "lucide-react";
 import {
   normalizeUrl,
@@ -148,27 +146,6 @@ const StyledTagsSelect = styled(Select)`
 
   &:hover .ant-select-selector {
     border-color: ${(props) => props.theme.token.colorPrimary} !important;
-  }
-`;
-
-const SwitchLabelContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-`;
-const SwitchInfo = styled.div`
-  margin-right: 16px;
-  .title {
-    font-weight: 600;
-    color: #222;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .desc {
-    font-size: 13px;
-    color: #717171;
   }
 `;
 
@@ -338,12 +315,13 @@ const GeneralSettingsTab = ({
                   { required: true, message: "Business type is required" },
                 ]}
               >
+                {/* UPDATED: Options to match backend models.py */}
                 <StyledSelect placeholder="Select business type">
-                  <Option value="individual">Individual Teacher</Option>
-                  <Option value="school">School</Option>
-                  <Option value="studio">Studio</Option>
-                  <Option value="academy">Academy</Option>
-                  <Option value="center">Learning Center</Option>
+                  <Option value="individual">Individual Host</Option>
+                  <Option value="tour-operator">Tour Operator</Option>
+                  <Option value="experience-group">Experience Group</Option>
+                  <Option value="venue">Venue / Studio</Option>
+                  <Option value="event-organizer">Event Organizer</Option>
                 </StyledSelect>
               </Form.Item>
             </FormGroup>

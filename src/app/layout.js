@@ -9,21 +9,21 @@ import "./globals.css";
 export const metadata = {
   metadataBase: new URL("https://classeasily.com"),
   title: {
-    default: "Classeasily - Discover Local Classes & Experiences",
+    default: "Classeasily - Discover Fun Local Experiences",
     template: "%s | Classeasily",
   },
   description:
-    "Explore thousands of local classes and fun experiences. Go out with your friends or family for a memorable experience.",
+    "Discover and book unique local experiences with passionate hosts. Join as a guest for memorable adventures, workshops, and activities with friends or family.",
   keywords: [
-    "classes",
-    "workshops",
     "experiences",
+    "local hosts",
+    "guest activities",
     "fun experiences",
-    "local experiences",
-    "local classes",
-    "art classes",
-    "cooking classes",
-    "fitness classes",
+    "local guides",
+    "workshops",
+    "social events",
+    "hosted activities",
+    "adventures",
     "learn new skills",
   ],
   authors: [{ name: "Classeasily" }],
@@ -35,15 +35,15 @@ export const metadata = {
     telephone: false,
   },
   openGraph: {
-    title: "Classeasily - Discover Local Classes & Experiences",
+    title: "Classeasily - Discover Unique Local Experiences",
     description:
-      "Explore thousands of local classes and fun experiences. Go out with your friends or family for a memorable experience.",
+      "Discover and book unique local experiences with passionate hosts. Join as a guest for memorable adventures, workshops, and activities with friends or family.",
     images: [
       {
         url: "https://i.imgur.com/biTTckW.png",
         width: 1200,
         height: 630,
-        alt: "Classeasily - Discover Local Classes",
+        alt: "Classeasily - Discover Local Experiences",
       },
     ],
     url: "https://classeasily.com",
@@ -53,9 +53,9 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Classeasily - Discover Local Classes & Experiences",
+    title: "Classeasily - Discover Unique Local Experiences",
     description:
-      "Explore thousands of local classes and fun experiences. Go out with your friends or family for a memorable experience.",
+      "Discover and book unique local experiences with passionate hosts. Join as a guest for memorable adventures, workshops, and activities with friends or family.",
     images: ["https://i.imgur.com/biTTckW.png"],
     creator: "@classeasily",
   },

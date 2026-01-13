@@ -28,7 +28,7 @@ class ErrorBoundary extends Component {
             color: "#666",
           }}
         >
-          <h3>Unable to load classes</h3>
+          <h3>Unable to load experiences</h3>
           <p>Please refresh the page or try again later.</p>
           <button
             onClick={() => window.location.reload()}

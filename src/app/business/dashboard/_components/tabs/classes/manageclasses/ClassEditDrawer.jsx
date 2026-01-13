@@ -41,6 +41,11 @@ import {
   Info,
   Clock,
   AlertCircle,
+  Sparkles,
+  Tent,
+  Activity,
+  Backpack,
+  Loader,
 } from "lucide-react";
 import heic2any from "heic2any";
 import { motion } from "framer-motion";
@@ -205,7 +210,7 @@ const StyledTabs = styled(Tabs)`
     .ant-tabs-nav {
       padding: 0 16px;
     }
-    
+
     .ant-tabs-tab {
       padding: 10px 8px !important;
       font-size: 13px;
@@ -216,7 +221,7 @@ const StyledTabs = styled(Tabs)`
 const FormSection = styled(motion.div)`
   margin-bottom: 2rem;
   border-radius: 12px;
-  
+
   @media (max-width: 768px) {
     margin-bottom: 1.5rem;
   }
@@ -320,12 +325,12 @@ const StyledSelect = styled(Select)`
   .ant-select-selection-placeholder {
     line-height: ${(props) => props.theme.token.controlHeight - 2}px !important;
     font-size: ${(props) => props.theme.token.fontSize}px;
-    
+
     @media (max-width: 768px) {
       font-size: 16px !important; /* Prevent Zoom on Mobile */
     }
   }
-  
+
   /* Mobile: Ensure search input is 16px */
   @media (max-width: 768px) {
     .ant-select-selection-search-input {
@@ -368,7 +373,7 @@ const StyledTagsSelect = styled(Select)`
     height: auto !important;
     display: flex;
     align-items: center;
-    
+
     @media (max-width: 768px) {
       font-size: 14px !important; /* Tags can be smaller, but input must be 16px */
     }
@@ -391,7 +396,7 @@ const StyledTagsSelect = styled(Select)`
       props.theme.token.controlHeight - 12}px !important;
     font-size: ${(props) => props.theme.token.fontSize}px;
     color: ${(props) => props.theme.token.colorTextPlaceholder};
-    
+
     @media (max-width: 768px) {
       font-size: 16px !important;
     }
@@ -719,9 +724,21 @@ const LoaderWrapper = styled.div`
   min-height: 300px;
 `;
 
+const LoadingSpinner = styled(Loader)`
+  animation: spin 1s linear infinite;
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
 const TabContentWrapper = styled.div`
   padding: 16px;
-  
+
   @media (max-width: 768px) {
     padding: 12px;
   }
@@ -769,28 +786,30 @@ const MapCenterHandler = ({ center }) => {
   return null;
 };
 
+// Preset features matching creation flow
 const presetFeaturesOptions = [
-  { value: "All Materials Provided", label: "All Materials Provided" },
-  { value: "Hands-On Experience", label: "Hands-On Experience" },
+  // --- Essentials ---
+  { value: "All Supplies Included", label: "All Supplies Included" },
+  { value: "Beginner Friendly", label: "Beginner Friendly" },
+  { value: "Drinks Included", label: "Drinks Included" },
+  { value: "Food Included", label: "Food Included" },
   { value: "Take-Home Creation", label: "Take-Home Creation" },
-  { value: "Personalized Feedback", label: "Personalized Feedback" },
-  { value: "Certificate of Completion", label: "Certificate of Completion" },
-  { value: "No Experience Necessary", label: "No Experience Necessary" },
-  { value: "Suitable for All Levels", label: "Suitable for All Levels" },
-  { value: "Date Night Special", label: "Date Night Special" },
-  { value: "Great for Team-Building", label: "Great for Team-Building" },
-  { value: "Family-Friendly (All Ages)", label: "Family-Friendly (All Ages)" },
-  { value: "Intimate Class Setting", label: "Intimate Class Setting" },
-  { value: "Free On-Site Parking", label: "Free On-Site Parking" },
+
+  // --- Vibe & Audience ---
+  { value: "Small Group", label: "Small Group" },
+  { value: "Private Group Available", label: "Private Group Available" },
+  { value: "Date Night", label: "Date Night" },
+  { value: "Family Friendly", label: "Family Friendly" },
+  { value: "Great for Teams", label: "Great for Teams" },
+
+  // --- Logistics ---
+  { value: "Free Parking", label: "Free Parking" },
+  { value: "Indoor", label: "Indoor" },
+  { value: "Outdoor", label: "Outdoor" },
   { value: "Wheelchair Accessible", label: "Wheelchair Accessible" },
-  { value: "Refreshments Included", label: "Refreshments Included" },
-  { value: "Flexible Booking", label: "Flexible Booking" },
-  { value: "Wear Comfortable Clothes", label: "Wear Comfortable Clothes" },
-  { value: "Bilingual Instructor", label: "Bilingual Instructor" },
-  {
-    value: "In-Class Materials for Purchase",
-    label: "In-Class Materials for Purchase",
-  },
+
+  // --- Legacy Support (Hidden from menu but kept for mapping) ---
+  // { value: "Hands-On Experience", label: "Hands-On Experience" },
 ];
 
 const ClassEditDrawer = ({
@@ -1234,7 +1253,7 @@ const ClassEditDrawer = ({
     );
   };
 
-const handleSubmit = async () => {
+  const handleSubmit = async () => {
     try {
       setLoading(true);
       const values = await form.validateFields();
@@ -1307,21 +1326,20 @@ const handleSubmit = async () => {
         }
       }
 
-      // 5. Prepare Options Data (CRITICAL FIXES HERE)
+      // 5. Prepare Options Data
       const originalOption = initialClassDataRef.current?.options?.[0] || {};
       const isCourse = originalOption.booking_type === "Full Course";
 
       const optionData = {
         optionId: originalOption.optionId,
-        
-        // FIX: Use original booking_type. Do NOT read from form values which might be undefined.
+
         booking_type: originalOption.booking_type,
         price_type: isCourse ? "full_course" : "per_session",
 
         level: values.level,
         equipment: values.equipment || [],
         tags: values.tags || [],
-        
+
         // Standard Policy
         cancellationPolicy: values.cancellationPolicy,
         cancellationCustomHours:
@@ -1331,23 +1349,29 @@ const handleSubmit = async () => {
         cancellationRefundPercentage:
           values.cancellationRefundPercentage ?? 100,
 
-        // Mid-Course Drop Policy (Only if it is a course)
-        allowMidCourseDrops: isCourse ? (values.allowMidCourseDrops || false) : false,
-        
-        midCourseCancellationPolicy: (isCourse && values.allowMidCourseDrops)
-          ? values.midCourseCancellationPolicy
-          : null,
-          
-        midCourseCancellationCustomHours:
-          (isCourse && values.allowMidCourseDrops && values.midCourseCancellationPolicy === "custom")
-            ? values.midCourseCancellationCustomHours // Corrected field mapping
+        // Mid-Course Drop Policy
+        allowMidCourseDrops: isCourse
+          ? values.allowMidCourseDrops || false
+          : false,
+
+        midCourseCancellationPolicy:
+          isCourse && values.allowMidCourseDrops
+            ? values.midCourseCancellationPolicy
             : null,
-            
-        midCourseCancellationRefundPercentage: (isCourse && values.allowMidCourseDrops)
-          ? (values.midCourseCancellationRefundPercentage ?? 100) // Corrected field mapping
-          : null,
+
+        midCourseCancellationCustomHours:
+          isCourse &&
+          values.allowMidCourseDrops &&
+          values.midCourseCancellationPolicy === "custom"
+            ? values.midCourseCancellationCustomHours
+            : null,
+
+        midCourseCancellationRefundPercentage:
+          isCourse && values.allowMidCourseDrops
+            ? values.midCourseCancellationRefundPercentage ?? 100
+            : null,
       };
-      
+
       payload.options = JSON.stringify([optionData]);
 
       // 6. Send Update
@@ -1364,7 +1388,7 @@ const handleSubmit = async () => {
           result.error ||
           result.errors ||
           result.message ||
-          "Failed to update class.";
+          "Failed to update experience.";
         if (typeof errorDetail === "object") {
           Object.entries(errorDetail).forEach(([field, errors]) => {
             message.error(
@@ -1406,7 +1430,7 @@ const handleSubmit = async () => {
             "cancellationPolicy",
             "cancellationRefundPercentage",
             "midCourseCancellationPolicy",
-            "midCourseCancellationRefundPercentage"
+            "midCourseCancellationRefundPercentage",
           ].includes(firstErrorField)
         ) {
           setActiveTab("3");
@@ -1425,10 +1449,10 @@ const handleSubmit = async () => {
       <ul
         style={{ paddingLeft: "20px", margin: "5px 0 0 0", fontSize: "12px" }}
       >
-        <li>What will students learn or achieve?</li>
-        <li>Describe your teaching style/atmosphere.</li>
-        <li>Mention unique aspects or benefits.</li>
-        <li>Include relevant keywords.</li>
+        <li>What will guests do?</li>
+        <li>Is there a specific vibe or atmosphere?</li>
+        <li>What makes this experience unique?</li>
+        <li>Who is your host (you)?</li>
       </ul>
     </div>
   );
@@ -1436,7 +1460,7 @@ const handleSubmit = async () => {
   const renderDrawerContent = () => (
     <>
       <DrawerHeader>
-        <DrawerTitle level={4}>Edit Class</DrawerTitle>
+        <DrawerTitle level={4}>Edit Experience</DrawerTitle>
         <CloseButton
           icon={<X size={20} />}
           onClick={onClose}
@@ -1462,20 +1486,20 @@ const handleSubmit = async () => {
                       <FormSection>
                         <FormGroup>
                           <FormLabel htmlFor="edit_class_title">
-                            <BookOpen size={16} />
-                            Class Title
+                            <Sparkles size={16} />
+                            Experience Title
                           </FormLabel>
                           <HelpText>
                             <Info size={14} />
-                            Create a clear, descriptive title that tells students
-                            exactly what you're teaching.
+                            Catchy and descriptive. e.g., "Secret Jazz Club &
+                            Cocktails".
                           </HelpText>
                           <FormItemAntd
                             name="title"
                             rules={[
                               {
                                 required: true,
-                                message: "Please enter a class title",
+                                message: "Please enter a title",
                               },
                               {
                                 min: 5,
@@ -1489,14 +1513,14 @@ const handleSubmit = async () => {
                           >
                             <StyledInput
                               id="edit_class_title"
-                              placeholder="e.g., Introduction to Classical Piano"
+                              placeholder="e.g., Hidden Street Art Walk"
                             />
                           </FormItemAntd>
                         </FormGroup>
                         <FormGroup>
                           <FormLabel htmlFor="edit_class_description">
-                            <BookOpen size={16} />
-                            Class Description
+                            <Tent size={16} />
+                            What you'll do (Description)
                             <Tooltip
                               title={descriptionTooltipContent}
                               placement="topRight"
@@ -1514,17 +1538,15 @@ const handleSubmit = async () => {
                           </FormLabel>
                           <HelpText>
                             <Info size={14} />
-                            Describe what students will learn, your teaching approach,
-                            and what makes your class special. Detailed descriptions
-                            help guests understand what to expect and improve
-                            discoverability.
+                            Describe the itinerary, the atmosphere, and what's
+                            included.
                           </HelpText>
                           <FormItemAntd
                             name="description"
                             rules={[
                               {
                                 required: true,
-                                message: "Please enter a class description",
+                                message: "Please enter a description",
                               },
                               {
                                 min: 100,
@@ -1533,14 +1555,15 @@ const handleSubmit = async () => {
                               },
                               {
                                 max: 4000,
-                                message: "Description cannot exceed 4000 characters",
+                                message:
+                                  "Description cannot exceed 4000 characters",
                               },
                             ]}
                           >
                             <StyledTextArea
                               id="edit_class_description"
                               rows={5}
-                              placeholder="Tell students about what they'll learn..."
+                              placeholder="We'll meet at... Then we'll explore..."
                               showCount
                               maxLength={4000}
                             />
@@ -1549,21 +1572,20 @@ const handleSubmit = async () => {
                       </FormSection>
                       <SectionDivider>
                         <span>
-                          <ImageIcon size={16} />
-                          Class Photos
+                          <ImagePlus size={16} />
+                          Gallery
                         </span>
                       </SectionDivider>
                       <FormSection>
                         <FormGroup>
                           <FormLabel>
-                            <ImageIcon size={16} />
-                            Class Images (2-10 photos required)
+                            <ImagePlus size={16} />
+                            Photos (2-10 required)
                           </FormLabel>
                           <HelpText>
                             <Info size={14} />
-                            Drag & drop or click to upload high-quality photos that
-                            showcase your class. More photos help guests visualize the
-                            experience and stand out in search.
+                            Show people having fun, the environment, and
+                            details.
                           </HelpText>
                           <FormItemAntd
                             name="class_photos_validation_edit"
@@ -1572,7 +1594,9 @@ const handleSubmit = async () => {
                                 validator: async () => {
                                   if (!mainImages || mainImages.length < 2)
                                     return Promise.reject(
-                                      new Error("Please upload at least 2 images.")
+                                      new Error(
+                                        "Please upload at least 2 images."
+                                      )
                                     );
                                   if (mainImages.length > 10)
                                     return Promise.reject(
@@ -1591,31 +1615,39 @@ const handleSubmit = async () => {
                             ]}
                             dependencies={[
                               mainImages
-                                .map((img) => `${img.id}-${img.isCover}-${img.url}`)
+                                .map(
+                                  (img) => `${img.id}-${img.isCover}-${img.url}`
+                                )
                                 .join(","),
                             ]}
                           >
                             <ImageUploadSection>
                               <ImageGrid>
                                 {mainImages.map((image) => (
-                                  <ImageCard key={image.id} $isCover={image.isCover}>
+                                  <ImageCard
+                                    key={image.id}
+                                    $isCover={image.isCover}
+                                  >
                                     <ImagePreview
                                       src={image.url}
-                                      alt={image.name || "Class image"}
+                                      alt={image.name || "Experience image"}
                                     />
                                     <ImageActions>
-                                      {!image.isCover && mainImages.length > 0 && (
-                                        <Tooltip title="Set as cover">
-                                          <ActionButton
-                                            type="button"
-                                            onClick={() =>
-                                              handleSetCoverMainImage(image.id)
-                                            }
-                                          >
-                                            <Star />
-                                          </ActionButton>
-                                        </Tooltip>
-                                      )}
+                                      {!image.isCover &&
+                                        mainImages.length > 0 && (
+                                          <Tooltip title="Set as cover">
+                                            <ActionButton
+                                              type="button"
+                                              onClick={() =>
+                                                handleSetCoverMainImage(
+                                                  image.id
+                                                )
+                                              }
+                                            >
+                                              <Star />
+                                            </ActionButton>
+                                          </Tooltip>
+                                        )}
                                       <Tooltip title="Remove image">
                                         <ActionButton
                                           type="button"
@@ -1660,14 +1692,6 @@ const handleSubmit = async () => {
                                       >
                                         Drag or click
                                       </span>
-                                      <span
-                                        style={{
-                                          fontSize: "11px",
-                                          color: "#94a3b8",
-                                        }}
-                                      >
-                                        up to {10 - mainImages.length} more
-                                      </span>
                                     </ImageCard>
                                   </StyledDragger>
                                 )}
@@ -1679,7 +1703,7 @@ const handleSubmit = async () => {
                       <SectionDivider>
                         <span>
                           <Building2 size={16} />
-                          Category & Features
+                          Category & Tags
                         </span>
                       </SectionDivider>
                       <FormSection>
@@ -1687,12 +1711,11 @@ const handleSubmit = async () => {
                           <FormGroup>
                             <FormLabel htmlFor="edit_class_category">
                               <Building2 size={16} />
-                              Main Category
+                              Primary Category
                             </FormLabel>
                             <HelpText>
                               <Info size={14} />
-                              Choose the primary subject area that best describes your
-                              class.
+                              What type of experience is this?
                             </HelpText>
                             <FormItemAntd
                               name="category_key"
@@ -1705,7 +1728,7 @@ const handleSubmit = async () => {
                             >
                               <StyledSelect
                                 id="edit_class_category"
-                                placeholder="Select the main category"
+                                placeholder="Select category"
                                 allowClear
                                 loading={categories.length === 0 && dataLoading}
                               >
@@ -1719,13 +1742,12 @@ const handleSubmit = async () => {
                           </FormGroup>
                           <FormGroup>
                             <FormLabel htmlFor="edit_class_subcategory">
-                              <Building2 size={16} />
+                              <Hash size={16} />
                               Subcategory
                             </FormLabel>
                             <HelpText>
                               <Info size={14} />
-                              Select a specific subcategory to help students find
-                              exactly what they're looking for.
+                              Select a specific tag for guests.
                             </HelpText>
                             <FormItemAntd
                               name="subcategory_key"
@@ -1759,12 +1781,11 @@ const handleSubmit = async () => {
                         <FormGroup>
                           <FormLabel htmlFor="edit_class_features">
                             <Hash size={16} />
-                            Class Features
+                            Features & Highlights
                           </FormLabel>
                           <HelpText>
                             <Info size={14} />
-                            Select or add features that highlight what makes your
-                            class special.
+                            What's included? What's the vibe?
                           </HelpText>
                           <FormItemAntd
                             name="features"
@@ -1779,7 +1800,7 @@ const handleSubmit = async () => {
                               id="edit_class_features"
                               mode="tags"
                               style={{ width: "100%" }}
-                              placeholder="Select or type custom features"
+                              placeholder="Select tags..."
                               tokenSeparators={[","]}
                               options={presetFeaturesOptions}
                               maxTagCount="responsive"
@@ -1800,11 +1821,11 @@ const handleSubmit = async () => {
                           <FormGroup>
                             <FormLabel htmlFor="edit_location_search_input_display_only">
                               <Search size={16} />
-                              Class Location Search
+                              Meeting Point Search
                             </FormLabel>
                             <HelpText>
                               <Info size={14} />
-                              Search for the main address or building.
+                              Address, landmark, or meeting spot.
                             </HelpText>
                             <SearchWrapper>
                               <FormItemAntd
@@ -1841,9 +1862,12 @@ const handleSubmit = async () => {
                               <StyledInput
                                 id="edit_location_search_input_display_only"
                                 prefix={
-                                  <Search size={16} style={{ color: "#adb5bd" }} />
+                                  <Search
+                                    size={16}
+                                    style={{ color: "#adb5bd" }}
+                                  />
                                 }
-                                placeholder="Search for address or place name"
+                                placeholder="Search for address or landmark"
                                 value={mapSearchValue}
                                 onChange={(e) => {
                                   setMapSearchValue(e.target.value);
@@ -1860,7 +1884,9 @@ const handleSubmit = async () => {
                                   {mapSearchResults.map((result, index) => (
                                     <SearchResult
                                       key={index}
-                                      onClick={() => handleMapLocationSelect(result)}
+                                      onClick={() =>
+                                        handleMapLocationSelect(result)
+                                      }
                                     >
                                       <MapPin size={18} />
                                       <ResultContent>
@@ -1877,16 +1903,17 @@ const handleSubmit = async () => {
                           <FormGroup>
                             <FormLabel htmlFor="edit_class_unit_number">
                               <Building2 size={16} />
-                              Apartment, suite, etc. (Optional)
+                              Unit / Suite / Details (Optional)
                             </FormLabel>
                             <HelpText>
-                              <Info size={14} />A specific unit, suite, or apartment
-                              number.
+                              <Info size={14} />
+                              Specific instructions (e.g. "Look for red
+                              umbrella").
                             </HelpText>
                             <FormItemAntd name="unit_number" noStyle>
                               <StyledInput
                                 id="edit_class_unit_number"
-                                placeholder="e.g., Unit B"
+                                placeholder="Optional details..."
                               />
                             </FormItemAntd>
                           </FormGroup>
@@ -1951,8 +1978,8 @@ const handleSubmit = async () => {
                             </MapWrapper>
                             <LocationText>
                               {hideExactLocation
-                                ? `Approximate area shown`
-                                : `Exact location shown`}
+                                ? `Approximate area: ${selectedMapLocation.display_name}`
+                                : `Exact location: ${selectedMapLocation.display_name}`}
                             </LocationText>
                             <FormGroup>
                               <FormLabel>Location Privacy</FormLabel>
@@ -1964,18 +1991,22 @@ const handleSubmit = async () => {
                                 <ToggleButton
                                   type="button"
                                   $selected={!hideExactLocation}
-                                  onClick={() => handleLocationPrivacyToggle("show")}
+                                  onClick={() =>
+                                    handleLocationPrivacyToggle("show")
+                                  }
                                   title="Show precise address"
                                 >
-                                  <Eye size={16} /> Show exact location
+                                  <Eye size={16} /> Show Exact Location
                                 </ToggleButton>
                                 <ToggleButton
                                   type="button"
                                   $selected={hideExactLocation}
-                                  onClick={() => handleLocationPrivacyToggle("hide")}
+                                  onClick={() =>
+                                    handleLocationPrivacyToggle("hide")
+                                  }
                                   title="Show general area"
                                 >
-                                  <EyeOff size={16} /> Hide exact location
+                                  <EyeOff size={16} /> Hide Exact (Show Area)
                                 </ToggleButton>
                               </ToggleGroup>
                             </FormGroup>
@@ -1985,7 +2016,7 @@ const handleSubmit = async () => {
                       <SectionDivider>
                         <span>
                           <Phone size={16} />
-                          Student Contact
+                          Guest Support Contact
                         </span>
                       </SectionDivider>
                       <FormSection>
@@ -1993,11 +2024,11 @@ const handleSubmit = async () => {
                           <FormGroup>
                             <FormLabel htmlFor="edit_studentContactEmail">
                               <Mail size={16} />
-                              Contact Email
+                              Support Email
                             </FormLabel>
                             <HelpText>
                               <Info size={14} />
-                              Email for students to contact you about this class.
+                              Where can guests email you with questions?
                             </HelpText>
                             <FormItemAntd
                               name="studentContactEmail"
@@ -2015,9 +2046,12 @@ const handleSubmit = async () => {
                               <StyledInput
                                 id="edit_studentContactEmail"
                                 prefix={
-                                  <Mail size={16} style={{ color: "#adb5bd" }} />
+                                  <Mail
+                                    size={16}
+                                    style={{ color: "#adb5bd" }}
+                                  />
                                 }
-                                placeholder="you@example.com"
+                                placeholder="help@example.com"
                                 inputMode="email"
                               />
                             </FormItemAntd>
@@ -2025,11 +2059,11 @@ const handleSubmit = async () => {
                           <FormGroup>
                             <FormLabel htmlFor="edit_studentContactPhone">
                               <Phone size={16} />
-                              Contact Phone
+                              Support Phone
                             </FormLabel>
                             <HelpText>
-                              <Info size={14} />
-                              Phone number for students.
+                              <Info size={14} />A number for guests to call or
+                              text.
                             </HelpText>
                             <FormItemAntd
                               name="studentContactPhone"
@@ -2048,7 +2082,10 @@ const handleSubmit = async () => {
                               <StyledInput
                                 id="edit_studentContactPhone"
                                 prefix={
-                                  <Phone size={16} style={{ color: "#adb5bd" }} />
+                                  <Phone
+                                    size={16}
+                                    style={{ color: "#adb5bd" }}
+                                  />
                                 }
                                 placeholder="+1 555-123-4567"
                                 inputMode="tel"
@@ -2074,12 +2111,12 @@ const handleSubmit = async () => {
                         </FormItemAntd>
                         <FormGroup>
                           <FormLabel htmlFor="edit_level">
-                            <UserCheck size={16} />
-                            Experience Level
+                            <Activity size={16} />
+                            Activity / Skill Level
                           </FormLabel>
                           <HelpText>
                             <Info size={14} />
-                            What skill level should students have?
+                            How intense or difficult is this experience?
                           </HelpText>
                           <FormItemAntd
                             name="level"
@@ -2092,18 +2129,23 @@ const handleSubmit = async () => {
                           >
                             <StyledSelect
                               id="edit_level"
-                              placeholder="Select experience level"
+                              placeholder="Select level"
                             >
+                              <Option value="all">Open to Everyone</Option>
+                              <Option value="no-experience">
+                                No Experience Needed
+                              </Option>
                               <Option value="beginner">
-                                Beginner - No experience needed
+                                Beginner Friendly
+                              </Option>
+                              <Option value="active">Moderate Activity</Option>
+                              <Option value="strenuous">
+                                High Intensity / Strenuous
                               </Option>
                               <Option value="intermediate">
-                                Intermediate - Some experience
+                                Intermediate Skill
                               </Option>
-                              <Option value="advanced">
-                                Advanced - Significant experience
-                              </Option>
-                              <Option value="all">All Levels Welcome</Option>
+                              <Option value="advanced">Advanced Skill</Option>
                             </StyledSelect>
                           </FormItemAntd>
                         </FormGroup>
@@ -2119,27 +2161,28 @@ const handleSubmit = async () => {
                           <FormGroup>
                             <FormLabel htmlFor="edit_cancellationPolicy">
                               <FileText size={16} />
-                              Cancellation Notice
+                              Notice Required
                             </FormLabel>
                             <HelpText>
                               <Info size={14} />
-                              Required notice for cancellations.
+                              Minimum time before start for a refund.
                             </HelpText>
                             <FormItemAntd
                               name="cancellationPolicy"
                               rules={[
                                 {
                                   required: true,
-                                  message: "Please select a cancellation policy",
+                                  message:
+                                    "Please select a cancellation policy",
                                 },
                               ]}
                             >
                               <StyledSelect
                                 id="edit_cancellationPolicy"
-                                placeholder="Select cancellation period"
+                                placeholder="Select notice"
                               >
                                 <Option value="flexible">
-                                  Flexible (up to 1 hour before)
+                                  Flexible (1 hour before)
                                 </Option>
                                 <Option value="24h">24 Hours Notice</Option>
                                 <Option value="48h">48 Hours Notice</Option>
@@ -2147,7 +2190,7 @@ const handleSubmit = async () => {
                                 <Option value="strict">
                                   Strict (Non-refundable)
                                 </Option>
-                                <Option value="custom">Custom Notice Period</Option>
+                                <Option value="custom">Custom</Option>
                               </StyledSelect>
                             </FormItemAntd>
                           </FormGroup>
@@ -2180,9 +2223,13 @@ const handleSubmit = async () => {
                                 min={0}
                                 max={100}
                                 formatter={(value) => `${value}%`}
-                                parser={(value) => String(value).replace("%", "")}
-                                placeholder="e.g., 100"
-                                disabled={watchedCancellationPolicy === "strict"}
+                                parser={(value) =>
+                                  String(value).replace("%", "")
+                                }
+                                placeholder="100"
+                                disabled={
+                                  watchedCancellationPolicy === "strict"
+                                }
                                 inputMode="decimal"
                               />
                             </FormItemAntd>
@@ -2199,19 +2246,19 @@ const handleSubmit = async () => {
                             <SectionDivider>
                               <span>
                                 <AlertCircle size={16} />
-                                Mid-Course Drop Policy
+                                Mid-Series Drops
                               </span>
                             </SectionDivider>
                             <FormSection>
                               <FormGroup>
                                 <FormLabel htmlFor="edit_allowMidCourseDrops">
                                   <AlertCircle size={16} />
-                                  Allow Mid-Course Drops?
+                                  Allow Mid-Series Drops?
                                 </FormLabel>
                                 <HelpText>
                                   <Info size={14} />
-                                  Can students drop out after the course has started
-                                  and get a pro-rated refund for remaining sessions?
+                                  Can guests drop out after the series has
+                                  started for a partial refund?
                                 </HelpText>
                                 <FormItemAntd
                                   name="allowMidCourseDrops"
@@ -2236,12 +2283,12 @@ const handleSubmit = async () => {
                                     <FormGroup>
                                       <FormLabel htmlFor="edit_midCourseCancellationPolicy">
                                         <FileText size={16} />
-                                        Mid-Course Drop Notice
+                                        Notice for Next Session
                                       </FormLabel>
                                       <HelpText>
                                         <Info size={14} />
-                                        Notice required before their NEXT session to
-                                        drop.
+                                        Notice required before the specific
+                                        session starts.
                                       </HelpText>
                                       <FormItemAntd
                                         name="midCourseCancellationPolicy"
@@ -2255,20 +2302,16 @@ const handleSubmit = async () => {
                                       >
                                         <StyledSelect
                                           id="edit_midCourseCancellationPolicy"
-                                          placeholder="Select notice period"
+                                          placeholder="Select notice"
                                         >
                                           <Option value="flexible">
-                                            Flexible (up to 1 hour before)
+                                            Flexible
                                           </Option>
-                                          <Option value="24h">24 Hours Notice</Option>
-                                          <Option value="48h">48 Hours Notice</Option>
-                                          <Option value="72h">72 Hours Notice</Option>
-                                          <Option value="strict">
-                                            Strict (Non-refundable)
-                                          </Option>
-                                          <Option value="custom">
-                                            Custom Notice Period
-                                          </Option>
+                                          <Option value="24h">24 Hours</Option>
+                                          <Option value="48h">48 Hours</Option>
+                                          <Option value="72h">72 Hours</Option>
+                                          <Option value="strict">Strict</Option>
+                                          <Option value="custom">Custom</Option>
                                         </StyledSelect>
                                       </FormItemAntd>
                                     </FormGroup>
@@ -2276,7 +2319,7 @@ const handleSubmit = async () => {
                                     <FormGroup>
                                       <FormLabel htmlFor="edit_midCourseCancellationRefundPercentage">
                                         <Percent size={16} />
-                                        Mid-Course Refund
+                                        Refund % (Remaining)
                                       </FormLabel>
                                       <HelpText>
                                         <Info size={14} />
@@ -2287,7 +2330,8 @@ const handleSubmit = async () => {
                                         rules={[
                                           {
                                             required: midCourseDropsAllowed,
-                                            message: "Enter a refund percentage",
+                                            message:
+                                              "Enter a refund percentage",
                                           },
                                         ]}
                                       >
@@ -2309,7 +2353,11 @@ const handleSubmit = async () => {
                                   </FormGrid>
                                   {watchedMidCoursePolicy === "custom" && (
                                     <motion.div
-                                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                      initial={{
+                                        opacity: 0,
+                                        height: 0,
+                                        marginTop: 0,
+                                      }}
                                       animate={{
                                         opacity: 1,
                                         height: "auto",
@@ -2320,7 +2368,7 @@ const handleSubmit = async () => {
                                       <FormGroup>
                                         <FormLabel htmlFor="edit_midCourseCancellationCustomHours">
                                           <Clock size={16} />
-                                          Custom Mid-Course Notice (Hours)
+                                          Custom Notice (Hours)
                                         </FormLabel>
                                         <FormItemAntd
                                           name="midCourseCancellationCustomHours"
@@ -2360,7 +2408,8 @@ const handleSubmit = async () => {
                               </FormLabel>
                               <HelpText>
                                 <Info size={14} />
-                                Required notice period in hours.
+                                Specific hours before start required for a
+                                refund.
                               </HelpText>
                               <FormItemAntd
                                 name="cancellationCustomHours"
@@ -2380,7 +2429,7 @@ const handleSubmit = async () => {
                                 <StyledInputNumber
                                   id="edit_cancellationCustomHours"
                                   min={1}
-                                  placeholder="e.g., 36"
+                                  placeholder="Hours"
                                   style={{ width: "100%" }}
                                   inputMode="numeric"
                                 />
@@ -2392,26 +2441,27 @@ const handleSubmit = async () => {
                       <SectionDivider>
                         <span>
                           <SettingsIcon size={16} />
-                          Optional Details
+                          Details
                         </span>
                       </SectionDivider>
                       <FormSection>
                         <FormGrid>
                           <FormGroup>
                             <FormLabel htmlFor="edit_equipment">
-                              <PackageIcon size={16} />
-                              Equipment to Bring
+                              <Backpack size={16} />
+                              What to Bring
                             </FormLabel>
                             <HelpText>
                               <Info size={14} />
-                              List items students need.
+                              Items guests need (e.g. "Comfortable shoes",
+                              "ID").
                             </HelpText>
                             <FormItemAntd name="equipment">
                               <StyledTagsSelect
                                 id="edit_equipment"
                                 mode="tags"
                                 style={{ width: "100%" }}
-                                placeholder="e.g., Yoga Mat, Notebook"
+                                placeholder="Type and press Enter..."
                                 tokenSeparators={[","]}
                                 maxTagCount="responsive"
                               />
@@ -2420,11 +2470,11 @@ const handleSubmit = async () => {
                           <FormGroup>
                             <FormLabel htmlFor="edit_tags">
                               <TagIcon size={16} />
-                              Additional Tags
+                              Search Tags
                             </FormLabel>
                             <HelpText>
                               <Info size={14} />
-                              Keywords to help students find your class.
+                              Keywords to help guests find this.
                             </HelpText>
                             <FormItemAntd name="tags">
                               <StyledTagsSelect
@@ -2457,18 +2507,17 @@ const handleSubmit = async () => {
         </Button>
         <Button
           type="primary"
-          icon={<Save size={16} />}
           onClick={handleSubmit}
-          loading={loading}
           disabled={dataLoading}
           size="middle"
-          key={`btn-${loading}`}>
+          loading={loading}
+          key={`btn-${loading}`}
+        >
           Save Changes
         </Button>
       </DrawerFooter>
     </>
   );
-
 
   return (
     <ThemeProvider theme={appTheme}>

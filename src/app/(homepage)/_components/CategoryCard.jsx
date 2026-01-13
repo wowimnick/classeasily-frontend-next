@@ -114,7 +114,7 @@ const CategoryCard = ({ category, description, image, onClick, alt }) => {
       onClick={onClick}
       role="button"
       tabIndex={0}
-      aria-label={`Explore ${category} classes`}
+      aria-label={`Explore ${category} experiences`}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();

@@ -453,7 +453,7 @@ export default function FooterClient({ categories = [] }) {
                   {section.locations.map((item) => (
                     <li key={item.name}>
                       <ItemLink href={item.path}>
-                        Classes in {item.name}
+                        Experiences in {item.name}
                       </ItemLink>
                     </li>
                   ))}
@@ -581,14 +581,24 @@ export default function FooterClient({ categories = [] }) {
             <Social>
               <StyledH2>Follow us</StyledH2>
               <SocialLinks>
-                <a href="https://www.linkedin.com/company/classeasily/" aria-label="Follow us on LinkedIn" target="_blank" rel="noopener noreferrer">
+                <a
+                  href="https://www.linkedin.com/company/classeasily/"
+                  aria-label="Follow us on LinkedIn"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <Image
                     src={LinkedinSvg}
                     alt="LinkedIn"
                     style={{ height: "32px", width: "auto" }}
                   />
                 </a>
-                <a href="https://www.facebook.com/p/ClassEasily-61577902526917/" aria-label="Follow us on Facebook" target="_blank" rel="noopener noreferrer">
+                <a
+                  href="https://www.facebook.com/p/ClassEasily-61577902526917/"
+                  aria-label="Follow us on Facebook"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   <Image
                     src={FacebookSvg}
                     alt="Facebook"

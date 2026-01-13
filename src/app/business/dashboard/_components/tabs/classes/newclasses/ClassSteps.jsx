@@ -3,9 +3,9 @@
 import React from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
-import { Button, Tooltip } from "antd"; // ADDED: Tooltip
+import { Button, Tooltip } from "antd";
 import message from "@/lib/message";
-import { ArrowLeft, ArrowRight, Loader } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useClass } from "./ClassContext";
 import { businessClassService, uploadService } from "@/services/apiService";
 
@@ -73,18 +73,6 @@ const FooterButton = styled(Button)`
   }
 `;
 
-const LoadingSpinner = styled(Loader)`
-  animation: spin 1s linear infinite;
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-`;
-
 const getErrorMessage = (error) => {
   if (error?.response?.data) {
     const data = error.response.data;
@@ -118,7 +106,7 @@ const ClassSteps = ({
   loading,
   setLoading,
   steps,
-  isStructureSelected, // MODIFIED: Receive prop
+  isStructureSelected,
   onCreationSuccess,
 }) => {
   const { state, resetForm } = useClass();
@@ -129,7 +117,7 @@ const ClassSteps = ({
       setLoading(true);
       const uploadKey = "imageUpload";
       message.loading({
-        content: "Uploading images...",
+        content: "Uploading photos...",
         key: uploadKey,
         duration: 0,
       });
@@ -160,7 +148,7 @@ const ClassSteps = ({
         const coverImageS3Key = imageS3Keys[coverImageIndex];
 
         message.loading({
-          content: "Finalizing class creation...",
+          content: "Creating experience...",
           key: uploadKey,
           duration: 2,
         });
@@ -193,7 +181,7 @@ const ClassSteps = ({
           cover_image_s3_key: coverImageS3Key,
 
           // Options (JSON stringified)
-                    options: JSON.stringify([
+          options: JSON.stringify([
             {
               booking_type: currentOptionState.booking_type || "Single Session",
               level: currentOptionState.level || "all",
@@ -206,19 +194,19 @@ const ClassSteps = ({
               cancellationRefundPercentage:
                 currentOptionState.cancellationRefundPercentage ?? 100,
               price_type: currentOptionState.price_type || "per_session",
-              
-              allowMidCourseDrops: isCourse 
-                ? (currentOptionState.allowMidCourseDrops ?? false) // Change default to false
+
+              allowMidCourseDrops: isCourse
+                ? currentOptionState.allowMidCourseDrops ?? false
                 : false,
-              
+
               midCourseCancellationPolicy: isCourse
                 ? currentOptionState.midCourseCancellationPolicy
                 : null,
-                
+
               midCourseCancellationCustomHours: isCourse
                 ? currentOptionState.midCourseCancellationCustomHours
                 : null,
-                
+
               midCourseCancellationRefundPercentage: isCourse
                 ? currentOptionState.midCourseCancellationRefundPercentage
                 : null,
@@ -233,11 +221,11 @@ const ClassSteps = ({
           resetForm();
         } else {
           throw new Error(
-            getErrorMessage(response) || "Failed to create class."
+            getErrorMessage(response) || "Failed to create experience."
           );
         }
       } catch (error) {
-        console.error("Error creating class:", error);
+        console.error("Error creating experience:", error);
         message.error({
           content: getErrorMessage(error),
           key: uploadKey,
@@ -294,11 +282,10 @@ const ClassSteps = ({
           Previous
         </FooterButton>
 
-        {/* MODIFIED: Wrapped button in a Tooltip and a span */}
         <Tooltip
           title={
             isFinalStep && !isStructureSelected
-              ? "Please select a class structure (Single Session or Course) in the previous step."
+              ? "Please select an experience structure (One-Time or Series)."
               : ""
           }
         >
@@ -309,17 +296,11 @@ const ClassSteps = ({
               form={`step-${currentStep}-form`}
               htmlType="submit"
               disabled={finalButtonIsDisabled}
+              loading={loading}
+              key={`btn-${loading}`}
             >
-              {isFinalStep
-                ? loading
-                  ? "Creating..."
-                  : "Create Class"
-                : "Next"}
-              {loading ? (
-                <LoadingSpinner size={16} />
-              ) : (
-                !isFinalStep && <ArrowRight size={16} />
-              )}
+              {isFinalStep ? "Create Experience" : "Next"}
+              {!isFinalStep && !loading && <ArrowRight size={16} />}
             </FooterButton>
           </span>
         </Tooltip>

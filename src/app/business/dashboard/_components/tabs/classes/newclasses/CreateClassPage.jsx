@@ -2,15 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { ConfigProvider, Steps, Typography, Tooltip } from "antd";
-import { BookOpen, MapPin, Layers } from "lucide-react";
+import { ConfigProvider, Steps, Typography } from "antd";
+import { Sparkles, MapPin, Sliders } from "lucide-react"; // Changed icon
 import ClassSteps from "./ClassSteps";
 import BasicInfoStep from "./steps/BasicInfoStep";
 import ClassOptionsStep from "./steps/ClassOptionsStep";
 import LocationContactStep from "./steps/LocationContactStep";
-import { useClass } from "./ClassContext"; // ADDED: Import context hook
-
-const { Text } = Typography;
+import { useClass } from "./ClassContext";
 
 // Theme configuration
 const theme = {
@@ -77,21 +75,21 @@ const StepsContainer = styled.div`
 
 export const steps = [
   {
-    icon: <BookOpen size={18} />,
-    title: "Basic Info",
-    description: "Class details",
+    icon: <Sparkles size={18} />,
+    title: "The Experience",
+    description: "Basics & Photos",
     component: BasicInfoStep,
   },
   {
     icon: <MapPin size={18} />,
-    title: "Location & Contact",
-    description: "Set location",
+    title: "Meeting Point",
+    description: "Location & Contact",
     component: LocationContactStep,
   },
   {
-    icon: <Layers size={18} />,
-    title: "Class Options",
-    description: "Configure class",
+    icon: <Sliders size={18} />,
+    title: "Details",
+    description: "Structure & Policies",
     component: ClassOptionsStep,
   },
 ];
@@ -115,7 +113,6 @@ const CreateClassPage = ({ onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const isMobile = useIsMobile();
 
-  // ADDED: Get state from context to check if the core structure is defined
   const { state } = useClass();
   const isStructureSelected = !!state.options?.[0]?.booking_type;
 
@@ -156,7 +153,7 @@ const CreateClassPage = ({ onSuccess }) => {
             loading={loading}
             setLoading={setLoading}
             steps={steps}
-            isStructureSelected={isStructureSelected} // MODIFIED: Pass the flag down
+            isStructureSelected={isStructureSelected}
             onCreationSuccess={handleCreationSuccess}
           />
         </StepsContainer>
