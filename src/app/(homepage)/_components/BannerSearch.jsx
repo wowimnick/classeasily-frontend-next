@@ -58,7 +58,7 @@ const Banner = styled.section`
   box-sizing: border-box;
 
   @media (max-width: 760px) {
-    min-height: 45vh;
+    min-height: 15vh;
     padding-top: 5rem;
     justify-content: flex-start;
     padding-bottom: 2rem;
@@ -1208,7 +1208,7 @@ const MobileContainer = styled.div`
 
   @media (max-width: 760px) {
     display: flex;
-    padding-bottom: 4rem;
+    padding-bottom: 1rem;
   }
 `;
 
@@ -1467,11 +1467,11 @@ const TrustStripWrapper = styled.div`
   align-items: center;
   z-index: 10;
   background: rgba(0, 0, 0, 0.27);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
   padding: 1.25rem 1.5rem;
   @media (max-width: 600px) {
-    padding: 0.6rem;
+    display: none;
   }
 `;
 const WaveContainer = styled.div`
