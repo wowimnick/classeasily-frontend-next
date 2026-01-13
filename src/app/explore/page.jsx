@@ -1,181 +1,21 @@
 import { Suspense } from "react";
+import ExploreClient from "@/app/explore/_components/ExploreClient";
 import {
   searchClasses,
   fetchHomepageCategories,
   fetchClassCollections,
 } from "@/lib/server-data-fetchers";
-import ExploreClient from "@/app/explore/_components/ExploreClient";
 import ExplorePageSkeleton from "./_components/ExplorePageSkeleton";
 
-const unslugify = (slug) => {
-  if (!slug) return "";
-  return slug.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-};
-
-function generateStructuredData(routeParams, classes, locationName) {
+export async function generateMetadata() {
   return {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    name: `Classes and Workshops${locationName ? ` in ${locationName}` : ""}`,
-    description: `Find local classes and workshops${
-      locationName ? ` in ${locationName}` : ""
-    }`,
-    numberOfItems: classes.length,
-    itemListElement: classes.slice(0, 10).map((classItem, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      item: {
-        "@type": "Course",
-        name: classItem.title,
-        description: classItem.description || classItem.title,
-        provider: {
-          "@type": "Organization",
-          name: classItem.business_name || "Classeasily",
-        },
-        url: `https://classeasily.com/classes/${classItem.slug}`,
-        ...(classItem.average_rating > 0 && {
-          aggregateRating: {
-            "@type": "AggregateRating",
-            ratingValue: classItem.average_rating,
-            reviewCount: classItem.review_count,
-          },
-        }),
-        ...(classItem.min_session_price && {
-          offers: {
-            "@type": "Offer",
-            price: classItem.min_session_price,
-            priceCurrency: "USD",
-          },
-        }),
-      },
-    })),
+    title: "Explore Classes Near You | Classeasily",
+    description:
+      "Find and book amazing local classes and workshops. Start learning something new today!",
   };
 }
 
-export async function generateMetadata({ params, searchParams }) {
-  try {
-    const { slug = [] } = params;
-    const [first, second] = slug;
-
-    let province = null;
-    let city = null;
-    let identifier = null;
-
-    const isCategoryRoute = first === "category";
-
-    if (!isCategoryRoute) {
-      if (slug.length === 1) {
-        identifier = first;
-      } else if (slug.length >= 2) {
-        province = first;
-        city = second;
-      }
-    }
-
-    const categoryKey = searchParams.category || "";
-    const tag = searchParams.tag || "";
-    const locationParam = searchParams.location;
-
-    const cityText = unslugify(
-      city || (identifier && !categoryKey ? identifier : "")
-    );
-    const provinceText = unslugify(province);
-    const locationText = cityText
-      ? `${cityText}${provinceText ? `, ${provinceText}` : ""}`
-      : locationParam
-      ? unslugify(locationParam)
-      : "";
-    const tagText = unslugify(tag);
-
-    let categoryText = "";
-    if (categoryKey) {
-      try {
-        const categoriesResponse = await fetchHomepageCategories();
-        if (categoriesResponse.success) {
-          const categoryObj = categoriesResponse.data.find(
-            (c) => c.key === categoryKey
-          );
-          categoryText = categoryObj
-            ? categoryObj.name
-            : unslugify(categoryKey);
-        } else {
-          categoryText = unslugify(categoryKey);
-        }
-      } catch (error) {
-        console.warn("Could not fetch category name for metadata:", error);
-        categoryText = unslugify(categoryKey);
-      }
-    }
-
-    let title = "Explore Classes Near You | Classeasily";
-    let description =
-      "Find and book amazing local classes and workshops. Start learning something new today!";
-
-    if (tagText && locationText) {
-      title = `${tagText} Classes in ${locationText} | Classeasily`;
-      description = `Discover the best ${tagText.toLowerCase()} classes and workshops in ${locationText}. Book your spot on Classeasily.`;
-    } else if (categoryText && locationText) {
-      title = `${categoryText} Classes in ${locationText} | Classeasily`;
-      description = `Find and book the best ${categoryText.toLowerCase()} classes and workshops in ${locationText}.`;
-    } else if (locationText) {
-      title = `Classes and Workshops in ${locationText} | Classeasily`;
-      description = `Explore a wide variety of classes in ${locationText}. From art to cooking, find your next learning adventure.`;
-    } else if (categoryText) {
-      title = `Explore ${categoryText} Classes | Classeasily`;
-      description = `Find and book the best ${categoryText.toLowerCase()} classes and workshops in your area.`;
-    }
-
-    const url = `/explore/${slug.join("/")}`;
-    const plainSearchParams = {};
-    for (const [key, value] of Object.entries(searchParams)) {
-      plainSearchParams[key] = value;
-    }
-    const queryString = new URLSearchParams(plainSearchParams).toString();
-
-    const fullUrl = `https://classeasily.com${url}${
-      queryString ? `?${queryString}` : ""
-    }`;
-
-    return {
-      title,
-      description,
-      alternates: {
-        canonical: fullUrl,
-      },
-      openGraph: {
-        title,
-        description,
-        url: fullUrl,
-        type: "website",
-      },
-    };
-  } catch (error) {
-    console.error("Critical error in generateMetadata:", error);
-    return {
-      title: "Explore Classes Near You | Classeasily",
-      description:
-        "Find and book amazing local classes and workshops. Start learning something new today!",
-    };
-  }
-}
-
-async function fetchServerData({ params, searchParams }) {
-  const { slug = [] } = params;
-  const [first, second] = slug;
-
-  let province = null;
-  let city = null;
-  let identifier = null;
-
-  if (first !== "category") {
-    if (slug.length === 1) {
-      identifier = first;
-    } else if (slug.length >= 2) {
-      province = first;
-      city = second;
-    }
-  }
-
+async function fetchServerData(searchParams) {
   const apiParams = {};
 
   const latFromUrl = searchParams.lat;
@@ -189,36 +29,32 @@ async function fetchServerData({ params, searchParams }) {
 
   if (locationDisplayNameFromUrl) {
     apiParams.location_search = locationDisplayNameFromUrl;
-  } else if (province && city) {
-    apiParams.location_search = `${unslugify(city)}, ${unslugify(province)}`;
-  } else if (city) {
-    apiParams.location_search = unslugify(city);
-  } else if (province) {
-    apiParams.location_search = unslugify(province);
-  } else if (identifier && first !== "category") {
-    apiParams.location_search = unslugify(identifier);
   }
 
+  // Handle category and subcategory from URL
   const category = searchParams.category;
   const subcategory = searchParams.subcategory;
   const collection = searchParams.collection;
 
   if (collection) {
     apiParams.collection = collection;
-  } else if (category) {
+  } else if (category && category !== "all") {
     apiParams.category_key = category;
     if (subcategory) {
       apiParams.subcategory_key = subcategory;
     }
   }
 
+  // Handle all other search params
   if (searchParams.tag) apiParams.tag = searchParams.tag;
   if (searchParams.keyword) apiParams.keyword = searchParams.keyword;
+  if (searchParams.price_min)
+    apiParams.price_min = parseInt(searchParams.price_min, 10);
   if (searchParams.price_max)
     apiParams.price_max = parseInt(searchParams.price_max, 10);
   if (searchParams.radius) apiParams.radius = parseInt(searchParams.radius, 10);
 
-  // --- DATE RANGE LOGIC ---
+  // UPDATED: Handle Date Range
   if (searchParams.start_date) apiParams.start_date = searchParams.start_date;
   if (searchParams.end_date) apiParams.end_date = searchParams.end_date;
   if (searchParams.date) apiParams.date = searchParams.date;
@@ -229,7 +65,20 @@ async function fetchServerData({ params, searchParams }) {
     apiParams.sort_by = searchParams.sort_by;
   }
 
-  apiParams.page_size = 24;
+  // Handle time preferences and days
+  const timePrefs = searchParams.time_preference;
+  if (timePrefs) {
+    apiParams.time_preference = Array.isArray(timePrefs)
+      ? timePrefs
+      : [timePrefs];
+  }
+
+  const days = searchParams.days;
+  if (days) {
+    apiParams.days = Array.isArray(days) ? days : [days];
+  }
+
+  console.log("[Server] Fetching classes with params:", apiParams);
 
   const [categoriesResponse, classesResponse, collectionsList] =
     await Promise.all([
@@ -238,61 +87,41 @@ async function fetchServerData({ params, searchParams }) {
       fetchClassCollections(),
     ]);
 
-  let locationName = "";
-  if (locationDisplayNameFromUrl) {
-    locationName = locationDisplayNameFromUrl;
-  } else if (city && province) {
-    locationName = `${unslugify(city)}, ${unslugify(province)}`;
-  } else if (city) {
-    locationName = unslugify(city);
-  }
-
   return {
     categories: categoriesResponse.success ? categoriesResponse.data : [],
     initialClasses: classesResponse.results || [],
     totalCount: classesResponse.count || 0,
     nextPageUrl: classesResponse.next || null,
+    locationName: locationDisplayNameFromUrl || "",
     collections: collectionsList || [],
-    locationName,
     routeParams: {
-      province,
-      city,
-      identifier,
+      province: null,
+      city: null,
+      identifier: null,
     },
   };
 }
 
-export default async function ExplorePage({ params, searchParams }) {
+async function ExplorePageContent({ searchParams }) {
   const resolvedSearchParams = await searchParams;
-  const serverData = await fetchServerData({
-    params,
-    searchParams: resolvedSearchParams,
-  });
-  const structuredData = generateStructuredData(
-    serverData.routeParams,
-    serverData.initialClasses,
-    serverData.locationName
-  );
-
-  // Generate a key based on search parameters to force re-mounting and show skeleton
-  const suspenseKey = new URLSearchParams(resolvedSearchParams).toString();
+  const serverData = await fetchServerData(resolvedSearchParams);
 
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
-      <Suspense key={suspenseKey} fallback={<ExplorePageSkeleton />}>
-        <ExploreClient
-          initialCategories={serverData.categories}
-          initialClasses={serverData.initialClasses}
-          initialTotalCount={serverData.totalCount}
-          initialNextPageUrl={serverData.nextPageUrl}
-          initialCollections={serverData.collections}
-          routeParams={serverData.routeParams}
-        />
-      </Suspense>
-    </>
+    <ExploreClient
+      initialCategories={serverData.categories}
+      initialClasses={serverData.initialClasses}
+      initialTotalCount={serverData.totalCount}
+      initialNextPageUrl={serverData.nextPageUrl}
+      initialCollections={serverData.collections}
+      routeParams={serverData.routeParams}
+    />
+  );
+}
+
+export default async function ExploreRootPage(props) {
+  return (
+    <Suspense fallback={<ExplorePageSkeleton />}>
+      <ExplorePageContent searchParams={props.searchParams} />
+    </Suspense>
   );
 }
