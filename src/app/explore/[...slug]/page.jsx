@@ -1,10 +1,8 @@
-// app/explore/[...slug]/page.jsx
-
 import { Suspense } from "react";
 import {
   searchClasses,
   fetchHomepageCategories,
-  fetchClassCollections, // Import the collection fetcher
+  fetchClassCollections,
 } from "@/lib/server-data-fetchers";
 import ExploreClient from "@/app/explore/_components/ExploreClient";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
@@ -219,7 +217,12 @@ async function fetchServerData({ params, searchParams }) {
   if (searchParams.price_max)
     apiParams.price_max = parseInt(searchParams.price_max, 10);
   if (searchParams.radius) apiParams.radius = parseInt(searchParams.radius, 10);
+
+  // --- DATE RANGE LOGIC ---
+  if (searchParams.start_date) apiParams.start_date = searchParams.start_date;
+  if (searchParams.end_date) apiParams.end_date = searchParams.end_date;
   if (searchParams.date) apiParams.date = searchParams.date;
+
   if (searchParams.participants)
     apiParams.participants = parseInt(searchParams.participants, 10);
   if (searchParams.sort_by && searchParams.sort_by !== "relevance") {
@@ -228,7 +231,6 @@ async function fetchServerData({ params, searchParams }) {
 
   apiParams.page_size = 24;
 
-  // UPDATED: Parallel fetch categories, classes, AND collections
   const [categoriesResponse, classesResponse, collectionsList] =
     await Promise.all([
       fetchHomepageCategories(),
@@ -250,7 +252,7 @@ async function fetchServerData({ params, searchParams }) {
     initialClasses: classesResponse.results || [],
     totalCount: classesResponse.count || 0,
     nextPageUrl: classesResponse.next || null,
-    collections: collectionsList || [], // Return collections
+    collections: collectionsList || [],
     locationName,
     routeParams: {
       province,
@@ -282,7 +284,7 @@ export default async function ExplorePage({ params, searchParams }) {
           initialClasses={serverData.initialClasses}
           initialTotalCount={serverData.totalCount}
           initialNextPageUrl={serverData.nextPageUrl}
-          initialCollections={serverData.collections} // Pass collections data
+          initialCollections={serverData.collections}
           routeParams={serverData.routeParams}
         />
       </Suspense>

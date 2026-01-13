@@ -439,35 +439,15 @@ const DayGrid = styled.div`
   row-gap: 4px;
 `;
 
-const DayBtn = styled(motion.button)`
+// Updated DayBtn: No layout scale logic, simple container
+const DayBtn = styled.button`
   width: 40px;
   height: 40px;
   border: none;
   position: relative;
-
-  /* Dynamic Border Radius for Range Effect */
-  border-radius: ${(props) => {
-    if (props.$isRangeStart && props.$isRangeEnd) return "50%"; // Single day range
-    if (props.$isRangeStart) return "50% 0 0 50%";
-    if (props.$isRangeEnd) return "0 50% 50% 0";
-    if (props.$isInRange) return "0";
-    return "50%"; // Default single hover
-  }};
-
-  background: ${(props) =>
-    props.$isRangeStart || props.$isRangeEnd
-      ? props.theme.token.colorPrimary
-      : props.$isInRange
-      ? `${props.theme.token.colorPrimary}15` // 15 = 8% opacity approx
-      : "transparent"};
-
+  background: transparent;
   color: ${(props) =>
-    props.$isRangeStart || props.$isRangeEnd
-      ? "white"
-      : props.$isDisabled
-      ? "#e5e7eb"
-      : "#374151"};
-
+    props.$isWhiteText ? "white" : props.$isDisabled ? "#e5e7eb" : "#374151"};
   cursor: ${(props) => (props.$isDisabled ? "not-allowed" : "pointer")};
   font-weight: 600;
   font-size: 14px;
@@ -475,16 +455,40 @@ const DayBtn = styled(motion.button)`
   align-items: center;
   justify-content: center;
   margin: 0 auto;
-
-  /* Ensure background spans full width for middle items */
-  width: ${(props) => (props.$isInRange ? "100%" : "40px")};
+  /* Width needs to match grid column for ranges to look connected visually if we used 100%, 
+     but for this design we keep 40px/40px centered and use width 100% for the fill */
+  width: 100%;
+  isolation: isolate; /* Create stacking context for background z-index */
 
   &:hover {
+    /* Only show hover gray if it's NOT selected */
     background: ${(props) =>
-      !(props.$isRangeStart || props.$isRangeEnd || props.$isInRange) &&
-      !props.$isDisabled &&
-      "#f3f4f6"};
+      !props.$hasSelection && !props.$isDisabled ? "#f3f4f6" : "transparent"};
+    border-radius: 50%;
   }
+`;
+
+// New Animated Background Component
+const DayBackground = styled(motion.div)`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+  z-index: -1;
+
+  /* Geometric logic moved to props or determined by class */
+  background: ${(props) => props.$bgColor};
+  border-radius: ${(props) => props.$radius};
+
+  /* Width handling: 
+     - Middle range items take full width (connect neighbors).
+     - Start/End items might need to fill towards the connector.
+     - Single items are just centered circles (handled by scale/radius).
+  */
+  width: 100%;
+  height: 100%;
 `;
 
 // --- QUICK SELECT COMPONENTS ---
@@ -564,8 +568,9 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
   const selectedEnd = value?.end ? dayjs(value.end) : null;
 
   const handleDateClick = (dateObj) => {
-    // Single date selection logic
-    onChange(dateObj); // Pass dayjs object for single date
+    // Single date selection logic or Start of range logic depending on requirements.
+    // Assuming simple set for now as per original code.
+    onChange(dateObj);
     onClose();
   };
 
@@ -623,11 +628,11 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
           let isRangeStart = false;
           let isRangeEnd = false;
           let isInRange = false;
+          let isSingle = false;
 
           if (selectedStart && !selectedEnd) {
             // Single date match
-            isRangeStart = thisDate.isSame(selectedStart, "day");
-            isRangeEnd = isRangeStart;
+            isSingle = thisDate.isSame(selectedStart, "day");
           } else if (selectedStart && selectedEnd) {
             // Range match
             const s = selectedStart.startOf("day");
@@ -637,21 +642,66 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
             isRangeStart = t.isSame(s);
             isRangeEnd = t.isSame(e);
             isInRange = t.isAfter(s) && t.isBefore(e);
+            // Handle edge case where start == end
+            if (isRangeStart && isRangeEnd) {
+              isSingle = true;
+              isRangeStart = false;
+              isRangeEnd = false;
+            }
+          }
+
+          const hasSelection =
+            isSingle || isRangeStart || isRangeEnd || isInRange;
+
+          // Determine styling props for the background layer
+          let bgRadius = "0";
+          let bgColor = "transparent";
+          let scaleVal = 1;
+
+          // Theme primary color would typically be accessed via context or imported
+          // Simulating access here, assuming styled-components ThemeProvider is used
+          // We'll use a CSS variable or hardcoded fallback for the prop logic
+          const primaryColor = (props) =>
+            props.theme.token.colorPrimary || "#e11d48";
+          const faintColor = (props) =>
+            `${props.theme.token.colorPrimary || "#e11d48"}15`; // ~8% opacity
+
+          if (isSingle) {
+            bgRadius = "50%";
+            bgColor = primaryColor;
+          } else if (isRangeStart) {
+            bgRadius = "50% 0 0 50%";
+            bgColor = primaryColor;
+          } else if (isRangeEnd) {
+            bgRadius = "0 50% 50% 0";
+            bgColor = primaryColor;
+          } else if (isInRange) {
+            bgRadius = "0";
+            bgColor = faintColor;
+            scaleVal = 1; // Slight scale down could be stylistic, but sticking to full
           }
 
           return (
             <DayBtn
               key={d}
               type="button"
-              layout
-              $isRangeStart={isRangeStart}
-              $isRangeEnd={isRangeEnd}
-              $isInRange={isInRange}
               $isDisabled={isPast}
+              $hasSelection={hasSelection}
+              $isWhiteText={isSingle || isRangeStart || isRangeEnd}
               disabled={isPast}
               onClick={() => handleDateClick(thisDate)}
             >
-              {d}
+              <span style={{ position: "relative", zIndex: 2 }}>{d}</span>
+
+              {hasSelection && (
+                <DayBackground
+                  $bgColor={bgColor}
+                  $radius={bgRadius}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                />
+              )}
             </DayBtn>
           );
         })}

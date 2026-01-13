@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import dayjs from "dayjs";
 import { useSearch, SUGGESTED_AREAS } from "@/context/SearchContext";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 // --- ANIMATIONS ---
 const shimmer = keyframes`
@@ -60,7 +60,7 @@ const NestedContent = styled(Drawer.Content)`
   ${ContentBase};
   z-index: 9995;
   height: auto;
-  max-height: 85vh; /* Slightly shorter for nested feel */
+  max-height: 85vh;
 `;
 
 const Handle = styled.div`
@@ -285,6 +285,7 @@ const CalendarWrapper = styled.div`
   background: white;
   border-radius: 14px;
   padding: 12px;
+  user-select: none;
 `;
 
 const CalHeader = styled.div`
@@ -328,35 +329,15 @@ const DayGrid = styled.div`
   row-gap: 4px;
 `;
 
-const DayBtn = styled(motion.button)`
+// Updated DayBtn to match BannerSearch logic
+const DayBtn = styled.button`
   width: 40px;
   height: 40px;
   border: none;
   position: relative;
-
-  /* Dynamic Border Radius for Range Effect */
-  border-radius: ${(props) => {
-    if (props.$isRangeStart && props.$isRangeEnd) return "50%"; // Single day range
-    if (props.$isRangeStart) return "50% 0 0 50%";
-    if (props.$isRangeEnd) return "0 50% 50% 0";
-    if (props.$isInRange) return "0";
-    return "50%"; // Default single hover
-  }};
-
-  background: ${(props) =>
-    props.$isRangeStart || props.$isRangeEnd
-      ? "#e11d48"
-      : props.$isInRange
-      ? "#ffe4e6" // Very light pink
-      : "transparent"};
-
+  background: transparent;
   color: ${(props) =>
-    props.$isRangeStart || props.$isRangeEnd
-      ? "white"
-      : props.$isDisabled
-      ? "#e5e7eb"
-      : "#374151"};
-
+    props.$isWhiteText ? "white" : props.$isDisabled ? "#e5e7eb" : "#374151"};
   cursor: ${(props) => (props.$isDisabled ? "not-allowed" : "pointer")};
   font-weight: 600;
   font-size: 14px;
@@ -364,17 +345,32 @@ const DayBtn = styled(motion.button)`
   align-items: center;
   justify-content: center;
   margin: 0 auto;
+  width: 100%;
+  isolation: isolate;
   font-family: "ProximaSoft", sans-serif;
 
-  /* Ensure background spans full width for middle items */
-  width: ${(props) => (props.$isInRange ? "100%" : "40px")};
-
-  &:active {
+  &:hover {
     background: ${(props) =>
-      !(props.$isRangeStart || props.$isRangeEnd || props.$isInRange) &&
-      !props.$isDisabled &&
-      "#f0f0f0"};
+      !props.$hasSelection && !props.$isDisabled ? "#f3f4f6" : "transparent"};
+    border-radius: 50%;
   }
+`;
+
+// Animated Background Component
+const DayBackground = styled(motion.div)`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+  z-index: -1;
+  background: ${(props) => props.$bgColor};
+  border-radius: ${(props) => props.$radius};
+
+  /* Use explicit width prop to avoid stretched ovals on wide screens */
+  width: ${(props) => props.$width || "100%"};
+  height: 100%;
 `;
 
 const QuickChipsGrid = styled.div`
@@ -450,7 +446,13 @@ const CountVal = styled.span`
 
 // --- HELPER COMPONENTS ---
 
-const CustomCalendar = ({ value, onChange }) => {
+/**
+ * CustomCalendar
+ * @param {object} value - current date/range value
+ * @param {function} setValue - updates value WITHOUT closing drawer (for presets)
+ * @param {function} onSelect - updates value AND closes drawer (for direct clicks)
+ */
+const CustomCalendar = ({ value, setValue, onSelect }) => {
   const [currentDate, setCurrentDate] = useState(dayjs());
 
   const selectedStart = value?.start
@@ -471,22 +473,14 @@ const CustomCalendar = ({ value, onChange }) => {
 
     switch (type) {
       case "weekend":
-        start =
-          today.day() === 0 ? today.day(6).subtract(1, "week") : today.day(6);
-        // If today is Sunday(0), subtract to get past Saturday or logic depends on "This Weekend" meaning.
-        // Better logic: If today is Sun, "This Weekend" usually means the one just ending or user wants next.
-        // Standard convention: "This Weekend" = Upcoming Sat/Sun.
         if (today.day() === 0) {
-          // It is Sunday today
+          // Sunday
           start = today.subtract(1, "day"); // Sat
           end = today; // Sun
         } else {
           start = today.day(6);
           end = today.day(6).add(1, "day");
         }
-        // Actually, let's keep it simple: upcoming Saturday + Sunday
-        start = today.day(6);
-        end = today.day(6).add(1, "day");
         break;
       case "next_weekend":
         start = today.day(6).add(1, "week");
@@ -503,16 +497,18 @@ const CustomCalendar = ({ value, onChange }) => {
       default:
         start = today;
     }
-    onChange({
+
+    // Use setValue for presets so the drawer stays open
+    setValue({
       start: start.format("YYYY-MM-DD"),
       end: end ? end.format("YYYY-MM-DD") : null,
     });
   };
 
   const handleDayClick = (day) => {
-    // Basic single selection for tap
+    // Basic single selection for tap, use onSelect to close drawer
     const selected = currentDate.date(day);
-    onChange(selected.format("YYYY-MM-DD"));
+    onSelect(selected.format("YYYY-MM-DD"));
   };
 
   return (
@@ -544,11 +540,13 @@ const CustomCalendar = ({ value, onChange }) => {
           let isRangeStart = false;
           let isRangeEnd = false;
           let isInRange = false;
+          let isSingle = false;
 
           if (selectedStart && !selectedEnd) {
-            isRangeStart = thisDate.isSame(selectedStart, "day");
-            isRangeEnd = isRangeStart;
+            // Single date match
+            isSingle = thisDate.isSame(selectedStart, "day");
           } else if (selectedStart && selectedEnd) {
+            // Range match
             const s = selectedStart.startOf("day");
             const e = selectedEnd.startOf("day");
             const t = thisDate.startOf("day");
@@ -556,21 +554,68 @@ const CustomCalendar = ({ value, onChange }) => {
             isRangeStart = t.isSame(s);
             isRangeEnd = t.isSame(e);
             isInRange = t.isAfter(s) && t.isBefore(e);
+
+            if (isRangeStart && isRangeEnd) {
+              isSingle = true;
+              isRangeStart = false;
+              isRangeEnd = false;
+            }
+          }
+
+          const hasSelection =
+            isSingle || isRangeStart || isRangeEnd || isInRange;
+
+          // Determine geometric styling for the animation background
+          let bgRadius = "0";
+          let bgColor = "transparent";
+          let bgWidth = "100%";
+
+          // Use the brand color hardcoded or from theme context
+          const primaryColor = "#e11d48";
+          const faintColor = "#ffe4e6"; // Light pink for range
+
+          if (isSingle) {
+            bgRadius = "50%";
+            bgWidth = "40px"; // Constrain to circle
+            bgColor = primaryColor;
+          } else if (isRangeStart) {
+            // Use 20px (half height) to make a perfect semi-circle cap
+            // avoiding the stretched oval effect
+            bgRadius = "20px 0 0 20px";
+            bgWidth = "100%";
+            bgColor = primaryColor;
+          } else if (isRangeEnd) {
+            bgRadius = "0 20px 20px 0";
+            bgWidth = "100%";
+            bgColor = primaryColor;
+          } else if (isInRange) {
+            bgRadius = "0";
+            bgColor = faintColor;
+            bgWidth = "100%";
           }
 
           return (
             <DayBtn
               key={d}
               type="button"
-              layout
-              $isRangeStart={isRangeStart}
-              $isRangeEnd={isRangeEnd}
-              $isInRange={isInRange}
               $isDisabled={isPast}
+              $hasSelection={hasSelection}
+              $isWhiteText={isSingle || isRangeStart || isRangeEnd}
               disabled={isPast}
               onClick={() => handleDayClick(d)}
             >
-              {d}
+              <span style={{ position: "relative", zIndex: 2 }}>{d}</span>
+
+              {hasSelection && (
+                <DayBackground
+                  $bgColor={bgColor}
+                  $radius={bgRadius}
+                  $width={bgWidth}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                />
+              )}
             </DayBtn>
           );
         })}
@@ -670,6 +715,15 @@ const SearchDrawer = () => {
   }, [isLocationOpen]);
 
   const onSelectLocation = (result) => {
+    // 1. Close drawer immediately to provide instant feedback
+    setIsLocationOpen(false);
+
+    // 2. Dismiss keyboard
+    if (inputRef.current) {
+      inputRef.current.blur();
+    }
+
+    // 3. Update the Search Context
     if (typeof result === "string") {
       handleLocationSelect(result);
     } else {
@@ -679,7 +733,6 @@ const SearchDrawer = () => {
         provinceSlug: result.provinceSlug,
       });
     }
-    setIsLocationOpen(false);
   };
 
   const handleSearchClick = () => {
@@ -725,7 +778,10 @@ const SearchDrawer = () => {
       return (
         <SuggestionItem
           key={idx}
-          onClick={() => onSelectLocation(hasTerm ? item : item.name)}
+          onClick={(e) => {
+            e.stopPropagation(); // Stop propagation to prevent nested drawer issues
+            onSelectLocation(hasTerm ? item : item.name);
+          }}
         >
           <IconBox>{icon}</IconBox>
           <div
@@ -783,6 +839,7 @@ const SearchDrawer = () => {
             <Drawer.NestedRoot
               open={isLocationOpen}
               onOpenChange={setIsLocationOpen}
+              shouldScaleBackground
             >
               <Drawer.Trigger asChild>
                 <MenuRow onClick={() => setIsLocationOpen(true)}>
@@ -840,7 +897,11 @@ const SearchDrawer = () => {
             </Drawer.NestedRoot>
 
             {/* ROW 2: DATE */}
-            <Drawer.NestedRoot open={isDateOpen} onOpenChange={setIsDateOpen}>
+            <Drawer.NestedRoot
+              open={isDateOpen}
+              onOpenChange={setIsDateOpen}
+              shouldScaleBackground
+            >
               <Drawer.Trigger asChild>
                 <MenuRow onClick={() => setIsDateOpen(true)}>
                   <RowLeft>
@@ -866,9 +927,11 @@ const SearchDrawer = () => {
                   <Body>
                     <CustomCalendar
                       value={datePickerValue}
-                      onChange={(d) => {
-                        setDatePickerValue(d);
-                        setIsDateOpen(false); // Auto close on select
+                      setValue={setDatePickerValue} // For presets: updates but keeps drawer open
+                      onSelect={(val) => {
+                        // For date clicks: updates and closes drawer
+                        setDatePickerValue(val);
+                        setIsDateOpen(false);
                       }}
                     />
                     <div
@@ -894,7 +957,11 @@ const SearchDrawer = () => {
             </Drawer.NestedRoot>
 
             {/* ROW 3: PARTICIPANTS */}
-            <Drawer.NestedRoot open={isWhoOpen} onOpenChange={setIsWhoOpen}>
+            <Drawer.NestedRoot
+              open={isWhoOpen}
+              onOpenChange={setIsWhoOpen}
+              shouldScaleBackground
+            >
               <Drawer.Trigger asChild>
                 <MenuRow onClick={() => setIsWhoOpen(true)}>
                   <RowLeft>

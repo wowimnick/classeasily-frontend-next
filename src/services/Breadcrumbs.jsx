@@ -10,6 +10,22 @@ import styled from "styled-components";
 const BreadcrumbWrapper = styled.div`
   padding: 12px 0;
   font-size: 13px;
+  width: 100%;
+  overflow: hidden;
+
+  /* Prevent wrapping to two lines */
+  .ant-breadcrumb {
+    white-space: nowrap;
+    overflow-x: auto;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+    display: flex; /* Ensures items stay in a row */
+    padding-bottom: 2px; /* Prevent cutting off descenders */
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
 
   .ant-breadcrumb-link a {
     color: ${(props) => props.theme.token.colorTextSecondary};
@@ -31,7 +47,30 @@ const BreadcrumbWrapper = styled.div`
 
 const formatCrumbText = (slug) => {
   if (!slug) return "";
-  return slug.replace(/-/g, " ").replace(/(^\w|\s\w)/g, (m) => m.toUpperCase());
+  // Decode URI components just in case (e.g. %20 -> space)
+  const decoded = decodeURIComponent(slug);
+  return decoded
+    .replace(/-/g, " ")
+    .replace(/(^\w|\s\w)/g, (m) => m.toUpperCase());
+};
+
+const formatLocationForDisplay = (locationQuery) => {
+  if (!locationQuery) return "";
+
+  // 1. Split by comma to get the most specific part (City, Street, or Neighborhood)
+  // e.g. "Toronto, ON, Canada" -> "Toronto"
+  const firstPart = locationQuery.split(",")[0].trim();
+
+  // 2. Format capitalization
+  const formatted = formatCrumbText(firstPart);
+
+  // 3. Hard truncate if still too long to prevent layout breaking
+  const MAX_LENGTH = 20;
+  if (formatted.length > MAX_LENGTH) {
+    return `${formatted.substring(0, MAX_LENGTH)}...`;
+  }
+
+  return formatted;
 };
 
 // Separate component that uses useSearchParams
@@ -60,7 +99,7 @@ function BreadcrumbsContent() {
       title: <Link href="/explore">Explore</Link>,
     });
 
-    // FIXED: Better location display from query param
+    // Handle Location Display
     if (locationQuery) {
       const locationParams = new URLSearchParams();
       locationParams.set("location", locationQuery);
@@ -70,12 +109,7 @@ function BreadcrumbsContent() {
       if (lat) locationParams.set("lat", lat);
       if (lng) locationParams.set("lng", lng);
 
-      // FIXED: Parse location better for display
-      // "Toronto, ON" -> show as is
-      // "Canada" -> show as is but it's too broad
-      const displayLocation = locationQuery.includes(",")
-        ? locationQuery
-        : formatCrumbText(locationQuery);
+      const displayLocation = formatLocationForDisplay(locationQuery);
 
       items.push({
         key: "location",
@@ -138,7 +172,7 @@ function BreadcrumbsContent() {
 
 const Breadcrumbs = () => {
   return (
-    <Suspense fallback={<div style={{ height: "37px" }} />}>
+    <Suspense fallback={<div style={{ height: "44px" }} />}>
       <BreadcrumbsContent />
     </Suspense>
   );

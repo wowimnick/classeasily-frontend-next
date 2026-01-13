@@ -54,7 +54,6 @@ function ExploreClientContent({
   const { location: userLocation } = useIpGeolocation();
 
   // --- STATE ---
-  // We initialize state with Server Data (initialClasses)
   const [displayClasses, setDisplayClasses] = useState(initialClasses);
   const [totalClassesCount, setTotalClassesCount] = useState(initialTotalCount);
   const [nextPageUrl, setNextPageUrl] = useState(initialNextPageUrl);
@@ -63,7 +62,6 @@ function ExploreClientContent({
   const [loadingMore, setLoadingMore] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
 
-  // Refs for tracking previous state and infinite scroll
   const observerTarget = useRef(null);
   const apiParamsRef = useRef({});
   const isInitialMount = useRef(true);
@@ -97,15 +95,14 @@ function ExploreClientContent({
       days: searchParams.getAll("days") || [],
       classType: searchParams.get("class_type") || "class",
       keyword: searchParams.get("keyword") || "",
+      // --- UPDATED: Date Handling ---
       date: searchParams.get("date") || "",
+      startDate: searchParams.get("start_date") || "",
+      endDate: searchParams.get("end_date") || "",
       participants: parseInt(searchParams.get("participants") || "1", 10),
     };
   }, [searchParams]);
 
-  // --- EFFECT 1: SYNC WITH SERVER DATA ---
-  // When the URL changes via router.push, the Server Component re-runs,
-  // passes new `initialClasses` props, and this effect syncs the local state.
-  // This restores native Next.js caching and Back/Forward button functionality.
   useEffect(() => {
     if (initialClasses) {
       setDisplayClasses(initialClasses);
@@ -113,13 +110,10 @@ function ExploreClientContent({
       setNextPageUrl(initialNextPageUrl);
       setIsNavigating(false);
       setLoading(false);
-
-      // Sync the ref so the Client-Side Fetch effect doesn't fire unnecessarily
       previousSearchParamsRef.current = searchParams.toString();
     }
   }, [initialClasses, initialTotalCount, initialNextPageUrl, searchParams]);
 
-  // --- API FETCH FUNCTION (Client Side) ---
   const fetchClassesApi = useCallback(
     async (params, pageToFetch, isLoadMoreRequest, signal) => {
       if (isLoadMoreRequest) {
@@ -157,9 +151,6 @@ function ExploreClientContent({
     []
   );
 
-  // --- EFFECT 2: CLIENT-SIDE FILTERING ---
-  // Detects changes in Filters (Price, Distance, etc.) that should happen client-side
-  // without a full page reload (if that is the desired UX).
   useEffect(() => {
     const controller = new AbortController();
 
@@ -173,27 +164,28 @@ function ExploreClientContent({
 
     if (currentParamsStr === prevParamsStr) return;
 
+    // Set navigating state IMMEDIATELY when params change
+    setIsNavigating(true);
+
     const currentObj = Object.fromEntries(searchParams.entries());
     const prevObj = Object.fromEntries(
       new URLSearchParams(prevParamsStr).entries()
     );
 
-    // Check if this is a "Navigation" change (Category, Subcategory, Collection)
     const isNavChange =
       currentObj.category !== prevObj.category ||
       currentObj.subcategory !== prevObj.subcategory ||
       currentObj.collection !== prevObj.collection;
 
-    // If it is a Navigation change, return early.
-    // The Server Component will handle data fetching and pass it via props (Effect 1).
     if (isNavChange) {
+      // Keep navigating state true for category changes
+      previousSearchParamsRef.current = currentParamsStr;
       return;
     }
 
-    // If we are here, it's a Filter change (Price, Sort, Map Move). Fetch Client-Side.
+    // Build API params
     const apiParams = {};
 
-    // Reconstruct API params from current state/URL
     const lat = searchParams.get("lat");
     const lng = searchParams.get("lng");
     const location = searchParams.get("location");
@@ -219,7 +211,14 @@ function ExploreClientContent({
       apiParams.price_max = currentFilters.pricePerClass[1];
     if (currentFilters.distance[1] > 0)
       apiParams.radius = currentFilters.distance[1];
-    if (currentFilters.date) apiParams.date = currentFilters.date;
+
+    if (currentFilters.startDate && currentFilters.endDate) {
+      apiParams.start_date = currentFilters.startDate;
+      apiParams.end_date = currentFilters.endDate;
+    } else if (currentFilters.date) {
+      apiParams.date = currentFilters.date;
+    }
+
     if (currentFilters.participants > 0)
       apiParams.participants = currentFilters.participants;
     if (currentFilters.timePreference.length > 0)
@@ -231,7 +230,6 @@ function ExploreClientContent({
     apiParamsRef.current = apiParams;
     previousSearchParamsRef.current = currentParamsStr;
 
-    // Trigger Fetch
     fetchClassesApi(apiParams, 1, false, controller.signal);
 
     return () => controller.abort();
@@ -246,7 +244,6 @@ function ExploreClientContent({
     fetchClassesApi,
   ]);
 
-  // --- EFFECT 3: INFINITE SCROLL ---
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -270,14 +267,10 @@ function ExploreClientContent({
     };
   }, [nextPageUrl, loadingMore, fetchClassesApi]);
 
-  // --- HANDLERS ---
-
   const handleCategoryChange = useCallback(
     (newCategoryKey, newSubcategoryKey) => {
       setIsNavigating(true);
       const newParams = new URLSearchParams(searchParams.toString());
-
-      // If switching to category, remove collection
       newParams.delete("collection");
 
       if (newCategoryKey && newCategoryKey !== "all") {
@@ -292,7 +285,6 @@ function ExploreClientContent({
         newParams.delete("subcategory");
       }
 
-      // Just update URL. Server Component + Effect 1 will handle data.
       router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
     },
     [searchParams, router, pathname]
@@ -302,8 +294,6 @@ function ExploreClientContent({
     (collectionSlug) => {
       setIsNavigating(true);
       const newParams = new URLSearchParams(searchParams.toString());
-
-      // If switching to collection, remove categories
       newParams.delete("category");
       newParams.delete("subcategory");
 
@@ -313,7 +303,6 @@ function ExploreClientContent({
         newParams.delete("collection");
       }
 
-      // Just update URL. Server Component + Effect 1 will handle data.
       router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
     },
     [searchParams, router, pathname]
@@ -336,10 +325,11 @@ function ExploreClientContent({
         "keyword",
         "sort_by",
         "date",
+        "start_date",
+        "end_date",
         "participants",
       ].forEach((key) => newParams.delete(key));
 
-      // Re-populate keys
       const defaultMaxPrice = 500;
       const defaultMaxDistance = 0;
 
@@ -364,7 +354,15 @@ function ExploreClientContent({
       if (newSort && newSort !== "relevance") {
         newParams.set("sort_by", newSort);
       }
-      if (newFilters.date) newParams.set("date", newFilters.date);
+
+      // --- UPDATED: Update URL with Range Params ---
+      if (newFilters.startDate && newFilters.endDate) {
+        newParams.set("start_date", newFilters.startDate);
+        newParams.set("end_date", newFilters.endDate);
+      } else if (newFilters.date) {
+        newParams.set("date", newFilters.date);
+      }
+
       if (newFilters.participants > 0)
         newParams.set("participants", newFilters.participants.toString());
 

@@ -82,9 +82,7 @@ const HeaderWrapper = styled.header`
   height: 80px;
   padding: 0 2rem;
   transition: background-color 0.3s, border-bottom 0.3s;
-  /* Ensure Header is above other page content like maps/heros */
   z-index: 100;
-  /* Allow popups to flow outside the header bounds */
   overflow: visible;
 
   @media (max-width: 768px) {
@@ -123,7 +121,6 @@ const RightSection = styled.div`
   }
 `;
 
-// Updated User Pill to be larger/consistent with search pill
 const UserMenuButton = styled(motion.button)`
   height: 48px;
   border: 1px solid #e5e7eb;
@@ -146,7 +143,7 @@ const UserMenuButton = styled(motion.button)`
 `;
 
 // ------------------------------------------------------------------------
-//  COMPACT SEARCH PILL COMPONENTS (Redesigned)
+//  COMPACT SEARCH PILL COMPONENTS
 // ------------------------------------------------------------------------
 
 const SearchFormWrapper = styled(motion.form)`
@@ -159,7 +156,7 @@ const SearchFormWrapper = styled(motion.form)`
   border: 1px solid #e5e7eb;
   border-radius: 100px;
   padding: 0;
-  height: 56px; /* Primary Search Pill Height */
+  height: 56px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   width: auto;
   z-index: 50;
@@ -276,9 +273,9 @@ const InlineInput = styled.input`
 
 const UnifiedPopupContainer = styled(motion.div)`
   position: absolute;
-  top: 70px; /* Below the header */
+  top: 70px;
   background: white;
-  border-radius: 24px;
+  border-radius: 32px;
   padding: 0;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   border: 1px solid rgba(0, 0, 0, 0.05);
@@ -287,125 +284,339 @@ const UnifiedPopupContainer = styled(motion.div)`
 `;
 
 const PopupContentPadding = styled.div`
-  padding: 20px;
+  padding: 24px;
 `;
 
-// --- REUSED SUB-COMPONENTS (Calendar, Location List, etc) ---
+// --- CALENDAR CUSTOM COMPONENTS ---
 
-// 1. Calendar
 const CalendarWrapper = styled.div`
   width: 100%;
+  user-select: none;
 `;
+
 const CalendarHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 16px;
   color: #111;
+  position: relative;
 `;
+
+const MonthTitle = styled.div`
+  flex: 1;
+  text-align: center;
+`;
+
 const NavBtn = styled.button`
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 8px;
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   &:hover {
     background: #f3f4f6;
   }
 `;
+
+const DoubleMonthGrid = styled.div`
+  display: flex;
+  gap: 32px;
+  width: 100%;
+`;
+
+const MonthSection = styled.div`
+  flex: 1;
+`;
+
 const WeekGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   margin-bottom: 8px;
   text-align: center;
-  font-size: 11px;
-  color: #9ca3af;
+  font-size: 12px;
+  color: #999;
+  font-weight: 600;
 `;
+
 const DayGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  row-gap: 2px;
+  row-gap: 4px;
 `;
+
 const DayBtn = styled.button`
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: 40px;
+  height: 40px;
   border: none;
-  background: ${(props) =>
-    props.$isSelected ? props.theme.token.colorPrimary : "transparent"};
+  position: relative;
+  background: transparent;
   color: ${(props) =>
-    props.$isSelected ? "white" : props.$isDisabled ? "#e5e7eb" : "#374151"};
+    props.$isWhiteText ? "white" : props.$isDisabled ? "#e5e7eb" : "#374151"};
   cursor: ${(props) => (props.$isDisabled ? "not-allowed" : "pointer")};
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto;
+  width: 100%;
+  isolation: isolate;
+
   &:hover {
     background: ${(props) =>
-      !props.$isSelected && !props.$isDisabled && "#f3f4f6"};
+      !props.$hasSelection && !props.$isDisabled ? "#f3f4f6" : "transparent"};
+    border-radius: 50%;
   }
 `;
 
-const CustomCalendar = ({ value, onChange, onClose }) => {
-  const [currentDate, setCurrentDate] = useState(
-    value ? dayjs(value) : dayjs()
-  );
-  const daysInMonth = currentDate.daysInMonth();
-  const startDay = currentDate.startOf("month").day();
-  const blanks = Array(startDay).fill(null);
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+const DayBackground = styled(motion.div)`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+  z-index: -1;
+  background: ${(props) => props.$bgColor};
+  border-radius: ${(props) => props.$radius};
+  width: 100%;
+  height: 100%;
+`;
 
-  return (
-    <CalendarWrapper>
-      <CalendarHeader>
-        <NavBtn
-          onClick={() => setCurrentDate(currentDate.subtract(1, "month"))}
-          type="button"
-        >
-          <ChevronLeft size={18} />
-        </NavBtn>
-        <span>{currentDate.format("MMMM YYYY")}</span>
-        <NavBtn
-          onClick={() => setCurrentDate(currentDate.add(1, "month"))}
-          type="button"
-        >
-          <ChevronRight size={18} />
-        </NavBtn>
-      </CalendarHeader>
-      <WeekGrid>
-        {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
-          <div key={d}>{d}</div>
-        ))}
-      </WeekGrid>
+const QuickSelectGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding-top: 20px;
+  margin-top: 12px;
+  border-top: 1px solid #f3f4f6;
+`;
+
+const QuickPill = styled.button`
+  background: ${(props) => (props.$active ? "#f3f4f6" : "white")};
+  border: 1px solid ${(props) => (props.$active ? "#111" : "#e5e7eb")};
+  border-radius: 12px;
+  padding: 8px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: #111;
+    background: #f9fafb;
+  }
+`;
+
+// --- CustomCalendar Component (Dual Month + Range Support) ---
+const CustomCalendar = ({ value, onChange, onClose }) => {
+  const [currentDate, setCurrentDate] = useState(dayjs());
+
+  const selectedStart = value?.start
+    ? dayjs(value.start)
+    : value && value.isValid && value.isValid()
+    ? dayjs(value)
+    : null;
+  const selectedEnd = value?.end ? dayjs(value.end) : null;
+
+  const handleDateClick = (dateObj) => {
+    // For now, behaving as single selection or simple override
+    // If you want range selection logic (click 1 = start, click 2 = end), implement here.
+    // Currently following banner logic: clicking a date selects it as single/start
+    onChange(dateObj);
+    onClose();
+  };
+
+  const nextMonth = () => setCurrentDate(currentDate.add(1, "month"));
+  const prevMonth = () => setCurrentDate(currentDate.subtract(1, "month"));
+
+  const applyPreset = (type) => {
+    let start, end;
+    const today = dayjs();
+
+    switch (type) {
+      case "weekend":
+        if (today.day() === 0) {
+          // Sunday
+          start = today.subtract(1, "day");
+          end = today;
+        } else {
+          start = today.day(6);
+          end = today.day(6).add(1, "day");
+        }
+        break;
+      case "next_weekend":
+        start = today.day(6).add(1, "week");
+        end = start.add(1, "day");
+        break;
+      case "this_week":
+        start = today;
+        end = today.endOf("week");
+        break;
+      case "next_week":
+        start = today.add(1, "week").startOf("week");
+        end = today.add(1, "week").endOf("week");
+        break;
+      default:
+        start = today;
+        end = null;
+    }
+
+    onChange({
+      start: start.format("YYYY-MM-DD"),
+      end: end ? end.format("YYYY-MM-DD") : null,
+    });
+  };
+
+  const renderMonthGrid = (baseDate) => {
+    const daysInMonth = baseDate.daysInMonth();
+    const startDay = baseDate.startOf("month").day();
+    const blanks = Array(startDay).fill(null);
+    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+    return (
       <DayGrid>
         {blanks.map((_, i) => (
           <div key={`blank-${i}`} />
         ))}
         {days.map((d) => {
-          const thisDate = currentDate.date(d);
-          const isSelected = value && dayjs(value).isSame(thisDate, "day");
+          const thisDate = baseDate.date(d);
           const isPast = thisDate.isBefore(dayjs().startOf("day"));
+
+          let isRangeStart = false;
+          let isRangeEnd = false;
+          let isInRange = false;
+          let isSingle = false;
+
+          if (selectedStart && !selectedEnd) {
+            isSingle = thisDate.isSame(selectedStart, "day");
+          } else if (selectedStart && selectedEnd) {
+            const s = selectedStart.startOf("day");
+            const e = selectedEnd.startOf("day");
+            const t = thisDate.startOf("day");
+
+            isRangeStart = t.isSame(s);
+            isRangeEnd = t.isSame(e);
+            isInRange = t.isAfter(s) && t.isBefore(e);
+
+            if (isRangeStart && isRangeEnd) {
+              isSingle = true;
+              isRangeStart = false;
+              isRangeEnd = false;
+            }
+          }
+
+          const hasSelection =
+            isSingle || isRangeStart || isRangeEnd || isInRange;
+
+          // Theme primary color (hardcoded fallback to match banner)
+          const primaryColor = "#ff385c"; // Airbnb/Rose color
+          const faintColor = "#ff385c15"; // Faint version
+
+          let bgRadius = "0";
+          let bgColor = "transparent";
+
+          if (isSingle) {
+            bgRadius = "50%";
+            bgColor = primaryColor;
+          } else if (isRangeStart) {
+            bgRadius = "50% 0 0 50%";
+            bgColor = primaryColor;
+          } else if (isRangeEnd) {
+            bgRadius = "0 50% 50% 0";
+            bgColor = primaryColor;
+          } else if (isInRange) {
+            bgRadius = "0";
+            bgColor = faintColor;
+          }
+
           return (
             <DayBtn
               key={d}
               type="button"
-              $isSelected={isSelected}
               $isDisabled={isPast}
+              $hasSelection={hasSelection}
+              $isWhiteText={isSingle || isRangeStart || isRangeEnd}
               disabled={isPast}
-              onClick={() => {
-                onChange(thisDate);
-                onClose();
-              }}
+              onClick={() => handleDateClick(thisDate)}
             >
-              {d}
+              <span style={{ position: "relative", zIndex: 2 }}>{d}</span>
+              {hasSelection && (
+                <DayBackground
+                  $bgColor={bgColor}
+                  $radius={bgRadius}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                />
+              )}
             </DayBtn>
           );
         })}
       </DayGrid>
+    );
+  };
+
+  const nextMonthDate = currentDate.add(1, "month");
+
+  return (
+    <CalendarWrapper>
+      <CalendarHeader>
+        <NavBtn onClick={prevMonth} type="button">
+          <ChevronLeft size={20} />
+        </NavBtn>
+        <div style={{ display: "flex", flex: 1 }}>
+          <MonthTitle>{currentDate.format("MMMM YYYY")}</MonthTitle>
+          <MonthTitle>{nextMonthDate.format("MMMM YYYY")}</MonthTitle>
+        </div>
+        <NavBtn onClick={nextMonth} type="button">
+          <ChevronRight size={20} />
+        </NavBtn>
+      </CalendarHeader>
+
+      <DoubleMonthGrid>
+        <MonthSection>
+          <WeekGrid>
+            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+              <div key={d}>{d}</div>
+            ))}
+          </WeekGrid>
+          {renderMonthGrid(currentDate)}
+        </MonthSection>
+
+        <MonthSection>
+          <WeekGrid>
+            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+              <div key={d}>{d}</div>
+            ))}
+          </WeekGrid>
+          {renderMonthGrid(nextMonthDate)}
+        </MonthSection>
+      </DoubleMonthGrid>
+
+      <QuickSelectGrid>
+        <QuickPill type="button" onClick={() => applyPreset("weekend")}>
+          This Weekend
+        </QuickPill>
+        <QuickPill type="button" onClick={() => applyPreset("next_weekend")}>
+          Next Weekend
+        </QuickPill>
+        <QuickPill type="button" onClick={() => applyPreset("this_week")}>
+          This Week
+        </QuickPill>
+        <QuickPill type="button" onClick={() => applyPreset("next_week")}>
+          Next Week
+        </QuickPill>
+      </QuickSelectGrid>
     </CalendarWrapper>
   );
 };
@@ -416,11 +627,11 @@ const ParticipantRow = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  padding: 4px 0;
+  padding: 8px 0;
 `;
 const CounterBtn = styled.button`
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 1px solid #d1d5db;
   background: white;
@@ -444,10 +655,10 @@ const CustomParticipant = ({ count, onChange }) => (
     <div
       style={{ display: "flex", flexDirection: "column", textAlign: "left" }}
     >
-      <span style={{ fontWeight: 600, color: "#111", fontSize: 15 }}>
+      <span style={{ fontWeight: 600, color: "#111", fontSize: 16 }}>
         Participants
       </span>
-      <span style={{ fontSize: 12, color: "#717171" }}>Join the class</span>
+      <span style={{ fontSize: 13, color: "#717171" }}>Join the class</span>
     </div>
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
       <CounterBtn
@@ -455,14 +666,14 @@ const CustomParticipant = ({ count, onChange }) => (
         disabled={count <= 1}
         onClick={() => onChange(Math.max(1, count - 1))}
       >
-        <Minus size={14} />
+        <Minus size={16} />
       </CounterBtn>
       <span
         style={{
-          width: 20,
+          width: 24,
           textAlign: "center",
           fontWeight: 600,
-          fontSize: 15,
+          fontSize: 16,
         }}
       >
         {count}
@@ -472,7 +683,7 @@ const CustomParticipant = ({ count, onChange }) => (
         disabled={count >= 20}
         onClick={() => onChange(count + 1)}
       >
-        <Plus size={14} />
+        <Plus size={16} />
       </CounterBtn>
     </div>
   </ParticipantRow>
@@ -498,23 +709,24 @@ const LocationOption = styled.div`
   }
 `;
 const IconBox = styled.div`
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background: #f3f4f6;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 12px;
+  margin-right: 14px;
   color: #374151;
   flex-shrink: 0;
 `;
 
 // --- CONSTANTS ---
+// Updated widths to accommodate wider calendar
 const POPUP_SIZES = {
-  location: 360,
-  date: 340,
-  participants: 320,
+  location: 380,
+  date: 660, // Widened for dual months
+  participants: 340,
 };
 
 const contentVariants = {
@@ -575,7 +787,12 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
     const locParam = searchParams.get("location");
     const latParam = searchParams.get("lat");
     const lngParam = searchParams.get("lng");
+
+    // Updated date logic to handle ranges
     const dateParam = searchParams.get("date");
+    const startDateParam = searchParams.get("start_date");
+    const endDateParam = searchParams.get("end_date");
+
     const participantsParam = searchParams.get("participants");
 
     if (locParam) {
@@ -589,10 +806,20 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
         });
       }
     }
-    if (dateParam) {
+
+    if (startDateParam && endDateParam) {
+      setDatePickerValue({
+        start: startDateParam,
+        end: endDateParam,
+      });
+    } else if (dateParam) {
       const parsedDate = dayjs(dateParam);
-      setDatePickerValue(parsedDate.isValid() ? parsedDate : null);
+      if (parsedDate.isValid()) setDatePickerValue(parsedDate);
+    } else {
+      // Only clear if no date params (optional - depends on UX preference)
+      // setDatePickerValue(null);
     }
+
     if (participantsParam) {
       const numParticipants = parseInt(participantsParam, 10);
       setParticipantCount(
@@ -622,6 +849,8 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
       if (targetRef?.current && containerRef.current) {
         const buttonRect = targetRef.current.getBoundingClientRect();
         const containerRect = containerRef.current.getBoundingClientRect();
+
+        // Use updated widths
         const width = POPUP_SIZES[activeField] || 360;
 
         // Calculate center relative to the button
@@ -631,10 +860,23 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
           buttonRect.width / 2 -
           width / 2;
 
-        // Boundaries
-        if (left < 0) left = 0;
-        if (left + width > containerRect.width)
-          left = containerRect.width - width;
+        // Smart edge detection (prevents popup from going off screen)
+        // Note: The HeaderWrapper has overflow: visible, so negative left isn't clipped,
+        // but we want it aligned nicely relative to the pill.
+
+        // However, we need to check if it overflows the viewport, not just container.
+        // Simplified check:
+        const absoluteLeft = containerRect.left + left;
+        const windowWidth = window.innerWidth;
+
+        if (absoluteLeft + width > windowWidth - 20) {
+          // Shift left if overflows right edge
+          left -= absoluteLeft + width - (windowWidth - 20);
+        }
+        if (absoluteLeft < 20) {
+          // Shift right if overflows left edge
+          left += 20 - absoluteLeft;
+        }
 
         setPopupConfig({ left, width });
       }
@@ -654,6 +896,27 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
     setActiveField(null);
   };
 
+  const getDateDisplay = () => {
+    if (!datePickerValue) return "Any week";
+
+    // Check for range object
+    if (datePickerValue.start && datePickerValue.end) {
+      const s = dayjs(datePickerValue.start);
+      const e = dayjs(datePickerValue.end);
+      if (s.month() === e.month()) {
+        return `${s.format("MMM D")} - ${e.format("D")}`;
+      }
+      return `${s.format("MMM D")} - ${e.format("MMM D")}`;
+    }
+
+    // Check for single Dayjs object
+    if (dayjs.isDayjs(datePickerValue)) {
+      return datePickerValue.format("MMM DD");
+    }
+
+    return "Any week";
+  };
+
   const renderLocationSuggestions = () => {
     const safeResults = Array.isArray(geocodedAddressResults)
       ? geocodedAddressResults
@@ -668,7 +931,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
           }}
         >
           <IconBox>
-            <MapPin size={18} />
+            <MapPin size={20} />
           </IconBox>
           <div
             style={{
@@ -677,10 +940,10 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
               textAlign: "left",
             }}
           >
-            <span style={{ fontWeight: 600, fontSize: 13, color: "#111" }}>
+            <span style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>
               {result.displayName.split(",")[0]}
             </span>
-            <span style={{ fontSize: 11, color: "#717171" }}>
+            <span style={{ fontSize: 12, color: "#717171" }}>
               {result.displayName}
             </span>
           </div>
@@ -703,10 +966,10 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
             textAlign: "left",
           }}
         >
-          <span style={{ fontWeight: 600, fontSize: 13, color: "#111" }}>
+          <span style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>
             {area.name}
           </span>
-          <span style={{ fontSize: 11, color: "#717171" }}>
+          <span style={{ fontSize: 12, color: "#717171" }}>
             {area.description}
           </span>
         </div>
@@ -796,7 +1059,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
                 ref={dateRef}
                 $isActive={activeField === "date"}
                 onClick={() => handleFieldClick("date")}
-                style={{ width: 140 }}
+                style={{ width: 150 }}
               >
                 {activeField === "date" && (
                   <ActivePillBackground
@@ -806,9 +1069,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
                 )}
                 <FieldLabel>Date</FieldLabel>
                 <ValueDisplay $hasValue={!!datePickerValue}>
-                  {datePickerValue
-                    ? dayjs(datePickerValue).format("MMM DD")
-                    : "Any date"}
+                  {getDateDisplay()}
                 </ValueDisplay>
               </SectionButton>
 
@@ -884,8 +1145,9 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
                           initial="enter"
                           animate="center"
                           exit="exit"
+                          // Fix: Use correct width for content container relative to popup
                           style={{
-                            width: (POPUP_SIZES[activeField] || 360) - 40,
+                            width: (POPUP_SIZES[activeField] || 360) - 48,
                           }}
                         >
                           {activeField === "location" && (
