@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback } from "react";
 import debounce from "lodash/debounce";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation"; // Removed usePathname, useSearchParams
 import { LordIcon } from "@/services/ReactUtils";
 
 const SearchContext = createContext();
@@ -66,9 +66,11 @@ export const SUGGESTED_AREAS = [
 
 export const SearchProvider = ({ children }) => {
   const router = useRouter();
+  // REMOVED: usePathname and useSearchParams to prevent build errors on static pages
 
   // UI State
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Search Data State
   const [searchTerm, setSearchTerm] = useState("");
@@ -78,7 +80,7 @@ export const SearchProvider = ({ children }) => {
     citySlug: null,
     provinceSlug: null,
   });
-  const [datePickerValue, setDatePickerValue] = useState(null); // Can be null, dayjs obj, or { start, end }
+  const [datePickerValue, setDatePickerValue] = useState(null);
   const [participantCount, setParticipantCount] = useState(1);
 
   // Geocoding State
@@ -179,7 +181,12 @@ export const SearchProvider = ({ children }) => {
       params.set("location", "Toronto, ON");
       params.set("lat", "43.6532");
       params.set("lng", "-79.3832");
-      router.push(`/explore?${params.toString()}`);
+
+      const newUrl = `/explore?${params.toString()}`;
+
+      setIsSearching(true);
+      router.push(newUrl);
+
       setIsDrawerOpen(false);
       return;
     }
@@ -194,13 +201,20 @@ export const SearchProvider = ({ children }) => {
       params.set("lng", coordinates.lng.toString());
     }
 
-    router.push(`/explore?${params.toString()}`);
+    const newUrl = `/explore?${params.toString()}`;
+
+    // Trigger global loading state immediately
+    setIsSearching(true);
+    router.push(newUrl);
+
     setIsDrawerOpen(false);
   };
 
   const value = {
     isDrawerOpen,
     setIsDrawerOpen,
+    isSearching,
+    setIsSearching,
     searchTerm,
     setSearchTerm,
     selectedLocation,

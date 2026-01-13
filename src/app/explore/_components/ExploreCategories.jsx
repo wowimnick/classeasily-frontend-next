@@ -455,14 +455,19 @@ function ExploreCategoriesContent({
   isMapVisible,
   onShowMap,
 }) {
+  // NEW: Optimistic State
   const [optimisticCategory, setOptimisticCategory] = useState(currentCategory);
   const [optimisticSubcategory, setOptimisticSubcategory] =
     useState(currentSubcategory);
+  const [optimisticCollection, setOptimisticCollection] =
+    useState(currentCollection);
 
+  // Sync state when props change (e.g. on server response or popstate)
   useEffect(() => {
     setOptimisticCategory(currentCategory);
     setOptimisticSubcategory(currentSubcategory);
-  }, [currentCategory, currentSubcategory]);
+    setOptimisticCollection(currentCollection);
+  }, [currentCategory, currentSubcategory, currentCollection]);
 
   const subcatWrapperRef = useRef(null);
   const categoriesRef = useRef(null);
@@ -561,14 +566,14 @@ function ExploreCategoriesContent({
     setDisplayedSubcategories(subcats);
   }, [optimisticCategory, masterSubcategoryMap]);
 
-  // Visibility logic
+  // Visibility logic - UPDATED to use optimisticCollection
   useEffect(() => {
     setIsSubcategoriesVisible(
-      !currentCollection &&
+      !optimisticCollection &&
         optimisticCategory !== "all" &&
         displayedSubcategories.length > 0
     );
-  }, [optimisticCategory, displayedSubcategories, currentCollection]);
+  }, [optimisticCategory, displayedSubcategories, optimisticCollection]);
 
   // --- Scroll Logic ---
   const updateScrollPosition = useCallback(() => {
@@ -666,34 +671,53 @@ function ExploreCategoriesContent({
     }
   }, [isSubcategoriesVisible, updateScrollPosition]);
 
-  // --- Handlers ---
+  // --- Handlers (UPDATED TO BE OPTIMISTIC) ---
 
   const handleCategoryClick = useCallback(
     (categoryKey) => {
-      // Logic: Just tell parent to change category.
-      // Parent handles clearing collection.
+      if (optimisticCategory === categoryKey && !optimisticCollection) return;
+
+      // Optimistic updates
+      setOptimisticCategory(categoryKey);
+      setOptimisticSubcategory("");
+      setOptimisticCollection("");
+
       onCategoryChange(categoryKey, "");
     },
-    [onCategoryChange]
+    [onCategoryChange, optimisticCategory, optimisticCollection]
   );
 
   const handleCollectionClick = useCallback(
     (collectionSlug) => {
-      if (currentCollection === collectionSlug) return;
-      // Logic: Just tell parent to change collection.
-      // Parent handles clearing category.
+      if (optimisticCollection === collectionSlug) return;
+
+      // Optimistic updates
+      setOptimisticCollection(collectionSlug);
+      setOptimisticCategory("all"); // Reset category to All
+      setOptimisticSubcategory("");
+
       onCollectionChange(collectionSlug);
     },
-    [currentCollection, onCollectionChange]
+    [optimisticCollection, onCollectionChange]
   );
 
   const handleSubcategoryClick = useCallback(
     (subcategoryKey) => {
       const isDeselecting = optimisticSubcategory === subcategoryKey;
-      setOptimisticSubcategory(isDeselecting ? "" : subcategoryKey);
-      onCategoryChange(optimisticCategory, isDeselecting ? "" : subcategoryKey);
+      const newSub = isDeselecting ? "" : subcategoryKey;
+
+      setOptimisticSubcategory(newSub);
+      // Ensure collection is cleared (should be implicitly, but safely here)
+      if (optimisticCollection) setOptimisticCollection("");
+
+      onCategoryChange(optimisticCategory, newSub);
     },
-    [optimisticCategory, optimisticSubcategory, onCategoryChange]
+    [
+      optimisticCategory,
+      optimisticSubcategory,
+      onCategoryChange,
+      optimisticCollection,
+    ]
   );
 
   return (
@@ -717,16 +741,13 @@ function ExploreCategoriesContent({
               {collections.map((collection, index) => {
                 const id =
                   collection.key || collection.slug || `collection-${index}`;
+                const slug = collection.key || collection.slug;
                 return (
                   <CollectionItem
                     key={id}
                     collection={collection}
-                    isSelected={
-                      currentCollection === (collection.key || collection.slug)
-                    }
-                    onClick={() =>
-                      handleCollectionClick(collection.key || collection.slug)
-                    }
+                    isSelected={optimisticCollection === slug}
+                    onClick={() => handleCollectionClick(slug)}
                   />
                 );
               })}
@@ -740,7 +761,7 @@ function ExploreCategoriesContent({
                   key={category.key}
                   category={category}
                   isSelected={
-                    !currentCollection && optimisticCategory === category.key
+                    !optimisticCollection && optimisticCategory === category.key
                   }
                   onClick={() => handleCategoryClick(category.key)}
                 />

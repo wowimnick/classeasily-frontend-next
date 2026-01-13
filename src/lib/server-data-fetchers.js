@@ -72,13 +72,11 @@ export async function searchClasses(params = {}) {
     const url = `${BASE_URL}/classes/search/?${queryParams.toString()}`;
     const cacheTags = generateSearchCacheTags(params);
 
-    // Remove the condition that disables caching for location searches.
-    // We want to cache based on the rounded location tags generated above.
+    // CHANGED: Use no-store to prevent stale data and race conditions with client loaders
+    const cacheStrategy = "no-store";
 
-    const cacheStrategy = "force-cache";
-
-    // You can adjust revalidate time (e.g., 3600 = 1 hour)
-    const nextConfig = { revalidate: 3600, tags: cacheTags };
+    // We remove revalidate since we are not storing, but we keep tags for invalidation reference if needed later
+    const nextConfig = { tags: cacheTags };
 
     console.log(`[Server] Fetching classes: ${url}`);
     console.log(

@@ -93,38 +93,19 @@ const ClassGridWrapper = styled.div`
 const ClassGrid = styled.div`
   display: grid;
   width: 100%;
-
-  /* 
-     DESKTOP DEFAULT:
-     Reduced from 270px to 240px to fit more cards per row on standard monitors.
-  */
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 24px;
 
-  /* 
-     COMPACT LAPTOP:
-     Reduced from 240px to 210px.
-  */
   @media (max-width: 1400px) {
     gap: 20px;
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   }
 
-  /* 
-     TABLET:
-     Reduced from 220px to 180px.
-     This ensures 3-4 columns on tablets instead of snapping to 2.
-  */
   @media (max-width: 1048px) {
     gap: 16px;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
 
-  /* 
-     MOBILE:
-     Reduced from 165px to 150px.
-     This guarantees 2 columns on almost all mobile screens (including 360px width Androids).
-  */
   @media (max-width: 600px) {
     gap: 12px;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -316,7 +297,7 @@ const NoResultsAnimation = ({ onReset }) => {
 const ClassesDisplay = ({
   classes = [],
   categories = [],
-  collections = [], // NEW PROP
+  collections = [],
   loading,
   isNavigating,
   userLocation,
@@ -325,10 +306,8 @@ const ClassesDisplay = ({
   currentCategory,
   currentSubcategory,
   onCategoryChange,
-
-  currentCollection, // NEW PROP
-  onCollectionChange, // NEW PROP
-
+  currentCollection,
+  onCollectionChange,
   currentSortBy,
   onApplyModalChanges,
   observerTargetRef,
@@ -509,57 +488,52 @@ const ClassesDisplay = ({
   };
 
   const renderContent = () => {
-    if (isNavigating) {
+    // 1. Force skeleton if navigation/loading is explicitly happening
+    if (isNavigating || loading) {
       return <ClassesContentSkeleton />;
     }
 
-    if (loading && classesWithDistance.length === 0) {
-      return <ClassesContentSkeleton />;
-    }
-
-    if (!loading && classesWithDistance.length === 0) {
+    if (classesWithDistance.length === 0) {
       return <NoResultsAnimation onReset={handleResetFilters} />;
     }
 
     return (
-      <>
-        <ClassGrid>
-          {classesWithDistance.map((classItem, index) => (
-            <div
-              id={`class-${classItem.classId}`}
-              key={classItem.classId}
-              onMouseEnter={() => setSelectedClassId(classItem.classId)}
-              onMouseLeave={() => setSelectedClassId(null)}
-            >
-              <HomeClassCard
-                classId={classItem.classId}
-                slug={classItem.slug}
-                images={classItem.images || []}
-                title={classItem.title}
-                rating={classItem.average_rating}
-                min_session_price={classItem.min_session_price}
-                min_course_price={classItem.min_course_price}
-                totalReviews={applyRandomReviewOffset(
-                  classItem.review_count,
-                  classItem.classId
-                )}
-                business_name={classItem.business_name}
-                city={classItem.city}
-                state={classItem.state}
-                coordinates={classItem.coordinates}
-                distance={classItem.distance}
-                isSelected={selectedClassId === classItem.classId}
-                is_favorited={classItem.is_favorited}
-                priority={index < 4}
-              />
-            </div>
+      <ClassGrid>
+        {classesWithDistance.map((classItem, index) => (
+          <div
+            id={`class-${classItem.classId}`}
+            key={classItem.classId}
+            onMouseEnter={() => setSelectedClassId(classItem.classId)}
+            onMouseLeave={() => setSelectedClassId(null)}
+          >
+            <HomeClassCard
+              classId={classItem.classId}
+              slug={classItem.slug}
+              images={classItem.images || []}
+              title={classItem.title}
+              rating={classItem.average_rating}
+              min_session_price={classItem.min_session_price}
+              min_course_price={classItem.min_course_price}
+              totalReviews={applyRandomReviewOffset(
+                classItem.review_count,
+                classItem.classId
+              )}
+              business_name={classItem.business_name}
+              city={classItem.city}
+              state={classItem.state}
+              coordinates={classItem.coordinates}
+              distance={classItem.distance}
+              isSelected={selectedClassId === classItem.classId}
+              is_favorited={classItem.is_favorited}
+              priority={index < 4}
+            />
+          </div>
+        ))}
+        {isLoadingMore &&
+          [...Array(6)].map((_, i) => (
+            <SkeletonClassSingleCard key={`skeleton-${i}`} />
           ))}
-          {isLoadingMore &&
-            [...Array(6)].map((_, i) => (
-              <SkeletonClassSingleCard key={`skeleton-${i}`} />
-            ))}
-        </ClassGrid>
-      </>
+      </ClassGrid>
     );
   };
 
@@ -570,13 +544,12 @@ const ClassesDisplay = ({
           <ExploreCategories
             classes={classesWithDistance}
             categories={categories}
-            collections={collections} // Pass collections
+            collections={collections}
             filters={filters}
             onFiltersChange={onFiltersChange}
             currentCategory={currentCategory}
             currentSubcategory={currentSubcategory}
             onCategoryChange={onCategoryChange}
-            // Pass collection logic
             currentCollection={currentCollection}
             onCollectionChange={onCollectionChange}
             currentSortBy={currentSortBy}

@@ -15,6 +15,7 @@ import ClassesDisplay from "./ClassesDisplay";
 import { classService } from "@/services/apiService";
 import Breadcrumbs from "@/services/Breadcrumbs";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
+import { useSearch } from "@/context/SearchContext"; // IMPORT SEARCH CONTEXT
 
 const PageLayout = styled.div`
   display: flex;
@@ -50,6 +51,9 @@ function ExploreClientContent({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  // Use Global Search Context to handle header search loading state
+  const { isSearching, setIsSearching } = useSearch();
 
   const { location: userLocation } = useIpGeolocation();
 
@@ -110,9 +114,17 @@ function ExploreClientContent({
       setNextPageUrl(initialNextPageUrl);
       setIsNavigating(false);
       setLoading(false);
+      // STOP GLOBAL SEARCH LOADING
+      setIsSearching(false);
       previousSearchParamsRef.current = searchParams.toString();
     }
-  }, [initialClasses, initialTotalCount, initialNextPageUrl, searchParams]);
+  }, [
+    initialClasses,
+    initialTotalCount,
+    initialNextPageUrl,
+    searchParams,
+    setIsSearching,
+  ]);
 
   const fetchClassesApi = useCallback(
     async (params, pageToFetch, isLoadMoreRequest, signal) => {
@@ -146,9 +158,10 @@ function ExploreClientContent({
         setLoading(false);
         setLoadingMore(false);
         setIsNavigating(false);
+        setIsSearching(false);
       }
     },
-    []
+    [setIsSearching]
   );
 
   useEffect(() => {
@@ -164,9 +177,6 @@ function ExploreClientContent({
 
     if (currentParamsStr === prevParamsStr) return;
 
-    // Set navigating state IMMEDIATELY when params change
-    setIsNavigating(true);
-
     const currentObj = Object.fromEntries(searchParams.entries());
     const prevObj = Object.fromEntries(
       new URLSearchParams(prevParamsStr).entries()
@@ -178,12 +188,12 @@ function ExploreClientContent({
       currentObj.collection !== prevObj.collection;
 
     if (isNavChange) {
-      // Keep navigating state true for category changes
-      previousSearchParamsRef.current = currentParamsStr;
       return;
     }
 
-    // Build API params
+    // Force explicit loading for client-side filter changes
+    setLoading(true);
+
     const apiParams = {};
 
     const lat = searchParams.get("lat");
@@ -212,6 +222,7 @@ function ExploreClientContent({
     if (currentFilters.distance[1] > 0)
       apiParams.radius = currentFilters.distance[1];
 
+    // --- UPDATED: Add Date Ranges to Client API Params ---
     if (currentFilters.startDate && currentFilters.endDate) {
       apiParams.start_date = currentFilters.startDate;
       apiParams.end_date = currentFilters.endDate;
@@ -371,6 +382,10 @@ function ExploreClientContent({
     [searchParams, pathname, router]
   );
 
+  // Combine all loading states
+  const effectiveLoading = loading && !loadingMore;
+  const showSkeleton = effectiveLoading || isNavigating || isSearching;
+
   return (
     <PageLayout>
       <ExploreHeader showOptionsWrapper={true} />
@@ -382,8 +397,8 @@ function ExploreClientContent({
           classes={displayClasses}
           categories={initialCategories}
           collections={initialCollections}
-          loading={loading && !loadingMore}
-          isNavigating={isNavigating}
+          loading={showSkeleton}
+          isNavigating={isNavigating} // Still pass explicitly if needed, but 'loading' covers it now
           userLocation={userLocation}
           filters={currentFilters}
           onFiltersChange={() => {}}
