@@ -1069,13 +1069,13 @@ function ClassManagementContent(props) {
   const handleClassEditSuccess = () => {
     setEditDrawerVisible(false);
     loadClasses();
-    message.success("Class updated successfully");
+    message.success("Experience updated successfully");
   };
 
   const handleCreateClassSuccess = () => {
     setCreateDrawerVisible(false);
     loadClasses();
-    message.success("Class created successfully");
+    message.success("Experience created successfully");
   };
 
   const openDeleteModal = (classItem) => {

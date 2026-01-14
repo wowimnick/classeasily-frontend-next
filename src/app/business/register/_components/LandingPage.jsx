@@ -208,7 +208,6 @@ const LottieWrapper = styled(m.div)`
   width: 100%;
   max-width: 480px;
   margin-bottom: 10px;
-  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.08));
 `;
 
 // --- Main Component ---

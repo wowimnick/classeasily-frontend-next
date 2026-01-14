@@ -500,13 +500,11 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                   <StyledSelect placeholder="Select level" size="middle">
                     <Option value="all">Open to Everyone</Option>
                     <Option value="no-experience">No Experience Needed</Option>
-                    <Option value="beginner">Beginner Friendly</Option>
-                    <Option value="active">Moderate Activity</Option>
+                    <Option value="intermediate">Intermediate Skill</Option>
+                    <Option value="advanced">Advanced Skill</Option>
                     <Option value="strenuous">
                       High Intensity / Strenuous
                     </Option>
-                    <Option value="intermediate">Intermediate Skill</Option>
-                    <Option value="advanced">Advanced Skill</Option>
                   </StyledSelect>
                 </Form.Item>
               </FormGroup>

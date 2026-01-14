@@ -369,7 +369,7 @@ const ClassTypesStep = ({ onSubmit, initialData = {}, onFormSubmitFailed }) => {
               <StyledSelect
                 mode="multiple"
                 allowClear
-                placeholder="Select formats (e.g., Small Group, Private, Virtual)"
+                placeholder="Select formats (e.g., Small Group, Private)"
                 size="large"
                 maxTagCount="responsive"
               >
@@ -378,9 +378,6 @@ const ClassTypesStep = ({ onSubmit, initialData = {}, onFormSubmitFailed }) => {
                 <Option value="private">Private Booking</Option>
                 <Option value="event">Large Event Friendly</Option>
                 <Option value="course">Multi-Day Workshop</Option>
-                <Option value="online">Virtual Experience</Option>
-                <Option value="in-person">In-Person Only</Option>
-                <Option value="hybrid">Hybrid</Option>
               </StyledSelect>
             </Form.Item>
           </FormGroup>
@@ -411,7 +408,6 @@ const ClassTypesStep = ({ onSubmit, initialData = {}, onFormSubmitFailed }) => {
                 maxTagCount="responsive"
               >
                 <Option value="no-experience">No Experience Needed</Option>
-                <Option value="beginner">Beginner Friendly</Option>
                 <Option value="intermediate">Intermediate</Option>
                 <Option value="advanced">Advanced</Option>
                 <Option value="active">Moderate Physical Activity</Option>

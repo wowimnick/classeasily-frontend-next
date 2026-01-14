@@ -551,7 +551,7 @@ const GeneralSettingsTab = ({
               <StyledTagsSelect
                 mode="tags"
                 style={{ width: "100%" }}
-                placeholder="e.g., Yoga, Beginner Friendly, Kids Art"
+                placeholder="e.g., Yoga, Beginner Friendly, Art"
                 tokenSeparators={[","]}
               />
             </Form.Item>

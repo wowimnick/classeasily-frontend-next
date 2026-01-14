@@ -1976,7 +1976,7 @@ const ScheduleEditDrawer = ({
                   <FieldContainer>
                     <Label>
                       Min Participants
-                      <Tooltip title="The minimum number of bookings required for this session to go ahead. If not met, you might need to cancel.">
+                      <Tooltip title="The minimum number of participants required for a person to book this session.">
                         <HelpCircle
                           size={14}
                           style={{ cursor: "pointer", color: "#94a3b8" }}
