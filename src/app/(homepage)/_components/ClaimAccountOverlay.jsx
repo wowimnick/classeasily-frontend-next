@@ -336,8 +336,9 @@ function ClaimAccountOverlayInner() {
   // Extract params
   const mode = searchParams.get("mode");
   const uid = searchParams.get("uid");
-  // FIX: Check for both 'token' (standard) and 'invite_token' (link generated)
-  const token = searchParams.get("token") || searchParams.get("invite_token");
+
+  // FIX: Explicitly grab 'invite_token' or 'token'
+  const token = searchParams.get("invite_token") || searchParams.get("token");
 
   useEffect(() => {
     // Only open if mode is claim-account and we have the required tokens
@@ -362,7 +363,7 @@ function ClaimAccountOverlayInner() {
     params.delete("mode");
     params.delete("uid");
     params.delete("token");
-    params.delete("invite_token"); // Ensure we clean this up too
+    params.delete("invite_token");
     router.replace(`/?${params.toString()}`, { scroll: false });
   };
 

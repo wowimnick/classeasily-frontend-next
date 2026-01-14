@@ -59,8 +59,12 @@ export const metadata = {
   description: "Discover and book local classes and experiences in your area.",
 };
 
-export default async function HomePage() {
+// 1. Accept searchParams prop
+export default async function HomePage({ searchParams }) {
   const { row_collections, categories } = await preloadHomepageData();
+
+  // 2. Check the mode to prevent conflicts
+  const isClaimingAccount = searchParams?.mode === "claim-account";
 
   return (
     <>
@@ -120,7 +124,9 @@ export default async function HomePage() {
         </Suspense>
 
         <CancellationOverlay />
-        <InviteOverlay />
+
+        {!isClaimingAccount && <InviteOverlay />}
+
         <PasswordResetOverlay />
         <ClaimAccountOverlay />
         <VerifyEmailOverlay />
