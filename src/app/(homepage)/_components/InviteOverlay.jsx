@@ -158,6 +158,9 @@ function InviteContent({ token, triggerClose }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    // Guard against running if token is missing
+    if (!token) return;
+
     const validate = async () => {
       try {
         const res = await axiosInstance.get(
@@ -166,6 +169,8 @@ function InviteContent({ token, triggerClose }) {
         setDetails(res.data);
         setStatus("info");
       } catch (err) {
+        // Only set error if the component is still mounted and intended to be active
+        console.error("Invite validation error:", err);
         setErrorMsg(err.response?.data?.detail || "Invalid invitation link.");
         setStatus("error");
       }
@@ -439,10 +444,15 @@ function InviteOverlayInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  // FIX 1: Detect Claim Mode
   const isClaimMode = searchParams.get("mode") === "claim-account";
-  const rawToken =
-    searchParams.get("invite_token") ||
-    (!isClaimMode ? searchParams.get("token") : null);
+
+  // FIX 2: If in claim mode, force rawToken to null so this overlay does not open
+  // logic: invite_token OR (if NOT claim mode, maybe plain token)
+  const rawToken = isClaimMode
+    ? null
+    : searchParams.get("invite_token") || searchParams.get("token");
+
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -452,6 +462,10 @@ function InviteOverlayInner() {
   }, [rawToken]);
 
   useEffect(() => {
+    // FIX 3: Do not rewrite 'token' to 'invite_token' if we are in claim mode.
+    // The 'token' in claim mode is the password reset token, not the invite token.
+    if (isClaimMode) return;
+
     if (searchParams.get("token")) {
       const params = new URLSearchParams(searchParams.toString());
       const val = params.get("token");
@@ -459,7 +473,7 @@ function InviteOverlayInner() {
       params.set("invite_token", val);
       router.replace(`/?${params.toString()}`, { scroll: false });
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, isClaimMode]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
@@ -480,6 +494,7 @@ function InviteOverlayInner() {
     setTimeout(handleFinalCleanup, 500);
   };
 
+  // If no token, or if we are suppressed by claim mode (rawToken is null), return null
   if (!rawToken && !isOpen) return null;
 
   return (
