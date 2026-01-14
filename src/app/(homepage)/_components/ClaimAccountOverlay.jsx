@@ -19,22 +19,25 @@ import {
   Alert,
 } from "antd";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, CheckCircle } from "lucide-react";
+import { Lock, CheckCircle, KeyRound } from "lucide-react";
 import { Drawer } from "vaul";
 import { useSearchParams, useRouter } from "next/navigation";
 import message from "@/lib/message";
 
-// --- UPDATED IMPORTS ---
 import { useAuthModal } from "@/context/AuthContext";
 import { theme } from "@/components/theme";
 import { userService } from "@/services/apiService";
+
 const { Title, Paragraph } = Typography;
 
+// --- GLOBAL STYLES ---
 const ModalGlobalStyle = createGlobalStyle`
   .no-padding-modal .ant-modal-content {
     padding: 0 !important;
   }
 `;
+
+// --- STYLED COMPONENTS ---
 
 const StyledModal = styled(Modal)`
   .ant-modal-container {
@@ -42,44 +45,8 @@ const StyledModal = styled(Modal)`
   }
 `;
 
-/**
- * Animation Helpers
- */
-const useElementSize = () => {
-  const ref = useRef(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
-  useLayoutEffect(() => {
-    if (!ref.current) return;
-    const observer = new ResizeObserver(([entry]) => {
-      setSize({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
-      });
-    });
-    observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-  return [ref, size];
-};
-
-const AnimatedModalContent = ({ children }) => {
-  const [ref, { height }] = useElementSize();
-  return (
-    <motion.div
-      animate={{ height: height || "auto" }}
-      style={{ overflow: "hidden" }}
-      transition={{ type: "spring", damping: 25, stiffness: 200 }}
-    >
-      <div ref={ref}>{children}</div>
-    </motion.div>
-  );
-};
-
-/**
- * Styled Components
- */
 const ContentWrapper = styled.div`
-  padding: 1.5rem;
+  padding: 2rem 1.5rem;
   text-align: center;
 `;
 
@@ -87,6 +54,14 @@ const IconWrapper = styled.span`
   color: #999;
   display: flex;
   align-items: center;
+`;
+
+const EmojiHeader = styled(motion.div)`
+  font-size: 48px;
+  line-height: 1;
+  margin-bottom: 16px;
+  display: inline-block;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
 `;
 
 const SuccessBloom = styled(motion.div)`
@@ -135,6 +110,38 @@ const StyledForm = styled(Form)`
   }
 `;
 
+// --- ANIMATION HELPERS ---
+const useElementSize = () => {
+  const ref = useRef(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      });
+    });
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, size];
+};
+
+const AnimatedModalContent = ({ children }) => {
+  const [ref, { height }] = useElementSize();
+  return (
+    <motion.div
+      animate={{ height: height || "auto" }}
+      style={{ overflow: "hidden" }}
+      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+    >
+      <div ref={ref}>{children}</div>
+    </motion.div>
+  );
+};
+
+// --- CONTENT COMPONENT ---
 function ClaimAccountContent({ uid, token, triggerClose }) {
   const { openLoginModal } = useAuthModal();
   const [form] = Form.useForm();
@@ -158,8 +165,6 @@ function ClaimAccountContent({ uid, token, triggerClose }) {
       message.success("Account claimed successfully!");
     } catch (error) {
       console.error("Claim error:", error);
-
-      // Since your service throws the error response data directly:
       const detail =
         error.detail ||
         error.password1 ||
@@ -194,11 +199,21 @@ function ClaimAccountContent({ uid, token, triggerClose }) {
             exit={{ opacity: 0, y: -20, filter: "blur(8px)" }}
             transition={{ duration: 0.3 }}
           >
-            <Title level={3} style={{ marginBottom: 4 }}>
-              Claim Your Account
+            {/* Friendly Emoji Header */}
+            <EmojiHeader
+              initial={{ scale: 0.5, rotate: -20, opacity: 0 }}
+              animate={{ scale: 1, rotate: 0, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 15 }}
+            >
+              🔑
+            </EmojiHeader>
+
+            <Title level={2} style={{ marginBottom: 8, fontSize: "1.75rem" }}>
+              Here are your keys!
             </Title>
-            <Paragraph type="secondary">
-              Set a secure password to access your business dashboard.
+            <Paragraph style={{ color: "#666", fontSize: "15px" }}>
+              Your business profile setup is complete. <br />
+              Create a secure password to unlock your dashboard.
             </Paragraph>
 
             {errorMsg && (
@@ -206,7 +221,7 @@ function ClaimAccountContent({ uid, token, triggerClose }) {
                 message={errorMsg}
                 type="error"
                 showIcon
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: 16, textAlign: "left" }}
               />
             )}
 
@@ -227,7 +242,7 @@ function ClaimAccountContent({ uid, token, triggerClose }) {
                       <Lock size={18} />
                     </IconWrapper>
                   }
-                  placeholder="New Password"
+                  placeholder="Create Password"
                   size="middle"
                 />
               </Form.Item>
@@ -259,12 +274,12 @@ function ClaimAccountContent({ uid, token, triggerClose }) {
               <Button
                 type="primary"
                 htmlType="submit"
-                size="middle"
+                size="large"
                 block
                 loading={status === "submitting"}
-                style={{ marginTop: 12 }}
+                style={{ marginTop: 8, height: "48px", borderRadius: "12px" }}
               >
-                Set Password & Claim
+                Claim My Account
               </Button>
             </StyledForm>
           </motion.div>
@@ -290,16 +305,17 @@ function ClaimAccountContent({ uid, token, triggerClose }) {
             >
               <CheckCircle size={36} strokeWidth={3} />
             </SuccessBloom>
-            <Title level={3}>All Set!</Title>
-            <Paragraph type="secondary">
-              Your password has been set. Welcome aboard.
+            <Title level={3}>You're In!</Title>
+            <Paragraph style={{ color: "#666", fontSize: "16px" }}>
+              Your password has been set and your keys are ready.
             </Paragraph>
             <div style={{ marginTop: 24 }}>
               <Button
                 type="primary"
                 block
-                size="middle"
+                size="large"
                 onClick={handleLoginClick}
+                style={{ height: "48px", borderRadius: "12px" }}
               >
                 Sign In Now
               </Button>
@@ -333,6 +349,7 @@ function ClaimAccountContent({ uid, token, triggerClose }) {
   );
 }
 
+// --- OVERLAY/DRAWER CONTROLLER ---
 function ClaimAccountOverlayInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -380,7 +397,6 @@ function ClaimAccountOverlayInner() {
         <Drawer.Root
           open={isOpen}
           onOpenChange={(open) => !open && handleClose()}
-          // This ensures the drawer stays in the viewport when keyboard opens
           disablePreventScroll={false}
         >
           <Drawer.Portal>
@@ -403,7 +419,7 @@ function ClaimAccountOverlayInner() {
                 borderTopRightRadius: 16,
                 zIndex: 1001,
                 outline: "none",
-                // Allows scrolling if keyboard shrinks viewport too much
+                // Handles keyboard resizing viewport
                 maxHeight: "96vh",
                 overflowY: "auto",
               }}
