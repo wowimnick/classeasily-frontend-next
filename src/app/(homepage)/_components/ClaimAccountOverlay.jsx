@@ -116,7 +116,14 @@ const StyledForm = styled(Form)`
     height: 48px;
     border-radius: 12px;
     border: 1px solid #e8e8e8;
-    font-size: 16px !important;
+
+    /* Default font size for desktop */
+    font-size: 14px;
+
+    /* Force 16px on mobile to prevent iOS zoom on focus */
+    @media (max-width: 768px) {
+      font-size: 16px !important;
+    }
 
     &:hover,
     &.ant-input-affix-wrapper-focused,
@@ -252,7 +259,7 @@ function ClaimAccountContent({ uid, token, triggerClose }) {
               <Button
                 type="primary"
                 htmlType="submit"
-                size="large"
+                size="middle"
                 block
                 loading={status === "submitting"}
                 style={{ marginTop: 12 }}
@@ -291,7 +298,7 @@ function ClaimAccountContent({ uid, token, triggerClose }) {
               <Button
                 type="primary"
                 block
-                size="large"
+                size="middle"
                 onClick={handleLoginClick}
               >
                 Sign In Now
@@ -373,6 +380,8 @@ function ClaimAccountOverlayInner() {
         <Drawer.Root
           open={isOpen}
           onOpenChange={(open) => !open && handleClose()}
+          // This ensures the drawer stays in the viewport when keyboard opens
+          disablePreventScroll={false}
         >
           <Drawer.Portal>
             <Drawer.Overlay
@@ -394,6 +403,9 @@ function ClaimAccountOverlayInner() {
                 borderTopRightRadius: 16,
                 zIndex: 1001,
                 outline: "none",
+                // Allows scrolling if keyboard shrinks viewport too much
+                maxHeight: "96vh",
+                overflowY: "auto",
               }}
             >
               <div
@@ -403,6 +415,7 @@ function ClaimAccountOverlayInner() {
                   background: "#ddd",
                   borderRadius: 2,
                   margin: "12px auto",
+                  flexShrink: 0,
                 }}
               />
               <AnimatedModalContent>
