@@ -221,7 +221,7 @@ function ClaimAccountContent({ uid, token, triggerClose }) {
                     </IconWrapper>
                   }
                   placeholder="New Password"
-                  size="large"
+                  size="middle"
                 />
               </Form.Item>
               <Form.Item
@@ -245,7 +245,7 @@ function ClaimAccountContent({ uid, token, triggerClose }) {
                     </IconWrapper>
                   }
                   placeholder="Confirm Password"
-                  size="large"
+                  size="middle"
                 />
               </Form.Item>
 
