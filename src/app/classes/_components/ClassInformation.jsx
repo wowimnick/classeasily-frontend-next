@@ -762,7 +762,7 @@ const ClassInformation = React.memo(
               <BusinessName>Hosted by {displayBusinessName}</BusinessName>
               <BusinessMetaWrapper>
                 <MetaItem>
-                  {hostingDuration && ` · ${hostingDuration} hosting`}
+                  {hostingDuration && `${hostingDuration} hosting`}
                 </MetaItem>
 
                 {reviewCount > 0 && (
