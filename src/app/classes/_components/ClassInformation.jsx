@@ -501,12 +501,6 @@ const CategoryPill = styled.div`
   transition: all 0.3s ease;
   overflow: visible;
 
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-    border-color: #e0e0e0;
-  }
-
   @media (max-width: 480px) {
     padding: 5px 12px 5px 8px;
   }

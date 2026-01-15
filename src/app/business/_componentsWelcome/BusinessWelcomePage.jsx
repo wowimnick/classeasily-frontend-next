@@ -751,21 +751,21 @@ const BusinessWelcomePage = () => {
             title: "Bookings",
             description:
               "Visualize trends, pinpoint popular experiences, and optimize your schedule.",
-            image: "/Desert Titanium.svg",
+            image: "/Desert Titanium.webp",
             delay: 0,
           },
           {
             title: "Insights",
             description:
               "Track every dollar. Visualize growth trends and instantly identify profitable time slots.",
-            image: "/Desert Titanium 3.svg",
+            image: "/Desert Titanium 3.webp",
             delay: 0.1,
           },
           {
             title: "Earnings",
             description:
               "Get paid with confidence. Track earnings in real-time and access clear payout history.",
-            image: "/Desert Titanium 2.svg",
+            image: "/Desert Titanium 2.webp",
             delay: 0.2,
           },
         ],
@@ -945,7 +945,7 @@ const BusinessWelcomePage = () => {
                   {/* OPTIMIZATION: sizes prop added to prevent full res load on mobile */}
                   {/* NOTE: Convert this SVG to WebP for massive LCP improvement */}
                   <Image
-                    src="/Frame 1597880366.svg"
+                    src="/Frame 1597880366.webp"
                     alt="Host Dashboard Preview"
                     fill
                     priority
