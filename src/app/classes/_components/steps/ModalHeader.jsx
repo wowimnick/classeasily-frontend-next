@@ -1,13 +1,6 @@
 import React from "react";
-import {
-  Clock,
-  Users,
-  Check,
-  Calendar,
-  ChevronLeft
-} from "lucide-react";
+import { Check, ChevronLeft, Calendar } from "lucide-react";
 import styled from "styled-components";
-import { getScheduleSummary, getDurationText } from "./utils";
 import { AnimatePresence, motion } from "framer-motion";
 
 const theme = {
@@ -21,63 +14,15 @@ const theme = {
 
 // --- Header Styles ---
 const HeaderContainer = styled.div`
-  padding: 20px 24px;
+  padding: 24px 24px;
   border-bottom: 1px solid ${theme.borderLight};
   background: ${theme.white};
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
   @media (max-width: 640px) {
-    padding: 16px;
-    border-bottom: 1px solid #f0f0f0;
-  }
-`;
-
-const ClassInfo = styled.div`
-  display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
-`;
-
-const ClassImage = styled.img`
-  width: 100px;
-  height: 66px;
-  border-radius: 8px;
-  object-fit: cover;
-
-  @media (max-width: 480px) {
-    width: 80px;
-    height: 60px;
-  }
-`;
-
-const ClassDetails = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-`;
-
-const ClassTitle = styled.h2`
-  margin: 0 0 6px 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: ${theme.textPrimary};
-  line-height: 1.3;
-
-  @media (max-width: 480px) {
-    font-size: 16px;
-  }
-`;
-
-const ClassMeta = styled.div`
-  display: flex;
-  gap: 16px;
-  color: ${theme.textSecondary};
-  font-size: 13px;
-
-  div {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    padding: 20px 16px;
   }
 `;
 
@@ -87,14 +32,15 @@ const ProgressContainer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 0 8px;
+  width: 100%;
+  max-width: 500px;
 `;
 
 const ProgressTrack = styled.div`
   position: absolute;
-  top: 12px;
-  left: 40px;
-  right: 40px;
+  top: 15px; /* Aligned with center of circle */
+  left: 30px;
+  right: 30px;
   height: 2px;
   background-color: ${theme.borderLight};
   transform: translateY(-50%);
@@ -103,9 +49,9 @@ const ProgressTrack = styled.div`
 
 const ProgressFill = styled(motion.div)`
   position: absolute;
-  top: 12px;
-  left: 40px;
-  right: 40px;
+  top: 15px; /* Aligned with center of circle */
+  left: 30px;
+  right: 30px;
   height: 2px;
   background-color: ${theme.success};
   transform: translateY(-50%);
@@ -120,39 +66,40 @@ const Step = styled.div`
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  width: 80px;
+  width: 90px;
 `;
 
 const StepCircle = styled.div`
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   transition: all 0.3s ease;
   background: ${(props) =>
     props.$active
       ? theme.primary
       : props.$completed
-        ? theme.success
-        : "#e5e7eb"};
-  color: white;
+      ? theme.success
+      : "#f3f4f6"};
+  color: ${(props) =>
+    props.$active || props.$completed ? "white" : "#9ca3af"};
   border: 2px solid white;
-  box-shadow: 0 0 0 1px
+  box-shadow: 0 0 0 2px
     ${(props) =>
-    props.$active
-      ? theme.primary
-      : props.$completed
+      props.$active
+        ? theme.primary
+        : props.$completed
         ? theme.success
         : "transparent"};
 `;
 
 const StepLabel = styled.span`
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: ${(props) =>
     props.$active || props.$completed
       ? theme.textPrimary
@@ -166,17 +113,17 @@ const FooterContainer = styled.div`
   padding: 16px 24px;
   border-top: 1px solid ${theme.borderLight};
   background: ${theme.white};
-  
+
   /* Mobile Safe Area & Grid */
   @media (max-width: 640px) {
     padding: 16px;
     padding-bottom: max(16px, env(safe-area-inset-bottom));
     display: grid;
-    grid-template-columns: ${(props) => props.$hasBack ? "auto 1fr" : "1fr"};
+    grid-template-columns: ${(props) => (props.$hasBack ? "auto 1fr" : "1fr")};
     gap: 12px;
     align-items: center;
   }
-  
+
   /* Desktop Flex */
   @media (min-width: 641px) {
     display: flex;
@@ -190,7 +137,7 @@ const DesktopLeftSlot = styled.div`
   align-items: center;
   gap: 12px;
   @media (max-width: 640px) {
-    display: contents; 
+    display: contents;
   }
 `;
 
@@ -199,11 +146,11 @@ const DesktopRightSlot = styled.div`
   align-items: center;
   gap: 12px;
   justify-content: flex-end;
-  
+
   @media (max-width: 640px) {
     width: 100%;
     button {
-      width: 100%; 
+      width: 100%;
     }
   }
 `;
@@ -251,12 +198,11 @@ const Button = styled(motion.button)`
   gap: 8px;
   transition: all 0.2s ease;
   white-space: nowrap;
-  
+
   @media (max-width: 640px) {
     padding: 14px 16px;
     font-size: 15px;
-    /* FIX: Ensure standard border radius on mobile for all buttons */
-    border-radius: 12px; 
+    border-radius: 12px;
   }
 
   ${(props) =>
@@ -300,61 +246,21 @@ const MobileBackButton = styled(Button)`
     width: 48px;
     height: 48px;
     padding: 0;
-    
-    span { display: none; }
-    svg { margin: 0; }
+
+    span {
+      display: none;
+    }
+    svg {
+      margin: 0;
+    }
   }
 `;
 
-export const ModalHeader = ({
-  classData,
-  currentStep,
-}) => {
-  const selectedOption = classData?.selectedOption;
-  const summary = getScheduleSummary(selectedOption?.schedules);
-  const steps = ["Select Date", "Payment", "Confirmation"];
-
-  const getDisplayDurationText = (option, summary) => {
-    if (!option) return "-";
-    if (
-      option.schedules?.length === 1 &&
-      typeof option.schedules[0].duration === "number"
-    ) {
-      return getDurationText(option.schedules[0].duration);
-    }
-    return summary?.duration || "-";
-  };
-
-  const getCapacityText = (summary) => {
-    if (!summary || !summary.capacity || summary.capacity === "-")
-      return "Capacity varies";
-    return summary.capacity.toString().includes("-")
-      ? "Capacity varies"
-      : `Up to ${summary.capacity} people`;
-  };
+export const ModalHeader = ({ currentStep }) => {
+  const steps = ["📅 Select Date", "💳 Payment", "✅ Confirmation"];
 
   return (
     <HeaderContainer>
-      <ClassInfo>
-        <ClassImage
-          src={classData?.image || "/placeholder.jpg"}
-          alt={classData?.title || "Class Image"}
-        />
-        <ClassDetails>
-          <ClassTitle>{classData?.title || "Class Title"}</ClassTitle>
-          <ClassMeta>
-            <div>
-              <Clock size={14} />
-              {getDisplayDurationText(selectedOption, summary)}
-            </div>
-            <div>
-              <Users size={14} />
-              {getCapacityText(summary)}
-            </div>
-          </ClassMeta>
-        </ClassDetails>
-      </ClassInfo>
-
       <ProgressContainer>
         <ProgressTrack />
         <ProgressFill
@@ -371,7 +277,7 @@ export const ModalHeader = ({
           return (
             <Step key={index}>
               <StepCircle $active={isActive} $completed={isCompleted}>
-                {isCompleted ? <Check size={14} /> : stepNumber}
+                {isCompleted ? <Check size={16} /> : stepNumber}
               </StepCircle>
               <StepLabel $active={isActive} $completed={isCompleted}>
                 {label}
@@ -394,16 +300,17 @@ export const ModalFooter = ({
   hideBackButton = false,
   isNextDisabled = false,
   bookingData = null,
-  businessTimeZone = "Etc/UTC",
-  userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone,
   paymentAction = null,
 }) => {
+  // If we are on the first step (Calendar), return null to hide the footer
+  if (currentStep === 1) {
+    return null;
+  }
+
   const selectedSlot = bookingData?.selectedSlots?.[0];
 
   const getButtonText = () => {
     switch (currentStep) {
-      case 1:
-        return "Next";
       case 2:
         return "Confirm & Pay";
       case 3:
@@ -421,7 +328,6 @@ export const ModalFooter = ({
 
   const isPaymentDisabled = !paymentAction?.canSubmit || paymentAction?.loading;
   const showBackButton = currentStep > 1 && !hideBackButton;
-  const showSelectedSlotInfo = currentStep === 1 && selectedSlot;
 
   return (
     <FooterContainer $hasBack={showBackButton}>
@@ -435,36 +341,9 @@ export const ModalFooter = ({
             <span>Back</span>
           </MobileBackButton>
         )}
-
-        <AnimatePresence>
-          {showSelectedSlotInfo && (
-            <div style={{ display: showBackButton ? 'none' : 'block' }}>
-              <SelectedSlotInfo
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Calendar size={16} />
-                <strong>
-                  {new Date(selectedSlot.date).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </strong>
-              </SelectedSlotInfo>
-            </div>
-          )}
-        </AnimatePresence>
       </DesktopLeftSlot>
 
       <DesktopRightSlot>
-        {currentStep === 1 && !hideNextButton && (
-          <Button $primary onClick={onNext} disabled={isNextDisabled}>
-            {getButtonText()}
-          </Button>
-        )}
-
         {currentStep === 2 && (
           <Button
             $primary

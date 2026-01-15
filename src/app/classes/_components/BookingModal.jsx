@@ -32,13 +32,10 @@ const ReviewAndPaymentStep = dynamic(
   }
 );
 
-const CourseCalendarStep = dynamic(
-  () => import("./steps/CourseCalendarStep"),
-  {
-    loading: () => <div style={{ minHeight: "400px" }} />,
-    ssr: false,
-  }
-);
+const CourseCalendarStep = dynamic(() => import("./steps/CourseCalendarStep"), {
+  loading: () => <div style={{ minHeight: "400px" }} />,
+  ssr: false,
+});
 
 const CalendarStep = dynamic(() => import("./steps/CalendarStep"), {
   loading: () => <div style={{ minHeight: "400px" }} />,
@@ -120,7 +117,7 @@ const DesktopOverlay = styled(motion.div)`
 
 const DesktopModal = styled(motion.div)`
   width: 100%;
-  max-width: 1200px;
+  max-width: 1000px;
   background: white;
   border-radius: 24px;
   overflow: hidden;
@@ -145,7 +142,6 @@ const CloseButton = styled(motion.button)`
   justify-content: center;
   z-index: 10;
   color: #484848;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
 `;
 
@@ -155,7 +151,7 @@ const ScrollableContent = styled.div`
   overflow-x: hidden;
   min-height: 0;
   background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
-  
+
   &::-webkit-scrollbar {
     width: 6px;
   }
@@ -166,7 +162,7 @@ const ScrollableContent = styled.div`
 `;
 
 const StepContentWrapper = styled.div`
-  padding: 32px;
+  padding: 20px;
 `;
 
 // Vaul Drawer Styles
@@ -182,7 +178,6 @@ const StyledDrawerContent = styled(Drawer.Content)`
   display: flex;
   flex-direction: column;
   border-radius: 24px 24px 0 0;
-  height: 90%;
   max-height: 90vh;
   position: fixed;
   bottom: 0;
@@ -206,7 +201,6 @@ const DrawerHeader = styled.div`
 `;
 
 const DrawerBody = styled.div`
-  flex: 1;
   overflow-y: auto;
   padding: 4px;
   background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
@@ -214,6 +208,8 @@ const DrawerBody = styled.div`
     display: none;
   }
   scrollbar-width: none;
+  /* Ensure it doesn't force height but allows expansion for animation */
+  min-height: 0;
 `;
 
 const DrawerFooter = styled.div`
@@ -339,7 +335,7 @@ const BookingModal = ({
     try {
       const validInitialParticipantCount =
         Number.isInteger(effectiveInitialParticipants) &&
-          effectiveInitialParticipants > 0
+        effectiveInitialParticipants > 0
           ? effectiveInitialParticipants
           : 1;
       let bookerName = "";
@@ -347,8 +343,9 @@ const BookingModal = ({
       let bookerPhone = "";
 
       if (currentUserFromRedux) {
-        bookerName = `${currentUserFromRedux.first_name || ""} ${currentUserFromRedux.last_name || ""
-          }`.trim();
+        bookerName = `${currentUserFromRedux.first_name || ""} ${
+          currentUserFromRedux.last_name || ""
+        }`.trim();
         bookerEmail = currentUserFromRedux.email || "";
         bookerPhone = currentUserFromRedux.phone_number || "";
       }
@@ -394,7 +391,10 @@ const BookingModal = ({
         userPhone: bookerPhone,
       };
     } catch (error) {
-      console.error("[BookingModal Debug] Error in getInitialBookingState", error);
+      console.error(
+        "[BookingModal Debug] Error in getInitialBookingState",
+        error
+      );
       throw error;
     }
   }, [effectiveInitialParticipants, selectedOption, currentUserFromRedux]);
@@ -407,7 +407,10 @@ const BookingModal = ({
   const cancelPendingIntent = useCallback(async (intentId) => {
     if (!intentId) return;
     try {
-      console.log("[BookingModal] Releasing held spot (deleting pending booking):", intentId);
+      console.log(
+        "[BookingModal] Releasing held spot (deleting pending booking):",
+        intentId
+      );
       // Calls the new 'delete' logic in backend
       await paymentService.cancelPaymentIntent({ payment_intent_id: intentId });
     } catch (error) {
@@ -420,8 +423,14 @@ const BookingModal = ({
       const newInitialState = getInitialBookingState();
       setBookingData((prev) => {
         // --- GUARD CLAUSE ---
-        if (prev.bookingId || prev.user_facing_reference || prev.paymentIntentId) {
-          console.error("[BookingModal Debug] Reset Effect Skipped: Booking in progress or confirmed.");
+        if (
+          prev.bookingId ||
+          prev.user_facing_reference ||
+          prev.paymentIntentId
+        ) {
+          console.error(
+            "[BookingModal Debug] Reset Effect Skipped: Booking in progress or confirmed."
+          );
           return prev;
         }
 
@@ -433,7 +442,9 @@ const BookingModal = ({
           prev.selectedSlots.length === 0;
 
         if (userJustLoggedIn || optionChanged || participantsPropChanged) {
-          console.error("[BookingModal Debug] Resetting State due to Props/Auth change.");
+          console.error(
+            "[BookingModal Debug] Resetting State due to Props/Auth change."
+          );
           return {
             ...newInitialState,
             selectedSlots:
@@ -464,7 +475,12 @@ const BookingModal = ({
     setBookingData(getInitialBookingState());
     setIsLoading(false);
     setPaymentAction(null);
-  }, [getInitialBookingState, bookingData.paymentIntentId, bookingData.bookingId, cancelPendingIntent]);
+  }, [
+    getInitialBookingState,
+    bookingData.paymentIntentId,
+    bookingData.bookingId,
+    cancelPendingIntent,
+  ]);
 
   const handleClose = useCallback(() => {
     // Also trigger cleanup on close click
@@ -481,18 +497,26 @@ const BookingModal = ({
 
   const handleUpdateBooking = useCallback(
     (data) => {
-      console.error("[BookingModal Debug] handleUpdateBooking Called. Incoming Data:", data);
+      console.error(
+        "[BookingModal Debug] handleUpdateBooking Called. Incoming Data:",
+        data
+      );
       setBookingData((prev) => {
         // --- SAFETY CHECK / LOGGING ---
-        console.error("[BookingModal Debug] handleUpdateBooking - Current State:", {
-          bookingId: prev.bookingId,
-          ref: prev.user_facing_reference,
-          participants: prev.participant_details
-        });
+        console.error(
+          "[BookingModal Debug] handleUpdateBooking - Current State:",
+          {
+            bookingId: prev.bookingId,
+            ref: prev.user_facing_reference,
+            participants: prev.participant_details,
+          }
+        );
 
         // Prevent updates from child components if booking is confirmed.
         if (prev.bookingId || prev.user_facing_reference) {
-          console.error("[BookingModal Debug] 🛑 BLOCKING update. Booking already confirmed.");
+          console.error(
+            "[BookingModal Debug] 🛑 BLOCKING update. Booking already confirmed."
+          );
           return prev;
         }
 
@@ -532,8 +556,9 @@ const BookingModal = ({
             const currentDetails = prev.participant_details || [];
             let bookerNameForPrefill = prev.userName;
             if (!bookerNameForPrefill && currentUserFromRedux) {
-              bookerNameForPrefill = `${currentUserFromRedux.first_name || ""
-                } ${currentUserFromRedux.last_name || ""}`.trim();
+              bookerNameForPrefill = `${
+                currentUserFromRedux.first_name || ""
+              } ${currentUserFromRedux.last_name || ""}`.trim();
             }
             newState.participant_details = Array.from(
               { length: newCount },
@@ -553,7 +578,10 @@ const BookingModal = ({
           newState.participant_details = data.participant_details;
         }
 
-        console.error("[BookingModal Debug] ✅ ALLOWING update. New State Participants:", newState.participant_details);
+        console.error(
+          "[BookingModal Debug] ✅ ALLOWING update. New State Participants:",
+          newState.participant_details
+        );
         return newState;
       });
     },
@@ -561,11 +589,17 @@ const BookingModal = ({
   );
 
   const handlePaymentComplete = useCallback((dataFromReviewStep) => {
-    console.error("[BookingModal Debug] handlePaymentComplete Called. Payload:", dataFromReviewStep);
+    console.error(
+      "[BookingModal Debug] handlePaymentComplete Called. Payload:",
+      dataFromReviewStep
+    );
 
     if (dataFromReviewStep.booking_id) {
       setBookingData((prev) => {
-        console.error("[BookingModal Debug] Setting Confirmed Booking Data. Previous State:", prev);
+        console.error(
+          "[BookingModal Debug] Setting Confirmed Booking Data. Previous State:",
+          prev
+        );
         return {
           ...prev,
           bookingId: dataFromReviewStep.booking_id,
@@ -587,13 +621,19 @@ const BookingModal = ({
       setCurrentStep(3);
       setIsLoading(false);
     } else {
-      console.error("[BookingModal Debug] Unexpected payment data structure", dataFromReviewStep);
+      console.error(
+        "[BookingModal Debug] Unexpected payment data structure",
+        dataFromReviewStep
+      );
       setIsLoading(false);
     }
   }, []);
 
   const updateBookingDetailsFromPolling = useCallback((details) => {
-    console.error("[BookingModal Debug] updateBookingDetailsFromPolling Called:", details);
+    console.error(
+      "[BookingModal Debug] updateBookingDetailsFromPolling Called:",
+      details
+    );
     setBookingData((prev) => ({
       ...prev,
       bookingId: details.booking_id || prev.bookingId,
@@ -628,7 +668,6 @@ const BookingModal = ({
   const handleBack = useCallback(async () => {
     if (currentStep > 1) {
       if (currentStep === 2 && bookingData.paymentIntentId) {
-
         // FIX: Pass the ID directly as a string, not an object
         await paymentService.cancelPaymentIntent(bookingData.paymentIntentId);
 
@@ -751,7 +790,8 @@ const BookingModal = ({
               <ModalHeader
                 classData={{
                   title: classData.title,
-                  image: classData.images?.[0]?.thumbnail_url || "/placeholder.jpg",
+                  image:
+                    classData.images?.[0]?.thumbnail_url || "/placeholder.jpg",
                   selectedOption: selectedOption,
                 }}
                 currentStep={currentStep}
@@ -763,17 +803,23 @@ const BookingModal = ({
             </DrawerHeader>
             <DrawerBody>
               <Elements stripe={stripePromise}>
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentStep}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  >
-                    {renderStepContent()}
-                  </motion.div>
-                </AnimatePresence>
+                {/* Wrapped in AnimatedModalContent to animate height changes on mobile */}
+                <AnimatedModalContent>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentStep}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{
+                        duration: 0.3,
+                        ease: [0.25, 0.46, 0.45, 0.94],
+                      }}
+                    >
+                      {renderStepContent()}
+                    </motion.div>
+                  </AnimatePresence>
+                </AnimatedModalContent>
               </Elements>
             </DrawerBody>
             <DrawerFooter>
@@ -785,7 +831,9 @@ const BookingModal = ({
                 loading={isLoading}
                 hideNextButton={shouldHideNextButton}
                 hideBackButton={currentStep === 1 || currentStep === 3}
-                isNextDisabled={currentStep === 1 && !validateStep(currentStep, bookingData)}
+                isNextDisabled={
+                  currentStep === 1 && !validateStep(currentStep, bookingData)
+                }
                 bookingData={bookingData}
                 businessTimeZone={businessTimeZone}
                 userTimeZone={userTimeZone}
@@ -818,7 +866,8 @@ const BookingModal = ({
             <ModalHeader
               classData={{
                 title: classData.title,
-                image: classData.images?.[0]?.thumbnail_url || "/placeholder.jpg",
+                image:
+                  classData.images?.[0]?.thumbnail_url || "/placeholder.jpg",
                 selectedOption: selectedOption,
               }}
               currentStep={currentStep}
@@ -827,12 +876,7 @@ const BookingModal = ({
               businessTimeZone={businessTimeZone}
               userTimeZone={userTimeZone}
             />
-            <CloseButton
-              onClick={handleClose}
-              aria-label="Close booking modal"
-              whileHover={{ scale: 1.1, rotate: 90 }}
-              whileTap={{ scale: 0.9 }}
-            >
+            <CloseButton onClick={handleClose} aria-label="Close booking modal">
               <X size={20} />
             </CloseButton>
 
@@ -846,7 +890,9 @@ const BookingModal = ({
               loading={isLoading}
               hideNextButton={shouldHideNextButton}
               hideBackButton={currentStep === 1 || currentStep === 3}
-              isNextDisabled={currentStep === 1 && !validateStep(currentStep, bookingData)}
+              isNextDisabled={
+                currentStep === 1 && !validateStep(currentStep, bookingData)
+              }
               bookingData={bookingData}
               businessTimeZone={businessTimeZone}
               userTimeZone={userTimeZone}

@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { ConfigProvider, Form, Input, Alert, Button } from "antd";
 import message from "@/lib/message";
 import {
@@ -11,7 +17,8 @@ import {
 import { loadStripe } from "@stripe/stripe-js";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
-import NumberFlow, { NumberFlowGroup } from '@number-flow/react';
+import NumberFlow, { NumberFlowGroup } from "@number-flow/react";
+import confetti from "canvas-confetti";
 import {
   Shield,
   Clock,
@@ -22,14 +29,18 @@ import {
   Percent,
   UserCheck,
   RefreshCw,
+  Ticket,
+  MapPin,
+  CalendarDays,
+  X,
 } from "lucide-react";
-import {
-  getCancellationPolicyText,
-  getDurationText,
-} from "./utils";
+import Lottie from "lottie-react";
+
+import { getCancellationPolicyText, getDurationText } from "./utils";
 import { businessDiscountService } from "@/services/apiService";
 import { theme as appTheme } from "@/components/theme";
 import { formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
+import loadingAnimation from "@/assets/animations/Scene.json";
 
 const HST_RATE = 0.13;
 
@@ -43,12 +54,12 @@ const StepContainer = styled.div`
   gap: 24px;
   padding: 0 4px;
   padding-top: 4px;
-  padding-bottom: 20px; /* Reduced padding since we removed the internal footer */
+  padding-bottom: 20px;
   position: relative;
 
   @media (min-width: 969px) {
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
-    gap: 32px;
+    grid-template-columns: minmax(0, 1.2fr) 400px;
+    gap: 40px;
     align-items: flex-start;
     padding-bottom: 0;
   }
@@ -65,9 +76,158 @@ const SummarySection = styled.div`
   @media (min-width: 969px) {
     display: block;
     position: sticky;
-    top: 1px;
+    top: 20px;
   }
 `;
+
+// --- TICKET DESIGN COMPONENTS ---
+
+const TicketWrapper = styled.div`
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.05));
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+`;
+
+const TicketTop = styled.div`
+  background-color: #ffffff;
+  border-radius: 16px 16px 0 0;
+  padding: 24px;
+  position: relative;
+  border: 1px solid #e5e7eb;
+  border-bottom: none;
+
+  /* The semi-circle cutouts at the bottom corners of the top section */
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: -18px;
+    left: -8px;
+    width: 20px;
+    height: 20px;
+    background-color: #f3f4f6; /* Matches page bg */
+    border-radius: 50%;
+    border-right: 1px solid #e5e7eb;
+    z-index: 2;
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    bottom: -18px;
+    right: -10px;
+    width: 20px;
+    height: 20px;
+    background-color: #f3f4f6; /* Matches page bg */
+    border-radius: 50%;
+    border-left: 1px solid #e5e7eb;
+    z-index: 2;
+  }
+`;
+
+const TicketDivider = styled.div`
+  height: 20px;
+  background-color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  border-left: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Dashed Line */
+  &::after {
+    content: "";
+    width: 86%;
+    height: 0;
+    border-top: 2px dashed #e5e7eb;
+  }
+`;
+
+const TicketBottom = styled.div`
+  background-color: #ffffff;
+  border-radius: 0 0 16px 16px;
+  padding: 24px;
+  padding-top: 12px;
+  position: relative;
+  border: 1px solid #e5e7eb;
+  border-top: none;
+`;
+
+const TicketHeaderTitle = styled.h2`
+  font-size: 20px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 4px 0;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+`;
+
+const TicketSubHeader = styled.div`
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 16px;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+`;
+
+const TicketRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #374151;
+
+  span:first-child {
+    color: #6b7280;
+    font-weight: 500;
+  }
+
+  span:last-child {
+    font-weight: 600;
+    text-align: right;
+  }
+`;
+
+const TicketTotalRow = styled(TicketRow)`
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 2px solid #f3f4f6;
+  margin-bottom: 0;
+  align-items: center;
+
+  span:first-child {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+    text-transform: uppercase;
+  }
+
+  span:last-child {
+    font-size: 24px;
+    font-weight: 800;
+    color: #111827;
+  }
+`;
+
+const BarcodeSVG = () => (
+  <svg width="100%" height="30" viewBox="0 0 200 30" preserveAspectRatio="none">
+    <path
+      fill="#111827"
+      d="M0,0 h4 v30 h-4 M8,0 h2 v30 h-2 M14,0 h6 v30 h-6 M24,0 h2 v30 h-2 M30,0 h4 v30 h-4 M38,0 h2 v30 h-2 M44,0 h4 v30 h-4 M52,0 h2 v30 h-2 M60,0 h6 v30 h-6 M70,0 h2 v30 h-2 M76,0 h2 v30 h-2 M82,0 h4 v30 h-4 M90,0 h6 v30 h-6 M100,0 h2 v30 h-2 M106,0 h4 v30 h-4 M114,0 h2 v30 h-2 M120,0 h6 v30 h-6 M130,0 h2 v30 h-2 M136,0 h4 v30 h-4 M144,0 h2 v30 h-2 M150,0 h6 v30 h-6 M160,0 h2 v30 h-2 M166,0 h4 v30 h-4 M174,0 h2 v30 h-2 M180,0 h4 v30 h-4 M188,0 h2 v30 h-2 M196,0 h4 v30 h-4"
+    />
+  </svg>
+);
+
+// --- END TICKET DESIGN ---
 
 const MobileSummaryContainer = styled.div`
   display: block;
@@ -102,7 +262,7 @@ const MobileSummaryHeader = styled.div`
     font-size: 13px;
     font-weight: 600;
     color: #111827;
-    
+
     svg {
       color: #ff385c;
     }
@@ -113,7 +273,7 @@ const MobileSummaryHeader = styled.div`
     align-items: center;
     gap: 8px;
   }
-  
+
   .total-price {
     font-size: 16px;
     font-weight: 700;
@@ -136,7 +296,7 @@ const MobileSummaryInner = styled.div`
   padding: 20px;
 `;
 
-const Card = styled.div`
+const FormCard = styled.div`
   background: white;
   border-radius: 16px;
   border: 1px solid #e5e7eb;
@@ -148,9 +308,6 @@ const Card = styled.div`
   }
 `;
 
-const SummaryCard = styled(Card)``;
-const FormCard = styled(Card)``;
-
 const SectionTitle = styled.h4`
   margin: 0 0 16px 0;
   font-size: 18px;
@@ -158,76 +315,52 @@ const SectionTitle = styled.h4`
   color: #111827;
 `;
 
-const SummaryItemContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 20px;
-`;
-
-const SummaryItemTitle = styled.h3`
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #111827;
-  line-height: 1.3;
-`;
-
 const SummaryMetaBlock = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: 6px;
+  gap: 12px;
+  margin-top: 8px;
 `;
 
-const SummaryMetaRow = styled.div`
+const TicketMetaItem = styled.div`
   display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: #6b7280;
-  line-height: 1.4;
-
-  svg {
-    width: 14px;
-    height: 14px;
-    color: #9ca3af;
-  }
-`;
-
-const ReceiptDivider = styled.div`
-  height: 1px;
-  background-image: linear-gradient(to right, #e5e7eb 50%, rgba(255,255,255,0) 0%);
-  background-position: bottom;
-  background-size: 8px 1px;
-  background-repeat: repeat-x;
-  margin: 20px 0;
-`;
-
-const PriceBreakdown = styled.div`
-  display: flex;
-  flex-direction: column;
   gap: 10px;
-`;
+  align-items: flex-start;
 
-const PriceRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  color: ${(props) => (props.$success ? "#059669" : "#4b5563")};
-  
-  &.total {
-    font-size: 18px;
-    font-weight: 700;
-    color: #111827;
-    margin-top: 12px;
-    padding-top: 16px;
-    border-top: 1px solid #e5e7eb;
+  .icon-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #f9fafb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    flex-shrink: 0;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
   }
 
-  span:first-child {
-    color: ${(props) => (props.$success ? "#059669" : "#6b7280")};
+  .text-content {
+    display: flex;
+    flex-direction: column;
+
+    .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #9ca3af;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .value {
+      font-size: 14px;
+      color: #111827;
+      font-weight: 600;
+      line-height: 1.4;
+    }
   }
 `;
 
@@ -239,12 +372,14 @@ const InfoPanel = styled.div`
   margin-top: 16px;
   background: ${(props) => props.$bgColor || "#f9fafb"};
   border: 1px solid ${(props) => props.$borderColor || "#e5e7eb"};
+
   svg {
     flex-shrink: 0;
     width: 20px;
     height: 20px;
     color: ${(props) => props.$iconColor || "#6b7280"};
   }
+
   div {
     flex: 1;
     h5 {
@@ -262,28 +397,71 @@ const InfoPanel = styled.div`
   }
 `;
 
-const CouponInputWrapper = styled.div`
+// -- Updated Coupon Components --
+const CouponTicketInput = styled.div`
   display: flex;
   gap: 8px;
+  margin-bottom: 24px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px dashed #e5e7eb;
+
   .ant-input {
-    text-transform: uppercase;
-    &::placeholder {
-      text-transform: none;
+    font-size: 13px;
+    background: white;
+  }
+
+  .ant-btn {
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: none;
+    border: 1px solid #111827;
+    background: #111827;
+    color: white;
+
+    &:hover {
+      background: #374151;
+      border-color: #374151;
+      color: white;
+    }
+
+    &:disabled {
+      background: #f3f4f6;
+      border-color: #e5e7eb;
+      color: #9ca3af;
     }
   }
 `;
 
-const AppliedCouponDisplay = styled.div`
+const AppliedCouponTicket = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  margin-bottom: 24px;
+  padding: 10px 14px;
   background-color: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  margin-bottom: 12px;
-  border-radius: 8px;
+  border: 1px dashed #34d399;
+  border-radius: 12px;
   color: #047857;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 13px;
+
+  .coupon-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  button {
+    color: #047857;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    &:hover {
+      opacity: 1;
+      background: rgba(4, 120, 87, 0.1);
+    }
+  }
 `;
 
 const TimerBadge = styled.div`
@@ -309,6 +487,8 @@ const MobileTimerContainer = styled.div`
 
 const DesktopTimerContainer = styled.div`
   display: none;
+  margin-bottom: 12px;
+  text-align: right;
   @media (min-width: 969px) {
     display: block;
   }
@@ -369,6 +549,34 @@ const ExpiredIconWrapper = styled.div`
   color: #dc2626;
 `;
 
+// --- NEW LOADER STYLES ---
+
+const LottieContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+`;
+
+const LottieText = styled.h3`
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin-top: 16px;
+  margin-bottom: 0;
+`;
+
+const LottieSubText = styled.p`
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 4px;
+`;
+
 // --- HELPERS ---
 const Countdown = ({ seconds }) => {
   const mm = Math.floor((seconds % 3600) / 60);
@@ -411,28 +619,28 @@ const ParticipantNameInputs = ({
 
   return (
     <div style={{ paddingTop: 8 }}>
-      <SectionTitle>Participants</SectionTitle>
+      <SectionTitle>Who's Coming?</SectionTitle>
       {Array.from({ length: count }).map((_, index) => (
         <Form.Item
           key={index}
           name={["participant_details", index, "name"]}
           rules={[
-            { required: true, message: `P.${index + 1} name is required` },
+            { required: true, message: `Guest ${index + 1} name is required` },
           ]}
           style={{ marginBottom: 12 }}
         >
           <Input
-            placeholder={`Participant ${index + 1} Full Name`}
+            placeholder={`Guest ${index + 1} Full Name`}
             readOnly={
               index === 0 && isUserLoggedIn && !!bookerNameFromBookingData
             }
             style={
               index === 0 && isUserLoggedIn && !!bookerNameFromBookingData
                 ? {
-                  backgroundColor: "#f0f0f0",
-                  cursor: "not-allowed",
-                  color: "#555",
-                }
+                    backgroundColor: "#f0f0f0",
+                    cursor: "not-allowed",
+                    color: "#555",
+                  }
                 : {}
             }
             suffix={
@@ -449,7 +657,13 @@ const ParticipantNameInputs = ({
   );
 };
 
-const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, paymentService, bookingData }) => {
+const ExpressCheckoutButton = ({
+  finalTotal,
+  clientSecret,
+  onPaymentComplete,
+  paymentService,
+  bookingData,
+}) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
 
@@ -457,10 +671,10 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
     if (!stripe || !finalTotal) return;
 
     const pr = stripe.paymentRequest({
-      country: 'CA',
-      currency: 'cad',
+      country: "CA",
+      currency: "cad",
       total: {
-        label: 'Booking Total',
+        label: "Experience Booking",
         amount: Math.round(finalTotal * 100),
       },
       requestPayerName: true,
@@ -474,14 +688,14 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
       }
     });
 
-    pr.on('paymentmethod', async (ev) => {
+    pr.on("paymentmethod", async (ev) => {
       const payerName = ev.payerName;
       const payerEmail = ev.payerEmail;
       const payerPhone = ev.payerPhone;
 
       try {
         if (clientSecret) {
-          const paymentIntentId = clientSecret.split('_secret_')[0];
+          const paymentIntentId = clientSecret.split("_secret_")[0];
 
           if (paymentService && paymentService.updatePaymentIntent) {
             try {
@@ -490,7 +704,9 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
                 guest_email: payerEmail,
                 guest_full_name: payerName,
                 guest_phone: payerPhone,
-                participant_details: bookingData.participant_details || [{ name: payerName }],
+                participant_details: bookingData.participant_details || [
+                  { name: payerName },
+                ],
                 notes: bookingData.notes || "",
                 applied_discount_id: bookingData.applied_discount_id || null,
               });
@@ -510,10 +726,10 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
         );
 
         if (error) {
-          ev.complete('fail');
+          ev.complete("fail");
           message.error(error.message);
         } else {
-          ev.complete('success');
+          ev.complete("success");
           if (paymentIntent.status === "succeeded") {
             onPaymentComplete({
               payment_intent_id: paymentIntent.id,
@@ -523,31 +739,39 @@ const ExpressCheckoutButton = ({ finalTotal, clientSecret, onPaymentComplete, pa
         }
       } catch (err) {
         console.error("🍎 Apple Pay: EXCEPTION:", err);
-        ev.complete('fail');
+        ev.complete("fail");
         message.error("Payment failed. Please try again.");
       }
     });
-
-  }, [stripe, finalTotal, clientSecret, onPaymentComplete, paymentService, bookingData]);
+  }, [
+    stripe,
+    finalTotal,
+    clientSecret,
+    onPaymentComplete,
+    paymentService,
+    bookingData,
+  ]);
 
   if (!paymentRequest) return null;
 
   return (
     <div style={{ marginBottom: 24 }}>
       <PaymentRequestButtonElement options={{ paymentRequest }} />
-      <div style={{
-        textAlign: 'center',
-        margin: '16px 0',
-        color: '#6b7280',
-        fontSize: '13px',
-        fontWeight: 500,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px'
-      }}>
-        <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}></div>
+      <div
+        style={{
+          textAlign: "center",
+          margin: "16px 0",
+          color: "#6b7280",
+          fontSize: "13px",
+          fontWeight: 500,
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+        }}
+      >
+        <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }}></div>
         <span>Or pay with card</span>
-        <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }}></div>
+        <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }}></div>
       </div>
     </div>
   );
@@ -564,7 +788,7 @@ const PaymentFormContent = ({
   onPaymentAction,
   onPaymentComplete,
   paymentService,
-  bookingData
+  bookingData,
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -598,7 +822,6 @@ const PaymentFormContent = ({
       {!isFree && clientSecret && (
         <div
           style={{
-            marginTop: 24,
             borderTop: "1px solid #e5e7eb",
             paddingTop: 24,
           }}
@@ -615,8 +838,8 @@ const PaymentFormContent = ({
             options={{
               layout: "tabs",
               wallets: {
-                applePay: 'never',
-                googlePay: 'never',
+                applePay: "never",
+                googlePay: "never",
               },
               defaultValues: {
                 billingDetails: {
@@ -676,24 +899,27 @@ const ReviewAndPaymentStep = ({
     };
   }, []);
 
-  const validateValues = useCallback((values) => {
-    const { email, phone, guest_full_name, participant_details } = values;
+  const validateValues = useCallback(
+    (values) => {
+      const { email, phone, guest_full_name, participant_details } = values;
 
-    const contactFields = isUserLoggedIn
-      ? [email, phone]
-      : [email, phone, guest_full_name];
+      const contactFields = isUserLoggedIn
+        ? [email, phone]
+        : [email, phone, guest_full_name];
 
-    const allTextFieldsFilled = contactFields.every(
-      (val) => val && String(val).trim().length > 0
-    );
+      const allTextFieldsFilled = contactFields.every(
+        (val) => val && String(val).trim().length > 0
+      );
 
-    const currentParticipants = participant_details || [];
-    const participantsFilled =
-      currentParticipants.length === bookingData.participants &&
-      currentParticipants.every((p) => p?.name?.trim());
+      const currentParticipants = participant_details || [];
+      const participantsFilled =
+        currentParticipants.length === bookingData.participants &&
+        currentParticipants.every((p) => p?.name?.trim());
 
-    return !!(allTextFieldsFilled && participantsFilled);
-  }, [isUserLoggedIn, bookingData.participants]);
+      return !!(allTextFieldsFilled && participantsFilled);
+    },
+    [isUserLoggedIn, bookingData.participants]
+  );
 
   useEffect(() => {
     if (form) {
@@ -705,25 +931,32 @@ const ReviewAndPaymentStep = ({
         formData.guest_full_name = "";
 
         const currentParticipants = bookingData.participant_details || [];
-        const newParticipants = Array.from({ length: bookingData.participants }, (_, i) => {
-          let name = currentParticipants[i]?.name || "";
-          if (i === 0 && bookingData.userName && !name) {
-            name = bookingData.userName;
+        const newParticipants = Array.from(
+          { length: bookingData.participants },
+          (_, i) => {
+            let name = currentParticipants[i]?.name || "";
+            if (i === 0 && bookingData.userName && !name) {
+              name = bookingData.userName;
+            }
+            return { name };
           }
-          return { name };
-        });
+        );
         formData.participant_details = newParticipants;
       } else {
         const currentValues = form.getFieldsValue(true);
         if (currentValues.email === undefined) formData.email = "";
         if (currentValues.phone === undefined) formData.phone = "";
-        if (currentValues.guest_full_name === undefined) formData.guest_full_name = "";
+        if (currentValues.guest_full_name === undefined)
+          formData.guest_full_name = "";
 
         const currentPart = currentValues.participant_details || [];
         if (currentPart.length !== bookingData.participants) {
-          const newGuestParticipants = Array.from({ length: bookingData.participants }, (_, i) => {
-            return { name: currentPart[i]?.name || "" };
-          });
+          const newGuestParticipants = Array.from(
+            { length: bookingData.participants },
+            (_, i) => {
+              return { name: currentPart[i]?.name || "" };
+            }
+          );
           formData.participant_details = newGuestParticipants;
         }
       }
@@ -739,7 +972,7 @@ const ReviewAndPaymentStep = ({
 
       const isValid = validateValues({
         ...form.getFieldsValue(true),
-        ...formData
+        ...formData,
       });
       setIsFormValid(isValid);
     }
@@ -777,7 +1010,9 @@ const ReviewAndPaymentStep = ({
 
     const timer = setInterval(() => {
       const now = Date.now();
-      const secondsLeft = Math.ceil((expirationTimestampRef.current - now) / 1000);
+      const secondsLeft = Math.ceil(
+        (expirationTimestampRef.current - now) / 1000
+      );
 
       if (secondsLeft <= 0) {
         clearInterval(timer);
@@ -807,14 +1042,18 @@ const ReviewAndPaymentStep = ({
 
       try {
         const values = form.getFieldsValue();
-        let participantDetailsPayload = values.participant_details?.map((d) => ({
-          name: d?.name || "Guest",
-        })) || [];
+        let participantDetailsPayload =
+          values.participant_details?.map((d) => ({
+            name: d?.name || "Guest",
+          })) || [];
 
         if (participantDetailsPayload.length < participantsCount) {
-          participantDetailsPayload = Array.from({ length: participantsCount }, (_, i) => ({
-            name: participantDetailsPayload[i]?.name || "Guest"
-          }));
+          participantDetailsPayload = Array.from(
+            { length: participantsCount },
+            (_, i) => ({
+              name: participantDetailsPayload[i]?.name || "Guest",
+            })
+          );
         }
 
         const payload = {
@@ -834,10 +1073,10 @@ const ReviewAndPaymentStep = ({
           setClientSecret(response.clientSecret);
 
           if (onUpdateBookingData) {
-            const paymentIntentId = response.clientSecret.split('_secret_')[0];
+            const paymentIntentId = response.clientSecret.split("_secret_")[0];
             onUpdateBookingData({
               paymentIntentId: paymentIntentId,
-              clientSecret: response.clientSecret
+              clientSecret: response.clientSecret,
             });
           }
         }
@@ -845,7 +1084,14 @@ const ReviewAndPaymentStep = ({
         console.error("Error creating draft intent:", err);
       }
     },
-    [bookingData, participantsCount, isFree, form, paymentService, onUpdateBookingData]
+    [
+      bookingData,
+      participantsCount,
+      isFree,
+      form,
+      paymentService,
+      onUpdateBookingData,
+    ]
   );
 
   useEffect(() => {
@@ -867,6 +1113,12 @@ const ReviewAndPaymentStep = ({
       if (result.success) {
         setAppliedDiscount(result.data);
         message.success(`Coupon "${result.data.code}" applied!`);
+        confetti({
+          particleCount: 150,
+          spread: 60,
+          origin: { y: 0.6 },
+          colors: ["#ff385c", "#000000", "#ffffff"],
+        });
       } else {
         message.error(result.error?.detail || "Invalid coupon.");
         setAppliedDiscount(null);
@@ -915,10 +1167,17 @@ const ReviewAndPaymentStep = ({
         if (isFree) {
           if (bookingData.paymentIntentId) {
             try {
-              await paymentService.cancelPaymentIntent(bookingData.paymentIntentId);
-              console.log("Cancelled previous pending booking to free capacity for 100% discount.");
+              await paymentService.cancelPaymentIntent(
+                bookingData.paymentIntentId
+              );
+              console.log(
+                "Cancelled previous pending booking to free capacity for 100% discount."
+              );
             } catch (cancelErr) {
-              console.warn("Failed to cancel previous pending booking, proceeding anyway:", cancelErr);
+              console.warn(
+                "Failed to cancel previous pending booking, proceeding anyway:",
+                cancelErr
+              );
             }
           }
 
@@ -950,44 +1209,52 @@ const ReviewAndPaymentStep = ({
 
         if (clientSecret) {
           try {
-            const paymentIntentId = clientSecret.split('_secret_')[0];
+            const paymentIntentId = clientSecret.split("_secret_")[0];
 
             if (paymentService.updatePaymentIntent) {
               await paymentService.updatePaymentIntent({
                 payment_intent_id: paymentIntentId,
                 guest_email: values.email,
-                guest_full_name: isUserLoggedIn ? bookingData.userName : values.guest_full_name,
+                guest_full_name: isUserLoggedIn
+                  ? bookingData.userName
+                  : values.guest_full_name,
                 guest_phone: values.phone,
                 participant_details: values.participant_details,
                 notes: values.notes,
                 applied_discount_id: appliedDiscount?.id || null,
               });
             } else {
-              console.warn("paymentService.updatePaymentIntent is not defined. Email may use placeholder.");
+              console.warn(
+                "paymentService.updatePaymentIntent is not defined. Email may use placeholder."
+              );
             }
           } catch (updateErr) {
-            console.error("Failed to update booking details before payment:", updateErr);
+            console.error(
+              "Failed to update booking details before payment:",
+              updateErr
+            );
           }
         }
 
-        const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
-          elements,
-          clientSecret,
-          confirmParams: {
-            return_url: `${window.location.origin}/booking/status`,
-            payment_method_data: {
-              billing_details: {
-                name: isUserLoggedIn
-                  ? bookingData.userName
-                  : values.guest_full_name,
-                email: values.email,
-                phone: values.phone,
-                address: { country: "CA" },
+        const { error: confirmError, paymentIntent } =
+          await stripe.confirmPayment({
+            elements,
+            clientSecret,
+            confirmParams: {
+              return_url: `${window.location.origin}/booking/status`,
+              payment_method_data: {
+                billing_details: {
+                  name: isUserLoggedIn
+                    ? bookingData.userName
+                    : values.guest_full_name,
+                  email: values.email,
+                  phone: values.phone,
+                  address: { country: "CA" },
+                },
               },
             },
-          },
-          redirect: "if_required",
-        });
+            redirect: "if_required",
+          });
 
         if (confirmError) {
           throw new Error(confirmError.message);
@@ -1018,83 +1285,241 @@ const ReviewAndPaymentStep = ({
     ]
   );
 
-  const renderBookingDetailsText = () => {
+  const renderBookingDetailsTicket = () => {
     if (!selectedSlot) return null;
-    const {
-      date,
-      time,
-      duration,
-      isCourse,
-      end_date,
-      days,
-    } = selectedSlot;
+    const { date, time, duration, isCourse, end_date, days } = selectedSlot;
 
     if (isCourse) {
       return (
         <SummaryMetaBlock>
-          <SummaryMetaRow>
-            {formatNaiveDate(date, "MMM d")} - {formatNaiveDate(end_date, "MMM d, yyyy")}
-          </SummaryMetaRow>
-          <SummaryMetaRow>
-            Every {days.join(", ")} at {formatTimeRangeForDisplay(date, time, duration, businessTimeZone, userTimeZone)}
-          </SummaryMetaRow>
-          <SummaryMetaRow>
-            {participantsCount} Participant{participantsCount > 1 ? 's' : ''}
-          </SummaryMetaRow>
+          <TicketMetaItem>
+            <div className="icon-box">
+              <CalendarDays />
+            </div>
+            <div className="text-content">
+              <span className="label">Course Dates</span>
+              <span className="value">
+                {formatNaiveDate(date, "MMM d")} -{" "}
+                {formatNaiveDate(end_date, "MMM d, yyyy")}
+              </span>
+            </div>
+          </TicketMetaItem>
+          <TicketMetaItem>
+            <div className="icon-box">
+              <Clock />
+            </div>
+            <div className="text-content">
+              <span className="label">Time</span>
+              <span className="value">
+                Every {days.join(", ")} at{" "}
+                {formatTimeRangeForDisplay(
+                  date,
+                  time,
+                  duration,
+                  businessTimeZone,
+                  userTimeZone
+                )}
+              </span>
+            </div>
+          </TicketMetaItem>
         </SummaryMetaBlock>
       );
     }
 
     return (
       <SummaryMetaBlock>
-        <SummaryMetaRow>
-          {formatNaiveDate(date, "EEEE, MMMM d, yyyy")}
-        </SummaryMetaRow>
-        <SummaryMetaRow>
-          {formatTimeRangeForDisplay(date, time, duration, businessTimeZone, userTimeZone)}
-        </SummaryMetaRow>
-        <SummaryMetaRow>
-          {getDurationText(duration)} • {participantsCount} Participant{participantsCount > 1 ? 's' : ''}
-        </SummaryMetaRow>
+        <TicketMetaItem>
+          <div className="icon-box">
+            <CalendarDays />
+          </div>
+          <div className="text-content">
+            <span className="label">Date</span>
+            <span className="value">
+              {formatNaiveDate(date, "EEEE, MMMM d, yyyy")}
+            </span>
+          </div>
+        </TicketMetaItem>
+        <TicketMetaItem>
+          <div className="icon-box">
+            <Clock />
+          </div>
+          <div className="text-content">
+            <span className="label">Time</span>
+            <span className="value">
+              {formatTimeRangeForDisplay(
+                date,
+                time,
+                duration,
+                businessTimeZone,
+                userTimeZone
+              )}{" "}
+              ({getDurationText(duration)})
+            </span>
+          </div>
+        </TicketMetaItem>
       </SummaryMetaBlock>
     );
   };
 
-  const renderSummaryContent = () => (
-    <>
-      <SummaryItemContainer>
-        <SummaryItemTitle>{classData?.title}</SummaryItemTitle>
-        {renderBookingDetailsText()}
-      </SummaryItemContainer>
+  // --- RENDER TICKET SUMMARY (Replaces Card) ---
+  const renderTicketSummary = () => (
+    <TicketWrapper>
+      <TicketTop>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: 12,
+          }}
+        >
+          <DesktopTimerContainer>{renderTimerContent()}</DesktopTimerContainer>
+        </div>
+        <TicketHeaderTitle>{classData?.title}</TicketHeaderTitle>
+        <TicketSubHeader>
+          <MapPin />
+          <span>{classData?.business_name || "Host Location"}</span>
+        </TicketSubHeader>
 
-      <ReceiptDivider />
+        {renderBookingDetailsTicket()}
+      </TicketTop>
 
-      <PriceBreakdown>
-        <PriceRow>
-          <span>
-            {participantsCount} {participantsCount > 1 ? "people" : "person"} &times; ${basePrice.toFixed(2)}
-          </span>
-          <span>{subtotal === 0 ? "Free" : `$${subtotal.toFixed(2)}`}</span>
-        </PriceRow>
+      <TicketDivider />
 
-        {appliedDiscount && (
-          <PriceRow $success>
-            <span>Discount ({appliedDiscount.code})</span>
-            <span>-${discountAmount.toFixed(2)}</span>
-          </PriceRow>
+      <TicketBottom>
+        {/* Coupon Section inside Ticket */}
+        {!appliedDiscount ? (
+          <CouponTicketInput>
+            <Input
+              size="middle"
+              placeholder="Promo Code"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              bordered={false}
+              onPressEnter={handleApplyCoupon}
+            />
+            <Button
+              size="middle"
+              onClick={handleApplyCoupon}
+              loading={couponLoading}
+              style={{ height: 60 }}
+            >
+              Apply
+            </Button>
+          </CouponTicketInput>
+        ) : (
+          <AppliedCouponTicket>
+            <div className="coupon-info">
+              <Percent size={14} />
+              <span>{appliedDiscount.code.toUpperCase()} Applied</span>
+            </div>
+            <Button
+              type="text"
+              size="small"
+              icon={<X size={14} />}
+              onClick={handleRemoveCoupon}
+            />
+          </AppliedCouponTicket>
         )}
 
-        <PriceRow>
-          <span>HST (13%)</span>
-          <span>${taxAmount.toFixed(2)}</span>
-        </PriceRow>
+        <TicketRow>
+          <span>
+            {participantsCount} {participantsCount > 1 ? "Guests" : "Guest"}
+          </span>
+          <span>
+            {subtotal === 0 ? (
+              "Free"
+            ) : (
+              <NumberFlow
+                value={subtotal}
+                format={{ style: "currency", currency: "CAD" }}
+              />
+            )}
+          </span>
+        </TicketRow>
 
-        <PriceRow className="total">
+        {appliedDiscount && (
+          <TicketRow style={{ color: "#059669" }}>
+            <span>Discount ({appliedDiscount.code})</span>
+            <span>
+              <NumberFlow
+                value={-discountAmount}
+                format={{ style: "currency", currency: "CAD" }}
+              />
+            </span>
+          </TicketRow>
+        )}
+
+        <TicketRow>
+          <span>HST (13%)</span>
+          <span>
+            <NumberFlow
+              value={taxAmount}
+              format={{ style: "currency", currency: "CAD" }}
+            />
+          </span>
+        </TicketRow>
+
+        <TicketTotalRow>
           <span>Total</span>
-          <span>{finalTotal === 0 ? "Free" : `$${finalTotal.toFixed(2)}`}</span>
-        </PriceRow>
-      </PriceBreakdown>
-    </>
+          <span>
+            {finalTotal === 0 ? (
+              "Free"
+            ) : (
+              <NumberFlow
+                value={finalTotal}
+                format={{ style: "currency", currency: "CAD" }}
+              />
+            )}
+          </span>
+        </TicketTotalRow>
+      </TicketBottom>
+
+      {/* Policies below ticket */}
+      <InfoPanel
+        $bgColor="#f9fafb"
+        $borderColor="#e5e7eb"
+        $iconColor="#6b7280"
+        $titleColor="#111827"
+        $textColor="#4b5563"
+      >
+        <Shield />
+        <div>
+          <h5>Cancellation Policy</h5>
+          <p>{cancellationPolicyText}</p>
+        </div>
+      </InfoPanel>
+
+      {isFree ? (
+        <InfoPanel
+          $bgColor="#f0fdf4"
+          $borderColor="#bbf7d0"
+          $iconColor="#22c55e"
+          $titleColor="#15803d"
+          $textColor="#166534"
+        >
+          <CheckCircle />
+          <div>
+            <h5>No Payment Required</h5>
+            <p>This booking is free. No card needed.</p>
+          </div>
+        </InfoPanel>
+      ) : (
+        <InfoPanel
+          $bgColor="#f0fdf4"
+          $borderColor="#bbf7d0"
+          $iconColor="#22c55e"
+          $titleColor="#15803d"
+          $textColor="#166534"
+        >
+          <Lock />
+          <div>
+            <h5>Secure Payment</h5>
+            <p>Your payment is encrypted and processed securely.</p>
+          </div>
+        </InfoPanel>
+      )}
+    </TicketWrapper>
   );
 
   const cancellationPolicyText = useMemo(() => {
@@ -1188,20 +1613,50 @@ const ReviewAndPaymentStep = ({
     if (isFree || isExpired) return null;
     return (
       <TimerBadge $urgent={timeRemaining < 120}>
-        <span>
-          {timeRemaining < 120 ? "Expires in:" : "Spot reserved:"}
-        </span>
+        <span>{timeRemaining < 120 ? "Expires in:" : "Spot reserved:"}</span>
         <Countdown seconds={timeRemaining} />
       </TimerBadge>
     );
   };
 
+  // Helper for mobile summary simple text (kept simple for the dropdown)
+  const renderMobileSimpleSummary = () => (
+    <>
+      <div style={{ marginBottom: 12 }}>
+        <strong>{classData?.title}</strong>
+        <div style={{ fontSize: 13, color: "#6b7280" }}>
+          {selectedSlot && formatNaiveDate(selectedSlot.date, "MMM d, yyyy")} •{" "}
+          {participantsCount} Guest{participantsCount > 1 && "s"}
+        </div>
+      </div>
+      <TicketRow>
+        <span>Total</span>
+        <span>
+          {finalTotal === 0 ? (
+            "Free"
+          ) : (
+            <NumberFlow
+              value={finalTotal}
+              format={{ style: "currency", currency: "CAD" }}
+            />
+          )}
+        </span>
+      </TicketRow>
+    </>
+  );
+
   return (
     <ConfigProvider theme={appTheme}>
       {!isFree && !clientSecret ? (
-        <div style={{ padding: 60, textAlign: "center", color: "#6b7280" }}>
-          Preparing payment details...
-        </div>
+        <LottieContainer>
+          <Lottie
+            animationData={loadingAnimation}
+            loop={true}
+            style={{ width: 180, height: 180 }}
+          />
+          <LottieText>We're getting things ready</LottieText>
+          <LottieSubText>Let's get that booked for you!</LottieSubText>
+        </LottieContainer>
       ) : (
         <Elements
           stripe={stripePromise}
@@ -1210,9 +1665,9 @@ const ReviewAndPaymentStep = ({
             isFree
               ? undefined
               : {
-                clientSecret,
-                appearance: stripeAppearance,
-              }
+                  clientSecret,
+                  appearance: stripeAppearance,
+                }
           }
         >
           <StepContainer>
@@ -1224,8 +1679,8 @@ const ReviewAndPaymentStep = ({
                   </ExpiredIconWrapper>
                   <h3>Session Expired</h3>
                   <p>
-                    To ensure fairness for all students, we only hold spots for
-                    15 minutes. Please find a spot again to check availability.
+                    To ensure fairness for all guests, we only hold spots for 15
+                    minutes. Please find a spot again to check availability.
                   </p>
                   <Button
                     type="primary"
@@ -1267,18 +1722,23 @@ const ReviewAndPaymentStep = ({
                   onClick={() => setShowMobileSummary(!showMobileSummary)}
                 >
                   <div className="title-group">
-                    <ShoppingCart size={20} />
+                    <Ticket size={20} />
                     <span>Booking Summary</span>
                   </div>
                   <div className="price-group">
                     <span className="total-price">
-                      ${finalTotal.toFixed(2)}
+                      <NumberFlow
+                        value={finalTotal}
+                        format={{ style: "currency", currency: "CAD" }}
+                      />
                     </span>
                     <ChevronDown
                       className="toggle-icon"
                       size={20}
                       style={{
-                        transform: showMobileSummary ? "rotate(180deg)" : "none",
+                        transform: showMobileSummary
+                          ? "rotate(180deg)"
+                          : "none",
                       }}
                     />
                   </div>
@@ -1293,7 +1753,7 @@ const ReviewAndPaymentStep = ({
                       transition={{ duration: 0.3, ease: "easeInOut" }}
                     >
                       <MobileSummaryInner>
-                        {renderSummaryContent()}
+                        {renderMobileSimpleSummary()}
                       </MobileSummaryInner>
                     </MobileSummaryContent>
                   )}
@@ -1359,57 +1819,6 @@ const ReviewAndPaymentStep = ({
                       </div>
                     </div>
 
-                    <div
-                      style={{
-                        paddingTop: "16px",
-                        borderTop: "1px solid #e5e7eb",
-                      }}
-                    >
-                      {!appliedDiscount ? (
-                        <Form.Item label="Have a Coupon?">
-                          <CouponInputWrapper>
-                            <Input
-                              placeholder="PROMO CODE"
-                              value={couponCode}
-                              onChange={(e) =>
-                                setCouponCode(e.target.value.toUpperCase())
-                              }
-                            />
-                            <Button
-                              onClick={handleApplyCoupon}
-                              loading={couponLoading}
-                              size="large"
-                              key={`btn-${couponLoading}`}>
-                              Apply
-                            </Button>
-                          </CouponInputWrapper>
-                        </Form.Item>
-                      ) : (
-                        <AppliedCouponDisplay>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                            }}
-                          >
-                            <Percent size={16} />
-                            <span>
-                              {appliedDiscount.code.toUpperCase()} Applied
-                            </span>
-                          </div>
-                          <Button
-                            type="text"
-                            danger
-                            onClick={handleRemoveCoupon}
-                            size="small"
-                          >
-                            Remove
-                          </Button>
-                        </AppliedCouponDisplay>
-                      )}
-                    </div>
-
                     <PaymentFormContent
                       form={form}
                       handleSubmit={handleSubmit}
@@ -1424,10 +1833,10 @@ const ReviewAndPaymentStep = ({
                       bookingData={bookingData}
                     />
 
-                    <div style={{ marginTop: 24 }}>
+                    <div>
                       <Form.Item name="notes" label="Additional Notes">
                         <Input.TextArea
-                          placeholder="Any special requests?"
+                          placeholder="Any special requests for the host?"
                           rows={2}
                         />
                       </Form.Item>
@@ -1437,63 +1846,7 @@ const ReviewAndPaymentStep = ({
               </FormCard>
             </PaymentSection>
 
-            <SummarySection>
-              <SummaryCard>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', marginBottom: 16 }}>
-                  <SectionTitle style={{ marginBottom: 0 }}>Order Summary</SectionTitle>
-                  <DesktopTimerContainer>
-                    {renderTimerContent()}
-                  </DesktopTimerContainer>
-                </div>
-
-                {renderSummaryContent()}
-
-                <InfoPanel
-                  $bgColor="#f9fafb"
-                  $borderColor="#e5e7eb"
-                  $iconColor="#6b7280"
-                  $titleColor="#111827"
-                  $textColor="#4b5563"
-                >
-                  <Shield />
-                  <div>
-                    <h5>Cancellation Policy</h5>
-                    <p>{cancellationPolicyText}</p>
-                  </div>
-                </InfoPanel>
-
-                {isFree ? (
-                  <InfoPanel
-                    $bgColor="#f0fdf4"
-                    $borderColor="#bbf7d0"
-                    $iconColor="#22c55e"
-                    $titleColor="#15803d"
-                    $textColor="#166534"
-                  >
-                    <CheckCircle />
-                    <div>
-                      <h5>No Payment Required</h5>
-                      <p>This booking is free. No card needed.</p>
-                    </div>
-                  </InfoPanel>
-                ) : (
-                  <InfoPanel
-                    $bgColor="#f0fdf4"
-                    $borderColor="#bbf7d0"
-                    $iconColor="#22c55e"
-                    $titleColor="#15803d"
-                    $textColor="#166534"
-                  >
-                    <Lock />
-                    <div>
-                      <h5>Secure Payment</h5>
-                      <p>Your payment is encrypted and processed securely.</p>
-                    </div>
-                  </InfoPanel>
-                )}
-              </SummaryCard>
-            </SummarySection>
-
+            <SummarySection>{renderTicketSummary()}</SummarySection>
           </StepContainer>
         </Elements>
       )}
