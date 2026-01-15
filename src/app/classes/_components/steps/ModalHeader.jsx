@@ -18,12 +18,44 @@ const HeaderContainer = styled.div`
   border-bottom: 1px solid ${theme.borderLight};
   background: ${theme.white};
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 24px;
 
   @media (max-width: 640px) {
     padding: 20px 16px;
+    gap: 20px;
   }
+`;
+
+// --- Text Content Styles ---
+const TextContainer = styled.div`
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  max-width: 400px;
+`;
+
+const HeaderTitle = styled(motion.h2)`
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: ${theme.textPrimary};
+  line-height: 1.2;
+
+  @media (max-width: 640px) {
+    font-size: 20px;
+  }
+`;
+
+const HeaderSubtitle = styled(motion.p)`
+  margin: 0;
+  font-size: 14px;
+  color: ${theme.textSecondary};
+  line-height: 1.5;
 `;
 
 // --- Progress Bar Styles ---
@@ -33,7 +65,7 @@ const ProgressContainer = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  max-width: 500px;
+  max-width: 360px; /* Slightly tighter to look good above/below text */
 `;
 
 const ProgressTrack = styled.div`
@@ -98,8 +130,10 @@ const StepCircle = styled.div`
 `;
 
 const StepLabel = styled.span`
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   color: ${(props) =>
     props.$active || props.$completed
       ? theme.textPrimary
@@ -152,35 +186,6 @@ const DesktopRightSlot = styled.div`
     button {
       width: 100%;
     }
-  }
-`;
-
-const SelectedSlotInfo = styled(motion.div)`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: ${theme.textSecondary};
-  background-color: #f9fafb;
-  padding: 8px 12px;
-  border-radius: 8px;
-  flex-shrink: 1;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-
-  svg {
-    flex-shrink: 0;
-    color: ${theme.primary};
-  }
-
-  strong {
-    color: ${theme.textPrimary};
-    font-weight: 500;
-  }
-
-  @media (max-width: 968px) {
-    display: none;
   }
 `;
 
@@ -256,11 +261,60 @@ const MobileBackButton = styled(Button)`
   }
 `;
 
+// --- Animations ---
+const textVariants = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+};
+
 export const ModalHeader = ({ currentStep }) => {
-  const steps = ["📅 Select Date", "💳 Payment", "✅ Confirmation"];
+  const steps = ["Date", "Payment", "Confirm"];
+
+  const stepContent = {
+    1: {
+      title: "When would you like to go?",
+      subtitle: "Choose a date and time that suits you best.",
+    },
+    2: {
+      title: "Review & Pay",
+      subtitle: "Double-check your details and secure your spot.",
+    },
+    3: {
+      title: "Woohoo! You're booked.",
+      subtitle: "Your spot is saved. We've sent the details to your email.",
+    },
+  };
+
+  const { title, subtitle } = stepContent[currentStep] || stepContent[1];
 
   return (
     <HeaderContainer>
+      <TextContainer>
+        <AnimatePresence mode="wait">
+          <React.Fragment key={currentStep}>
+            <HeaderTitle
+              variants={textVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
+              {title}
+            </HeaderTitle>
+            <HeaderSubtitle
+              variants={textVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.3, delay: 0.05, ease: "easeOut" }}
+            >
+              {subtitle}
+            </HeaderSubtitle>
+          </React.Fragment>
+        </AnimatePresence>
+      </TextContainer>
+
       <ProgressContainer>
         <ProgressTrack />
         <ProgressFill
@@ -306,8 +360,6 @@ export const ModalFooter = ({
   if (currentStep === 1) {
     return null;
   }
-
-  const selectedSlot = bookingData?.selectedSlots?.[0];
 
   const getButtonText = () => {
     switch (currentStep) {

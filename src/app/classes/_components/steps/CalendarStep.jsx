@@ -231,18 +231,12 @@ const DayButton = styled(motion.button)`
       background: ${theme.primary} !important;
       color: white !important;
       font-weight: 600;
-      box-shadow: 0 4px 12px ${theme.primary}66;
     `}
 `;
 
 // --- Time Slots Section ---
 
-const TimeSlotsCard = styled(motion.div)`
-  background: ${theme.bg};
-  border-radius: ${theme.radius};
-  padding: 24px;
-  box-shadow: ${theme.shadow};
-  border: 1px solid ${theme.border};
+const TimeSlotsContainer = styled(motion.div)`
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -1050,9 +1044,9 @@ const CalendarStep = ({
           )}
         </CalendarCard>
 
-        {/* Right: Slots (Desktop) - Now wrapped in a Card */}
+        {/* Right: Slots (Desktop) - No longer a card */}
         {!isMobile && (
-          <TimeSlotsCard>
+          <TimeSlotsContainer>
             <AnimatePresence mode="wait">
               {selectedDate && (
                 <ColumnHeader
@@ -1079,7 +1073,7 @@ const CalendarStep = ({
               )}
             </AnimatePresence>
             {renderSlots()}
-          </TimeSlotsCard>
+          </TimeSlotsContainer>
         )}
 
         {/* Mobile Drawer (Vaul) */}

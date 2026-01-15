@@ -239,17 +239,17 @@ const ClassOptionCard = ({
   // Updated logic to include $0 (Free) pricing
   const getPriceRange = () => {
     if (!schedules.length) return { min: 0, max: 0, display: "-" };
-    
+
     // Include 0 in the prices array
     const prices = schedules
       .map((s) => parseFloat(s.price || 0))
       .filter((p) => !isNaN(p));
 
     if (prices.length === 0) return { min: 0, max: 0, display: "-" };
-    
+
     const min = Math.min(...prices);
     const max = Math.max(...prices);
-    
+
     // Determine display string
     let display = "";
     if (min === 0 && max === 0) {
@@ -266,11 +266,13 @@ const ClassOptionCard = ({
   };
 
   const priceInfo = getPriceRange();
-  
+
   // Filter generic upcoming sessions (non-course)
   const upcomingSchedules = !isCourse
     ? schedules
-        .filter((s) => s.date && dayjs(s.date).isAfter(dayjs().subtract(1, "day")))
+        .filter(
+          (s) => s.date && dayjs(s.date).isAfter(dayjs().subtract(1, "day"))
+        )
         .sort((a, b) => {
           const dateTimeA = dayjs(`${a.date}T${a.time}`);
           const dateTimeB = dayjs(`${b.date}T${b.time}`);
@@ -330,24 +332,28 @@ const ClassOptionCard = ({
           <CourseDetailRow>
             <Calendar />
             <div>
-                <strong>Next Start:</strong> 
-                {formatDate(nextCourseSchedule.date)}
+              <strong>Next Start:</strong>
+              {formatDate(nextCourseSchedule.date)}
             </div>
           </CourseDetailRow>
           {nextCourseSchedule.end_date && (
             <CourseDetailRow>
-                <ArrowRight size={14} style={{transform: 'rotate(0deg)'}} /> 
-                <div>
-                    <strong>Ends:</strong> 
-                    {formatDate(nextCourseSchedule.end_date)}
-                </div>
+              <ArrowRight size={14} style={{ transform: "rotate(0deg)" }} />
+              <div>
+                <strong>Ends:</strong>
+                {formatDate(nextCourseSchedule.end_date)}
+              </div>
             </CourseDetailRow>
           )}
           <CourseDetailRow>
             <Clock />
             <div>
-                <strong>Schedule:</strong> 
-                Every {Array.isArray(nextCourseSchedule.days) ? nextCourseSchedule.days.join(", ") : "Week"} at {formatTime(nextCourseSchedule.time)}
+              <strong>Schedule:</strong>
+              Every{" "}
+              {Array.isArray(nextCourseSchedule.days)
+                ? nextCourseSchedule.days.join(", ")
+                : "Week"}{" "}
+              at {formatTime(nextCourseSchedule.time)}
             </div>
           </CourseDetailRow>
         </CourseDetailsContainer>
