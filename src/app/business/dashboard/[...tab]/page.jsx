@@ -10,13 +10,13 @@ import ActiveBookings from "../_components/tabs/bookings/ActiveBookings";
 import BookingHistory from "../_components/tabs/bookings/BookingHistory";
 import ClassManagement from "../_components/tabs/classes/manageclasses/ClassManagement";
 import BusinessReviews from "../_components/tabs/reviews/BusinessReviews";
-import Students from "../_components/tabs/students/Students";
 import Staff from "../_components/tabs/staff/Staff";
 import Revenue from "../_components/tabs/finances/Revenue";
 import Payouts from "../_components/tabs/payouts/Payouts";
 import BookingTrends from "../_components/tabs/bookings/BookingTrends";
 import Discounts from "../_components/tabs/discounts/Discounts";
 import WidgetCustomizer from "../_components/tabs/widget/WidgetCustomizer";
+import Guests from "../_components/tabs/students/Guests";
 
 export default function DashboardPage() {
   const params = useParams();
@@ -55,9 +55,9 @@ export default function DashboardPage() {
       componentToRender = <BusinessReviews />;
       componentName = "BusinessReviews";
       break;
-    case "students":
-      componentToRender = <Students />;
-      componentName = "Students";
+    case "guests":
+      componentToRender = <Guests />;
+      componentName = "Guests";
       break;
     case "staff":
       componentToRender = <Staff />;

@@ -1,11 +1,6 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-} from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import styled from "styled-components";
 import {
   Table,
@@ -31,17 +26,17 @@ import {
   TrendingUp,
   RefreshCw,
   BarChart3,
-  Calendar,       // <-- IMPORTED
-  Hash,           // <-- IMPORTED
-  Activity,       // <-- IMPORTED
-  Percent,        // <-- IMPORTED
+  Calendar,
+  Hash,
+  Activity,
+  Percent,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import NumberFlow from "@number-flow/react";
 import { businessDiscountService } from "@/services/apiService";
 import { theme } from "@/components/theme";
-import DiscountsDrawer from "./DiscountsDrawer"; // IMPORT THE NEW DRAWER
+import DiscountsDrawer from "./DiscountsDrawer";
 
 const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -101,12 +96,17 @@ const StatsGrid = styled.div`
 `;
 const StatCard = styled(Card)`
   border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
+  margin-bottom: 0;
   min-height: 140px;
+
   .ant-card-body {
     padding: 20px;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     height: 100%;
     @media (max-width: 768px) {
       padding: 16px;
@@ -117,7 +117,7 @@ const StatCardHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 `;
 const IconContainer = styled.div`
   width: 36px;
@@ -128,22 +128,31 @@ const IconContainer = styled.div`
   justify-content: center;
   background: ${(props) => props.background || "#f1f5f9"};
   color: ${(props) => props.color || colors.textSecondary};
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
 `;
 const StatValue = styled.div`
   font-size: 22px;
   font-weight: 700;
   color: ${colors.textPrimary};
+  display: flex;
+  align-items: baseline;
 `;
 const StatLabel = styled.div`
   font-size: 13px;
   color: ${colors.textSecondary};
-  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 `;
 const StatFooter = styled.div`
   font-size: 12px;
   color: ${colors.textSecondary};
-  margin-top: auto;
-  padding-top: 8px;
+  margin-top: 4px;
+  line-height: 1.4;
 `;
 const ActionButton = styled(Button)`
   height: 40px;
@@ -182,7 +191,6 @@ const EmptyStateContainer = styled.div`
   padding: 60px 20px;
 `;
 const StatSkeleton = () => <Skeleton active paragraph={{ rows: 2 }} />;
-
 
 // #region --- NEW MOBILE DISCOUNT CARD STYLES ---
 
@@ -302,37 +310,45 @@ const SkeletonWrapper = styled.div`
 `;
 
 const MobileDiscountSkeleton = () => (
-    <MobileDiscountCard>
-      <MobileCardHeader>
-        <HeaderInfo>
-          <SkeletonLine width="150px" height="18px" />
-          <SkeletonLine width="100px" height="14px" />
-        </HeaderInfo>
-        <SkeletonLine width="60px" height="22px" />
-      </MobileCardHeader>
-      <MobileCardContent>
-        <MetaItem>
-          <MetaLabel style={{ opacity: 0.5 }}><Percent size={14} /> Discount</MetaLabel>
-          <SkeletonLine width="70px" />
-        </MetaItem>
-        <MetaItem>
-          <MetaLabel style={{ opacity: 0.5 }}><Activity size={14} /> Status</MetaLabel>
-          <SkeletonLine width="90px" />
-        </MetaItem>
-        <MetaItem>
-          <MetaLabel style={{ opacity: 0.5 }}><BarChart3 size={14} /> Usage</MetaLabel>
-          <SkeletonLine width="80px" />
-        </MetaItem>
-        <MetaItem>
-          <MetaLabel style={{ opacity: 0.5 }}><Calendar size={14} /> Validity</MetaLabel>
-          <SkeletonLine width="100px" />
-        </MetaItem>
-      </MobileCardContent>
-      <MobileCardFooter>
-        <SkeletonLine height="38px" />
-        <SkeletonLine height="38px" />
-      </MobileCardFooter>
-    </MobileDiscountCard>
+  <MobileDiscountCard>
+    <MobileCardHeader>
+      <HeaderInfo>
+        <SkeletonLine width="150px" height="18px" />
+        <SkeletonLine width="100px" height="14px" />
+      </HeaderInfo>
+      <SkeletonLine width="60px" height="22px" />
+    </MobileCardHeader>
+    <MobileCardContent>
+      <MetaItem>
+        <MetaLabel style={{ opacity: 0.5 }}>
+          <Percent size={14} /> Discount
+        </MetaLabel>
+        <SkeletonLine width="70px" />
+      </MetaItem>
+      <MetaItem>
+        <MetaLabel style={{ opacity: 0.5 }}>
+          <Activity size={14} /> Status
+        </MetaLabel>
+        <SkeletonLine width="90px" />
+      </MetaItem>
+      <MetaItem>
+        <MetaLabel style={{ opacity: 0.5 }}>
+          <BarChart3 size={14} /> Usage
+        </MetaLabel>
+        <SkeletonLine width="80px" />
+      </MetaItem>
+      <MetaItem>
+        <MetaLabel style={{ opacity: 0.5 }}>
+          <Calendar size={14} /> Validity
+        </MetaLabel>
+        <SkeletonLine width="100px" />
+      </MetaItem>
+    </MobileCardContent>
+    <MobileCardFooter>
+      <SkeletonLine height="38px" />
+      <SkeletonLine height="38px" />
+    </MobileCardFooter>
+  </MobileDiscountCard>
 );
 // #endregion
 
@@ -350,14 +366,26 @@ const Discounts = ({ businessId }) => {
   const fetchDiscounts = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await businessDiscountService.getDiscounts({ business_id: businessId });
+      const response = await businessDiscountService.getDiscounts({
+        business_id: businessId,
+      });
       setDiscounts(response.data || []);
-    } catch (error) { message.error("Failed to load discounts"); }
-    finally { setLoading(false); }
+    } catch (error) {
+      message.error("Failed to load discounts");
+    } finally {
+      setLoading(false);
+    }
   }, [businessId]);
 
-  useEffect(() => { fetchDiscounts(); }, [fetchDiscounts]);
-  useEffect(() => { if (!loading) { const timer = setTimeout(() => setIsReady(true), 100); return () => clearTimeout(timer); } }, [loading]);
+  useEffect(() => {
+    fetchDiscounts();
+  }, [fetchDiscounts]);
+  useEffect(() => {
+    if (!loading) {
+      const timer = setTimeout(() => setIsReady(true), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
 
   const refreshData = async () => {
     await fetchDiscounts();
@@ -371,8 +399,9 @@ const Discounts = ({ businessId }) => {
 
   const onDrawerClose = () => {
     setDrawerVisible(false);
-    // Delay clearing the editing state to allow the drawer to animate out
-    setTimeout(() => { setEditingDiscount(null); }, 300);
+    setTimeout(() => {
+      setEditingDiscount(null);
+    }, 300);
   };
 
   const handleDelete = async (id) => {
@@ -380,52 +409,215 @@ const Discounts = ({ businessId }) => {
       await businessDiscountService.deleteDiscount(id);
       message.success("Discount deleted successfully!");
       await fetchDiscounts();
-    } catch (error) { message.error("Failed to delete discount"); }
+    } catch (error) {
+      message.error("Failed to delete discount");
+    }
   };
 
   const handleToggleActive = async (id, currentStatus) => {
     try {
-      // Use the dedicated toggle action for simplicity
       await businessDiscountService.toggleDiscountActive(id);
-      message.success(`Discount ${!currentStatus ? "activated" : "deactivated"}`);
+      message.success(
+        `Discount ${!currentStatus ? "activated" : "deactivated"}`
+      );
       await fetchDiscounts();
-    } catch (error) { message.error("Failed to update discount status"); }
+    } catch (error) {
+      message.error("Failed to update discount status");
+    }
   };
 
   const statisticCards = [
-    { key: "total", title: "Total Discounts", value: discounts.length, icon: <Ticket size={18} />, background: `${colors.info}15`, color: colors.info },
-    { key: "active", title: "Active Offers", value: discounts.filter((d) => d.is_active).length, icon: <TrendingUp size={18} />, background: `${colors.success}15`, color: colors.success },
-    { key: "usage", title: "Total Usage", value: discounts.reduce((sum, d) => sum + (d.usage_count || 0), 0), icon: <BarChart3 size={18} />, background: `#8b5cf615`, color: "#8b5cf6" },
+    {
+      key: "total",
+      title: "Total Discounts",
+      value: discounts.length,
+      icon: <Ticket size={18} />,
+      background: `rgba(59, 130, 246, 0.1)`, // info
+      color: colors.info,
+      footer: "All created discounts",
+    },
+    {
+      key: "active",
+      title: "Active Offers",
+      value: discounts.filter((d) => d.is_active).length,
+      icon: <TrendingUp size={18} />,
+      background: `rgba(16, 185, 129, 0.1)`, // success
+      color: colors.success,
+      footer: "Currently valid",
+    },
+    {
+      key: "usage",
+      title: "Total Usage",
+      value: discounts.reduce((sum, d) => sum + (d.usage_count || 0), 0),
+      icon: <BarChart3 size={18} />,
+      background: `rgba(139, 92, 246, 0.1)`, // purple
+      color: "#8b5cf6",
+      footer: "All-time redemptions",
+    },
   ];
-  
+
   const generateSkeletonData = (count = 5) => {
     return Array.from({ length: count }, (_, i) => ({
       key: `skeleton-${i}`,
       code: <SkeletonLine width="120px" />,
       name: <SkeletonLine width="180px" />,
       discount_type: <SkeletonLine width="100px" height="24px" />,
-      validity: <SkeletonWrapper><SkeletonLine width="110px" height="12px" /><SkeletonLine width="110px" height="12px" /></SkeletonWrapper>,
-      usage: <SkeletonWrapper><SkeletonLine width="70px" height="14px" /><SkeletonLine width="80px" height="12px" /></SkeletonWrapper>,
-      is_active: <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><SkeletonLine width="70px" height="24px" /><SkeletonLine width="40px" height="22px" /></div>,
-      actions: <div style={{ display: 'flex', gap: '8px' }}><SkeletonLine width="32px" height="32px" /><SkeletonLine width="32px" height="32px" /></div>,
+      validity: (
+        <SkeletonWrapper>
+          <SkeletonLine width="110px" height="12px" />
+          <SkeletonLine width="110px" height="12px" />
+        </SkeletonWrapper>
+      ),
+      usage: (
+        <SkeletonWrapper>
+          <SkeletonLine width="70px" height="14px" />
+          <SkeletonLine width="80px" height="12px" />
+        </SkeletonWrapper>
+      ),
+      is_active: (
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <SkeletonLine width="70px" height="24px" />
+          <SkeletonLine width="40px" height="22px" />
+        </div>
+      ),
+      actions: (
+        <div style={{ display: "flex", gap: "8px" }}>
+          <SkeletonLine width="32px" height="32px" />
+          <SkeletonLine width="32px" height="32px" />
+        </div>
+      ),
     }));
   };
 
   const columns = [
-    { title: "Code", dataIndex: "code", key: "code", render: (text) => React.isValidElement(text) ? text : text ? <Text strong style={{ fontFamily: "monospace", color: colors.primary }}>{text}</Text> : <Tag>Automatic</Tag> },
-    { title: "Name", dataIndex: "name", key: "name", render: (text) => React.isValidElement(text) ? text : <Text strong>{text}</Text> },
+    {
+      title: "Code",
+      dataIndex: "code",
+      key: "code",
+      render: (text) =>
+        React.isValidElement(text) ? (
+          text
+        ) : text ? (
+          <Text
+            strong
+            style={{ fontFamily: "monospace", color: colors.primary }}
+          >
+            {text}
+          </Text>
+        ) : (
+          <Tag>Automatic</Tag>
+        ),
+    },
+    {
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
+      render: (text) =>
+        React.isValidElement(text) ? text : <Text strong>{text}</Text>,
+    },
     {
       title: "Type",
       dataIndex: "discount_type",
       key: "discount_type",
-      render: (type, record) => React.isValidElement(type) ? type : type === "percentage"
-        ? <Tag color="blue">{record.value}% OFF</Tag>
-        : <Tag color="green">${record.value} OFF</Tag>
+      render: (type, record) =>
+        React.isValidElement(type) ? (
+          type
+        ) : type === "percentage" ? (
+          <Tag color="blue">{record.value}% OFF</Tag>
+        ) : (
+          <Tag color="green">${record.value} OFF</Tag>
+        ),
     },
-    { title: "Validity", key: "validity", dataIndex: 'validity', render: (text, record) => React.isValidElement(text) ? text : !record.valid_from && !record.valid_to ? (<Text type="secondary">No expiry</Text>) : (<Space direction="vertical" size={0}><Text type="secondary" style={{ fontSize: "12px" }}>From: {dayjs(record.valid_from).format("MMM D, YYYY")}</Text><Text type="secondary" style={{ fontSize: "12px" }}>Until: {dayjs(record.valid_to).format("MMM D, YYYY")}</Text></Space>) },
-    { title: "Usage", key: "usage", dataIndex: 'usage', render: (text, record) => React.isValidElement(text) ? text : <Space direction="vertical" size={0}><Text strong>{record.usage_count || 0} times</Text>{record.usage_limit && <Text type="secondary" style={{ fontSize: "12px" }}>Limit: {record.usage_limit}</Text>}</Space> },
-    { title: "Status", dataIndex: "is_active", key: "is_active", render: (isActive, record) => React.isValidElement(isActive) ? isActive : <Space><Tag color={isActive ? "success" : "default"}>{isActive ? "Active" : "Inactive"}</Tag><Tooltip title={record.is_active ? "Deactivate" : "Activate"}><Switch size="small" checked={record.is_active} onChange={() => handleToggleActive(record.id, record.is_active)} /></Tooltip></Space> },
-    { title: "Actions", key: "actions", dataIndex: 'actions', render: (text, record) => React.isValidElement(text) ? text : <Space><Tooltip title="Edit discount"><Button type="text" icon={<Edit size={16} />} onClick={() => showDrawer(record)} /></Tooltip><Popconfirm title="Delete this discount?" onConfirm={() => handleDelete(record.id)} okText="Delete" cancelText="Cancel" okButtonProps={{ danger: true }}><Tooltip title="Delete discount"><Button type="text" danger icon={<Trash2 size={16} />} /></Tooltip></Popconfirm></Space> },
+    {
+      title: "Validity",
+      key: "validity",
+      dataIndex: "validity",
+      render: (text, record) =>
+        React.isValidElement(text) ? (
+          text
+        ) : !record.valid_from && !record.valid_to ? (
+          <Text type="secondary">No expiry</Text>
+        ) : (
+          <Space direction="vertical" size={0}>
+            <Text type="secondary" style={{ fontSize: "12px" }}>
+              From: {dayjs(record.valid_from).format("MMM D, YYYY")}
+            </Text>
+            <Text type="secondary" style={{ fontSize: "12px" }}>
+              Until: {dayjs(record.valid_to).format("MMM D, YYYY")}
+            </Text>
+          </Space>
+        ),
+    },
+    {
+      title: "Usage",
+      key: "usage",
+      dataIndex: "usage",
+      render: (text, record) =>
+        React.isValidElement(text) ? (
+          text
+        ) : (
+          <Space direction="vertical" size={0}>
+            <Text strong>{record.usage_count || 0} times</Text>
+            {record.usage_limit && (
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                Limit: {record.usage_limit}
+              </Text>
+            )}
+          </Space>
+        ),
+    },
+    {
+      title: "Status",
+      dataIndex: "is_active",
+      key: "is_active",
+      render: (isActive, record) =>
+        React.isValidElement(isActive) ? (
+          isActive
+        ) : (
+          <Space>
+            <Tag color={isActive ? "success" : "default"}>
+              {isActive ? "Active" : "Inactive"}
+            </Tag>
+            <Tooltip title={record.is_active ? "Deactivate" : "Activate"}>
+              <Switch
+                size="small"
+                checked={record.is_active}
+                onChange={() => handleToggleActive(record.id, record.is_active)}
+              />
+            </Tooltip>
+          </Space>
+        ),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      dataIndex: "actions",
+      render: (text, record) =>
+        React.isValidElement(text) ? (
+          text
+        ) : (
+          <Space>
+            <Tooltip title="Edit discount">
+              <Button
+                type="text"
+                icon={<Edit size={16} />}
+                onClick={() => showDrawer(record)}
+              />
+            </Tooltip>
+            <Popconfirm
+              title="Delete this discount?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Delete"
+              cancelText="Cancel"
+              okButtonProps={{ danger: true }}
+            >
+              <Tooltip title="Delete discount">
+                <Button type="text" danger icon={<Trash2 size={16} />} />
+              </Tooltip>
+            </Popconfirm>
+          </Space>
+        ),
+    },
   ];
 
   // --- NEW MOBILE DISCOUNT ITEM COMPONENT ---
@@ -434,20 +626,28 @@ const Discounts = ({ businessId }) => {
       <MobileCardHeader>
         <HeaderInfo>
           <DiscountName>{record.name}</DiscountName>
-          <DiscountCode>{record.code || 'AUTOMATIC'}</DiscountCode>
+          <DiscountCode>{record.code || "AUTOMATIC"}</DiscountCode>
         </HeaderInfo>
-        <Tag color={record.is_active ? "success" : "default"}>{record.is_active ? "Active" : "Inactive"}</Tag>
+        <Tag color={record.is_active ? "success" : "default"}>
+          {record.is_active ? "Active" : "Inactive"}
+        </Tag>
       </MobileCardHeader>
 
       <MobileCardContent>
         <MetaItem>
-          <MetaLabel><Percent size={14} /> Discount</MetaLabel>
+          <MetaLabel>
+            <Percent size={14} /> Discount
+          </MetaLabel>
           <MetaValue>
-            {record.discount_type === "percentage" ? `${record.value}% OFF` : `$${record.value} OFF`}
+            {record.discount_type === "percentage"
+              ? `${record.value}% OFF`
+              : `$${record.value} OFF`}
           </MetaValue>
         </MetaItem>
         <MetaItem>
-          <MetaLabel><Activity size={14} /> Status</MetaLabel>
+          <MetaLabel>
+            <Activity size={14} /> Status
+          </MetaLabel>
           <MetaValue>
             <Switch
               size="small"
@@ -457,23 +657,26 @@ const Discounts = ({ businessId }) => {
           </MetaValue>
         </MetaItem>
         <MetaItem>
-          <MetaLabel><BarChart3 size={14} /> Usage</MetaLabel>
+          <MetaLabel>
+            <BarChart3 size={14} /> Usage
+          </MetaLabel>
           <MetaValue>
             {record.usage_count || 0}
-            {record.usage_limit ? ` / ${record.usage_limit}` : ' times'}
+            {record.usage_limit ? ` / ${record.usage_limit}` : " times"}
           </MetaValue>
         </MetaItem>
         <MetaItem>
-          <MetaLabel><Calendar size={14} /> Validity</MetaLabel>
+          <MetaLabel>
+            <Calendar size={14} /> Validity
+          </MetaLabel>
           <MetaValue>
             {!record.valid_from && !record.valid_to
               ? "No expiry"
-              : `${dayjs(record.valid_to).format("MMM D, YYYY")}`
-            }
+              : `${dayjs(record.valid_to).format("MMM D, YYYY")}`}
           </MetaValue>
         </MetaItem>
       </MobileCardContent>
-      
+
       <MobileCardFooter>
         <MobileActionButton
           icon={<Edit size={16} />}
@@ -500,26 +703,111 @@ const Discounts = ({ businessId }) => {
     <ConfigProvider theme={theme}>
       <DashboardWrapper>
         <DashboardHeader>
-          <div><PageTitle>Discounts & Coupons</PageTitle><HeaderSubtitle>Create and manage promotions to attract more students.</HeaderSubtitle></div>
+          <div>
+            <PageTitle>Discounts & Coupons</PageTitle>
+            <HeaderSubtitle>
+              Create and manage promotions to attract more guests.
+            </HeaderSubtitle>
+          </div>
           <Space>
-            <ActionButton ref={refreshButtonRef} icon={<RefreshCw size={16} />} onClick={refreshData} loading={loading}>Refresh</ActionButton>
-            <ActionButton type="primary" onClick={() => showDrawer()} icon={<Plus size={16} />}>Create Discount</ActionButton>
+            <ActionButton
+              ref={refreshButtonRef}
+              icon={<RefreshCw size={16} />}
+              onClick={refreshData}
+              loading={loading}
+            >
+              Refresh
+            </ActionButton>
+            <ActionButton
+              type="primary"
+              onClick={() => showDrawer()}
+              icon={<Plus size={16} />}
+            >
+              Create Discount
+            </ActionButton>
           </Space>
         </DashboardHeader>
 
         <Divider />
 
         <StatsGrid>
-          {statisticCards.map((stat) => (<StatCard key={stat.key}>{loading ? <StatSkeleton /> : (<><StatCardHeader><IconContainer background={stat.background} color={stat.color}>{stat.icon}</IconContainer></StatCardHeader><div><StatValue><NumberFlow value={isReady ? stat.value : 0} duration={800} /></StatValue><StatLabel>{stat.title}</StatLabel></div>{stat.footer && <StatFooter>{stat.footer}</StatFooter>}</>)}</StatCard>))}
+          {statisticCards.map((stat) => (
+            <StatCard key={stat.key}>
+              {loading ? (
+                <StatSkeleton />
+              ) : (
+                <>
+                  <div>
+                    <StatCardHeader>
+                      <IconContainer
+                        background={stat.background}
+                        color={stat.color}
+                      >
+                        {stat.icon}
+                      </IconContainer>
+                    </StatCardHeader>
+                    <StatLabel>{stat.title}</StatLabel>
+                  </div>
+                  <div>
+                    <StatValue>
+                      <NumberFlow
+                        value={isReady ? stat.value : 0}
+                        duration={800}
+                      />
+                    </StatValue>
+                    {stat.footer && <StatFooter>{stat.footer}</StatFooter>}
+                  </div>
+                </>
+              )}
+            </StatCard>
+          ))}
         </StatsGrid>
 
         <Divider />
 
         <TableSection>
-          <TableHeader><TableTitle>Discount Management</TableTitle><TableDescription>Manage your promotional offers and track their performance.</TableDescription></TableHeader>
-          {isMobile ? (<div style={{ padding: "0 16px 16px" }}>{loading ? (Array.from({ length: 3 }).map((_, index) => <MobileDiscountSkeleton key={index} />)) : discounts.length > 0 ? (discounts.map((item) => <MobileDiscountItem key={item.id} record={item} />)) : (<EmptyStateContainer><Text>No discounts found. Create one to get started.</Text></EmptyStateContainer>)}</div>) : (<StyledTable columns={columns} dataSource={loading ? generateSkeletonData(5) : discounts} rowKey={record => record.id || record.key} pagination={loading ? false : { pageSize: 10, showSizeChanger: true }} loading={false} locale={{ emptyText: <EmptyStateContainer><Text>No discounts have been made yet.</Text></EmptyStateContainer> }} />)}
+          <TableHeader>
+            <TableTitle>Discount Management</TableTitle>
+            <TableDescription>
+              Manage your promotional offers and track their performance.
+            </TableDescription>
+          </TableHeader>
+          {isMobile ? (
+            <div style={{ padding: "0 16px 16px" }}>
+              {loading ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                  <MobileDiscountSkeleton key={index} />
+                ))
+              ) : discounts.length > 0 ? (
+                discounts.map((item) => (
+                  <MobileDiscountItem key={item.id} record={item} />
+                ))
+              ) : (
+                <EmptyStateContainer>
+                  <Text>No discounts found. Create one to get started.</Text>
+                </EmptyStateContainer>
+              )}
+            </div>
+          ) : (
+            <StyledTable
+              columns={columns}
+              dataSource={loading ? generateSkeletonData(5) : discounts}
+              rowKey={(record) => record.id || record.key}
+              pagination={
+                loading ? false : { pageSize: 10, showSizeChanger: true }
+              }
+              loading={false}
+              locale={{
+                emptyText: (
+                  <EmptyStateContainer>
+                    <Text>No discounts have been made yet.</Text>
+                  </EmptyStateContainer>
+                ),
+              }}
+            />
+          )}
         </TableSection>
-        
+
         <DiscountsDrawer
           visible={drawerVisible}
           onClose={onDrawerClose}

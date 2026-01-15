@@ -1,8 +1,30 @@
 "use client";
 
-import React, { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
-import { Modal, Upload, Button, Steps, Select, Table, Typography, ConfigProvider, Spin, Alert, Space, Card, Progress, Tag, Divider,  } from 'antd';
-import message from '@/lib/message';
+import React, {
+  useState,
+  useMemo,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+} from "react";
+import {
+  Modal,
+  Upload,
+  Button,
+  Steps,
+  Select,
+  Table,
+  Typography,
+  ConfigProvider,
+  Spin,
+  Alert,
+  Space,
+  Card,
+  Progress,
+  Tag,
+  Divider,
+} from "antd";
+import message from "@/lib/message";
 import { motion, AnimatePresence } from "framer-motion";
 import { DownloadOutlined } from "@ant-design/icons";
 import { X } from "lucide-react";
@@ -26,14 +48,14 @@ const useElementSize = () => {
 
   useLayoutEffect(() => {
     if (!ref.current) return;
-    
+
     const observer = new ResizeObserver(([entry]) => {
       setSize({
         width: entry.contentRect.width,
-        height: entry.contentRect.height
+        height: entry.contentRect.height,
       });
     });
-    
+
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
@@ -52,14 +74,13 @@ const AnimatedModalContent = ({ children }) => {
     >
       <div ref={ref}>
         {/* We add a tiny border to prevent margin collapse issues which cause jumpiness */}
-        <div style={{ border: '1px solid transparent', margin: '-1px' }}>
+        <div style={{ border: "1px solid transparent", margin: "-1px" }}>
           {children}
         </div>
       </div>
     </motion.div>
   );
 };
-
 
 // --- Vaul Drawer Styles ---
 const StyledDrawerOverlay = styled(Drawer.Overlay)`
@@ -356,7 +377,7 @@ const containerVariants = {
   },
 };
 
-const ImportStudentsModal = ({ visible, onClose, onImportComplete }) => {
+const ImportGuestsModal = ({ visible, onClose, onImportComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [fileList, setFileList] = useState([]);
   const [fileHeaders, setFileHeaders] = useState([]);
@@ -576,7 +597,7 @@ const ImportStudentsModal = ({ visible, onClose, onImportComplete }) => {
     if (link.download !== undefined) {
       const url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
-      link.setAttribute("download", "student_import_template.csv");
+      link.setAttribute("download", "guest_import_template.csv");
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
@@ -646,8 +667,8 @@ const ImportStudentsModal = ({ visible, onClose, onImportComplete }) => {
             <StepHeader>
               <StepTitle>Upload your file</StepTitle>
               <StepDescription>
-                Drag and drop a CSV or Excel file with your student contacts.
-                Or, download our template to get started.
+                Drag and drop a CSV or Excel file with your guest contacts. Or,
+                download our template to get started.
               </StepDescription>
             </StepHeader>
 
@@ -826,7 +847,7 @@ const ImportStudentsModal = ({ visible, onClose, onImportComplete }) => {
                 Import Complete!
               </Title>
               <Text style={{ color: "#64748b", marginBottom: 24 }}>
-                Your student contacts have been successfully imported.
+                Your guest contacts have been successfully imported.
               </Text>
               {importStats && (
                 <Card style={{ width: 300 }}>
@@ -1001,7 +1022,7 @@ const ImportStudentsModal = ({ visible, onClose, onImportComplete }) => {
       {/* --- MODIFIED: Desktop Modal with Animated Wrapper --- */}
       {!isMobile && (
         <DesktopModal
-          title="Import Students"
+          title="Import Guests"
           open={visible}
           onCancel={handleClose}
           width={currentStep === 1 ? 800 : 600}
@@ -1020,7 +1041,9 @@ const ImportStudentsModal = ({ visible, onClose, onImportComplete }) => {
                   <Step key={item.title} title={item.title} icon={item.icon} />
                 ))}
               </StyledSteps>
-              <AnimatePresence mode="wait">{renderStepContent()}</AnimatePresence>
+              <AnimatePresence mode="wait">
+                {renderStepContent()}
+              </AnimatePresence>
             </ModalContent>
           </AnimatedModalContent>
         </DesktopModal>
@@ -1038,7 +1061,7 @@ const ImportStudentsModal = ({ visible, onClose, onImportComplete }) => {
             <StyledDrawerContent>
               <DrawerHandle />
               <DrawerHeader>
-                <DrawerTitle>Import Students</DrawerTitle>
+                <DrawerTitle>Import Guests</DrawerTitle>
                 <CloseButton
                   icon={<X size={20} />}
                   onClick={handleClose}
@@ -1063,4 +1086,4 @@ const ImportStudentsModal = ({ visible, onClose, onImportComplete }) => {
   );
 };
 
-export default ImportStudentsModal;
+export default ImportGuestsModal;

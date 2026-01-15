@@ -196,10 +196,10 @@ const DeleteClassModal = ({
             style={{ width: 40, height: 40 }}
           />
         </WarningIconContainer>
-        <StyledTitle level={3}>Permanently Delete Class?</StyledTitle>
+        <StyledTitle level={3}>Permanently Delete Experience?</StyledTitle>
         <StyledParagraph>
-          This action is irreversible. Please review the class details below
-          before proceeding.
+          This action is irreversible. Please review the experience details
+          below before proceeding.
         </StyledParagraph>
       </HeaderSection>
       <FinalWarning>
@@ -236,7 +236,7 @@ const DeleteClassModal = ({
           ></LordIcon>
         }
       >
-        Yes, Delete Class
+        Yes, Delete Experience
       </Button>
     </>
   );

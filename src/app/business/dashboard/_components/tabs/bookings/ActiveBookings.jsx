@@ -628,7 +628,7 @@ const ActiveBookings = () => {
                       <UsersIcon size={20} color={colors.info} />
                     </IconContainer>
                   </StatCardHeader>
-                  <StatLabel>Active Participant Bookings</StatLabel>
+                  <StatLabel>Active Guest Bookings</StatLabel>
                 </div>
                 <StatValue>
                   <NumberFlow
@@ -651,7 +651,7 @@ const ActiveBookings = () => {
 
         <SearchFilterBar>
           <SearchInput
-            placeholder="Search by reference ID, user, or class..."
+            placeholder="Search by reference ID, user, or experience..."
             prefix={<Search size={16} color="#9ca3af" />}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}

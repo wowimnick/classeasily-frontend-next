@@ -1,4 +1,4 @@
-// src/data/helpCenterData.js
+// --- START OF FILE helpCenterData.js ---
 
 import {
   Rocket,
@@ -7,6 +7,8 @@ import {
   Users,
   MessageSquareQuote,
   Ticket,
+  ShieldCheck,
+  BellRing,
 } from "lucide-react";
 
 export const helpCenterData = [
@@ -15,48 +17,48 @@ export const helpCenterData = [
     title: "Getting Started",
     icon: Rocket,
     description:
-      "Everything you need to know to launch your business, set up payments, and complete your profile.",
+      "Everything you need to know to launch your business, set up payments, and complete your Host profile.",
     articles: [
       {
         slug: "setup-guide",
-        title: "Your Business Setup Checklist",
+        title: "Your Host Setup Checklist",
         content: [
           {
             type: "p",
-            text: "Welcome to ClassEasily! Getting your business up and running is simple. Follow this checklist to ensure you are ready to accept bookings and payments.",
+            text: "Welcome to ClassEasily! Getting your business up and running as a Host is simple. Follow this checklist to ensure you are ready to accept bookings and payments.",
           },
           { type: "h3", text: "1. Connect Stripe for Payouts" },
           {
             type: "p",
-            text: "This is the most critical step. You cannot receive money until you connect a Stripe account. Navigate to <strong>Settings</strong> &rarr; <strong>Payouts</strong> to link your bank account securely. This automatically enables credit card, <strong>Apple Pay</strong>, and <strong>Google Pay</strong> processing for your bookers.",
+            text: "This is the most critical step. You cannot receive money until you connect a Stripe account. Navigate to <strong>Settings</strong> &rarr; <strong>Payouts</strong> to link your bank account securely. This automatically enables credit card, <strong>Apple Pay</strong>, and <strong>Google Pay</strong> processing for your Guests.",
           },
           { type: "h3", text: "2. Complete Your Business Profile" },
           {
             type: "p",
-            text: "Your profile is your storefront. A complete profile builds trust.",
+            text: "Your profile is your storefront. A complete profile builds trust with potential Guests.",
           },
           {
             type: "ul",
             items: [
               "<strong>Basic Info:</strong> Add your business name, description, and logo.",
               "<strong>Location:</strong> Set your address. You can choose to show the exact location map or just a general area for privacy.",
-              "<strong>Contact Info:</strong> Add a phone number and email for bookers to reach you.",
+              "<strong>Contact Info:</strong> Add a phone number and email for Guests to reach you.",
               "<strong>Social Links:</strong> Connect your Instagram or Facebook to cross-promote.",
             ],
           },
           { type: "h3", text: "3. Create Your First Experience" },
           {
             type: "p",
-            text: "An 'Experience' is the template for what you teach or host (e.g., 'Beginner Yoga' or 'Pottery Workshop'). It holds descriptions and photos but <strong>not dates</strong>. You only need to create this once.",
+            text: "An 'Experience' is the template for what you host (e.g., 'Beginner Pottery Workshop' or 'Guided City Tour'). It holds descriptions and photos but <strong>not dates</strong>. You only need to create this once.",
           },
           { type: "h3", text: "4. Schedule Sessions" },
           {
             type: "p",
-            text: "Once you have an Experience, you add 'Schedules' to it. These are the actual dates and times that appear on the calendar for bookers to reserve.",
+            text: "Once you have an Experience, you add 'Schedules' to it. These are the actual dates and times that appear on the calendar for Guests to reserve.",
           },
           {
             type: "blockquote",
-            text: "<strong>Pro Tip:</strong> You can set up 'Staff Roles' later if you have a team, but completing the steps above is all you need to start selling.",
+            text: "<strong>Pro Tip:</strong> You can set up 'Team Roles' later if you have additional hosts or admins, but completing the steps above is all you need to start selling.",
           },
         ],
       },
@@ -90,7 +92,7 @@ export const helpCenterData = [
           {
             type: "ul",
             items: [
-              "<strong>Individual / Sole Proprietorship:</strong> Choose this if you are a freelancer, independent contractor, or running the business yourself without official incorporation. You will verify using your personal <strong>SIN</strong> (Social Insurance Number) or just your personal identity details.",
+              "<strong>Individual / Sole Proprietorship:</strong> Choose this if you are a freelancer, independent host, or running the business yourself without official incorporation. You will verify using your personal <strong>SIN</strong> (Social Insurance Number) or just your personal identity details.",
               "<strong>Company / Corporation:</strong> Choose this <strong>only</strong> if you have official incorporation documents. You will need your <strong>Business Number (BN)</strong> or Provincial Corporation Number.",
               "<strong>Non-profit / Charity:</strong> Choose this if you are a registered charity (requires your CRA Registration Number ending in RR0001).",
             ],
@@ -129,7 +131,7 @@ export const helpCenterData = [
           {
             type: "ul",
             items: [
-              "<strong>Name Mismatch (Sole Prop):</strong> If you selected 'Individual', the 'Business Name' is legally <strong>your own name</strong>. Do not enter a trade name (e.g., 'Yoga by Sarah') unless you have legally registered it as a 'Doing Business As' name.",
+              "<strong>Name Mismatch (Sole Prop):</strong> If you selected 'Individual', the 'Business Name' is legally <strong>your own name</strong>. Do not enter a trade name (e.g., 'Pottery by Sarah') unless you have legally registered it as a 'Doing Business As' name.",
               "<strong>Corporation Mismatch:</strong> Ensure your legal business name matches your Articles of Incorporation exactly (including 'Inc.', 'Ltd.', etc.).",
               "<strong>Address Verification:</strong> Stripe may ask for a photo of your driver's license or passport if they cannot verify you automatically via credit bureaus.",
             ],
@@ -143,7 +145,7 @@ export const helpCenterData = [
     title: "Experiences & Scheduling",
     icon: CalendarDays,
     description:
-      "Learn the difference between experiences and schedules, and how to set up single sessions or full courses.",
+      "Learn how to set up single sessions, multi-day adventures, and manage your calendar.",
     articles: [
       {
         slug: "experience-vs-schedule",
@@ -151,19 +153,19 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Understanding the difference between an Experience and a Schedule is the key to using ClassEasily effectively.",
+            text: "Understanding the difference between an Experience and a Schedule is the key to managing your hosting duties effectively.",
           },
           { type: "h3", text: "The Experience (The 'What')" },
           {
             type: "p",
-            text: "Think of an <strong>Experience</strong> as your menu item or catalog entry. It contains the static details that don't change often:",
+            text: "Think of an <strong>Experience</strong> as your catalog entry. It contains the static details that don't change often:",
           },
           {
             type: "ul",
             items: [
               "Title & Description",
               "Photos & Cover Image",
-              "Category (e.g., Art, Fitness)",
+              "Category (e.g., Tours, Workshops, Food)",
               "Location & Equipment Needed",
             ],
           },
@@ -174,43 +176,43 @@ export const helpCenterData = [
           },
           {
             type: "ul",
-            items: ["Date & Time", "Price", "Capacity (Max bookers)"],
+            items: ["Date & Time", "Price", "Capacity (Max Guests)"],
           },
           {
             type: "blockquote",
-            text: "<strong>Example:</strong> You create one Experience called 'Pottery 101'. You then add two Schedules to it: one on Tuesday evenings for $50, and one on Saturday mornings for $60. Both share the same description and photos.",
+            text: "<strong>Example:</strong> You create one Experience called 'Sunset Kayaking'. You then add two Schedules to it: one on Tuesday evenings for $50, and one on Saturday mornings for $60. Both share the same description and photos.",
           },
         ],
       },
       {
-        slug: "creating-courses",
-        title: "Single Sessions vs. Full Courses",
+        slug: "booking-types",
+        title: "Single Sessions vs. Multi-Day Adventures",
         content: [
           {
             type: "p",
-            text: "When creating a Schedule, you can choose between two booking types. This setting changes how bookers book and how you get paid.",
+            text: "When creating a Schedule, you can choose between two booking types. This setting changes how Guests book and how you get paid.",
           },
           { type: "h3", text: "Single Session" },
           {
             type: "p",
-            text: "Bookers reserve one date at a time. This is perfect for drop-in experiences like Yoga, Gym slots, or one-off workshops.",
+            text: "Guests reserve one specific date. This is perfect for drop-in experiences like city tours, cooking classes, or equipment rentals.",
           },
-          { type: "h3", text: "Full Course" },
+          { type: "h3", text: "Multi-Day Adventure (Full Course)" },
           {
             type: "p",
-            text: "A Full Course is a bundle of sessions that must be booked together. Bookers pay one price for the entire series. This is ideal for:",
+            text: "A Multi-Day Adventure is a bundle of sessions that must be booked together. Guests pay one price for the entire series. This is ideal for:",
           },
           {
             type: "ul",
             items: [
+              "3-day retreats",
               "6-week bootcamps",
-              "Semester-based learning",
               "Progressive workshops (Level 1, 2, 3)",
             ],
           },
           {
             type: "p",
-            text: "When setting up a course, you define the start date, end date, and days of the week (e.g., 'Every Mon/Wed for 4 weeks'). The system automatically generates all the individual session instances for you.",
+            text: "When setting up an adventure, you define the start date, end date, and days of the week (e.g., 'Every Mon/Wed for 4 weeks'). The system automatically generates all the individual session instances for you.",
           },
         ],
       },
@@ -241,11 +243,11 @@ export const helpCenterData = [
     ],
   },
   {
-    slug: "bookings-and-bookers",
-    title: "Bookings & Bookers",
+    slug: "guests-and-bookings",
+    title: "Guests & Bookings",
     icon: Users,
     description:
-      "Manage your roster, handle cancellations, and import booker lists.",
+      "Manage your guest list, handle cancellations, and import contacts.",
     articles: [
       {
         slug: "managing-bookings",
@@ -259,16 +261,16 @@ export const helpCenterData = [
           {
             type: "ul",
             items: [
-              "<strong>Confirmed:</strong> The booker has reserved and paid. They are on the roster.",
+              "<strong>Confirmed:</strong> The Guest has reserved and paid. They are on the roster.",
               "<strong>Pending:</strong> The booking is reserved but payment is processing (rare).",
-              "<strong>Cancelled:</strong> The booking was cancelled by you or the booker.",
+              "<strong>Cancelled:</strong> The booking was cancelled by you or the Guest.",
               "<strong>Completed:</strong> The experience date has passed.",
             ],
           },
           { type: "h3", text: "Cancelling a Booking" },
           {
             type: "p",
-            text: "If you need to cancel a booking for a booker, simply find the booking and click 'Cancel'. You will be asked for a reason, which is sent to the booker via email.",
+            text: "If you need to cancel a booking for a Guest, simply find the booking and click 'Cancel'. You will be asked for a reason, which is sent to the Guest via email.",
           },
           {
             type: "blockquote",
@@ -277,18 +279,18 @@ export const helpCenterData = [
         ],
       },
       {
-        slug: "importing-bookers",
-        title: "Importing Bookers (CRM)",
+        slug: "importing-guests",
+        title: "Importing Guests (CRM)",
         content: [
           {
             type: "p",
-            text: "Moving from another system? You can bulk import your existing booker list into ClassEasily using a CSV or Excel file.",
+            text: "Moving from another system? You can bulk import your existing guest list into ClassEasily using a CSV or Excel file.",
           },
           { type: "h3", text: "How to Import" },
           {
             type: "ol",
             items: [
-              "Navigate to the <strong>Bookers</strong> tab.",
+              "Navigate to the <strong>Guests</strong> tab.",
               "Click the <strong>Import</strong> button.",
               "Upload your file (.csv or .xlsx).",
               "Map the columns (tell us which column is 'First Name', 'Email', etc.).",
@@ -296,17 +298,17 @@ export const helpCenterData = [
           },
           {
             type: "p",
-            text: "The system will create profile records for these bookers. If they sign up for the app later with the same email address, their account will automatically link to the history you imported.",
+            text: "The system will create profile records for these Guests. If they sign up for the platform later with the same email address, their account will automatically link to the history you imported.",
           },
         ],
       },
       {
-        slug: "guest-bookings",
-        title: "Guest Bookings",
+        slug: "guest-checkout",
+        title: "Guest Checkout",
         content: [
           {
             type: "p",
-            text: "Not every booker needs to create an account to book with you. We support <strong>Guest Checkout</strong>.",
+            text: "Not every Guest needs to create an account to book with you. We support <strong>Guest Checkout</strong>.",
           },
           {
             type: "p",
@@ -335,7 +337,7 @@ export const helpCenterData = [
           {
             type: "ul",
             items: [
-              "<strong>Gross Revenue:</strong> Total money paid by bookers (before fees/taxes).",
+              "<strong>Gross Revenue:</strong> Total money paid by Guests (before fees/taxes).",
               "<strong>Net Revenue:</strong> The actual amount you take home.",
               "<strong>Platform Fees:</strong> The service fee charged by ClassEasily (includes credit card processing costs).",
             ],
@@ -349,7 +351,7 @@ export const helpCenterData = [
       },
       {
         slug: "payout-schedule",
-        title: "Payout Schedules & Course Payouts",
+        title: "Payout Schedules & Adventure Payouts",
         content: [
           {
             type: "p",
@@ -360,18 +362,18 @@ export const helpCenterData = [
             type: "p",
             text: "Funds for a session are released to your payout balance approximately 24-48 hours after the experience is <strong>completed</strong>.",
           },
-          { type: "h3", text: "Payouts for Courses (Important)" },
+          { type: "h3", text: "Payouts for Multi-Day Adventures (Important)" },
           {
             type: "p",
-            text: "If you are running a multi-session <strong>Full Course</strong> (e.g., a 10-week bootcamp where bookers pay upfront), you do not receive the entire lump sum immediately.",
+            text: "If you are running a multi-session <strong>Adventure/Course</strong> (e.g., a 10-week bootcamp where guests pay upfront), you do not receive the entire lump sum immediately.",
           },
           {
             type: "p",
-            text: "Instead, the system takes the total amount paid by the booker and divides it by the number of sessions in the course. The funds for each specific session are released <strong>after that specific session takes place</strong>.",
+            text: "Instead, the system takes the total amount paid by the Guest and divides it by the number of sessions in the adventure. The funds for each specific session are released <strong>after that specific session takes place</strong>.",
           },
           {
             type: "blockquote",
-            text: "<strong>Example:</strong> A booker pays $100 for a 4-week course. You will receive $25 after Week 1 is completed, $25 after Week 2, and so on. This ensures that if a course is cancelled mid-way, refunds are easier to manage.",
+            text: "<strong>Example:</strong> A Guest pays $100 for a 4-week adventure. You will receive $25 after Week 1 is completed, $25 after Week 2, and so on. This ensures that if an adventure is cancelled mid-way, refunds are easier to manage and protects you from liability.",
           },
           { type: "h3", text: "Daily Bank Transfers" },
           {
@@ -383,37 +385,38 @@ export const helpCenterData = [
     ],
   },
   {
-    slug: "team-and-community",
-    title: "Team & Staff",
+    slug: "team-and-hosts",
+    title: "Team & Hosts",
     icon: MessageSquareQuote,
-    description: "Invite staff members and manage their access permissions.",
+    description:
+      "Invite additional hosts or admins and manage their permissions.",
     articles: [
       {
         slug: "staff-roles",
-        title: "Managing Staff & Roles",
+        title: "Managing Team Roles",
         content: [
           {
             type: "p",
-            text: "You can invite instructors or admins to help manage your business. We use a role-based permission system to keep your data safe.",
+            text: "You can invite other Hosts or Admins to help manage your business. We use a role-based permission system to keep your data safe.",
           },
           { type: "h3", text: "Creating Roles" },
           {
             type: "p",
-            text: "Before inviting someone, create a <strong>Role</strong> (e.g., 'Instructor', 'Front Desk'). You can toggle specific permissions for each role, such as:",
+            text: "Before inviting someone, create a <strong>Role</strong> (e.g., 'Lead Host', 'Admin', 'Front Desk'). You can toggle specific permissions for each role, such as:",
           },
           {
             type: "ul",
             items: [
               "Can manage experiences",
               "Can view revenue (sensitive)",
-              "Can view booker contact info",
+              "Can view Guest contact info",
               "Can refund bookings",
             ],
           },
-          { type: "h3", text: "Inviting Staff" },
+          { type: "h3", text: "Inviting Team Members" },
           {
             type: "p",
-            text: "Once a role exists, go to the <strong>Team</strong> tab and invite a staff member by email. They will receive a link to create their own login. They will strictly see only what their role allows.",
+            text: "Once a role exists, go to the <strong>Team</strong> tab and invite a team member by email. They will receive a link to create their own login. They will strictly see only what their role allows.",
           },
         ],
       },
@@ -431,7 +434,7 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Turn your own website into a booking engine. Our widget (beta) allows bookers to reserve experiences without leaving your site.",
+            text: "Turn your own website into a booking engine. Our widget (beta) allows Guests to reserve experiences without leaving your site.",
           },
           { type: "h3", text: "Setup" },
           {
@@ -446,7 +449,7 @@ export const helpCenterData = [
           { type: "h3", text: "Security" },
           {
             type: "p",
-            text: "To prevent others from using your widget, you must whitelist your website domain in the widget settings (e.g., <code>www.myyogastudio.com</code>).",
+            text: "To prevent others from using your widget, you must whitelist your website domain in the widget settings (e.g., <code>www.myadventures.com</code>).",
           },
         ],
       },
@@ -456,12 +459,13 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Currently, you can create one kind of discount. Although sales will be added in an upcoming update:",
+            text: "You can create flexible discount codes to attract Guests.",
           },
           {
             type: "ul",
             items: [
-              "<strong>Coupon Codes:</strong> Requires the booker to type a code (e.g., 'SUMMER20') at checkout.",
+              "<strong>Coupon Codes:</strong> Requires the Guest to type a code (e.g., 'SUMMER20') at checkout.",
+              "<strong>Automatic Discounts:</strong> (Coming Soon) Automatically applied at checkout.",
             ],
           },
           { type: "h3", text: "Discount Scopes" },

@@ -15,8 +15,8 @@ import {
   Space,
   Grid,
   List,
-  Tag, // Added
-  Alert, // Added
+  Tag,
+  Alert,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -33,7 +33,7 @@ import {
   Calendar,
   Info,
   Download,
-  BookOpen, // Added
+  BookOpen,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import NumberFlow from "@number-flow/react";
@@ -446,14 +446,12 @@ const StatusBadge = styled.div`
   }}
 `;
 
-// NEW: Styled component for the Bookings column tag
 const BookingCountTag = styled(StatusBadge)`
   background: rgba(59, 130, 246, 0.1);
   color: ${colors.info};
   border: 1px solid rgba(59, 130, 246, 0.2);
 `;
 
-// NEW: Course Badge
 const CourseBadge = styled(Tag)`
   border-radius: 12px;
   font-weight: 600;
@@ -463,9 +461,9 @@ const CourseBadge = styled(Tag)`
   gap: 4px;
   padding: 2px 10px;
   margin-left: 8px;
-  background: #f0f9ff; 
+  background: #f0f9ff;
   color: #0284c7;
-  
+
   svg {
     width: 12px;
     height: 12px;
@@ -859,14 +857,22 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
     }));
   };
 
-  // --- NEW: Helper to render class name with context ---
-  const renderClassInfo = (text, record) => {
+  // --- Helper to render experience info ---
+  const renderExperienceInfo = (text, record) => {
     const isCourse = record.enrollment_type === "Full Course";
-    
+
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <Text strong style={{ fontSize: 14 }}>{text}</Text>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <Text strong style={{ fontSize: 14 }}>
+            {text}
+          </Text>
           {isCourse && (
             <CourseBadge>
               <BookOpen size={12} />
@@ -876,7 +882,8 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
         </div>
         {isCourse && record.course_session_number && (
           <Text type="secondary" style={{ fontSize: 12 }}>
-            Session {record.course_session_number} of {record.total_sessions || '?'}
+            Session {record.course_session_number} of{" "}
+            {record.total_sessions || "?"}
           </Text>
         )}
       </div>
@@ -890,13 +897,13 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
       key: "ref",
       width: 120,
     },
-    { title: "Student", dataIndex: "user_name", key: "user", ellipsis: true },
-    { 
-      title: "Class / Course", 
-      dataIndex: "class_name", 
-      key: "class", 
+    { title: "Guest", dataIndex: "user_name", key: "user", ellipsis: true },
+    {
+      title: "Experience / Course",
+      dataIndex: "class_name",
+      key: "class",
       ellipsis: true,
-      render: renderClassInfo // Use new renderer
+      render: renderExperienceInfo,
     },
     {
       title: "Session Date",
@@ -914,17 +921,24 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
       render: (val, record) => {
         const amount = Number(val).toFixed(2);
         const isCourse = record.enrollment_type === "Full Course";
-        
+
         return (
-          <Tooltip 
-            title={isCourse ? "Course payments are split equally across all sessions (1/N payout)." : "Single session payout."}
+          <Tooltip
+            title={
+              isCourse
+                ? "Course payments are split equally across all sessions (1/N payout)."
+                : "Single session payout."
+            }
           >
-            <div style={{ textAlign: 'right' }}>
+            <div style={{ textAlign: "right" }}>
               <Text strong style={{ color: colors.success }}>
                 ${amount}
               </Text>
               {isCourse && (
-                <Text type="secondary" style={{ fontSize: 10, display: 'block' }}>
+                <Text
+                  type="secondary"
+                  style={{ fontSize: 10, display: "block" }}
+                >
                   (Allocated Split)
                 </Text>
               )}
@@ -949,8 +963,8 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
     if (loading) {
       return isMobile ? (
         <List
-            dataSource={Array.from({ length: 8 }, (_, i) => ({ key: i }))}
-            renderItem={() => <BookingItemSkeleton />}
+          dataSource={Array.from({ length: 8 }, (_, i) => ({ key: i }))}
+          renderItem={() => <BookingItemSkeleton />}
         />
       ) : (
         <StyledTable
@@ -990,37 +1004,56 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
           handleTableChange({ current: page, pageSize })
         }
         renderItem={(item) => {
-           const isCourse = item.enrollment_type === "Full Course";
-           return (
+          const isCourse = item.enrollment_type === "Full Course";
+          return (
             <MobileBookingItem>
               <List.Item.Meta
                 title={
-                  <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 6 }}
+                  >
                     {item.class_name}
                     {isCourse && <BookOpen size={12} color={colors.info} />}
                   </div>
                 }
                 description={
                   <Space direction="vertical" size={0}>
-                    <Text type="secondary" style={{fontSize: 12}}>
-                       {item.user_name} • {dayjs(item.session_date).format("MMM D")}
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {item.user_name} •{" "}
+                      {dayjs(item.session_date).format("MMM D")}
                     </Text>
                     {isCourse && (
-                      <Text type="secondary" style={{fontSize: 11, color: colors.info}}>
-                         Session {item.course_session_number} of {item.total_sessions || '?'}
+                      <Text
+                        type="secondary"
+                        style={{ fontSize: 11, color: colors.info }}
+                      >
+                        Session {item.course_session_number} of{" "}
+                        {item.total_sessions || "?"}
                       </Text>
                     )}
                   </Space>
                 }
               />
-              <div style={{textAlign: 'right'}}>
-                <Text strong style={{ color: colors.success, fontSize: "14px", display: 'block' }}>
+              <div style={{ textAlign: "right" }}>
+                <Text
+                  strong
+                  style={{
+                    color: colors.success,
+                    fontSize: "14px",
+                    display: "block",
+                  }}
+                >
                   ${Number(item.net_amount_for_payout).toFixed(2)}
                 </Text>
-                {isCourse && <Text type="secondary" style={{fontSize: 10}}>(Split)</Text>}
+                {isCourse && (
+                  <Text type="secondary" style={{ fontSize: 10 }}>
+                    (Split)
+                  </Text>
+                )}
               </div>
             </MobileBookingItem>
-          )}}
+          );
+        }}
       />
     ) : (
       <StyledTable
@@ -1050,17 +1083,16 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
           <SummaryValue>{payout.booking_count}</SummaryValue>
         </SummaryItem>
       </DrawerSummary>
-      
-      {/* NEW: Context Alert for the User */}
-      <div style={{ padding: '16px 24px 0 24px' }}>
-         <Alert 
-           message="How Course Payouts Work"
-           description="For full courses, the total net revenue is split equally across all sessions. You receive a payout for each specific session only after it has been completed."
-           type="info"
-           showIcon
-           closable
-           style={{ fontSize: 13 }}
-         />
+
+      <div style={{ padding: "16px 24px 0 24px" }}>
+        <Alert
+          message="How Course Payouts Work"
+          description="For full courses, the total net revenue is split equally across all sessions. You receive a payout for each specific session only after it has been completed."
+          type="info"
+          showIcon
+          closable
+          style={{ fontSize: 13 }}
+        />
       </div>
 
       <ExpandedRowWrapper>{renderContent()}</ExpandedRowWrapper>
@@ -1407,15 +1439,15 @@ const Payouts = () => {
   const StatSkeleton = () => <Skeleton active paragraph={{ rows: 2 }} />;
 
   const statisticCards = [
-{
+    {
       key: "pending_payout",
-      title: "Pending Balance", 
+      title: "Pending Balance",
       value: summary?.pending_payout_amount,
       icon: <Wallet size={20} />,
       color: colors.info,
       background: "rgba(59, 130, 246, 0.1)",
       suffix: summary?.currency,
-      footer: "Funds held for all future classes.", 
+      footer: "Funds held for all future experiences.",
     },
     {
       key: "next_payout",
@@ -1589,8 +1621,8 @@ const Payouts = () => {
                   </EmptyStateIcon>
                   <EmptyStateText>No Payouts Found</EmptyStateText>
                   <EmptyStateSubtext>
-                    No payouts have been made yet. Payouts are made 24h after a
-                    class ends.
+                    No payouts have been made yet. Payouts are made 24h after an
+                    experience ends.
                   </EmptyStateSubtext>
                 </EmptyStateContainer>
               )}
@@ -1633,7 +1665,7 @@ const Payouts = () => {
                     <EmptyStateText>No Payouts Found</EmptyStateText>
                     <EmptyStateSubtext>
                       No payouts have been made yet. Payouts are made 24h after
-                      a class ends.
+                      an experience ends.
                     </EmptyStateSubtext>
                   </EmptyStateContainer>
                 ),

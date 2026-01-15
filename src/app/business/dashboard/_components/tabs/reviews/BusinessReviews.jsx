@@ -1,5 +1,3 @@
-// src/app/business/dashboard/_components/tabs/reviews/BusinessReviews.jsx
-
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
@@ -471,11 +469,11 @@ const ReviewerInfo = styled.div`
   gap: 12px;
 `;
 
-const ClassInfo = styled.div`
-  .class-title {
+const ExperienceInfo = styled.div`
+  .exp-title {
     font-weight: 500;
   }
-  .class-details {
+  .exp-details {
     font-size: 13px;
     color: ${colors.textSecondary};
   }
@@ -556,10 +554,8 @@ const SourceBadge = styled.span`
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
-  background: ${(props) =>
-    props.source === "google" ? "#f0f9ff" : "#fef3f2"};
-  color: ${(props) =>
-    props.source === "google" ? "#0369a1" : colors.primary};
+  background: ${(props) => (props.source === "google" ? "#f0f9ff" : "#fef3f2")};
+  color: ${(props) => (props.source === "google" ? "#0369a1" : colors.primary)};
 `;
 
 const EmptyStateContainer = styled.div`
@@ -782,21 +778,13 @@ const DesktopTableSkeleton = () => (
         <div style={{ display: "flex", gap: "12px", width: "240px" }}>
           <SkeletonBase $width="40px" $height="40px" $borderRadius="50%" />
           <div style={{ flex: 1 }}>
-            <SkeletonBase
-              $width="70%"
-              $height="14px"
-              $marginBottom="4px"
-            />
+            <SkeletonBase $width="70%" $height="14px" $marginBottom="4px" />
             <SkeletonBase $width="40%" $height="12px" />
           </div>
         </div>
         {/* Class Info */}
         <div style={{ width: "190px" }}>
-          <SkeletonBase
-            $width="80%"
-            $height="14px"
-            $marginBottom="4px"
-          />
+          <SkeletonBase $width="80%" $height="14px" $marginBottom="4px" />
           <SkeletonBase $width="50%" $height="12px" />
         </div>
         {/* Rating */}
@@ -805,16 +793,8 @@ const DesktopTableSkeleton = () => (
         </div>
         {/* Comment */}
         <div style={{ width: "350px" }}>
-          <SkeletonBase
-            $width="90%"
-            $height="12px"
-            $marginBottom="6px"
-          />
-          <SkeletonBase
-            $width="80%"
-            $height="12px"
-            $marginBottom="6px"
-          />
+          <SkeletonBase $width="90%" $height="12px" $marginBottom="6px" />
+          <SkeletonBase $width="80%" $height="12px" $marginBottom="6px" />
           <SkeletonBase $width="40%" $height="12px" />
         </div>
         {/* Response */}
@@ -857,11 +837,7 @@ const MobileReviewSkeletonList = () => (
           <div style={{ display: "flex", gap: "12px", flex: 1 }}>
             <SkeletonBase $width="40px" $height="40px" $borderRadius="50%" />
             <div style={{ flex: 1 }}>
-              <SkeletonBase
-                $width="60%"
-                $height="14px"
-                $marginBottom="4px"
-              />
+              <SkeletonBase $width="60%" $height="14px" $marginBottom="4px" />
               <SkeletonBase $width="40%" $height="12px" />
             </div>
           </div>
@@ -1242,7 +1218,7 @@ const BusinessReviews = () => {
 
   const tableColumns = [
     {
-      title: "Reviewer",
+      title: "Guest",
       dataIndex: "user",
       key: "reviewer",
       width: 240,
@@ -1268,28 +1244,28 @@ const BusinessReviews = () => {
       },
     },
     {
-      title: "Class",
+      title: "Experience",
       dataIndex: "class_info",
       key: "class",
       width: 190,
       render: (classInfo, record) => {
         if (isGoogleReview(record)) {
           return (
-            <ClassInfo>
-              <div className="class-title">Business-wide</div>
-              <div className="class-details">Google Review</div>
-            </ClassInfo>
+            <ExperienceInfo>
+              <div className="exp-title">Business-wide</div>
+              <div className="exp-details">Google Review</div>
+            </ExperienceInfo>
           );
         }
         return (
-          <ClassInfo>
-            <div className="class-title">{classInfo?.title || "N/A"}</div>
-            <div className="class-details">
+          <ExperienceInfo>
+            <div className="exp-title">{classInfo?.title || "N/A"}</div>
+            <div className="exp-details">
               {classInfo?.date
                 ? dayjs(classInfo.date).format("MMM D, YYYY")
                 : "Date N/A"}
             </div>
-          </ClassInfo>
+          </ExperienceInfo>
         );
       },
     },
@@ -1636,7 +1612,7 @@ const BusinessReviews = () => {
           <div>
             <StyledTitle>Manage Reviews</StyledTitle>
             <HeaderSubtitle>
-              Analyze, view, and respond to reviews for your classes.
+              Analyze, view, and respond to reviews for your experiences.
             </HeaderSubtitle>
           </div>
           <ControlsBar>
@@ -1823,7 +1799,7 @@ const BusinessReviews = () => {
 
         <SearchFilterBar>
           <Input
-            placeholder="Search reviews, users, classes..."
+            placeholder="Search reviews, guests, experiences..."
             prefix={<Search size={16} />}
             allowClear
             onChange={(e) => debouncedSearchChange(e.target.value)}
@@ -1964,7 +1940,8 @@ const BusinessReviews = () => {
                     type="primary"
                     onClick={handleRespondSubmit}
                     loading={loadingReviews}
-                    key={`btn-${loadingReviews}`}>
+                    key={`btn-${loadingReviews}`}
+                  >
                     Submit Response
                   </Button>
                 </DrawerFooter>
@@ -2008,7 +1985,8 @@ const BusinessReviews = () => {
                     danger
                     onClick={handleReportSubmit}
                     loading={loadingReviews}
-                    key={`btn-${loadingReviews}`}>
+                    key={`btn-${loadingReviews}`}
+                  >
                     Submit Report
                   </Button>
                 </DrawerFooter>

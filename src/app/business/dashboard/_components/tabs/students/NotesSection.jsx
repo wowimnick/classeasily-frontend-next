@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Input, Button, Form, Empty, Pagination, Avatar, ConfigProvider, Tooltip,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Input,
+  Button,
+  Form,
+  Empty,
+  Pagination,
+  Avatar,
+  ConfigProvider,
+  Tooltip,
+} from "antd";
+import message from "@/lib/message";
 import { Send, User, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { businessStudentService } from "@/services/apiService";
@@ -209,7 +218,7 @@ const PaginationWrapper = styled.div`
   flex-shrink: 0;
 `;
 
-const NotesSection = ({ student, currentUser, compact = false }) => {
+const NotesSection = ({ guest, currentUser, compact = false }) => {
   const [form] = Form.useForm();
   const [currentPage, setCurrentPage] = useState(1);
   const [addingNote, setAddingNote] = useState(false);
@@ -226,13 +235,13 @@ const NotesSection = ({ student, currentUser, compact = false }) => {
   }, [currentUser]);
 
   useEffect(() => {
-    const notesToShow = student?.notes || [];
+    const notesToShow = guest?.notes || [];
     setLocalNotes(Array.isArray(notesToShow) ? notesToShow : []);
     setCurrentPage(1);
-  }, [student]);
+  }, [guest]);
 
   const handleAddNote = async (values) => {
-    if (values.note?.trim() && student?.id && currentUser?.userId) {
+    if (values.note?.trim() && guest?.id && currentUser?.userId) {
       setAddingNote(true);
       const noteText = values.note.trim();
       const optimisticId = `temp-${Date.now()}`;
@@ -254,7 +263,7 @@ const NotesSection = ({ student, currentUser, compact = false }) => {
 
       try {
         const response = await businessStudentService.addNoteToBusinessStudent(
-          student.id,
+          guest.id,
           noteText
         );
 
@@ -285,7 +294,7 @@ const NotesSection = ({ student, currentUser, compact = false }) => {
         setAddingNote(false);
       }
     } else {
-      if (!student?.id) message.error("Student information is missing.");
+      if (!guest?.id) message.error("Guest information is missing.");
       if (!currentUser?.userId) message.error("User information is missing.");
     }
   };
@@ -330,7 +339,7 @@ const NotesSection = ({ student, currentUser, compact = false }) => {
                 compact={compact}
                 rows={compact ? 2 : 3}
                 placeholder={`Add a note about ${
-                  student?.first_name || "this contact"
+                  guest?.first_name || "this contact"
                 }...`}
                 disabled={addingNote}
               />
@@ -369,7 +378,7 @@ const NotesSection = ({ student, currentUser, compact = false }) => {
                 <EmptyState
                   compact={compact}
                   description={`No notes for ${
-                    student?.first_name || "this contact"
+                    guest?.first_name || "this contact"
                   }.`}
                 />
               ) : (

@@ -130,7 +130,7 @@ const CardSkeleton = () => (
 const TableSkeleton = () => {
   const skeletonColumns = [
     {
-      title: "Listing",
+      title: "Experience",
       key: "class",
       width: 400,
       render: () => (
@@ -1042,7 +1042,7 @@ function ClassManagementContent(props) {
         setClasses(processedClasses);
       } else {
         message.error(
-          getErrorMessage(result.error || "Failed to load classes.")
+          getErrorMessage(result.error || "Failed to load experiences.")
         );
       }
     } catch (error) {
@@ -1088,7 +1088,7 @@ function ClassManagementContent(props) {
     setIsDeleting(true);
     try {
       await businessClassService.deleteClass(selectedClassForAction.classId);
-      message.success("Class deleted successfully");
+      message.success("Experience deleted successfully");
       setDeleteModalVisible(false);
       loadClasses();
     } catch (error) {
@@ -1104,7 +1104,7 @@ function ClassManagementContent(props) {
     try {
       await businessClassService.toggleClassActive(classId);
       message.success(
-        `Class ${isActive ? "deactivated" : "activated"} successfully`
+        `Experience ${isActive ? "deactivated" : "activated"} successfully`
       );
       setClasses((prevClasses) =>
         prevClasses.map((c) =>
@@ -1154,7 +1154,7 @@ function ClassManagementContent(props) {
 
   const columns = [
     {
-      title: "Class",
+      title: "Experience",
       dataIndex: "title",
       key: "class",
       width: 400,
@@ -1182,10 +1182,10 @@ function ClassManagementContent(props) {
                 style={{ display: "flex", alignItems: "center", gap: "8px" }}
               >
                 <Text strong style={{ fontSize: "15px" }}>
-                  {text || "Untitled Class"}
+                  {text || "Untitled Experience"}
                 </Text>
                 {needsSchedulesWarning(record.last_schedule_date) && (
-                  <Tooltip title="This class is running out of available schedules and may not be visible to new students.">
+                  <Tooltip title="This experience is running out of available schedules and may not be visible to new guests.">
                     <AlertTriangle size={16} color={colors.warning} />
                   </Tooltip>
                 )}
@@ -1318,7 +1318,9 @@ function ClassManagementContent(props) {
             title={
               isLoading
                 ? "Updating..."
-                : `Click to set class to ${isActive ? "Inactive" : "Active"}`
+                : `Click to set experience to ${
+                    isActive ? "Inactive" : "Active"
+                  }`
             }
           >
             <div
@@ -1380,7 +1382,7 @@ function ClassManagementContent(props) {
               icon={<Edit size={16} />}
               onClick={() => handleEditClass(record)}
             >
-              Edit Listing Details
+              Edit Experience Details
             </Menu.Item>
             <Menu.Item
               key="delete"
@@ -1388,7 +1390,7 @@ function ClassManagementContent(props) {
               onClick={() => openDeleteModal(record)}
               danger
             >
-              Delete Listing
+              Delete Experience
             </Menu.Item>
           </StyledMenu>
         );
@@ -1398,8 +1400,8 @@ function ClassManagementContent(props) {
             <Tooltip
               title={
                 record.option
-                  ? "Manage class times, dates, and prices"
-                  : "Complete class setup to add schedules"
+                  ? "Manage experience times, dates, and prices"
+                  : "Complete experience setup to add schedules"
               }
             >
               <Button
@@ -1416,7 +1418,7 @@ function ClassManagementContent(props) {
                   }
                 }}
               >
-                {record.option ? "Manage Schedules" : "Configure Class"}
+                {record.option ? "Manage Schedules" : "Configure Experience"}
               </Button>
             </Tooltip>
             <Dropdown
@@ -1424,7 +1426,7 @@ function ClassManagementContent(props) {
               trigger={["click"]}
               placement="bottomRight"
             >
-              <Tooltip title="More class options">
+              <Tooltip title="More experience options">
                 <TableActionButton icon={<MoreVertical size={16} />} />
               </Tooltip>
             </Dropdown>
@@ -1445,10 +1447,10 @@ function ClassManagementContent(props) {
           style={{ width: 40, height: 40 }}
         />
       </EmptyStateIcon>
-      <EmptyStateText>No Listings Found</EmptyStateText>
+      <EmptyStateText>No Experiences Found</EmptyStateText>
       <EmptyStateSubtext>
-        You haven't created any listings yet. Click 'Create New Listing' to get
-        started!
+        You haven't created any experiences yet. Click 'Create New Experience'
+        to get started!
       </EmptyStateSubtext>
     </EmptyStateContainer>
   );
@@ -1484,7 +1486,7 @@ function ClassManagementContent(props) {
           icon={<Edit size={16} />}
           onClick={() => handleEditClass(classItem)}
         >
-          Edit Listing Details
+          Edit Experience Details
         </Menu.Item>
         <Menu.Item
           key="delete"
@@ -1492,7 +1494,7 @@ function ClassManagementContent(props) {
           danger
           onClick={() => openDeleteModal(classItem)}
         >
-          Delete Listing
+          Delete Experience
         </Menu.Item>
       </StyledMenu>
     );
@@ -1510,10 +1512,10 @@ function ClassManagementContent(props) {
           <CardContent>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <CardTitle style={{ marginBottom: 0 }}>
-                {title || "Untitled Class"}
+                {title || "Untitled Experience"}
               </CardTitle>
               {needsSchedulesWarning(last_schedule_date) && (
-                <Tooltip title="This class has no future schedules and may not be visible to students.">
+                <Tooltip title="This experience has no future schedules and may not be visible to guests.">
                   <AlertTriangle size={16} color={colors.warning} />
                 </Tooltip>
               )}
@@ -1600,9 +1602,9 @@ function ClassManagementContent(props) {
     <ConfigProvider theme={theme}>
       <PageContainer>
         <PageHeader>
-          <HeaderTitle>Listing Management</HeaderTitle>
+          <HeaderTitle>Experience Management</HeaderTitle>
           <HeaderSubtitle>
-            Oversee, edit, and manage all your listings and their schedules.
+            Oversee, edit, and manage all your experiences and their schedules.
           </HeaderSubtitle>
         </PageHeader>
         <Divider />
@@ -1619,7 +1621,7 @@ function ClassManagementContent(props) {
           >
             <StyledSearchInput
               prefix={<Search size={18} />}
-              placeholder="Search classes by name or category..."
+              placeholder="Search experiences by name or category..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               allowClear
@@ -1631,7 +1633,7 @@ function ClassManagementContent(props) {
                 width: 200,
               }}
             >
-              <Option value="all">All Classes</Option>
+              <Option value="all">All Experiences</Option>
               <Option value="single">Single Sessions</Option>
               <Option value="course">Courses</Option>
             </StyledSelect>
@@ -1641,7 +1643,7 @@ function ClassManagementContent(props) {
             icon={<Plus size={18} />}
             onClick={() => setCreateDrawerVisible(true)}
           >
-            Create New Listing
+            Create New Experience
           </ActionButton>
         </Controls>
 
@@ -1725,7 +1727,7 @@ function ClassManagementContent(props) {
 
                 <DrawerHeader>
                   <Title level={4} style={{ margin: 0 }}>
-                    Create New Listing
+                    Create New Experience
                   </Title>
                   <CloseButton
                     icon={<X size={20} />}
@@ -1755,7 +1757,7 @@ function ClassManagementContent(props) {
               <DesktopDrawerContent>
                 <DrawerHeader>
                   <Title level={4} style={{ margin: 0 }}>
-                    Create New Listing
+                    Create New Experience
                   </Title>
                   <CloseButton
                     icon={<X size={20} />}

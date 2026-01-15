@@ -161,25 +161,25 @@ const MoreButton = styled(Button)`
   }
 `;
 
-const StudentCard = ({ student, onClick, onDelete, isReady }) => {
-  if (!student) return null;
+const GuestCard = ({ guest, onClick, onDelete, isReady }) => {
+  if (!guest) return null;
 
-  const isPlatformUser = student.type === "user";
-  const isGuest = student.type === "guest";
-  const isActiveStudent = student.is_active === true;
-  const statusColor = isActiveStudent ? colors.success : colors.textSecondary;
-  const avatarLetter = student.first_name
-    ? student.first_name[0].toUpperCase()
-    : student.email
-    ? student.email[0].toUpperCase()
+  const isPlatformUser = guest.type === "user";
+  const isGuest = guest.type === "guest";
+  const isActiveGuest = guest.is_active === true;
+  const statusColor = isActiveGuest ? colors.success : colors.textSecondary;
+  const avatarLetter = guest.first_name
+    ? guest.first_name[0].toUpperCase()
+    : guest.email
+    ? guest.email[0].toUpperCase()
     : "?";
 
-  const lastBookingDateFormatted = student.last_booking_date_this_business
-    ? dayjs(student.last_booking_date_this_business).format("MMM D, YYYY")
+  const lastBookingDateFormatted = guest.last_booking_date_this_business
+    ? dayjs(guest.last_booking_date_this_business).format("MMM D, YYYY")
     : "N/A";
 
   const { display: phoneDisplay, link: phoneLink } = formatPhoneNumber(
-    student.phone_number
+    guest.phone_number
   );
 
   const tooltipText = isPlatformUser
@@ -220,10 +220,10 @@ const StudentCard = ({ student, onClick, onDelete, isReady }) => {
       <CardHeader>
         <AvatarContainer $statusColor={statusColor}>
           <StyledAvatar
-            src={student.avatar_thumb_url}
-            icon={!student.avatar_thumb_url ? <User /> : null}
+            src={guest.avatar_thumb_url}
+            icon={!guest.avatar_thumb_url ? <User /> : null}
           >
-            {!student.avatar_thumb_url && avatarLetter}
+            {!guest.avatar_thumb_url && avatarLetter}
           </StyledAvatar>
         </AvatarContainer>
         <div>
@@ -236,7 +236,7 @@ const StudentCard = ({ student, onClick, onDelete, isReady }) => {
               lineHeight: 1.3,
             }}
           >
-            {student.first_name || "Unknown"} {student.last_name || ""}
+            {guest.first_name || "Unknown"} {guest.last_name || ""}
           </h3>
           <Tooltip title={tooltipText}>
             <Tag
@@ -254,11 +254,11 @@ const StudentCard = ({ student, onClick, onDelete, isReady }) => {
       <InfoGrid>
         <InfoItem>
           <InfoLabel>
-            <BookOpen size={12} /> Classes Taken
+            <BookOpen size={12} /> Experiences Taken
           </InfoLabel>
           <InfoValue>
             <NumberFlow
-              value={isReady ? student.total_classes_taken ?? 0 : 0}
+              value={isReady ? guest.total_classes_taken ?? 0 : 0}
               duration={800}
               numberFormatOptions={{ maximumFractionDigits: 0 }}
             />
@@ -271,7 +271,7 @@ const StudentCard = ({ student, onClick, onDelete, isReady }) => {
           <InfoValue>
             $
             <NumberFlow
-              value={isReady ? student.total_spent_this_business || 0 : 0}
+              value={isReady ? guest.total_spent_this_business || 0 : 0}
               duration={800}
               numberFormatOptions={{
                 minimumFractionDigits: 2,
@@ -288,20 +288,20 @@ const StudentCard = ({ student, onClick, onDelete, isReady }) => {
         </InfoItem>
       </InfoGrid>
       <ContactInfo>
-        {student.email && (
+        {guest.email && (
           <ContactItem>
             <Mail />
-            <Tooltip title={student.email}>
+            <Tooltip title={guest.email}>
               <a
-                href={`mailto:${student.email}`}
+                href={`mailto:${guest.email}`}
                 onClick={(e) => e.stopPropagation()}
               >
-                {student.email}
+                {guest.email}
               </a>
             </Tooltip>
           </ContactItem>
         )}
-        {student.phone_number && (
+        {guest.phone_number && (
           <ContactItem>
             <Phone />
             {phoneLink ? (
@@ -313,7 +313,7 @@ const StudentCard = ({ student, onClick, onDelete, isReady }) => {
             )}
           </ContactItem>
         )}
-        {!student.phone_number && !student.email && (
+        {!guest.phone_number && !guest.email && (
           <ContactItem>
             <span style={{ color: colors.textSecondary, fontStyle: "italic" }}>
               No contact info
@@ -325,4 +325,4 @@ const StudentCard = ({ student, onClick, onDelete, isReady }) => {
   );
 };
 
-export default StudentCard;
+export default GuestCard;

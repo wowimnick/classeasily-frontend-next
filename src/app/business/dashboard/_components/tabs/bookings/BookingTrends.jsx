@@ -1,5 +1,3 @@
-// src/app/business/dashboard/_components/tabs/booking/BookingTrends.jsx
-
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
@@ -187,6 +185,7 @@ const StatCard = styled(Card)`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   transition: all 0.2s ease;
+  min-height: 140px;
 
   &:hover {
     transform: translateY(-2px);
@@ -259,6 +258,16 @@ const StatLabel = styled.div`
 
   @media (max-width: 768px) {
     font-size: 12px;
+  }
+`;
+
+const StatFooter = styled.div`
+  font-size: 12px;
+  color: ${colors.textSecondary};
+  margin-top: 4px;
+  line-height: 1.4;
+  @media (max-width: 768px) {
+    font-size: 11px;
   }
 `;
 
@@ -335,7 +344,7 @@ const StyledTable = styled.table`
 `;
 
 // --- Mobile Card for Top Classes ---
-const MobileClassCard = styled(Card)`
+const MobileExperienceCard = styled(Card)`
   border-radius: 12px;
   border: 1px solid ${colors.border};
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -741,7 +750,7 @@ const BookingTrends = () => {
           (c) => ({ value: c.class_id, label: c.class_name })
         );
         setBusinessClasses([
-          { value: undefined, label: "All Classes" },
+          { value: undefined, label: "All Experiences" },
           ...uniqueClasses,
         ]);
       }
@@ -810,14 +819,18 @@ const BookingTrends = () => {
       value: analytics.summary.total_booking_transactions,
       icon: <Calendar size={20} />,
       color: colors.chart.blue,
+      background: `rgba(59, 130, 246, 0.1)`,
+      footer: "Total confirmed bookings",
     },
     {
       key: "booker_retention_rate",
-      title: "Booker Retention",
+      title: "Guest Retention",
       value: analytics.summary.booker_retention_rate,
       suffix: "%",
       icon: <Users size={20} />,
       color: colors.chart.purple,
+      background: `rgba(139, 92, 246, 0.1)`,
+      footer: "Returning vs new guests",
     },
     {
       key: "cancellation_rate_by_transaction",
@@ -826,6 +839,8 @@ const BookingTrends = () => {
       suffix: "%",
       icon: <AlertCircle size={20} />,
       color: colors.chart.red,
+      background: `rgba(239, 68, 68, 0.1)`,
+      footer: "Percentage of bookings cancelled",
     },
     {
       key: "average_lead_time_days",
@@ -834,6 +849,8 @@ const BookingTrends = () => {
       suffix: " days",
       icon: <Clock size={20} />,
       color: colors.chart.orange,
+      background: `rgba(249, 115, 22, 0.1)`,
+      footer: "Days in advance",
     },
     {
       key: "average_occupancy_rate",
@@ -842,17 +859,19 @@ const BookingTrends = () => {
       suffix: "%",
       icon: <Percent size={20} />,
       color: colors.chart.teal,
+      background: `rgba(20, 184, 166, 0.1)`,
+      footer: "Seats filled per session",
     },
   ];
 
-  const studentTypeData = [
+  const guestTypeData = [
     {
-      type: "New Students",
+      type: "New Guests",
       value: analytics.summary.new_student_bookings || 0,
       color: colors.chart.green,
     },
     {
-      type: "Returning Students",
+      type: "Returning Guests",
       value: analytics.summary.returning_student_bookings || 0,
       color: colors.chart.blue,
     },
@@ -865,7 +884,7 @@ const BookingTrends = () => {
           <div>
             <PageTitle>Booking Trends & Insights</PageTitle>
             <HeaderSubtitle>
-              Analyze booking patterns and student engagement.
+              Analyze booking patterns and guest engagement.
             </HeaderSubtitle>
           </div>
           <Controls>
@@ -874,7 +893,7 @@ const BookingTrends = () => {
               onChange={handleDateChange}
             />
             <ClassFilterSelect
-              placeholder="Filter by Class"
+              placeholder="Filter by Experience"
               value={filterParams.classId}
               onChange={handleClassFilterChange}
               options={businessClasses}
@@ -896,7 +915,7 @@ const BookingTrends = () => {
                   <div>
                     <StatCardHeader>
                       <IconContainer
-                        background={hexToRgba(stat.color, 0.1)}
+                        background={stat.background}
                         color={stat.color}
                       >
                         {stat.icon}
@@ -904,14 +923,17 @@ const BookingTrends = () => {
                     </StatCardHeader>
                     <StatLabel>{stat.title}</StatLabel>
                   </div>
-                  <StatValue>
-                    <NumberFlow
-                      value={isReadyForAnimation ? stat.value || 0 : 0}
-                      duration={800}
-                      suffix={stat.suffix}
-                      numberFormatOptions={{ maximumFractionDigits: 1 }}
-                    />
-                  </StatValue>
+                  <div>
+                    <StatValue>
+                      <NumberFlow
+                        value={isReadyForAnimation ? stat.value || 0 : 0}
+                        duration={800}
+                        suffix={stat.suffix}
+                        numberFormatOptions={{ maximumFractionDigits: 1 }}
+                      />
+                    </StatValue>
+                    {stat.footer && <StatFooter>{stat.footer}</StatFooter>}
+                  </div>
                 </>
               )}
             </StatCard>
@@ -1137,15 +1159,15 @@ const BookingTrends = () => {
                   state="in-compare"
                   colors="primary:#ff385c"
                 />{" "}
-                New vs. Returning Students
+                New vs. Returning Guests
               </ChartTitle>
               <ChartDescription>
-                Breakdown of bookings by student type.
+                Breakdown of bookings by guest type.
               </ChartDescription>
               <ChartContainer>
                 {loading ? (
                   <PieSkeleton />
-                ) : !studentTypeData.some((d) => d.value > 0) ? (
+                ) : !guestTypeData.some((d) => d.value > 0) ? (
                   <EmptyStateContainer>
                     <EmptyStateIcon>
                       <lord-icon
@@ -1157,7 +1179,7 @@ const BookingTrends = () => {
                         style={{ width: 40, height: 40 }}
                       />
                     </EmptyStateIcon>
-                    <EmptyStateText>No Students Found</EmptyStateText>
+                    <EmptyStateText>No Guests Found</EmptyStateText>
                     <EmptyStateSubtext>
                       You dont have any bookings yet. When you do, a recurrence
                       breakdown can be found here.
@@ -1167,7 +1189,7 @@ const BookingTrends = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={studentTypeData}
+                        data={guestTypeData}
                         dataKey="value"
                         nameKey="type"
                         cx="50%"
@@ -1176,7 +1198,7 @@ const BookingTrends = () => {
                         outerRadius="80%"
                         paddingAngle={2}
                       >
-                        {studentTypeData.map((entry, index) => (
+                        {guestTypeData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -1199,7 +1221,7 @@ const BookingTrends = () => {
             <TableWrapper>
               <TableHeader>
                 <ChartTitle>
-                  <TrendingUp size={18} /> Top Performing Classes
+                  <TrendingUp size={18} /> Top Performing Experiences
                 </ChartTitle>
                 <ChartDescription>
                   Ranked by participant spots.
@@ -1222,13 +1244,13 @@ const BookingTrends = () => {
                   <EmptyStateText>No Bookings Found</EmptyStateText>
                   <EmptyStateSubtext>
                     You dont have any bookings yet. When you do, you can see
-                    your top performing classes here.
+                    your top performing experiences here.
                   </EmptyStateSubtext>
                 </EmptyStateContainer>
               ) : isMobile ? (
                 <div style={{ padding: "0 16px 16px" }}>
                   {analytics.class_insights.popular_classes.map((c) => (
-                    <MobileClassCard
+                    <MobileExperienceCard
                       key={c.class_name}
                       style={{ marginTop: 12 }}
                     >
@@ -1247,7 +1269,7 @@ const BookingTrends = () => {
                           <div>{c.unique_bookers}</div>
                         </Col>
                       </Row>
-                    </MobileClassCard>
+                    </MobileExperienceCard>
                   ))}
                 </div>
               ) : (
@@ -1255,7 +1277,7 @@ const BookingTrends = () => {
                   <StyledTable>
                     <thead>
                       <tr>
-                        <th>Class Name</th>
+                        <th>Experience Name</th>
                         <th>Booked Spots</th>
                         <th>Revenue</th>
                         <th>Unique Bookers</th>

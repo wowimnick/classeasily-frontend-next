@@ -35,6 +35,7 @@ import dayjs from "dayjs";
 import { theme as appTheme } from "@/components/theme";
 import NumberFlow from "@number-flow/react";
 import { Drawer } from "vaul";
+import CompactContactModal from "./CompactContactModal";
 
 const { Text, Title } = Typography;
 
@@ -173,7 +174,7 @@ const CompactProfileLayout = styled.div`
   width: 100%;
 `;
 
-const StudentAvatar = styled.div`
+const GuestAvatar = styled.div`
   width: ${(props) => (props.compact ? "48px" : "120px")};
   height: ${(props) => (props.compact ? "48px" : "120px")};
   border-radius: 50%;
@@ -201,12 +202,12 @@ const StudentAvatar = styled.div`
   }
 `;
 
-const StudentInfo = styled.div`
+const GuestInfo = styled.div`
   flex: 1;
   min-width: 0;
 `;
 
-const StudentName = styled.h1`
+const GuestName = styled.h1`
   font-size: ${(props) => (props.compact ? "1.125rem" : "2.25rem")};
   font-weight: 600;
   margin: 0 0 ${(props) => (props.compact ? "4px" : "8px")} 0;
@@ -350,19 +351,19 @@ const TableSkeleton = () => (
 );
 
 // Booking History Modal
-const BookingHistoryModal = ({ visible, onClose, student }) => {
+const BookingHistoryModal = ({ visible, onClose, guest }) => {
   const [bookingHistoryData, setBookingHistoryData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const DATE_FNS_DISPLAY_FORMAT = "MMM d, yyyy";
 
   useEffect(() => {
-    if (visible && student?.booking_history) {
+    if (visible && guest?.booking_history) {
       setIsLoading(true);
       // Simulate loading for skeleton
       setTimeout(() => {
-        const data = Array.isArray(student.booking_history)
-          ? student.booking_history.map((item, index) => ({
+        const data = Array.isArray(guest.booking_history)
+          ? guest.booking_history.map((item, index) => ({
               ...item,
               key: item.id || `booking-${index}`,
               date: item.date
@@ -377,11 +378,11 @@ const BookingHistoryModal = ({ visible, onClose, student }) => {
         setIsLoading(false);
       }, 300);
     }
-  }, [visible, student]);
+  }, [visible, guest]);
 
   const bookingHistoryColumns = [
     {
-      title: "Class Name",
+      title: "Experience Name",
       dataIndex: "class_name",
       key: "class",
       ellipsis: true,
@@ -504,7 +505,7 @@ const BookingHistoryModal = ({ visible, onClose, student }) => {
       title={
         <>
           <Calendar size={18} />
-          {`${student?.first_name || "Student"}'s Booking History`}
+          {`${guest?.first_name || "Guest"}'s Booking History`}
         </>
       }
       open={visible}
@@ -540,90 +541,16 @@ const BookingHistoryModal = ({ visible, onClose, student }) => {
           <AlertIcon>
             <Calendar size={20} />
           </AlertIcon>
-          <AlertText>No booking history available for this student.</AlertText>
+          <AlertText>No booking history available for this guest.</AlertText>
         </CompactAlert>
       )}
     </StyledBookingModal>
   );
 };
 
-// Compact Modal for Imported Contacts
-const CompactContactModal = ({ student, currentUser, onClose }) => {
-  const avatarLetter = student.first_name
-    ? student.first_name[0].toUpperCase()
-    : student.email
-    ? student.email[0].toUpperCase()
-    : "?";
-
-  const { display: phoneDisplay, link: phoneLink } = formatPhoneNumber(
-    student.phone_number || ""
-  );
-
-  return (
-    <>
-      <CompactHeroSection>
-        <CompactProfileLayout>
-          <StudentAvatar compact>
-            <Avatar src={student.avatar_thumb_url} icon={<User />}>
-              {!student.avatar_thumb_url && avatarLetter}
-            </Avatar>
-          </StudentAvatar>
-          <StudentInfo>
-            <StudentName compact>
-              {student.first_name || "Unknown"} {student.last_name || ""}
-            </StudentName>
-            <Tag color="default" style={{ marginBottom: "8px" }}>
-              Imported Contact
-            </Tag>
-            <ContactInfo compact>
-              {student.email && (
-                <ContactItem compact>
-                  <Mail />
-                  <a href={`mailto:${student.email}`}>{student.email}</a>
-                </ContactItem>
-              )}
-              {student.phone_number && (
-                <ContactItem compact>
-                  <Phone />
-                  {phoneLink ? (
-                    <a href={phoneLink}>{phoneDisplay}</a>
-                  ) : (
-                    <span>{phoneDisplay}</span>
-                  )}
-                </ContactItem>
-              )}
-              {!student.phone_number && !student.email && (
-                <ContactItem compact>
-                  <span style={{ color: "#64748b", fontStyle: "italic" }}>
-                    No contact information available
-                  </span>
-                </ContactItem>
-              )}
-            </ContactInfo>
-          </StudentInfo>
-        </CompactProfileLayout>
-      </CompactHeroSection>
-
-      <ContentBody compact>
-        <InfoSection compact>
-          <SectionTitle compact>
-            <MessageSquare />
-            Notes
-          </SectionTitle>
-          <NotesSection
-            student={student}
-            currentUser={currentUser}
-            compact={true}
-          />
-        </InfoSection>
-      </ContentBody>
-    </>
-  );
-};
-
 // Compact Modal for Platform Users
 const CompactPlatformUserModal = ({
-  student,
+  guest,
   currentUser,
   onClose,
   isReadyForAnimation,
@@ -639,48 +566,48 @@ const CompactPlatformUserModal = ({
   }, [currentUser]);
 
   const joinedDateFormatted = useMemo(() => {
-    return student?.createdAt
-      ? formatUTCToUserDisplay(student.createdAt, userTimeZone, {
+    return guest?.createdAt
+      ? formatUTCToUserDisplay(guest.createdAt, userTimeZone, {
           dateFormat: "MMMM yyyy",
         })
       : "N/A";
-  }, [student?.createdAt, userTimeZone]);
+  }, [guest?.createdAt, userTimeZone]);
 
-  const avatarLetter = student.first_name
-    ? student.first_name[0].toUpperCase()
-    : student.email
-    ? student.email[0].toUpperCase()
+  const avatarLetter = guest.first_name
+    ? guest.first_name[0].toUpperCase()
+    : guest.email
+    ? guest.email[0].toUpperCase()
     : "?";
 
-  const averageAttendance = student?.average_attendance
-    ? parseFloat(student.average_attendance)
+  const averageAttendance = guest?.average_attendance
+    ? parseFloat(guest.average_attendance)
     : 0;
 
-  const bookingCount = Array.isArray(student?.booking_history)
-    ? student.booking_history.length
+  const bookingCount = Array.isArray(guest?.booking_history)
+    ? guest.booking_history.length
     : 0;
 
   return (
     <>
       <CompactHeroSection>
         <CompactProfileLayout>
-          <StudentAvatar compact>
-            <Avatar src={student.avatar_thumb_url} icon={<User />}>
-              {!student.avatar_thumb_url && avatarLetter}
+          <GuestAvatar compact>
+            <Avatar src={guest.avatar_thumb_url} icon={<User />}>
+              {!guest.avatar_thumb_url && avatarLetter}
             </Avatar>
-          </StudentAvatar>
-          <StudentInfo>
-            <StudentName compact>
-              {student.first_name || "Unknown"} {student.last_name || ""}
-            </StudentName>
+          </GuestAvatar>
+          <GuestInfo>
+            <GuestName compact>
+              {guest.first_name || "Unknown"} {guest.last_name || ""}
+            </GuestName>
             <Tag color="blue" style={{ marginBottom: "8px" }}>
               Platform User
             </Tag>
             <ContactInfo compact>
-              {student.email && (
+              {guest.email && (
                 <ContactItem compact>
                   <Mail />
-                  <a href={`mailto:${student.email}`}>{student.email}</a>
+                  <a href={`mailto:${guest.email}`}>{guest.email}</a>
                 </ContactItem>
               )}
               <ContactItem compact>
@@ -688,7 +615,7 @@ const CompactPlatformUserModal = ({
                 <span>Member since {joinedDateFormatted}</span>
               </ContactItem>
             </ContactInfo>
-          </StudentInfo>
+          </GuestInfo>
         </CompactProfileLayout>
       </CompactHeroSection>
 
@@ -719,9 +646,7 @@ const CompactPlatformUserModal = ({
               }}
             >
               <NumberFlow
-                value={
-                  isReadyForAnimation ? student.total_classes_taken ?? 0 : 0
-                }
+                value={isReadyForAnimation ? guest.total_classes_taken ?? 0 : 0}
                 duration={800}
                 numberFormatOptions={{ maximumFractionDigits: 0 }}
               />
@@ -734,7 +659,7 @@ const CompactPlatformUserModal = ({
                 textTransform: "uppercase",
               }}
             >
-              Classes
+              Experiences
             </div>
           </div>
 
@@ -778,9 +703,7 @@ const CompactPlatformUserModal = ({
               $
               <NumberFlow
                 value={
-                  isReadyForAnimation
-                    ? student.total_spent_this_business || 0
-                    : 0
+                  isReadyForAnimation ? guest.total_spent_this_business || 0 : 0
                 }
                 duration={800}
                 numberFormatOptions={{
@@ -828,7 +751,7 @@ const CompactPlatformUserModal = ({
             Notes
           </SectionTitle>
           <NotesSection
-            student={student}
+            guest={guest}
             currentUser={currentUser}
             compact={true}
           />
@@ -838,19 +761,19 @@ const CompactPlatformUserModal = ({
       <BookingHistoryModal
         visible={showBookingHistory}
         onClose={() => setShowBookingHistory(false)}
-        student={student}
+        guest={guest}
       />
     </>
   );
 };
 
-const StudentProfile = ({
-  student: initialStudent,
+const GuestProfile = ({
+  guest: initialGuest,
   onClose,
   currentUser,
   visible,
 }) => {
-  const [student, setStudent] = useState(null);
+  const [guest, setGuest] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
   const [error, setError] = useState(null);
@@ -864,9 +787,9 @@ const StudentProfile = ({
   }, []);
 
   useEffect(() => {
-    const fetchStudentDetails = async () => {
-      if (!initialStudent?.id) {
-        setError("No student selected.");
+    const fetchGuestDetails = async () => {
+      if (!initialGuest?.id) {
+        setError("No guest selected.");
         setIsLoading(false);
         return;
       }
@@ -876,20 +799,20 @@ const StudentProfile = ({
       setError(null);
       try {
         const response = await businessStudentService.getBusinessStudentProfile(
-          initialStudent.id
+          initialGuest.id
         );
 
         if (response.success && response.data) {
-          setStudent(response.data);
+          setGuest(response.data);
           setTimeout(() => setIsReadyForAnimation(true), 50);
         } else {
-          throw new Error(response.error || "Failed to fetch student details");
+          throw new Error(response.error || "Failed to fetch guest details");
         }
       } catch (err) {
         if (err.response && err.response.status === 404) {
-          setError("The requested student profile could not be found.");
+          setError("The requested guest profile could not be found.");
         } else {
-          setError(err.message || "Could not load student details.");
+          setError(err.message || "Could not load guest details.");
         }
       } finally {
         setIsLoading(false);
@@ -897,9 +820,9 @@ const StudentProfile = ({
     };
 
     if (visible) {
-      fetchStudentDetails();
+      fetchGuestDetails();
     }
-  }, [initialStudent, visible]);
+  }, [initialGuest, visible]);
 
   const renderContent = () => {
     if (error) {
@@ -913,18 +836,18 @@ const StudentProfile = ({
               <strong>Error Loading Profile</strong>
               <br />
               {error ||
-                "The details for this student could not be loaded. Please try again later."}
+                "The details for this guest could not be loaded. Please try again later."}
             </AlertText>
           </CompactAlert>
         </div>
       );
     }
 
-    const isPlatformUser = student?.type === "user";
+    const isPlatformUser = guest?.type === "user";
 
     return (
       <AnimatePresence mode="wait">
-        {isLoading || !student ? (
+        {isLoading || !guest ? (
           <motion.div
             key="skeleton"
             initial={{ opacity: 0 }}
@@ -946,13 +869,13 @@ const StudentProfile = ({
           >
             {!isPlatformUser ? (
               <CompactContactModal
-                student={student}
+                guest={guest}
                 currentUser={currentUser}
                 onClose={onClose}
               />
             ) : (
               <CompactPlatformUserModal
-                student={student}
+                guest={guest}
                 currentUser={currentUser}
                 onClose={onClose}
                 isReadyForAnimation={isReadyForAnimation}
@@ -967,18 +890,22 @@ const StudentProfile = ({
   const getModalTitle = () => {
     if (isLoading) return "Loading Profile...";
     if (error) return "Error";
-    if (student)
-      return `${student.first_name || "Contact"}'s ${
-        student.type === "user" ? "Profile" : "Details"
+    if (guest)
+      return `${guest.first_name || "Contact"}'s ${
+        guest.type === "user" ? "Profile" : "Details"
       }`;
-    return "Student Profile";
+    return "Guest Profile";
   };
 
   return (
     <ConfigProvider theme={appTheme}>
       {/* Mobile Drawer with Vaul */}
       {isMobile ? (
-        <Drawer.Root open={visible} onOpenChange={(open) => !open && onClose()} repositionInputs={false}>
+        <Drawer.Root
+          open={visible}
+          onOpenChange={(open) => !open && onClose()}
+          repositionInputs={false}
+        >
           <Drawer.Portal>
             <StyledDrawerOverlay />
             <StyledDrawerContent>
@@ -1017,4 +944,4 @@ const StudentProfile = ({
   );
 };
 
-export default StudentProfile;
+export default GuestProfile;

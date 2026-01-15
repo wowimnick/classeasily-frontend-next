@@ -2,8 +2,20 @@
 
 import React, { useState, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
-import { Typography, Divider, Tag, Avatar, Button, Popconfirm, Space, List, ConfigProvider, Skeleton, Timeline } from 'antd';
-import message from '@/lib/message';
+import {
+  Typography,
+  Divider,
+  Tag,
+  Avatar,
+  Button,
+  Popconfirm,
+  Space,
+  List,
+  ConfigProvider,
+  Skeleton,
+  Timeline,
+} from "antd";
+import message from "@/lib/message";
 import {
   User,
   BookOpen as BookIcon,
@@ -173,7 +185,7 @@ const HeaderSection = styled.div`
   }
 `;
 
-const StudentAvatar = styled(Avatar)`
+const GuestAvatar = styled(Avatar)`
   width: 60px;
   height: 60px;
   font-size: 28px;
@@ -187,11 +199,11 @@ const StudentAvatar = styled(Avatar)`
   }
 `;
 
-const StudentInfo = styled.div`
+const GuestInfo = styled.div`
   flex: 1;
 `;
 
-const StudentName = styled(Title).attrs({ level: 4 })`
+const GuestName = styled(Title).attrs({ level: 4 })`
   margin: 0 0 2px 0 !important;
   color: ${colors.textPrimary};
   font-weight: 600;
@@ -201,7 +213,7 @@ const StudentName = styled(Title).attrs({ level: 4 })`
   }
 `;
 
-const StudentEmail = styled(Text)`
+const GuestEmail = styled(Text)`
   color: ${colors.textSecondary};
   font-size: 14px;
   display: block;
@@ -366,13 +378,13 @@ const ActionSection = styled.div`
 
 // Skeleton Components
 const SkeletonLine = styled.div`
-  height: ${props => props.height || '16px'};
-  width: ${props => props.width || '100%'};
+  height: ${(props) => props.height || "16px"};
+  width: ${(props) => props.width || "100%"};
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: loading 1.5s ease-in-out infinite;
   border-radius: 4px;
-  margin-bottom: ${props => props.marginBottom || '0'};
+  margin-bottom: ${(props) => props.marginBottom || "0"};
 
   @keyframes loading {
     0% {
@@ -386,15 +398,15 @@ const SkeletonLine = styled.div`
 
 const SkeletonCircle = styled(SkeletonLine)`
   border-radius: 50%;
-  width: ${props => props.size || '60px'};
-  height: ${props => props.size || '60px'};
+  width: ${(props) => props.size || "60px"};
+  height: ${(props) => props.size || "60px"};
   margin-bottom: 0;
   flex-shrink: 0;
 `;
 
 const SkeletonTag = styled(SkeletonLine)`
   height: 24px;
-  width: ${props => props.width || '80px'};
+  width: ${(props) => props.width || "80px"};
   border-radius: 6px;
   display: inline-block;
   margin-bottom: 0;
@@ -403,11 +415,11 @@ const SkeletonTag = styled(SkeletonLine)`
 const SkeletonHeaderSection = () => (
   <HeaderSection>
     <SkeletonCircle size="60px" />
-    <StudentInfo>
+    <GuestInfo>
       <SkeletonLine width="60%" height="20px" marginBottom="8px" />
       <SkeletonLine width="80%" height="14px" marginBottom="8px" />
       <SkeletonTag width="90px" />
-    </StudentInfo>
+    </GuestInfo>
   </HeaderSection>
 );
 
@@ -440,10 +452,10 @@ const SkeletonContent = () => (
   <>
     <SkeletonHeaderSection />
     <ContentBody>
-      {/* Service & Schedule - 4 items */}
+      {/* Experience & Schedule - 4 items */}
       <InfoGroup>
         <InfoGroupTitle style={{ opacity: 0.5 }}>
-          <BookIcon /> Service & Schedule
+          <BookIcon /> Experience & Schedule
         </InfoGroupTitle>
         <InfoGrid>
           <InfoItem>
@@ -451,7 +463,7 @@ const SkeletonContent = () => (
               <BookIcon size={18} />
             </InfoIcon>
             <InfoContent>
-              <InfoLabel>Class</InfoLabel>
+              <InfoLabel>Experience</InfoLabel>
               <SkeletonLine width="80%" height="16px" />
             </InfoContent>
           </InfoItem>
@@ -485,10 +497,10 @@ const SkeletonContent = () => (
         </InfoGrid>
       </InfoGroup>
 
-      {/* Attendees - 2 items + participant list */}
+      {/* Guests - 2 items + participant list */}
       <InfoGroup>
         <InfoGroupTitle style={{ opacity: 0.5 }}>
-          <UsersIcon /> Attendees
+          <UsersIcon /> Guests
         </InfoGroupTitle>
         <InfoGrid>
           <InfoItem>
@@ -511,18 +523,18 @@ const SkeletonContent = () => (
           </InfoItem>
         </InfoGrid>
         <Divider style={{ margin: "20px 0 16px" }} />
-        <div style={{ marginBottom: '12px' }}>
+        <div style={{ marginBottom: "12px" }}>
           <SkeletonLine width="150px" height="16px" />
         </div>
         {[1, 2].map((i) => (
-          <div 
+          <div
             key={i}
-            style={{ 
-              padding: '12px 0',
-              borderBottom: i === 1 ? `1px solid ${colors.border}` : 'none'
+            style={{
+              padding: "12px 0",
+              borderBottom: i === 1 ? `1px solid ${colors.border}` : "none",
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <SkeletonCircle size="40px" />
               <div style={{ flex: 1 }}>
                 <SkeletonLine width="140px" height="14px" marginBottom="6px" />
@@ -653,7 +665,7 @@ const BookingTypeTag = styled(Tag)`
   }
 `;
 
-const ParticipantListItem = styled(List.Item)`
+const GuestListItem = styled(List.Item)`
   padding: 12px 0 !important;
   border-bottom: 1px solid ${colors.border} !important;
   &:last-child {
@@ -895,18 +907,18 @@ const BookingDetailsDrawer = ({
     return (
       <>
         <HeaderSection>
-          <StudentAvatar
+          <GuestAvatar
             size={60}
             src={booker_details.avatar_url}
             $hasImage={!!booker_details.avatar_url}
           >
             {!booker_details.avatar_url && <User />}
-          </StudentAvatar>
-          <StudentInfo>
-            <StudentName>{booker_details.full_name || "N/A"}</StudentName>
-            <StudentEmail>{booker_details.email || "N/A"}</StudentEmail>
+          </GuestAvatar>
+          <GuestInfo>
+            <GuestName>{booker_details.full_name || "N/A"}</GuestName>
+            <GuestEmail>{booker_details.email || "N/A"}</GuestEmail>
             {getStatusTag(booking.status, booking.payment_status)}
-          </StudentInfo>
+          </GuestInfo>
         </HeaderSection>
 
         <ContentBody>
@@ -935,7 +947,7 @@ const BookingDetailsDrawer = ({
 
           <InfoGroup>
             <InfoGroupTitle>
-              <BookIcon /> Service & Schedule
+              <BookIcon /> Experience & Schedule
             </InfoGroupTitle>
             <InfoGrid>
               <InfoItem>
@@ -943,7 +955,7 @@ const BookingDetailsDrawer = ({
                   <BookIcon />
                 </InfoIcon>
                 <InfoContent>
-                  <InfoLabel>Class</InfoLabel>
+                  <InfoLabel>Experience</InfoLabel>
                   <InfoValue>
                     {booking.class_name || <NoDataText>N/A</NoDataText>}
                   </InfoValue>
@@ -996,56 +1008,63 @@ const BookingDetailsDrawer = ({
           </InfoGroup>
 
           {/* NEW: Course Schedule Section */}
-          {booking.enrollment_type === "Full Course" && booking.course_schedule && (
-            <InfoGroup>
-              <InfoGroupTitle>
-                <Calendar /> Course Schedule
-              </InfoGroupTitle>
-              <div style={{ marginTop: '12px', padding: '0 12px' }}>
-                <Timeline
-                  items={booking.course_schedule.map((session) => ({
-                    color: session.is_current 
-                      ? colors.primary 
-                      : session.status === 'completed' 
-                        ? colors.success 
-                        : 'gray',
-                    children: (
-                      <div style={{ 
-                        display: 'flex', 
-                        justifyContent: 'space-between',
-                        opacity: session.status === 'cancelled' ? 0.5 : 1,
-                        fontWeight: session.is_current ? 600 : 400
-                      }}>
-                        <Space direction="vertical" size={0}>
-                          <Text strong={session.is_current}>
-                            Session {session.session_number}
-                            {session.is_current && <Tag color="blue" style={{marginLeft: 8}}>Current Viewing</Tag>}
-                          </Text>
-                          <Text type="secondary" style={{ fontSize: '13px' }}>
-                            {formatBusinessLocalToUserDisplay(
-                              session.date,
-                              session.time,
-                              // You might need to pass timezone props down or use the ones from booking context
-                              booking.business_context.business_timezone, 
-                              booking.business_context.business_timezone,
-                              { dateTimeFormat: "EEE, MMM d, yyyy • h:mm a" }
-                            )}
-                          </Text>
-                        </Space>
-                        <StatusTag style={{ height: 'fit-content' }}>
-                          {session.status.toUpperCase()}
-                        </StatusTag>
-                      </div>
-                    ),
-                  }))}
-                />
-              </div>
-            </InfoGroup>
-          )}
+          {booking.enrollment_type === "Full Course" &&
+            booking.course_schedule && (
+              <InfoGroup>
+                <InfoGroupTitle>
+                  <Calendar /> Course Schedule
+                </InfoGroupTitle>
+                <div style={{ marginTop: "12px", padding: "0 12px" }}>
+                  <Timeline
+                    items={booking.course_schedule.map((session) => ({
+                      color: session.is_current
+                        ? colors.primary
+                        : session.status === "completed"
+                        ? colors.success
+                        : "gray",
+                      children: (
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            opacity: session.status === "cancelled" ? 0.5 : 1,
+                            fontWeight: session.is_current ? 600 : 400,
+                          }}
+                        >
+                          <Space direction="vertical" size={0}>
+                            <Text strong={session.is_current}>
+                              Session {session.session_number}
+                              {session.is_current && (
+                                <Tag color="blue" style={{ marginLeft: 8 }}>
+                                  Current Viewing
+                                </Tag>
+                              )}
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: "13px" }}>
+                              {formatBusinessLocalToUserDisplay(
+                                session.date,
+                                session.time,
+                                // You might need to pass timezone props down or use the ones from booking context
+                                booking.business_context.business_timezone,
+                                booking.business_context.business_timezone,
+                                { dateTimeFormat: "EEE, MMM d, yyyy • h:mm a" }
+                              )}
+                            </Text>
+                          </Space>
+                          <StatusTag style={{ height: "fit-content" }}>
+                            {session.status.toUpperCase()}
+                          </StatusTag>
+                        </div>
+                      ),
+                    }))}
+                  />
+                </div>
+              </InfoGroup>
+            )}
 
           <InfoGroup>
             <InfoGroupTitle>
-              <UsersIcon /> Attendees
+              <UsersIcon /> Guests
             </InfoGroupTitle>
             <InfoGrid>
               <InfoItem>
@@ -1079,13 +1098,11 @@ const BookingDetailsDrawer = ({
               <>
                 <Divider style={{ margin: "20px 0 16px" }} />
                 <List
-                  header={
-                    <Text strong>Participants ({booking.participants})</Text>
-                  }
+                  header={<Text strong>Guests ({booking.participants})</Text>}
                   itemLayout="horizontal"
                   dataSource={booking.participant_details}
                   renderItem={(participant, index) => (
-                    <ParticipantListItem>
+                    <GuestListItem>
                       <List.Item.Meta
                         avatar={
                           <Avatar
@@ -1093,13 +1110,13 @@ const BookingDetailsDrawer = ({
                             icon={<UserCircle2 size={18} />}
                           />
                         }
-                        title={participant.name || `Participant ${index + 1}`}
+                        title={participant.name || `Guest ${index + 1}`}
                         description={
                           participant.email ||
                           (booking.participants === 1 ? "Same as booker" : "")
                         }
                       />
-                    </ParticipantListItem>
+                    </GuestListItem>
                   )}
                 />
               </>
@@ -1252,7 +1269,7 @@ const BookingDetailsDrawer = ({
             </Button>
             <Popconfirm
               title="Are you sure you want to cancel?"
-              description="The student will be notified and a refund may be initiated."
+              description="The guest will be notified and a refund may be initiated."
               onConfirm={handleInternalCancel}
               okText="Yes, Cancel Booking"
               cancelText="No"
@@ -1264,7 +1281,8 @@ const BookingDetailsDrawer = ({
                 danger
                 icon={<XCircle size={16} />}
                 loading={isCancelling}
-                key={`btn-${isCancelling}`}>
+                key={`btn-${isCancelling}`}
+              >
                 Cancel Booking
               </Button>
             </Popconfirm>

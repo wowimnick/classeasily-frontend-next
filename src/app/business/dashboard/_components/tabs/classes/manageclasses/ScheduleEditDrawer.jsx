@@ -1608,7 +1608,7 @@ const ScheduleEditDrawer = ({
                   Session Name <HelpLabel>(Optional)</HelpLabel>
                 </Label>
                 <CompactFormItem name="name">
-                  <StyledInput placeholder="e.g., Morning Pottery Class" />
+                  <StyledInput placeholder="e.g., Morning Pottery Workshop" />
                 </CompactFormItem>
               </FieldContainer>
             </FormSection>
@@ -1620,7 +1620,7 @@ const ScheduleEditDrawer = ({
             <FormSection>
               <SectionHeader>
                 <h4>
-                  <DollarSign size={18} /> Pricing & Capacity
+                  <DollarSign size={18} /> Pricing & Guests
                 </h4>
                 <p>Set the financials and limits for this session.</p>
               </SectionHeader>
@@ -1636,7 +1636,7 @@ const ScheduleEditDrawer = ({
                 </FieldContainer>
                 <FieldContainer>
                   <Label>
-                    Total Capacity
+                    Total Guests
                     <Tooltip title="The maximum number of people who can book this session.">
                       <HelpCircle
                         size={14}
@@ -1655,8 +1655,8 @@ const ScheduleEditDrawer = ({
 
               <FieldContainer>
                 <Label>
-                  Minimum Participants{" "}
-                  <Tooltip title="The minimum number of participants required for a person to book this session.">
+                  Minimum Guests{" "}
+                  <Tooltip title="The minimum number of bookings required for this session to go ahead. If not met, you might need to cancel.">
                     <HelpCircle
                       size={14}
                       style={{ cursor: "pointer", color: "#94a3b8" }}
@@ -1932,7 +1932,7 @@ const ScheduleEditDrawer = ({
                     <FieldContainer>
                       <Label>
                         Price (CAD)
-                        <Tooltip title="Price per attendee.">
+                        <Tooltip title="Price per guest.">
                           <HelpCircle
                             size={14}
                             style={{ cursor: "pointer", color: "#94a3b8" }}
@@ -1948,8 +1948,8 @@ const ScheduleEditDrawer = ({
                     </FieldContainer>
                     <FieldContainer>
                       <Label>
-                        Max Capacity
-                        <Tooltip title="Maximum attendees allowed per session.">
+                        Max Guests
+                        <Tooltip title="Maximum guests allowed per session.">
                           <HelpCircle
                             size={14}
                             style={{ cursor: "pointer", color: "#94a3b8" }}
@@ -1975,8 +1975,8 @@ const ScheduleEditDrawer = ({
                   </FieldContainer>
                   <FieldContainer>
                     <Label>
-                      Min Participants
-                      <Tooltip title="The minimum number of participants required for a person to book this session.">
+                      Min Guests
+                      <Tooltip title="The minimum number of bookings required for this session to go ahead. If not met, you might need to cancel.">
                         <HelpCircle
                           size={14}
                           style={{ cursor: "pointer", color: "#94a3b8" }}

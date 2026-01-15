@@ -3,8 +3,26 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import styled from "styled-components";
 import { Drawer as VaulDrawer } from "vaul";
-import { Table, Button, Typography, Tag, Space, Tooltip, Drawer, Form, Input, Checkbox, Popconfirm, Empty, Row, Col, Collapse, Spin, Card,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Table,
+  Button,
+  Typography,
+  Tag,
+  Space,
+  Tooltip,
+  Drawer,
+  Form,
+  Input,
+  Checkbox,
+  Popconfirm,
+  Empty,
+  Row,
+  Col,
+  Collapse,
+  Spin,
+  Card,
+} from "antd";
+import message from "@/lib/message";
 import { Plus, Edit, Trash2, Shield, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { businessRoleService } from "@/services/apiService";
@@ -201,7 +219,7 @@ const StyledTable = styled(Table)`
     font-size: 14px;
     vertical-align: middle;
   }
-  
+
   .ant-table-tbody > tr.ant-table-placeholder:hover > td {
     background: white;
   }
@@ -578,7 +596,6 @@ const RolesSkeleton = ({ isMobile, count = 3 }) => {
     />
   );
 };
-
 
 const MobileRoleItem = ({
   record,
@@ -997,7 +1014,7 @@ const Roles = () => {
       }, 300);
     }
   };
-  
+
   const renderContent = () => {
     if (loading && roles.length === 0) {
       return <RolesSkeleton isMobile={isMobile} />;
@@ -1005,11 +1022,11 @@ const Roles = () => {
 
     if (isMobile) {
       return (
-        <div style={{ padding: '16px' }}>
+        <div style={{ padding: "16px" }}>
           {roles.length === 0 ? (
             <Empty
               description="No custom roles created yet."
-              style={{ padding: '40px 20px' }}
+              style={{ padding: "40px 20px" }}
             />
           ) : (
             roles.map((role) => (
@@ -1018,9 +1035,9 @@ const Roles = () => {
                 record={role}
                 onEdit={showDrawer}
                 onDelete={handleDeleteRole}
-                canEdit={role.name !== 'Business Owner' && canManageRoles}
+                canEdit={role.name !== "Business Owner" && canManageRoles}
                 canDelete={
-                  role.name !== 'Business Owner' &&
+                  role.name !== "Business Owner" &&
                   role.user_count === 0 &&
                   canManageRoles
                 }
@@ -1131,7 +1148,7 @@ const Roles = () => {
                         prefix={
                           <Shield size={16} color={colors.textSecondary} />
                         }
-                        placeholder="e.g., Instructor, Front Desk"
+                        placeholder="e.g., Host, Front Desk"
                         maxLength={50}
                         size="large"
                       />
@@ -1267,7 +1284,8 @@ const Roles = () => {
                   type="primary"
                   loading={drawerLoading}
                   block
-                  key={`btn-${drawerLoading}`}>
+                  key={`btn-${drawerLoading}`}
+                >
                   {editingRole ? "Save Changes" : "Create Role"}
                 </Button>
                 <Button onClick={onDrawerClose} block>
@@ -1311,7 +1329,7 @@ const Roles = () => {
                         prefix={
                           <Shield size={16} color={colors.textSecondary} />
                         }
-                        placeholder="e.g., Instructor, Front Desk"
+                        placeholder="e.g., Host, Front Desk"
                         maxLength={50}
                       />
                     </Form.Item>
@@ -1444,7 +1462,8 @@ const Roles = () => {
                   onClick={() => form.submit()}
                   type="primary"
                   loading={drawerLoading}
-                  key={`btn-${drawerLoading}`}>
+                  key={`btn-${drawerLoading}`}
+                >
                   {editingRole ? "Save Changes" : "Create Role"}
                 </Button>
               </DesktopDrawerFooter>

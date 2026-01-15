@@ -1,9 +1,19 @@
-"use client"
+"use client";
 
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { Modal, List, Button, Typography, Empty, Alert, Radio, Tooltip, Skeleton,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Modal,
+  List,
+  Button,
+  Typography,
+  Empty,
+  Alert,
+  Radio,
+  Tooltip,
+  Skeleton,
+} from "antd";
+import message from "@/lib/message";
 import {
   Calendar,
   Clock,
@@ -235,7 +245,7 @@ const RescheduleBookingModal = ({ visible, booking, onSuccess, onCancel }) => {
         description={
           <Paragraph type="secondary" style={{ fontSize: "13px", margin: 0 }}>
             The new session is ${Math.abs(diff).toFixed(2)}{" "}
-            {isMoreExpensive ? "more expensive" : "cheaper"}. The student will
+            {isMoreExpensive ? "more expensive" : "cheaper"}. The guest will
             <b> not</b> be charged or refunded the difference. The original
             payment of ${parseFloat(policyCheck.original_price).toFixed(2)} will
             be retained for this booking.
@@ -250,7 +260,7 @@ const RescheduleBookingModal = ({ visible, booking, onSuccess, onCancel }) => {
 
   return (
     <Modal
-      title={`Reschedule Booking for ${booking?.user_name || "Student"}`}
+      title={`Reschedule Booking for ${booking?.user_name || "Guest"}`}
       open={visible}
       onCancel={onCancel}
       destroyOnClose
@@ -329,7 +339,7 @@ const RescheduleBookingModal = ({ visible, booking, onSuccess, onCancel }) => {
                 />
               </Radio.Group>
             ) : (
-              <Empty description="No other available slots for this class." />
+              <Empty description="No other available slots for this experience." />
             )}
           </SlotListWrapper>
         )}

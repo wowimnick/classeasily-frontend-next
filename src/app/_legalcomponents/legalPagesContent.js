@@ -1,9 +1,6 @@
-// This file contains all legal content for the platform
-// Import the content objects from your LegalPage.jsx and export them here
-
 export const termsContent = {
   title: "Terms of Service",
-  lastUpdated: "May 5, 2024", // <-- CHANGE THIS DATE WHEN UPDATING
+  lastUpdated: "January 14, 2026", // Updated date
   sections: [
     // Section 1: Introduction
     {
@@ -30,12 +27,12 @@ export const termsContent = {
         {
           type: "ul",
           items: [
-            "<strong>User:</strong> Any individual or entity accessing or using the Platform, including Students and Hosts.",
-            "<strong>Student:</strong> A User who searches for, books, or attends Classes via the Platform.",
-            "<strong>Host:</strong> An individual instructor, business, or organization that offers Classes via the Platform.",
-            "<strong>Class / Classes:</strong> Educational, instructional, or workshop sessions, including single sessions and multi-session courses, offered by Hosts on the Platform.",
-            "<strong>Listing:</strong> A Host's description, details, schedule, and pricing for a Class offered on the Platform.",
-            "<strong>Booking:</strong> An agreement between a Student and a Host, facilitated by the Platform, for the Student to attend a Class.",
+            "<strong>User:</strong> Any individual or entity accessing or using the Platform, including Guests and Hosts.",
+            "<strong>Guest:</strong> A User who searches for, books, or attends Experiences via the Platform.",
+            "<strong>Host:</strong> An individual, business, or organization that offers Experiences via the Platform.",
+            "<strong>Experience / Experiences:</strong> Activities, workshops, tours, instructional sessions, or events, including single sessions and multi-session courses, offered by Hosts on the Platform.",
+            "<strong>Listing:</strong> A Host's description, details, schedule, and pricing for an Experience offered on the Platform.",
+            "<strong>Booking:</strong> An agreement between a Guest and a Host, facilitated by the Platform, for the Guest to attend an Experience.",
             "<strong>User Content:</strong> Any text, images, videos, reviews, messages, or other materials uploaded, posted, or transmitted by Users on the Platform.",
             "<strong>Platform Content:</strong> All content on the Platform excluding User Content, including text, graphics, logos, icons, images, software, and underlying technology.",
             "<strong>Fees:</strong> Any charges applicable to Users, including Service Fees, Booking Fees, or Payment Processing Fees, as detailed on the Platform.",
@@ -53,11 +50,11 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "A User who meets this age requirement (e.g., a parent or legal guardian) may book a Class on behalf of a minor. If you do so, you represent and warrant that you are the minor's legal guardian, and you agree to these Terms on behalf of the minor. You are solely responsible for the minor’s conduct, safety, and compliance with any Class rules or requirements.",
+          text: "A User who meets this age requirement (e.g., a parent or legal guardian) may book an Experience on behalf of a minor. If you do so, you represent and warrant that you are the minor's legal guardian, and you agree to these Terms on behalf of the minor. You are solely responsible for the minor’s conduct, safety, and compliance with any Experience rules or requirements.",
         },
         {
           type: "p",
-          text: "<strong>Booking for Age-Restricted Classes:</strong> To book or attend any Class that involves the sale, service, or consumption of alcohol, you must be at least 19 years old (the legal drinking age in Ontario). All attendees of such classes must provide valid government-issued photo identification upon request by the Host. You may not book an alcohol-related class on behalf of anyone under the age of 19.",
+          text: "<strong>Booking for Age-Restricted Experiences:</strong> To book or attend any Experience that involves the sale, service, or consumption of alcohol, you must be at least 19 years old (the legal drinking age in Ontario). All attendees of such experiences must provide valid government-issued photo identification upon request by the Host. You may not book an alcohol-related experience on behalf of anyone under the age of 19.",
         },
         {
           type: "p",
@@ -79,15 +76,15 @@ export const termsContent = {
       content: [
         {
           type: "p",
-          text: "Classeasily provides an online marketplace that enables Hosts to publish Listings for Classes and communicate with Students seeking such Classes. Students can search for, communicate with Hosts about, and book Classes directly with Hosts through the Platform.",
+          text: "Classeasily provides an online marketplace that enables Hosts to publish Listings for Experiences and communicate with Guests seeking such Experiences. Guests can search for, communicate with Hosts about, and book Experiences directly with Hosts through the Platform.",
         },
         {
           type: "p",
-          text: "Important Disclaimer: Classeasily acts solely as a facilitator and is not a party to any agreement entered into between Students and Hosts. Classeasily does not own, create, sell, resell, provide, control, manage, offer, deliver, or supply any Classes or Listings. Hosts are solely responsible for their Listings and Classes. When Students make or accept a Booking, they are entering into a contract directly with the Host.",
+          text: "Important Disclaimer: Classeasily acts solely as a facilitator and is not a party to any agreement entered into between Guests and Hosts. Classeasily does not own, create, sell, resell, provide, control, manage, offer, deliver, or supply any Experiences or Listings. Hosts are solely responsible for their Listings and Experiences. When Guests make or accept a Booking, they are entering into a contract directly with the Host.",
         },
         {
           type: "p",
-          text: "While Classeasily may facilitate dispute resolution, we have no control over and do not guarantee (i) the existence, quality, safety, suitability, or legality of any Listings or Classes, (ii) the truth or accuracy of any Listing descriptions, ratings, reviews, or other User Content, or (iii) the performance or conduct of any User or third party. Classeasily does not endorse any User, Listing, or Class. Any verification or background check information provided is for informational purposes only and is not an endorsement, certification, or guarantee.",
+          text: "While Classeasily may facilitate dispute resolution, we have no control over and do not guarantee (i) the existence, quality, safety, suitability, or legality of any Listings or Experiences, (ii) the truth or accuracy of any Listing descriptions, ratings, reviews, or other User Content, or (iii) the performance or conduct of any User or third party. Classeasily does not endorse any User, Listing, or Experience. Any verification or background check information provided is for informational purposes only and is not an endorsement, certification, or guarantee.",
         },
       ],
     },
@@ -95,27 +92,27 @@ export const termsContent = {
     {
       title: "5. Host Terms",
       content: [
-        { type: "h3", text: "5.1. Listing Classes" },
+        { type: "h3", text: "5.1. Listing Experiences" },
         {
           type: "p",
-          text: "As a Host, you may create Listings for your Classes. Your Listings must include complete and accurate information about your Class, including description, location (if applicable), schedule, duration, capacity, prerequisites, pricing, cancellation policy, and any rules or requirements.",
+          text: "As a Host, you may create Listings for your Experiences or Workshops. Your Listings must include complete and accurate information about your Experience, including description, location (if applicable), schedule, duration, capacity, prerequisites, pricing, cancellation policy, and any rules or requirements.",
         },
         {
           type: "p",
-          text: "You are responsible for setting the price for your Class (including any taxes or fees) and establishing rules and requirements. You may not post any Listing with false or misleading information or list any Class that violates applicable laws or these Terms.",
+          text: "You are responsible for setting the price for your Experience (including any taxes or fees) and establishing rules and requirements. You may not post any Listing with false or misleading information or list any Experience that violates applicable laws or these Terms.",
         },
         {
           type: "p",
-          text: "You represent and warrant that you have all necessary rights, licenses, permits, qualifications, and insurance to offer the Classes listed and that your Listings and Classes will not infringe upon any third-party rights.",
+          text: "You represent and warrant that you have all necessary rights, licenses, permits, qualifications, and insurance to offer the Experiences listed and that your Listings and Experiences will not infringe upon any third-party rights.",
         },
         {
           type: "p",
-          text: "Images and videos used in your Listings must accurately reflect the quality and condition of your Classes. Classeasily reserves the right to require Listings to have a minimum number of images of a certain format, size, and resolution.",
+          text: "Images and videos used in your Listings must accurately reflect the quality and condition of your Experiences. Classeasily reserves the right to require Listings to have a minimum number of images of a certain format, size, and resolution.",
         },
         { type: "h3", text: "5.2. Managing Bookings" },
         {
           type: "p",
-          text: "You are responsible for honouring any confirmed Bookings. When you accept a Booking request or receive a confirmation through the Platform, you enter into a legally binding agreement with the Student.",
+          text: "You are responsible for honouring any confirmed Bookings. When you accept a Booking request or receive a confirmation through the Platform, you enter into a legally binding agreement with the Guest.",
         },
         {
           type: "p",
@@ -124,35 +121,35 @@ export const termsContent = {
         { type: "h3", text: "5.3. Conduct and Responsibility" },
         {
           type: "p",
-          text: "You are solely responsible for conducting your Classes in a professional, safe, and respectful manner, complying with all applicable laws (including health and safety regulations, accessibility laws, and tax laws).",
+          text: "You are solely responsible for conducting your Experiences in a professional, safe, and respectful manner, complying with all applicable laws (including health and safety regulations, accessibility laws, and tax laws).",
         },
         {
           type: "p",
-          text: "You are responsible for your own acts and omissions and are also responsible for the acts and omissions of any individuals who assist with or participate in your Class.",
+          text: "You are responsible for your own acts and omissions and are also responsible for the acts and omissions of any individuals who assist with or participate in your Experience.",
         },
       ],
     },
-    // Section 6: Student Terms
+    // Section 6: Guest Terms
     {
-      title: "6. Student Terms",
+      title: "6. Guest Terms",
       content: [
-        { type: "h3", text: "6.1. Booking Classes" },
+        { type: "h3", text: "6.1. Booking Experiences" },
         {
           type: "p",
-          text: "Subject to meeting any requirements set by the Host (such as age, proficiency, or prerequisites), you can book a Class available on the Platform by following the relevant booking process.",
+          text: "Subject to meeting any requirements set by the Host (such as age, proficiency, or prerequisites), you can book an Experience available on the Platform by following the relevant booking process.",
         },
         {
           type: "p",
           text: "Upon receipt of a booking confirmation from Classeasily, a legally binding agreement is formed between you and the Host, subject to any additional terms and conditions of the Host that apply, including the applicable cancellation policy and any rules specified in the Listing.",
         },
-        { type: "h3", text: "6.2. Attending Classes" },
+        { type: "h3", text: "6.2. Attending Experiences" },
         {
           type: "p",
-          text: "You agree to comply with any rules or requirements specified by the Host in the Listing or communicated to you. You are responsible for your own conduct during the Class.",
+          text: "You agree to comply with any rules or requirements specified by the Host in the Listing or communicated to you. You are responsible for your own conduct during the Experience.",
         },
         {
           type: "p",
-          text: "You should carefully review the description, schedule, location, and cancellation policy before booking a Class.",
+          text: "You should carefully review the description, schedule, location, and cancellation policy before booking an Experience.",
         },
       ],
     },
@@ -172,11 +169,11 @@ export const termsContent = {
         { type: "h3", text: "7.2. Payments" },
         {
           type: "p",
-          text: "Students agree to pay the Total Fees for any Booking requested in connection with their Classeasily Account. Classeasily Payments (via Stripe) will collect the Total Fees at the time of the booking request or upon the Host’s confirmation.",
+          text: "Guests agree to pay the Total Fees for any Booking requested in connection with their Classeasily Account. Classeasily Payments (via Stripe) will collect the Total Fees at the time of the booking request or upon the Host’s confirmation.",
         },
         {
           type: "p",
-          text: "Hosts will receive payouts according to the schedule and method agreed upon (e.g., after Class completion minus applicable Service Fees). Payout details and schedules are available in the Host dashboard or relevant documentation.",
+          text: "Hosts will receive payouts according to the schedule and method agreed upon (e.g., after Experience completion minus applicable Service Fees). Payout details and schedules are available in the Host dashboard or relevant documentation.",
         },
         {
           type: "p",
@@ -185,15 +182,15 @@ export const termsContent = {
         { type: "h3", text: "7.3. Cancellations and Refunds" },
         {
           type: "p",
-          text: "Hosts and Students are responsible for any modifications to a Booking they make via the Platform, and agree to pay any additional Fees associated with such modifications.",
+          text: "Hosts and Guests are responsible for any modifications to a Booking they make via the Platform, and agree to pay any additional Fees associated with such modifications.",
         },
         {
           type: "p",
-          text: "Students can cancel a confirmed Booking subject to the Listing’s cancellation policy set by the Host. Classeasily Payments will refund the amount due to the Student in accordance with such cancellation policy. Applicable Booking Fees may be non-refundable.",
+          text: "Guests can cancel a confirmed Booking subject to the Listing’s cancellation policy set by the Host. Classeasily Payments will refund the amount due to the Guest in accordance with such cancellation policy. Applicable Booking Fees may be non-refundable.",
         },
         {
           type: "p",
-          text: "Hosts can cancel a confirmed Booking under certain extenuating circumstances. If a Host cancels, the Student will receive a full refund of the Total Fees for such Booking. Classeasily may impose penalties on Hosts for cancellations without valid extenuating circumstances.",
+          text: "Hosts can cancel a confirmed Booking under certain extenuating circumstances. If a Host cancels, the Guest will receive a full refund of the Total Fees for such Booking. Classeasily may impose penalties on Hosts for cancellations without valid extenuating circumstances.",
         },
       ],
     },
@@ -230,7 +227,7 @@ export const termsContent = {
             "Uploading or transmitting viruses, worms, or any other type of malicious code.",
             "Collecting or tracking the personal information of others without consent.",
             "Interfering with or circumventing the security features of the Platform or any related website.",
-            "Using the Platform to offer services unrelated to Classes listed.",
+            "Using the Platform to offer services unrelated to Experiences listed.",
             "Circumventing any Fees owed to Classeasily or Hosts.",
             "Posting spam or unsolicited commercial messages.",
           ],
@@ -247,7 +244,7 @@ export const termsContent = {
       content: [
         {
           type: "p",
-          text: "Students and Hosts may leave public reviews and ratings about each other. Reviews must be accurate, truthful, and may not contain discriminatory, offensive, defamatory, or harassing language.",
+          text: "Guests and Hosts may leave public reviews and ratings about each other. Reviews must be accurate, truthful, and may not contain discriminatory, offensive, defamatory, or harassing language.",
         },
         {
           type: "p",
@@ -327,7 +324,7 @@ export const termsContent = {
       content: [
         {
           type: "p",
-          text: "TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL CLASSEASILY, ITS AFFILIATES, OFFICERS, DIRECTORS, EMPLOYEES, AGENTS, SUPPLIERS OR LICENSORS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES, INCLUDING WITHOUT LIMITATION, LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, RESULTING FROM (I) YOUR ACCESS TO OR USE OF OR INABILITY TO ACCESS OR USE THE PLATFORM; (II) ANY CONDUCT OR CONTENT OF ANY THIRD PARTY ON THE PLATFORM, INCLUDING HOSTS OR STUDENTS; (III) ANY CONTENT OBTAINED FROM THE PLATFORM; AND (IV) UNAUTHORIZED ACCESS, USE OR ALTERATION OF YOUR TRANSMISSIONS OR CONTENT, WHETHER BASED ON WARRANTY, CONTRACT, TORT (INCLUDING NEGLIGENCE) OR ANY OTHER LEGAL THEORY, WHETHER OR NOT WE HAVE BEEN INFORMED OF THE POSSIBILITY OF SUCH DAMAGE, AND EVEN IF A REMEDY SET FORTH HEREIN IS FOUND TO HAVE FAILED OF ITS ESSENTIAL PURPOSE.",
+          text: "TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL CLASSEASILY, ITS AFFILIATES, OFFICERS, DIRECTORS, EMPLOYEES, AGENTS, SUPPLIERS OR LICENSORS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES, INCLUDING WITHOUT LIMITATION, LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, RESULTING FROM (I) YOUR ACCESS TO OR USE OF OR INABILITY TO ACCESS OR USE THE PLATFORM; (II) ANY CONDUCT OR CONTENT OF ANY THIRD PARTY ON THE PLATFORM, INCLUDING HOSTS OR GUESTS; (III) ANY CONTENT OBTAINED FROM THE PLATFORM; AND (IV) UNAUTHORIZED ACCESS, USE OR ALTERATION OF YOUR TRANSMISSIONS OR CONTENT, WHETHER BASED ON WARRANTY, CONTRACT, TORT (INCLUDING NEGLIGENCE) OR ANY OTHER LEGAL THEORY, WHETHER OR NOT WE HAVE BEEN INFORMED OF THE POSSIBILITY OF SUCH DAMAGE, AND EVEN IF A REMEDY SET FORTH HEREIN IS FOUND TO HAVE FAILED OF ITS ESSENTIAL PURPOSE.",
         },
         {
           type: "p",
@@ -341,7 +338,7 @@ export const termsContent = {
       content: [
         {
           type: "p",
-          text: "You agree to release, defend, indemnify, and hold Classeasily and its affiliates and subsidiaries, and their officers, directors, employees, and agents, harmless from and against any claims, liabilities, damages, losses, and expenses, including, without limitation, reasonable legal and accounting fees, arising out of or in any way connected with (i) your breach of these Terms or our Policies, (ii) your improper use of the Platform, (iii) your interaction with any User, participation in a Class, including without limitation any injuries, losses or damages (whether compensatory, direct, incidental, consequential or otherwise) of any kind arising in connection with or as a result of such interaction or participation, or (iv) your breach of any laws, regulations or third party rights.",
+          text: "You agree to release, defend, indemnify, and hold Classeasily and its affiliates and subsidiaries, and their officers, directors, employees, and agents, harmless from and against any claims, liabilities, damages, losses, and expenses, including, without limitation, reasonable legal and accounting fees, arising out of or in any way connected with (i) your breach of these Terms or our Policies, (ii) your improper use of the Platform, (iii) your interaction with any User, participation in an Experience, including without limitation any injuries, losses or damages (whether compensatory, direct, incidental, consequential or otherwise) of any kind arising in connection with or as a result of such interaction or participation, or (iv) your breach of any laws, regulations or third party rights.",
         },
       ],
     },
@@ -418,7 +415,7 @@ export const termsContent = {
 
 export const privacyContent = {
   title: "Privacy Policy",
-  lastUpdated: "May 5, 2024", // <-- CHANGE THIS DATE WHEN UPDATING
+  lastUpdated: "January 14, 2026", // Updated date
   sections: [
     // Section 1: Introduction
     {
@@ -430,7 +427,7 @@ export const privacyContent = {
         },
         {
           type: "p",
-          text: "This Policy applies to all Users (Students, Hosts, and visitors) of the Platform. By using the Platform, you consent to the data practices described in this Policy. If you do not agree with this Policy, please do not use the Platform.",
+          text: "This Policy applies to all Users (Guests, Hosts, and visitors) of the Platform. By using the Platform, you consent to the data practices described in this Policy. If you do not agree with this Policy, please do not use the Platform.",
         },
         {
           type: "p",
@@ -451,8 +448,8 @@ export const privacyContent = {
           type: "ul",
           items: [
             "<strong>Account Information:</strong> When you register, we collect information such as your name, email address, password (hashed), date of birth, phone number, and profile picture (optional). Hosts may provide additional business information, qualifications, or verification details.",
-            "<strong>Listing Information (Hosts):</strong> Details about your Classes, including description, schedule, location (address or general area), pricing, capacity, images, videos, and rules.",
-            "<strong>Booking Information (Students):</strong> Information related to your bookings, including classes booked, dates, times, number of participants, and any special requests or notes provided.",
+            "<strong>Listing Information (Hosts):</strong> Details about your Experiences or Workshops, including description, schedule, location (address or general area), pricing, capacity, images, videos, and rules.",
+            "<strong>Booking Information (Guests):</strong> Information related to your bookings, including experiences booked, dates, times, number of participants, and any special requests or notes provided.",
             "<strong>Payment Information:</strong> While we use Stripe for payment processing, we may collect information necessary to facilitate transactions, such as billing address and transaction details. We do not store your full credit card number.",
             "<strong>Communications:</strong> Records of communications with us (e.g., support requests via support@classeasily.com) or between Users via the Platform's messaging features (where applicable and monitored for safety/policy enforcement).",
             "<strong>Reviews and Feedback:</strong> Content you submit as reviews, ratings, or feedback.",
@@ -465,7 +462,7 @@ export const privacyContent = {
           items: [
             "<strong>Usage Data:</strong> Information about your interactions with the Platform, such as pages viewed, searches performed, bookings made, features used, clicks, timestamps, and referring URLs.",
             "<strong>Log Data and Device Information:</strong> IP address, browser type, operating system, device identifiers, crash data, and other technical information when you access the Platform.",
-            "<strong>Location Information:</strong> We may collect approximate location information from your IP address or more precise location if you grant permission via your device settings (e.g., for finding nearby classes).",
+            "<strong>Location Information:</strong> We may collect approximate location information from your IP address or more precise location if you grant permission via your device settings (e.g., for finding nearby experiences).",
             "<strong>Cookies and Similar Technologies:</strong> We use cookies, web beacons, pixels, and other tracking technologies. Please see Section 8 (Cookies) for details.",
           ],
         },
@@ -524,7 +521,7 @@ export const privacyContent = {
         {
           type: "ul",
           items: [
-            "<strong>Between Users:</strong> We share information necessary to facilitate Bookings between Students and Hosts (e.g., Student's name shared with Host, Class location shared with Student upon booking). We encourage Users to limit sharing of personal contact information until a booking is confirmed.",
+            "<strong>Between Users:</strong> We share information necessary to facilitate Bookings between Guests and Hosts (e.g., Guest's name shared with Host, Experience location shared with Guest upon booking). We encourage Users to limit sharing of personal contact information until a booking is confirmed.",
             "<strong>With Service Providers:</strong> We share information with third-party vendors and service providers who perform services on our behalf, such as payment processing (Stripe), cloud hosting (e.g., AWS, Google Cloud), data analytics, customer support tools, and marketing platforms. These providers have access only to the information necessary to perform their functions and are obligated to protect your information.",
             "<strong>For Legal Reasons:</strong> We may disclose information if required by law, subpoena, or other legal process, or if we believe in good faith that disclosure is necessary to protect our rights, protect your safety or the safety of others, investigate fraud, or respond to a government request.",
             "<strong>Business Transfers:</strong> In connection with a merger, acquisition, reorganization, sale of assets, or bankruptcy, your information may be transferred as part of that transaction. We will notify you before your personal information becomes subject to a different privacy policy.",
@@ -665,7 +662,7 @@ export const privacyContent = {
 
 export const cookiePolicyContent = {
   title: "Cookie Policy",
-  lastUpdated: "August 12, 2025", // <-- Update this date
+  lastUpdated: "January 14, 2026", // Updated date
   sections: [
     {
       title: "1. What Are Cookies?",
@@ -733,33 +730,33 @@ export const cookiePolicyContent = {
 
 export const feeContent = {
   title: "Fees and Pricing",
-  lastUpdated: "September 3, 2025",
+  lastUpdated: "January 14, 2026", // Updated date
   sections: [
     {
       title: "Our Fee Structure Explained",
       content: [
         {
           type: "p",
-          text: "At Classeasily, we aim for a transparent and straightforward fee structure. We connect Students seeking learning experiences with talented Hosts offering classes. Our fees help us operate the platform, provide support, and continuously improve our services.",
+          text: "At Classeasily, we aim for a transparent and straightforward fee structure. We connect Guests seeking unique experiences with talented Hosts offering workshops and activities. Our fees help us operate the platform, provide support, and continuously improve our services.",
         },
         {
           type: "p",
-          text: "All prices on the Platform are in Canadian Dollars (CAD) unless stated otherwise. For <strong>Students</strong>, the total amount displayed at checkout, including taxes, is the final price you will be charged. For <strong>Hosts</strong>, the price you set for your class is the starting point from which we automatically deduct our service fee to calculate your final payout.",
+          text: "All prices on the Platform are in Canadian Dollars (CAD) unless stated otherwise. For <strong>Guests</strong>, the total amount displayed at checkout, including taxes, is the final price you will be charged. For <strong>Hosts</strong>, the price you set for your experience is the starting point from which we automatically deduct our service fee to calculate your final payout.",
         },
       ],
     },
     {
-      title: "Fees for Students",
+      title: "Fees for Guests",
       content: [
-        { type: "h3", text: "Class Price" },
+        { type: "h3", text: "Experience Price" },
         {
           type: "p",
-          text: "This is the pre-tax price set by the Host for their Class (single session or full course).",
+          text: "This is the pre-tax price set by the Host for their Experience or Workshop (single session or full course).",
         },
         { type: "h3", text: "Harmonized Sales Tax (HST)" },
         {
           type: "p",
-          text: "For all transactions within Canada, applicable Harmonized Sales Tax (HST) will be calculated based on the Class Price and added to your total at checkout. The final price you see before paying will include all applicable taxes.",
+          text: "For all transactions within Canada, applicable Harmonized Sales Tax (HST) will be calculated based on the Experience Price and added to your total at checkout. The final price you see before paying will include all applicable taxes.",
         },
       ],
     },
@@ -769,22 +766,22 @@ export const feeContent = {
         { type: "h3", text: "Classeasily Service Fee" },
         {
           type: "p",
-          text: "For each completed booking, Classeasily deducts a Service Fee from the Host's payout. This fee is calculated as a percentage of the pre-tax Class Price set by the Host.",
+          text: "For each completed booking, Classeasily deducts a Service Fee from the Host's payout. This fee is calculated as a percentage of the pre-tax Experience Price set by the Host.",
         },
         {
           type: "ul",
           items: [
-            "<strong>Current Service Fee:</strong> 20% of the pre-tax Class Price (subject to change with notice).",
+            "<strong>Current Service Fee:</strong> 20% of the pre-tax Experience Price (subject to change with notice).",
           ],
         },
         {
           type: "p",
-          text: "Example: A Host lists a class for $100. A Student in Ontario books it. At checkout, the Student pays $100 + 13% HST = $113. The Classeasily Service Fee is 20% of the $100 Class Price, which is $20. The Host's payout will be calculated as follows:",
+          text: "Example: A Host lists an experience for $100. A Guest in Ontario books it. At checkout, the Guest pays $100 + 13% HST = $113. The Classeasily Service Fee is 20% of the $100 Experience Price, which is $20. The Host's payout will be calculated as follows:",
         },
         {
           type: "ul",
           items: [
-            "Original Class Price: $100.00",
+            "Original Experience Price: $100.00",
             "Less Classeasily Service Fee: -$20.00",
             "Plus HST collected on your portion (13% of $80): +$10.40",
             "<strong>Total Host Payout: $90.40</strong>",
@@ -797,12 +794,12 @@ export const feeContent = {
         { type: "h3", text: "Payouts" },
         {
           type: "p",
-          text: "Payouts to Hosts are typically processed via Stripe Connect 24 hours after a class or session has been successfully completed, according to the schedule outlined in your Host dashboard and subject to Stripe's processing times. Payout details can be managed in your Host account settings.",
+          text: "Payouts to Hosts are typically processed via Stripe Connect 24 hours after an experience or session has been successfully completed, according to the schedule outlined in your Host dashboard and subject to Stripe's processing times. Payout details can be managed in your Host account settings.",
         },
         { type: "h3", text: "Taxes (Host Responsibility)" },
         {
           type: "p",
-          text: "To simplify the process, Classeasily automatically calculates and collects the applicable HST from the Student. We remit the portion of HST applicable to our Service Fee. The remaining portion of the HST, collected on the Host's share of the revenue, is included in the Host's payout.",
+          text: "To simplify the process, Classeasily automatically calculates and collects the applicable HST from the Guest. We remit the portion of HST applicable to our Service Fee. The remaining portion of the HST, collected on the Host's share of the revenue, is included in the Host's payout.",
         },
         {
           type: "p",
@@ -819,7 +816,7 @@ export const feeContent = {
         },
         {
           type: "p",
-          text: "You do not need a separate Stripe account as a Student. Hosts will set up a Stripe Connect account through Classeasily during their onboarding process to receive payouts.",
+          text: "You do not need a separate Stripe account as a Guest. Hosts will set up a Stripe Connect account through Classeasily during their onboarding process to receive payouts.",
         },
       ],
     },
@@ -828,7 +825,7 @@ export const feeContent = {
       content: [
         {
           type: "p",
-          text: "Fees related to cancellations and refunds are determined by the Host's chosen cancellation policy for the specific Class, as outlined in the Listing and our Terms of Service. Any taxes collected will be refunded in accordance with the refundable amount of the Class Price.",
+          text: "Fees related to cancellations and refunds are determined by the Host's chosen cancellation policy for the specific Experience, as outlined in the Listing and our Terms of Service. Any taxes collected will be refunded in accordance with the refundable amount of the Experience Price.",
         },
       ],
     },
@@ -860,14 +857,14 @@ export const feeContent = {
 
 export const contentPolicyContent = {
   title: "Content Policy",
-  lastUpdated: "May 5, 2024", // <-- CHANGE THIS DATE WHEN UPDATING
+  lastUpdated: "January 14, 2026", // Updated date
   sections: [
     {
       title: "1. Introduction and Scope",
       content: [
         {
           type: "p",
-          text: "Classeasily aims to foster a positive, respectful, and safe learning environment. This Content Policy outlines the types of content and conduct that are permitted or prohibited on the Classeasily Platform. It applies to all User Content, including Listings (text, images, videos), reviews, ratings, messages, profile information, and any other materials shared by Users.",
+          text: "Classeasily aims to foster a positive, respectful, and safe community environment. This Content Policy outlines the types of content and conduct that are permitted or prohibited on the Classeasily Platform. It applies to all User Content, including Listings (text, images, videos), reviews, ratings, messages, profile information, and any other materials shared by Users.",
         },
         {
           type: "p",
@@ -880,12 +877,12 @@ export const contentPolicyContent = {
       content: [
         {
           type: "p",
-          text: "We expect all Users to interact with respect, honesty, and professionalism. Your content should be relevant to the Classeasily Platform and its purpose of connecting Students and Hosts for learning experiences.",
+          text: "We expect all Users to interact with respect, honesty, and professionalism. Your content should be relevant to the Classeasily Platform and its purpose of connecting Guests and Hosts for unique experiences and workshops.",
         },
         {
           type: "ul",
           items: [
-            "<strong>Authenticity:</strong> Content should be truthful and accurately represent the Classes offered or the experiences had. Do not impersonate others or misrepresent your affiliation.",
+            "<strong>Authenticity:</strong> Content should be truthful and accurately represent the Experiences offered or the participation therein. Do not impersonate others or misrepresent your affiliation.",
             "<strong>Respect:</strong> Treat other Users with courtesy. Do not engage in harassment, bullying, or hate speech.",
             "<strong>Safety:</strong> Do not post content that promotes dangerous activities, self-harm, or illegal acts.",
             "<strong>Legality:</strong> Ensure your content complies with all applicable laws and regulations in Ontario and Canada, as well as any applicable local laws.",
@@ -964,8 +961,8 @@ export const contentPolicyContent = {
         {
           type: "ul",
           items: [
-            "<strong>Accurate and Complete:</strong> Truthfully describe the Class, schedule, location, requirements, and what is included.",
-            "<strong>Relevant:</strong> Images and descriptions must be directly related to the Class offered.",
+            "<strong>Accurate and Complete:</strong> Truthfully describe the Experience or Workshop, schedule, location, requirements, and what is included.",
+            "<strong>Relevant:</strong> Images and descriptions must be directly related to the Experience offered.",
             "<strong>Appropriate:</strong> Avoid misleading 'bait-and-switch' tactics or discriminatory pricing/availability not based on objective criteria.",
             "<strong>Compliant:</strong> Adhere to all guidelines in Section 3 (Prohibited Content).",
           ],
@@ -979,8 +976,8 @@ export const contentPolicyContent = {
         {
           type: "ul",
           items: [
-            "<strong>Based on Actual Experience:</strong> Only leave reviews for Classes you have actually booked and attended (or were scheduled to attend).",
-            "<strong>Relevant:</strong> Focus on the Class experience, the Host's conduct, and the accuracy of the Listing.",
+            "<strong>Based on Actual Experience:</strong> Only leave reviews for Experiences you have actually booked and attended (or were scheduled to attend).",
+            "<strong>Relevant:</strong> Focus on the Experience itself, the Host's conduct, and the accuracy of the Listing.",
             "<strong>Unbiased:</strong> Do not extort, incentivize positive reviews, or post retaliatory reviews.",
             "<strong>Respectful:</strong> Avoid personal attacks, hate speech, or harassment (as outlined in Section 3).",
             "<strong>Non-Commercial:</strong> Do not include promotional material or links in reviews.",
@@ -988,7 +985,7 @@ export const contentPolicyContent = {
         },
         {
           type: "p",
-          text: "Hosts should not review their own classes or manipulate the review system.",
+          text: "Hosts should not review their own experiences or manipulate the review system.",
         },
       ],
     },
@@ -1043,7 +1040,7 @@ export const contentPolicyContent = {
 
 export const copyrightPolicyContent = {
   title: "Copyright Policy",
-  lastUpdated: "May 5, 2024", // <-- CHANGE THIS DATE WHEN UPDATING
+  lastUpdated: "January 14, 2026", // Updated date
   sections: [
     {
       title: "1. Introduction",

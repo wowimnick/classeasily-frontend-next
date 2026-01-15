@@ -1,5 +1,3 @@
-// src/app/business/dashboard/_components/tabs/staff/Staff.jsx
-
 "use client";
 
 import React, { Suspense, lazy } from "react";

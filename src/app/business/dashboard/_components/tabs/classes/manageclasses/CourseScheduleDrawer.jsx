@@ -93,7 +93,7 @@ const AnimatedModalContent = ({ children }) => {
   return (
     <motion.div
       animate={{ height: height || "auto" }}
-      style={{ overflow: "hidden", width: '100%' }} // Ensure full width
+      style={{ overflow: "hidden", width: "100%" }} // Ensure full width
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
     >
       <div ref={ref}>
@@ -443,7 +443,7 @@ const DayChip = styled.button`
   &:hover {
     border-color: ${(props) => props.theme.token.colorPrimary};
     color: ${(props) =>
-    props.$selected ? "white" : props.theme.token.colorPrimary};
+      props.$selected ? "white" : props.theme.token.colorPrimary};
   }
   &:disabled {
     opacity: 0.5;
@@ -456,13 +456,13 @@ const DesktopModal = styled(Modal)`
   .ant-modal-content {
     border-radius: 16px;
     padding: 0 !important; /* Ensure no internal padding */
-    overflow: hidden;      /* This clips the footer and header to the border-radius */
+    overflow: hidden; /* This clips the footer and header to the border-radius */
   }
 
   .ant-modal-container {
-    padding: 0 !important; 
+    padding: 0 !important;
   }
-  
+
   .ant-modal-header {
     border-bottom: 1px solid #f0f0f0;
     padding: 20px 24px;
@@ -470,7 +470,7 @@ const DesktopModal = styled(Modal)`
   }
 
   .ant-modal-body {
-    padding: 0 ;
+    padding: 0;
     max-height: 75vh;
     overflow-y: auto;
   }
@@ -544,7 +544,7 @@ const ScheduleListArea = styled.div`
   padding: 24px; /* Internal padding for cards is fine */
   background: #f8fafc; /* This will now touch the modal edges */
   width: 100%;
-  
+
   columns: 300px;
   column-gap: 16px;
   align-content: start;
@@ -562,10 +562,10 @@ const CourseCard = styled(motion.div)`
   border-radius: 16px;
   overflow: hidden;
   transition: all 0.2s ease;
-  
+
   break-inside: avoid;
   margin-bottom: 16px;
-  
+
   &:hover {
     border-color: ${(props) => props.theme.token.colorPrimary};
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -661,7 +661,7 @@ const SkeletonCardWrapper = styled.div`
   border: 1px solid #e5e7eb;
   border-radius: 16px;
   overflow: hidden;
-  margin-bottom: 16px; 
+  margin-bottom: 16px;
   break-inside: avoid;
 `;
 const SkeletonHeader = styled.div`
@@ -898,7 +898,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
       await Promise.all(
         schedule.ids.map((id) => scheduleService.deleteSchedule(id))
       );
-      message.success("Course deleted");
+      message.success("Series deleted");
       fetchSchedules();
     } catch (e) {
       message.error("Failed to delete");
@@ -998,7 +998,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
           ),
           ...toDelete.map((id) => scheduleService.deleteSchedule(id)),
         ]);
-        message.success("Course updated");
+        message.success("Series updated");
       } else {
         // Create Logic
         await Promise.all(
@@ -1010,7 +1010,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
             })
           )
         );
-        message.success("Course created");
+        message.success("Series created");
       }
 
       setActiveView("manage");
@@ -1093,9 +1093,9 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
             <FormSection>
               <SectionHeader>
                 <h4>
-                  <Calendar size={18} /> Course Basics
+                  <Calendar size={18} /> Series Basics
                 </h4>
-                <p>Define the schedule pattern for this course.</p>
+                <p>Define the schedule pattern for this series.</p>
               </SectionHeader>
 
               {isLocked && (
@@ -1114,16 +1114,16 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                 >
                   <HelpCircle size={16} />
                   <span>
-                    Dates and times are locked because this course has active
+                    Dates and times are locked because this series has active
                     bookings.
                   </span>
                 </div>
               )}
 
               <FieldContainer>
-                <Label>Course Name</Label>
+                <Label>Series Name</Label>
                 <CompactFormItem name="name" rules={[{ required: true }]}>
-                  <StyledInput placeholder="e.g. Summer Pottery Wheel 101" />
+                  <StyledInput placeholder="e.g. Summer Pottery Series" />
                 </CompactFormItem>
               </FieldContainer>
 
@@ -1204,7 +1204,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                 <h4>
                   <DollarSign size={18} /> Pricing & Size
                 </h4>
-                <p>Set the cost for the entire course and class limits.</p>
+                <p>Set the cost for the entire series and experience limits.</p>
               </SectionHeader>
               <TwoColGrid>
                 <FieldContainer>
@@ -1214,7 +1214,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                   </CompactFormItem>
                 </FieldContainer>
                 <FieldContainer>
-                  <Label>Max Students</Label>
+                  <Label>Max Guests</Label>
                   <CompactFormItem
                     name="maxParticipants"
                     rules={[{ required: true }]}
@@ -1232,7 +1232,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
             <FormSection>
               <SectionHeader>
                 <h4>
-                  <CheckCircle size={18} /> Review Course
+                  <CheckCircle size={18} /> Review Series
                 </h4>
               </SectionHeader>
               <ReviewCard>
@@ -1290,7 +1290,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                     <Check size={14} color="#22c55e" /> Capacity
                   </span>
                   <span className="value">
-                    <Users size={14} /> {formData.maxParticipants} students
+                    <Users size={14} /> {formData.maxParticipants} guests
                   </span>
                 </ReviewRow>
               </ReviewCard>
@@ -1355,7 +1355,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                         onClick={() => handleEdit(item)}
                       />
                       <Popconfirm
-                        title="Delete Course?"
+                        title="Delete Series?"
                         description="This deletes all sessions."
                         onConfirm={() => handleDelete(item)}
                         okButtonProps={{ danger: true }}
@@ -1410,14 +1410,14 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                 colors="primary:#94a3b8"
                 style={{ width: 64, height: 64 }}
               />
-              <Text type="secondary">No courses found.</Text>
+              <Text type="secondary">No series found.</Text>
               <Button
                 type="primary"
                 icon={<Plus size={14} />}
                 onClick={handleAddNew}
                 style={{ marginTop: 16 }}
               >
-                Create Course
+                Create Series
               </Button>
             </EmptyStateContainer>
           )}
@@ -1438,7 +1438,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
           block={isMobileLayout}
           style={btnStyle}
         >
-          Create Course
+          Create Series
         </Button>
       );
     }
@@ -1481,8 +1481,9 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
             onClick={handleSubmit}
             loading={isLoading}
             style={btnStyle}
-            key={`btn-${isLoading}`}>
-            {editingSchedule ? "Update Course" : "Create Course"}
+            key={`btn-${isLoading}`}
+          >
+            {editingSchedule ? "Update Series" : "Create Series"}
           </Button>
         )}
       </div>
@@ -1491,8 +1492,8 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
 
   const getTitle = () => {
     if (activeView === "form")
-      return editingSchedule ? "Edit Course" : "New Course";
-    return `Course Schedules`;
+      return editingSchedule ? "Edit Series" : "New Series";
+    return `Series Schedules`;
   };
 
   return (
@@ -1549,7 +1550,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
             <StyledDrawerContent $fixedHeight="85vh">
               <DrawerHandle />
               <MobileHeader>
-                <MobileTitle>{`Course Schedules`}</MobileTitle>
+                <MobileTitle>{`Series Schedules`}</MobileTitle>
                 <CloseButton icon={<X size={20} />} onClick={onClose} />
               </MobileHeader>
               <MobileContent>{renderManagementList()}</MobileContent>
@@ -1561,7 +1562,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
                   block
                   style={{ height: 44 }}
                 >
-                  Create Course
+                  Create Series
                 </Button>
               </MobileFooter>
             </StyledDrawerContent>

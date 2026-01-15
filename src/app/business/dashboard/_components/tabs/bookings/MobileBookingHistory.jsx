@@ -56,14 +56,14 @@ const CardHeader = styled.div`
   border-bottom: 1px solid ${colors.border};
 `;
 
-const ClassName = styled(Text)`
+const ExperienceName = styled(Text)`
   font-size: 15px;
   font-weight: 600;
   color: ${colors.textPrimary};
   line-height: 1.3;
 `;
 
-const StudentName = styled(Text)`
+const GuestName = styled(Text)`
   font-size: 13px;
   color: ${colors.textSecondary};
 `;
@@ -169,8 +169,8 @@ const ActionButton = styled(Button)`
 // --- SKELETON LOADER ---
 
 const SkeletonLine = styled.div`
-  height: ${props => props.height || '16px'};
-  width: ${props => props.width || '100%'};
+  height: ${(props) => props.height || "16px"};
+  width: ${(props) => props.width || "100%"};
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: loading 1.5s ease-in-out infinite;
@@ -202,13 +202,13 @@ const MobileBookingSkeleton = () => (
     <CardContent>
       <MetaItem>
         <MetaLabel style={{ opacity: 0.5 }}>
-          <Calendar size={14} /> Class Date
+          <Calendar size={14} /> Experience Date
         </MetaLabel>
         <SkeletonLine width="100px" height="14px" />
       </MetaItem>
       <MetaItem>
         <MetaLabel style={{ opacity: 0.5 }}>
-          <Clock size={14} /> Class Time
+          <Clock size={14} /> Experience Time
         </MetaLabel>
         <SkeletonLine width="70px" height="14px" />
       </MetaItem>
@@ -232,7 +232,7 @@ const MobileBookingSkeleton = () => (
       </MetaItem>
       <MetaItem>
         <MetaLabel style={{ opacity: 0.5 }}>
-          <BookOpen size={14} /> Class Option
+          <BookOpen size={14} /> Experience Option
         </MetaLabel>
         <SkeletonLine width="80%" height="14px" />
       </MetaItem>
@@ -240,7 +240,7 @@ const MobileBookingSkeleton = () => (
         <MetaLabel style={{ opacity: 0.5 }}>
           <Calendar size={14} /> Booking Type
         </MetaLabel>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: "flex", gap: "8px" }}>
           <SkeletonTag />
           <SkeletonTag width="120px" />
         </div>
@@ -295,14 +295,14 @@ const MobileBookingHistory = ({ data, showViewDrawer, loading }) => {
         return (
           <BookingCard key={booking.id}>
             <CardHeader>
-              <ClassName>{booking.class_name || "N/A"}</ClassName>
-              <StudentName>{booking.user_name || "N/A"}</StudentName>
+              <ExperienceName>{booking.class_name || "N/A"}</ExperienceName>
+              <GuestName>{booking.user_name || "N/A"}</GuestName>
             </CardHeader>
 
             <CardContent>
               <MetaItem>
                 <MetaLabel>
-                  <Calendar size={14} /> Class Date
+                  <Calendar size={14} /> Experience Date
                 </MetaLabel>
                 <MetaValue>
                   {booking.date
@@ -312,7 +312,7 @@ const MobileBookingHistory = ({ data, showViewDrawer, loading }) => {
               </MetaItem>
               <MetaItem>
                 <MetaLabel>
-                  <Clock size={14} /> Class Time
+                  <Clock size={14} /> Experience Time
                 </MetaLabel>
                 <MetaValue>
                   {booking.time
@@ -344,7 +344,7 @@ const MobileBookingHistory = ({ data, showViewDrawer, loading }) => {
               </MetaItem>
               <MetaItem>
                 <MetaLabel>
-                  <BookOpen size={14} /> Class Option
+                  <BookOpen size={14} /> Experience Option
                 </MetaLabel>
                 <MetaValue>{booking.option_name || "N/A"}</MetaValue>
               </MetaItem>

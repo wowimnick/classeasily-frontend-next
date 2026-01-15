@@ -1,5 +1,3 @@
-// src/app/business/dashboard/_components/tabs/overview/Overview.jsx
-
 "use client";
 
 import React, {
@@ -32,6 +30,7 @@ import {
   Edit3,
   Shield,
   AlertTriangle,
+  ArrowRight,
 } from "lucide-react";
 import {
   Typography,
@@ -669,20 +668,30 @@ const EmptyStateSubtext = styled.div`
   max-width: 300px;
 `;
 
+/* Redesigned Action Prompt */
 const ActionPromptContainer = styled.div`
-  background-color: ${hexToRgba(colors.warning, 0.05)};
+  background-color: #fff;
+  border: 1px solid ${colors.border};
+  border-left: 4px solid ${colors.warning};
   border-radius: 8px;
-  padding: 16px 20px;
+  padding: 20px 24px;
   margin-bottom: 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.08);
   gap: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(245, 158, 11, 0.15);
+  }
 
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    padding: 16px;
   }
 `;
 
@@ -690,6 +699,7 @@ const ActionPromptContent = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
+  flex: 1;
 `;
 
 const RankNumber = styled.div`
@@ -977,18 +987,18 @@ const iconMap = {
 
 const metricDisplayInfo = {
   total_students: {
-    title: "Students This Month",
+    title: "Guests This Month",
     icon: Users,
     color: colors.chart.blue,
     link: "/business/dashboard/students",
     footer: "vs last month",
   },
   active_classes: {
-    title: "Active Classes",
+    title: "Active Experiences",
     icon: BookOpen,
     color: colors.chart.green,
     link: "/business/dashboard/classes",
-    footer: "Total published classes",
+    footer: "Total published experiences",
   },
   monthly_revenue: {
     title: "Gross Revenue (Month)",
@@ -1229,7 +1239,7 @@ const Overview = forwardRef((props, ref) => {
   const todaySnapshotMetrics = [
     {
       key: "today_classes_running",
-      title: "Classes Today",
+      title: "Experiences Today",
       value: todaySnap.today_classes_running || 0,
       icon: Briefcase,
       color: colors.info,
@@ -1243,7 +1253,7 @@ const Overview = forwardRef((props, ref) => {
     },
     {
       key: "today_total_participants",
-      title: "Participants Today",
+      title: "Guests Today",
       value: todaySnap.today_total_participants || 0,
       icon: UserPlus,
       color: colors.chart.orange,
@@ -1299,7 +1309,9 @@ const Overview = forwardRef((props, ref) => {
                   <AlertTriangle />
                 </IconContainer>
                 <div>
-                  <Text strong>Action Required</Text>
+                  <Text strong style={{ fontSize: "16px" }}>
+                    Action Required
+                  </Text>
                   <Paragraph
                     style={{ marginBottom: 0, color: colors.textSecondary }}
                   >
@@ -1312,15 +1324,15 @@ const Overview = forwardRef((props, ref) => {
                     </b>{" "}
                     {overviewData.actionable_prompts
                       .classes_needing_schedules_count === 1
-                      ? "class that is"
-                      : "classes that are"}{" "}
+                      ? "experience that is"
+                      : "experiences that are"}{" "}
                     running out of available schedules.
                   </Paragraph>
                 </div>
               </ActionPromptContent>
               <Link href="/business/dashboard/classes">
-                <Button type="primary" ghost>
-                  Manage Classes
+                <Button icon={<ArrowRight size={16} />} type="text">
+                  Manage Experiences
                 </Button>
               </Link>
             </ActionPromptContainer>
@@ -1615,7 +1627,7 @@ const Overview = forwardRef((props, ref) => {
             <ContentListCard>
               <CardTitle>
                 <Calendar size={isMobile ? 18 : 20} color={colors.primary} />
-                Upcoming Classes (Next 7 Days)
+                Upcoming Experiences
               </CardTitle>
               {loading ? (
                 <ScrollableList>
@@ -1636,9 +1648,11 @@ const Overview = forwardRef((props, ref) => {
                               colors="primary:#94a3b8"
                             />
                           </EmptyStateIcon>
-                          <EmptyStateText>No upcoming classes</EmptyStateText>
+                          <EmptyStateText>
+                            No upcoming experiences
+                          </EmptyStateText>
                           <EmptyStateSubtext>
-                            Classes scheduled in the next 7 days will appear
+                            Experiences scheduled in the next 7 days will appear
                             here
                           </EmptyStateSubtext>
                         </EmptyStateContainer>
@@ -1675,7 +1689,7 @@ const Overview = forwardRef((props, ref) => {
                         );
                         if (isCourseSession) {
                           return (
-                            <Tooltip title="Course schedules are edited from the 'My Classes' page, not individually.">
+                            <Tooltip title="Course schedules are edited from the 'My Experiences' page, not individually.">
                               <span
                                 style={{
                                   display: "inline-block",
@@ -1780,7 +1794,7 @@ const Overview = forwardRef((props, ref) => {
             <ContentListCard>
               <CardTitle>
                 <Users size={isMobile ? 18 : 20} color={colors.primary} />
-                Most Popular Classes
+                Most Popular Experiences
               </CardTitle>
               {loading ? (
                 <ScrollableList>

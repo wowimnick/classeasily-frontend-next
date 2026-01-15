@@ -600,7 +600,7 @@ const BookingHistory = forwardRef((props, ref) => {
                       <UsersIcon size={20} color={colors.success} />
                     </IconContainer>
                   </StatCardHeader>
-                  <StatLabel>Completed Participant Spots</StatLabel>
+                  <StatLabel>Completed Guest Spots</StatLabel>
                 </div>
                 <StatValue>
                   <NumberFlow
@@ -628,7 +628,7 @@ const BookingHistory = forwardRef((props, ref) => {
                       <UsersIcon size={20} color={colors.error} />
                     </IconContainer>
                   </StatCardHeader>
-                  <StatLabel>Cancelled Participant Spots</StatLabel>
+                  <StatLabel>Cancelled Guest Spots</StatLabel>
                 </div>
                 <StatValue>
                   <NumberFlow
@@ -649,7 +649,7 @@ const BookingHistory = forwardRef((props, ref) => {
 
         <SearchFilterBar>
           <SearchInput
-            placeholder="Search by reference ID, user, or class..."
+            placeholder="Search by reference ID, user, or experience..."
             prefix={<Search size={16} color="#9ca3af" />}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}

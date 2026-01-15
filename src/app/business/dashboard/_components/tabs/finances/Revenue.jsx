@@ -1,5 +1,3 @@
-// src/app/business/dashboard/_components/tabs/revenue/Revenue.jsx
-
 "use client";
 
 import React, {
@@ -150,7 +148,7 @@ const StyledRangePicker = styled(RangePicker)`
     width: 100%;
   }
 `;
-const ClassFilterSelect = styled(Select)`
+const ExperienceFilterSelect = styled(Select)`
   width: 250px;
   .ant-select-selector {
     border-radius: 12px !important;
@@ -330,6 +328,14 @@ const ChartContainer = styled.div`
   @media (max-width: 768px) {
     height: 250px;
   }
+`;
+
+const LoaderWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  width: 100%;
 `;
 
 const EmptyStateContainer = styled.div`
@@ -524,8 +530,8 @@ const RevenueTrendsSkeleton = () => (
   </ChartSkeletonContainer>
 );
 
-// 2. Class Revenue Skeleton (Horizontal Bar)
-const ClassRevenueSkeleton = () => (
+// 2. Experience Revenue Skeleton (Horizontal Bar)
+const ExperienceRevenueSkeleton = () => (
   <div
     style={{
       width: "100%",
@@ -599,7 +605,7 @@ const CustomTooltip = ({ active, payload, label, type, isMobile }) => {
             fontSize: isMobile ? "13px" : "14px",
           }}
         >
-          {type === "class" ? label : dayjs(label).format("MMM D, YYYY")}
+          {type === "experience" ? label : dayjs(label).format("MMM D, YYYY")}
         </Text>
         {payload.map((entry, index) => (
           <div
@@ -664,7 +670,7 @@ const Revenue = forwardRef((props, ref) => {
     class_revenue: [],
     revenue_by_booking_type: [],
   });
-  const [businessClasses, setBusinessClasses] = useState([]);
+  const [businessExperiences, setBusinessExperiences] = useState([]);
   const [isMobileView, setIsMobileView] = useState(false);
 
   const abortControllerRef = useRef(null);
@@ -682,8 +688,9 @@ const Revenue = forwardRef((props, ref) => {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const fetchBusinessClassesForFilter = useCallback(async () => {
+  const fetchBusinessExperiencesForFilter = useCallback(async () => {
     try {
+      // Logic unchanged, just renaming state/UI
       const result = await businessClassService.fetchBusinessClasses({
         page_size: 500,
         status: "active,inactive",
@@ -693,15 +700,15 @@ const Revenue = forwardRef((props, ref) => {
           value: c.classId,
           label: c.title,
         }));
-        setBusinessClasses([
-          { value: null, label: "All Classes" },
+        setBusinessExperiences([
+          { value: null, label: "All Experiences" },
           ...uniqueClasses,
         ]);
       } else {
-        setBusinessClasses([{ value: null, label: "All Classes" }]);
+        setBusinessExperiences([{ value: null, label: "All Experiences" }]);
       }
     } catch (error) {
-      setBusinessClasses([{ value: null, label: "All Classes" }]);
+      setBusinessExperiences([{ value: null, label: "All Experiences" }]);
     }
   }, []);
 
@@ -746,8 +753,8 @@ const Revenue = forwardRef((props, ref) => {
   }, []);
 
   useEffect(() => {
-    fetchBusinessClassesForFilter();
-  }, [fetchBusinessClassesForFilter]);
+    fetchBusinessExperiencesForFilter();
+  }, [fetchBusinessExperiencesForFilter]);
 
   useEffect(() => {
     if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
@@ -861,7 +868,7 @@ const Revenue = forwardRef((props, ref) => {
       icon: <Users size={20} />,
       color: colors.chart.orange,
       background: `rgba(249, 115, 22, 0.1)`,
-      footer: "Average per unique customer",
+      footer: "Average per unique guest",
     },
     {
       key: "revenue_per_spot",
@@ -900,11 +907,11 @@ const Revenue = forwardRef((props, ref) => {
                 alignItems: "center",
               }}
             >
-              <ClassFilterSelect
-                placeholder="Filter by Class"
+              <ExperienceFilterSelect
+                placeholder="Filter by Experience"
                 value={filterParams.classId}
                 onChange={handleClassFilterChange}
-                options={businessClasses}
+                options={businessExperiences}
                 allowClear
                 showSearch
                 filterOption={(input, option) =>
@@ -1172,15 +1179,15 @@ const Revenue = forwardRef((props, ref) => {
                     colors="primary:#ff385c"
                     playOnLoad={true}
                   />{" "}
-                  Revenue by Class
+                  Revenue by Experience
                 </div>
                 <div className="chart-description">
-                  Top 10 revenue-generating classes (Gross Revenue).
+                  Top 10 revenue-generating experiences (Gross Revenue).
                 </div>
               </div>
               <ChartContainer>
                 {loading ? (
-                  <ClassRevenueSkeleton />
+                  <ExperienceRevenueSkeleton />
                 ) : !analytics.class_revenue ||
                   analytics.class_revenue.length === 0 ? (
                   <LoaderWrapper>
@@ -1198,7 +1205,7 @@ const Revenue = forwardRef((props, ref) => {
                       <EmptyStateText>No Revenue Data</EmptyStateText>
                       <EmptyStateSubtext>
                         You don't currently have any revenue. When you do,
-                        you'll see a breakdown by class here.
+                        you'll see a breakdown by experience here.
                       </EmptyStateSubtext>
                     </EmptyStateContainer>
                   </LoaderWrapper>
@@ -1248,7 +1255,7 @@ const Revenue = forwardRef((props, ref) => {
                       />
                       <RechartsTooltip
                         content={(props) => (
-                          <CustomTooltip {...props} type="class" />
+                          <CustomTooltip {...props} type="experience" />
                         )}
                         cursor={{ fill: "#f8fafc" }}
                       />

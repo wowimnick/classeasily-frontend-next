@@ -22,15 +22,31 @@ import {
   User,
   Eye,
 } from "lucide-react";
-import { Button, Input, Select, ConfigProvider, Typography, Grid, Divider, Modal, Pagination, Table, Avatar, Tag, Dropdown, Menu, Tooltip, Space, Popconfirm,  } from 'antd';
-import message from '@/lib/message';
-import { businessStudentService } from "@/services/apiService";
-import StudentCard from "./StudentCard";
-import StudentProfile from "./StudentProfile";
-import ImportStudentsModal from "./ImportStudentsModal";
 import {
-  GlobalLoaderWithInlineStyles,
-} from "@/components/common/GlobalLoader";
+  Button,
+  Input,
+  Select,
+  ConfigProvider,
+  Typography,
+  Grid,
+  Divider,
+  Modal,
+  Pagination,
+  Table,
+  Avatar,
+  Tag,
+  Dropdown,
+  Menu,
+  Tooltip,
+  Space,
+  Popconfirm,
+} from "antd";
+import message from "@/lib/message";
+import { businessStudentService } from "@/services/apiService";
+import GuestCard from "./GuestCard";
+import GuestProfile from "./GuestProfile";
+import ImportGuestsModal from "./ImportGuestsModal";
+import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 import { theme } from "@/components/theme";
 import dayjs from "dayjs";
 import { formatPhoneNumber } from "@/services/utils";
@@ -157,7 +173,7 @@ const ActionButtonContainer = styled.div`
   }
 `;
 
-const StudentsGrid = styled(motion.div)`
+const GuestsGrid = styled(motion.div)`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 20px;
@@ -207,7 +223,7 @@ const TableViewWrapper = styled(motion.div)`
   .ant-table-tbody > tr:hover > td {
     background-color: #f8fafc;
   }
-  
+
   .ant-table-tbody > tr.ant-table-placeholder:hover > td {
     background: white;
   }
@@ -353,7 +369,7 @@ const TableActionButton = styled(Button)`
   }
 `;
 
-const StudentInfo = styled.div`
+const GuestInfo = styled.div`
   .name {
     font-weight: 500;
     color: #1e293b;
@@ -447,11 +463,11 @@ const EmptyStateSubtext = styled.div`
   }
 `;
 
-const Students = forwardRef((props, ref) => {
-  const [students, setStudents] = useState([]);
+const Guests = forwardRef((props, ref) => {
+  const [guests, setGuests] = useState([]);
   const [searchText, setSearchText] = useState("");
   const { user: currentUser } = useAuth();
-  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [selectedGuest, setSelectedGuest] = useState(null);
   const [isProfileVisible, setIsProfileVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
@@ -476,7 +492,7 @@ const Students = forwardRef((props, ref) => {
 
   const fetchTimeoutRef = useRef(null);
 
-  const fetchStudentsData = useCallback(
+  const fetchGuestsData = useCallback(
     async (page = 1, search = searchText, status = statusFilter) => {
       setIsLoading(true);
       setIsReadyForAnimation(false);
@@ -492,7 +508,7 @@ const Students = forwardRef((props, ref) => {
           params
         );
         if (response.success && response.data) {
-          setStudents(response.data);
+          setGuests(response.data);
           setPagination((prev) => ({
             ...prev,
             current: page,
@@ -500,12 +516,12 @@ const Students = forwardRef((props, ref) => {
           }));
           setTimeout(() => setIsReadyForAnimation(true), 50);
         } else {
-          throw new Error(response.error || "Failed to fetch students");
+          throw new Error(response.error || "Failed to fetch guests");
         }
       } catch (err) {
-        setError(err.message || "Failed to fetch students");
-        message.error(err.message || "Failed to fetch students");
-        setStudents([]);
+        setError(err.message || "Failed to fetch guests");
+        message.error(err.message || "Failed to fetch guests");
+        setGuests([]);
         setPagination((prev) => ({ ...prev, total: 0, current: 1 }));
       } finally {
         setIsLoading(false);
@@ -517,28 +533,28 @@ const Students = forwardRef((props, ref) => {
   useEffect(() => {
     if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
     fetchTimeoutRef.current = setTimeout(() => {
-      fetchStudentsData(1, searchText, statusFilter);
+      fetchGuestsData(1, searchText, statusFilter);
     }, 300);
     return () => clearTimeout(fetchTimeoutRef.current);
-  }, [searchText, statusFilter, fetchStudentsData]);
+  }, [searchText, statusFilter, fetchGuestsData]);
 
   useEffect(() => {
-    fetchStudentsData(1);
+    fetchGuestsData(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handlePageChange = (page) => {
-    fetchStudentsData(page, searchText, statusFilter);
+    fetchGuestsData(page, searchText, statusFilter);
   };
 
-  const handleStudentClick = (student) => {
-    setSelectedStudent(student);
+  const handleGuestClick = (guest) => {
+    setSelectedGuest(guest);
     setIsProfileVisible(true);
   };
 
   const handleCloseProfile = () => {
     setIsProfileVisible(false);
-    setTimeout(() => setSelectedStudent(null), 300); // Wait for animation
+    setTimeout(() => setSelectedGuest(null), 300); // Wait for animation
   };
 
   const handleStatusFilterChange = (value) => {
@@ -560,13 +576,13 @@ const Students = forwardRef((props, ref) => {
   const handleImportComplete = () => {
     setTimeout(() => {
       setStatusFilter("all");
-      fetchStudentsData(1, "", "all");
+      fetchGuestsData(1, "", "all");
     }, 1000);
   };
 
-  const handleDeleteContact = (student) => {
+  const handleDeleteContact = (guest) => {
     Modal.confirm({
-      title: `Delete ${student.first_name}?`,
+      title: `Delete ${guest.first_name}?`,
       content:
         "Are you sure you want to permanently delete this contact? This action cannot be undone.",
       okText: "Delete",
@@ -574,12 +590,10 @@ const Students = forwardRef((props, ref) => {
       cancelText: "Cancel",
       onOk: async () => {
         try {
-          const response = await businessStudentService.deleteContact(
-            student.id
-          );
+          const response = await businessStudentService.deleteContact(guest.id);
           if (response.success) {
             message.success("Contact deleted successfully.");
-            fetchStudentsData(pagination.current);
+            fetchGuestsData(pagination.current);
           } else {
             throw new Error(response.error || "Failed to delete contact.");
           }
@@ -599,8 +613,8 @@ const Students = forwardRef((props, ref) => {
   const columns = useMemo(
     () => [
       {
-        title: "Student",
-        key: "student",
+        title: "Guest",
+        key: "guest",
         sorter: true,
         render: (_, record) => {
           const avatarLetter = record.first_name
@@ -619,11 +633,11 @@ const Students = forwardRef((props, ref) => {
                 {avatarLetter}
               </Avatar>
               <div>
-                <StudentInfo>
+                <GuestInfo>
                   <div className="name">
                     {record.first_name || "Unknown"} {record.last_name || ""}
                   </div>
-                </StudentInfo>
+                </GuestInfo>
                 <Tooltip title={tooltipText}>
                   <Tag
                     color={isUser ? "blue" : "default"}
@@ -674,7 +688,7 @@ const Students = forwardRef((props, ref) => {
         width: 250,
       },
       {
-        title: "Classes",
+        title: "Experiences",
         dataIndex: "total_classes_taken",
         key: "total_classes_taken",
         align: "center",
@@ -718,7 +732,7 @@ const Students = forwardRef((props, ref) => {
                 icon={<Eye size={16} />}
                 onClick={(e) => {
                   e.domEvent.stopPropagation();
-                  handleStudentClick(record);
+                  handleGuestClick(record);
                 }}
               >
                 View Profile
@@ -768,7 +782,7 @@ const Students = forwardRef((props, ref) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
-  
+
   // --- SKELETON LOADER DEFINITIONS ---
   const SkeletonWrapper = styled.div`
     display: flex;
@@ -808,7 +822,7 @@ const Students = forwardRef((props, ref) => {
   `;
 
   // Skeleton for Grid View Card
-  const SkeletonStudentCard = () => (
+  const SkeletonGuestCard = () => (
     <div
       style={{
         background: "white",
@@ -851,7 +865,7 @@ const Students = forwardRef((props, ref) => {
   // Skeleton Row for Table View
   const SkeletonTableRow = () => ({
     key: Math.random(),
-    student: (
+    guest: (
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
         <SkeletonCircle size="40px" />
         <SkeletonWrapper gap="8px">
@@ -884,7 +898,7 @@ const Students = forwardRef((props, ref) => {
 
   const skeletonColumns = useMemo(
     () => [
-      { title: "Student", key: "student", dataIndex: "student", width: 280 },
+      { title: "Guest", key: "guest", dataIndex: "guest", width: 280 },
       {
         title: "Contact Info",
         key: "contact",
@@ -892,7 +906,7 @@ const Students = forwardRef((props, ref) => {
         width: 250,
       },
       {
-        title: "Classes",
+        title: "Experiences",
         key: "classes",
         dataIndex: "total_classes_taken",
         align: "center",
@@ -923,20 +937,20 @@ const Students = forwardRef((props, ref) => {
     []
   );
 
-  const StudentsSkeleton = ({ viewMode, pageSize }) => {
+  const GuestsSkeleton = ({ viewMode, pageSize }) => {
     // Fallback for viewMode if it's still undefined during the very first render
     const currentViewMode =
       viewMode === undefined ? (screens.md ? "table" : "grid") : viewMode;
 
     if (currentViewMode === "grid") {
       return (
-        <StudentsGrid>
+        <GuestsGrid>
           {Array.from({ length: pageSize }).map((_, index) => (
             <motion.div key={index}>
-              <SkeletonStudentCard />
+              <SkeletonGuestCard />
             </motion.div>
           ))}
-        </StudentsGrid>
+        </GuestsGrid>
       );
     }
 
@@ -953,15 +967,14 @@ const Students = forwardRef((props, ref) => {
     );
   };
 
-
   return (
     <ConfigProvider theme={theme}>
       <DashboardWrapper>
         <DashboardHeader>
           <div>
-            <PageTitle>Student Management</PageTitle>
+            <PageTitle>Guest Management</PageTitle>
             <HeaderSubtitle>
-              View and manage all your business contacts and platform students.
+              View and manage all your business contacts and platform guests.
             </HeaderSubtitle>
           </div>
           <ActionButton
@@ -975,7 +988,7 @@ const Students = forwardRef((props, ref) => {
               borderColor: colors.primary,
             }}
           >
-            Import Contacts
+            Import Guests
           </ActionButton>
         </DashboardHeader>
 
@@ -996,7 +1009,7 @@ const Students = forwardRef((props, ref) => {
                 onChange={handleStatusFilterChange}
               >
                 <Option value="all">All Contacts</Option>
-                <Option value="active">Platform Students</Option>
+                <Option value="active">Platform Guests</Option>
                 <Option value="inactive">Imported Only</Option>
               </StyledSelect>
               <ActionButton
@@ -1004,9 +1017,9 @@ const Students = forwardRef((props, ref) => {
                 icon={<RefreshCw size={16} />}
                 onClick={() => {
                   clearFilters();
-                  fetchStudentsData(1, "", "all");
+                  fetchGuestsData(1, "", "all");
                 }}
-                loading={isLoading && students.length === 0}
+                loading={isLoading && guests.length === 0}
                 disabled={isLoading}
               >
                 {screens.xs ? "" : "Refresh"}
@@ -1030,47 +1043,50 @@ const Students = forwardRef((props, ref) => {
         <Divider />
 
         <AnimatePresence mode="wait">
-          {isLoading && students.length === 0 ? (
+          {isLoading && guests.length === 0 ? (
             <div key="skeleton">
-              <StudentsSkeleton viewMode={viewMode} pageSize={pagination.pageSize} />
+              <GuestsSkeleton
+                viewMode={viewMode}
+                pageSize={pagination.pageSize}
+              />
             </div>
           ) : error ? (
             <NoResultsContainer key="error">
               <h3>Error Loading Data</h3>
               <p>{error}</p>
               <Button
-                onClick={() => fetchStudentsData(pagination.current)}
+                onClick={() => fetchGuestsData(pagination.current)}
                 type="primary"
               >
                 Try Again
               </Button>
             </NoResultsContainer>
-          ) : students.length > 0 ? (
+          ) : guests.length > 0 ? (
             <div key="content">
               {viewMode === "grid" ? (
-                <StudentsGrid
+                <GuestsGrid
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                 >
-                  {students.map((student) => (
+                  {guests.map((guest) => (
                     <motion.div
-                      key={student.id}
+                      key={guest.id}
                       layout
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -15 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <StudentCard
-                        student={student}
-                        onClick={() => handleStudentClick(student)}
-                        onDelete={() => handleDeleteContact(student)}
+                      <GuestCard
+                        guest={guest}
+                        onClick={() => handleGuestClick(guest)}
+                        onDelete={() => handleDeleteContact(guest)}
                         isReady={isReadyForAnimation}
                       />
                     </motion.div>
                   ))}
-                </StudentsGrid>
+                </GuestsGrid>
               ) : (
                 <TableViewWrapper
                   initial={{ opacity: 0 }}
@@ -1079,15 +1095,15 @@ const Students = forwardRef((props, ref) => {
                 >
                   <Table
                     columns={columns}
-                    dataSource={students}
+                    dataSource={guests}
                     rowKey="id"
                     pagination={false}
                     loading={{
-                      spinning: isLoading && students.length > 0,
+                      spinning: isLoading && guests.length > 0,
                       indicator: <GlobalLoaderWithInlineStyles />,
                     }}
                     onRow={(record) => ({
-                      onClick: () => handleStudentClick(record),
+                      onClick: () => handleGuestClick(record),
                       className: "clickable-row",
                     })}
                     scroll={{ x: 1200 }}
@@ -1118,25 +1134,25 @@ const Students = forwardRef((props, ref) => {
                   style={{ width: 40, height: 40 }}
                 />
               </EmptyStateIcon>
-              <EmptyStateText>No Students Found</EmptyStateText>
+              <EmptyStateText>No Guests Found</EmptyStateText>
               <EmptyStateSubtext>
-                You don't currently have any students. They will appear here
-                when they book, or when you import from a table.
+                You don't currently have any guests. They will appear here when
+                they book, or when you import from a table.
               </EmptyStateSubtext>
             </EmptyStateContainer>
           )}
         </AnimatePresence>
 
-        {selectedStudent && (
-          <StudentProfile
-            student={selectedStudent}
+        {selectedGuest && (
+          <GuestProfile
+            guest={selectedGuest}
             currentUser={currentUser}
             onClose={handleCloseProfile}
             visible={isProfileVisible}
           />
         )}
 
-        <ImportStudentsModal
+        <ImportGuestsModal
           visible={isImportModalVisible}
           onClose={() => setIsImportModalVisible(false)}
           onImportComplete={handleImportComplete}
@@ -1146,4 +1162,4 @@ const Students = forwardRef((props, ref) => {
   );
 });
 
-export default Students;
+export default Guests;

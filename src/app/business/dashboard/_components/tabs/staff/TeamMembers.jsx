@@ -2,8 +2,25 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import styled from "styled-components";
 import { Drawer } from "vaul";
-import { Table, Button, Typography, Tag, Space, Tooltip, Modal, Form, Input, Select, Popconfirm, Empty, Card, Row, Col, Avatar,  } from 'antd';
-import message from '@/lib/message';
+import {
+  Table,
+  Button,
+  Typography,
+  Tag,
+  Space,
+  Tooltip,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Popconfirm,
+  Empty,
+  Card,
+  Row,
+  Col,
+  Avatar,
+} from "antd";
+import message from "@/lib/message";
 import {
   Plus,
   Edit,
@@ -581,7 +598,6 @@ const TeamMembersSkeleton = ({ isMobile, count = 5 }) => {
   );
 };
 
-
 const MobileStaffItem = ({
   record,
   onEdit,
@@ -1025,7 +1041,6 @@ const TeamMembers = () => {
     );
   };
 
-
   return (
     <TableSection initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <TableHeader>
@@ -1093,7 +1108,7 @@ const TeamMembers = () => {
                       placeholder="Select a role"
                       loading={!roles.length}
                       size="large"
-      >
+                    >
                       {roles.map((role) => (
                         <Option key={role.id} value={role.id}>
                           {role.name}
@@ -1118,7 +1133,8 @@ const TeamMembers = () => {
                   onClick={() => form.submit()}
                   loading={loading}
                   block
-                  key={`btn-${loading}`}>
+                  key={`btn-${loading}`}
+                >
                   {editingStaff ? "Save Changes" : "Send Invitation"}
                 </Button>
                 <Button onClick={onModalClose} block>
@@ -1170,8 +1186,7 @@ const TeamMembers = () => {
               label="Assign Role"
               rules={[{ required: true, message: "Please assign a role" }]}
             >
-              <Select placeholder="Select a role" loading={!roles.length}
-      >
+              <Select placeholder="Select a role" loading={!roles.length}>
                 {roles.map((role) => (
                   <Option key={role.id} value={role.id}>
                     {role.name}

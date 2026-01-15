@@ -232,12 +232,8 @@ const HeaderSkeleton = () => (
   </CompactHeader>
 );
 
-const CompactContactModal = ({
-  student: initialStudent,
-  onClose,
-  currentUser,
-}) => {
-  const [student, setStudent] = useState(null);
+const CompactContactModal = ({ guest: initialGuest, onClose, currentUser }) => {
+  const [guest, setGuest] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -250,8 +246,8 @@ const CompactContactModal = ({
   }, []);
 
   useEffect(() => {
-    const fetchStudentDetails = async () => {
-      if (!initialStudent?.id) {
+    const fetchGuestDetails = async () => {
+      if (!initialGuest?.id) {
         setError("No contact selected.");
         setIsLoading(false);
         return;
@@ -261,11 +257,11 @@ const CompactContactModal = ({
       setError(null);
       try {
         const response = await businessStudentService.getBusinessStudentProfile(
-          initialStudent.id
+          initialGuest.id
         );
 
         if (response.success && response.data) {
-          setStudent(response.data);
+          setGuest(response.data);
         } else {
           throw new Error(response.error || "Failed to fetch contact details");
         }
@@ -280,8 +276,8 @@ const CompactContactModal = ({
       }
     };
 
-    fetchStudentDetails();
-  }, [initialStudent]);
+    fetchGuestDetails();
+  }, [initialGuest]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -295,7 +291,7 @@ const CompactContactModal = ({
       );
     }
 
-    if (error || !student) {
+    if (error || !guest) {
       return (
         <CompactContainer>
           <CompactHeader>
@@ -309,14 +305,14 @@ const CompactContactModal = ({
       );
     }
 
-    const avatarLetter = student.first_name
-      ? student.first_name[0].toUpperCase()
-      : student.email
-      ? student.email[0].toUpperCase()
+    const avatarLetter = guest.first_name
+      ? guest.first_name[0].toUpperCase()
+      : guest.email
+      ? guest.email[0].toUpperCase()
       : "?";
 
     const { display: phoneDisplay, link: phoneLink } = formatPhoneNumber(
-      student.phone_number || ""
+      guest.phone_number || ""
     );
 
     return (
@@ -324,25 +320,25 @@ const CompactContactModal = ({
         <CompactHeader>
           <HeaderLayout>
             <CompactAvatar>
-              <Avatar src={student.avatar_thumb_url} icon={<User />}>
-                {!student.avatar_thumb_url && avatarLetter}
+              <Avatar src={guest.avatar_thumb_url} icon={<User />}>
+                {!guest.avatar_thumb_url && avatarLetter}
               </Avatar>
             </CompactAvatar>
             <ContactInfo>
               <ContactName>
-                {student.first_name || "Unknown"} {student.last_name || ""}
+                {guest.first_name || "Unknown"} {guest.last_name || ""}
               </ContactName>
               <Tag color="default" size="small">
                 Imported Contact
               </Tag>
               <ContactDetails>
-                {student.email && (
+                {guest.email && (
                   <ContactItem>
                     <Mail />
-                    <a href={`mailto:${student.email}`}>{student.email}</a>
+                    <a href={`mailto:${guest.email}`}>{guest.email}</a>
                   </ContactItem>
                 )}
-                {student.phone_number && (
+                {guest.phone_number && (
                   <ContactItem>
                     <Phone />
                     {phoneLink ? (
@@ -352,7 +348,7 @@ const CompactContactModal = ({
                     )}
                   </ContactItem>
                 )}
-                {!student.phone_number && !student.email && (
+                {!guest.phone_number && !guest.email && (
                   <ContactItem>
                     <span style={{ color: "#64748b", fontStyle: "italic" }}>
                       No contact information available
@@ -366,7 +362,7 @@ const CompactContactModal = ({
 
         <CompactBody>
           <NotesSection
-            student={student}
+            guest={guest}
             currentUser={currentUser}
             compact={true}
           />
@@ -379,7 +375,11 @@ const CompactContactModal = ({
     <ConfigProvider theme={appTheme}>
       {/* Mobile Drawer */}
       {isMobile ? (
-        <Drawer.Root open={true} onOpenChange={(open) => !open && onClose()} repositionInputs={false}>
+        <Drawer.Root
+          open={true}
+          onOpenChange={(open) => !open && onClose()}
+          repositionInputs={false}
+        >
           <Drawer.Portal>
             <StyledDrawerOverlay />
             <StyledDrawerContent>

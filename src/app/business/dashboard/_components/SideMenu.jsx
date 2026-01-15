@@ -594,7 +594,7 @@ const menuItemsConfig = [
       />
     ),
     children: [
-      { key: "students", label: "Students" },
+      { key: "guests", label: "Guests" },
       { key: "reviews", label: "Reviews & Feedback" },
       { key: "staff", label: "Staff Management" },
     ],
@@ -660,7 +660,7 @@ const menuItemPermissions = {
   listings: "manage_own_classes",
   "bookings/active": "view_own_business_bookings",
   "bookings/history": "view_own_business_bookings",
-  students: "view_business_students",
+  guests: "view_business_students",
   reviews: "view_own_business_reviews",
   revenue: "view_business_revenue_analytics",
   payouts: "view_business_revenue_analytics",

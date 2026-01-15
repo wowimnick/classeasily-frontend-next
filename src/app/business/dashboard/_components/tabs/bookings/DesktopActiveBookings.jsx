@@ -1,6 +1,15 @@
 import React from "react";
 import styled from "styled-components";
-import { Table, Tag, Space, Button, Dropdown, Menu, Popconfirm, Skeleton } from "antd";
+import {
+  Table,
+  Tag,
+  Space,
+  Button,
+  Dropdown,
+  Menu,
+  Popconfirm,
+  Skeleton,
+} from "antd";
 import {
   MoreVertical,
   Eye,
@@ -149,7 +158,7 @@ const StyledMenu = styled(Menu)`
   }
 `;
 
-const StudentInfo = styled.div`
+const GuestInfo = styled.div`
   .name {
     font-weight: 500;
     color: #1e293b;
@@ -203,8 +212,8 @@ const BookingTypeTag = styled(Tag)`
   }
 `;
 
-const ClassDetails = styled.div`
-  .main-class {
+const ExperienceDetails = styled.div`
+  .main-experience {
     font-weight: 500;
     color: #1e293b;
     margin-bottom: 4px;
@@ -233,8 +242,8 @@ const SkeletonWrapper = styled.div`
 `;
 
 const SkeletonLine = styled.div`
-  height: ${props => props.height || '16px'};
-  width: ${props => props.width || '100%'};
+  height: ${(props) => props.height || "16px"};
+  width: ${(props) => props.width || "100%"};
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: loading 1.5s ease-in-out infinite;
@@ -252,8 +261,8 @@ const SkeletonLine = styled.div`
 
 const SkeletonCircle = styled(SkeletonLine)`
   border-radius: 50%;
-  width: ${props => props.size || '36px'};
-  height: ${props => props.size || '36px'};
+  width: ${(props) => props.size || "36px"};
+  height: ${(props) => props.size || "36px"};
 `;
 
 const SkeletonTag = styled(SkeletonLine)`
@@ -265,9 +274,7 @@ const SkeletonTag = styled(SkeletonLine)`
 // Skeleton Row Component
 const SkeletonRow = () => ({
   id: Math.random(),
-  user_facing_reference: (
-    <SkeletonLine width="120px" height="14px" />
-  ),
+  user_facing_reference: <SkeletonLine width="120px" height="14px" />,
   user_name: (
     <SkeletonWrapper>
       <SkeletonLine width="140px" height="14px" />
@@ -291,15 +298,9 @@ const SkeletonRow = () => ({
       <SkeletonLine width="80px" height="12px" />
     </SkeletonWrapper>
   ),
-  participants: (
-    <SkeletonLine width="30px" height="14px" />
-  ),
-  status: (
-    <SkeletonTag />
-  ),
-  action: (
-    <SkeletonCircle size="36px" />
-  ),
+  participants: <SkeletonLine width="30px" height="14px" />,
+  status: <SkeletonTag />,
+  action: <SkeletonCircle size="36px" />,
 });
 
 // Generate skeleton data
@@ -326,7 +327,7 @@ const DesktopActiveBookings = ({
   // Mapping for frontend display keys to backend sort fields
   const sortableFields = {
     booking_reference: "user_facing_reference",
-    student: "user_name",
+    guest: "user_name",
     class_name: "schedule_instance__schedule__option__classId__title",
     booking_type: "enrollment_type",
     date: "schedule_instance__date",
@@ -373,9 +374,9 @@ const DesktopActiveBookings = ({
       width: 160,
     },
     {
-      title: "Student",
+      title: "Guest",
       dataIndex: "user_name",
-      key: "student",
+      key: "guest",
       sorter: true,
       sortOrder: sortField === "user_name" ? sortOrder : null,
       render: (_, record) => {
@@ -384,16 +385,16 @@ const DesktopActiveBookings = ({
           return record.user_name;
         }
         return (
-          <StudentInfo>
+          <GuestInfo>
             <div className="name">{record.user_name || "N/A"}</div>
             <div className="email">{record.user_email || "N/A"}</div>
-          </StudentInfo>
+          </GuestInfo>
         );
       },
       width: 220,
     },
     {
-      title: "Class Details",
+      title: "Experience Details",
       dataIndex: "class_name",
       key: "class_name",
       sorter: true,
@@ -407,10 +408,10 @@ const DesktopActiveBookings = ({
           return text;
         }
         return (
-          <ClassDetails>
-            <div className="main-class">{text || "N/A"}</div>
+          <ExperienceDetails>
+            <div className="main-experience">{text || "N/A"}</div>
             <div className="option-name">{record.option_name || "N/A"}</div>
-          </ClassDetails>
+          </ExperienceDetails>
         );
       },
       width: 280,
@@ -476,8 +477,9 @@ const DesktopActiveBookings = ({
         if (React.isValidElement(status)) {
           return status;
         }
-        
-        const statusLower = status && typeof status === 'string' ? status.toLowerCase() : '';
+
+        const statusLower =
+          status && typeof status === "string" ? status.toLowerCase() : "";
         if (statusLower === "confirmed") {
           return (
             <StyledTag className="confirmed" icon={<CheckCircle size={12} />}>
@@ -486,7 +488,13 @@ const DesktopActiveBookings = ({
           );
         }
         // Fallback for any unexpected statuses
-        return <Tag>{status && typeof status === 'string' ? status.toUpperCase() : "N/A"}</Tag>;
+        return (
+          <Tag>
+            {status && typeof status === "string"
+              ? status.toUpperCase()
+              : "N/A"}
+          </Tag>
+        );
       },
       width: 140,
       align: "center",
@@ -554,7 +562,9 @@ const DesktopActiveBookings = ({
   return (
     <StyledTable
       columns={columns}
-      dataSource={loading ? generateSkeletonData(pagination?.pageSize || 10) : data}
+      dataSource={
+        loading ? generateSkeletonData(pagination?.pageSize || 10) : data
+      }
       rowKey={loading ? "key" : "id"}
       pagination={loading ? false : pagination}
       onChange={handleTableChange}
