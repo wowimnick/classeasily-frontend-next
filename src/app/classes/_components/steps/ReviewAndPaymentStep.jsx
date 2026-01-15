@@ -1402,7 +1402,7 @@ const ReviewAndPaymentStep = ({
               size="middle"
               onClick={handleApplyCoupon}
               loading={couponLoading}
-              style={{ height: 60 }}
+              style={{ height: 45 }}
             >
               Apply
             </Button>
