@@ -105,16 +105,33 @@ const excludedIcons = new Set([
   "IconNode",
   "icons",
   "default",
+  "__esModule",
 ]);
+
+// Prepare options outside component to avoid recalculation
 const iconOptions = Object.keys(allIcons)
-  .filter(
-    (name) => typeof allIcons[name] === "object" && !excludedIcons.has(name)
-  )
-  .map((name) => ({
-    value: name,
-    label: formatIconName(name),
-    component: allIcons[name],
-  }));
+  .filter((name) => {
+    const item = allIcons[name];
+    // Check for both function (components) and object (forwardRef components)
+    return (
+      (typeof item === "function" || typeof item === "object") &&
+      !excludedIcons.has(name)
+    );
+  })
+  .map((name) => {
+    const IconComponent = allIcons[name];
+    return {
+      value: name,
+      label: (
+        <Space>
+          <IconComponent size={16} />
+          {formatIconName(name)}
+        </Space>
+      ),
+      // Keep a text-only label for searching
+      searchLabel: formatIconName(name),
+    };
+  });
 
 const CategoryIcon = ({ iconName, ...props }) => {
   const IconComponent = allIcons[iconName] || allIcons.Bookmark;
@@ -989,26 +1006,15 @@ const UniversalEditDrawer = ({
                   label={<span style={{ fontWeight: 600 }}>Icon</span>}
                   rules={[{ required: true, message: "Select an icon." }]}
                 >
+                  {/* FIX: Use options prop instead of children for performance with large lists */}
                   <Select
                     size="middle"
                     showSearch
                     placeholder="Select icon..."
-                    optionFilterProp="label"
-                    virtual={false}
-                  >
-                    {iconOptions.map((opt) => (
-                      <Select.Option
-                        key={opt.value}
-                        value={opt.value}
-                        label={opt.label}
-                      >
-                        <Space>
-                          <opt.component size={16} />
-                          {opt.label}
-                        </Space>
-                      </Select.Option>
-                    ))}
-                  </Select>
+                    options={iconOptions}
+                    optionFilterProp="searchLabel"
+                    // Removed virtual={false} to allow virtualization of 1000+ items
+                  />
                 </Form.Item>
 
                 <Form.Item
