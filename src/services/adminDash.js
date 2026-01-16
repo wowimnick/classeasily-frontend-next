@@ -1439,24 +1439,12 @@ export const classManagementService = {
     }
   },
 
-  /**
-   * FIX: Changed to send FormData instead of a JSON object.
-   */
   updateSubcategory: async (categoryId, subcategoryId, subcategoryData) => {
     try {
-      const formData = new FormData();
-      for (const key in subcategoryData) {
-        formData.append(key, subcategoryData[key]);
-      }
-
+      // Send standard JSON object
       const response = await axiosInstance.patch(
         `/admin/categories/${categoryId}/subcategories/${subcategoryId}/`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        subcategoryData
       );
       return {
         success: true,
@@ -1467,9 +1455,17 @@ export const classManagementService = {
         `Error updating subcategory ${subcategoryId}:`,
         error.response
       );
+
+      // FIX: Extract the specific error string.
+      // If we return the whole 'data' object, React crashes when trying to render it.
+      const errorMessage =
+        error.response?.data?.detail ||
+        error.response?.data?.error ||
+        "Failed to update subcategory.";
+
       return {
         success: false,
-        error: error.response?.data || `Failed to update subcategory.`,
+        error: errorMessage,
       };
     }
   },

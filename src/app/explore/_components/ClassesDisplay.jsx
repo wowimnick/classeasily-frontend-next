@@ -1,16 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
-import {
-  Map as MapIcon,
-  List,
-  BookOpen,
-  Palette,
-  Music,
-  Code as TechnologyIcon,
-  Dumbbell,
-  PersonStanding,
-} from "lucide-react";
+import { Map as MapIcon, List, SearchX } from "lucide-react";
 import dynamic from "next/dynamic";
 import HomeClassCard from "../../../components/homepage/HomeClassCard.jsx";
 import ExploreCategories from "./ExploreCategories.jsx";
@@ -149,66 +140,6 @@ const LoadingContainer = styled.div`
   width: 100%;
 `;
 
-const NoResultsContainer = styled(motion.div)`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 5rem 1rem;
-  text-align: center;
-  min-height: 400px;
-  width: 100%;
-  margin: auto;
-`;
-
-const IconGrid = styled(motion.div)`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-bottom: 32px;
-`;
-
-const EmptyIcon = styled(motion.div)`
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  background: ${(props) => props.$color};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  opacity: 0.8;
-`;
-
-const NoResultsTitle = styled(motion.h2)`
-  font-size: 24px;
-  font-weight: 700;
-  color: #484848;
-  margin: 0 0 16px 0;
-`;
-
-const NoResultsText = styled(motion.p)`
-  font-size: 16px;
-  color: #6b7280;
-  max-width: 400px;
-  line-height: 1.6;
-  margin: 0 0 24px 0;
-`;
-
-const NoResultsButton = styled(motion.button)`
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #ff385c 0%, #ff1447 100%);
-  border: none;
-  border-radius: 24px;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-  &:hover {
-    transform: translateY(-2px);
-  }
-`;
-
 const MobileMapToggle = styled.button`
   position: fixed;
   bottom: 20px;
@@ -236,61 +167,85 @@ const MobileMapToggle = styled.button`
   }
 `;
 
-const NoResultsAnimation = ({ onReset }) => {
-  const gridVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
-  };
-  const iconVariants = {
-    hidden: { opacity: 0, y: 20, rotate: -10 },
-    visible: {
-      opacity: 0.8,
-      y: 0,
-      rotate: 0,
-      transition: { duration: 0.5, ease: "easeOut" },
-    },
-  };
-  const contentVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { delay: 0.3, duration: 0.5 } },
-  };
+// --- New No Results Styled Components ---
 
-  const icons = [
-    { Icon: BookOpen, color: "#FF385C" },
-    { Icon: Palette, color: "#00A699" },
-    { Icon: Music, color: "#FC642D" },
-    { Icon: TechnologyIcon, color: "#767676" },
-    { Icon: Dumbbell, color: "#FF5A5F" },
-    { Icon: PersonStanding, color: "#008489" },
-  ];
+const EmptyStateContainer = styled(motion.div)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+  min-height: 400px;
+  margin-top: 40px;
+`;
 
+const EmptyIconWrapper = styled(motion.div)`
+  color: #dddddd;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
+`;
+
+const EmptyHeading = styled(motion.h3)`
+  font-size: 18px;
+  font-weight: 600;
+  color: #222222;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.01em;
+`;
+
+const EmptySubtext = styled(motion.p)`
+  font-size: 16px;
+  color: #717171;
+  max-width: 380px;
+  margin: 0;
+  line-height: 1.5;
+`;
+
+// --- Updated No Results Component ---
+
+const NoResultsView = () => {
   return (
-    <NoResultsContainer
-      initial="hidden"
-      animate="visible"
-      variants={contentVariants}
+    <EmptyStateContainer
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.6 }}
     >
-      <IconGrid variants={gridVariants}>
-        {icons.map(({ Icon, color }, index) => (
-          <EmptyIcon
-            key={index}
-            variants={iconVariants}
-            $color={color}
-            whileHover={{ scale: 1.1, rotate: 5 }}
-          >
-            <Icon size={32} strokeWidth={2} />
-          </EmptyIcon>
-        ))}
-      </IconGrid>
-      <NoResultsTitle>No classes found</NoResultsTitle>
-      <NoResultsText>
-        We couldn't find any classes matching your criteria. Try adjusting your
-        filters or exploring different categories.
-      </NoResultsText>
-      <NoResultsButton whileHover={{ scale: 1.05 }} onClick={onReset}>
-        Clear Filters
-      </NoResultsButton>
-    </NoResultsContainer>
+      <EmptyIconWrapper
+        initial={{ scale: 0.8, opacity: 0, y: 10 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{
+          type: "spring",
+          stiffness: 120,
+          damping: 15,
+          delay: 0.1,
+        }}
+      >
+        <SearchX size={48} strokeWidth={1.5} />
+      </EmptyIconWrapper>
+
+      <div style={{ overflow: "hidden" }}>
+        <EmptyHeading
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
+        >
+          No exact matches
+        </EmptyHeading>
+      </div>
+
+      <div style={{ overflow: "hidden" }}>
+        <EmptySubtext
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
+        >
+          Try changing or removing some of your filters to find the perfect
+          experience.
+        </EmptySubtext>
+      </div>
+    </EmptyStateContainer>
   );
 };
 
@@ -466,27 +421,6 @@ const ClassesDisplay = ({
     }
   }, []);
 
-  const handleResetFilters = () => {
-    if (onApplyModalChanges) {
-      onApplyModalChanges(
-        {
-          pricePerClass: [0, 500],
-          distance: [0, 0],
-          timePreference: [],
-          days: [],
-          classType: "class",
-          keyword: "",
-          date: filters.date || "",
-          participants: filters.participants || 0,
-        },
-        "relevance"
-      );
-    }
-    // Reset both categories and collections
-    onCategoryChange("all", "");
-    if (onCollectionChange) onCollectionChange("");
-  };
-
   const renderContent = () => {
     // 1. Force skeleton if navigation/loading is explicitly happening
     if (isNavigating || loading) {
@@ -494,7 +428,7 @@ const ClassesDisplay = ({
     }
 
     if (classesWithDistance.length === 0) {
-      return <NoResultsAnimation onReset={handleResetFilters} />;
+      return <NoResultsView />;
     }
 
     return (
