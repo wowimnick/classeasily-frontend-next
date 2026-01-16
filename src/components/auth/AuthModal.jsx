@@ -920,7 +920,11 @@ const AuthModal = ({
   if (isMobile) {
     return (
       <ConfigProvider theme={theme}>
-        <Drawer.Root open={visible} onOpenChange={(open) => !open && onClose()}>
+        <Drawer.Root
+          open={visible}
+          onOpenChange={(open) => !open && onClose()}
+          repositionInputs={false}
+        >
           <Drawer.Portal>
             <StyledDrawerOverlay />
             <StyledDrawerContent>

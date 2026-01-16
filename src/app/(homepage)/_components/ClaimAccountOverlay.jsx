@@ -396,6 +396,7 @@ function ClaimAccountOverlayInner() {
       {isMobile ? (
         <Drawer.Root
           open={isOpen}
+          repositionInputs={false}
           onOpenChange={(open) => !open && handleClose()}
           disablePreventScroll={false}
         >

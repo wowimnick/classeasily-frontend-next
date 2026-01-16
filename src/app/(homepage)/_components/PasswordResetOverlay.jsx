@@ -86,6 +86,14 @@ const StyledForm = styled(Form)`
   .ant-form-item-label {
     padding-bottom: 4px;
   }
+
+  .ant-input-affix-wrapper,
+  .ant-input-password,
+  .ant-input {
+    @media (max-width: 768px) {
+      font-size: 16px !important;
+    }
+  }
 `;
 
 const SuccessBloom = styled(motion.div)`
@@ -349,6 +357,7 @@ function PasswordResetOverlayInner() {
       {isMobile ? (
         <Drawer.Root
           open={isOpen}
+          repositionInputs={false}
           onOpenChange={(open) => !open && triggerClose()}
         >
           <Drawer.Portal>
