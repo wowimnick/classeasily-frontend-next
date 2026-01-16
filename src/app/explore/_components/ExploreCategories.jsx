@@ -116,7 +116,7 @@ const CategoryGroup = styled.div`
   border-bottom: 1px solid transparent;
   border-bottom-color: ${({ isSelected }) =>
     isSelected ? "#ff385c" : "transparent"};
-  width: 64px;
+  width: 72px;
   height: 100%;
   padding-top: 8px;
   position: relative;
