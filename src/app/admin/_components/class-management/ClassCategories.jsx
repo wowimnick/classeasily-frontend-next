@@ -1877,7 +1877,7 @@ const ClassCategories = () => {
 
   const getReassignmentOptions = () => {
     if (!reassignmentData) return [];
-    const { type, target, parent } = reassignmentData;
+    const { type, target } = reassignmentData;
 
     if (type === "category") {
       return categories
@@ -1885,10 +1885,19 @@ const ClassCategories = () => {
         .map((c) => ({ label: c.name, value: c.id }));
     }
 
-    if (type === "subcategory" && parent) {
-      return parent.subcategories
-        .filter((s) => s.id !== target.id)
-        .map((s) => ({ label: s.name, value: s.id }));
+    if (type === "subcategory") {
+      // MODIFIED: Return grouped options with all subcategories from all categories
+      return categories
+        .map((cat) => ({
+          label: cat.name,
+          options: cat.subcategories
+            .filter((s) => s.id !== target.id) // Exclude the one being deleted
+            .map((s) => ({
+              label: s.name,
+              value: s.id,
+            })),
+        }))
+        .filter((group) => group.options.length > 0); // Remove empty groups
     }
 
     return [];

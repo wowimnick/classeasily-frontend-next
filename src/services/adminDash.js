@@ -1421,17 +1421,10 @@ export const classManagementService = {
     newId
   ) => {
     try {
-      const formData = new FormData();
-      formData.append("new_id", newId);
-
+      // Send as simple JSON object, not FormData
       const response = await axiosInstance.post(
         `/admin/categories/${categoryId}/subcategories/${subcategoryId}/`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        { new_id: newId }
       );
       return { success: true, data: response.data };
     } catch (error) {
