@@ -672,9 +672,8 @@ const EmptyStateSubtext = styled.div`
 const ActionPromptContainer = styled.div`
   background-color: #fff;
   border: 1px solid ${colors.border};
-  border-left: 4px solid ${colors.warning};
   border-radius: 8px;
-  padding: 20px 24px;
+  padding: 10px 14px;
   margin-bottom: 24px;
   display: flex;
   align-items: center;
@@ -990,14 +989,14 @@ const metricDisplayInfo = {
     title: "Guests This Month",
     icon: Users,
     color: colors.chart.blue,
-    link: "/business/dashboard/students",
+    link: "/business/dashboard/guests",
     footer: "vs last month",
   },
   active_classes: {
     title: "Active Experiences",
     icon: BookOpen,
     color: colors.chart.green,
-    link: "/business/dashboard/classes",
+    link: "/business/dashboard/listings",
     footer: "Total published experiences",
   },
   monthly_revenue: {
@@ -1330,7 +1329,7 @@ const Overview = forwardRef((props, ref) => {
                   </Paragraph>
                 </div>
               </ActionPromptContent>
-              <Link href="/business/dashboard/classes">
+              <Link href="/business/dashboard/listings">
                 <Button icon={<ArrowRight size={16} />} type="text">
                   Manage Experiences
                 </Button>
