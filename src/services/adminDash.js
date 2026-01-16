@@ -1379,7 +1379,7 @@ export const classManagementService = {
   addSubcategory: async (categoryId, subcategoryData) => {
     try {
       const response = await axiosInstance.post(
-        `/admin/categories/${categoryId}/subcategories/add_subcategory/`,
+        `/admin/categories/${categoryId}/subcategories/`,
         subcategoryData
       );
       return { success: true, data: response.data };
@@ -1426,8 +1426,12 @@ export const classManagementService = {
 
       const response = await axiosInstance.post(
         `/admin/categories/${categoryId}/subcategories/${subcategoryId}/`,
-        formData
-        // REMOVED manual headers object here
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
       return { success: true, data: response.data };
     } catch (error) {
@@ -1444,25 +1448,22 @@ export const classManagementService = {
 
   /**
    * FIX: Changed to send FormData instead of a JSON object.
-   * REMOVED manual header setting to allow axios to set boundary.
    */
   updateSubcategory: async (categoryId, subcategoryId, subcategoryData) => {
     try {
       const formData = new FormData();
       for (const key in subcategoryData) {
-        // Ensure we don't append undefined/null values unless intended
-        if (
-          subcategoryData[key] !== undefined &&
-          subcategoryData[key] !== null
-        ) {
-          formData.append(key, subcategoryData[key]);
-        }
+        formData.append(key, subcategoryData[key]);
       }
 
       const response = await axiosInstance.patch(
         `/admin/categories/${categoryId}/subcategories/${subcategoryId}/`,
-        formData
-        // REMOVED manual headers object here
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
       return {
         success: true,
