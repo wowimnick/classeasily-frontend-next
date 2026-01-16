@@ -457,14 +457,14 @@ const BusinessSetupGuide = ({ sideMenuRef, initialOpen = false }) => {
       },
       {
         key: "class",
-        title: "Class & Scheduling Setup",
+        title: "Experience & Scheduling Setup",
         items: [
           {
             id: "createClass",
-            label: "Create Your First Class",
+            label: "Create Your First Experience",
             isComplete: !!setupStatus?.has_created_class,
             icon: <AppstoreAddOutlined />,
-            action: () => handleNavigate("/business/dashboard/classes"),
+            action: () => handleNavigate("/business/dashboard/listings"),
             actionLabel: "Create",
           },
           {
@@ -472,7 +472,7 @@ const BusinessSetupGuide = ({ sideMenuRef, initialOpen = false }) => {
             label: "Set Up Schedules & Pricing",
             isComplete: !!setupStatus?.has_schedules,
             icon: <CalendarOutlined />,
-            action: () => handleNavigate("/business/dashboard/classes"),
+            action: () => handleNavigate("/business/dashboard/listings"),
             actionLabel: "Set Pricing",
             disabled: !setupStatus?.has_class_options,
           },

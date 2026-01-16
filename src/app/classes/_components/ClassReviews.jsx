@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
+import { createPortal } from "react-dom"; // Added for Image Viewer Fix
 import styled, { keyframes, css } from "styled-components";
 import { Avatar, Rate, Modal } from "antd";
 import { Drawer as VaulDrawer } from "vaul";
@@ -89,7 +96,7 @@ const VaulOverlay = styled(VaulDrawer.Overlay)`
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.4);
-  z-index: 2200; /* STRICTLY ABOVE HEADER (1001) */
+  z-index: 9999; /* Increased significantly to beat Header (100) */
 `;
 
 const VaulContent = styled(VaulDrawer.Content)`
@@ -104,7 +111,7 @@ const VaulContent = styled(VaulDrawer.Content)`
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 2201; /* STRICTLY ABOVE HEADER */
+  z-index: 10000; /* Strictly above Overlay */
   outline: none;
 `;
 
@@ -176,7 +183,7 @@ const CardBaseStyles = `
 
 const ReviewCard = styled(motion.div)`
   ${CardBaseStyles}
-  
+
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -185,14 +192,16 @@ const ReviewCard = styled(motion.div)`
 
   @media (max-width: 768px) {
     padding: 1rem;
-    &:hover { transform: none; }
+    &:hover {
+      transform: none;
+    }
   }
 `;
 
 const ModalReviewItem = styled.div`
   ${CardBaseStyles}
   margin-bottom: 1rem;
-  
+
   &:hover {
     border-color: #ff385c;
   }
@@ -276,7 +285,9 @@ const ShowMoreButton = styled.button`
   cursor: pointer;
   font-weight: 600;
   font-size: 0.85rem;
-  &:hover { text-decoration: underline; }
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 const BusinessResponse = styled.div`
@@ -391,7 +402,7 @@ const ShowAllButton = styled(motion.button)`
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
-  
+
   @media (max-width: 768px) {
     width: 100%;
     max-width: 100%;
@@ -405,7 +416,7 @@ const ImageModalOverlay = styled(motion.div)`
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.9);
-  z-index: 2500;
+  z-index: 10001; /* Strictly above Vaul (10000) and Header */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -453,13 +464,17 @@ const EmptyState = styled.div`
   text-align: center;
   padding: 3rem 1rem;
   color: #666;
-  h3 { margin-bottom: 0.5rem; color: #333; }
+  h3 {
+    margin-bottom: 0.5rem;
+    color: #333;
+  }
 `;
 
 // --- Helpers ---
 const normalizeReview = (review) => ({
   ...review,
-  reviewer_avatar_url: review.reviewer_avatar_url || review.user?.avatar_thumb_url,
+  reviewer_avatar_url:
+    review.reviewer_avatar_url || review.user?.avatar_thumb_url,
   reviewer_name: review.reviewer_name || review.user?.name,
   image_urls: review.image_urls || [],
   business_response: review.business_response || review.owner_response,
@@ -492,8 +507,10 @@ const Reviews = ({
   serverReviews = null,
 }) => {
   const [isMobile, setIsMobile] = useState(false);
+  const [mounted, setMounted] = useState(false); // Track client-side mount
 
   useEffect(() => {
+    setMounted(true);
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
     checkMobile();
     window.addEventListener("resize", checkMobile);
@@ -502,7 +519,9 @@ const Reviews = ({
 
   const normalizedServerReviews = useMemo(() => {
     if (!serverReviews) return [];
-    const reviewsArray = Array.isArray(serverReviews) ? serverReviews : serverReviews?.reviews || [];
+    const reviewsArray = Array.isArray(serverReviews)
+      ? serverReviews
+      : serverReviews?.reviews || [];
     return reviewsArray.map(normalizeReview);
   }, [serverReviews]);
 
@@ -512,17 +531,18 @@ const Reviews = ({
   const [modalPage, setModalPage] = useState(1);
   const [modalHasMore, setModalHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [loadingPreview, setLoadingPreview] = useState(!normalizedServerReviews.length);
+  const [loadingPreview, setLoadingPreview] = useState(
+    !normalizedServerReviews.length
+  );
   const [expandedReviews, setExpandedReviews] = useState({});
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
 
   // --- CRITICAL FIX: SYNC STATE WITH PARENT COMPONENT ---
-  // This ensures the booking footer reappears when Vaul is closed by swipe or any other method.
   useEffect(() => {
     window.dispatchEvent(
       new CustomEvent("reviewsModalStateChange", {
-        detail: { isOpen: isModalVisible }
+        detail: { isOpen: isModalVisible },
       })
     );
   }, [isModalVisible]);
@@ -549,13 +569,21 @@ const Reviews = ({
   // --- Data Fetching ---
   useEffect(() => {
     const fetchPreviewReviews = async () => {
-      if (normalizedServerReviews.length > 0 || !slug || initialReviewCount === 0) {
+      if (
+        normalizedServerReviews.length > 0 ||
+        !slug ||
+        initialReviewCount === 0
+      ) {
         setLoadingPreview(false);
         return;
       }
       try {
         setLoadingPreview(true);
-        const result = await classService.fetchClassReviewsPaginated(slug, 1, 6);
+        const result = await classService.fetchClassReviewsPaginated(
+          slug,
+          1,
+          6
+        );
         if (result.success) {
           setPreviewReviews((result.reviews || []).map(normalizeReview));
         }
@@ -573,13 +601,19 @@ const Reviews = ({
 
     try {
       setLoadingMore(true);
-      const result = await classService.fetchClassReviewsPaginated(slug, page, 10);
+      const result = await classService.fetchClassReviewsPaginated(
+        slug,
+        page,
+        10
+      );
 
       if (result.success) {
         const newReviews = (result.reviews || []).map(normalizeReview);
         const pagination = result.pagination || {};
 
-        setModalReviews((prev) => (page === 1 ? newReviews : [...prev, ...newReviews]));
+        setModalReviews((prev) =>
+          page === 1 ? newReviews : [...prev, ...newReviews]
+        );
         setModalPage(page);
         setModalHasMore(pagination.has_more || false);
       }
@@ -607,37 +641,50 @@ const Reviews = ({
   // --- Render Helpers ---
   const renderReviewContent = (review, index, isModal) => {
     const CardComponent = isModal ? ModalReviewItem : ReviewCard;
-    const shouldTruncate = review.comment && review.comment.length > 150 && !isModal;
+    const shouldTruncate =
+      review.comment && review.comment.length > 150 && !isModal;
     const isExpanded = expandedReviews[review.id];
 
     const isLastElement = isModal && index === modalReviews.length - 1;
     const refProp = isLastElement ? { ref: lastReviewElementRef } : {};
 
-    const avatarUrl = review.reviewer_avatar_url || review.user?.avatar_thumb_url;
-    const reviewerName = review.reviewer_name || review.user?.name || "Anonymous";
-    const reviewImages = review.image_urls && review.image_urls.length > 0
-      ? review.image_urls
-      : review.image_medium_url
+    const avatarUrl =
+      review.reviewer_avatar_url || review.user?.avatar_thumb_url;
+    const reviewerName =
+      review.reviewer_name || review.user?.name || "Anonymous";
+    const reviewImages =
+      review.image_urls && review.image_urls.length > 0
+        ? review.image_urls
+        : review.image_medium_url
         ? [review.image_medium_url]
         : [];
 
     return (
       <CardComponent
-        key={`${review.id}-${isModal ? 'modal' : 'preview'}`}
+        key={`${review.id}-${isModal ? "modal" : "preview"}`}
         {...refProp}
         initial={!isModal ? { opacity: 0, y: 10 } : undefined}
         animate={!isModal ? { opacity: 1, y: 0 } : undefined}
         transition={!isModal ? { delay: index * 0.05 } : undefined}
       >
-        {(isModal || (platformReviewCount > 0 && platformReviewCount < 10)) && review.source && (
-          <ReviewSourceTag source={review.source}>
-            {review.source === "google" ? <Globe size={12} /> : <Star size={12} />}
-            {review.source === "google" ? "From Google" : "On Classeasily"}
-          </ReviewSourceTag>
-        )}
+        {(isModal || (platformReviewCount > 0 && platformReviewCount < 10)) &&
+          review.source && (
+            <ReviewSourceTag source={review.source}>
+              {review.source === "google" ? (
+                <Globe size={12} />
+              ) : (
+                <Star size={12} />
+              )}
+              {review.source === "google" ? "From Google" : "On Classeasily"}
+            </ReviewSourceTag>
+          )}
 
         <ReviewHeader>
-          <StyledAvatar size={isModal ? 44 : 40} src={avatarUrl} alt={reviewerName}>
+          <StyledAvatar
+            size={isModal ? 44 : 40}
+            src={avatarUrl}
+            alt={reviewerName}
+          >
             {reviewerName.charAt(0).toUpperCase() || <User size={18} />}
           </StyledAvatar>
           <ReviewerInfo>
@@ -645,7 +692,9 @@ const Reviews = ({
             <ReviewMeta>
               <StyledRate disabled value={review.rating} />
               <ReviewDate>
-                {new Date(review.date || review.createdAt || review.review_date).toLocaleDateString("en-US", {
+                {new Date(
+                  review.date || review.createdAt || review.review_date
+                ).toLocaleDateString("en-US", {
                   month: "short",
                   year: "numeric",
                 })}
@@ -672,7 +721,9 @@ const Reviews = ({
             <ResponseHeader>
               <MessageSquareText size={16} /> Response from Host
             </ResponseHeader>
-            <ResponseText>{review.business_response || review.owner_response}</ResponseText>
+            <ResponseText>
+              {review.business_response || review.owner_response}
+            </ResponseText>
           </BusinessResponse>
         )}
 
@@ -711,7 +762,9 @@ const Reviews = ({
   if (initialReviewCount === 0) {
     return (
       <ReviewsContainer>
-        <Header><Star size={24} /> New Class</Header>
+        <Header>
+          <Star size={24} /> New Class
+        </Header>
         <EmptyState>
           <h3>No reviews yet</h3>
           <p>Be the first to leave a review for this class!</p>
@@ -719,6 +772,40 @@ const Reviews = ({
       </ReviewsContainer>
     );
   }
+
+  // --- PORTALED IMAGE MODAL ---
+  // This ensures the image modal renders at the body level, strictly above everything else
+  const imageModal = mounted
+    ? createPortal(
+        <AnimatePresence>
+          {selectedImage && (
+            <ImageModalOverlay
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedImage(null)}
+            >
+              <ImageModalContainer
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.8 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ImageCloseButton onClick={() => setSelectedImage(null)}>
+                  <X size={20} />
+                </ImageCloseButton>
+                <FullScreenImage
+                  src={selectedImage}
+                  alt="Full screen review image"
+                />
+              </ImageModalContainer>
+            </ImageModalOverlay>
+          )}
+        </AnimatePresence>,
+        document.body
+      )
+    : null;
 
   return (
     <>
@@ -729,17 +816,24 @@ const Reviews = ({
       >
         <Header>
           <Star size={24} />
-          {initialRating.toFixed(1)} · {initialReviewCount} review{initialReviewCount !== 1 ? "s" : ""}
+          {initialRating.toFixed(1)} · {initialReviewCount} review
+          {initialReviewCount !== 1 ? "s" : ""}
         </Header>
 
         <ReviewsColumn>
           <AnimatePresence>
-            {previewReviews.map((review, index) => renderReviewContent(review, index, false))}
+            {previewReviews.map((review, index) =>
+              renderReviewContent(review, index, false)
+            )}
           </AnimatePresence>
         </ReviewsColumn>
 
         {initialReviewCount > 6 && (
-          <ShowAllButton onClick={handleOpenModal} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <ShowAllButton
+            onClick={handleOpenModal}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
             Show all {initialReviewCount} reviews <ChevronRight size={16} />
           </ShowAllButton>
         )}
@@ -754,24 +848,32 @@ const Reviews = ({
           width={720}
           centered
           destroyOnClose
-          zIndex={2200}
+          zIndex={9999} // High Z-Index to stay above Header
           title={
-            <div style={{ fontSize: "1.25rem", fontWeight: 600, paddingBottom: "10px" }}>
+            <div
+              style={{
+                fontSize: "1.25rem",
+                fontWeight: 600,
+                paddingBottom: "10px",
+              }}
+            >
               All reviews ({initialReviewCount})
             </div>
           }
           styles={{
             body: {
-              maxHeight: '70vh',
-              overflowY: 'auto',
-              paddingRight: '8px',
-            }
+              maxHeight: "70vh",
+              overflowY: "auto",
+              paddingRight: "8px",
+            },
           }}
         >
-          <div style={{ paddingTop: '10px' }}>
-            {modalReviews.map((review, index) => renderReviewContent(review, index, true))}
+          <div style={{ paddingTop: "10px" }}>
+            {modalReviews.map((review, index) =>
+              renderReviewContent(review, index, true)
+            )}
             {loadingMore && (
-              <div style={{ padding: '0 0 20px 0' }}>
+              <div style={{ padding: "0 0 20px 0" }}>
                 <ReviewSkeletonLoader />
                 <ReviewSkeletonLoader />
               </div>
@@ -789,12 +891,24 @@ const Reviews = ({
             <VaulContent>
               <VaulHandle />
               <VaulBody>
-                <div style={{ paddingBottom: '16px', borderBottom: '1px solid #eee', marginBottom: '16px' }}>
-                  <h3 style={{ fontSize: '1.125rem', fontWeight: 600, margin: 0 }}>All reviews ({initialReviewCount})</h3>
+                <div
+                  style={{
+                    paddingBottom: "16px",
+                    borderBottom: "1px solid #eee",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <h3
+                    style={{ fontSize: "1.125rem", fontWeight: 600, margin: 0 }}
+                  >
+                    All reviews ({initialReviewCount})
+                  </h3>
                 </div>
-                {modalReviews.map((review, index) => renderReviewContent(review, index, true))}
+                {modalReviews.map((review, index) =>
+                  renderReviewContent(review, index, true)
+                )}
                 {loadingMore && (
-                  <div style={{ padding: '0 0 20px 0' }}>
+                  <div style={{ padding: "0 0 20px 0" }}>
                     <ReviewSkeletonLoader />
                     <ReviewSkeletonLoader />
                   </div>
@@ -806,30 +920,8 @@ const Reviews = ({
         </VaulDrawer.Root>
       )}
 
-      {/* Full Screen Image Viewer */}
-      <AnimatePresence>
-        {selectedImage && (
-          <ImageModalOverlay
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelectedImage(null)}
-          >
-            <ImageModalContainer
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <ImageCloseButton onClick={() => setSelectedImage(null)}>
-                <X size={20} />
-              </ImageCloseButton>
-              <FullScreenImage src={selectedImage} alt="Full screen review image" />
-            </ImageModalContainer>
-          </ImageModalOverlay>
-        )}
-      </AnimatePresence>
+      {/* Full Screen Image Viewer (Portaled) */}
+      {imageModal}
     </>
   );
 };
