@@ -16,8 +16,8 @@ import dynamic from "next/dynamic";
 import ClassPageImagesTitle from "./ClassPageImagesTitle";
 import ClassInformation from "./ClassInformation";
 import { classService } from "@/services/apiService.js";
-import { Alert, Button as AntButton } from 'antd';
-import message from '@/lib/message';
+import { Alert, Button as AntButton } from "antd";
+import message from "@/lib/message";
 
 // Dynamic imports for better code splitting
 const ClassOffers = dynamic(() => import("./ClassOffers"));
@@ -331,7 +331,9 @@ const MobileBookingFooterContainer = styled.div`
     border-radius: 16px;
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
     z-index: 100;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    transition:
+      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.3s ease;
 
     &[data-hidden="true"] {
       transform: translateY(calc(100% + 2rem));
@@ -471,12 +473,12 @@ export default function ClassPageClient({
     };
     window.addEventListener(
       "reviewsModalStateChange",
-      handleReviewsModalChange
+      handleReviewsModalChange,
     );
     return () => {
       window.removeEventListener(
         "reviewsModalStateChange",
-        handleReviewsModalChange
+        handleReviewsModalChange,
       );
     };
   }, []);
@@ -500,7 +502,7 @@ export default function ClassPageClient({
 
       try {
         const result = await classService.toggleFavoriteClass(
-          classData.classId
+          classData.classId,
         );
         if (result.success) {
           if (!originalState && buttonElement) {
@@ -528,7 +530,7 @@ export default function ClassPageClient({
         setIsTogglingFavorite(false);
       }
     },
-    [isAuthenticated, isTogglingFavorite, isFavorite, classData]
+    [isAuthenticated, isTogglingFavorite, isFavorite, classData],
   );
 
   const handleOpenShareModal = () => setIsShareModalVisible(true);
@@ -550,7 +552,7 @@ export default function ClassPageClient({
     if (!classData?.options || classData.options.length === 0) return null;
     return (
       classData.options.find((opt) =>
-        opt.schedules?.some((s) => s.price != null && parseFloat(s.price) > 0)
+        opt.schedules?.some((s) => s.price != null && parseFloat(s.price) > 0),
       ) || classData.options[0]
     );
   }, [classData]);
