@@ -130,8 +130,9 @@ export default function RootLayout({ children }) {
           <img
             height="1"
             width="1"
-            style="display:none"
+            style={{ display: "none" }}
             src="https://www.facebook.com/tr?id=910730058202180&ev=PageView&noscript=1"
+            alt=""
           />
         </noscript>
 
