@@ -244,7 +244,7 @@ const SCHEDULE_WARNING_THRESHOLD_DAYS = 7;
 const needsSchedulesWarning = (lastScheduleDate) => {
   if (!lastScheduleDate) return true;
   return dayjs(lastScheduleDate).isBefore(
-    dayjs().add(SCHEDULE_WARNING_THRESHOLD_DAYS, "day")
+    dayjs().add(SCHEDULE_WARNING_THRESHOLD_DAYS, "day"),
   );
 };
 
@@ -264,12 +264,12 @@ const formatScheduleInfo = (record) => {
   if (isCourse) {
     if (!record.last_schedule_date) return "No course schedules set";
     return `Courses run until ${dayjs(record.last_schedule_date).format(
-      "MMM YYYY"
+      "MMM YYYY",
     )}`;
   } else {
     if (!record.last_schedule_date) return "No sessions scheduled";
     return `Sessions available until ${dayjs(record.last_schedule_date).format(
-      "MMM D, YYYY"
+      "MMM D, YYYY",
     )}`;
   }
 };
@@ -345,7 +345,9 @@ const StyledSegmented = styled(Segmented)`
 
   .ant-segmented-item {
     border-radius: 8px !important;
-    transition: background-color 0.2s ease, box-shadow 0.2s ease; // More specific transitions
+    transition:
+      background-color 0.2s ease,
+      box-shadow 0.2s ease; // More specific transitions
   }
 
   .ant-segmented-item-selected {
@@ -355,7 +357,9 @@ const StyledSegmented = styled(Segmented)`
 
   // Prevent thumb animation from interfering
   .ant-segmented-thumb {
-    transition: transform 0.2s ease, width 0.2s ease; // Control thumb animation
+    transition:
+      transform 0.2s ease,
+      width 0.2s ease; // Control thumb animation
   }
 `;
 
@@ -536,8 +540,8 @@ const CustomSwitch = styled.div`
           ? "#10b981"
           : "#e5e7eb"
         : props.$checked
-        ? "#059669"
-        : "#d1d5db"};
+          ? "#059669"
+          : "#d1d5db"};
   }
 
   &::after {
@@ -1001,7 +1005,7 @@ function ClassManagementContent(props) {
   useEffect(() => {
     if (openClassId && classes.length > 0) {
       const classToOpen = classes.find(
-        (c) => c.classId === parseInt(openClassId)
+        (c) => c.classId === parseInt(openClassId),
       );
       if (classToOpen) {
         const isCourse =
@@ -1042,7 +1046,7 @@ function ClassManagementContent(props) {
         setClasses(processedClasses);
       } else {
         message.error(
-          getErrorMessage(result.error || "Failed to load experiences.")
+          getErrorMessage(result.error || "Failed to load experiences."),
         );
       }
     } catch (error) {
@@ -1104,14 +1108,14 @@ function ClassManagementContent(props) {
     try {
       await businessClassService.toggleClassActive(classId);
       message.success(
-        `Experience ${isActive ? "deactivated" : "activated"} successfully`
+        `Experience ${isActive ? "deactivated" : "activated"} successfully`,
       );
       setClasses((prevClasses) =>
         prevClasses.map((c) =>
           c.classId === classId
             ? { ...c, status: isActive ? "inactive" : "active" }
-            : c
-        )
+            : c,
+        ),
       );
     } catch (error) {
       message.error(getErrorMessage(error));
@@ -1129,18 +1133,18 @@ function ClassManagementContent(props) {
         (c) =>
           c.title?.toLowerCase().includes(lowerSearch) ||
           c.category_name?.toLowerCase().includes(lowerSearch) ||
-          c.subcategory_name?.toLowerCase().includes(lowerSearch)
+          c.subcategory_name?.toLowerCase().includes(lowerSearch),
       );
     }
 
     // MODIFIED: Updated filter to use new viewType state
     if (viewType === "single") {
       filtered = filtered.filter(
-        (c) => c.options?.[0]?.booking_type === "Single Session"
+        (c) => c.options?.[0]?.booking_type === "Single Session",
       );
     } else if (viewType === "course") {
       filtered = filtered.filter(
-        (c) => c.options?.[0]?.booking_type === "Full Course"
+        (c) => c.options?.[0]?.booking_type === "Full Course",
       );
     }
 
@@ -1149,7 +1153,7 @@ function ClassManagementContent(props) {
 
   const filteredClasses = useMemo(
     () => getFilteredClasses(),
-    [classes, searchText, viewType] // viewType added as dependency
+    [classes, searchText, viewType], // viewType added as dependency
   );
 
   const columns = [

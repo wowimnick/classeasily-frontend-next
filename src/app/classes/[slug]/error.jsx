@@ -25,7 +25,7 @@ export default function Error({ error, reset }) {
           message="Something Went Wrong"
           description={
             error.message ||
-            "We couldn't load the class details. Please try again later."
+            "We couldn't load the listing details. Please try again later."
           }
           type="error"
           showIcon

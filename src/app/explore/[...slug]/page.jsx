@@ -16,8 +16,8 @@ function generateStructuredData(routeParams, classes, locationName) {
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: `Classes and Workshops${locationName ? ` in ${locationName}` : ""}`,
-    description: `Find local classes and workshops${
+    name: `Experiences and Activities${locationName ? ` in ${locationName}` : ""}`,
+    description: `Find local experiences and activities${
       locationName ? ` in ${locationName}` : ""
     }`,
     numberOfItems: classes.length,
@@ -30,7 +30,7 @@ function generateStructuredData(routeParams, classes, locationName) {
         description: classItem.description || classItem.title,
         provider: {
           "@type": "Organization",
-          name: classItem.business_name || "Classeasily",
+          name: classItem.business_name || "Classeasily Host",
         },
         url: `https://classeasily.com/classes/${classItem.slug}`,
         ...(classItem.average_rating > 0 && {
@@ -77,14 +77,14 @@ export async function generateMetadata({ params, searchParams }) {
     const locationParam = searchParams.location;
 
     const cityText = unslugify(
-      city || (identifier && !categoryKey ? identifier : "")
+      city || (identifier && !categoryKey ? identifier : ""),
     );
     const provinceText = unslugify(province);
     const locationText = cityText
       ? `${cityText}${provinceText ? `, ${provinceText}` : ""}`
       : locationParam
-      ? unslugify(locationParam)
-      : "";
+        ? unslugify(locationParam)
+        : "";
     const tagText = unslugify(tag);
 
     let categoryText = "";
@@ -93,7 +93,7 @@ export async function generateMetadata({ params, searchParams }) {
         const categoriesResponse = await fetchHomepageCategories();
         if (categoriesResponse.success) {
           const categoryObj = categoriesResponse.data.find(
-            (c) => c.key === categoryKey
+            (c) => c.key === categoryKey,
           );
           categoryText = categoryObj
             ? categoryObj.name
@@ -107,22 +107,22 @@ export async function generateMetadata({ params, searchParams }) {
       }
     }
 
-    let title = "Explore Classes Near You | Classeasily";
+    let title = "Explore Experiences Near You | Classeasily";
     let description =
-      "Find and book amazing local classes and workshops. Start learning something new today!";
+      "Find and book amazing local experiences and activities. Plan your next date night or outing with friends today!";
 
     if (tagText && locationText) {
-      title = `${tagText} Classes in ${locationText} | Classeasily`;
-      description = `Discover the best ${tagText.toLowerCase()} classes and workshops in ${locationText}. Book your spot on Classeasily.`;
+      title = `${tagText} Experiences in ${locationText} | Classeasily`;
+      description = `Discover the best ${tagText.toLowerCase()} experiences and activities in ${locationText}. Book your spot on Classeasily.`;
     } else if (categoryText && locationText) {
-      title = `${categoryText} Classes in ${locationText} | Classeasily`;
-      description = `Find and book the best ${categoryText.toLowerCase()} classes and workshops in ${locationText}.`;
+      title = `${categoryText} Experiences in ${locationText} | Classeasily`;
+      description = `Find and book the best ${categoryText.toLowerCase()} experiences and activities in ${locationText}.`;
     } else if (locationText) {
-      title = `Classes and Workshops in ${locationText} | Classeasily`;
-      description = `Explore a wide variety of classes in ${locationText}. From art to cooking, find your next learning adventure.`;
+      title = `Experiences and Activities in ${locationText} | Classeasily`;
+      description = `Explore a wide variety of experiences in ${locationText}. From art to cooking, find your next great memory.`;
     } else if (categoryText) {
-      title = `Explore ${categoryText} Classes | Classeasily`;
-      description = `Find and book the best ${categoryText.toLowerCase()} classes and workshops in your area.`;
+      title = `Explore ${categoryText} Experiences | Classeasily`;
+      description = `Find and book the best ${categoryText.toLowerCase()} experiences and activities in your area.`;
     }
 
     const url = `/explore/${slug.join("/")}`;
@@ -152,9 +152,9 @@ export async function generateMetadata({ params, searchParams }) {
   } catch (error) {
     console.error("Critical error in generateMetadata:", error);
     return {
-      title: "Explore Classes Near You | Classeasily",
+      title: "Explore Experiences Near You | Classeasily",
       description:
-        "Find and book amazing local classes and workshops. Start learning something new today!",
+        "Find and book amazing local experiences and activities. Plan your next date night or outing with friends today!",
     };
   }
 }
@@ -267,7 +267,7 @@ export default async function ExplorePage({ params, searchParams }) {
   const structuredData = generateStructuredData(
     serverData.routeParams,
     serverData.initialClasses,
-    serverData.locationName
+    serverData.locationName,
   );
 
   return (
@@ -277,7 +277,9 @@ export default async function ExplorePage({ params, searchParams }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <Suspense
-        fallback={<GlobalLoaderWithInlineStyles text="Loading classes..." />}
+        fallback={
+          <GlobalLoaderWithInlineStyles text="Loading experiences..." />
+        }
       >
         <ExploreClient
           initialCategories={serverData.categories}

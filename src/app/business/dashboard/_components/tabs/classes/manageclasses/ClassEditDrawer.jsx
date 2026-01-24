@@ -1193,7 +1193,7 @@ const StandardLabel = ({ icon: Icon, label, help }) => (
           fontSize: "12px",
           color: appTheme.token.colorTextSecondary,
           marginTop: 2,
-          marginLeft: Icon ? 20 : 0,
+          marginLeft: 0,
         }}
       >
         {help}
@@ -1327,24 +1327,6 @@ const TierDetailsTab = ({ field, form }) => {
             mode="tags"
             size="middle"
             placeholder="e.g. Towel, ID Card, Water"
-            style={{ width: "100%" }}
-            tokenSeparators={[","]}
-            open={false}
-          />
-        </FormItemAntd>
-      </div>
-
-      <div style={{ marginTop: "16px" }}>
-        <StandardLabel
-          icon={TagIcon}
-          label="Search Tags"
-          help="Keywords for discovery."
-        />
-        <FormItemAntd {...field} name={[field.name, "tags"]}>
-          <StyledTagsSelect
-            mode="tags"
-            size="middle"
-            placeholder="Keywords..."
             style={{ width: "100%" }}
             tokenSeparators={[","]}
             open={false}

@@ -446,6 +446,10 @@ export default function ClassPageClient({
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // We use `mounted` only for client-specific portals or overlays (like BookingModal)
+  // The main content is rendered immediately for SEO.
+  const [mounted, setMounted] = useState(false);
+
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [selectedOptionIdForModal, setSelectedOptionIdForModal] =
     useState(null);
@@ -453,16 +457,17 @@ export default function ClassPageClient({
   const [isFavorite, setIsFavorite] = useState(classData.is_favorited);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(false);
-  const [bookingOptionsLoaded, setBookingOptionsLoaded] = useState(false);
+
+  // Simulate booking options loading state if needed, or derived from props
+  // Since options come from server props, they are technically loaded.
+  // We keep this state to maintain existing logic if desired, or set true immediately.
+  const [bookingOptionsLoaded, setBookingOptionsLoaded] = useState(
+    !!(classData.options && classData.options.length > 0),
+  );
 
   useEffect(() => {
-    setIsHydrated(true);
-    // Simulate booking options loaded after component mount
-    if (classData.options && classData.options.length > 0) {
-      setBookingOptionsLoaded(true);
-    }
-  }, [classData.options]);
+    setMounted(true);
+  }, []);
 
   const { user: currentUser } = useAuthUser();
   const isAuthenticated = !!currentUser;
@@ -562,72 +567,10 @@ export default function ClassPageClient({
       ? `${classData.business_city}, ${classData.business_state}`
       : classData?.business_state || classData?.business_city || null;
 
-  if (!isHydrated) {
-    return (
-      <ContentWrapper>
-        <MainContentLayout>
-          <PrimaryContentArea>
-            <Skel_MapSection>
-              <Skel_Map $radius="14px" />
-            </Skel_MapSection>
-            <Skel_FeaturesSection>
-              <Skel_FeatureTitle />
-              <Skel_FeaturesGrid>
-                <Skel_FeatureTag />
-                <Skel_FeatureTag />
-                <Skel_FeatureTag />
-                <Skel_FeatureTag />
-                <Skel_FeatureTag />
-                <Skel_FeatureTag />
-              </Skel_FeaturesGrid>
-            </Skel_FeaturesSection>
-            <Skel_ReviewsSection>
-              <Skel_ReviewsTitle />
-              {[1, 2, 3].map((i) => (
-                <Skel_ReviewCard key={i}>
-                  <Skel_ReviewHeader>
-                    <Skel_ReviewAvatar />
-                    <Skel_ReviewInfo>
-                      <Skel_ReviewName />
-                      <Skel_ReviewRating />
-                    </Skel_ReviewInfo>
-                  </Skel_ReviewHeader>
-                  <Skel_ReviewComment />
-                </Skel_ReviewCard>
-              ))}
-            </Skel_ReviewsSection>
-            <Skel_HostSection>
-              <Skel_HostHeader>
-                <Skel_HostAvatar />
-                <Skel_HostDetails>
-                  <Skel_HostName />
-                  <Skel_HostSubtext />
-                </Skel_HostDetails>
-              </Skel_HostHeader>
-              <Skel_HostStatsGrid>
-                <Skel_HostStatBlock />
-                <Skel_HostStatBlock />
-                <Skel_HostStatBlock />
-              </Skel_HostStatsGrid>
-            </Skel_HostSection>
-          </PrimaryContentArea>
-          <StickySidebar>
-            <Skel_BookingCard>
-              <Skel_Disclaimer />
-              <Skel_Price />
-              <Skel_Details />
-              <Skel_Schedule />
-              <Skel_Button />
-            </Skel_BookingCard>
-          </StickySidebar>
-        </MainContentLayout>
-      </ContentWrapper>
-    );
-  }
-
   return (
     <>
       <ContentWrapper>
+        {/* Render Title & Images immediately for SEO */}
         <ClassPageImagesTitle
           title={classData.title}
           images={classData.images || []}
@@ -642,8 +585,10 @@ export default function ClassPageClient({
           onFavoriteClick={handleFavoriteClick}
           onShareClick={handleOpenShareModal}
         />
+
         <MainContentLayout>
           <PrimaryContentArea>
+            {/* Render Description immediately for SEO */}
             <ClassInformation
               title={classData.title}
               description={classData.description}
@@ -660,6 +605,7 @@ export default function ClassPageClient({
               onShareClick={handleOpenShareModal}
             />
 
+            {/* Suspense fallback for client-heavy components */}
             <Suspense
               fallback={
                 <>
@@ -736,7 +682,7 @@ export default function ClassPageClient({
                 initialRating={classData.average_rating || 0}
                 initialReviewCount={classData.review_count || 0}
                 platformReviewCount={classData.platform_review_count || 0}
-                serverReviews={initialReviews || null} // This will now be the array of reviews
+                serverReviews={initialReviews || null}
               />
               {businessData && (
                 <HostInfo
@@ -746,6 +692,7 @@ export default function ClassPageClient({
               )}
             </Suspense>
           </PrimaryContentArea>
+
           <StickySidebar>
             {!bookingOptionsLoaded ? (
               <Skel_BookingCard>
@@ -768,7 +715,8 @@ export default function ClassPageClient({
         </MainContentLayout>
       </ContentWrapper>
 
-      {isHydrated && (
+      {/* Render portals / overlays only after mount to avoid hydration mismatch on body append */}
+      {mounted && (
         <>
           {optionToDisplayOnCard && (
             <MobileBookingFooter

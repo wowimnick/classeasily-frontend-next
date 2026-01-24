@@ -7,23 +7,19 @@ import React, {
   useRef,
   forwardRef,
   useImperativeHandle,
+  useMemo,
 } from "react";
 import styled, { keyframes } from "styled-components";
 import {
-  Calendar,
   TrendingUp,
   Users,
-  ArrowUp,
-  ArrowDown,
   Download,
-  BookOpen,
   CreditCard,
-  BarChart2 as RevenueBreakdownIcon,
   PieChart as BookingTypeIcon,
   Percent,
   DollarSign,
   TrendingDown,
-  LineChart as LineChartIcon,
+  Info,
 } from "lucide-react";
 import {
   DatePicker,
@@ -31,17 +27,13 @@ import {
   ConfigProvider,
   Card,
   Tooltip,
-  Badge,
-  Space,
-  Select,
   Button,
-  Empty,
-  Statistic,
-  Spin,
+  Select,
   Skeleton,
   Row,
   Col,
   Divider,
+  Grid,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -58,13 +50,9 @@ import {
   PieChart,
   Pie,
   Cell,
+  ComposedChart,
+  Label,
 } from "recharts";
-import dynamic from "next/dynamic";
-
-const ComposedChart = dynamic(
-  () => import("recharts").then((mod) => mod.ComposedChart),
-  { ssr: false }
-);
 import NumberFlow from "@number-flow/react";
 import dayjs from "dayjs";
 import { revenueService, businessClassService } from "@/services/apiService";
@@ -73,6 +61,7 @@ import { theme } from "@/components/theme";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
+const { useBreakpoint } = Grid;
 
 const colors = {
   primary: "#ff385c",
@@ -92,6 +81,7 @@ const colors = {
     red: "#ef4444",
     teal: "#14b8a6",
     yellow: "#eab308",
+    darkBlue: "#1e3a8a",
   },
 };
 
@@ -109,78 +99,65 @@ const DashboardWrapper = styled.div`
     gap: 0;
   }
 `;
+
 const DashboardHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  @media (max-width: 768px) {
+  @media (max-width: 992px) {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 16px;
   }
 `;
 
 const Controls = styled.div`
   display: flex;
-  gap: 8px;
+  gap: 16px;
   align-items: center;
-  margin-top: 12px;
-  @media (max-width: 1500px) {
+  @media (max-width: 992px) {
+    width: 100%;
     flex-direction: column;
-    align-items: flex-start;
-  }
-  @media (max-width: 768px) {
-    width: 100%;
-    flex-wrap: wrap;
-    margin-top: 0;
+    align-items: stretch;
   }
 `;
+
 const StyledRangePicker = styled(RangePicker)`
-  width: 320px;
-  border-radius: 12px;
-  height: 44px;
-  border: 1px solid ${colors.border};
-  &:hover,
-  &:focus-within {
-    border-color: ${colors.primary};
-  }
-  @media (max-width: 768px) {
+  @media (max-width: 992px) {
     width: 100%;
   }
 `;
+
 const ExperienceFilterSelect = styled(Select)`
   width: 250px;
-  .ant-select-selector {
-    border-radius: 12px !important;
-    border: 1px solid ${colors.border} !important;
-    height: 44px !important;
-    display: flex;
-    align-items: center;
-  }
-  &:hover .ant-select-selector,
-  &.ant-select-focused .ant-select-selector {
-    border-color: ${colors.primary} !important;
-  }
-  @media (max-width: 768px) {
-    width: 190px;
+  @media (max-width: 992px) {
+    width: 100%;
   }
 `;
+
 const StatsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 20px;
   @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
   }
 `;
+
 const StatCard = styled(Card)`
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
-  margin-bottom: 0;
   min-height: 140px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
   .ant-card-body {
     padding: 20px;
     display: flex;
@@ -192,6 +169,7 @@ const StatCard = styled(Card)`
     }
   }
 `;
+
 const PageTitle = styled.h1`
   font-size: 24px;
   font-weight: 700;
@@ -220,12 +198,14 @@ const HeaderSubtitle = styled(Text)`
     font-size: 13px;
   }
 `;
+
 const StatCardHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 `;
+
 const IconContainer = styled.div`
   width: 36px;
   height: 36px;
@@ -248,6 +228,7 @@ const IconContainer = styled.div`
     }
   }
 `;
+
 const StatValue = styled.div`
   font-size: 22px;
   font-weight: 700;
@@ -258,6 +239,7 @@ const StatValue = styled.div`
     font-size: 17px;
   }
 `;
+
 const StatLabel = styled.div`
   font-size: 13px;
   color: ${colors.textSecondary};
@@ -268,6 +250,7 @@ const StatLabel = styled.div`
     font-size: 12px;
   }
 `;
+
 const StatFooter = styled.div`
   font-size: 12px;
   color: ${colors.textSecondary};
@@ -277,6 +260,7 @@ const StatFooter = styled.div`
     font-size: 11px;
   }
 `;
+
 const MetricTrend = styled.div`
   display: flex;
   align-items: center;
@@ -287,55 +271,72 @@ const MetricTrend = styled.div`
   color: ${(props) => (props.positive ? colors.success : colors.error)};
   background-color: ${(props) =>
     props.positive ? "rgba(16, 185, 129, 0.1)" : "rgba(239, 68, 68, 0.1)"};
-  @media (max-width: 768px) {
-    font-size: 11px;
-  }
 `;
-const GridRow = styled(Row)`
-  // Removed margin-bottom as Col handles gutter
-`;
-const ChartCard = styled(StatCard)`
-  min-height: 400px;
-  .chart-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: ${colors.textPrimary};
-    margin-bottom: 4px;
+
+const ChartCard = styled(Card)`
+  height: 440px;
+  border-radius: 16px;
+  border: 1px solid ${colors.border};
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  .ant-card-body {
+    padding: 24px !important;
     display: flex;
-    align-items: center;
-    gap: 8px;
-    @media (max-width: 768px) {
-      font-size: 15px;
-    }
-  }
-  .chart-description {
-    font-size: 13px;
-    color: ${colors.textSecondary};
-    margin-bottom: 16px;
-    @media (max-width: 768px) {
-      font-size: 12px;
-    }
-  }
-`;
-const ChartContainer = styled.div`
-  height: 280px;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  @media (max-width: 768px) {
-    height: 250px;
+    flex-direction: column;
+    height: 100% !important;
   }
 `;
 
-const LoaderWrapper = styled.div`
+const ChartHeader = styled.div`
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  margin-bottom: 20px;
+`;
+
+const ChartTitleRow = styled.div`
+  display: flex;
   align-items: center;
-  min-height: 200px;
-  width: 100%;
+  justify-content: space-between;
+  margin-bottom: 4px;
+`;
+
+const ChartTitle = styled.h3`
+  font-size: 16px;
+  font-weight: 600;
+  color: ${colors.textPrimary};
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const ChartDescription = styled.p`
+  font-size: 13px;
+  color: ${colors.textSecondary};
+  margin: 0;
+`;
+
+const InsightBadge = styled.div`
+  background: ${colors.lightBg};
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: ${colors.textPrimary};
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid ${colors.border};
+
+  strong {
+    color: ${colors.primary};
+  }
+`;
+
+const ChartContainer = styled.div`
+  flex-grow: 1;
+  position: relative;
+  min-height: 0;
 `;
 
 const EmptyStateContainer = styled.div`
@@ -347,39 +348,14 @@ const EmptyStateContainer = styled.div`
   padding: ${(props) => props.$padding || "60px 20px"};
   text-align: center;
   gap: 16px;
-
-  @media (max-width: 768px) {
-    padding: ${(props) => props.$padding || "40px 16px"};
-    gap: 12px;
-  }
-
-  @media (max-width: 480px) {
-    padding: ${(props) => props.$padding || "30px 12px"};
-    gap: 10px;
-  }
 `;
 
 const EmptyStateIcon = styled.div`
   opacity: 0.3;
   filter: grayscale(100%);
-
   lord-icon {
     width: 80px;
     height: 80px;
-  }
-
-  @media (max-width: 768px) {
-    lord-icon {
-      width: 64px;
-      height: 64px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    lord-icon {
-      width: 48px;
-      height: 48px;
-    }
   }
 `;
 
@@ -387,14 +363,6 @@ const EmptyStateText = styled.div`
   color: ${colors.textSecondary};
   font-size: 15px;
   font-weight: 500;
-
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 13px;
-  }
 `;
 
 const EmptyStateSubtext = styled.div`
@@ -402,27 +370,13 @@ const EmptyStateSubtext = styled.div`
   font-size: 13px;
   opacity: 0.7;
   max-width: 300px;
-
-  @media (max-width: 768px) {
-    font-size: 12px;
-    max-width: 250px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 11px;
-    max-width: 200px;
-  }
 `;
 
 /* --- Custom Skeletons --- */
 
 const shimmer = keyframes`
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 `;
 
 const SkeletonBase = styled.div`
@@ -473,36 +427,6 @@ const ChartGridLine = styled.div`
   background-color: ${colors.border};
 `;
 
-const ChartLinePath = styled.div`
-  position: absolute;
-  top: 30%;
-  left: 10px;
-  right: 0;
-  height: 40%;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 56, 92, 0) 0%,
-    rgba(255, 56, 92, 0.1) 50%,
-    rgba(255, 56, 92, 0) 100%
-  );
-  clip-path: polygon(
-    0 100%,
-    10% 80%,
-    20% 85%,
-    30% 60%,
-    40% 70%,
-    50% 40%,
-    60% 50%,
-    70% 30%,
-    80% 45%,
-    90% 20%,
-    100% 30%,
-    100% 100%
-  );
-  opacity: 0.5;
-`;
-
-// 1. Revenue Trends Skeleton
 const RevenueTrendsSkeleton = () => (
   <ChartSkeletonContainer>
     <ChartYAxis>
@@ -514,7 +438,6 @@ const RevenueTrendsSkeleton = () => (
       {[...Array(5)].map((_, i) => (
         <ChartGridLine key={i} />
       ))}
-      <ChartLinePath />
       <div
         style={{
           display: "flex",
@@ -530,7 +453,6 @@ const RevenueTrendsSkeleton = () => (
   </ChartSkeletonContainer>
 );
 
-// 2. Experience Revenue Skeleton (Horizontal Bar)
 const ExperienceRevenueSkeleton = () => (
   <div
     style={{
@@ -547,7 +469,7 @@ const ExperienceRevenueSkeleton = () => (
         key={i}
         style={{ display: "flex", alignItems: "center", marginBottom: "15px" }}
       >
-        <SkeletonBase $width="15%" $height="12px" style={{ marginRight: 15 }} />
+        <SkeletonBase $width="25%" $height="12px" style={{ marginRight: 15 }} />
         <SkeletonBase
           $width={`${Math.floor(Math.random() * (90 - 30) + 30)}%`}
           $height="24px"
@@ -558,8 +480,7 @@ const ExperienceRevenueSkeleton = () => (
   </div>
 );
 
-// 3. Booking Type Skeleton (Pie Chart)
-const BookingTypeSkeleton = () => (
+const PieSkeleton = () => (
   <div
     style={{
       width: "100%",
@@ -570,41 +491,30 @@ const BookingTypeSkeleton = () => (
       justifyContent: "center",
     }}
   >
-    <div style={{ position: "relative", width: "180px", height: "180px" }}>
+    <div style={{ position: "relative", width: "160px", height: "160px" }}>
       <SkeletonBase
-        $width="180px"
-        $height="180px"
+        $width="160px"
+        $height="160px"
         $borderRadius="50%"
         style={{ border: `4px solid white` }}
       />
     </div>
-    <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
-      <SkeletonBase $width="80px" $height="12px" />
-      <SkeletonBase $width="80px" $height="12px" />
-    </div>
   </div>
 );
 
-const CustomTooltip = ({ active, payload, label, type, isMobile }) => {
+const CustomTooltip = ({ active, payload, label, type }) => {
   if (active && payload && payload.length) {
     return (
       <div
         style={{
           background: "white",
           padding: "12px 16px",
-          border: "1px solid #e2e8f0",
-          borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          border: `1px solid ${colors.border}`,
+          borderRadius: 12,
+          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
         }}
       >
-        <Text
-          strong
-          style={{
-            display: "block",
-            marginBottom: "8px",
-            fontSize: isMobile ? "13px" : "14px",
-          }}
-        >
+        <Text strong style={{ display: "block", marginBottom: "8px" }}>
           {type === "experience" ? label : dayjs(label).format("MMM D, YYYY")}
         </Text>
         {payload.map((entry, index) => (
@@ -613,12 +523,13 @@ const CustomTooltip = ({ active, payload, label, type, isMobile }) => {
             style={{
               color: entry.color || colors.textPrimary,
               marginBottom: "4px",
-              fontSize: isMobile ? "13px" : "14px",
+              fontSize: "13px",
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "16px",
             }}
           >
-            <span style={{ marginRight: "8px", color: colors.textSecondary }}>
-              {entry.name}:
-            </span>
+            <span style={{ color: colors.textSecondary }}>{entry.name}:</span>
             <span style={{ fontWeight: 600 }}>
               $
               {entry.value?.toLocaleString(undefined, {
@@ -641,11 +552,12 @@ const PIE_COLORS_EXTENDED = [
   colors.chart.orange,
   colors.chart.red,
   colors.chart.teal,
-  colors.chart.yellow,
-  "#a855f7",
-  "#ec4899",
-  "#f43f5e",
 ];
+
+// Helper to calculate total for donut center
+const getChartTotal = (data) => {
+  return data.reduce((acc, curr) => acc + (curr.value || 0), 0);
+};
 
 const Revenue = forwardRef((props, ref) => {
   const [loading, setLoading] = useState(true);
@@ -671,26 +583,18 @@ const Revenue = forwardRef((props, ref) => {
     revenue_by_booking_type: [],
   });
   const [businessExperiences, setBusinessExperiences] = useState([]);
-  const [isMobileView, setIsMobileView] = useState(false);
-
   const abortControllerRef = useRef(null);
   const fetchTimeoutRef = useRef(null);
   const mainContentRef = useRef(null);
+  const screens = useBreakpoint();
+  const isMobile = !screens.lg;
 
   useImperativeHandle(ref, () => ({
     getTargetElement: () => mainContentRef.current,
   }));
 
-  useEffect(() => {
-    setIsMobileView(window.innerWidth <= 768);
-    const checkMobile = () => setIsMobileView(window.innerWidth <= 768);
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
   const fetchBusinessExperiencesForFilter = useCallback(async () => {
     try {
-      // Logic unchanged, just renaming state/UI
       const result = await businessClassService.fetchBusinessClasses({
         page_size: 500,
         status: "active,inactive",
@@ -704,8 +608,6 @@ const Revenue = forwardRef((props, ref) => {
           { value: null, label: "All Experiences" },
           ...uniqueClasses,
         ]);
-      } else {
-        setBusinessExperiences([{ value: null, label: "All Experiences" }]);
       }
     } catch (error) {
       setBusinessExperiences([{ value: null, label: "All Experiences" }]);
@@ -714,7 +616,6 @@ const Revenue = forwardRef((props, ref) => {
 
   const fetchAnalytics = useCallback(async (currentFilters) => {
     if (!currentFilters.startDate || !currentFilters.endDate) {
-      message.warning("Please select a valid date range.");
       return;
     }
     setIsReadyForAnimation(false);
@@ -732,7 +633,6 @@ const Revenue = forwardRef((props, ref) => {
       const result = await revenueService.getRevenueAnalytics(apiParams, {
         signal: abortControllerRef.current.signal,
       });
-      console.log("Analytics result:", result);
 
       if (abortControllerRef.current.signal.aborted) return;
       if (result.success) {
@@ -775,8 +675,6 @@ const Revenue = forwardRef((props, ref) => {
         startDate: dates[0],
         endDate: dates[1],
       }));
-    else
-      setFilterParams((prev) => ({ ...prev, startDate: null, endDate: null }));
   };
 
   const handleClassFilterChange = (value) => {
@@ -789,9 +687,8 @@ const Revenue = forwardRef((props, ref) => {
       return;
     }
     message.loading({
-      content: "Generating your report...",
+      content: "Generating report...",
       key: "exportRevenue",
-      duration: 0,
     });
     try {
       const result = await revenueService.exportRevenueReport({
@@ -806,17 +703,26 @@ const Revenue = forwardRef((props, ref) => {
         });
       } else {
         message.error({
-          content: result.error || "Export failed. Please try again.",
+          content: result.error || "Export failed.",
           key: "exportRevenue",
         });
       }
     } catch (error) {
       message.error({
-        content: "An error occurred during export.",
+        content: "An error occurred.",
         key: "exportRevenue",
       });
     }
   };
+
+  // --- Insight Helpers ---
+  const topSourceInsight = useMemo(() => {
+    const data = analytics.revenue_by_booking_type || [];
+    if (!data.length) return null;
+    return data.reduce((prev, current) =>
+      prev.value > current.value ? prev : current,
+    );
+  }, [analytics.revenue_by_booking_type]);
 
   const statisticCards = [
     {
@@ -852,13 +758,13 @@ const Revenue = forwardRef((props, ref) => {
     },
     {
       key: "average_order_value",
-      title: "Average Order Value",
+      title: "Avg. Order Value",
       value: analytics.metrics.average_order_value,
       prefix: "$",
       icon: <CreditCard size={20} />,
       color: colors.chart.purple,
       background: `rgba(139, 92, 246, 0.1)`,
-      footer: "Average revenue per transaction",
+      footer: "Average per transaction",
     },
     {
       key: "revenue_per_booker",
@@ -872,13 +778,13 @@ const Revenue = forwardRef((props, ref) => {
     },
     {
       key: "revenue_per_spot",
-      title: "Revenue Per Spot Booked",
+      title: "Revenue Per Spot",
       value: analytics.metrics.revenue_per_spot,
       prefix: "$",
       icon: <Percent size={20} />,
       color: colors.chart.teal,
       background: `rgba(20, 184, 166, 0.1)`,
-      footer: "Average revenue per enrollment",
+      footer: "Average revenue per seat",
     },
   ];
 
@@ -899,42 +805,33 @@ const Revenue = forwardRef((props, ref) => {
               format="MMM D, YYYY"
               allowClear={false}
             />
-            <div
-              style={{
-                display: "flex",
-                gap: "8px",
-                flexWrap: "nowrap",
-                alignItems: "center",
-              }}
-            >
-              <ExperienceFilterSelect
-                placeholder="Filter by Experience"
-                value={filterParams.classId}
-                onChange={handleClassFilterChange}
-                options={businessExperiences}
-                allowClear
-                showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? "")
-                    .toLowerCase()
-                    .includes(input.toLowerCase())
-                }
-              />
-              <Tooltip title="Export your report for a detailed HST breakdown for tax purposes.">
-                <Button
-                  type="primary"
-                  icon={<Download size={16} />}
-                  onClick={handleExport}
-                  disabled={loading}
-                >
-                  Export Report
-                </Button>
-              </Tooltip>
-            </div>
+            <ExperienceFilterSelect
+              placeholder="Filter by Experience"
+              value={filterParams.classId}
+              onChange={handleClassFilterChange}
+              options={businessExperiences}
+              allowClear
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label ?? "")
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+            />
+            <Tooltip title="Export your report for a detailed breakdown.">
+              <Button
+                type="primary"
+                icon={<Download size={16} />}
+                onClick={handleExport}
+                disabled={loading}
+              >
+                Export
+              </Button>
+            </Tooltip>
           </Controls>
         </DashboardHeader>
 
-        <Divider />
+        <Divider style={{ margin: "24px 0" }} />
 
         <StatsGrid>
           {statisticCards.map((stat) => (
@@ -967,7 +864,7 @@ const Revenue = forwardRef((props, ref) => {
                               <LordIcon
                                 src="https://cdn.lordicon.com/zwtssiaj.json"
                                 colors="primary:#f56231"
-                                size={isMobileView ? "16px" : "20px"}
+                                size={isMobile ? "16px" : "20px"}
                                 trigger="hover"
                                 playOnLoad={true}
                               />
@@ -982,27 +879,13 @@ const Revenue = forwardRef((props, ref) => {
                     <StatValue>
                       {stat.prefix}
                       <NumberFlow
-                        key={
-                          loading ? `${stat.key}-loading` : `${stat.key}-loaded`
-                        }
                         value={isReadyForAnimation ? stat.value || 0 : 0}
                         duration={800}
                         numberFormatOptions={{
                           maximumFractionDigits:
-                            stat.key === "average_order_value" ||
-                            stat.key === "revenue_per_booker" ||
-                            stat.key === "revenue_per_spot"
-                              ? 2
-                              : 0,
-                          minimumFractionDigits:
-                            stat.key === "average_order_value" ||
-                            stat.key === "revenue_per_booker" ||
-                            stat.key === "revenue_per_spot"
-                              ? 2
-                              : 0,
+                            stat.key === "total_gross_revenue" ? 0 : 2,
                         }}
                       />
-                      {stat.suffix}
                     </StatValue>
                     {stat.footer && <StatFooter>{stat.footer}</StatFooter>}
                   </div>
@@ -1012,35 +895,41 @@ const Revenue = forwardRef((props, ref) => {
           ))}
         </StatsGrid>
 
-        <Divider />
+        <Divider style={{ margin: "24px 0" }} />
 
-        <ChartCard style={{ marginBottom: 24 }}>
-          <div>
-            <div className="chart-title">
-              <LordIcon
-                src="https://cdn.lordicon.com/excswhey.json"
-                trigger="in"
-                delay="1500"
-                state="in-trend-up"
-                colors="primary:#ff385c"
-              />{" "}
-              Revenue Trends (Local Business Time)
-            </div>
-            <div className="chart-description">
-              Gross revenue, platform fees, and net revenue over the selected
-              period.
-            </div>
-          </div>
+        <ChartCard>
+          <ChartHeader>
+            <ChartTitleRow>
+              <ChartTitle>
+                <LordIcon
+                  src="https://cdn.lordicon.com/excswhey.json"
+                  trigger="in"
+                  delay="1500"
+                  state="in-trend-up"
+                  colors="primary:#ff385c"
+                />
+                Revenue Trends
+              </ChartTitle>
+              {!loading && analytics.metrics.total_gross_revenue > 0 && (
+                <InsightBadge>
+                  Total Net:{" "}
+                  <strong>
+                    ${analytics.metrics.estimated_net_revenue?.toLocaleString()}
+                  </strong>
+                </InsightBadge>
+              )}
+            </ChartTitleRow>
+            <ChartDescription>
+              Gross vs. Net Revenue over time.
+            </ChartDescription>
+          </ChartHeader>
+
           <ChartContainer>
             {loading ? (
               <RevenueTrendsSkeleton />
-            ) : !analytics.revenue_trends ||
-              analytics.revenue_trends.length === 0 ||
+            ) : !analytics.revenue_trends?.length ||
               analytics.revenue_trends.every(
-                (day) =>
-                  day.gross_revenue === 0 &&
-                  day.net_revenue === 0 &&
-                  day.platform_fees === 0
+                (day) => day.gross_revenue === 0,
               ) ? (
               <EmptyStateContainer>
                 <EmptyStateIcon>
@@ -1053,23 +942,31 @@ const Revenue = forwardRef((props, ref) => {
                     style={{ width: 40, height: 40 }}
                   />
                 </EmptyStateIcon>
-                <EmptyStateText>No Revenue Activity Found</EmptyStateText>
+                <EmptyStateText>No Revenue Activity</EmptyStateText>
                 <EmptyStateSubtext>
-                  You don't have any revenue in this date range. When you do,
-                  daily revenue trends will be shown here.
+                  No revenue recorded for this period.
                 </EmptyStateSubtext>
               </EmptyStateContainer>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart
                   data={analytics.revenue_trends}
-                  margin={{
-                    top: 10,
-                    right: isMobileView ? 15 : 30,
-                    left: isMobileView ? -10 : 0,
-                    bottom: 10,
-                  }}
+                  margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
                 >
+                  <defs>
+                    <linearGradient id="colorGross" x1="0" y1="0" x2="0" y2="1">
+                      <stop
+                        offset="5%"
+                        stopColor={colors.chart.green}
+                        stopOpacity={0.2}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={colors.chart.green}
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     stroke={colors.border}
@@ -1078,87 +975,51 @@ const Revenue = forwardRef((props, ref) => {
                   <XAxis
                     dataKey="date"
                     tickFormatter={(value) =>
-                      dayjs(value).format(isMobileView ? "D MMM" : "MMM D")
+                      dayjs(value).format(isMobile ? "D MMM" : "MMM D")
                     }
-                    tick={{
-                      fill: colors.textSecondary,
-                      fontSize: isMobileView ? "10px" : "12px",
-                    }}
-                    axisLine={{ stroke: colors.border }}
-                    tickLine={{ stroke: colors.border }}
-                    interval={
-                      isMobileView
-                        ? Math.floor(analytics.revenue_trends.length / 5)
-                        : Math.floor(analytics.revenue_trends.length / 10)
-                    }
+                    tick={{ fill: colors.textSecondary, fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                    dy={10}
                   />
                   <YAxis
-                    label={{
-                      value: "Amount (CAD)",
-                      angle: -90,
-                      position: "insideLeft",
-                      style: {
-                        textAnchor: "middle",
-                        fill: colors.textSecondary,
-                        fontSize: isMobileView ? "10px" : "12px",
-                      },
-                      dy: isMobileView ? 50 : 40,
-                      dx: isMobileView ? 5 : 0,
-                    }}
                     tickFormatter={(value) =>
-                      `$${value.toLocaleString(undefined, {
-                        maximumFractionDigits: 0,
-                      })}`
+                      `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
                     }
-                    tick={{
-                      fill: colors.textSecondary,
-                      fontSize: isMobileView ? "10px" : "12px",
-                    }}
-                    axisLine={{ stroke: colors.border }}
-                    tickLine={{ stroke: colors.border }}
-                    allowDecimals={false}
-                    width={isMobileView ? 35 : 60}
+                    tick={{ fill: colors.textSecondary, fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={50}
                   />
                   <RechartsTooltip
                     content={<CustomTooltip />}
-                    cursor={{ stroke: colors.primary, strokeDasharray: "3 3" }}
+                    cursor={{ stroke: colors.border }}
                   />
-                  <Legend
-                    verticalAlign="top"
-                    height={36}
-                    wrapperStyle={{
-                      fontSize: isMobileView ? "10px" : "12px",
-                      color: colors.textSecondary,
-                      paddingBottom: "10px",
-                    }}
-                  />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
                   <Area
                     type="monotone"
                     dataKey="gross_revenue"
                     name="Gross Revenue"
-                    fill={colors.chart.green}
                     stroke={colors.chart.green}
-                    fillOpacity={0.1}
-                    activeDot={{ r: isMobileView ? 3 : 6 }}
+                    fill="url(#colorGross)"
+                    strokeWidth={2}
                   />
                   <Line
                     type="monotone"
                     dataKey="net_revenue"
-                    name="Net Revenue (Est.)"
+                    name="Net Revenue"
                     stroke={colors.chart.blue}
                     strokeWidth={2}
                     dot={false}
-                    activeDot={{ r: isMobileView ? 3 : 6 }}
                   />
                   <Line
                     type="monotone"
                     dataKey="platform_fees"
-                    name="Platform Fees (Est.)"
+                    name="Fees"
                     stroke={colors.chart.red}
                     strokeWidth={2}
                     strokeDasharray="3 3"
                     dot={false}
-                    activeDot={{ r: isMobileView ? 3 : 6 }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -1166,122 +1027,99 @@ const Revenue = forwardRef((props, ref) => {
           </ChartContainer>
         </ChartCard>
 
-        <GridRow gutter={[20, 20]}>
-          <Col xs={24} lg={12}>
+        <Divider style={{ margin: "24px 0" }} />
+
+        <Row gutter={[24, 24]}>
+          {/* BAR CHART - WIDER (66%) */}
+          <Col xs={24} lg={16}>
             <ChartCard>
-              <div>
-                <div className="chart-title">
-                  <LordIcon
-                    src="https://cdn.lordicon.com/mubdgyyw.json"
-                    trigger="in"
-                    delay="1500"
-                    state="in-assessment"
-                    colors="primary:#ff385c"
-                    playOnLoad={true}
-                  />{" "}
-                  Revenue by Experience
-                </div>
-                <div className="chart-description">
-                  Top 10 revenue-generating experiences (Gross Revenue).
-                </div>
-              </div>
+              <ChartHeader>
+                <ChartTitleRow>
+                  <ChartTitle>
+                    <LordIcon
+                      src="https://cdn.lordicon.com/mubdgyyw.json"
+                      trigger="in"
+                      delay="1500"
+                      state="in-assessment"
+                      colors="primary:#ff385c"
+                    />
+                    Revenue by Experience
+                  </ChartTitle>
+                </ChartTitleRow>
+                <ChartDescription>
+                  Top revenue-generating experiences.
+                </ChartDescription>
+              </ChartHeader>
               <ChartContainer>
                 {loading ? (
                   <ExperienceRevenueSkeleton />
-                ) : !analytics.class_revenue ||
-                  analytics.class_revenue.length === 0 ? (
-                  <LoaderWrapper>
-                    <EmptyStateContainer>
-                      <EmptyStateIcon>
-                        <LordIcon
-                          src="https://cdn.lordicon.com/qfkpvtbg.json"
-                          trigger="in"
-                          delay="1500"
-                          state="in-coin"
-                          colors="primary:#94a3b8"
-                          style={{ width: 40, height: 40 }}
-                        />
-                      </EmptyStateIcon>
-                      <EmptyStateText>No Revenue Data</EmptyStateText>
-                      <EmptyStateSubtext>
-                        You don't currently have any revenue. When you do,
-                        you'll see a breakdown by experience here.
-                      </EmptyStateSubtext>
-                    </EmptyStateContainer>
-                  </LoaderWrapper>
+                ) : !analytics.class_revenue?.length ? (
+                  <EmptyStateContainer>
+                    <EmptyStateIcon>
+                      <lord-icon
+                        src="https://cdn.lordicon.com/qfkpvtbg.json"
+                        trigger="in"
+                        colors="primary:#94a3b8"
+                        style={{ width: 40, height: 40 }}
+                      />
+                    </EmptyStateIcon>
+                    <EmptyStateText>No Revenue Data</EmptyStateText>
+                  </EmptyStateContainer>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={analytics.class_revenue.slice(0, 10)}
+                      data={analytics.class_revenue.slice(0, 8)}
                       layout="vertical"
-                      margin={{
-                        top: 20,
-                        right: isMobileView ? 15 : 30,
-                        left: isMobileView ? 5 : 20,
-                        bottom: 5,
-                      }}
+                      margin={{ top: 0, right: 30, left: 10, bottom: 0 }}
+                      barSize={20}
                     >
                       <CartesianGrid
                         strokeDasharray="3 3"
-                        stroke={colors.border}
                         horizontal={false}
+                        stroke={colors.border}
                       />
                       <XAxis
                         type="number"
-                        tickFormatter={(value) =>
-                          `$${value.toLocaleString(undefined, {
-                            maximumFractionDigits: 0,
-                          })}`
-                        }
-                        tick={{
-                          fill: colors.textSecondary,
-                          fontSize: isMobileView ? "10px" : "12px",
-                        }}
-                        axisLine={{ stroke: colors.border }}
-                        tickLine={{ stroke: colors.border }}
+                        tickFormatter={(value) => `$${value}`}
+                        tick={{ fill: colors.textSecondary, fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
                       />
                       <YAxis
                         dataKey="name"
                         type="category"
                         tick={{
                           fill: colors.textSecondary,
-                          fontSize: isMobileView ? "10px" : "12px",
-                          width: isMobileView ? 80 : 150,
+                          fontSize: 12,
+                          fontWeight: 500,
                         }}
-                        axisLine={{ stroke: colors.border }}
+                        width={isMobile ? 80 : 150}
+                        axisLine={false}
                         tickLine={false}
-                        width={isMobileView ? 90 : 150}
-                        interval={0}
                       />
                       <RechartsTooltip
                         content={(props) => (
                           <CustomTooltip {...props} type="experience" />
                         )}
-                        cursor={{ fill: "#f8fafc" }}
+                        cursor={{ fill: colors.lightBg }}
                       />
                       <Legend
-                        verticalAlign="top"
-                        wrapperStyle={{
-                          fontSize: isMobileView ? "10px" : "12px",
-                          color: colors.textSecondary,
-                          paddingBottom: "10px",
-                          paddingTop: "5px",
-                        }}
-                      />
-                      <Bar
-                        dataKey="platform_revenue"
-                        name="Platform Revenue"
-                        stackId="a"
-                        fill={colors.chart.purple}
-                        maxBarSize={isMobileView ? 20 : 30}
+                        wrapperStyle={{ fontSize: 12, paddingTop: 10 }}
+                        iconType="circle"
                       />
                       <Bar
                         dataKey="widget_revenue"
                         name="Widget Revenue"
                         stackId="a"
                         fill={colors.chart.blue}
+                        radius={[0, 0, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="platform_revenue"
+                        name="Platform Revenue"
+                        stackId="a"
+                        fill={colors.chart.purple}
                         radius={[0, 4, 4, 0]}
-                        maxBarSize={isMobileView ? 20 : 30}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -1289,46 +1127,45 @@ const Revenue = forwardRef((props, ref) => {
               </ChartContainer>
             </ChartCard>
           </Col>
-          <Col xs={24} lg={12}>
+
+          {/* DONUT CHART - NARROWER (33%) */}
+          <Col xs={24} lg={8}>
             <ChartCard>
-              <div>
-                <div className="chart-title">
-                  <LordIcon
-                    src="https://cdn.lordicon.com/btfbysou.json"
-                    trigger="in"
-                    delay="1500"
-                    state="in-pie-chart"
-                    colors="primary:#ff385c"
-                  />{" "}
-                  Revenue by Booking Type
-                </div>
-                <div className="chart-description">
-                  Revenue distribution from the embeddable widget vs. the main
-                  platform.
-                </div>
-              </div>
+              <ChartHeader>
+                <ChartTitleRow>
+                  <ChartTitle>
+                    <LordIcon
+                      src="https://cdn.lordicon.com/btfbysou.json"
+                      trigger="in"
+                      delay="1500"
+                      state="in-pie-chart"
+                      colors="primary:#ff385c"
+                    />
+                    Revenue Source
+                  </ChartTitle>
+                  {!loading && topSourceInsight && (
+                    <InsightBadge>
+                      Top: <strong>{topSourceInsight.name}</strong>
+                    </InsightBadge>
+                  )}
+                </ChartTitleRow>
+                <ChartDescription>Widget vs. Platform.</ChartDescription>
+              </ChartHeader>
               <ChartContainer>
                 {loading ? (
-                  <BookingTypeSkeleton />
-                ) : !analytics.revenue_by_booking_type ||
-                  analytics.revenue_by_booking_type.length === 0 ? (
-                  <LoaderWrapper>
-                    <EmptyStateContainer>
-                      <EmptyStateIcon>
-                        <lord-icon
-                          src="https://cdn.lordicon.com/idcmwtrd.json"
-                          trigger="in"
-                          colors="primary:#94a3b8"
-                          style={{ width: 40, height: 40 }}
-                        />
-                      </EmptyStateIcon>
-                      <EmptyStateText>No Revenue Data</EmptyStateText>
-                      <EmptyStateSubtext>
-                        You don't currently have any revenue. When you do,
-                        you'll see the source of the revenue here.
-                      </EmptyStateSubtext>
-                    </EmptyStateContainer>
-                  </LoaderWrapper>
+                  <PieSkeleton />
+                ) : !analytics.revenue_by_booking_type?.length ? (
+                  <EmptyStateContainer>
+                    <EmptyStateIcon>
+                      <lord-icon
+                        src="https://cdn.lordicon.com/idcmwtrd.json"
+                        trigger="in"
+                        colors="primary:#94a3b8"
+                        style={{ width: 40, height: 40 }}
+                      />
+                    </EmptyStateIcon>
+                    <EmptyStateText>No Data</EmptyStateText>
+                  </EmptyStateContainer>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -1336,36 +1173,13 @@ const Revenue = forwardRef((props, ref) => {
                         data={analytics.revenue_by_booking_type}
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
-                        label={({
-                          cx,
-                          cy,
-                          midAngle,
-                          innerRadius,
-                          outerRadius,
-                          percent,
-                        }) => {
-                          const RADIAN = Math.PI / 180;
-                          const radius =
-                            innerRadius + (outerRadius - innerRadius) * 0.5;
-                          const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                          const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                          return (
-                            <text
-                              x={x}
-                              y={y}
-                              fill="white"
-                              textAnchor={x > cx ? "start" : "end"}
-                              dominantBaseline="central"
-                            >
-                              {`${(percent * 100).toFixed(0)}%`}
-                            </text>
-                          );
-                        }}
-                        outerRadius={isMobileView ? 80 : 100}
-                        fill="#8884d8"
+                        innerRadius="60%"
+                        outerRadius="85%"
+                        paddingAngle={5}
                         dataKey="value"
                         nameKey="name"
+                        stroke="none"
+                        cornerRadius={5}
                       >
                         {analytics.revenue_by_booking_type.map(
                           (entry, index) => (
@@ -1377,19 +1191,21 @@ const Revenue = forwardRef((props, ref) => {
                                 ]
                               }
                             />
-                          )
+                          ),
                         )}
+                        <Label
+                          value={`$${getChartTotal(analytics.revenue_by_booking_type).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                          position="center"
+                          fill={colors.textPrimary}
+                          style={{ fontSize: "20px", fontWeight: "bold" }}
+                        />
                       </Pie>
-                      <RechartsTooltip
-                        content={(props) => (
-                          <CustomTooltip {...props} isMobile={isMobileView} />
-                        )}
-                      />
                       <Legend
-                        iconSize={10}
-                        wrapperStyle={{
-                          fontSize: isMobileView ? "11px" : "13px",
-                        }}
+                        iconType="circle"
+                        wrapperStyle={{ fontSize: 12 }}
+                      />
+                      <RechartsTooltip
+                        content={(props) => <CustomTooltip {...props} />}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -1397,7 +1213,7 @@ const Revenue = forwardRef((props, ref) => {
               </ChartContainer>
             </ChartCard>
           </Col>
-        </GridRow>
+        </Row>
       </DashboardWrapper>
     </ConfigProvider>
   );

@@ -25,6 +25,9 @@ import {
   Space,
   Popconfirm,
   Tag,
+  Segmented,
+  Alert, // Added Alert for synced mode warning
+  Badge, // Added Badge
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -48,6 +51,8 @@ import {
   Plus,
   Filter,
   Hourglass,
+  Layers, // Added for Option icon
+  Link2, // Added for Synced icon
 } from "lucide-react";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
@@ -821,6 +826,9 @@ const dayLabels = {
 const ScheduleManagementView = React.memo(
   ({
     classData,
+    options, // Added prop
+    selectedOptionId, // Added prop
+    onOptionChange, // Added prop
     onAdd,
     onEdit,
     onEditGroup,
@@ -833,33 +841,42 @@ const ScheduleManagementView = React.memo(
     const [schedules, setSchedules] = useState([]);
     const [loading, setLoading] = useState(true);
     const scrollRef = useRef(null);
-    const optionId = classData?.option?.optionId;
+
+    // Calculate option info
+    const currentOption =
+      options?.find((o) => o.optionId === selectedOptionId) ||
+      classData?.option;
+    const isSynced = currentOption?.schedule_mode === "synced";
+    const primaryOption = options?.find((o) => o.schedule_mode === "primary");
 
     const refreshSchedules = useCallback(async () => {
-      if (!optionId) return;
+      if (!selectedOptionId) return;
       setLoading((prev) => (prev === true ? true : false));
       try {
         const result = await scheduleService.fetchSchedules({
-          option_id: optionId,
+          option_id: selectedOptionId,
         });
         if (result.success) setSchedules(result.data || []);
         else
           message.error(
-            getErrorMessage(result.error || "Failed to refresh schedules.")
+            getErrorMessage(result.error || "Failed to refresh schedules."),
           );
       } catch (error) {
         message.error(getErrorMessage(error));
       } finally {
         setLoading(false);
       }
-    }, [optionId]);
+    }, [selectedOptionId]);
 
     useEffect(() => {
-      if (optionId) {
+      if (selectedOptionId && !isSynced) {
         setLoading(true);
         refreshSchedules();
+      } else if (isSynced) {
+        setSchedules([]); // Clear schedules if synced, as we can't edit them here
+        setLoading(false);
       }
-    }, [optionId, refreshSchedules]);
+    }, [selectedOptionId, isSynced, refreshSchedules]);
 
     const setCurrentMonth = (val) => onViewStateChange({ currentMonth: val });
     const setSelectedDate = (val) => onViewStateChange({ selectedDate: val });
@@ -883,11 +900,11 @@ const ScheduleManagementView = React.memo(
       // Apply Date Filter
       if (selectedDate) {
         filtered = filtered.filter(
-          (s) => s.date === selectedDate.format("YYYY-MM-DD")
+          (s) => s.date === selectedDate.format("YYYY-MM-DD"),
         );
         // If specific date selected, usually sort by time ascending
         return filtered.sort((a, b) =>
-          dayjs(`${a.date}T${a.time}`).diff(dayjs(`${b.date}T${b.time}`))
+          dayjs(`${a.date}T${a.time}`).diff(dayjs(`${b.date}T${b.time}`)),
         );
       }
 
@@ -900,13 +917,13 @@ const ScheduleManagementView = React.memo(
 
       // Default Sort: Furthest away first (Descending) for "View All"
       return filtered.sort((a, b) =>
-        dayjs(`${b.date}T${b.time}`).diff(dayjs(`${a.date}T${a.time}`))
+        dayjs(`${b.date}T${b.time}`).diff(dayjs(`${a.date}T${a.time}`)),
       );
     }, [schedules, selectedDate, groupFilter]);
 
     const uniqueGroups = useMemo(
       () => [...new Set(schedules.map((s) => s.name).filter(Boolean))],
-      [schedules]
+      [schedules],
     );
 
     const handleDelete = async (id) => {
@@ -939,221 +956,335 @@ const ScheduleManagementView = React.memo(
 
     return (
       <ManagementContainer>
-        <DateStripContainer>
+        {/* --- ADDED: Option Selector --- */}
+        {options && options.length > 1 && (
           <div
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "0 20px",
-              alignItems: "center",
+              padding: "16px 20px 8px",
+              background: "white",
+              borderBottom: "1px solid #f0f0f0",
             }}
           >
-            <div style={{ display: "flex", gap: 8 }}>
-              <Button
-                size="small"
-                onClick={() =>
-                  setCurrentMonth(currentMonth.subtract(1, "month"))
-                }
-                icon={<ChevronLeft size={14} />}
-              />
-              <span style={{ fontWeight: 600 }}>
-                {currentMonth.format("MMMM YYYY")}
-              </span>
-              <Button
-                size="small"
-                onClick={() => setCurrentMonth(currentMonth.add(1, "month"))}
-                icon={<ChevronRight size={14} />}
-              />
+            <div
+              style={{
+                marginBottom: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                color: "#64748b",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <Layers size={12} /> SELECT TIER TO MANAGE
             </div>
-            <Button
-              size="small"
-              type="link"
-              onClick={() => setSelectedDate(null)}
-            >
-              View All
-            </Button>
-          </div>
-
-          <DateScrollWrapper>
-            <button className="scroll-btn" onClick={() => handleScroll("left")}>
-              <ChevronLeft size={16} />
-            </button>
-            <div className="scroll-container" ref={scrollRef}>
-              {datesInMonth.map((date) => {
-                const isSel = selectedDate && selectedDate.isSame(date, "day");
-                const hasSch = schedules.some(
-                  (s) => s.date === date.format("YYYY-MM-DD")
-                );
-                return (
-                  <Button
-                    key={date.toString()}
-                    type={isSel ? "primary" : "default"}
-                    style={{
-                      height: 56,
-                      minWidth: 50,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      padding: 0,
-                      borderColor: hasSch && !isSel ? "#ff385c" : undefined,
-                      flexShrink: 0,
-                    }}
-                    onClick={() => setSelectedDate(date)}
-                  >
-                    <span style={{ fontSize: 10, opacity: 0.8 }}>
-                      {date.format("ddd")}
-                    </span>
-                    <span style={{ fontSize: 16, fontWeight: 700 }}>
-                      {date.format("D")}
-                    </span>
-                  </Button>
-                );
-              })}
-            </div>
-            <button
-              className="scroll-btn"
-              onClick={() => handleScroll("right")}
-            >
-              <ChevronRight size={16} />
-            </button>
-          </DateScrollWrapper>
-        </DateStripContainer>
-        <div
-          style={{
-            padding: "12px 20px",
-            background: "white",
-            borderBottom: "1px solid #f0f0f0",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
-          <Filter size={14} color="#64748b" />
-          <Select
-            placeholder="Filter Group"
-            style={{ width: 180 }}
-            allowClear
-            size="small"
-            bordered={false}
-            value={groupFilter}
-            onChange={setGroupFilter}
-          >
-            <Option value="##__INDIVIDUAL__##">Individual</Option>
-            {uniqueGroups.map((g) => (
-              <Option key={g} value={g}>
-                {g}
-              </Option>
-            ))}
-          </Select>
-          {groupFilter && groupFilter !== "##__INDIVIDUAL__##" && (
-            <Button
-              size="small"
-              type="link"
-              icon={<Edit3 size={14} />}
-              onClick={() =>
-                onEditGroup(
-                  groupFilter,
-                  schedules.find((s) => s.name === groupFilter)
-                )
-              }
-            >
-              Edit Group
-            </Button>
-          )}
-        </div>
-        <ScheduleListArea>
-          {loading ? (
-            // Render Skeleton Loader
-            Array.from({ length: 6 }).map((_, i) => (
-              <ScheduleSkeleton key={i} />
-            ))
-          ) : filteredSchedules.length > 0 ? (
-            filteredSchedules.map((s) => (
-              <ScheduleCard
-                key={s.id}
-                $isPast={dayjs(s.date).isBefore(dayjs(), "day")}
-              >
-                <div
-                  style={{ display: "flex", justifyContent: "space-between" }}
-                >
-                  <div style={{ minWidth: 0, flex: 1, marginRight: 8 }}>
-                    <div style={{ fontWeight: 700 }}>
-                      {dayjs(s.date).format("MMM D")} •{" "}
-                      {dayjs(`2000-01-01T${s.time}`).format("h:mm A")}
-                    </div>
-                    {s.name && (
-                      <Tooltip title={s.name}>
-                        <Tag
-                          color="blue"
-                          style={{
-                            marginTop: 4,
-                            maxWidth: "100%",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            display: "inline-block",
-                            verticalAlign: "bottom",
-                          }}
-                        >
-                          {s.name}
-                        </Tag>
-                      </Tooltip>
-                    )}
-                  </div>
-                  <Space style={{ alignSelf: "flex-start" }}>
-                    <Button
-                      size="small"
-                      icon={<Edit3 size={14} />}
-                      onClick={() => onEdit(s)}
-                    />
-                    <Popconfirm
-                      title="Delete?"
-                      onConfirm={() => handleDelete(s.id)}
+            {options.length < 4 ? (
+              <Segmented
+                block
+                value={selectedOptionId}
+                onChange={onOptionChange}
+                options={options.map((opt) => ({
+                  label: (
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        justifyContent: "center",
+                      }}
                     >
-                      <Button size="small" danger icon={<Trash2 size={14} />} />
-                    </Popconfirm>
-                  </Space>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: 12,
-                    color: "#64748b",
-                    marginTop: 8,
-                  }}
-                >
-                  <span>
-                    <Users size={12} style={{ marginRight: 4 }} />
-                    {s.booked_participants}/{s.maxParticipants}
-                  </span>
-                  <span>${parseFloat(s.price).toFixed(2)}</span>
-                </div>
-              </ScheduleCard>
-            ))
-          ) : (
-            <EmptyStateContainer>
-              <LordIcon
-                src="https://cdn.lordicon.com/uoljexdg.json"
-                trigger="in"
-                colors="primary:#94a3b8"
-                style={{ width: 64, height: 64 }}
+                      {opt.title}
+                      {opt.schedule_mode === "synced" && (
+                        <Badge
+                          status="warning"
+                          style={{ marginLeft: 0 }}
+                          title="Synced"
+                        />
+                      )}
+                    </span>
+                  ),
+                  value: opt.optionId,
+                }))}
               />
-              <Text type="secondary">No schedules found.</Text>
-              <Button
-                type="primary"
-                icon={<Plus size={14} />}
-                onClick={() => onAdd(selectedDate || dayjs())}
-                style={{ marginTop: 16 }}
+            ) : (
+              <Select
+                style={{ width: "100%" }}
+                value={selectedOptionId}
+                onChange={onOptionChange}
+                options={options.map((opt) => ({
+                  label: opt.title,
+                  value: opt.optionId,
+                }))}
+              />
+            )}
+          </div>
+        )}
+
+        {/* --- ADDED: Synced Warning --- */}
+        {isSynced ? (
+          <div style={{ padding: 20 }}>
+            <Alert
+              message={<span style={{ fontWeight: 600 }}>Synced Schedule</span>}
+              description={
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                >
+                  <Text>
+                    This option is synced to the primary schedule (
+                    <Text strong>{primaryOption?.title || "Primary"}</Text>).
+                    Schedules cannot be edited independently.
+                  </Text>
+                  <Button
+                    type="primary"
+                    ghost
+                    size="small"
+                    onClick={() =>
+                      primaryOption && onOptionChange(primaryOption.optionId)
+                    }
+                    icon={<Link2 size={14} />}
+                    style={{ alignSelf: "flex-start" }}
+                  >
+                    Edit Primary Schedule
+                  </Button>
+                </div>
+              }
+              type="info"
+              showIcon
+              icon={<Link2 size={20} />}
+            />
+          </div>
+        ) : (
+          <>
+            <DateStripContainer>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "0 20px",
+                  alignItems: "center",
+                }}
               >
-                Add Session
-              </Button>
-            </EmptyStateContainer>
-          )}
-        </ScheduleListArea>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Button
+                    size="small"
+                    onClick={() =>
+                      setCurrentMonth(currentMonth.subtract(1, "month"))
+                    }
+                    icon={<ChevronLeft size={14} />}
+                  />
+                  <span style={{ fontWeight: 600 }}>
+                    {currentMonth.format("MMMM YYYY")}
+                  </span>
+                  <Button
+                    size="small"
+                    onClick={() =>
+                      setCurrentMonth(currentMonth.add(1, "month"))
+                    }
+                    icon={<ChevronRight size={14} />}
+                  />
+                </div>
+                <Button
+                  size="small"
+                  type="link"
+                  onClick={() => setSelectedDate(null)}
+                >
+                  View All
+                </Button>
+              </div>
+
+              <DateScrollWrapper>
+                <button
+                  className="scroll-btn"
+                  onClick={() => handleScroll("left")}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <div className="scroll-container" ref={scrollRef}>
+                  {datesInMonth.map((date) => {
+                    const isSel =
+                      selectedDate && selectedDate.isSame(date, "day");
+                    const hasSch = schedules.some(
+                      (s) => s.date === date.format("YYYY-MM-DD"),
+                    );
+                    return (
+                      <Button
+                        key={date.toString()}
+                        type={isSel ? "primary" : "default"}
+                        style={{
+                          height: 56,
+                          minWidth: 50,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: 0,
+                          borderColor: hasSch && !isSel ? "#ff385c" : undefined,
+                          flexShrink: 0,
+                        }}
+                        onClick={() => setSelectedDate(date)}
+                      >
+                        <span style={{ fontSize: 10, opacity: 0.8 }}>
+                          {date.format("ddd")}
+                        </span>
+                        <span style={{ fontSize: 16, fontWeight: 700 }}>
+                          {date.format("D")}
+                        </span>
+                      </Button>
+                    );
+                  })}
+                </div>
+                <button
+                  className="scroll-btn"
+                  onClick={() => handleScroll("right")}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </DateScrollWrapper>
+            </DateStripContainer>
+            <div
+              style={{
+                padding: "12px 20px",
+                background: "white",
+                borderBottom: "1px solid #f0f0f0",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <Filter size={14} color="#64748b" />
+              <Select
+                placeholder="Filter Group"
+                style={{ width: 180 }}
+                allowClear
+                size="small"
+                bordered={false}
+                value={groupFilter}
+                onChange={setGroupFilter}
+              >
+                <Option value="##__INDIVIDUAL__##">Individual</Option>
+                {uniqueGroups.map((g) => (
+                  <Option key={g} value={g}>
+                    {g}
+                  </Option>
+                ))}
+              </Select>
+              {groupFilter && groupFilter !== "##__INDIVIDUAL__##" && (
+                <Button
+                  size="small"
+                  type="link"
+                  icon={<Edit3 size={14} />}
+                  onClick={() =>
+                    onEditGroup(
+                      groupFilter,
+                      schedules.find((s) => s.name === groupFilter),
+                    )
+                  }
+                >
+                  Edit Group
+                </Button>
+              )}
+            </div>
+            <ScheduleListArea>
+              {loading ? (
+                // Render Skeleton Loader
+                Array.from({ length: 6 }).map((_, i) => (
+                  <ScheduleSkeleton key={i} />
+                ))
+              ) : filteredSchedules.length > 0 ? (
+                filteredSchedules.map((s) => (
+                  <ScheduleCard
+                    key={s.id}
+                    $isPast={dayjs(s.date).isBefore(dayjs(), "day")}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <div style={{ minWidth: 0, flex: 1, marginRight: 8 }}>
+                        <div style={{ fontWeight: 700 }}>
+                          {dayjs(s.date).format("MMM D")} •{" "}
+                          {dayjs(`2000-01-01T${s.time}`).format("h:mm A")}
+                        </div>
+                        {s.name && (
+                          <Tooltip title={s.name}>
+                            <Tag
+                              color="blue"
+                              style={{
+                                marginTop: 4,
+                                maxWidth: "100%",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                display: "inline-block",
+                                verticalAlign: "bottom",
+                              }}
+                            >
+                              {s.name}
+                            </Tag>
+                          </Tooltip>
+                        )}
+                      </div>
+                      <Space style={{ alignSelf: "flex-start" }}>
+                        <Button
+                          size="small"
+                          icon={<Edit3 size={14} />}
+                          onClick={() => onEdit(s)}
+                        />
+                        <Popconfirm
+                          title="Delete?"
+                          onConfirm={() => handleDelete(s.id)}
+                        >
+                          <Button
+                            size="small"
+                            danger
+                            icon={<Trash2 size={14} />}
+                          />
+                        </Popconfirm>
+                      </Space>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        fontSize: 12,
+                        color: "#64748b",
+                        marginTop: 8,
+                      }}
+                    >
+                      <span>
+                        <Users size={12} style={{ marginRight: 4 }} />
+                        {s.booked_participants}/{s.maxParticipants}
+                      </span>
+                      <span>${parseFloat(s.price).toFixed(2)}</span>
+                    </div>
+                  </ScheduleCard>
+                ))
+              ) : (
+                <EmptyStateContainer>
+                  <LordIcon
+                    src="https://cdn.lordicon.com/uoljexdg.json"
+                    trigger="in"
+                    colors="primary:#94a3b8"
+                    style={{ width: 64, height: 64 }}
+                  />
+                  <Text type="secondary">No schedules found.</Text>
+                  <Button
+                    type="primary"
+                    icon={<Plus size={14} />}
+                    onClick={() => onAdd(selectedDate || dayjs())}
+                    style={{ marginTop: 16 }}
+                  >
+                    Add Session
+                  </Button>
+                </EmptyStateContainer>
+              )}
+            </ScheduleListArea>
+          </>
+        )}
       </ManagementContainer>
     );
-  }
+  },
 );
 
 // --- MAIN DRAWER COMPONENT ---
@@ -1180,6 +1311,8 @@ const ScheduleEditDrawer = ({
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [prefillDate, setPrefillDate] = useState(null);
   const [editingGroup, setEditingGroup] = useState(null);
+  // --- ADDED: Selected Option State ---
+  const [selectedOptionId, setSelectedOptionId] = useState(null);
 
   const [viewState, setViewState] = useState({
     currentMonth: dayjs(),
@@ -1189,7 +1322,7 @@ const ScheduleEditDrawer = ({
 
   const updateViewState = useCallback(
     (updates) => setViewState((prev) => ({ ...prev, ...updates })),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -1205,12 +1338,20 @@ const ScheduleEditDrawer = ({
         setActiveView("form");
         setEditingSchedule(directEditingSchedule);
         setPrefillDate(null);
+        // Ensure the correct option is selected
+        setSelectedOptionId(directEditingSchedule.option);
       } else if (classData) {
         setActiveView("manage");
         setEditingSchedule(null);
         setPrefillDate(null);
+        // Default to Primary or first option
+        const primary =
+          classData.options?.find((o) => o.schedule_mode === "primary") ||
+          classData.options?.[0];
+        setSelectedOptionId(primary?.optionId || classData.option?.optionId);
       }
     } else {
+      // Reset logic...
       form.resetFields();
       bulkForm.resetFields();
       setCurrentStep(0);
@@ -1225,13 +1366,19 @@ const ScheduleEditDrawer = ({
         selectedDate: null,
         groupFilter: undefined,
       });
+      setSelectedOptionId(null);
     }
   }, [open, classData, startInEditMode, directEditingSchedule, form, bulkForm]);
 
   const optionType = classData?.option?.booking_type || "Single Session";
-  const optionId = classData?.option?.optionId;
   const isSingleSession = optionType === "Single Session";
   const bulkFormDays = Form.useWatch("days_of_week", bulkForm) || [];
+
+  // Determine current option details
+  const currentOption = classData?.options?.find(
+    (o) => o.optionId === selectedOptionId,
+  );
+  const isSynced = currentOption?.schedule_mode === "synced";
 
   useEffect(() => {
     if (activeView !== "form") return;
@@ -1310,7 +1457,7 @@ const ScheduleEditDrawer = ({
         });
       }
     },
-    [form]
+    [form],
   );
 
   const handleGroupSubmit = async () => {
@@ -1325,7 +1472,7 @@ const ScheduleEditDrawer = ({
         duration: values.duration,
       };
       await scheduleService.groupUpdate({
-        option_id: optionId,
+        option_id: selectedOptionId, // MODIFIED: Use selectedOptionId
         name: editingGroup,
         updates: updates,
       });
@@ -1347,7 +1494,7 @@ const ScheduleEditDrawer = ({
       setIsLoading(true);
       const scheduleData = {
         name: values.name,
-        option: optionId,
+        option: selectedOptionId, // MODIFIED: Use selectedOptionId
         time: values.time.format("HH:mm"),
         duration: values.duration,
         price: parseFloat(values.price).toFixed(2),
@@ -1381,7 +1528,7 @@ const ScheduleEditDrawer = ({
       setIsBulkLoading(true);
       const payload = {
         name: values.name,
-        option: optionId,
+        option: selectedOptionId, // MODIFIED: Use selectedOptionId
         start_date: values.date_range[0].format("YYYY-MM-DD"),
         end_date: values.date_range[1].format("YYYY-MM-DD"),
         days_of_week: values.days_of_week,
@@ -2087,11 +2234,11 @@ const ScheduleEditDrawer = ({
     (date) => {
       setEditingSchedule(null);
       setPrefillDate(
-        date && dayjs.isDayjs(date) ? date : viewState.selectedDate
+        date && dayjs.isDayjs(date) ? date : viewState.selectedDate,
       );
       setActiveView("form");
     },
-    [viewState.selectedDate]
+    [viewState.selectedDate],
   );
 
   const handleEdit = useCallback((schedule) => {
@@ -2104,6 +2251,11 @@ const ScheduleEditDrawer = ({
       return (
         <ScheduleManagementView
           classData={classData}
+          // --- ADDED: Pass new props ---
+          options={classData?.options}
+          selectedOptionId={selectedOptionId}
+          onOptionChange={setSelectedOptionId}
+          // -----------------------------
           onAdd={handleAddNew}
           onEdit={handleEdit}
           onEditGroup={handleEditGroup}
@@ -2123,6 +2275,7 @@ const ScheduleEditDrawer = ({
     const btnStyle = isMobileLayout ? { height: 44 } : { height: 40 };
 
     if (activeView === "manage") {
+      // --- MODIFIED: Disable Add button if Synced ---
       return (
         <Button
           key="add"
@@ -2131,6 +2284,12 @@ const ScheduleEditDrawer = ({
           onClick={() => handleAddNew(null)}
           block={isMobileLayout}
           style={btnStyle}
+          disabled={isSynced} // Disable if synced
+          title={
+            isSynced
+              ? "Cannot add schedules to a synced option"
+              : "Add new schedule"
+          }
         >
           Add New Schedule
         </Button>
@@ -2303,6 +2462,11 @@ const ScheduleEditDrawer = ({
               <MobileContent>
                 <ScheduleManagementView
                   classData={classData}
+                  // --- ADDED: Pass props ---
+                  options={classData?.options}
+                  selectedOptionId={selectedOptionId}
+                  onOptionChange={setSelectedOptionId}
+                  // -------------------------
                   onAdd={handleAddNew}
                   onEdit={handleEdit}
                   onEditGroup={handleEditGroup}
@@ -2314,12 +2478,14 @@ const ScheduleEditDrawer = ({
                 />
               </MobileContent>
               <MobileFooter>
+                {/* --- MODIFIED: Disable footer button if synced --- */}
                 <Button
                   type="primary"
                   icon={<Plus size={16} />}
                   onClick={() => handleAddNew(null)}
                   block
                   style={{ height: 44 }}
+                  disabled={isSynced}
                 >
                   Add New Schedule
                 </Button>

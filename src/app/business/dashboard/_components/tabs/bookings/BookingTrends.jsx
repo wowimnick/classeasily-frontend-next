@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import styled, { keyframes } from "styled-components";
 import {
   Calendar,
@@ -12,6 +18,7 @@ import {
   GitCompareArrows,
   BarChart2,
   PieChart as PieIcon,
+  Info,
 } from "lucide-react";
 import {
   DatePicker,
@@ -25,6 +32,7 @@ import {
   Col,
   Divider,
   Grid,
+  Tooltip as AntTooltip,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -41,6 +49,8 @@ import {
   Line,
   BarChart,
   PieChart,
+  Area,
+  Label,
 } from "recharts";
 import NumberFlow from "@number-flow/react";
 import debounce from "lodash/debounce";
@@ -72,14 +82,8 @@ const colors = {
     red: "#ef4444",
     teal: "#14b8a6",
     yellow: "#eab308",
+    darkBlue: "#1e3a8a",
   },
-};
-
-const hexToRgba = (hex, alpha = 1) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
 // --- Styled Components ---
@@ -272,7 +276,7 @@ const StatFooter = styled.div`
 `;
 
 const ChartCard = styled(Card)`
-  height: 420px;
+  height: 440px;
   border-radius: 16px;
   border: 1px solid ${colors.border};
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -285,11 +289,24 @@ const ChartCard = styled(Card)`
   }
 `;
 
+const ChartHeader = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+`;
+
+const ChartTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+`;
+
 const ChartTitle = styled.h3`
   font-size: 16px;
   font-weight: 600;
   color: ${colors.textPrimary};
-  margin: 0 0 4px 0;
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -298,16 +315,34 @@ const ChartTitle = styled.h3`
 const ChartDescription = styled.p`
   font-size: 13px;
   color: ${colors.textSecondary};
-  margin: 0 0 16px 0;
+  margin: 0;
+`;
+
+const InsightBadge = styled.div`
+  background: ${colors.lightBg};
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: ${colors.textPrimary};
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid ${colors.border};
+
+  strong {
+    color: ${colors.primary};
+  }
 `;
 
 const ChartContainer = styled.div`
   flex-grow: 1;
   position: relative;
+  min-height: 0; /* Important for flex child */
 `;
 
 const TableWrapper = styled(Card)`
-  height: 420px;
+  height: 440px;
   border-radius: 16px;
   border: 1px solid ${colors.border};
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -321,7 +356,10 @@ const TableWrapper = styled(Card)`
 `;
 
 const TableHeader = styled.div`
-  padding: 16px 20px;
+  padding: 20px 24px;
+  border-bottom: 1px solid ${colors.border};
+  background-color: #fff;
+  border-radius: 16px 16px 0 0;
 `;
 
 const StyledTable = styled.table`
@@ -329,18 +367,41 @@ const StyledTable = styled.table`
   border-collapse: collapse;
   th,
   td {
-    padding: 12px 20px;
+    padding: 14px 24px;
     text-align: left;
     border-bottom: 1px solid ${colors.border};
     font-size: 13px;
   }
   th {
     font-weight: 600;
+    color: ${colors.textSecondary};
+    background-color: ${colors.lightBg};
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  tbody tr:hover {
     background-color: ${colors.lightBg};
   }
   tr:last-child td {
     border-bottom: none;
   }
+`;
+
+const ProgressBarContainer = styled.div`
+  width: 100%;
+  height: 6px;
+  background-color: #f1f5f9;
+  border-radius: 3px;
+  margin-top: 6px;
+  overflow: hidden;
+`;
+
+const ProgressBarFill = styled.div`
+  height: 100%;
+  background-color: ${(props) => props.color || colors.primary};
+  width: ${(props) => props.width}%;
+  border-radius: 3px;
 `;
 
 // --- Mobile Card for Top Classes ---
@@ -403,14 +464,6 @@ const EmptyStateText = styled.div`
   color: ${colors.textSecondary};
   font-size: 15px;
   font-weight: 500;
-
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 13px;
-  }
 `;
 
 const EmptyStateSubtext = styled.div`
@@ -418,27 +471,12 @@ const EmptyStateSubtext = styled.div`
   font-size: 13px;
   opacity: 0.7;
   max-width: 300px;
-
-  @media (max-width: 768px) {
-    font-size: 12px;
-    max-width: 250px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 11px;
-    max-width: 200px;
-  }
 `;
 
-/* --- Custom Skeletons --- */
-
+/* --- Custom Skeletons (Kept same as original for brevity) --- */
 const shimmer = keyframes`
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 `;
 
 const SkeletonBase = styled.div`
@@ -489,36 +527,6 @@ const ChartGridLine = styled.div`
   background-color: ${colors.border};
 `;
 
-const ChartLinePath = styled.div`
-  position: absolute;
-  top: 30%;
-  left: 10px;
-  right: 0;
-  height: 40%;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 56, 92, 0) 0%,
-    rgba(255, 56, 92, 0.1) 50%,
-    rgba(255, 56, 92, 0) 100%
-  );
-  clip-path: polygon(
-    0 100%,
-    10% 80%,
-    20% 85%,
-    30% 60%,
-    40% 70%,
-    50% 40%,
-    60% 50%,
-    70% 30%,
-    80% 45%,
-    90% 20%,
-    100% 30%,
-    100% 100%
-  );
-  opacity: 0.5;
-`;
-
-// 1. Daily Activity Skeleton (Composed Chart)
 const DailyActivitySkeleton = () => (
   <ChartSkeletonContainer>
     <ChartYAxis>
@@ -530,7 +538,6 @@ const DailyActivitySkeleton = () => (
       {[...Array(5)].map((_, i) => (
         <ChartGridLine key={i} />
       ))}
-      {/* Simulated Bars */}
       <div
         style={{
           position: "absolute",
@@ -552,73 +559,10 @@ const DailyActivitySkeleton = () => (
           />
         ))}
       </div>
-      {/* Simulated Line Overlay */}
-      <ChartLinePath />
-      {/* X-Axis Labels */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginTop: "10px",
-        }}
-      >
-        {[...Array(6)].map((_, i) => (
-          <SkeletonBase key={i} $width="30px" $height="8px" />
-        ))}
-      </div>
     </ChartGridArea>
   </ChartSkeletonContainer>
 );
 
-// 2. Time Distribution Skeleton (Bar Chart)
-const TimeBarSkeleton = () => (
-  <ChartSkeletonContainer>
-    <ChartYAxis>
-      {[...Array(5)].map((_, i) => (
-        <SkeletonBase key={i} $width="20px" $height="8px" />
-      ))}
-    </ChartYAxis>
-    <ChartGridArea>
-      {[...Array(5)].map((_, i) => (
-        <ChartGridLine key={i} />
-      ))}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 30,
-          left: 10,
-          right: 0,
-          display: "flex",
-          justifyContent: "space-around",
-          alignItems: "flex-end",
-          height: "80%",
-        }}
-      >
-        {[...Array(8)].map((_, i) => (
-          <SkeletonBase
-            key={i}
-            $width="8%"
-            $height={`${Math.random() * 70 + 20}%`}
-            $borderRadius="4px 4px 0 0"
-          />
-        ))}
-      </div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginTop: "10px",
-        }}
-      >
-        {[...Array(6)].map((_, i) => (
-          <SkeletonBase key={i} $width="25px" $height="8px" />
-        ))}
-      </div>
-    </ChartGridArea>
-  </ChartSkeletonContainer>
-);
-
-// 3. Pie Chart Skeleton (Generic)
 const PieSkeleton = () => (
   <div
     style={{
@@ -630,25 +574,19 @@ const PieSkeleton = () => (
       justifyContent: "center",
     }}
   >
-    <div style={{ position: "relative", width: "180px", height: "180px" }}>
+    <div style={{ position: "relative", width: "160px", height: "160px" }}>
       <SkeletonBase
-        $width="180px"
-        $height="180px"
+        $width="160px"
+        $height="160px"
         $borderRadius="50%"
         style={{ border: `4px solid white` }}
       />
     </div>
-    <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
-      <SkeletonBase $width="80px" $height="12px" />
-      <SkeletonBase $width="80px" $height="12px" />
-    </div>
   </div>
 );
 
-// 4. Table Skeleton
 const TableSkeleton = () => (
   <div>
-    {/* Header */}
     <div
       style={{
         display: "flex",
@@ -658,12 +596,8 @@ const TableSkeleton = () => (
       }}
     >
       <SkeletonBase $width="30%" $height="14px" />
-      <SkeletonBase $width="15%" $height="14px" />
-      <SkeletonBase $width="15%" $height="14px" />
-      <SkeletonBase $width="20%" $height="14px" />
-      <SkeletonBase $width="10%" $height="14px" />
+      <SkeletonBase $width="70%" $height="14px" />
     </div>
-    {/* Rows */}
     {[...Array(5)].map((_, i) => (
       <div
         key={i}
@@ -675,10 +609,7 @@ const TableSkeleton = () => (
         }}
       >
         <SkeletonBase $width="30%" $height="12px" />
-        <SkeletonBase $width="15%" $height="12px" />
-        <SkeletonBase $width="15%" $height="12px" />
-        <SkeletonBase $width="20%" $height="12px" />
-        <SkeletonBase $width="10%" $height="12px" />
+        <SkeletonBase $width="70%" $height="12px" />
       </div>
     ))}
   </div>
@@ -690,19 +621,30 @@ const CustomTooltip = ({ active, payload, label, type }) => {
       <div
         style={{
           background: "white",
-          padding: "8px 12px",
+          padding: "12px 16px",
           border: `1px solid ${colors.border}`,
-          borderRadius: 8,
+          borderRadius: 12,
+          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
         }}
       >
-        <Text strong style={{ display: "block", marginBottom: "4px" }}>
+        <Text strong style={{ display: "block", marginBottom: "8px" }}>
           {type === "time"
             ? dayjs().hour(label).minute(0).format("h A")
-            : dayjs(label).format("MMM D, YYYY")}
+            : dayjs(label).format("ddd, MMM D")}
         </Text>
         {payload.map((entry, index) => (
-          <div key={index} style={{ color: entry.color }}>
-            <span style={{ color: colors.textSecondary }}>{entry.name}: </span>
+          <div
+            key={index}
+            style={{
+              color: entry.color,
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "16px",
+              marginBottom: "4px",
+              fontSize: "13px",
+            }}
+          >
+            <span style={{ color: colors.textSecondary }}>{entry.name}:</span>
             <span style={{ fontWeight: 600 }}>
               {entry.dataKey?.includes("rate")
                 ? `${entry.value?.toFixed(1)}%`
@@ -718,6 +660,14 @@ const CustomTooltip = ({ active, payload, label, type }) => {
 };
 
 const PIE_COLORS_EXTENDED = Object.values(colors.chart);
+
+// Helper to calculate total for donut center
+const getChartTotal = (data) => {
+  return data.reduce(
+    (acc, curr) => acc + (curr.value || curr.spot_count || 0),
+    0,
+  );
+};
 
 const BookingTrends = () => {
   const [loading, setLoading] = useState(true);
@@ -739,15 +689,14 @@ const BookingTrends = () => {
   const isMobile = !screens.lg;
 
   const fetchBusinessClassesForFilter = useCallback(async () => {
-    // Simplified fetch for demo; in production, you might have a dedicated endpoint
     try {
       const result = await bookingAnalyticsService.getBookingAnalytics(
         [dayjs().subtract(1, "year"), dayjs()],
-        {}
+        {},
       );
       if (result.success && result.data?.class_insights?.popular_classes) {
         const uniqueClasses = result.data.class_insights.popular_classes.map(
-          (c) => ({ value: c.class_id, label: c.class_name })
+          (c) => ({ value: c.class_id, label: c.class_name }),
         );
         setBusinessClasses([
           { value: undefined, label: "All Experiences" },
@@ -755,7 +704,7 @@ const BookingTrends = () => {
         ]);
       }
     } catch (error) {
-      /* Handle error silently for this helper function */
+      // Handle error silently
     }
   }, []);
 
@@ -772,7 +721,7 @@ const BookingTrends = () => {
         {
           signal: abortControllerRef.current.signal,
           classId: currentFilters.classId || undefined,
-        }
+        },
       );
       if (!abortControllerRef.current.signal.aborted) {
         if (result.success) {
@@ -811,6 +760,38 @@ const BookingTrends = () => {
       classId: value === undefined ? null : value,
     }));
   };
+
+  // --- Insight Helpers ---
+  const peakHourInsight = useMemo(() => {
+    const data = analytics.booking_patterns?.time_distribution || [];
+    if (!data.length) return null;
+    const peak = data.reduce((prev, current) =>
+      prev.booking_transactions > current.booking_transactions ? prev : current,
+    );
+    return peak.booking_transactions > 0
+      ? {
+          time: dayjs().hour(peak.hour).format("h A"),
+          count: peak.booking_transactions,
+        }
+      : null;
+  }, [analytics.booking_patterns]);
+
+  const guestRetentionInsight = useMemo(() => {
+    const newG = analytics.summary.new_student_bookings || 0;
+    const retG = analytics.summary.returning_student_bookings || 0;
+    const total = newG + retG;
+    if (total === 0) return 0;
+    return Math.round((retG / total) * 100);
+  }, [analytics.summary]);
+
+  const maxSpots = useMemo(() => {
+    return Math.max(
+      ...(analytics.class_insights?.popular_classes || []).map(
+        (c) => c.total_participant_spots,
+      ),
+      0,
+    );
+  }, [analytics.class_insights]);
 
   const statisticCards = [
     {
@@ -868,10 +849,10 @@ const BookingTrends = () => {
     {
       type: "New Guests",
       value: analytics.summary.new_student_bookings || 0,
-      color: colors.chart.green,
+      color: colors.chart.teal,
     },
     {
-      type: "Returning Guests",
+      type: "Returning",
       value: analytics.summary.returning_student_bookings || 0,
       color: colors.chart.blue,
     },
@@ -942,31 +923,36 @@ const BookingTrends = () => {
 
         <ResponsiveDivider />
 
-        <ChartCard>
-          <ChartTitle>
-            <LordIcon
-              src="https://cdn.lordicon.com/excswhey.json"
-              trigger="in"
-              delay="500"
-              state="in-trend-up"
-              colors="primary:#ff385c"
-              playOnLoad={true}
-            />{" "}
-            Daily Booking Activity
-          </ChartTitle>
-          <ChartDescription>
-            Participant spots booked, net, and cancellations over time.
-          </ChartDescription>
+        <ChartCard style={{ height: 480 }}>
+          <ChartHeader>
+            <ChartTitleRow>
+              <ChartTitle>
+                <LordIcon
+                  src="https://cdn.lordicon.com/excswhey.json"
+                  trigger="in"
+                  delay="500"
+                  state="in-trend-up"
+                  colors="primary:#ff385c"
+                  playOnLoad={true}
+                />
+                Daily Booking Activity
+              </ChartTitle>
+              {!loading && analytics.trends?.length > 0 && (
+                <InsightBadge>
+                  Total Spots:{" "}
+                  <strong>{analytics.summary.total_participant_spots}</strong>
+                </InsightBadge>
+              )}
+            </ChartTitleRow>
+            <ChartDescription>
+              Comparison of new bookings vs net volume (after cancellations).
+            </ChartDescription>
+          </ChartHeader>
+
           <ChartContainer>
             {loading ? (
               <DailyActivitySkeleton />
-            ) : !analytics.trends?.length ||
-              analytics.trends.every(
-                (day) =>
-                  day.new_participant_spots === 0 &&
-                  day.net_participant_spots === 0 &&
-                  day.cancelled_participant_spots === 0
-              ) ? (
+            ) : !analytics.trends?.length ? (
               <EmptyStateContainer>
                 <EmptyStateIcon>
                   <lord-icon
@@ -980,8 +966,7 @@ const BookingTrends = () => {
                 </EmptyStateIcon>
                 <EmptyStateText>No Booking Activity Found</EmptyStateText>
                 <EmptyStateSubtext>
-                  You don't have any booking activity in this date range. When
-                  you do, daily trends will be shown here.
+                  You don't have any booking activity in this date range.
                 </EmptyStateSubtext>
               </EmptyStateContainer>
             ) : (
@@ -995,6 +980,32 @@ const BookingTrends = () => {
                     bottom: 5,
                   }}
                 >
+                  <defs>
+                    <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
+                      <stop
+                        offset="5%"
+                        stopColor={colors.chart.blue}
+                        stopOpacity={0.2}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={colors.chart.blue}
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                    <linearGradient id="colorBar" x1="0" y1="0" x2="0" y2="1">
+                      <stop
+                        offset="0%"
+                        stopColor={colors.chart.purple}
+                        stopOpacity={0.8}
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor={colors.chart.purple}
+                        stopOpacity={0.4}
+                      />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     stroke={colors.border}
@@ -1002,41 +1013,52 @@ const BookingTrends = () => {
                   />
                   <XAxis
                     dataKey="date"
-                    tickFormatter={(value) =>
-                      dayjs(value).format(isMobile ? "D MMM" : "MMM D")
-                    }
-                    tick={{ fontSize: 12 }}
+                    tickFormatter={(value) => dayjs(value).format("MMM D")}
+                    tick={{ fontSize: 12, fill: colors.textSecondary }}
+                    axisLine={false}
+                    tickLine={false}
+                    dy={10}
                   />
                   <YAxis
                     yAxisId="left"
                     allowDecimals={false}
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 12, fill: colors.textSecondary }}
+                    axisLine={false}
+                    tickLine={false}
                   />
                   <YAxis
                     yAxisId="right"
                     orientation="right"
-                    tickFormatter={(value) => `${value.toFixed(0)}%`}
+                    tickFormatter={(value) => `${value}%`}
                     domain={[0, 100]}
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 12, fill: colors.textSecondary }}
+                    axisLine={false}
+                    tickLine={false}
                   />
-                  <RechartsTooltip content={<CustomTooltip />} />
+                  <RechartsTooltip
+                    content={<CustomTooltip />}
+                    cursor={{ fill: "rgba(0,0,0,0.02)" }}
+                  />
                   <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
-                  <Bar
-                    yAxisId="left"
-                    dataKey="new_participant_spots"
-                    name="New Spots"
-                    fill={colors.chart.blue}
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={25}
-                  />
-                  <Line
+
+                  {/* Visuals */}
+                  <Area
                     yAxisId="left"
                     type="monotone"
                     dataKey="net_participant_spots"
                     name="Net Spots"
-                    stroke={colors.chart.green}
-                    strokeWidth={2}
-                    dot={false}
+                    stroke={colors.chart.blue}
+                    fillOpacity={1}
+                    fill="url(#colorNet)"
+                    strokeWidth={3}
+                  />
+                  <Bar
+                    yAxisId="left"
+                    dataKey="new_participant_spots"
+                    name="New Spots"
+                    fill="url(#colorBar)"
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={40}
                   />
                   <Line
                     yAxisId="right"
@@ -1046,6 +1068,7 @@ const BookingTrends = () => {
                     stroke={colors.chart.red}
                     strokeWidth={2}
                     dot={false}
+                    strokeDasharray="5 5"
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -1056,30 +1079,36 @@ const BookingTrends = () => {
         <ResponsiveDivider />
 
         <Row gutter={[24, 24]}>
-          <Col xs={24} lg={12}>
+          {/* BAR CHART - WIDER (66%) */}
+          <Col xs={24} lg={16}>
             <ChartCard>
-              <ChartTitle>
-                <LordIcon
-                  src="https://cdn.lordicon.com/okqjaags.json"
-                  trigger="in"
-                  delay="500"
-                  state="in-clock"
-                  colors="primary:#ff385c"
-                />{" "}
-                Popular Booking Times
-              </ChartTitle>
-              <ChartDescription>
-                Distribution of bookings by time of day.
-              </ChartDescription>
+              <ChartHeader>
+                <ChartTitleRow>
+                  <ChartTitle>
+                    <LordIcon
+                      src="https://cdn.lordicon.com/okqjaags.json"
+                      trigger="in"
+                      delay="500"
+                      state="in-clock"
+                      colors="primary:#ff385c"
+                    />{" "}
+                    Popular Booking Times
+                  </ChartTitle>
+                  {!loading && peakHourInsight && (
+                    <InsightBadge>
+                      Peak: <strong>{peakHourInsight.time}</strong> (
+                      {peakHourInsight.count} bkgs)
+                    </InsightBadge>
+                  )}
+                </ChartTitleRow>
+                <ChartDescription>
+                  Distribution of confirmed and cancelled bookings by hour.
+                </ChartDescription>
+              </ChartHeader>
               <ChartContainer>
                 {loading ? (
-                  <TimeBarSkeleton />
-                ) : !analytics.booking_patterns?.time_distribution?.length ||
-                  analytics.booking_patterns.time_distribution.every(
-                    (hour) =>
-                      hour.booking_transactions === 0 &&
-                      hour.cancelled_transactions === 0
-                  ) ? (
+                  <DailyActivitySkeleton />
+                ) : !analytics.booking_patterns?.time_distribution?.length ? (
                   <EmptyStateContainer>
                     <EmptyStateIcon>
                       <lord-icon
@@ -1091,49 +1120,52 @@ const BookingTrends = () => {
                         style={{ width: 40, height: 40 }}
                       />
                     </EmptyStateIcon>
-                    <EmptyStateText>No Time Data Found</EmptyStateText>
-                    <EmptyStateSubtext>
-                      You don't have any bookings yet. When you do, time
-                      distribution will be shown here.
-                    </EmptyStateSubtext>
+                    <EmptyStateText>No Time Data</EmptyStateText>
                   </EmptyStateContainer>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={analytics.booking_patterns.time_distribution}
-                      margin={{
-                        top: 10,
-                        right: isMobile ? 5 : 20,
-                        left: isMobile ? -25 : 0,
-                        bottom: 5,
-                      }}
+                      margin={{ top: 10, right: 0, left: -25, bottom: 5 }}
+                      barSize={20}
                     >
                       <CartesianGrid
                         strokeDasharray="3 3"
-                        stroke={colors.border}
                         vertical={false}
+                        stroke={colors.border}
                       />
                       <XAxis
                         dataKey="hour"
                         tickFormatter={(hour) =>
                           dayjs().hour(hour).format("hA")
                         }
-                        tick={{ fontSize: 12 }}
+                        tick={{ fontSize: 11, fill: colors.textSecondary }}
+                        axisLine={false}
+                        tickLine={false}
+                        dy={10}
                       />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fontSize: 11, fill: colors.textSecondary }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
                       <RechartsTooltip
                         content={(props) => (
                           <CustomTooltip {...props} type="time" />
                         )}
+                        cursor={{ fill: "transparent" }}
                       />
-                      <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+                      <Legend
+                        iconType="circle"
+                        wrapperStyle={{ fontSize: 12, paddingTop: 10 }}
+                      />
                       <Bar
                         dataKey="booking_transactions"
                         name="Confirmed"
                         fill={colors.chart.blue}
                         stackId="a"
-                        radius={[4, 4, 0, 0]}
-                        maxBarSize={25}
+                        radius={[0, 0, 4, 4]}
                       />
                       <Bar
                         dataKey="cancelled_transactions"
@@ -1141,7 +1173,6 @@ const BookingTrends = () => {
                         fill={colors.chart.red}
                         stackId="a"
                         radius={[4, 4, 0, 0]}
-                        maxBarSize={25}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -1149,41 +1180,38 @@ const BookingTrends = () => {
               </ChartContainer>
             </ChartCard>
           </Col>
-          <Col xs={24} lg={12}>
+
+          {/* PIE CHART - NARROWER (33%) */}
+          <Col xs={24} lg={8}>
             <ChartCard>
-              <ChartTitle>
-                <LordIcon
-                  src="https://cdn.lordicon.com/meaqueth.json"
-                  trigger="in"
-                  delay="500"
-                  state="in-compare"
-                  colors="primary:#ff385c"
-                />{" "}
-                New vs. Returning Guests
-              </ChartTitle>
-              <ChartDescription>
-                Breakdown of bookings by guest type.
-              </ChartDescription>
+              <ChartHeader>
+                <ChartTitleRow>
+                  <ChartTitle>
+                    <LordIcon
+                      src="https://cdn.lordicon.com/meaqueth.json"
+                      trigger="in"
+                      delay="500"
+                      state="in-compare"
+                      colors="primary:#ff385c"
+                    />{" "}
+                    Guest Type
+                  </ChartTitle>
+                  {!loading && (
+                    <AntTooltip title="Percent of returning guests">
+                      <InsightBadge>
+                        Return Rate: <strong>{guestRetentionInsight}%</strong>
+                      </InsightBadge>
+                    </AntTooltip>
+                  )}
+                </ChartTitleRow>
+                <ChartDescription>New vs Returning.</ChartDescription>
+              </ChartHeader>
               <ChartContainer>
                 {loading ? (
                   <PieSkeleton />
                 ) : !guestTypeData.some((d) => d.value > 0) ? (
-                  <EmptyStateContainer>
-                    <EmptyStateIcon>
-                      <lord-icon
-                        src="https://cdn.lordicon.com/valwmkhs.json"
-                        trigger="in"
-                        delay="500"
-                        state="in-autorenew"
-                        colors="primary:#94a3b8"
-                        style={{ width: 40, height: 40 }}
-                      />
-                    </EmptyStateIcon>
-                    <EmptyStateText>No Guests Found</EmptyStateText>
-                    <EmptyStateSubtext>
-                      You dont have any bookings yet. When you do, a recurrence
-                      breakdown can be found here.
-                    </EmptyStateSubtext>
+                  <EmptyStateContainer $padding="20px">
+                    <EmptyStateText>No Data</EmptyStateText>
                   </EmptyStateContainer>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
@@ -1194,18 +1222,27 @@ const BookingTrends = () => {
                         nameKey="type"
                         cx="50%"
                         cy="50%"
-                        innerRadius="50%"
-                        outerRadius="80%"
-                        paddingAngle={2}
+                        innerRadius="60%"
+                        outerRadius="85%"
+                        paddingAngle={5}
+                        cornerRadius={5}
+                        stroke="none"
                       >
                         {guestTypeData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
+                        <Label
+                          value={getChartTotal(guestTypeData)}
+                          position="center"
+                          fill={colors.textPrimary}
+                          style={{ fontSize: "24px", fontWeight: "bold" }}
+                        />
                       </Pie>
-                      <RechartsTooltip
-                        formatter={(value, name) => [`${value} bookings`, name]}
+                      <Legend
+                        wrapperStyle={{ fontSize: "12px" }}
+                        iconType="circle"
                       />
-                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      <RechartsTooltip />
                     </PieChart>
                   </ResponsiveContainer>
                 )}
@@ -1217,12 +1254,16 @@ const BookingTrends = () => {
         <ResponsiveDivider />
 
         <Row gutter={[24, 24]}>
-          <Col xs={24} lg={12}>
+          {/* TABLE - WIDER (66%) */}
+          <Col xs={24} lg={16}>
             <TableWrapper>
               <TableHeader>
-                <ChartTitle>
-                  <TrendingUp size={18} /> Top Performing Experiences
-                </ChartTitle>
+                <ChartTitleRow>
+                  <ChartTitle>
+                    <TrendingUp size={18} color={colors.primary} /> Top
+                    Performing Experiences
+                  </ChartTitle>
+                </ChartTitleRow>
                 <ChartDescription>
                   Ranked by participant spots.
                 </ChartDescription>
@@ -1231,105 +1272,91 @@ const BookingTrends = () => {
                 <TableSkeleton />
               ) : !analytics.class_insights?.popular_classes?.length ? (
                 <EmptyStateContainer>
-                  <EmptyStateIcon>
-                    <lord-icon
-                      src="https://cdn.lordicon.com/tctltdwj.json"
-                      trigger="in"
-                      delay="500"
-                      state="in-label"
-                      colors="primary:#94a3b8"
-                      style={{ width: 40, height: 40 }}
-                    />
-                  </EmptyStateIcon>
                   <EmptyStateText>No Bookings Found</EmptyStateText>
-                  <EmptyStateSubtext>
-                    You dont have any bookings yet. When you do, you can see
-                    your top performing experiences here.
-                  </EmptyStateSubtext>
                 </EmptyStateContainer>
-              ) : isMobile ? (
-                <div style={{ padding: "0 16px 16px" }}>
-                  {analytics.class_insights.popular_classes.map((c) => (
-                    <MobileExperienceCard
-                      key={c.class_name}
-                      style={{ marginTop: 12 }}
-                    >
-                      <Text strong>{c.class_name}</Text>
-                      <Row gutter={16} style={{ marginTop: 12 }}>
-                        <Col span={8}>
-                          <Text type="secondary">Spots</Text>
-                          <div>{c.total_participant_spots}</div>
-                        </Col>
-                        <Col span={8}>
-                          <Text type="secondary">Revenue</Text>
-                          <div>${c.total_revenue?.toLocaleString()}</div>
-                        </Col>
-                        <Col span={8}>
-                          <Text type="secondary">Bookers</Text>
-                          <div>{c.unique_bookers}</div>
-                        </Col>
-                      </Row>
-                    </MobileExperienceCard>
-                  ))}
-                </div>
               ) : (
-                <div style={{ overflowX: "auto" }}>
+                <div style={{ overflowX: "auto", flex: 1, overflowY: "auto" }}>
                   <StyledTable>
                     <thead>
                       <tr>
-                        <th>Experience Name</th>
-                        <th>Booked Spots</th>
+                        <th style={{ width: "40%" }}>Experience</th>
+                        <th style={{ width: "25%" }}>Booked Spots</th>
                         <th>Revenue</th>
-                        <th>Unique Bookers</th>
                         <th>Cancel %</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {analytics.class_insights.popular_classes.map((c) => (
-                        <tr key={c.class_name}>
-                          <td>
-                            <Text strong>{c.class_name}</Text>
-                          </td>
-                          <td>{c.total_participant_spots}</td>
-                          <td>${c.total_revenue?.toLocaleString()}</td>
-                          <td>{c.unique_bookers}</td>
-                          <td>{c.cancellation_rate_by_spots?.toFixed(1)}%</td>
-                        </tr>
-                      ))}
+                      {analytics.class_insights.popular_classes
+                        .slice(0, 5)
+                        .map((c) => (
+                          <tr key={c.class_name}>
+                            <td>
+                              <Text strong style={{ fontSize: 13 }}>
+                                {c.class_name}
+                              </Text>
+                            </td>
+                            <td>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                }}
+                              >
+                                <span style={{ fontWeight: 600, fontSize: 13 }}>
+                                  {c.total_participant_spots}
+                                </span>
+                                <ProgressBarContainer>
+                                  <ProgressBarFill
+                                    width={
+                                      (c.total_participant_spots / maxSpots) *
+                                      100
+                                    }
+                                    color={colors.chart.blue}
+                                  />
+                                </ProgressBarContainer>
+                              </div>
+                            </td>
+                            <td style={{ fontWeight: 500 }}>
+                              ${c.total_revenue?.toLocaleString()}
+                            </td>
+                            <td>
+                              <span
+                                style={{
+                                  color:
+                                    c.cancellation_rate_by_spots > 20
+                                      ? colors.error
+                                      : colors.success,
+                                }}
+                              >
+                                {c.cancellation_rate_by_spots?.toFixed(1)}%
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </StyledTable>
                 </div>
               )}
             </TableWrapper>
           </Col>
-          <Col xs={24} lg={12}>
+
+          {/* PIE CHART - NARROWER (33%) */}
+          <Col xs={24} lg={8}>
             <ChartCard>
-              <ChartTitle>
-                <PieIcon size={18} /> Booking Type Distribution
-              </ChartTitle>
-              <ChartDescription>
-                Breakdown by single session vs. full course.
-              </ChartDescription>
+              <ChartHeader>
+                <ChartTitleRow>
+                  <ChartTitle>
+                    <PieIcon size={18} color={colors.primary} /> Booking Types
+                  </ChartTitle>
+                </ChartTitleRow>
+                <ChartDescription>Single vs. Course.</ChartDescription>
+              </ChartHeader>
               <ChartContainer>
                 {loading ? (
                   <PieSkeleton />
                 ) : !analytics.booking_patterns?.booking_types?.length ? (
-                  <EmptyStateContainer>
-                    <EmptyStateIcon>
-                      <lord-icon
-                        src="https://cdn.lordicon.com/idcmwtrd.json"
-                        trigger="in"
-                        delay="500"
-                        state="in-label"
-                        colors="primary:#94a3b8"
-                        style={{ width: 40, height: 40 }}
-                      />
-                    </EmptyStateIcon>
-                    <EmptyStateText>No Bookings Found</EmptyStateText>
-                    <EmptyStateSubtext>
-                      You don't currently have any bookings. When you do, you
-                      can see booking distribution here.
-                    </EmptyStateSubtext>
+                  <EmptyStateContainer $padding="20px">
+                    <EmptyStateText>No Data</EmptyStateText>
                   </EmptyStateContainer>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
@@ -1340,9 +1367,11 @@ const BookingTrends = () => {
                         nameKey="type"
                         cx="50%"
                         cy="50%"
-                        innerRadius="50%"
-                        outerRadius="80%"
-                        paddingAngle={2}
+                        innerRadius="60%"
+                        outerRadius="85%"
+                        paddingAngle={5}
+                        cornerRadius={5}
+                        stroke="none"
                       >
                         {analytics.booking_patterns.booking_types.map(
                           (entry, index) => (
@@ -1354,13 +1383,22 @@ const BookingTrends = () => {
                                 ]
                               }
                             />
-                          )
+                          ),
                         )}
+                        <Label
+                          value={getChartTotal(
+                            analytics.booking_patterns.booking_types,
+                          )}
+                          position="center"
+                          fill={colors.textPrimary}
+                          style={{ fontSize: "24px", fontWeight: "bold" }}
+                        />
                       </Pie>
-                      <RechartsTooltip
-                        formatter={(value, name) => [`${value} spots`, name]}
+                      <Legend
+                        wrapperStyle={{ fontSize: 12 }}
+                        iconType="circle"
                       />
-                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      <RechartsTooltip />
                     </PieChart>
                   </ResponsiveContainer>
                 )}

@@ -18,12 +18,13 @@ const Container = styled.div`
 
 const ScrollOuterWrapper = styled.div`
   position: relative;
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
   border-radius: 12px;
   background: #fff;
   border: 1px solid #e5e7eb;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  overflow: hidden; /* Contains the scroll area and absolute elements */
+  overflow: hidden;
 `;
 
 const ScrollInnerContainer = styled.div`
@@ -418,7 +419,7 @@ const OptionSelectionStep = ({ options, selectedOptionId, onSelect }) => {
                       initial={{ y: -5, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                     >
-                      Best Value
+                      Regular Admission
                     </Badge>
                   )}
                   <OptionTitle>{option.title}</OptionTitle>

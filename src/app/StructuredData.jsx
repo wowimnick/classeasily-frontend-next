@@ -39,7 +39,8 @@ export function WebsiteSchema() {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: "https://classeasily.com/explore?q={search_term_string}",
+        urlTemplate:
+          "https://classeasily.com/explore?keyword={search_term_string}",
       },
       "query-input": "required name=search_term_string",
     },

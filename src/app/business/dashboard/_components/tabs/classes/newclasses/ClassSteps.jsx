@@ -127,14 +127,14 @@ const ClassSteps = ({
           .map((img) => img.file)
           .filter(Boolean);
         const uploadPromises = imageFiles.map((file) =>
-          uploadService.uploadFile(file, "class_image")
+          uploadService.uploadFile(file, "class_image"),
         );
         const uploadResults = await Promise.all(uploadPromises);
 
         const failedUploads = uploadResults.filter((res) => !res.success);
         if (failedUploads.length > 0) {
           throw new Error(
-            `Failed to upload ${failedUploads.length} image(s). ${failedUploads[0].error}`
+            `Failed to upload ${failedUploads.length} image(s). ${failedUploads[0].error}`,
           );
         }
 
@@ -143,7 +143,7 @@ const ClassSteps = ({
           state.basicInfo.images.find((img) => img.isCover) ||
           state.basicInfo.images[0];
         const coverImageIndex = state.basicInfo.images.findIndex(
-          (img) => img.id === coverImage.id
+          (img) => img.id === coverImage.id,
         );
         const coverImageS3Key = imageS3Keys[coverImageIndex];
 
@@ -153,20 +153,22 @@ const ClassSteps = ({
           duration: 2,
         });
 
-        // MULTI-TIER UPDATE: Map all options in state, not just index 0
+        // MULTI-TIER UPDATE: Map all options in state
         const optionsPayload = state.options.map((opt, index) => {
           const isCourse = opt.booking_type === "Full Course";
           const isPrimary = index === 0;
 
           return {
-            // Identity
-            optionId: opt.optionId, // Only present if editing, null for create
+            // Identity (null for creation)
+            optionId: null,
 
             // Metadata
             title:
               opt.title ||
               (isPrimary ? "General Admission" : "Option " + (index + 1)),
             description: opt.description || "",
+
+            // Tier Logic
             schedule_mode: isPrimary
               ? "primary"
               : opt.schedule_mode || "synced",
@@ -176,7 +178,7 @@ const ClassSteps = ({
             level: opt.level || "all",
             equipment: opt.equipment || [],
             tags: opt.tags || [],
-            price_type: opt.price_type || "per_session",
+            price_type: isCourse ? "full_course" : "per_session",
 
             // Cancellation
             cancellationPolicy: opt.cancellationPolicy || "flexible",
@@ -186,7 +188,7 @@ const ClassSteps = ({
 
             // Mid-Course Logic (only send if course)
             allowMidCourseDrops: isCourse
-              ? opt.allowMidCourseDrops ?? false
+              ? (opt.allowMidCourseDrops ?? false)
               : false,
             midCourseCancellationPolicy: isCourse
               ? opt.midCourseCancellationPolicy
@@ -235,7 +237,7 @@ const ClassSteps = ({
           resetForm();
         } else {
           throw new Error(
-            getErrorMessage(response) || "Failed to create experience."
+            getErrorMessage(response) || "Failed to create experience.",
           );
         }
       } catch (error) {

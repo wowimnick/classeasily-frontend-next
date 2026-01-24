@@ -231,7 +231,9 @@ const MenuItem = styled(motion.div)`
   cursor: pointer;
   color: #1a1a1a;
   position: relative;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
   text-align: left;
 
   &:hover {
@@ -350,7 +352,7 @@ const mobileMenuVariants = {
     x: 0,
     y: 0,
     borderRadius: "50px",
-    pointerEvents: "none"
+    pointerEvents: "none",
   },
   visible: {
     scale: 1,
@@ -415,7 +417,7 @@ const MenuContents = React.forwardRef(
       menuPosition,
       transformOrigin,
     },
-    ref
+    ref,
   ) => {
     const router = useRouter();
 
@@ -484,7 +486,9 @@ const MenuContents = React.forwardRef(
           <GroupLabel>Business Management</GroupLabel>
           <MenuItem
             onClick={() => onNavigate("/business/dashboard/overview")}
-            onMouseEnter={(e) => handleMenuItemEnter(e, "/business/dashboard/overview")}
+            onMouseEnter={(e) =>
+              handleMenuItemEnter(e, "/business/dashboard/overview")
+            }
             onMouseLeave={handleMenuItemLeave}
           >
             <LordIcon
@@ -567,7 +571,7 @@ const MenuContents = React.forwardRef(
                 {renderAdminSection()}
                 {renderBusinessSection()}
                 <MenuGroup>
-                  <GroupLabel>Academic</GroupLabel>
+                  <GroupLabel>Personal</GroupLabel>
                   <MenuItem
                     onClick={() => onNavigate("/my-classes")}
                     onMouseEnter={(e) => handleMenuItemEnter(e, "/my-classes")}
@@ -577,7 +581,7 @@ const MenuContents = React.forwardRef(
                       src="https://cdn.lordicon.com/wxnxiano.json"
                       colors="primary:#1a1a1a,secondary:#1a1a1a"
                     />
-                    <MenuText>My Classes</MenuText>
+                    <MenuText>My Bookings</MenuText>
                     <ArrowIcon />
                   </MenuItem>
                   <MenuItem
@@ -592,9 +596,7 @@ const MenuContents = React.forwardRef(
                     <MenuText>My Favorites</MenuText>
                     <ArrowIcon />
                   </MenuItem>
-                </MenuGroup>
-                <MenuGroup>
-                  <GroupLabel>Personal</GroupLabel>
+
                   <MenuItem
                     onClick={onShowSettings}
                     onMouseEnter={(e) => handleMenuItemEnter(e)}
@@ -731,7 +733,7 @@ const MenuContents = React.forwardRef(
         </MenuContainer>
       </>
     );
-  }
+  },
 );
 MenuContents.displayName = "MenuContents";
 
@@ -821,8 +823,8 @@ const CustomUserMenu = ({
   }, [isOpen, isMobile]);
 
   const handleActualNavigate = (path) => {
-    // Navigate immediately. 
-    // We don't call onClose() here because Header.jsx closes the menu 
+    // Navigate immediately.
+    // We don't call onClose() here because Header.jsx closes the menu
     // automatically via [pathname] useEffect, making navigation feel instant.
     onNavigate(path);
   };
@@ -897,7 +899,7 @@ const CustomUserMenu = ({
         onClose={() => setIsFavoritesModalOpen(false)}
       />
     </>,
-    document.body
+    document.body,
   );
 };
 

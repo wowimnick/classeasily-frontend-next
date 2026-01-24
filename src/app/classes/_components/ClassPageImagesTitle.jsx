@@ -613,7 +613,7 @@ const ClassPageImagesTitle = React.memo(
           galleryEmblaApi.scrollTo(index);
         }
       },
-      [galleryEmblaApi, resetZoom]
+      [galleryEmblaApi, resetZoom],
     );
 
     useEffect(() => {
@@ -899,7 +899,7 @@ const ClassPageImagesTitle = React.memo(
                   ) : (
                     <MetaItem>
                       <Star size={14} fill="#FFB400" color="#FFB400" />
-                      New Class
+                      New Experience
                     </MetaItem>
                   )}
                   {business_name && <MetaItem>· {business_name}</MetaItem>}
@@ -919,7 +919,7 @@ const ClassPageImagesTitle = React.memo(
               <ShareOptionButton
                 as="a"
                 href={`mailto:?subject=${encodeURIComponent(
-                  title
+                  title,
                 )}&body=${encodeURIComponent(currentUrl)}`}
               >
                 <Mail size={18} /> Email
@@ -927,7 +927,7 @@ const ClassPageImagesTitle = React.memo(
               <ShareOptionButton
                 as="a"
                 href={`sms:?&body=${encodeURIComponent(
-                  `${title}\n${currentUrl}`
+                  `${title}\n${currentUrl}`,
                 )}`}
               >
                 <MessageSquare size={18} /> Messages
@@ -935,7 +935,7 @@ const ClassPageImagesTitle = React.memo(
               <ShareOptionButton
                 as="a"
                 href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                  `${title}\n${currentUrl}`
+                  `${title}\n${currentUrl}`,
                 )}`}
                 target="_blank"
               >
@@ -944,7 +944,7 @@ const ClassPageImagesTitle = React.memo(
               <ShareOptionButton
                 as="a"
                 href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                  currentUrl
+                  currentUrl,
                 )}`}
                 target="_blank"
               >
@@ -953,7 +953,7 @@ const ClassPageImagesTitle = React.memo(
               <ShareOptionButton
                 as="a"
                 href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
-                  currentUrl
+                  currentUrl,
                 )}&text=${encodeURIComponent(title)}`}
                 target="_blank"
               >
@@ -999,7 +999,7 @@ const ClassPageImagesTitle = React.memo(
         </Modal>
       </MainContent>
     );
-  }
+  },
 );
 
 ClassPageImagesTitle.displayName = "ClassPageImagesTitle";

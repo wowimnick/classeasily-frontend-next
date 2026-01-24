@@ -1,6 +1,3 @@
-// app/classes/[slug]/page.jsx
-// UPDATED: Use fetchBusinessDetail from server-data-fetchers instead of businessService
-
 import React from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -9,10 +6,9 @@ import { Breadcrumb } from "antd";
 import {
   fetchClassDetail,
   fetchBusinessDetail,
-} from "@/lib/server-data-fetchers"; // ADDED fetchBusinessDetail
+} from "@/lib/server-data-fetchers";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 
-// CRITICAL FIX: Use FooterSmart for client component context
 import FooterSmart from "@/components/homepage/FooterSmart.jsx";
 import ClassPageClient from "../_components/ClassPageClient";
 
@@ -21,7 +17,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 // Generate static params - fetch ALL classes
 export async function generateStaticParams() {
   try {
-    console.log("=== Fetching ALL class slugs for static generation ===");
+    console.log("=== Fetching ALL experience slugs for static generation ===");
     const allClasses = [];
     let page = 1;
     let hasMore = true;
@@ -35,7 +31,7 @@ export async function generateStaticParams() {
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },
-          }
+          },
         );
 
         if (!response.ok) {
@@ -47,7 +43,9 @@ export async function generateStaticParams() {
 
         if (data.results && Array.isArray(data.results)) {
           allClasses.push(...data.results);
-          console.log(`✅ Page ${page}: Added ${data.results.length} classes`);
+          console.log(
+            `✅ Page ${page}: Added ${data.results.length} experiences`,
+          );
           hasMore = !!data.next;
           page++;
         } else {
@@ -68,7 +66,7 @@ export async function generateStaticParams() {
       .map((classItem) => ({ slug: classItem.slug }));
 
     console.log(
-      `=== ✅ SUCCESS: ${slugs.length} class pages will be pre-generated ===`
+      `=== ✅ SUCCESS: ${slugs.length} experience pages will be pre-generated ===`,
     );
     return slugs;
   } catch (error) {
@@ -91,25 +89,25 @@ async function getClassData(slug) {
     const classResult = await fetchClassDetail(slug);
 
     if (!classResult.success || !classResult.data) {
-      console.warn(`Class not found for slug: ${slug}`);
+      console.warn(`Experience not found for slug: ${slug}`);
       notFound();
     }
 
     const classData = classResult.data;
-    console.log(`✅ Class data fetched: ${classData.classId}`);
+    console.log(`✅ Experience data fetched: ${classData.classId}`);
 
     // UPDATED: Use server-side fetcher with proper cache tags
     let businessResult = null;
     if (classData.business_slug) {
-      console.log(`Fetching business: ${classData.business_slug}`);
+      console.log(`Fetching host: ${classData.business_slug}`);
       const businessFetchResult = await fetchBusinessDetail(
-        classData.business_slug
+        classData.business_slug,
       );
       if (businessFetchResult.success && businessFetchResult.data) {
         businessResult = businessFetchResult.data;
-        console.log(`✅ Business data fetched`);
+        console.log(`✅ Host data fetched`);
       } else {
-        console.warn(`Business not found or error: ${classData.business_slug}`);
+        console.warn(`Host not found or error: ${classData.business_slug}`);
       }
     }
 
@@ -127,7 +125,7 @@ async function getClassData(slug) {
               revalidate: 86400,
               tags: ["reviews", `class-${slug}-reviews`],
             },
-          }
+          },
         );
 
         if (response.ok) {
@@ -160,23 +158,40 @@ async function getClassData(slug) {
   }
 }
 
-// Rest of the file remains the same...
 export async function generateMetadata({ params }) {
   const resolvedParams = await Promise.resolve(params);
   const { classData, businessData } = await getClassData(resolvedParams.slug);
 
   const pageTitle = classData?.title
     ? `${classData.title} | Classeasily`
-    : "Class Details | Classeasily";
+    : "Experience Details | Classeasily";
   const pageDescription = classData?.description
     ? classData.description.substring(0, 160) + "..."
-    : "View details and book this class on Classeasily.";
+    : "View details and book this experience for your next date night or friend gathering on Classeasily.";
   const canonicalUrl = `https://classeasily.com/classes/${classData.slug}`;
   const imageUrl =
     classData.images?.length > 0
       ? classData.images[0].original_url
       : "https://classeasily.com/placeholder-image.jpg";
 
+  // Parse Coordinates for Schema
+  let geoCoordinates = null;
+  if (classData.coordinates) {
+    const parts = classData.coordinates.split(",");
+    if (parts.length === 2) {
+      const lat = parts[0].trim();
+      const lng = parts[1].trim();
+      if (lat && lng) {
+        geoCoordinates = {
+          "@type": "GeoCoordinates",
+          latitude: lat,
+          longitude: lng,
+        };
+      }
+    }
+  }
+
+  // Construct Full Schema
   const courseSchema = {
     "@context": "https://schema.org",
     "@type": "Course",
@@ -186,8 +201,21 @@ export async function generateMetadata({ params }) {
     courseCode: `CLASS-${classData.classId}`,
     provider: {
       "@type": "Organization",
-      name: businessData?.businessName || "Classeasily Partner",
+      name: businessData?.businessName || "Classeasily Host",
       url: businessData?.website || "https://classeasily.com",
+    },
+    // Location Schema for "Near Me" search optimization
+    location: {
+      "@type": "Place",
+      name: businessData?.businessName || "Event Location",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: classData.location || "",
+        addressLocality: classData.business_city || "",
+        addressRegion: classData.business_state || "",
+        addressCountry: "CA", // Defaulting to CA based on supported provinces
+      },
+      ...(geoCoordinates && { geo: geoCoordinates }),
     },
     aggregateRating: {
       "@type": "AggregateRating",
@@ -196,11 +224,11 @@ export async function generateMetadata({ params }) {
     },
     offers: classData.options
       ?.filter((opt) =>
-        opt.schedules?.some((s) => s.price && parseFloat(s.price) > 0)
+        opt.schedules?.some((s) => s.price && parseFloat(s.price) > 0),
       )
       .map((option) => ({
         "@type": "Offer",
-        name: option.title || "Class Option",
+        name: option.title || "Experience Option",
         price:
           option.schedules.find((s) => s.price && parseFloat(s.price) > 0)
             ?.price || "0",
@@ -233,7 +261,7 @@ export async function generateMetadata({ params }) {
 export default async function ClassPage({ params }) {
   const resolvedParams = await Promise.resolve(params);
   const { classData, businessData, initialReviews } = await getClassData(
-    resolvedParams.slug
+    resolvedParams.slug,
   );
 
   const breadcrumbItems = [

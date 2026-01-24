@@ -906,21 +906,23 @@ const BookingModal = ({
 
             {ModalContent}
 
-            <ModalFooter
-              currentStep={currentStep}
-              onBack={handleBack}
-              onNext={handleNext}
-              onClose={handleClose}
-              loading={isLoading}
-              hideNextButton={shouldHideNextButton}
-              hideBackButton={
-                currentStep === 1 || currentStep === headerSteps.length
-              }
-              isNextDisabled={!validateStep(currentStep, bookingData)}
-              bookingData={bookingData}
-              paymentAction={paymentAction}
-              isPaymentStep={currentStep === PAYMENT_STEP}
-            />
+            {shouldShowFooter && (
+              <ModalFooter
+                currentStep={currentStep}
+                onBack={handleBack}
+                onNext={handleNext}
+                onClose={handleClose}
+                loading={isLoading}
+                hideNextButton={shouldHideNextButton}
+                hideBackButton={
+                  currentStep === 1 || currentStep === headerSteps.length
+                }
+                isNextDisabled={!validateStep(currentStep, bookingData)}
+                bookingData={bookingData}
+                paymentAction={paymentAction}
+                isPaymentStep={currentStep === PAYMENT_STEP}
+              />
+            )}
           </DesktopModal>
         </DesktopOverlay>
       )}

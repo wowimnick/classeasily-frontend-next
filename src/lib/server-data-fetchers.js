@@ -58,7 +58,7 @@ export async function searchClasses(params = {}) {
     // Explicitly log the params coming in for debugging
     console.log(
       "[server-data-fetchers] searchClasses params:",
-      JSON.stringify(params)
+      JSON.stringify(params),
     );
 
     Object.entries(params).forEach(([key, value]) => {
@@ -81,8 +81,8 @@ export async function searchClasses(params = {}) {
     console.log(`[Server] Fetching classes: ${url}`);
     console.log(
       `[Server] Cache Strategy: ${cacheStrategy}, Tags: ${JSON.stringify(
-        cacheTags
-      )}`
+        cacheTags,
+      )}`,
     );
 
     const response = await fetch(url, {
@@ -115,7 +115,7 @@ export async function searchClasses(params = {}) {
 export async function fetchClassesByCategory(
   categoryKey,
   subcategoryKey = null,
-  additionalParams = {}
+  additionalParams = {},
 ) {
   const params = {
     category_key: categoryKey,
@@ -143,7 +143,7 @@ export async function fetchClassCollections() {
         headers: { "Content-Type": "application/json" },
         cache: "force-cache",
         next: { revalidate: 3600, tags: ["collections"] },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -190,7 +190,7 @@ export async function fetchBlogPosts(pageSize = 50) {
           revalidate: 3600,
           tags: ["blog-posts"],
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -347,7 +347,7 @@ export async function fetchBlogPostsByCategory(categorySlug, pageSize = 50) {
           revalidate: 86400,
           tags: ["blog-posts", `category-${categorySlug}`],
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -609,7 +609,7 @@ export async function fetchBusinessReviews(slug, page = 1, pageSize = 10) {
           revalidate: 86400,
           tags: ["reviews", `business-${slug}-reviews`, `reviews-page-${page}`],
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -948,7 +948,7 @@ export async function preloadHomepageData() {
       `${API_URL}/classes/homepage-content/?mode=collections`,
       {
         next: { revalidate: 3600, tags: ["homepage-content"] },
-      }
+      },
     );
 
     if (!homepageRes.ok) {
@@ -970,7 +970,7 @@ export async function preloadHomepageData() {
     // 3. Find "Date Night" specifically from the backend response
     // The backend has already filtered out trending items and shuffled this list
     const dateNightData = data.collections?.find(
-      (c) => c.slug === "date-night"
+      (c) => c.slug === "date-night",
     );
 
     if (dateNightData && dateNightData.classes?.length > 0) {
