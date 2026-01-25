@@ -106,7 +106,7 @@ const ForHosts = () => {
         <div>
           <Image
             src={artistImage}
-            alt="Artist teaching a class"
+            alt="Art experience host painting"
             fill
             style={{ objectFit: "cover" }}
             sizes="(max-width: 992px) 100vw, 50vw"
@@ -119,7 +119,7 @@ const ForHosts = () => {
         <StyledH2 id="for-hosts-title">
           Host an experience on ClassEasily
         </StyledH2>
-        <StyledP>
+        <StyledP data-nosnippet>
           Expand your reach by tapping into our community of experience seekers.
           We'll handle the bookings, payments, and admin - you focus on what you
           do best.

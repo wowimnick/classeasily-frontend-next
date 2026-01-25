@@ -7,15 +7,14 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import { useSearchParams } from "next/navigation";
 import styled, { keyframes, useTheme } from "styled-components";
 import Image from "next/image";
-import { motion } from "framer-motion";
+// REMOVED: import { motion } from "framer-motion"; -- Safer for server build
 import { Heart, Star, Navigation, AlertCircle } from "lucide-react";
 import message from "@/lib/message";
 import { useAuthUser } from "@/hooks/useAuthUser";
-import confetti from "canvas-confetti";
 
+// REMOVED: import confetti from "canvas-confetti";
 import { classService } from "@/services/apiService.js";
 import useIntersectionObserver from "@/hooks/useIntersectionObserver.js";
 
@@ -41,7 +40,8 @@ const ImageLoadingSpinner = styled.div`
   animation: ${spinAnimation} 1s linear infinite;
 `;
 
-const CardContainer = styled(motion.div)`
+// CHANGED: Removed motion.div, just use styled.div
+const CardContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: min-content;
@@ -49,7 +49,10 @@ const CardContainer = styled(motion.div)`
   position: relative;
   width: 100%;
   padding: ${(props) => (props.$isSelected ? "2px" : "0")};
-  transition: padding 0.2s ease;
+  transition:
+    padding 0.2s ease,
+    opacity 0.25s ease;
+  opacity: 1;
 
   @media (max-width: 800px) {
     font-size: 0.9em;
@@ -328,9 +331,10 @@ const HomeClassCard = ({
   onFavoriteChange,
   priority = false,
 }) => {
-  const searchParams = useSearchParams();
+  // Safe hook usage
   const { user: currentUser } = useAuthUser();
   const isAuthenticated = !!currentUser;
+
   const [isFavorite, setIsFavorite] = useState(is_favorited);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const [imageLoadState, setImageLoadState] = useState("idle");
@@ -342,7 +346,7 @@ const HomeClassCard = ({
   const isIntersecting = useIntersectionObserver(
     cardRef,
     { threshold: 0.1 },
-    true
+    true,
   );
 
   const prices = useMemo(
@@ -350,7 +354,7 @@ const HomeClassCard = ({
       course: min_course_price,
       singleSession: min_session_price,
     }),
-    [min_course_price, min_session_price]
+    [min_course_price, min_session_price],
   );
 
   const imageUrl = useMemo(() => {
@@ -388,13 +392,18 @@ const HomeClassCard = ({
       return;
     }
     const identifier = slug || classId;
-    const currentParticipants = searchParams.get("participants");
+
     let navigationUrl = `/classes/${identifier}`;
-    if (currentParticipants) {
-      navigationUrl += `?participants=${currentParticipants}`;
+    // Use window check to prevent server error
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const currentParticipants = sp.get("participants");
+      if (currentParticipants) {
+        navigationUrl += `?participants=${currentParticipants}`;
+      }
     }
     window.open(navigationUrl, "_blank");
-  }, [slug, classId, searchParams]);
+  }, [slug, classId]);
 
   const handleFavoriteClick = useCallback(
     async (e) => {
@@ -415,7 +424,7 @@ const HomeClassCard = ({
         if (result.success) {
           if (onFavoriteChange) onFavoriteChange(newState);
           if (newState && favoriteButtonRef.current) {
-            // 2. DYNAMIC IMPORT HERE
+            // Dynamic import prevents server crash
             const confetti = (await import("canvas-confetti")).default;
 
             const rect = favoriteButtonRef.current.getBoundingClientRect();
@@ -443,10 +452,15 @@ const HomeClassCard = ({
         setIsTogglingFavorite(false);
       }
     },
-    [isAuthenticated, isTogglingFavorite, isFavorite, classId, onFavoriteChange]
+    [
+      isAuthenticated,
+      isTogglingFavorite,
+      isFavorite,
+      classId,
+      onFavoriteChange,
+    ],
   );
 
-  // Logic to format the price display (handles $0 -> "Free")
   const renderPrice = (priceValue, label) => {
     const numericPrice = parseFloat(priceValue);
     const isFree = numericPrice === 0;
@@ -463,9 +477,6 @@ const HomeClassCard = ({
     <CardContainer
       ref={cardRef}
       onClick={handleNavigateToClass}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.25 }}
       $isSelected={isSelected}
       theme={theme}
     >
@@ -560,7 +571,7 @@ const HomeClassCard = ({
           ) : (
             <>
               {prices.singleSession !== null &&
-                renderPrice(prices.singleSession, "/ class")}
+                renderPrice(prices.singleSession, "/ person")}
               {prices.singleSession !== null && prices.course !== null && (
                 <PriceSeparator>•</PriceSeparator>
               )}

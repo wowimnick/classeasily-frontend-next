@@ -1,20 +1,24 @@
-// src/app/providers/CookieConsentProvider.jsx
-
 "use client";
 
 import { useState, useEffect } from "react";
-import message from '@/lib/message';
+import message from "@/lib/message";
 import CookieConsentBanner from "@/components/auth/CookieConsentBanner";
 
 export default function CookieConsentProvider({ children }) {
   const [showConsentBanner, setShowConsentBanner] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
-  // This effect runs only once on the client after mounting, making it safe
   useEffect(() => {
     setIsClient(true);
+
+    // Check permanent consent (Local Storage)
     const consent = localStorage.getItem("cookie_consent");
-    if (consent === null) {
+
+    // Check temporary dismissal (Session Storage)
+    const dismissed = sessionStorage.getItem("cookie_consent_dismissed");
+
+    // Only show if no permanent choice AND not temporarily dismissed
+    if (consent === null && !dismissed) {
       setShowConsentBanner(true);
     }
   }, []);
@@ -28,6 +32,9 @@ export default function CookieConsentProvider({ children }) {
 
   const handleAccept = () => {
     localStorage.setItem("cookie_consent", "true");
+    // Clear session dismissal if it exists, though not strictly necessary
+    sessionStorage.removeItem("cookie_consent_dismissed");
+
     gtag("consent", "update", {
       analytics_storage: "granted",
       ad_storage: "granted",
@@ -38,6 +45,8 @@ export default function CookieConsentProvider({ children }) {
 
   const handleDecline = () => {
     localStorage.setItem("cookie_consent", "false");
+    sessionStorage.removeItem("cookie_consent_dismissed");
+
     gtag("consent", "update", {
       analytics_storage: "denied",
       ad_storage: "denied",
@@ -47,10 +56,15 @@ export default function CookieConsentProvider({ children }) {
   };
 
   const handleClose = () => {
+    // Save to Session Storage: keeps it hidden until the tab is closed
+    sessionStorage.setItem("cookie_consent_dismissed", "true");
+
     setShowConsentBanner(false);
+    // Optional: You might want to remove this toast to make it less annoying
+    // since they just dismissed it silently.
     message.info(
-      "Cookie preferences not saved. You will be asked again later.",
-      3
+      "Cookie preferences not saved. You will be asked again next time.",
+      3,
     );
   };
 

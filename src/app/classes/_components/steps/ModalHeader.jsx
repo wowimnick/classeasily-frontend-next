@@ -1,5 +1,5 @@
 import React from "react";
-import { Check, ChevronLeft, Calendar } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
 import styled from "styled-components";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -65,7 +65,7 @@ const ProgressContainer = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  max-width: 360px; /* Slightly tighter to look good above/below text */
+  max-width: ${(props) => (props.$stepCount > 3 ? "420px" : "360px")};
 `;
 
 const ProgressTrack = styled.div`
@@ -115,8 +115,8 @@ const StepCircle = styled.div`
     props.$active
       ? theme.primary
       : props.$completed
-      ? theme.success
-      : "#f3f4f6"};
+        ? theme.success
+        : "#f3f4f6"};
   color: ${(props) =>
     props.$active || props.$completed ? "white" : "#9ca3af"};
   border: 2px solid white;
@@ -125,8 +125,8 @@ const StepCircle = styled.div`
       props.$active
         ? theme.primary
         : props.$completed
-        ? theme.success
-        : "transparent"};
+          ? theme.success
+          : "transparent"};
 `;
 
 const StepLabel = styled.span`
@@ -268,25 +268,43 @@ const textVariants = {
   exit: { opacity: 0, y: -10 },
 };
 
-export const ModalHeader = ({ currentStep }) => {
-  const steps = ["Date", "Payment", "Confirm"];
-
-  const stepContent = {
-    1: {
-      title: "When would you like to go?",
-      subtitle: "Choose a date and time that suits you best.",
-    },
-    2: {
-      title: "Review & Pay",
-      subtitle: "Double-check your details and secure your spot.",
-    },
-    3: {
-      title: "Woohoo! You're booked.",
-      subtitle: "Your spot is saved. We've sent the details to your email.",
-    },
+export const ModalHeader = ({
+  currentStep,
+  steps = ["Date", "Payment", "Confirm"],
+}) => {
+  // Dynamic Content mapping based on step Label or Index
+  const getContent = (label) => {
+    switch (label) {
+      case "Option":
+        return {
+          title: "Choose your experience",
+          subtitle: "Select the option that suits you best.",
+        };
+      case "Date":
+        return {
+          title: "When would you like to go?",
+          subtitle: "Choose a date and time.",
+        };
+      case "Payment":
+        return {
+          title: "Review & Pay",
+          subtitle: "Double-check your details and secure your spot.",
+        };
+      case "Confirm":
+        return {
+          title: "Woohoo! You're booked.",
+          subtitle: "Your spot is saved. Details sent to email.",
+        };
+      default:
+        return { title: "", subtitle: "" };
+    }
   };
 
-  const { title, subtitle } = stepContent[currentStep] || stepContent[1];
+  const currentLabel = steps[currentStep - 1] || "Unknown";
+  const { title, subtitle } = getContent(currentLabel);
+
+  // Calculate progress fill percentage
+  const progressPercent = ((currentStep - 1) / (steps.length - 1)) * 100;
 
   return (
     <HeaderContainer>
@@ -315,13 +333,11 @@ export const ModalHeader = ({ currentStep }) => {
         </AnimatePresence>
       </TextContainer>
 
-      <ProgressContainer>
+      <ProgressContainer $stepCount={steps.length}>
         <ProgressTrack />
         <ProgressFill
           initial={{ scaleX: 0 }}
-          animate={{
-            scaleX: currentStep === 1 ? 0 : currentStep === 2 ? 0.5 : 1,
-          }}
+          animate={{ scaleX: progressPercent / 100 }}
           transition={{ duration: 0.4, ease: "easeInOut" }}
         />
         {steps.map((label, index) => {
@@ -346,32 +362,14 @@ export const ModalHeader = ({ currentStep }) => {
 
 export const ModalFooter = ({
   currentStep,
+  totalSteps,
   onBack,
-  onNext,
   onClose,
   loading = false,
-  hideNextButton = false,
   hideBackButton = false,
-  isNextDisabled = false,
-  bookingData = null,
   paymentAction = null,
+  isPaymentStep = false,
 }) => {
-  // If we are on the first step (Calendar), return null to hide the footer
-  if (currentStep === 1) {
-    return null;
-  }
-
-  const getButtonText = () => {
-    switch (currentStep) {
-      case 2:
-        return "Confirm & Pay";
-      case 3:
-        return "Done";
-      default:
-        return "Next";
-    }
-  };
-
   const handlePaymentClick = () => {
     if (paymentAction?.handleSubmit) {
       paymentAction.handleSubmit();
@@ -380,6 +378,9 @@ export const ModalFooter = ({
 
   const isPaymentDisabled = !paymentAction?.canSubmit || paymentAction?.loading;
   const showBackButton = currentStep > 1 && !hideBackButton;
+
+  // FIX: Only show the "Pay" button if we are explicitly on the payment step
+  const showPayButton = isPaymentStep && paymentAction !== null;
 
   return (
     <FooterContainer $hasBack={showBackButton}>
@@ -396,7 +397,7 @@ export const ModalFooter = ({
       </DesktopLeftSlot>
 
       <DesktopRightSlot>
-        {currentStep === 2 && (
+        {showPayButton && (
           <Button
             $primary
             onClick={handlePaymentClick}
@@ -408,9 +409,9 @@ export const ModalFooter = ({
           </Button>
         )}
 
-        {currentStep === 3 && (
+        {!showPayButton && onClose && currentStep === totalSteps && (
           <Button $primary onClick={onClose}>
-            {getButtonText()}
+            Done
           </Button>
         )}
       </DesktopRightSlot>

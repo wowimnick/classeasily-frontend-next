@@ -9,10 +9,10 @@ const nextConfig = {
       process.env.STAGE === "test"
         ? false
         : process.env.NODE_ENV === "production"
-        ? {
-            exclude: ["error", "warn"],
-          }
-        : false,
+          ? {
+              exclude: ["error", "warn"],
+            }
+          : false,
   },
 
   images: {
@@ -262,7 +262,7 @@ const nextConfig = {
             test: /[\\/]node_modules[\\/]/,
             name(module) {
               const packageName = module.context.match(
-                /[\\/]node_modules[\\/](.*?)([\\/]|$)/
+                /[\\/]node_modules[\\/](.*?)([\\/]|$)/,
               )?.[1];
               return `npm.${packageName?.replace("@", "")}`;
             },

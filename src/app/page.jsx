@@ -11,22 +11,22 @@ import {
   CategorySkeleton,
 } from "./(homepage)/_components/FindClassSkeleton";
 
-const CancellationOverlay = dynamic(() =>
-  import("./(homepage)/_components/CancellationOverlay")
+const CancellationOverlay = dynamic(
+  () => import("./(homepage)/_components/CancellationOverlay"),
 );
-const InviteOverlay = dynamic(() =>
-  import("./(homepage)/_components/InviteOverlay")
+const InviteOverlay = dynamic(
+  () => import("./(homepage)/_components/InviteOverlay"),
 );
-const PasswordResetOverlay = dynamic(() =>
-  import("./(homepage)/_components/PasswordResetOverlay")
-);
-
-const ClaimAccountOverlay = dynamic(() =>
-  import("./(homepage)/_components/ClaimAccountOverlay")
+const PasswordResetOverlay = dynamic(
+  () => import("./(homepage)/_components/PasswordResetOverlay"),
 );
 
-const VerifyEmailOverlay = dynamic(() =>
-  import("./(homepage)/_components/VerifyEmailOverlay")
+const ClaimAccountOverlay = dynamic(
+  () => import("./(homepage)/_components/ClaimAccountOverlay"),
+);
+
+const VerifyEmailOverlay = dynamic(
+  () => import("./(homepage)/_components/VerifyEmailOverlay"),
 );
 
 // Lazy Load Components
@@ -38,32 +38,58 @@ const HomepageCategories = dynamic(
   () => import("./(homepage)/_components/HomepageCategories"),
   {
     loading: () => <CategorySkeleton />,
-  }
+  },
 );
 
-const ClassRow = dynamic(() => import("./(homepage)/_components/FindClass"), {
-  loading: () => <FindClassSkeleton />,
-});
+import ClassRow from "./(homepage)/_components/FindClass";
 
 const HowItWorks = dynamic(() => import("./(homepage)/_components/HowItWorks"));
 const ForHosts = dynamic(() => import("./(homepage)/_components/ForHosts"));
-const Testimonials = dynamic(() =>
-  import("./(homepage)/_components/Testimonials")
+const Testimonials = dynamic(
+  () => import("./(homepage)/_components/Testimonials"),
 );
-const GiftCardsCTA = dynamic(() =>
-  import("./(homepage)/_components/GiftCardsCTA")
+const GiftCardsCTA = dynamic(
+  () => import("./(homepage)/_components/GiftCardsCTA"),
 );
 
 export const metadata = {
-  title: "Classeasily - Find Local Classes & Experiences Near You",
-  description: "Discover and book local classes and experiences in your area.",
+  title: "ClassEasily - Find Local Classes & Experiences Near You",
+  description:
+    "Discover and book local experiences in your area for your next date night or friend gathering on Classeasily.",
+  openGraph: {
+    title: "ClassEasily - Find Local Classes & Experiences Near You",
+    description:
+      "Discover and book local experiences in your area for your next date night or friend gathering on Classeasily.",
+    type: "website",
+  },
 };
 
 export default async function HomePage() {
   const { row_collections, categories } = await preloadHomepageData();
 
+  // JSON-LD Schema
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "ClassEasily",
+    url: "https://classeasily.com",
+    description:
+      "Discover and book local experiences in your area for your next date night or friend gathering on Classeasily.",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://classeasily.com/explore?query={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
+  };
+
   return (
     <>
+      {/* Inject Schema here */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <AnnouncementBanner />
       <SharedMainClientHeader topOffset={48} />
 
@@ -71,27 +97,17 @@ export default async function HomePage() {
         <main className="main-content">
           <BannerSearch />
 
-          {/* TRENDING & DATE NIGHT ROWS */}
           {row_collections?.map((collection, index) => (
-            <Suspense
+            <ClassRow
               key={collection.slug}
-              fallback={
-                <FindClassSkeleton
-                  style={{ marginTop: index === 0 ? "3rem" : "1rem" }}
-                />
-              }
-            >
-              <ClassRow
-                title={collection.title}
-                subtitle={collection.subtitle}
-                classes={collection.classes}
-                seeAllLink={`/explore?collection=${collection.slug}`}
-                style={{ marginTop: index === 0 ? "3rem" : "0" }}
-              />
-            </Suspense>
+              title={collection.title}
+              subtitle={collection.subtitle}
+              classes={collection.classes}
+              seeAllLink={`/explore?collection=${collection.slug}`}
+              style={{ marginTop: index === 0 ? "3rem" : "0" }}
+            />
           ))}
 
-          {/* VIBE PILLS (Collections) */}
           <Suspense fallback={<CategorySkeleton />}>
             <HomepageCategories initialCategories={categories} />
           </Suspense>

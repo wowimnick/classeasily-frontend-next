@@ -745,7 +745,7 @@ const BookingDetailsDrawer = ({
     try {
       const result = await bookingService.businessCancelBooking(
         booking.id,
-        "Cancelled by business user"
+        "Cancelled by business user",
       );
       if (result.success) {
         message.success("Booking successfully cancelled");
@@ -901,7 +901,7 @@ const BookingDetailsDrawer = ({
     const businessTimezone = businessCtx.business_timezone || "UTC";
     const userTimezone = booker_details.user_timezone || businessTimezone;
     const { display: phoneDisplay, link: phoneLink } = formatPhoneNumber(
-      booker_details.phone_number
+      booker_details.phone_number,
     );
 
     return (
@@ -963,6 +963,17 @@ const BookingDetailsDrawer = ({
               </InfoItem>
               <InfoItem>
                 <InfoIcon>
+                  <Hash />
+                </InfoIcon>
+                <InfoContent>
+                  <InfoLabel>Option / Tier</InfoLabel>
+                  <InfoValue>
+                    {booking.option_name || <NoDataText>N/A</NoDataText>}
+                  </InfoValue>
+                </InfoContent>
+              </InfoItem>
+              <InfoItem>
+                <InfoIcon>
                   <Calendar />
                 </InfoIcon>
                 <InfoContent>
@@ -973,7 +984,7 @@ const BookingDetailsDrawer = ({
                       scheduleInstance.time,
                       businessTimezone,
                       businessTimezone,
-                      { dateTimeFormat: "EEEE, MMMM d, yyyy, h:mm a" }
+                      { dateTimeFormat: "EEEE, MMMM d, yyyy, h:mm a" },
                     )}
                   </InfoValue>
                 </InfoContent>
@@ -1020,8 +1031,8 @@ const BookingDetailsDrawer = ({
                       color: session.is_current
                         ? colors.primary
                         : session.status === "completed"
-                        ? colors.success
-                        : "gray",
+                          ? colors.success
+                          : "gray",
                       children: (
                         <div
                           style={{
@@ -1047,7 +1058,7 @@ const BookingDetailsDrawer = ({
                                 // You might need to pass timezone props down or use the ones from booking context
                                 booking.business_context.business_timezone,
                                 booking.business_context.business_timezone,
-                                { dateTimeFormat: "EEE, MMM d, yyyy • h:mm a" }
+                                { dateTimeFormat: "EEE, MMM d, yyyy • h:mm a" },
                               )}
                             </Text>
                           </Space>
@@ -1149,7 +1160,7 @@ const BookingDetailsDrawer = ({
                     {formatUTCToUserDisplay(
                       booking.booking_date,
                       userTimezone,
-                      { dateTimeFormat: "MMM d, yyyy, h:mm a zzz" }
+                      { dateTimeFormat: "MMM d, yyyy, h:mm a zzz" },
                     )}
                   </InfoValue>
                 </InfoContent>
@@ -1163,7 +1174,7 @@ const BookingDetailsDrawer = ({
                   <InfoValue>
                     {getBookingTypeDisplay(
                       booking.enrollment_type,
-                      booking.session_info
+                      booking.session_info,
                     )}
                   </InfoValue>
                 </InfoContent>

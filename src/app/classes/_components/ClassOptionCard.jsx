@@ -211,7 +211,7 @@ const ClassOptionCard = ({
   const nextCourseSchedule = isCourse
     ? schedules
         .filter(
-          (s) => s.date && dayjs(s.date).isAfter(dayjs().subtract(1, "day"))
+          (s) => s.date && dayjs(s.date).isAfter(dayjs().subtract(1, "day")),
         )
         .sort((a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf())[0]
     : null;
@@ -220,7 +220,7 @@ const ClassOptionCard = ({
     if (!timeStr) return "";
     try {
       return dayjs(`2000-01-01 ${timeStr}`, "YYYY-MM-DD HH:mm:ss").format(
-        "h:mm A"
+        "h:mm A",
       );
     } catch (e) {
       return timeStr;
@@ -271,7 +271,7 @@ const ClassOptionCard = ({
   const upcomingSchedules = !isCourse
     ? schedules
         .filter(
-          (s) => s.date && dayjs(s.date).isAfter(dayjs().subtract(1, "day"))
+          (s) => s.date && dayjs(s.date).isAfter(dayjs().subtract(1, "day")),
         )
         .sort((a, b) => {
           const dateTimeA = dayjs(`${a.date}T${a.time}`);

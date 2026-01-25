@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import styled, { keyframes } from "styled-components";
 import {
   Card,
@@ -40,10 +46,10 @@ import {
   Eye,
   EyeOff,
   CheckCircle,
-  BarChart2,
   Percent,
   MoreVertical,
   Globe,
+  TrendingUp,
 } from "lucide-react";
 import {
   BarChart,
@@ -56,6 +62,8 @@ import {
   Cell as RechartsCell,
   LineChart,
   Line,
+  Area,
+  ComposedChart,
 } from "recharts";
 import NumberFlow from "@number-flow/react";
 import debounce from "lodash/debounce";
@@ -124,7 +132,6 @@ const DrawerBody = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 24px;
-
   &::-webkit-scrollbar {
     display: none;
   }
@@ -204,8 +211,7 @@ const DashboardHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
-
-  @media (max-width: 768px) {
+  @media (max-width: 992px) {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
@@ -244,7 +250,6 @@ const HeaderSubtitle = styled(Text)`
 
 const ResponsiveDivider = styled(Divider)`
   margin: 24px 0;
-
   @media (max-width: 768px) {
     margin: 16px 0;
   }
@@ -254,16 +259,14 @@ const ControlsBar = styled.div`
   display: flex;
   gap: 16px;
   align-items: center;
-
-  @media (max-width: 768px) {
+  @media (max-width: 992px) {
     width: 100%;
   }
 `;
 
 const StyledRangePicker = styled(RangePicker)`
   width: 280px;
-
-  @media (max-width: 768px) {
+  @media (max-width: 992px) {
     width: 100%;
   }
 `;
@@ -274,7 +277,6 @@ const SearchFilterBar = styled.div`
   gap: 16px;
   align-items: center;
   margin-top: 16px;
-
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 12px;
@@ -285,7 +287,6 @@ const SearchFilterBar = styled.div`
 
 const StyledSelect = styled(Select)`
   width: 180px;
-
   @media (max-width: 768px) {
     width: 100%;
   }
@@ -296,7 +297,6 @@ const ActionButton = styled(Button)`
   align-items: center;
   justify-content: center;
   gap: 8px;
-
   @media (max-width: 768px) {
     width: 100%;
   }
@@ -312,11 +312,16 @@ const StatCardBase = styled(Card)`
   min-height: 140px;
   transition: all 0.2s ease;
 
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
   .ant-card-body {
     padding: 20px !important;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: space-between;
     height: 100%;
   }
 
@@ -329,7 +334,6 @@ const StatsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 20px;
-
   @media (max-width: 768px) {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 12px;
@@ -347,12 +351,10 @@ const IconContainer = styled.div`
   justify-content: center;
   background: ${(props) => props.background};
   color: ${(props) => props.iconcolor};
-
   svg {
     width: 18px;
     height: 18px;
   }
-
   @media (max-width: 768px) {
     width: 32px;
     height: 32px;
@@ -363,12 +365,11 @@ const MetricValue = styled.div`
   font-size: 22px;
   font-weight: 700;
   color: ${colors.textPrimary};
-  margin-top: auto;
+  margin-top: 12px;
   margin-bottom: 4px;
   display: flex;
   align-items: baseline;
   line-height: 1.2;
-
   @media (max-width: 768px) {
     font-size: 17px;
   }
@@ -380,45 +381,88 @@ const StatLabel = styled(Text)`
   display: block;
   line-height: 1.3;
   margin-top: 10px;
-
   @media (max-width: 768px) {
     font-size: 12px;
   }
 `;
 
-const ChartCard = styled(StatCardBase)`
-  min-height: 400px;
+const StatFooter = styled.div`
+  font-size: 12px;
+  color: ${colors.textSecondary};
+  margin-top: 4px;
+  line-height: 1.4;
+  opacity: 0.8;
+  @media (max-width: 768px) {
+    font-size: 11px;
+  }
+`;
 
+// --- New Header / Chart Styles ---
+
+const ChartCard = styled(StatCardBase)`
+  min-height: 440px;
+  .ant-card-body {
+    padding: 24px !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
   @media (max-width: 768px) {
     min-height: 350px;
   }
 `;
 
-const CardTitle = styled(Title).attrs({ level: 5 })`
-  &.ant-typography {
-    font-weight: 600;
-    font-size: 17px;
-    color: ${colors.textPrimary};
-    margin-bottom: 16px !important;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+const ChartHeader = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+`;
 
-  @media (max-width: 768px) {
-    font-size: 16px;
+const ChartTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+`;
+
+const ChartTitle = styled.h3`
+  font-size: 16px;
+  font-weight: 600;
+  color: ${colors.textPrimary};
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const ChartDescription = styled.p`
+  font-size: 13px;
+  color: ${colors.textSecondary};
+  margin: 0;
+`;
+
+const InsightBadge = styled.div`
+  background: ${colors.lightBg};
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: ${colors.textPrimary};
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid ${colors.border};
+
+  strong {
+    color: ${colors.primary};
   }
 `;
 
 const ChartContainer = styled.div`
   flex-grow: 1;
-  height: 300px;
-  margin-top: 16px;
+  width: 100%;
   position: relative;
-
-  @media (max-width: 768px) {
-    height: 250px;
-  }
+  min-height: 0;
 `;
 
 const ReviewTableContainer = styled(StatCardBase)`
@@ -432,7 +476,6 @@ const StyledTable = styled(Table)`
     border-radius: 16px;
     overflow: hidden;
   }
-
   .ant-table-thead > tr > th {
     background-color: #f8fafc !important;
     color: #475569;
@@ -442,7 +485,6 @@ const StyledTable = styled(Table)`
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
-
   .ant-table-tbody > tr > td {
     vertical-align: top;
     padding: 16px 20px;
@@ -450,7 +492,6 @@ const StyledTable = styled(Table)`
     color: #1e293b;
     border-bottom: 1px solid ${colors.border};
   }
-
   .ant-table-tbody > tr:last-child > td {
     border-bottom: none;
   }
@@ -511,15 +552,6 @@ const StyledButton = styled(Button)`
   justify-content: center;
 `;
 
-const LoaderWrapper = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  min-height: 250px;
-`;
-
 const MobileReviewList = styled.div`
   display: flex;
   flex-direction: column;
@@ -567,39 +599,14 @@ const EmptyStateContainer = styled.div`
   padding: ${(props) => props.$padding || "60px 20px"};
   text-align: center;
   gap: 16px;
-
-  @media (max-width: 768px) {
-    padding: ${(props) => props.$padding || "40px 16px"};
-    gap: 12px;
-  }
-
-  @media (max-width: 480px) {
-    padding: ${(props) => props.$padding || "30px 12px"};
-    gap: 10px;
-  }
 `;
 
 const EmptyStateIcon = styled.div`
   opacity: 0.3;
   filter: grayscale(100%);
-
   lord-icon {
     width: 80px;
     height: 80px;
-  }
-
-  @media (max-width: 768px) {
-    lord-icon {
-      width: 64px;
-      height: 64px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    lord-icon {
-      width: 48px;
-      height: 48px;
-    }
   }
 `;
 
@@ -607,14 +614,6 @@ const EmptyStateText = styled.div`
   color: ${colors.textSecondary};
   font-size: 15px;
   font-weight: 500;
-
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 13px;
-  }
 `;
 
 const EmptyStateSubtext = styled.div`
@@ -622,16 +621,6 @@ const EmptyStateSubtext = styled.div`
   font-size: 13px;
   opacity: 0.7;
   max-width: 300px;
-
-  @media (max-width: 768px) {
-    font-size: 12px;
-    max-width: 250px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 11px;
-    max-width: 200px;
-  }
 `;
 
 /* --- Custom Skeletons --- */
@@ -704,7 +693,6 @@ const GeneralChartSkeleton = () => (
       {[...Array(5)].map((_, i) => (
         <ChartGridLine key={i} />
       ))}
-      {/* Simulate some bars/data */}
       <div
         style={{
           position: "absolute",
@@ -727,17 +715,6 @@ const GeneralChartSkeleton = () => (
           />
         ))}
       </div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginTop: "10px",
-        }}
-      >
-        {[...Array(6)].map((_, i) => (
-          <SkeletonBase key={i} $width="30px" $height="8px" />
-        ))}
-      </div>
     </ChartGridArea>
   </ChartSkeletonContainer>
 );
@@ -753,7 +730,6 @@ const TableRowSkeletonWrapper = styled.div`
 
 const DesktopTableSkeleton = () => (
   <div>
-    {/* Table Header Simulation */}
     <div
       style={{
         display: "flex",
@@ -771,10 +747,8 @@ const DesktopTableSkeleton = () => (
         />
       ))}
     </div>
-    {/* Rows */}
     {[...Array(5)].map((_, i) => (
       <TableRowSkeletonWrapper key={i}>
-        {/* User Info */}
         <div style={{ display: "flex", gap: "12px", width: "240px" }}>
           <SkeletonBase $width="40px" $height="40px" $borderRadius="50%" />
           <div style={{ flex: 1 }}>
@@ -782,32 +756,22 @@ const DesktopTableSkeleton = () => (
             <SkeletonBase $width="40%" $height="12px" />
           </div>
         </div>
-        {/* Class Info */}
         <div style={{ width: "190px" }}>
           <SkeletonBase $width="80%" $height="14px" $marginBottom="4px" />
           <SkeletonBase $width="50%" $height="12px" />
         </div>
-        {/* Rating */}
         <div style={{ width: "160px" }}>
           <SkeletonBase $width="80px" $height="16px" />
         </div>
-        {/* Comment */}
         <div style={{ width: "350px" }}>
           <SkeletonBase $width="90%" $height="12px" $marginBottom="6px" />
           <SkeletonBase $width="80%" $height="12px" $marginBottom="6px" />
-          <SkeletonBase $width="40%" $height="12px" />
         </div>
-        {/* Response */}
         <div style={{ width: "300px" }}>
           <SkeletonBase $width="60%" $height="12px" />
         </div>
-        {/* Status */}
         <div style={{ width: "130px" }}>
           <SkeletonBase $width="70px" $height="22px" $borderRadius="12px" />
-        </div>
-        {/* Actions */}
-        <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
-          <SkeletonBase $width="20px" $height="20px" />
         </div>
       </TableRowSkeletonWrapper>
     ))}
@@ -845,12 +809,6 @@ const MobileReviewSkeletonList = () => (
         </div>
         <SkeletonBase $width="100px" $height="12px" $marginBottom="12px" />
         <SkeletonBase $width="100%" $height="12px" $marginBottom="6px" />
-        <SkeletonBase $width="90%" $height="12px" $marginBottom="6px" />
-        <SkeletonBase $width="80%" $height="12px" $marginBottom="12px" />
-        <div style={{ display: "flex", gap: "8px" }}>
-          <SkeletonBase $width="48%" $height="36px" $borderRadius="8px" />
-          <SkeletonBase $width="48%" $height="36px" $borderRadius="8px" />
-        </div>
       </MobileCardSkeletonWrapper>
     ))}
   </div>
@@ -864,15 +822,17 @@ const CustomRechartsTooltip = ({ active, payload }) => {
       <div
         style={{
           background: "white",
-          padding: "8px 12px",
+          padding: "12px 16px",
           border: `1px solid ${colors.border}`,
-          borderRadius: 8,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          borderRadius: 12,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
         }}
       >
-        <p style={{ margin: 0, fontWeight: 500 }}>
-          {data.name}: {data.count} reviews
-        </p>
+        <Text strong>{data.name}</Text>
+        <div style={{ marginTop: 4 }}>
+          <span style={{ color: colors.textSecondary }}>Count: </span>
+          <span style={{ fontWeight: 600 }}>{data.count} reviews</span>
+        </div>
       </div>
     );
   }
@@ -896,24 +856,18 @@ const CustomLineChartTooltip = ({ active, payload, label, analyticsData }) => {
       <div
         style={{
           background: "white",
-          padding: "8px 12px",
+          padding: "12px 16px",
           border: `1px solid ${colors.border}`,
-          borderRadius: 8,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          borderRadius: 12,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
         }}
       >
-        <p style={{ margin: 0, color: colors.textSecondary, fontSize: 12 }}>
+        <Text strong style={{ display: "block", marginBottom: 4 }}>
           {dayjs(label).format(dateFormat)}
-        </p>
-        <p
-          style={{
-            margin: "4px 0 0",
-            color: payload[0].stroke,
-            fontWeight: 500,
-          }}
-        >
+        </Text>
+        <div style={{ color: payload[0].color, fontWeight: 500 }}>
           New Reviews: {payload[0].value}
-        </p>
+        </div>
       </div>
     );
   }
@@ -994,7 +948,7 @@ const BusinessReviews = () => {
         setLoadingReviews(false);
       }
     },
-    [filters.rating, filters.status, filters.search, filters.source]
+    [filters.rating, filters.status, filters.search, filters.source],
   );
 
   const fetchAnalytics = useCallback(async (dateRange) => {
@@ -1037,7 +991,7 @@ const BusinessReviews = () => {
 
   const debouncedSearchChange = useCallback(
     debounce((value) => handleFilterChange("search", value), 500),
-    []
+    [],
   );
 
   const resetFilters = () => {
@@ -1092,10 +1046,10 @@ const BusinessReviews = () => {
         () =>
           reviewService.respondToReview(
             selectedReview.reviewId,
-            values.business_response
+            values.business_response,
           ),
         "Response submitted successfully!",
-        "respondReview"
+        "respondReview",
       );
       if (success) {
         setIsRespondModalVisible(false);
@@ -1113,10 +1067,10 @@ const BusinessReviews = () => {
         () =>
           reviewService.reportReview(
             selectedReview.reviewId,
-            values.report_reason
+            values.report_reason,
           ),
         "Review reported successfully!",
-        "reportReview"
+        "reportReview",
       );
       if (success) {
         setIsReportModalVisible(false);
@@ -1156,14 +1110,36 @@ const BusinessReviews = () => {
     }
   };
 
+  // --- Insight Computations ---
+  const peakDayInsight = useMemo(() => {
+    if (!analyticsData?.reviews_over_time?.length) return null;
+    const peak = analyticsData.reviews_over_time.reduce((p, c) =>
+      p.new_reviews > c.new_reviews ? p : c,
+    );
+    return peak.new_reviews > 0
+      ? { date: dayjs(peak.date).format("MMM D"), count: peak.new_reviews }
+      : null;
+  }, [analyticsData]);
+
+  const dominantRatingInsight = useMemo(() => {
+    if (!analyticsData?.rating_distribution?.length) return null;
+    const dominant = analyticsData.rating_distribution.reduce((p, c) =>
+      p.count > c.count ? p : c,
+    );
+    return dominant.count > 0
+      ? { stars: dominant.name, count: dominant.count }
+      : null;
+  }, [analyticsData]);
+
   const summaryMetrics = analyticsData?.summary_metrics || {};
   const statisticCardsData = [
     {
       key: "total_reviews_in_period",
-      title: "Total Reviews (Period)",
+      title: "Total Reviews",
       value: summaryMetrics.total_reviews_in_period,
       icon: <MessageSquare size={20} />,
       color: colors.chart.blue,
+      footer: "Confirmed reviews in period",
     },
     {
       key: "platform_reviews_in_period",
@@ -1171,6 +1147,7 @@ const BusinessReviews = () => {
       value: summaryMetrics.platform_reviews_in_period,
       icon: <Star size={20} />,
       color: colors.chart.purple,
+      footer: "Direct booking reviews",
     },
     {
       key: "google_reviews_in_period",
@@ -1178,10 +1155,11 @@ const BusinessReviews = () => {
       value: summaryMetrics.google_reviews_in_period,
       icon: <Globe size={20} />,
       color: colors.chart.teal,
+      footer: "Imported from Google",
     },
     {
       key: "average_rating_in_period",
-      title: "Avg. Rating (Period)",
+      title: "Avg. Rating",
       value: summaryMetrics.average_rating_in_period,
       suffix: (
         <LordIcon
@@ -1189,27 +1167,30 @@ const BusinessReviews = () => {
           trigger="in"
           delay="1500"
           state="in-reveal"
-          colors="primary:#e8b730"
+          colors="primary:#ff385c"
           style={{ marginLeft: 4, paddingTop: 2 }}
         />
       ),
       icon: <Star size={20} />,
       color: colors.chart.orange,
+      footer: "Weighted average score",
     },
     {
       key: "response_rate_in_period",
-      title: "Response Rate (Period)",
+      title: "Response Rate",
       value: summaryMetrics.response_rate_in_period,
       suffix: "%",
       icon: <Percent size={20} />,
       color: colors.chart.green,
+      footer: "Reviews replied to",
     },
     {
       key: "reviews_reported",
-      title: "Reported Reviews (Period)",
+      title: "Reported Reviews",
       value: summaryMetrics.reviews_reported,
       icon: <AlertTriangle size={20} />,
       color: colors.chart.red,
+      footer: "Flagged for moderation",
     },
   ];
 
@@ -1288,8 +1269,8 @@ const BusinessReviews = () => {
         const images = isGoogleReview(record)
           ? record.image_urls
           : record.image_url
-          ? [record.image_url]
-          : [];
+            ? [record.image_url]
+            : [];
 
         return (
           <ReviewContent>
@@ -1456,8 +1437,8 @@ const BusinessReviews = () => {
     const images = isGoogle
       ? review.image_urls
       : review.image_url
-      ? [review.image_url]
-      : [];
+        ? [review.image_url]
+        : [];
 
     return (
       <MobileReviewCard key={isGoogle ? review.id : review.reviewId}>
@@ -1643,14 +1624,17 @@ const BusinessReviews = () => {
                     </IconContainer>
                     <StatLabel>{stat.title}</StatLabel>
                   </div>
-                  <MetricValue>
-                    <NumberFlow
-                      value={isAnalyticsReady ? stat.value || 0 : 0}
-                      duration={800}
-                      numberFormatOptions={{ maximumFractionDigits: 1 }}
-                    />
-                    {stat.suffix}
-                  </MetricValue>
+                  <div>
+                    <MetricValue>
+                      <NumberFlow
+                        value={isAnalyticsReady ? stat.value || 0 : 0}
+                        duration={800}
+                        numberFormatOptions={{ maximumFractionDigits: 1 }}
+                      />
+                      {stat.suffix}
+                    </MetricValue>
+                    {stat.footer && <StatFooter>{stat.footer}</StatFooter>}
+                  </div>
                 </>
               )}
             </StatCard>
@@ -1659,77 +1643,33 @@ const BusinessReviews = () => {
 
         <ResponsiveDivider />
 
-        <Row gutter={[isMobile ? 12 : 24, isMobile ? 12 : 24]}>
-          <Col xs={24} lg={12}>
+        <Row gutter={[24, 24]}>
+          {/* REVIEWS OVER TIME - WIDER (16) */}
+          <Col xs={24} lg={16}>
             <ChartCard>
-              <CardTitle>
-                <LordIcon
-                  src="https://cdn.lordicon.com/mubdgyyw.json"
-                  trigger="in"
-                  colors="primary:#f56231"
-                  playOnLoad={true}
-                />{" "}
-                Rating Distribution
-              </CardTitle>
-              <ChartContainer>
-                {loadingAnalytics ? (
-                  <GeneralChartSkeleton />
-                ) : !analyticsData?.rating_distribution?.length ? (
-                  <Empty />
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={analyticsData.rating_distribution}
-                      margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke={colors.border}
-                      />
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fontSize: 12, fill: colors.textSecondary }}
-                      />
-                      <YAxis
-                        allowDecimals={false}
-                        tick={{ fontSize: 12, fill: colors.textSecondary }}
-                      />
-                      <RechartsTooltip
-                        content={<CustomRechartsTooltip />}
-                        cursor={{ fill: "#f5f5f5" }}
-                      />
-                      <Bar dataKey="count" name="Reviews" radius={[4, 4, 0, 0]}>
-                        {analyticsData.rating_distribution.map(
-                          (entry, index) => (
-                            <RechartsCell
-                              key={`cell-${index}`}
-                              fill={
-                                PIE_COLORS_RATINGS[
-                                  index % PIE_COLORS_RATINGS.length
-                                ]
-                              }
-                            />
-                          )
-                        )}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </ChartContainer>
-            </ChartCard>
-          </Col>
-          <Col xs={24} lg={12}>
-            <ChartCard>
-              <CardTitle>
-                <LordIcon
-                  src="https://cdn.lordicon.com/excswhey.json"
-                  colors="primary:#f56231"
-                  size={isMobile ? "18px" : "20px"}
-                  trigger="in"
-                  playOnLoad={true}
-                />{" "}
-                New Reviews Over Time
-              </CardTitle>
+              <ChartHeader>
+                <ChartTitleRow>
+                  <ChartTitle>
+                    <LordIcon
+                      src="https://cdn.lordicon.com/excswhey.json"
+                      colors="primary:#f56231"
+                      size={isMobile ? "18px" : "20px"}
+                      trigger="in"
+                      playOnLoad={true}
+                    />{" "}
+                    New Reviews Trend
+                  </ChartTitle>
+                  {!loadingAnalytics && peakDayInsight && (
+                    <InsightBadge>
+                      Peak: <strong>{peakDayInsight.date}</strong> (
+                      {peakDayInsight.count})
+                    </InsightBadge>
+                  )}
+                </ChartTitleRow>
+                <ChartDescription>
+                  Volume of new reviews over time.
+                </ChartDescription>
+              </ChartHeader>
               <ChartContainer>
                 {loadingAnalytics ? (
                   <GeneralChartSkeleton />
@@ -1746,16 +1686,33 @@ const BusinessReviews = () => {
                       />
                     </EmptyStateIcon>
                     <EmptyStateText>No Reviews Yet</EmptyStateText>
-                    <EmptyStateSubtext>
-                      You don't currently have any reviews.
-                    </EmptyStateSubtext>
                   </EmptyStateContainer>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
+                    <ComposedChart
                       data={analyticsData.reviews_over_time}
-                      margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+                      margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
                     >
+                      <defs>
+                        <linearGradient
+                          id="colorReviews"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor={colors.chart.red}
+                            stopOpacity={0.2}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor={colors.chart.red}
+                            stopOpacity={0}
+                          />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid
                         strokeDasharray="3 3"
                         stroke={colors.border}
@@ -1765,10 +1722,15 @@ const BusinessReviews = () => {
                         dataKey="date"
                         tickFormatter={(tick) => dayjs(tick).format("MMM D")}
                         tick={{ fontSize: 12, fill: colors.textSecondary }}
+                        axisLine={false}
+                        tickLine={false}
+                        dy={10}
                       />
                       <YAxis
                         allowDecimals={false}
                         tick={{ fontSize: 12, fill: colors.textSecondary }}
+                        axisLine={false}
+                        tickLine={false}
                       />
                       <RechartsTooltip
                         content={(props) => (
@@ -1777,17 +1739,95 @@ const BusinessReviews = () => {
                             analyticsData={analyticsData}
                           />
                         )}
+                        cursor={{ stroke: colors.border }}
                       />
-                      <Line
+                      <Area
                         type="monotone"
                         dataKey="new_reviews"
                         name="New Reviews"
                         stroke={colors.chart.red}
+                        fill="url(#colorReviews)"
                         strokeWidth={2}
-                        dot={{ r: 3 }}
-                        activeDot={{ r: 5 }}
+                        activeDot={{ r: 6 }}
                       />
-                    </LineChart>
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                )}
+              </ChartContainer>
+            </ChartCard>
+          </Col>
+
+          {/* RATING DISTRIBUTION - NARROWER (8) */}
+          <Col xs={24} lg={8}>
+            <ChartCard>
+              <ChartHeader>
+                <ChartTitleRow>
+                  <ChartTitle>
+                    <LordIcon
+                      src="https://cdn.lordicon.com/mubdgyyw.json"
+                      trigger="in"
+                      colors="primary:#ff385c"
+                      playOnLoad={true}
+                    />{" "}
+                    Ratings
+                  </ChartTitle>
+                  {!loadingAnalytics && dominantRatingInsight && (
+                    <InsightBadge>
+                      Most: <strong>{dominantRatingInsight.stars}</strong>
+                    </InsightBadge>
+                  )}
+                </ChartTitleRow>
+                <ChartDescription>Breakdown by star rating.</ChartDescription>
+              </ChartHeader>
+              <ChartContainer>
+                {loadingAnalytics ? (
+                  <GeneralChartSkeleton />
+                ) : !analyticsData?.rating_distribution?.length ? (
+                  <Empty />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={analyticsData.rating_distribution}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 5 }}
+                      barSize={40}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={colors.border}
+                        vertical={false}
+                      />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 12, fill: colors.textSecondary }}
+                        axisLine={false}
+                        tickLine={false}
+                        dy={10}
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fontSize: 12, fill: colors.textSecondary }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <RechartsTooltip
+                        content={<CustomRechartsTooltip />}
+                        cursor={{ fill: "transparent" }}
+                      />
+                      <Bar dataKey="count" name="Reviews" radius={[6, 6, 0, 0]}>
+                        {analyticsData.rating_distribution.map(
+                          (entry, index) => (
+                            <RechartsCell
+                              key={`cell-${index}`}
+                              fill={
+                                PIE_COLORS_RATINGS[
+                                  index % PIE_COLORS_RATINGS.length
+                                ]
+                              }
+                            />
+                          ),
+                        )}
+                      </Bar>
+                    </BarChart>
                   </ResponsiveContainer>
                 )}
               </ChartContainer>

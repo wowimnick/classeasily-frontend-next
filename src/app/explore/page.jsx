@@ -9,9 +9,9 @@ import ExplorePageSkeleton from "./_components/ExplorePageSkeleton";
 
 export async function generateMetadata() {
   return {
-    title: "Explore Classes Near You | Classeasily",
+    title: "Explore Experiences Near You | Classeasily",
     description:
-      "Find and book amazing local classes and workshops. Start learning something new today!",
+      "Find and book amazing local experiences and activities. Plan your next date night or outing with friends today!",
   };
 }
 
@@ -78,7 +78,7 @@ async function fetchServerData(searchParams) {
     apiParams.days = Array.isArray(days) ? days : [days];
   }
 
-  console.log("[Server] Fetching classes with params:", apiParams);
+  console.log("[Server] Fetching experiences with params:", apiParams);
 
   const [categoriesResponse, classesResponse, collectionsList] =
     await Promise.all([

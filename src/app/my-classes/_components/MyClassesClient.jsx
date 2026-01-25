@@ -10,7 +10,7 @@ import React, {
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { Typography, ConfigProvider, Alert } from "antd";
-import message from '@/lib/message';
+import message from "@/lib/message";
 import { CheckCircle, Calendar, X, Frown } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -211,7 +211,7 @@ const MyScheduleAndBookings = () => {
 
   // Initialize tab from URL or default to 'upcoming'
   const [activeTab, setActiveTab] = useState(() => {
-    return searchParams.get('tab') || "upcoming";
+    return searchParams.get("tab") || "upcoming";
   });
 
   const [bookingsData, setBookingsData] = useState({
@@ -253,13 +253,17 @@ const MyScheduleAndBookings = () => {
 
   // --- Effect: Handle highlighting deep links from email ---
   useEffect(() => {
-    const highlightId = searchParams.get('highlight');
-    if (highlightId && !loading[activeTab] && bookingsData[activeTab].length > 0) {
+    const highlightId = searchParams.get("highlight");
+    if (
+      highlightId &&
+      !loading[activeTab] &&
+      bookingsData[activeTab].length > 0
+    ) {
       const element = document.getElementById(`booking-card-${highlightId}`);
       if (element) {
         // Delay slighty to ensure layout is stable
         setTimeout(() => {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
         }, 300);
       }
     }
@@ -307,7 +311,7 @@ const MyScheduleAndBookings = () => {
       groupBookings.sort((a, b) => new Date(a.date) - new Date(b.date));
 
       const totalSessions = groupBookings.length;
-      const isCourseReviewed = groupBookings.some(b => b.has_review);
+      const isCourseReviewed = groupBookings.some((b) => b.has_review);
 
       let bookingToDisplay = null;
 
@@ -320,16 +324,18 @@ const MyScheduleAndBookings = () => {
       }
 
       if (bookingToDisplay) {
-        const currentSessionIndex = groupBookings.findIndex(b => b.id === bookingToDisplay.id);
+        const currentSessionIndex = groupBookings.findIndex(
+          (b) => b.id === bookingToDisplay.id,
+        );
 
         const collapsedBooking = {
           ...bookingToDisplay,
           session_info: {
             current_session: currentSessionIndex + 1,
-            total_sessions: totalSessions
+            total_sessions: totalSessions,
           },
           has_review: isCourseReviewed,
-          all_sessions: groupBookings
+          all_sessions: groupBookings,
         };
         collapsedGroups.push(collapsedBooking);
       }
@@ -393,21 +399,21 @@ const MyScheduleAndBookings = () => {
                   booking.time,
                   booking.business_timezone,
                   studentEffectiveTimeZone,
-                  { dateTimeFormat: "PP" }
+                  { dateTimeFormat: "PP" },
                 );
                 const timePart = formatBusinessLocalToUserDisplay(
                   booking.date,
                   booking.time,
                   booking.business_timezone,
                   studentEffectiveTimeZone,
-                  { dateTimeFormat: "p" }
+                  { dateTimeFormat: "p" },
                 );
                 const tzAbbreviation = formatBusinessLocalToUserDisplay(
                   booking.date,
                   booking.time,
                   booking.business_timezone,
                   studentEffectiveTimeZone,
-                  { dateTimeFormat: "zzz" }
+                  { dateTimeFormat: "zzz" },
                 );
 
                 if (
@@ -420,17 +426,17 @@ const MyScheduleAndBookings = () => {
                 const businessTZDisplay =
                   booking.business_timezone?.replace("_", " ") || "TZ N/A";
                 displayableDateTime = `${dayjs(booking.date).format(
-                  "ddd, MMM D, YYYY"
+                  "ddd, MMM D, YYYY",
                 )} at ${dayjs(`1970-01-01T${booking.time}`).format(
-                  "h:mm a"
+                  "h:mm a",
                 )} (${businessTZDisplay})`;
               }
             } else {
               if (booking.date && booking.time) {
                 displayableDateTime = `${dayjs(booking.date).format(
-                  "ddd, MMM d, yyyy"
+                  "ddd, MMM d, yyyy",
                 )} at ${dayjs(`1970-01-01T${booking.time}`).format(
-                  "h:mm a"
+                  "h:mm a",
                 )} (Timezone Info Missing)`;
               }
             }
@@ -466,11 +472,11 @@ const MyScheduleAndBookings = () => {
         setHasFetched((prev) => ({ ...prev, [tabKey]: true }));
       }
     },
-    [studentEffectiveTimeZone]
+    [studentEffectiveTimeZone],
   );
 
   useEffect(() => {
-    // Only fetch if we haven't fetched this tab yet, 
+    // Only fetch if we haven't fetched this tab yet,
     // or if it's the very first load and we need to respect the URL tab
     if (!hasFetched[activeTab]) {
       fetchBookings(activeTab);
@@ -481,7 +487,7 @@ const MyScheduleAndBookings = () => {
     setActiveTab(tabKey);
     // Update URL without full reload
     const newParams = new URLSearchParams(searchParams);
-    newParams.set('tab', tabKey);
+    newParams.set("tab", tabKey);
     router.replace(`?${newParams.toString()}`, { scroll: false });
   };
 
@@ -501,7 +507,7 @@ const MyScheduleAndBookings = () => {
     const currentLoading = loading[activeTab];
     const currentError = error[activeTab];
     const currentBookings = bookingsData[activeTab] || [];
-    const highlightId = searchParams.get('highlight');
+    const highlightId = searchParams.get("highlight");
 
     if (currentLoading) {
       return (
@@ -577,10 +583,11 @@ const MyScheduleAndBookings = () => {
         <AnimatePresence mode="popLayout">
           {currentBookings.map((booking, index) => {
             // Check if this booking (or its group) matches the highlight ID
-            const isHighlighted = highlightId && (
-              String(booking.id) === highlightId ||
-              (booking.booking_group_id && String(booking.booking_group_id) === highlightId)
-            );
+            const isHighlighted =
+              highlightId &&
+              (String(booking.id) === highlightId ||
+                (booking.booking_group_id &&
+                  String(booking.booking_group_id) === highlightId));
 
             return (
               <motion.div
@@ -605,11 +612,15 @@ const MyScheduleAndBookings = () => {
                   onBookAgain={handleBookAgain}
                   // Refresh list on success
                   onCancelSuccess={() => {
-                    setHasFetched(prev => ({ ...prev, upcoming: false, cancelled: false }));
+                    setHasFetched((prev) => ({
+                      ...prev,
+                      upcoming: false,
+                      cancelled: false,
+                    }));
                     fetchBookings(activeTab);
                   }}
                   onReviewSuccess={() => {
-                    setHasFetched(prev => ({ ...prev, completed: false }));
+                    setHasFetched((prev) => ({ ...prev, completed: false }));
                     fetchBookings(activeTab);
                   }}
                 />
@@ -627,7 +638,9 @@ const MyScheduleAndBookings = () => {
       <PageContainer>
         <HeaderSection>
           <PageTitle>My Bookings</PageTitle>
-          <SubTitle>Manage your classes and track your progress.</SubTitle>
+          <SubTitle>
+            Manage your bookings and cancel or review past classes.
+          </SubTitle>
         </HeaderSection>
 
         <TabContainer>

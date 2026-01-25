@@ -363,7 +363,9 @@ const SocialLinks = styled.div`
   gap: 1rem;
   img {
     opacity: 0.8;
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
     &:hover {
       opacity: 1;
       transform: scale(1.1);
@@ -427,7 +429,7 @@ export default function FooterClient({ categories = [] }) {
   return (
     <FooterWrapper>
       <InspirationContainer>
-        <InspirationHeader>Find your next class</InspirationHeader>
+        <InspirationHeader>Find your next experience</InspirationHeader>
 
         {/* Only show tabs if there's more than one tab */}
         {TABS.length > 1 && (

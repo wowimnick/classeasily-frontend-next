@@ -82,7 +82,7 @@ const ClassOptionsContainer = ({
   }
 
   const cancellationOption = options.find(
-    (option) => option.cancellationPolicy
+    (option) => option.cancellationPolicy,
   );
   const cancellationPolicy = cancellationOption?.cancellationPolicy;
   const cancellationRefundPercentage =

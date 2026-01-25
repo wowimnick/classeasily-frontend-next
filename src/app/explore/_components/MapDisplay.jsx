@@ -516,7 +516,7 @@ const MarkerComponent = React.memo(
                     {classInfo.min_session_price !== null && (
                       <Price>
                         <span>${classInfo.min_session_price}</span>
-                        <PriceLabel>/ class</PriceLabel>
+                        <PriceLabel>/ person</PriceLabel>
                       </Price>
                     )}
                     {classInfo.min_session_price !== null &&
@@ -547,7 +547,7 @@ const MarkerComponent = React.memo(
         </Popup>
       </Marker>
     );
-  }
+  },
 );
 
 const MapDisplay = ({
@@ -576,7 +576,7 @@ const MapDisplay = ({
         typeof m.lat === "number" &&
         typeof m.lng === "number" &&
         !isNaN(m.lat) &&
-        !isNaN(m.lng)
+        !isNaN(m.lng),
     );
 
     if (validMarkers.length > 0) {
@@ -585,7 +585,7 @@ const MapDisplay = ({
           lat: acc.lat + marker.lat,
           lng: acc.lng + marker.lng,
         }),
-        { lat: 0, lng: 0 }
+        { lat: 0, lng: 0 },
       );
       return {
         lat: center.lat / validMarkers.length,
@@ -604,7 +604,7 @@ const MapDisplay = ({
         typeof m.lat === "number" &&
         typeof m.lng === "number" &&
         !isNaN(m.lat) &&
-        !isNaN(m.lng)
+        !isNaN(m.lng),
     );
     if (validMarkers.length > 0) {
       const firstValidMarker = validMarkers[0];
@@ -622,7 +622,7 @@ const MapDisplay = ({
         {
           sw: { lat: firstValidMarker.lat, lng: firstValidMarker.lng },
           ne: { lat: firstValidMarker.lat, lng: firstValidMarker.lng },
-        }
+        },
       );
       if (bounds.ne.lat !== bounds.sw.lat || bounds.ne.lng !== bounds.sw.lng) {
         const latPadding = (bounds.ne.lat - bounds.sw.lat) * 0.1;
@@ -708,7 +708,7 @@ const MapDisplay = ({
                       onClick={onMarkerClick}
                       classInfo={marker}
                     />
-                  )
+                  ),
               )}
             </MarkerClusterGroup>
           </MapContainer>

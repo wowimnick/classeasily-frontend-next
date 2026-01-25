@@ -301,7 +301,8 @@ const FormCard = styled.div`
   border-radius: 16px;
   border: 1px solid #e5e7eb;
   padding: 24px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
     0 2px 4px -2px rgba(0, 0, 0, 0.05);
   @media (max-width: 968px) {
     padding: 16px;
@@ -537,6 +538,19 @@ const ExpiredContent = styled.div`
   }
 `;
 
+const OptionLabel = styled.div`
+  display: inline-block;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: #374151;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+`;
+
 const ExpiredIconWrapper = styled.div`
   width: 48px;
   height: 48px;
@@ -722,7 +736,7 @@ const ExpressCheckoutButton = ({
             payment_method: ev.paymentMethod.id,
             receipt_email: payerEmail || undefined,
           },
-          { handleActions: false }
+          { handleActions: false },
         );
 
         if (error) {
@@ -908,7 +922,7 @@ const ReviewAndPaymentStep = ({
         : [email, phone, guest_full_name];
 
       const allTextFieldsFilled = contactFields.every(
-        (val) => val && String(val).trim().length > 0
+        (val) => val && String(val).trim().length > 0,
       );
 
       const currentParticipants = participant_details || [];
@@ -918,7 +932,7 @@ const ReviewAndPaymentStep = ({
 
       return !!(allTextFieldsFilled && participantsFilled);
     },
-    [isUserLoggedIn, bookingData.participants]
+    [isUserLoggedIn, bookingData.participants],
   );
 
   useEffect(() => {
@@ -939,7 +953,7 @@ const ReviewAndPaymentStep = ({
               name = bookingData.userName;
             }
             return { name };
-          }
+          },
         );
         formData.participant_details = newParticipants;
       } else {
@@ -955,7 +969,7 @@ const ReviewAndPaymentStep = ({
             { length: bookingData.participants },
             (_, i) => {
               return { name: currentPart[i]?.name || "" };
-            }
+            },
           );
           formData.participant_details = newGuestParticipants;
         }
@@ -1011,7 +1025,7 @@ const ReviewAndPaymentStep = ({
     const timer = setInterval(() => {
       const now = Date.now();
       const secondsLeft = Math.ceil(
-        (expirationTimestampRef.current - now) / 1000
+        (expirationTimestampRef.current - now) / 1000,
       );
 
       if (secondsLeft <= 0) {
@@ -1052,7 +1066,7 @@ const ReviewAndPaymentStep = ({
             { length: participantsCount },
             (_, i) => ({
               name: participantDetailsPayload[i]?.name || "Guest",
-            })
+            }),
           );
         }
 
@@ -1091,7 +1105,7 @@ const ReviewAndPaymentStep = ({
       form,
       paymentService,
       onUpdateBookingData,
-    ]
+    ],
   );
 
   useEffect(() => {
@@ -1168,15 +1182,15 @@ const ReviewAndPaymentStep = ({
           if (bookingData.paymentIntentId) {
             try {
               await paymentService.cancelPaymentIntent(
-                bookingData.paymentIntentId
+                bookingData.paymentIntentId,
               );
               console.log(
-                "Cancelled previous pending booking to free capacity for 100% discount."
+                "Cancelled previous pending booking to free capacity for 100% discount.",
               );
             } catch (cancelErr) {
               console.warn(
                 "Failed to cancel previous pending booking, proceeding anyway:",
-                cancelErr
+                cancelErr,
               );
             }
           }
@@ -1225,13 +1239,13 @@ const ReviewAndPaymentStep = ({
               });
             } else {
               console.warn(
-                "paymentService.updatePaymentIntent is not defined. Email may use placeholder."
+                "paymentService.updatePaymentIntent is not defined. Email may use placeholder.",
               );
             }
           } catch (updateErr) {
             console.error(
               "Failed to update booking details before payment:",
-              updateErr
+              updateErr,
             );
           }
         }
@@ -1282,7 +1296,7 @@ const ReviewAndPaymentStep = ({
       isUserLoggedIn,
       clientSecret,
       isExpired,
-    ]
+    ],
   );
 
   const renderBookingDetailsTicket = () => {
@@ -1317,7 +1331,7 @@ const ReviewAndPaymentStep = ({
                   time,
                   duration,
                   businessTimeZone,
-                  userTimeZone
+                  userTimeZone,
                 )}
               </span>
             </div>
@@ -1351,7 +1365,7 @@ const ReviewAndPaymentStep = ({
                 time,
                 duration,
                 businessTimeZone,
-                userTimeZone
+                userTimeZone,
               )}{" "}
               ({getDurationText(duration)})
             </span>
@@ -1375,6 +1389,9 @@ const ReviewAndPaymentStep = ({
         >
           <DesktopTimerContainer>{renderTimerContent()}</DesktopTimerContainer>
         </div>
+
+        {option?.title && <OptionLabel>{option.title}</OptionLabel>}
+
         <TicketHeaderTitle>{classData?.title}</TicketHeaderTitle>
         <TicketSubHeader>
           <MapPin />
@@ -1531,7 +1548,7 @@ const ReviewAndPaymentStep = ({
         ? `${selectedSlot.date}T${selectedSlot.time}`
         : null,
       userTimeZone,
-      businessTimeZone
+      businessTimeZone,
     );
   }, [
     option?.cancellationPolicy,
@@ -1606,7 +1623,7 @@ const ReviewAndPaymentStep = ({
         },
       },
     }),
-    []
+    [],
   );
 
   const renderTimerContent = () => {

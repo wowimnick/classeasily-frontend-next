@@ -2,13 +2,11 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
-import { Typography } from "antd";
+// REMOVED: import { Typography } from "antd";  <-- The likely culprit for Date.now() error
 import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import HomeClassCard from "@/components/homepage/HomeClassCard";
-
-const { Title: AntTitle } = Typography;
 
 const MainWrapper = styled.section`
   display: flex;
@@ -50,19 +48,32 @@ const HeaderRight = styled.div`
   padding-bottom: 4px;
 `;
 
-const StyledTitle = styled(AntTitle)`
-  &.ant-typography {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 0.2rem !important;
-    color: #222222;
-    line-height: 1.25;
+// Replaced AntTitle with a standard styled h3
+const StyledTitle = styled.h3`
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.2rem 0;
+  color: #222222;
+  line-height: 1.25;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+
+  a {
+    color: inherit;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &:hover {
+      color: #000;
+      text-decoration: none;
+    }
   }
 
   @media (max-width: 768px) {
-    &.ant-typography {
-      font-size: 1.25rem;
-    }
+    font-size: 1.25rem;
   }
 `;
 
@@ -156,7 +167,6 @@ const SeeAllLink = styled(Link)`
   }
 `;
 
-// Helper to calculate distance (Client side only)
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
   if ([lat1, lon1, lat2, lon2].some((coord) => coord == null)) return null;
   const R = 6371;
@@ -178,7 +188,7 @@ const ClassRow = ({
   classes = [],
   seeAllLink = "/explore",
   userLocation = null,
-  style = {}, // New prop for custom styling
+  style = {},
 }) => {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: "start",
@@ -191,11 +201,11 @@ const ClassRow = ({
 
   const scrollPrev = useCallback(
     () => emblaApi && emblaApi.scrollPrev(),
-    [emblaApi]
+    [emblaApi],
   );
   const scrollNext = useCallback(
     () => emblaApi && emblaApi.scrollNext(),
-    [emblaApi]
+    [emblaApi],
   );
 
   const onSelect = useCallback((api) => {
@@ -216,19 +226,9 @@ const ClassRow = ({
     <MainWrapper style={style}>
       <HeaderContainer>
         <HeaderLeft>
-          <StyledTitle level={3}>
-            <Link
-              href={seeAllLink}
-              style={{
-                color: "inherit",
-                textDecoration: "none",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              {title}
-            </Link>
+          {/* Changed from AntTitle to standard styled component */}
+          <StyledTitle>
+            <Link href={seeAllLink}>{title}</Link>
           </StyledTitle>
           {subtitle && <StyledSubtitle>{subtitle}</StyledSubtitle>}
         </HeaderLeft>
@@ -257,7 +257,7 @@ const ClassRow = ({
                   userLocation.lat,
                   userLocation.lng,
                   lat,
-                  lng
+                  lng,
                 );
               }
 

@@ -532,7 +532,7 @@ const Reviews = ({
   const [modalHasMore, setModalHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(
-    !normalizedServerReviews.length
+    !normalizedServerReviews.length,
   );
   const [expandedReviews, setExpandedReviews] = useState({});
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -543,7 +543,7 @@ const Reviews = ({
     window.dispatchEvent(
       new CustomEvent("reviewsModalStateChange", {
         detail: { isOpen: isModalVisible },
-      })
+      }),
     );
   }, [isModalVisible]);
 
@@ -563,7 +563,7 @@ const Reviews = ({
 
       if (node) observer.current.observe(node);
     },
-    [loadingMore, modalHasMore, modalPage]
+    [loadingMore, modalHasMore, modalPage],
   );
 
   // --- Data Fetching ---
@@ -582,7 +582,7 @@ const Reviews = ({
         const result = await classService.fetchClassReviewsPaginated(
           slug,
           1,
-          6
+          6,
         );
         if (result.success) {
           setPreviewReviews((result.reviews || []).map(normalizeReview));
@@ -604,7 +604,7 @@ const Reviews = ({
       const result = await classService.fetchClassReviewsPaginated(
         slug,
         page,
-        10
+        10,
       );
 
       if (result.success) {
@@ -612,7 +612,7 @@ const Reviews = ({
         const pagination = result.pagination || {};
 
         setModalReviews((prev) =>
-          page === 1 ? newReviews : [...prev, ...newReviews]
+          page === 1 ? newReviews : [...prev, ...newReviews],
         );
         setModalPage(page);
         setModalHasMore(pagination.has_more || false);
@@ -656,8 +656,8 @@ const Reviews = ({
       review.image_urls && review.image_urls.length > 0
         ? review.image_urls
         : review.image_medium_url
-        ? [review.image_medium_url]
-        : [];
+          ? [review.image_medium_url]
+          : [];
 
     return (
       <CardComponent
@@ -693,7 +693,7 @@ const Reviews = ({
               <StyledRate disabled value={review.rating} />
               <ReviewDate>
                 {new Date(
-                  review.date || review.createdAt || review.review_date
+                  review.date || review.createdAt || review.review_date,
                 ).toLocaleDateString("en-US", {
                   month: "short",
                   year: "numeric",
@@ -763,11 +763,11 @@ const Reviews = ({
     return (
       <ReviewsContainer>
         <Header>
-          <Star size={24} /> New Class
+          <Star size={24} /> New Experience
         </Header>
         <EmptyState>
           <h3>No reviews yet</h3>
-          <p>Be the first to leave a review for this class!</p>
+          <p>Be the first to leave a review for this experience!</p>
         </EmptyState>
       </ReviewsContainer>
     );
@@ -803,7 +803,7 @@ const Reviews = ({
             </ImageModalOverlay>
           )}
         </AnimatePresence>,
-        document.body
+        document.body,
       )
     : null;
 
@@ -823,7 +823,7 @@ const Reviews = ({
         <ReviewsColumn>
           <AnimatePresence>
             {previewReviews.map((review, index) =>
-              renderReviewContent(review, index, false)
+              renderReviewContent(review, index, false),
             )}
           </AnimatePresence>
         </ReviewsColumn>
@@ -870,7 +870,7 @@ const Reviews = ({
         >
           <div style={{ paddingTop: "10px" }}>
             {modalReviews.map((review, index) =>
-              renderReviewContent(review, index, true)
+              renderReviewContent(review, index, true),
             )}
             {loadingMore && (
               <div style={{ padding: "0 0 20px 0" }}>
@@ -905,7 +905,7 @@ const Reviews = ({
                   </h3>
                 </div>
                 {modalReviews.map((review, index) =>
-                  renderReviewContent(review, index, true)
+                  renderReviewContent(review, index, true),
                 )}
                 {loadingMore && (
                   <div style={{ padding: "0 0 20px 0" }}>

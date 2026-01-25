@@ -36,9 +36,12 @@ const defaultInitialState = {
     adminContactEmail: "",
     adminContactPhone: "",
   },
+  // MULTI-TIER UPDATE: Initialize as array with Primary tier
   options: [
     {
       id: Date.now() + Math.random(),
+      title: "General Admission",
+      schedule_mode: "primary",
       booking_type: "Single Session",
       equipment: [],
       tags: [],
@@ -77,41 +80,44 @@ const classReducer = (state, action) => {
         locationContact: { ...state.locationContact, ...action.payload },
       };
     case actionTypes.UPDATE_OPTIONS:
-      const currentOptions = state.options || [];
-      const newOptions =
-        Array.isArray(action.payload) && action.payload.length > 0
-          ? [
-              {
-                id:
-                  action.payload[0].id ||
-                  currentOptions[0]?.id ||
-                  Date.now() + Math.random(),
-                booking_type:
-                  action.payload[0].booking_type || "Single Session",
-                equipment: action.payload[0].equipment || [],
-                tags: action.payload[0].tags || [],
-                ...action.payload[0],
-              },
-            ]
+      // MULTI-TIER UPDATE: Handle replacing the entire array of options
+      const incomingPayload = Array.isArray(action.payload)
+        ? action.payload
+        : [];
+
+      // Fallback if payload is empty (should not happen in normal flow)
+      const newOptionsData =
+        incomingPayload.length > 0
+          ? incomingPayload
           : [
               {
                 id: Date.now() + Math.random(),
+                title: "General Admission",
+                schedule_mode: "primary",
                 booking_type: "Single Session",
                 equipment: [],
                 tags: [],
               },
             ];
 
-      if (!newOptions[0].id) {
-        newOptions[0].id = Date.now() + Math.random();
-      }
+      // Ensure every option has an internal ID for React keys if not present
+      const formattedOptions = newOptionsData.map((opt, index) => ({
+        ...opt,
+        id: opt.id || opt.optionId || Date.now() + Math.random() + index,
+        // Enforce Primary rule on index 0
+        schedule_mode: index === 0 ? "primary" : opt.schedule_mode || "synced",
+        title: opt.title || (index === 0 ? "General Admission" : ""),
+        equipment: opt.equipment || [],
+        tags: opt.tags || [],
+      }));
 
       return {
         ...state,
-        options: newOptions,
+        options: formattedOptions,
       };
+
     case actionTypes.RESET_FORM:
-      // The side-effect of deleting from storage is now handled in the resetForm function itself
+      // The side-effect of deleting from storage is handled in the resetForm function
       return defaultInitialState;
     default:
       return state;
@@ -200,8 +206,8 @@ export const ClassProvider = ({ children }) => {
     []
   );
 
-  const updateOptions = (optionsFromStep) => {
-    dispatch({ type: actionTypes.UPDATE_OPTIONS, payload: optionsFromStep });
+  const updateOptions = (optionsArray) => {
+    dispatch({ type: actionTypes.UPDATE_OPTIONS, payload: optionsArray });
   };
   const debouncedUpdateOptions = useCallback(debounce(updateOptions, 500), [
     state.options,
