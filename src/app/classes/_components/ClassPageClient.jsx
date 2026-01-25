@@ -704,7 +704,7 @@ export default function ClassPageClient({
               </Skel_BookingCard>
             ) : optionToDisplayOnCard ? (
               <ClassOptionsContainer
-                options={classData.options}
+                options={[optionToDisplayOnCard]}
                 classTitle={classData.title}
                 classImages={classData.images}
                 currency={classData.currency_code || "$"}
@@ -714,7 +714,6 @@ export default function ClassPageClient({
           </StickySidebar>
         </MainContentLayout>
       </ContentWrapper>
-
       {/* Render portals / overlays only after mount to avoid hydration mismatch on body append */}
       {mounted && (
         <>

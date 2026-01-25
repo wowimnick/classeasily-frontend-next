@@ -28,7 +28,6 @@ import {
   FileText,
   Ticket,
   CalendarRange,
-  AlertCircle,
   Plus,
   Trash2,
   Crown,
@@ -36,7 +35,6 @@ import {
   Unlink,
   ChevronDown,
   ChevronUp,
-  Layers,
   Users,
   CalendarDays,
   Clock,
@@ -105,31 +103,6 @@ const StepDescription = styled(Text)`
   color: ${(props) => props.theme.token.colorTextSecondary};
   font-size: 16px;
   margin-bottom: 24px;
-`;
-
-const GlobalSettingsContainer = styled.div`
-  background: #ffffff;
-  border: 1px solid ${(props) => props.theme.token.colorBorder};
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 32px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-`;
-
-const BookingTypeToggle = styled(Button.Group)`
-  display: flex;
-  width: 100%;
-
-  .ant-btn {
-    flex: 1;
-    height: 40px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-size: 14px;
-  }
 `;
 
 const TierCard = styled(motion.div)`
@@ -742,7 +715,7 @@ const TierDetailsTab = ({ field, form }) => {
   );
 };
 
-const TierPoliciesTab = ({ field, form, bookingType }) => {
+const TierPoliciesTab = ({ field, form }) => {
   return (
     <div style={{ paddingTop: "8px" }}>
       <FormGrid>
@@ -881,99 +854,6 @@ const TierPoliciesTab = ({ field, form, bookingType }) => {
           );
         }}
       </Form.Item>
-
-      {/* Mid-Course Logic - Only if Full Course */}
-      {bookingType === "Full Course" && (
-        <div
-          style={{
-            marginTop: "24px",
-            borderTop: "1px dashed #e2e8f0",
-            paddingTop: "24px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginBottom: "16px",
-            }}
-          >
-            <StandardLabel
-              icon={AlertCircle}
-              label="Mid-Series Drops"
-              help="Allow partial refunds after start?"
-            />
-            <FormItemAntd
-              {...field}
-              name={[field.name, "allowMidCourseDrops"]}
-              valuePropName="checked"
-              initialValue={false}
-              noStyle
-            >
-              <Switch checkedChildren="Yes" unCheckedChildren="No" />
-            </FormItemAntd>
-          </div>
-
-          <Form.Item
-            shouldUpdate={(prev, curr) =>
-              prev.options?.[field.key]?.allowMidCourseDrops !==
-              curr.options?.[field.key]?.allowMidCourseDrops
-            }
-          >
-            {({ getFieldValue }) => {
-              const allowed = getFieldValue([
-                "options",
-                field.name,
-                "allowMidCourseDrops",
-              ]);
-              if (!allowed) return null;
-
-              return (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                >
-                  <FormGrid>
-                    <div>
-                      <StandardLabel label="Drop Notice" />
-                      <FormItemAntd
-                        {...field}
-                        name={[field.name, "midCourseCancellationPolicy"]}
-                        initialValue="24h"
-                      >
-                        <Select size="middle">
-                          <Option value="flexible">Flexible</Option>
-                          <Option value="24h">24 Hours</Option>
-                          <Option value="48h">48 Hours</Option>
-                          <Option value="strict">Strict</Option>
-                        </Select>
-                      </FormItemAntd>
-                    </div>
-                    <div>
-                      <StandardLabel label="Refund % (Remaining)" />
-                      <FormItemAntd
-                        {...field}
-                        name={[
-                          field.name,
-                          "midCourseCancellationRefundPercentage",
-                        ]}
-                        initialValue={100}
-                      >
-                        <StyledInputNumber
-                          min={0}
-                          max={100}
-                          formatter={(val) => `${val}%`}
-                          size="middle"
-                        />
-                      </FormItemAntd>
-                    </div>
-                  </FormGrid>
-                </motion.div>
-              );
-            }}
-          </Form.Item>
-        </div>
-      )}
     </div>
   );
 };
@@ -986,16 +866,10 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
   const [activeTier, setActiveTier] = useState(0);
   const isFormInitialized = useRef(false);
 
-  // Watchers
-  const bookingType = Form.useWatch("booking_type", form);
-  const options = Form.useWatch("options", form);
-
   // Initialize Form
   useEffect(() => {
     if (isLoaded && !isFormInitialized.current) {
       const contextOptions = state.options || [];
-      const initialBookingType =
-        contextOptions[0]?.booking_type || "Single Session";
 
       const mappedOptions =
         contextOptions.length > 0
@@ -1008,11 +882,16 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
               description: opt.description || "",
               equipment: opt.equipment || [],
               tags: opt.tags || [],
+              // Force update these to ensure consistency
+              booking_type: "Single Session",
+              price_type: "per_session",
             }))
           : [
               {
                 title: "General Admission",
                 schedule_mode: "primary",
+                booking_type: "Single Session",
+                price_type: "per_session",
                 cancellationPolicy: "flexible",
                 cancellationRefundPercentage: 100,
                 level: "all",
@@ -1022,7 +901,7 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
             ];
 
       form.setFieldsValue({
-        booking_type: initialBookingType,
+        booking_type: "Single Session", // Hidden field backup
         options: mappedOptions,
       });
 
@@ -1045,42 +924,26 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
             form.setFieldValue(path, 0);
           }
         }
-        if (opt.midCourseCancellationPolicy === "strict") {
-          const path = [
-            "options",
-            index,
-            "midCourseCancellationRefundPercentage",
-          ];
-          if (form.getFieldValue(path) !== 0) {
-            form.setFieldValue(path, 0);
-          }
-        }
       });
     }
 
     const formattedOptions = allValues.options.map((opt) => ({
       ...opt,
-      booking_type: allValues.booking_type,
-      price_type:
-        allValues.booking_type === "Full Course"
-          ? "full_course"
-          : "per_session",
+      booking_type: "Single Session",
+      price_type: "per_session",
     }));
 
     debouncedUpdateOptions(formattedOptions);
   };
 
   // Callback specifically for the FeatureBuilder to force context update
-  // because form.setFieldsValue does not trigger onValuesChange
   const handleManualFeatureUpdate = (newOptions) => {
     if (!isFormInitialized.current) return;
-    const currentBookingType = form.getFieldValue("booking_type");
 
     const formattedOptions = newOptions.map((opt) => ({
       ...opt,
-      booking_type: currentBookingType,
-      price_type:
-        currentBookingType === "Full Course" ? "full_course" : "per_session",
+      booking_type: "Single Session",
+      price_type: "per_session",
     }));
 
     debouncedUpdateOptions(formattedOptions);
@@ -1089,9 +952,8 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
   const handleFinish = (values) => {
     const formattedOptions = values.options.map((opt) => ({
       ...opt,
-      booking_type: values.booking_type,
-      price_type:
-        values.booking_type === "Full Course" ? "full_course" : "per_session",
+      booking_type: "Single Session",
+      price_type: "per_session",
     }));
     updateOptions(formattedOptions);
     onValidatedNext();
@@ -1108,8 +970,8 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
       cancellationPolicy: primaryTier.cancellationPolicy,
       cancellationRefundPercentage: primaryTier.cancellationRefundPercentage,
       cancellationCustomHours: primaryTier.cancellationCustomHours,
-      allowMidCourseDrops: primaryTier.allowMidCourseDrops,
-      midCourseCancellationPolicy: primaryTier.midCourseCancellationPolicy,
+      booking_type: "Single Session",
+      price_type: "per_session",
     });
     const currentLen = form.getFieldValue("options").length;
     setActiveTier(currentLen);
@@ -1125,55 +987,17 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
       </StepHeader>
 
       <Form
-        id="step-2-form" // <--- ADDED ID HERE
+        id="step-2-form"
         form={form}
         layout="vertical"
         onFinish={handleFinish}
         onValuesChange={handleValuesChange}
         preserve={true}
       >
-        <GlobalSettingsContainer>
-          <StandardLabel icon={CalendarRange} label="Experience Structure" />
-          <div
-            style={{
-              marginBottom: "12px",
-              fontSize: "13px",
-              color: theme.token.colorTextSecondary,
-            }}
-          >
-            This setting applies to <strong>all</strong> ticket tiers.
-          </div>
-          <FormItemAntd
-            name="booking_type"
-            rules={[{ required: true, message: "Required" }]}
-            style={{ marginBottom: 0 }}
-          >
-            <BookingTypeToggle>
-              <Tooltip title="Guests book specific dates (e.g., a one-off class).">
-                <Button
-                  type={
-                    bookingType === "Single Session" ? "primary" : "default"
-                  }
-                  onClick={() =>
-                    form.setFieldsValue({ booking_type: "Single Session" })
-                  }
-                >
-                  <Ticket size={16} /> One-Time Experience
-                </Button>
-              </Tooltip>
-              <Tooltip title="Guests enroll in a multi-day series (e.g. 4-week course).">
-                <Button
-                  type={bookingType === "Full Course" ? "primary" : "default"}
-                  onClick={() =>
-                    form.setFieldsValue({ booking_type: "Full Course" })
-                  }
-                >
-                  <Layers size={16} /> Multi-Day Series
-                </Button>
-              </Tooltip>
-            </BookingTypeToggle>
-          </FormItemAntd>
-        </GlobalSettingsContainer>
+        {/* Hidden field to maintain form structure if needed by other components */}
+        <Form.Item name="booking_type" hidden initialValue="Single Session">
+          <Input />
+        </Form.Item>
 
         <StandardLabel
           icon={Ticket}
@@ -1348,7 +1172,6 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                                         <TierPoliciesTab
                                           field={field}
                                           form={form}
-                                          bookingType={bookingType}
                                         />
                                       </SmoothHeight>
                                     ),

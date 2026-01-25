@@ -1614,7 +1614,7 @@ function ClassManagementContent(props) {
         <Divider />
 
         <Controls>
-          <div
+          {/* <div
             style={{
               display: "flex",
               gap: "16px",
@@ -1641,7 +1641,7 @@ function ClassManagementContent(props) {
               <Option value="single">Single Sessions</Option>
               <Option value="course">Courses</Option>
             </StyledSelect>
-          </div>
+          </div> */}
           <ActionButton
             type="primary"
             icon={<Plus size={18} />}

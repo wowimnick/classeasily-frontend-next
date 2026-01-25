@@ -1,4 +1,3 @@
-// ClassOptionsContainer.jsx
 "use client";
 
 import React from "react";
@@ -6,12 +5,12 @@ import styled from "styled-components";
 import dynamic from "next/dynamic";
 
 // Dynamic import with loading state
-const ClassOptionCard = dynamic(() => import("../ClassOptionCard"), {
+const ClassOptionCard = dynamic(() => import("./ClassOptionCard"), {
   loading: () => <CardSkeleton />,
   ssr: false,
 });
 
-const PriceDisclaimer = dynamic(() => import("../PricingDisclaimer"), {
+const PriceDisclaimer = dynamic(() => import("./PricingDisclaimer"), {
   ssr: false,
 });
 
@@ -82,11 +81,16 @@ const ClassOptionsContainer = ({
   }
 
   const cancellationOption = options.find(
-    (option) => option.cancellationPolicy
+    (option) => option.cancellationPolicy,
   );
   const cancellationPolicy = cancellationOption?.cancellationPolicy;
   const cancellationRefundPercentage =
     cancellationOption?.cancellationRefundPercentage;
+
+  const displayOption =
+    options.find(
+      (opt) => Array.isArray(opt.schedules) && opt.schedules.length > 0,
+    ) || options[0];
 
   return (
     <Container>
@@ -95,17 +99,15 @@ const ClassOptionsContainer = ({
         cancellationRefundPercentage={cancellationRefundPercentage}
       />
       <OptionsGrid>
-        {options.map((option) => (
-          <CardWrapper key={option.optionId}>
-            <ClassOptionCard
-              option={option}
-              classTitle={classTitle}
-              classImages={classImages}
-              currency={currency}
-              onBookNow={onBookNow}
-            />
-          </CardWrapper>
-        ))}
+        <CardWrapper key={displayOption.optionId}>
+          <ClassOptionCard
+            option={displayOption}
+            classTitle={classTitle}
+            classImages={classImages}
+            currency={currency}
+            onBookNow={onBookNow}
+          />
+        </CardWrapper>
       </OptionsGrid>
     </Container>
   );

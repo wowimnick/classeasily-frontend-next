@@ -75,19 +75,16 @@ const StepsContainer = styled.div`
 
 export const steps = [
   {
-    icon: <Sparkles size={18} />,
     title: "The Experience",
     description: "Basics & Photos",
     component: BasicInfoStep,
   },
   {
-    icon: <MapPin size={18} />,
     title: "Meeting Point",
     description: "Location & Contact",
     component: LocationContactStep,
   },
   {
-    icon: <Sliders size={18} />,
     title: "Details",
     description: "Structure & Policies",
     component: ClassOptionsStep,

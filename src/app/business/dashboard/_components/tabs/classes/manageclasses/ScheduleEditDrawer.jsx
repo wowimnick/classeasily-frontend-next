@@ -20,14 +20,14 @@ import {
   InputNumber,
   Tabs,
   Typography,
-  Tooltip,
   Steps,
   Space,
   Popconfirm,
   Tag,
   Segmented,
-  Alert, // Added Alert for synced mode warning
-  Badge, // Added Badge
+  Badge,
+  Empty,
+  Divider,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -42,27 +42,26 @@ import {
   X,
   File,
   Type,
-  HelpCircle,
   CheckCircle,
   ChevronRight,
   ChevronLeft,
   Trash2,
-  List,
-  Plus,
-  Filter,
   Hourglass,
-  Layers, // Added for Option icon
-  Link2, // Added for Synced icon
+  Layers,
+  ArrowLeft,
+  Undo2,
+  Filter,
+  Sunrise,
+  Sun,
+  Moon,
 } from "lucide-react";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 import styled, { css, keyframes } from "styled-components";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { theme as appTheme } from "@/components/theme";
 import { scheduleService } from "@/services/apiService";
 import { Drawer } from "vaul";
-import { LordIcon } from "@/services/ReactUtils";
-
 import {
   MobileDatePicker,
   MobileTimePicker,
@@ -71,11 +70,49 @@ import {
 
 dayjs.extend(isBetween);
 
-const { Option } = Select;
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
-// --- HOOK AND COMPONENT FOR MODAL ANIMATION ---
+// --- UTILS ---
 
+const getErrorMessage = (error) => {
+  if (error?.response?.data) {
+    const data = error.response.data;
+    if (typeof data.detail === "string") return data.detail;
+    if (typeof data.message === "string") return data.message;
+    if (typeof data.error === "string") return data.error;
+    if (typeof data === "object" && data !== null) {
+      const messages = Object.entries(data).map(([key, value]) => {
+        const formattedKey = key
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (l) => l.toUpperCase());
+        return `${formattedKey}: ${
+          Array.isArray(value) ? value.join(", ") : value
+        }`;
+      });
+      if (messages.length > 0) return messages.join("; ");
+    }
+  }
+  if (typeof error?.message === "string") return error.message;
+  return "An unexpected error occurred.";
+};
+
+const formatDuration = (minutes) => {
+  if (!minutes) return "Not set";
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hrs > 0 && mins > 0) return `${hrs}h ${mins}m`;
+  if (hrs > 0) return `${hrs}h`;
+  return `${mins}m`;
+};
+
+const getPeriod = (timeStr) => {
+  const hour = parseInt(timeStr.split(":")[0], 10);
+  if (hour < 12) return "morning";
+  if (hour < 17) return "afternoon";
+  return "evening";
+};
+
+// --- ANIMATION HOOKS (From BookingModal) ---
 const useElementSize = () => {
   const ref = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -97,16 +134,18 @@ const useElementSize = () => {
   return [ref, size];
 };
 
-const AnimatedModalContent = ({ children }) => {
+const AnimatedHeightWrapper = ({ children }) => {
   const [ref, { height }] = useElementSize();
 
   return (
     <motion.div
       animate={{ height: height || "auto" }}
       style={{ overflow: "hidden" }}
+      initial={false}
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
     >
       <div ref={ref}>
+        {/* The border/margin hack prevents margin collapse issues */}
         <div style={{ border: "1px solid transparent", margin: "-1px" }}>
           {children}
         </div>
@@ -115,105 +154,362 @@ const AnimatedModalContent = ({ children }) => {
   );
 };
 
-// --- Error Handling ---
-const getErrorMessage = (error) => {
-  if (error?.response?.data) {
-    const data = error.response.data;
-    if (typeof data.detail === "string") return data.detail;
-    if (typeof data.message === "string") return data.message;
-    if (typeof data.error === "string") return data.error;
-    if (typeof data === "object" && data !== null) {
-      const messages = Object.entries(data).map(([key, value]) => {
-        const formattedKey = key
-          .replace(/_/g, " ")
-          .replace(/\b\w/g, (l) => l.toUpperCase());
-        return `${formattedKey}: ${
-          Array.isArray(value) ? value.join(", ") : value
-        }`;
-      });
-      if (messages.length > 0) return messages.join("; ");
-    }
-  }
-  if (typeof error?.error === "string") return error.error;
-  if (typeof error?.detail === "string") return error.detail;
-  if (error?.message) return error.message;
-  if (typeof error === "string") return error;
-  return "An unexpected error occurred. Please try again.";
-};
+// --- STYLED COMPONENTS (SKELETONS) ---
 
-// --- Helper Functions ---
-const formatDuration = (minutes) => {
-  if (!minutes) return "Not set";
-  const hrs = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-
-  if (hrs > 0 && mins > 0) return `${hrs} hr ${mins} min`;
-  if (hrs > 0) return `${hrs} hr`;
-  return `${mins} min`;
-};
-
-// --- SKELETON LOADER STYLES ---
 const shimmer = keyframes`
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
 `;
 
 const SkeletonBase = styled.div`
-  background: #f1f5f9;
+  background: #f6f7f8;
   background-image: linear-gradient(
-    90deg,
-    #f1f5f9 0%,
-    #e2e8f0 50%,
-    #f1f5f9 100%
+    to right,
+    #f6f7f8 0%,
+    #edeef1 20%,
+    #f6f7f8 40%,
+    #f6f7f8 100%
   );
-  background-size: 200% 100%;
-  animation: ${shimmer} 1.5s infinite;
-  border-radius: 6px;
+  background-repeat: no-repeat;
+  background-size: 1000px 100%;
+  animation: ${shimmer} 2s infinite linear forwards;
+  border-radius: ${(props) => props.$radius || "8px"};
+  width: ${(props) => props.$width || "100%"};
+  height: ${(props) => props.$height || "20px"};
+  margin-bottom: ${(props) => props.$mb || "0"};
 `;
 
-const SkeletonCardWrapper = styled.div`
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 12px;
+const SkeletonContainer = styled.div`
+  width: 100%;
+  height: 100%;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
 `;
 
-const SkeletonRow = styled.div`
+const GridSkeleton = styled.div`
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: #e2e8f0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  flex: 1;
+`;
+
+const CellSkeleton = styled.div`
+  background: white;
+  height: 100%;
+  min-height: 80px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+// --- STYLED COMPONENTS (LAYOUT & CALENDAR) ---
+
+const DesktopModal = styled(Modal)`
+  .ant-modal-content {
+    border-radius: 20px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+    transition: width 0.3s ease-in-out;
+  }
+  .ant-modal-header {
+    display: none;
+  }
+  .ant-modal-close {
+    display: none;
+  }
+  .ant-modal-body {
+    padding: 0;
+    height: 700px;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+  }
+  .ant-modal-footer {
+    border-top: 1px solid #f0f0f0;
+    padding: 12px 24px;
+    background: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+`;
+
+const TopNav = styled.div`
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  flex-shrink: 0;
+  background: white;
+  z-index: 10;
+`;
+
+const ZoomContainer = styled.div`
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #f8fafc;
+`;
+
+const ViewWrapper = styled(motion.div)`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  overflow: hidden;
+`;
+
+// Calendar Styles
+const CalendarGridContainer = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 24px 24px;
+  background: white;
+  overflow: hidden;
+`;
+
+const CalendarControls = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+  padding: 0 4px;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e293b;
+    text-align: center;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .side-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 `;
 
-const ScheduleSkeleton = () => {
-  return (
-    <SkeletonCardWrapper>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <div style={{ width: "70%" }}>
-          {/* Date/Time Placeholder */}
-          <SkeletonBase style={{ width: "60%", height: 20, marginBottom: 8 }} />
-          {/* Tag Placeholder */}
-          <SkeletonBase style={{ width: "30%", height: 16 }} />
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          {/* Actions Placeholder */}
-          <SkeletonBase style={{ width: 28, height: 28, borderRadius: 6 }} />
-          <SkeletonBase style={{ width: 28, height: 28, borderRadius: 6 }} />
-        </div>
-      </div>
-      <SkeletonRow>
-        {/* Participants Placeholder */}
-        <SkeletonBase style={{ width: "25%", height: 14 }} />
-        {/* Price Placeholder */}
-        <SkeletonBase style={{ width: "15%", height: 14 }} />
-      </SkeletonRow>
-    </SkeletonCardWrapper>
-  );
-};
+const WeekdayRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 8px;
+  flex-shrink: 0;
 
-// --- Mobile Drawer Styles ---
+  span {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+  }
+`;
+
+const MonthGrid = styled.div`
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(auto-fit, minmax(0, 1fr));
+  gap: 1px;
+  background: #e2e8f0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+`;
+
+const DateCell = styled.div`
+  background: white;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #f1f5f9;
+  }
+
+  ${(props) =>
+    props.$isOtherMonth &&
+    `
+    background: #fafafa;
+    opacity: 0.5;
+    pointer-events: none;
+  `}
+
+  ${(props) =>
+    props.$isToday &&
+    `
+    background: #eff6ff;
+  `}
+`;
+
+const DateNumber = styled.div`
+  font-size: 12px;
+  font-weight: 600;
+  color: ${(props) =>
+    props.$isToday ? props.theme.token.colorPrimary : "#334155"};
+  margin-bottom: 2px;
+  display: flex;
+  justify-content: space-between;
+`;
+
+const DotContainer = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+`;
+
+const EventPill = styled.div`
+  font-size: 10px;
+  background: ${(props) => props.theme.token.colorPrimary}15;
+  color: ${(props) => props.theme.token.colorPrimary};
+  padding: 1px 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  line-height: 1.3;
+`;
+
+// --- DESKTOP DAY VIEW STYLES (COMPACT) ---
+
+const DayCard = styled.div`
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.2s;
+  min-height: 56px;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-color: #cbd5e1;
+    z-index: 1;
+    position: relative;
+  }
+
+  .time-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 65px;
+    text-align: center;
+    padding-right: 16px;
+    border-right: 1px solid #f1f5f9;
+    justify-content: center;
+
+    .start {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1e293b;
+      line-height: 1;
+    }
+    .ampm {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+  }
+
+  .info-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+
+    .name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #334155;
+      line-height: 1.2;
+    }
+
+    .meta {
+      display: flex;
+      gap: 12px;
+      color: #64748b;
+      font-size: 12px;
+      align-items: center;
+
+      span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+    }
+  }
+
+  .action-col {
+    display: flex;
+    gap: 4px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+
+  &:hover .action-col {
+    opacity: 1;
+  }
+`;
+
+const DaySectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 10px;
+
+  .icon-box {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  h4 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .line {
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+  }
+`;
+
+// --- MOBILE DRAWER STYLES (VAUL) ---
+
 const StyledDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
   inset: 0;
@@ -226,206 +522,196 @@ const StyledDrawerContent = styled(Drawer.Content)`
   background: white;
   display: flex;
   flex-direction: column;
-  border-radius: 16px 16px 0 0;
-
-  /* 
-     Update: Fixed height on mobile for management view to prevent jumping.
-     If a specific prop $height is passed, use it, otherwise fallback to max-height logic
-  */
-  ${(props) =>
-    props.$fixedHeight
-      ? css`
-          height: ${props.$fixedHeight};
-        `
-      : css`
-          max-height: 96%;
-        `}
-
+  border-radius: 20px 20px 0 0;
+  max-height: 96%;
+  height: fit-content;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 1011;
   outline: none;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.15);
 `;
 
 const DrawerHandle = styled.div`
-  width: 32px;
-  height: 3px;
-  background: #d1d5db;
-  border-radius: 2px;
-  margin: 8px auto;
-  cursor: grab;
+  width: 40px;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 10px;
+  margin: 12px auto;
   flex-shrink: 0;
-
-  &:active {
-    cursor: grabbing;
-  }
 `;
 
 const MobileHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid #f0f0f0;
-  background: white;
+  padding: 0 20px 16px;
+  border-bottom: 1px solid #f1f5f9;
   flex-shrink: 0;
+  min-height: 60px;
 `;
 
-const MobileTitle = styled(Title)`
-  &.ant-typography {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0 !important;
-    color: #1f2937;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: calc(100% - 40px);
-  }
-`;
-
-const CloseButton = styled(Button)`
-  border: none;
-  background: none;
-  padding: 8px;
-  height: auto;
-  color: #6b7280;
-  border-radius: 8px;
-
-  &:hover {
-    background: #f3f4f6;
-    color: #374151;
-  }
-`;
-
-const MobileContent = styled.div`
+const MobileBody = styled.div`
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
   position: relative;
 `;
 
-const MobileFooter = styled.div`
-  padding: 16px 20px;
-  border-top: 1px solid #f0f0f0;
-  background: white;
-  flex-shrink: 0;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: max(16px, env(safe-area-inset-bottom));
+const MobileCalendarGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 0 16px 16px;
+  margin-top: 8px;
+
+  .header {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  button {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: #334155;
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.2s;
+
+    &.today {
+      color: ${(props) => props.theme.token.colorPrimary};
+      font-weight: 700;
+      background: ${(props) => props.theme.token.colorPrimary}10;
+    }
+
+    &.has-events .dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: ${(props) => props.theme.token.colorPrimary};
+      position: absolute;
+      bottom: 6px;
+    }
+
+    &:active {
+      background: #f1f5f9;
+    }
+  }
 `;
 
-// --- Styled Inputs (Modernized) ---
+const MobileScheduleCard = styled.div`
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  background: white;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .time-badge {
+    background: #f1f5f9;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    display: inline-block;
+    margin-bottom: 8px;
+  }
+
+  .title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 4px;
+  }
+
+  .details {
+    display: flex;
+    gap: 12px;
+    font-size: 13px;
+    color: #64748b;
+    align-items: center;
+
+    span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+`;
+
+// --- FORM STYLES ---
 const commonInputStyles = css`
   height: 48px;
   border-radius: 12px;
   font-size: 14px;
   border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-
-  @media (max-width: 768px) {
-    font-size: 16px; /* Prevent Zoom on Mobile */
-  }
-
-  &:hover {
-    border-color: #cbd5e1;
-  }
   &:focus,
   &:focus-within {
     border-color: ${(props) => props.theme.token.colorPrimary};
     box-shadow: 0 0 0 3px ${(props) => props.theme.token.colorPrimary}15;
   }
 `;
-
 const StyledInput = styled(Input)`
   ${commonInputStyles}
 `;
-
 const StyledTimePicker = styled(TimePicker)`
   width: 100%;
   ${commonInputStyles}
-  .ant-picker-input > input {
-    font-size: 14px;
-  }
 `;
-
 const StyledDatePicker = styled(DatePicker)`
   width: 100%;
   ${commonInputStyles}
-  .ant-picker-input > input {
-    font-size: 14px;
-  }
 `;
-
 const StyledRangePicker = styled(DatePicker.RangePicker)`
   width: 100%;
   ${commonInputStyles}
-  .ant-picker-input > input {
-    font-size: 14px;
-  }
 `;
-
 const StyledInputNumber = styled(InputNumber)`
   width: 100%;
-  ${commonInputStyles}
-  .ant-input-number-input-wrap, .ant-input-number-input {
+  ${commonInputStyles} .ant-input-number-input {
     height: 100%;
-    display: flex;
-    align-items: center;
-    @media (max-width: 768px) {
-      font-size: 16px;
-    }
   }
 `;
 
-// --- Modern Form Layout Components ---
-
 const CompactFormItem = styled(Form.Item)`
-  margin-bottom: 0; /* Remove default large margin */
-
+  margin-bottom: 0;
   .ant-form-item-explain {
     font-size: 11px;
-    color: ${(props) => props.theme.token.colorError};
-    line-height: 1.2;
     margin-top: 4px;
-    min-height: 0;
   }
-
   .ant-form-item-row {
     flex-direction: column;
     align-items: stretch;
   }
-
-  &.ant-form-item-has-error {
-    input,
-    .ant-input-number,
-    .ant-picker,
-    div[class*="MobileInputTrigger"] {
-      border-color: ${(props) => props.theme.token.colorError} !important;
-    }
-  }
 `;
-
 const ModernFormLayout = styled.div`
   display: flex;
   flex-direction: column;
   gap: 32px;
   padding: 8px 0;
 `;
-
 const FormSection = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
 `;
-
 const SectionHeader = styled.div`
   margin-bottom: 4px;
   h4 {
@@ -443,23 +729,19 @@ const SectionHeader = styled.div`
     color: #64748b;
   }
 `;
-
 const TwoColGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }
 `;
-
 const FieldContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
 `;
-
 const Label = styled.label`
   font-size: 13px;
   font-weight: 600;
@@ -467,14 +749,7 @@ const Label = styled.label`
   display: flex;
   align-items: center;
   gap: 6px;
-
-  svg {
-    color: #94a3b8;
-    width: 14px;
-    height: 14px;
-  }
 `;
-
 const HelpLabel = styled.span`
   font-size: 12px;
   font-weight: 400;
@@ -482,19 +757,17 @@ const HelpLabel = styled.span`
   margin-left: auto;
 `;
 
-// --- Custom Duration Picker ---
+// Duration Picker Component
 const DurationWrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
 `;
-
 const DurationPresets = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 `;
-
 const PresetChip = styled.button`
   border: 1px solid
     ${(props) => (props.$active ? props.theme.token.colorPrimary : "#e2e8f0")};
@@ -508,13 +781,11 @@ const PresetChip = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-
   &:hover {
     border-color: ${(props) => props.theme.token.colorPrimary};
     color: ${(props) => props.theme.token.colorPrimary};
   }
 `;
-
 const CustomDurationInput = styled.div`
   display: flex;
   align-items: center;
@@ -523,18 +794,15 @@ const CustomDurationInput = styled.div`
   background: #f8fafc;
   border-radius: 10px;
   border: 1px solid #f1f5f9;
-
   .unit {
     font-size: 13px;
     color: #64748b;
     font-weight: 500;
   }
 `;
-
 const DurationPicker = ({ value, onChange, disabled }) => {
   const safeValue = value || 0;
   const presets = [30, 45, 60, 90, 120];
-
   return (
     <DurationWrapper>
       <DurationPresets>
@@ -558,7 +826,6 @@ const DurationPicker = ({ value, onChange, disabled }) => {
           Custom
         </PresetChip>
       </DurationPresets>
-
       <CustomDurationInput>
         <div style={{ flex: 1 }}>
           <StyledInputNumber
@@ -575,13 +842,12 @@ const DurationPicker = ({ value, onChange, disabled }) => {
   );
 };
 
-// --- Bulk Days Selector ---
+// Bulk Days Grid
 const DaysGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
   gap: 8px;
 `;
-
 const DayChip = styled.button`
   height: 44px;
   border-radius: 12px;
@@ -594,73 +860,12 @@ const DayChip = styled.button`
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
-
   &:hover {
     border-color: ${(props) => props.theme.token.colorPrimary};
-    color: ${(props) =>
-      props.$selected ? "white" : props.theme.token.colorPrimary};
   }
 `;
 
-// --- Desktop Modal Styles ---
-const DesktopModal = styled(Modal)`
-  .ant-modal-content {
-    border-radius: 16px;
-    padding: 0;
-    overflow: hidden;
-  }
-
-  .ant-modal-container {
-    padding: 0 !important;
-  }
-
-  .ant-modal-header {
-    border-bottom: 1px solid #f0f0f0;
-    padding: 20px 24px;
-    margin: 0;
-  }
-
-  .ant-modal-title {
-    font-size: 18px;
-    font-weight: 700;
-  }
-
-  .ant-modal-body {
-    padding: 0;
-    max-height: 75vh;
-    overflow-y: auto;
-  }
-
-  .ant-modal-footer {
-    border-top: 1px solid #f0f0f0;
-    padding: 16px 24px;
-    margin: 0;
-    background: #ffffff;
-    border-bottom-left-radius: 16px;
-    border-bottom-right-radius: 16px;
-  }
-`;
-
-// --- Stepper Styles ---
-const ModernSteps = styled(Steps)`
-  padding: 24px 32px;
-  border-bottom: 1px solid #f0f0f0;
-  background: white;
-
-  .ant-steps-item-process .ant-steps-item-icon {
-    border-color: ${(props) => props.theme.token.colorPrimary};
-  }
-`;
-
-const ContentPadding = styled.div`
-  padding: 32px;
-
-  @media (max-width: 768px) {
-    padding: 20px;
-  }
-`;
-
-// --- Review Section Styles ---
+// Review Card
 const ReviewCard = styled.div`
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -668,17 +873,14 @@ const ReviewCard = styled.div`
   padding: 20px;
   margin-top: 8px;
 `;
-
 const ReviewRow = styled.div`
   display: flex;
   justify-content: space-between;
   padding: 12px 0;
   border-bottom: 1px solid #e2e8f0;
-
   &:last-child {
     border-bottom: none;
   }
-
   span.label {
     color: #64748b;
     font-size: 14px;
@@ -693,12 +895,17 @@ const ReviewRow = styled.div`
   }
 `;
 
-// --- Tabs Styling ---
 const ModernTabs = styled(Tabs)`
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
   .ant-tabs-nav {
     padding: 0 32px;
     margin: 0 !important;
     border-bottom: 1px solid #f0f0f0;
+    flex-shrink: 0;
   }
   .ant-tabs-tab {
     padding: 16px 0 !important;
@@ -706,112 +913,45 @@ const ModernTabs = styled(Tabs)`
     font-size: 14px;
     font-weight: 500;
   }
-`;
 
-// --- Management View Styles ---
-const ManagementContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-`;
-const DateStripContainer = styled.div`
-  background: white;
-  padding: 16px 0;
-  border-bottom: 1px solid #f0f0f0;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  position: relative;
-`;
-
-const DateScrollWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  position: relative;
-  padding: 0 20px;
-  gap: 4px;
-
-  .scroll-btn {
-    width: 24px;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    background: white;
-    color: #64748b;
-    cursor: pointer;
-    flex-shrink: 0;
-    z-index: 2;
-    transition: color 0.2s;
-
-    &:hover {
-      color: #1e293b;
-      background: #f8fafc;
-    }
-
-    &:disabled {
-      opacity: 0.3;
-      cursor: default;
-    }
-  }
-
-  .scroll-container {
+  .ant-tabs-content-holder {
     flex: 1;
-    overflow-x: auto;
     display: flex;
-    gap: 8px;
-    padding-bottom: 8px;
-    margin-bottom: -8px; /* Hide scrollbar spacing */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE */
+    flex-direction: column;
+    overflow: hidden;
+  }
 
-    &::-webkit-scrollbar {
-      display: none; /* Chrome/Safari */
-    }
+  .ant-tabs-content {
+    flex: 1;
+    height: 100%;
+  }
 
-    scroll-behavior: smooth;
+  /* FIXED: Apply flex layout only to the ACTIVE pane */
+  .ant-tabs-tabpane {
+    height: 100%;
+  }
+
+  /* This specific selector ensures we don't accidentally show hidden tabs */
+  .ant-tabs-tabpane-active {
+    display: flex;
+    flex-direction: column;
   }
 `;
-
-const ScheduleListArea = styled.div`
-  flex: 1;
+const ContentPadding = styled.div`
+  padding: 32px;
   overflow-y: auto;
-  padding: 16px;
-  background: #f8fafc;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 12px;
-  align-content: start;
-`;
-const ScheduleCard = styled(motion.div)`
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  transition: all 0.2s ease;
-  &:hover {
-    border-color: #ff385c;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  flex: 1;
+  @media (max-width: 768px) {
+    padding: 20px;
   }
-  ${(props) => props.$isPast && `opacity: 0.7; background: #f9fafb;`}
 `;
-const EmptyStateContainer = styled.div`
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  text-align: center;
-  gap: 16px;
+const ModernSteps = styled(Steps)`
+  padding: 24px 32px;
+  border-bottom: 1px solid #f0f0f0;
+  background: white;
 `;
 
-// --- Helper for Day Labels ---
+// Helper for Day Labels
 const dayLabels = {
   Mon: "Mon",
   Tue: "Tue",
@@ -821,471 +961,6 @@ const dayLabels = {
   Sat: "Sat",
   Sun: "Sun",
 };
-
-// --- Schedule Management View Component ---
-const ScheduleManagementView = React.memo(
-  ({
-    classData,
-    options, // Added prop
-    selectedOptionId, // Added prop
-    onOptionChange, // Added prop
-    onAdd,
-    onEdit,
-    onEditGroup,
-    onSchedulesUpdate,
-    currentMonth,
-    selectedDate,
-    groupFilter,
-    onViewStateChange,
-  }) => {
-    const [schedules, setSchedules] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const scrollRef = useRef(null);
-
-    // Calculate option info
-    const currentOption =
-      options?.find((o) => o.optionId === selectedOptionId) ||
-      classData?.option;
-    const isSynced = currentOption?.schedule_mode === "synced";
-    const primaryOption = options?.find((o) => o.schedule_mode === "primary");
-
-    const refreshSchedules = useCallback(async () => {
-      if (!selectedOptionId) return;
-      setLoading((prev) => (prev === true ? true : false));
-      try {
-        const result = await scheduleService.fetchSchedules({
-          option_id: selectedOptionId,
-        });
-        if (result.success) setSchedules(result.data || []);
-        else
-          message.error(
-            getErrorMessage(result.error || "Failed to refresh schedules."),
-          );
-      } catch (error) {
-        message.error(getErrorMessage(error));
-      } finally {
-        setLoading(false);
-      }
-    }, [selectedOptionId]);
-
-    useEffect(() => {
-      if (selectedOptionId && !isSynced) {
-        setLoading(true);
-        refreshSchedules();
-      } else if (isSynced) {
-        setSchedules([]); // Clear schedules if synced, as we can't edit them here
-        setLoading(false);
-      }
-    }, [selectedOptionId, isSynced, refreshSchedules]);
-
-    const setCurrentMonth = (val) => onViewStateChange({ currentMonth: val });
-    const setSelectedDate = (val) => onViewStateChange({ selectedDate: val });
-    const setGroupFilter = (val) => onViewStateChange({ groupFilter: val });
-
-    const datesInMonth = useMemo(() => {
-      const start = currentMonth.startOf("month");
-      const end = currentMonth.endOf("month");
-      const dates = [];
-      let curr = start;
-      while (curr.isBefore(end) || curr.isSame(end, "day")) {
-        dates.push(curr);
-        curr = curr.add(1, "day");
-      }
-      return dates;
-    }, [currentMonth]);
-
-    const filteredSchedules = useMemo(() => {
-      let filtered = schedules;
-
-      // Apply Date Filter
-      if (selectedDate) {
-        filtered = filtered.filter(
-          (s) => s.date === selectedDate.format("YYYY-MM-DD"),
-        );
-        // If specific date selected, usually sort by time ascending
-        return filtered.sort((a, b) =>
-          dayjs(`${a.date}T${a.time}`).diff(dayjs(`${b.date}T${b.time}`)),
-        );
-      }
-
-      // Apply Group Filter
-      if (groupFilter)
-        filtered =
-          groupFilter === "##__INDIVIDUAL__##"
-            ? filtered.filter((s) => !s.name)
-            : filtered.filter((s) => s.name === groupFilter);
-
-      // Default Sort: Furthest away first (Descending) for "View All"
-      return filtered.sort((a, b) =>
-        dayjs(`${b.date}T${b.time}`).diff(dayjs(`${a.date}T${a.time}`)),
-      );
-    }, [schedules, selectedDate, groupFilter]);
-
-    const uniqueGroups = useMemo(
-      () => [...new Set(schedules.map((s) => s.name).filter(Boolean))],
-      [schedules],
-    );
-
-    const handleDelete = async (id) => {
-      try {
-        await scheduleService.deleteSchedule(id);
-        await refreshSchedules();
-        onSchedulesUpdate();
-        message.success("Deleted");
-      } catch (e) {
-        message.error(getErrorMessage(e));
-      }
-    };
-
-    const handleScroll = (direction) => {
-      if (scrollRef.current) {
-        const scrollAmount = 200;
-        scrollRef.current.scrollBy({
-          left: direction === "left" ? -scrollAmount : scrollAmount,
-          behavior: "smooth",
-        });
-      }
-    };
-
-    if (!classData?.option)
-      return (
-        <EmptyStateContainer>
-          <Text>Configuration Needed</Text>
-        </EmptyStateContainer>
-      );
-
-    return (
-      <ManagementContainer>
-        {/* --- ADDED: Option Selector --- */}
-        {options && options.length > 1 && (
-          <div
-            style={{
-              padding: "16px 20px 8px",
-              background: "white",
-              borderBottom: "1px solid #f0f0f0",
-            }}
-          >
-            <div
-              style={{
-                marginBottom: 8,
-                fontSize: 12,
-                fontWeight: 600,
-                color: "#64748b",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <Layers size={12} /> SELECT TIER TO MANAGE
-            </div>
-            {options.length < 4 ? (
-              <Segmented
-                block
-                value={selectedOptionId}
-                onChange={onOptionChange}
-                options={options.map((opt) => ({
-                  label: (
-                    <span
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        justifyContent: "center",
-                      }}
-                    >
-                      {opt.title}
-                      {opt.schedule_mode === "synced" && (
-                        <Badge
-                          status="warning"
-                          style={{ marginLeft: 0 }}
-                          title="Synced"
-                        />
-                      )}
-                    </span>
-                  ),
-                  value: opt.optionId,
-                }))}
-              />
-            ) : (
-              <Select
-                style={{ width: "100%" }}
-                value={selectedOptionId}
-                onChange={onOptionChange}
-                options={options.map((opt) => ({
-                  label: opt.title,
-                  value: opt.optionId,
-                }))}
-              />
-            )}
-          </div>
-        )}
-
-        {/* --- ADDED: Synced Warning --- */}
-        {isSynced ? (
-          <div style={{ padding: 20 }}>
-            <Alert
-              message={<span style={{ fontWeight: 600 }}>Synced Schedule</span>}
-              description={
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 10 }}
-                >
-                  <Text>
-                    This option is synced to the primary schedule (
-                    <Text strong>{primaryOption?.title || "Primary"}</Text>).
-                    Schedules cannot be edited independently.
-                  </Text>
-                  <Button
-                    type="primary"
-                    ghost
-                    size="small"
-                    onClick={() =>
-                      primaryOption && onOptionChange(primaryOption.optionId)
-                    }
-                    icon={<Link2 size={14} />}
-                    style={{ alignSelf: "flex-start" }}
-                  >
-                    Edit Primary Schedule
-                  </Button>
-                </div>
-              }
-              type="info"
-              showIcon
-              icon={<Link2 size={20} />}
-            />
-          </div>
-        ) : (
-          <>
-            <DateStripContainer>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  padding: "0 20px",
-                  alignItems: "center",
-                }}
-              >
-                <div style={{ display: "flex", gap: 8 }}>
-                  <Button
-                    size="small"
-                    onClick={() =>
-                      setCurrentMonth(currentMonth.subtract(1, "month"))
-                    }
-                    icon={<ChevronLeft size={14} />}
-                  />
-                  <span style={{ fontWeight: 600 }}>
-                    {currentMonth.format("MMMM YYYY")}
-                  </span>
-                  <Button
-                    size="small"
-                    onClick={() =>
-                      setCurrentMonth(currentMonth.add(1, "month"))
-                    }
-                    icon={<ChevronRight size={14} />}
-                  />
-                </div>
-                <Button
-                  size="small"
-                  type="link"
-                  onClick={() => setSelectedDate(null)}
-                >
-                  View All
-                </Button>
-              </div>
-
-              <DateScrollWrapper>
-                <button
-                  className="scroll-btn"
-                  onClick={() => handleScroll("left")}
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <div className="scroll-container" ref={scrollRef}>
-                  {datesInMonth.map((date) => {
-                    const isSel =
-                      selectedDate && selectedDate.isSame(date, "day");
-                    const hasSch = schedules.some(
-                      (s) => s.date === date.format("YYYY-MM-DD"),
-                    );
-                    return (
-                      <Button
-                        key={date.toString()}
-                        type={isSel ? "primary" : "default"}
-                        style={{
-                          height: 56,
-                          minWidth: 50,
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          padding: 0,
-                          borderColor: hasSch && !isSel ? "#ff385c" : undefined,
-                          flexShrink: 0,
-                        }}
-                        onClick={() => setSelectedDate(date)}
-                      >
-                        <span style={{ fontSize: 10, opacity: 0.8 }}>
-                          {date.format("ddd")}
-                        </span>
-                        <span style={{ fontSize: 16, fontWeight: 700 }}>
-                          {date.format("D")}
-                        </span>
-                      </Button>
-                    );
-                  })}
-                </div>
-                <button
-                  className="scroll-btn"
-                  onClick={() => handleScroll("right")}
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </DateScrollWrapper>
-            </DateStripContainer>
-            <div
-              style={{
-                padding: "12px 20px",
-                background: "white",
-                borderBottom: "1px solid #f0f0f0",
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-              }}
-            >
-              <Filter size={14} color="#64748b" />
-              <Select
-                placeholder="Filter Group"
-                style={{ width: 180 }}
-                allowClear
-                size="small"
-                bordered={false}
-                value={groupFilter}
-                onChange={setGroupFilter}
-              >
-                <Option value="##__INDIVIDUAL__##">Individual</Option>
-                {uniqueGroups.map((g) => (
-                  <Option key={g} value={g}>
-                    {g}
-                  </Option>
-                ))}
-              </Select>
-              {groupFilter && groupFilter !== "##__INDIVIDUAL__##" && (
-                <Button
-                  size="small"
-                  type="link"
-                  icon={<Edit3 size={14} />}
-                  onClick={() =>
-                    onEditGroup(
-                      groupFilter,
-                      schedules.find((s) => s.name === groupFilter),
-                    )
-                  }
-                >
-                  Edit Group
-                </Button>
-              )}
-            </div>
-            <ScheduleListArea>
-              {loading ? (
-                // Render Skeleton Loader
-                Array.from({ length: 6 }).map((_, i) => (
-                  <ScheduleSkeleton key={i} />
-                ))
-              ) : filteredSchedules.length > 0 ? (
-                filteredSchedules.map((s) => (
-                  <ScheduleCard
-                    key={s.id}
-                    $isPast={dayjs(s.date).isBefore(dayjs(), "day")}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <div style={{ minWidth: 0, flex: 1, marginRight: 8 }}>
-                        <div style={{ fontWeight: 700 }}>
-                          {dayjs(s.date).format("MMM D")} •{" "}
-                          {dayjs(`2000-01-01T${s.time}`).format("h:mm A")}
-                        </div>
-                        {s.name && (
-                          <Tooltip title={s.name}>
-                            <Tag
-                              color="blue"
-                              style={{
-                                marginTop: 4,
-                                maxWidth: "100%",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                display: "inline-block",
-                                verticalAlign: "bottom",
-                              }}
-                            >
-                              {s.name}
-                            </Tag>
-                          </Tooltip>
-                        )}
-                      </div>
-                      <Space style={{ alignSelf: "flex-start" }}>
-                        <Button
-                          size="small"
-                          icon={<Edit3 size={14} />}
-                          onClick={() => onEdit(s)}
-                        />
-                        <Popconfirm
-                          title="Delete?"
-                          onConfirm={() => handleDelete(s.id)}
-                        >
-                          <Button
-                            size="small"
-                            danger
-                            icon={<Trash2 size={14} />}
-                          />
-                        </Popconfirm>
-                      </Space>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: 12,
-                        color: "#64748b",
-                        marginTop: 8,
-                      }}
-                    >
-                      <span>
-                        <Users size={12} style={{ marginRight: 4 }} />
-                        {s.booked_participants}/{s.maxParticipants}
-                      </span>
-                      <span>${parseFloat(s.price).toFixed(2)}</span>
-                    </div>
-                  </ScheduleCard>
-                ))
-              ) : (
-                <EmptyStateContainer>
-                  <LordIcon
-                    src="https://cdn.lordicon.com/uoljexdg.json"
-                    trigger="in"
-                    colors="primary:#94a3b8"
-                    style={{ width: 64, height: 64 }}
-                  />
-                  <Text type="secondary">No schedules found.</Text>
-                  <Button
-                    type="primary"
-                    icon={<Plus size={14} />}
-                    onClick={() => onAdd(selectedDate || dayjs())}
-                    style={{ marginTop: 16 }}
-                  >
-                    Add Session
-                  </Button>
-                </EmptyStateContainer>
-              )}
-            </ScheduleListArea>
-          </>
-        )}
-      </ManagementContainer>
-    );
-  },
-);
 
 // --- MAIN DRAWER COMPONENT ---
 
@@ -1297,34 +972,38 @@ const ScheduleEditDrawer = ({
   onSchedulesUpdate,
   editingSchedule: directEditingSchedule,
   startInEditMode = false,
-  hideBackButton = false,
 }) => {
+  // Original Form State
   const [bulkForm] = Form.useForm();
   const [isLoading, setIsLoading] = useState(false);
   const [isBulkLoading, setIsBulkLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("single");
-  const [isMobile, setIsMobile] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({});
   const [bulkCurrentStep, setBulkCurrentStep] = useState(0);
-  const [activeView, setActiveView] = useState("manage");
-  const [editingSchedule, setEditingSchedule] = useState(null);
   const [prefillDate, setPrefillDate] = useState(null);
+
+  // Navigation / View State
+  const [activeView, setActiveView] = useState("manage"); // 'manage' | 'form' | 'group-form'
+  const [calendarViewMode, setCalendarViewMode] = useState("month"); // 'month' | 'day'
+  const [editingSchedule, setEditingSchedule] = useState(null);
   const [editingGroup, setEditingGroup] = useState(null);
-  // --- ADDED: Selected Option State ---
   const [selectedOptionId, setSelectedOptionId] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const [viewState, setViewState] = useState({
-    currentMonth: dayjs(),
-    selectedDate: null,
-    groupFilter: undefined,
-  });
+  // Filtering
+  const [selectedGroup, setSelectedGroup] = useState("all");
 
-  const updateViewState = useCallback(
-    (updates) => setViewState((prev) => ({ ...prev, ...updates })),
-    [],
-  );
+  // Calendar State
+  const [currentMonth, setCurrentMonth] = useState(dayjs());
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [schedules, setSchedules] = useState([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
 
+  // Animation Direction
+  const [zoomDirection, setZoomDirection] = useState("in"); // 'in' (Month->Day) or 'out' (Day->Month)
+
+  // --- INIT & EFFECT ---
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth <= 1024);
     checkMobile();
@@ -1338,20 +1017,20 @@ const ScheduleEditDrawer = ({
         setActiveView("form");
         setEditingSchedule(directEditingSchedule);
         setPrefillDate(null);
-        // Ensure the correct option is selected
         setSelectedOptionId(directEditingSchedule.option);
       } else if (classData) {
         setActiveView("manage");
+        setCalendarViewMode("month");
         setEditingSchedule(null);
         setPrefillDate(null);
-        // Default to Primary or first option
+        setSelectedGroup("all");
         const primary =
           classData.options?.find((o) => o.schedule_mode === "primary") ||
           classData.options?.[0];
         setSelectedOptionId(primary?.optionId || classData.option?.optionId);
       }
     } else {
-      // Reset logic...
+      // Full Reset
       form.resetFields();
       bulkForm.resetFields();
       setCurrentStep(0);
@@ -1361,26 +1040,65 @@ const ScheduleEditDrawer = ({
       setEditingGroup(null);
       setPrefillDate(null);
       setActiveView("manage");
-      setViewState({
-        currentMonth: dayjs(),
-        selectedDate: null,
-        groupFilter: undefined,
-      });
+      setCalendarViewMode("month");
+      setSelectedDate(null);
       setSelectedOptionId(null);
+      setSelectedGroup("all");
     }
   }, [open, classData, startInEditMode, directEditingSchedule, form, bulkForm]);
 
+  const fetchSchedules = useCallback(async () => {
+    if (!selectedOptionId) return;
+    setLoadingSchedules(true);
+    try {
+      const result = await scheduleService.fetchSchedules({
+        option_id: selectedOptionId,
+      });
+      if (result.success) setSchedules(result.data || []);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingSchedules(false);
+    }
+  }, [selectedOptionId]);
+
+  useEffect(() => {
+    if (selectedOptionId) fetchSchedules();
+    else setSchedules([]);
+  }, [selectedOptionId, fetchSchedules]);
+
+  // Unique Groups
+  const uniqueGroups = useMemo(() => {
+    const names = schedules.map((s) => s.name).filter(Boolean);
+    return [...new Set(names)];
+  }, [schedules]);
+
+  // Filtered Schedules
+  const visibleSchedules = useMemo(() => {
+    if (selectedGroup === "all") return schedules;
+    return schedules.filter((s) => s.name === selectedGroup);
+  }, [schedules, selectedGroup]);
+
+  // --- FORM LOGIC ---
   const optionType = classData?.option?.booking_type || "Single Session";
   const isSingleSession = optionType === "Single Session";
   const bulkFormDays = Form.useWatch("days_of_week", bulkForm) || [];
 
-  // Determine current option details
-  const currentOption = classData?.options?.find(
-    (o) => o.optionId === selectedOptionId,
-  );
-  const isSynced = currentOption?.schedule_mode === "synced";
-
   useEffect(() => {
+    // 1. Group Edit Pre-fill Logic
+    if (activeView === "group-form" && editingGroup) {
+      const sample = schedules.find((s) => s.name === editingGroup);
+      if (sample) {
+        form.setFieldsValue({
+          price: sample.price,
+          maxParticipants: sample.maxParticipants,
+          duration: sample.duration,
+        });
+      }
+      return;
+    }
+
+    // 2. Regular Form Logic
     if (activeView !== "form") return;
     setActiveTab("single");
     form.resetFields();
@@ -1424,131 +1142,28 @@ const ScheduleEditDrawer = ({
         },
       });
     }
-  }, [activeView, editingSchedule, prefillDate]);
+  }, [
+    activeView,
+    editingSchedule,
+    prefillDate,
+    form,
+    bulkForm,
+    editingGroup,
+    schedules,
+  ]);
 
   const handleFormSuccess = () => {
     onSchedulesUpdate();
+    fetchSchedules();
     if (classData && !startInEditMode) {
       setActiveView("manage");
+      if (prefillDate) {
+        setCalendarViewMode("day");
+        setSelectedDate(prefillDate);
+      }
       setPrefillDate(null);
     } else {
       onClose();
-    }
-  };
-
-  const handleEditGroup = useCallback(
-    (groupName, sampleSchedule = null) => {
-      setEditingGroup(groupName);
-      setActiveView("group-form");
-      form.resetFields();
-      if (sampleSchedule) {
-        form.setFieldsValue({
-          duration: sampleSchedule.duration,
-          price: sampleSchedule.price,
-          maxParticipants: sampleSchedule.maxParticipants,
-          minParticipants: sampleSchedule.minParticipants || 1,
-        });
-      } else {
-        form.setFieldsValue({
-          duration: 60,
-          price: "0.00",
-          maxParticipants: 10,
-          minParticipants: 1,
-        });
-      }
-    },
-    [form],
-  );
-
-  const handleGroupSubmit = async () => {
-    try {
-      await form.validateFields();
-      const values = form.getFieldsValue(true);
-      setIsLoading(true);
-      const updates = {
-        price: parseFloat(values.price).toFixed(2),
-        maxParticipants: values.maxParticipants,
-        minParticipants: values.minParticipants || 1,
-        duration: values.duration,
-      };
-      await scheduleService.groupUpdate({
-        option_id: selectedOptionId, // MODIFIED: Use selectedOptionId
-        name: editingGroup,
-        updates: updates,
-      });
-      message.success(`Group '${editingGroup}' updated successfully.`);
-      onSchedulesUpdate();
-      setActiveView("manage");
-      setEditingGroup(null);
-    } catch (error) {
-      message.error(getErrorMessage(error));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSubmit = async () => {
-    try {
-      await form.validateFields();
-      const values = form.getFieldsValue(true);
-      setIsLoading(true);
-      const scheduleData = {
-        name: values.name,
-        option: selectedOptionId, // MODIFIED: Use selectedOptionId
-        time: values.time.format("HH:mm"),
-        duration: values.duration,
-        price: parseFloat(values.price).toFixed(2),
-        maxParticipants: values.maxParticipants,
-        minParticipants: values.minParticipants || 1,
-        date: values.date.format("YYYY-MM-DD"),
-      };
-
-      if (editingSchedule) {
-        await scheduleService.updateSchedule(editingSchedule.id, scheduleData);
-        message.success("Schedule updated successfully.");
-      } else {
-        await scheduleService.createSchedule(scheduleData);
-        message.success("Schedule created successfully.");
-      }
-      handleFormSuccess();
-    } catch (errorInfo) {
-      message.error(getErrorMessage(errorInfo));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleBulkSubmit = async () => {
-    try {
-      const values = { ...formData, ...bulkForm.getFieldsValue(true) };
-      if (!values.date_range || !values.date_range[0]) {
-        message.error("Date range is missing.");
-        return;
-      }
-      setIsBulkLoading(true);
-      const payload = {
-        name: values.name,
-        option: selectedOptionId, // MODIFIED: Use selectedOptionId
-        start_date: values.date_range[0].format("YYYY-MM-DD"),
-        end_date: values.date_range[1].format("YYYY-MM-DD"),
-        days_of_week: values.days_of_week,
-        times: values.times.map((t) => t.format("HH:mm")),
-        duration: values.commonDetails?.duration,
-        price: parseFloat(values.commonDetails?.price || 0).toFixed(2),
-        maxParticipants: values.commonDetails?.maxParticipants,
-        minParticipants: values.commonDetails?.minParticipants || 1,
-      };
-      const result = await scheduleService.bulkCreateSchedules(payload);
-      if (result && result.created_count > 0) {
-        message.success(result.message);
-        handleFormSuccess();
-      } else {
-        message.warning(result.message || "No schedules created.");
-      }
-    } catch (errorInfo) {
-      message.error(getErrorMessage(errorInfo));
-    } finally {
-      setIsBulkLoading(false);
     }
   };
 
@@ -1610,77 +1225,93 @@ const ScheduleEditDrawer = ({
     if (bulkCurrentStep > 0) setBulkCurrentStep(bulkCurrentStep - 1);
   };
 
-  // --- REDESIGNED FORM RENDERERS ---
+  const handleSubmit = async () => {
+    try {
+      await form.validateFields();
+      const values = form.getFieldsValue(true);
+      setIsLoading(true);
+      const scheduleData = {
+        name: values.name,
+        option: selectedOptionId,
+        time: values.time.format("HH:mm"),
+        duration: values.duration,
+        price: parseFloat(values.price).toFixed(2),
+        maxParticipants: values.maxParticipants,
+        minParticipants: values.minParticipants || 1,
+        date: values.date.format("YYYY-MM-DD"),
+      };
+      if (editingSchedule) {
+        await scheduleService.updateSchedule(editingSchedule.id, scheduleData);
+        message.success("Schedule updated.");
+      } else {
+        await scheduleService.createSchedule(scheduleData);
+        message.success("Schedule created.");
+      }
+      handleFormSuccess();
+    } catch (errorInfo) {
+      message.error(getErrorMessage(errorInfo));
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const renderGroupEditForm = () => (
-    <ContentPadding>
-      <Form form={form} layout="vertical">
-        <ModernFormLayout>
-          <FormSection>
-            <SectionHeader>
-              <h4>
-                <Edit3 size={16} /> Edit Group Settings: {editingGroup}
-              </h4>
-              <p>
-                Updating these settings will affect all future sessions in this
-                group.
-              </p>
-            </SectionHeader>
+  const handleBulkSubmit = async () => {
+    try {
+      const values = { ...formData, ...bulkForm.getFieldsValue(true) };
+      setIsBulkLoading(true);
+      const payload = {
+        name: values.name,
+        option: selectedOptionId,
+        start_date: values.date_range[0].format("YYYY-MM-DD"),
+        end_date: values.date_range[1].format("YYYY-MM-DD"),
+        days_of_week: values.days_of_week,
+        times: values.times.map((t) => t.format("HH:mm")),
+        duration: values.commonDetails?.duration,
+        price: parseFloat(values.commonDetails?.price || 0).toFixed(2),
+        maxParticipants: values.commonDetails?.maxParticipants,
+        minParticipants: values.commonDetails?.minParticipants || 1,
+      };
+      const result = await scheduleService.bulkCreateSchedules(payload);
+      if (result && result.created_count > 0) {
+        message.success(result.message);
+        handleFormSuccess();
+      } else {
+        message.warning(result.message || "No schedules created.");
+      }
+    } catch (errorInfo) {
+      message.error(getErrorMessage(errorInfo));
+    } finally {
+      setIsBulkLoading(false);
+    }
+  };
 
-            <TwoColGrid>
-              <FieldContainer>
-                <Label>
-                  <DollarSign /> Price (CAD)
-                  <Tooltip title="The cost per person to attend.">
-                    <HelpCircle
-                      size={14}
-                      style={{ cursor: "pointer", color: "#94a3b8" }}
-                    />
-                  </Tooltip>
-                </Label>
-                <CompactFormItem name="price" rules={[{ required: true }]}>
-                  <StyledInput prefix="$" type="number" step="0.01" />
-                </CompactFormItem>
-              </FieldContainer>
-              <FieldContainer>
-                <Label>
-                  <Users /> Max Capacity
-                  <Tooltip title="Maximum number of attendees allowed.">
-                    <HelpCircle
-                      size={14}
-                      style={{ cursor: "pointer", color: "#94a3b8" }}
-                    />
-                  </Tooltip>
-                </Label>
-                <CompactFormItem
-                  name="maxParticipants"
-                  rules={[{ required: true }]}
-                >
-                  <StyledInputNumber inputMode="numeric" />
-                </CompactFormItem>
-              </FieldContainer>
-            </TwoColGrid>
+  const handleGroupSubmit = async () => {
+    try {
+      await form.validateFields();
+      const values = form.getFieldsValue(true);
+      setIsLoading(true);
+      const updates = {
+        price: parseFloat(values.price).toFixed(2),
+        maxParticipants: values.maxParticipants,
+        minParticipants: values.minParticipants || 1,
+        duration: values.duration,
+      };
+      await scheduleService.groupUpdate({
+        option_id: selectedOptionId,
+        name: editingGroup,
+        updates: updates,
+      });
+      message.success(`Group '${editingGroup}' updated.`);
+      handleFormSuccess();
+      setEditingGroup(null);
+    } catch (error) {
+      message.error(getErrorMessage(error));
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-            <FieldContainer>
-              <Label>
-                <Hourglass size={14} /> Duration
-                <Tooltip title="How long the session lasts.">
-                  <HelpCircle
-                    size={14}
-                    style={{ cursor: "pointer", color: "#94a3b8" }}
-                  />
-                </Tooltip>
-              </Label>
-              <CompactFormItem name="duration" rules={[{ required: true }]}>
-                <DurationPicker />
-              </CompactFormItem>
-            </FieldContainer>
-          </FormSection>
-        </ModernFormLayout>
-      </Form>
-    </ContentPadding>
-  );
-
+  // --- RENDER FORM CONTENTS ---
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
@@ -1693,19 +1324,16 @@ const ScheduleEditDrawer = ({
                 </h4>
                 <p>When is this session taking place?</p>
               </SectionHeader>
-
               <TwoColGrid>
                 <FieldContainer>
                   <Label>Date</Label>
                   <CompactFormItem name="date" rules={[{ required: true }]}>
                     {isMobile ? (
-                      <MobileDatePicker
-                        disabledDate={(c) => c && c < dayjs().startOf("day")}
-                      />
+                      <MobileDatePicker />
                     ) : (
                       <StyledDatePicker
-                        disabledDate={(c) => c && c < dayjs().startOf("day")}
                         inputReadOnly
+                        disabledDate={(c) => c && c < dayjs().startOf("day")}
                       />
                     )}
                   </CompactFormItem>
@@ -1726,29 +1354,19 @@ const ScheduleEditDrawer = ({
                   </CompactFormItem>
                 </FieldContainer>
               </TwoColGrid>
-
               <FieldContainer>
-                <Label>
-                  Duration
-                  <Tooltip title="The total length of the session in minutes.">
-                    <HelpCircle
-                      size={14}
-                      style={{ cursor: "pointer", color: "#94a3b8" }}
-                    />
-                  </Tooltip>
-                </Label>
+                <Label>Duration</Label>
                 <CompactFormItem name="duration" rules={[{ required: true }]}>
                   <DurationPicker disabled={isLoading} />
                 </CompactFormItem>
               </FieldContainer>
             </FormSection>
-
             <FormSection>
               <SectionHeader>
                 <h4>
                   <Type size={18} /> Identification
                 </h4>
-                <p>Helpful for grouping similar sessions together.</p>
+                <p>Helpful for grouping similar sessions.</p>
               </SectionHeader>
               <FieldContainer>
                 <Label>
@@ -1769,28 +1387,16 @@ const ScheduleEditDrawer = ({
                 <h4>
                   <DollarSign size={18} /> Pricing & Guests
                 </h4>
-                <p>Set the financials and limits for this session.</p>
               </SectionHeader>
-
               <TwoColGrid>
                 <FieldContainer>
-                  <Label>
-                    Price (CAD) <HelpLabel>0 for free</HelpLabel>
-                  </Label>
+                  <Label>Price (CAD)</Label>
                   <CompactFormItem name="price" rules={[{ required: true }]}>
                     <StyledInput prefix="$" type="number" step="0.01" min="0" />
                   </CompactFormItem>
                 </FieldContainer>
                 <FieldContainer>
-                  <Label>
-                    Total Guests
-                    <Tooltip title="The maximum number of people who can book this session.">
-                      <HelpCircle
-                        size={14}
-                        style={{ cursor: "pointer", color: "#94a3b8" }}
-                      />
-                    </Tooltip>
-                  </Label>
+                  <Label>Total Guests</Label>
                   <CompactFormItem
                     name="maxParticipants"
                     rules={[{ required: true }]}
@@ -1799,30 +1405,9 @@ const ScheduleEditDrawer = ({
                   </CompactFormItem>
                 </FieldContainer>
               </TwoColGrid>
-
               <FieldContainer>
-                <Label>
-                  Minimum Guests{" "}
-                  <Tooltip title="The minimum number of bookings required for this session to go ahead. If not met, you might need to cancel.">
-                    <HelpCircle
-                      size={14}
-                      style={{ cursor: "pointer", color: "#94a3b8" }}
-                    />
-                  </Tooltip>
-                </Label>
-                <CompactFormItem
-                  name="minParticipants"
-                  rules={[
-                    { required: true },
-                    ({ getFieldValue }) => ({
-                      validator(_, val) {
-                        return !val || val <= getFieldValue("maxParticipants")
-                          ? Promise.resolve()
-                          : Promise.reject(new Error("Min > Max"));
-                      },
-                    }),
-                  ]}
-                >
+                <Label>Minimum Guests</Label>
+                <CompactFormItem name="minParticipants">
                   <StyledInputNumber min={1} />
                 </CompactFormItem>
               </FieldContainer>
@@ -1837,7 +1422,6 @@ const ScheduleEditDrawer = ({
                 <h4>
                   <CheckCircle size={18} /> Review Details
                 </h4>
-                <p>Verify everything is correct before saving.</p>
               </SectionHeader>
               <ReviewCard>
                 <ReviewRow>
@@ -1871,13 +1455,6 @@ const ScheduleEditDrawer = ({
                     {formData.price}
                   </span>
                 </ReviewRow>
-                <ReviewRow>
-                  <span className="label">Capacity</span>
-                  <span className="value">
-                    <Users size={14} />
-                    {formData.maxParticipants} spots
-                  </span>
-                </ReviewRow>
               </ReviewCard>
             </FormSection>
           </ModernFormLayout>
@@ -1887,34 +1464,8 @@ const ScheduleEditDrawer = ({
     }
   };
 
-  const renderSingleSessionStepperForm = () => (
-    <>
-      {!isMobile && (
-        <ModernSteps
-          size="small"
-          current={currentStep}
-          items={[
-            { title: "Time & Date", icon: <Calendar size={16} /> },
-            { title: "Pricing", icon: <DollarSign size={16} /> },
-            { title: "Review", icon: <CheckCircle size={16} /> },
-          ]}
-        />
-      )}
-      <ContentPadding>
-        <Form
-          form={form}
-          layout="vertical"
-          onValuesChange={(c) => setFormData({ ...formData, ...c })}
-        >
-          {renderStepContent()}
-        </Form>
-      </ContentPadding>
-    </>
-  );
-
   const renderBulkForm = () => {
     const commonDetails = formData.commonDetails || {};
-
     return (
       <>
         {!isMobile && (
@@ -1941,27 +1492,13 @@ const ScheduleEditDrawer = ({
                     <h4>
                       <Copy size={18} /> Bulk Generation
                     </h4>
-                    <p>
-                      Create multiple sessions at once based on a repeating
-                      pattern.
-                    </p>
+                    <p>Create multiple sessions at once.</p>
                   </SectionHeader>
                   <FieldContainer>
                     <Label>
-                      Group Name <HelpLabel>Required for bulk</HelpLabel>
-                      <Tooltip title="A unique name to identify this batch of schedules (e.g. 'Summer Bootcamp').">
-                        <HelpCircle
-                          size={14}
-                          style={{ cursor: "pointer", color: "#94a3b8" }}
-                        />
-                      </Tooltip>
+                      Group Name <HelpLabel>Required</HelpLabel>
                     </Label>
-                    <CompactFormItem
-                      name="name"
-                      rules={[
-                        { required: true, message: "Group name is required" },
-                      ]}
-                    >
+                    <CompactFormItem name="name" rules={[{ required: true }]}>
                       <StyledInput placeholder="e.g. Summer Drop-ins" />
                     </CompactFormItem>
                   </FieldContainer>
@@ -1979,7 +1516,6 @@ const ScheduleEditDrawer = ({
                     </CompactFormItem>
                   </FieldContainer>
                 </FormSection>
-
                 <FormSection>
                   <SectionHeader>
                     <h4>
@@ -2013,7 +1549,6 @@ const ScheduleEditDrawer = ({
                       </DaysGrid>
                     </CompactFormItem>
                   </FieldContainer>
-
                   <FieldContainer>
                     <Label>At Times</Label>
                     <Form.List name="times">
@@ -2064,7 +1599,6 @@ const ScheduleEditDrawer = ({
                 </FormSection>
               </ModernFormLayout>
             )}
-
             {bulkCurrentStep === 1 && (
               <ModernFormLayout>
                 <FormSection>
@@ -2072,20 +1606,10 @@ const ScheduleEditDrawer = ({
                     <h4>
                       <DollarSign size={18} /> Common Details
                     </h4>
-                    <p>These settings apply to every generated session.</p>
                   </SectionHeader>
-
                   <TwoColGrid>
                     <FieldContainer>
-                      <Label>
-                        Price (CAD)
-                        <Tooltip title="Price per guest.">
-                          <HelpCircle
-                            size={14}
-                            style={{ cursor: "pointer", color: "#94a3b8" }}
-                          />
-                        </Tooltip>
-                      </Label>
+                      <Label>Price</Label>
                       <CompactFormItem
                         name={["commonDetails", "price"]}
                         rules={[{ required: true }]}
@@ -2094,20 +1618,12 @@ const ScheduleEditDrawer = ({
                       </CompactFormItem>
                     </FieldContainer>
                     <FieldContainer>
-                      <Label>
-                        Max Guests
-                        <Tooltip title="Maximum guests allowed per session.">
-                          <HelpCircle
-                            size={14}
-                            style={{ cursor: "pointer", color: "#94a3b8" }}
-                          />
-                        </Tooltip>
-                      </Label>
+                      <Label>Max Guests</Label>
                       <CompactFormItem
                         name={["commonDetails", "maxParticipants"]}
                         rules={[{ required: true }]}
                       >
-                        <StyledInputNumber min={1} inputMode="numeric" />
+                        <StyledInputNumber min={1} />
                       </CompactFormItem>
                     </FieldContainer>
                   </TwoColGrid>
@@ -2121,15 +1637,7 @@ const ScheduleEditDrawer = ({
                     </CompactFormItem>
                   </FieldContainer>
                   <FieldContainer>
-                    <Label>
-                      Min Guests
-                      <Tooltip title="The minimum number of bookings required for this session to go ahead. If not met, you might need to cancel.">
-                        <HelpCircle
-                          size={14}
-                          style={{ cursor: "pointer", color: "#94a3b8" }}
-                        />
-                      </Tooltip>
-                    </Label>
+                    <Label>Min Guests</Label>
                     <CompactFormItem
                       name={["commonDetails", "minParticipants"]}
                     >
@@ -2139,7 +1647,6 @@ const ScheduleEditDrawer = ({
                 </FormSection>
               </ModernFormLayout>
             )}
-
             {bulkCurrentStep === 2 && (
               <ModernFormLayout>
                 <FormSection>
@@ -2147,7 +1654,6 @@ const ScheduleEditDrawer = ({
                     <h4>
                       <CheckCircle size={18} /> Summary
                     </h4>
-                    <p>Ready to generate these schedules?</p>
                   </SectionHeader>
                   <ReviewCard>
                     <ReviewRow>
@@ -2167,21 +1673,15 @@ const ScheduleEditDrawer = ({
                       </span>
                     </ReviewRow>
                     <ReviewRow>
-                      <span className="label">Date Range</span>
+                      <span className="label">Range</span>
                       <span className="value">
                         {formData.date_range?.[0]?.format("MMM D")} -{" "}
-                        {formData.date_range?.[1]?.format("MMM D, YYYY")}
+                        {formData.date_range?.[1]?.format("MMM D")}
                       </span>
                     </ReviewRow>
                     <ReviewRow>
                       <span className="label">Price</span>
                       <span className="value">${commonDetails.price}</span>
-                    </ReviewRow>
-                    <ReviewRow>
-                      <span className="label">Capacity</span>
-                      <span className="value">
-                        {commonDetails.maxParticipants} spots
-                      </span>
                     </ReviewRow>
                   </ReviewCard>
                 </FormSection>
@@ -2193,116 +1693,87 @@ const ScheduleEditDrawer = ({
     );
   };
 
-  const renderFormContent = () => {
-    return editingSchedule ? (
-      renderSingleSessionStepperForm()
-    ) : (
-      <ModernTabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={[
-          {
-            label: (
-              <Space>
-                <File size={16} />
-                Single Session
-              </Space>
-            ),
-            key: "single",
-            children: renderSingleSessionStepperForm(),
-          },
-          ...(!editingSchedule && isSingleSession
-            ? [
-                {
-                  label: (
-                    <Space>
-                      <Copy size={16} />
-                      Bulk Create
-                    </Space>
-                  ),
-                  key: "bulk",
-                  children: renderBulkForm(),
-                },
-              ]
-            : []),
-        ]}
-      />
-    );
-  };
-
-  const handleAddNew = useCallback(
-    (date) => {
-      setEditingSchedule(null);
-      setPrefillDate(
-        date && dayjs.isDayjs(date) ? date : viewState.selectedDate,
-      );
-      setActiveView("form");
-    },
-    [viewState.selectedDate],
+  const renderSingleSessionStepperForm = () => (
+    <>
+      {!isMobile && (
+        <ModernSteps
+          size="small"
+          current={currentStep}
+          items={[
+            { title: "Time & Date", icon: <Calendar size={16} /> },
+            { title: "Pricing", icon: <DollarSign size={16} /> },
+            { title: "Review", icon: <CheckCircle size={16} /> },
+          ]}
+        />
+      )}
+      <ContentPadding>
+        <Form
+          form={form}
+          layout="vertical"
+          onValuesChange={(c) => setFormData({ ...formData, ...c })}
+        >
+          {renderStepContent()}
+        </Form>
+      </ContentPadding>
+    </>
   );
 
-  const handleEdit = useCallback((schedule) => {
-    setEditingSchedule(schedule);
-    setActiveView("form");
-  }, []);
-
-  const renderContent = () => {
-    if (activeView === "manage")
-      return (
-        <ScheduleManagementView
-          classData={classData}
-          // --- ADDED: Pass new props ---
-          options={classData?.options}
-          selectedOptionId={selectedOptionId}
-          onOptionChange={setSelectedOptionId}
-          // -----------------------------
-          onAdd={handleAddNew}
-          onEdit={handleEdit}
-          onEditGroup={handleEditGroup}
-          onSchedulesUpdate={onSchedulesUpdate}
-          currentMonth={viewState.currentMonth}
-          selectedDate={viewState.selectedDate}
-          groupFilter={viewState.groupFilter}
-          onViewStateChange={updateViewState}
-        />
-      );
-    if (activeView === "form") return renderFormContent();
-    if (activeView === "group-form") return renderGroupEditForm();
-    return null;
-  };
+  const renderGroupEditForm = () => (
+    <ContentPadding>
+      <Form form={form} layout="vertical">
+        <ModernFormLayout>
+          <FormSection>
+            <SectionHeader>
+              <h4>
+                <Edit3 size={16} /> Edit Group: {editingGroup}
+              </h4>
+              <p>
+                Updating these settings will affect all future sessions in this
+                group.
+              </p>
+            </SectionHeader>
+            <TwoColGrid>
+              <FieldContainer>
+                <Label>Price</Label>
+                <CompactFormItem name="price" rules={[{ required: true }]}>
+                  <StyledInput prefix="$" type="number" step="0.01" />
+                </CompactFormItem>
+              </FieldContainer>
+              <FieldContainer>
+                <Label>Capacity</Label>
+                <CompactFormItem
+                  name="maxParticipants"
+                  rules={[{ required: true }]}
+                >
+                  <StyledInputNumber />
+                </CompactFormItem>
+              </FieldContainer>
+            </TwoColGrid>
+            <FieldContainer>
+              <Label>Duration</Label>
+              <CompactFormItem name="duration" rules={[{ required: true }]}>
+                <DurationPicker />
+              </CompactFormItem>
+            </FieldContainer>
+          </FormSection>
+        </ModernFormLayout>
+      </Form>
+    </ContentPadding>
+  );
 
   const renderFooterButtons = (isMobileLayout = false) => {
-    const btnStyle = isMobileLayout ? { height: 44 } : { height: 40 };
+    const btnStyle = { height: 40 };
+    if (activeView === "manage") return null;
 
-    if (activeView === "manage") {
-      // --- MODIFIED: Disable Add button if Synced ---
-      return (
-        <Button
-          key="add"
-          type="primary"
-          icon={<Plus size={16} />}
-          onClick={() => handleAddNew(null)}
-          block={isMobileLayout}
-          style={btnStyle}
-          disabled={isSynced} // Disable if synced
-          title={
-            isSynced
-              ? "Cannot add schedules to a synced option"
-              : "Add new schedule"
-          }
-        >
-          Add New Schedule
-        </Button>
-      );
-    }
+    const commonProps = isMobileLayout ? { block: true } : {};
+
     if (activeView === "group-form") {
       return (
-        <div style={{ display: "flex", gap: 12, width: "100%" }}>
+        <>
           <Button
             onClick={() => setActiveView("manage")}
-            disabled={isLoading}
-            block={isMobileLayout}
             style={btnStyle}
+            {...commonProps}
           >
             Cancel
           </Button>
@@ -2310,39 +1781,33 @@ const ScheduleEditDrawer = ({
             type="primary"
             onClick={handleGroupSubmit}
             loading={isLoading}
-            block={isMobileLayout}
-            style={{ ...btnStyle, flex: 1 }}
             key={`btn-${isLoading}`}
+            style={btnStyle}
+            {...commonProps}
           >
             Update Group
           </Button>
-        </div>
+        </>
       );
     }
-    // Bulk Form Footer
+
     if (activeTab === "bulk" && !editingSchedule) {
       return (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            width: "100%",
-            gap: 12,
-          }}
-        >
+        <>
           {bulkCurrentStep === 0 ? (
             <Button
               onClick={() => setActiveView("manage")}
               style={btnStyle}
-              icon={<List size={16} />}
+              {...commonProps}
             >
-              {isMobileLayout ? "List" : "Back to List"}
+              Cancel
             </Button>
           ) : (
             <Button
               onClick={handleBulkBack}
               disabled={isBulkLoading}
               style={btnStyle}
+              {...commonProps}
             >
               Back
             </Button>
@@ -2354,6 +1819,7 @@ const ScheduleEditDrawer = ({
               style={btnStyle}
               icon={<ChevronRight size={16} />}
               iconPosition="end"
+              {...commonProps}
             >
               Next
             </Button>
@@ -2363,34 +1829,32 @@ const ScheduleEditDrawer = ({
               onClick={handleBulkSubmit}
               loading={isBulkLoading}
               style={btnStyle}
-              key={`btn-${isBulkLoading}`}
+              {...commonProps}
             >
               Generate
             </Button>
           )}
-        </div>
+        </>
       );
     }
-    // Single Form Footer
+
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          width: "100%",
-          gap: 12,
-        }}
-      >
+      <>
         {currentStep === 0 ? (
           <Button
             onClick={() => setActiveView("manage")}
             style={btnStyle}
-            icon={<List size={16} />}
+            {...commonProps}
           >
-            {isMobileLayout ? "List" : "Back to List"}
+            Cancel
           </Button>
         ) : (
-          <Button onClick={handleBack} disabled={isLoading} style={btnStyle}>
+          <Button
+            onClick={handleBack}
+            disabled={isLoading}
+            style={btnStyle}
+            {...commonProps}
+          >
             Back
           </Button>
         )}
@@ -2401,6 +1865,7 @@ const ScheduleEditDrawer = ({
             style={btnStyle}
             icon={<ChevronRight size={16} />}
             iconPosition="end"
+            {...commonProps}
           >
             Next
           </Button>
@@ -2411,113 +1876,910 @@ const ScheduleEditDrawer = ({
             loading={isLoading}
             style={btnStyle}
             key={`btn-${isLoading}`}
+            {...commonProps}
           >
             {editingSchedule ? "Save Changes" : "Create"}
           </Button>
         )}
+      </>
+    );
+  };
+
+  const handleDayClick = (dateObj) => {
+    setZoomDirection("in");
+    setSelectedDate(dateObj);
+    setCalendarViewMode("day");
+  };
+
+  const handleBackToCalendar = () => {
+    setZoomDirection("out");
+    setCalendarViewMode("month");
+    setTimeout(() => setSelectedDate(null), 300); // clear after anim
+  };
+
+  const handleDelete = async (id) => {
+    await scheduleService.deleteSchedule(id);
+    message.success("Deleted");
+    fetchSchedules();
+    onSchedulesUpdate();
+  };
+
+  // --- SHARED CALENDAR LOGIC ---
+  const calendarDays = useMemo(() => {
+    const start = currentMonth.startOf("month").startOf("week");
+    const end = start.add(41, "day"); // Fixed rows
+    const days = [];
+    let curr = start;
+    while (curr.isBefore(end)) {
+      const dateStr = curr.format("YYYY-MM-DD");
+      // Use visibleSchedules here to reflect filtering
+      const daySchedules = visibleSchedules.filter((s) => s.date === dateStr);
+      days.push({
+        date: curr,
+        isCurrentMonth: curr.isSame(currentMonth, "month"),
+        isToday: curr.isSame(dayjs(), "day"),
+        schedules: daySchedules,
+      });
+      curr = curr.add(1, "day");
+    }
+    return days;
+  }, [currentMonth, visibleSchedules]);
+
+  const filteredDaySchedules = useMemo(() => {
+    if (!selectedDate) return [];
+    // Use visibleSchedules here as well
+    return visibleSchedules
+      .filter((s) => s.date === selectedDate.format("YYYY-MM-DD"))
+      .sort((a, b) =>
+        dayjs(`${a.date}T${a.time}`).diff(dayjs(`${b.date}T${b.time}`)),
+      );
+  }, [selectedDate, visibleSchedules]);
+
+  // Grouping for Day View
+  const groupedDaySchedules = useMemo(() => {
+    const groups = { morning: [], afternoon: [], evening: [] };
+    filteredDaySchedules.forEach((s) => {
+      const p = getPeriod(s.time);
+      if (groups[p]) groups[p].push(s);
+    });
+    return groups;
+  }, [filteredDaySchedules]);
+
+  // --- ANIMATION VARIANTS (ZOOM/FADE) ---
+  const zoomVariants = {
+    enter: (direction) => ({
+      scale: direction === "in" ? 0.95 : 1.05,
+      opacity: 0,
+      filter: "blur(2px)",
+    }),
+    center: {
+      scale: 1,
+      opacity: 1,
+      filter: "blur(0px)",
+      transition: { duration: 0.3, ease: "easeOut" },
+    },
+    exit: (direction) => ({
+      scale: direction === "in" ? 1.05 : 0.95,
+      opacity: 0,
+      filter: "blur(2px)",
+      transition: { duration: 0.2, ease: "easeIn" },
+    }),
+  };
+
+  // --- RENDER CONTENT ---
+
+  // 1. MOBILE RENDERER (VAUL DRAWER)
+  if (isMobile) {
+    const renderMobileView = () => {
+      // Form View
+      if (activeView === "form" || activeView === "group-form") {
+        return (
+          <>
+            <MobileHeader>
+              <Button
+                icon={<ArrowLeft size={18} />}
+                onClick={() => setActiveView("manage")}
+                type="text"
+              />
+              <Title level={5} style={{ margin: 0 }}>
+                {activeView === "group-form"
+                  ? "Edit Group"
+                  : editingSchedule
+                    ? "Edit Session"
+                    : "Create Schedule"}
+              </Title>
+              <div style={{ width: 32 }} />
+            </MobileHeader>
+            <MobileBody>
+              <AnimatedHeightWrapper>
+                {activeView === "group-form" ? (
+                  renderGroupEditForm()
+                ) : editingSchedule ? (
+                  renderSingleSessionStepperForm()
+                ) : (
+                  <ModernTabs
+                    activeKey={activeTab}
+                    onChange={setActiveTab}
+                    centered
+                    items={[
+                      {
+                        label: "Single",
+                        key: "single",
+                        children: renderSingleSessionStepperForm(),
+                      },
+                      ...(!editingSchedule && isSingleSession
+                        ? [
+                            {
+                              label: "Bulk",
+                              key: "bulk",
+                              children: renderBulkForm(),
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
+                )}
+              </AnimatedHeightWrapper>
+            </MobileBody>
+            <div
+              style={{
+                padding: "16px 20px",
+                borderTop: "1px solid #f1f5f9",
+                display: "flex",
+                gap: 12,
+              }}
+            >
+              {renderFooterButtons(true)}
+            </div>
+          </>
+        );
+      }
+
+      // Day List View
+      if (calendarViewMode === "day") {
+        return (
+          <>
+            <MobileHeader>
+              <Button
+                icon={<ArrowLeft size={18} />}
+                onClick={handleBackToCalendar}
+                type="text"
+              />
+              <Title level={5} style={{ margin: 0 }}>
+                {selectedDate?.format("ddd, MMM D")}
+              </Title>
+              <Button
+                type="primary"
+                size="small"
+                icon={<PlusCircle size={16} />}
+                onClick={() => {
+                  setEditingSchedule(null);
+                  setPrefillDate(selectedDate);
+                  setActiveView("form");
+                }}
+              />
+            </MobileHeader>
+            <MobileBody>
+              <AnimatedHeightWrapper>
+                {loadingSchedules ? (
+                  <div style={{ padding: 16 }}>
+                    {[1, 2, 3].map((i) => (
+                      <SkeletonBase
+                        key={i}
+                        $height="100px"
+                        $mb="12px"
+                        $radius="12px"
+                      />
+                    ))}
+                  </div>
+                ) : filteredDaySchedules.length > 0 ? (
+                  filteredDaySchedules.map((s) => (
+                    <MobileScheduleCard key={s.id}>
+                      <div className="time-badge">
+                        {dayjs(`2000-01-01T${s.time}`).format("h:mm A")}
+                      </div>
+                      <div className="title">{s.name || "Regular Session"}</div>
+                      <div className="details">
+                        <span>
+                          <Users size={12} /> {s.booked_participants}/
+                          {s.maxParticipants}
+                        </span>
+                        <span>
+                          <DollarSign size={12} /> {s.price}
+                        </span>
+                        <span>
+                          <Hourglass size={12} /> {formatDuration(s.duration)}
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 12,
+                          paddingTop: 12,
+                          borderTop: "1px dashed #f1f5f9",
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          gap: 8,
+                        }}
+                      >
+                        <Button
+                          size="small"
+                          icon={<Edit3 size={14} />}
+                          onClick={() => {
+                            setEditingSchedule(s);
+                            setActiveView("form");
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <Popconfirm
+                          title="Delete?"
+                          onConfirm={() => handleDelete(s.id)}
+                        >
+                          <Button
+                            size="small"
+                            danger
+                            icon={<Trash2 size={14} />}
+                          />
+                        </Popconfirm>
+                      </div>
+                    </MobileScheduleCard>
+                  ))
+                ) : (
+                  <div style={{ marginTop: 60 }}>
+                    <Empty description="No sessions scheduled" />
+                  </div>
+                )}
+              </AnimatedHeightWrapper>
+            </MobileBody>
+          </>
+        );
+      }
+
+      // Calendar Grid View (Mobile)
+      return (
+        <>
+          <MobileHeader>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+                width: "100%",
+              }}
+            >
+              <Title level={5} style={{ margin: 0 }}>
+                Manage Schedule
+              </Title>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 8,
+                }}
+              >
+                <Segmented
+                  size="small"
+                  block
+                  options={
+                    classData?.options?.map((o) => ({
+                      label: o.title,
+                      value: o.optionId,
+                    })) || []
+                  }
+                  value={selectedOptionId}
+                  onChange={setSelectedOptionId}
+                />
+                <Select
+                  size="small"
+                  value={selectedGroup}
+                  onChange={setSelectedGroup}
+                  options={[
+                    { label: "All Groups", value: "all" },
+                    ...uniqueGroups.map((g) => ({ label: g, value: g })),
+                  ]}
+                />
+              </div>
+            </div>
+          </MobileHeader>
+          <MobileBody>
+            <AnimatedHeightWrapper>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "16px 20px 0",
+                }}
+              >
+                <Button
+                  icon={<ChevronLeft size={20} />}
+                  onClick={() =>
+                    setCurrentMonth(currentMonth.subtract(1, "month"))
+                  }
+                  type="text"
+                />
+                <span style={{ fontSize: 16, fontWeight: 600 }}>
+                  {currentMonth.format("MMMM YYYY")}
+                </span>
+                <Button
+                  icon={<ChevronRight size={20} />}
+                  onClick={() => setCurrentMonth(currentMonth.add(1, "month"))}
+                  type="text"
+                />
+              </div>
+
+              {loadingSchedules ? (
+                <div style={{ padding: 20 }}>
+                  <GridSkeleton style={{ height: 350, border: "none" }}>
+                    {Array.from({ length: 35 }).map((_, i) => (
+                      <div
+                        key={i}
+                        style={{ background: "white", borderRadius: 4 }}
+                      />
+                    ))}
+                  </GridSkeleton>
+                </div>
+              ) : (
+                <MobileCalendarGrid>
+                  {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                    <div key={i} className="header">
+                      {d}
+                    </div>
+                  ))}
+                  {calendarDays.map((day, i) => (
+                    <button
+                      key={i}
+                      className={`${day.isToday ? "today" : ""} ${day.schedules.length > 0 ? "has-events" : ""}`}
+                      style={{ opacity: day.isCurrentMonth ? 1 : 0.3 }}
+                      onClick={() => handleDayClick(day.date)}
+                    >
+                      {day.date.date()}
+                      {day.schedules.length > 0 && <div className="dot" />}
+                    </button>
+                  ))}
+                </MobileCalendarGrid>
+              )}
+            </AnimatedHeightWrapper>
+          </MobileBody>
+          <div style={{ padding: "16px 20px", borderTop: "1px solid #f1f5f9" }}>
+            {selectedGroup !== "all" ? (
+              <Button
+                block
+                size="large"
+                icon={<Edit3 size={18} />}
+                onClick={() => {
+                  setEditingGroup(selectedGroup);
+                  setActiveView("group-form");
+                }}
+              >
+                Edit Group: {selectedGroup}
+              </Button>
+            ) : (
+              <Button
+                type="primary"
+                block
+                size="large"
+                icon={<PlusCircle size={18} />}
+                onClick={() => {
+                  setEditingSchedule(null);
+                  setPrefillDate(dayjs());
+                  setActiveView("form");
+                }}
+                disabled={
+                  classData?.options?.find(
+                    (o) => o.optionId === selectedOptionId,
+                  )?.schedule_mode === "synced"
+                }
+              >
+                Add Schedule
+              </Button>
+            )}
+          </div>
+        </>
+      );
+    };
+
+    return (
+      <Drawer.Root
+        open={open}
+        onOpenChange={(o) => !o && onClose()}
+        repositionInputs={false}
+        dismissible
+      >
+        <Drawer.Portal>
+          <StyledDrawerOverlay />
+          <StyledDrawerContent>
+            <DrawerHandle />
+            {renderMobileView()}
+          </StyledDrawerContent>
+        </Drawer.Portal>
+      </Drawer.Root>
+    );
+  }
+
+  // 2. DESKTOP RENDERER (MODAL)
+
+  // Skeleton Renderers for Desktop
+  const renderDesktopSkeleton = () => {
+    if (calendarViewMode === "month") {
+      return (
+        <SkeletonContainer>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: 10,
+            }}
+          >
+            <SkeletonBase $width="200px" $height="32px" />
+            <SkeletonBase $width="100px" $height="32px" />
+          </div>
+          <GridSkeleton>
+            {Array.from({ length: 35 }).map((_, i) => (
+              <CellSkeleton key={i}>
+                <SkeletonBase $width="20px" $height="14px" />
+                <SkeletonBase $width="80%" $height="10px" $radius="4px" />
+                <SkeletonBase $width="60%" $height="10px" $radius="4px" />
+              </CellSkeleton>
+            ))}
+          </GridSkeleton>
+        </SkeletonContainer>
+      );
+    }
+    return (
+      <SkeletonContainer>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: 20,
+          }}
+        >
+          <SkeletonBase $width="250px" $height="32px" />
+          <SkeletonBase $width="120px" $height="32px" />
+        </div>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <SkeletonBase
+            key={i}
+            $width="100%"
+            $height="60px"
+            $radius="10px"
+            $mb="10px"
+          />
+        ))}
+      </SkeletonContainer>
+    );
+  };
+
+  const renderDesktopContent = () => {
+    // FORM VIEW OVERLAY
+    if (activeView === "form" || activeView === "group-form") {
+      return (
+        <div
+          style={{ display: "flex", flexDirection: "column", height: "100%" }}
+        >
+          <TopNav>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Button
+                icon={<ArrowLeft size={18} />}
+                onClick={() => setActiveView("manage")}
+                type="text"
+              />
+              <Title level={4} style={{ margin: 0 }}>
+                {activeView === "group-form"
+                  ? "Edit Group"
+                  : editingSchedule
+                    ? "Edit Session"
+                    : "Create Schedule"}
+              </Title>
+            </div>
+            <Button icon={<X size={20} />} onClick={onClose} type="text" />
+          </TopNav>
+          {activeView === "group-form" ? (
+            renderGroupEditForm()
+          ) : editingSchedule ? (
+            renderSingleSessionStepperForm()
+          ) : (
+            <ModernTabs
+              activeKey={activeTab}
+              onChange={setActiveTab}
+              items={[
+                {
+                  label: (
+                    <Space>
+                      <File size={16} />
+                      Single Session
+                    </Space>
+                  ),
+                  key: "single",
+                  children: renderSingleSessionStepperForm(),
+                },
+                ...(!editingSchedule && isSingleSession
+                  ? [
+                      {
+                        label: (
+                          <Space>
+                            <Copy size={16} />
+                            Bulk Create
+                          </Space>
+                        ),
+                        key: "bulk",
+                        children: renderBulkForm(),
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          )}
+        </div>
+      );
+    }
+
+    // MANAGE VIEW (CALENDAR / DAY LIST)
+    return (
+      <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        {/* Top Bar - Tier & Group Filters */}
+        <TopNav>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <Layers size={18} color="#64748b" />
+            <span style={{ fontWeight: 600, color: "#334155" }}>Tier:</span>
+            {classData?.options?.length > 4 ? (
+              <Select
+                value={selectedOptionId}
+                onChange={setSelectedOptionId}
+                style={{ width: 180 }}
+                options={classData.options.map((o) => ({
+                  label: o.title,
+                  value: o.optionId,
+                }))}
+              />
+            ) : (
+              <Segmented
+                options={
+                  classData?.options?.map((o) => ({
+                    label: o.title,
+                    value: o.optionId,
+                  })) || []
+                }
+                value={selectedOptionId}
+                onChange={setSelectedOptionId}
+              />
+            )}
+
+            <div
+              style={{
+                width: 1,
+                height: 24,
+                background: "#e2e8f0",
+                margin: "0 8px",
+              }}
+            />
+
+            <Filter size={16} color="#64748b" />
+            <span style={{ fontWeight: 600, color: "#334155" }}>Group:</span>
+            <Select
+              value={selectedGroup}
+              onChange={setSelectedGroup}
+              style={{ width: 180 }}
+              options={[
+                { label: "All Groups", value: "all" },
+                ...uniqueGroups.map((g) => ({ label: g, value: g })),
+              ]}
+            />
+            {selectedGroup !== "all" && (
+              <Button
+                icon={<Edit3 size={14} />}
+                onClick={() => {
+                  setEditingGroup(selectedGroup);
+                  setActiveView("group-form");
+                }}
+              >
+                Edit
+              </Button>
+            )}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <Button
+              icon={<X size={20} />}
+              onClick={onClose}
+              type="text"
+              style={{ color: "#94a3b8" }}
+            />
+          </div>
+        </TopNav>
+
+        {/* Zoom Container with AnimatePresence */}
+        <ZoomContainer>
+          <AnimatePresence
+            mode="popLayout"
+            initial={false}
+            custom={zoomDirection}
+          >
+            {loadingSchedules ? (
+              <ViewWrapper
+                key="skeleton"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                {renderDesktopSkeleton()}
+              </ViewWrapper>
+            ) : calendarViewMode === "month" ? (
+              <ViewWrapper
+                key="month"
+                custom={zoomDirection}
+                variants={zoomVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+              >
+                <CalendarGridContainer>
+                  <CalendarControls>
+                    <Button
+                      icon={<ChevronLeft size={16} />}
+                      onClick={() =>
+                        setCurrentMonth(currentMonth.subtract(1, "month"))
+                      }
+                    />
+                    <h3>{currentMonth.format("MMMM YYYY")}</h3>
+                    <div className="side-actions">
+                      <Button
+                        icon={<ChevronRight size={16} />}
+                        onClick={() =>
+                          setCurrentMonth(currentMonth.add(1, "month"))
+                        }
+                      />
+                      <Button
+                        type="primary"
+                        icon={<PlusCircle size={16} />}
+                        onClick={() => {
+                          setEditingSchedule(null);
+                          setPrefillDate(dayjs());
+                          setActiveView("form");
+                        }}
+                        disabled={
+                          classData?.options?.find(
+                            (o) => o.optionId === selectedOptionId,
+                          )?.schedule_mode === "synced"
+                        }
+                      >
+                        New Schedule
+                      </Button>
+                    </div>
+                  </CalendarControls>
+                  <WeekdayRow>
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                      (d) => (
+                        <span key={d}>{d}</span>
+                      ),
+                    )}
+                  </WeekdayRow>
+                  <MonthGrid>
+                    {calendarDays.map((day, i) => (
+                      <DateCell
+                        key={i}
+                        $isOtherMonth={!day.isCurrentMonth}
+                        $isToday={day.isToday}
+                        onClick={() => handleDayClick(day.date)}
+                      >
+                        <DateNumber $isToday={day.isToday}>
+                          {day.date.date()}
+                          {day.schedules.length > 0 && (
+                            <Badge
+                              color={appTheme.token.colorPrimary}
+                              status="processing"
+                              style={{ transform: "scale(0.6)" }}
+                            />
+                          )}
+                        </DateNumber>
+                        <DotContainer>
+                          {day.schedules.slice(0, 3).map((s, idx) => (
+                            <EventPill key={idx}>
+                              {dayjs(`2000-01-01T${s.time}`).format("h:mmA")}{" "}
+                              {s.name || "Session"}
+                            </EventPill>
+                          ))}
+                          {day.schedules.length > 3 && (
+                            <EventPill
+                              style={{
+                                background: "#f1f5f9",
+                                color: "#64748b",
+                              }}
+                            >
+                              +{day.schedules.length - 3} more
+                            </EventPill>
+                          )}
+                        </DotContainer>
+                      </DateCell>
+                    ))}
+                  </MonthGrid>
+                </CalendarGridContainer>
+              </ViewWrapper>
+            ) : (
+              <ViewWrapper
+                key="day"
+                custom={zoomDirection}
+                variants={zoomVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+              >
+                <div
+                  style={{
+                    padding: "16px 24px",
+                    borderBottom: "1px solid #f0f0f0",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
+                    <Button
+                      icon={<Undo2 size={16} />}
+                      onClick={handleBackToCalendar}
+                    >
+                      Back to Month
+                    </Button>
+                    <Title level={4} style={{ margin: 0 }}>
+                      {selectedDate?.format("dddd, MMM D")}
+                    </Title>
+                  </div>
+                  <Button
+                    type="primary"
+                    icon={<PlusCircle size={16} />}
+                    onClick={() => {
+                      setEditingSchedule(null);
+                      setPrefillDate(selectedDate);
+                      setActiveView("form");
+                    }}
+                  >
+                    Add to this day
+                  </Button>
+                </div>
+
+                <div
+                  style={{ padding: "0 24px 24px", overflowY: "auto", flex: 1 }}
+                >
+                  {filteredDaySchedules.length > 0 ? (
+                    <>
+                      {["morning", "afternoon", "evening"].map((period) => {
+                        const items = groupedDaySchedules[period];
+                        if (!items.length) return null;
+
+                        let icon = (
+                          <lord-icon
+                            src="https://cdn.lordicon.com/okqjaags.json"
+                            trigger="in"
+                            state="in-clock"
+                          ></lord-icon>
+                        );
+                        if (period === "morning") {
+                          icon = (
+                            <lord-icon
+                              src="https://cdn.lordicon.com/okqjaags.json"
+                              trigger="in"
+                              state="in-clock"
+                            ></lord-icon>
+                          );
+                        }
+                        if (period === "evening") {
+                          icon = (
+                            <lord-icon
+                              src="https://cdn.lordicon.com/okqjaags.json"
+                              trigger="in"
+                              state="in-clock"
+                            ></lord-icon>
+                          );
+                        }
+
+                        return (
+                          <div key={period}>
+                            <DaySectionHeader>
+                              <div className="icon-box">{icon}</div>
+                              <h4>
+                                {period.charAt(0).toUpperCase() +
+                                  period.slice(1)}
+                              </h4>
+                              <div className="line" />
+                            </DaySectionHeader>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 8,
+                              }}
+                            >
+                              {items.map((s) => {
+                                const start = dayjs(`2000-01-01T${s.time}`);
+                                return (
+                                  <DayCard key={s.id}>
+                                    <div className="time-col">
+                                      <span className="start">
+                                        {start.format("h:mm")}
+                                      </span>
+                                      <span className="ampm">
+                                        {start.format("A")}
+                                      </span>
+                                    </div>
+                                    <div className="info-col">
+                                      <span className="name">
+                                        {s.name || "Regular Session"}
+                                      </span>
+                                      <div className="meta">
+                                        <span>
+                                          <Users size={12} />{" "}
+                                          {s.booked_participants}/
+                                          {s.maxParticipants} Guests
+                                        </span>
+                                        <span>
+                                          <DollarSign size={12} /> ${s.price}
+                                        </span>
+                                        <span>
+                                          <Hourglass size={12} />{" "}
+                                          {formatDuration(s.duration)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="action-col">
+                                      <Button
+                                        size="small"
+                                        icon={<Edit3 size={14} />}
+                                        onClick={() => {
+                                          setEditingSchedule(s);
+                                          setActiveView("form");
+                                        }}
+                                      />
+                                      <Popconfirm
+                                        title="Delete session?"
+                                        onConfirm={() => handleDelete(s.id)}
+                                      >
+                                        <Button
+                                          size="small"
+                                          danger
+                                          icon={<Trash2 size={14} />}
+                                        />
+                                      </Popconfirm>
+                                    </div>
+                                  </DayCard>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>
+                  ) : (
+                    <Empty description="No sessions scheduled for this day." />
+                  )}
+                </div>
+              </ViewWrapper>
+            )}
+          </AnimatePresence>
+        </ZoomContainer>
       </div>
     );
   };
 
-  const getTitle = () => {
-    if (activeView === "form")
-      return `${editingSchedule ? "Edit" : "New"} Schedule`;
-    if (activeView === "group-form") return "Edit Group";
-    return `Manage Schedules`;
-  };
-
   return (
     <ConfigProvider theme={appTheme}>
+      {isMobile ? renderMobileView() : null}
+
       {!isMobile && (
         <DesktopModal
           centered
-          title={getTitle()}
           open={open}
           onCancel={onClose}
-          width={activeView === "manage" ? "800px" : "720px"}
+          width={activeView === "manage" ? 1000 : 600}
           destroyOnClose
           maskClosable={!isLoading && !isBulkLoading}
-          closable={!isLoading && !isBulkLoading}
-          footer={renderFooterButtons(false)}
+          footer={activeView !== "manage" ? renderFooterButtons(false) : null}
+          closeIcon={null}
         >
-          <AnimatedModalContent>{renderContent()}</AnimatedModalContent>
+          {renderDesktopContent()}
         </DesktopModal>
-      )}
-      {isMobile && (
-        <Drawer.Root
-          open={open}
-          onOpenChange={(o) => {
-            if (!o) onClose();
-          }}
-          repositionInputs={false}
-        >
-          <Drawer.Portal>
-            <StyledDrawerOverlay />
-            <StyledDrawerContent $fixedHeight="85vh">
-              <DrawerHandle />
-              <MobileHeader>
-                <MobileTitle>{`Manage Schedules`}</MobileTitle>
-                <CloseButton icon={<X size={20} />} onClick={onClose} />
-              </MobileHeader>
-              <MobileContent>
-                <ScheduleManagementView
-                  classData={classData}
-                  // --- ADDED: Pass props ---
-                  options={classData?.options}
-                  selectedOptionId={selectedOptionId}
-                  onOptionChange={setSelectedOptionId}
-                  // -------------------------
-                  onAdd={handleAddNew}
-                  onEdit={handleEdit}
-                  onEditGroup={handleEditGroup}
-                  onSchedulesUpdate={onSchedulesUpdate}
-                  currentMonth={viewState.currentMonth}
-                  selectedDate={viewState.selectedDate}
-                  groupFilter={viewState.groupFilter}
-                  onViewStateChange={updateViewState}
-                />
-              </MobileContent>
-              <MobileFooter>
-                {/* --- MODIFIED: Disable footer button if synced --- */}
-                <Button
-                  type="primary"
-                  icon={<Plus size={16} />}
-                  onClick={() => handleAddNew(null)}
-                  block
-                  style={{ height: 44 }}
-                  disabled={isSynced}
-                >
-                  Add New Schedule
-                </Button>
-              </MobileFooter>
-            </StyledDrawerContent>
-          </Drawer.Portal>
-          <Drawer.NestedRoot
-            open={activeView === "form" || activeView === "group-form"}
-            onOpenChange={(o) => !o && setActiveView("manage")}
-            repositionInputs={false}
-          >
-            <Drawer.Portal>
-              <StyledDrawerOverlay />
-              <StyledDrawerContent style={{ height: "96%" }}>
-                <DrawerHandle />
-                <MobileHeader>
-                  <MobileTitle>{getTitle()}</MobileTitle>
-                  <CloseButton
-                    icon={<X size={20} />}
-                    onClick={() => setActiveView("manage")}
-                  />
-                </MobileHeader>
-                <MobileContent>
-                  {activeView === "group-form"
-                    ? renderGroupEditForm()
-                    : renderFormContent()}
-                </MobileContent>
-                <MobileFooter>{renderFooterButtons(true)}</MobileFooter>
-              </StyledDrawerContent>
-            </Drawer.Portal>
-          </Drawer.NestedRoot>
-        </Drawer.Root>
       )}
     </ConfigProvider>
   );
