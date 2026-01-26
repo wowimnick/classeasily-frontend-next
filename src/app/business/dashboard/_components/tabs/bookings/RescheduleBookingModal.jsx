@@ -1,193 +1,280 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import styled from "styled-components";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
+import styled, { createGlobalStyle } from "styled-components";
 import {
   Modal,
-  List,
   Button,
   Typography,
-  Empty,
-  Alert,
-  Radio,
-  Tooltip,
   Skeleton,
+  ConfigProvider,
+  Alert,
+  Empty,
+  Radio,
 } from "antd";
-import message from "@/lib/message";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Calendar,
   Clock,
-  User,
   AlertTriangle,
   Info as InfoIcon,
-  HelpCircle,
+  X,
+  CheckCircle,
 } from "lucide-react";
-import { bookingService } from "@/services/apiService";
+import { Drawer } from "vaul";
 import moment from "moment";
 
-const { Text, Paragraph } = Typography;
+import message from "@/lib/message";
+import { bookingService } from "@/services/apiService";
+import { theme } from "@/components/theme";
 
-const ModalContentWrapper = styled.div`
+const { Title } = Typography;
+
+// --- GLOBAL STYLES ---
+const ModalGlobalStyle = createGlobalStyle`
+  .compact-modal .ant-modal-content {
+    padding: 0 !important;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .compact-modal .ant-modal-body {
+    padding: 0;
+  }
+`;
+
+// --- STYLED COMPONENTS ---
+
+const StyledModal = styled(Modal)`
+  .ant-modal-container {
+    padding: 0 !important;
+  }
+`;
+
+const ContentContainer = styled.div`
   display: flex;
   flex-direction: column;
-  max-height: 65vh;
-  min-height: 40vh;
-
-  @media (max-width: 576px) {
-    max-height: 70vh;
-  }
+  height: 100%;
+  max-height: 80vh;
+  background: white;
+  position: relative;
 `;
 
-const SlotListWrapper = styled.div`
-  flex-grow: 1;
-  overflow-y: auto;
-  margin: 0 -24px;
-  padding: 0 24px;
-
-  @media (max-width: 576px) {
-    margin: 0 -16px;
-    padding: 0 16px;
-  }
-`;
-
-const SlotItem = styled(List.Item)`
-  padding: 12px 8px !important;
-  border-radius: 8px;
-  border-bottom: 1px solid #f0f0f0 !important;
-  transition: background-color 0.2s ease, opacity 0.2s ease;
-  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
-  opacity: ${(props) => (props.disabled ? 0.6 : 1)};
-
-  &:hover {
-    background-color: ${(props) =>
-      props.disabled ? "transparent" : "#f8fafc"};
-  }
-
-  &.selected {
-    background-color: #f0f9ff;
-    padding-left: 8px !important;
-  }
-`;
-
-const SlotDetails = styled.div`
+const Header = styled.div`
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
-  gap: 16px;
+  background: white;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 50; /* Topmost */
 
-  @media (max-width: 480px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
   }
 `;
 
-const SlotDateTime = styled.div`
-  .date {
-    font-weight: 500;
-    color: #1f2937;
-    font-size: 14px;
-  }
-  .time {
-    color: #6b7280;
-    font-size: 13px;
-  }
-`;
+const ScrollableList = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  position: relative;
+  z-index: 1; /* Lowest */
+  background: white;
 
-const SlotInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-
-  @media (max-width: 480px) {
-    width: 100%;
-    justify-content: space-between;
+  /* Compact Scrollbar */
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #e5e7eb;
+    border-radius: 4px;
   }
 `;
 
-const SlotAvailability = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: ${(props) => (props.hasSpots ? "#10b981" : "#ef4444")};
-  font-weight: 500;
-`;
-
-const ConfirmationSection = styled.div`
-  margin-top: 16px;
-  padding-top: 16px;
+const Footer = styled.div`
+  padding: 12px 16px;
   border-top: 1px solid #f0f0f0;
+  background: white;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  position: relative;
+  z-index: 50; /* Topmost */
+
+  @media (max-width: 576px) {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+`;
+
+// --- COMPACT LIST ITEM STYLES ---
+
+const CompactItem = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f5f5f5;
+  cursor: ${(props) => (props.$disabled ? "not-allowed" : "pointer")};
+  background: ${(props) => (props.$selected ? "#f0f9ff" : "white")};
+  opacity: ${(props) => (props.$disabled ? 0.6 : 1)};
+  transition: background 0.1s;
+  position: relative;
+  z-index: 1;
+
+  &:hover {
+    background: ${(props) =>
+      !props.$disabled && (props.$selected ? "#e0f2fe" : "#fafafa")};
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const ItemContent = styled.div`
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-left: 12px;
+`;
+
+const DateGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+
+  .date {
+    font-weight: 500;
+    font-size: 14px;
+    color: #1f2937;
+  }
+  .time {
+    font-size: 12px;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
 `;
 
-const StyledAlert = styled(Alert)`
-  border-radius: 8px;
+const MetaGroup = styled.div`
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+
+  .price {
+    font-weight: 600;
+    font-size: 13px;
+    color: ${theme.token.colorPrimary};
+  }
+  .spots {
+    font-size: 11px;
+    color: ${(props) => (props.$hasSpots ? "#059669" : "#dc2626")};
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
 `;
 
-const PriceTag = styled.span`
-  font-weight: 600;
-  color: #059669;
+// --- WARNING SECTION ---
+
+const WarningContainer = styled(motion.div)`
+  background: #fffaf0;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 16px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  z-index: 30; /* High Z-Index to sit above list */
+  box-shadow: 0 4px 6px -4px rgba(0, 0, 0, 0.1); /* Shadow to prove depth */
 `;
 
-const SkeletonItem = () => (
-  <List.Item style={{ padding: "12px 8px" }}>
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        width: "100%",
-        gap: "16px",
-      }}
+const CompactAlert = styled(Alert)`
+  padding: 8px 12px;
+  border-radius: 6px;
+
+  .ant-alert-message {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .ant-alert-description {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .ant-alert-icon {
+    margin-top: 2px;
+  }
+`;
+
+// --- ANIMATION ---
+const useElementSize = () => {
+  const ref = useRef(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      });
+    });
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, size];
+};
+
+const AnimatedContent = ({ children }) => {
+  const [ref, { height }] = useElementSize();
+  return (
+    <motion.div
+      animate={{ height: height || "auto" }}
+      transition={{ type: "spring", damping: 25, stiffness: 300 }}
     >
-      <Skeleton.Avatar shape="circle" size="small" active />
-      <div style={{ flex: 1 }}>
-        <Skeleton active title={false} paragraph={{ rows: 2, width: "100%" }} />
-      </div>
-    </div>
-  </List.Item>
-);
+      <div ref={ref}>{children}</div>
+    </motion.div>
+  );
+};
 
-const RescheduleBookingModal = ({ visible, booking, onSuccess, onCancel }) => {
+// --- LOGIC COMPONENT ---
+
+const RescheduleContent = ({ booking, onSuccess, onCancel, isInDrawer }) => {
   const [availableSlots, setAvailableSlots] = useState([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(true);
   const [selectedSlotId, setSelectedSlotId] = useState(null);
   const [policyCheck, setPolicyCheck] = useState(null);
   const [checkingPolicy, setCheckingPolicy] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [viewState, setViewState] = useState("selection");
 
   useEffect(() => {
-    if (visible && booking) {
-      const fetchSlots = async () => {
-        setLoadingSlots(true);
-        try {
-          const result = await bookingService.fetchAvailableRescheduleSlots(
-            booking.id
-          );
-          if (result.success) {
-            setAvailableSlots(result.data);
-          } else {
-            message.error(result.error || "Failed to fetch available slots.");
-          }
-        } catch (error) {
-          message.error("An error occurred while fetching slots.");
-        } finally {
-          setLoadingSlots(false);
-        }
-      };
-      fetchSlots();
-    } else {
-      setAvailableSlots([]);
-      setSelectedSlotId(null);
-      setPolicyCheck(null);
-    }
-  }, [visible, booking]);
+    if (booking) fetchSlots();
+  }, [booking]);
 
-  const handleSlotSelect = async (instanceId) => {
-    if (!instanceId) return;
+  const fetchSlots = async () => {
+    setLoadingSlots(true);
+    try {
+      const result = await bookingService.fetchAvailableRescheduleSlots(
+        booking.id,
+      );
+      if (result.success) setAvailableSlots(result.data);
+      else message.error(result.error || "Failed to fetch slots.");
+    } catch {
+      message.error("Error fetching slots.");
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
+
+  const handleSlotSelect = async (instanceId, isValid) => {
+    if (!isValid || instanceId === selectedSlotId) return;
     setSelectedSlotId(instanceId);
     setCheckingPolicy(true);
     setPolicyCheck(null);
@@ -195,16 +282,15 @@ const RescheduleBookingModal = ({ visible, booking, onSuccess, onCancel }) => {
       const result = await bookingService.rescheduleBooking(
         booking.id,
         instanceId,
-        true // dry_run = true
-      );
-      if (result.success) {
-        setPolicyCheck(result.data);
-      } else {
-        message.error(result.error || "Could not verify this slot.");
+        true,
+      ); // dry_run
+      if (result.success) setPolicyCheck(result.data);
+      else {
+        message.error(result.error || "Slot verification failed.");
         setSelectedSlotId(null);
       }
-    } catch (error) {
-      message.error("An error occurred while checking this slot.");
+    } catch {
+      message.error("Error checking slot.");
       setSelectedSlotId(null);
     } finally {
       setCheckingPolicy(false);
@@ -218,165 +304,283 @@ const RescheduleBookingModal = ({ visible, booking, onSuccess, onCancel }) => {
       const result = await bookingService.rescheduleBooking(
         booking.id,
         selectedSlotId,
-        false, // dry_run = false
-        "Rescheduled by business"
+        false,
+        "Rescheduled by business",
       );
       if (result.success) {
-        onSuccess();
+        setViewState("success");
+        setTimeout(onSuccess, 1500);
       } else {
-        message.error(result.error || "Failed to reschedule booking.");
+        message.error(result.error || "Reschedule failed.");
+        setIsConfirming(false);
       }
-    } catch (error) {
-      message.error("An unexpected error occurred.");
-    } finally {
+    } catch {
+      message.error("Unexpected error.");
       setIsConfirming(false);
     }
   };
 
-  const renderPriceDifferenceWarning = () => {
-    if (!policyCheck || policyCheck.price_difference === 0) return null;
-
+  const renderWarnings = () => {
+    if (!policyCheck) return null;
     const diff = parseFloat(policyCheck.price_difference);
-    const isMoreExpensive = diff > 0;
+    const hasDiff = diff !== 0;
+    const isMore = diff > 0;
 
     return (
-      <StyledAlert
-        message={isMoreExpensive ? "Price Increase" : "Price Decrease"}
-        description={
-          <Paragraph type="secondary" style={{ fontSize: "13px", margin: 0 }}>
-            The new session is ${Math.abs(diff).toFixed(2)}{" "}
-            {isMoreExpensive ? "more expensive" : "cheaper"}. The guest will
-            <b> not</b> be charged or refunded the difference. The original
-            payment of ${parseFloat(policyCheck.original_price).toFixed(2)} will
-            be retained for this booking.
-          </Paragraph>
-        }
-        type="warning"
-        showIcon
-        icon={<AlertTriangle />}
-      />
+      <>
+        {/* Policy Warning */}
+        <CompactAlert
+          message={
+            policyCheck.warning_required ? "Policy Warning" : "Policy Info"
+          }
+          description={policyCheck.policy_message}
+          type={policyCheck.warning_required ? "warning" : "info"}
+          showIcon
+          icon={
+            policyCheck.warning_required ? (
+              <AlertTriangle size={16} />
+            ) : (
+              <InfoIcon size={16} />
+            )
+          }
+          style={{ marginBottom: hasDiff ? 8 : 0 }}
+        />
+
+        {/* Price Warning */}
+        {hasDiff && (
+          <CompactAlert
+            message={isMore ? "Price Increase" : "Price Decrease"}
+            description={
+              <span>
+                New session is <b>${Math.abs(diff).toFixed(2)}</b>{" "}
+                {isMore ? "more" : "less"}. Difference is <u>not</u>{" "}
+                charged/refunded automatically.
+              </span>
+            }
+            type="warning"
+            showIcon
+            icon={<AlertTriangle size={16} />}
+          />
+        )}
+      </>
     );
   };
 
+  if (viewState === "success") {
+    return (
+      <ContentContainer
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: 250,
+        }}
+      >
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+        >
+          <CheckCircle size={48} color="#52c41a" style={{ marginBottom: 16 }} />
+        </motion.div>
+        <Title level={4}>Rescheduled!</Title>
+      </ContentContainer>
+    );
+  }
+
   return (
-    <Modal
-      title={`Reschedule Booking for ${booking?.user_name || "Guest"}`}
-      open={visible}
-      onCancel={onCancel}
-      destroyOnClose
-      width="95vw"
-      style={{ maxWidth: "600px", top: 20 }}
-      footer={[
-        <Button key="back" onClick={onCancel}>
-          Cancel
-        </Button>,
+    <ContentContainer>
+      <Header>
+        <h3>Reschedule {booking?.user_name}</h3>
+        {!isInDrawer && (
+          <Button
+            type="text"
+            size="small"
+            icon={<X size={18} />}
+            onClick={onCancel}
+          />
+        )}
+      </Header>
+
+      <AnimatePresence>
+        {selectedSlotId && (
+          <AnimatedContent>
+            <WarningContainer
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              {checkingPolicy ? (
+                <Skeleton active paragraph={{ rows: 1 }} title={false} />
+              ) : (
+                renderWarnings()
+              )}
+            </WarningContainer>
+          </AnimatedContent>
+        )}
+      </AnimatePresence>
+
+      <ScrollableList>
+        {loadingSlots ? (
+          <div style={{ padding: 16 }}>
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton.Input
+                key={i}
+                active
+                size="small"
+                block
+                style={{ marginBottom: 12, height: 40 }}
+              />
+            ))}
+          </div>
+        ) : availableSlots.length === 0 ? (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description="No slots available"
+            style={{ margin: "32px 0" }}
+          />
+        ) : (
+          <div>
+            {availableSlots.map((item) => (
+              <CompactItem
+                key={item.id}
+                $selected={selectedSlotId === item.id}
+                $disabled={!item.is_valid}
+                onClick={() => handleSlotSelect(item.id, item.is_valid)}
+              >
+                <Radio
+                  checked={selectedSlotId === item.id}
+                  disabled={!item.is_valid}
+                  style={{ marginRight: 0 }}
+                />
+                <ItemContent>
+                  <DateGroup>
+                    <div className="date">
+                      {moment(item.date).format("ddd, MMM D")}
+                    </div>
+                    <div className="time">
+                      <Clock size={10} />{" "}
+                      {moment(item.time, "HH:mm:ss").format("h:mm A")}
+                    </div>
+                  </DateGroup>
+                  <MetaGroup $hasSpots={item.available_spots > 0}>
+                    <div className="price">
+                      ${parseFloat(item.price).toFixed(2)}
+                    </div>
+                    <div className="spots">
+                      {!item.is_valid && <AlertTriangle size={10} />}
+                      {item.available_spots} spots
+                    </div>
+                  </MetaGroup>
+                </ItemContent>
+              </CompactItem>
+            ))}
+          </div>
+        )}
+      </ScrollableList>
+
+      <Footer>
+        <Button onClick={onCancel}>Cancel</Button>
         <Button
-          key={`btn-${isConfirming}`}
           type="primary"
-          loading={isConfirming}
           onClick={handleConfirm}
+          loading={isConfirming}
           disabled={!selectedSlotId || checkingPolicy}
         >
-          Confirm Reschedule
-        </Button>,
-      ]}
-    >
-      <ModalContentWrapper>
-        <Paragraph type="secondary">
-          Select a new available time slot. Invalid slots are disabled.
-        </Paragraph>
-        {loadingSlots ? (
-          <SlotListWrapper>
-            <List dataSource={[1, 2, 3]} renderItem={() => <SkeletonItem />} />
-          </SlotListWrapper>
-        ) : (
-          <SlotListWrapper>
-            {availableSlots.length > 0 ? (
-              <Radio.Group
-                onChange={(e) => handleSlotSelect(e.target.value)}
-                value={selectedSlotId}
-                style={{ width: "100%" }}
-              >
-                <List
-                  dataSource={availableSlots}
-                  renderItem={(item) => (
-                    <SlotItem
-                      onClick={() => item.is_valid && handleSlotSelect(item.id)}
-                      className={selectedSlotId === item.id ? "selected" : ""}
-                      disabled={!item.is_valid}
-                    >
-                      <Radio
-                        value={item.id}
-                        disabled={!item.is_valid}
-                        style={{ marginRight: "16px" }}
-                      />
-                      <SlotDetails>
-                        <SlotDateTime>
-                          <div className="date">
-                            {moment(item.date).format("dddd, MMMM D, YYYY")}
-                          </div>
-                          <div className="time">
-                            {moment(item.time, "HH:mm:ss").format("h:mm A")}
-                          </div>
-                        </SlotDateTime>
-                        <SlotInfo>
-                          <PriceTag>
-                            ${parseFloat(item.price).toFixed(2)}
-                          </PriceTag>
-                          <SlotAvailability hasSpots={item.available_spots > 0}>
-                            <User size={14} />
-                            {item.available_spots} spots
-                          </SlotAvailability>
-                          {!item.is_valid && (
-                            <Tooltip title={item.reason_invalid}>
-                              <AlertTriangle size={16} color="#ef4444" />
-                            </Tooltip>
-                          )}
-                        </SlotInfo>
-                      </SlotDetails>
-                    </SlotItem>
-                  )}
-                />
-              </Radio.Group>
-            ) : (
-              <Empty description="No other available slots for this experience." />
-            )}
-          </SlotListWrapper>
-        )}
-        {selectedSlotId && (
-          <ConfirmationSection>
-            {checkingPolicy && (
-              <Skeleton
-                active
-                title={false}
-                paragraph={{ rows: 2, width: "100%" }}
+          Confirm
+        </Button>
+      </Footer>
+    </ContentContainer>
+  );
+};
+
+// --- MAIN EXPORT ---
+
+const RescheduleBookingModal = ({ visible, booking, onSuccess, onCancel }) => {
+  const [isMobile, setIsMobile] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const checkMobile = () => setIsMobile(window.innerWidth <= 576);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  if (!mounted) return null;
+
+  return (
+    <ConfigProvider theme={theme}>
+      <ModalGlobalStyle />
+      {isMobile ? (
+        <Drawer.Root
+          open={visible}
+          onOpenChange={(open) => !open && onCancel()}
+          disablePreventScroll={false}
+        >
+          <Drawer.Portal>
+            <Drawer.Overlay
+              style={{
+                position: "fixed",
+                inset: 0,
+                backgroundColor: "rgba(0,0,0,0.4)",
+                zIndex: 1000,
+              }}
+            />
+            <Drawer.Content
+              style={{
+                position: "fixed",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: "white",
+                borderTopLeftRadius: 16,
+                borderTopRightRadius: 16,
+                zIndex: 1001,
+                outline: "none",
+                display: "flex",
+                flexDirection: "column",
+                maxHeight: "90vh",
+              }}
+            >
+              <div
+                style={{
+                  width: 40,
+                  height: 4,
+                  background: "#e5e7eb",
+                  borderRadius: 2,
+                  margin: "8px auto",
+                  flexShrink: 0,
+                }}
               />
-            )}
-            {policyCheck && (
-              <>
-                {policyCheck.warning_required ? (
-                  <StyledAlert
-                    message="Policy Warning"
-                    description={<>{policyCheck.policy_message}</>}
-                    type="warning"
-                    showIcon
-                    icon={<AlertTriangle />}
-                  />
-                ) : (
-                  <StyledAlert
-                    message={policyCheck.policy_message}
-                    type="info"
-                    showIcon
-                    icon={<InfoIcon />}
-                  />
-                )}
-                {renderPriceDifferenceWarning()}
-              </>
-            )}
-          </ConfirmationSection>
-        )}
-      </ModalContentWrapper>
-    </Modal>
+              <RescheduleContent
+                booking={booking}
+                onSuccess={onSuccess}
+                onCancel={onCancel}
+                isInDrawer={true}
+              />
+            </Drawer.Content>
+          </Drawer.Portal>
+        </Drawer.Root>
+      ) : (
+        <StyledModal
+          open={visible}
+          onCancel={onCancel}
+          footer={null}
+          centered
+          width={420}
+          closable={false}
+          className="compact-modal"
+          destroyOnClose
+        >
+          <RescheduleContent
+            booking={booking}
+            onSuccess={onSuccess}
+            onCancel={onCancel}
+            isInDrawer={false}
+          />
+        </StyledModal>
+      )}
+    </ConfigProvider>
   );
 };
 
