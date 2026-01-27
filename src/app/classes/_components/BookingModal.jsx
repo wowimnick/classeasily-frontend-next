@@ -18,7 +18,6 @@ import { Drawer } from "vaul";
 import { paymentService } from "@/services/apiService";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import dayjs from "dayjs";
-import ReactPixel from "react-facebook-pixel"; // <--- ADDED IMPORT
 
 // Initialize Stripe outside component
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
@@ -436,32 +435,35 @@ const BookingModal = ({
     }
   }, [initialOptionId, hasMultipleOptions]);
 
-  // --- ADDED: FACEBOOK PIXEL - AddToCart ---
+  // --- FACEBOOK PIXEL - AddToCart ---
   useEffect(() => {
     if (isOpen && selectedOption && classData) {
-      ReactPixel.track("AddToCart", {
-        content_name: classData.title,
-        content_ids: [classData.classId || classData.id],
-        content_type: "product",
-        value: parseFloat(selectedOption.price || 0),
-        currency: classData.currency_code || "CAD",
-      });
+      import("react-facebook-pixel").then((x) =>
+        x.default.track("AddToCart", {
+          content_name: classData.title,
+          content_ids: [classData.classId || classData.id],
+          content_type: "product",
+          value: parseFloat(selectedOption.price || 0),
+          currency: classData.currency_code || "CAD",
+        }),
+      );
     }
   }, [isOpen, selectedOption, classData]);
 
-  // --- ADDED: FACEBOOK PIXEL - InitiateCheckout ---
+  // --- FACEBOOK PIXEL - InitiateCheckout ---
   useEffect(() => {
-    // Only fire when we enter payment step
     if (isOpen && currentStep === PAYMENT_STEP) {
       const totalPrice =
         (bookingData.price || 0) * (bookingData.participants || 1);
 
-      ReactPixel.track("InitiateCheckout", {
-        content_name: classData?.title,
-        num_items: bookingData.participants,
-        value: totalPrice,
-        currency: classData?.currency_code || "CAD",
-      });
+      import("react-facebook-pixel").then((x) =>
+        x.default.track("InitiateCheckout", {
+          content_name: classData?.title,
+          num_items: bookingData.participants,
+          value: totalPrice,
+          currency: classData?.currency_code || "CAD",
+        }),
+      );
     }
   }, [isOpen, currentStep, PAYMENT_STEP, bookingData, classData]);
 
@@ -613,45 +615,44 @@ const BookingModal = ({
 
   const handlePaymentComplete = useCallback(
     (dataFromReviewStep) => {
-      // --- FACEBOOK PIXEL: Purchase Event with Advanced Matching ---
+      // --- FACEBOOK PIXEL - Purchase ---
       const revenue =
         (bookingData.price || 0) * (bookingData.participants || 1);
 
-      // 1. Extract user data that bubbled up from ReviewAndPaymentStep
-      // Note: ReviewAndPaymentStep saves these to bookingData via onUpdateBookingData
+      // Extract user data for Advanced Matching
       const userEmail = bookingData.email || bookingData.userEmail;
       const userPhone = bookingData.phone || bookingData.userPhone;
       const fullName = bookingData.fullName || bookingData.userName || "";
-
-      // Split name for FB (heuristic)
       const nameParts = fullName.trim().split(" ");
       const firstName = nameParts[0] || "";
       const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
 
-      ReactPixel.track(
-        "Purchase",
-        {
-          content_name: classData?.title,
-          content_ids: [classData?.classId || classData?.id],
-          content_type: "product",
-          value: revenue,
-          currency: classData?.currency_code || "CAD",
-          num_items: bookingData.participants,
-          order_id:
-            dataFromReviewStep.booking_id ||
-            dataFromReviewStep.payment_intent_id,
-        },
-        {
-          // --- Advanced Matching Parameters ---
-          em: userEmail, // Email
-          ph: userPhone, // Phone
-          fn: firstName, // First Name
-          ln: lastName, // Last Name
-          ct: bookingData.city, // City
-          st: bookingData.state, // State/Province
-          zp: bookingData.zipCode, // Zip/Postal Code
-          country: "ca", // Defaulting to CA based on your currency/context, or add country field to form
-        },
+      import("react-facebook-pixel").then((x) =>
+        x.default.track(
+          "Purchase",
+          {
+            content_name: classData?.title,
+            content_ids: [classData?.classId || classData?.id],
+            content_type: "product",
+            value: revenue,
+            currency: classData?.currency_code || "CAD",
+            num_items: bookingData.participants,
+            order_id:
+              dataFromReviewStep.booking_id ||
+              dataFromReviewStep.payment_intent_id,
+          },
+          {
+            // Advanced Matching
+            em: userEmail,
+            ph: userPhone,
+            fn: firstName,
+            ln: lastName,
+            ct: bookingData.city,
+            st: bookingData.state,
+            zp: bookingData.zipCode,
+            country: "ca",
+          },
+        ),
       );
 
       if (dataFromReviewStep.booking_id) {

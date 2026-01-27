@@ -7,7 +7,6 @@ import React, {
   useCallback,
   Suspense,
 } from "react";
-import ReactPixel from "react-facebook-pixel";
 import { useRouter, useSearchParams } from "next/navigation";
 import styled, { keyframes } from "styled-components";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -497,14 +496,18 @@ export default function ClassPageClient({
     // We check for NaN just in case parsing failed
     const finalValue = isNaN(pixelPrice) ? 0 : pixelPrice;
 
-    ReactPixel.track("ViewContent", {
-      content_name: classData.title,
-      content_ids: [classData.classId], // Matches the ID in your catalog
-      content_type: "product",
-      value: finalValue,
-      currency: classData.currency_code || "CAD", // Fallback to CAD if missing
-      content_category: classData.category_name,
-    });
+    import("react-facebook-pixel")
+      .then((x) => x.default)
+      .then((ReactPixel) => {
+        ReactPixel.track("ViewContent", {
+          content_name: classData.title,
+          content_ids: [classData.classId],
+          content_type: "product",
+          value: finalValue,
+          currency: classData.currency_code || "CAD",
+          content_category: classData.category_name,
+        });
+      });
   }, [classData]);
 
   const { user: currentUser } = useAuthUser();
