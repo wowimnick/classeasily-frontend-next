@@ -4,10 +4,11 @@ import React from "react";
 import styled from "styled-components";
 
 const TabNavigation = styled.nav`
-  background: white;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px) saturate(180%);
   border-bottom: 1px solid #e8e8e8;
   position: sticky;
-  top: 80px;
+  top: 65px;
   z-index: 100;
   overflow: hidden;
 

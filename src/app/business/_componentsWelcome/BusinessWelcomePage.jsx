@@ -39,8 +39,9 @@ const PageWrapper = styled.div`
   position: relative;
   background-color: #ffffff;
   color: #222222;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
-    Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
 
@@ -51,7 +52,8 @@ const PageWrapper = styled.div`
     left: 0;
     width: 100%;
     height: 100%;
-    background: radial-gradient(
+    background:
+      radial-gradient(
         circle at 15% 50%,
         rgba(255, 200, 200, 0.15),
         transparent 25%
@@ -773,7 +775,7 @@ const BusinessWelcomePage = () => {
           {
             feature: "Commission Rate",
             others: "20-30% + Fees",
-            classEasily: "17% All-Inclusive",
+            classEasily: "15% All-Inclusive",
             highlight: true,
           },
           {
@@ -830,7 +832,7 @@ const BusinessWelcomePage = () => {
           },
           {
             title: "Partner",
-            price: "~17% Marketplace",
+            price: "~15% Marketplace",
             description:
               "Unlock marketplace distribution and we bring you customers.",
             iconColor: "#f81e3e",
@@ -890,7 +892,7 @@ const BusinessWelcomePage = () => {
           },
         ],
       }),
-      []
+      [],
     );
 
   const handleNavigate = useCallback(() => {
@@ -1234,7 +1236,7 @@ const BusinessWelcomePage = () => {
                             />
                             {feat}
                           </FeatureItemClean>
-                        )
+                        ),
                       )}
                     </FeatureListClean>
                   </MobileTabContent>

@@ -648,7 +648,7 @@ const ScheduleModeSelector = ({ value, onChange }) => {
           <Users size={16} /> Same Spot / Time
         </h5>
         <p>
-          Happens alongside the Primary tier. Great for VIP upgrades or pricing
+          Happens alongside the Primary tier. Great for VIP upgrades or
           variations for the same event.
         </p>
       </ScheduleCard>
@@ -660,8 +660,8 @@ const ScheduleModeSelector = ({ value, onChange }) => {
           <CalendarDays size={16} /> Separate Time
         </h5>
         <p>
-          Has its own unique schedule. Great for "Tuesday Discount" vs "Saturday
-          Premium" or different rooms.
+          Has its own unique schedule. Great for different rooms or dedicated
+          setups.
         </p>
       </ScheduleCard>
     </ScheduleCardGroup>

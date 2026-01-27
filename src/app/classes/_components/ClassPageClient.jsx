@@ -7,6 +7,7 @@ import React, {
   useCallback,
   Suspense,
 } from "react";
+import ReactPixel from "react-facebook-pixel";
 import { useRouter, useSearchParams } from "next/navigation";
 import styled, { keyframes } from "styled-components";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -468,6 +469,43 @@ export default function ClassPageClient({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    // 1. Determine a price to send to Pixel (matches your card display logic)
+    let pixelPrice = 0;
+
+    if (classData?.options?.length > 0) {
+      // Find the first option that has a valid price
+      const bestOption =
+        classData.options.find((opt) =>
+          opt.schedules?.some(
+            (s) => s.price != null && parseFloat(s.price) > 0,
+          ),
+        ) || classData.options[0];
+
+      // Extract price from schedule or fallback to option level
+      if (bestOption) {
+        const validSchedule = bestOption.schedules?.find(
+          (s) => parseFloat(s.price) > 0,
+        );
+        const rawPrice = validSchedule ? validSchedule.price : bestOption.price;
+        pixelPrice = parseFloat(rawPrice);
+      }
+    }
+
+    // 2. Fire the Event
+    // We check for NaN just in case parsing failed
+    const finalValue = isNaN(pixelPrice) ? 0 : pixelPrice;
+
+    ReactPixel.track("ViewContent", {
+      content_name: classData.title,
+      content_ids: [classData.classId], // Matches the ID in your catalog
+      content_type: "product",
+      value: finalValue,
+      currency: classData.currency_code || "CAD", // Fallback to CAD if missing
+      content_category: classData.category_name,
+    });
+  }, [classData]);
 
   const { user: currentUser } = useAuthUser();
   const isAuthenticated = !!currentUser;

@@ -3,6 +3,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
 import ClientProviders from "./ClientProviders";
+import FacebookPixel from "@/components/FacebookPixel";
 import { OrganizationSchema, WebsiteSchema } from "./StructuredData";
 import "./globals.css";
 
@@ -161,7 +162,7 @@ export default function RootLayout({ children }) {
           src="https://cdn.lordicon.com/lordicon.js"
           strategy="lazyOnload"
         />
-
+        <FacebookPixel />
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
