@@ -6,6 +6,7 @@ import ClientProviders from "./ClientProviders";
 import FacebookPixel from "@/components/FacebookPixel";
 import { OrganizationSchema, WebsiteSchema } from "./StructuredData";
 import "./globals.css";
+import { Suspense } from "react";
 
 export const metadata = {
   metadataBase: new URL("https://classeasily.com"),
@@ -162,7 +163,9 @@ export default function RootLayout({ children }) {
           src="https://cdn.lordicon.com/lordicon.js"
           strategy="lazyOnload"
         />
-        <FacebookPixel />
+        <Suspense fallback={null}>
+          <FacebookPixel />
+        </Suspense>
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
