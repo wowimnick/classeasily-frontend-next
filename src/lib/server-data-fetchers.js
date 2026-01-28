@@ -943,7 +943,7 @@ export async function preloadHomepageData() {
 
     // 1. Fetch ONLY homepage-content
     // This endpoint now returns:
-    // { trending: [...], new: [...], collections: [{ slug: 'date-night', classes: [...] (filtered & shuffled) }] }
+    // { trending: [...], date_night: [...], collections: [...] }
     const homepageRes = await fetch(
       `${API_URL}/classes/homepage-content/?mode=collections`,
       {
@@ -967,18 +967,16 @@ export async function preloadHomepageData() {
       },
     ];
 
-    // 3. Find "Date Night" specifically from the backend response
-    // The backend has already filtered out trending items and shuffled this list
-    const dateNightData = data.collections?.find(
-      (c) => c.slug === "date-night",
-    );
+    // 3. Extract "Date Night"
+    // FIX: The backend returns "date_night" as a root key, not inside the "collections" array.
+    const dateNightClasses = data.date_night || [];
 
-    if (dateNightData && dateNightData.classes?.length > 0) {
+    if (dateNightClasses.length > 0) {
       row_collections.push({
-        title: dateNightData.name || "Date Night", // Use backend name or fallback
+        title: "Date Night",
         subtitle: "Perfect experiences for couples",
         slug: "date-night",
-        classes: dateNightData.classes,
+        classes: dateNightClasses,
       });
     }
 
