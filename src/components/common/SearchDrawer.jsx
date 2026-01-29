@@ -449,8 +449,8 @@ const CountVal = styled.span`
 /**
  * CustomCalendar
  * @param {object} value - current date/range value
- * @param {function} setValue - updates value WITHOUT closing drawer (for presets)
- * @param {function} onSelect - updates value AND closes drawer (for direct clicks)
+ * @param {function} setValue - updates value WITHOUT closing drawer
+ * @param {function} onSelect - updates value AND closes drawer
  */
 const CustomCalendar = ({ value, setValue, onSelect }) => {
   const [currentDate, setCurrentDate] = useState(dayjs());
@@ -458,8 +458,8 @@ const CustomCalendar = ({ value, setValue, onSelect }) => {
   const selectedStart = value?.start
     ? dayjs(value.start)
     : value && value.isValid && value.isValid()
-    ? dayjs(value)
-    : null;
+      ? dayjs(value)
+      : null;
   const selectedEnd = value?.end ? dayjs(value.end) : null;
 
   const daysInMonth = currentDate.daysInMonth();
@@ -498,8 +498,8 @@ const CustomCalendar = ({ value, setValue, onSelect }) => {
         start = today;
     }
 
-    // Use setValue for presets so the drawer stays open
-    setValue({
+    // UPDATED: Use onSelect instead of setValue so it closes the drawer automatically
+    onSelect({
       start: start.format("YYYY-MM-DD"),
       end: end ? end.format("YYYY-MM-DD") : null,
     });
@@ -1014,7 +1014,7 @@ const SearchDrawer = () => {
                           disabled={participantCount <= 1}
                           onClick={() =>
                             setParticipantCount(
-                              Math.max(1, participantCount - 1)
+                              Math.max(1, participantCount - 1),
                             )
                           }
                           icon={<Minus size={18} />}

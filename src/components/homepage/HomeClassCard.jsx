@@ -9,12 +9,9 @@ import React, {
 } from "react";
 import styled, { keyframes, useTheme } from "styled-components";
 import Image from "next/image";
-// REMOVED: import { motion } from "framer-motion"; -- Safer for server build
 import { Heart, Star, Navigation, AlertCircle } from "lucide-react";
 import message from "@/lib/message";
 import { useAuthUser } from "@/hooks/useAuthUser";
-
-// REMOVED: import confetti from "canvas-confetti";
 import { classService } from "@/services/apiService.js";
 import useIntersectionObserver from "@/hooks/useIntersectionObserver.js";
 
@@ -40,7 +37,6 @@ const ImageLoadingSpinner = styled.div`
   animation: ${spinAnimation} 1s linear infinite;
 `;
 
-// CHANGED: Removed motion.div, just use styled.div
 const CardContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -320,6 +316,7 @@ const HomeClassCard = ({
   title = "Loading...",
   city = "",
   state = "",
+  location = "", // ADDED: Fallback location string
   rating = 0,
   min_session_price = null,
   min_course_price = null,
@@ -367,12 +364,15 @@ const HomeClassCard = ({
   const formattedDistance = useMemo(() => formatDistance(distance), [distance]);
 
   const displayLocation = useMemo(() => {
+    // UPDATED: Check for 'location' string first (server data often has this)
+    if (location) return truncateText(location, 25);
+
     const classCity = city || "";
     const classState = state || "";
     if (classCity) return truncateText(classCity, 25);
     if (classState) return truncateText(classState, 25);
     return "Location unavailable";
-  }, [city, state]);
+  }, [city, state, location]);
 
   useEffect(() => setIsFavorite(is_favorited), [is_favorited]);
 

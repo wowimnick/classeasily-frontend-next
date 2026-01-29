@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
-// REMOVED: import { Typography } from "antd";  <-- The likely culprit for Date.now() error
 import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import HomeClassCard from "@/components/homepage/HomeClassCard";
+// ADDED: Import geolocation hook to calculate distances on client side
+import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 
 const MainWrapper = styled.section`
   display: flex;
@@ -48,7 +49,6 @@ const HeaderRight = styled.div`
   padding-bottom: 4px;
 `;
 
-// Replaced AntTitle with a standard styled h3
 const StyledTitle = styled.h3`
   font-size: 1.5rem;
   font-weight: 700;
@@ -187,9 +187,15 @@ const ClassRow = ({
   subtitle,
   classes = [],
   seeAllLink = "/explore",
-  userLocation = null,
+  userLocation = null, // Can be passed from parent if available
   style = {},
 }) => {
+  // Use client-side hook for location if not provided by parent
+  const { location: ipLocation } = useIpGeolocation();
+
+  // Determine final location to use for distance calculation
+  const finalLocation = userLocation || ipLocation;
+
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: "start",
     containScroll: "trimSnaps",
@@ -226,7 +232,6 @@ const ClassRow = ({
     <MainWrapper style={style}>
       <HeaderContainer>
         <HeaderLeft>
-          {/* Changed from AntTitle to standard styled component */}
           <StyledTitle>
             <Link href={seeAllLink}>{title}</Link>
           </StyledTitle>
@@ -251,11 +256,12 @@ const ClassRow = ({
           <EmblaContainer>
             {classes.map((cls, index) => {
               let dist = null;
-              if (userLocation && cls.coordinates) {
+              // Calculate distance if we have user location (from hook or prop)
+              if (finalLocation && cls.coordinates) {
                 const [lat, lng] = cls.coordinates.split(",").map(Number);
                 dist = getDistanceFromLatLonInKm(
-                  userLocation.lat,
-                  userLocation.lng,
+                  finalLocation.lat,
+                  finalLocation.lng,
                   lat,
                   lng,
                 );
@@ -265,6 +271,8 @@ const ClassRow = ({
                 <div className="embla__slide" key={cls.classId || index}>
                   <HomeClassCard
                     {...cls}
+                    // Explicitly pass location fallback if the object keys vary
+                    location={cls.location || cls.business_city}
                     rating={cls.average_rating}
                     totalReviews={cls.review_count}
                     distance={dist}
