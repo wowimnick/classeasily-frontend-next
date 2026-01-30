@@ -363,29 +363,37 @@ const HomeClassCard = ({
   const formattedDistance = useMemo(() => formatDistance(distance), [distance]);
 
   const displayLocation = useMemo(() => {
-    // Priority: 'location' string from AWS/Backend
+    // 1. Use 'location' string from AWS/Backend
     if (location) {
-      // 1. Split by comma
       const parts = location.split(",").map((p) => p.trim());
 
-      // 2. Format based on available parts
-      if (parts.length > 0) {
-        // First part is usually street address. Remove leading number.
-        // Regex: start of string, one or more digits, followed by whitespace
-        const street = parts[0].replace(/^\d+\s/, "");
+      // Search for the first part that starts with a number (likely the street address)
+      // e.g. "2515 Yonge St" or "56 Yonge St" (even if it's the 2nd part of the string)
+      const addressIndex = parts.findIndex((p) => /^[\d]+/.test(p));
 
-        // If we have at least 2 parts, join the first two (Street, City)
-        // ignoring subsequent parts (Province, Country, Postal)
-        if (parts.length >= 2) {
-          return truncateText(`${street}, ${parts[1]}`, 30);
-        }
+      if (addressIndex !== -1) {
+        // We found the street address. Remove the number.
+        // Regex removes leading digits and any spaces/hyphens immediately following
+        const street = parts[addressIndex].replace(/^[\d\s-]+/, "");
 
-        // Fallback: If only one part exists (e.g. "Toronto")
-        return truncateText(street, 30);
+        // Try to grab the next part as the City
+        // If the address was the last part, try falling back to the 'city' prop
+        const citySegment = parts[addressIndex + 1] || city || "";
+
+        return truncateText(
+          citySegment ? `${street}, ${citySegment}` : street,
+          30,
+        );
       }
+
+      // Fallback: If no number was found in any part (e.g. "High Park, Toronto")
+      if (parts.length >= 2) {
+        return truncateText(`${parts[0]}, ${parts[1]}`, 30);
+      }
+      return truncateText(parts[0], 30);
     }
 
-    // Fallback: city and state props
+    // 2. Fallback to individual props if 'location' is empty
     const classCity = city || "";
     const classState = state || "";
 
