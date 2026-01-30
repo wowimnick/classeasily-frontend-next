@@ -316,7 +316,7 @@ const HomeClassCard = ({
   title = "Loading...",
   city = "",
   state = "",
-  location = "", // ADDED: Fallback location string
+  location = "",
   rating = 0,
   min_session_price = null,
   min_course_price = null,
@@ -328,7 +328,6 @@ const HomeClassCard = ({
   onFavoriteChange,
   priority = false,
 }) => {
-  // Safe hook usage
   const { user: currentUser } = useAuthUser();
   const isAuthenticated = !!currentUser;
 
@@ -364,13 +363,37 @@ const HomeClassCard = ({
   const formattedDistance = useMemo(() => formatDistance(distance), [distance]);
 
   const displayLocation = useMemo(() => {
-    // UPDATED: Check for 'location' string first (server data often has this)
-    if (location) return truncateText(location, 25);
+    // Priority: 'location' string from AWS/Backend
+    if (location) {
+      // 1. Split by comma
+      const parts = location.split(",").map((p) => p.trim());
 
+      // 2. Format based on available parts
+      if (parts.length > 0) {
+        // First part is usually street address. Remove leading number.
+        // Regex: start of string, one or more digits, followed by whitespace
+        const street = parts[0].replace(/^\d+\s/, "");
+
+        // If we have at least 2 parts, join the first two (Street, City)
+        // ignoring subsequent parts (Province, Country, Postal)
+        if (parts.length >= 2) {
+          return truncateText(`${street}, ${parts[1]}`, 30);
+        }
+
+        // Fallback: If only one part exists (e.g. "Toronto")
+        return truncateText(street, 30);
+      }
+    }
+
+    // Fallback: city and state props
     const classCity = city || "";
     const classState = state || "";
+
+    if (classCity && classState)
+      return truncateText(`${classCity}, ${classState}`, 30);
     if (classCity) return truncateText(classCity, 25);
     if (classState) return truncateText(classState, 25);
+
     return "Location unavailable";
   }, [city, state, location]);
 
@@ -394,7 +417,6 @@ const HomeClassCard = ({
     const identifier = slug || classId;
 
     let navigationUrl = `/classes/${identifier}`;
-    // Use window check to prevent server error
     if (typeof window !== "undefined") {
       const sp = new URLSearchParams(window.location.search);
       const currentParticipants = sp.get("participants");
@@ -424,9 +446,7 @@ const HomeClassCard = ({
         if (result.success) {
           if (onFavoriteChange) onFavoriteChange(newState);
           if (newState && favoriteButtonRef.current) {
-            // Dynamic import prevents server crash
             const confetti = (await import("canvas-confetti")).default;
-
             const rect = favoriteButtonRef.current.getBoundingClientRect();
             const origin = {
               x: (rect.left + rect.width / 2) / window.innerWidth,
