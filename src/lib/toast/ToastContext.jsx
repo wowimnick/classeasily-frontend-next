@@ -1,3 +1,5 @@
+// --- START OF FILE ToastContext.jsx ---
+
 "use client";
 
 import React, {
@@ -64,7 +66,8 @@ const ToastContainer = styled.div`
     transform: none;
     width: 100%;
     padding: 0 16px; /* Safety margin on sides */
-    align-items: stretch; /* Force toasts to fill width */
+    /* Changed from 'stretch' to 'center' to prevent forcing full width */
+    align-items: center;
   }
 `;
 
@@ -78,29 +81,37 @@ const ToastItem = styled.div`
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   animation: ${(props) => (props.$isExiting ? slideOut : slideIn)} 0.3s ease;
   pointer-events: auto;
-  
-  /* Desktop: content based width */
+
+  /* General width rules */
   max-width: 500px;
   min-width: fit-content;
   width: auto;
   white-space: nowrap;
 
-  /* Mobile: Full width banner style */
+  /* Mobile rules */
   @media (max-width: 768px) {
-    max-width: none;
-    width: 100%;
-    min-width: 0;
+    /* Allow text to wrap if it hits the edge of the screen */
     white-space: normal;
     word-wrap: break-word;
+
+    /* Ensure it doesn't overflow screen width (minus container padding) */
+    max-width: 100%;
+
+    /* Let it shrink to fit short text */
+    width: fit-content;
+
     padding: 12px 16px;
     border-radius: 12px;
-    /* FIX: Center content on mobile */
-    justify-content: center; 
+
+    /* Align items to start so icon stays at top if text wraps multiple lines */
+    align-items: flex-start;
   }
 
   .anticon {
     font-size: 18px;
     flex-shrink: 0;
+    /* Optical alignment for multiline text */
+    margin-top: 2px;
   }
 
   &[data-type="success"] .anticon {
@@ -133,9 +144,8 @@ const ToastContent = styled.div`
 
   @media (max-width: 768px) {
     white-space: normal;
-    flex: 1; 
-    /* FIX: Center text alignment on mobile */
-    text-align: center;
+    /* Removed text-align: center; Left align looks better when box is fitted */
+    text-align: left;
   }
 `;
 
@@ -169,8 +179,8 @@ export function ToastProvider({ children }) {
 
     setToasts((prev) =>
       prev.map((toast) =>
-        toast.id === id ? { ...toast, isExiting: true } : toast
-      )
+        toast.id === id ? { ...toast, isExiting: true } : toast,
+      ),
     );
 
     setTimeout(() => {
@@ -198,7 +208,7 @@ export function ToastProvider({ children }) {
           return prev.map((toast) =>
             toast.id === id
               ? { ...toast, type, content, isExiting: false }
-              : toast
+              : toast,
           );
         } else {
           // Add new toast
@@ -218,7 +228,7 @@ export function ToastProvider({ children }) {
       // Return function to manually close this toast
       return () => removeToast(id);
     },
-    [removeToast]
+    [removeToast],
   );
 
   const normalizeDuration = (duration) => {
@@ -236,7 +246,7 @@ export function ToastProvider({ children }) {
           content.content,
           normalizedDuration,
           content.onClose,
-          content.key
+          content.key,
         );
       }
       return addToast("success", content, normalizeDuration(duration), onClose);
@@ -249,7 +259,7 @@ export function ToastProvider({ children }) {
           content.content,
           normalizedDuration,
           content.onClose,
-          content.key
+          content.key,
         );
       }
       return addToast("error", content, normalizeDuration(duration), onClose);
@@ -262,7 +272,7 @@ export function ToastProvider({ children }) {
           content.content,
           normalizedDuration,
           content.onClose,
-          content.key
+          content.key,
         );
       }
       return addToast("info", content, normalizeDuration(duration), onClose);
@@ -275,7 +285,7 @@ export function ToastProvider({ children }) {
           content.content,
           normalizedDuration,
           content.onClose,
-          content.key
+          content.key,
         );
       }
       return addToast("warning", content, normalizeDuration(duration), onClose);
@@ -283,14 +293,14 @@ export function ToastProvider({ children }) {
     loading: (content, duration = 0, onClose) => {
       if (typeof content === "object" && content.content !== undefined) {
         const normalizedDuration = normalizeDuration(
-          content.duration !== undefined ? content.duration : 0
+          content.duration !== undefined ? content.duration : 0,
         );
         return addToast(
           "loading",
           content.content,
           normalizedDuration,
           content.onClose,
-          content.key
+          content.key,
         );
       }
       return addToast("loading", content, normalizeDuration(duration), onClose);
@@ -337,7 +347,7 @@ export function ToastProvider({ children }) {
               );
             })}
           </ToastContainer>,
-          document.body
+          document.body,
         )}
     </ToastContext.Provider>
   );
