@@ -118,12 +118,12 @@ export default async function HomePage() {
             </section>
           </Suspense>
 
-          <Suspense fallback={<div style={{ minHeight: "400px" }} />}>
-            <ForHosts />
-          </Suspense>
-
           <Suspense fallback={<div style={{ minHeight: "600px" }} />}>
             <GiftCardsCTA />
+          </Suspense>
+
+          <Suspense fallback={<div style={{ minHeight: "400px" }} />}>
+            <ForHosts />
           </Suspense>
 
           <Suspense fallback={<div style={{ minHeight: "500px" }} />}>
