@@ -552,7 +552,7 @@ const TierSection = styled.section`
 
 const CleanTierGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   width: 100%;
   margin-top: 40px;
   max-width: 900px;
@@ -620,7 +620,7 @@ const MobileTabContent = styled(m.div)`
 const CleanTierColumn = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 0 20px;
+  padding: 0 40px;
   border-right: 1px solid rgba(0, 0, 0, 0.06);
 
   &:last-child {
@@ -645,6 +645,8 @@ const TierPriceDisplay = styled.div`
   font-weight: 500;
   color: ${(props) => props.$color || "#6e6e73"};
   margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 `;
 
 const TierDescription = styled.p`
@@ -742,7 +744,7 @@ const BusinessWelcomePage = () => {
   // --- State Hooks ---
   const [activeItems, setActiveItems] = useState(new Set(["1"]));
   const [hoveredMockup, setHoveredMockup] = useState(null);
-  const [activeTierIndex, setActiveTierIndex] = useState(1);
+  const [activeTierIndex, setActiveTierIndex] = useState(0);
 
   // --- Data ---
   const { mockupItems, comparisonData, growthPathData, faqData, testimonials } =
@@ -805,43 +807,31 @@ const BusinessWelcomePage = () => {
         ],
         growthPathData: [
           {
-            title: "Starter",
-            price: "Free",
+            title: "Marketplace Listing",
+            price: "We bring you guests",
             description:
-              "For managing existing contacts and organizing schedules.",
-            iconColor: "#6b7280",
-            features: [
-              "CRM contact import",
-              "Guest notes & tags",
-              "Manual scheduling",
-              "Basic profile page",
-            ],
-          },
-          {
-            title: "Growth",
-            price: "~6% Processing",
-            description:
-              "Booking widgets for your site and automated payments.",
-            iconColor: "#0284c7",
-            features: [
-              "Embeddable widget",
-              "Automated SMS reminders",
-              "Secure payment processing",
-              "Calendar syncing",
-            ],
-          },
-          {
-            title: "Partner",
-            price: "~15% Marketplace",
-            description:
-              "Unlock marketplace distribution and we bring you customers.",
+              "List your experience on our platform. We handle marketing, SEO, and payment processing to bring you new customers.",
             iconColor: "#f81e3e",
             features: [
-              "Full marketplace listing",
-              "Active marketing campaigns",
-              "SEO & Discovery boost",
+              "Full marketplace exposure",
+              "Search & Discovery boost",
+              "Secure payment processing",
               "Next-day payouts",
-              "Priority support",
+              "Verified guest reviews",
+            ],
+          },
+          {
+            title: "Website Widget",
+            price: "You convert your traffic",
+            description:
+              "Already have a website? Embed our booking widget to manage schedules and accept payments directly on your own domain.",
+            iconColor: "#0284c7",
+            features: [
+              "Embeddable booking engine",
+              "Real-time calendar sync",
+              "Automated email/SMS reminders",
+              "Centralized dashboard",
+              "Brand-matched design",
             ],
           },
         ],
@@ -981,8 +971,8 @@ const BusinessWelcomePage = () => {
                   </IconCircle>
                   <ValueTitle>0% Listing Fees</ValueTitle>
                   <ValueDesc>
-                    Keep 100% of your earnings minus standard processing fees.
-                    We don't charge you to exist on our platform.
+                    We don't charge you to exist on our platform. List unlimited
+                    experiences with no upfront costs.
                   </ValueDesc>
                 </ValueCard>
                 <ValueCard>
@@ -1132,15 +1122,15 @@ const BusinessWelcomePage = () => {
             </SectionContainer>
           </TestimonialsSection>
 
-          {/* 5. Tiers / Growth Path */}
+          {/* 5. Flexibility / How It Works */}
           <TierSection>
             <SectionContainer>
               <SectionHeader $center>
                 <SectionEyebrow>FLEXIBILITY</SectionEyebrow>
-                <SectionTitle>Scale at your own pace</SectionTitle>
+                <SectionTitle>Grow your way</SectionTitle>
                 <SectionSubtitle $center>
-                  Start with free tools to manage your contacts, or unlock the
-                  full marketplace power.
+                  List on our marketplace to reach new customers, or use our
+                  powerful widget to streamline bookings on your own website.
                 </SectionSubtitle>
               </SectionHeader>
 
@@ -1176,8 +1166,8 @@ const BusinessWelcomePage = () => {
                         <TabIndicator
                           layoutId="tabIndicator"
                           style={{
-                            width: `${100 / 3}%`,
-                            left: `${(i * 100) / 3}%`,
+                            width: `${100 / growthPathData.length}%`,
+                            left: `${(i * 100) / growthPathData.length}%`,
                           }}
                           transition={{
                             type: "spring",

@@ -373,22 +373,70 @@ const HowItWorks = () => {
     if (selectedButton === "forHosts") {
       switch (step) {
         case 1:
-          return <ImagePlus />;
+          return (
+            <lord-icon
+              src="https://cdn.lordicon.com/yraqammt.json"
+              trigger="in"
+              state="in-newspaper"
+              colors="primary:#fff"
+              style={{ width: "40px", height: "40px" }}
+            ></lord-icon>
+          );
         case 2:
-          return <Wrench />;
+          return (
+            <lord-icon
+              src="https://cdn.lordicon.com/mudwpdhy.json"
+              trigger="in"
+              state="in-build"
+              colors="primary:#fff"
+              style={{ width: "40px", height: "40px" }}
+            ></lord-icon>
+          );
         case 3:
-          return <DollarSign />;
+          return (
+            <lord-icon
+              src="https://cdn.lordicon.com/yycecovd.json"
+              trigger="in"
+              state="in-wallet"
+              colors="primary:#fff"
+              style={{ width: "40px", height: "40px" }}
+            ></lord-icon>
+          );
         default:
           return <Search />;
       }
     } else {
       switch (step) {
         case 1:
-          return <Search />;
+          return (
+            <lord-icon
+              src="https://cdn.lordicon.com/xaekjsls.json"
+              trigger="in"
+              state="in-reveal"
+              colors="primary:#fff"
+              style={{ width: "40px", height: "40px" }}
+            ></lord-icon>
+          );
         case 2:
-          return <Calendar />;
+          return (
+            <lord-icon
+              src="https://cdn.lordicon.com/uoljexdg.json"
+              trigger="in"
+              state="in-calendar"
+              colors="primary:#fff"
+              style={{ width: "40px", height: "40px" }}
+            ></lord-icon>
+          );
         case 3:
-          return <Star />;
+          return (
+            <lord-icon
+              src="https://cdn.lordicon.com/namwvlmv.json"
+              trigger="in"
+              state="in-celebration"
+              colors="primary:#fff"
+              style={{ width: "40px", height: "40px" }}
+            ></lord-icon>
+          );
         default:
           return <Search />;
       }

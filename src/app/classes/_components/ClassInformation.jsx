@@ -13,83 +13,8 @@ const COLLAPSED_MAX_HEIGHT_PX = 200;
 
 // --- Icon Mapping ---
 const iconMap = {
-  Crafts: {
-    icon: {
-      src: "https://cdn.lordicon.com/rpgzzvoy.json",
-      trigger: "in",
-      state: "in-reveal",
-    },
-    subcategories: {
-      Pottery: {
-        src: "https://cdn.lordicon.com/pmilflvu.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      "Candle Making": {
-        src: "https://cdn.lordicon.com/pqabvgco.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      "Soap Making": {
-        src: "https://cdn.lordicon.com/ksnofsjl.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      "Jewellery Making": {
-        src: "https://cdn.lordicon.com/zlrssaft.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      "Glass & Mosaic": {
-        src: "https://cdn.lordicon.com/eimnwynu.json",
-        trigger: "in",
-        state: "in-reveal",
-        colors: "primary:#92140c,secondary:#eeca66,tertiary:#b26836",
-      },
-      Sculpting: {
-        src: "https://cdn.lordicon.com/asqbehym.json",
-        trigger: "in",
-        state: "in-reveal",
-        colors: "primary:#92140c,secondary:#eeca66,tertiary:#b26836",
-      },
-      Print: {
-        src: "https://cdn.lordicon.com/rhmcciby.json",
-        trigger: "in",
-        state: "in-reveal",
-        colors: "primary:#92140c,secondary:#eeca66,tertiary:#b26836",
-      },
-    },
-  },
-  Culinary: {
-    icon: {
-      src: "https://cdn.lordicon.com/tlhmniwg.json",
-      trigger: "in",
-      state: "in-reveal",
-    },
-    subcategories: {
-      Cooking: {
-        src: "https://cdn.lordicon.com/qetumhhk.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      Baking: {
-        src: "https://cdn.lordicon.com/helqkcwb.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      "Cocktail Making": {
-        src: "https://cdn.lordicon.com/ldbrwnqj.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      "Chocolate Making": {
-        src: "https://cdn.lordicon.com/fffxglnq.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-    },
-  },
-  Art: {
+  "Creative & Makers": {
+    // Reused "Art" icon
     icon: {
       src: "https://cdn.lordicon.com/usohfczy.json",
       trigger: "in",
@@ -98,154 +23,66 @@ const iconMap = {
         "primary:#ffc738,secondary:#b26836,tertiary:#3a3347,quaternary:#ebe6ef,quinary:#f24c00,senary:#eeca66,septenary:#2ca58d,octonary:#4bb3fd",
     },
     subcategories: {
-      Painting: {
+      "Visual Arts": {
+        // Reused "Painting" icon
         src: "https://cdn.lordicon.com/spjlvfgs.json",
         trigger: "in",
         state: "in-reveal",
       },
-      "Paint & Sip": {
-        src: "https://cdn.lordicon.com/bibkaawz.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      Drawing: {
-        src: "https://cdn.lordicon.com/odgpwhdt.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      Photography: {
-        src: "https://cdn.lordicon.com/rhrmfnhf.json",
+      "Crafts & DIY": {
+        // Reused "Crafts" icon
+        src: "https://cdn.lordicon.com/rpgzzvoy.json",
         trigger: "in",
         state: "in-reveal",
       },
     },
   },
-  "Flowers & Plants": {
+  "Food & Drink": {
+    // Reused "Culinary" icon
     icon: {
-      src: "https://cdn.lordicon.com/vkzbxtxh.json",
-      trigger: "in",
-      delay: "1500",
-      state: "in-reveal",
-      colors: "primary:#2ca58d,secondary:#f24c00,tertiary:#eeca66",
-    },
-    subcategories: {
-      "Bouquet Making": {
-        src: "https://cdn.lordicon.com/cjxamcdp.json",
-        trigger: "in",
-        delay: "1500",
-        state: "in-reveal",
-        colors:
-          "primary:#eeca66,secondary:#ebe6ef,tertiary:#f24c00,quaternary:#2ca58d",
-      },
-      "Terrarium Making": {
-        src: "https://cdn.lordicon.com/bydazpwu.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      Gardening: {
-        src: "https://cdn.lordicon.com/tpvhyxrn.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-    },
-  },
-  "Fabric & Fibre": {
-    icon: {
-      src: "https://cdn.lordicon.com/nvwaqgmm.json",
+      src: "https://cdn.lordicon.com/tlhmniwg.json",
       trigger: "in",
       state: "in-reveal",
     },
     subcategories: {
-      "Sewing & Embroidery": {
-        src: "https://cdn.lordicon.com/xyyhygfz.json",
+      "Cooking & Baking": {
+        // Reused "Cooking" icon
+        src: "https://cdn.lordicon.com/qetumhhk.json",
         trigger: "in",
         state: "in-reveal",
       },
-      "Crochet & Knitting": {
-        src: "https://cdn.lordicon.com/yzsefhtg.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      Tufting: {
-        src: "https://cdn.lordicon.com/hefvnfun.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-    },
-  },
-  Music: {
-    icon: {
-      src: "https://cdn.lordicon.com/nnnotppf.json",
-      trigger: "in",
-      state: "in-dynamic",
-    },
-    subcategories: {
-      Piano: {
-        src: "https://cdn.lordicon.com/vcmojjzv.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      Violin: {
-        src: "https://cdn.lordicon.com/rdhvtwkd.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      Guitar: {
-        src: "https://cdn.lordicon.com/xhvajdug.json",
+      "Tastings & Mixology": {
+        // Reused "Cocktail Making" icon
+        src: "https://cdn.lordicon.com/ldbrwnqj.json",
         trigger: "in",
         state: "in-reveal",
       },
     },
   },
-  "Performing Arts": {
+  "Active & Social": {
+    // Reused "Performing Arts" icon
     icon: {
-      src: "https://cdn.lordicon.com/acrqbwgj.json",
+      src: "https://cdn.lordicon.com/hhqqenci.json",
       trigger: "in",
       state: "in-reveal",
     },
     subcategories: {
-      Dance: {
-        src: "https://cdn.lordicon.com/zqfgromc.json",
+      "Movement & Games": {
+        // Reused "Dance" icon
+        src: "https://cdn.lordicon.com/iujnhzgo.json",
         trigger: "in",
         state: "in-reveal",
       },
-      Acting: {
-        src: "https://cdn.lordicon.com/friydaec.json",
+      "Performance & Culture": {
+        // Reused "Music" icon
+        src: "https://cdn.lordicon.com/nnnotppf.json",
         trigger: "in",
-        state: "in-reveal",
-      },
-      Singing: {
-        src: "https://cdn.lordicon.com/rqnukbqw.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-    },
-  },
-  Academics: {
-    icon: {
-      src: "https://cdn.lordicon.com/mwgvvcwn.json",
-      trigger: "in",
-      state: "in-reveal",
-    },
-    subcategories: {
-      Math: {
-        src: "https://cdn.lordicon.com/fxksqiaz.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      Writing: {
-        src: "https://cdn.lordicon.com/tqldjjaa.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      Science: {
-        src: "https://cdn.lordicon.com/zhxbbeaf.json",
-        trigger: "in",
-        state: "in-reveal",
+        state: "in-dynamic",
       },
     },
   },
 };
+
 const defaultCategoryIcon = {
   src: "https://cdn.lordicon.com/xodeitpr.json",
   trigger: "in",
@@ -649,7 +486,7 @@ const calculateHostingDuration = (dateString) => {
     return `${totalMonths} month${totalMonths > 1 ? "s" : ""}`;
   const totalDays = Math.max(
     1,
-    Math.floor((now - startDate) / (1000 * 3600 * 24))
+    Math.floor((now - startDate) / (1000 * 3600 * 24)),
   );
   return `${totalDays} day${totalDays > 1 ? "s" : ""}`;
 };
@@ -678,7 +515,7 @@ const ClassInformation = React.memo(
       const checkTruncation = () => {
         if (descriptionRef.current) {
           setCanBeTruncated(
-            descriptionRef.current.scrollHeight > COLLAPSED_MAX_HEIGHT_PX
+            descriptionRef.current.scrollHeight > COLLAPSED_MAX_HEIGHT_PX,
           );
         }
       };
@@ -868,7 +705,7 @@ const ClassInformation = React.memo(
         </DescriptionSection>
       </InfoWrapper>
     );
-  }
+  },
 );
 
 ClassInformation.displayName = "ClassInformation";

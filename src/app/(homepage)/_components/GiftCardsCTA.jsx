@@ -1,23 +1,15 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useRef } from "react";
 import styled from "styled-components";
 import { Button as AntButton } from "antd";
 import message from "@/lib/message";
 import { motion } from "framer-motion";
-import {
-  Gift,
-  ArrowRight,
-  Sparkles,
-  Calendar,
-  DollarSign,
-  Clock,
-  Wifi,
-} from "lucide-react";
+import { ArrowRight, Calendar, DollarSign, Clock, Wifi } from "lucide-react";
 import LogoIcon from "@/components/common/logoIcon";
 
 const GiftCardSection = styled.section`
-  padding: 8rem 2rem;
+  padding: 5rem 2rem;
   position: relative;
   overflow: hidden;
   background: radial-gradient(
@@ -42,20 +34,21 @@ const ContentWrapper = styled.div`
   align-items: center;
 
   @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
-    text-align: center;
-    gap: 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
   }
 `;
 
 const TextContent = styled(motion.div)`
   position: relative;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+
   @media (max-width: 1024px) {
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    order: 1;
+    text-align: center;
   }
 `;
 
@@ -67,18 +60,20 @@ const CardsArea = styled.div`
   justify-content: center;
   perspective: 1500px;
   z-index: 1;
+  width: 100%;
 
   @media (max-width: 1024px) {
-    height: 400px;
-    order: 2;
+    height: 380px;
+    order: 2; /* Sandwiched between Title and Description on mobile */
   }
   @media (max-width: 480px) {
-    height: 320px;
+    height: 260px;
   }
 `;
 
 // --- Typography & Features ---
 
+// Title is extracted to be usable in two places for responsive layout
 const Title = styled.h2`
   font-size: clamp(2.2rem, 5vw, 3.2rem);
   font-weight: 700;
@@ -86,6 +81,28 @@ const Title = styled.h2`
   line-height: 1.1;
   color: #1a1a1a;
   margin-top: 0;
+
+  /* Mobile specific styling when used as MobileTitle */
+  ${(props) =>
+    props.$mobile &&
+    `
+    display: none;
+    text-align: center;
+    margin-bottom: 0;
+    
+    @media (max-width: 1024px) {
+      display: block;
+    }
+  `}
+
+  /* Desktop specific styling when used inside TextContent */
+  ${(props) =>
+    props.$desktop &&
+    `
+    @media (max-width: 1024px) {
+      display: none;
+    }
+  `}
 `;
 
 const Description = styled.p`
@@ -95,6 +112,10 @@ const Description = styled.p`
   margin-bottom: 2rem;
   margin-top: 0;
   max-width: 50ch;
+
+  @media (max-width: 1024px) {
+    order: 3;
+  }
 `;
 
 const Features = styled.div`
@@ -105,6 +126,7 @@ const Features = styled.div`
 
   @media (max-width: 1024px) {
     justify-content: center;
+    order: 4;
   }
 `;
 
@@ -132,8 +154,6 @@ const CardContainer = styled(motion.div)`
   border-radius: 16px;
   transform-style: preserve-3d;
   cursor: default;
-
-  /* Default positioning for Classic Card */
   top: 50%;
   left: 50%;
   z-index: 2;
@@ -154,7 +174,6 @@ const CardFace = styled.div`
   inset: 0;
   border-radius: 16px;
   overflow: hidden;
-  /* Glass/Plastic texture base */
   background: ${(props) => props.$bgColor || "#1a1a1a"};
   box-shadow:
     0 20px 50px rgba(0, 0, 0, 0.3),
@@ -165,7 +184,6 @@ const CardFace = styled.div`
   padding: 24px;
   color: white;
 
-  /* Texture Overlay */
   &::before {
     content: "";
     position: absolute;
@@ -175,7 +193,6 @@ const CardFace = styled.div`
     mix-blend-mode: overlay;
   }
 
-  /* Dynamic Glare Effect */
   &::after {
     content: "";
     position: absolute;
@@ -238,7 +255,7 @@ const WirelessIcon = styled(Wifi)`
 `;
 
 const CardAmount = styled.div`
-  font-family: "Courier New", Courier, monospace; /* Monospace for card feel */
+  font-family: "Courier New", Courier, monospace;
   font-size: 2.5rem;
   font-weight: 700;
   letter-spacing: -1px;
@@ -294,6 +311,13 @@ const BrandLogo = styled.div`
 
   svg path {
     fill: white !important;
+  }
+`;
+
+const ActionWrapper = styled(motion.div)`
+  display: inline-block;
+  @media (max-width: 1024px) {
+    order: 5;
   }
 `;
 
@@ -375,21 +399,28 @@ const InteractiveCard = ({
 
 const GiftCardsCTA = () => {
   const handleBuyClick = () => {
-    message.info(
-      "Gift Cards are currently in development. They will be released by launch.",
-    );
+    message.info("Gift Cards are currently in development.");
   };
 
   return (
     <GiftCardSection aria-labelledby="giftcard-title">
       <ContentWrapper>
+        {/* Mobile-only Title to create the "Sandwich" layout: Title -> Cards -> Text */}
+        <Title as="h2" id="giftcard-title-mobile" $mobile>
+          Gift a fun experience
+        </Title>
+
         <TextContent
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <Title id="giftcard-title">Gift a fun experience</Title>
+          {/* Desktop-only Title */}
+          <Title as="h2" id="giftcard-title" $desktop>
+            Gift a fun experience
+          </Title>
+
           <Description>
             The best gifts aren't things, they're moments. Let them pick their
             own vibe, from salsa dancing to sushi rolling. Instant delivery,
@@ -408,10 +439,9 @@ const GiftCardsCTA = () => {
             </FeatureItem>
           </Features>
 
-          <motion.div
+          <ActionWrapper
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            style={{ display: "inline-block" }}
           >
             <AntButton
               type="primary"
@@ -426,14 +456,13 @@ const GiftCardsCTA = () => {
               Purchase Gift Card{" "}
               <ArrowRight size={18} style={{ marginLeft: "8px" }} />
             </AntButton>
-          </motion.div>
+          </ActionWrapper>
         </TextContent>
 
         <CardsArea>
           {/* Background Premium Card (Black) */}
           <InteractiveCard
             style={{
-              // Centered Y (-55%), Centered X (-50%), Rotated
               transform: "translate(-50%, -60%) rotate(-15deg) scale(0.9)",
               zIndex: 1,
             }}
@@ -445,7 +474,6 @@ const GiftCardsCTA = () => {
           {/* Foreground Classic Card (Red) */}
           <InteractiveCard
             style={{
-              // Centered Y (-45%), Centered X (-50%), Rotated
               transform: "translate(-50%, -40%) rotate(5deg)",
               zIndex: 2,
             }}
