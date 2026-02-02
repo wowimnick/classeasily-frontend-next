@@ -586,9 +586,9 @@ const ForHosts = () => {
           </Heading>
 
           <SubText data-nosnippet>
-            We connect you with thousands of locals looking for fun experiences.
-            List your class, tour, or workshop, and watch the bookings roll in.
-            We handle the payments and admin—you get paid the next day.
+            Expand your reach by tapping into our community of experience
+            seekers. We'll handle the bookings, payments, and admin - you focus
+            on what you do best.
           </SubText>
 
           <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
