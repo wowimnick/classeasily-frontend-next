@@ -563,8 +563,8 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
   const selectedStart = value?.start
     ? dayjs(value.start)
     : value && value.isValid && value.isValid()
-    ? dayjs(value)
-    : null;
+      ? dayjs(value)
+      : null;
   const selectedEnd = value?.end ? dayjs(value.end) : null;
 
   const handleDateClick = (dateObj) => {
@@ -1306,7 +1306,8 @@ const BannerWrapper = styled.div`
   padding: 0 24px;
   min-height: 52px;
   /* Subtle inner glow and shadow */
-  box-shadow: inset 0 -1px 0 0 rgba(255, 255, 255, 0.1),
+  box-shadow:
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.1),
     0 4px 12px rgba(0, 0, 0, 0.12);
 
   @media (max-width: 768px) {
@@ -1797,16 +1798,6 @@ const BannerSearch = () => {
             style={{ objectFit: "cover" }}
           />
         </FilteredBackgroundImage>
-        <Video
-          autoPlay
-          loop
-          muted
-          playsInline
-          poster="/videos/1.png"
-          preload="none"
-        >
-          <source src="/videos/Classes.mp4" type="video/mp4" />
-        </Video>
       </BackgroundMediaWrapper>
 
       <DesktopContainer>
