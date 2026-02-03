@@ -5,7 +5,6 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import styled from "styled-components";
-import LinkedinSvg from "@/assets/icons/homepage/linkedin.svg";
 import FacebookSvg from "@/assets/icons/homepage/facebook.svg";
 
 // Static data - Updated to use query parameters consistent with SearchDrawer logic
@@ -98,7 +97,7 @@ const TabButton = styled.button`
     bottom: -1px;
     left: 0;
     right: 0;
-    height: 2px;
+    height: 1px;
     background-color: #fff;
     transform: ${({ $isActive }) => ($isActive ? "scaleX(1)" : "scaleX(0)")};
     transform-origin: center;
@@ -328,7 +327,6 @@ const StyledH1 = styled.h1`
   font-size: 2rem;
   font-weight: 700;
   color: #fff;
-  margin-left: 0.5rem;
   margin-top: 0;
   margin-bottom: 0;
 `;
@@ -584,14 +582,16 @@ export default function FooterClient({ categories = [] }) {
               <StyledH2>Follow us</StyledH2>
               <SocialLinks>
                 <a
-                  href="https://www.linkedin.com/company/classeasily/"
-                  aria-label="Follow us on LinkedIn"
+                  href="https://www.instagram.com/classeasily/"
+                  aria-label="Follow us on Instagram"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <Image
-                    src={LinkedinSvg}
-                    alt="LinkedIn"
+                    src={
+                      "https://cdn-icons-png.flaticon.com/512/174/174855.png"
+                    }
+                    alt="Instagram"
                     style={{ height: "32px", width: "auto" }}
                   />
                 </a>
@@ -611,7 +611,7 @@ export default function FooterClient({ categories = [] }) {
             </Social>
           </FooterGrid>
           <Trademark>
-            <StyledP>© 2025 Classeasily. All rights reserved.</StyledP>
+            <StyledP>© 2026 Classeasily. All rights reserved.</StyledP>
             <StyledP>
               <Link href="/terms-of-service">Terms of Service</Link> |{" "}
               <Link href="/privacy-policy">Privacy Policy</Link> |{" "}

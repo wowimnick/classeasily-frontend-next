@@ -17,24 +17,23 @@ const HowItWorksWrapper = styled.section`
   background: linear-gradient(45deg, rgb(175, 16, 16), rgb(218, 84, 88));
   position: relative;
   overflow: hidden;
-  min-height: 800px;
   display: flex;
   flex-direction: column;
-  padding: 6rem 2rem;
+  padding: 15rem 2rem;
 
+  @media (min-width: 768px) {
+    padding: 15rem 2rem;
+  }
   @media (max-width: 1024px) {
-    min-height: 900px;
     padding: 2rem;
-    padding-top: 8rem;
+    padding-top: 5rem;
   }
   @media (max-width: 768px) {
     padding: 6rem 2rem;
-    min-height: 1000px;
   }
   @media (max-width: 480px) {
-    min-height: 1200px;
     padding: 2rem 2rem;
-    padding-top: 8rem;
+    padding-top: 2rem;
   }
 `;
 
@@ -42,37 +41,32 @@ const Pattern = styled.div`
   position: absolute;
   left: 0;
   right: 0;
-  height: 270px;
+  width: 100%;
+  height: 400px;
   background-image: url("/HowItWorks.svg");
-  background-repeat: repeat-x;
-  background-size: cover;
+  background-repeat: no-repeat;
+  background-size: 100% auto;
   opacity: 1;
   pointer-events: none;
 
   @media (max-width: 768px) {
-    height: 180px;
+    height: 300px;
   }
 `;
 
 const TopPattern = styled(Pattern)`
-  top: -20px;
-
-  @media (max-width: 768px) {
-    top: -10px;
-  }
+  top: 0;
+  background-position: top;
 `;
 
 const BottomPattern = styled(Pattern)`
-  bottom: -20px;
+  bottom: 0;
+  background-position: top;
   transform: rotate(180deg);
-
-  @media (max-width: 768px) {
-    bottom: -10px;
-  }
 `;
 
 const ContentContainer = styled.div`
-  max-width: 1200px;
+  max-width: 1000px;
   width: 100%;
   margin: auto;
   position: relative;
@@ -88,7 +82,7 @@ const ContentContainer = styled.div`
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 8rem 0;
+    padding: 4rem 0;
     gap: 3rem;
     text-align: center;
   }

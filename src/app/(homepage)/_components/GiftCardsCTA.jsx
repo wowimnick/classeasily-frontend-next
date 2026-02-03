@@ -5,7 +5,7 @@ import styled from "styled-components";
 import { Button as AntButton } from "antd";
 import message from "@/lib/message";
 import { motion } from "framer-motion";
-import { ArrowRight, Calendar, DollarSign, Clock, Wifi } from "lucide-react";
+import { ArrowRight, Wifi } from "lucide-react";
 import LogoIcon from "@/components/common/logoIcon";
 
 const GiftCardSection = styled.section`
@@ -19,7 +19,7 @@ const GiftCardSection = styled.section`
   );
 
   @media (max-width: 1024px) {
-    padding: 5rem 1.5rem;
+    padding: 4rem 1.5rem;
   }
 `;
 
@@ -29,29 +29,41 @@ const ContentWrapper = styled.div`
   max-width: 1300px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1fr 1.5fr;
+  grid-template-columns: 1fr 1.5fr; /* Desktop: Text (1fr) Left, Cards (1.5fr) Right */
   gap: 4rem;
   align-items: center;
 
   @media (max-width: 1024px) {
     display: flex;
     flex-direction: column;
-    gap: 3rem;
+    gap: 2rem;
+    align-items: center;
   }
 `;
 
+/* 
+   On Desktop: This is Column 1 (Left). 
+   On Mobile: We force this to Order 3 (Bottom).
+*/
 const TextContent = styled(motion.div)`
   position: relative;
   z-index: 2;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
 
   @media (max-width: 1024px) {
     align-items: center;
     text-align: center;
+    order: 3;
+    width: 100%;
   }
 `;
 
+/* 
+   On Desktop: This is Column 2 (Right).
+   On Mobile: We force this to Order 2 (Middle).
+*/
 const CardsArea = styled.div`
   position: relative;
   height: 450px;
@@ -63,18 +75,38 @@ const CardsArea = styled.div`
   width: 100%;
 
   @media (max-width: 1024px) {
-    height: 380px;
-    order: 2; /* Sandwiched between Title and Description on mobile */
+    height: 300px;
+    order: 2;
+    margin-top: -1rem;
+    margin-bottom: -1rem;
   }
+
   @media (max-width: 480px) {
     height: 260px;
   }
 `;
 
-// --- Typography & Features ---
+// --- Typography ---
 
-// Title is extracted to be usable in two places for responsive layout
-const Title = styled.h2`
+/* Only visible on Mobile. Order 1 (Top). */
+const MobileTitle = styled.h2`
+  display: none;
+  font-size: clamp(2rem, 5vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  color: #111;
+  text-align: center;
+  margin: 0;
+  width: 100%;
+  order: 1;
+
+  @media (max-width: 1024px) {
+    display: block;
+  }
+`;
+
+/* Only visible on Desktop. Inside TextContent. */
+const DesktopTitle = styled.h2`
   font-size: clamp(2.2rem, 5vw, 3.2rem);
   font-weight: 700;
   margin-bottom: 1.2rem;
@@ -82,66 +114,23 @@ const Title = styled.h2`
   color: #1a1a1a;
   margin-top: 0;
 
-  /* Mobile specific styling when used as MobileTitle */
-  ${(props) =>
-    props.$mobile &&
-    `
+  @media (max-width: 1024px) {
     display: none;
-    text-align: center;
-    margin-bottom: 0;
-    
-    @media (max-width: 1024px) {
-      display: block;
-    }
-  `}
-
-  /* Desktop specific styling when used inside TextContent */
-  ${(props) =>
-    props.$desktop &&
-    `
-    @media (max-width: 1024px) {
-      display: none;
-    }
-  `}
+  }
 `;
 
 const Description = styled.p`
   font-size: clamp(1rem, 1.5vw, 1.1rem);
-  color: #555;
+  color: #111; /* Changed to Black */
   line-height: 1.6;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
   margin-top: 0;
   max-width: 50ch;
 
   @media (max-width: 1024px) {
-    order: 3;
-  }
-`;
-
-const Features = styled.div`
-  display: flex;
-  gap: 1rem 2rem;
-  margin-bottom: 2.5rem;
-  flex-wrap: wrap;
-
-  @media (max-width: 1024px) {
-    justify-content: center;
-    order: 4;
-  }
-`;
-
-const FeatureItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #444;
-  font-weight: 500;
-  font-size: 0.95rem;
-
-  svg {
-    color: #e52e31;
-    width: 18px;
-    height: 18px;
+    margin-bottom: 2rem;
+    font-size: 1rem;
+    padding: 0 1rem;
   }
 `;
 
@@ -159,8 +148,8 @@ const CardContainer = styled(motion.div)`
   z-index: 2;
 
   @media (max-width: 1024px) {
-    width: 340px;
-    height: 215px;
+    width: 320px;
+    height: 200px;
   }
 
   @media (max-width: 480px) {
@@ -314,13 +303,6 @@ const BrandLogo = styled.div`
   }
 `;
 
-const ActionWrapper = styled(motion.div)`
-  display: inline-block;
-  @media (max-width: 1024px) {
-    order: 5;
-  }
-`;
-
 // --- Component Logic ---
 
 const InteractiveCard = ({
@@ -335,7 +317,9 @@ const InteractiveCard = ({
   const cardRef = useRef(null);
 
   const handleMouseMove = (e) => {
-    if (!cardRef.current) return;
+    // Only run hover effect on desktop
+    if (window.innerWidth < 1024 || !cardRef.current) return;
+
     const rect = cardRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -345,6 +329,7 @@ const InteractiveCard = ({
   };
 
   const handleMouseEnter = () => {
+    if (window.innerWidth < 1024) return;
     if (cardRef.current)
       cardRef.current.style.setProperty("--glare-opacity", "1");
   };
@@ -405,21 +390,17 @@ const GiftCardsCTA = () => {
   return (
     <GiftCardSection aria-labelledby="giftcard-title">
       <ContentWrapper>
-        {/* Mobile-only Title to create the "Sandwich" layout: Title -> Cards -> Text */}
-        <Title as="h2" id="giftcard-title-mobile" $mobile>
-          Gift a fun experience
-        </Title>
+        {/* Mobile Title (Order 1) */}
+        <MobileTitle>Gift a fun experience</MobileTitle>
 
+        {/* Text Content: Desktop (Left/Col 1), Mobile (Order 3/Bottom) */}
         <TextContent
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          {/* Desktop-only Title */}
-          <Title as="h2" id="giftcard-title" $desktop>
-            Gift a fun experience
-          </Title>
+          <DesktopTitle>Gift a fun experience</DesktopTitle>
 
           <Description>
             The best gifts aren't things, they're moments. Let them pick their
@@ -427,38 +408,22 @@ const GiftCardsCTA = () => {
             zero wrapping paper required.
           </Description>
 
-          <Features>
-            <FeatureItem>
-              <Clock /> Never Expires
-            </FeatureItem>
-            <FeatureItem>
-              <DollarSign /> Any Amount
-            </FeatureItem>
-            <FeatureItem>
-              <Calendar /> Instant Delivery
-            </FeatureItem>
-          </Features>
-
-          <ActionWrapper
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
+          <AntButton
+            type="primary"
+            size="large"
+            onClick={handleBuyClick}
+            style={{
+              padding: "1rem 2.5rem",
+              height: "auto",
+              lineHeight: "1.5",
+            }}
           >
-            <AntButton
-              type="primary"
-              size="large"
-              onClick={handleBuyClick}
-              style={{
-                padding: "1rem 2.5rem",
-                height: "auto",
-                lineHeight: "1.5",
-              }}
-            >
-              Purchase Gift Card{" "}
-              <ArrowRight size={18} style={{ marginLeft: "8px" }} />
-            </AntButton>
-          </ActionWrapper>
+            Purchase Gift Card{" "}
+            <ArrowRight size={18} style={{ marginLeft: "8px" }} />
+          </AntButton>
         </TextContent>
 
+        {/* Cards Area: Desktop (Right/Col 2), Mobile (Order 2/Middle) */}
         <CardsArea>
           {/* Background Premium Card (Black) */}
           <InteractiveCard

@@ -1518,15 +1518,11 @@ const AvatarItem = styled.div`
   width: 44px; /* Slightly larger to make activities visible */
   height: 44px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   overflow: hidden;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   transition: transform 0.3s ease;
   background: #333; /* Fallback */
-  &:hover {
-    z-index: 50 !important;
-    transform: scale(1.15) translateY(-4px) !important;
-  }
 `;
 const CenterInfo = styled.div`
   display: flex;
@@ -1577,13 +1573,6 @@ const BottomTrustBanner = () => {
       y: -3,
       z: 2,
     },
-    {
-      src: "https://rollthisway.com/cdn/shop/files/corporate_class.png?v=1762635482&width=878", // Music/Instruments
-      alt: "Sushi Making",
-      x: -14,
-      y: 3,
-      z: 4,
-    },
   ];
 
   const activityImagesRight = [
@@ -1593,13 +1582,6 @@ const BottomTrustBanner = () => {
       x: 0,
       y: 3,
       z: 2,
-    },
-    {
-      src: "https://res.cloudinary.com/hz3gmuqw6/image/upload/c_fill,h_310,q_auto,w_450,f_auto,q_auto/f_auto/cooking-class-holiday-cookie-decorating-728016B",
-      alt: "Baking Class",
-      x: -14,
-      y: -3,
-      z: 4,
     },
   ];
 

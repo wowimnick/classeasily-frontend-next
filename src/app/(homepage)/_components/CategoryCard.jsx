@@ -33,8 +33,8 @@ const CategoryCardWrapper = styled.div`
   flex-direction: column;
   justify-content: flex-end;
   /* Fuller Dimensions: Taller aspect ratio (approx 3:4) */
-  width: 280px;
-  height: 380px;
+  width: 230px;
+  height: 250px;
   border-radius: 1rem; /* More modern rounded corners */
   overflow: hidden;
   cursor: pointer;
@@ -59,7 +59,7 @@ const CategoryCardWrapper = styled.div`
 
   h2 {
     margin: 0 0 0.5rem 0;
-    font-size: 22px;
+    font-size: 19px;
     font-weight: 700;
     color: #fff;
     line-height: 1.1;
@@ -69,7 +69,7 @@ const CategoryCardWrapper = styled.div`
 
   p {
     margin: 0;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 400;
     color: rgba(255, 255, 255, 0.9);
     line-height: 1.4;
@@ -82,28 +82,21 @@ const CategoryCardWrapper = styled.div`
 
   /* Responsive Adjustments */
   @media (max-width: 992px) {
-    width: 240px;
-    height: 320px;
+    width: 190px;
+    height: 220px;
 
     h2 {
-      font-size: 1.35rem;
+      font-size: 17px;
     }
   }
 
   @media (max-width: 768px) {
-    width: 220px;
-    height: 300px;
+    width: 190px;
+    height: 220px;
     border-radius: 0.85rem;
 
     ${CardContent} {
       padding: 1.25rem;
-    }
-
-    h2 {
-      font-size: 1.25rem;
-    }
-    p {
-      font-size: 0.85rem;
     }
   }
 `;
