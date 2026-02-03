@@ -101,13 +101,20 @@ const EmblaViewport = styled.div`
 
 const EmblaContainer = styled.div`
   display: flex;
-  gap: 24px;
+  gap: 20px;
   padding: 4px;
   margin: -4px;
 
   .embla__slide {
     flex: 0 0 auto;
     width: 250px;
+  }
+
+  @media (max-width: 768px) {
+    gap: 16px;
+    .embla__slide {
+      width: 190px;
+    }
   }
 `;
 

@@ -22,8 +22,8 @@ const Section = styled.section`
   width: 100%;
   display: flex;
   justify-content: center;
-  background-color: #fff;
-  overflow: hidden; /* Prevent horizontal scroll on mobile if animations fly out */
+  background-color: #fbfbfb;
+  overflow: hidden;
 `;
 
 const Container = styled.div`
@@ -35,8 +35,10 @@ const Container = styled.div`
   align-items: center;
 
   @media (max-width: 992px) {
-    grid-template-columns: 1fr;
-    gap: 2.5rem; /* Reduced gap for better mobile flow */
+    display: flex; /* Changed to flex to control order */
+    flex-direction: column;
+    gap: 2.5rem;
+    align-items: center;
   }
 `;
 
@@ -48,10 +50,12 @@ const TextContent = styled.div`
   @media (max-width: 992px) {
     align-items: center;
     text-align: center;
-    order: 1; /* Text comes FIRST on mobile for context */
+    order: 3; /* Places Description + Button LAST on mobile */
+    width: 100%;
   }
 `;
 
+// Original Heading CSS restored exactly
 const Heading = styled.h2`
   font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 700;
@@ -61,14 +65,40 @@ const Heading = styled.h2`
   margin: 0;
 
   span {
-    color: #f81e3e; /* Brand accent color */
+    color: #f81e3e;
+  }
+
+  /* Hide this specific instance on mobile because we use MobileHeading instead */
+  @media (max-width: 992px) {
+    display: none;
+  }
+`;
+
+// Duplicate of Heading for Mobile (Order 1)
+const MobileHeading = styled.h2`
+  display: none;
+  font-size: clamp(2rem, 5vw, 3rem); /* Same sizing logic */
+  font-weight: 700;
+  color: #111;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-align: center;
+  order: 1; /* Places Title FIRST on mobile */
+
+  span {
+    color: #f81e3e;
+  }
+
+  @media (max-width: 992px) {
+    display: block;
   }
 `;
 
 const SubText = styled.p`
   font-size: 1.125rem;
   line-height: 1.6;
-  color: #666;
+  color: #000; /* Changed to black as requested */
   margin: 0;
   max-width: 480px;
 
@@ -86,20 +116,19 @@ const VisualWrapper = styled.div`
   justify-content: center;
 
   @media (max-width: 992px) {
-    height: 340px; /* Reduced height on mobile so it doesn't take up whole screen */
-    order: 2; /* Visual comes SECOND on mobile */
+    height: 340px;
+    order: 2; /* Places Animation MIDDLE on mobile */
     margin-bottom: 1rem;
   }
 `;
 
-// Wrapper to scale the animation down on small screens without breaking layout logic
 const MobileScaleWrapper = styled.div`
   width: 100%;
   height: 100%;
   position: relative;
 
   @media (max-width: 500px) {
-    transform: scale(0.85); /* Scale down elements */
+    transform: scale(0.85);
     transform-origin: center center;
   }
 `;
@@ -118,7 +147,6 @@ const CardBase = styled(motion.div)`
   overflow: hidden;
 `;
 
-// Guest Side
 const BookingCard = styled(CardBase)`
   width: 260px;
   bottom: 0;
@@ -127,14 +155,12 @@ const BookingCard = styled(CardBase)`
   padding: 20px;
 
   @media (max-width: 992px) {
-    /* Centered relative to wrapper on mobile */
     left: 50%;
     transform: translateX(-50%) !important;
     bottom: 20px;
   }
 `;
 
-// Host Side (Dashboard Look)
 const DashboardCard = styled(CardBase)`
   width: 340px;
   height: 280px;
@@ -176,7 +202,7 @@ const DashHeader = styled.div`
 const Label = styled.div`
   font-size: 0.7rem;
   text-transform: uppercase;
-  color: #888;
+  color: #000; /* Black */
   letter-spacing: 0.05em;
   font-weight: 600;
   margin-bottom: 4px;
@@ -261,12 +287,6 @@ const NAMES = [
   "Alex K.",
   "Emma W.",
   "David R.",
-  "Lisa M.",
-  "Chris P.",
-  "Maya S.",
-  "Tom H.",
-  "Nina B.",
-  "Ryan C.",
 ];
 
 const EVENTS = [
@@ -274,19 +294,9 @@ const EVENTS = [
   "Wine Tasting",
   "Sushi Rolling",
   "Cooking Workshop",
-  "Photography Tour",
-  "Art Class",
-  "Painting Session",
 ];
 
-const COLORS = [
-  "#f81e3e",
-  "#3b82f6",
-  "#f59e0b",
-  "#8b5cf6",
-  "#10b981",
-  "#ec4899",
-];
+const COLORS = ["#f81e3e", "#3b82f6", "#f59e0b", "#8b5cf6"];
 
 const getRandomBooking = () => ({
   id: Math.random(),
@@ -317,10 +327,17 @@ const RevenueSimulation = () => {
   const [step, setStep] = useState(0);
   const [balance, setBalance] = useState(INITIAL_BALANCE);
   const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
+    // Detect mobile for cursor positioning
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 992);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
 
+    let mounted = true;
     const runSequence = async () => {
       while (mounted) {
         await wait(1000);
@@ -353,10 +370,32 @@ const RevenueSimulation = () => {
     runSequence();
     return () => {
       mounted = false;
+      window.removeEventListener("resize", checkMobile);
     };
   }, []);
 
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  // Fix: Dynamic cursor coordinates based on screen size
+  const getCursorVariants = () => {
+    if (isMobile) {
+      // Mobile coordinates: Target the button in the CENTER of the card (translateX -50% logic)
+      return {
+        initial: { x: 300, y: 400, opacity: 0 },
+        // Adjust these to hit the "Book Now" button on the mobile card layout
+        hover: { x: 170, y: 275, opacity: 1 },
+        click: { scale: 0.8 },
+      };
+    }
+    // Desktop coordinates (Original logic)
+    return {
+      initial: { x: 300, y: 450, opacity: 0 },
+      hover: { x: 160, y: 365, opacity: 1 },
+      click: { scale: 0.8 },
+    };
+  };
+
+  const variants = getCursorVariants();
 
   return (
     <MobileScaleWrapper>
@@ -408,7 +447,9 @@ const RevenueSimulation = () => {
                     </Avatar>
                     <div>
                       <div style={{ fontWeight: 600 }}>{booking.name}</div>
-                      <div style={{ fontSize: "0.75rem", color: "#888" }}>
+                      <div style={{ fontSize: "0.75rem", color: "#111" }}>
+                        {" "}
+                        {/* Black text */}
                         {booking.event}
                       </div>
                     </div>
@@ -444,7 +485,8 @@ const RevenueSimulation = () => {
           </div>
           <div>
             <div style={{ fontWeight: 700, fontSize: 15 }}>Pottery 101</div>
-            <div style={{ fontSize: 13, color: "#666" }}>Sat, 2:00 PM</div>
+            <div style={{ fontSize: 13, color: "#111" }}>Sat, 2:00 PM</div>{" "}
+            {/* Black text */}
           </div>
         </div>
 
@@ -456,7 +498,8 @@ const RevenueSimulation = () => {
             marginBottom: 16,
           }}
         >
-          <span style={{ fontSize: 13, color: "#888" }}>Total</span>
+          <span style={{ fontSize: 13, color: "#111" }}>Total</span>{" "}
+          {/* Black text */}
           <span style={{ fontSize: 16, fontWeight: 700 }}>$75.00</span>
         </div>
 
@@ -540,10 +583,21 @@ const RevenueSimulation = () => {
       {/* --- CURSOR --- */}
       <Cursor
         animate={{
-          x: step === 0 ? 300 : step >= 1 ? 160 : 300,
-          y: step === 0 ? 450 : step >= 1 ? 365 : 450,
-          opacity: step === 0 ? 0 : 1,
-          scale: step === 2 ? 0.8 : 1,
+          x:
+            step === 0
+              ? variants.initial.x
+              : step >= 1
+                ? variants.hover.x
+                : variants.initial.x,
+          y:
+            step === 0
+              ? variants.initial.y
+              : step >= 1
+                ? variants.hover.y
+                : variants.initial.y,
+          opacity:
+            step === 0 ? variants.initial.opacity : variants.hover.opacity,
+          scale: step === 2 ? variants.click.scale : 1,
         }}
         transition={{ duration: 0.8, type: "spring" }}
         style={{ top: 0, left: 0 }}
@@ -573,12 +627,18 @@ const ForHosts = () => {
   return (
     <Section aria-labelledby="for-hosts-title">
       <Container>
-        {/* Left Side (Desktop): Animation - Moved to order 2 on mobile via Styled Comp */}
+        {/* Mobile Title (Shows FIRST on mobile) */}
+        <MobileHeading>
+          Turn your passion into <br />
+          <span>predictable revenue.</span>
+        </MobileHeading>
+
+        {/* Animation Area (Shows SECOND on mobile, LEFT on Desktop) */}
         <VisualWrapper>
           <RevenueSimulation />
         </VisualWrapper>
 
-        {/* Right Side (Desktop): Content - Moved to order 1 on mobile via Styled Comp */}
+        {/* Text Content (Shows THIRD on mobile, RIGHT on Desktop) */}
         <TextContent>
           <Heading id="for-hosts-title">
             Turn your passion into <br />
@@ -593,6 +653,7 @@ const ForHosts = () => {
 
           <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
             <Link href="/business" passHref legacyBehavior>
+              {/* Button styles RESTORED exactly */}
               <Button
                 type="primary"
                 size="large"

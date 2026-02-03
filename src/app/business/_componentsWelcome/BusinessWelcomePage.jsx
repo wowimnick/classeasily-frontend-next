@@ -948,11 +948,65 @@ const BusinessWelcomePage = () => {
             </SectionContainer>
           </HeroSection>
 
+          {/* 3. Dashboard Mockups */}
+          <DashboardSection>
+            <SectionContainer>
+              <SectionHeader $center>
+                <SectionTitle>Manage everything in one place</SectionTitle>
+                <SectionSubtitle $center>
+                  From scheduling events to tracking your payouts, our dashboard
+                  gives you the clarity you need.
+                </SectionSubtitle>
+              </SectionHeader>
+
+              <MockupGrid onMouseLeave={() => setHoveredMockup(null)}>
+                {mockupItems.map((item, index) => {
+                  const isHovered = hoveredMockup === index;
+                  const isInactive = hoveredMockup !== null && !isHovered;
+
+                  return (
+                    <MockupItem
+                      key={index}
+                      onMouseEnter={() => setHoveredMockup(index)}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      animate={{
+                        scale: isHovered ? 1.01 : isInactive ? 0.99 : 1,
+                        opacity: isInactive ? 0.3 : 1,
+                        y: isHovered ? -10 : 0,
+                        filter: isInactive ? "blur(0px)" : "blur(0px)",
+                        zIndex: isHovered ? 10 : 0,
+                      }}
+                      transition={{
+                        duration: 0.4,
+                        ease: [0.25, 0.1, 0.25, 1.0],
+                      }}
+                    >
+                      <MockupImageWrapper>
+                        {/* OPTIMIZATION: sizes prop added to avoid large image downloads on mobile */}
+                        <Image
+                          src={item.image}
+                          alt={item.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                        />
+                      </MockupImageWrapper>
+                      <div>
+                        <MockupTitle>{item.title}</MockupTitle>
+                        <MockupDesc>{item.description}</MockupDesc>
+                      </div>
+                    </MockupItem>
+                  );
+                })}
+              </MockupGrid>
+            </SectionContainer>
+          </DashboardSection>
+
           {/* 2. Value & Comparison */}
           <ValuePropSection>
             <SectionContainer>
               <SectionHeader $center>
-                <SectionEyebrow>WHY CHOOSE US</SectionEyebrow>
                 <SectionTitle>Built for your bottom line</SectionTitle>
                 <SectionSubtitle $center>
                   We only succeed when you do. Experience a fairer way to host.
@@ -1033,67 +1087,10 @@ const BusinessWelcomePage = () => {
             </SectionContainer>
           </ValuePropSection>
 
-          {/* 3. Dashboard Mockups */}
-          <DashboardSection>
-            <SectionContainer>
-              <SectionHeader $center>
-                <SectionEyebrow>HOST TOOLS</SectionEyebrow>
-                <SectionTitle>Manage everything in one place</SectionTitle>
-                <SectionSubtitle $center>
-                  From scheduling events to tracking your payouts, our dashboard
-                  gives you the clarity you need.
-                </SectionSubtitle>
-              </SectionHeader>
-
-              <MockupGrid onMouseLeave={() => setHoveredMockup(null)}>
-                {mockupItems.map((item, index) => {
-                  const isHovered = hoveredMockup === index;
-                  const isInactive = hoveredMockup !== null && !isHovered;
-
-                  return (
-                    <MockupItem
-                      key={index}
-                      onMouseEnter={() => setHoveredMockup(index)}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      animate={{
-                        scale: isHovered ? 1.01 : isInactive ? 0.99 : 1,
-                        opacity: isInactive ? 0.3 : 1,
-                        y: isHovered ? -10 : 0,
-                        filter: isInactive ? "blur(0px)" : "blur(0px)",
-                        zIndex: isHovered ? 10 : 0,
-                      }}
-                      transition={{
-                        duration: 0.4,
-                        ease: [0.25, 0.1, 0.25, 1.0],
-                      }}
-                    >
-                      <MockupImageWrapper>
-                        {/* OPTIMIZATION: sizes prop added to avoid large image downloads on mobile */}
-                        <Image
-                          src={item.image}
-                          alt={item.title}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 33vw"
-                        />
-                      </MockupImageWrapper>
-                      <div>
-                        <MockupTitle>{item.title}</MockupTitle>
-                        <MockupDesc>{item.description}</MockupDesc>
-                      </div>
-                    </MockupItem>
-                  );
-                })}
-              </MockupGrid>
-            </SectionContainer>
-          </DashboardSection>
-
           {/* 4. Testimonials */}
           <TestimonialsSection>
             <SectionContainer>
               <SectionHeader $center>
-                <SectionEyebrow>TESTIMONIALS</SectionEyebrow>
                 <SectionTitle>What hosts are saying</SectionTitle>
               </SectionHeader>
               <ReviewGrid className="no-scrollbar">
@@ -1126,7 +1123,6 @@ const BusinessWelcomePage = () => {
           <TierSection>
             <SectionContainer>
               <SectionHeader $center>
-                <SectionEyebrow>FLEXIBILITY</SectionEyebrow>
                 <SectionTitle>Grow your way</SectionTitle>
                 <SectionSubtitle $center>
                   List on our marketplace to reach new customers, or use our
