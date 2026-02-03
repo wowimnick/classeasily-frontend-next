@@ -1798,6 +1798,16 @@ const BannerSearch = () => {
             style={{ objectFit: "cover" }}
           />
         </FilteredBackgroundImage>
+        <Video
+          autoPlay
+          loop
+          muted
+          playsInline
+          poster="/videos/1.png"
+          preload="none"
+        >
+          <source src="/videos/Classes.mp4" type="video/mp4" />
+        </Video>
       </BackgroundMediaWrapper>
 
       <DesktopContainer>
