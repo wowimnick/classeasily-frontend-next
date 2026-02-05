@@ -43,6 +43,7 @@ import Card4 from "@/assets/Card 6.png";
 import Card5 from "@/assets/Card 9.png";
 import Card6 from "@/assets/Card 10.png";
 import Card7 from "@/assets/Card 11.png";
+import { useRouter } from "next/navigation";
 
 const HERO_CARD_IMAGES = [
   Card1.src,
@@ -1009,7 +1010,7 @@ const FAQS = [
 
 export default function GiftCardsPage() {
   const [openFaq, setOpenFaq] = useState(null);
-  const [selectedId, setSelectedId] = useState(null);
+  const router = useRouter();
   const selectionSectionRef = useRef(null);
 
   const [carouselIndex, setCarouselIndex] = useState(3);
@@ -1024,6 +1025,14 @@ export default function GiftCardsPage() {
 
   const scrollToSelection = () => {
     selectionSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleSelect = (url) => {
+    // Find the index of the selected image URL to pass as a param
+    const index = HERO_CARD_IMAGES.indexOf(url);
+    if (index !== -1) {
+      router.push(`/giftcards/checkout?designIndex=${index}`);
+    }
   };
 
   const handleNext = () =>
@@ -1105,7 +1114,6 @@ export default function GiftCardsPage() {
         <CarouselSection ref={selectionSectionRef}>
           <Container>
             <CarouselWrapper>
-              {/* 2D ARROWS CONTROLLING 3D STATE */}
               <ArrowButton
                 onClick={handlePrev}
                 disabled={carouselIndex === 0}
@@ -1117,7 +1125,6 @@ export default function GiftCardsPage() {
               <Suspense fallback={null}>
                 <Canvas
                   shadows
-                  // A slightly wider FOV for the carousel to feel immersive
                   camera={{ position: [0, 0, 8], fov: 35 }}
                   gl={{ antialias: true }}
                   style={{
@@ -1131,7 +1138,7 @@ export default function GiftCardsPage() {
                   <NitroCarouselScene
                     activeIndex={carouselIndex}
                     setActiveIndex={setCarouselIndex}
-                    onSelect={setSelectedId}
+                    onSelect={handleSelect}
                   />
                 </Canvas>
               </Suspense>
@@ -1145,105 +1152,6 @@ export default function GiftCardsPage() {
             </CarouselWrapper>
           </Container>
         </CarouselSection>
-
-        {/* MODAL (REUSED LOGIC) */}
-        <AnimatePresence>
-          {selectedId && (
-            <Overlay
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedId(null)}
-            >
-              <ModalContent
-                onClick={(e) => e.stopPropagation()}
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              >
-                <ModalImageContainer>
-                  <Image
-                    src={selectedId}
-                    alt="Selected card"
-                    fill
-                    style={{ objectFit: "cover" }}
-                  />
-                  <CloseButton onClick={() => setSelectedId(null)}>
-                    <X size={18} />
-                  </CloseButton>
-                </ModalImageContainer>
-
-                <ModalBody>
-                  <h3
-                    style={{
-                      fontSize: "1.25rem",
-                      fontWeight: 700,
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Customize your gift
-                  </h3>
-                  <p
-                    style={{
-                      marginBottom: "20px",
-                      color: "#666",
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    Choose an amount and add a personal touch
-                  </p>
-
-                  <FormSection>
-                    <Label>Gift Amount</Label>
-                    <AmountGrid>
-                      <AmountButton
-                        type="button"
-                        $selected={false}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        $25
-                      </AmountButton>
-                      <AmountButton
-                        type="button"
-                        $selected={true}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        $50
-                      </AmountButton>
-                      <AmountButton
-                        type="button"
-                        $selected={false}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        $100
-                      </AmountButton>
-                    </AmountGrid>
-                    <Input type="number" placeholder="Or enter custom amount" />
-                  </FormSection>
-
-                  <FormSection>
-                    <Label>Recipient Email</Label>
-                    <Input type="email" placeholder="friend@example.com" />
-                  </FormSection>
-
-                  <FormSection>
-                    <Label>Personal Message (Optional)</Label>
-                    <TextArea placeholder="Write a thoughtful note..." />
-                  </FormSection>
-
-                  <BuyButton
-                    onClick={handleBuy}
-                    style={{ width: "100%" }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Continue to Payment
-                  </BuyButton>
-                </ModalBody>
-              </ModalContent>
-            </Overlay>
-          )}
-        </AnimatePresence>
 
         {/* FEATURES */}
         <FeatureSection>
