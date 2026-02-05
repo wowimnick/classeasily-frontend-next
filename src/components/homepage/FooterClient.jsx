@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import styled from "styled-components";
 import FacebookSvg from "@/assets/icons/homepage/facebook.svg";
+import { InstagramOutlined } from "@ant-design/icons";
 
 // Static data - Updated to use query parameters consistent with SearchDrawer logic
 const popularLocationsByProvince = [
@@ -588,11 +589,10 @@ export default function FooterClient({ categories = [] }) {
                   rel="noopener noreferrer"
                 >
                   <Image
-                    src={
-                      "https://cdn-icons-png.flaticon.com/512/174/174855.png"
-                    }
+                    src={InstagramOutlined}
                     alt="Instagram"
-                    style={{ height: "32px", width: "auto" }}
+                    width={32}
+                    height={32}
                   />
                 </a>
                 <a
