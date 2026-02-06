@@ -5,7 +5,6 @@ import React, {
   Suspense,
   useRef,
   useEffect,
-  useMemo,
   useLayoutEffect,
 } from "react";
 import styled, { createGlobalStyle, css } from "styled-components";
@@ -13,11 +12,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
   ChevronUp,
-  X,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import Image from "next/image";
 import { ConfigProvider } from "antd";
 import message from "@/lib/message";
 import { theme } from "@/components/theme";
@@ -25,7 +22,7 @@ import Header from "@/components/layout/SharedMainClientHeader";
 import FooterClient from "@/components/homepage/FooterClient";
 
 // --- THREE JS IMPORTS ---
-import { Canvas, useFrame, extend } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import {
   Environment,
   ContactShadows,
@@ -55,6 +52,18 @@ const HERO_CARD_IMAGES = [
   Card7.src,
 ];
 
+// --- HOOKS ---
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+  return isMobile;
+}
+
 // --- Global Styles ---
 const GlobalStyle = createGlobalStyle`
   body {
@@ -75,7 +84,7 @@ const PageWrapper = styled.div`
   background: #ffffff;
 
   @media (max-width: 768px) {
-    padding-top: 80px;
+    padding-top: 70px;
   }
 `;
 
@@ -102,6 +111,7 @@ const Headline = styled.h1`
   margin-bottom: 16px;
 
   @media (max-width: 768px) {
+    font-size: 2.5rem;
     margin-bottom: 12px;
   }
 `;
@@ -115,10 +125,11 @@ const SubHeadline = styled.p`
   max-width: 600px;
   margin-left: auto;
   margin-right: auto;
+  line-height: 1.5;
 `;
 
 const SectionTitle = styled.h2`
-  font-size: clamp(2rem, 4vw, 4rem);
+  font-size: clamp(1.75rem, 4vw, 4rem);
   font-weight: 700;
   color: #222222;
   text-align: center;
@@ -182,15 +193,14 @@ const HeroSection = styled.section`
   overflow: visible;
 
   @media (max-width: 768px) {
-    padding: 10px 0 10px 0;
+    padding: 10px 0 0 0;
   }
 `;
 
 const HeroVisual = styled.div`
-  margin-top: 40px;
   position: relative;
   width: 100%;
-  height: 700px;
+  height: 650px;
 
   &::before,
   &::after {
@@ -198,7 +208,7 @@ const HeroVisual = styled.div`
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 15%;
+    width: 5%;
     z-index: 10;
     pointer-events: none;
   }
@@ -214,7 +224,7 @@ const HeroVisual = styled.div`
   }
 
   @media (max-width: 768px) {
-    height: 400px;
+    height: 380px;
     margin-top: 20px;
 
     &::before,
@@ -231,7 +241,7 @@ const TextSection = styled.section`
   text-align: center;
 
   @media (max-width: 768px) {
-    padding: 30px 0;
+    padding: 20px 0;
   }
 `;
 
@@ -239,6 +249,7 @@ const TextSection = styled.section`
 const CarouselSection = styled.section`
   overflow: hidden;
   scroll-margin-top: 100px;
+  margin-bottom: 20px;
 `;
 
 const CarouselWrapper = styled.div`
@@ -247,7 +258,7 @@ const CarouselWrapper = styled.div`
   height: 400px;
 
   @media (max-width: 768px) {
-    height: 350px;
+    height: 320px;
   }
 `;
 
@@ -279,15 +290,16 @@ const ArrowButton = styled.button`
         `}
 
   @media (max-width: 768px) {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.9);
     ${(props) =>
       props.$left
         ? css`
-            left: 10px;
+            left: 8px;
           `
         : css`
-            right: 10px;
+            right: 8px;
           `}
   }
 
@@ -299,135 +311,6 @@ const ArrowButton = styled.button`
   &:hover:not(:disabled) {
     background: #f7f7f7;
     transform: translateY(-50%) scale(1.05);
-  }
-`;
-
-/* --- MODAL OVERLAY --- */
-const Overlay = styled(motion.div)`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-`;
-
-const ModalContent = styled(motion.div)`
-  width: 100%;
-  max-width: 440px;
-  background: white;
-  border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-`;
-
-const ModalImageContainer = styled(motion.div)`
-  width: 100%;
-  aspect-ratio: 1.58/1;
-  position: relative;
-  overflow: hidden;
-`;
-
-const ModalBody = styled(motion.div)`
-  padding: 24px;
-  text-align: left;
-`;
-
-const FormSection = styled.div`
-  margin-bottom: 16px;
-`;
-
-const Label = styled.label`
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #222;
-  margin-bottom: 8px;
-`;
-
-const AmountGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 10px;
-`;
-
-const AmountButton = styled(motion.button)`
-  padding: 12px;
-  border: 2px solid ${(props) => (props.$selected ? "#ff385c" : "#e0e0e0")};
-  background: ${(props) => (props.$selected ? "#fff5f7" : "white")};
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: ${(props) => (props.$selected ? "#ff385c" : "#222")};
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    border-color: #ff385c;
-    background: #fff5f7;
-  }
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: 12px 14px;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  font-family: inherit;
-  transition: border-color 0.2s ease;
-
-  &:focus {
-    outline: none;
-    border-color: #ff385c;
-  }
-`;
-
-const TextArea = styled.textarea`
-  width: 100%;
-  padding: 12px 14px;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  font-family: inherit;
-  resize: vertical;
-  min-height: 80px;
-  transition: border-color 0.2s ease;
-
-  &:focus {
-    outline: none;
-    border-color: #ff385c;
-  }
-`;
-
-const CloseButton = styled.button`
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
-  color: white;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.7);
   }
 `;
 
@@ -446,9 +329,10 @@ const FeatureGrid = styled.div`
   gap: 48px;
   text-align: center;
 
-  @media (max-width: 768px) {
+  @media (max-width: 900px) {
     grid-template-columns: 1fr;
     gap: 32px;
+    padding: 0 16px;
   }
 `;
 
@@ -457,6 +341,10 @@ const FeatureTitle = styled.h4`
   font-weight: 800;
   margin-bottom: 8px;
   color: #222222;
+
+  @media (max-width: 768px) {
+    font-size: 1.25rem;
+  }
 `;
 
 const FeatureText = styled.p`
@@ -465,6 +353,7 @@ const FeatureText = styled.p`
   line-height: 1.5;
 `;
 
+/* --- CORPORATE SECTION --- */
 const CorporateSection = styled.section`
   background: #f7f7f7;
   padding: 80px 0;
@@ -515,6 +404,7 @@ const VisualColumn = styled.div`
   @media (max-width: 900px) {
     height: 350px;
     order: -1;
+    margin-bottom: -20px;
   }
 `;
 
@@ -548,10 +438,11 @@ const FAQTrigger = styled.button`
     font-size: 1.125rem;
     font-weight: 500;
     color: #222;
+    padding-right: 16px;
   }
 
   @media (max-width: 768px) {
-    padding: 16px 0;
+    padding: 18px 0;
     span {
       font-size: 1rem;
     }
@@ -563,17 +454,19 @@ const FAQContent = styled(motion.div)`
   color: #555;
   font-size: 1rem;
   line-height: 1.6;
+
+  @media (max-width: 768px) {
+    font-size: 0.95rem;
+  }
 `;
 
 // --- SHARED 3D RESOURCES ---
 
-// 1. Shared Geometry Definitions
 const CARD_WIDTH = 3;
 const CARD_HEIGHT = 1.9;
 const CARD_RADIUS = 0.2;
 const CARD_THICKNESS = 0.05;
 
-// Define shape once
 const cardShape = new THREE.Shape();
 const w = CARD_WIDTH;
 const h = CARD_HEIGHT;
@@ -596,26 +489,21 @@ const extrudeSettings = {
   bevelEnabled: false,
 };
 
-// 2. Shared Glossy Card Component
-// Now accepts `envMapIntensity` so we can tune it per scene.
 const GlossyCardMesh = React.forwardRef(
   ({ textureUrl, envMapIntensity = 0.25, ...props }, ref) => {
     const texture = useTexture(textureUrl);
     texture.colorSpace = THREE.SRGBColorSpace;
     const geometryRef = useRef();
 
-    // Fix UVs for ExtrudeGeometry
     useLayoutEffect(() => {
       if (geometryRef.current) {
         geometryRef.current.computeBoundingBox();
         const { min, max } = geometryRef.current.boundingBox;
         const uvAttribute = geometryRef.current.attributes.uv;
         const posAttribute = geometryRef.current.attributes.position;
-
         for (let i = 0; i < posAttribute.count; i++) {
           const xPos = posAttribute.getX(i);
           const yPos = posAttribute.getY(i);
-          // Normalize coordinates to 0..1 based on bounding box
           const u = (xPos - min.x) / (max.x - min.x);
           const v = (yPos - min.y) / (max.y - min.y);
           uvAttribute.setXY(i, u, v);
@@ -625,32 +513,26 @@ const GlossyCardMesh = React.forwardRef(
     }, []);
 
     return (
-      <mesh ref={ref} castShadow receiveShadow {...props}>
+      <mesh ref={ref} castShadow {...props}>
         <extrudeGeometry
           ref={geometryRef}
           args={[cardShape, extrudeSettings]}
         />
-        {/* Front/Back: Glossy Plastic/Laminated Look */}
         <meshPhysicalMaterial
           attach="material-0"
           map={texture}
           color="#ffffff"
-          // 1. Base Material: Smooth plastic, not rough paper
           roughness={0.1}
-          metalness={0.05} // A tiny bit of metalness helps plastic reflect environment better
-          // 2. The Lamination Layer
+          metalness={0.5}
           clearcoat={1.0}
-          clearcoatRoughness={0.05} // Very sharp reflections
-          // 3. Physics of Plastic
-          ior={1.5} // Index of Refraction for typical PVC plastic
-          reflectivity={0.5}
-          // 4. Lighting
+          clearcoatRoughness={0.05}
+          ior={1.5}
+          reflectivity={0.9}
           envMapIntensity={envMapIntensity}
         />
-        {/* Sides: White Plastic */}
         <meshStandardMaterial
           attach="material-1"
-          color="#f5f5f5"
+          color="#ffffff"
           roughness={0.3}
         />
       </mesh>
@@ -661,13 +543,17 @@ GlossyCardMesh.displayName = "GlossyCardMesh";
 
 // --- 3D HERO COMPONENTS ---
 
-function AutoRotateRig({ children }) {
+function AutoRotateRig({ children, isMobile }) {
   const groupRef = useRef();
+
   useFrame((state, delta) => {
+    // 1. Keep the rotation
     groupRef.current.rotation.y += delta * 0.1;
+
+    // 2. Fixed Camera Position (Elevated look, no mouse tracking)
     easing.damp3(
       state.camera.position,
-      [-state.pointer.x * 2, state.pointer.y + 1.5, 10],
+      [0, isMobile ? 4.5 : 1.9, 10],
       0.3,
       delta,
     );
@@ -696,13 +582,12 @@ function GiftCardCarousel({ radius = 2.4 }) {
 function GiftCard({ url, ...props }) {
   const meshRef = useRef();
   const [hovered, hover] = useState(false);
-  const baseScale = 0.5; // Base scale for hero carousel cards
+  const baseScale = 0.5;
 
   useFrame((state, delta) => {
-    // Animate the scale of the mesh directly
     easing.damp3(
       meshRef.current.scale,
-      hovered ? baseScale * 1.15 : baseScale,
+      hovered ? baseScale * 1.05 : baseScale,
       0.1,
       delta,
     );
@@ -714,58 +599,50 @@ function GiftCard({ url, ...props }) {
       onPointerOver={(e) => (e.stopPropagation(), hover(true))}
       onPointerOut={() => hover(false)}
     >
-      <GlossyCardMesh
-        ref={meshRef}
-        textureUrl={url}
-        // BOOSTED REFLECTION for open hero scene
-        envMapIntensity={2}
-      />
+      <GlossyCardMesh ref={meshRef} textureUrl={url} envMapIntensity={2} />
     </group>
   );
 }
 
-const HeroCarouselScene = () => (
+const HeroCarouselScene = ({ isMobile }) => (
   <>
     <color attach="background" args={["#ffffff"]} />
     <ambientLight intensity={1} />
 
-    {/* FIX 1: HIGH QUALITY SHADOW MAPS */}
+    {/* 
+      COPY OF LIGHTING FROM NitroCarouselScene
+    */}
     <directionalLight
       position={[5, 5, 10]}
       intensity={1.5}
       castShadow
-      shadow-mapSize={[2048, 2048]} // Increase shadow resolution
-      shadow-bias={-0.0001} // Reduce shadow acne on cards
-      shadow-camera-left={-10}
-      shadow-camera-right={10}
-      shadow-camera-top={10}
-      shadow-camera-bottom={-10}
+      shadow-mapSize={[2048, 2048]}
+      shadow-bias={-0.0001}
     />
 
     <Environment preset="city" />
 
-    <AutoRotateRig>
-      <GiftCardCarousel />
+    <AutoRotateRig isMobile={isMobile}>
+      <GiftCardCarousel radius={isMobile ? 1.8 : 2.4} />
     </AutoRotateRig>
 
-    {/* FIX 2: GROUND THE SHADOWS */}
+    {/* 
+      COPY OF SHADOWS FROM NitroCarouselScene 
+      (Using -1.5 Y position to match the "float" height)
+    */}
     <ContactShadows
-      position={[0, -1.0, 0]} // Moved up from -1.2 to -1.0 to touch card bottoms
-      opacity={0.4}
-      scale={20}
-      blur={2.5}
-      far={4}
-      resolution={1024}
-      color="#000000"
+      position={[0, -0.7, 0]}
+      opacity={1}
+      scale={10}
+      blur={1.5}
+      far={4.5}
     />
   </>
 );
 
 // --- 3D BUSINESS COMPONENT ---
-function ShuffleDeck() {
-  const textures = HERO_CARD_IMAGES;
+function ShuffleDeck({ isMobile }) {
   const indices = [5, 4, 6];
-
   const [order, setOrder] = useState([0, 1, 2]);
 
   useEffect(() => {
@@ -785,15 +662,17 @@ function ShuffleDeck() {
           key={indices[textureIndex]}
           url={HERO_CARD_IMAGES[indices[textureIndex]]}
           positionIndex={i}
+          isMobile={isMobile}
         />
       ))}
     </group>
   );
 }
 
-function ShufflingCard({ url, positionIndex }) {
+function ShufflingCard({ url, positionIndex, isMobile }) {
   const ref = useRef();
-  const x = positionIndex * 0.15;
+  const spreadFactor = isMobile ? 0.1 : 0.15;
+  const x = positionIndex * spreadFactor;
   const y = positionIndex * 0.05;
   const z = positionIndex * -0.2;
   const rotY = -positionIndex * 0.1;
@@ -806,37 +685,26 @@ function ShufflingCard({ url, positionIndex }) {
 
   return (
     <group ref={ref}>
-      <GlossyCardMesh
-        textureUrl={url}
-        scale={0.85}
-        // BOOSTED REFLECTION for business scene
-        envMapIntensity={2}
-      />
+      <GlossyCardMesh textureUrl={url} scale={0.85} envMapIntensity={2} />
     </group>
   );
 }
 
-const BusinessScene = () => (
+const BusinessScene = ({ isMobile }) => (
   <>
     <color attach="background" args={["#f7f7f7"]} />
-
     <ambientLight intensity={1} />
-    {/* FIX 1: HIGH QUALITY SHADOW MAPS */}
     <directionalLight
-      position={[-5, 8, 5]}
+      position={[5, 5, 10]}
       intensity={1.5}
       castShadow
-      shadow-mapSize={[2048, 2048]} // Higher resolution
-      shadow-bias={-0.0001} // Fix artifacts
+      shadow-mapSize={[2048, 2048]}
+      shadow-bias={-0.0001}
     />
-
     <Environment preset="city" />
-
-    <ShuffleDeck />
-
-    {/* FIX 2: GROUND THE SHADOWS */}
+    <ShuffleDeck isMobile={isMobile} />
     <ContactShadows
-      position={[0, -1.0, 0]} // Moved up from -1.2 to -1.0
+      position={[0, -1.0, 0]}
       opacity={0.4}
       scale={10}
       blur={5}
@@ -861,34 +729,33 @@ const SelectButton = styled(motion.button)`
   align-items: center;
   gap: 8px;
   white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 
   &:hover {
     background: #d9324e;
   }
 `;
 
-function NitroCard3D({ index, activeIndex, textureUrl, onSelect, onSetIndex }) {
+function NitroCard3D({
+  index,
+  activeIndex,
+  textureUrl,
+  onSelect,
+  onSetIndex,
+  isMobile,
+}) {
   const groupRef = useRef();
 
   const offset = index - activeIndex;
   const isActive = offset === 0;
 
   useFrame((state, delta) => {
-    const spacing = 3.2;
+    const spacing = isMobile ? 2.3 : 3.2;
     const targetX = offset * spacing;
-    const targetZ = isActive ? 0 : -Math.abs(offset) * 1.5;
-
+    const targetZ = isActive ? 0 : -Math.abs(offset) * (isMobile ? 1.0 : 1.5);
     let targetRotY = offset * -0.15;
-
-    // if (isActive) {
-    //   targetRotY += state.pointer.x * 0.2;
-    //   const tiltX = -state.pointer.y * 0.2;
-    //   easing.damp(groupRef.current.rotation, "x", tiltX, 0.2, delta);
-    // } else {
-    //   easing.damp(groupRef.current.rotation, "x", 0, 0.2, delta);
-    // }
-
-    const targetScale = isActive ? 1.1 : 0.85;
+    const baseScale = isMobile ? 0.9 : 1.0;
+    const targetScale = isActive ? baseScale * 1.1 : baseScale * 0.85;
 
     easing.damp(groupRef.current.position, "x", targetX, 0.25, delta);
     easing.damp(groupRef.current.position, "z", targetZ, 0.25, delta);
@@ -916,17 +783,13 @@ function NitroCard3D({ index, activeIndex, textureUrl, onSelect, onSetIndex }) {
         document.body.style.cursor = "auto";
       }}
     >
-      {/* 
-        This is the "PERFECT" one. 
-        We keep the default envMapIntensity (0.25) or set it explicitly.
-      */}
       <GlossyCardMesh textureUrl={textureUrl} envMapIntensity={2} />
 
       {isActive && (
         <Html
           position={[0, -1.4, 0]}
           center
-          distanceFactor={5}
+          distanceFactor={isMobile ? 4 : 5}
           zIndexRange={[100, 0]}
           transform
           style={{ opacity: 1, pointerEvents: "auto" }}
@@ -949,11 +812,15 @@ function NitroCard3D({ index, activeIndex, textureUrl, onSelect, onSetIndex }) {
   );
 }
 
-const NitroCarouselScene = ({ activeIndex, setActiveIndex, onSelect }) => {
+const NitroCarouselScene = ({
+  activeIndex,
+  setActiveIndex,
+  onSelect,
+  isMobile,
+}) => {
   return (
     <>
       <ambientLight intensity={1} />
-      {/* Updated light here too for consistency, though not requested explicitly */}
       <directionalLight
         position={[5, 5, 10]}
         intensity={1.5}
@@ -973,6 +840,7 @@ const NitroCarouselScene = ({ activeIndex, setActiveIndex, onSelect }) => {
             textureUrl={url}
             onSelect={onSelect}
             onSetIndex={setActiveIndex}
+            isMobile={isMobile}
           />
         ))}
       </group>
@@ -1012,23 +880,25 @@ export default function GiftCardsPage() {
   const [openFaq, setOpenFaq] = useState(null);
   const router = useRouter();
   const selectionSectionRef = useRef(null);
-
+  const isMobile = useIsMobile();
   const [carouselIndex, setCarouselIndex] = useState(3);
+
+  // FIX FOR CRASH: Unique key for Canvas to force full re-mount on navigation
+  const [canvasKey, setCanvasKey] = useState(0);
+
+  useEffect(() => {
+    setCanvasKey((prev) => prev + 1);
+  }, []);
 
   const toggleFaq = (index) => setOpenFaq(openFaq === index ? null : index);
   const handleUnsupported = () =>
     message.info("Our developers are building this! Check back soon.");
-  const handleBuy = () => {
-    message.success("Added to cart!");
-    setSelectedId(null);
-  };
 
   const scrollToSelection = () => {
     selectionSectionRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSelect = (url) => {
-    // Find the index of the selected image URL to pass as a param
     const index = HERO_CARD_IMAGES.indexOf(url);
     if (index !== -1) {
       router.push(`/giftcards/checkout?designIndex=${index}`);
@@ -1069,15 +939,19 @@ export default function GiftCardsPage() {
               </BuyButton>
             </div>
             <HeroVisual>
+              {/* Added key={canvasKey} to prevent crash on navigation */}
               <Suspense fallback={null}>
-                <Canvas
-                  shadows
-                  camera={{ position: [0, 0, 10], fov: 15 }}
-                  gl={{ antialias: true, alpha: true }}
-                  dpr={[1, 2]}
-                >
-                  <HeroCarouselScene />
-                </Canvas>
+                {canvasKey > 0 && (
+                  <Canvas
+                    key={`hero-${canvasKey}`}
+                    shadows
+                    camera={{ position: [0, 0, 10], fov: isMobile ? 22 : 20 }}
+                    gl={{ antialias: true, alpha: true }}
+                    dpr={[1, 2]}
+                  >
+                    <HeroCarouselScene isMobile={isMobile} />
+                  </Canvas>
+                )}
               </Suspense>
             </HeroVisual>
           </Container>
@@ -1093,6 +967,7 @@ export default function GiftCardsPage() {
                 margin: "0 auto",
                 lineHeight: "1.5",
                 color: "#222",
+                fontSize: "0.95rem",
               }}
             >
               Give the gift of unforgettable experiences. Our gift cards unlock
@@ -1119,35 +994,39 @@ export default function GiftCardsPage() {
                 disabled={carouselIndex === 0}
                 $left
               >
-                <ChevronLeft size={24} />
+                <ChevronLeft size={isMobile ? 20 : 24} />
               </ArrowButton>
 
               <Suspense fallback={null}>
-                <Canvas
-                  shadows
-                  camera={{ position: [0, 0, 8], fov: 35 }}
-                  gl={{ antialias: true }}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                  }}
-                >
-                  <NitroCarouselScene
-                    activeIndex={carouselIndex}
-                    setActiveIndex={setCarouselIndex}
-                    onSelect={handleSelect}
-                  />
-                </Canvas>
+                {canvasKey > 0 && (
+                  <Canvas
+                    key={`select-${canvasKey}`}
+                    shadows
+                    camera={{ position: [0, 0, 8], fov: isMobile ? 45 : 35 }}
+                    gl={{ antialias: true }}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      height: "100%",
+                    }}
+                  >
+                    <NitroCarouselScene
+                      activeIndex={carouselIndex}
+                      setActiveIndex={setCarouselIndex}
+                      onSelect={handleSelect}
+                      isMobile={isMobile}
+                    />
+                  </Canvas>
+                )}
               </Suspense>
 
               <ArrowButton
                 onClick={handleNext}
                 disabled={carouselIndex === HERO_CARD_IMAGES.length - 1}
               >
-                <ChevronRight size={24} />
+                <ChevronRight size={isMobile ? 20 : 24} />
               </ArrowButton>
             </CarouselWrapper>
           </Container>
@@ -1161,21 +1040,20 @@ export default function GiftCardsPage() {
                 <FeatureTitle>You choose the amount</FeatureTitle>
                 <FeatureText>
                   Pick a design, set the budget, write a note. Done. They handle
-                  the rest (the fun part).
+                  the rest.
                 </FeatureText>
               </div>
               <div>
                 <FeatureTitle>Zero lag time</FeatureTitle>
                 <FeatureText>
-                  Forgot a birthday? We won't tell. Send it via email instantly
-                  or schedule it for the exact right moment.
+                  Send it via email instantly or schedule it for the exact right
+                  moment.
                 </FeatureText>
               </div>
               <div>
                 <FeatureTitle>Forever valid</FeatureTitle>
                 <FeatureText>
-                  Life gets busy. That's why our credits never expire. The
-                  experience will be waiting whenever they are.
+                  Life gets busy. That's why our credits never expire.
                 </FeatureText>
               </div>
             </FeatureGrid>
@@ -1188,7 +1066,7 @@ export default function GiftCardsPage() {
             <TextColumn>
               <h2
                 style={{
-                  fontSize: "clamp(2rem, 4vw, 2.5rem)",
+                  fontSize: isMobile ? "2rem" : "clamp(2rem, 4vw, 2.5rem)",
                   fontWeight: 700,
                   margin: "0 0 24px 0",
                   lineHeight: 1.1,
@@ -1247,14 +1125,17 @@ export default function GiftCardsPage() {
             {/* RIGHT COLUMN: The 3D Canvas */}
             <VisualColumn>
               <Suspense fallback={null}>
-                <Canvas
-                  shadows
-                  camera={{ position: [0, 0, 4.5], fov: 40 }}
-                  gl={{ antialias: true }}
-                  dpr={[1, 2]}
-                >
-                  <BusinessScene />
-                </Canvas>
+                {canvasKey > 0 && (
+                  <Canvas
+                    key={`biz-${canvasKey}`}
+                    shadows
+                    camera={{ position: [0, 0, isMobile ? 6 : 4.5], fov: 40 }}
+                    gl={{ antialias: true }}
+                    dpr={[1, 2]}
+                  >
+                    <BusinessScene isMobile={isMobile} />
+                  </Canvas>
+                )}
               </Suspense>
             </VisualColumn>
           </TwoColumnContainer>
@@ -1269,6 +1150,7 @@ export default function GiftCardsPage() {
                 fontWeight: 700,
                 marginBottom: 40,
                 color: "#222",
+                textAlign: isMobile ? "center" : "left",
               }}
             >
               Frequently asked questions
@@ -1296,7 +1178,14 @@ export default function GiftCardsPage() {
                 </AnimatePresence>
               </FAQItem>
             ))}
-            <div style={{ marginTop: 32, fontSize: "0.9rem", color: "#222" }}>
+            <div
+              style={{
+                marginTop: 32,
+                fontSize: "0.9rem",
+                color: "#222",
+                textAlign: isMobile ? "center" : "left",
+              }}
+            >
               Have more burning questions? Visit the{" "}
               <span
                 style={{

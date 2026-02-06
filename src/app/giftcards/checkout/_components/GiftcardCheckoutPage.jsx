@@ -1,5 +1,3 @@
-// --- START OF FILE GiftcardCheckoutPage.jsx ---
-
 "use client";
 
 import React, {
@@ -8,6 +6,7 @@ import React, {
   useRef,
   useLayoutEffect,
   useEffect,
+  memo,
 } from "react";
 import styled, { createGlobalStyle, css } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,23 +19,23 @@ import {
   User,
   Gift,
   Check,
+  Clock,
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import Image from "next/image";
 // --- ANT DESIGN IMPORTS ---
-import { ConfigProvider, Input, DatePicker, message } from "antd";
+import { ConfigProvider, Input, message } from "antd";
 import { theme } from "@/components/theme";
+import dayjs from "dayjs";
 
 import Header from "@/components/layout/SharedMainClientHeader";
 import FooterClient from "@/components/homepage/FooterClient";
 
 // --- THREE JS IMPORTS ---
 import { Canvas, useFrame } from "@react-three/fiber";
-import {
-  Environment,
-  ContactShadows,
-  useTexture,
-  Float,
-} from "@react-three/drei";
+import { Environment, ContactShadows, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { easing } from "maath";
 
@@ -58,6 +57,9 @@ const CARD_IMAGES = [
   Card6.src,
   Card7.src,
 ];
+
+// --- PRELOAD TEXTURES TO PREVENT FLICKERING ---
+CARD_IMAGES.forEach((url) => useTexture.preload(url));
 
 // --- 3D GEOMETRY ---
 const CARD_WIDTH = 3;
@@ -87,9 +89,16 @@ const extrudeSettings = { depth: CARD_THICKNESS, bevelEnabled: false };
 // --- 3D COMPONENTS ---
 
 const GlossyCardMesh = React.forwardRef(
-  ({ textureUrl, envMapIntensity = 1, opacity = 1, ...props }, ref) => {
-    // We use a key on the mesh parent to force re-mount if needed,
-    // but here we just swap the map.
+  (
+    {
+      textureUrl,
+      envMapIntensity = 1,
+      opacity = 1,
+      transparent = true,
+      ...props
+    },
+    ref,
+  ) => {
     const texture = useTexture(textureUrl);
     texture.colorSpace = THREE.SRGBColorSpace;
     const geometryRef = useRef();
@@ -117,6 +126,7 @@ const GlossyCardMesh = React.forwardRef(
           ref={geometryRef}
           args={[cardShape, extrudeSettings]}
         />
+        {/* Material 0: The Front Face (Textured) */}
         <meshPhysicalMaterial
           attach="material-0"
           map={texture}
@@ -128,13 +138,16 @@ const GlossyCardMesh = React.forwardRef(
           ior={1.5}
           reflectivity={0.5}
           envMapIntensity={envMapIntensity}
-          transparent
+          transparent={transparent}
           opacity={opacity}
         />
+        {/* Material 1: The Sides/Back (Plain) */}
         <meshStandardMaterial
           attach="material-1"
           color="#f5f5f5"
           roughness={0.3}
+          transparent={transparent}
+          opacity={opacity}
         />
       </mesh>
     );
@@ -142,39 +155,51 @@ const GlossyCardMesh = React.forwardRef(
 );
 GlossyCardMesh.displayName = "GlossyCardMesh";
 
-// Wrapper that handles the "Flip and Switch" logic
 function FlippableCard({ targetTextureUrl }) {
-  const meshRef = useRef();
-  // We keep track of the texture currently displayed on the mesh
-  const [displayedUrl, setDisplayedUrl] = useState(targetTextureUrl);
+  const groupRef = useRef();
 
-  // Ref to track rotation animation state
-  // We accumulate rotation. If user clicks 3 times, we spin 3 times.
+  // Refs to access the meshes directly for performance-heavy opacity updates
+  const primaryMeshRef = useRef();
+  const secondaryMeshRef = useRef();
+
+  // State to manage which textures are currently on the stage
+  // current = the one we are transitioning TO
+  // previous = the one we are transitioning FROM
+  const [textureState, setTextureState] = useState({
+    current: targetTextureUrl,
+    previous: null,
+  });
+
   const rotationTarget = useRef(0);
   const currentRotation = useRef(0);
 
-  // Detect change in targetTextureUrl
+  // Fade progress: 0 = "previous" is fully visible, 1 = "current" is fully visible
+  const fadeProgress = useRef(1);
+
   useEffect(() => {
-    if (targetTextureUrl !== displayedUrl) {
-      // Trigger a spin: Add 360 degrees (2 PI)
+    // Detect if the target texture has changed
+    if (targetTextureUrl !== textureState.current) {
+      // 1. Spin the card
       rotationTarget.current += Math.PI * 2;
 
-      // Swap the texture halfway through the spin (at 180 degrees / PI)
-      // We use a timeout roughly matching the speed of the damp
-      const swapTimer = setTimeout(() => {
-        setDisplayedUrl(targetTextureUrl);
-      }, 300); // 300ms matches the halfway point of the smooth animation roughly
-
-      return () => clearTimeout(swapTimer);
+      // 2. Set up the fade
+      // add sleep
+      setTimeout(() => {
+        setTextureState({
+          previous: textureState.current,
+          current: targetTextureUrl,
+        });
+        // Reset fade progress to 0 (start fading)
+        fadeProgress.current = 0;
+      }, 200);
     }
-  }, [targetTextureUrl, displayedUrl]);
+  }, [targetTextureUrl, textureState.current]);
 
   useFrame((state, delta) => {
-    // 1. Base Spin Animation (damp towards target)
+    // --- 1. Rotation Logic ---
     easing.damp(currentRotation, "current", rotationTarget.current, 0.4, delta);
 
-    // 2. Mouse Tilt Interaction (Clamped)
-    const MAX_TILT = 0.3; // Radians (~17 degrees)
+    const MAX_TILT = 0.3;
     const mouseX = THREE.MathUtils.clamp(
       state.pointer.x * 0.5,
       -MAX_TILT,
@@ -186,55 +211,300 @@ function FlippableCard({ targetTextureUrl }) {
       MAX_TILT,
     );
 
-    // 3. Floating Animation
     const t = state.clock.getElapsedTime();
     const floatY = Math.sin(t / 2) * 0.1;
 
-    if (meshRef.current) {
-      // Combine animations
-      // Y Rotation = Spin Progress + Mouse Tilt
-      meshRef.current.rotation.y = currentRotation.current + mouseX;
-      // X Rotation = Mouse Tilt - Float
-      meshRef.current.rotation.x = -mouseY + Math.cos(t / 2) * 0.05;
-      // Z Position = Bobbing
-      meshRef.current.position.y = floatY;
+    if (groupRef.current) {
+      groupRef.current.rotation.y = currentRotation.current + mouseX;
+      groupRef.current.rotation.x = -mouseY + Math.cos(t / 2) * 0.05;
+      groupRef.current.position.y = floatY;
+    }
+
+    // --- 2. Fade Logic ---
+    // If we have a 'previous' texture, we are in a transition or finishing one
+    if (textureState.previous) {
+      // Advance fade progress quickly (0.2 damping is fast)
+      easing.damp(fadeProgress, "current", 1, 0.2, delta);
+
+      const alpha = fadeProgress.current;
+
+      // Primary Mesh (The New Card): Fades IN (0 -> 1)
+      if (primaryMeshRef.current) {
+        // We access materials array: [0] is face, [1] is sides
+        if (primaryMeshRef.current.material[0])
+          primaryMeshRef.current.material[0].opacity = alpha;
+        if (primaryMeshRef.current.material[1])
+          primaryMeshRef.current.material[1].opacity = alpha;
+      }
+
+      // Secondary Mesh (The Old Card): Fades OUT (1 -> 0)
+      if (secondaryMeshRef.current) {
+        if (secondaryMeshRef.current.material[0])
+          secondaryMeshRef.current.material[0].opacity = 1 - alpha;
+        if (secondaryMeshRef.current.material[1])
+          secondaryMeshRef.current.material[1].opacity = 1 - alpha;
+      }
+
+      // Cleanup: If fade is basically done (0.999), remove the 'previous' from state to stop rendering it
+      if (alpha > 0.999) {
+        setTextureState((prev) => ({ ...prev, previous: null }));
+      }
     }
   });
 
   return (
-    <group>
+    <group ref={groupRef}>
+      {/* 
+        PRIMARY MESH: The "Current" or "New" Card.
+        Always visible.
+      */}
       <GlossyCardMesh
-        ref={meshRef}
-        textureUrl={displayedUrl}
+        ref={primaryMeshRef}
+        textureUrl={textureState.current}
         envMapIntensity={1.5}
+        // If we are transitioning, we scale this slightly larger to prevent Z-fighting
+        // with the fading-out card underneath it.
+        scale={textureState.previous ? [1.002, 1.002, 1.002] : [1, 1, 1]}
       />
+
+      {/* 
+        SECONDARY MESH: The "Previous" or "Old" Card.
+        Only rendered during transition.
+      */}
+      {textureState.previous && (
+        <GlossyCardMesh
+          ref={secondaryMeshRef}
+          textureUrl={textureState.previous}
+          envMapIntensity={1.5}
+          // Opacity is handled in useFrame
+        />
+      )}
     </group>
+  );
+}
+
+// Separate scene to avoid re-mounting Canvas
+const GiftCardScene = memo(({ textureUrl }) => (
+  <Canvas
+    shadows
+    camera={{ position: [0, 0, 4.5], fov: 45 }}
+    gl={{ antialias: true, alpha: true }}
+  >
+    <ambientLight intensity={0.8} />
+    <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
+
+    {/* By putting Suspense INSIDE, the lights/env stay alive even if card suspends */}
+    <Suspense fallback={null}>
+      <Environment preset="city" />
+      <FlippableCard targetTextureUrl={textureUrl} />
+    </Suspense>
+
+    <ContactShadows
+      position={[0, -1.2, 0]}
+      opacity={0.4}
+      scale={10}
+      blur={2.5}
+      far={4}
+    />
+  </Canvas>
+));
+GiftCardScene.displayName = "GiftCardScene";
+
+// --- CUSTOM CALENDAR COMPONENT ---
+
+const CalContainer = styled.div`
+  width: 100%;
+  max-width: 320px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 20px;
+  user-select: none;
+`;
+
+const CalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+
+  h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #000;
+  }
+`;
+
+const CalNavBtn = styled.button`
+  background: transparent;
+  border: 1px solid #eee;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #000;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f7f7f7;
+    border-color: #ddd;
+  }
+`;
+
+const CalGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+`;
+
+const CalDayLabel = styled.div`
+  text-align: center;
+  font-size: 0.75rem;
+  color: #888;
+  font-weight: 600;
+  margin-bottom: 8px;
+`;
+
+const CalDayBtn = styled.button`
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #000;
+  cursor: pointer;
+  position: relative;
+
+  ${(props) =>
+    props.disabled &&
+    css`
+      color: #ccc;
+      cursor: not-allowed;
+      text-decoration: line-through;
+    `}
+
+  ${(props) =>
+    !props.disabled &&
+    !props.$selected &&
+    css`
+      &:hover {
+        background: #f0f0f0;
+        font-weight: 600;
+      }
+    `}
+
+  ${(props) =>
+    props.$selected &&
+    css`
+      background: #ff385c;
+      color: white;
+      font-weight: 600;
+    `}
+  
+  ${(props) =>
+    props.$today &&
+    !props.$selected &&
+    css`
+      color: #ff385c;
+      font-weight: 700;
+
+      &::after {
+        content: "";
+        position: absolute;
+        bottom: 6px;
+        width: 4px;
+        height: 4px;
+        background: #ff385c;
+        border-radius: 50%;
+      }
+    `}
+`;
+
+function CustomCalendar({ value, onChange }) {
+  const [currentMonth, setCurrentMonth] = useState(dayjs(value || undefined));
+
+  const today = dayjs();
+  const selectedDate = value ? dayjs(value) : null;
+
+  const startOfMonth = currentMonth.startOf("month");
+  const daysInMonth = currentMonth.daysInMonth();
+  const startDayOfWeek = startOfMonth.day(); // 0 = Sunday
+
+  const handlePrevMonth = () =>
+    setCurrentMonth(currentMonth.subtract(1, "month"));
+  const handleNextMonth = () => setCurrentMonth(currentMonth.add(1, "month"));
+
+  const handleDayClick = (day) => {
+    const newDate = currentMonth.date(day);
+    onChange(newDate);
+  };
+
+  const daysArray = [];
+  // Empty slots for previous month
+  for (let i = 0; i < startDayOfWeek; i++) {
+    daysArray.push(null);
+  }
+  // Days of current month
+  for (let i = 1; i <= daysInMonth; i++) {
+    daysArray.push(i);
+  }
+
+  const weekDays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+  return (
+    <CalContainer>
+      <CalHeader>
+        <CalNavBtn onClick={handlePrevMonth}>
+          <ChevronLeft size={16} />
+        </CalNavBtn>
+        <h4>{currentMonth.format("MMMM YYYY")}</h4>
+        <CalNavBtn onClick={handleNextMonth}>
+          <ChevronRight size={16} />
+        </CalNavBtn>
+      </CalHeader>
+
+      <CalGrid>
+        {weekDays.map((d) => (
+          <CalDayLabel key={d}>{d}</CalDayLabel>
+        ))}
+
+        {daysArray.map((day, idx) => {
+          if (!day) return <div key={`empty-${idx}`} />;
+
+          const thisDate = currentMonth.date(day);
+          const isPast = thisDate.isBefore(today, "day");
+          const isSelected =
+            selectedDate && thisDate.isSame(selectedDate, "day");
+          const isToday = thisDate.isSame(today, "day");
+
+          return (
+            <CalDayBtn
+              key={day}
+              disabled={isPast}
+              $selected={isSelected}
+              $today={isToday}
+              onClick={() => !isPast && handleDayClick(day)}
+            >
+              {day}
+            </CalDayBtn>
+          );
+        })}
+      </CalGrid>
+    </CalContainer>
   );
 }
 
 // --- STYLES ---
 
-const GlobalStyle = createGlobalStyle`
-  body {
-    background-color: #ffffff;
-    overflow-x: hidden;
-  }
-  
-  /* Ant Design Override Helpers */
-  .ant-input, .ant-input-textarea, .ant-picker {
-    border-radius: 8px;
-    padding: 10px 12px;
-    border-color: #d9d9d9;
-    box-shadow: none !important;
-  }
-  .ant-input:hover, .ant-picker:hover {
-    border-color: #222 !important;
-  }
-  .ant-input:focus, .ant-input-focused, .ant-picker-focused {
-    border-color: #222 !important;
-    box-shadow: 0 0 0 2px rgba(0,0,0,0.05) !important;
-  }
-`;
+const CORPORATE_COLOR = "#ff385c";
 
 const PageWrapper = styled.div`
   width: 100%;
@@ -242,7 +512,7 @@ const PageWrapper = styled.div`
   padding-top: 100px;
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: #222;
+  color: #000;
 
   @media (max-width: 768px) {
     padding-top: 80px;
@@ -265,12 +535,11 @@ const MainContainer = styled.div`
     gap: 40px;
   }
 
-  /* CUSTOM MOBILE LAYOUT START */
   @media (max-width: 900px) {
     display: flex;
     flex-direction: column;
     padding: 20px 16px;
-    padding-bottom: 120px; /* Space for sticky footer */
+    padding-bottom: 120px;
     gap: 0;
   }
 `;
@@ -278,7 +547,7 @@ const MainContainer = styled.div`
 const LeftColumn = styled.div`
   width: 100%;
   @media (max-width: 900px) {
-    order: 2; /* Form comes after visual on mobile */
+    order: 2;
   }
 `;
 
@@ -289,11 +558,10 @@ const RightColumn = styled.div`
   height: fit-content;
 
   @media (max-width: 900px) {
-    display: none; /* Hide standard right column on mobile */
+    display: none;
   }
 `;
 
-// --- MOBILE SPECIFIC HEADER ---
 const MobileVisualHeader = styled.div`
   display: none;
   width: 100%;
@@ -309,7 +577,6 @@ const MobileVisualHeader = styled.div`
   }
 `;
 
-// --- MOBILE STICKY FOOTER ---
 const MobileStickyFooter = styled.div`
   display: none;
   position: fixed;
@@ -340,12 +607,12 @@ const MobilePrice = styled.div`
   span:last-child {
     font-size: 1.1rem;
     font-weight: 700;
-    color: #222;
+    color: #000;
   }
 `;
 
 const MobileCheckoutBtn = styled(motion.button)`
-  background: #ff385c;
+  background: ${CORPORATE_COLOR};
   color: white;
   border: none;
   padding: 12px 24px;
@@ -353,8 +620,6 @@ const MobileCheckoutBtn = styled(motion.button)`
   font-weight: 600;
   font-size: 1rem;
 `;
-
-// --- SHARED UI COMPONENTS ---
 
 const SectionHeader = styled.h2`
   font-size: 1.5rem;
@@ -386,7 +651,8 @@ const DesignOption = styled.button`
   aspect-ratio: 1.58/1;
   border-radius: 12px;
   overflow: hidden;
-  border: 3px solid ${(props) => (props.$selected ? "#222" : "transparent")};
+  border: 3px solid
+    ${(props) => (props.$selected ? CORPORATE_COLOR : "transparent")};
   cursor: pointer;
   transition: all 0.2s;
   padding: 0;
@@ -413,16 +679,16 @@ const AmountGrid = styled.div`
 const AmountChip = styled.button`
   padding: 12px 24px;
   border-radius: 30px;
-  border: 1px solid ${(props) => (props.$selected ? "#222" : "#ddd")};
-  background: ${(props) => (props.$selected ? "#222" : "white")};
-  color: ${(props) => (props.$selected ? "white" : "#222")};
+  border: 1px solid ${(props) => (props.$selected ? CORPORATE_COLOR : "#ddd")};
+  background: ${(props) => (props.$selected ? CORPORATE_COLOR : "white")};
+  color: ${(props) => (props.$selected ? "white" : "#000")};
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    border-color: #222;
+    border-color: ${CORPORATE_COLOR};
   }
 `;
 
@@ -444,7 +710,7 @@ const CustomAmountInput = styled.div`
     transform: translateY(-50%);
     z-index: 2;
     font-weight: 600;
-    color: #222;
+    color: #000;
   }
 `;
 
@@ -474,19 +740,25 @@ const DeliveryToggle = styled.div`
 const ToggleOption = styled.button`
   flex: 1;
   padding: 16px;
-  border: 2px solid ${(props) => (props.$selected ? "#222" : "#eee")};
+  border: 1px solid ${(props) => (props.$selected ? CORPORATE_COLOR : "#eee")};
   border-radius: 12px;
-  background: ${(props) => (props.$selected ? "#f7f7f7" : "white")};
+  background: ${(props) => (props.$selected ? "#fff5f7" : "white")};
   text-align: left;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 12px;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: ${CORPORATE_COLOR};
+  }
 
   h4 {
     font-size: 0.95rem;
     font-weight: 600;
     margin: 0;
+    color: ${(props) => (props.$selected ? CORPORATE_COLOR : "#000")};
   }
 
   p {
@@ -497,11 +769,8 @@ const ToggleOption = styled.button`
 `;
 
 const StickyCard = styled.div`
-  background: white;
-  border: 1px solid #ddd;
   border-radius: 24px;
   padding: 24px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
 `;
@@ -521,7 +790,7 @@ const SummaryRow = styled.div`
   justify-content: space-between;
   margin-bottom: 12px;
   font-size: 0.95rem;
-  color: #555;
+  color: #000;
 
   &.total {
     margin-top: 12px;
@@ -529,12 +798,16 @@ const SummaryRow = styled.div`
     border-top: 1px solid #eee;
     font-weight: 700;
     font-size: 1.125rem;
-    color: #222;
+    color: #000;
+  }
+
+  span {
+    font-weight: 600;
   }
 `;
 
 const CheckoutButton = styled(motion.button)`
-  background: #ff385c;
+  background: ${CORPORATE_COLOR};
   color: white;
   width: 100%;
   padding: 16px;
@@ -574,17 +847,16 @@ const FAQTrigger = styled.button`
   text-align: left;
   font-size: 1rem;
   font-weight: 500;
-  color: #222;
+  color: #000;
 `;
 
 const FAQContent = styled(motion.div)`
   overflow: hidden;
-  color: #555;
+  color: #000;
   font-size: 0.95rem;
   line-height: 1.6;
 `;
 
-// --- DATA ---
 const PRESET_AMOUNTS = [25, 50, 100, 150, 200];
 const FAQS = [
   {
@@ -616,6 +888,9 @@ export default function GiftcardCheckoutPage() {
   const [customAmount, setCustomAmount] = useState("");
   const [deliveryMethod, setDeliveryMethod] = useState("email");
   const [openFaq, setOpenFaq] = useState(null);
+
+  // Scheduling State
+  const [isScheduled, setIsScheduled] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -656,51 +931,21 @@ export default function GiftcardCheckoutPage() {
 
   const toggleFaq = (index) => setOpenFaq(openFaq === index ? null : index);
 
-  // Reusable 3D Scene to keep things consistent between Mobile and Desktop
-  const GiftCardScene = () => (
-    <Canvas
-      shadows
-      camera={{ position: [0, 0, 4.5], fov: 45 }}
-      gl={{ antialias: true, alpha: true }}
-    >
-      <ambientLight intensity={0.8} />
-      <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
-      <Environment preset="city" />
-      <FlippableCard targetTextureUrl={CARD_IMAGES[selectedDesignIndex]} />
-      <ContactShadows
-        position={[0, -1.2, 0]}
-        opacity={0.4}
-        scale={10}
-        blur={2.5}
-        far={4}
-      />
-    </Canvas>
-  );
-
   return (
     <ConfigProvider theme={theme}>
-      <GlobalStyle />
       <Header
         hamburgerColor="#111"
         dropdownButtonColor="#111"
-        dropdownButtonHoverColor="#ff385c"
+        dropdownButtonHoverColor={CORPORATE_COLOR}
         dropdownButtonOutlineColor="#111"
-        logoTitleColor="#ff385c"
+        logoTitleColor={CORPORATE_COLOR}
       />
 
       <PageWrapper>
         <MainContainer>
-          {/* --- MOBILE VISUAL (Shows on top only on mobile) --- */}
           <MobileVisualHeader>
-            <Suspense
-              fallback={
-                <div
-                  style={{ width: "100%", height: "100%", background: "#eee" }}
-                />
-              }
-            >
-              <GiftCardScene />
-            </Suspense>
+            {/* The preloading ensures this doesn't flicker even if it suspends briefly */}
+            <GiftCardScene textureUrl={CARD_IMAGES[selectedDesignIndex]} />
           </MobileVisualHeader>
 
           {/* --- LEFT SIDE: CONFIGURATION --- */}
@@ -708,7 +953,10 @@ export default function GiftcardCheckoutPage() {
             {/* 1. Design Selection */}
             <SectionBlock>
               <SectionHeader>
-                <Gift size={22} color="#ff385c" />
+                <lord-icon
+                  src="https://cdn.lordicon.com/hwfggmas.json"
+                  trigger="in"
+                ></lord-icon>
                 Select a design
               </SectionHeader>
               <DesignGrid>
@@ -730,7 +978,7 @@ export default function GiftcardCheckoutPage() {
                           position: "absolute",
                           top: 8,
                           right: 8,
-                          background: "#222",
+                          background: "#000",
                           borderRadius: "50%",
                           padding: 2,
                         }}
@@ -746,7 +994,7 @@ export default function GiftcardCheckoutPage() {
             {/* 2. Amount Selection */}
             <SectionBlock>
               <SectionHeader>
-                <CreditCard size={22} color="#ff385c" />
+                <CreditCard size={22} color={CORPORATE_COLOR} />
                 Choose amount
               </SectionHeader>
               <AmountGrid>
@@ -775,7 +1023,7 @@ export default function GiftcardCheckoutPage() {
             {/* 3. Delivery Method */}
             <SectionBlock>
               <SectionHeader>
-                <Mail size={22} color="#ff385c" />
+                <Mail size={22} color={CORPORATE_COLOR} />
                 How would you like to send it?
               </SectionHeader>
               <DeliveryToggle>
@@ -783,7 +1031,12 @@ export default function GiftcardCheckoutPage() {
                   $selected={deliveryMethod === "email"}
                   onClick={() => setDeliveryMethod("email")}
                 >
-                  <Mail size={20} />
+                  <Mail
+                    size={20}
+                    color={
+                      deliveryMethod === "email" ? CORPORATE_COLOR : "#444"
+                    }
+                  />
                   <div>
                     <h4>Email to recipient</h4>
                     <p>We'll send it directly to them.</p>
@@ -793,7 +1046,10 @@ export default function GiftcardCheckoutPage() {
                   $selected={deliveryMethod === "self"}
                   onClick={() => setDeliveryMethod("self")}
                 >
-                  <User size={20} />
+                  <User
+                    size={20}
+                    color={deliveryMethod === "self" ? CORPORATE_COLOR : "#444"}
+                  />
                   <div>
                     <h4>Email to me</h4>
                     <p>Print it out or forward it later.</p>
@@ -857,29 +1113,65 @@ export default function GiftcardCheckoutPage() {
                   onChange={(e) => handleInputChange("message", e.target.value)}
                 />
               </InputGroup>
+            </SectionBlock>
 
-              <InputGroup>
-                <Label>Delivery Date</Label>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <DatePicker
-                    size="large"
-                    style={{ width: "100%", maxWidth: 200 }}
-                    onChange={(date, dateString) =>
-                      handleInputChange("date", dateString)
-                    }
-                    disabledDate={(current) => current && current < Date.now()}
+            {/* 4. Scheduling */}
+            <SectionBlock>
+              <SectionHeader>
+                <Clock size={22} color={CORPORATE_COLOR} />
+                When should we send it?
+              </SectionHeader>
+
+              <DeliveryToggle style={{ marginBottom: 10 }}>
+                <ToggleOption
+                  $selected={!isScheduled}
+                  onClick={() => setIsScheduled(false)}
+                >
+                  <Clock
+                    size={20}
+                    color={!isScheduled ? CORPORATE_COLOR : "#444"}
                   />
-                  {!formData.date && (
-                    <span style={{ fontSize: "0.9rem", color: "#666" }}>
-                      Sent instantly
-                    </span>
-                  )}
-                </div>
-              </InputGroup>
+                  <div>
+                    <h4>Send Instantly</h4>
+                    <p>We'll send it as soon as you pay.</p>
+                  </div>
+                </ToggleOption>
+                <ToggleOption
+                  $selected={isScheduled}
+                  onClick={() => setIsScheduled(true)}
+                >
+                  <CalendarIcon
+                    size={20}
+                    color={isScheduled ? CORPORATE_COLOR : "#444"}
+                  />
+                  <div>
+                    <h4>Schedule for Later</h4>
+                    <p>Choose a specific date.</p>
+                  </div>
+                </ToggleOption>
+              </DeliveryToggle>
+
+              <AnimatePresence>
+                {isScheduled && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <div style={{ marginTop: 24 }}>
+                      <CustomCalendar
+                        value={formData.date}
+                        onChange={(val) => handleInputChange("date", val)}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </SectionBlock>
           </LeftColumn>
 
-          {/* --- RIGHT SIDE: STICKY PREVIEW (Desktop Only) --- */}
+          {/* --- RIGHT SIDE: STICKY PREVIEW --- */}
           <RightColumn>
             <StickyCard>
               <h3 style={{ margin: "0 0 16px 0", fontSize: "1.2rem" }}>
@@ -887,19 +1179,7 @@ export default function GiftcardCheckoutPage() {
               </h3>
 
               <CanvasContainer>
-                <Suspense
-                  fallback={
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        background: "#eee",
-                      }}
-                    />
-                  }
-                >
-                  <GiftCardScene />
-                </Suspense>
+                <GiftCardScene textureUrl={CARD_IMAGES[selectedDesignIndex]} />
               </CanvasContainer>
 
               <div>
@@ -955,7 +1235,7 @@ export default function GiftcardCheckoutPage() {
                 href="#"
                 style={{
                   textDecoration: "underline",
-                  color: "#222",
+                  color: "#000",
                   fontWeight: 600,
                 }}
                 onClick={(e) => {
