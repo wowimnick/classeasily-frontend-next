@@ -717,8 +717,6 @@ const BusinessScene = ({ isMobile }) => (
   </>
 );
 
-// --- NEW 3D NITRO CARD SELECTOR ---
-
 const SelectButton = styled(motion.button)`
   color: white;
   background: #ff385c;
@@ -737,6 +735,14 @@ const SelectButton = styled(motion.button)`
   &:hover {
     background: #d9324e;
   }
+`;
+
+// NEW: Wrapper to center the button on mobile below the canvas
+const MobileButtonWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  width: 100%;
 `;
 
 function NitroCard3D({
@@ -788,11 +794,11 @@ function NitroCard3D({
     >
       <GlossyCardMesh textureUrl={textureUrl} envMapIntensity={2} />
 
-      {isActive && (
+      {isActive && !isMobile && (
         <Html
           position={[0, -1.4, 0]}
           center
-          distanceFactor={isMobile ? 4 : 5}
+          distanceFactor={5}
           zIndexRange={[100, 0]}
           transform
           style={{ opacity: 1, pointerEvents: "auto" }}
@@ -1005,7 +1011,12 @@ export default function GiftCardsPage() {
                   <Canvas
                     key={`select-${canvasKey}`}
                     shadows
-                    camera={{ position: [0, 0, 8], fov: isMobile ? 45 : 35 }}
+                    // CHANGED: Moved camera much closer on mobile (Z: 5.5) to fill the container
+                    // CHANGED: Increased FOV slightly to 40 on mobile to widen the view at close range
+                    camera={{
+                      position: [0, 0, isMobile ? 5.5 : 8],
+                      fov: isMobile ? 40 : 35,
+                    }}
                     gl={{ antialias: true }}
                     style={{
                       position: "absolute",
@@ -1032,6 +1043,18 @@ export default function GiftCardsPage() {
                 <ChevronRight size={isMobile ? 20 : 24} />
               </ArrowButton>
             </CarouselWrapper>
+
+            {isMobile && (
+              <MobileButtonWrapper>
+                <SelectButton
+                  onClick={() => handleSelect(HERO_CARD_IMAGES[carouselIndex])}
+                  whileTap={{ scale: 0.95 }}
+                  style={{ justifyContent: "center" }}
+                >
+                  Select Design
+                </SelectButton>
+              </MobileButtonWrapper>
+            )}
           </Container>
         </CarouselSection>
 
@@ -1132,7 +1155,10 @@ export default function GiftCardsPage() {
                   <Canvas
                     key={`biz-${canvasKey}`}
                     shadows
-                    camera={{ position: [0, 0, isMobile ? 6 : 4.5], fov: 40 }}
+                    camera={{
+                      position: [0, 0, isMobile ? 3.8 : 4.5],
+                      fov: isMobile ? 35 : 40,
+                    }}
                     gl={{ antialias: true }}
                     dpr={[1, 2]}
                   >

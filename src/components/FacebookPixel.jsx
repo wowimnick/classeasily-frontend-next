@@ -8,13 +8,18 @@ export default function FacebookPixel() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Dynamically import ReactPixel so it only runs on the client
-    import("react-facebook-pixel")
-      .then((x) => x.default)
-      .then((ReactPixel) => {
-        ReactPixel.init(process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID);
-        ReactPixel.pageView();
-      });
+    // Only run on classeasily.com, not on staging or localhost
+    if (
+      typeof window !== "undefined" &&
+      window.location.hostname === "classeasily.com"
+    ) {
+      import("react-facebook-pixel")
+        .then((x) => x.default)
+        .then((ReactPixel) => {
+          ReactPixel.init(process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID);
+          ReactPixel.pageView();
+        });
+    }
   }, [pathname, searchParams]);
 
   return null;
