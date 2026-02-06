@@ -157,10 +157,9 @@ const BuyButton = styled(motion.button)`
   color: #ffffff;
   border: none;
   height: 48px;
-  padding: 0 24px;
-  border-radius: 8px;
   font-weight: 600;
-  font-size: 14px;
+  padding: 12px 28px;
+  border-radius: 14px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -496,6 +495,7 @@ const GlossyCardMesh = React.forwardRef(
     const geometryRef = useRef();
 
     useLayoutEffect(() => {
+      // ... existing geometry logic stays the same ...
       if (geometryRef.current) {
         geometryRef.current.computeBoundingBox();
         const { min, max } = geometryRef.current.boundingBox;
@@ -522,8 +522,18 @@ const GlossyCardMesh = React.forwardRef(
           attach="material-0"
           map={texture}
           color="#ffffff"
-          roughness={0.1}
-          metalness={0.5}
+          // --- START OF CHANGES ---
+
+          // 1. Add Emissive Logic (Self-illumination)
+          emissive="#ffffff" // Base color of the glow
+          emissiveMap={texture} // Map the glow to the image itself
+          emissiveIntensity={0.2} // Controls brightness! (Try 0.1 to 0.4)
+          // 2. Reduce Metalness
+          // Was 0.5. Lowering this prevents the texture from getting "muddy"
+          metalness={0.1}
+          roughness={0.2} // Increased slightly to catch more light
+          // --- END OF CHANGES ---
+
           clearcoat={1.0}
           clearcoatRoughness={0.05}
           ior={1.5}
@@ -609,12 +619,9 @@ const HeroCarouselScene = ({ isMobile }) => (
     <color attach="background" args={["#ffffff"]} />
     <ambientLight intensity={1} />
 
-    {/* 
-      COPY OF LIGHTING FROM NitroCarouselScene
-    */}
     <directionalLight
       position={[5, 5, 10]}
-      intensity={1.5}
+      intensity={0.5}
       castShadow
       shadow-mapSize={[2048, 2048]}
       shadow-bias={-0.0001}
@@ -626,10 +633,6 @@ const HeroCarouselScene = ({ isMobile }) => (
       <GiftCardCarousel radius={isMobile ? 1.8 : 2.4} />
     </AutoRotateRig>
 
-    {/* 
-      COPY OF SHADOWS FROM NitroCarouselScene 
-      (Using -1.5 Y position to match the "float" height)
-    */}
     <ContactShadows
       position={[0, -0.7, 0]}
       opacity={1}
@@ -696,7 +699,7 @@ const BusinessScene = ({ isMobile }) => (
     <ambientLight intensity={1} />
     <directionalLight
       position={[5, 5, 10]}
-      intensity={1.5}
+      intensity={0.5}
       castShadow
       shadow-mapSize={[2048, 2048]}
       shadow-bias={-0.0001}
@@ -823,7 +826,7 @@ const NitroCarouselScene = ({
       <ambientLight intensity={1} />
       <directionalLight
         position={[5, 5, 10]}
-        intensity={1.5}
+        intensity={0.5}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0001}
@@ -850,7 +853,7 @@ const NitroCarouselScene = ({
         opacity={0.4}
         scale={20}
         blur={2}
-        far={4.5}
+        far={3.5}
       />
     </>
   );
