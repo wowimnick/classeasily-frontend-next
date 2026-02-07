@@ -5,7 +5,6 @@ import Image from "next/image";
 import { message, Input, Alert, Button, Divider } from "antd";
 import NumberFlow from "@number-flow/react";
 import posthog from "posthog-js";
-import dayjs from "dayjs"; // Make sure to install this
 import { ActionButton, CheckoutLink } from "./GiftcardStyles";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -18,6 +17,7 @@ import {
 import { theme as appTheme } from "@/components/theme";
 
 // --- STRIPE SETUP ---
+// If key is missing, this resolves to null, disabling the real form.
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || "",
 );
@@ -67,8 +67,6 @@ const SummaryBox = styled.div`
   padding: 24px;
   position: sticky;
   top: 120px;
-  background: #fafafa;
-  border: 1px solid #eee;
 `;
 
 const SummaryThumb = styled.div`
@@ -181,6 +179,8 @@ const StripePaymentForm = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [editingField, setEditingField] = useState(null);
+
+  // NEW: State for Cardholder Name
   const [cardholderName, setCardholderName] = useState("");
 
   const handleSaveEdit = () => {
@@ -190,6 +190,7 @@ const StripePaymentForm = ({
   const handleSubmit = async () => {
     if (!stripe || !elements) return;
 
+    // Simple validation for cardholder name
     if (!cardholderName.trim()) {
       setError("Please enter the cardholder name.");
       return;
@@ -199,6 +200,7 @@ const StripePaymentForm = ({
     setError(null);
 
     try {
+      // 1. Validate form fields
       const { error: submitError } = await elements.submit();
       if (submitError) {
         setError(submitError.message);
@@ -206,7 +208,7 @@ const StripePaymentForm = ({
         return;
       }
 
-      // Mock confirmation for demo / or use real clientSecret
+      // 2. Confirm Payment
       let result;
       if (clientSecret) {
         result = await stripe.confirmPayment({
@@ -216,15 +218,18 @@ const StripePaymentForm = ({
             return_url: `${window.location.origin}/booking/status`,
             payment_method_data: {
               billing_details: {
-                name: cardholderName,
+                name: cardholderName, // Pass the new field here
                 email: formData.recipientEmail,
-                address: { country: "CA" },
+                address: {
+                  country: "CA",
+                },
               },
             },
           },
           redirect: "if_required",
         });
       } else {
+        // Mock fallback for demo purposes
         await new Promise((resolve) => setTimeout(resolve, 1500));
         result = { paymentIntent: { status: "succeeded" } };
       }
@@ -240,7 +245,7 @@ const StripePaymentForm = ({
           recipient_email: formData.recipientEmail,
         });
         message.success("Gift card ordered successfully!");
-        if (onSuccess) onSuccess();
+        if (onSuccess) onSuccess(); // Trigger success transition
       }
     } catch (err) {
       setError(err.message || "Payment processing failed.");
@@ -249,16 +254,13 @@ const StripePaymentForm = ({
     }
   };
 
-  const formattedDate = formData.date
-    ? dayjs(formData.date).format("MMM D, YYYY")
-    : "Instantly";
-
   return (
     <CheckoutGrid>
       {/* LEFT: PAYMENT INPUTS */}
       <div>
         <CheckoutSection>
           <CheckoutSectionHeader>Pay with</CheckoutSectionHeader>
+
           {error && (
             <Alert
               message={error}
@@ -278,6 +280,7 @@ const StripePaymentForm = ({
             }}
           />
 
+          {/* NEW: Cardholder Name Field */}
           <div style={{ marginBottom: 16 }}>
             <label
               style={{
@@ -300,8 +303,20 @@ const StripePaymentForm = ({
           <PaymentElement
             options={{
               layout: "tabs",
-              fields: { billingDetails: { address: { country: "never" } } },
-              defaultValues: { billingDetails: { address: { country: "CA" } } },
+              fields: {
+                billingDetails: {
+                  address: {
+                    country: "never",
+                  },
+                },
+              },
+              defaultValues: {
+                billingDetails: {
+                  address: {
+                    country: "CA",
+                  },
+                },
+              },
             }}
           />
         </CheckoutSection>
@@ -313,7 +328,7 @@ const StripePaymentForm = ({
             Required for your gift card
           </CheckoutSectionHeader>
 
-          {/* Email */}
+          {/* Recipient Email */}
           {editingField === "email" ? (
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontWeight: 500, marginBottom: 4 }}>
@@ -365,6 +380,7 @@ const StripePaymentForm = ({
                   onChange={(e) =>
                     setFormData({ ...formData, message: e.target.value })
                   }
+                  placeholder="Your message here..."
                 />
                 <div style={{ alignSelf: "flex-end" }}>
                   <Button onClick={handleSaveEdit} type="primary">
@@ -413,7 +429,8 @@ const StripePaymentForm = ({
             }}
           >
             By selecting the button below, I agree to the{" "}
-            <CheckoutLink>Terms</CheckoutLink> and{" "}
+            <CheckoutLink>Host Terms</CheckoutLink>,{" "}
+            <CheckoutLink>Payment Terms of Service</CheckoutLink>, and{" "}
             <CheckoutLink>Privacy Policy</CheckoutLink>.
           </p>
           <ActionButton
@@ -423,6 +440,29 @@ const StripePaymentForm = ({
           >
             {loading ? "Processing..." : "Confirm and Pay"}
           </ActionButton>
+
+          {/* <div
+            style={{
+              marginTop: 24,
+              textAlign: "center",
+              borderTop: "1px dashed #ddd",
+              paddingTop: 16,
+            }}
+          >
+            <span style={{ fontSize: "0.8rem", color: "#888", marginRight: 8 }}>
+              Testing?
+            </span>
+            <Button
+              type="dashed"
+              size="small"
+              onClick={(e) => {
+                e.preventDefault();
+                if (onSuccess) onSuccess();
+              }}
+            >
+              Skip & Simulate Success
+            </Button> 
+          </div>*/}
         </div>
       </div>
 
@@ -472,11 +512,6 @@ const StripePaymentForm = ({
             </span>
           </SummaryRow>
 
-          <SummaryRow>
-            <span>Delivery Date</span>
-            <span>{formattedDate}</span>
-          </SummaryRow>
-
           <SummaryRow style={{ color: "#666" }}>
             <span>Tax (0%)</span>
             <span>$0.00</span>
@@ -499,6 +534,9 @@ const StripePaymentForm = ({
               />
             </span>
           </div>
+          <div style={{ fontSize: "0.8rem", color: "#888", marginTop: 8 }}>
+            *Taxes are applied when the gift card is redeemed, not at purchase.
+          </div>
         </SummaryBox>
       </div>
     </CheckoutGrid>
@@ -511,12 +549,12 @@ export default function GiftcardPaymentStep({
   formData,
   setFormData,
   onBack,
-  onSuccess,
+  onSuccess, // Receive success callback
 }) {
   const [clientSecret, setClientSecret] = useState(null);
 
   useEffect(() => {
-    // Fetch Intent logic here
+    // Mock or Fetch Intent Here
   }, [amount]);
 
   const stripeAppearance = useMemo(() => {
@@ -524,21 +562,65 @@ export default function GiftcardPaymentStep({
       theme: "stripe",
       variables: {
         colorPrimary: appTheme.token.colorPrimary,
+        colorBackground: "#ffffff",
+        colorText: appTheme.token.colorText,
+        colorDanger: appTheme.token.colorError,
+        fontFamily: '"Proxima Soft", sans-serif',
+        spacingUnit: "4px",
         borderRadius: `${appTheme.token.borderRadius}px`,
+        fontSizeBase: `${appTheme.token.fontSize}px`,
       },
       rules: {
         ".Input": {
-          padding: "12px",
+          paddingTop: "16px",
+          paddingBottom: "16px",
+          paddingLeft: "16px",
+          paddingRight: "16px",
           borderColor: appTheme.token.colorBorder,
           boxShadow: "none",
+          transition: "border-color 0.2s, box-shadow 0.2s",
+          fontFamily: '"Proxima Soft", sans-serif',
+          fontWeight: "500",
+        },
+        ".Input:hover": {
+          borderColor: appTheme.token.colorPrimary,
         },
         ".Input:focus": {
+          borderColor: appTheme.token.colorPrimary,
+          boxShadow: `0 0 0 2px ${appTheme.token.colorPrimary}20`,
+          outline: "none",
+        },
+        ".Input--invalid": {
+          borderColor: appTheme.token.colorError,
+          boxShadow: "none",
+        },
+        ".Input--invalid:focus": {
+          borderColor: appTheme.token.colorError,
+          boxShadow: `0 0 0 2px ${appTheme.token.colorError}20`,
+        },
+        ".Label": {
+          fontWeight: "600",
+          color: "#000",
+          marginBottom: "8px",
+          fontFamily: '"Proxima Soft", sans-serif',
+        },
+        ".Input::placeholder": {
+          color: "#c5c5c5",
+          fontWeight: "600",
+          fontFamily: '"Proxima Soft", sans-serif',
+        },
+        ".Tab": {
+          borderColor: appTheme.token.colorBorder,
+          borderRadius: `${appTheme.token.borderRadius}px`,
+          fontFamily: '"Proxima Soft", sans-serif',
+          fontWeight: "600",
+        },
+        ".Tab:selected": {
           borderColor: appTheme.token.colorPrimary,
         },
       },
     };
   }, []);
-
   const options = {
     mode: "payment",
     currency: "cad",
@@ -565,8 +647,11 @@ export default function GiftcardPaymentStep({
           <CheckoutLink as="span">Back to options</CheckoutLink>
         </button>
       </div>
+
       <CheckoutPageTitle>Confirm and Pay</CheckoutPageTitle>
+
       <Divider style={{ margin: "40px 0" }} />
+
       <Elements stripe={stripePromise} options={options}>
         <StripePaymentForm
           amount={amount}
@@ -574,7 +659,7 @@ export default function GiftcardPaymentStep({
           setFormData={setFormData}
           designUrl={designUrl}
           clientSecret={clientSecret}
-          onSuccess={onSuccess}
+          onSuccess={onSuccess} // Pass it down
         />
       </Elements>
     </div>

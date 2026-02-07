@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import styled, { css } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,7 +13,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Image from "next/image";
-import { ConfigProvider, Input, Form, message } from "antd";
+import { ConfigProvider, Input } from "antd";
 import dayjs from "dayjs";
 import Giftcard3DScene from "./Giftcard3DScene";
 import { theme } from "@/components/theme";
@@ -68,7 +68,7 @@ const RightColumn = styled.div`
 const MobileVisualHeader = styled.div`
   display: none;
   width: 100%;
-  height: 300px;
+  height: 280px;
   background: #fff;
   border-radius: 16px;
   margin-bottom: 32px;
@@ -94,7 +94,7 @@ const DesignOption = styled.button`
   aspect-ratio: 1.58/1;
   border-radius: 12px;
   overflow: hidden;
-  border: 2px solid
+  border: 1px solid
     ${(props) => (props.$selected ? CORPORATE_COLOR : "transparent")};
   cursor: pointer;
   transition: all 0.2s;
@@ -118,13 +118,12 @@ const CheckCircle = styled.div`
   right: 8px;
   width: 24px;
   height: 24px;
-  background: ${CORPORATE_COLOR};
+  background: rgba(0, 0, 0, 0.6);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 `;
 
 const AmountGrid = styled.div`
@@ -151,6 +150,7 @@ const AmountChip = styled.button`
   }
 `;
 
+// New styles for the redesign
 const CustomInputWrapper = styled(motion.div)`
   width: 100%;
   margin-top: 8px;
@@ -257,7 +257,6 @@ const MobileStickyFooter = styled.div`
   z-index: 100;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
 
   @media (max-width: 900px) {
     display: flex;
@@ -332,7 +331,6 @@ function SimpleCalendar({ value, onChange }) {
         }}
       >
         <button
-          type="button"
           style={{
             border: "1px solid #eee",
             borderRadius: "50%",
@@ -340,9 +338,6 @@ function SimpleCalendar({ value, onChange }) {
             height: 32,
             cursor: "pointer",
             background: "white",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
           }}
           onClick={() => setCurrentMonth(currentMonth.subtract(1, "month"))}
         >
@@ -350,7 +345,6 @@ function SimpleCalendar({ value, onChange }) {
         </button>
         <h4 style={{ margin: 0 }}>{currentMonth.format("MMMM YYYY")}</h4>
         <button
-          type="button"
           style={{
             border: "1px solid #eee",
             borderRadius: "50%",
@@ -358,9 +352,6 @@ function SimpleCalendar({ value, onChange }) {
             height: 32,
             cursor: "pointer",
             background: "white",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
           }}
           onClick={() => setCurrentMonth(currentMonth.add(1, "month"))}
         >
@@ -368,19 +359,6 @@ function SimpleCalendar({ value, onChange }) {
         </button>
       </div>
       <CalGrid>
-        {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
-          <div
-            key={d}
-            style={{
-              textAlign: "center",
-              fontSize: "0.8rem",
-              color: "#888",
-              marginBottom: 4,
-            }}
-          >
-            {d}
-          </div>
-        ))}
         {days.map((day, idx) => {
           if (!day) return <div key={idx} />;
           const date = currentMonth.date(day);
@@ -389,7 +367,6 @@ function SimpleCalendar({ value, onChange }) {
           return (
             <CalDayBtn
               key={idx}
-              type="button"
               disabled={isPast}
               $selected={isSelected}
               onClick={() => !isPast && handleDayClick(day)}
@@ -419,45 +396,10 @@ export default function GiftcardConfigStep({
   setIsScheduled,
   onNext,
 }) {
-  const [form] = Form.useForm();
   const finalAmount = amount || (customAmount ? parseFloat(customAmount) : 0);
 
-  // Sync Form with Parent State on Mount
-  useEffect(() => {
-    form.setFieldsValue(formData);
-  }, [formData, form]);
-
-  const handleFormValuesChange = (changedValues, allValues) => {
-    // Real-time sync to parent state so Preview card updates immediately
-    setFormData((prev) => ({ ...prev, ...allValues }));
-  };
-
-  const handleValidateAndProceed = async () => {
-    try {
-      // 1. Validate Amount
-      if (!finalAmount || finalAmount <= 0) {
-        message.error("Please select or enter a valid gift card amount");
-        // Scroll to top
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return;
-      }
-
-      // 2. Validate Antd Form Fields
-      await form.validateFields();
-
-      // 3. Validation Logic for Schedule
-      if (isScheduled && !formData.date) {
-        message.error("Please select a date for delivery");
-        return;
-      }
-
-      // Proceed
-      onNext();
-    } catch (errorInfo) {
-      console.log("Validation Failed:", errorInfo);
-      // Antd automatically scrolls to error if configured, otherwise simple message
-      message.error("Please fix the errors in the form");
-    }
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -479,7 +421,6 @@ export default function GiftcardConfigStep({
                   key={idx}
                   $selected={selectedDesignIndex === idx}
                   onClick={() => setSelectedDesignIndex(idx)}
-                  type="button"
                 >
                   <Image
                     src={img}
@@ -506,7 +447,6 @@ export default function GiftcardConfigStep({
               {PRESET_AMOUNTS.map((val) => (
                 <AmountChip
                   key={val}
-                  type="button"
                   $selected={amount === val}
                   onClick={() => {
                     setAmount(val);
@@ -518,7 +458,6 @@ export default function GiftcardConfigStep({
               ))}
               {/* Custom Chip */}
               <AmountChip
-                type="button"
                 $selected={amount === null}
                 onClick={() => setAmount(null)}
               >
@@ -553,7 +492,7 @@ export default function GiftcardConfigStep({
             </AnimatePresence>
           </SectionBlock>
 
-          {/* DETAILS (FORM) */}
+          {/* DETAILS */}
           <SectionBlock>
             <SectionHeader>
               <Mail size={22} color={CORPORATE_COLOR} /> How would you like to
@@ -561,7 +500,6 @@ export default function GiftcardConfigStep({
             </SectionHeader>
             <DeliveryToggle>
               <ToggleOption
-                type="button"
                 $selected={deliveryMethod === "email"}
                 onClick={() => setDeliveryMethod("email")}
               >
@@ -575,7 +513,6 @@ export default function GiftcardConfigStep({
                 </div>
               </ToggleOption>
               <ToggleOption
-                type="button"
                 $selected={deliveryMethod === "self"}
                 onClick={() => setDeliveryMethod("self")}
               >
@@ -590,65 +527,96 @@ export default function GiftcardConfigStep({
               </ToggleOption>
             </DeliveryToggle>
 
-            <Form
-              form={form}
-              layout="vertical"
-              initialValues={formData}
-              onValuesChange={handleFormValuesChange}
-              requiredMark={false}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 20,
+                marginBottom: 20,
+              }}
             >
-              <div
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: 8,
+                    fontWeight: 600,
+                    fontSize: "13px",
+                  }}
+                >
+                  Recipient Name
+                </label>
+                <Input
+                  size="middle"
+                  placeholder="e.g. John Doe"
+                  value={formData.recipientName}
+                  onChange={(e) =>
+                    handleInputChange("recipientName", e.target.value)
+                  }
+                />
+              </div>
+              {deliveryMethod === "email" && (
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: 8,
+                      fontWeight: 600,
+                      fontSize: "13px",
+                    }}
+                  >
+                    Recipient Email
+                  </label>
+                  <Input
+                    size="middle"
+                    type="email"
+                    placeholder="e.g. john@example.com"
+                    value={formData.recipientEmail}
+                    onChange={(e) =>
+                      handleInputChange("recipientEmail", e.target.value)
+                    }
+                  />
+                </div>
+              )}
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <label
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 20,
+                  display: "block",
+                  marginBottom: 8,
+                  fontWeight: 600,
+                  fontSize: "13px",
                 }}
               >
-                <Form.Item
-                  name="recipientName"
-                  label="Recipient Name"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please enter the recipient's name",
-                    },
-                  ]}
-                >
-                  <Input size="large" placeholder="e.g. John Doe" />
-                </Form.Item>
-
-                {deliveryMethod === "email" && (
-                  <Form.Item
-                    name="recipientEmail"
-                    label="Recipient Email"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please enter recipient email",
-                      },
-                      { type: "email", message: "Please enter a valid email" },
-                    ]}
-                  >
-                    <Input size="large" placeholder="e.g. john@example.com" />
-                  </Form.Item>
-                )}
-              </div>
-
-              <Form.Item
-                name="senderName"
-                label="Your Name"
-                rules={[{ required: true, message: "Please enter your name" }]}
+                Your Name
+              </label>
+              <Input
+                size="middle"
+                placeholder="e.g. Jane Smith"
+                value={formData.senderName}
+                onChange={(e) =>
+                  handleInputChange("senderName", e.target.value)
+                }
+              />
+            </div>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: 8,
+                  fontWeight: 600,
+                  fontSize: "13px",
+                }}
               >
-                <Input size="large" placeholder="e.g. Jane Smith" />
-              </Form.Item>
-
-              <Form.Item name="message" label="Message (Optional)">
-                <Input.TextArea
-                  rows={4}
-                  placeholder="Write a personal note..."
-                />
-              </Form.Item>
-            </Form>
+                Message (Optional)
+              </label>
+              <Input.TextArea
+                rows={4}
+                placeholder="Write a personal note..."
+                value={formData.message}
+                onChange={(e) => handleInputChange("message", e.target.value)}
+              />
+            </div>
           </SectionBlock>
 
           {/* SCHEDULING */}
@@ -659,7 +627,6 @@ export default function GiftcardConfigStep({
             </SectionHeader>
             <DeliveryToggle style={{ marginBottom: 10 }}>
               <ToggleOption
-                type="button"
                 $selected={!isScheduled}
                 onClick={() => setIsScheduled(false)}
               >
@@ -673,7 +640,6 @@ export default function GiftcardConfigStep({
                 </div>
               </ToggleOption>
               <ToggleOption
-                type="button"
                 $selected={isScheduled}
                 onClick={() => setIsScheduled(true)}
               >
@@ -697,15 +663,9 @@ export default function GiftcardConfigStep({
                   style={{ overflow: "hidden" }}
                 >
                   <div style={{ marginTop: 24 }}>
-                    {/* 
-                        Note: We are manually updating formData.date here.
-                        If strict Form validation is needed for date, we could use a hidden Form.Item
-                     */}
                     <SimpleCalendar
                       value={formData.date}
-                      onChange={(val) => {
-                        setFormData((prev) => ({ ...prev, date: val }));
-                      }}
+                      onChange={(val) => handleInputChange("date", val)}
                     />
                   </div>
                 </motion.div>
@@ -740,10 +700,7 @@ export default function GiftcardConfigStep({
                 </span>
               </SummaryRow>
             </div>
-            <ActionButton
-              whileTap={{ scale: 0.98 }}
-              onClick={handleValidateAndProceed}
-            >
+            <ActionButton whileTap={{ scale: 0.98 }} onClick={onNext}>
               Checkout
             </ActionButton>
             <div
@@ -769,7 +726,7 @@ export default function GiftcardConfigStep({
           <ActionButton
             style={{ width: "auto", marginTop: 0 }}
             whileTap={{ scale: 0.95 }}
-            onClick={handleValidateAndProceed}
+            onClick={onNext}
           >
             Checkout
           </ActionButton>

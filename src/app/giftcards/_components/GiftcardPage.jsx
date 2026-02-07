@@ -294,7 +294,6 @@ const ArrowButton = styled.button`
   z-index: 50;
   color: #222;
   transition: all 0.2s;
-  aria-label: ${(props) => (props.$left ? "Previous Design" : "Next Design")};
 
   ${(props) =>
     props.$left
