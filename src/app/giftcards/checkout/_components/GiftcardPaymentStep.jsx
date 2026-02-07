@@ -30,6 +30,11 @@ const CheckoutGrid = styled.div`
   grid-template-columns: 1fr 1fr;
   gap: 80px;
 
+  /* Prevent grid blowout when content is long (e.g. messages) */
+  & > * {
+    min-width: 0;
+  }
+
   @media (min-width: 1200px) {
     grid-template-columns: 1.2fr 1fr;
   }
@@ -405,7 +410,7 @@ const StripePaymentForm = ({
             </div>
           ) : (
             <EditableRow>
-              <div style={{ maxWidth: "80%" }}>
+              <div style={{ maxWidth: "80%", minWidth: 0 }}>
                 <div style={{ fontWeight: 500 }}>Message</div>
                 <div
                   style={{

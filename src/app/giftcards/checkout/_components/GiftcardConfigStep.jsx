@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled, { css } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -160,23 +160,6 @@ const CustomInputWrapper = styled(motion.div)`
 const CustomInputContainer = styled.div`
   position: relative;
   max-width: 150px;
-
-  .ant-input {
-    padding-left: 32px;
-    border-radius: 24px;
-    height: 44px;
-  }
-`;
-
-const CurrencyPrefix = styled.span`
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 2;
-  font-weight: 600;
-  font-size: 1rem;
-  color: #000;
 `;
 
 const DeliveryToggle = styled.div`
@@ -419,8 +402,56 @@ export default function GiftcardConfigStep({
   const [form] = Form.useForm();
   const finalAmount = amount || (customAmount ? parseFloat(customAmount) : 0);
 
-  const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  // 1. Initialize form from parent state when component mounts (e.g. Back from payment)
+  useEffect(() => {
+    form.setFieldsValue({
+      ...formData,
+      customAmount: customAmount,
+    });
+  }, [form, formData, customAmount]);
+
+  // 2. Ensure field values are correct when switching modes
+  useEffect(() => {
+    if (amount === null) {
+      form.setFieldsValue({ customAmount });
+    }
+  }, [amount, customAmount, form]);
+
+  useEffect(() => {
+    if (isScheduled) {
+      form.setFieldsValue({ date: formData.date });
+    }
+  }, [isScheduled, formData.date, form]);
+
+  // 3. Sync changes from Form back to parent state
+  const handleValuesChange = (changedValues) => {
+    // Handle customAmount
+    if ("customAmount" in changedValues) {
+      setCustomAmount(changedValues.customAmount);
+    }
+
+    // Handle standard form fields
+    const formFields = [
+      "recipientName",
+      "recipientEmail",
+      "senderName",
+      "message",
+      "date",
+    ];
+
+    const updates = {};
+    let hasUpdates = false;
+
+    formFields.forEach((field) => {
+      if (field in changedValues) {
+        updates[field] = changedValues[field];
+        hasUpdates = true;
+      }
+    });
+
+    if (hasUpdates) {
+      setFormData((prev) => ({ ...prev, ...updates }));
+    }
   };
 
   const handleNext = async () => {
@@ -434,7 +465,11 @@ export default function GiftcardConfigStep({
 
   return (
     <ConfigProvider theme={theme}>
-      <Form form={form} component={false}>
+      <Form
+        form={form}
+        component={false}
+        onValuesChange={handleValuesChange} // Bind sync handler
+      >
         <ConfigGrid>
           <MobileVisualHeader>
             <Giftcard3DScene textureUrl={cardImages[selectedDesignIndex]} />
@@ -483,7 +518,7 @@ export default function GiftcardConfigStep({
                     $selected={amount === val}
                     onClick={() => {
                       setAmount(val);
-                      setCustomAmount("");
+                      setCustomAmount(""); // Clear custom amount if preset chosen
                     }}
                   >
                     ${val}
@@ -509,7 +544,6 @@ export default function GiftcardConfigStep({
                     transition={{ duration: 0.2 }}
                   >
                     <CustomInputContainer>
-                      <CurrencyPrefix>$</CurrencyPrefix>
                       <Form.Item
                         name="customAmount"
                         rules={[
@@ -521,14 +555,12 @@ export default function GiftcardConfigStep({
                         style={{ margin: 0 }}
                       >
                         <Input
+                          prefix="$"
                           type="number"
                           placeholder="0.00"
                           size="middle"
-                          value={customAmount}
-                          onChange={(e) => {
-                            setCustomAmount(e.target.value);
-                          }}
                           autoFocus
+                          // Removed manual value/onChange to prevent conflicts
                         />
                       </Form.Item>
                     </CustomInputContainer>
@@ -608,10 +640,7 @@ export default function GiftcardConfigStep({
                     <Input
                       size="middle"
                       placeholder="e.g. John Doe"
-                      value={formData.recipientName}
-                      onChange={(e) =>
-                        handleInputChange("recipientName", e.target.value)
-                      }
+                      // Removed manual value/onChange to prevent conflicts
                     />
                   </Form.Item>
                 </div>
@@ -642,10 +671,7 @@ export default function GiftcardConfigStep({
                         size="middle"
                         type="email"
                         placeholder="e.g. john@example.com"
-                        value={formData.recipientEmail}
-                        onChange={(e) =>
-                          handleInputChange("recipientEmail", e.target.value)
-                        }
+                        // Removed manual value/onChange to prevent conflicts
                       />
                     </Form.Item>
                   </div>
@@ -675,10 +701,7 @@ export default function GiftcardConfigStep({
                   <Input
                     size="middle"
                     placeholder="e.g. Jane Smith"
-                    value={formData.senderName}
-                    onChange={(e) =>
-                      handleInputChange("senderName", e.target.value)
-                    }
+                    // Removed manual value/onChange to prevent conflicts
                   />
                 </Form.Item>
               </div>
@@ -697,10 +720,7 @@ export default function GiftcardConfigStep({
                   <Input.TextArea
                     rows={4}
                     placeholder="Write a personal note..."
-                    value={formData.message}
-                    onChange={(e) =>
-                      handleInputChange("message", e.target.value)
-                    }
+                    // Removed manual value/onChange to prevent conflicts
                   />
                 </Form.Item>
               </div>
@@ -762,8 +782,7 @@ export default function GiftcardConfigStep({
                         ]}
                       >
                         <SimpleCalendar
-                          value={formData.date}
-                          onChange={(val) => handleInputChange("date", val)}
+                        // Form.Item injects value and onChange here automatically
                         />
                       </Form.Item>
                     </div>
