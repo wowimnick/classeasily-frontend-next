@@ -7,6 +7,7 @@ import styled, { createGlobalStyle } from "styled-components";
 import { useAuthModal } from "@/context/AuthContext";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { signOutFull } from "@/lib/auth-client";
+import posthog from "posthog-js";
 import { getRoleDisplayName } from "@/services/apiService.js";
 import { LordIcon } from "@/services/ReactUtils.jsx";
 import message from "@/lib/message";
@@ -852,10 +853,15 @@ const CustomUserMenu = ({
   const handleLogout = async () => {
     onClose();
     try {
+      // PostHog: Capture logout event before resetting
+      posthog.capture("user_logged_out");
+      posthog.reset();
+
       await signOutFull();
       message.success("Logged out successfully");
     } catch (error) {
       console.error("Error during logout:", error);
+      posthog.captureException(error);
       message.error("Logout failed. Please try again.");
     }
   };

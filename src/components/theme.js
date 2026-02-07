@@ -1,3 +1,5 @@
+// --- START OF FILE theme.js ---
+
 // src/theme.js
 
 // 🔥 FIX 1: Freeze colors object to prevent mutations
@@ -51,11 +53,11 @@ const themeConfig = {
     colorBgLayout: colors.lightBg,
     colorBgElevated: "#FFFFFF",
 
-    fontFamily: fontStack, // Set globally
+    fontFamily: fontStack,
     fontSize: 14,
 
     borderRadius: 12,
-    controlHeight: 44,
+    controlHeight: 44, // Global height reference
     marginXS: 8,
     margin: 16,
     marginLG: 24,
@@ -80,10 +82,10 @@ const themeConfig = {
     Button: {
       colorPrimary: colors.primary,
       algorithm: true,
-      controlHeight: 40,
+      controlHeight: 46, // CHANGED: Matches Input height exactly
       borderRadius: 12,
       paddingInline: 16,
-      fontFamily: fontStack, // 🔥 Explicitly enforce font
+      fontFamily: fontStack,
     },
     Modal: {
       borderRadiusLG: 12,
@@ -95,13 +97,14 @@ const themeConfig = {
       borderRadius: 12,
       paddingInline: 16,
       paddingBlock: 12,
-      fontFamily: fontStack, // 🔥 Explicitly enforce font
+      colorTextPlaceholder: "#c5c5c5",
+      fontFamily: fontStack,
     },
     Select: {
       controlHeight: 44,
       controlHeightLG: 44,
       borderRadius: 12,
-      fontFamily: fontStack, // 🔥 Explicitly enforce font
+      fontFamily: fontStack,
     },
     DatePicker: {
       controlHeight: 44,

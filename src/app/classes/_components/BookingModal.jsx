@@ -17,6 +17,7 @@ import dynamic from "next/dynamic";
 import { Drawer } from "vaul";
 import { paymentService } from "@/services/apiService";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import posthog from "posthog-js";
 import dayjs from "dayjs";
 
 // Initialize Stripe outside component
@@ -290,8 +291,17 @@ const BookingModal = ({
   }, [isOpen, hasMultipleOptions]);
 
   useEffect(() => {
-    if (isOpen) setIsVisible(true);
-  }, [isOpen]);
+    if (isOpen) {
+      setIsVisible(true);
+      // PostHog: Track booking funnel entry
+      posthog.capture("booking_started", {
+        class_id: classData?.classId || classData?.id,
+        class_title: classData?.title,
+        business_name: classData?.business_name,
+        has_multiple_options: hasMultipleOptions,
+      });
+    }
+  }, [isOpen, classData, hasMultipleOptions]);
 
   useEffect(() => {
     if (isVisible) {
@@ -656,6 +666,17 @@ const BookingModal = ({
       );
 
       if (dataFromReviewStep.booking_id) {
+        // PostHog: Track successful booking completion
+        posthog.capture("booking_completed", {
+          class_id: classData?.classId || classData?.id,
+          class_title: classData?.title,
+          business_name: classData?.business_name,
+          booking_id: dataFromReviewStep.booking_id,
+          revenue,
+          currency: classData?.currency_code || "CAD",
+          participants: bookingData.participants,
+        });
+
         setBookingData((prev) => {
           return {
             ...prev,

@@ -6,7 +6,7 @@ import React, {
   useEffect,
   memo,
 } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, ContactShadows, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { easing } from "maath";
@@ -35,6 +35,27 @@ cardShape.lineTo(x, y + r);
 cardShape.quadraticCurveTo(x, y, x + r, y);
 
 const extrudeSettings = { depth: CARD_THICKNESS, bevelEnabled: false };
+
+// --- COMPONENTS ---
+
+/**
+ * Adjusts camera position based on screen width to ensure
+ * the card fits within the viewport on mobile devices.
+ */
+function ResponsiveRig() {
+  const { camera, size } = useThree();
+
+  useEffect(() => {
+    // Breakpoint logic: if width < 600px, move camera back
+    const isMobile = size.width < 600;
+    const targetZ = isMobile ? 6.5 : 4.5; // 4.5 is desktop default, 6.5 zooms out for mobile
+
+    camera.position.z = targetZ;
+    camera.updateProjectionMatrix();
+  }, [size.width, camera]);
+
+  return null;
+}
 
 const GlossyCardMesh = React.forwardRef(
   (
@@ -103,15 +124,9 @@ GlossyCardMesh.displayName = "GlossyCardMesh";
 
 function FlippableCard({ targetTextureUrl }) {
   const meshRef = useRef();
-
-  // The texture currently being rendered
   const [displayedTexture, setDisplayedTexture] = useState(targetTextureUrl);
-
-  // Track rotation for animation
   const rotationY = useRef(0);
   const targetRotationY = useRef(0);
-
-  // Helper to know if we are in the process of a "flip"
   const isFlipping = useRef(false);
   const hasSwappedForThisFlip = useRef(false);
 
@@ -124,10 +139,8 @@ function FlippableCard({ targetTextureUrl }) {
   }, [targetTextureUrl, displayedTexture]);
 
   useFrame((state, delta) => {
-    // 1. Damped Rotation
     easing.damp(rotationY, "current", targetRotationY.current, 0.4, delta);
 
-    // 2. Continuous idle float
     const t = state.clock.getElapsedTime();
     const floatY = Math.sin(t / 2) * 0.1;
     const floatTiltX = Math.cos(t / 2) * 0.05;
@@ -138,11 +151,9 @@ function FlippableCard({ targetTextureUrl }) {
       meshRef.current.position.y = floatY;
     }
 
-    // 3. Texture Swap Logic (At 1/4 of the flip)
     if (isFlipping.current && !hasSwappedForThisFlip.current) {
       const dist = Math.abs(targetRotationY.current - rotationY.current);
-      const threshold = Math.PI * 1.5; // Approx 1/4 of the way through the 2PI spin
-
+      const threshold = Math.PI * 1.5;
       if (dist <= threshold) {
         setDisplayedTexture(targetTextureUrl);
         hasSwappedForThisFlip.current = true;
@@ -170,7 +181,9 @@ const Giftcard3DScene = memo(({ textureUrl }) => (
     shadows
     camera={{ position: [0, 0, 4.5], fov: 45 }}
     gl={{ antialias: true, alpha: true }}
+    style={{ pointerEvents: "none" }} // Prevents canvas from capturing scroll on mobile
   >
+    <ResponsiveRig />
     <ambientLight intensity={0.8} />
     <directionalLight position={[5, 5, 5]} intensity={1} castShadow />
 

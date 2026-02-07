@@ -2,19 +2,22 @@
 
 import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ConfigProvider, message } from "antd";
+import { ConfigProvider } from "antd";
 import { theme } from "@/components/theme";
 import { useTexture } from "@react-three/drei";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import styled from "styled-components";
 
+import posthog from "posthog-js";
 import Header from "@/components/layout/SharedMainClientHeader";
 import FooterClient from "@/components/homepage/FooterClient";
 
 // Import sub-components
 import GiftcardConfigStep from "./GiftcardConfigStep";
 import GiftcardPaymentStep from "./GiftcardPaymentStep";
+import GiftcardSuccessStep from "./GiftcardSuccessStep";
+
 import {
   CORPORATE_COLOR,
   PageWrapper,
@@ -100,7 +103,7 @@ export default function GiftcardCheckoutPage() {
   const searchParams = useSearchParams();
   const initialIndex = parseInt(searchParams.get("designIndex") || "0");
 
-  const [step, setStep] = useState("config"); // 'config' | 'checkout'
+  const [step, setStep] = useState("config");
   const [selectedDesignIndex, setSelectedDesignIndex] = useState(
     initialIndex >= 0 && initialIndex < CARD_IMAGES.length ? initialIndex : 0,
   );
@@ -121,11 +124,20 @@ export default function GiftcardCheckoutPage() {
   const finalAmount = amount || (customAmount ? parseFloat(customAmount) : 0);
 
   const handleProceedToCheckout = () => {
-    if (!finalAmount || finalAmount <= 0)
-      return message.error("Please enter a valid amount");
-    if (deliveryMethod === "email" && !formData.recipientEmail)
-      return message.error("Please enter recipient email");
+    // Basic validations that happen before step switch,
+    // Note: ConfigStep now handles granular form validation.
+    posthog.capture("giftcard_checkout_started", {
+      amount: finalAmount,
+      delivery_method: deliveryMethod,
+      is_scheduled: isScheduled,
+    });
+
     setStep("checkout");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handlePaymentSuccess = () => {
+    setStep("success");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -143,7 +155,7 @@ export default function GiftcardCheckoutPage() {
 
       <PageWrapper>
         <MainContainer>
-          {step === "config" ? (
+          {step === "config" && (
             <GiftcardConfigStep
               cardImages={CARD_IMAGES}
               selectedDesignIndex={selectedDesignIndex}
@@ -160,43 +172,57 @@ export default function GiftcardCheckoutPage() {
               setIsScheduled={setIsScheduled}
               onNext={handleProceedToCheckout}
             />
-          ) : (
+          )}
+
+          {step === "checkout" && (
             <GiftcardPaymentStep
               amount={finalAmount}
               designUrl={CARD_IMAGES[selectedDesignIndex]}
               formData={formData}
+              setFormData={setFormData}
               onBack={() => setStep("config")}
+              onSuccess={handlePaymentSuccess}
+            />
+          )}
+
+          {step === "success" && (
+            <GiftcardSuccessStep
+              designUrl={CARD_IMAGES[selectedDesignIndex]}
+              amount={finalAmount}
+              recipientEmail={formData.recipientEmail}
             />
           )}
         </MainContainer>
 
         {/* SHARED FAQ SECTION */}
-        <BottomContainer>
-          <SectionHeader>Frequently asked questions</SectionHeader>
-          {FAQS.map((item, index) => (
-            <FAQItem key={index}>
-              <FAQTrigger onClick={() => toggleFaq(index)}>
-                <span>{item.q}</span>
-                {openFaq === index ? (
-                  <ChevronUp size={20} />
-                ) : (
-                  <ChevronDown size={20} />
-                )}
-              </FAQTrigger>
-              <AnimatePresence>
-                {openFaq === index && (
-                  <FAQContent
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                  >
-                    <div style={{ paddingBottom: 24 }}>{item.a}</div>
-                  </FAQContent>
-                )}
-              </AnimatePresence>
-            </FAQItem>
-          ))}
-        </BottomContainer>
+        {step !== "success" && (
+          <BottomContainer>
+            <SectionHeader>Frequently asked questions</SectionHeader>
+            {FAQS.map((item, index) => (
+              <FAQItem key={index}>
+                <FAQTrigger onClick={() => toggleFaq(index)}>
+                  <span>{item.q}</span>
+                  {openFaq === index ? (
+                    <ChevronUp size={20} />
+                  ) : (
+                    <ChevronDown size={20} />
+                  )}
+                </FAQTrigger>
+                <AnimatePresence>
+                  {openFaq === index && (
+                    <FAQContent
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                    >
+                      <div style={{ paddingBottom: 24 }}>{item.a}</div>
+                    </FAQContent>
+                  )}
+                </AnimatePresence>
+              </FAQItem>
+            ))}
+          </BottomContainer>
+        )}
       </PageWrapper>
       <FooterClient />
     </ConfigProvider>

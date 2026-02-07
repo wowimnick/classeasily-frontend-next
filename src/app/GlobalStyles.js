@@ -336,6 +336,12 @@ const GlobalStyles = createGlobalStyle`
   [vaul-drawer] > * {
     touch-action: auto;
   }
+
+  .ant-input::placeholder,
+  .ant-input-affix-wrapper input::placeholder,
+  .ant-select-selection-placeholder {
+    font-weight: 600 !important; 
+  }
 `;
 
 export default GlobalStyles;

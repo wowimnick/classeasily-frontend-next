@@ -16,10 +16,12 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { ConfigProvider } from "antd";
+import Image from "next/image"; // Import Next Image for fallbacks
 import message from "@/lib/message";
 import { theme } from "@/components/theme";
 import Header from "@/components/layout/SharedMainClientHeader";
 import FooterClient from "@/components/homepage/FooterClient";
+import Script from "next/script"; // Import Script for JSON-LD
 
 // --- THREE JS IMPORTS ---
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -233,6 +235,20 @@ const HeroVisual = styled.div`
   }
 `;
 
+/* --- FALLBACK COMPONENT --- */
+// SEO Friendly fallback that shows a static image while 3D loads
+const CanvasFallback = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+`;
+
 /* --- VALUE PROP SECTION --- */
 const TextSection = styled.section`
   padding: 60px 0;
@@ -278,6 +294,7 @@ const ArrowButton = styled.button`
   z-index: 50;
   color: #222;
   transition: all 0.2s;
+  aria-label: ${(props) => (props.$left ? "Previous Design" : "Next Design")};
 
   ${(props) =>
     props.$left
@@ -460,7 +477,7 @@ const FAQContent = styled(motion.div)`
 `;
 
 // --- SHARED 3D RESOURCES ---
-
+// ... (Geometry and Mesh components remain unchanged) ...
 const CARD_WIDTH = 3;
 const CARD_HEIGHT = 1.9;
 const CARD_RADIUS = 0.2;
@@ -495,7 +512,6 @@ const GlossyCardMesh = React.forwardRef(
     const geometryRef = useRef();
 
     useLayoutEffect(() => {
-      // ... existing geometry logic stays the same ...
       if (geometryRef.current) {
         geometryRef.current.computeBoundingBox();
         const { min, max } = geometryRef.current.boundingBox;
@@ -522,18 +538,11 @@ const GlossyCardMesh = React.forwardRef(
           attach="material-0"
           map={texture}
           color="#ffffff"
-          // --- START OF CHANGES ---
-
-          // 1. Add Emissive Logic (Self-illumination)
-          emissive="#ffffff" // Base color of the glow
-          emissiveMap={texture} // Map the glow to the image itself
-          emissiveIntensity={0.2} // Controls brightness! (Try 0.1 to 0.4)
-          // 2. Reduce Metalness
-          // Was 0.5. Lowering this prevents the texture from getting "muddy"
+          emissive="#ffffff"
+          emissiveMap={texture}
+          emissiveIntensity={0.2}
           metalness={0.1}
-          roughness={0.2} // Increased slightly to catch more light
-          // --- END OF CHANGES ---
-
+          roughness={0.2}
           clearcoat={1.0}
           clearcoatRoughness={0.05}
           ior={1.5}
@@ -557,10 +566,7 @@ function AutoRotateRig({ children, isMobile }) {
   const groupRef = useRef();
 
   useFrame((state, delta) => {
-    // 1. Keep the rotation
     groupRef.current.rotation.y += delta * 0.1;
-
-    // 2. Fixed Camera Position (Elevated look, no mouse tracking)
     easing.damp3(
       state.camera.position,
       [0, isMobile ? 4.5 : 1.9, 10],
@@ -618,7 +624,6 @@ const HeroCarouselScene = ({ isMobile }) => (
   <>
     <color attach="background" args={["#ffffff"]} />
     <ambientLight intensity={1} />
-
     <directionalLight
       position={[5, 5, 10]}
       intensity={0.5}
@@ -626,13 +631,10 @@ const HeroCarouselScene = ({ isMobile }) => (
       shadow-mapSize={[2048, 2048]}
       shadow-bias={-0.0001}
     />
-
     <Environment preset="city" />
-
     <AutoRotateRig isMobile={isMobile}>
       <GiftCardCarousel radius={isMobile ? 1.8 : 2.4} />
     </AutoRotateRig>
-
     <ContactShadows
       position={[0, -0.7, 0]}
       opacity={1}
@@ -737,7 +739,6 @@ const SelectButton = styled(motion.button)`
   }
 `;
 
-// NEW: Wrapper to center the button on mobile below the canvas
 const MobileButtonWrapper = styled.div`
   display: flex;
   justify-content: center;
@@ -754,7 +755,6 @@ function NitroCard3D({
   isMobile,
 }) {
   const groupRef = useRef();
-
   const offset = index - activeIndex;
   const isActive = offset === 0;
 
@@ -793,7 +793,6 @@ function NitroCard3D({
       }}
     >
       <GlossyCardMesh textureUrl={textureUrl} envMapIntensity={2} />
-
       {isActive && !isMobile && (
         <Html
           position={[0, -1.4, 0]}
@@ -837,9 +836,7 @@ const NitroCarouselScene = ({
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0001}
       />
-
       <Environment preset="city" />
-
       <group position={[0, 0, 0]}>
         {HERO_CARD_IMAGES.map((url, i) => (
           <NitroCard3D
@@ -853,7 +850,6 @@ const NitroCarouselScene = ({
           />
         ))}
       </group>
-
       <ContactShadows
         position={[0, -1.5, 0]}
         opacity={0.4}
@@ -891,8 +887,6 @@ export default function GiftCardsPage() {
   const selectionSectionRef = useRef(null);
   const isMobile = useIsMobile();
   const [carouselIndex, setCarouselIndex] = useState(3);
-
-  // FIX FOR CRASH: Unique key for Canvas to force full re-mount on navigation
   const [canvasKey, setCanvasKey] = useState(0);
 
   useEffect(() => {
@@ -918,9 +912,54 @@ export default function GiftCardsPage() {
     setCarouselIndex((prev) => Math.min(prev + 1, HERO_CARD_IMAGES.length - 1));
   const handlePrev = () => setCarouselIndex((prev) => Math.max(prev - 1, 0));
 
+  // --- STRUCTURED DATA (JSON-LD) ---
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQS.map((faq) => ({
+      "@type": "Question",
+      name: faq.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.a,
+      },
+    })),
+  };
+
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: "ClassEasily Digital Gift Card",
+    image: HERO_CARD_IMAGES[2], // Use your primary card image URL
+    description:
+      "Give the gift of creative experiences. Valid for workshops, classes, and tours.",
+    brand: {
+      "@type": "Brand",
+      name: "ClassEasily",
+    },
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "USD",
+      price: "50.00", // Example start price, or use lowPrice/highPrice
+      availability: "https://schema.org/InStock",
+    },
+  };
+
   return (
     <ConfigProvider theme={theme}>
       <GlobalStyle />
+      {/* SEO: Inject JSON-LD */}
+      <Script
+        id="faq-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <Script
+        id="product-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
+
       <Header
         hamburgerColor="#111"
         dropdownButtonColor="#111"
@@ -948,8 +987,21 @@ export default function GiftCardsPage() {
               </BuyButton>
             </div>
             <HeroVisual>
-              {/* Added key={canvasKey} to prevent crash on navigation */}
-              <Suspense fallback={null}>
+              {/* Fallback for SEO & LCP */}
+              <Suspense
+                fallback={
+                  <CanvasFallback>
+                    <Image
+                      src={Card2}
+                      alt="Gift Card Preview"
+                      width={400}
+                      height={250}
+                      style={{ objectFit: "contain" }}
+                      priority
+                    />
+                  </CanvasFallback>
+                }
+              >
                 {canvasKey > 0 && (
                   <Canvas
                     key={`hero-${canvasKey}`}
@@ -1002,17 +1054,29 @@ export default function GiftCardsPage() {
                 onClick={handlePrev}
                 disabled={carouselIndex === 0}
                 $left
+                aria-label="Previous Design"
               >
                 <ChevronLeft size={isMobile ? 20 : 24} />
               </ArrowButton>
 
-              <Suspense fallback={null}>
+              <Suspense
+                fallback={
+                  <CanvasFallback>
+                    {/* Static image of the card deck as fallback */}
+                    <Image
+                      src={HERO_CARD_IMAGES[carouselIndex]}
+                      alt="Select Card Design"
+                      width={300}
+                      height={190}
+                      style={{ objectFit: "contain" }}
+                    />
+                  </CanvasFallback>
+                }
+              >
                 {canvasKey > 0 && (
                   <Canvas
                     key={`select-${canvasKey}`}
                     shadows
-                    // CHANGED: Moved camera much closer on mobile (Z: 5.5) to fill the container
-                    // CHANGED: Increased FOV slightly to 40 on mobile to widen the view at close range
                     camera={{
                       position: [0, 0, isMobile ? 5.5 : 8],
                       fov: isMobile ? 40 : 35,
@@ -1039,6 +1103,7 @@ export default function GiftCardsPage() {
               <ArrowButton
                 onClick={handleNext}
                 disabled={carouselIndex === HERO_CARD_IMAGES.length - 1}
+                aria-label="Next Design"
               >
                 <ChevronRight size={isMobile ? 20 : 24} />
               </ArrowButton>
@@ -1062,26 +1127,26 @@ export default function GiftCardsPage() {
         <FeatureSection>
           <Container>
             <FeatureGrid>
-              <div>
+              <article>
                 <FeatureTitle>You choose the amount</FeatureTitle>
                 <FeatureText>
                   Pick a design, set the budget, write a note. Done. They handle
                   the rest.
                 </FeatureText>
-              </div>
-              <div>
+              </article>
+              <article>
                 <FeatureTitle>Zero lag time</FeatureTitle>
                 <FeatureText>
                   Send it via email instantly or schedule it for the exact right
                   moment.
                 </FeatureText>
-              </div>
-              <div>
+              </article>
+              <article>
                 <FeatureTitle>Forever valid</FeatureTitle>
                 <FeatureText>
                   Life gets busy. That's why our credits never expire.
                 </FeatureText>
-              </div>
+              </article>
             </FeatureGrid>
           </Container>
         </FeatureSection>
@@ -1150,7 +1215,20 @@ export default function GiftCardsPage() {
 
             {/* RIGHT COLUMN: The 3D Canvas */}
             <VisualColumn>
-              <Suspense fallback={null}>
+              <Suspense
+                fallback={
+                  <CanvasFallback>
+                    {/* Static image fallback */}
+                    <Image
+                      src={Card5}
+                      alt="Corporate Gift Cards"
+                      width={300}
+                      height={200}
+                      style={{ objectFit: "contain" }}
+                    />
+                  </CanvasFallback>
+                }
+              >
                 {canvasKey > 0 && (
                   <Canvas
                     key={`biz-${canvasKey}`}
@@ -1185,9 +1263,13 @@ export default function GiftCardsPage() {
               Frequently asked questions
             </h2>
             {FAQS.map((item, index) => (
-              <FAQItem key={index}>
+              <FAQItem
+                key={index}
+                itemScope
+                itemType="https://schema.org/Question"
+              >
                 <FAQTrigger onClick={() => toggleFaq(index)}>
-                  <span>{item.q}</span>
+                  <span itemProp="name">{item.q}</span>
                   {openFaq === index ? (
                     <ChevronUp size={20} color="#222" />
                   ) : (
@@ -1200,8 +1282,12 @@ export default function GiftCardsPage() {
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
+                      itemScope
+                      itemType="https://schema.org/Answer"
                     >
-                      <div style={{ paddingBottom: 24 }}>{item.a}</div>
+                      <div style={{ paddingBottom: 24 }} itemProp="text">
+                        {item.a}
+                      </div>
                     </FAQContent>
                   )}
                 </AnimatePresence>

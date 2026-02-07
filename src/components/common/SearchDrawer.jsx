@@ -15,6 +15,7 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import dayjs from "dayjs";
+import posthog from "posthog-js";
 import { useSearch, SUGGESTED_AREAS } from "@/context/SearchContext";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -736,6 +737,13 @@ const SearchDrawer = () => {
   };
 
   const handleSearchClick = () => {
+    // PostHog: Track search performed
+    posthog.capture("search_performed", {
+      search_term: searchTerm || null,
+      has_date_filter: !!datePickerValue,
+      participants: participants > 1 ? participants : null,
+    });
+
     performSearch();
     setIsDrawerOpen(false);
     setIsLocationOpen(false);

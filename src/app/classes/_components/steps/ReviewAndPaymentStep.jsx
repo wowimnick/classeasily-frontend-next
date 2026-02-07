@@ -38,6 +38,7 @@ import Lottie from "lottie-react";
 
 import { getCancellationPolicyText, getDurationText } from "./utils";
 import { businessDiscountService } from "@/services/apiService";
+import posthog from "posthog-js";
 import { theme as appTheme } from "@/components/theme";
 import { formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
 import loadingAnimation from "@/assets/animations/Scene.json";
@@ -906,6 +907,13 @@ const ReviewAndPaymentStep = ({
   const debounceTimerRef = useRef(null);
 
   useEffect(() => {
+    // PostHog: Track payment step entry in booking funnel
+    posthog.capture("booking_payment_initiated", {
+      class_id: classData?.classId || classData?.id,
+      class_title: classData?.title,
+      participants: bookingData.participants,
+    });
+
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
@@ -1559,72 +1567,75 @@ const ReviewAndPaymentStep = ({
     businessTimeZone,
   ]);
 
-  const stripeAppearance = useMemo(
-    () => ({
-      theme: "flat",
+  const stripeAppearance = useMemo(() => {
+    return {
+      theme: "stripe",
       variables: {
-        borderRadius: "12px",
         colorPrimary: appTheme.token.colorPrimary,
         colorBackground: "#ffffff",
-        colorText: "#222222",
-        colorDanger: "#ff4d4f",
+        colorText: appTheme.token.colorText,
+        colorDanger: appTheme.token.colorError,
+        // Set global font variable
+        fontFamily: '"Proxima Soft", sans-serif',
         spacingUnit: "4px",
-        gridRowSpacing: "16px",
-        fontFamily: '"ProximaSoft" !important',
+        borderRadius: `${appTheme.token.borderRadius}px`,
+        fontSizeBase: `${appTheme.token.fontSize}px`,
       },
       rules: {
         ".Input": {
-          border: "1px solid #d9d9d9",
+          paddingTop: "16px",
+          paddingBottom: "16px",
+          paddingLeft: "16px",
+          paddingRight: "16px",
+          borderColor: appTheme.token.colorBorder,
           boxShadow: "none",
-          backgroundColor: "#ffffff",
-          transition: "all 0.2s",
-          fontSize: "14px",
+          transition: "border-color 0.2s, box-shadow 0.2s",
+          // Force font usage on input text
+          fontFamily: '"Proxima Soft", sans-serif',
+          fontWeight: "500",
         },
+        // Added Hover Effect
         ".Input:hover": {
           borderColor: appTheme.token.colorPrimary,
         },
         ".Input:focus": {
           borderColor: appTheme.token.colorPrimary,
-          boxShadow: `0 0 0 2px rgba(255, 38, 92, 0.2)`,
+          boxShadow: `0 0 0 2px ${appTheme.token.colorPrimary}20`,
+          outline: "none",
         },
         ".Input--invalid": {
-          borderColor: "#ff4d4f",
-          color: "#ff4d4f",
+          borderColor: appTheme.token.colorError,
           boxShadow: "none",
         },
         ".Input--invalid:focus": {
-          boxShadow: "0 0 0 2px rgba(255, 77, 79, 0.2)",
+          borderColor: appTheme.token.colorError,
+          boxShadow: `0 0 0 2px ${appTheme.token.colorError}20`,
         },
         ".Label": {
-          fontWeight: "500",
-          color: "#222222",
-          marginBottom: "6px",
-          fontSize: "14px",
+          // Heavier weight for labels
+          fontWeight: "600",
+          color: "#000",
+          marginBottom: "8px",
+          fontFamily: '"Proxima Soft", sans-serif',
+        },
+        // Target placeholders specifically
+        ".Input::placeholder": {
+          color: "#c5c5c5",
+          fontWeight: "600",
+          fontFamily: '"Proxima Soft", sans-serif',
         },
         ".Tab": {
-          border: "1px solid #d9d9d9",
-          backgroundColor: "#ffffff",
-          padding: "10px",
+          borderColor: appTheme.token.colorBorder,
+          borderRadius: `${appTheme.token.borderRadius}px`,
+          fontFamily: '"Proxima Soft", sans-serif',
+          fontWeight: "600",
         },
-        ".Tab:hover": {
+        ".Tab:selected": {
           borderColor: appTheme.token.colorPrimary,
-          color: appTheme.token.colorPrimary,
-        },
-        ".Tab--selected": {
-          borderColor: appTheme.token.colorPrimary,
-          color: appTheme.token.colorPrimary,
-          backgroundColor: "#fff5f7",
-        },
-        ".TabIcon": {
-          color: "#6b7280",
-        },
-        ".TabIcon--selected": {
-          color: appTheme.token.colorPrimary,
         },
       },
-    }),
-    [],
-  );
+    };
+  }, []);
 
   const renderTimerContent = () => {
     if (isFree || isExpired) return null;

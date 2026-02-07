@@ -167,6 +167,10 @@ const nextConfig = {
       process.env.NEXT_PUBLIC_CLOUDFRONT_URL ||
       "https://d1uuoquc68y10e.cloudfront.net";
 
+    // PostHog host URL for reverse proxy
+    const posthogHost =
+      process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com";
+
     return {
       beforeFiles: [
         // These run BEFORE Next.js checks for pages/static files
@@ -174,6 +178,16 @@ const nextConfig = {
         {
           source: "/widget/:path*",
           destination: `${cloudFrontUrl}/widget/:path*`,
+        },
+        // PostHog reverse proxy for static assets
+        {
+          source: "/ingest/static/:path*",
+          destination: "https://us-assets.i.posthog.com/static/:path*",
+        },
+        // PostHog reverse proxy for analytics
+        {
+          source: "/ingest/:path*",
+          destination: `${posthogHost}/:path*`,
         },
       ],
       afterFiles: [
@@ -195,6 +209,9 @@ const nextConfig = {
       ],
     };
   },
+
+  // This is required to support PostHog trailing slash API requests
+  skipTrailingSlashRedirect: true,
 
   async redirects() {
     return [

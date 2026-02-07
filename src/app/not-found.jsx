@@ -1,6 +1,5 @@
 // app/not-found.jsx
 import { Suspense } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import IllustrationSvg from "@/assets/404.svg";
@@ -92,24 +91,6 @@ export default function NotFound() {
               mistyped the address, or the page has been moved to another URL.
               If you think this is an error, contact support.
             </p>
-
-            <Link
-              href="/"
-              style={{
-                marginTop: "0.5rem",
-                display: "inline-block",
-                padding: "0.5rem 1.5rem",
-                backgroundColor: "#ff385c",
-                color: "white",
-                borderRadius: "12px",
-                textDecoration: "none",
-                fontSize: "1rem",
-                fontWeight: 500,
-                transition: "background-color 0.2s",
-              }}
-            >
-              Take me back to the home page
-            </Link>
           </div>
         </div>
       </main>

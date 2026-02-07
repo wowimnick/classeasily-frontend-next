@@ -31,7 +31,6 @@ export const MainContainer = styled.div`
 
   @media (max-width: 900px) {
     padding: 20px 16px;
-    padding-bottom: 120px;
   }
 `;
 
@@ -51,12 +50,10 @@ export const SectionBlock = styled.section`
 `;
 
 export const StickyCard = styled.div`
-  border: 1px solid #ddd;
   border-radius: 12px;
   padding: 24px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
   background: white;
 `;
 
