@@ -5,6 +5,7 @@ import Image from "next/image";
 import { message, Input, Alert, Button, Divider } from "antd";
 import NumberFlow from "@number-flow/react";
 import posthog from "posthog-js";
+import dayjs from "dayjs"; // ADDED IMPORT
 import { ActionButton, CheckoutLink } from "./GiftcardStyles";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -34,7 +35,8 @@ const CheckoutGrid = styled.div`
   }
 
   @media (max-width: 900px) {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column-reverse;
     gap: 40px;
   }
 `;
@@ -369,6 +371,18 @@ const StripePaymentForm = ({
             </EditableRow>
           )}
 
+          {/* ADDED: Scheduled Date Display */}
+          {formData.date && (
+            <EditableRow>
+              <div>
+                <div style={{ fontWeight: 500 }}>Scheduled Delivery</div>
+                <div style={{ color: "#666" }}>
+                  {dayjs(formData.date).format("MMMM D, YYYY")}
+                </div>
+              </div>
+            </EditableRow>
+          )}
+
           {/* Message */}
           {editingField === "message" ? (
             <div style={{ marginTop: 16 }}>
@@ -429,9 +443,12 @@ const StripePaymentForm = ({
             }}
           >
             By selecting the button below, I agree to the{" "}
-            <CheckoutLink>Host Terms</CheckoutLink>,{" "}
-            <CheckoutLink>Payment Terms of Service</CheckoutLink>, and{" "}
-            <CheckoutLink>Privacy Policy</CheckoutLink>.
+            <CheckoutLink href="/host-terms">Host Terms</CheckoutLink>,{" "}
+            <CheckoutLink href="/payment-terms">
+              Payment Terms of Service
+            </CheckoutLink>
+            , and{" "}
+            <CheckoutLink href="/privacy-policy">Privacy Policy</CheckoutLink>.
           </p>
           <ActionButton
             whileTap={{ scale: 0.98 }}
@@ -440,29 +457,6 @@ const StripePaymentForm = ({
           >
             {loading ? "Processing..." : "Confirm and Pay"}
           </ActionButton>
-
-          {/* <div
-            style={{
-              marginTop: 24,
-              textAlign: "center",
-              borderTop: "1px dashed #ddd",
-              paddingTop: 16,
-            }}
-          >
-            <span style={{ fontSize: "0.8rem", color: "#888", marginRight: 8 }}>
-              Testing?
-            </span>
-            <Button
-              type="dashed"
-              size="small"
-              onClick={(e) => {
-                e.preventDefault();
-                if (onSuccess) onSuccess();
-              }}
-            >
-              Skip & Simulate Success
-            </Button> 
-          </div>*/}
         </div>
       </div>
 

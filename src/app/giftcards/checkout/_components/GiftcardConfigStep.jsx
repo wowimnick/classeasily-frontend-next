@@ -13,7 +13,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Image from "next/image";
-import { ConfigProvider, Input } from "antd";
+import { ConfigProvider, Input, Form } from "antd";
 import dayjs from "dayjs";
 import Giftcard3DScene from "./Giftcard3DScene";
 import { theme } from "@/components/theme";
@@ -263,6 +263,23 @@ const MobileStickyFooter = styled.div`
   }
 `;
 
+const ResponsiveSectionHeader = styled(SectionHeader)`
+  transition: font-size 0.2s ease;
+  font-size: 1.25rem;
+
+  @media (max-width: 1024px) {
+    font-size: 1.15rem;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 1.05rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.95rem;
+  }
+`;
+
 // --- MINI CALENDAR ---
 const CalContainer = styled.div`
   width: 100%;
@@ -331,6 +348,7 @@ function SimpleCalendar({ value, onChange }) {
         }}
       >
         <button
+          type="button"
           style={{
             border: "1px solid #eee",
             borderRadius: "50%",
@@ -345,6 +363,7 @@ function SimpleCalendar({ value, onChange }) {
         </button>
         <h4 style={{ margin: 0 }}>{currentMonth.format("MMMM YYYY")}</h4>
         <button
+          type="button"
           style={{
             border: "1px solid #eee",
             borderRadius: "50%",
@@ -366,6 +385,7 @@ function SimpleCalendar({ value, onChange }) {
           const isSelected = selectedDate && date.isSame(selectedDate, "day");
           return (
             <CalDayBtn
+              type="button"
               key={idx}
               disabled={isPast}
               $selected={isSelected}
@@ -396,166 +416,174 @@ export default function GiftcardConfigStep({
   setIsScheduled,
   onNext,
 }) {
+  const [form] = Form.useForm();
   const finalAmount = amount || (customAmount ? parseFloat(customAmount) : 0);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleNext = async () => {
+    try {
+      await form.validateFields();
+      onNext();
+    } catch (error) {
+      console.error("Validation failed:", error);
+    }
+  };
+
   return (
     <ConfigProvider theme={theme}>
-      <ConfigGrid>
-        <MobileVisualHeader>
-          <Giftcard3DScene textureUrl={cardImages[selectedDesignIndex]} />
-        </MobileVisualHeader>
+      <Form form={form} component={false}>
+        <ConfigGrid>
+          <MobileVisualHeader>
+            <Giftcard3DScene textureUrl={cardImages[selectedDesignIndex]} />
+          </MobileVisualHeader>
 
-        <LeftColumn>
-          {/* DESIGN */}
-          <SectionBlock>
-            <SectionHeader>
-              <Gift size={22} color={CORPORATE_COLOR} /> Select a design
-            </SectionHeader>
-            <DesignGrid>
-              {cardImages.map((img, idx) => (
-                <DesignOption
-                  key={idx}
-                  $selected={selectedDesignIndex === idx}
-                  onClick={() => setSelectedDesignIndex(idx)}
-                >
-                  <Image
-                    src={img}
-                    alt={`Card ${idx}`}
-                    width={200}
-                    height={126}
-                  />
-                  {selectedDesignIndex === idx && (
-                    <CheckCircle>
-                      <Check size={14} color="white" />
-                    </CheckCircle>
-                  )}
-                </DesignOption>
-              ))}
-            </DesignGrid>
-          </SectionBlock>
-
-          {/* AMOUNT */}
-          <SectionBlock>
-            <SectionHeader>
-              <CreditCard size={22} color={CORPORATE_COLOR} /> Choose amount
-            </SectionHeader>
-            <AmountGrid>
-              {PRESET_AMOUNTS.map((val) => (
-                <AmountChip
-                  key={val}
-                  $selected={amount === val}
-                  onClick={() => {
-                    setAmount(val);
-                    setCustomAmount("");
-                  }}
-                >
-                  ${val}
-                </AmountChip>
-              ))}
-              {/* Custom Chip */}
-              <AmountChip
-                $selected={amount === null}
-                onClick={() => setAmount(null)}
-              >
-                Custom
-              </AmountChip>
-            </AmountGrid>
-
-            {/* Custom Input Animation */}
-            <AnimatePresence>
-              {amount === null && (
-                <CustomInputWrapper
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <CustomInputContainer>
-                    <CurrencyPrefix>$</CurrencyPrefix>
-                    <Input
-                      type="number"
-                      placeholder="0.00"
-                      size="middle"
-                      value={customAmount}
-                      onChange={(e) => {
-                        setCustomAmount(e.target.value);
-                      }}
-                      autoFocus
+          <LeftColumn>
+            {/* DESIGN */}
+            <SectionBlock>
+              <ResponsiveSectionHeader>
+                <Gift size={22} color={CORPORATE_COLOR} /> Select a design
+              </ResponsiveSectionHeader>
+              <DesignGrid>
+                {cardImages.map((img, idx) => (
+                  <DesignOption
+                    type="button"
+                    key={idx}
+                    $selected={selectedDesignIndex === idx}
+                    onClick={() => setSelectedDesignIndex(idx)}
+                  >
+                    <Image
+                      src={img}
+                      alt={`Card ${idx}`}
+                      width={200}
+                      height={126}
                     />
-                  </CustomInputContainer>
-                </CustomInputWrapper>
-              )}
-            </AnimatePresence>
-          </SectionBlock>
+                    {selectedDesignIndex === idx && (
+                      <CheckCircle>
+                        <Check size={14} color="white" />
+                      </CheckCircle>
+                    )}
+                  </DesignOption>
+                ))}
+              </DesignGrid>
+            </SectionBlock>
 
-          {/* DETAILS */}
-          <SectionBlock>
-            <SectionHeader>
-              <Mail size={22} color={CORPORATE_COLOR} /> How would you like to
-              send it?
-            </SectionHeader>
-            <DeliveryToggle>
-              <ToggleOption
-                $selected={deliveryMethod === "email"}
-                onClick={() => setDeliveryMethod("email")}
-              >
-                <Mail
-                  size={20}
-                  color={deliveryMethod === "email" ? CORPORATE_COLOR : "#444"}
-                />
-                <div>
-                  <h4>Email to recipient</h4>
-                  <p>We'll send it directly.</p>
-                </div>
-              </ToggleOption>
-              <ToggleOption
-                $selected={deliveryMethod === "self"}
-                onClick={() => setDeliveryMethod("self")}
-              >
-                <User
-                  size={20}
-                  color={deliveryMethod === "self" ? CORPORATE_COLOR : "#444"}
-                />
-                <div>
-                  <h4>Email to me</h4>
-                  <p>Print or forward later.</p>
-                </div>
-              </ToggleOption>
-            </DeliveryToggle>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 20,
-                marginBottom: 20,
-              }}
-            >
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: 8,
-                    fontWeight: 600,
-                    fontSize: "13px",
-                  }}
+            {/* AMOUNT */}
+            <SectionBlock>
+              <ResponsiveSectionHeader>
+                <CreditCard size={22} color={CORPORATE_COLOR} /> Choose amount
+              </ResponsiveSectionHeader>
+              <AmountGrid>
+                {PRESET_AMOUNTS.map((val) => (
+                  <AmountChip
+                    type="button"
+                    key={val}
+                    $selected={amount === val}
+                    onClick={() => {
+                      setAmount(val);
+                      setCustomAmount("");
+                    }}
+                  >
+                    ${val}
+                  </AmountChip>
+                ))}
+                {/* Custom Chip */}
+                <AmountChip
+                  type="button"
+                  $selected={amount === null}
+                  onClick={() => setAmount(null)}
                 >
-                  Recipient Name
-                </label>
-                <Input
-                  size="middle"
-                  placeholder="e.g. John Doe"
-                  value={formData.recipientName}
-                  onChange={(e) =>
-                    handleInputChange("recipientName", e.target.value)
-                  }
-                />
-              </div>
-              {deliveryMethod === "email" && (
+                  Custom
+                </AmountChip>
+              </AmountGrid>
+
+              {/* Custom Input Animation */}
+              <AnimatePresence>
+                {amount === null && (
+                  <CustomInputWrapper
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <CustomInputContainer>
+                      <CurrencyPrefix>$</CurrencyPrefix>
+                      <Form.Item
+                        name="customAmount"
+                        rules={[
+                          {
+                            required: true,
+                            message: "Please enter an amount",
+                          },
+                        ]}
+                        style={{ margin: 0 }}
+                      >
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          size="middle"
+                          value={customAmount}
+                          onChange={(e) => {
+                            setCustomAmount(e.target.value);
+                          }}
+                          autoFocus
+                        />
+                      </Form.Item>
+                    </CustomInputContainer>
+                  </CustomInputWrapper>
+                )}
+              </AnimatePresence>
+            </SectionBlock>
+
+            {/* DETAILS */}
+            <SectionBlock>
+              <ResponsiveSectionHeader>
+                <Mail size={22} color={CORPORATE_COLOR} /> How would you like to
+                send it?
+              </ResponsiveSectionHeader>
+              <DeliveryToggle>
+                <ToggleOption
+                  type="button"
+                  $selected={deliveryMethod === "email"}
+                  onClick={() => setDeliveryMethod("email")}
+                >
+                  <Mail
+                    size={20}
+                    color={
+                      deliveryMethod === "email" ? CORPORATE_COLOR : "#444"
+                    }
+                  />
+                  <div>
+                    <h4>Email to recipient</h4>
+                    <p>We'll send it directly.</p>
+                  </div>
+                </ToggleOption>
+                <ToggleOption
+                  type="button"
+                  $selected={deliveryMethod === "self"}
+                  onClick={() => setDeliveryMethod("self")}
+                >
+                  <User
+                    size={20}
+                    color={deliveryMethod === "self" ? CORPORATE_COLOR : "#444"}
+                  />
+                  <div>
+                    <h4>Email to me</h4>
+                    <p>Print or forward later.</p>
+                  </div>
+                </ToggleOption>
+              </DeliveryToggle>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 20,
+                  marginBottom: 20,
+                }}
+              >
                 <div>
                   <label
                     style={{
@@ -565,173 +593,247 @@ export default function GiftcardConfigStep({
                       fontSize: "13px",
                     }}
                   >
-                    Recipient Email
+                    Recipient Name
                   </label>
+                  <Form.Item
+                    name="recipientName"
+                    rules={[
+                      {
+                        required: true,
+                        message: "Recipient name is required",
+                      },
+                    ]}
+                    style={{ marginBottom: 0 }}
+                  >
+                    <Input
+                      size="middle"
+                      placeholder="e.g. John Doe"
+                      value={formData.recipientName}
+                      onChange={(e) =>
+                        handleInputChange("recipientName", e.target.value)
+                      }
+                    />
+                  </Form.Item>
+                </div>
+                {deliveryMethod === "email" && (
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: 8,
+                        fontWeight: 600,
+                        fontSize: "13px",
+                      }}
+                    >
+                      Recipient Email
+                    </label>
+                    <Form.Item
+                      name="recipientEmail"
+                      rules={[
+                        {
+                          required: true,
+                          type: "email",
+                          message: "Valid email is required",
+                        },
+                      ]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <Input
+                        size="middle"
+                        type="email"
+                        placeholder="e.g. john@example.com"
+                        value={formData.recipientEmail}
+                        onChange={(e) =>
+                          handleInputChange("recipientEmail", e.target.value)
+                        }
+                      />
+                    </Form.Item>
+                  </div>
+                )}
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: 8,
+                    fontWeight: 600,
+                    fontSize: "13px",
+                  }}
+                >
+                  Your Name
+                </label>
+                <Form.Item
+                  name="senderName"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Sender name is required",
+                    },
+                  ]}
+                  style={{ marginBottom: 0 }}
+                >
                   <Input
                     size="middle"
-                    type="email"
-                    placeholder="e.g. john@example.com"
-                    value={formData.recipientEmail}
+                    placeholder="e.g. Jane Smith"
+                    value={formData.senderName}
                     onChange={(e) =>
-                      handleInputChange("recipientEmail", e.target.value)
+                      handleInputChange("senderName", e.target.value)
                     }
                   />
-                </div>
-              )}
-            </div>
-            <div style={{ marginBottom: 20 }}>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: 8,
-                  fontWeight: 600,
-                  fontSize: "13px",
-                }}
-              >
-                Your Name
-              </label>
-              <Input
-                size="middle"
-                placeholder="e.g. Jane Smith"
-                value={formData.senderName}
-                onChange={(e) =>
-                  handleInputChange("senderName", e.target.value)
-                }
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: 8,
-                  fontWeight: 600,
-                  fontSize: "13px",
-                }}
-              >
-                Message (Optional)
-              </label>
-              <Input.TextArea
-                rows={4}
-                placeholder="Write a personal note..."
-                value={formData.message}
-                onChange={(e) => handleInputChange("message", e.target.value)}
-              />
-            </div>
-          </SectionBlock>
-
-          {/* SCHEDULING */}
-          <SectionBlock>
-            <SectionHeader>
-              <Clock size={22} color={CORPORATE_COLOR} /> When should we send
-              it?
-            </SectionHeader>
-            <DeliveryToggle style={{ marginBottom: 10 }}>
-              <ToggleOption
-                $selected={!isScheduled}
-                onClick={() => setIsScheduled(false)}
-              >
-                <Clock
-                  size={20}
-                  color={!isScheduled ? CORPORATE_COLOR : "#444"}
-                />
-                <div>
-                  <h4>Send Instantly</h4>
-                  <p>As soon as you pay.</p>
-                </div>
-              </ToggleOption>
-              <ToggleOption
-                $selected={isScheduled}
-                onClick={() => setIsScheduled(true)}
-              >
-                <CalendarIcon
-                  size={20}
-                  color={isScheduled ? CORPORATE_COLOR : "#444"}
-                />
-                <div>
-                  <h4>Schedule for Later</h4>
-                  <p>Choose a specific date.</p>
-                </div>
-              </ToggleOption>
-            </DeliveryToggle>
-
-            <AnimatePresence>
-              {isScheduled && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  style={{ overflow: "hidden" }}
+                </Form.Item>
+              </div>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: 8,
+                    fontWeight: 600,
+                    fontSize: "13px",
+                  }}
                 >
-                  <div style={{ marginTop: 24 }}>
-                    <SimpleCalendar
-                      value={formData.date}
-                      onChange={(val) => handleInputChange("date", val)}
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </SectionBlock>
-        </LeftColumn>
+                  Message (Optional)
+                </label>
+                <Form.Item name="message" style={{ marginBottom: 0 }}>
+                  <Input.TextArea
+                    rows={4}
+                    placeholder="Write a personal note..."
+                    value={formData.message}
+                    onChange={(e) =>
+                      handleInputChange("message", e.target.value)
+                    }
+                  />
+                </Form.Item>
+              </div>
+            </SectionBlock>
 
-        <RightColumn>
-          <StickyCard>
-            <h3 style={{ margin: "0 0 16px 0", fontSize: "1.2rem" }}>
-              Preview
-            </h3>
-            <CanvasContainer>
-              <Giftcard3DScene textureUrl={cardImages[selectedDesignIndex]} />
-            </CanvasContainer>
-            <div>
-              <SummaryRow>
-                <span>Gift Card Value</span>
-                <span>
-                  ${finalAmount > 0 ? finalAmount.toFixed(2) : "0.00"}
-                </span>
-              </SummaryRow>
-              <SummaryRow>
-                <span>Delivery</span>
-                <span style={{ color: "#008a05", fontWeight: 600 }}>Free</span>
-              </SummaryRow>
-              <SummaryRow className="total">
-                <span>Total</span>
-                <span>
-                  ${finalAmount > 0 ? finalAmount.toFixed(2) : "0.00"}
-                </span>
-              </SummaryRow>
+            {/* SCHEDULING */}
+            <SectionBlock>
+              <ResponsiveSectionHeader>
+                <Clock size={22} color={CORPORATE_COLOR} /> When should we send
+                it?
+              </ResponsiveSectionHeader>
+              <DeliveryToggle style={{ marginBottom: 10 }}>
+                <ToggleOption
+                  type="button"
+                  $selected={!isScheduled}
+                  onClick={() => setIsScheduled(false)}
+                >
+                  <Clock
+                    size={20}
+                    color={!isScheduled ? CORPORATE_COLOR : "#444"}
+                  />
+                  <div>
+                    <h4>Send Instantly</h4>
+                    <p>As soon as you pay.</p>
+                  </div>
+                </ToggleOption>
+                <ToggleOption
+                  type="button"
+                  $selected={isScheduled}
+                  onClick={() => setIsScheduled(true)}
+                >
+                  <CalendarIcon
+                    size={20}
+                    color={isScheduled ? CORPORATE_COLOR : "#444"}
+                  />
+                  <div>
+                    <h4>Schedule for Later</h4>
+                    <p>Choose a specific date.</p>
+                  </div>
+                </ToggleOption>
+              </DeliveryToggle>
+
+              <AnimatePresence>
+                {isScheduled && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    style={{ overflow: "hidden" }}
+                  >
+                    <div style={{ marginTop: 24 }}>
+                      <Form.Item
+                        name="date"
+                        rules={[
+                          {
+                            required: true,
+                            message: "Please select a date",
+                          },
+                        ]}
+                      >
+                        <SimpleCalendar
+                          value={formData.date}
+                          onChange={(val) => handleInputChange("date", val)}
+                        />
+                      </Form.Item>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </SectionBlock>
+          </LeftColumn>
+
+          <RightColumn>
+            <StickyCard>
+              <h3 style={{ margin: "0 0 16px 0", fontSize: "1.2rem" }}>
+                Preview
+              </h3>
+              <CanvasContainer>
+                <Giftcard3DScene textureUrl={cardImages[selectedDesignIndex]} />
+              </CanvasContainer>
+              <div>
+                <SummaryRow>
+                  <span>Gift Card Value</span>
+                  <span>
+                    ${finalAmount > 0 ? finalAmount.toFixed(2) : "0.00"}
+                  </span>
+                </SummaryRow>
+                <SummaryRow>
+                  <span>Delivery</span>
+                  <span style={{ color: "#008a05", fontWeight: 600 }}>
+                    Free
+                  </span>
+                </SummaryRow>
+                <SummaryRow className="total">
+                  <span>Total</span>
+                  <span>
+                    ${finalAmount > 0 ? finalAmount.toFixed(2) : "0.00"}
+                  </span>
+                </SummaryRow>
+              </div>
+              <ActionButton whileTap={{ scale: 0.98 }} onClick={handleNext}>
+                Checkout
+              </ActionButton>
+              <div
+                style={{
+                  textAlign: "center",
+                  marginTop: 16,
+                  fontSize: "0.8rem",
+                  color: "#888",
+                }}
+              >
+                Secure SSL Encrypted Payment
+              </div>
+            </StickyCard>
+          </RightColumn>
+
+          <MobileStickyFooter>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ fontSize: "0.8rem", color: "#666" }}>Total</span>
+              <span style={{ fontSize: "1.1rem", fontWeight: 700 }}>
+                ${finalAmount > 0 ? finalAmount.toFixed(2) : "0.00"}
+              </span>
             </div>
-            <ActionButton whileTap={{ scale: 0.98 }} onClick={onNext}>
+            <ActionButton
+              style={{ width: "auto", marginTop: 0 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleNext}
+            >
               Checkout
             </ActionButton>
-            <div
-              style={{
-                textAlign: "center",
-                marginTop: 16,
-                fontSize: "0.8rem",
-                color: "#888",
-              }}
-            >
-              Secure SSL Encrypted Payment
-            </div>
-          </StickyCard>
-        </RightColumn>
-
-        <MobileStickyFooter>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontSize: "0.8rem", color: "#666" }}>Total</span>
-            <span style={{ fontSize: "1.1rem", fontWeight: 700 }}>
-              ${finalAmount > 0 ? finalAmount.toFixed(2) : "0.00"}
-            </span>
-          </div>
-          <ActionButton
-            style={{ width: "auto", marginTop: 0 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onNext}
-          >
-            Checkout
-          </ActionButton>
-        </MobileStickyFooter>
-      </ConfigGrid>
+          </MobileStickyFooter>
+        </ConfigGrid>
+      </Form>
     </ConfigProvider>
   );
 }
