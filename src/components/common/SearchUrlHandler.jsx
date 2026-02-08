@@ -10,6 +10,7 @@ const SearchUrlHandler = () => {
   const searchParams = useSearchParams();
   const {
     setIsDrawerOpen,
+    searchTerm,
     setSearchTerm,
     setSelectedLocation,
     setDatePickerValue,
@@ -34,7 +35,9 @@ const SearchUrlHandler = () => {
 
     const participantsParam = searchParams.get("participants");
 
-    if (locParam) {
+    // CHANGED: Added check to ensure we only update state if it differs from URL.
+    // This prevents infinite loops where State Change -> URL Change -> State Change.
+    if (locParam && locParam !== searchTerm) {
       setSearchTerm(locParam);
       if (latParam && lngParam) {
         setSelectedLocation((prev) => ({
@@ -54,9 +57,9 @@ const SearchUrlHandler = () => {
     } else if (dateParam) {
       const parsedDate = dayjs(dateParam);
       if (parsedDate.isValid()) setDatePickerValue(parsedDate);
-    } else {
-      setDatePickerValue(null);
     }
+    // Removed the "else setDatePickerValue(null)" to prevent clearing state
+    // unnecessarily if parameters are just missing (e.g. during a shallow push)
 
     if (participantsParam) {
       const count = parseInt(participantsParam, 10);
@@ -64,6 +67,8 @@ const SearchUrlHandler = () => {
     }
   }, [
     searchParams,
+    // Add searchTerm to dependency array so we can check against it
+    searchTerm,
     setSearchTerm,
     setSelectedLocation,
     setDatePickerValue,

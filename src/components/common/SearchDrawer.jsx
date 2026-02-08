@@ -239,7 +239,8 @@ const LocationInputWrapper = styled.div`
 
 const StyledInput = styled(Input)`
   width: 100%;
-  font-size: 15px !important;
+  /* CHANGED: Forced 16px to prevent iOS zoom */
+  font-size: 16px !important;
   padding: 8px 0 !important;
   border: none !important;
   outline: none !important;
@@ -833,6 +834,9 @@ const SearchDrawer = () => {
       onOpenChange={setIsDrawerOpen}
       shouldScaleBackground
       preventScrollRestoration={false}
+      // CHANGED: Disable Vaul's automatic input repositioning logic
+      // to prevent the "push up" effect when keyboard opens
+      repositionInputs={false}
     >
       <Drawer.Portal>
         <Overlay />
@@ -848,6 +852,7 @@ const SearchDrawer = () => {
               open={isLocationOpen}
               onOpenChange={setIsLocationOpen}
               shouldScaleBackground
+              repositionInputs={false}
             >
               <Drawer.Trigger asChild>
                 <MenuRow onClick={() => setIsLocationOpen(true)}>
@@ -909,6 +914,7 @@ const SearchDrawer = () => {
               open={isDateOpen}
               onOpenChange={setIsDateOpen}
               shouldScaleBackground
+              repositionInputs={false}
             >
               <Drawer.Trigger asChild>
                 <MenuRow onClick={() => setIsDateOpen(true)}>
@@ -969,6 +975,7 @@ const SearchDrawer = () => {
               open={isWhoOpen}
               onOpenChange={setIsWhoOpen}
               shouldScaleBackground
+              repositionInputs={false}
             >
               <Drawer.Trigger asChild>
                 <MenuRow onClick={() => setIsWhoOpen(true)}>
