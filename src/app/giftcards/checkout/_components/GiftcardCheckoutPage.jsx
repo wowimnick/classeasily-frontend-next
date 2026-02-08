@@ -70,6 +70,7 @@ const FAQS = [
 const FAQItem = styled.div`
   border-bottom: 1px solid #eee;
 `;
+
 const FAQTrigger = styled.button`
   width: 100%;
   display: flex;
@@ -84,12 +85,14 @@ const FAQTrigger = styled.button`
   font-weight: 500;
   color: #000;
 `;
+
 const FAQContent = styled(motion.div)`
   overflow: hidden;
   color: #000;
   font-size: 0.95rem;
   line-height: 1.6;
 `;
+
 const BottomContainer = styled.div`
   max-width: 800px;
   width: 100%;
@@ -198,29 +201,43 @@ export default function GiftcardCheckoutPage() {
         {step !== "success" && (
           <BottomContainer>
             <SectionHeader>Frequently asked questions</SectionHeader>
-            {FAQS.map((item, index) => (
-              <FAQItem key={index}>
-                <FAQTrigger onClick={() => toggleFaq(index)}>
-                  <span>{item.q}</span>
-                  {openFaq === index ? (
-                    <ChevronUp size={20} />
-                  ) : (
-                    <ChevronDown size={20} />
-                  )}
-                </FAQTrigger>
-                <AnimatePresence>
-                  {openFaq === index && (
-                    <FAQContent
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                    >
-                      <div style={{ paddingBottom: 24 }}>{item.a}</div>
-                    </FAQContent>
-                  )}
-                </AnimatePresence>
-              </FAQItem>
-            ))}
+            {FAQS.map((item, index) => {
+              const isOpen = openFaq === index;
+              const faqId = `faq-content-${index}`;
+              const triggerId = `faq-trigger-${index}`;
+
+              return (
+                <FAQItem key={index}>
+                  <FAQTrigger
+                    id={triggerId}
+                    aria-expanded={isOpen}
+                    aria-controls={faqId}
+                    onClick={() => toggleFaq(index)}
+                  >
+                    <span>{item.q}</span>
+                    {isOpen ? (
+                      <ChevronUp size={20} />
+                    ) : (
+                      <ChevronDown size={20} />
+                    )}
+                  </FAQTrigger>
+                  <AnimatePresence>
+                    {isOpen && (
+                      <FAQContent
+                        id={faqId}
+                        role="region"
+                        aria-labelledby={triggerId}
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                      >
+                        <div style={{ paddingBottom: 24 }}>{item.a}</div>
+                      </FAQContent>
+                    )}
+                  </AnimatePresence>
+                </FAQItem>
+              );
+            })}
           </BottomContainer>
         )}
       </PageWrapper>

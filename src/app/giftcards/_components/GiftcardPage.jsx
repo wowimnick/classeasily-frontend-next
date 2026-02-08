@@ -7,21 +7,23 @@ import React, {
   useEffect,
   useLayoutEffect,
 } from "react";
-import styled, { createGlobalStyle, css } from "styled-components";
+import styled, { createGlobalStyle, css, keyframes } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronDown,
   ChevronUp,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { ConfigProvider } from "antd";
-import Image from "next/image"; // Import Next Image for fallbacks
+import Image from "next/image";
+import Link from "next/link"; // IMPORT ADDED
 import message from "@/lib/message";
 import { theme } from "@/components/theme";
 import Header from "@/components/layout/SharedMainClientHeader";
 import FooterClient from "@/components/homepage/FooterClient";
-import Script from "next/script"; // Import Script for JSON-LD
+import Script from "next/script";
 
 // --- THREE JS IMPORTS ---
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -75,6 +77,15 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 // --- Styled Components ---
+const rotate = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+const Spinner = styled(Loader2)`
+  animation: ${rotate} 1s linear infinite;
+`;
+
 const PageWrapper = styled.div`
   width: 100%;
   min-height: 100vh;
@@ -138,7 +149,13 @@ const SectionTitle = styled.h2`
   margin-bottom: 16px;
 `;
 
-const LinkText = styled.a`
+// Changed from styled.a to styled.button to fix "Link not crawlable" error
+// when used for actions instead of navigation.
+const LinkButton = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
   color: #222222;
   text-decoration: underline;
   font-weight: 600;
@@ -147,6 +164,19 @@ const LinkText = styled.a`
   text-align: center;
   display: block;
   margin-top: 10px;
+
+  &:hover {
+    color: #000000;
+  }
+`;
+
+// New styled component for actual Links
+const StyledLink = styled(Link)`
+  color: #222222;
+  text-decoration: underline;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: inherit;
 
   &:hover {
     color: #000000;
@@ -183,6 +213,34 @@ const DarkButton = styled(motion.button)`
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
+`;
+
+const SelectButton = styled(motion.button)`
+  color: white;
+  background: #ff385c;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #d9324e;
+  }
+
+  &:disabled {
+    background: #d9324e;
+    opacity: 0.8;
+    cursor: wait;
+    pointer-events: none;
+  }
 `;
 
 /* --- HERO --- */
@@ -236,7 +294,6 @@ const HeroVisual = styled.div`
 `;
 
 /* --- FALLBACK COMPONENT --- */
-// SEO Friendly fallback that shows a static image while 3D loads
 const CanvasFallback = styled.div`
   position: absolute;
   top: 0;
@@ -476,7 +533,6 @@ const FAQContent = styled(motion.div)`
 `;
 
 // --- SHARED 3D RESOURCES ---
-// ... (Geometry and Mesh components remain unchanged) ...
 const CARD_WIDTH = 3;
 const CARD_HEIGHT = 1.9;
 const CARD_RADIUS = 0.2;
@@ -718,26 +774,6 @@ const BusinessScene = ({ isMobile }) => (
   </>
 );
 
-const SelectButton = styled(motion.button)`
-  color: white;
-  background: #ff385c;
-  border: none;
-  padding: 12px 28px;
-  border-radius: 14px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-
-  &:hover {
-    background: #d9324e;
-  }
-`;
-
 const MobileButtonWrapper = styled.div`
   display: flex;
   justify-content: center;
@@ -752,6 +788,7 @@ function NitroCard3D({
   onSelect,
   onSetIndex,
   isMobile,
+  isNavigating,
 }) {
   const groupRef = useRef();
   const offset = index - activeIndex;
@@ -809,8 +846,15 @@ function NitroCard3D({
             <SelectButton
               onClick={() => onSelect(textureUrl)}
               whileTap={{ scale: 0.95 }}
+              disabled={isNavigating}
             >
-              Select Design
+              {isNavigating ? (
+                <>
+                  <Spinner size={16} /> Redirecting...
+                </>
+              ) : (
+                "Select Design"
+              )}
             </SelectButton>
           </motion.div>
         </Html>
@@ -824,6 +868,7 @@ const NitroCarouselScene = ({
   setActiveIndex,
   onSelect,
   isMobile,
+  isNavigating,
 }) => {
   return (
     <>
@@ -846,6 +891,7 @@ const NitroCarouselScene = ({
             onSelect={onSelect}
             onSetIndex={setActiveIndex}
             isMobile={isMobile}
+            isNavigating={isNavigating}
           />
         ))}
       </group>
@@ -887,10 +933,16 @@ export default function GiftCardsPage() {
   const isMobile = useIsMobile();
   const [carouselIndex, setCarouselIndex] = useState(3);
   const [canvasKey, setCanvasKey] = useState(0);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     setCanvasKey((prev) => prev + 1);
   }, []);
+
+  // Prefetch the checkout page to minimize delay
+  useEffect(() => {
+    router.prefetch("/giftcards/checkout");
+  }, [router]);
 
   const toggleFaq = (index) => setOpenFaq(openFaq === index ? null : index);
   const handleUnsupported = () =>
@@ -901,6 +953,7 @@ export default function GiftCardsPage() {
   };
 
   const handleSelect = (url) => {
+    setIsNavigating(true);
     const index = HERO_CARD_IMAGES.indexOf(url);
     if (index !== -1) {
       router.push(`/giftcards/checkout?designIndex=${index}`);
@@ -929,7 +982,7 @@ export default function GiftCardsPage() {
     "@context": "https://schema.org",
     "@type": "Product",
     name: "ClassEasily Digital Gift Card",
-    image: HERO_CARD_IMAGES[2], // Use your primary card image URL
+    image: HERO_CARD_IMAGES[2],
     description:
       "Give the gift of creative experiences. Valid for workshops, classes, and tours.",
     brand: {
@@ -939,7 +992,7 @@ export default function GiftCardsPage() {
     offers: {
       "@type": "Offer",
       priceCurrency: "USD",
-      price: "50.00", // Example start price, or use lowPrice/highPrice
+      price: "50.00",
       availability: "https://schema.org/InStock",
     },
   };
@@ -947,7 +1000,6 @@ export default function GiftCardsPage() {
   return (
     <ConfigProvider theme={theme}>
       <GlobalStyle />
-      {/* SEO: Inject JSON-LD */}
       <Script
         id="faq-schema"
         type="application/ld+json"
@@ -986,7 +1038,6 @@ export default function GiftCardsPage() {
               </BuyButton>
             </div>
             <HeroVisual>
-              {/* Fallback for SEO & LCP */}
               <Suspense
                 fallback={
                   <CanvasFallback>
@@ -1038,9 +1089,10 @@ export default function GiftCardsPage() {
               <span style={{ fontSize: "0.9rem", color: "#222" }}>
                 Interested in corporate gifting?
               </span>
-              <LinkText onClick={handleUnsupported}>
+              {/* FIXED: Changed LinkText (a) to LinkButton (button) for semantics since it triggers action */}
+              <LinkButton onClick={handleUnsupported}>
                 Check out corporate options
-              </LinkText>
+              </LinkButton>
             </div>
           </Container>
         </TextSection>
@@ -1061,7 +1113,6 @@ export default function GiftCardsPage() {
               <Suspense
                 fallback={
                   <CanvasFallback>
-                    {/* Static image of the card deck as fallback */}
                     <Image
                       src={HERO_CARD_IMAGES[carouselIndex]}
                       alt="Select Card Design"
@@ -1094,6 +1145,7 @@ export default function GiftCardsPage() {
                       setActiveIndex={setCarouselIndex}
                       onSelect={handleSelect}
                       isMobile={isMobile}
+                      isNavigating={isNavigating}
                     />
                   </Canvas>
                 )}
@@ -1114,8 +1166,15 @@ export default function GiftCardsPage() {
                   onClick={() => handleSelect(HERO_CARD_IMAGES[carouselIndex])}
                   whileTap={{ scale: 0.95 }}
                   style={{ justifyContent: "center" }}
+                  disabled={isNavigating}
                 >
-                  Select Design
+                  {isNavigating ? (
+                    <>
+                      <Spinner size={16} /> Redirecting...
+                    </>
+                  ) : (
+                    "Select Design"
+                  )}
                 </SelectButton>
               </MobileButtonWrapper>
             )}
@@ -1183,18 +1242,17 @@ export default function GiftCardsPage() {
                 <span style={{ fontSize: "0.9rem", color: "#222" }}>
                   Planning a big order?
                 </span>
-                <span
-                  onClick={handleUnsupported}
-                  style={{
-                    fontWeight: 600,
-                    textDecoration: "underline",
-                    cursor: "pointer",
-                    color: "#222",
-                    marginLeft: 4,
+                {/* FIXED: Changed span to StyledLink for crawlability */}
+                <StyledLink
+                  href="/corporate-gifting"
+                  style={{ marginLeft: 4 }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleUnsupported();
                   }}
                 >
                   Talk to our sales team
-                </span>
+                </StyledLink>
               </div>
 
               <div
@@ -1217,7 +1275,6 @@ export default function GiftCardsPage() {
               <Suspense
                 fallback={
                   <CanvasFallback>
-                    {/* Static image fallback */}
                     <Image
                       src={Card5}
                       alt="Corporate Gift Cards"
@@ -1301,16 +1358,8 @@ export default function GiftCardsPage() {
               }}
             >
               Have more burning questions? Visit the{" "}
-              <span
-                style={{
-                  fontWeight: 600,
-                  textDecoration: "underline",
-                  cursor: "pointer",
-                }}
-              >
-                Help Center
-              </span>
-              .
+              {/* FIXED: Changed span to StyledLink for crawlability */}
+              <StyledLink href="/help-center">Help Center</StyledLink>.
             </div>
           </FAQSection>
         </Container>

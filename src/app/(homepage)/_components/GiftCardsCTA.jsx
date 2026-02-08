@@ -292,6 +292,7 @@ const CTAScene = ({ isMobile }) => {
 const GiftCardsCTA = () => {
   const router = useRouter();
   const isMobile = useIsMobile();
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // FIX: Force remount logic to prevent WebGL Context crash on navigation
   const [canvasKey, setCanvasKey] = useState(0);
@@ -299,9 +300,13 @@ const GiftCardsCTA = () => {
   useEffect(() => {
     // Increment key on mount to force fresh Canvas instance
     setCanvasKey((prev) => prev + 1);
-  }, []);
+
+    // Prefetch the giftcards page for instant navigation
+    router.prefetch("/giftcards/");
+  }, [router]);
 
   const handleBuyClick = () => {
+    setIsNavigating(true);
     router.push("/giftcards/");
   };
 
@@ -330,14 +335,21 @@ const GiftCardsCTA = () => {
             type="primary"
             size="large"
             onClick={handleBuyClick}
+            loading={isNavigating} // Use Ant Design's native loading state
             style={{
               padding: "1rem 2.5rem",
               height: "auto",
               lineHeight: "1.5",
             }}
           >
-            Purchase Gift Card{" "}
-            <ArrowRight size={18} style={{ marginLeft: "8px" }} />
+            {isNavigating ? (
+              "Redirecting..."
+            ) : (
+              <>
+                Purchase Gift Card{" "}
+                <ArrowRight size={18} style={{ marginLeft: "8px" }} />
+              </>
+            )}
           </AntButton>
         </TextContent>
 

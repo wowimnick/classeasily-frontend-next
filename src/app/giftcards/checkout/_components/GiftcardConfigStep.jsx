@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import styled, { css } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -11,6 +11,7 @@ import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import Image from "next/image";
 import { ConfigProvider, Input, Form } from "antd";
@@ -211,6 +212,18 @@ const CanvasContainer = styled.div`
   margin-bottom: 24px;
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const CanvasFallback = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #888;
 `;
 
 const SummaryRow = styled.div`
@@ -240,6 +253,7 @@ const MobileStickyFooter = styled.div`
   z-index: 100;
   align-items: center;
   justify-content: space-between;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
 
   @media (max-width: 900px) {
     display: flex;
@@ -332,6 +346,7 @@ function SimpleCalendar({ value, onChange }) {
       >
         <button
           type="button"
+          aria-label="Previous Month"
           style={{
             border: "1px solid #eee",
             borderRadius: "50%",
@@ -339,6 +354,9 @@ function SimpleCalendar({ value, onChange }) {
             height: 32,
             cursor: "pointer",
             background: "white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
           onClick={() => setCurrentMonth(currentMonth.subtract(1, "month"))}
         >
@@ -347,6 +365,7 @@ function SimpleCalendar({ value, onChange }) {
         <h4 style={{ margin: 0 }}>{currentMonth.format("MMMM YYYY")}</h4>
         <button
           type="button"
+          aria-label="Next Month"
           style={{
             border: "1px solid #eee",
             borderRadius: "50%",
@@ -354,6 +373,9 @@ function SimpleCalendar({ value, onChange }) {
             height: 32,
             cursor: "pointer",
             background: "white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
           onClick={() => setCurrentMonth(currentMonth.add(1, "month"))}
         >
@@ -373,6 +395,8 @@ function SimpleCalendar({ value, onChange }) {
               disabled={isPast}
               $selected={isSelected}
               onClick={() => !isPast && handleDayClick(day)}
+              aria-label={`Select ${date.format("MMMM D, YYYY")}`}
+              aria-pressed={isSelected}
             >
               {day}
             </CalDayBtn>
@@ -472,7 +496,15 @@ export default function GiftcardConfigStep({
       >
         <ConfigGrid>
           <MobileVisualHeader>
-            <Giftcard3DScene textureUrl={cardImages[selectedDesignIndex]} />
+            <Suspense
+              fallback={
+                <CanvasFallback>
+                  <Loader2 className="animate-spin" />
+                </CanvasFallback>
+              }
+            >
+              <Giftcard3DScene textureUrl={cardImages[selectedDesignIndex]} />
+            </Suspense>
           </MobileVisualHeader>
 
           <LeftColumn>
@@ -488,10 +520,12 @@ export default function GiftcardConfigStep({
                     key={idx}
                     $selected={selectedDesignIndex === idx}
                     onClick={() => setSelectedDesignIndex(idx)}
+                    aria-label={`Select design ${idx + 1}`}
+                    aria-pressed={selectedDesignIndex === idx}
                   >
                     <Image
                       src={img}
-                      alt={`Card ${idx}`}
+                      alt={`Card Design ${idx + 1}`}
                       width={200}
                       height={126}
                     />
@@ -520,6 +554,7 @@ export default function GiftcardConfigStep({
                       setAmount(val);
                       setCustomAmount(""); // Clear custom amount if preset chosen
                     }}
+                    aria-pressed={amount === val}
                   >
                     ${val}
                   </AmountChip>
@@ -529,6 +564,7 @@ export default function GiftcardConfigStep({
                   type="button"
                   $selected={amount === null}
                   onClick={() => setAmount(null)}
+                  aria-pressed={amount === null}
                 >
                   Custom
                 </AmountChip>
@@ -560,7 +596,7 @@ export default function GiftcardConfigStep({
                           placeholder="0.00"
                           size="middle"
                           autoFocus
-                          // Removed manual value/onChange to prevent conflicts
+                          aria-label="Custom Amount"
                         />
                       </Form.Item>
                     </CustomInputContainer>
@@ -580,6 +616,7 @@ export default function GiftcardConfigStep({
                   type="button"
                   $selected={deliveryMethod === "email"}
                   onClick={() => setDeliveryMethod("email")}
+                  aria-pressed={deliveryMethod === "email"}
                 >
                   <Mail
                     size={20}
@@ -596,6 +633,7 @@ export default function GiftcardConfigStep({
                   type="button"
                   $selected={deliveryMethod === "self"}
                   onClick={() => setDeliveryMethod("self")}
+                  aria-pressed={deliveryMethod === "self"}
                 >
                   <User
                     size={20}
@@ -618,6 +656,7 @@ export default function GiftcardConfigStep({
               >
                 <div>
                   <label
+                    htmlFor="recipientName"
                     style={{
                       display: "block",
                       marginBottom: 8,
@@ -638,15 +677,16 @@ export default function GiftcardConfigStep({
                     style={{ marginBottom: 0 }}
                   >
                     <Input
+                      id="recipientName"
                       size="middle"
                       placeholder="e.g. John Doe"
-                      // Removed manual value/onChange to prevent conflicts
                     />
                   </Form.Item>
                 </div>
                 {deliveryMethod === "email" && (
                   <div>
                     <label
+                      htmlFor="recipientEmail"
                       style={{
                         display: "block",
                         marginBottom: 8,
@@ -668,10 +708,10 @@ export default function GiftcardConfigStep({
                       style={{ marginBottom: 0 }}
                     >
                       <Input
+                        id="recipientEmail"
                         size="middle"
                         type="email"
                         placeholder="e.g. john@example.com"
-                        // Removed manual value/onChange to prevent conflicts
                       />
                     </Form.Item>
                   </div>
@@ -679,6 +719,7 @@ export default function GiftcardConfigStep({
               </div>
               <div style={{ marginBottom: 20 }}>
                 <label
+                  htmlFor="senderName"
                   style={{
                     display: "block",
                     marginBottom: 8,
@@ -699,14 +740,15 @@ export default function GiftcardConfigStep({
                   style={{ marginBottom: 0 }}
                 >
                   <Input
+                    id="senderName"
                     size="middle"
                     placeholder="e.g. Jane Smith"
-                    // Removed manual value/onChange to prevent conflicts
                   />
                 </Form.Item>
               </div>
               <div>
                 <label
+                  htmlFor="message"
                   style={{
                     display: "block",
                     marginBottom: 8,
@@ -718,9 +760,9 @@ export default function GiftcardConfigStep({
                 </label>
                 <Form.Item name="message" style={{ marginBottom: 0 }}>
                   <Input.TextArea
+                    id="message"
                     rows={4}
                     placeholder="Write a personal note..."
-                    // Removed manual value/onChange to prevent conflicts
                   />
                 </Form.Item>
               </div>
@@ -737,6 +779,7 @@ export default function GiftcardConfigStep({
                   type="button"
                   $selected={!isScheduled}
                   onClick={() => setIsScheduled(false)}
+                  aria-pressed={!isScheduled}
                 >
                   <Clock
                     size={20}
@@ -751,6 +794,7 @@ export default function GiftcardConfigStep({
                   type="button"
                   $selected={isScheduled}
                   onClick={() => setIsScheduled(true)}
+                  aria-pressed={isScheduled}
                 >
                   <CalendarIcon
                     size={20}
@@ -798,7 +842,17 @@ export default function GiftcardConfigStep({
                 Preview
               </h3>
               <CanvasContainer>
-                <Giftcard3DScene textureUrl={cardImages[selectedDesignIndex]} />
+                <Suspense
+                  fallback={
+                    <CanvasFallback>
+                      <Loader2 className="animate-spin" />
+                    </CanvasFallback>
+                  }
+                >
+                  <Giftcard3DScene
+                    textureUrl={cardImages[selectedDesignIndex]}
+                  />
+                </Suspense>
               </CanvasContainer>
               <div>
                 <SummaryRow>

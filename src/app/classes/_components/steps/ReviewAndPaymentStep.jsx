@@ -395,14 +395,12 @@ const CouponTicketInput = styled.div`
   display: flex;
   gap: 8px;
   margin-bottom: 24px;
-  padding: 12px;
   background: #f9fafb;
   border-radius: 12px;
   border: 1px dashed #e5e7eb;
 
   .ant-input {
     font-size: 13px;
-    background: white;
   }
 
   .ant-btn {
