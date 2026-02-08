@@ -23,7 +23,7 @@ import { useSearch, SUGGESTED_AREAS } from "@/context/SearchContext";
 // Dynamic Imports
 const CustomUserMenu = dynamic(
   () => import("@/components/header/CustomUserMenu.jsx"),
-  { ssr: false, loading: () => null }
+  { ssr: false, loading: () => null },
 );
 
 const UserAvatar = dynamic(() => import("@/components/common/UserAvatar"), {
@@ -43,7 +43,7 @@ const LogoIcon = dynamic(() => import("@/components/common/logoIcon"), {
 
 const SettingsModal = dynamic(
   () => import("@/components/header/SettingsDrawer"),
-  { ssr: false }
+  { ssr: false },
 );
 
 // --- HELPER HOOKS ---
@@ -81,7 +81,9 @@ const HeaderWrapper = styled.header`
   top: ${({ $isFixed }) => ($isFixed ? "0" : "auto")};
   height: 80px;
   padding: 0 2rem;
-  transition: background-color 0.3s, border-bottom 0.3s;
+  transition:
+    background-color 0.3s,
+    border-bottom 0.3s;
   z-index: 100;
   overflow: visible;
 
@@ -424,8 +426,8 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
   const selectedStart = value?.start
     ? dayjs(value.start)
     : value && value.isValid && value.isValid()
-    ? dayjs(value)
-    : null;
+      ? dayjs(value)
+      : null;
   const selectedEnd = value?.end ? dayjs(value.end) : null;
 
   const handleDateClick = (dateObj) => {
@@ -823,7 +825,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
     if (participantsParam) {
       const numParticipants = parseInt(participantsParam, 10);
       setParticipantCount(
-        !isNaN(numParticipants) && numParticipants > 0 ? numParticipants : 1
+        !isNaN(numParticipants) && numParticipants > 0 ? numParticipants : 1,
       );
     }
   }, [
@@ -861,11 +863,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
           width / 2;
 
         // Smart edge detection (prevents popup from going off screen)
-        // Note: The HeaderWrapper has overflow: visible, so negative left isn't clipped,
-        // but we want it aligned nicely relative to the pill.
-
-        // However, we need to check if it overflows the viewport, not just container.
-        // Simplified check:
         const absoluteLeft = containerRect.left + left;
         const windowWidth = window.innerWidth;
 
@@ -926,7 +923,12 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
         <LocationOption
           key={idx}
           onClick={() => {
-            handleLocationSelect(result.displayName);
+            // FIXED: Pass the full object to handleLocationSelect
+            handleLocationSelect(result.displayName, {
+              coordinates: result.coordinates,
+              citySlug: result.citySlug,
+              provinceSlug: result.provinceSlug,
+            });
             setActiveField(null);
           }}
         >
@@ -954,7 +956,12 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
       <LocationOption
         key={idx}
         onClick={() => {
-          handleLocationSelect(area.name);
+          // FIXED: Pass the full object (using 'coords' property for suggestions)
+          handleLocationSelect(area.name, {
+            coordinates: area.coords,
+            citySlug: area.citySlug,
+            provinceSlug: area.provinceSlug,
+          });
           setActiveField(null);
         }}
       >
