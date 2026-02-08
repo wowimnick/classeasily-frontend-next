@@ -1,12 +1,31 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  Suspense,
+} from "react";
 import styled from "styled-components";
 import { Button as AntButton } from "antd";
-import message from "@/lib/message";
 import { motion } from "framer-motion";
-import { ArrowRight, Wifi } from "lucide-react";
-import LogoIcon from "@/components/common/logoIcon";
+import { ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+// --- THREE JS IMPORTS ---
+import { Canvas, useFrame } from "@react-three/fiber";
+import {
+  Environment,
+  ContactShadows,
+  useTexture,
+  Float,
+} from "@react-three/drei";
+import * as THREE from "three";
+
+// --- ASSET IMPORTS ---
+import Card1 from "@/assets/card1.png"; // Red/Pinkish card usually
+import Card5 from "@/assets/Card 9.png"; // Dark/Premium card usually
 
 const GiftCardSection = styled.section`
   padding: 5rem 2rem;
@@ -29,7 +48,7 @@ const ContentWrapper = styled.div`
   max-width: 1300px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1fr 1.5fr; /* Desktop: Text (1fr) Left, Cards (1.5fr) Right */
+  grid-template-columns: 1fr 1.5fr;
   gap: 4rem;
   align-items: center;
 
@@ -41,10 +60,6 @@ const ContentWrapper = styled.div`
   }
 `;
 
-/* 
-   On Desktop: This is Column 1 (Left). 
-   On Mobile: We force this to Order 3 (Bottom).
-*/
 const TextContent = styled(motion.div)`
   position: relative;
   z-index: 2;
@@ -60,35 +75,26 @@ const TextContent = styled(motion.div)`
   }
 `;
 
-/* 
-   On Desktop: This is Column 2 (Right).
-   On Mobile: We force this to Order 2 (Middle).
-*/
 const CardsArea = styled.div`
   position: relative;
-  height: 450px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  perspective: 1500px;
-  z-index: 1;
+  height: 500px; /* Increased slightly for 3D canvas headroom */
   width: 100%;
+  z-index: 1;
 
   @media (max-width: 1024px) {
-    height: 300px;
+    height: 350px;
     order: 2;
     margin-top: -1rem;
     margin-bottom: -1rem;
   }
 
   @media (max-width: 480px) {
-    height: 260px;
+    height: 300px;
   }
 `;
 
 // --- Typography ---
 
-/* Only visible on Mobile. Order 1 (Top). */
 const MobileTitle = styled.h2`
   display: none;
   font-size: clamp(2rem, 5vw, 2.5rem);
@@ -105,7 +111,6 @@ const MobileTitle = styled.h2`
   }
 `;
 
-/* Only visible on Desktop. Inside TextContent. */
 const DesktopTitle = styled.h2`
   font-size: clamp(2.2rem, 5vw, 3.2rem);
   font-weight: 700;
@@ -121,7 +126,7 @@ const DesktopTitle = styled.h2`
 
 const Description = styled.p`
   font-size: clamp(1rem, 1.5vw, 1.1rem);
-  color: #111; /* Changed to Black */
+  color: #111;
   line-height: 1.6;
   margin-bottom: 2.5rem;
   margin-top: 0;
@@ -134,257 +139,175 @@ const Description = styled.p`
   }
 `;
 
-// --- High-Fidelity 3D Card Styles ---
+// --- 3D GEOMETRY & MATERIALS ---
 
-const CardContainer = styled(motion.div)`
-  position: absolute;
-  width: 380px;
-  height: 240px;
-  border-radius: 16px;
-  transform-style: preserve-3d;
-  cursor: default;
-  top: 50%;
-  left: 50%;
-  z-index: 2;
+const CARD_WIDTH = 3;
+const CARD_HEIGHT = 1.9;
+const CARD_RADIUS = 0.2;
+const CARD_THICKNESS = 0.05;
 
-  @media (max-width: 1024px) {
-    width: 320px;
-    height: 200px;
-  }
+const cardShape = new THREE.Shape();
+const w = CARD_WIDTH;
+const h = CARD_HEIGHT;
+const r = CARD_RADIUS;
+const x = -w / 2;
+const y = -h / 2;
 
-  @media (max-width: 480px) {
-    width: 280px;
-    height: 176px;
-  }
-`;
+cardShape.moveTo(x + r, y);
+cardShape.lineTo(x + w - r, y);
+cardShape.quadraticCurveTo(x + w, y, x + w, y + r);
+cardShape.lineTo(x + w, y + h - r);
+cardShape.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+cardShape.lineTo(x + r, y + h);
+cardShape.quadraticCurveTo(x, y + h, x, y + h - r);
+cardShape.lineTo(x, y + r);
+cardShape.quadraticCurveTo(x, y, x + r, y);
 
-const CardFace = styled.div`
-  position: absolute;
-  inset: 0;
-  border-radius: 16px;
-  overflow: hidden;
-  background: ${(props) => props.$bgColor || "#1a1a1a"};
-  box-shadow:
-    0 20px 50px rgba(0, 0, 0, 0.3),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.15);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 24px;
-  color: white;
+const extrudeSettings = {
+  depth: CARD_THICKNESS,
+  bevelEnabled: false,
+};
 
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    opacity: 0.6;
-    background-image: url("/GiftCardsCTA.svg");
-    mix-blend-mode: overlay;
-  }
+// Reusable 3D Card Component
+const GlossyCardMesh = React.forwardRef(
+  ({ textureUrl, envMapIntensity = 0.8, ...props }, ref) => {
+    const texture = useTexture(textureUrl);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const geometryRef = useRef();
 
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(
-      circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-      rgba(255, 255, 255, 0.25) 0%,
-      rgba(255, 255, 255, 0) 60%
+    useLayoutEffect(() => {
+      if (geometryRef.current) {
+        geometryRef.current.computeBoundingBox();
+        const { min, max } = geometryRef.current.boundingBox;
+        const uvAttribute = geometryRef.current.attributes.uv;
+        const posAttribute = geometryRef.current.attributes.position;
+        for (let i = 0; i < posAttribute.count; i++) {
+          const xPos = posAttribute.getX(i);
+          const yPos = posAttribute.getY(i);
+          const u = (xPos - min.x) / (max.x - min.x);
+          const v = (yPos - min.y) / (max.y - min.y);
+          uvAttribute.setXY(i, u, v);
+        }
+        uvAttribute.needsUpdate = true;
+      }
+    }, []);
+
+    return (
+      <mesh ref={ref} castShadow receiveShadow {...props}>
+        <extrudeGeometry
+          ref={geometryRef}
+          args={[cardShape, extrudeSettings]}
+        />
+        {/* Face Material */}
+        <meshPhysicalMaterial
+          attach="material-0"
+          map={texture}
+          color="#ffffff"
+          metalness={0.1}
+          roughness={0.2}
+          clearcoat={1.0}
+          clearcoatRoughness={0.05}
+          ior={1.5}
+          reflectivity={0.9}
+          envMapIntensity={envMapIntensity}
+        />
+        {/* Edge Material */}
+        <meshStandardMaterial
+          attach="material-1"
+          color="#f0f0f0"
+          roughness={0.3}
+        />
+      </mesh>
     );
-    opacity: var(--glare-opacity, 0);
-    transition: opacity 0.2s;
-    mix-blend-mode: overlay;
-    pointer-events: none;
-  }
+  },
+);
+GlossyCardMesh.displayName = "GlossyCardMesh";
 
-  @media (max-width: 480px) {
-    padding: 18px;
-  }
-`;
+// --- 3D SCENE LOGIC ---
 
-const CardTop = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-`;
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+  return isMobile;
+}
 
-const CardChip = styled.div`
-  width: 45px;
-  height: 34px;
-  background: linear-gradient(135deg, #d9d9d9 0%, #b3b3b3 50%, #e6e6e6 100%);
-  border-radius: 6px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 100%;
-    height: 1px;
-    background: rgba(0, 0, 0, 0.2);
-  }
-  &::after {
-    content: "";
-    position: absolute;
-    left: 35%;
-    top: 15%;
-    width: 30%;
-    height: 70%;
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-  }
-`;
-
-const WirelessIcon = styled(Wifi)`
-  transform: rotate(90deg);
-  opacity: 0.7;
-`;
-
-const CardAmount = styled.div`
-  font-family: "Courier New", Courier, monospace;
-  font-size: 2.5rem;
-  font-weight: 700;
-  letter-spacing: -1px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: baseline;
-
-  span {
-    font-size: 1rem;
-    margin-left: 8px;
-    opacity: 0.8;
-    font-family: inherit;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 2rem;
-  }
-`;
-
-const CardBottom = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-`;
-
-const CardDetails = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-`;
-
-const CardLabel = styled.span`
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  opacity: 0.7;
-`;
-
-const CardNumber = styled.span`
-  font-family: "Courier New", Courier, monospace;
-  font-size: 1.1rem;
-  letter-spacing: 2px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-`;
-
-const BrandLogo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 700;
-  font-size: 1.1rem;
-  opacity: 0.9;
-
-  svg path {
-    fill: white !important;
-  }
-`;
-
-// --- Component Logic ---
-
-const InteractiveCard = ({
-  style,
-  initial,
-  animate,
-  bgColor,
-  amount,
-  code,
-  type,
-}) => {
-  const cardRef = useRef(null);
-
-  const handleMouseMove = (e) => {
-    // Only run hover effect on desktop
-    if (window.innerWidth < 1024 || !cardRef.current) return;
-
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    cardRef.current.style.setProperty("--mouse-x", `${x}px`);
-    cardRef.current.style.setProperty("--mouse-y", `${y}px`);
-  };
-
-  const handleMouseEnter = () => {
-    if (window.innerWidth < 1024) return;
-    if (cardRef.current)
-      cardRef.current.style.setProperty("--glare-opacity", "1");
-  };
-
-  const handleMouseLeave = () => {
-    if (cardRef.current)
-      cardRef.current.style.setProperty("--glare-opacity", "0");
-  };
-
+const CTAScene = ({ isMobile }) => {
   return (
-    <CardContainer
-      style={style}
-      initial={initial}
-      animate={animate}
-      transition={{ duration: 0.8, ease: "easeOut" }}
-    >
-      <CardFace
-        ref={cardRef}
-        $bgColor={bgColor}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+    <>
+      <ambientLight intensity={0.8} />
+      <directionalLight
+        position={[5, 10, 5]}
+        intensity={1}
+        castShadow
+        shadow-mapSize={[1024, 1024]}
+      />
+      <Environment preset="city" />
+
+      <group
+        position={[0, isMobile ? -0.2 : 0, 0]}
+        scale={isMobile ? 0.9 : 1.1}
       >
-        <CardTop>
-          <CardChip />
-          <WirelessIcon size={24} />
-        </CardTop>
+        {/* Back Card (Dark/Premium) - Tilted left */}
+        <Float
+          speed={2}
+          rotationIntensity={0.2}
+          floatIntensity={0.5}
+          position={[-0.8, 0.4, -1]}
+        >
+          <GlossyCardMesh
+            textureUrl={Card5.src}
+            rotation={[0.1, 0.3, -0.2]}
+            scale={0.9}
+          />
+        </Float>
 
-        <CardAmount>
-          ${amount}
-          <span>CAD</span>
-        </CardAmount>
+        {/* Front Card (Red/Vibrant) - Tilted right, overlapping */}
+        <Float
+          speed={2.5}
+          rotationIntensity={0.4}
+          floatIntensity={0.8}
+          position={[0.5, -0.3, 0.5]}
+        >
+          <GlossyCardMesh textureUrl={Card1.src} rotation={[0, -0.2, 0.1]} />
+        </Float>
+      </group>
 
-        <CardBottom>
-          <CardDetails>
-            <CardLabel>Digital Gift Code</CardLabel>
-            <CardNumber>•••• {code}</CardNumber>
-          </CardDetails>
-          <div style={{ textAlign: "right" }}>
-            <CardLabel style={{ display: "block", marginBottom: "4px" }}>
-              {type}
-            </CardLabel>
-            <BrandLogo>
-              <LogoIcon size="1.5rem" /> ClassEasily
-            </BrandLogo>
-          </div>
-        </CardBottom>
-      </CardFace>
-    </CardContainer>
+      <ContactShadows
+        position={[0, -2, 0]}
+        opacity={0.5}
+        scale={15}
+        blur={2}
+        far={4.5}
+        color="#000000"
+      />
+    </>
   );
 };
 
 const GiftCardsCTA = () => {
+  const router = useRouter();
+  const isMobile = useIsMobile();
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  // FIX: Force remount logic to prevent WebGL Context crash on navigation
+  const [canvasKey, setCanvasKey] = useState(0);
+
+  useEffect(() => {
+    // Increment key on mount to force fresh Canvas instance
+    setCanvasKey((prev) => prev + 1);
+
+    // Prefetch the giftcards page for instant navigation
+    router.prefetch("/giftcards/");
+  }, [router]);
+
   const handleBuyClick = () => {
-    message.info("Gift Cards are currently in development.");
+    setIsNavigating(true);
+    router.push("/giftcards/");
   };
 
   return (
@@ -393,7 +316,7 @@ const GiftCardsCTA = () => {
         {/* Mobile Title (Order 1) */}
         <MobileTitle>Gift a fun experience</MobileTitle>
 
-        {/* Text Content: Desktop (Left/Col 1), Mobile (Order 3/Bottom) */}
+        {/* Text Content */}
         <TextContent
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -412,40 +335,39 @@ const GiftCardsCTA = () => {
             type="primary"
             size="large"
             onClick={handleBuyClick}
+            loading={isNavigating} // Use Ant Design's native loading state
             style={{
               padding: "1rem 2.5rem",
               height: "auto",
               lineHeight: "1.5",
             }}
           >
-            Purchase Gift Card{" "}
-            <ArrowRight size={18} style={{ marginLeft: "8px" }} />
+            <>
+              Purchase Gift Card{" "}
+              <ArrowRight size={18} style={{ marginLeft: "8px" }} />
+            </>
           </AntButton>
         </TextContent>
 
-        {/* Cards Area: Desktop (Right/Col 2), Mobile (Order 2/Middle) */}
+        {/* 3D Cards Area */}
         <CardsArea>
-          {/* Background Premium Card (Black) */}
-          <InteractiveCard
-            style={{
-              transform: "translate(-50%, -60%) rotate(-15deg) scale(0.9)",
-              zIndex: 1,
-            }}
-            bgColor="linear-gradient(135deg, #232526 0%, #414345 100%)"
-            amount="250"
-            code="8842"
-          />
-
-          {/* Foreground Classic Card (Red) */}
-          <InteractiveCard
-            style={{
-              transform: "translate(-50%, -40%) rotate(5deg)",
-              zIndex: 2,
-            }}
-            bgColor="linear-gradient(135deg, #E92E31 0%, #c41e21 100%)"
-            amount="100"
-            code="4291"
-          />
+          <Suspense fallback={null}>
+            {/* 
+                FIX: Only render Canvas when canvasKey > 0 
+                This ensures it mounts cleanly after client-side hydration
+            */}
+            {canvasKey > 0 && (
+              <Canvas
+                key={canvasKey}
+                shadows
+                dpr={[1, 2]}
+                camera={{ position: [0, 0, 6], fov: 50 }}
+                style={{ width: "100%", height: "100%" }}
+              >
+                <CTAScene isMobile={isMobile} />
+              </Canvas>
+            )}
+          </Suspense>
         </CardsArea>
       </ContentWrapper>
     </GiftCardSection>

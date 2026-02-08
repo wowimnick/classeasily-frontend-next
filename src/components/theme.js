@@ -1,3 +1,5 @@
+// --- START OF FILE theme.js ---
+
 // src/theme.js
 
 // 🔥 FIX 1: Freeze colors object to prevent mutations
@@ -8,7 +10,7 @@ const colors = Object.freeze({
   error: "#ef4444",
   info: "#3b82f6",
   lightBg: "#f8fafc",
-  border: "#f1f5f9",
+  border: "#e2e2e2",
   textPrimary: "#334155",
   textSecondary: "#64748b",
   chart: Object.freeze({
@@ -23,7 +25,8 @@ const colors = Object.freeze({
 });
 
 // Common font stack to be used across token and components
-const fontStack = 'var(--font-proxima-soft), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const fontStack =
+  'var(--font-proxima-soft), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
 // 🔥 FIX 2: Create theme config once and freeze it
 const themeConfig = {
@@ -38,23 +41,23 @@ const themeConfig = {
     colorTextBase: colors.textPrimary,
     colorText: colors.textPrimary,
     colorTextSecondary: colors.textSecondary,
-    colorTextTertiary: '#94a3b8',
-    colorTextQuaternary: '#cbd5e1',
-    colorPrimaryHover: '#e11d48',
+    colorTextTertiary: "#94a3b8",
+    colorTextQuaternary: "#cbd5e1",
+    colorPrimaryHover: "#e11d48",
 
     colorBorder: colors.border,
-    colorBorderSecondary: '#e2e8f0',
+    colorBorderSecondary: "#e2e8f0",
 
-    colorBgBase: '#FFFFFF',
-    colorBgContainer: '#FFFFFF',
+    colorBgBase: "#FFFFFF",
+    colorBgContainer: "#FFFFFF",
     colorBgLayout: colors.lightBg,
-    colorBgElevated: '#FFFFFF',
+    colorBgElevated: "#FFFFFF",
 
-    fontFamily: fontStack, // Set globally
+    fontFamily: fontStack,
     fontSize: 14,
 
-    borderRadius: 16,
-    controlHeight: 44,
+    borderRadius: 12,
+    controlHeight: 44, // Global height reference
     marginXS: 8,
     margin: 16,
     marginLG: 24,
@@ -63,9 +66,9 @@ const themeConfig = {
     paddingLG: 24,
     controlPaddingHorizontal: 16,
 
-    colorBackgroundDark: '#0f172a',
-    colorHeaderText: '#FFFFFF',
-    
+    colorBackgroundDark: "#0f172a",
+    colorHeaderText: "#FFFFFF",
+
     colorChart1: colors.chart.blue,
     colorChart2: colors.chart.green,
     colorChart3: colors.chart.purple,
@@ -74,18 +77,18 @@ const themeConfig = {
     colorChart6: colors.chart.teal,
     colorChart7: colors.chart.yellow,
   },
-  
+
   components: {
     Button: {
       colorPrimary: colors.primary,
       algorithm: true,
-      controlHeight: 40,
+      controlHeight: 46, // CHANGED: Matches Input height exactly
       borderRadius: 12,
       paddingInline: 16,
-      fontFamily: fontStack, // 🔥 Explicitly enforce font
+      fontFamily: fontStack,
     },
     Modal: {
-      borderRadiusLG: 16,
+      borderRadiusLG: 12,
       fontFamily: fontStack,
     },
     Input: {
@@ -94,13 +97,14 @@ const themeConfig = {
       borderRadius: 12,
       paddingInline: 16,
       paddingBlock: 12,
-      fontFamily: fontStack, // 🔥 Explicitly enforce font
+      colorTextPlaceholder: "#c5c5c5",
+      fontFamily: fontStack,
     },
     Select: {
       controlHeight: 44,
       controlHeightLG: 44,
       borderRadius: 12,
-      fontFamily: fontStack, // 🔥 Explicitly enforce font
+      fontFamily: fontStack,
     },
     DatePicker: {
       controlHeight: 44,
@@ -125,7 +129,7 @@ const themeConfig = {
       fontFamily: fontStack,
     },
     Card: {
-      borderRadiusLG: 16,
+      borderRadiusLG: 12,
       fontFamily: fontStack,
     },
     Table: {
@@ -162,7 +166,7 @@ const themeConfig = {
     },
     Typography: {
       fontFamily: fontStack,
-    }
+    },
   },
 };
 

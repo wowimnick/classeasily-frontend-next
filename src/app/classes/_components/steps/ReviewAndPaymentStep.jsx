@@ -19,11 +19,11 @@ import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow, { NumberFlowGroup } from "@number-flow/react";
 import confetti from "canvas-confetti";
+import axios from "axios";
 import {
   Shield,
   Clock,
   ChevronDown,
-  ShoppingCart,
   CheckCircle,
   Lock,
   Percent,
@@ -33,11 +33,16 @@ import {
   MapPin,
   CalendarDays,
   X,
+  Gift,
 } from "lucide-react";
 import Lottie from "lottie-react";
 
 import { getCancellationPolicyText, getDurationText } from "./utils";
-import { businessDiscountService } from "@/services/apiService";
+import {
+  businessDiscountService,
+  giftCardService,
+} from "@/services/apiService";
+import posthog from "posthog-js";
 import { theme as appTheme } from "@/components/theme";
 import { formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
 import loadingAnimation from "@/assets/animations/Scene.json";
@@ -97,7 +102,6 @@ const TicketTop = styled.div`
   border: 1px solid #e5e7eb;
   border-bottom: none;
 
-  /* The semi-circle cutouts at the bottom corners of the top section */
   &::after {
     content: "";
     position: absolute;
@@ -105,7 +109,7 @@ const TicketTop = styled.div`
     left: -8px;
     width: 20px;
     height: 20px;
-    background-color: #f3f4f6; /* Matches page bg */
+    background-color: #f3f4f6;
     border-radius: 50%;
     border-right: 1px solid #e5e7eb;
     z-index: 2;
@@ -118,7 +122,7 @@ const TicketTop = styled.div`
     right: -10px;
     width: 20px;
     height: 20px;
-    background-color: #f3f4f6; /* Matches page bg */
+    background-color: #f3f4f6;
     border-radius: 50%;
     border-left: 1px solid #e5e7eb;
     z-index: 2;
@@ -136,7 +140,6 @@ const TicketDivider = styled.div`
   align-items: center;
   justify-content: center;
 
-  /* Dashed Line */
   &::after {
     content: "";
     width: 86%;
@@ -217,17 +220,6 @@ const TicketTotalRow = styled(TicketRow)`
     color: #111827;
   }
 `;
-
-const BarcodeSVG = () => (
-  <svg width="100%" height="30" viewBox="0 0 200 30" preserveAspectRatio="none">
-    <path
-      fill="#111827"
-      d="M0,0 h4 v30 h-4 M8,0 h2 v30 h-2 M14,0 h6 v30 h-6 M24,0 h2 v30 h-2 M30,0 h4 v30 h-4 M38,0 h2 v30 h-2 M44,0 h4 v30 h-4 M52,0 h2 v30 h-2 M60,0 h6 v30 h-6 M70,0 h2 v30 h-2 M76,0 h2 v30 h-2 M82,0 h4 v30 h-4 M90,0 h6 v30 h-6 M100,0 h2 v30 h-2 M106,0 h4 v30 h-4 M114,0 h2 v30 h-2 M120,0 h6 v30 h-6 M130,0 h2 v30 h-2 M136,0 h4 v30 h-4 M144,0 h2 v30 h-2 M150,0 h6 v30 h-6 M160,0 h2 v30 h-2 M166,0 h4 v30 h-4 M174,0 h2 v30 h-2 M180,0 h4 v30 h-4 M188,0 h2 v30 h-2 M196,0 h4 v30 h-4"
-    />
-  </svg>
-);
-
-// --- END TICKET DESIGN ---
 
 const MobileSummaryContainer = styled.div`
   display: block;
@@ -403,14 +395,12 @@ const CouponTicketInput = styled.div`
   display: flex;
   gap: 8px;
   margin-bottom: 24px;
-  padding: 12px;
   background: #f9fafb;
   border-radius: 12px;
   border: 1px dashed #e5e7eb;
 
   .ant-input {
     font-size: 13px;
-    background: white;
   }
 
   .ant-btn {
@@ -895,9 +885,16 @@ const ReviewAndPaymentStep = ({
   const [clientSecret, setClientSecret] = useState(null);
   const [isFormValid, setIsFormValid] = useState(false);
   const [showMobileSummary, setShowMobileSummary] = useState(false);
+
+  // Coupon State
   const [couponCode, setCouponCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
+
+  // Gift Card State
+  const [giftCardCode, setGiftCardCode] = useState("");
+  const [appliedGiftCard, setAppliedGiftCard] = useState(null); // { code, balance }
+  const [gcLoading, setGcLoading] = useState(false);
 
   // --- TIMER STATE ---
   const [timeRemaining, setTimeRemaining] = useState(15 * 60);
@@ -906,6 +903,13 @@ const ReviewAndPaymentStep = ({
   const debounceTimerRef = useRef(null);
 
   useEffect(() => {
+    // PostHog: Track payment step entry in booking funnel
+    posthog.capture("booking_payment_initiated", {
+      class_id: classData?.classId || classData?.id,
+      class_title: classData?.title,
+      participants: bookingData.participants,
+    });
+
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
@@ -998,21 +1002,34 @@ const ReviewAndPaymentStep = ({
   const basePrice = parseFloat(selectedSlot?.price || option?.price || 0);
   const subtotal = basePrice * participantsCount;
 
-  const { discountAmount, finalTotal } = useMemo(() => {
+  // Calculate totals including Gift Card deductions
+  const { discountAmount, taxAmount, finalTotal, gcDeduction } = useMemo(() => {
+    // 1. Calculate Standard Subtotal with Coupon
     const calculatedDiscount = appliedDiscount
       ? parseFloat(appliedDiscount.calculated_discount_amount) || 0
       : 0;
-    const subtotalAfter = Math.max(0, subtotal - calculatedDiscount);
-    const tax = subtotalAfter * HST_RATE;
+    const subtotalAfterDiscount = Math.max(0, subtotal - calculatedDiscount);
+    const tax = subtotalAfterDiscount * HST_RATE;
+    const grossTotal = subtotalAfterDiscount + tax;
+
+    // 2. Apply Gift Card Logic (Payment Method, applied AFTER tax)
+    let deduction = 0;
+    if (appliedGiftCard) {
+      // We can't deduct more than the total, and we can't deduct more than the balance
+      deduction = Math.min(grossTotal, parseFloat(appliedGiftCard.balance));
+    }
+
+    const payable = Math.max(0, grossTotal - deduction);
+
     return {
       discountAmount: calculatedDiscount,
       taxAmount: tax,
-      finalTotal: subtotalAfter + tax,
+      finalTotal: payable,
+      gcDeduction: deduction,
     };
-  }, [subtotal, appliedDiscount]);
+  }, [subtotal, appliedDiscount, appliedGiftCard]);
 
   const isFree = finalTotal === 0;
-  const taxAmount = (subtotal - discountAmount) * HST_RATE;
 
   // --- TIMER EFFECT ---
   useEffect(() => {
@@ -1046,7 +1063,11 @@ const ReviewAndPaymentStep = ({
 
   const fetchPaymentIntent = useCallback(
     async (currentDiscountId = null) => {
-      if (isFree) return;
+      // If fully covered by Gift Card, we don't need a Stripe Intent upfront.
+      // But we DO need to ensure we have a valid booking state to submit.
+      // We skip fetching payment intent if it's already free, unless we're just updating metadata.
+      if (isFree && !appliedGiftCard) return;
+
       if (
         !bookingData.selectedSlots ||
         bookingData.selectedSlots.length === 0
@@ -1079,6 +1100,8 @@ const ReviewAndPaymentStep = ({
           guest_email: values.email || "pending@example.com",
           guest_full_name: values.guest_full_name || "Pending Guest",
           guest_phone: values.phone || "555-555-5555",
+          // Pass Gift Card info so backend knows we might be partially or fully covering it
+          gift_card_code: appliedGiftCard?.code || null,
         };
 
         const response = await paymentService.createPaymentIntent(payload);
@@ -1105,13 +1128,16 @@ const ReviewAndPaymentStep = ({
       form,
       paymentService,
       onUpdateBookingData,
+      appliedGiftCard,
     ],
   );
 
   useEffect(() => {
+    // Re-fetch intent when discount or gift card changes
     fetchPaymentIntent(appliedDiscount?.id);
-  }, [appliedDiscount?.id]);
+  }, [appliedDiscount?.id, appliedGiftCard]);
 
+  // --- COUPON HANDLERS ---
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
       message.error("Please enter a coupon code.");
@@ -1150,6 +1176,27 @@ const ReviewAndPaymentStep = ({
     message.info("Coupon removed.");
   };
 
+  const handleApplyGiftCard = async () => {
+    if (!giftCardCode.trim()) return;
+    setGcLoading(true);
+    try {
+      const data = await giftCardService.validateGiftCard(giftCardCode);
+
+      setAppliedGiftCard(data); // Should return { code, balance }
+      message.success(`Gift card applied: $${data.balance} available`);
+    } catch (err) {
+      message.error(err.error || "Invalid Gift Card"); // apiService throws the response.data directly
+      setAppliedGiftCard(null);
+    } finally {
+      setGcLoading(false);
+    }
+  };
+
+  const handleRemoveGiftCard = () => {
+    setAppliedGiftCard(null);
+    setGiftCardCode("");
+  };
+
   const handleFormValuesChange = (changedValues, allValues) => {
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     debounceTimerRef.current = setTimeout(() => {
@@ -1178,20 +1225,17 @@ const ReviewAndPaymentStep = ({
       try {
         const values = await form.validateFields();
 
+        // --- FREE / FULLY COVERED BOOKING FLOW ---
+        // If final total is 0 (due to 100% coupon OR 100% gift card coverage)
         if (isFree) {
+          // If we had a previous stripe intent, cancel it to release hold
           if (bookingData.paymentIntentId) {
             try {
               await paymentService.cancelPaymentIntent(
                 bookingData.paymentIntentId,
               );
-              console.log(
-                "Cancelled previous pending booking to free capacity for 100% discount.",
-              );
             } catch (cancelErr) {
-              console.warn(
-                "Failed to cancel previous pending booking, proceeding anyway:",
-                cancelErr,
-              );
+              // Ignore
             }
           }
 
@@ -1204,7 +1248,10 @@ const ReviewAndPaymentStep = ({
             guest_email: values.email,
             guest_full_name: values.guest_full_name,
             guest_phone: values.phone,
+            gift_card_code: appliedGiftCard?.code || null,
           };
+
+          // Logic: For $0 total, createPaymentIntent returns booking_id directly
           const res = await paymentService.createPaymentIntent(payload);
           if (res.booking_id) {
             onPaymentComplete(res);
@@ -1212,6 +1259,7 @@ const ReviewAndPaymentStep = ({
           }
         }
 
+        // --- STANDARD STRIPE FLOW ---
         if (!stripe || !elements) return;
 
         const { error: submitError } = await elements.submit();
@@ -1237,10 +1285,6 @@ const ReviewAndPaymentStep = ({
                 notes: values.notes,
                 applied_discount_id: appliedDiscount?.id || null,
               });
-            } else {
-              console.warn(
-                "paymentService.updatePaymentIntent is not defined. Email may use placeholder.",
-              );
             }
           } catch (updateErr) {
             console.error(
@@ -1296,6 +1340,7 @@ const ReviewAndPaymentStep = ({
       isUserLoggedIn,
       clientSecret,
       isExpired,
+      appliedGiftCard,
     ],
   );
 
@@ -1404,7 +1449,7 @@ const ReviewAndPaymentStep = ({
       <TicketDivider />
 
       <TicketBottom>
-        {/* Coupon Section inside Ticket */}
+        {/* Coupon Section */}
         {!appliedDiscount ? (
           <CouponTicketInput>
             <Input
@@ -1439,6 +1484,48 @@ const ReviewAndPaymentStep = ({
           </AppliedCouponTicket>
         )}
 
+        {/* Gift Card Section */}
+        {!appliedGiftCard ? (
+          <CouponTicketInput style={{ marginTop: 12 }}>
+            <Input
+              prefix={<Gift size={14} color="#9ca3af" />}
+              placeholder="Gift Card Code"
+              value={giftCardCode}
+              onChange={(e) => setGiftCardCode(e.target.value)}
+              onPressEnter={handleApplyGiftCard}
+              bordered={false}
+            />
+            <Button
+              size="middle"
+              onClick={handleApplyGiftCard}
+              loading={gcLoading}
+              style={{ height: 45 }}
+            >
+              Apply
+            </Button>
+          </CouponTicketInput>
+        ) : (
+          <AppliedCouponTicket
+            style={{
+              marginTop: 12,
+              borderColor: "#8b5cf6",
+              backgroundColor: "#f5f3ff",
+              color: "#7c3aed",
+            }}
+          >
+            <div className="coupon-info">
+              <Gift size={14} />
+              <span>Gift Card ending in {appliedGiftCard.code.slice(-4)}</span>
+            </div>
+            <Button
+              type="text"
+              size="small"
+              icon={<X size={14} />}
+              onClick={handleRemoveGiftCard}
+            />
+          </AppliedCouponTicket>
+        )}
+
         <TicketRow>
           <span>
             {participantsCount} {participantsCount > 1 ? "Guests" : "Guest"}
@@ -1461,6 +1548,19 @@ const ReviewAndPaymentStep = ({
             <span>
               <NumberFlow
                 value={-discountAmount}
+                format={{ style: "currency", currency: "CAD" }}
+              />
+            </span>
+          </TicketRow>
+        )}
+
+        {appliedGiftCard && (
+          <TicketRow style={{ color: "#7c3aed" }}>
+            <span>Gift Card</span>
+            <span>
+              -{" "}
+              <NumberFlow
+                value={gcDeduction}
                 format={{ style: "currency", currency: "CAD" }}
               />
             </span>
@@ -1518,7 +1618,7 @@ const ReviewAndPaymentStep = ({
           <CheckCircle />
           <div>
             <h5>No Payment Required</h5>
-            <p>This booking is free. No card needed.</p>
+            <p>This booking is fully covered.</p>
           </div>
         </InfoPanel>
       ) : (
@@ -1559,72 +1659,75 @@ const ReviewAndPaymentStep = ({
     businessTimeZone,
   ]);
 
-  const stripeAppearance = useMemo(
-    () => ({
-      theme: "flat",
+  const stripeAppearance = useMemo(() => {
+    return {
+      theme: "stripe",
       variables: {
-        borderRadius: "12px",
         colorPrimary: appTheme.token.colorPrimary,
         colorBackground: "#ffffff",
-        colorText: "#222222",
-        colorDanger: "#ff4d4f",
+        colorText: appTheme.token.colorText,
+        colorDanger: appTheme.token.colorError,
+        // Set global font variable
+        fontFamily: '"Proxima Soft", sans-serif',
         spacingUnit: "4px",
-        gridRowSpacing: "16px",
-        fontFamily: '"ProximaSoft" !important',
+        borderRadius: `${appTheme.token.borderRadius}px`,
+        fontSizeBase: `${appTheme.token.fontSize}px`,
       },
       rules: {
         ".Input": {
-          border: "1px solid #d9d9d9",
+          paddingTop: "16px",
+          paddingBottom: "16px",
+          paddingLeft: "16px",
+          paddingRight: "16px",
+          borderColor: appTheme.token.colorBorder,
           boxShadow: "none",
-          backgroundColor: "#ffffff",
-          transition: "all 0.2s",
-          fontSize: "14px",
+          transition: "border-color 0.2s, box-shadow 0.2s",
+          // Force font usage on input text
+          fontFamily: '"Proxima Soft", sans-serif',
+          fontWeight: "500",
         },
+        // Added Hover Effect
         ".Input:hover": {
           borderColor: appTheme.token.colorPrimary,
         },
         ".Input:focus": {
           borderColor: appTheme.token.colorPrimary,
-          boxShadow: `0 0 0 2px rgba(255, 38, 92, 0.2)`,
+          boxShadow: `0 0 0 2px ${appTheme.token.colorPrimary}20`,
+          outline: "none",
         },
         ".Input--invalid": {
-          borderColor: "#ff4d4f",
-          color: "#ff4d4f",
+          borderColor: appTheme.token.colorError,
           boxShadow: "none",
         },
         ".Input--invalid:focus": {
-          boxShadow: "0 0 0 2px rgba(255, 77, 79, 0.2)",
+          borderColor: appTheme.token.colorError,
+          boxShadow: `0 0 0 2px ${appTheme.token.colorError}20`,
         },
         ".Label": {
-          fontWeight: "500",
-          color: "#222222",
-          marginBottom: "6px",
-          fontSize: "14px",
+          // Heavier weight for labels
+          fontWeight: "600",
+          color: "#000",
+          marginBottom: "8px",
+          fontFamily: '"Proxima Soft", sans-serif',
+        },
+        // Target placeholders specifically
+        ".Input::placeholder": {
+          color: "#c5c5c5",
+          fontWeight: "600",
+          fontFamily: '"Proxima Soft", sans-serif',
         },
         ".Tab": {
-          border: "1px solid #d9d9d9",
-          backgroundColor: "#ffffff",
-          padding: "10px",
+          borderColor: appTheme.token.colorBorder,
+          borderRadius: `${appTheme.token.borderRadius}px`,
+          fontFamily: '"Proxima Soft", sans-serif',
+          fontWeight: "600",
         },
-        ".Tab:hover": {
+        ".Tab:selected": {
           borderColor: appTheme.token.colorPrimary,
-          color: appTheme.token.colorPrimary,
-        },
-        ".Tab--selected": {
-          borderColor: appTheme.token.colorPrimary,
-          color: appTheme.token.colorPrimary,
-          backgroundColor: "#fff5f7",
-        },
-        ".TabIcon": {
-          color: "#6b7280",
-        },
-        ".TabIcon--selected": {
-          color: appTheme.token.colorPrimary,
         },
       },
-    }),
-    [],
-  );
+    };
+  }, []);
 
   const renderTimerContent = () => {
     if (isFree || isExpired) return null;
@@ -1636,7 +1739,6 @@ const ReviewAndPaymentStep = ({
     );
   };
 
-  // Helper for mobile summary simple text (kept simple for the dropdown)
   const renderMobileSimpleSummary = () => (
     <>
       <div style={{ marginBottom: 12 }}>
@@ -1664,6 +1766,10 @@ const ReviewAndPaymentStep = ({
 
   return (
     <ConfigProvider theme={appTheme}>
+      {/* 
+          If NOT free and NO clientSecret yet, show loader. 
+          If free (via GC/coupon), we skip Elements and show just the form.
+      */}
       {!isFree && !clientSecret ? (
         <LottieContainer>
           <Lottie

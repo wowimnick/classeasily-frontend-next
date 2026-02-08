@@ -17,6 +17,7 @@ import {
 } from "@ant-design/icons";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useAuth } from "@/lib/auth-client"; // Added useAuth import
+import posthog from "posthog-js";
 import axiosInstance from "@/lib/axiosInstance";
 import dynamic from "next/dynamic";
 import { useForm } from "./FormContext";
@@ -851,11 +852,17 @@ const RegisterPageContent = () => {
       );
 
       if (response.data) {
+        // PostHog: Track successful business registration submission
+        posthog.capture("business_registration_submitted", {
+          business_name: dataToSubmit.business_name,
+        });
+
         setPageStatus("success");
         resetForm();
         message.success("Business registration submitted successfully!");
       }
     } catch (error) {
+      posthog.captureException(error);
       // Check for 401 Session Expired that failed auto-refresh
       if (error.response?.status === 401) {
         setIsSubmitting(false);
@@ -901,6 +908,14 @@ const RegisterPageContent = () => {
 
       // TRACKING: Step Completed
       const stepTitle = stepsConfig[currentStep].title;
+
+      // PostHog: Track step completion
+      posthog.capture("business_registration_step_completed", {
+        step_number: currentStep + 1,
+        step_title: stepTitle,
+        step_id: stepId,
+      });
+
       if (gaInitialized && typeof window !== "undefined") {
         import("react-ga4").then((GA) => {
           if (GA.default.isInitialized) {
@@ -1030,6 +1045,9 @@ const RegisterPageContent = () => {
 
   // TRACKING: Start Form
   const startForm = () => {
+    // PostHog: Track business registration funnel entry
+    posthog.capture("business_registration_started");
+
     if (gaInitialized && typeof window !== "undefined") {
       import("react-ga4").then((GA) => {
         if (GA.default.isInitialized) {

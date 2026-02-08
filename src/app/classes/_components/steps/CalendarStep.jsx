@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { scheduleService } from "@/services/apiService";
+import posthog from "posthog-js";
 import { getDurationText } from "./utils";
 import {
   formatTimeRangeForDisplay,
@@ -798,6 +799,14 @@ const CalendarStep = ({
   };
 
   const finalize = () => {
+    // PostHog: Track date selection in booking funnel
+    if (currentSelectedSlot) {
+      posthog.capture("booking_date_selected", {
+        date: currentSelectedSlot.date,
+        time: currentSelectedSlot.time,
+        participants: bookingData.participants,
+      });
+    }
     if (isMobile) setShowMobileSheet(false);
     onNext();
   };

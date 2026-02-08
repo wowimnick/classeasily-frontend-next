@@ -13,6 +13,7 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 import confetti from "canvas-confetti";
 import dynamic from "next/dynamic";
 
+import posthog from "posthog-js";
 import ClassPageImagesTitle from "./ClassPageImagesTitle";
 import ClassInformation from "./ClassInformation";
 import { classService } from "@/services/apiService.js";
@@ -508,6 +509,16 @@ export default function ClassPageClient({
           content_category: classData.category_name,
         });
       });
+
+    // PostHog: Track class view (booking funnel entry point)
+    posthog.capture("class_viewed", {
+      class_id: classData.classId,
+      class_title: classData.title,
+      business_name: classData.business_name,
+      category: classData.category_name,
+      price: finalValue,
+      currency: classData.currency_code || "CAD",
+    });
   }, [classData]);
 
   const { user: currentUser } = useAuthUser();
