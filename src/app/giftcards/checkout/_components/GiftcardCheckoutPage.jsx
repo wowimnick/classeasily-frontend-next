@@ -10,7 +10,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import styled from "styled-components";
 
 import posthog from "posthog-js";
-import Header from "@/components/layout/SharedMainClientHeader";
 import FooterClient from "@/components/homepage/FooterClient";
 
 // Import sub-components
@@ -33,6 +32,7 @@ import Card4 from "@/assets/Card 6.png";
 import Card5 from "@/assets/Card 9.png";
 import Card6 from "@/assets/Card 10.png";
 import Card7 from "@/assets/Card 11.png";
+import ExploreHeader from "@/components/explore/ExploreHeader";
 
 const CARD_IMAGES = [
   Card1.src,
@@ -148,13 +148,7 @@ export default function GiftcardCheckoutPage() {
 
   return (
     <ConfigProvider theme={theme}>
-      <Header
-        hamburgerColor="#111"
-        dropdownButtonColor="#111"
-        dropdownButtonHoverColor={CORPORATE_COLOR}
-        dropdownButtonOutlineColor="#111"
-        logoTitleColor={CORPORATE_COLOR}
-      />
+      <ExploreHeader showOptionsWrapper={false} />
 
       <PageWrapper>
         <MainContainer>

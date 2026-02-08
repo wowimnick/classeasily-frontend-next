@@ -21,7 +21,6 @@ import Image from "next/image";
 import Link from "next/link"; // IMPORT ADDED
 import message from "@/lib/message";
 import { theme } from "@/components/theme";
-import Header from "@/components/layout/SharedMainClientHeader";
 import FooterClient from "@/components/homepage/FooterClient";
 import Script from "next/script";
 
@@ -45,6 +44,7 @@ import Card5 from "@/assets/Card 9.png";
 import Card6 from "@/assets/Card 10.png";
 import Card7 from "@/assets/Card 11.png";
 import { useRouter } from "next/navigation";
+import ExploreHeader from "@/components/explore/ExploreHeader";
 
 const HERO_CARD_IMAGES = [
   Card1.src,
@@ -1005,13 +1005,7 @@ export default function GiftCardsPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
       />
 
-      <Header
-        hamburgerColor="#111"
-        dropdownButtonColor="#111"
-        dropdownButtonHoverColor="#ff385c"
-        dropdownButtonOutlineColor="#111"
-        logoTitleColor="#ff385c"
-      />
+      <ExploreHeader showOptionsWrapper={false} />
 
       <PageWrapper>
         {/* HERO SECTION */}
