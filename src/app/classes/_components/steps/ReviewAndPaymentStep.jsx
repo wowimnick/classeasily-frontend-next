@@ -38,7 +38,10 @@ import {
 import Lottie from "lottie-react";
 
 import { getCancellationPolicyText, getDurationText } from "./utils";
-import { businessDiscountService } from "@/services/apiService";
+import {
+  businessDiscountService,
+  giftCardService,
+} from "@/services/apiService";
 import posthog from "posthog-js";
 import { theme as appTheme } from "@/components/theme";
 import { formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
@@ -1175,18 +1178,16 @@ const ReviewAndPaymentStep = ({
     message.info("Coupon removed.");
   };
 
-  // --- GIFT CARD HANDLERS ---
   const handleApplyGiftCard = async () => {
     if (!giftCardCode.trim()) return;
     setGcLoading(true);
     try {
-      const res = await axios.post("/api/gift-cards/validate/", {
-        code: giftCardCode,
-      });
-      setAppliedGiftCard(res.data); // Should return { code, balance }
-      message.success(`Gift card applied: $${res.data.balance} available`);
+      const data = await giftCardService.validateGiftCard(giftCardCode);
+
+      setAppliedGiftCard(data); // Should return { code, balance }
+      message.success(`Gift card applied: $${data.balance} available`);
     } catch (err) {
-      message.error(err.response?.data?.error || "Invalid Gift Card");
+      message.error(err.error || "Invalid Gift Card"); // apiService throws the response.data directly
       setAppliedGiftCard(null);
     } finally {
       setGcLoading(false);

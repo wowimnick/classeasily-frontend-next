@@ -44,6 +44,7 @@ export const API_ENDPOINTS = {
   PUBLIC_CLASSES: "/classes/",
   PUBLIC_CATEGORIES: "/categories/",
   GIFTCARD_PURCHASE_INTENT: "/gift-cards/purchase-intent/",
+  GIFTCARD_VALIDATE: "/gift-cards/validate/",
   TOGGLE_FAVORITE: (classId) => `/classes/${classId}/toggle-favorite/`,
   PUBLIC_BUSINESSES: "/businesses/",
   PUBLIC_SCHEDULES: "/schedules/",
@@ -2760,120 +2761,6 @@ export const courseService = {
       };
     }
   },
-
-  getCourseDetail: async (scheduleId) => {
-    try {
-      const response = await axiosInstance.get(
-        `${API_ENDPOINTS.PUBLIC_COURSES}${scheduleId}/`,
-      );
-      return { success: true, data: response.data };
-    } catch (error) {
-      console.error(
-        `Error fetching course detail ${scheduleId}:`,
-        error.response?.data || error,
-      );
-      return {
-        success: false,
-        error: error.response?.data?.detail || "Failed to fetch course detail",
-      };
-    }
-  },
-
-  // Business endpoints
-  getBusinessCourses: async (params = {}) => {
-    try {
-      const response = await axiosInstance.get(API_ENDPOINTS.BUSINESS_COURSES, {
-        params,
-      });
-      return { success: true, data: response.data };
-    } catch (error) {
-      console.error(
-        "Error fetching business courses:",
-        error.response?.data || error,
-      );
-      return {
-        success: false,
-        error:
-          error.response?.data?.detail || "Failed to fetch business courses",
-      };
-    }
-  },
-
-  getBusinessCourseEnrollments: async (courseScheduleId, params = {}) => {
-    try {
-      // This endpoint is a custom action on the BusinessCourseManagementViewSet
-      const response = await axiosInstance.get(
-        `${API_ENDPOINTS.BUSINESS_COURSES}${courseScheduleId}/enrollments/`,
-        { params },
-      );
-      return { success: true, data: response.data };
-    } catch (error) {
-      console.error(
-        "Error fetching course enrollments:",
-        error.response?.data || error,
-      );
-      return {
-        success: false,
-        error: error.response?.data?.detail || "Failed to fetch enrollments",
-      };
-    }
-  },
-
-  // Student enrollment (for creating, viewing, and canceling their own)
-  createCourseEnrollment: async (enrollmentData) => {
-    try {
-      // Uses the correct student-facing endpoint for creation
-      const response = await axiosInstance.post(
-        API_ENDPOINTS.STUDENT_COURSE_ENROLLMENTS,
-        enrollmentData,
-      );
-      return { success: true, data: response.data };
-    } catch (error) {
-      console.error(
-        "Error creating course enrollment:",
-        error.response?.data || error,
-      );
-      return {
-        success: false,
-        error: error.response?.data || "Failed to create enrollment",
-      };
-    }
-  },
-
-  getMyCourseEnrollments: async (params = {}) => {
-    try {
-      const response = await axiosInstance.get(
-        API_ENDPOINTS.STUDENT_COURSE_ENROLLMENTS,
-        { params },
-      );
-      return { success: true, data: response.data };
-    } catch (error) {
-      console.error(
-        "Error fetching student course enrollments:",
-        error.response?.data || error,
-      );
-      return { success: false, error: "Failed to fetch your enrollments" };
-    }
-  },
-
-  cancelMyCourseEnrollment: async (enrollmentId, reason = "") => {
-    try {
-      const response = await axiosInstance.post(
-        `${API_ENDPOINTS.STUDENT_COURSE_ENROLLMENTS}${enrollmentId}/cancel/`,
-        { reason },
-      );
-      return { success: true, data: response.data };
-    } catch (error) {
-      console.error(
-        `Error canceling enrollment ${enrollmentId}:`,
-        error.response?.data || error,
-      );
-      return {
-        success: false,
-        error: error.response?.data || "Failed to cancel enrollment",
-      };
-    }
-  },
 };
 
 export const giftCardService = {
@@ -2887,6 +2774,23 @@ export const giftCardService = {
     } catch (error) {
       console.error(
         "Error creating gift card purchase intent:",
+        error.response?.data || error,
+      );
+      throw error.response?.data || error;
+    }
+  },
+  validateGiftCard: async (code) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.GIFTCARD_VALIDATE,
+        {
+          code,
+        },
+      );
+      return response.data; // Expects { code, balance }
+    } catch (error) {
+      console.error(
+        "Error validating gift card:",
         error.response?.data || error,
       );
       throw error.response?.data || error;
