@@ -776,6 +776,9 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
   const dateRef = useRef(null);
   const participantsRef = useRef(null);
 
+  // Track the last known URL param to prevent dirty state overwrite
+  const lastUrlLocationRef = useRef(null);
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -797,7 +800,12 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
 
     const participantsParam = searchParams.get("participants");
 
-    if (locParam) {
+    // --- FIX: Safer Location Syncing ---
+    // Only update state if the URL param has actually changed from what we last saw.
+    // This prevents the effect from overwriting user typing (backspace) just because
+    // local state differs from the stale URL.
+    if (locParam && locParam !== lastUrlLocationRef.current) {
+      lastUrlLocationRef.current = locParam;
       setSearchTerm(locParam);
       if (latParam && lngParam) {
         setSelectedLocation({
@@ -807,6 +815,10 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
           provinceSlug: null,
         });
       }
+    } else if (!locParam && lastUrlLocationRef.current) {
+      // Optional: If URL param is removed, clear state (depending on preference)
+      // lastUrlLocationRef.current = null;
+      // setSearchTerm("");
     }
 
     if (startDateParam && endDateParam) {
@@ -817,9 +829,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
     } else if (dateParam) {
       const parsedDate = dayjs(dateParam);
       if (parsedDate.isValid()) setDatePickerValue(parsedDate);
-    } else {
-      // Only clear if no date params (optional - depends on UX preference)
-      // setDatePickerValue(null);
     }
 
     if (participantsParam) {
@@ -830,6 +839,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
     }
   }, [
     searchParams,
+    // Note: setSearchTerm, setDatePickerValue etc are stable
     setSearchTerm,
     setDatePickerValue,
     setParticipantCount,
@@ -852,26 +862,21 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
         const buttonRect = targetRef.current.getBoundingClientRect();
         const containerRect = containerRef.current.getBoundingClientRect();
 
-        // Use updated widths
         const width = POPUP_SIZES[activeField] || 360;
 
-        // Calculate center relative to the button
         let left =
           buttonRect.left -
           containerRect.left +
           buttonRect.width / 2 -
           width / 2;
 
-        // Smart edge detection (prevents popup from going off screen)
         const absoluteLeft = containerRect.left + left;
         const windowWidth = window.innerWidth;
 
         if (absoluteLeft + width > windowWidth - 20) {
-          // Shift left if overflows right edge
           left -= absoluteLeft + width - (windowWidth - 20);
         }
         if (absoluteLeft < 20) {
-          // Shift right if overflows left edge
           left += 20 - absoluteLeft;
         }
 
@@ -896,7 +901,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
   const getDateDisplay = () => {
     if (!datePickerValue) return "Any week";
 
-    // Check for range object
     if (datePickerValue.start && datePickerValue.end) {
       const s = dayjs(datePickerValue.start);
       const e = dayjs(datePickerValue.end);
@@ -906,7 +910,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
       return `${s.format("MMM D")} - ${e.format("MMM D")}`;
     }
 
-    // Check for single Dayjs object
     if (dayjs.isDayjs(datePickerValue)) {
       return datePickerValue.format("MMM DD");
     }
@@ -923,12 +926,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
         <LocationOption
           key={idx}
           onClick={() => {
-            // FIXED: Pass the full object to handleLocationSelect
-            handleLocationSelect(result.displayName, {
-              coordinates: result.coordinates,
-              citySlug: result.citySlug,
-              provinceSlug: result.provinceSlug,
-            });
+            handleLocationSelect(result.displayName);
             setActiveField(null);
           }}
         >
@@ -956,12 +954,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
       <LocationOption
         key={idx}
         onClick={() => {
-          // FIXED: Pass the full object (using 'coords' property for suggestions)
-          handleLocationSelect(area.name, {
-            coordinates: area.coords,
-            citySlug: area.citySlug,
-            provinceSlug: area.provinceSlug,
-          });
+          handleLocationSelect(area.name);
           setActiveField(null);
         }}
       >
@@ -984,7 +977,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
     ));
   };
 
-  // Mobile Trigger (Visible < 768px)
   const MobileSearchTrigger = styled.div`
     display: none;
     @media (max-width: 768px) {
@@ -1047,6 +1039,8 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
                   <InlineInput
                     autoFocus
                     value={searchTerm}
+                    // FIX: Stop propagation to prevent bubbling to SectionButton onClick (which closes popup)
+                    onClick={(e) => e.stopPropagation()}
                     onChange={(e) => handleLocationChange(e.target.value)}
                     placeholder="Search destination"
                   />
@@ -1152,7 +1146,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
                           initial="enter"
                           animate="center"
                           exit="exit"
-                          // Fix: Use correct width for content container relative to popup
                           style={{
                             width: (POPUP_SIZES[activeField] || 360) - 48,
                           }}
