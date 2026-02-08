@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import styled from "styled-components";
 import { ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import { message, Input, Alert, Button, Divider } from "antd";
 import NumberFlow from "@number-flow/react";
 import posthog from "posthog-js";
-import dayjs from "dayjs"; // ADDED IMPORT
+import dayjs from "dayjs";
+import axios from "axios"; // Ensure axios is installed
 import { ActionButton, CheckoutLink } from "./GiftcardStyles";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -16,9 +17,9 @@ import {
   PaymentRequestButtonElement,
 } from "@stripe/react-stripe-js";
 import { theme as appTheme } from "@/components/theme";
+import { giftCardService } from "@/services/apiService";
 
 // --- STRIPE SETUP ---
-// If key is missing, this resolves to null, disabling the real form.
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || "",
 );
@@ -30,7 +31,6 @@ const CheckoutGrid = styled.div`
   grid-template-columns: 1fr 1fr;
   gap: 80px;
 
-  /* Prevent grid blowout when content is long (e.g. messages) */
   & > * {
     min-width: 0;
   }
@@ -113,63 +113,15 @@ const EditableRow = styled.div`
 
 // --- EXPRESS CHECKOUT COMPONENT ---
 const ExpressCheckoutButton = ({ amount, onPaymentComplete }) => {
+  // Keeping logic simple for now as per previous implementation
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
 
-  useEffect(() => {
-    if (!stripe || !amount) return;
+  // Note: For a real implementation, you would need to create the intent upfront
+  // or use Stripe's deferred intent creation for Payment Request Buttons.
+  // This is a placeholder visual from the original file.
 
-    const pr = stripe.paymentRequest({
-      country: "CA",
-      currency: "cad",
-      total: {
-        label: "Gift Card Purchase",
-        amount: Math.round(amount * 100),
-      },
-      requestPayerName: true,
-      requestPayerEmail: true,
-    });
-
-    pr.canMakePayment().then((result) => {
-      if (result) {
-        setPaymentRequest(pr);
-      }
-    });
-
-    pr.on("paymentmethod", async (ev) => {
-      try {
-        ev.complete("success");
-        onPaymentComplete({ payment_method: "wallet" });
-      } catch (err) {
-        ev.complete("fail");
-        message.error("Payment failed. Please try again.");
-      }
-    });
-  }, [stripe, amount, onPaymentComplete]);
-
-  if (!paymentRequest) return null;
-
-  return (
-    <div style={{ marginBottom: 24 }}>
-      <PaymentRequestButtonElement options={{ paymentRequest }} />
-      <div
-        style={{
-          textAlign: "center",
-          margin: "16px 0",
-          color: "#6b7280",
-          fontSize: "13px",
-          fontWeight: 500,
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}
-      >
-        <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }}></div>
-        <span>Or pay with card</span>
-        <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }}></div>
-      </div>
-    </div>
-  );
+  return null;
 };
 
 // --- INNER FORM COMPONENT ---
@@ -177,7 +129,6 @@ const StripePaymentForm = ({
   amount,
   formData,
   setFormData,
-  clientSecret,
   designUrl,
   onSuccess,
 }) => {
@@ -186,8 +137,6 @@ const StripePaymentForm = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [editingField, setEditingField] = useState(null);
-
-  // NEW: State for Cardholder Name
   const [cardholderName, setCardholderName] = useState("");
 
   const handleSaveEdit = () => {
@@ -197,7 +146,6 @@ const StripePaymentForm = ({
   const handleSubmit = async () => {
     if (!stripe || !elements) return;
 
-    // Simple validation for cardholder name
     if (!cardholderName.trim()) {
       setError("Please enter the cardholder name.");
       return;
@@ -207,7 +155,7 @@ const StripePaymentForm = ({
     setError(null);
 
     try {
-      // 1. Validate form fields
+      // 1. Validate form fields via Stripe
       const { error: submitError } = await elements.submit();
       if (submitError) {
         setError(submitError.message);
@@ -215,31 +163,44 @@ const StripePaymentForm = ({
         return;
       }
 
-      // 2. Confirm Payment
-      let result;
-      if (clientSecret) {
-        result = await stripe.confirmPayment({
-          elements,
-          clientSecret,
-          confirmParams: {
-            return_url: `${window.location.origin}/booking/status`,
-            payment_method_data: {
-              billing_details: {
-                name: cardholderName, // Pass the new field here
-                email: formData.recipientEmail,
-                address: {
-                  country: "CA",
-                },
+      // 2. Call Backend to create the specific Gift Card Intent
+      const purchasePayload = {
+        amount: amount,
+        recipient_email: formData.recipientEmail,
+        recipient_name: formData.recipientName,
+        sender_name: formData.senderName,
+        message: formData.message,
+        date: formData.date ? dayjs(formData.date).format("YYYY-MM-DD") : null,
+        delivery_method: "email",
+      };
+
+      const intentData =
+        await giftCardService.createPurchaseIntent(purchasePayload);
+
+      const clientSecret = intentData.clientSecret;
+
+      if (!clientSecret) {
+        throw new Error("Failed to initialize payment. Please try again.");
+      }
+
+      // 3. Confirm Payment with the returned secret
+      const result = await stripe.confirmPayment({
+        elements,
+        clientSecret,
+        confirmParams: {
+          return_url: `${window.location.origin}/gift-cards/checkout`,
+          payment_method_data: {
+            billing_details: {
+              name: cardholderName,
+              email: formData.senderEmail,
+              address: {
+                country: "CA",
               },
             },
           },
-          redirect: "if_required",
-        });
-      } else {
-        // Mock fallback for demo purposes
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        result = { paymentIntent: { status: "succeeded" } };
-      }
+        },
+        redirect: "if_required",
+      });
 
       if (result.error) {
         throw new Error(result.error.message);
@@ -252,9 +213,10 @@ const StripePaymentForm = ({
           recipient_email: formData.recipientEmail,
         });
         message.success("Gift card ordered successfully!");
-        if (onSuccess) onSuccess(); // Trigger success transition
+        if (onSuccess) onSuccess();
       }
     } catch (err) {
+      console.error(err);
       setError(err.message || "Payment processing failed.");
     } finally {
       setLoading(false);
@@ -279,15 +241,9 @@ const StripePaymentForm = ({
             />
           )}
 
-          <ExpressCheckoutButton
-            amount={amount}
-            onPaymentComplete={() => {
-              message.success("Paid via Wallet!");
-              if (onSuccess) onSuccess();
-            }}
-          />
+          {/* Express Checkout Placeholder */}
+          <ExpressCheckoutButton amount={amount} />
 
-          {/* NEW: Cardholder Name Field */}
           <div style={{ marginBottom: 16 }}>
             <label
               style={{
@@ -376,7 +332,7 @@ const StripePaymentForm = ({
             </EditableRow>
           )}
 
-          {/* ADDED: Scheduled Date Display */}
+          {/* Scheduled Date Display */}
           {formData.date && (
             <EditableRow>
               <div>
@@ -548,14 +504,8 @@ export default function GiftcardPaymentStep({
   formData,
   setFormData,
   onBack,
-  onSuccess, // Receive success callback
+  onSuccess,
 }) {
-  const [clientSecret, setClientSecret] = useState(null);
-
-  useEffect(() => {
-    // Mock or Fetch Intent Here
-  }, [amount]);
-
   const stripeAppearance = useMemo(() => {
     return {
       theme: "stripe",
@@ -620,6 +570,7 @@ export default function GiftcardPaymentStep({
       },
     };
   }, []);
+
   const options = {
     mode: "payment",
     currency: "cad",
@@ -651,14 +602,15 @@ export default function GiftcardPaymentStep({
 
       <Divider style={{ margin: "40px 0" }} />
 
+      {/* Initialize Elements with a dummy amount to load inputs. 
+          Real intent is created on submit to capture exact timestamp/metadata. */}
       <Elements stripe={stripePromise} options={options}>
         <StripePaymentForm
           amount={amount}
           formData={formData}
           setFormData={setFormData}
           designUrl={designUrl}
-          clientSecret={clientSecret}
-          onSuccess={onSuccess} // Pass it down
+          onSuccess={onSuccess}
         />
       </Elements>
     </div>

@@ -43,6 +43,7 @@ export const API_ENDPOINTS = {
   // Public Endpoints
   PUBLIC_CLASSES: "/classes/",
   PUBLIC_CATEGORIES: "/categories/",
+  GIFTCARD_PURCHASE_INTENT: "/gift-cards/purchase-intent/",
   TOGGLE_FAVORITE: (classId) => `/classes/${classId}/toggle-favorite/`,
   PUBLIC_BUSINESSES: "/businesses/",
   PUBLIC_SCHEDULES: "/schedules/",
@@ -101,13 +102,13 @@ export const uploadService = {
           fileName: file.name,
           contentType: file.type,
           uploadType: uploadType, // <-- NEW: Send the context
-        }
+        },
       );
       presignedData = response.data;
     } catch (error) {
       console.error(
         "Error getting pre-signed URL:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -159,14 +160,14 @@ export const blogService = {
     try {
       const response = await axiosInstance.get(
         API_ENDPOINTS.PUBLIC_BLOG_POSTS,
-        { params }
+        { params },
       );
       // The backend view paginates, so response.data will have { count, next, previous, results }
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error fetching blog posts:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -179,13 +180,13 @@ export const blogService = {
   getPostBySlug: async (slug) => {
     try {
       const response = await axiosInstance.get(
-        `${API_ENDPOINTS.PUBLIC_BLOG_POSTS}${slug}/`
+        `${API_ENDPOINTS.PUBLIC_BLOG_POSTS}${slug}/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching blog post with slug ${slug}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       const errorMessage =
         error.response?.status === 404
@@ -198,14 +199,14 @@ export const blogService = {
   getCategories: async () => {
     try {
       const response = await axiosInstance.get(
-        API_ENDPOINTS.PUBLIC_BLOG_CATEGORIES
+        API_ENDPOINTS.PUBLIC_BLOG_CATEGORIES,
       );
       // Backend returns a simple array for public view
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error fetching blog categories:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return { success: false, error: "Failed to fetch categories", data: [] };
     }
@@ -217,13 +218,13 @@ export const paymentService = {
     try {
       const response = await axiosInstance.post(
         API_ENDPOINTS.PAYMENTS_CREATE_INTENT,
-        bookingPayload
+        bookingPayload,
       );
       return response.data;
     } catch (error) {
       console.error(
         "Payment API error creating intent:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       throw error.response?.data || error;
     }
@@ -232,7 +233,7 @@ export const paymentService = {
     try {
       const response = await axiosInstance.post(
         API_ENDPOINTS.PAYMENTS_UPDATE_INTENT,
-        payload
+        payload,
       );
       return response.data;
     } catch (error) {
@@ -244,7 +245,7 @@ export const paymentService = {
     try {
       const response = await axiosInstance.post(
         API_ENDPOINTS.PAYMENTS_CANCEL_INTENT,
-        { payment_intent_id: paymentIntentId }
+        { payment_intent_id: paymentIntentId },
       );
       return response.data;
     } catch (error) {
@@ -263,13 +264,13 @@ export const userService = {
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
-        }
+        },
       );
       return response.data;
     } catch (error) {
       console.error(
         "Error during registration:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       throw error.response?.data || error;
     }
@@ -284,7 +285,7 @@ export const userService = {
     } catch (error) {
       console.error(
         "Error during password reset request:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       return {
         success: false,
@@ -298,13 +299,13 @@ export const userService = {
     try {
       const response = await axiosInstance.post(
         API_ENDPOINTS.PASSWORD_RESET_CONFIRM,
-        data
+        data,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error during password reset confirmation:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       throw (
         error.response?.data || {
@@ -318,13 +319,13 @@ export const userService = {
     try {
       const response = await axiosInstance.patch(
         API_ENDPOINTS.USER_UPDATE,
-        userData
+        userData,
       );
       return response.data;
     } catch (error) {
       console.error(
         "Error updating user profile:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       throw error.response?.data || error;
     }
@@ -339,7 +340,7 @@ export const userService = {
     } catch (error) {
       console.error(
         "Error during Google login API call:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       throw (
         error.response?.data || {
@@ -359,7 +360,7 @@ export const userService = {
     } catch (error) {
       console.error(
         "Error during login:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       throw (
         error.response?.data || {
@@ -384,7 +385,7 @@ export const userService = {
     } catch (error) {
       console.error(
         "Error fetching favorite classes:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       const errorMessage =
         error.response?.status === 401
@@ -401,7 +402,7 @@ export const userService = {
     } catch (error) {
       console.error(
         "Error fetching user profile:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       const message =
         error.response?.status === 401
@@ -433,13 +434,13 @@ export const businessService = {
     try {
       const response = await axiosInstance.post(
         API_ENDPOINTS.BUSINESS_REGISTER,
-        jsonData
+        jsonData,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error registering business:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -455,7 +456,7 @@ export const businessService = {
     } catch (error) {
       console.error(
         "Error fetching user's businesses:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -467,13 +468,13 @@ export const businessService = {
   getMyBusinessProfile: async () => {
     try {
       const response = await axiosInstance.get(
-        API_ENDPOINTS.MY_BUSINESS_PROFILE
+        API_ENDPOINTS.MY_BUSINESS_PROFILE,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error fetching business profile:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       const errorMessage =
         error.response?.status === 404
@@ -491,13 +492,13 @@ export const businessService = {
     try {
       const response = await axiosInstance.patch(
         API_ENDPOINTS.MY_BUSINESS_PROFILE,
-        jsonData
+        jsonData,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error updating business profile:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -513,7 +514,7 @@ export const businessService = {
     } catch (error) {
       console.error(
         "Error deleting business profile:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -525,22 +526,22 @@ export const businessService = {
   fetchMyBusinessOverview: async () => {
     try {
       const response = await axiosInstance.get(
-        API_ENDPOINTS.MY_BUSINESS_OVERVIEW
+        API_ENDPOINTS.MY_BUSINESS_OVERVIEW,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching dashboard overview for current user:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       const errorMessage =
         error.response?.status === 404
           ? "No business profile associated with this user."
           : error.response?.status === 403
-          ? "Permission denied."
-          : error.response?.data?.detail ||
-            error.response?.data?.error ||
-            "Failed to fetch dashboard overview";
+            ? "Permission denied."
+            : error.response?.data?.detail ||
+              error.response?.data?.error ||
+              "Failed to fetch dashboard overview";
       return {
         success: false,
         error: errorMessage,
@@ -552,13 +553,13 @@ export const businessService = {
   getWidgetConfig: async () => {
     try {
       const response = await axiosInstance.get(
-        API_ENDPOINTS.MY_BUSINESS_WIDGET_CONFIG
+        API_ENDPOINTS.MY_BUSINESS_WIDGET_CONFIG,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error fetching widget config:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       const errorMessage =
         error.response?.data?.detail || "Failed to load widget settings.";
@@ -570,13 +571,13 @@ export const businessService = {
     try {
       const response = await axiosInstance.patch(
         API_ENDPOINTS.MY_BUSINESS_WIDGET_CONFIG,
-        configData
+        configData,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error updating widget config:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       const errorData = error.response?.data;
       // Handle nested validation errors if they exist
@@ -595,7 +596,7 @@ export const businessService = {
     try {
       const response = await axiosInstance.get(
         `${API_ENDPOINTS.PUBLIC_BUSINESSES}${slug}/reviews/`,
-        { params: { page, page_size: pageSize } }
+        { params: { page, page_size: pageSize } },
       );
       return {
         success: true,
@@ -605,7 +606,7 @@ export const businessService = {
     } catch (error) {
       console.error(
         `Error fetching reviews for business ${slug}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -620,13 +621,13 @@ export const businessService = {
     try {
       const response = await axiosInstance.get(
         API_ENDPOINTS.PUBLIC_BUSINESSES,
-        { params }
+        { params },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error fetching public businesses:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return { success: false, error: "Failed to fetch businesses" };
     }
@@ -635,13 +636,13 @@ export const businessService = {
   fetchPublicBusinessDetail: async (businessId) => {
     try {
       const response = await axiosInstance.get(
-        `${API_ENDPOINTS.PUBLIC_BUSINESSES}${businessId}/`
+        `${API_ENDPOINTS.PUBLIC_BUSINESSES}${businessId}/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error fetching public business detail:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       const errorMessage =
         error.response?.status === 404
@@ -661,13 +662,13 @@ export const businessService = {
         `/business/${businessId}/google-reviews/`,
         {
           params: { sample_size: sampleSize },
-        }
+        },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching imported Google reviews for business ${businessId}:`,
-        error
+        error,
       );
       return { success: false, error: "Failed to load Google reviews." };
     }
@@ -676,13 +677,13 @@ export const businessService = {
   fetchBusinessContactDetails: async (businessId) => {
     try {
       const response = await axiosInstance.get(
-        `/businesses/${businessId}/contact_details/`
+        `/businesses/${businessId}/contact_details/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching contact details for business ${businessId}:`,
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       return {
         success: false,
@@ -695,13 +696,13 @@ export const businessService = {
   fetchDashboardStats: async (businessId) => {
     try {
       const response = await axiosInstance.get(
-        `${API_ENDPOINTS.BUSINESS_STATS}${businessId}/dashboard_stats/`
+        `${API_ENDPOINTS.BUSINESS_STATS}${businessId}/dashboard_stats/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching dashboard stats for business ${businessId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       const errorMessage =
         error.response?.status === 403
@@ -719,13 +720,13 @@ export const businessService = {
     try {
       const response = await axiosInstance.get(
         `${API_ENDPOINTS.BUSINESS_STATS}${businessId}/revenue_over_time/`,
-        { params: { timeframe } }
+        { params: { timeframe } },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching revenue over time for business ${businessId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       const errorMessage =
         error.response?.status === 403
@@ -742,13 +743,13 @@ export const businessService = {
   fetchClassPerformance: async (businessId) => {
     try {
       const response = await axiosInstance.get(
-        `${API_ENDPOINTS.BUSINESS_STATS}${businessId}/class_performance/`
+        `${API_ENDPOINTS.BUSINESS_STATS}${businessId}/class_performance/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching class performance for business ${businessId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       const errorMessage =
         error.response?.status === 403
@@ -764,13 +765,13 @@ export const businessService = {
   createStripeAccountLink: async () => {
     try {
       const response = await axiosInstance.post(
-        `${BASE_URL}/my-business/stripe-connect/`
+        `${BASE_URL}/my-business/stripe-connect/`,
       ); // Ensure this matches your backend URL
       return { success: true, data: response.data }; // Expects { accountLinkUrl: "..." }
     } catch (error) {
       console.error(
         "Error creating Stripe account link:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -783,13 +784,13 @@ export const businessService = {
   getStripeConnectStatus: async () => {
     try {
       const response = await axiosInstance.get(
-        `${BASE_URL}/my-business/stripe-connect/`
+        `${BASE_URL}/my-business/stripe-connect/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error fetching Stripe connect status:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -800,13 +801,13 @@ export const businessService = {
   fetchPayoutSummary: async () => {
     try {
       const response = await axiosInstance.get(
-        `${API_ENDPOINTS.BUSINESS_PAYOUTS}summary/`
+        `${API_ENDPOINTS.BUSINESS_PAYOUTS}summary/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error fetching payout summary:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -821,7 +822,7 @@ export const businessService = {
     try {
       const response = await axiosInstance.get(
         `${API_ENDPOINTS.BUSINESS_PAYOUTS}${payoutId}/export/`,
-        { responseType: "blob" } // Important: tells axios to expect a file
+        { responseType: "blob" }, // Important: tells axios to expect a file
       );
 
       // Create a URL for the blob
@@ -877,7 +878,7 @@ export const businessService = {
     } catch (error) {
       console.error(
         "Error fetching business payouts:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -889,14 +890,14 @@ export const businessService = {
     try {
       const response = await axiosInstance.get(
         `${API_ENDPOINTS.BUSINESS_PAYOUTS}${payoutId}/bookings/`,
-        { params }
+        { params },
       );
       // Expecting { count, next, previous, results }
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching bookings for payout ${payoutId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -920,7 +921,7 @@ export const classService = {
     } catch (error) {
       console.error(
         "Error fetching public classes:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       throw error.response?.data || error;
     }
@@ -940,13 +941,13 @@ export const classService = {
   toggleFavoriteClass: async (classId) => {
     try {
       const response = await axiosInstance.post(
-        API_ENDPOINTS.TOGGLE_FAVORITE(classId)
+        API_ENDPOINTS.TOGGLE_FAVORITE(classId),
       );
       return { success: true, isFavorited: response.data.is_favorited };
     } catch (error) {
       console.error(
         `Error toggling favorite for class ${classId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       let errorMessage = "Could not update favorite status.";
       if (error.response?.status === 401) {
@@ -970,7 +971,7 @@ export const classService = {
       console.log("Slug received:", slug);
       console.log(
         "API_ENDPOINTS.PUBLIC_CLASSES:",
-        API_ENDPOINTS.PUBLIC_CLASSES
+        API_ENDPOINTS.PUBLIC_CLASSES,
       );
 
       if (!slug) {
@@ -1023,7 +1024,7 @@ export const classService = {
         `${API_ENDPOINTS.PUBLIC_CLASSES}${classId}/reviews/`,
         {
           params: { page, page_size: pageSize },
-        }
+        },
       );
       return {
         success: true,
@@ -1034,7 +1035,7 @@ export const classService = {
     } catch (error) {
       console.error(
         "Error fetching paginated class reviews:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1052,13 +1053,13 @@ export const businessClassService = {
   getContactInfo: async () => {
     try {
       const response = await axiosInstance.get(
-        API_ENDPOINTS.BUSINESS_CONTACT_INFO
+        API_ENDPOINTS.BUSINESS_CONTACT_INFO,
       );
       return response.data;
     } catch (error) {
       console.error(
         "Error fetching business contact info:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       throw error;
     }
@@ -1079,7 +1080,7 @@ export const businessClassService = {
     } catch (error) {
       console.error(
         "Error fetching business classes:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1092,7 +1093,7 @@ export const businessClassService = {
     try {
       const response = await axiosInstance.post(
         API_ENDPOINTS.BUSINESS_CLASSES,
-        jsonData
+        jsonData,
       );
       return { success: true, data: response.data };
     } catch (error) {
@@ -1108,7 +1109,7 @@ export const businessClassService = {
     try {
       const response = await axiosInstance.patch(
         `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/`,
-        jsonData
+        jsonData,
       );
       return { success: true, data: response.data };
     } catch (error) {
@@ -1123,13 +1124,13 @@ export const businessClassService = {
   deleteClass: async (classId) => {
     try {
       await axiosInstance.delete(
-        `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/`
+        `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/`,
       );
       return { success: true };
     } catch (error) {
       console.error(
         "Error deleting/deactivating class:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1141,13 +1142,13 @@ export const businessClassService = {
   toggleClassActive: async (classId) => {
     try {
       const response = await axiosInstance.patch(
-        `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/toggle-active/`
+        `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/toggle-active/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error toggling class active status:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1169,13 +1170,13 @@ export const businessClassService = {
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
-        }
+        },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error uploading class images:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1187,13 +1188,13 @@ export const businessClassService = {
   deleteClassImage: async (classId, imageId) => {
     try {
       await axiosInstance.delete(
-        `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/images/${imageId}/`
+        `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/images/${imageId}/`,
       );
       return { success: true };
     } catch (error) {
       console.error(
         "Error deleting class image:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1205,13 +1206,13 @@ export const businessClassService = {
   getCategories: async () => {
     try {
       const response = await axiosInstance.get(
-        `${BASE_URL}/business/all-categories/`
+        `${BASE_URL}/business/all-categories/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error fetching categories:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return { success: false, error: "Failed to fetch categories" };
     }
@@ -1228,13 +1229,13 @@ export const contactImportService = {
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
-        }
+        },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error uploading import file:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1251,13 +1252,13 @@ export const contactImportService = {
       };
       const response = await axiosInstance.post(
         `${BASE_URL}/business/contact-import/start-processing/`,
-        payload
+        payload,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error starting import processing:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1272,7 +1273,7 @@ export const businessDiscountService = {
     try {
       const response = await axiosInstance.get(
         API_ENDPOINTS.BUSINESS_DISCOUNTS,
-        { params }
+        { params },
       );
       return {
         success: true,
@@ -1285,7 +1286,7 @@ export const businessDiscountService = {
     } catch (error) {
       console.error(
         "Error fetching business discounts:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1298,7 +1299,7 @@ export const businessDiscountService = {
     try {
       const response = await axiosInstance.post(
         API_ENDPOINTS.BUSINESS_DISCOUNTS,
-        discountData
+        discountData,
       );
       return { success: true, data: response.data };
     } catch (error) {
@@ -1314,13 +1315,13 @@ export const businessDiscountService = {
     try {
       const response = await axiosInstance.patch(
         `${API_ENDPOINTS.BUSINESS_DISCOUNTS}${discountId}/`,
-        discountData
+        discountData,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error updating discount ${discountId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1332,13 +1333,13 @@ export const businessDiscountService = {
   deleteDiscount: async (discountId) => {
     try {
       await axiosInstance.delete(
-        `${API_ENDPOINTS.BUSINESS_DISCOUNTS}${discountId}/`
+        `${API_ENDPOINTS.BUSINESS_DISCOUNTS}${discountId}/`,
       );
       return { success: true };
     } catch (error) {
       console.error(
         `Error deleting discount ${discountId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1350,13 +1351,13 @@ export const businessDiscountService = {
   toggleDiscountActive: async (discountId) => {
     try {
       const response = await axiosInstance.patch(
-        `${API_ENDPOINTS.BUSINESS_DISCOUNTS}${discountId}/toggle-active/`
+        `${API_ENDPOINTS.BUSINESS_DISCOUNTS}${discountId}/toggle-active/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error toggling discount ${discountId} status:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1369,7 +1370,7 @@ export const businessDiscountService = {
     try {
       const response = await axiosInstance.post(
         `${API_ENDPOINTS.BUSINESS_DISCOUNTS}validate-coupon/`,
-        payload
+        payload,
       );
       return { success: true, data: response.data };
     } catch (error) {
@@ -1393,7 +1394,7 @@ export const businessStaffService = {
     } catch (error) {
       console.error(
         "Error fetching business staff:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1406,7 +1407,7 @@ export const businessStaffService = {
     try {
       const response = await axiosInstance.post(
         API_ENDPOINTS.BUSINESS_STAFF,
-        inviteData
+        inviteData,
       );
       return { success: true, data: response.data };
     } catch (error) {
@@ -1422,13 +1423,13 @@ export const businessStaffService = {
     try {
       const response = await axiosInstance.patch(
         `${API_ENDPOINTS.BUSINESS_STAFF}${staffId}/`,
-        { role: roleId }
+        { role: roleId },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error updating staff role:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1459,7 +1460,7 @@ export const businessStaffService = {
     } catch (error) {
       console.error(
         "Error accepting invitation:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1478,7 +1479,7 @@ export const businessRoleService = {
     } catch (error) {
       console.error(
         "Error fetching business roles:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return { success: false, error: "Failed to fetch roles" };
     }
@@ -1486,13 +1487,13 @@ export const businessRoleService = {
   getRole: async (roleId) => {
     try {
       const response = await axiosInstance.get(
-        `${API_ENDPOINTS.BUSINESS_ROLES}${roleId}/`
+        `${API_ENDPOINTS.BUSINESS_ROLES}${roleId}/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching role ${roleId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1504,13 +1505,13 @@ export const businessRoleService = {
   getAvailablePermissions: async () => {
     try {
       const response = await axiosInstance.get(
-        `${API_ENDPOINTS.BUSINESS_ROLES}available-permissions/`
+        `${API_ENDPOINTS.BUSINESS_ROLES}available-permissions/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error fetching available permissions:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return { success: false, error: "Failed to fetch permissions" };
     }
@@ -1520,7 +1521,7 @@ export const businessRoleService = {
     try {
       const response = await axiosInstance.post(
         API_ENDPOINTS.BUSINESS_ROLES,
-        roleData
+        roleData,
       );
       return { success: true, data: response.data };
     } catch (error) {
@@ -1536,7 +1537,7 @@ export const businessRoleService = {
     try {
       const response = await axiosInstance.patch(
         `${API_ENDPOINTS.BUSINESS_ROLES}${roleId}/`,
-        roleData
+        roleData,
       );
       return { success: true, data: response.data };
     } catch (error) {
@@ -1571,13 +1572,13 @@ export const revenueService = {
       if (params.startDate) queryParams.append("start_date", params.startDate);
       if (params.endDate) queryParams.append("end_date", params.endDate);
       const response = await axiosInstance.get(
-        `${API_ENDPOINTS.REVENUE_ANALYTICS}?${queryParams.toString()}`
+        `${API_ENDPOINTS.REVENUE_ANALYTICS}?${queryParams.toString()}`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error fetching revenue analytics:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1595,7 +1596,7 @@ export const revenueService = {
       const response = await axiosInstance.post(
         API_ENDPOINTS.REVENUE_ANALYTICS,
         {},
-        { params: queryParams, responseType: "blob" }
+        { params: queryParams, responseType: "blob" },
       );
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
@@ -1616,7 +1617,7 @@ export const revenueService = {
     } catch (error) {
       console.error(
         "Error exporting revenue report:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       let errorText = "Failed to export revenue report";
       if (error.response?.data instanceof Blob) {
@@ -1645,7 +1646,7 @@ export const bookingAnalyticsService = {
         params.append("end_date", dateRange[1].format("YYYY-MM-DD"));
       const response = await axiosInstance.get(
         `${API_ENDPOINTS.BUSINESS_BOOKINGS}analytics/?${params.toString()}`,
-        { signal: options.signal }
+        { signal: options.signal },
       );
       return { success: true, data: response.data };
     } catch (error) {
@@ -1655,7 +1656,7 @@ export const bookingAnalyticsService = {
       }
       console.error(
         "Error fetching booking analytics:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1675,7 +1676,7 @@ export const bookingAnalyticsService = {
       const response = await axiosInstance.post(
         `${API_ENDPOINTS.BUSINESS_BOOKINGS}analytics/`,
         {},
-        { params: params, responseType: "blob" }
+        { params: params, responseType: "blob" },
       );
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
@@ -1696,7 +1697,7 @@ export const bookingAnalyticsService = {
     } catch (error) {
       console.error(
         "Error exporting booking report:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       let errorText = "Failed to export booking report";
       if (error.response?.data instanceof Blob) {
@@ -1719,7 +1720,7 @@ export const businessStudentService = {
     try {
       const response = await axiosInstance.get(
         API_ENDPOINTS.BUSINESS_STUDENTS,
-        { params }
+        { params },
       );
       return {
         success: true,
@@ -1732,7 +1733,7 @@ export const businessStudentService = {
     } catch (error) {
       console.error(
         "Error fetching students for business:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -1744,13 +1745,13 @@ export const businessStudentService = {
   getBusinessStudentProfile: async (studentId) => {
     try {
       const response = await axiosInstance.get(
-        `${API_ENDPOINTS.BUSINESS_STUDENTS}${studentId}/`
+        `${API_ENDPOINTS.BUSINESS_STUDENTS}${studentId}/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching student profile ${studentId} for business:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       const message =
         error.response?.status === 404
@@ -1764,13 +1765,13 @@ export const businessStudentService = {
     try {
       const response = await axiosInstance.post(
         `${API_ENDPOINTS.BUSINESS_STUDENTS}${studentId}/add_note/`,
-        { content: noteContent }
+        { content: noteContent },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error adding note for student ${studentId} in business context:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       const errorDetail =
         error.response?.data?.content?.[0] ||
@@ -1783,13 +1784,13 @@ export const businessStudentService = {
   deleteContact: async (contactId) => {
     try {
       await axiosInstance.delete(
-        `${API_ENDPOINTS.BUSINESS_STUDENTS}${contactId}/`
+        `${API_ENDPOINTS.BUSINESS_STUDENTS}${contactId}/`,
       );
       return { success: true };
     } catch (error) {
       console.error(
         `Error deleting contact ${contactId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       // Return the specific error message from the backend (e.g., "Cannot delete...").
       return {
@@ -1844,13 +1845,13 @@ export const guestBookingService = {
     }
     try {
       const response = await axiosInstance.get(
-        `/bookings/guest-cancel/${token}/`
+        `/bookings/guest-cancel/${token}/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching guest booking details for token ${token}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       const errorMessage =
         error.response?.status === 404
@@ -1871,13 +1872,13 @@ export const guestBookingService = {
     }
     try {
       const response = await axiosInstance.post(
-        `/bookings/guest-cancel/${token}/`
+        `/bookings/guest-cancel/${token}/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error cancelling guest booking for token ${token}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       const errorMessage =
         error.response?.data?.policy ||
@@ -1897,7 +1898,7 @@ export const bookingService = {
   bookingStatusPolling: async (paymentIntentId, clientSecret = null) => {
     if (!paymentIntentId) {
       console.error(
-        "apiService: bookingStatusPolling - paymentIntentId is required"
+        "apiService: bookingStatusPolling - paymentIntentId is required",
       );
       return { success: false, error: "Payment Intent ID is required." };
     }
@@ -1917,7 +1918,7 @@ export const bookingService = {
 
       console.log(
         "apiService: bookingStatusPolling - Backend response data:",
-        response.data
+        response.data,
       );
       return { success: true, data: response.data };
     } catch (error) {
@@ -1926,30 +1927,30 @@ export const bookingService = {
         "apiService: Error polling booking status. PI:",
         paymentIntentId,
         "Error Object:",
-        error
+        error,
       );
       if (error.response) {
         console.error(
           "apiService: Polling Error - Response Data:",
-          error.response.data
+          error.response.data,
         );
         console.error(
           "apiService: Polling Error - Response Status:",
-          error.response.status
+          error.response.status,
         );
         console.error(
           "apiService: Polling Error - Response Headers:",
-          error.response.headers
+          error.response.headers,
         );
       } else if (error.request) {
         console.error(
           "apiService: Polling Error - No response received, Request:",
-          error.request
+          error.request,
         );
       } else {
         console.error(
           "apiService: Polling Error - Error Message:",
-          error.message
+          error.message,
         );
       }
       const errorData = error.response?.data;
@@ -1968,13 +1969,13 @@ export const bookingService = {
   getBookingCancellationInfo: async (bookingId) => {
     try {
       const response = await axiosInstance.get(
-        `${API_ENDPOINTS.STUDENT_BOOKINGS}${bookingId}/cancellation-info/`
+        `${API_ENDPOINTS.STUDENT_BOOKINGS}${bookingId}/cancellation-info/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching cancellation info for booking ${bookingId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       const errorMessage =
         error.response?.data?.error ||
@@ -1991,14 +1992,14 @@ export const bookingService = {
     try {
       const response = await axiosInstance.get(
         API_ENDPOINTS.BUSINESS_BOOKINGS,
-        { params }
+        { params },
       );
       // Expect paginated response: { count, next, previous, results, summary (optional) }
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error fetching business bookings:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2009,13 +2010,13 @@ export const bookingService = {
   getBookingDetails: async (bookingId) => {
     try {
       const response = await axiosInstance.get(
-        `${API_ENDPOINTS.BUSINESS_BOOKINGS}${bookingId}/`
+        `${API_ENDPOINTS.BUSINESS_BOOKINGS}${bookingId}/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching booking details ${bookingId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       const message =
         error.response?.status === 404
@@ -2028,13 +2029,13 @@ export const bookingService = {
     try {
       const response = await axiosInstance.post(
         `${API_ENDPOINTS.BUSINESS_BOOKINGS}${bookingId}/cancel/`,
-        { reason }
+        { reason },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error cancelling booking ${bookingId} (Business):`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2049,13 +2050,13 @@ export const bookingService = {
     if (!bookingId) return { success: false, error: "Booking ID is required." };
     try {
       const response = await axiosInstance.get(
-        `${API_ENDPOINTS.BUSINESS_BOOKINGS}${bookingId}/available-slots/`
+        `${API_ENDPOINTS.BUSINESS_BOOKINGS}${bookingId}/available-slots/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching available slots for booking ${bookingId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return { success: false, error: "Failed to fetch available slots." };
     }
@@ -2065,7 +2066,7 @@ export const bookingService = {
     bookingId,
     newScheduleInstanceId,
     isDryRun = false,
-    reason = ""
+    reason = "",
   ) => {
     try {
       const payload = {
@@ -2075,13 +2076,13 @@ export const bookingService = {
       };
       const response = await axiosInstance.post(
         `${API_ENDPOINTS.BUSINESS_BOOKINGS}${bookingId}/reschedule/`,
-        payload
+        payload,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error rescheduling booking ${bookingId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       const errorData = error.response?.data;
       const errorMessage =
@@ -2095,13 +2096,13 @@ export const bookingService = {
     try {
       const response = await axiosInstance.post(
         `${API_ENDPOINTS.BUSINESS_BOOKINGS}${bookingId}/mark_attendance/`,
-        { attended }
+        { attended },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error marking attendance for booking ${bookingId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2118,7 +2119,7 @@ export const bookingService = {
       if (filters.page) params.append("page", filters.page);
 
       const response = await axiosInstance.get(
-        `${API_ENDPOINTS.STUDENT_BOOKINGS}?${params.toString()}`
+        `${API_ENDPOINTS.STUDENT_BOOKINGS}?${params.toString()}`,
       );
 
       if (response.data && typeof response.data === "object") {
@@ -2129,7 +2130,7 @@ export const bookingService = {
         if (!Array.isArray(bookings)) {
           console.error(
             "API Error: Expected bookings array, received:",
-            bookings
+            bookings,
           );
           return {
             success: false,
@@ -2150,7 +2151,7 @@ export const bookingService = {
       } else {
         console.error(
           "API Error: Invalid response data structure:",
-          response.data
+          response.data,
         );
         return {
           success: false,
@@ -2161,7 +2162,7 @@ export const bookingService = {
     } catch (error) {
       console.error(
         "Error fetching my bookings:",
-        error.response?.data || error.message || error
+        error.response?.data || error.message || error,
       );
       const errorMessage =
         error.response?.data?.detail ||
@@ -2178,13 +2179,13 @@ export const bookingService = {
     try {
       const response = await axiosInstance.post(
         `${API_ENDPOINTS.STUDENT_BOOKINGS}${bookingId}/cancel/`,
-        { reason }
+        { reason },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error cancelling booking ${bookingId} (Student):`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2200,13 +2201,13 @@ export const optionService = {
     try {
       const response = await axiosInstance.post(
         `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/options/`,
-        optionData
+        optionData,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error creating option for class ${classId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2218,13 +2219,13 @@ export const optionService = {
     try {
       const response = await axiosInstance.patch(
         `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/options/${optionId}/`,
-        optionData
+        optionData,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error updating option ${optionId} for class ${classId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2235,13 +2236,13 @@ export const optionService = {
   deleteOption: async (classId, optionId) => {
     try {
       await axiosInstance.delete(
-        `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/options/${optionId}/`
+        `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/options/${optionId}/`,
       );
       return { success: true };
     } catch (error) {
       console.error(
         `Error deleting option ${optionId} for class ${classId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2252,13 +2253,13 @@ export const optionService = {
   toggleOptionActive: async (classId, optionId) => {
     try {
       const response = await axiosInstance.patch(
-        `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/options/${optionId}/toggle-active/`
+        `${API_ENDPOINTS.BUSINESS_CLASSES}${classId}/options/${optionId}/toggle-active/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error toggling option active status:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2278,7 +2279,7 @@ export const reviewService = {
       // { booking_id, rating, comment, image_s3_key? }
       const response = await axiosInstance.post(
         API_ENDPOINTS.REVIEWS_SUBMIT,
-        reviewData
+        reviewData,
       );
       return { success: true, data: response.data };
     } catch (error) {
@@ -2302,7 +2303,7 @@ export const reviewService = {
     try {
       const response = await axiosInstance.get(
         `${BASE_URL}/business/reviews/`,
-        { params }
+        { params },
       );
       return {
         success: true,
@@ -2317,7 +2318,7 @@ export const reviewService = {
     } catch (error) {
       console.error(
         "Error fetching business reviews:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2330,13 +2331,13 @@ export const reviewService = {
     try {
       const response = await axiosInstance.post(
         `${BASE_URL}/business/reviews/${reviewId}/respond/`,
-        { business_response: responseText }
+        { business_response: responseText },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error responding to review ${reviewId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2353,13 +2354,13 @@ export const reviewService = {
       if (params.endDate) queryParams.append("end_date", params.endDate); // Expect YYYY-MM-DD
 
       const response = await axiosInstance.get(
-        `${BASE_URL}/business/reviews/analytics/?${queryParams.toString()}`
+        `${BASE_URL}/business/reviews/analytics/?${queryParams.toString()}`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error fetching business review analytics:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2373,13 +2374,13 @@ export const reviewService = {
     try {
       const response = await axiosInstance.post(
         `${BASE_URL}/business/reviews/${reviewId}/report/`,
-        { report_reason: reason }
+        { report_reason: reason },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error reporting review ${reviewId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2394,7 +2395,7 @@ export const scheduleService = {
   fetchInstance: async (instanceId) => {
     try {
       const response = await axiosInstance.get(
-        `${API_ENDPOINTS.BUSINESS_SCHEDULE_INSTANCES}${instanceId}/`
+        `${API_ENDPOINTS.BUSINESS_SCHEDULE_INSTANCES}${instanceId}/`,
       );
       return { success: true, data: response.data, error: null };
     } catch (error) {
@@ -2404,7 +2405,7 @@ export const scheduleService = {
         "An unknown error occurred.";
       console.error(
         `Error fetching schedule instance ${instanceId}:`,
-        errorMessage
+        errorMessage,
       );
       return { success: false, data: null, error: errorMessage };
     }
@@ -2413,7 +2414,7 @@ export const scheduleService = {
     try {
       const response = await axiosInstance.get(
         API_ENDPOINTS.BUSINESS_SCHEDULES,
-        { params }
+        { params },
       );
       return { success: true, data: response.data };
     } catch (error) {
@@ -2428,13 +2429,13 @@ export const scheduleService = {
     try {
       const response = await axiosInstance.post(
         API_ENDPOINTS.BUSINESS_SCHEDULES,
-        scheduleData
+        scheduleData,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error creating schedule:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       return {
         success: false,
@@ -2446,13 +2447,13 @@ export const scheduleService = {
     try {
       const response = await axiosInstance.post(
         `${API_ENDPOINTS.BUSINESS_SCHEDULES}group-delete/`,
-        payload
+        payload,
       );
       return response.data;
     } catch (error) {
       console.error(
         "Error deleting schedule group:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       throw error;
     }
@@ -2461,13 +2462,13 @@ export const scheduleService = {
     try {
       const response = await axiosInstance.post(
         `${API_ENDPOINTS.BUSINESS_SCHEDULES}bulk-create/`,
-        payload
+        payload,
       );
       return response.data;
     } catch (error) {
       console.error(
         "Error bulk creating schedules:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       // Let the component handle the error message display
       throw error;
@@ -2477,7 +2478,7 @@ export const scheduleService = {
     try {
       const response = await axiosInstance.patch(
         `${API_ENDPOINTS.BUSINESS_SCHEDULES}${scheduleId}/`,
-        scheduleData
+        scheduleData,
       );
       return { success: true, data: response.data };
     } catch (error) {
@@ -2491,7 +2492,7 @@ export const scheduleService = {
   deleteSchedule: async (scheduleId) => {
     try {
       await axiosInstance.delete(
-        `${API_ENDPOINTS.BUSINESS_SCHEDULES}${scheduleId}/`
+        `${API_ENDPOINTS.BUSINESS_SCHEDULES}${scheduleId}/`,
       );
       return { success: true };
     } catch (error) {
@@ -2506,13 +2507,13 @@ export const scheduleService = {
     try {
       const response = await axiosInstance.post(
         `${API_ENDPOINTS.BUSINESS_SCHEDULES}group-update/`,
-        payload
+        payload,
       );
       return response.data;
     } catch (error) {
       console.error(
         "Error updating schedule group:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       throw error;
     }
@@ -2527,13 +2528,13 @@ export const scheduleService = {
             start_date: startDate,
             end_date: endDate,
           },
-        }
+        },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching instances for schedule ${scheduleId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2543,20 +2544,20 @@ export const scheduleService = {
   },
   getAvailabilityForOption: async (
     optionId,
-    { start_date, end_date, is_course = false }
+    { start_date, end_date, is_course = false },
   ) => {
     //console.log('Fetching availability for option:', optionId, start_date, end_date, 'is_course:', is_course);
     try {
       const params = { option_id: optionId, start_date, end_date };
       const response = await axiosInstance.get(
         `${API_ENDPOINTS.PUBLIC_SCHEDULES}availability/`,
-        { params }
+        { params },
       );
       return response.data;
     } catch (error) {
       console.error(
         "Error fetching availability:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       throw error.response?.data || error;
     }
@@ -2573,7 +2574,7 @@ export const CustomerSupportTicketService = {
     } catch (error) {
       console.error(
         "Error fetching user tickets:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2586,7 +2587,7 @@ export const CustomerSupportTicketService = {
     try {
       const response = await axiosInstance.post(
         "/support-tickets/",
-        ticketData
+        ticketData,
       );
       return { success: true, data: response.data };
     } catch (error) {
@@ -2610,7 +2611,7 @@ export const CustomerSupportTicketService = {
     } catch (error) {
       console.error(
         `Error fetching ticket details ${ticketId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       const message =
         error.response?.status === 404
@@ -2625,13 +2626,13 @@ export const CustomerSupportTicketService = {
       // Backend expects a JSON object: { "message": "..." }
       const response = await axiosInstance.post(
         `/support-tickets/${ticketId}/reply/`,
-        { message }
+        { message },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error replying to ticket ${ticketId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2664,7 +2665,7 @@ export const notificationService = {
     } catch (error) {
       console.error(
         "Error fetching notifications:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2676,13 +2677,13 @@ export const notificationService = {
   getUnreadCount: async () => {
     try {
       const response = await axiosInstance.get(
-        API_ENDPOINTS.NOTIFICATIONS_UNREAD_COUNT
+        API_ENDPOINTS.NOTIFICATIONS_UNREAD_COUNT,
       );
       return { success: true, data: response.data }; // Expects { unread_count: X }
     } catch (error) {
       console.error(
         "Error fetching unread notification count:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2695,13 +2696,13 @@ export const notificationService = {
   markNotificationAsRead: async (notificationId) => {
     try {
       const response = await axiosInstance.post(
-        API_ENDPOINTS.NOTIFICATION_MARK_READ(notificationId)
+        API_ENDPOINTS.NOTIFICATION_MARK_READ(notificationId),
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error marking notification ${notificationId} as read:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2713,13 +2714,13 @@ export const notificationService = {
   markAllNotificationsAsRead: async () => {
     try {
       const response = await axiosInstance.post(
-        `${API_ENDPOINTS.NOTIFICATIONS}mark-all-read/`
+        `${API_ENDPOINTS.NOTIFICATIONS}mark-all-read/`,
       ); // Assuming action path
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error marking all notifications as read:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2751,7 +2752,7 @@ export const courseService = {
     } catch (error) {
       console.error(
         "Error fetching public courses:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2763,13 +2764,13 @@ export const courseService = {
   getCourseDetail: async (scheduleId) => {
     try {
       const response = await axiosInstance.get(
-        `${API_ENDPOINTS.PUBLIC_COURSES}${scheduleId}/`
+        `${API_ENDPOINTS.PUBLIC_COURSES}${scheduleId}/`,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error fetching course detail ${scheduleId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2788,7 +2789,7 @@ export const courseService = {
     } catch (error) {
       console.error(
         "Error fetching business courses:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2803,13 +2804,13 @@ export const courseService = {
       // This endpoint is a custom action on the BusinessCourseManagementViewSet
       const response = await axiosInstance.get(
         `${API_ENDPOINTS.BUSINESS_COURSES}${courseScheduleId}/enrollments/`,
-        { params }
+        { params },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error fetching course enrollments:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2824,13 +2825,13 @@ export const courseService = {
       // Uses the correct student-facing endpoint for creation
       const response = await axiosInstance.post(
         API_ENDPOINTS.STUDENT_COURSE_ENROLLMENTS,
-        enrollmentData
+        enrollmentData,
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error creating course enrollment:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
@@ -2843,13 +2844,13 @@ export const courseService = {
     try {
       const response = await axiosInstance.get(
         API_ENDPOINTS.STUDENT_COURSE_ENROLLMENTS,
-        { params }
+        { params },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         "Error fetching student course enrollments:",
-        error.response?.data || error
+        error.response?.data || error,
       );
       return { success: false, error: "Failed to fetch your enrollments" };
     }
@@ -2859,18 +2860,36 @@ export const courseService = {
     try {
       const response = await axiosInstance.post(
         `${API_ENDPOINTS.STUDENT_COURSE_ENROLLMENTS}${enrollmentId}/cancel/`,
-        { reason }
+        { reason },
       );
       return { success: true, data: response.data };
     } catch (error) {
       console.error(
         `Error canceling enrollment ${enrollmentId}:`,
-        error.response?.data || error
+        error.response?.data || error,
       );
       return {
         success: false,
         error: error.response?.data || "Failed to cancel enrollment",
       };
+    }
+  },
+};
+
+export const giftCardService = {
+  createPurchaseIntent: async (payload) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.GIFTCARD_PURCHASE_INTENT,
+        payload,
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Error creating gift card purchase intent:",
+        error.response?.data || error,
+      );
+      throw error.response?.data || error;
     }
   },
 };
