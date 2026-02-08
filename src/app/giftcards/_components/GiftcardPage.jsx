@@ -848,13 +848,7 @@ function NitroCard3D({
               whileTap={{ scale: 0.95 }}
               disabled={isNavigating}
             >
-              {isNavigating ? (
-                <>
-                  <Spinner size={16} /> Redirecting...
-                </>
-              ) : (
-                "Select Design"
-              )}
+              Select Design
             </SelectButton>
           </motion.div>
         </Html>
@@ -1085,11 +1079,16 @@ export default function GiftCardsPage() {
               a world of activities, from making something tasty to making neon
               signs. Perfect for birthdays, holidays, or just because.
             </p>
-            <div style={{ marginTop: 24 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginTop: 20,
+              }}
+            >
               <span style={{ fontSize: "0.9rem", color: "#222" }}>
                 Interested in corporate gifting?
               </span>
-              {/* FIXED: Changed LinkText (a) to LinkButton (button) for semantics since it triggers action */}
               <LinkButton onClick={handleUnsupported}>
                 Check out corporate options
               </LinkButton>
@@ -1168,13 +1167,7 @@ export default function GiftCardsPage() {
                   style={{ justifyContent: "center" }}
                   disabled={isNavigating}
                 >
-                  {isNavigating ? (
-                    <>
-                      <Spinner size={16} /> Redirecting...
-                    </>
-                  ) : (
-                    "Select Design"
-                  )}
+                  Select Design
                 </SelectButton>
               </MobileButtonWrapper>
             )}

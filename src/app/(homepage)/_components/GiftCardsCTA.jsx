@@ -342,14 +342,10 @@ const GiftCardsCTA = () => {
               lineHeight: "1.5",
             }}
           >
-            {isNavigating ? (
-              "Redirecting..."
-            ) : (
-              <>
-                Purchase Gift Card{" "}
-                <ArrowRight size={18} style={{ marginLeft: "8px" }} />
-              </>
-            )}
+            <>
+              Purchase Gift Card{" "}
+              <ArrowRight size={18} style={{ marginLeft: "8px" }} />
+            </>
           </AntButton>
         </TextContent>
 
