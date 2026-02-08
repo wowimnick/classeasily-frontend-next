@@ -17,8 +17,7 @@ import {
 import { Drawer } from "vaul";
 import { theme } from "@/components/theme";
 
-// --- UTILS & HOOKS (Matching your existing overlays) ---
-
+// --- UTILS ---
 const useElementSize = () => {
   const ref = useRef(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -47,27 +46,36 @@ const PopupWrapper = styled(motion.div)`
   border: 1px solid #e8e8e8;
   border-radius: 20px;
   width: 380px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
-  overflow: hidden; /* Vital for height animation */
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08); /* Lighter shadow */
+  overflow: hidden;
 
   @media (max-width: 768px) {
-    left: 12px;
-    right: 12px;
+    left: 16px;
+    right: 16px;
+    bottom: max(16px, env(safe-area-inset-bottom));
     width: auto;
-    bottom: max(12px, env(safe-area-inset-bottom));
-    border-radius: 24px;
+    border-radius: 16px; /* Smaller radius */
   }
 `;
 
 const ContentContainer = styled.div`
   padding: 1.25rem;
+
+  @media (max-width: 768px) {
+    padding: 12px 16px; /* Much tighter padding on mobile */
+  }
 `;
 
+// Mobile-specific hidden elements to save space
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+
+  @media (max-width: 768px) {
+    display: ${(props) => (props.$mobileHide ? "none" : "flex")};
+  }
 `;
 
 const Title = styled.h2`
@@ -103,6 +111,13 @@ const TextContent = styled.div`
   line-height: 1.5;
   color: #4b5563;
   font-size: 0.9rem;
+
+  @media (max-width: 768px) {
+    margin-bottom: 12px;
+    font-size: 0.85rem; /* Smaller font */
+    line-height: 1.4;
+    padding-right: 20px; /* Space for hidden close click area if needed */
+  }
 `;
 
 const StyledLink = styled(Link)`
@@ -118,6 +133,10 @@ const ButtonGroup = styled.div`
   display: flex;
   gap: 10px;
   align-items: center;
+
+  @media (max-width: 768px) {
+    gap: 8px;
+  }
 `;
 
 const OptionsButton = styled.button`
@@ -137,6 +156,12 @@ const OptionsButton = styled.button`
     background: #f9fafb;
     border-color: #d1d5db;
   }
+
+  @media (max-width: 768px) {
+    height: 36px; /* Smaller button */
+    width: 36px;
+    border-radius: 10px;
+  }
 `;
 
 const SettingsOption = styled.div`
@@ -153,12 +178,11 @@ const SettingsOption = styled.div`
 const OptionTextWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 2px; /* Fixed the "no spacing" text issue */
+  gap: 2px;
   flex: 1;
 `;
 
 // --- DRAWER COMPONENTS (Mobile) ---
-
 const DrawerInner = styled.div`
   padding: 1.5rem;
   background: white;
@@ -181,7 +205,6 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Height morphing logic
   const [contentRef, { height }] = useElementSize();
 
   useEffect(() => {
@@ -204,7 +227,8 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
   return (
     <ConfigProvider theme={theme}>
       <PopupWrapper
-        animate={{ height: height || "auto" }}
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1, height: height || "auto" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
       >
         <div ref={contentRef}>
@@ -213,12 +237,13 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
               {view === "main" ? (
                 <motion.div
                   key="main"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Header>
+                  {/* Header hidden on mobile for compactness */}
+                  <Header $mobileHide>
                     <Title>
                       <Cookie
                         size={20}
@@ -234,7 +259,7 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
                   </Header>
 
                   <TextContent>
-                    We use cookies to analyze traffic and site speed. See our{" "}
+                    We use cookies to analyze traffic. See our{" "}
                     <StyledLink href="/cookie-policy">Policy</StyledLink>.
                   </TextContent>
 
@@ -243,20 +268,35 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
                       onClick={handleMoreClick}
                       aria-label="More options"
                     >
-                      <Ellipsis size={20} />
+                      <Ellipsis size={isMobile ? 18 : 20} />
                     </OptionsButton>
                     <Button
                       type="primary"
                       onClick={onAccept}
                       block
                       style={{
-                        height: "44px",
-                        borderRadius: "12px",
+                        height: isMobile ? "36px" : "44px", // Compact button
+                        borderRadius: isMobile ? "10px" : "12px",
                         fontWeight: 600,
+                        fontSize: isMobile ? "13px" : "14px",
                       }}
                     >
                       Accept All
                     </Button>
+                    {/* Tiny close button for mobile only, next to Accept */}
+                    {isMobile && (
+                      <IconButton
+                        onClick={onClose}
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 10,
+                          flexShrink: 0,
+                        }}
+                      >
+                        <X size={16} />
+                      </IconButton>
+                    )}
                   </ButtonGroup>
                 </motion.div>
               ) : (
@@ -267,6 +307,7 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
                   exit={{ opacity: 0, x: 10 }}
                   transition={{ duration: 0.2 }}
                 >
+                  {/* Desktop Settings View (Mobile uses Drawer) */}
                   <Header>
                     <Title>
                       <IconButton
@@ -285,14 +326,12 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
 
                   <SettingsOption>
                     <OptionTextWrapper>
-                      <Typography.Text strong>
-                        Essential Cookies
-                      </Typography.Text>
+                      <Typography.Text strong>Essential</Typography.Text>
                       <Typography.Text
                         type="secondary"
                         style={{ fontSize: "12px" }}
                       >
-                        Required for the site to function.
+                        Required for site function.
                       </Typography.Text>
                     </OptionTextWrapper>
                     <ShieldCheck size={20} color="#10b981" />
@@ -305,7 +344,7 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
                         type="secondary"
                         style={{ fontSize: "12px" }}
                       >
-                        Helps us fix bugs and improve UI.
+                        Helps us improve UI.
                       </Typography.Text>
                     </OptionTextWrapper>
                     <Button
@@ -333,7 +372,7 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
         </div>
       </PopupWrapper>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Drawer (Vaul) */}
       <Drawer.Root open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <Drawer.Portal>
           <Drawer.Overlay
@@ -356,28 +395,33 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
           >
             <DrawerInner>
               <DrawerHandle />
-              <div style={{ textAlign: "center", marginBottom: 24 }}>
+              <div style={{ textAlign: "center", marginBottom: 20 }}>
                 <Settings
-                  size={32}
+                  size={28}
                   color={theme.token.colorPrimary}
-                  style={{ margin: "0 auto 12px" }}
+                  style={{ margin: "0 auto 10px" }}
                 />
-                <Typography.Title level={3} style={{ margin: 0 }}>
+                <Typography.Title level={4} style={{ margin: 0 }}>
                   Privacy Settings
                 </Typography.Title>
               </div>
 
-              <SettingsOption style={{ padding: 16 }}>
+              <SettingsOption style={{ padding: 12 }}>
                 <OptionTextWrapper>
                   <Typography.Text strong>Analytics Tracking</Typography.Text>
                   <Typography.Text
                     type="secondary"
-                    style={{ fontSize: "13px" }}
+                    style={{ fontSize: "12px" }}
                   >
                     Anonymized data to improve performance.
                   </Typography.Text>
                 </OptionTextWrapper>
-                <Button danger type="link" onClick={handleDeclineIntent}>
+                <Button
+                  danger
+                  type="link"
+                  size="small"
+                  onClick={handleDeclineIntent}
+                >
                   Decline
                 </Button>
               </SettingsOption>
@@ -391,8 +435,8 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
                   setIsDrawerOpen(false);
                 }}
                 style={{
-                  height: 54,
-                  borderRadius: 16,
+                  height: 48,
+                  borderRadius: 14,
                   marginTop: 12,
                   fontWeight: 600,
                 }}
@@ -404,7 +448,7 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
         </Drawer.Portal>
       </Drawer.Root>
 
-      {/* Decline Confirmation */}
+      {/* Decline Confirmation Modal */}
       <Modal
         title={
           <div
@@ -413,9 +457,10 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
               alignItems: "center",
               gap: "10px",
               color: "#dc2626",
+              fontSize: "16px",
             }}
           >
-            <AlertTriangle size={22} />
+            <AlertTriangle size={20} />
             Are you sure?
           </div>
         }
@@ -423,14 +468,14 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
         onCancel={() => setShowDeclineModal(false)}
         zIndex={1100}
         centered
+        width={320} // Smaller width for modal
         footer={[
           <Button
             key="keep"
             type="primary"
             block
-            size="large"
             onClick={() => setShowDeclineModal(false)}
-            style={{ borderRadius: 12, height: 48 }}
+            style={{ borderRadius: 10 }}
           >
             Keep Cookies
           </Button>,
@@ -443,15 +488,14 @@ const CookieConsentBanner = ({ onAccept, onDecline, onClose }) => {
               setShowDeclineModal(false);
               onDecline();
             }}
-            style={{ marginTop: 8 }}
+            style={{ marginTop: 4 }}
           >
             Decline All
           </Button>,
         ]}
       >
-        <Typography.Paragraph type="secondary">
-          Declining cookies may cause slower loading times and some features
-          might not work as intended.
+        <Typography.Paragraph type="secondary" style={{ fontSize: "13px" }}>
+          Declining cookies may cause slower loading times.
         </Typography.Paragraph>
       </Modal>
     </ConfigProvider>

@@ -1,8 +1,10 @@
+// --- START OF FILE ClientHeader.jsx ---
+
 "use client";
 
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import Link from "next/link";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import styled, { createGlobalStyle } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
@@ -419,7 +421,7 @@ const QuickPill = styled.button`
   }
 `;
 
-// --- CustomCalendar Component (Dual Month + Range Support) ---
+// --- CustomCalendar Component ---
 const CustomCalendar = ({ value, onChange, onClose }) => {
   const [currentDate, setCurrentDate] = useState(dayjs());
 
@@ -431,9 +433,6 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
   const selectedEnd = value?.end ? dayjs(value.end) : null;
 
   const handleDateClick = (dateObj) => {
-    // For now, behaving as single selection or simple override
-    // If you want range selection logic (click 1 = start, click 2 = end), implement here.
-    // Currently following banner logic: clicking a date selects it as single/start
     onChange(dateObj);
     onClose();
   };
@@ -448,7 +447,6 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
     switch (type) {
       case "weekend":
         if (today.day() === 0) {
-          // Sunday
           start = today.subtract(1, "day");
           end = today;
         } else {
@@ -520,9 +518,8 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
           const hasSelection =
             isSingle || isRangeStart || isRangeEnd || isInRange;
 
-          // Theme primary color (hardcoded fallback to match banner)
-          const primaryColor = "#ff385c"; // Airbnb/Rose color
-          const faintColor = "#ff385c15"; // Faint version
+          const primaryColor = "#ff385c";
+          const faintColor = "#ff385c15";
 
           let bgRadius = "0";
           let bgColor = "transparent";
@@ -724,10 +721,9 @@ const IconBox = styled.div`
 `;
 
 // --- CONSTANTS ---
-// Updated widths to accommodate wider calendar
 const POPUP_SIZES = {
   location: 380,
-  date: 660, // Widened for dual months
+  date: 660,
   participants: 340,
 };
 
@@ -743,7 +739,6 @@ const contentVariants = {
 
 function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user: currentUser } = useAuthUser();
   const menuTriggerRef = useRef(null);
 
@@ -765,7 +760,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
     handleLocationSelect,
     performSearch,
     setIsDrawerOpen,
-    setSelectedLocation,
   } = useSearch();
 
   // Search Interaction State
@@ -776,9 +770,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
   const dateRef = useRef(null);
   const participantsRef = useRef(null);
 
-  // Track the last known URL param to prevent dirty state overwrite
-  const lastUrlLocationRef = useRef(null);
-
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -786,65 +777,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
   useClickOutside(containerRef, () => {
     setActiveField(null);
   });
-
-  // Sync Params
-  useEffect(() => {
-    const locParam = searchParams.get("location");
-    const latParam = searchParams.get("lat");
-    const lngParam = searchParams.get("lng");
-
-    // Updated date logic to handle ranges
-    const dateParam = searchParams.get("date");
-    const startDateParam = searchParams.get("start_date");
-    const endDateParam = searchParams.get("end_date");
-
-    const participantsParam = searchParams.get("participants");
-
-    // --- FIX: Safer Location Syncing ---
-    // Only update state if the URL param has actually changed from what we last saw.
-    // This prevents the effect from overwriting user typing (backspace) just because
-    // local state differs from the stale URL.
-    if (locParam && locParam !== lastUrlLocationRef.current) {
-      lastUrlLocationRef.current = locParam;
-      setSearchTerm(locParam);
-      if (latParam && lngParam) {
-        setSelectedLocation({
-          displayName: locParam,
-          coordinates: { lat: parseFloat(latParam), lng: parseFloat(lngParam) },
-          citySlug: null,
-          provinceSlug: null,
-        });
-      }
-    } else if (!locParam && lastUrlLocationRef.current) {
-      // Optional: If URL param is removed, clear state (depending on preference)
-      // lastUrlLocationRef.current = null;
-      // setSearchTerm("");
-    }
-
-    if (startDateParam && endDateParam) {
-      setDatePickerValue({
-        start: startDateParam,
-        end: endDateParam,
-      });
-    } else if (dateParam) {
-      const parsedDate = dayjs(dateParam);
-      if (parsedDate.isValid()) setDatePickerValue(parsedDate);
-    }
-
-    if (participantsParam) {
-      const numParticipants = parseInt(participantsParam, 10);
-      setParticipantCount(
-        !isNaN(numParticipants) && numParticipants > 0 ? numParticipants : 1,
-      );
-    }
-  }, [
-    searchParams,
-    // Note: setSearchTerm, setDatePickerValue etc are stable
-    setSearchTerm,
-    setDatePickerValue,
-    setParticipantCount,
-    setSelectedLocation,
-  ]);
 
   // Position Logic
   useLayoutEffect(() => {
@@ -926,7 +858,11 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
         <LocationOption
           key={idx}
           onClick={() => {
-            handleLocationSelect(result.displayName);
+            handleLocationSelect(result.displayName, {
+              coordinates: result.coordinates,
+              citySlug: result.citySlug,
+              provinceSlug: result.provinceSlug,
+            });
             setActiveField(null);
           }}
         >
@@ -954,7 +890,11 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
       <LocationOption
         key={idx}
         onClick={() => {
-          handleLocationSelect(area.name);
+          handleLocationSelect(area.name, {
+            coordinates: area.coords,
+            citySlug: area.citySlug,
+            provinceSlug: area.provinceSlug,
+          });
           setActiveField(null);
         }}
       >
@@ -977,6 +917,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
     ));
   };
 
+  // Mobile Trigger (Visible < 768px)
   const MobileSearchTrigger = styled.div`
     display: none;
     @media (max-width: 768px) {
@@ -1039,8 +980,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
                   <InlineInput
                     autoFocus
                     value={searchTerm}
-                    // FIX: Stop propagation to prevent bubbling to SectionButton onClick (which closes popup)
-                    onClick={(e) => e.stopPropagation()}
                     onChange={(e) => handleLocationChange(e.target.value)}
                     placeholder="Search destination"
                   />

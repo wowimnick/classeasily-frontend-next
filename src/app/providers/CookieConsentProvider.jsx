@@ -13,13 +13,16 @@ export default function CookieConsentProvider({ children }) {
 
     // Check permanent consent (Local Storage)
     const consent = localStorage.getItem("cookie_consent");
-
     // Check temporary dismissal (Session Storage)
     const dismissed = sessionStorage.getItem("cookie_consent_dismissed");
 
-    // Only show if no permanent choice AND not temporarily dismissed
+    // Only queue the banner if no choice made and not dismissed
     if (consent === null && !dismissed) {
-      setShowConsentBanner(true);
+      const timer = setTimeout(() => {
+        setShowConsentBanner(true);
+      }, 7000);
+
+      return () => clearTimeout(timer);
     }
   }, []);
 
@@ -32,7 +35,6 @@ export default function CookieConsentProvider({ children }) {
 
   const handleAccept = () => {
     localStorage.setItem("cookie_consent", "true");
-    // Clear session dismissal if it exists, though not strictly necessary
     sessionStorage.removeItem("cookie_consent_dismissed");
 
     gtag("consent", "update", {
@@ -40,7 +42,7 @@ export default function CookieConsentProvider({ children }) {
       ad_storage: "granted",
     });
     setShowConsentBanner(false);
-    message.success("Thank you!", 3);
+    message.success("Preferences saved", 2);
   };
 
   const handleDecline = () => {
@@ -52,20 +54,12 @@ export default function CookieConsentProvider({ children }) {
       ad_storage: "denied",
     });
     setShowConsentBanner(false);
-    message.info("You have opted out of analytics cookies.", 3);
+    message.info("Analytics opted out", 2);
   };
 
   const handleClose = () => {
-    // Save to Session Storage: keeps it hidden until the tab is closed
     sessionStorage.setItem("cookie_consent_dismissed", "true");
-
     setShowConsentBanner(false);
-    // Optional: You might want to remove this toast to make it less annoying
-    // since they just dismissed it silently.
-    message.info(
-      "Cookie preferences not saved. You will be asked again next time.",
-      3,
-    );
   };
 
   return (

@@ -14,7 +14,9 @@ import dayjs from "dayjs";
 import { useSearch } from "@/context/SearchContext";
 
 // --- DYNAMIC IMPORTS ---
-const CustomUserMenu = dynamic(() => import("./CustomUserMenu"), { ssr: false });
+const CustomUserMenu = dynamic(() => import("./CustomUserMenu"), {
+  ssr: false,
+});
 const SettingsModal = dynamic(() => import("./SettingsDrawer"), { ssr: false });
 const LogoIcon = dynamic(() => import("@/components/common/logoIcon"));
 
@@ -39,20 +41,24 @@ const HeaderWrapper = styled.header`
   text-align: center;
   display: grid;
   grid-template-columns: auto 1fr auto;
-  
+
   position: ${(props) => (props.$isScrolled ? "fixed" : "absolute")};
-  
+
   top: ${(props) => {
     const baseTop = props.$isImpersonating ? 40 : 0;
-    const offset = props.$isScrolled ? 0 : (props.$topOffset || 0);
+    const offset = props.$isScrolled ? 0 : props.$topOffset || 0;
     return `${baseTop + offset}px`;
   }};
-  
+
   left: 0;
   right: 0;
   align-items: center;
-  
-  transition: background-color 0.3s ease, padding 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+
+  transition:
+    background-color 0.3s ease,
+    padding 0.3s ease,
+    box-shadow 0.3s ease,
+    color 0.3s ease;
   z-index: 999;
 
   @media (min-width: 757px) and (max-width: 768px) {
@@ -61,8 +67,8 @@ const HeaderWrapper = styled.header`
 
   @media (min-width: 757px) {
     ${(props) =>
-    props.$isScrolled &&
-    `
+      props.$isScrolled &&
+      `
       background-color: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(12px) saturate(180%);
       -webkit-backdrop-filter: blur(12px) saturate(180%);
@@ -76,21 +82,23 @@ const HeaderWrapper = styled.header`
     width: calc(100% - 2rem);
     left: 1rem;
     right: 1rem;
-    
+
     top: ${(props) => {
-    const baseTop = props.$isImpersonating ? 48 : 8;
-    return `${baseTop}px`;
-  }};
+      const baseTop = props.$isImpersonating ? 48 : 8;
+      return `${baseTop}px`;
+    }};
 
     border-radius: 9999px;
     padding: 0.5rem 1rem;
     background-color: ${(props) =>
-    props.$isScrolled
-      ? "rgba(255, 255, 255, 0.4)"
-      : "rgba(255, 255, 255, 0.15)"};
+      props.$isScrolled
+        ? "rgba(255, 255, 255, 0.4)"
+        : "rgba(255, 255, 255, 0.15)"};
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04),
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.08),
+      0 2px 8px rgba(0, 0, 0, 0.04),
       inset 0 1px 0 rgba(255, 255, 255, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.25);
   }
@@ -100,16 +108,18 @@ const HeaderWrapper = styled.header`
 const NotchContainer = styled(motion.div)`
   position: fixed;
   left: 50%;
-  transform: translateX(-50%); 
+  transform: translateX(-50%);
   top: 75px;
   display: flex;
   align-items: center;
   gap: 12px;
-  background-color: rgba(255, 255, 255, 0.6); 
+  background-color: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.04);
   padding: 8px 8px 8px 20px;
   border-radius: 100px;
   cursor: pointer;
@@ -119,7 +129,7 @@ const NotchContainer = styled(motion.div)`
   padding-right: 8px;
 
   @media (min-width: 1089px) {
-    display: none; 
+    display: none;
   }
 `;
 
@@ -140,7 +150,7 @@ const NotchTitle = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: block; 
+  display: block;
 `;
 
 const NotchSubtitle = styled.span`
@@ -158,9 +168,9 @@ const NotchIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   color: #222;
-  flex-shrink: 0; 
+  flex-shrink: 0;
 `;
 
 const LogoLink = styled(Link)`
@@ -168,14 +178,18 @@ const LogoLink = styled(Link)`
   text-decoration: none;
   color: inherit;
 `;
-const Spacer = styled.div` grid-column: 2 / 3; `;
+const Spacer = styled.div`
+  grid-column: 2 / 3;
+`;
 const Selection = styled.div`
   grid-column: 3 / 4;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
   align-items: center;
-  @media (max-width: 756px) { gap: 0.5rem; }
+  @media (max-width: 756px) {
+    gap: 0.5rem;
+  }
 `;
 const RoundedButton = styled(motion.button)`
   border: 1px solid ${(props) => props.$borderColor || "#ddd"};
@@ -192,27 +206,44 @@ const RoundedButton = styled(motion.button)`
   margin-left: 1rem;
   padding-left: ${(props) => (props.$isScrolled ? "0.7rem" : "1rem")};
   transition: all 0.2s ease;
-  @media (max-width: 756px) { padding: 0.4rem 0.5rem; margin-left: 0.5rem; padding-left: 0.5rem; gap: 0.35rem; }
+  @media (max-width: 756px) {
+    padding: 0.4rem 0.5rem;
+    margin-left: 0.5rem;
+    padding-left: 0.5rem;
+    gap: 0.35rem;
+  }
 `;
 const MenuIconStyled = styled(Menu)`
-  width: 24px; height: 24px; flex-shrink: 0; color: ${(props) => props.$iconColor};
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: ${(props) => props.$iconColor};
 `;
 const Title = styled.p`
-  font-family: "ProximaSoft"; font-weight: 600;
+  font-family: "ProximaSoft";
+  font-weight: 600;
   font-size: ${(props) => (props.$isScrolled ? "2rem" : "2.5rem")};
   margin: ${(props) => (props.$isScrolled ? "0.2rem" : "0.4rem")};
   color: ${(props) => props.color};
   transition: all 0.3s ease;
-  @media (max-width: 756px) { display: none; }
+  @media (max-width: 756px) {
+    display: none;
+  }
 `;
 const LogoContainer = styled.div`
-  display: flex; align-items: center;
+  display: flex;
+  align-items: center;
   & > svg {
     width: ${(props) => (props.$isScrolled ? "2.5rem" : "3rem")};
     height: ${(props) => (props.$isScrolled ? "2.5rem" : "3rem")};
     transition: all 0.3s ease;
   }
-  @media (max-width: 756px) { & > svg { width: 2.25rem; height: 2.25rem; } }
+  @media (max-width: 756px) {
+    & > svg {
+      width: 2.25rem;
+      height: 2.25rem;
+    }
+  }
 `;
 const AuthLink = styled.span`
   color: ${(props) => props.color};
@@ -224,11 +255,32 @@ const AuthLink = styled.span`
   border: 1px solid ${(props) => props.$borderColor};
   display: inline-block;
   transition: all 0.3s ease;
-  &:hover { background-color: ${(props) => props.$hoverColor}; color: #fff; border-color: ${(props) => props.$hoverColor}; }
-  @media (max-width: 756px) { font-size: 0.8rem; padding: 0.55rem 0.9rem; }
+  &:hover {
+    background-color: ${(props) => props.$hoverColor};
+    color: #fff;
+    border-color: ${(props) => props.$hoverColor};
+  }
+  @media (max-width: 756px) {
+    font-size: 0.8rem;
+    padding: 0.55rem 0.9rem;
+  }
 `;
-const AuthContainer = styled(motion.div)` display: flex; align-items: center; gap: 1rem; @media (max-width: 756px) { gap: 0.25rem; } `;
-const AvatarWrapper = styled.div` display: flex; align-items: center; justify-content: center; @media (max-width: 756px) { transform: scale(0.8); } `;
+const AuthContainer = styled(motion.div)`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  @media (max-width: 756px) {
+    gap: 0.25rem;
+  }
+`;
+const AvatarWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  @media (max-width: 756px) {
+    transform: scale(0.8);
+  }
+`;
 
 // --- HELPER COMPONENTS ---
 const UserAvatar = ({ size = 28 }) => {
@@ -239,14 +291,40 @@ const UserAvatar = ({ size = 28 }) => {
 
   if (!currentUser?.avatar_thumb_url || imageFailed) {
     return (
-      <div style={{ width: size, height: size, borderRadius: '50%', backgroundColor: '#ff385c', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600, fontSize: size / 2.5 }}>
+      <div
+        style={{
+          width: size,
+          height: size,
+          borderRadius: "50%",
+          backgroundColor: "#ff385c",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "white",
+          fontWeight: 600,
+          fontSize: size / 2.5,
+        }}
+      >
         {initials}
       </div>
     );
   }
   return (
-    <div style={{ width: size, height: size, borderRadius: '50%', overflow: 'hidden', border: '1px solid #e0e0e0' }}>
-      <img src={currentUser.avatar_thumb_url} alt="User" onError={() => setImageFailed(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        overflow: "hidden",
+        border: "1px solid #e0e0e0",
+      }}
+    >
+      <img
+        src={currentUser.avatar_thumb_url}
+        alt="User"
+        onError={() => setImageFailed(true)}
+        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+      />
     </div>
   );
 };
@@ -269,12 +347,8 @@ const HeaderContent = ({
   const { openLoginModal, openRegisterModal } = useAuthModal();
   const isImpersonating = currentUser?.is_impersonating || false;
 
-  const {
-    searchTerm,
-    datePickerValue,
-    participantCount,
-    setIsDrawerOpen
-  } = useSearch();
+  const { searchTerm, datePickerValue, participantCount, setIsDrawerOpen } =
+    useSearch();
 
   // Scroll Listener
   useEffect(() => {
@@ -289,14 +363,39 @@ const HeaderContent = ({
     return () => window.removeEventListener("scroll", handleScroll);
   }, [topOffset]);
 
-  // FIX: Force menu close on route change to avoid "Double Menu"
   useEffect(() => {
     setIsMenuOpen(false);
   }, [pathname]);
 
-  const currentIconColor = isScrolled ? scrolledStyling.outlineAndIconColor : dropdownButtonColor;
-  const currentBorderColor = isScrolled ? scrolledStyling.outlineAndIconColor : dropdownButtonOutlineColor;
-  const currentTextColor = isScrolled ? scrolledStyling.textColor : dropdownButtonColor;
+  const getNotchDateDisplay = () => {
+    if (!datePickerValue) return "Any week";
+
+    // Handle Range Object { start, end }
+    if (datePickerValue.start && datePickerValue.end) {
+      const s = dayjs(datePickerValue.start);
+      const e = dayjs(datePickerValue.end);
+
+      // If same month: "Jan 1 - 5"
+      if (s.month() === e.month()) {
+        return `${s.format("MMM D")} - ${e.format("D")}`;
+      }
+      // If different months: "Jan 28 - Feb 2"
+      return `${s.format("MMM D")} - ${e.format("MMM D")}`;
+    }
+
+    // Handle Single Date
+    return dayjs(datePickerValue).format("MMM D");
+  };
+
+  const currentIconColor = isScrolled
+    ? scrolledStyling.outlineAndIconColor
+    : dropdownButtonColor;
+  const currentBorderColor = isScrolled
+    ? scrolledStyling.outlineAndIconColor
+    : dropdownButtonOutlineColor;
+  const currentTextColor = isScrolled
+    ? scrolledStyling.textColor
+    : dropdownButtonColor;
 
   return (
     <>
@@ -308,8 +407,15 @@ const HeaderContent = ({
       >
         <LogoLink href="/">
           <LogoContainer $isScrolled={isScrolled}>
-            <LogoIcon isScrolled={isScrolled} activeColor={scrolledStyling.logoColor} restingColor={logoTitleColor} />
-            <Title $isScrolled={isScrolled} color={isScrolled ? scrolledStyling.logoColor : logoTitleColor}>
+            <LogoIcon
+              isScrolled={isScrolled}
+              activeColor={scrolledStyling.logoColor}
+              restingColor={logoTitleColor}
+            />
+            <Title
+              $isScrolled={isScrolled}
+              color={isScrolled ? scrolledStyling.logoColor : logoTitleColor}
+            >
               classeasily
             </Title>
           </LogoContainer>
@@ -329,20 +435,41 @@ const HeaderContent = ({
                   $isScrolled={isScrolled}
                 >
                   <MenuIconStyled $iconColor={currentIconColor} />
-                  <AvatarWrapper><UserAvatar size={32} /></AvatarWrapper>
+                  <AvatarWrapper>
+                    <UserAvatar size={32} />
+                  </AvatarWrapper>
                 </RoundedButton>
-                <CustomUserMenu 
-                  isOpen={isMenuOpen} 
-                  onClose={() => setIsMenuOpen(false)} 
-                  onNavigate={(p) => router.push(p)} 
-                  onShowSettings={() => { setIsMenuOpen(false); setIsSettingsModalOpen(true); }} 
-                  triggerRef={menuTriggerRef} 
+                <CustomUserMenu
+                  isOpen={isMenuOpen}
+                  onClose={() => setIsMenuOpen(false)}
+                  onNavigate={(p) => router.push(p)}
+                  onShowSettings={() => {
+                    setIsMenuOpen(false);
+                    setIsSettingsModalOpen(true);
+                  }}
+                  triggerRef={menuTriggerRef}
                 />
               </AuthContainer>
             ) : (
               <AuthContainer key="guest">
-                <AuthLink onClick={openLoginModal} color={currentTextColor} $borderColor={currentBorderColor} $hoverColor={dropdownButtonHoverColor} $isScrolled={isScrolled}>Log In</AuthLink>
-                <AuthLink onClick={openRegisterModal} color={currentTextColor} $borderColor={currentBorderColor} $hoverColor={dropdownButtonHoverColor} $isScrolled={isScrolled}>Sign Up</AuthLink>
+                <AuthLink
+                  onClick={openLoginModal}
+                  color={currentTextColor}
+                  $borderColor={currentBorderColor}
+                  $hoverColor={dropdownButtonHoverColor}
+                  $isScrolled={isScrolled}
+                >
+                  Log In
+                </AuthLink>
+                <AuthLink
+                  onClick={openRegisterModal}
+                  color={currentTextColor}
+                  $borderColor={currentBorderColor}
+                  $hoverColor={dropdownButtonHoverColor}
+                  $isScrolled={isScrolled}
+                >
+                  Sign Up
+                </AuthLink>
               </AuthContainer>
             )}
           </AnimatePresence>
@@ -355,15 +482,28 @@ const HeaderContent = ({
             initial={{ y: -40, scale: 0.85, opacity: 0, x: "-50%" }}
             animate={{ y: 0, scale: 1, opacity: 1, x: "-50%" }}
             exit={{ y: -20, scale: 0.9, opacity: 0, x: "-50%" }}
-            transition={{ type: "spring", stiffness: 400, damping: 18, mass: 0.8 }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 18,
+              mass: 0.8,
+            }}
             onClick={() => setIsDrawerOpen(true)}
             whileTap={{ scale: 0.98 }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                flex: 1,
+                minWidth: 0,
+              }}
+            >
               <NotchText>
                 <NotchTitle>{searchTerm || "Find a class?"}</NotchTitle>
                 <NotchSubtitle>
-                  {datePickerValue ? dayjs(datePickerValue).format("MMM D") : "Any week"} • {participantCount} guests
+                  {getNotchDateDisplay()} • {participantCount} guests
                 </NotchSubtitle>
               </NotchText>
               <NotchIcon>
@@ -374,7 +514,10 @@ const HeaderContent = ({
         )}
       </AnimatePresence>
 
-      <SettingsModal open={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
+      <SettingsModal
+        open={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+      />
     </>
   );
 };
@@ -382,14 +525,14 @@ const HeaderContent = ({
 // --- FALLBACK COMPONENT ---
 const HeaderFallback = ({ logoTitleColor = "#fff", topOffset = 0 }) => {
   return (
-    <HeaderWrapper 
-       $isScrolled={false} 
-       $initialColor={logoTitleColor} 
-       $isImpersonating={false} 
-       $topOffset={topOffset}
+    <HeaderWrapper
+      $isScrolled={false}
+      $initialColor={logoTitleColor}
+      $isImpersonating={false}
+      $topOffset={topOffset}
     >
       <div style={{ gridColumn: "1 / 2" }}>
-         <Title color={logoTitleColor}>classeasily</Title>
+        <Title color={logoTitleColor}>classeasily</Title>
       </div>
     </HeaderWrapper>
   );
