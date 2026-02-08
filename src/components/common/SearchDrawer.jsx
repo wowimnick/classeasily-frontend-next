@@ -239,7 +239,7 @@ const LocationInputWrapper = styled.div`
 
 const StyledInput = styled(Input)`
   width: 100%;
-  font-size: 15px !important;
+  font-size: 16px !important; /* Fixed: 16px prevents iOS zoom */
   padding: 8px 0 !important;
   border: none !important;
   outline: none !important;
@@ -330,7 +330,6 @@ const DayGrid = styled.div`
   row-gap: 4px;
 `;
 
-// Updated DayBtn to match BannerSearch logic
 const DayBtn = styled.button`
   width: 40px;
   height: 40px;
@@ -357,7 +356,6 @@ const DayBtn = styled.button`
   }
 `;
 
-// Animated Background Component
 const DayBackground = styled(motion.div)`
   position: absolute;
   top: 0;
@@ -368,8 +366,6 @@ const DayBackground = styled(motion.div)`
   z-index: -1;
   background: ${(props) => props.$bgColor};
   border-radius: ${(props) => props.$radius};
-
-  /* Use explicit width prop to avoid stretched ovals on wide screens */
   width: ${(props) => props.$width || "100%"};
   height: 100%;
 `;
@@ -447,12 +443,6 @@ const CountVal = styled.span`
 
 // --- HELPER COMPONENTS ---
 
-/**
- * CustomCalendar
- * @param {object} value - current date/range value
- * @param {function} setValue - updates value WITHOUT closing drawer
- * @param {function} onSelect - updates value AND closes drawer
- */
 const CustomCalendar = ({ value, setValue, onSelect }) => {
   const [currentDate, setCurrentDate] = useState(dayjs());
 
@@ -475,9 +465,8 @@ const CustomCalendar = ({ value, setValue, onSelect }) => {
     switch (type) {
       case "weekend":
         if (today.day() === 0) {
-          // Sunday
-          start = today.subtract(1, "day"); // Sat
-          end = today; // Sun
+          start = today.subtract(1, "day");
+          end = today;
         } else {
           start = today.day(6);
           end = today.day(6).add(1, "day");
@@ -499,7 +488,6 @@ const CustomCalendar = ({ value, setValue, onSelect }) => {
         start = today;
     }
 
-    // UPDATED: Use onSelect instead of setValue so it closes the drawer automatically
     onSelect({
       start: start.format("YYYY-MM-DD"),
       end: end ? end.format("YYYY-MM-DD") : null,
@@ -507,7 +495,6 @@ const CustomCalendar = ({ value, setValue, onSelect }) => {
   };
 
   const handleDayClick = (day) => {
-    // Basic single selection for tap, use onSelect to close drawer
     const selected = currentDate.date(day);
     onSelect(selected.format("YYYY-MM-DD"));
   };
@@ -544,10 +531,8 @@ const CustomCalendar = ({ value, setValue, onSelect }) => {
           let isSingle = false;
 
           if (selectedStart && !selectedEnd) {
-            // Single date match
             isSingle = thisDate.isSame(selectedStart, "day");
           } else if (selectedStart && selectedEnd) {
-            // Range match
             const s = selectedStart.startOf("day");
             const e = selectedEnd.startOf("day");
             const t = thisDate.startOf("day");
@@ -566,22 +551,18 @@ const CustomCalendar = ({ value, setValue, onSelect }) => {
           const hasSelection =
             isSingle || isRangeStart || isRangeEnd || isInRange;
 
-          // Determine geometric styling for the animation background
           let bgRadius = "0";
           let bgColor = "transparent";
           let bgWidth = "100%";
 
-          // Use the brand color hardcoded or from theme context
           const primaryColor = "#e11d48";
-          const faintColor = "#ffe4e6"; // Light pink for range
+          const faintColor = "#ffe4e6";
 
           if (isSingle) {
             bgRadius = "50%";
-            bgWidth = "40px"; // Constrain to circle
+            bgWidth = "40px";
             bgColor = primaryColor;
           } else if (isRangeStart) {
-            // Use 20px (half height) to make a perfect semi-circle cap
-            // avoiding the stretched oval effect
             bgRadius = "20px 0 0 20px";
             bgWidth = "100%";
             bgColor = primaryColor;
@@ -726,22 +707,31 @@ const SearchDrawer = () => {
 
     // 3. Update the Search Context
     if (typeof result === "string") {
+      // Safety fallback: if string is passed directly, treat as name
       handleLocationSelect(result);
-    } else {
-      handleLocationSelect(result.displayName, {
-        coordinates: result.coordinates,
-        citySlug: result.citySlug,
-        provinceSlug: result.provinceSlug,
-      });
+      return;
     }
+
+    // Normalize data: 'displayName' (Geocoder) vs 'name' (Suggested)
+    const name = result.displayName || result.name;
+
+    // Normalize coordinates: 'coordinates' (Geocoder) vs 'coords' (Suggested)
+    const coords = result.coordinates || result.coords;
+
+    handleLocationSelect(name, {
+      coordinates: coords,
+      citySlug: result.citySlug,
+      provinceSlug: result.provinceSlug,
+    });
   };
 
   const handleSearchClick = () => {
     // PostHog: Track search performed
+    // FIXED: changed 'participants' to 'participantCount' to avoid ReferenceError
     posthog.capture("search_performed", {
       search_term: searchTerm || null,
       has_date_filter: !!datePickerValue,
-      participants: participants > 1 ? participants : null,
+      participants: participantCount > 1 ? participantCount : null,
     });
 
     performSearch();
@@ -787,8 +777,10 @@ const SearchDrawer = () => {
         <SuggestionItem
           key={idx}
           onClick={(e) => {
-            e.stopPropagation(); // Stop propagation to prevent nested drawer issues
-            onSelectLocation(hasTerm ? item : item.name);
+            e.stopPropagation();
+            // FIXED: Always pass the full 'item' object so that coordinates are available.
+            // Previously was passing 'item.name' (string) for suggestions, causing crashes.
+            onSelectLocation(item);
           }}
         >
           <IconBox>{icon}</IconBox>
@@ -833,6 +825,8 @@ const SearchDrawer = () => {
       onOpenChange={setIsDrawerOpen}
       shouldScaleBackground
       preventScrollRestoration={false}
+      // Fixed: Disable repositionInputs to prevent page jumping on mobile keyboard open
+      repositionInputs={false}
     >
       <Drawer.Portal>
         <Overlay />
@@ -848,6 +842,7 @@ const SearchDrawer = () => {
               open={isLocationOpen}
               onOpenChange={setIsLocationOpen}
               shouldScaleBackground
+              repositionInputs={false}
             >
               <Drawer.Trigger asChild>
                 <MenuRow onClick={() => setIsLocationOpen(true)}>
@@ -909,6 +904,7 @@ const SearchDrawer = () => {
               open={isDateOpen}
               onOpenChange={setIsDateOpen}
               shouldScaleBackground
+              repositionInputs={false}
             >
               <Drawer.Trigger asChild>
                 <MenuRow onClick={() => setIsDateOpen(true)}>
@@ -969,6 +965,7 @@ const SearchDrawer = () => {
               open={isWhoOpen}
               onOpenChange={setIsWhoOpen}
               shouldScaleBackground
+              repositionInputs={false}
             >
               <Drawer.Trigger asChild>
                 <MenuRow onClick={() => setIsWhoOpen(true)}>
