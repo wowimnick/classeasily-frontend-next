@@ -172,6 +172,7 @@ const StripePaymentForm = ({
         message: formData.message,
         date: formData.date ? dayjs(formData.date).format("YYYY-MM-DD") : null,
         delivery_method: "email",
+        design_url: designUrl,
       };
 
       const intentData =
