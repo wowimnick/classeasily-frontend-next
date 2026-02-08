@@ -1,315 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import styled from "styled-components";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Search,
-  Calendar,
-  Star,
-  ImagePlus,
-  Wrench,
-  DollarSign,
-} from "lucide-react";
+import { Search } from "lucide-react";
+import styles from "./HowItWorks.module.css";
 
-// --- Styled Components ---
-const HowItWorksWrapper = styled.section`
-  background: linear-gradient(45deg, rgb(175, 16, 16), rgb(218, 84, 88));
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  padding: 15rem 2rem;
-
-  @media (min-width: 768px) {
-    padding: 15rem 2rem;
-  }
-  @media (max-width: 1024px) {
-    padding: 2rem;
-    padding-top: 5rem;
-  }
-  @media (max-width: 768px) {
-    padding: 6rem 2rem;
-  }
-  @media (max-width: 480px) {
-    padding: 2rem 2rem;
-    padding-top: 2rem;
-  }
-`;
-
-const Pattern = styled.div`
-  position: absolute;
-  left: 0;
-  right: 0;
-  width: 100%;
-  height: 400px;
-  background-image: url("/HowItWorks.svg");
-  background-repeat: no-repeat;
-  background-size: 100% auto;
-  opacity: 1;
-  pointer-events: none;
-
-  @media (max-width: 768px) {
-    height: 300px;
-  }
-`;
-
-const TopPattern = styled(Pattern)`
-  top: 0;
-  background-position: top;
-`;
-
-const BottomPattern = styled(Pattern)`
-  bottom: 0;
-  background-position: top;
-  transform: rotate(180deg);
-`;
-
-const ContentContainer = styled.div`
-  max-width: 1000px;
-  width: 100%;
-  margin: auto;
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4rem;
-  flex: 1;
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 4rem 0;
-    gap: 3rem;
-    text-align: center;
-  }
-`;
-
-const FirstElement = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 1rem;
-  flex: 0.35;
-
-  @media (max-width: 1024px) {
-    align-items: center;
-    text-align: center;
-    flex: initial;
-    gap: 0.75rem;
-  }
-  @media (max-width: 768px) {
-    width: 100%;
-    gap: 1rem;
-  }
-`;
-
-const ButtonWrapper = styled.div`
-  display: flex;
-  gap: 0.75rem;
-
-  @media (max-width: 768px) {
-    width: 100%;
-    max-width: 400px;
-    gap: 0.625rem;
-  }
-`;
-
-const RoundedButton = styled(motion.button)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem 1.2rem;
-  border-radius: 35px;
-  background-color: ${(props) =>
-    props.$isSelected ? "#fff" : "rgba(0, 0, 0, 0.1)"};
-  color: ${(props) => (props.$isSelected ? "#3636ad" : "#fff")};
-  cursor: pointer;
-  border: none;
-  font-size: 0.95rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  flex: 1;
-  white-space: nowrap;
-  min-width: max-content;
-
-  &:hover {
-    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  @media (max-width: 768px) {
-    padding: 0.75rem 1.25rem;
-    font-size: 0.9rem;
-  }
-
-  @media (max-width: 480px) {
-    padding: 0.7rem 1rem;
-    font-size: 0.875rem;
-  }
-`;
-
-const SecondElement = styled.div`
-  flex: 0.65;
-  width: 100%;
-
-  @media (max-width: 1024px) {
-    flex: initial;
-    max-width: 800px;
-  }
-`;
-
-const StepsWrapper = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-`;
-
-const Step = styled(motion.div)`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  text-align: center;
-  color: #fff;
-
-  @media (max-width: 768px) {
-    flex-direction: row;
-    text-align: left;
-    gap: 1rem;
-    align-items: flex-start;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 1rem;
-    border-radius: 16px;
-    backdrop-filter: blur(10px);
-  }
-`;
-
-const StepContent = styled.div`
-  @media (max-width: 768px) {
-    flex: 1;
-  }
-`;
-
-const StyledH1 = styled.h1`
-  font-size: 2.5rem;
-  color: #fff;
-  margin: 0 0 0.5rem 0;
-  font-weight: 700;
-  line-height: 1.2;
-
-  @media (max-width: 1024px) {
-    font-size: 2.25rem;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 1.875rem;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 1.625rem;
-  }
-`;
-
-const StyledH2 = styled.h2`
-  font-weight: 600;
-  font-size: 1.25rem;
-  margin: 0 0 0.375rem 0;
-  color: #fff;
-
-  @media (max-width: 768px) {
-    font-size: 1.125rem;
-    margin-bottom: 0.25rem;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 1.05rem;
-  }
-`;
-
-const StyledP = styled.p`
-  font-weight: 400;
-  margin: 0;
-  line-height: 1.5;
-  color: inherit;
-  font-size: 0.95rem;
-
-  @media (max-width: 768px) {
-    font-size: 0.875rem;
-    line-height: 1.45;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 0.8125rem;
-  }
-`;
-
-const StepNumber = styled.div`
-  display: none;
-
-  @media (max-width: 768px) {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    min-width: 28px;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.25);
-    font-size: 1rem;
-    font-weight: 700;
-    color: #fff;
-    flex-shrink: 0;
-  }
-`;
-
-const StyledIcon = styled.div`
-  border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.2);
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  display: inline-flex;
-
-  svg {
-    width: 40px;
-    height: 40px;
-    color: #fff;
-    stroke-width: 2;
-  }
-
-  @media (max-width: 768px) {
-    padding: 1rem;
-    margin-bottom: 0;
-    background-color: rgba(0, 0, 0, 0.15);
-
-    svg {
-      width: 28px;
-      height: 28px;
-      stroke-width: 2.25;
-    }
-  }
-`;
-
-// --- HowItWorks Component ---
 const HowItWorks = () => {
   const [selectedButton, setSelectedButton] = useState("forExplorers");
-
-  const handleButtonClick = (button) => {
-    setSelectedButton(button);
-  };
 
   const getStepTitle = (stepNumber) => {
     if (selectedButton === "forHosts") {
@@ -364,6 +60,8 @@ const HowItWorks = () => {
   };
 
   const getStepIcon = (step) => {
+    // Note: lord-icon is a custom element.
+    // We add suppressHydrationWarning to avoid React complaining about custom attributes.
     if (selectedButton === "forHosts") {
       switch (step) {
         case 1:
@@ -438,58 +136,56 @@ const HowItWorks = () => {
   };
 
   return (
-    <HowItWorksWrapper aria-labelledby="how-it-works-title">
-      <TopPattern />
-      <BottomPattern />
-      <ContentContainer>
-        <FirstElement>
-          <StyledH1 id="how-it-works-title">
+    <section className={styles.section} aria-labelledby="how-it-works-title">
+      <div className={`${styles.pattern} ${styles.patternTop}`} />
+      <div className={`${styles.pattern} ${styles.patternBottom}`} />
+
+      <div className={styles.container}>
+        <div className={styles.firstElement}>
+          <h1 className={styles.h1} id="how-it-works-title">
             How does ClassEasily work?
-          </StyledH1>
-          <ButtonWrapper>
-            <RoundedButton
-              onClick={() => handleButtonClick("forExplorers")}
-              $isSelected={selectedButton === "forExplorers"}
-              whileTap={{ scale: 0.97 }}
+          </h1>
+          <div className={styles.buttonWrapper}>
+            <button
+              onClick={() => setSelectedButton("forExplorers")}
+              className={`${styles.toggleButton} ${selectedButton === "forExplorers" ? styles.active : ""}`}
               aria-pressed={selectedButton === "forExplorers"}
             >
               for Adventurers
-            </RoundedButton>
-            <RoundedButton
-              onClick={() => handleButtonClick("forHosts")}
-              $isSelected={selectedButton === "forHosts"}
-              whileTap={{ scale: 0.97 }}
+            </button>
+            <button
+              onClick={() => setSelectedButton("forHosts")}
+              className={`${styles.toggleButton} ${selectedButton === "forHosts" ? styles.active : ""}`}
               aria-pressed={selectedButton === "forHosts"}
             >
               for Hosts
-            </RoundedButton>
-          </ButtonWrapper>
-        </FirstElement>
-        <SecondElement>
-          <StepsWrapper role="list">
-            <AnimatePresence mode="wait">
-              {[1, 2, 3].map((step, index) => (
-                <Step
-                  key={`${selectedButton}-${step}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3, delay: 0.1 * index }}
-                  role="listitem"
-                >
-                  <StepNumber>{step}</StepNumber>
-                  <StyledIcon>{getStepIcon(step)}</StyledIcon>
-                  <StepContent>
-                    <StyledH2>{getStepTitle(step)}</StyledH2>
-                    <StyledP>{getStepDescription(step)}</StyledP>
-                  </StepContent>
-                </Step>
-              ))}
-            </AnimatePresence>
-          </StepsWrapper>
-        </SecondElement>
-      </ContentContainer>
-    </HowItWorksWrapper>
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.secondElement}>
+          <div className={styles.stepsGrid} role="list">
+            {[1, 2, 3].map((step, index) => (
+              <div
+                key={`${selectedButton}-${step}`}
+                className={styles.stepCard}
+                role="listitem"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className={styles.stepNumber}>{step}</div>
+                <div className={styles.iconWrapper} suppressHydrationWarning>
+                  {getStepIcon(step)}
+                </div>
+                <div className={styles.stepContent}>
+                  <h2 className={styles.h2}>{getStepTitle(step)}</h2>
+                  <p className={styles.p}>{getStepDescription(step)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 };
 

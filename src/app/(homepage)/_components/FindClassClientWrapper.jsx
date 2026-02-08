@@ -1,66 +1,42 @@
 "use client";
 
-import { Component } from "react";
+import React from "react";
 import FindClass from "./FindClass";
 
-// Error Boundary for graceful error handling
-class ErrorBoundary extends Component {
+// Simple Error Boundary
+class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false };
   }
-
   static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+    return { hasError: true };
   }
-
   componentDidCatch(error, errorInfo) {
     console.error("FindClass Error:", error, errorInfo);
   }
-
   render() {
-    if (this.state.hasError) {
-      return (
-        <div
-          style={{
-            padding: "4rem 14rem",
-            textAlign: "center",
-            color: "#666",
-          }}
-        >
-          <h3>Unable to load experiences</h3>
-          <p>Please refresh the page or try again later.</p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              marginTop: "1rem",
-              padding: "0.5rem 1.5rem",
-              background: "#007bff",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }}
-          >
-            Refresh Page
-          </button>
-        </div>
-      );
-    }
+    if (this.state.hasError) return null; // Fail silently or show a small placeholder
     return this.props.children;
   }
 }
 
-// Client wrapper component that receives server data
-export default function FindClassClientWrapper({
-  initialClasses = [],
-  initialNextPageUrl = null,
-}) {
+export default function FindClassClientWrapper(props) {
+  // Destructure the props coming from page.jsx
+  const { initialClasses, initialNextPageUrl, title, subtitle, seeAllLink } =
+    props;
+
   return (
     <ErrorBoundary>
       <FindClass
-        initialClasses={initialClasses}
-        initialNextPageUrl={initialNextPageUrl}
+        // 1. Pass the Title and Subtitle!
+        title={title}
+        subtitle={subtitle}
+        seeAllLink={seeAllLink}
+        // 2. RENAME prop: FindClass expects 'classes', page sends 'initialClasses'
+        classes={initialClasses}
+        // 3. Pass other data
+        nextPageUrl={initialNextPageUrl}
       />
     </ErrorBoundary>
   );

@@ -39,9 +39,7 @@ const UserAvatar = dynamic(() => import("@/components/common/UserAvatar"), {
   ),
 });
 
-const LogoIcon = dynamic(() => import("@/components/common/logoIcon"), {
-  ssr: false,
-});
+import LogoIcon from "@/components/common/logoIcon";
 
 const SettingsModal = dynamic(
   () => import("@/components/header/SettingsDrawer"),

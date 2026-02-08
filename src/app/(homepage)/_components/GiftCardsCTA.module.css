@@ -1,0 +1,154 @@
+/* GiftCardsCTA.module.css */
+.section {
+  padding: 5rem 2rem;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(
+    circle at top center,
+    rgba(255, 255, 255, 0.8),
+    #ffffff 60%
+  );
+}
+
+.wrapper {
+  max-width: 1300px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.canvasArea {
+  position: relative;
+  height: 500px;
+  width: 100%;
+  z-index: 1;
+  /* Placeholder background while loading */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.titleMobile {
+  display: none;
+  font-size: clamp(2rem, 5vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  color: #111;
+  text-align: center;
+  margin: 0;
+  width: 100%;
+  order: 1;
+}
+
+.titleDesktop {
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  font-weight: 700;
+  margin-bottom: 1.2rem;
+  line-height: 1.1;
+  color: #1a1a1a;
+  margin-top: 0;
+}
+
+.description {
+  font-size: clamp(1rem, 1.5vw, 1.1rem);
+  color: #111;
+  line-height: 1.6;
+  margin-bottom: 2.5rem;
+  margin-top: 0;
+  max-width: 50ch;
+}
+
+/* Button override to match Ant Design but with static class */
+.ctaButton {
+  padding: 1rem 2.5rem !important;
+  height: auto !important;
+  line-height: 1.5 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* 2D Fallback for when 3D is loading/disabled */
+.fallbackContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fallbackCard {
+  position: absolute;
+  width: 280px;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  transition: transform 0.5s ease;
+}
+
+.cardBack {
+  transform: translate(-40px, -20px) rotate(-10deg);
+  z-index: 1;
+}
+
+.cardFront {
+  transform: translate(40px, 20px) rotate(5deg);
+  z-index: 2;
+}
+
+@media (max-width: 1024px) {
+  .section {
+    padding: 4rem 1.5rem;
+  }
+
+  .wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  .content {
+    align-items: center;
+    text-align: center;
+    order: 3;
+    width: 100%;
+  }
+
+  .canvasArea {
+    height: 350px;
+    order: 2;
+    margin: -1rem 0;
+  }
+
+  .titleMobile {
+    display: block;
+  }
+  .titleDesktop {
+    display: none;
+  }
+
+  .description {
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .canvasArea {
+    height: 300px;
+  }
+  .fallbackCard {
+    width: 200px;
+  }
+}

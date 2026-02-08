@@ -1,0 +1,272 @@
+/* HowItWorks.module.css */
+.section {
+  background: linear-gradient(45deg, rgb(175, 16, 16), rgb(218, 84, 88));
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 15rem 2rem;
+}
+
+.pattern {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 400px;
+  background-image: url("/HowItWorks.svg");
+  background-repeat: no-repeat;
+  background-size: 100% auto;
+  pointer-events: none;
+}
+
+.patternTop {
+  top: 0;
+  background-position: top;
+}
+
+.patternBottom {
+  bottom: 0;
+  background-position: top;
+  transform: rotate(180deg);
+}
+
+.container {
+  max-width: 1000px;
+  width: 100%;
+  margin: auto;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4rem;
+  flex: 1;
+}
+
+.firstElement {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1rem;
+  flex: 0.35;
+}
+
+.buttonWrapper {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.toggleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 1.2rem;
+  border-radius: 35px;
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #fff;
+  cursor: pointer;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  flex: 1;
+  white-space: nowrap;
+  min-width: max-content;
+}
+
+.toggleButton:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.toggleButton.active {
+  background-color: #fff;
+  color: #3636ad;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.secondElement {
+  flex: 0.65;
+  width: 100%;
+}
+
+.stepsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+/* Animation for tab switching */
+.stepCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  color: #fff;
+  opacity: 0; /* Fix for flash: start invisible */
+  animation: fadeIn 0.4s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.h1 {
+  font-size: 2.5rem;
+  color: #fff;
+  margin: 0 0 0.5rem 0;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.h2 {
+  font-weight: 600;
+  font-size: 1.25rem;
+  margin: 0 0 0.375rem 0;
+  color: #fff;
+}
+
+.p {
+  font-weight: 400;
+  margin: 0;
+  line-height: 1.5;
+  color: inherit;
+  font-size: 0.95rem;
+}
+
+.stepNumber {
+  display: none;
+}
+
+.iconWrapper {
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  display: inline-flex;
+}
+
+.iconWrapper svg {
+  width: 40px;
+  height: 40px;
+  color: #fff;
+  stroke-width: 2;
+}
+
+/* --- Responsive --- */
+@media (max-width: 1024px) {
+  .section {
+    padding: 5rem 2rem;
+  }
+  .container {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 4rem 0;
+    gap: 3rem;
+    text-align: center;
+  }
+  .firstElement {
+    align-items: center;
+    text-align: center;
+    flex: initial;
+    gap: 0.75rem;
+  }
+  .secondElement {
+    flex: initial;
+    max-width: 800px;
+  }
+  .h1 {
+    font-size: 2.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 6rem 2rem;
+  }
+  .pattern {
+    height: 300px;
+  }
+  .firstElement {
+    width: 100%;
+    gap: 1rem;
+  }
+  .buttonWrapper {
+    width: 100%;
+    max-width: 400px;
+    gap: 0.625rem;
+  }
+  .stepsGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .stepCard {
+    flex-direction: row;
+    text-align: left;
+    gap: 1rem;
+    align-items: flex-start;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+  }
+
+  .stepContent {
+    flex: 1;
+  }
+  .stepNumber {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.25);
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .iconWrapper {
+    padding: 1rem;
+    margin-bottom: 0;
+    background-color: rgba(0, 0, 0, 0.15);
+  }
+
+  .iconWrapper svg {
+    width: 28px;
+    height: 28px;
+    stroke-width: 2.25;
+  }
+  .h1 {
+    font-size: 1.875rem;
+  }
+  .toggleButton {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .section {
+    padding: 2rem;
+  }
+  .h1 {
+    font-size: 1.625rem;
+  }
+}

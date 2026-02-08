@@ -27,7 +27,6 @@ import { X, AlertCircle, SidebarOpen, Eye } from "lucide-react";
 
 import { businessService } from "@/services/apiService";
 import BusinessSettings from "./tabs/settings/BusinessSettings";
-import AppGlobalStyles from "@/app/GlobalStyles";
 import { useAuth } from "@/lib/auth-client";
 
 const { Title, Text } = Typography;
@@ -674,7 +673,7 @@ const menuItemPermissions = {
 const SideMenuComponent = memo(
   forwardRef(({ onMenuSelect, activeKey }, ref) => {
     console.error(
-      `[SideMenuComponent] Render start for activeKey: "${activeKey}"`
+      `[SideMenuComponent] Render start for activeKey: "${activeKey}"`,
     );
     const [isMobile, setIsMobile] = useState(false);
     const [drawerVisible, setDrawerVisible] = useState(false);
@@ -699,7 +698,7 @@ const SideMenuComponent = memo(
       isBusinessClickable && businessData.slug
         ? () => {
             console.error(
-              "[SideMenuComponent] BusinessInfoWrapper click: Navigating to business page"
+              "[SideMenuComponent] BusinessInfoWrapper click: Navigating to business page",
             );
             router.push(`/business/${businessData.slug}`);
           }
@@ -733,7 +732,7 @@ const SideMenuComponent = memo(
 
       openSettingsDrawer: (tab = "general", sectionId = null) => {
         console.error(
-          `[SideMenuComponent] openSettingsDrawer called with tab: ${tab}, section: ${sectionId}`
+          `[SideMenuComponent] openSettingsDrawer called with tab: ${tab}, section: ${sectionId}`,
         );
         activeSettingsTab.current = tab;
         if (sectionId) {
@@ -752,7 +751,7 @@ const SideMenuComponent = memo(
 
     useEffect(() => {
       console.error(
-        "[SideMenuComponent] useEffect (mobile transform origin) triggered"
+        "[SideMenuComponent] useEffect (mobile transform origin) triggered",
       );
       if (typeof window === "undefined") return;
 
@@ -782,7 +781,7 @@ const SideMenuComponent = memo(
     const fetchBusinessProfile = useCallback(
       async (context = "explicit call") => {
         console.error(
-          `[SideMenuComponent] fetchBusinessProfile CALLED (context: ${context})`
+          `[SideMenuComponent] fetchBusinessProfile CALLED (context: ${context})`,
         );
         setLoadingBusiness(true);
         setBusinessError(null);
@@ -793,7 +792,7 @@ const SideMenuComponent = memo(
             setBusinessData(result.data);
           } else if (result.status === 404) {
             console.error(
-              "[SideMenuComponent] fetchBusinessProfile NOT FOUND (404)"
+              "[SideMenuComponent] fetchBusinessProfile NOT FOUND (404)",
             );
             setBusinessData({
               businessName: "Create Business Profile",
@@ -803,7 +802,7 @@ const SideMenuComponent = memo(
             });
           } else {
             console.error(
-              "[SideMenuComponent] fetchBusinessProfile FAILED (API error)"
+              "[SideMenuComponent] fetchBusinessProfile FAILED (API error)",
             );
             setBusinessError(result.error || "Failed to load business info");
             setBusinessData(null);
@@ -811,7 +810,7 @@ const SideMenuComponent = memo(
         } catch (error) {
           console.error(
             "[SideMenuComponent] fetchBusinessProfile CATCH ERROR:",
-            error
+            error,
           );
           setBusinessError("Network error occurred while fetching profile");
           setBusinessData(null);
@@ -820,26 +819,26 @@ const SideMenuComponent = memo(
           setLoadingBusiness(false);
         }
       },
-      []
+      [],
     );
 
     useEffect(() => {
       console.error(
-        "[SideMenuComponent] useEffect (initial fetchBusinessProfile) triggered"
+        "[SideMenuComponent] useEffect (initial fetchBusinessProfile) triggered",
       );
       fetchBusinessProfile("initial mount");
     }, [fetchBusinessProfile]);
 
     useEffect(() => {
       console.error(
-        "[SideMenuComponent] useEffect (resize listener) triggered"
+        "[SideMenuComponent] useEffect (resize listener) triggered",
       );
       const handleResize = () => setIsMobile(window.innerWidth <= 1024);
       handleResize();
       window.addEventListener("resize", handleResize);
       return () => {
         console.error(
-          "[SideMenuComponent] useEffect (resize listener) cleanup"
+          "[SideMenuComponent] useEffect (resize listener) cleanup",
         );
         window.removeEventListener("resize", handleResize);
       };
@@ -847,7 +846,7 @@ const SideMenuComponent = memo(
 
     useEffect(() => {
       const parentKey = menuItemsConfig.find((item) =>
-        item.children?.some((child) => child.key === activeKey)
+        item.children?.some((child) => child.key === activeKey),
       )?.key;
 
       if (parentKey) {
@@ -862,7 +861,7 @@ const SideMenuComponent = memo(
 
     useEffect(() => {
       console.error(
-        "[SideMenuComponent] useEffect (forceOpenSettingsTab) triggered"
+        "[SideMenuComponent] useEffect (forceOpenSettingsTab) triggered",
       );
       if (typeof window === "undefined") return;
 
@@ -872,7 +871,7 @@ const SideMenuComponent = memo(
         activeSettingsTab.current = forcedTab;
         setSettingsDrawerVisible(true);
         console.error(
-          "[SideMenuComponent] Force opening settings drawer, fetching business profile."
+          "[SideMenuComponent] Force opening settings drawer, fetching business profile.",
         );
         fetchBusinessProfile("after Stripe redirect");
       }
@@ -880,14 +879,14 @@ const SideMenuComponent = memo(
 
     const toggleMobileDrawer = () => {
       console.error(
-        `[SideMenuComponent] toggleMobileDrawer called, drawerVisible: ${!drawerVisible}`
+        `[SideMenuComponent] toggleMobileDrawer called, drawerVisible: ${!drawerVisible}`,
       );
       setDrawerVisible(!drawerVisible);
     };
 
     const handleMenuClick = (e) => {
       console.error(
-        `[SideMenuComponent] handleMenuClick called with key: ${e.key}`
+        `[SideMenuComponent] handleMenuClick called with key: ${e.key}`,
       );
       if (e.key === "settings") {
         activeSettingsTab.current = "general";
@@ -902,12 +901,12 @@ const SideMenuComponent = memo(
 
     const handleOpenChange = (keys) => {
       console.error(
-        `[SideMenuComponent] handleOpenChange called with keys: ${keys}`
+        `[SideMenuComponent] handleOpenChange called with keys: ${keys}`,
       );
       const latestOpenKey = keys.find((key) => !openKeys.includes(key));
       if (
         menuItemsConfig.some(
-          (item) => item.key === latestOpenKey && item.children
+          (item) => item.key === latestOpenKey && item.children,
         )
       ) {
         setOpenKeys(latestOpenKey ? [latestOpenKey] : []);
@@ -925,14 +924,14 @@ const SideMenuComponent = memo(
 
     const handleSettingsTabChange = (key) => {
       console.error(
-        `[SideMenuComponent] handleSettingsTabChange called with key: ${key}`
+        `[SideMenuComponent] handleSettingsTabChange called with key: ${key}`,
       );
       activeSettingsTab.current = key;
     };
 
     const handleSettingsSave = () => {
       console.error(
-        "[SideMenuComponent] handleSettingsSave called, re-fetching business profile"
+        "[SideMenuComponent] handleSettingsSave called, re-fetching business profile",
       );
       fetchBusinessProfile("after settings save");
     };
@@ -968,33 +967,33 @@ const SideMenuComponent = memo(
             const primaryColor = augmentedTheme.token.colorPrimary;
             icon.setAttribute(
               "colors",
-              `primary:${primaryColor},secondary:${primaryColor}`
+              `primary:${primaryColor},secondary:${primaryColor}`,
             );
           } else {
             icon.setAttribute("colors", "primary:#666,secondary:#666");
           }
         }
       },
-      []
+      [],
     );
 
     useEffect(() => {
       console.error(
-        "[SideMenuComponent] useEffect (icon color update) triggered"
+        "[SideMenuComponent] useEffect (icon color update) triggered",
       );
       const updateAllIconColors = () => {
         const menuItems = document.querySelectorAll(
-          ".ant-menu-item, .ant-menu-submenu-title"
+          ".ant-menu-item, .ant-menu-submenu-title",
         );
         menuItems.forEach((item) => {
           const isSelected =
             item.classList.contains("ant-menu-item-selected") ||
             item.parentElement.classList.contains(
-              "ant-menu-submenu-selected"
+              "ant-menu-submenu-selected",
             ) ||
             item.parentElement.classList.contains("ant-menu-submenu-open");
           const isSubmenuTitle = item.classList.contains(
-            "ant-menu-submenu-title"
+            "ant-menu-submenu-title",
           );
           updateIconColors(item, isSelected, false, isSubmenuTitle);
         });
@@ -1009,7 +1008,7 @@ const SideMenuComponent = memo(
 
     const getMenuItemsForAntd = useMemo(() => {
       console.error(
-        "[SideMenuComponent] useMemo (getMenuItemsForAntd) re-calculated"
+        "[SideMenuComponent] useMemo (getMenuItemsForAntd) re-calculated",
       );
       const attachRefToLabel = (label, key) => {
         let refToAttach;
@@ -1064,7 +1063,7 @@ const SideMenuComponent = memo(
       const filteredConfig = menuItemsConfig.reduce((acc, item) => {
         if (item.children) {
           const visibleChildren = item.children.filter((child) =>
-            hasPermission(child.key)
+            hasPermission(child.key),
           );
           if (visibleChildren.length > 0) {
             acc.push({ ...item, children: visibleChildren });
@@ -1290,7 +1289,7 @@ const SideMenuComponent = memo(
             icon={<AlertCircle size={16} />}
             onClick={() => {
               console.error(
-                "[SideMenuComponent] Help & Docs (desktop) clicked"
+                "[SideMenuComponent] Help & Docs (desktop) clicked",
               );
               router.push("/business/help/");
             }}
@@ -1371,12 +1370,11 @@ const SideMenuComponent = memo(
     };
 
     console.error(
-      `[SideMenuComponent] Render end for activeKey: "${activeKey}"`
+      `[SideMenuComponent] Render end for activeKey: "${activeKey}"`,
     );
     return (
       <ThemeProvider theme={augmentedTheme}>
         <ConfigProvider theme={augmentedTheme}>
-          <AppGlobalStyles />
           <LocalGlobalStyleForSkeleton />
           <SideMenuWrapper>
             <DesktopSideMenu
@@ -1491,7 +1489,7 @@ const SideMenuComponent = memo(
         </ConfigProvider>
       </ThemeProvider>
     );
-  })
+  }),
 );
 
 SideMenuComponent.displayName = "SideMenuComponent";

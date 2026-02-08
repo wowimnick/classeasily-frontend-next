@@ -64,7 +64,6 @@ import {
 import NumberFlow from "@number-flow/react";
 import Link from "next/link";
 
-import AppGlobalStyles from "@/app/GlobalStyles";
 import { formatUTCToUserDisplay, formatNaiveDate } from "@/services/utils";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { businessService, scheduleService } from "@/services/apiService";
@@ -680,7 +679,9 @@ const ActionPromptContainer = styled.div`
   justify-content: space-between;
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.08);
   gap: 16px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 
   &:hover {
     transform: translateY(-1px);
@@ -1027,7 +1028,7 @@ const AnimatedNumberFlow = ({
   const [displayValue, setDisplayValue] = useState(0);
   const targetValue = useMemo(
     () => (value == null || isNaN(value) ? 0 : Number(value)),
-    [value]
+    [value],
   );
   useEffect(() => {
     if (!loading) {
@@ -1137,7 +1138,7 @@ const Overview = forwardRef((props, ref) => {
     setEditingScheduleId(cls.schedule_instance_id);
     try {
       const result = await scheduleService.fetchInstance(
-        cls.schedule_instance_id
+        cls.schedule_instance_id,
       );
       if (result.success && result.data) {
         const apiData = result.data;
@@ -1174,7 +1175,7 @@ const Overview = forwardRef((props, ref) => {
         });
       } else {
         message.error(
-          getErrorMessage(result.error) || "Failed to load schedule details."
+          getErrorMessage(result.error) || "Failed to load schedule details.",
         );
       }
     } catch (err) {
@@ -1231,7 +1232,7 @@ const Overview = forwardRef((props, ref) => {
       "monthly_revenue",
       "average_rating",
     ],
-    []
+    [],
   );
 
   const todaySnap = overviewData?.today_snapshot || {};
@@ -1262,7 +1263,6 @@ const Overview = forwardRef((props, ref) => {
   if (error && !loading)
     return (
       <ConfigProvider theme={localAntDTheme}>
-        <AppGlobalStyles />
         <DashboardWrapper>
           <Alert
             message="Error Loading Dashboard"
@@ -1276,7 +1276,6 @@ const Overview = forwardRef((props, ref) => {
   if (!loading && !error && !overviewData)
     return (
       <ConfigProvider theme={localAntDTheme}>
-        <AppGlobalStyles />
         <DashboardWrapper>
           <Empty description="No overview data available." />
         </DashboardWrapper>
@@ -1285,7 +1284,6 @@ const Overview = forwardRef((props, ref) => {
 
   return (
     <ConfigProvider theme={localAntDTheme}>
-      <AppGlobalStyles />
       <DashboardWrapper>
         <DashboardHeader ref={overviewTitleRef}>
           <div>
@@ -1664,7 +1662,7 @@ const Overview = forwardRef((props, ref) => {
                         cls.max_occupancy > 0
                           ? Math.min(
                               100,
-                              (cls.current_occupancy / cls.max_occupancy) * 100
+                              (cls.current_occupancy / cls.max_occupancy) * 100,
                             )
                           : 0;
                       const occupancyColor =
@@ -1950,7 +1948,7 @@ const Overview = forwardRef((props, ref) => {
                         ? formatUTCToUserDisplay(
                             activity.timestamp,
                             userTimeZone,
-                            { dateTimeFormat: "p, MMM d" }
+                            { dateTimeFormat: "p, MMM d" },
                           )
                         : "N/A";
                       return (
@@ -1969,7 +1967,7 @@ const Overview = forwardRef((props, ref) => {
                                 ? formatUTCToUserDisplay(
                                     activity.timestamp,
                                     userTimeZone,
-                                    { dateTimeFormat: "PP p (zzz)" }
+                                    { dateTimeFormat: "PP p (zzz)" },
                                   )
                                 : ""
                             }

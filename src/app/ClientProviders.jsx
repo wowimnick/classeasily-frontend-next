@@ -7,7 +7,6 @@ import { AuthProvider } from "@/context/AuthContext";
 import { useAuthStore } from "@/lib/auth-client";
 import { theme } from "@/components/theme";
 import StyledComponentsRegistry from "@/lib/registry";
-import GlobalStyles from "./GlobalStyles";
 import AnalyticsProvider from "./providers/AnalyticsProvider";
 import CookieConsentProvider from "./providers/CookieConsentProvider";
 import { ToastProvider } from "@/lib/toast/ToastContext";
@@ -71,7 +70,6 @@ export default function ClientProviders({ children }) {
         getPopupContainer={() => document.body}
       >
         <ThemeProvider theme={memoizedTheme}>
-          <GlobalStyles />
           <ToastProvider>
             <AuthProvider>
               <SessionMonitor />

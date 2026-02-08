@@ -1,0 +1,191 @@
+/* Testimonials.module.css */
+.section {
+  background: linear-gradient(to bottom, #ffffff 50%, #fff6f6 100%);
+  padding: 5rem 0;
+  overflow: hidden;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+}
+
+.title {
+  font-size: clamp(1.8rem, 4vw, 2.2rem);
+  font-weight: 700;
+  color: #1e1e1e;
+  margin: 0;
+}
+
+.controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.btnGroup {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.controlBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid #e92e31;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #e92e31;
+}
+
+.controlBtn:hover {
+  background-color: #fff0f0;
+}
+
+.controlBtn.active {
+  background-color: #e92e31;
+  color: white;
+}
+
+/* THE TRACK: Native Scroll Snap */
+.trackContainer {
+  position: relative;
+  /* Mask gradient for fade effect on edges */
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 5%,
+    black 95%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 5%,
+    black 95%,
+    transparent 100%
+  );
+}
+
+.track {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 2rem; /* Space for shadow */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  scroll-behavior: smooth;
+}
+
+.track::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.card {
+  scroll-snap-align: start;
+  flex: 0 0 400px;
+  background-color: #ffffff;
+  border-radius: 1rem;
+  padding: 1.8rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: none;
+  gap: 1.2rem;
+}
+
+@media (max-width: 900px) {
+  .card {
+    flex: 0 0 350px;
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 0 1rem;
+  }
+  .headerRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  .trackContainer {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+  .card {
+    flex: 0 0 85vw;
+    padding: 1.4rem;
+  }
+}
+
+/* Card Internals */
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stars {
+  display: flex;
+  gap: 0.2rem;
+  color: #00b67a;
+}
+.date {
+  font-size: 0.85rem;
+  color: #666666;
+}
+.quote {
+  font-size: 0.95rem;
+  color: #555555;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #eee;
+}
+.userDetails {
+  display: flex;
+  flex-direction: column;
+}
+.userName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e1e1e;
+}
+.userTitle {
+  font-size: 0.85rem;
+  color: #666666;
+}

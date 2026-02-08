@@ -12,6 +12,7 @@ export default function CookieConsentProvider({ children }) {
     setIsClient(true);
 
     // Check permanent consent (Local Storage)
+    localStorage.setItem("cookie_consent", "true");
     const consent = localStorage.getItem("cookie_consent");
     // Check temporary dismissal (Session Storage)
     const dismissed = sessionStorage.getItem("cookie_consent_dismissed");

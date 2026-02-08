@@ -6,9 +6,10 @@ import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import HomeClassCard from "@/components/homepage/HomeClassCard";
-// ADDED: Import geolocation hook to calculate distances on client side
+// Import geolocation hook to calculate distances on client side
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 
+// --- STYLED COMPONENTS (FROM ORIGINAL) ---
 const MainWrapper = styled.section`
   display: flex;
   flex-direction: column;
@@ -65,7 +66,6 @@ const StyledTitle = styled.h3`
     display: flex;
     align-items: center;
     gap: 8px;
-
     &:hover {
       color: #000;
       text-decoration: none;
@@ -149,10 +149,6 @@ const ScrollButton = styled.button`
     cursor: default;
     border-color: #eee;
   }
-
-  svg {
-    stroke-width: 2.5px;
-  }
 `;
 
 const SeeAllLink = styled(Link)`
@@ -174,6 +170,7 @@ const SeeAllLink = styled(Link)`
   }
 `;
 
+// Helper for client-side distance calc
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
   if ([lat1, lon1, lat2, lon2].some((coord) => coord == null)) return null;
   const R = 6371;
@@ -189,18 +186,16 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-const ClassRow = ({
+const FindClass = ({
   title,
   subtitle,
   classes = [],
   seeAllLink = "/explore",
-  userLocation = null, // Can be passed from parent if available
+  userLocation = null,
   style = {},
 }) => {
-  // Use client-side hook for location if not provided by parent
+  // Client side geolocation check for distances
   const { location: ipLocation } = useIpGeolocation();
-
-  // Determine final location to use for distance calculation
   const finalLocation = userLocation || ipLocation;
 
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -263,7 +258,6 @@ const ClassRow = ({
           <EmblaContainer>
             {classes.map((cls, index) => {
               let dist = null;
-              // Calculate distance if we have user location (from hook or prop)
               if (finalLocation && cls.coordinates) {
                 const [lat, lng] = cls.coordinates.split(",").map(Number);
                 dist = getDistanceFromLatLonInKm(
@@ -278,7 +272,6 @@ const ClassRow = ({
                 <div className="embla__slide" key={cls.classId || index}>
                   <HomeClassCard
                     {...cls}
-                    // Explicitly pass location fallback if the object keys vary
                     location={cls.location || cls.business_city}
                     rating={cls.average_rating}
                     totalReviews={cls.review_count}
@@ -295,4 +288,4 @@ const ClassRow = ({
   );
 };
 
-export default ClassRow;
+export default React.memo(FindClass);

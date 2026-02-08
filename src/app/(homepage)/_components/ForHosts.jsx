@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import styled from "styled-components";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useInView } from "framer-motion";
 import Link from "next/link";
 import { Button } from "antd";
 import {
@@ -35,7 +35,7 @@ const Container = styled.div`
   align-items: center;
 
   @media (max-width: 992px) {
-    display: flex; /* Changed to flex to control order */
+    display: flex;
     flex-direction: column;
     gap: 2.5rem;
     align-items: center;
@@ -50,12 +50,11 @@ const TextContent = styled.div`
   @media (max-width: 992px) {
     align-items: center;
     text-align: center;
-    order: 3; /* Places Description + Button LAST on mobile */
+    order: 3;
     width: 100%;
   }
 `;
 
-// Original Heading CSS restored exactly
 const Heading = styled.h2`
   font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 700;
@@ -68,23 +67,21 @@ const Heading = styled.h2`
     color: #f81e3e;
   }
 
-  /* Hide this specific instance on mobile because we use MobileHeading instead */
   @media (max-width: 992px) {
     display: none;
   }
 `;
 
-// Duplicate of Heading for Mobile (Order 1)
 const MobileHeading = styled.h2`
   display: none;
-  font-size: clamp(2rem, 5vw, 3rem); /* Same sizing logic */
+  font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 700;
   color: #111;
   line-height: 1.1;
   letter-spacing: -0.02em;
   margin: 0;
   text-align: center;
-  order: 1; /* Places Title FIRST on mobile */
+  order: 1;
 
   span {
     color: #f81e3e;
@@ -98,7 +95,7 @@ const MobileHeading = styled.h2`
 const SubText = styled.p`
   font-size: 1.125rem;
   line-height: 1.6;
-  color: #000; /* Changed to black as requested */
+  color: #000;
   margin: 0;
   max-width: 480px;
 
@@ -117,7 +114,7 @@ const VisualWrapper = styled.div`
 
   @media (max-width: 992px) {
     height: 340px;
-    order: 2; /* Places Animation MIDDLE on mobile */
+    order: 2;
     margin-bottom: 1rem;
   }
 `;
@@ -145,6 +142,7 @@ const CardBase = styled(motion.div)`
   z-index: 2;
   border: 1px solid rgba(0, 0, 0, 0.03);
   overflow: hidden;
+  will-change: transform; /* Performance Hint */
 `;
 
 const BookingCard = styled(CardBase)`
@@ -202,7 +200,7 @@ const DashHeader = styled.div`
 const Label = styled.div`
   font-size: 0.7rem;
   text-transform: uppercase;
-  color: #000; /* Black */
+  color: #000;
   letter-spacing: 0.05em;
   font-weight: 600;
   margin-bottom: 4px;
@@ -233,6 +231,7 @@ const ListItem = styled(motion.div)`
   border: 1px solid #f0f0f0;
   border-radius: 8px;
   font-size: 0.85rem;
+  will-change: transform, opacity;
 `;
 
 const Avatar = styled.div`
@@ -254,6 +253,7 @@ const Cursor = styled(motion.div)`
   position: absolute;
   z-index: 20;
   pointer-events: none;
+  will-change: transform; /* Critical for smooth movement */
 
   svg {
     filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
@@ -274,6 +274,7 @@ const PaymentParticle = styled(motion.div)`
   align-items: center;
   justify-content: center;
   white-space: nowrap;
+  will-change: transform, opacity;
 `;
 
 // --- Simulation Logic ---
@@ -288,14 +289,12 @@ const NAMES = [
   "Emma W.",
   "David R.",
 ];
-
 const EVENTS = [
   "Pottery 101",
   "Wine Tasting",
   "Sushi Rolling",
   "Cooking Workshop",
 ];
-
 const COLORS = ["#f81e3e", "#3b82f6", "#f59e0b", "#8b5cf6"];
 
 const getRandomBooking = () => ({
@@ -324,22 +323,55 @@ const INITIAL_BOOKINGS = [
 ];
 
 const RevenueSimulation = () => {
+  const containerRef = useRef(null);
+  const isInView = useInView(containerRef, { margin: "0px 0px -100px 0px" });
+
+  // Use a ref to track view state inside the interval loop without restarting it
+  const shouldAnimate = useRef(false);
+
   const [step, setStep] = useState(0);
   const [balance, setBalance] = useState(INITIAL_BALANCE);
   const [bookings, setBookings] = useState(INITIAL_BOOKINGS);
   const [isMobile, setIsMobile] = useState(false);
 
+  // Sync ref with view state
   useEffect(() => {
-    // Detect mobile for cursor positioning
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 992);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
+    shouldAnimate.current = isInView;
+  }, [isInView]);
 
+  useEffect(() => {
+    // Debounced resize handler
+    let timeoutId;
+    const checkMobile = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setIsMobile(window.innerWidth <= 992);
+      }, 100);
+    };
+
+    // Initial check
+    checkMobile();
+
+    window.addEventListener("resize", checkMobile);
+    return () => {
+      window.removeEventListener("resize", checkMobile);
+      clearTimeout(timeoutId);
+    };
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
+
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
     const runSequence = async () => {
       while (mounted) {
+        // PERF: Pause loop if not in view
+        if (!shouldAnimate.current) {
+          await wait(1000);
+          continue;
+        }
+
         await wait(1000);
         if (!mounted) break;
         setStep(1); // Hover
@@ -368,37 +400,31 @@ const RevenueSimulation = () => {
     };
 
     runSequence();
+
     return () => {
       mounted = false;
-      window.removeEventListener("resize", checkMobile);
     };
-  }, []);
+  }, []); // Empty deps ensuring loop starts once
 
-  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  // Fix: Dynamic cursor coordinates based on screen size
-  const getCursorVariants = () => {
+  const getCursorVariants = useCallback(() => {
     if (isMobile) {
-      // Mobile coordinates: Target the button in the CENTER of the card (translateX -50% logic)
       return {
         initial: { x: 300, y: 400, opacity: 0 },
-        // Adjust these to hit the "Book Now" button on the mobile card layout
         hover: { x: 170, y: 275, opacity: 1 },
         click: { scale: 0.8 },
       };
     }
-    // Desktop coordinates (Original logic)
     return {
       initial: { x: 300, y: 450, opacity: 0 },
       hover: { x: 160, y: 365, opacity: 1 },
       click: { scale: 0.8 },
     };
-  };
+  }, [isMobile]);
 
   const variants = getCursorVariants();
 
   return (
-    <MobileScaleWrapper>
+    <MobileScaleWrapper ref={containerRef}>
       {/* --- DASHBOARD --- */}
       <DashboardCard
         animate={{ scale: step === 6 ? 1.02 : 1 }}
@@ -429,7 +455,7 @@ const RevenueSimulation = () => {
 
           <Label>Recent Activity</Label>
           <ListContainer>
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence mode="popLayout" initial={false}>
               {bookings.map((booking) => (
                 <ListItem
                   key={booking.id}
@@ -448,8 +474,6 @@ const RevenueSimulation = () => {
                     <div>
                       <div style={{ fontWeight: 600 }}>{booking.name}</div>
                       <div style={{ fontSize: "0.75rem", color: "#111" }}>
-                        {" "}
-                        {/* Black text */}
                         {booking.event}
                       </div>
                     </div>
@@ -485,8 +509,7 @@ const RevenueSimulation = () => {
           </div>
           <div>
             <div style={{ fontWeight: 700, fontSize: 15 }}>Pottery 101</div>
-            <div style={{ fontSize: 13, color: "#111" }}>Sat, 2:00 PM</div>{" "}
-            {/* Black text */}
+            <div style={{ fontSize: 13, color: "#111" }}>Sat, 2:00 PM</div>
           </div>
         </div>
 
@@ -498,8 +521,7 @@ const RevenueSimulation = () => {
             marginBottom: 16,
           }}
         >
-          <span style={{ fontSize: 13, color: "#111" }}>Total</span>{" "}
-          {/* Black text */}
+          <span style={{ fontSize: 13, color: "#111" }}>Total</span>
           <span style={{ fontSize: 16, fontWeight: 700 }}>$75.00</span>
         </div>
 
@@ -602,13 +624,7 @@ const RevenueSimulation = () => {
         transition={{ duration: 0.8, type: "spring" }}
         style={{ top: 0, left: 0 }}
       >
-        <svg
-          width="32"
-          height="32"
-          viewBox="0 0 32 32"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
           <path
             d="M9.5 5L24 18L15.5 19.5L12 27L9.5 5Z"
             fill="black"
@@ -627,18 +643,18 @@ const ForHosts = () => {
   return (
     <Section aria-labelledby="for-hosts-title">
       <Container>
-        {/* Mobile Title (Shows FIRST on mobile) */}
+        {/* Mobile Title */}
         <MobileHeading>
           Turn your passion into <br />
           <span>predictable revenue.</span>
         </MobileHeading>
 
-        {/* Animation Area (Shows SECOND on mobile, LEFT on Desktop) */}
+        {/* Animation Area */}
         <VisualWrapper>
           <RevenueSimulation />
         </VisualWrapper>
 
-        {/* Text Content (Shows THIRD on mobile, RIGHT on Desktop) */}
+        {/* Text Content */}
         <TextContent>
           <Heading id="for-hosts-title">
             Turn your passion into <br />
@@ -653,7 +669,6 @@ const ForHosts = () => {
 
           <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
             <Link href="/business" passHref legacyBehavior>
-              {/* Button styles RESTORED exactly */}
               <Button
                 type="primary"
                 size="large"

@@ -1,0 +1,76 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  padding: 0 4rem;
+  margin: 2rem auto;
+  width: 100%;
+  max-width: 1400px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: #222;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: #717171;
+  margin: 0;
+}
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.navBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.navBtn:disabled {
+  opacity: 0.3;
+}
+
+/* Embla Carousel Base Styles */
+.embla {
+  overflow: hidden;
+  width: 100%;
+}
+.container {
+  display: flex;
+  gap: 20px;
+  padding: 4px;
+}
+.slide {
+  flex: 0 0 auto;
+  width: 250px;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 0 1.5rem;
+  }
+  .controls {
+    display: none;
+  }
+  .slide {
+    width: 200px;
+  }
+}
