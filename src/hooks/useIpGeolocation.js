@@ -41,7 +41,15 @@ export const useIpGeolocation = () => {
     const fetchLocation = async () => {
       setLoading(true);
       try {
-        const response = await fetch(IP_GEOLOCATION_API_URL);
+        // Add timeout to prevent hanging requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch(IP_GEOLOCATION_API_URL, {
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
         
         if (!response.ok) {
           throw new Error(`IP Geolocation API failed with status: ${response.status}`);
@@ -76,7 +84,10 @@ export const useIpGeolocation = () => {
           throw new Error('Invalid data received from IP Geolocation API');
         }
       } catch (err) {
-        console.error("IP Geolocation Error:", err);
+        // Don't log errors in production to reduce console noise
+        if (process.env.NODE_ENV === 'development') {
+          console.error("IP Geolocation Error:", err);
+        }
         setError(err);
         
         // Set Toronto as fallback location
@@ -96,7 +107,15 @@ export const useIpGeolocation = () => {
       }
     };
 
-    fetchLocation();
+    // Defer fetch to not block initial render - use requestIdleCallback if available
+    if (typeof window !== 'undefined' && window.requestIdleCallback) {
+      const idleId = window.requestIdleCallback(fetchLocation, { timeout: 2000 });
+      return () => window.cancelIdleCallback(idleId);
+    } else {
+      // Fallback: delay by 500ms to let initial render complete
+      const timeoutId = setTimeout(fetchLocation, 500);
+      return () => clearTimeout(timeoutId);
+    }
   }, []); // Empty dependency array ensures this runs only once
 
   return { location, loading, error };

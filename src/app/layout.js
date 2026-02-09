@@ -125,7 +125,7 @@ export default function RootLayout({ children }) {
 
         <Script
           id="fb-pixel"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           dangerouslySetInnerHTML={{
             __html: `
               !function(f,b,e,v,n,t,s)
@@ -142,10 +142,16 @@ export default function RootLayout({ children }) {
           }}
         />
 
-        {/* DNS Prefetch for third-party domains */}
+        {/* DNS Prefetch and Preconnect for third-party domains */}
         <link rel="dns-prefetch" href="https://accounts.google.com" />
-        <link rel="dns-prefetch" href="https://cdn.lordicon.com" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://connect.facebook.net" />
+        <link rel="dns-prefetch" href="https://ipapi.co" />
+        
+        {/* Preconnect for critical origins (max 4) */}
+        <link rel="preconnect" href="https://cdn.lordicon.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://ipapi.co" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://d2mzhwd15ea85i.cloudfront.net" crossOrigin="anonymous" />
 
         {/* Structured Data */}
         <OrganizationSchema />

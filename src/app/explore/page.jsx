@@ -7,11 +7,55 @@ import {
 } from "@/lib/server-data-fetchers";
 import ExplorePageSkeleton from "./_components/ExplorePageSkeleton";
 
-export async function generateMetadata() {
+export async function generateMetadata({ searchParams }) {
+  const resolvedSearchParams = await searchParams;
+  const category = resolvedSearchParams?.category;
+  const location = resolvedSearchParams?.location;
+  
+  let title = "Explore Experiences Near You | Classeasily";
+  let description =
+    "Find and book amazing local experiences and activities. Plan your next date night or outing with friends today!";
+
+  if (category && category !== "all" && location) {
+    title = `Explore ${category.charAt(0).toUpperCase() + category.slice(1)} Experiences in ${location} | Classeasily`;
+    description = `Discover the best ${category.toLowerCase()} experiences and activities in ${location}. Book your spot today!`;
+  } else if (location) {
+    title = `Experiences and Activities in ${location} | Classeasily`;
+    description = `Explore a wide variety of experiences in ${location}. From art to cooking, find your next great memory.`;
+  } else if (category && category !== "all") {
+    title = `Explore ${category.charAt(0).toUpperCase() + category.slice(1)} Experiences | Classeasily`;
+    description = `Find and book the best ${category.toLowerCase()} experiences and activities in your area.`;
+  }
+
   return {
-    title: "Explore Experiences Near You | Classeasily",
-    description:
-      "Find and book amazing local experiences and activities. Plan your next date night or outing with friends today!",
+    title,
+    description,
+    alternates: {
+      canonical: "https://classeasily.com/explore",
+    },
+    openGraph: {
+      title,
+      description,
+      url: "https://classeasily.com/explore",
+      type: "website",
+      siteName: "Classeasily",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
+    },
   };
 }
 
@@ -78,7 +122,7 @@ async function fetchServerData(searchParams) {
     apiParams.days = Array.isArray(days) ? days : [days];
   }
 
-  console.log("[Server] Fetching experiences with params:", apiParams);
+  // Removed console.log for production performance
 
   const [categoriesResponse, classesResponse, collectionsList] =
     await Promise.all([
@@ -102,19 +146,69 @@ async function fetchServerData(searchParams) {
   };
 }
 
+function generateStructuredData(classes, locationName) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `Experiences and Activities${locationName ? ` in ${locationName}` : ""}`,
+    description: `Find local experiences and activities${
+      locationName ? ` in ${locationName}` : ""
+    }`,
+    numberOfItems: classes.length,
+    itemListElement: classes.slice(0, 10).map((classItem, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      item: {
+        "@type": "Course",
+        name: classItem.title,
+        description: classItem.description || classItem.title,
+        provider: {
+          "@type": "Organization",
+          name: classItem.business_name || "Classeasily Host",
+        },
+        url: `https://classeasily.com/classes/${classItem.slug}`,
+        ...(classItem.average_rating > 0 && {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: classItem.average_rating,
+            reviewCount: classItem.review_count,
+          },
+        }),
+        ...(classItem.min_session_price && {
+          offers: {
+            "@type": "Offer",
+            price: classItem.min_session_price,
+            priceCurrency: "USD",
+          },
+        }),
+      },
+    })),
+  };
+}
+
 async function ExplorePageContent({ searchParams }) {
   const resolvedSearchParams = await searchParams;
   const serverData = await fetchServerData(resolvedSearchParams);
+  const structuredData = generateStructuredData(
+    serverData.initialClasses,
+    serverData.locationName,
+  );
 
   return (
-    <ExploreClient
-      initialCategories={serverData.categories}
-      initialClasses={serverData.initialClasses}
-      initialTotalCount={serverData.totalCount}
-      initialNextPageUrl={serverData.nextPageUrl}
-      initialCollections={serverData.collections}
-      routeParams={serverData.routeParams}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <ExploreClient
+        initialCategories={serverData.categories}
+        initialClasses={serverData.initialClasses}
+        initialTotalCount={serverData.totalCount}
+        initialNextPageUrl={serverData.nextPageUrl}
+        initialCollections={serverData.collections}
+        routeParams={serverData.routeParams}
+      />
+    </>
   );
 }
 

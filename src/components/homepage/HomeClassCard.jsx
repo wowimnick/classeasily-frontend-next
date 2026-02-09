@@ -118,11 +118,14 @@ const HomeClassCard = ({
         {imageUrl ? (
           <Image
             src={imageUrl}
-            alt={title}
+            alt={title || "Class experience"}
             fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className={styles.cardImage} // Changed from "object-cover" to CSS module class
+            sizes="(max-width: 600px) 50vw, (max-width: 1048px) 33vw, (max-width: 1400px) 25vw, 20vw"
+            className={styles.cardImage}
             priority={priority}
+            fetchPriority={priority ? "high" : "auto"}
+            quality={priority ? 90 : 85}
+            loading={priority ? "eager" : "lazy"}
           />
         ) : (
           <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">

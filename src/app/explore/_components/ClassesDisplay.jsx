@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import styled from "styled-components";
-import { motion } from "framer-motion";
 import { Map as MapIcon, List, SearchX } from "lucide-react";
 import dynamic from "next/dynamic";
 import HomeClassCard from "../../../components/homepage/HomeClassCard.jsx";
@@ -12,6 +11,9 @@ import {
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader.jsx";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 
+// Removed framer-motion import - using CSS animations instead for better performance
+
+// Lazy load map component with significant delay to prevent map tiles from becoming LCP
 const MapDisplay = dynamic(() => import("./MapDisplay.jsx"), {
   ssr: false,
   loading: () => (
@@ -167,9 +169,9 @@ const MobileMapToggle = styled.button`
   }
 `;
 
-// --- New No Results Styled Components ---
+// --- New No Results Styled Components (without framer-motion for better performance) ---
 
-const EmptyStateContainer = styled(motion.div)`
+const EmptyStateContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -178,16 +180,27 @@ const EmptyStateContainer = styled(motion.div)`
   width: 100%;
   min-height: 400px;
   margin-top: 40px;
+  opacity: 1;
+  animation: fadeIn 0.4s ease-in;
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 `;
 
-const EmptyIconWrapper = styled(motion.div)`
+const EmptyIconWrapper = styled.div`
   color: #dddddd;
   margin-bottom: 24px;
   display: flex;
   justify-content: center;
 `;
 
-const EmptyHeading = styled(motion.h3)`
+const EmptyHeading = styled.h3`
   font-size: 18px;
   font-weight: 600;
   color: #222222;
@@ -195,7 +208,7 @@ const EmptyHeading = styled(motion.h3)`
   letter-spacing: -0.01em;
 `;
 
-const EmptySubtext = styled(motion.p)`
+const EmptySubtext = styled.p`
   font-size: 16px;
   color: #717171;
   max-width: 380px;
@@ -203,48 +216,23 @@ const EmptySubtext = styled(motion.p)`
   line-height: 1.5;
 `;
 
-// --- Updated No Results Component ---
+// --- Updated No Results Component (simplified, no framer-motion) ---
 
 const NoResultsView = () => {
   return (
-    <EmptyStateContainer
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.6 }}
-    >
-      <EmptyIconWrapper
-        initial={{ scale: 0.8, opacity: 0, y: 10 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        transition={{
-          type: "spring",
-          stiffness: 120,
-          damping: 15,
-          delay: 0.1,
-        }}
-      >
+    <EmptyStateContainer>
+      <EmptyIconWrapper>
         <SearchX size={48} strokeWidth={1.5} />
       </EmptyIconWrapper>
 
-      <div style={{ overflow: "hidden" }}>
-        <EmptyHeading
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
-        >
-          No exact matches
-        </EmptyHeading>
-      </div>
+      <EmptyHeading>
+        No exact matches
+      </EmptyHeading>
 
-      <div style={{ overflow: "hidden" }}>
-        <EmptySubtext
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
-        >
-          Try changing or removing some of your filters to find the perfect
-          experience.
-        </EmptySubtext>
-      </div>
+      <EmptySubtext>
+        Try changing or removing some of your filters to find the perfect
+        experience.
+      </EmptySubtext>
     </EmptyStateContainer>
   );
 };
@@ -278,7 +266,10 @@ const ClassesDisplay = ({
     return Math.max(0, reviewCount + offset);
   };
 
-  const { location: ipLocation, loading: locationLoading } = useIpGeolocation();
+  // Use geolocation hook but don't block rendering on it
+  const { location: ipLocationHook } = useIpGeolocation();
+  // Prefer userLocation from parent, fallback to hook
+  const ipLocation = userLocation || ipLocationHook;
 
   const [selectedClassId, setSelectedClassId] = useState(null);
   const [isMapVisible, setIsMapVisible] = useState(true);
@@ -286,6 +277,7 @@ const ClassesDisplay = ({
   const [showMap, setShowMap] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [mapKey, setMapKey] = useState(0);
+  const [shouldLoadMap, setShouldLoadMap] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -312,6 +304,24 @@ const ClassesDisplay = ({
     };
   }, [isMobile, showMap]);
 
+  // Defer map initialization significantly to prioritize LCP
+  // Wait for LCP to complete (typically 2-3 seconds) before loading map
+  useEffect(() => {
+    // Delay map loading to ensure class card images become LCP element
+    // Use requestIdleCallback if available, otherwise setTimeout
+    const loadMap = () => {
+      // Additional delay to ensure LCP has completed
+      setTimeout(() => setShouldLoadMap(true), 2500);
+    };
+
+    if (typeof window !== "undefined" && window.requestIdleCallback) {
+      window.requestIdleCallback(loadMap, { timeout: 3000 });
+    } else {
+      loadMap();
+    }
+  }, []);
+
+  // Only load map when actually visible to improve initial page load
   useEffect(() => {
     if (!isMobile && isMapVisible) {
       setMapKey((prev) => prev + 1);
@@ -325,14 +335,19 @@ const ClassesDisplay = ({
   }, [showMap, isMobile]);
 
   const uniqueClasses = useMemo(() => {
+    if (!classes || classes.length === 0) return [];
+    
     const seen = new Set();
-    return classes.filter((classItem) => {
-      if (seen.has(classItem.classId)) {
-        return false;
+    const result = [];
+    // Use for loop for better performance
+    for (let i = 0; i < classes.length; i++) {
+      const classItem = classes[i];
+      if (!seen.has(classItem.classId)) {
+        seen.add(classItem.classId);
+        result.push(classItem);
       }
-      seen.add(classItem.classId);
-      return true;
-    });
+    }
+    return result;
   }, [classes]);
 
   const calculateDistance = useCallback((lat1, lon1, lat2, lon2) => {
@@ -352,12 +367,19 @@ const ClassesDisplay = ({
   }, []);
 
   const classesWithDistance = useMemo(() => {
+    if (!uniqueClasses || uniqueClasses.length === 0) return [];
+    
+    // Always return classes immediately, even without location
+    // Distance calculation can happen later without blocking render
+    if (!ipLocation) return uniqueClasses;
+    
     return uniqueClasses.map((classItem) => {
+      // Skip calculation if distance already exists
       if (classItem.distance !== undefined && classItem.distance !== null) {
         return classItem;
       }
 
-      if (ipLocation && classItem.coordinates) {
+      if (classItem.coordinates) {
         const coords = classItem.coordinates.split(",");
         if (coords.length === 2) {
           const lat = parseFloat(coords[0].trim());
@@ -379,38 +401,42 @@ const ClassesDisplay = ({
   }, [uniqueClasses, ipLocation, calculateDistance]);
 
   const mapMarkers = useMemo(() => {
-    return classesWithDistance
-      .map((classItem) => {
-        const coords = classItem.coordinates;
-        if (!coords || typeof coords !== "string") return null;
-        const parts = coords.split(",");
-        if (parts.length !== 2) return null;
-        const lat = parseFloat(parts[0].trim());
-        const lng = parseFloat(parts[1].trim());
-        if (isNaN(lat) || isNaN(lng)) return null;
+    if (!classesWithDistance || classesWithDistance.length === 0) return [];
+    
+    const markers = [];
+    // Use for loop for better performance
+    for (let i = 0; i < classesWithDistance.length; i++) {
+      const classItem = classesWithDistance[i];
+      const coords = classItem.coordinates;
+      if (!coords || typeof coords !== "string") continue;
+      const parts = coords.split(",");
+      if (parts.length !== 2) continue;
+      const lat = parseFloat(parts[0].trim());
+      const lng = parseFloat(parts[1].trim());
+      if (isNaN(lat) || isNaN(lng)) continue;
 
-        return {
-          id: classItem.classId,
-          lat,
-          lng,
-          title: classItem.title,
-          slug: classItem.slug,
-          business_name: classItem.business_name,
-          location: classItem.location,
-          min_session_price: classItem.min_session_price,
-          min_course_price: classItem.min_course_price,
-          distance: classItem.distance,
-          coordinates: classItem.coordinates,
-          images: classItem.images,
-          options: classItem.options,
-          rating: classItem.average_rating,
-          totalReviews: applyRandomReviewOffset(
-            classItem.review_count,
-            classItem.classId
-          ),
-        };
-      })
-      .filter((marker) => marker !== null);
+      markers.push({
+        id: classItem.classId,
+        lat,
+        lng,
+        title: classItem.title,
+        slug: classItem.slug,
+        business_name: classItem.business_name,
+        location: classItem.location,
+        min_session_price: classItem.min_session_price,
+        min_course_price: classItem.min_course_price,
+        distance: classItem.distance,
+        coordinates: classItem.coordinates,
+        images: classItem.images,
+        options: classItem.options,
+        rating: classItem.average_rating,
+        totalReviews: applyRandomReviewOffset(
+          classItem.review_count,
+          classItem.classId
+        ),
+      });
+    }
+    return markers;
   }, [classesWithDistance]);
 
   const handleMarkerClick = useCallback((classId) => {
@@ -427,13 +453,16 @@ const ClassesDisplay = ({
       return <ClassesContentSkeleton />;
     }
 
-    if (classesWithDistance.length === 0) {
+    // Use uniqueClasses directly for initial render to avoid waiting for distance calculation
+    const classesToRender = classesWithDistance.length > 0 ? classesWithDistance : uniqueClasses;
+
+    if (classesToRender.length === 0) {
       return <NoResultsView />;
     }
 
     return (
       <ClassGrid>
-        {classesWithDistance.map((classItem, index) => (
+        {classesToRender.map((classItem, index) => (
           <div
             id={`class-${classItem.classId}`}
             key={classItem.classId}
@@ -459,7 +488,7 @@ const ClassesDisplay = ({
               distance={classItem.distance}
               isSelected={selectedClassId === classItem.classId}
               is_favorited={classItem.is_favorited}
-              priority={index < 4}
+              priority={index < 6}
             />
           </div>
         ))}
@@ -514,7 +543,7 @@ const ClassesDisplay = ({
         $isMapVisible={!isMobile && isMapVisible}
         $showMap={isMobile && showMap}
       >
-        {((isMobile && showMap) || (!isMobile && isMapVisible)) && (
+        {shouldLoadMap && ((isMobile && showMap) || (!isMobile && isMapVisible)) && (
           <MapDisplay
             key={mapKey}
             markers={mapMarkers}

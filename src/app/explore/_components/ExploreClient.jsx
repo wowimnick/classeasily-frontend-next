@@ -10,12 +10,17 @@ import React, {
 } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import styled from "styled-components";
+import dynamic from "next/dynamic";
 import ExploreHeader from "../../../components/explore/ExploreHeader";
-import ClassesDisplay from "./ClassesDisplay";
 import { classService } from "@/services/apiService";
 import Breadcrumbs from "@/services/Breadcrumbs";
 import { useIpGeolocation } from "@/hooks/useIpGeolocation";
 import { useSearch } from "@/context/SearchContext"; // IMPORT SEARCH CONTEXT
+
+// Lazy load ClassesDisplay to reduce initial bundle size
+const ClassesDisplay = dynamic(() => import("./ClassesDisplay"), {
+  loading: () => null, // Use parent loading state instead
+});
 
 const PageLayout = styled.div`
   display: flex;
@@ -55,6 +60,7 @@ function ExploreClientContent({
   // Use Global Search Context to handle header search loading state
   const { isSearching, setIsSearching } = useSearch();
 
+  // Use geolocation hook - it's non-blocking as it uses async fetch
   const { location: userLocation } = useIpGeolocation();
 
   // --- STATE ---
@@ -175,6 +181,7 @@ function ExploreClientContent({
     const currentParamsStr = searchParams.toString();
     const prevParamsStr = previousSearchParamsRef.current;
 
+    // Early return if params haven't changed
     if (currentParamsStr === prevParamsStr) return;
 
     const currentObj = Object.fromEntries(searchParams.entries());
@@ -386,6 +393,57 @@ function ExploreClientContent({
   const effectiveLoading = loading && !loadingMore;
   const showSkeleton = effectiveLoading || isNavigating || isSearching;
 
+  // Memoize classes display props to prevent unnecessary re-renders
+  const classesDisplayProps = useMemo(
+    () => ({
+      classes: displayClasses,
+      categories: initialCategories,
+      collections: initialCollections,
+      loading: showSkeleton,
+      isNavigating,
+      userLocation,
+      filters: currentFilters,
+      onFiltersChange: () => {},
+      currentCategory,
+      currentSubcategory,
+      onCategoryChange: handleCategoryChange,
+      currentCollection,
+      onCollectionChange: handleCollectionChange,
+      currentSortBy,
+      onApplyModalChanges: handleApplyModalChanges,
+      observerTargetRef: observerTarget,
+      hasMorePages: !!nextPageUrl,
+      isLoadingMore: loadingMore,
+      province: routeParams.province,
+      city: routeParams.city,
+      tag,
+      totalClassesCount,
+    }),
+    [
+      displayClasses,
+      initialCategories,
+      initialCollections,
+      showSkeleton,
+      isNavigating,
+      userLocation,
+      currentFilters,
+      currentCategory,
+      currentSubcategory,
+      handleCategoryChange,
+      currentCollection,
+      handleCollectionChange,
+      currentSortBy,
+      handleApplyModalChanges,
+      observerTarget,
+      nextPageUrl,
+      loadingMore,
+      routeParams.province,
+      routeParams.city,
+      tag,
+      totalClassesCount,
+    ]
+  );
+
   return (
     <PageLayout>
       <ExploreHeader showOptionsWrapper={true} />
@@ -393,30 +451,7 @@ function ExploreClientContent({
         <Breadcrumbs />
       </BreadcrumbContainer>
       <ContentArea>
-        <ClassesDisplay
-          classes={displayClasses}
-          categories={initialCategories}
-          collections={initialCollections}
-          loading={showSkeleton}
-          isNavigating={isNavigating} // Still pass explicitly if needed, but 'loading' covers it now
-          userLocation={userLocation}
-          filters={currentFilters}
-          onFiltersChange={() => {}}
-          currentCategory={currentCategory}
-          currentSubcategory={currentSubcategory}
-          onCategoryChange={handleCategoryChange}
-          currentCollection={currentCollection}
-          onCollectionChange={handleCollectionChange}
-          currentSortBy={currentSortBy}
-          onApplyModalChanges={handleApplyModalChanges}
-          observerTargetRef={observerTarget}
-          hasMorePages={!!nextPageUrl}
-          isLoadingMore={loadingMore}
-          province={routeParams.province}
-          city={routeParams.city}
-          tag={tag}
-          totalClassesCount={totalClassesCount}
-        />
+        <ClassesDisplay {...classesDisplayProps} />
       </ContentArea>
     </PageLayout>
   );
