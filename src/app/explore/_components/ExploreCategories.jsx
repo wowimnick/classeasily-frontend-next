@@ -18,9 +18,11 @@ import {
   Settings2,
   Layers,
 } from "lucide-react";
-import ReactGA from "react-ga4";
-import FilterModal from "./FilterModal";
+import dynamic from "next/dynamic";
 import styled from "styled-components";
+
+// Defer FilterModal loading to reduce initial bundle size
+const FilterModal = dynamic(() => import("./FilterModal"), { ssr: false });
 
 // Icon loading logic
 const IconFallback = (props) => (
@@ -423,7 +425,10 @@ const CategoryItem = memo(({ category, isSelected, onClick }) => (
     </ImageBackground>
     <CategoryFont isSelected={isSelected}>{category.name}</CategoryFont>
   </CategoryGroup>
-));
+), (prevProps, nextProps) => 
+  prevProps.category.key === nextProps.category.key &&
+  prevProps.isSelected === nextProps.isSelected
+);
 
 const CollectionItem = memo(({ collection, isSelected, onClick }) => (
   <CollectionPill
@@ -433,7 +438,11 @@ const CollectionItem = memo(({ collection, isSelected, onClick }) => (
   >
     {collection.name}
   </CollectionPill>
-));
+), (prevProps, nextProps) =>
+  prevProps.collection.key === nextProps.collection.key &&
+  prevProps.collection.slug === nextProps.collection.slug &&
+  prevProps.isSelected === nextProps.isSelected
+);
 
 function ExploreCategoriesContent({
   categories = [],
@@ -494,8 +503,13 @@ function ExploreCategoriesContent({
 
   // Subcategory extraction logic
   const subcategoriesFromClasses = useMemo(() => {
+    // Early return if no classes
+    if (!classes || classes.length === 0) return {};
+    
     const subcategoryMap = {};
-    classes.forEach((classItem) => {
+    // Use for loop for better performance with large arrays
+    for (let i = 0; i < classes.length; i++) {
+      const classItem = classes[i];
       const categoryKey = classItem.category_key;
       const subcategoryKey = classItem.subcategory_key;
       const subcategoryName = classItem.subcategory_name;
@@ -510,7 +524,7 @@ function ExploreCategoriesContent({
           subcategoryMap[categoryKey].set(subcategoryKey, subcategoryName);
         }
       }
-    });
+    }
     const finalMap = {};
     for (const categoryKey in subcategoryMap) {
       finalMap[categoryKey] = Array.from(subcategoryMap[categoryKey].entries())

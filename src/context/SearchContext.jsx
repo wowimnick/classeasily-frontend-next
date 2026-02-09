@@ -97,7 +97,7 @@ export const SearchProvider = ({ children }) => {
       try {
         const encodedAddress = encodeURIComponent(addr);
         const response = await fetch(
-          `${AWS_LOCATION_API_URL}?text=${encodedAddress}`
+          `${AWS_LOCATION_API_URL}?text=${encodedAddress}`,
         );
         if (!response.ok)
           throw new Error(`Geocoding request failed: ${response.status}`);
@@ -114,7 +114,7 @@ export const SearchProvider = ({ children }) => {
         setGeocoding(false);
       }
     }, 300),
-    []
+    [],
   );
 
   const handleLocationChange = (value) => {

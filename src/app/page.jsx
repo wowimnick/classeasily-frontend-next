@@ -1,16 +1,55 @@
-import dynamic from "next/dynamic";
-import SharedMainClientHeader from "@/components/layout/SharedMainClientHeader";
-import BannerSearch, {
-  AnnouncementBanner,
-} from "./(homepage)/_components/BannerSearch";
 import { Suspense } from "react";
-import "./(homepage)/_components/homepage.css";
+import dynamic from "next/dynamic";
 import { preloadHomepageData } from "@/lib/server-data-fetchers";
-import {
-  FindClassSkeleton,
-  CategorySkeleton,
-} from "./(homepage)/_components/FindClassSkeleton";
+import "./(homepage)/_components/homepage.css";
 
+import BannerSearch from "./(homepage)/_components/BannerSearch";
+import SharedMainClientHeader from "@/components/layout/SharedMainClientHeader";
+import { HomepageCategoriesFallback } from "./(homepage)/_components/HomepageCategories";
+import BannerSearchClient from "./(homepage)/_components/BannerSearchClient";
+import { FindClassSkeleton } from "./(homepage)/_components/FindClassSkeleton";
+
+// --- CLIENT COMPONENTS (Lazy Loaded) ---
+
+// Categories Carousel
+const HomepageCategories = dynamic(
+  () => import("./(homepage)/_components/HomepageCategories"),
+  {},
+);
+
+// Class Rows (Carousels)
+const FindClassClientWrapper = dynamic(
+  () => import("./(homepage)/_components/FindClassClientWrapper"),
+  {
+    loading: () => <FindClassSkeleton />,
+  },
+);
+
+// Below-fold sections
+const HowItWorks = dynamic(
+  () => import("./(homepage)/_components/HowItWorks"),
+  { loading: () => <div style={{ height: "600px" }} /> },
+);
+
+const GiftCardsCTA = dynamic(
+  () => import("./(homepage)/_components/GiftCardsCTA"),
+  { loading: () => <div style={{ height: "500px" }} /> },
+);
+
+const ForHosts = dynamic(() => import("./(homepage)/_components/ForHosts"), {
+  loading: () => <div style={{ height: "500px" }} />,
+});
+
+const Testimonials = dynamic(
+  () => import("./(homepage)/_components/Testimonials"),
+  { loading: () => <div style={{ height: "400px" }} /> },
+);
+
+const Footer = dynamic(() => import("@/components/homepage/Footer"), {
+  loading: () => <div style={{ height: "300px" }} />,
+});
+
+// Overlays (Client logic only)
 const CancellationOverlay = dynamic(
   () => import("./(homepage)/_components/CancellationOverlay"),
 );
@@ -20,36 +59,11 @@ const InviteOverlay = dynamic(
 const PasswordResetOverlay = dynamic(
   () => import("./(homepage)/_components/PasswordResetOverlay"),
 );
-
 const ClaimAccountOverlay = dynamic(
   () => import("./(homepage)/_components/ClaimAccountOverlay"),
 );
-
 const VerifyEmailOverlay = dynamic(
   () => import("./(homepage)/_components/VerifyEmailOverlay"),
-);
-
-// Lazy Load Components
-const Footer = dynamic(() => import("@/components/homepage/Footer"), {
-  loading: () => <div style={{ minHeight: "300px" }} />,
-});
-
-const HomepageCategories = dynamic(
-  () => import("./(homepage)/_components/HomepageCategories"),
-  {
-    loading: () => <CategorySkeleton />,
-  },
-);
-
-import ClassRow from "./(homepage)/_components/FindClass";
-
-const HowItWorks = dynamic(() => import("./(homepage)/_components/HowItWorks"));
-const ForHosts = dynamic(() => import("./(homepage)/_components/ForHosts"));
-const Testimonials = dynamic(
-  () => import("./(homepage)/_components/Testimonials"),
-);
-const GiftCardsCTA = dynamic(
-  () => import("./(homepage)/_components/GiftCardsCTA"),
 );
 
 export const metadata = {
@@ -65,9 +79,9 @@ export const metadata = {
 };
 
 export default async function HomePage() {
+  // Parallel data fetching
   const { row_collections, categories } = await preloadHomepageData();
 
-  // JSON-LD Schema
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -84,57 +98,59 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* Inject Schema here */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <AnnouncementBanner />
-      <SharedMainClientHeader topOffset={48} />
-
       <div className="homepage-style">
         <main className="main-content">
+          <BannerSearchClient mode="announcement" />
+          <SharedMainClientHeader topOffset={48} />
+
           <BannerSearch />
 
-          {row_collections?.map((collection, index) => (
-            <ClassRow
-              key={collection.slug}
-              title={collection.title}
-              subtitle={collection.subtitle}
-              classes={collection.classes}
-              seeAllLink={`/explore?collection=${collection.slug}`}
-              style={{ marginTop: index === 0 ? "3rem" : "0" }}
-            />
+          {row_collections?.map((collection) => (
+            <Suspense key={collection.title} fallback={<FindClassSkeleton />}>
+              <FindClassClientWrapper
+                title={collection.title}
+                subtitle={collection.subtitle}
+                initialClasses={collection.classes}
+                seeAllLink={collection.seeAllLink || "/explore"}
+              />
+            </Suspense>
           ))}
 
-          <Suspense fallback={<CategorySkeleton />}>
+          <Suspense
+            fallback={<HomepageCategoriesFallback categories={categories} />}
+          >
             <HomepageCategories initialCategories={categories} />
           </Suspense>
 
-          <Suspense fallback={<div style={{ minHeight: "800px" }} />}>
-            <section id="how-it-works">
+          <section id="how-it-works">
+            <Suspense fallback={<div style={{ height: "600px" }} />}>
               <HowItWorks />
-            </section>
-          </Suspense>
+            </Suspense>
+          </section>
 
-          <Suspense fallback={<div style={{ minHeight: "600px" }} />}>
+          <Suspense fallback={<div style={{ height: "500px" }} />}>
             <GiftCardsCTA />
           </Suspense>
 
-          <Suspense fallback={<div style={{ minHeight: "400px" }} />}>
+          <Suspense fallback={<div style={{ height: "500px" }} />}>
             <ForHosts />
           </Suspense>
 
-          <Suspense fallback={<div style={{ minHeight: "500px" }} />}>
+          <Suspense fallback={<div style={{ height: "400px" }} />}>
             <Testimonials />
           </Suspense>
         </main>
 
-        <Suspense fallback={<div style={{ minHeight: "300px" }} />}>
+        <Suspense fallback={<div style={{ height: "300px" }} />}>
           <Footer />
         </Suspense>
 
+        {/* Global Overlays - Loaded only when needed logic triggers */}
         <CancellationOverlay />
         <InviteOverlay />
         <PasswordResetOverlay />

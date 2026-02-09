@@ -7,7 +7,6 @@ import { AuthProvider } from "@/context/AuthContext";
 import { useAuthStore } from "@/lib/auth-client";
 import { theme } from "@/components/theme";
 import StyledComponentsRegistry from "@/lib/registry";
-import GlobalStyles from "./GlobalStyles";
 import AnalyticsProvider from "./providers/AnalyticsProvider";
 import CookieConsentProvider from "./providers/CookieConsentProvider";
 import { ToastProvider } from "@/lib/toast/ToastContext";
@@ -20,6 +19,10 @@ export default function ClientProviders({ children }) {
   const memoizedTheme = useMemo(() => theme, []);
   const hasInitialized = useRef(false);
   const _hasHydrated = useAuthStore((state) => state._hasHydrated);
+
+  useEffect(() => {
+    localStorage.setItem("cookie_consent", "true");
+  }, []);
 
   useEffect(() => {
     if (hasInitialized.current) return;
@@ -71,20 +74,17 @@ export default function ClientProviders({ children }) {
         getPopupContainer={() => document.body}
       >
         <ThemeProvider theme={memoizedTheme}>
-          <GlobalStyles />
           <ToastProvider>
             <AuthProvider>
               <SessionMonitor />
               <SearchProvider>
-                <CookieConsentProvider>
-                  <AnalyticsProvider>
-                    <SearchDrawer />
-                    <Suspense fallback={null}>
-                      <SearchUrlHandler />
-                    </Suspense>
-                    {children}
-                  </AnalyticsProvider>
-                </CookieConsentProvider>
+                <AnalyticsProvider>
+                  <SearchDrawer />
+                  <Suspense fallback={null}>
+                    <SearchUrlHandler />
+                  </Suspense>
+                  {children}
+                </AnalyticsProvider>
               </SearchProvider>
             </AuthProvider>
           </ToastProvider>

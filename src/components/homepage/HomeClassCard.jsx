@@ -1,319 +1,19 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useRef,
-  useCallback,
-} from "react";
-import styled, { keyframes, useTheme } from "styled-components";
+import React, { useState, useMemo } from "react";
 import Image from "next/image";
-import { Heart, Star, Navigation, AlertCircle } from "lucide-react";
+import { Heart, Star, Navigation } from "lucide-react";
+import styles from "./HomeClassCard.module.css";
+// NOTE: Assuming these utility hooks/services exist in your project
 import message from "@/lib/message";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { classService } from "@/services/apiService.js";
-import useIntersectionObserver from "@/hooks/useIntersectionObserver.js";
-
-const spinAnimation = keyframes`
-  to { transform: rotate(360deg); }
-`;
-
-const ButtonSpinner = styled.div`
-  border: 2px solid rgba(72, 72, 72, 0.2);
-  border-left-color: #484848;
-  border-radius: 50%;
-  width: 14px;
-  height: 14px;
-  animation: ${spinAnimation} 0.8s linear infinite;
-`;
-
-const ImageLoadingSpinner = styled.div`
-  border: 3px solid rgba(0, 0, 0, 0.08);
-  border-left-color: #ff385c;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  animation: ${spinAnimation} 1s linear infinite;
-`;
-
-const CardContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  height: min-content;
-  cursor: pointer;
-  position: relative;
-  width: 100%;
-  padding: ${(props) => (props.$isSelected ? "2px" : "0")};
-  transition:
-    padding 0.2s ease,
-    opacity 0.25s ease;
-  opacity: 1;
-
-  @media (max-width: 800px) {
-    font-size: 0.9em;
-  }
-`;
-
-const ImageContainer = styled.div`
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 6px;
-  background: #f7f7f7;
-
-  @media (max-width: 800px) {
-    margin-bottom: 4px;
-    border-radius: 8px;
-  }
-`;
-
-const ImageWrapper = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-`;
-
-const StyledImage = styled(Image)`
-  object-fit: cover;
-  opacity: ${(props) => (props.$isLoaded ? 1 : 0)};
-  transition: opacity 0.3s ease;
-`;
-
-const ImageErrorFallback = styled.div`
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background-color: #f0f0f0;
-  color: #bbb;
-  font-size: 0.7rem;
-  text-align: center;
-  padding: 0.5rem;
-  gap: 0.4rem;
-`;
-
-const ImagePlaceholder = styled.div`
-  position: absolute;
-  inset: 0;
-  background-color: #f7f7f7;
-`;
-
-const ImageSpinnerContainer = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(247, 247, 247, 0.8);
-  z-index: 2;
-`;
-
-const FavoriteButton = styled.button`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(255, 255, 255, 0);
-  border: none;
-  cursor: pointer;
-  z-index: 3;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  opacity: ${(props) => (props.disabled ? 0.5 : 1)};
-  pointer-events: ${(props) => (props.disabled ? "none" : "auto")};
-
-  &:hover:not(:disabled) {
-    transform: ${(props) => (props.disabled ? "none" : "scale(1.1)")};
-  }
-`;
-
-const ContentContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-
-  @media (max-width: 600px) {
-    gap: 0.5px;
-  }
-`;
-
-const TopRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 6px;
-  margin-bottom: 1px;
-`;
-
-const TitleText = styled.div`
-  color: #222;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.25;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-  min-width: 0;
-
-  @media (max-width: 600px) {
-    font-size: 12px;
-    -webkit-line-clamp: 2;
-  }
-`;
-
-const CompanyInfo = styled.div`
-  color: #717171;
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  @media (max-width: 600px) {
-    font-size: 11px;
-  }
-`;
-
-const LocationRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  color: #717171;
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  @media (max-width: 600px) {
-    font-size: 11px;
-  }
-`;
-
-const Price = styled.div`
-  color: #222;
-  font-size: 14px;
-  font-weight: 600;
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-  white-space: nowrap;
-
-  @media (max-width: 600px) {
-    font-size: 12px;
-  }
-`;
-
-const PriceLabel = styled.span`
-  color: #717171;
-  font-size: 13px;
-  font-weight: 400;
-
-  @media (max-width: 600px) {
-    font-size: 11px;
-  }
-`;
-
-const Rating = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  color: #222;
-  font-size: 13px;
-  font-weight: 400;
-  white-space: nowrap;
-  flex-shrink: 0;
-
-  svg {
-    color: #222;
-    fill: #222;
-    stroke-width: 0;
-  }
-
-  @media (max-width: 600px) {
-    font-size: 11px;
-
-    svg {
-      width: 10px;
-      height: 10px;
-    }
-  }
-`;
-
-const ReviewCount = styled.span`
-  color: #717171;
-  font-size: 13px;
-  font-weight: 400;
-
-  @media (max-width: 600px) {
-    font-size: 11px;
-  }
-`;
-
-const DistanceBadge = styled.span`
-  color: #717171;
-  font-weight: 400;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-`;
-
-const PriceRow = styled.div`
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  margin-top: 2px;
-  flex-wrap: wrap;
-`;
-const PriceSeparator = styled.span`
-  color: #717171;
-  font-size: 12px;
-  margin: 0 1px;
-`;
-
-const truncateText = (text, maxLength) => {
-  if (!text || text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + "...";
-};
-
-const formatDistance = (distanceInKm) => {
-  if (
-    distanceInKm === null ||
-    typeof distanceInKm !== "number" ||
-    isNaN(distanceInKm)
-  )
-    return null;
-  if (distanceInKm < 0.1) return "<100m";
-  if (distanceInKm < 1) return `${Math.round(distanceInKm * 1000)}m`;
-  if (distanceInKm < 10) return `${distanceInKm.toFixed(1)}km`;
-  return `${Math.round(distanceInKm)}km`;
-};
 
 const HomeClassCard = ({
   classId,
   slug,
   images,
-  title = "Loading...",
+  title = "Untitled Class",
   city = "",
   state = "",
   location = "",
@@ -324,7 +24,6 @@ const HomeClassCard = ({
   business_name = "",
   is_favorited = false,
   distance = null,
-  isSelected,
   onFavoriteChange,
   priority = false,
 }) => {
@@ -332,283 +31,147 @@ const HomeClassCard = ({
   const isAuthenticated = !!currentUser;
 
   const [isFavorite, setIsFavorite] = useState(is_favorited);
-  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
-  const [imageLoadState, setImageLoadState] = useState("idle");
-
-  const cardRef = useRef(null);
-  const favoriteButtonRef = useRef(null);
-  const theme = useTheme();
-
-  const isIntersecting = useIntersectionObserver(
-    cardRef,
-    { threshold: 0.1 },
-    true,
-  );
-
-  const prices = useMemo(
-    () => ({
-      course: min_course_price,
-      singleSession: min_session_price,
-    }),
-    [min_course_price, min_session_price],
-  );
+  const [isToggling, setIsToggling] = useState(false);
 
   const imageUrl = useMemo(() => {
-    if (images && images.length > 0) {
-      return images[0].medium_url || images[0].original_url || null;
-    }
-    return null;
+    return images?.[0]?.medium_url || images?.[0]?.original_url || null;
   }, [images]);
 
-  const formattedDistance = useMemo(() => formatDistance(distance), [distance]);
-
   const displayLocation = useMemo(() => {
-    // 1. Use 'location' string from AWS/Backend
-    if (location) {
-      const parts = location.split(",").map((p) => p.trim());
-
-      // Search for the first part that starts with a number (likely the street address)
-      // e.g. "2515 Yonge St" or "56 Yonge St" (even if it's the 2nd part of the string)
-      const addressIndex = parts.findIndex((p) => /^[\d]+/.test(p));
-
-      if (addressIndex !== -1) {
-        // We found the street address. Remove the number.
-        // Regex removes leading digits and any spaces/hyphens immediately following
-        const street = parts[addressIndex].replace(/^[\d\s-]+/, "");
-
-        // Try to grab the next part as the City
-        // If the address was the last part, try falling back to the 'city' prop
-        const citySegment = parts[addressIndex + 1] || city || "";
-
-        return truncateText(
-          citySegment ? `${street}, ${citySegment}` : street,
-          30,
-        );
-      }
-
-      // Fallback: If no number was found in any part (e.g. "High Park, Toronto")
-      if (parts.length >= 2) {
-        return truncateText(`${parts[0]}, ${parts[1]}`, 30);
-      }
-      return truncateText(parts[0], 30);
-    }
-
-    // 2. Fallback to individual props if 'location' is empty
-    const classCity = city || "";
-    const classState = state || "";
-
-    if (classCity && classState)
-      return truncateText(`${classCity}, ${classState}`, 30);
-    if (classCity) return truncateText(classCity, 25);
-    if (classState) return truncateText(classState, 25);
-
-    return "Location unavailable";
+    if (location) return location;
+    if (city && state) return `${city}, ${state}`;
+    return city || state || "";
   }, [city, state, location]);
 
-  useEffect(() => setIsFavorite(is_favorited), [is_favorited]);
+  const formatDistance = (d) => {
+    if (d === null || typeof d !== "number") return null;
+    return d < 1 ? `${Math.round(d * 1000)}m` : `${d.toFixed(1)}km`;
+  };
 
-  useEffect(() => {
-    if (isIntersecting && imageUrl && imageLoadState === "idle")
-      setImageLoadState("loading");
-    else if (isIntersecting && !imageUrl && imageLoadState === "idle")
-      setImageLoadState("no_image_url");
-  }, [isIntersecting, imageUrl, imageLoadState]);
-
-  const handleImageLoad = useCallback(() => setImageLoadState("loaded"), []);
-  const handleImageError = useCallback(() => setImageLoadState("error"), []);
-
-  const handleNavigateToClass = useCallback(() => {
-    if (!slug && !classId) {
-      console.error("HomeClassCard: Both slug and classId are missing.");
-      return;
-    }
+  const handleNavigate = () => {
     const identifier = slug || classId;
+    if (!identifier) return;
+    window.open(`/classes/${identifier}`, "_blank");
+  };
 
-    let navigationUrl = `/classes/${identifier}`;
-    if (typeof window !== "undefined") {
-      const sp = new URLSearchParams(window.location.search);
-      const currentParticipants = sp.get("participants");
-      if (currentParticipants) {
-        navigationUrl += `?participants=${currentParticipants}`;
-      }
-    }
-    window.open(navigationUrl, "_blank");
-  }, [slug, classId]);
+  const toggleFavorite = async (e) => {
+    e.stopPropagation();
+    if (!isAuthenticated) return message.info("Log in to save favorites.");
+    if (isToggling) return;
 
-  const handleFavoriteClick = useCallback(
-    async (e) => {
-      e.stopPropagation();
-      if (!isAuthenticated) {
-        message.info("Please log in to save favorites.");
-        return;
-      }
-      if (isTogglingFavorite) return;
+    setIsToggling(true);
+    const newState = !isFavorite;
+    setIsFavorite(newState);
 
-      setIsTogglingFavorite(true);
-      const originalState = isFavorite;
-      const newState = !originalState;
-      setIsFavorite(newState);
+    try {
+      const result = await classService.toggleFavoriteClass(classId);
+      if (result.success) {
+        if (onFavoriteChange) onFavoriteChange(newState);
 
-      try {
-        const result = await classService.toggleFavoriteClass(classId);
-        if (result.success) {
-          if (onFavoriteChange) onFavoriteChange(newState);
-          if (newState && favoriteButtonRef.current) {
-            const confetti = (await import("canvas-confetti")).default;
-            const rect = favoriteButtonRef.current.getBoundingClientRect();
-            const origin = {
-              x: (rect.left + rect.width / 2) / window.innerWidth,
-              y: (rect.top + rect.height / 2) / window.innerHeight,
-            };
-            confetti({
-              particleCount: 80,
-              spread: 70,
-              origin: origin,
-              colors: ["#FF385C", "#FF7A9E", "#FFFFFF", "#FEDADD"],
-              zIndex: 10000,
-            });
-          }
-        } else {
-          setIsFavorite(originalState);
-          message.error(result.error || "Could not update favorite status.");
+        if (newState) {
+          import("canvas-confetti").then((confetti) => {
+            const btn = e.target.closest("button");
+            if (btn) {
+              const rect = btn.getBoundingClientRect();
+              confetti.default({
+                particleCount: 40,
+                spread: 50,
+                origin: {
+                  x: (rect.left + 14) / window.innerWidth,
+                  y: (rect.top + 14) / window.innerHeight,
+                },
+              });
+            }
+          });
         }
-      } catch (error) {
-        setIsFavorite(originalState);
-        message.error("An error occurred while updating favorite status.");
-        console.error("Favorite toggle error:", error);
-      } finally {
-        setIsTogglingFavorite(false);
+      } else {
+        setIsFavorite(!newState);
       }
-    },
-    [
-      isAuthenticated,
-      isTogglingFavorite,
-      isFavorite,
-      classId,
-      onFavoriteChange,
-    ],
-  );
-
-  const renderPrice = (priceValue, label) => {
-    const numericPrice = parseFloat(priceValue);
-    const isFree = numericPrice === 0;
-
-    return (
-      <Price>
-        <span>{isFree ? "Free" : `$${numericPrice}`}</span>
-        <PriceLabel>{label}</PriceLabel>
-      </Price>
-    );
+    } catch {
+      setIsFavorite(!newState);
+    } finally {
+      setIsToggling(false);
+    }
   };
 
   return (
-    <CardContainer
-      ref={cardRef}
-      onClick={handleNavigateToClass}
-      $isSelected={isSelected}
-      theme={theme}
-    >
-      <ImageContainer>
-        <FavoriteButton
-          ref={favoriteButtonRef}
-          onClick={handleFavoriteClick}
-          disabled={isTogglingFavorite}
-          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+    <div className={styles.cardContainer} onClick={handleNavigate}>
+      <div className={styles.imageContainer}>
+        <button
+          className={styles.favoriteBtn}
+          onClick={toggleFavorite}
+          disabled={isToggling}
+          aria-label={isFavorite ? "Unfavorite" : "Favorite"}
         >
-          {isTogglingFavorite ? (
-            <ButtonSpinner />
+          {isToggling ? (
+            <div className={styles.spinner} />
           ) : (
             <Heart
               size={22}
-              color={isFavorite ? "#FF385C" : "#ffffffff"}
-              fill={isFavorite ? "#FF385C" : "rgba(0, 0, 0, 0.36)"}
-              style={{ transition: "all 0.2s ease" }}
+              // Removed Tailwind classes; styling is handled by fill/color props
+              fill={isFavorite ? "#ff385c" : "rgba(0,0,0,0.3)"}
+              color={isFavorite ? "#ff385c" : "#fff"}
             />
           )}
-        </FavoriteButton>
-        <ImageWrapper>
-          {imageLoadState === "loading" && (
-            <ImageSpinnerContainer>
-              <ImageLoadingSpinner theme={theme} />
-            </ImageSpinnerContainer>
-          )}
-          {imageLoadState === "error" && (
-            <ImageErrorFallback>
-              <AlertCircle size={24} /> Image unavailable
-            </ImageErrorFallback>
-          )}
-          {imageLoadState === "no_image_url" && <ImagePlaceholder />}
-          {imageUrl &&
-            (imageLoadState === "loading" || imageLoadState === "loaded") && (
-              <StyledImage
-                key={imageUrl}
-                src={imageUrl}
-                alt={title || "Class image"}
-                fill
-                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                quality={60}
-                onLoad={handleImageLoad}
-                onError={handleImageError}
-                priority={priority}
-                loading={priority ? "eager" : "lazy"}
-                $isLoaded={imageLoadState === "loaded"}
-              />
-            )}
-          {!imageUrl &&
-            (imageLoadState === "idle" ||
-              imageLoadState === "no_image_url") && <ImagePlaceholder />}
-        </ImageWrapper>
-      </ImageContainer>
+        </button>
 
-      <ContentContainer>
-        <TopRow>
-          <TitleText title={title}>{title || "Untitled Class"}</TitleText>
+        {imageUrl ? (
+          <Image
+            src={imageUrl}
+            alt={title || "Class experience"}
+            fill
+            sizes="(max-width: 600px) 50vw, (max-width: 1048px) 33vw, (max-width: 1400px) 25vw, 20vw"
+            className={styles.cardImage}
+            priority={priority}
+            fetchPriority={priority ? "high" : "auto"}
+            quality={priority ? 90 : 85}
+            loading={priority ? "eager" : "lazy"}
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
+            No Image
+          </div>
+        )}
+      </div>
+
+      <div className={styles.contentContainer}>
+        <div className={styles.topRow}>
+          <div className={styles.title}>{title}</div>
           {rating > 0 && (
-            <Rating>
-              <Star size={12} />
-              {Number(rating).toFixed(1)}
-              {totalReviews > 0 && <ReviewCount>({totalReviews})</ReviewCount>}
-            </Rating>
+            <div className={styles.rating}>
+              <Star size={12} fill="#222" />
+              <span>{Number(rating).toFixed(1)}</span>
+              <span className={styles.reviewCount}>({totalReviews})</span>
+            </div>
           )}
-        </TopRow>
+        </div>
 
-        <CompanyInfo title={business_name}>
-          {truncateText(business_name || "Business", 30)}
-        </CompanyInfo>
+        <div className={styles.companyInfo}>{business_name}</div>
 
-        <LocationRow>
-          <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-            {displayLocation}
+        <div className={styles.locationRow}>
+          <span className={styles.locationText}>{displayLocation}</span>
+          {distance !== null && (
+            <>
+              <span className={styles.separator}>•</span>
+              <span className={styles.distanceWrapper}>
+                <Navigation size={10} /> {formatDistance(distance)}
+              </span>
+            </>
+          )}
+        </div>
+
+        <div className={styles.priceRow}>
+          {min_session_price
+            ? `$${min_session_price}`
+            : min_course_price
+              ? `$${min_course_price}`
+              : "Price varies"}
+          <span className={styles.priceLabel}>
+            {min_session_price ? "/person" : min_course_price ? "/course" : ""}
           </span>
-          {formattedDistance && (
-            <>
-              <span style={{ color: "#c0c0c0", margin: "0 2px" }}>•</span>
-              <DistanceBadge>
-                <Navigation size={10} strokeWidth={2.5} />
-                {formattedDistance}
-              </DistanceBadge>
-            </>
-          )}
-        </LocationRow>
-
-        <PriceRow>
-          {prices.singleSession === null && prices.course === null ? (
-            <Price>
-              <PriceLabel>Pricing unavailable</PriceLabel>
-            </Price>
-          ) : (
-            <>
-              {prices.singleSession !== null &&
-                renderPrice(prices.singleSession, "/ person")}
-              {prices.singleSession !== null && prices.course !== null && (
-                <PriceSeparator>•</PriceSeparator>
-              )}
-              {prices.course !== null && renderPrice(prices.course, "/ course")}
-            </>
-          )}
-        </PriceRow>
-      </ContentContainer>
-    </CardContainer>
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -1,8 +1,10 @@
+// --- START OF FILE ClientHeader.jsx ---
+
 "use client";
 
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import Link from "next/link";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import styled, { createGlobalStyle } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,7 +25,7 @@ import { useSearch, SUGGESTED_AREAS } from "@/context/SearchContext";
 // Dynamic Imports
 const CustomUserMenu = dynamic(
   () => import("@/components/header/CustomUserMenu.jsx"),
-  { ssr: false, loading: () => null }
+  { ssr: false, loading: () => null },
 );
 
 const UserAvatar = dynamic(() => import("@/components/common/UserAvatar"), {
@@ -37,13 +39,11 @@ const UserAvatar = dynamic(() => import("@/components/common/UserAvatar"), {
   ),
 });
 
-const LogoIcon = dynamic(() => import("@/components/common/logoIcon"), {
-  ssr: false,
-});
+import LogoIcon from "@/components/common/logoIcon";
 
 const SettingsModal = dynamic(
   () => import("@/components/header/SettingsDrawer"),
-  { ssr: false }
+  { ssr: false },
 );
 
 // --- HELPER HOOKS ---
@@ -81,7 +81,9 @@ const HeaderWrapper = styled.header`
   top: ${({ $isFixed }) => ($isFixed ? "0" : "auto")};
   height: 80px;
   padding: 0 2rem;
-  transition: background-color 0.3s, border-bottom 0.3s;
+  transition:
+    background-color 0.3s,
+    border-bottom 0.3s;
   z-index: 100;
   overflow: visible;
 
@@ -417,21 +419,18 @@ const QuickPill = styled.button`
   }
 `;
 
-// --- CustomCalendar Component (Dual Month + Range Support) ---
+// --- CustomCalendar Component ---
 const CustomCalendar = ({ value, onChange, onClose }) => {
   const [currentDate, setCurrentDate] = useState(dayjs());
 
   const selectedStart = value?.start
     ? dayjs(value.start)
     : value && value.isValid && value.isValid()
-    ? dayjs(value)
-    : null;
+      ? dayjs(value)
+      : null;
   const selectedEnd = value?.end ? dayjs(value.end) : null;
 
   const handleDateClick = (dateObj) => {
-    // For now, behaving as single selection or simple override
-    // If you want range selection logic (click 1 = start, click 2 = end), implement here.
-    // Currently following banner logic: clicking a date selects it as single/start
     onChange(dateObj);
     onClose();
   };
@@ -446,7 +445,6 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
     switch (type) {
       case "weekend":
         if (today.day() === 0) {
-          // Sunday
           start = today.subtract(1, "day");
           end = today;
         } else {
@@ -518,9 +516,8 @@ const CustomCalendar = ({ value, onChange, onClose }) => {
           const hasSelection =
             isSingle || isRangeStart || isRangeEnd || isInRange;
 
-          // Theme primary color (hardcoded fallback to match banner)
-          const primaryColor = "#ff385c"; // Airbnb/Rose color
-          const faintColor = "#ff385c15"; // Faint version
+          const primaryColor = "#ff385c";
+          const faintColor = "#ff385c15";
 
           let bgRadius = "0";
           let bgColor = "transparent";
@@ -722,10 +719,9 @@ const IconBox = styled.div`
 `;
 
 // --- CONSTANTS ---
-// Updated widths to accommodate wider calendar
 const POPUP_SIZES = {
   location: 380,
-  date: 660, // Widened for dual months
+  date: 660,
   participants: 340,
 };
 
@@ -741,7 +737,6 @@ const contentVariants = {
 
 function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user: currentUser } = useAuthUser();
   const menuTriggerRef = useRef(null);
 
@@ -763,7 +758,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
     handleLocationSelect,
     performSearch,
     setIsDrawerOpen,
-    setSelectedLocation,
   } = useSearch();
 
   // Search Interaction State
@@ -782,58 +776,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
     setActiveField(null);
   });
 
-  // Sync Params
-  useEffect(() => {
-    const locParam = searchParams.get("location");
-    const latParam = searchParams.get("lat");
-    const lngParam = searchParams.get("lng");
-
-    // Updated date logic to handle ranges
-    const dateParam = searchParams.get("date");
-    const startDateParam = searchParams.get("start_date");
-    const endDateParam = searchParams.get("end_date");
-
-    const participantsParam = searchParams.get("participants");
-
-    if (locParam) {
-      setSearchTerm(locParam);
-      if (latParam && lngParam) {
-        setSelectedLocation({
-          displayName: locParam,
-          coordinates: { lat: parseFloat(latParam), lng: parseFloat(lngParam) },
-          citySlug: null,
-          provinceSlug: null,
-        });
-      }
-    }
-
-    if (startDateParam && endDateParam) {
-      setDatePickerValue({
-        start: startDateParam,
-        end: endDateParam,
-      });
-    } else if (dateParam) {
-      const parsedDate = dayjs(dateParam);
-      if (parsedDate.isValid()) setDatePickerValue(parsedDate);
-    } else {
-      // Only clear if no date params (optional - depends on UX preference)
-      // setDatePickerValue(null);
-    }
-
-    if (participantsParam) {
-      const numParticipants = parseInt(participantsParam, 10);
-      setParticipantCount(
-        !isNaN(numParticipants) && numParticipants > 0 ? numParticipants : 1
-      );
-    }
-  }, [
-    searchParams,
-    setSearchTerm,
-    setDatePickerValue,
-    setParticipantCount,
-    setSelectedLocation,
-  ]);
-
   // Position Logic
   useLayoutEffect(() => {
     if (!activeField || !containerRef.current) return;
@@ -850,31 +792,21 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
         const buttonRect = targetRef.current.getBoundingClientRect();
         const containerRect = containerRef.current.getBoundingClientRect();
 
-        // Use updated widths
         const width = POPUP_SIZES[activeField] || 360;
 
-        // Calculate center relative to the button
         let left =
           buttonRect.left -
           containerRect.left +
           buttonRect.width / 2 -
           width / 2;
 
-        // Smart edge detection (prevents popup from going off screen)
-        // Note: The HeaderWrapper has overflow: visible, so negative left isn't clipped,
-        // but we want it aligned nicely relative to the pill.
-
-        // However, we need to check if it overflows the viewport, not just container.
-        // Simplified check:
         const absoluteLeft = containerRect.left + left;
         const windowWidth = window.innerWidth;
 
         if (absoluteLeft + width > windowWidth - 20) {
-          // Shift left if overflows right edge
           left -= absoluteLeft + width - (windowWidth - 20);
         }
         if (absoluteLeft < 20) {
-          // Shift right if overflows left edge
           left += 20 - absoluteLeft;
         }
 
@@ -899,7 +831,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
   const getDateDisplay = () => {
     if (!datePickerValue) return "Any week";
 
-    // Check for range object
     if (datePickerValue.start && datePickerValue.end) {
       const s = dayjs(datePickerValue.start);
       const e = dayjs(datePickerValue.end);
@@ -909,7 +840,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
       return `${s.format("MMM D")} - ${e.format("MMM D")}`;
     }
 
-    // Check for single Dayjs object
     if (dayjs.isDayjs(datePickerValue)) {
       return datePickerValue.format("MMM DD");
     }
@@ -926,7 +856,11 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
         <LocationOption
           key={idx}
           onClick={() => {
-            handleLocationSelect(result.displayName);
+            handleLocationSelect(result.displayName, {
+              coordinates: result.coordinates,
+              citySlug: result.citySlug,
+              provinceSlug: result.provinceSlug,
+            });
             setActiveField(null);
           }}
         >
@@ -954,7 +888,11 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
       <LocationOption
         key={idx}
         onClick={() => {
-          handleLocationSelect(area.name);
+          handleLocationSelect(area.name, {
+            coordinates: area.coords,
+            citySlug: area.citySlug,
+            provinceSlug: area.provinceSlug,
+          });
           setActiveField(null);
         }}
       >
@@ -1145,7 +1083,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
                           initial="enter"
                           animate="center"
                           exit="exit"
-                          // Fix: Use correct width for content container relative to popup
                           style={{
                             width: (POPUP_SIZES[activeField] || 360) - 48,
                           }}

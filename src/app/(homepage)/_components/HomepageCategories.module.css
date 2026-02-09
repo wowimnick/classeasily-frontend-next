@@ -1,0 +1,235 @@
+/* HomepageCategories.module.css */
+
+/* --- SECTION WRAPPER --- */
+.section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0 4rem;
+  margin: 4rem auto;
+  z-index: 1;
+  width: 100%;
+}
+
+.headerContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.title {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #222222;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #717171;
+  margin: 0;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+/* --- CAROUSEL BUTTONS --- */
+.buttonContainer {
+  display: flex;
+  gap: 0.75rem;
+  padding-bottom: 8px;
+}
+
+.navButton {
+  width: 40px;
+  height: 40px;
+  background-color: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
+  color: #222;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.navButton:hover:not(:disabled) {
+  border-color: #222;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.navButton:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.navButton:disabled {
+  opacity: 0.3;
+  cursor: default;
+  border-color: #f0f0f0;
+  box-shadow: none;
+}
+
+/* --- EMBLA CAROUSEL --- */
+.carouselWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.emblaViewport {
+  overflow: hidden;
+  width: 100%;
+}
+
+.emblaContainer {
+  display: flex;
+  gap: 24px;
+  padding: 0.5rem 0.25rem 1.5rem 0.25rem;
+  margin: 0 -0.25rem;
+}
+
+.slide {
+  flex: 0 0 auto;
+  position: relative;
+}
+
+/* --- CATEGORY CARD STYLES --- */
+.cardWrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 230px;
+  height: 250px;
+  border-radius: 1rem;
+  overflow: hidden;
+  cursor: pointer;
+  background-color: #f0f0f0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+}
+
+.cardWrapper:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.cardWrapper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0.4) 40%,
+    rgba(0, 0, 0, 0) 70%
+  );
+  z-index: 1;
+}
+
+.imageContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.imageContainer img {
+  transition: transform 0.5s ease;
+}
+
+.cardWrapper:hover .imageContainer img {
+  transform: scale(1.05);
+}
+
+.cardContent {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 1.5rem;
+  z-index: 2;
+}
+
+.cardTitle {
+  margin: 0 0 0.5rem 0;
+  font-size: 19px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.cardDesc {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- RESPONSIVE BREAKPOINTS --- */
+@media (max-width: 1425px) {
+  .section {
+    padding: 0 3rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .cardWrapper {
+    width: 190px;
+    height: 220px;
+  }
+  .cardTitle {
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 0 1.5rem;
+    margin: 3rem auto;
+  }
+  .title {
+    font-size: 1.5rem;
+  }
+  .subtitle {
+    font-size: 0.9rem;
+  }
+  .buttonContainer {
+    display: none;
+  }
+
+  .cardWrapper {
+    width: 190px;
+    height: 220px;
+    border-radius: 0.85rem;
+  }
+  .cardContent {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 616px) {
+  .section {
+    padding: 0 1rem;
+  }
+}
