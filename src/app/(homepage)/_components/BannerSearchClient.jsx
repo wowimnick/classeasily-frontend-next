@@ -151,7 +151,7 @@ const SearchButton = styled(motion.button)`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+  background: linear-gradient(135deg, #ff385c 0%, #e11d48 100%);
   color: white;
   border: none;
   border-radius: 50px;
@@ -481,7 +481,7 @@ const TrustStripWrapper = styled.div`
   background: rgba(0, 0, 0, 0.27);
   backdrop-filter: blur(1px);
   -webkit-backdrop-filter: blur(1px);
-  padding: 1.25rem 1.5rem;
+  padding: 0.5rem 1.5rem;
 
   @media (max-width: 850px) {
     display: none;
@@ -535,6 +535,14 @@ const AvatarItem = styled.div`
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   transition: transform 0.3s ease;
   background: #333;
+
+  /* Add these lines: */
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
 `;
 const CenterInfo = styled.div`
   display: flex;
@@ -805,29 +813,23 @@ export default function BannerSearchClient({ mode }) {
           <BannerContainer>
             <LeftContent>
               <lord-icon
-                src="https://cdn.lordicon.com/xzvgfwwv.json"
+                src="https://cdn.lordicon.com/ajzwsrcs.json"
                 trigger="in"
                 state="in-reveal"
-                colors="primary:#ebe6ef,secondary:#ee6d66"
+                colors="primary:#f4dc9c,secondary:#ebe6ef,tertiary:#ffc738,quaternary:#f9c9c0,quinary:#629110"
                 style={{ width: "22px", height: "22px" }}
               />
               <TextContent>
                 <NewBadge>New</NewBadge>
-                <strong>Introducing Collections</strong>
+                <strong>Introducing Gift Cards</strong>
                 <span className="sep">|</span>
                 <span className="desc">
-                  Discover classes organized by theme: Date Nights, For Groups &
-                  Trending. 🔥
+                  Give the gift of experiences. Perfect for any occasion. 🎁
                 </span>
               </TextContent>
             </LeftContent>
             <ActionGroup>
-              <PillButton href="/explore?collection=trending">
-                Explore Collections
-              </PillButton>
-              <SecondaryLink href="/business">
-                For Business <ArrowRight size={14} />
-              </SecondaryLink>
+              <PillButton href="/giftcards">Shop Gift Cards</PillButton>
             </ActionGroup>
           </BannerContainer>
         </BannerWrapper>
@@ -838,8 +840,8 @@ export default function BannerSearchClient({ mode }) {
   if (mode === "trust") {
     const activityImagesLeft = [
       {
-        src: "https://polarart.ca/cdn/shop/products/Claythrowing-3-1.png?v=1682656534&width=1500",
-        alt: "Pottery Workshop",
+        src: "https://i.ytimg.com/vi/Z39AeBVCQu0/maxresdefault.jpg",
+        alt: "Neon Sign Making",
         x: 0,
         y: -3,
         z: 2,

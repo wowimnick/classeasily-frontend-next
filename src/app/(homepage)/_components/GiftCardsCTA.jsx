@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "antd";
 import { ArrowRight } from "lucide-react";
@@ -13,7 +13,6 @@ import Card1 from "@/assets/card1.png";
 import Card5 from "@/assets/Card 9.png";
 
 // 1. Dynamic Import for the heavy 3D component
-// We disable SSR because 3D canvas is client-only anyway
 const GiftCardsCanvas = dynamic(() => import("./GiftCardsCanvas"), {
   ssr: false,
   loading: () => <Fallback2D />,
@@ -37,14 +36,15 @@ const Fallback2D = () => (
 
 const GiftCardsCTA = () => {
   const router = useRouter();
-  const [isNavigating, setIsNavigating] = useState(false);
-
-  // 3. Viewport Detection
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "200px" });
 
+  // Prefetch the giftcards page
+  useEffect(() => {
+    router.prefetch("/giftcards/");
+  }, [router]);
+
   const handleBuyClick = () => {
-    setIsNavigating(true);
     router.push("/giftcards/");
   };
 
@@ -72,7 +72,6 @@ const GiftCardsCTA = () => {
             type="primary"
             size="large"
             onClick={handleBuyClick}
-            loading={isNavigating}
             className={styles.ctaButton}
           >
             Purchase Gift Card <ArrowRight size={18} />

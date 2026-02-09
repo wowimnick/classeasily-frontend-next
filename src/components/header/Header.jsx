@@ -20,13 +20,33 @@ const CustomUserMenu = dynamic(() => import("./CustomUserMenu"), {
 const SettingsModal = dynamic(() => import("./SettingsDrawer"), { ssr: false });
 const LogoIcon = dynamic(() => import("@/components/common/logoIcon"));
 
+// --- ICONS ---
+
+const GuestUserIcon = ({ color, size = 32 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 36 36"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M7.97444 29.1576C8.88693 27.0078 11.0174 25.5 13.5 25.5H22.5C24.9826 25.5 27.1131 27.0078 28.0256 29.1576M24 14.25C24 17.5637 21.3137 20.25 18 20.25C14.6863 20.25 12 17.5637 12 14.25C12 10.9363 14.6863 8.25 18 8.25C21.3137 8.25 24 10.9363 24 14.25ZM33 18C33 26.2843 26.2843 33 18 33C9.71573 33 3 26.2843 3 18C3 9.71573 9.71573 3 18 3C26.2843 3 33 9.71573 33 18Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 // --- STYLED COMPONENTS ---
 
 const scrolledStyling = {
   logoColor: "#fb2243",
-  outlineAndIconColor: "#353535",
-  backgroundColor: "rgba(255, 255, 255, 0.22)",
-  textColor: "#000000ff",
+  color: "#000000", // STRICTLY BLACK
+  backgroundColor: "rgba(255, 255, 255, 0.95)",
+  borderColor: "#e5e7eb", // Light grey border when scrolled for better aesthetic against white bg
 };
 
 const HeaderWrapper = styled.header`
@@ -37,7 +57,7 @@ const HeaderWrapper = styled.header`
   backdrop-filter: ${(props) => (props.$isScrolled ? "blur(8px)" : "none")};
   padding: ${(props) => (props.$isScrolled ? "0.3rem 2rem" : "0.5rem 3rem")};
   color: ${(props) =>
-    props.$isScrolled ? scrolledStyling.textColor : props.$initialColor};
+    props.$isScrolled ? scrolledStyling.color : props.$initialColor};
   text-align: center;
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -69,7 +89,7 @@ const HeaderWrapper = styled.header`
     ${(props) =>
       props.$isScrolled &&
       `
-      background-color: rgba(255, 255, 255, 0.85);
+      background-color: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(12px) saturate(180%);
       -webkit-backdrop-filter: blur(12px) saturate(180%);
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), 
@@ -92,7 +112,7 @@ const HeaderWrapper = styled.header`
     padding: 0.5rem 1rem;
     background-color: ${(props) =>
       props.$isScrolled
-        ? "rgba(255, 255, 255, 0.4)"
+        ? "rgba(255, 255, 255, 0.95)"
         : "rgba(255, 255, 255, 0.15)"};
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -191,34 +211,43 @@ const Selection = styled.div`
     gap: 0.5rem;
   }
 `;
+
+// --- BUTTON STYLE: FIXED TRANSPARENCY ---
 const RoundedButton = styled(motion.button)`
-  border: 1px solid ${(props) => props.$borderColor || "#ddd"};
+  height: 48px;
+  border: 1px solid ${(props) => props.$borderColor || "#e5e7eb"};
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: ${(props) => (props.$isScrolled ? "0.5rem 0.7rem" : "0.8rem")};
-  border-radius: 30px;
-  background-color: transparent;
+  padding: 4px 8px 4px 14px;
+  border-radius: 28px;
+  background-color: transparent !important; /* FORCED TRANSPARENT */
   cursor: pointer;
   overflow: hidden;
   color: ${(props) => props.color};
-  gap: 0.5rem;
-  margin-left: 1rem;
-  padding-left: ${(props) => (props.$isScrolled ? "0.7rem" : "1rem")};
+  gap: 5px;
+  margin-left: 0.5rem;
   transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
   @media (max-width: 756px) {
-    padding: 0.4rem 0.5rem;
+    height: 40px;
+    padding: 4px 6px 4px 10px;
+    gap: 6px;
     margin-left: 0.5rem;
-    padding-left: 0.5rem;
-    gap: 0.35rem;
   }
 `;
-const MenuIconStyled = styled(Menu)`
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
+
+const MenuIconWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: ${(props) => props.$iconColor};
 `;
+
 const Title = styled.p`
   font-family: "ProximaSoft";
   font-weight: 600;
@@ -250,25 +279,25 @@ const AuthLink = styled.span`
   font-weight: 600;
   font-size: ${(props) => (props.$isScrolled ? "0.85rem" : "0.95rem")};
   cursor: pointer;
-  padding: ${(props) => (props.$isScrolled ? "0.7rem 1rem" : "1.1rem 1.4rem")};
+  padding: ${(props) => (props.$isScrolled ? "0.7rem 1rem" : "0.7rem")};
   border-radius: 24px;
-  border: 1px solid ${(props) => props.$borderColor};
+  border: 1px solid transparent;
   display: inline-block;
   transition: all 0.3s ease;
   &:hover {
-    background-color: ${(props) => props.$hoverColor};
-    color: #fff;
-    border-color: ${(props) => props.$hoverColor};
+    background-color: rgba(255, 255, 255, 0.15);
   }
   @media (max-width: 756px) {
     font-size: 0.8rem;
     padding: 0.55rem 0.9rem;
+    display: none;
   }
 `;
 const AuthContainer = styled(motion.div)`
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
+  position: relative;
   @media (max-width: 756px) {
     gap: 0.25rem;
   }
@@ -277,19 +306,49 @@ const AvatarWrapper = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  @media (max-width: 756px) {
-    transform: scale(0.8);
+`;
+
+// --- GUEST MENU COMPONENTS ---
+const GuestMenuDropdown = styled(motion.div)`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  width: 240px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  padding: 0.5rem 0;
+  z-index: 1000;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+`;
+
+const GuestMenuItem = styled.div`
+  padding: 0.8rem 1.2rem;
+  font-size: 0.95rem;
+  color: #333;
+  font-weight: ${(props) => (props.$bold ? "600" : "400")};
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background-color: #f7f7f7;
+  }
+  &:first-child {
+    border-bottom: 1px solid #f0f0f0;
   }
 `;
 
 // --- HELPER COMPONENTS ---
-const UserAvatar = ({ size = 28 }) => {
+const UserAvatar = ({ size = 28, color }) => {
   const { user: currentUser } = useAuthUser();
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => setImageFailed(false), [currentUser?.avatar_thumb_url]);
   const initials = currentUser?.first_name?.[0] || "U";
 
-  if (!currentUser?.avatar_thumb_url || imageFailed) {
+  // Case 1: Logged in, no image (or failed), show Initials
+  if (currentUser && (!currentUser?.avatar_thumb_url || imageFailed)) {
     return (
       <div
         style={{
@@ -309,6 +368,26 @@ const UserAvatar = ({ size = 28 }) => {
       </div>
     );
   }
+
+  // Case 2: Guest (Not logged in) -> Show the specific SVG Icon with Dynamic Color
+  if (!currentUser) {
+    return (
+      <div
+        style={{
+          width: size,
+          height: size,
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <GuestUserIcon color={color} size={size + 8} />
+      </div>
+    );
+  }
+
+  // Case 3: Logged in with valid image
   return (
     <div
       style={{
@@ -338,7 +417,7 @@ const HeaderContent = ({
   topOffset = 0,
 }) => {
   const router = useRouter();
-  const pathname = usePathname(); // For closing menu on route change
+  const pathname = usePathname();
   const { user: currentUser } = useAuthUser();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -350,7 +429,6 @@ const HeaderContent = ({
   const { searchTerm, datePickerValue, participantCount, setIsDrawerOpen } =
     useSearch();
 
-  // Scroll Listener
   useEffect(() => {
     const scrollThreshold = topOffset > 0 ? topOffset : 100;
     const checkScrollPosition = () => {
@@ -367,35 +445,47 @@ const HeaderContent = ({
     setIsMenuOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        menuTriggerRef.current &&
+        !menuTriggerRef.current.contains(event.target)
+      ) {
+        setIsMenuOpen(false);
+      }
+    };
+    if (isMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
   const getNotchDateDisplay = () => {
     if (!datePickerValue) return "Any week";
-
-    // Handle Range Object { start, end }
     if (datePickerValue.start && datePickerValue.end) {
       const s = dayjs(datePickerValue.start);
       const e = dayjs(datePickerValue.end);
-
-      // If same month: "Jan 1 - 5"
       if (s.month() === e.month()) {
         return `${s.format("MMM D")} - ${e.format("D")}`;
       }
-      // If different months: "Jan 28 - Feb 2"
       return `${s.format("MMM D")} - ${e.format("MMM D")}`;
     }
-
-    // Handle Single Date
     return dayjs(datePickerValue).format("MMM D");
   };
 
-  const currentIconColor = isScrolled
-    ? scrolledStyling.outlineAndIconColor
-    : dropdownButtonColor;
-  const currentBorderColor = isScrolled
-    ? scrolledStyling.outlineAndIconColor
-    : dropdownButtonOutlineColor;
-  const currentTextColor = isScrolled
-    ? scrolledStyling.textColor
-    : dropdownButtonColor;
+  // --- DYNAMIC COLOR LOGIC ---
+  // If Scrolled: EVERYTHING BLACK (Icons, Text). Border is light grey.
+  // If Not Scrolled: Colors based on props (usually White).
+
+  const activeColor = isScrolled
+    ? scrolledStyling.color // #000000
+    : dropdownButtonColor; // usually #fff
+
+  const activeBorderColor = isScrolled
+    ? scrolledStyling.borderColor // #e5e7eb
+    : dropdownButtonOutlineColor; // usually #fff
 
   return (
     <>
@@ -424,55 +514,80 @@ const HeaderContent = ({
         <Spacer />
 
         <Selection>
-          <AnimatePresence mode="wait">
-            {currentUser ? (
-              <AuthContainer key="auth">
-                <RoundedButton
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  ref={menuTriggerRef}
-                  color={currentTextColor}
-                  $borderColor={currentBorderColor}
-                  $isScrolled={isScrolled}
-                >
-                  <MenuIconStyled $iconColor={currentIconColor} />
-                  <AvatarWrapper>
-                    <UserAvatar size={32} />
-                  </AvatarWrapper>
-                </RoundedButton>
-                <CustomUserMenu
-                  isOpen={isMenuOpen}
-                  onClose={() => setIsMenuOpen(false)}
-                  onNavigate={(p) => router.push(p)}
-                  onShowSettings={() => {
-                    setIsMenuOpen(false);
-                    setIsSettingsModalOpen(true);
-                  }}
-                  triggerRef={menuTriggerRef}
-                />
-              </AuthContainer>
-            ) : (
-              <AuthContainer key="guest">
-                <AuthLink
-                  onClick={openLoginModal}
-                  color={currentTextColor}
-                  $borderColor={currentBorderColor}
-                  $hoverColor={dropdownButtonHoverColor}
-                  $isScrolled={isScrolled}
-                >
-                  Log In
-                </AuthLink>
-                <AuthLink
-                  onClick={openRegisterModal}
-                  color={currentTextColor}
-                  $borderColor={currentBorderColor}
-                  $hoverColor={dropdownButtonHoverColor}
-                  $isScrolled={isScrolled}
-                >
-                  Sign Up
-                </AuthLink>
-              </AuthContainer>
+          <Link href="/business" legacyBehavior>
+            <AuthLink
+              color={activeColor}
+              $borderColor="transparent"
+              $hoverColor="rgba(255,255,255,0.2)"
+              $isScrolled={isScrolled}
+            >
+              Become a host
+            </AuthLink>
+          </Link>
+
+          <AuthContainer key="auth">
+            <RoundedButton
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              ref={menuTriggerRef}
+              color={activeColor}
+              $borderColor={activeBorderColor}
+              $isScrolled={isScrolled}
+            >
+              {/* Pass the activeColor to the Menu Icon */}
+              <MenuIconWrapper $iconColor={activeColor}>
+                <Menu size={18} strokeWidth={2.5} />
+              </MenuIconWrapper>
+
+              {/* Pass the activeColor to the Avatar (Guest Icon uses it) */}
+              <AvatarWrapper>
+                <UserAvatar size={28} color={activeColor} />
+              </AvatarWrapper>
+            </RoundedButton>
+
+            {currentUser && (
+              <CustomUserMenu
+                isOpen={isMenuOpen}
+                onClose={() => setIsMenuOpen(false)}
+                onNavigate={(p) => router.push(p)}
+                onShowSettings={() => {
+                  setIsMenuOpen(false);
+                  setIsSettingsModalOpen(true);
+                }}
+                triggerRef={menuTriggerRef}
+              />
             )}
-          </AnimatePresence>
+
+            {!currentUser && (
+              <AnimatePresence>
+                {isMenuOpen && (
+                  <GuestMenuDropdown
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <GuestMenuItem
+                      $bold
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        openLoginModal();
+                      }}
+                    >
+                      Log in
+                    </GuestMenuItem>
+                    <GuestMenuItem
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        openRegisterModal();
+                      }}
+                    >
+                      Sign up
+                    </GuestMenuItem>
+                  </GuestMenuDropdown>
+                )}
+              </AnimatePresence>
+            )}
+          </AuthContainer>
         </Selection>
       </HeaderWrapper>
 

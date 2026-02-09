@@ -21,6 +21,10 @@ export default function ClientProviders({ children }) {
   const _hasHydrated = useAuthStore((state) => state._hasHydrated);
 
   useEffect(() => {
+    localStorage.setItem("cookie_consent", "true");
+  }, []);
+
+  useEffect(() => {
     if (hasInitialized.current) return;
 
     if (!_hasHydrated) {
@@ -74,15 +78,13 @@ export default function ClientProviders({ children }) {
             <AuthProvider>
               <SessionMonitor />
               <SearchProvider>
-                <CookieConsentProvider>
-                  <AnalyticsProvider>
-                    <SearchDrawer />
-                    <Suspense fallback={null}>
-                      <SearchUrlHandler />
-                    </Suspense>
-                    {children}
-                  </AnalyticsProvider>
-                </CookieConsentProvider>
+                <AnalyticsProvider>
+                  <SearchDrawer />
+                  <Suspense fallback={null}>
+                    <SearchUrlHandler />
+                  </Suspense>
+                  {children}
+                </AnalyticsProvider>
               </SearchProvider>
             </AuthProvider>
           </ToastProvider>
