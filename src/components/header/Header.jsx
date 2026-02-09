@@ -205,7 +205,7 @@ const Selection = styled.div`
   grid-column: 3 / 4;
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
+  gap: 0.4rem;
   align-items: center;
   @media (max-width: 756px) {
     gap: 0.5rem;
@@ -322,6 +322,7 @@ const GuestMenuDropdown = styled(motion.div)`
   z-index: 1000;
   border: 1px solid rgba(0, 0, 0, 0.04);
   overflow: hidden;
+  text-align: left;
 `;
 
 const GuestMenuItem = styled.div`
@@ -445,7 +446,13 @@ const HeaderContent = ({
     setIsMenuOpen(false);
   }, [pathname]);
 
+  // FIX: This listener was closing the menu when clicking inside CustomUserMenu because
+  // CustomUserMenu is a Portal (physically outside menuTriggerRef).
   useEffect(() => {
+    // If logged in, CustomUserMenu handles "click outside" internally via triggerRef.
+    // We should not interfere here.
+    if (currentUser) return;
+
     const handleClickOutside = (event) => {
       if (
         menuTriggerRef.current &&
@@ -460,7 +467,7 @@ const HeaderContent = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isMenuOpen]);
+  }, [isMenuOpen, currentUser]);
 
   const getNotchDateDisplay = () => {
     if (!datePickerValue) return "Any week";
@@ -476,9 +483,6 @@ const HeaderContent = ({
   };
 
   // --- DYNAMIC COLOR LOGIC ---
-  // If Scrolled: EVERYTHING BLACK (Icons, Text). Border is light grey.
-  // If Not Scrolled: Colors based on props (usually White).
-
   const activeColor = isScrolled
     ? scrolledStyling.color // #000000
     : dropdownButtonColor; // usually #fff
@@ -533,12 +537,10 @@ const HeaderContent = ({
               $borderColor={activeBorderColor}
               $isScrolled={isScrolled}
             >
-              {/* Pass the activeColor to the Menu Icon */}
               <MenuIconWrapper $iconColor={activeColor}>
                 <Menu size={18} strokeWidth={2.5} />
               </MenuIconWrapper>
 
-              {/* Pass the activeColor to the Avatar (Guest Icon uses it) */}
               <AvatarWrapper>
                 <UserAvatar size={28} color={activeColor} />
               </AvatarWrapper>
