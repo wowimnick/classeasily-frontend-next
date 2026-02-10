@@ -725,6 +725,7 @@ const ClassPageImagesTitle = React.memo(
                   : image?.large_url ||
                     image?.medium_url ||
                     image?.thumbnail_url;
+                const isLcp = index === 0;
 
                 return (
                   <GridImageItem
@@ -736,9 +737,10 @@ const ClassPageImagesTitle = React.memo(
                   >
                     <img
                       src={imageUrl}
-                      alt={`Class image ${index + 1}`}
-                      loading={index === 0 ? "eager" : "lazy"}
-                      fetchpriority={index === 0 ? "high" : "auto"}
+                      alt={isLcp ? `${title || "Class"} - image 1` : `Class image ${index + 1}`}
+                      loading={isLcp ? "eager" : "lazy"}
+                      fetchPriority={isLcp ? "high" : "auto"}
+                      decoding="async"
                     />
                   </GridImageItem>
                 );
@@ -761,25 +763,33 @@ const ClassPageImagesTitle = React.memo(
             <MobileCarouselWrapper>
               <EmblaViewport ref={emblaRef}>
                 <EmblaContainer>
-                  {imagesToDisplay.map((img, index) => (
-                    <EmblaSlide
-                      key={index}
-                      onClick={() =>
-                        !usePlaceholders && showGalleryModal(index)
-                      }
-                    >
-                      <CarouselImageContent
-                        className={usePlaceholders ? "non-clickable" : ""}
+                  {imagesToDisplay.map((img, index) => {
+                    const imgSrc =
+                      typeof img === "string"
+                        ? img
+                        : img?.large_url || img?.medium_url || img;
+                    const isLcp = index === 0;
+                    return (
+                      <EmblaSlide
+                        key={index}
+                        onClick={() =>
+                          !usePlaceholders && showGalleryModal(index)
+                        }
                       >
-                        <img
-                          src={img.large_url || img.medium_url || img}
-                          alt={`Class image ${index + 1}`}
-                          loading={index === 0 ? "eager" : "lazy"}
-                          fetchpriority={index === 0 ? "high" : "auto"}
-                        />
-                      </CarouselImageContent>
-                    </EmblaSlide>
-                  ))}
+                        <CarouselImageContent
+                          className={usePlaceholders ? "non-clickable" : ""}
+                        >
+                          <img
+                            src={imgSrc}
+                            alt={isLcp ? `${title || "Class"} - image 1` : `Class image ${index + 1}`}
+                            loading={isLcp ? "eager" : "lazy"}
+                            fetchPriority={isLcp ? "high" : "auto"}
+                            decoding="async"
+                          />
+                        </CarouselImageContent>
+                      </EmblaSlide>
+                    );
+                  })}
                 </EmblaContainer>
               </EmblaViewport>
               <CarouselOverlay>

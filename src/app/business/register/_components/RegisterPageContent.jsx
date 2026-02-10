@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import styled, { ThemeProvider } from "styled-components";
-import { ConfigProvider, Spin, Alert } from "antd";
+import { ConfigProvider, Spin } from "antd";
 import message from "@/lib/message";
 import { motion } from "framer-motion";
 import {
@@ -15,6 +15,7 @@ import {
   ArrowRightOutlined,
   WarningOutlined,
 } from "@ant-design/icons";
+import Link from "next/link";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useAuth } from "@/lib/auth-client"; // Added useAuth import
 import posthog from "posthog-js";
@@ -25,7 +26,6 @@ import { businessService, uploadService } from "@/services/apiService";
 
 // Dynamically import components that might have SSR issues
 const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
-const ReactGA = dynamic(() => import("react-ga4"), { ssr: false });
 const ExploreHeader = dynamic(
   () => import("@/components/explore/ExploreHeader"),
   { ssr: false }
@@ -213,9 +213,139 @@ const AlreadyRegisteredContainer = styled(motion.div)`
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  text-align: center;
-  padding: 4rem 2rem;
+  padding: 1.5rem 1rem;
   height: 100%;
+  min-height: 0;
+
+  @media (min-width: 600px) {
+    padding: 2rem 1.5rem;
+  }
+`;
+
+const AlreadyRegisteredCard = styled.div`
+  width: 100%;
+  max-width: 520px;
+  background: ${(props) => props.theme.token.colorBgContainer};
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
+  overflow: hidden;
+  text-align: left;
+`;
+
+const AlreadyRegisteredHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, rgba(250, 173, 20, 0.12) 0%, rgba(250, 173, 20, 0.04) 100%);
+  border-bottom: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
+
+  @media (max-width: 480px) {
+    padding: 1rem 1.25rem;
+    gap: 10px;
+  }
+`;
+
+const AlreadyRegisteredIconWrap = styled.div`
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(250, 173, 20, 0.2);
+  color: #d48806;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  .anticon {
+    font-size: 22px;
+  }
+`;
+
+const AlreadyRegisteredTitle = styled.h1`
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: ${(props) => props.theme.token.colorText};
+
+  @media (max-width: 480px) {
+    font-size: 1.1rem;
+  }
+`;
+
+const AlreadyRegisteredBody = styled.div`
+  padding: 1.5rem 1.5rem 1.25rem;
+  font-size: 15px;
+  line-height: 1.6;
+  color: ${(props) => props.theme.token.colorTextSecondary};
+
+  @media (max-width: 480px) {
+    padding: 1.25rem 1.25rem 1rem;
+    font-size: 14px;
+  }
+
+  p {
+    margin: 0 0 0.75rem;
+  }
+  p:last-child {
+    margin-bottom: 0;
+  }
+  strong {
+    color: ${(props) => props.theme.token.colorText};
+    font-weight: 600;
+  }
+  a {
+    color: ${(props) => props.theme.token.colorPrimary};
+    font-weight: 500;
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+`;
+
+const AlreadyRegisteredActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 1.5rem 1.5rem;
+
+  @media (max-width: 480px) {
+    padding: 0 1.25rem 1.25rem;
+    flex-direction: column;
+  }
+`;
+
+const AlreadyRegisteredButton = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: ${(props) => props.theme.token.borderRadius}px;
+  font-size: 15px;
+  font-weight: 600;
+  background: ${(props) => props.theme.token.colorPrimary};
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.1s;
+
+  &:hover {
+    background: ${(props) => props.theme.token.colorPrimaryHover || props.theme.token.colorPrimary};
+    color: #fff;
+    transform: translateY(-1px);
+  }
+  &:active {
+    transform: translateY(0);
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+    padding: 12px 20px;
+  }
 `;
 
 export const stepsConfig = [
@@ -531,7 +661,6 @@ const RegisterPageContent = () => {
   const [isMobile, setIsMobile] = useState(true); // Default to true to be safe
   const [pageStatus, setPageStatus] = useState("loading");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [gaInitialized, setGaInitialized] = useState(false);
   const hasCheckedBusinessRef = useRef(false);
 
   const { user: currentUser, isLoading: loading } = useAuthUser();
@@ -542,17 +671,6 @@ const RegisterPageContent = () => {
   const { formData, updateStepData, resetForm } = useForm();
 
   const currentStepConfig = currentStep >= 0 ? stepsConfig[currentStep] : null;
-
-  // Initialize ReactGA only on client
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      import("react-ga4").then((GA) => {
-        if (GA.default.isInitialized) {
-          setGaInitialized(true);
-        }
-      });
-    }
-  }, []);
 
   // Set initial mobile state
   useEffect(() => {
@@ -569,28 +687,6 @@ const RegisterPageContent = () => {
     }
   }, [isAuthenticated]);
 
-  // TRACKING: View Registration Step
-  useEffect(() => {
-    if (
-      currentStep >= 0 &&
-      currentStep < stepsConfig.length &&
-      gaInitialized &&
-      typeof window !== "undefined"
-    ) {
-      import("react-ga4").then((GA) => {
-        if (GA.default.isInitialized) {
-          const stepTitle = stepsConfig[currentStep].title;
-          GA.default.event({
-            category: "Business Registration",
-            action: "View Step",
-            label: `Step ${currentStep + 1}: ${stepTitle}`,
-            value: currentStep + 1,
-          });
-        }
-      });
-    }
-  }, [currentStep, gaInitialized]);
-
   // Check for existing business
   useEffect(() => {
     if (pageStatus !== "checking" || hasCheckedBusinessRef.current) {
@@ -604,17 +700,6 @@ const RegisterPageContent = () => {
         if (isMounted) {
           if (response.success && response.data && response.data.length > 0) {
             setPageStatus("already_registered");
-            if (gaInitialized && typeof window !== "undefined") {
-              import("react-ga4").then((GA) => {
-                if (GA.default.isInitialized) {
-                  GA.default.event({
-                    category: "Business Registration",
-                    action: "Already Registered",
-                    label: `User with email ${currentUser?.email} attempted to re-register.`,
-                  });
-                }
-              });
-            }
           } else {
             setPageStatus("ready");
           }
@@ -629,7 +714,7 @@ const RegisterPageContent = () => {
     return () => {
       isMounted = false;
     };
-  }, [pageStatus, currentUser?.email, gaInitialized]);
+  }, [pageStatus, currentUser?.email]);
 
   useEffect(() => {
     const debouncedResize = debounce(() => {
@@ -722,18 +807,6 @@ const RegisterPageContent = () => {
   };
 
   const handleFinalApiSubmit = async (finalFormData) => {
-    if (gaInitialized && typeof window !== "undefined") {
-      import("react-ga4").then((GA) => {
-        if (GA.default.isInitialized) {
-          GA.default.event({
-            category: "Business Registration",
-            action: "Submit Final Step",
-            label: "User initiated final form submission",
-          });
-        }
-      });
-    }
-
     const dataToSubmit = new FormData();
     const { businessInfo = {} } = finalFormData;
     let imageS3Key = null;
@@ -875,19 +948,6 @@ const RegisterPageContent = () => {
         return;
       }
 
-      if (gaInitialized && typeof window !== "undefined") {
-        import("react-ga4").then((GA) => {
-          if (GA.default.isInitialized) {
-            GA.default.event({
-              category: "Business Registration",
-              action: "Final Submission Failed",
-              label: `API Error: ${JSON.stringify(error.response?.data)}`,
-              nonInteraction: true,
-            });
-          }
-        });
-      }
-
       const errorPayload = error.response?.data;
       if (errorPayload?.status === 409) {
         setPageStatus("already_registered");
@@ -916,19 +976,6 @@ const RegisterPageContent = () => {
         step_id: stepId,
       });
 
-      if (gaInitialized && typeof window !== "undefined") {
-        import("react-ga4").then((GA) => {
-          if (GA.default.isInitialized) {
-            GA.default.event({
-              category: "Business Registration",
-              action: "Complete Step",
-              label: `Step ${currentStep + 1}: ${stepTitle}`,
-              value: currentStep + 1,
-            });
-          }
-        });
-      }
-
       if (isLastStep) {
         setIsSubmitting(true);
         try {
@@ -950,7 +997,7 @@ const RegisterPageContent = () => {
         setCurrentStep((prev) => prev + 1);
       }
     },
-    [currentStep, formData, updateStepData, isLastStep, gaInitialized]
+    [currentStep, formData, updateStepData, isLastStep]
   );
 
   const handleStepSubmit = useCallback(
@@ -983,26 +1030,6 @@ const RegisterPageContent = () => {
         setCurrentStep(stepIndex);
       }
 
-      // TRACKING: Validation Errors
-      if (gaInitialized && typeof window !== "undefined") {
-        import("react-ga4").then((GA) => {
-          if (GA.default.isInitialized) {
-            const stepTitle = stepsConfig[stepIndex].title;
-            const fieldsInError = errorInfo.errorFields
-              .map((f) => f.name[0])
-              .join(", ");
-            GA.default.event({
-              category: "Business Registration",
-              action: "Validation Error",
-              label: `Step ${
-                stepIndex + 1
-              }: ${stepTitle} - Fields: ${fieldsInError}`,
-              nonInteraction: true,
-            });
-          }
-        });
-      }
-
       const errorMessages = errorInfo.errorFields
         .map(
           (field) =>
@@ -1025,7 +1052,7 @@ const RegisterPageContent = () => {
         duration: 10,
       });
     },
-    [currentStep, gaInitialized]
+    [currentStep]
   );
 
   const handleBack = useCallback(() => {
@@ -1045,20 +1072,7 @@ const RegisterPageContent = () => {
 
   // TRACKING: Start Form
   const startForm = () => {
-    // PostHog: Track business registration funnel entry
     posthog.capture("business_registration_started");
-
-    if (gaInitialized && typeof window !== "undefined") {
-      import("react-ga4").then((GA) => {
-        if (GA.default.isInitialized) {
-          GA.default.event({
-            category: "Business Registration",
-            action: "Start Registration",
-            label: "User clicked 'Begin Your Journey'",
-          });
-        }
-      });
-    }
     setDirection(1);
     setCurrentStep(0);
   };
@@ -1096,43 +1110,46 @@ const RegisterPageContent = () => {
         <PageLayout>
           <ContentColumn>
             <AlreadyRegisteredContainer
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
             >
-              <Alert
-                type="warning"
-                showIcon
-                icon={<WarningOutlined />}
-                style={{ maxWidth: "600px", textAlign: "left" }}
-                message={
-                  <span style={{ fontWeight: "bold", fontSize: "16px" }}>
+              <AlreadyRegisteredCard>
+                <AlreadyRegisteredHeader>
+                  <AlreadyRegisteredIconWrap>
+                    <WarningOutlined />
+                  </AlreadyRegisteredIconWrap>
+                  <AlreadyRegisteredTitle>
                     You Already Have a Business Registered
-                  </span>
-                }
-                description={
-                  <div>
-                    <p>
-                      Our records show that the account associated with{" "}
-                      <strong>{currentUser?.email}</strong> already owns a
-                      business. Each account is limited to one business profile.
-                    </p>
-                    <p>
-                      If you need to make changes to your existing business,
-                      please visit your dashboard. If you wish to register a
-                      completely new business, you will need to do so with a
-                      different account.
-                    </p>
-                    <p>
-                      If you believe this is an error or need to delete your
-                      current business to start over (note: this action is
-                      irreversible and will delete all associated data), please{" "}
-                      <a href="/contact-support">contact our support team</a>{" "}
-                      for assistance.
-                    </p>
-                  </div>
-                }
-              />
+                  </AlreadyRegisteredTitle>
+                </AlreadyRegisteredHeader>
+                <AlreadyRegisteredBody>
+                  <p>
+                    Our records show that the account associated with{" "}
+                    <strong>{currentUser?.email}</strong> already owns a business.
+                    Each account is limited to one business profile.
+                  </p>
+                  <p>
+                    If you need to make changes to your existing business, use
+                    the button below to open your dashboard. To register a
+                    completely new business, you’ll need to use a different
+                    account.
+                  </p>
+                  <p>
+                    If you believe this is an error or need to delete your
+                    current business to start over (this action is irreversible
+                    and will delete all associated data), please{" "}
+                    <a href="/contact-support">contact our support team</a> for
+                    assistance.
+                  </p>
+                </AlreadyRegisteredBody>
+                <AlreadyRegisteredActions>
+                  <AlreadyRegisteredButton href="/business/dashboard">
+                    <ArrowRightOutlined />
+                    Go to Dashboard
+                  </AlreadyRegisteredButton>
+                </AlreadyRegisteredActions>
+              </AlreadyRegisteredCard>
             </AlreadyRegisteredContainer>
           </ContentColumn>
         </PageLayout>

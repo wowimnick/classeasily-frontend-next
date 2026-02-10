@@ -30,7 +30,6 @@ import {
   SectionDivider,
   FormSectionCard,
 } from "./BusinessSettings";
-import heic2any from "heic2any";
 import { theme } from "@/components/theme";
 
 const { Option } = Select;
@@ -200,6 +199,7 @@ const GeneralSettingsTab = ({
           duration: 0,
         });
 
+        const { default: heic2any } = await import("heic2any");
         const convertedBlob = await heic2any({
           blob: file,
           toType: "image/jpeg",

@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import styled, { keyframes } from "styled-components";
+import { motion } from "framer-motion";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import confetti from "canvas-confetti";
 import dynamic from "next/dynamic";
@@ -42,6 +43,11 @@ const BookingModal = dynamic(() => import("./BookingModal"), {
 const ClassOptionsContainer = dynamic(() => import("./ClassOptionsContainer"), {
   ssr: false,
 });
+
+const LordIcon = dynamic(
+  () => import("@/services/ReactUtils").then((mod) => mod.LordIcon),
+  { ssr: false }
+);
 
 // Skeleton loader styles (ORIGINAL)
 const shimmer = keyframes`
@@ -302,10 +308,12 @@ const PrimaryContentArea = styled.main`
 
 const StickySidebar = styled.aside`
   position: sticky;
-  top: 1rem;
+  /* Card + bookmark sit lower to avoid overlapping hero images; bookmark sticks up ~40px */
+  top: calc(5.5rem + 0.5rem + 3.5rem);
+  padding-top: 2.25rem; /* ~100px: disclaimer + card start lower */
   align-self: start;
   height: fit-content;
-  max-height: calc(100vh - 8rem);
+  max-height: calc(100vh - 6rem - 4rem);
 
   @media (max-width: 1024px) {
     display: none;
@@ -320,16 +328,16 @@ const MobileBookingFooterContainer = styled.div`
     align-items: center;
     justify-content: space-between;
     position: fixed;
-    bottom: 1rem;
-    left: 1rem;
-    right: 1rem;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    right: 0.75rem;
     width: auto;
     background: rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(8px) saturate(180%);
     -webkit-backdrop-filter: blur(8px) saturate(180%);
-    padding: 0.7rem 1.5rem;
+    padding: 0.5rem 1rem;
     border: 1px solid rgba(255, 255, 255, 0.125);
-    border-radius: 16px;
+    border-radius: 12px;
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
     z-index: 100;
     transition:
@@ -347,20 +355,87 @@ const MobileBookingFooterContainer = styled.div`
 const FooterPriceInfo = styled.div`
   display: flex;
   flex-direction: column;
-  padding-right: 2rem;
+  padding-right: 1.25rem;
   line-height: 1.2;
 `;
 
 const FooterPrice = styled.span`
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #222;
 
   span {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     font-weight: 400;
     color: #717171;
   }
+`;
+
+/* Curved easing: smooth motion, no straight lines */
+const easeCurve = [0.33, 1, 0.68, 1];
+const easeCurveOut = [0.4, 0, 0.2, 1];
+
+/* Mobile-only: Best Price disclaimer — expands from footer toward lower center, then collapses to bookmark */
+const MobileBestPricePopUpWrapper = styled(motion.div)`
+  display: none;
+  @media (max-width: 1024px) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    z-index: 99;
+    box-sizing: border-box;
+    background: rgba(240, 240, 242, 0.72);
+    backdrop-filter: blur(10px) saturate(160%);
+    -webkit-backdrop-filter: blur(10px) saturate(160%);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    color: #222;
+    font-size: 0.8rem;
+    font-weight: 600;
+    pointer-events: auto;
+    min-height: 48px;
+
+    /* Bookmark: match footer glass, thinner, single-line feel */
+    &[data-bookmark="true"] {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(8px) saturate(180%);
+      -webkit-backdrop-filter: blur(8px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.125);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+      min-height: 36px;
+      font-size: 0.75rem;
+    }
+
+    lord-icon {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+      margin-right: 0.4rem;
+    }
+    &[data-bookmark="true"] lord-icon {
+      width: 18px;
+      height: 18px;
+      margin-right: 0.35rem;
+    }
+  }
+`;
+
+/* Expanded: two lines */
+const MobileBestPriceLines = styled(motion.div)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.25;
+`;
+
+/* Bookmark: single line "Best Price Guaranteed" */
+const MobileBestPriceSingleLine = styled(motion.div)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.25;
+  white-space: nowrap;
 `;
 
 const MapSectionWrapper = styled.section`
@@ -393,6 +468,271 @@ const AddressDisplay = styled.p`
   margin-top: 1rem;
   padding: 0 1rem;
 `;
+
+const letterVariants = {
+  initial: { scale: 1, color: "#222" },
+  animate: (i) => ({
+    scale: [1, 1.25, 1],
+    color: ["#222", "#fc3552", "#222"],
+    transition: {
+      duration: 0.3,
+      delay: i * 0.03,
+      ease: "easeInOut",
+    },
+  }),
+};
+
+/* Footer layout constants (match MobileBookingFooterContainer) */
+const FOOTER_BOTTOM_REM = 0.75;
+const FOOTER_HEIGHT_PX = 52;
+const FOOTER_MARGIN_REM = 0.75;
+
+function MobileBestPricePopUp({ visible, onComplete }) {
+  const [phase, setPhase] = useState("expanding"); // 'expanding' | 'expanded' | 'bookmark'
+  const [letterAnimationStarted, setLetterAnimationStarted] = useState(false);
+  const [footerWidthPx, setFooterWidthPx] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const marginPx = FOOTER_MARGIN_REM * 16;
+    const update = () => setFooterWidthPx(window.innerWidth - 2 * marginPx);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
+    setPhase("expanding");
+    setLetterAnimationStarted(false);
+  }, [visible]);
+
+  /* After expand animation, play letters and stay in expanded until interact/scroll */
+  const handleExpandComplete = useCallback(() => {
+    setPhase("expanded");
+    setLetterAnimationStarted(true);
+  }, []);
+
+  /* Scroll or interaction: collapse to bookmark with curved motion */
+  useEffect(() => {
+    if (!visible || phase !== "expanded") return;
+
+    const handleCollapse = () => setPhase("bookmark");
+
+    let scrollTop = typeof window !== "undefined" ? window.scrollY : 0;
+    const onScroll = () => {
+      if (Math.abs(window.scrollY - scrollTop) > 8) handleCollapse();
+      scrollTop = window.scrollY;
+    };
+
+    const onInteract = (e) => {
+      /* Ignore clicks on the footer CTA (Book button) so user can tap without collapsing */
+      const target = e.target?.closest?.("[data-mobile-footer-cta]");
+      if (target) return;
+      handleCollapse();
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("touchstart", onInteract, { passive: true });
+    window.addEventListener("click", onInteract);
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("touchstart", onInteract);
+      window.removeEventListener("click", onInteract);
+    };
+  }, [visible, phase]);
+
+  const line1 = "Best Price";
+  const line2 = "Guaranteed";
+  const singleLineText = "Best Price Guaranteed";
+
+  if (!visible) return null;
+
+  /* Expanded: lower-center card (grows from footer). Bookmark: strip above footer, same width as footer. */
+  const isBookmark = phase === "bookmark";
+  const footerBottomPx = FOOTER_BOTTOM_REM * 16;
+  const footerTop = footerBottomPx + FOOTER_HEIGHT_PX;
+  const marginPx = FOOTER_MARGIN_REM * 16;
+  /* Explicit pixel width so we never use "auto" — avoids width snap at end of animation */
+  const fullWidth = footerWidthPx > 0 ? footerWidthPx : 300;
+  /* Bookmark slightly narrower than footer (15px inset each side) */
+  const bookmarkWidth = fullWidth - 30;
+  const bookmarkLeftPx = marginPx + 15;
+  /* Left edge when 200px card is centered (center - 100). Keeps expand/collapse in sync and symmetric. */
+  const centerLeftPx = fullWidth / 2 + marginPx - 100;
+
+  /* Expand FROM the price: start as a small pill at the footer (centered), then grow to card. */
+  const isExpanding = phase === "expanding";
+  const isExpanded = phase === "expanded";
+
+  /* Start: small at the price (footer), centered — expands from there */
+  const PRICE_PILL_WIDTH = 72;
+  const footerState = {
+    left: "50%",
+    right: "auto",
+    width: PRICE_PILL_WIDTH,
+    bottom: footerTop,
+    minHeight: 48,
+    padding: "0.5rem 1rem",
+    borderRadius: "12px",
+    scale: 0.7,
+    scaleY: 0.25,
+    opacity: 0.85,
+    x: "-50%",
+  };
+  /* Paused state in pixels so collapse starts here and can expand symmetrically (left = center - width/2). */
+  const centerState = {
+    left: centerLeftPx,
+    right: "auto",
+    width: 200,
+    bottom: footerTop + 24,
+    minHeight: 48,
+    padding: "0.75rem 1rem",
+    borderRadius: "12px",
+    scale: 1,
+    scaleY: 1,
+    opacity: 1,
+    x: 0,
+  };
+  const bookmarkState = {
+    left: bookmarkLeftPx,
+    right: "auto",
+    width: bookmarkWidth,
+    bottom: footerTop,
+    padding: "0.35rem 1rem",
+    borderRadius: "10px 10px 0 0",
+    scale: 1,
+    scaleY: 1,
+    opacity: 1,
+    x: 0,
+    minHeight: 36,
+  };
+
+  /* Collapse: stay at centerLeftPx (centered) while moving down, then expand both ways to full width */
+  const collapseAnimate =
+    phase === "bookmark"
+      ? {
+          ...bookmarkState,
+          bottom: [footerTop + 24, footerTop + 8, footerTop],
+          scale: [1, 0.98, 1],
+          minHeight: [48, 40, 36],
+          width: [200, 200, bookmarkWidth],
+          left: [centerLeftPx, centerLeftPx, bookmarkLeftPx],
+          x: 0,
+        }
+      : null;
+
+  const collapseTransition = {
+    duration: 0.5,
+    ease: easeCurveOut,
+    times: [0, 0.6, 1], /* stay centered until 60%, then expand to bookmark */
+  };
+
+  /* Expand FROM price: small pill at footer -> full card at lower center */
+  const expandTransition = {
+    duration: 0.7,
+    ease: easeCurve,
+    times: [0, 0.5, 1],
+  };
+  const expandAnimate = isExpanding
+    ? {
+        ...centerState,
+        bottom: [footerTop, footerTop + 28, footerTop + 24],
+        scale: [0.7, 0.94, 1],
+        scaleY: [0.25, 0.96, 1],
+        opacity: [0.85, 1, 1],
+        minHeight: [48, 48, 48],
+        width: [PRICE_PILL_WIDTH, 160, 200],
+      }
+    : null;
+
+  return (
+    <MobileBestPricePopUpWrapper
+      aria-live="polite"
+      data-bookmark={isBookmark || undefined}
+      initial={isExpanding ? footerState : false}
+      animate={
+        isBookmark
+          ? collapseAnimate || bookmarkState
+          : isExpanding
+            ? expandAnimate
+            : isExpanded
+              ? centerState
+              : footerState
+      }
+      transition={
+        isExpanding && expandAnimate
+          ? expandTransition
+          : isBookmark
+            ? collapseTransition
+            : { duration: 0.6, ease: easeCurve }
+      }
+      onAnimationComplete={phase === "expanding" ? handleExpandComplete : undefined}
+      style={{
+        transformOrigin: "bottom center",
+      }}
+    >
+      <LordIcon
+        src="https://cdn.lordicon.com/abgykmtd.json"
+        trigger="in"
+        state="in-label"
+        colors="primary:#222"
+      />
+      {isBookmark ? (
+        <MobileBestPriceSingleLine
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2, delay: 0.15 }}
+        >
+          {singleLineText.split("").map((letter, i) => (
+            <motion.span
+              key={`s-${i}`}
+              custom={i}
+              variants={letterVariants}
+              initial="initial"
+              animate="animate"
+              style={{ display: "inline-block" }}
+            >
+              {letter === " " ? "\u00A0" : letter}
+            </motion.span>
+          ))}
+        </MobileBestPriceSingleLine>
+      ) : (
+        <MobileBestPriceLines>
+          <div style={{ display: "flex" }}>
+            {line1.split("").map((letter, i) => (
+              <motion.span
+                key={`1-${i}`}
+                custom={i}
+                variants={letterVariants}
+                initial="initial"
+                animate={letterAnimationStarted ? "animate" : "initial"}
+                style={{ display: "inline-block" }}
+              >
+                {letter === " " ? "\u00A0" : letter}
+              </motion.span>
+            ))}
+          </div>
+          <div style={{ display: "flex" }}>
+            {line2.split("").map((letter, i) => (
+              <motion.span
+                key={`2-${i}`}
+                custom={line1.length + i}
+                variants={letterVariants}
+                initial="initial"
+                animate={letterAnimationStarted ? "animate" : "initial"}
+                style={{ display: "inline-block" }}
+              >
+                {letter === " " ? "\u00A0" : letter}
+              </motion.span>
+            ))}
+          </div>
+        </MobileBestPriceLines>
+      )}
+    </MobileBestPricePopUpWrapper>
+  );
+}
 
 const MobileBookingFooter = ({ option, onBookNow, hidden }) => {
   if (!option) return null;
@@ -429,9 +769,17 @@ const MobileBookingFooter = ({ option, onBookNow, hidden }) => {
       </FooterPriceInfo>
       <AntButton
         type="primary"
-        size="large"
+        size="middle"
+        data-mobile-footer-cta
         onClick={() => onBookNow(option.optionId)}
-        style={{ borderRadius: "8px", fontWeight: 600 }}
+        style={{
+          borderRadius: "8px",
+          fontWeight: 600,
+          height: 36,
+          paddingLeft: 20,
+          paddingRight: 20,
+          fontSize: "0.875rem",
+        }}
       >
         {buttonText}
       </AntButton>
@@ -458,6 +806,8 @@ export default function ClassPageClient({
   const [isFavorite, setIsFavorite] = useState(classData.is_favorited);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
+  const [showMobileBestPriceBanner, setShowMobileBestPriceBanner] =
+    useState(false);
 
   // Simulate booking options loading state if needed, or derived from props
   // Since options come from server props, they are technically loaded.
@@ -614,6 +964,14 @@ export default function ClassPageClient({
     );
   }, [classData]);
 
+  /* Mobile: show "Best Price Guaranteed" pop-up every time when options are available */
+  useEffect(() => {
+    if (!mounted || typeof window === "undefined") return;
+    const isMobile = window.innerWidth <= 1024;
+    if (!isMobile || !optionToDisplayOnCard) return;
+    setShowMobileBestPriceBanner(true);
+  }, [mounted, optionToDisplayOnCard]);
+
   const locationText =
     classData?.business_city && classData?.business_state
       ? `${classData.business_city}, ${classData.business_state}`
@@ -740,6 +1098,7 @@ export default function ClassPageClient({
                 <HostInfo
                   businessData={businessData}
                   onHostClick={handleBusinessClick}
+                  classReviewCount={classData.review_count ?? 0}
                 />
               )}
             </Suspense>
@@ -769,6 +1128,12 @@ export default function ClassPageClient({
       {/* Render portals / overlays only after mount to avoid hydration mismatch on body append */}
       {mounted && (
         <>
+          {showMobileBestPriceBanner && (
+            <MobileBestPricePopUp
+              visible={showMobileBestPriceBanner}
+              onComplete={() => setShowMobileBestPriceBanner(false)}
+            />
+          )}
           {optionToDisplayOnCard && (
             <MobileBookingFooter
               option={optionToDisplayOnCard}

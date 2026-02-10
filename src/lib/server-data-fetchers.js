@@ -499,6 +499,39 @@ export async function fetchClassDetail(classIdOrSlug) {
   }
 }
 
+/**
+ * Fetch class reviews with caching (for class detail page)
+ * Endpoint: /classes/{slug}/reviews/
+ */
+export async function fetchClassReviews(slug, page = 1, pageSize = 6) {
+  if (!slug) return { success: true, data: [] };
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      page_size: pageSize.toString(),
+    });
+    const response = await fetch(
+      `${BASE_URL}/classes/${slug}/reviews/?${params.toString()}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "force-cache",
+        next: {
+          revalidate: 86400,
+          tags: ["reviews", `class-${slug}-reviews`, `reviews-page-${page}`],
+        },
+      },
+    );
+    if (!response.ok) return { success: true, data: [] };
+    const data = await response.json();
+    const results = data.results ?? data ?? [];
+    return { success: true, data: Array.isArray(results) ? results : [] };
+  } catch (error) {
+    console.error(`Error fetching class reviews ${slug}:`, error);
+    return { success: false, data: [] };
+  }
+}
+
 // ==================== BUSINESS FUNCTIONS ====================
 
 /**

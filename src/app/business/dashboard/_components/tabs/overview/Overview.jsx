@@ -70,7 +70,7 @@ import { businessService, scheduleService } from "@/services/apiService";
 import ScheduleEditDrawer from "../classes/manageclasses/ScheduleEditDrawer";
 import { LordIcon } from "@/services/ReactUtils";
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
 
 const colors = {
@@ -667,39 +667,44 @@ const EmptyStateSubtext = styled.div`
   max-width: 300px;
 `;
 
-/* Redesigned Action Prompt */
-const ActionPromptContainer = styled.div`
-  background-color: #fff;
-  border: 1px solid ${colors.border};
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin-bottom: 24px;
+/* Thin action banner — sits right under the black header, full-width */
+const ActionRequiredThinBanner = styled.div`
+  margin: -24px -24px 16px -24px;
+  padding: 10px 24px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.08);
   gap: 16px;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(245, 158, 11, 0.15);
-  }
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.12) 0%, rgba(245, 158, 11, 0.06) 100%);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.25);
+  flex-wrap: wrap;
 
   @media (max-width: 768px) {
+    margin: -12px -12px 12px -12px;
+    padding: 10px 16px;
+    min-height: auto;
     flex-direction: column;
     align-items: flex-start;
-    padding: 16px;
   }
 `;
 
-const ActionPromptContent = styled.div`
+const ActionRequiredThinBannerContent = styled.div`
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex: 1;
+  min-width: 0;
+`;
+
+const ActionRequiredThinBannerText = styled.div`
+  font-size: 14px;
+  color: ${colors.textPrimary};
+  line-height: 1.4;
+  strong { color: ${colors.warning}; }
+  @media (max-width: 768px) {
+    font-size: 13px;
+  }
 `;
 
 const RankNumber = styled.div`
@@ -1282,9 +1287,45 @@ const Overview = forwardRef((props, ref) => {
       </ConfigProvider>
     );
 
+  const showActionBanner =
+    !loading &&
+    overviewData?.actionable_prompts?.classes_needing_schedules_count > 0;
+  const actionCount =
+    overviewData?.actionable_prompts?.classes_needing_schedules_count ?? 0;
+
   return (
     <ConfigProvider theme={localAntDTheme}>
       <DashboardWrapper>
+        {showActionBanner && (
+          <ActionRequiredThinBanner>
+            <ActionRequiredThinBannerContent>
+              <IconContainer
+                background={hexToRgba(colors.warning, 0.15)}
+                iconcolor={colors.warning}
+              >
+                <AlertTriangle size={18} />
+              </IconContainer>
+              <ActionRequiredThinBannerText>
+                <strong>Action required:</strong>{" "}
+                {actionCount === 1
+                  ? "1 experience is"
+                  : `${actionCount} experiences are`}{" "}
+                running out of available schedules.
+              </ActionRequiredThinBannerText>
+            </ActionRequiredThinBannerContent>
+            <Link href="/business/dashboard/listings">
+              <Button
+                type="primary"
+                size="small"
+                icon={<ArrowRight size={14} />}
+                style={{ flexShrink: 0 }}
+              >
+                Manage Experiences
+              </Button>
+            </Link>
+          </ActionRequiredThinBanner>
+        )}
+
         <DashboardHeader ref={overviewTitleRef}>
           <div>
             <StyledTitle>Dashboard Overview</StyledTitle>
@@ -1293,47 +1334,6 @@ const Overview = forwardRef((props, ref) => {
             </HeaderSubtitle>
           </div>
         </DashboardHeader>
-
-        {!loading &&
-          overviewData?.actionable_prompts?.classes_needing_schedules_count >
-            0 && (
-            <ActionPromptContainer>
-              <ActionPromptContent>
-                <IconContainer
-                  background={hexToRgba(colors.warning, 0.15)}
-                  iconcolor={colors.warning}
-                >
-                  <AlertTriangle />
-                </IconContainer>
-                <div>
-                  <Text strong style={{ fontSize: "16px" }}>
-                    Action Required
-                  </Text>
-                  <Paragraph
-                    style={{ marginBottom: 0, color: colors.textSecondary }}
-                  >
-                    You have{" "}
-                    <b>
-                      {
-                        overviewData.actionable_prompts
-                          .classes_needing_schedules_count
-                      }
-                    </b>{" "}
-                    {overviewData.actionable_prompts
-                      .classes_needing_schedules_count === 1
-                      ? "experience that is"
-                      : "experiences that are"}{" "}
-                    running out of available schedules.
-                  </Paragraph>
-                </div>
-              </ActionPromptContent>
-              <Link href="/business/dashboard/listings">
-                <Button icon={<ArrowRight size={16} />} type="text">
-                  Manage Experiences
-                </Button>
-              </Link>
-            </ActionPromptContainer>
-          )}
 
         <ResponsiveDivider />
 

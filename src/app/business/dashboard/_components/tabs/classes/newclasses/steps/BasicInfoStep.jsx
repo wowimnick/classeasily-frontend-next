@@ -22,7 +22,6 @@ import {
   Hash,
   Tent,
 } from "lucide-react";
-import heic2any from "heic2any";
 import { motion } from "framer-motion";
 import { theme } from "@/components/theme";
 import { useClass } from "../ClassContext";
@@ -484,11 +483,14 @@ const BasicInfoStep = ({ onValidatedNext }) => {
         ["heic", "heif"].includes(fileExtension);
 
       const conversionPromise = isHeic
-        ? heic2any({
-            blob: file,
-            toType: "image/jpeg",
-            quality: 0.9,
-          })
+        ? (async () => {
+            const { default: heic2any } = await import("heic2any");
+            return heic2any({
+              blob: file,
+              toType: "image/jpeg",
+              quality: 0.9,
+            });
+          })()
         : Promise.resolve(file);
 
       conversionPromise

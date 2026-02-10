@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build --debug",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "analyze": "ANALYZE=true next build --webpack",
+    "test:e2e": "npx playwright test",
+    "test:e2e:ui": "npx playwright test --ui",
+    "test:e2e:chromium": "npx playwright test --project=chromium"
   },
   "npmConfig": {
     "legacy-peer-deps": true
@@ -62,7 +66,6 @@
     "react-big-calendar": "^1.19.4",
     "react-dom": "19.2.1",
     "react-facebook-pixel": "^1.0.4",
-    "react-ga4": "^2.1.0",
     "react-intersection-observer": "^9.16.0",
     "react-is": "19.2.1",
     "react-leaflet": "^5.0.0",
