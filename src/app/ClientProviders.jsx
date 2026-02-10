@@ -1,5 +1,6 @@
-console.error('app started');
 "use client";
+console.error('app started');
+
 
 import { Suspense, useMemo, useEffect, useRef } from "react";
 import { ConfigProvider } from "antd";
