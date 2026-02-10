@@ -2088,7 +2088,7 @@ const ClassEditDrawer = ({
       allowMidCourseDrops: primaryTier.allowMidCourseDrops,
       midCourseCancellationPolicy: primaryTier.midCourseCancellationPolicy,
     });
-    const currentLen = form.getFieldValue("options").length;
+    const currentLen = (form.getFieldValue("options") || []).length;
     setActiveTier(currentLen);
   };
 
@@ -2096,6 +2096,15 @@ const ClassEditDrawer = ({
     try {
       setLoading(true);
       const values = await form.validateFields();
+
+      // Guard: validateFields() can omit Form.List "options" in some cases
+      const rawOptions =
+        values.options ?? form.getFieldValue("options") ?? [];
+      if (!Array.isArray(rawOptions) || rawOptions.length === 0) {
+        message.error("At least one class option (tier) is required.");
+        setLoading(false);
+        return;
+      }
 
       const newImageFiles = mainImages.filter((img) => img.file);
       const existingImages = mainImages.filter((img) => !img.file);
@@ -2168,7 +2177,7 @@ const ClassEditDrawer = ({
       // 5. Prepare Multi-Tier Options Data
       const isCourse = values.booking_type === "Full Course";
 
-      const formattedOptions = values.options.map((opt, index) => ({
+      const formattedOptions = rawOptions.map((opt, index) => ({
         optionId: opt.optionId, // ID for updates, undefined for new
 
         // Structure & Metadata

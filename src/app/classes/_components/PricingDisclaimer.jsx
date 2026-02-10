@@ -31,7 +31,7 @@ const DisclaimerContainer = styled.div`
 /* Bookmark variant (desktop): tab peeking from top of card, matches card width with small inset */
 const BookmarkContainer = styled.div`
   position: absolute;
-  top: -40px;
+  top: -50px;
   left: 50%;
   transform: translateX(-50%);
   /* Wider: ~82% of card (360px sidebar → ~295px) so it looks like a real bookmark with slight inset */
