@@ -17,13 +17,15 @@ export default function StyledComponentsRegistry({ children }) {
     return <>{styles}</>;
   });
 
-  // Use same wrapper on server and client to avoid hydration mismatch.
-  // On server: sheet is the style sheet instance to collect styles.
-  // On client: sheet is undefined so StyleSheetManager just passes through.
-  const sheet =
-    typeof window === "undefined" ? styledComponentsStyleSheet.instance : undefined;
+  if (typeof window !== "undefined") {
+    // This is the client-side case, where we just render the children.
+    // The styles will be handled by styled-components' client-side runtime.
+    return <>{children}</>;
+  }
+
+  // This is the server-side case.
   return (
-    <StyleSheetManager sheet={sheet}>
+    <StyleSheetManager sheet={styledComponentsStyleSheet.instance}>
       {children}
     </StyleSheetManager>
   );

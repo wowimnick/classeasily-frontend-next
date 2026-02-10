@@ -71,9 +71,7 @@ export default function ClientProviders({ children }) {
     <StyledComponentsRegistry>
       <ConfigProvider
         theme={memoizedTheme}
-        getPopupContainer={() =>
-          typeof document !== "undefined" ? document.body : null
-        }
+        getPopupContainer={() => document.body}
       >
         <ThemeProvider theme={memoizedTheme}>
           <ToastProvider>

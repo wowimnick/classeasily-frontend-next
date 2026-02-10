@@ -94,14 +94,41 @@ const handlePostLoginRedirect = (user, router) => {
 };
 
 // ============================================================================
+// OPTIMISTIC AUTH STATE - Read from localStorage synchronously
+// ============================================================================
+const getOptimisticAuthState = () => {
+  if (typeof window === "undefined") {
+    return { user: null, isAuthenticated: false };
+  }
+
+  try {
+    const stored = localStorage.getItem("auth-storage");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return {
+        user: parsed.state?.user || null,
+        isAuthenticated: parsed.state?.isAuthenticated || false,
+        isImpersonating: parsed.state?.isImpersonating || false,
+      };
+    }
+  } catch (error) {
+    console.error("[AuthStore] Failed to read optimistic state:", error);
+  }
+
+  return { user: null, isAuthenticated: false, isImpersonating: false };
+};
+
+// ============================================================================
 // ZUSTAND STORE - Client-side auth state management
 // ============================================================================
-// Initial state is fixed (no localStorage read) so server and client match and
-// hydration does not throw. Persist middleware rehydrates after mount.
+// Use fixed initial state (no localStorage read) so server and client match
+// and avoid hydration mismatch / white screen on reload. Persist middleware
+// will rehydrate from storage after mount.
 export const useAuthStore = create(
   persist(
     (set, get) => {
       return {
+        // Same initial state on server and client to prevent hydration mismatch
         user: null,
         isAuthenticated: false,
         isImpersonating: false,
@@ -242,18 +269,19 @@ export const useAuthStore = create(
       }),
       onRehydrateStorage: () => {
         console.log("[AuthStore] onRehydrateStorage - hydration starting...");
-        return (state, error) => {
+        return (_state, error) => {
           if (error) {
             console.error("[AuthStore] Hydration error:", error);
           } else {
             console.log("[AuthStore] Hydration complete");
           }
-
-          if (state) {
-            state._hasHydrated = true;
-            state.isInitialized = false;
-            state.isInitializing = false;
-          }
+          // Set hydration flag so ClientProviders can run initialize; use setState
+          // so React re-renders (mutating _state may not trigger update in all envs).
+          useAuthStore.setState({
+            _hasHydrated: true,
+            isInitialized: false,
+            isInitializing: false,
+          });
         };
       },
     },
