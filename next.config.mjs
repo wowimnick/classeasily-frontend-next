@@ -1,5 +1,3 @@
-import bundleAnalyzer from "@next/bundle-analyzer";
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Init
@@ -411,9 +409,4 @@ const nextConfig = {
     process.env.STAGE === "test" || process.env.NODE_ENV === "development",
 };
 
-// Bundle analyzer: run with npm run analyze (ANALYZE=true next build)
-const withBundleAnalyzer = bundleAnalyzer({
-  enabled: process.env.ANALYZE === "true",
-});
-
-export default withBundleAnalyzer(nextConfig);
+export default nextConfig;
