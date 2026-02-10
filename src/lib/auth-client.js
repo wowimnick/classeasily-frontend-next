@@ -275,12 +275,14 @@ export const useAuthStore = create(
           } else {
             console.log("[AuthStore] Hydration complete");
           }
-          // Set hydration flag so ClientProviders can run initialize; use setState
-          // so React re-renders (mutating _state may not trigger update in all envs).
-          useAuthStore.setState({
-            _hasHydrated: true,
-            isInitialized: false,
-            isInitializing: false,
+          // Defer setState so we don't reference useAuthStore before it's assigned
+          // (callback runs during create(persist(...)), causing TDZ "Cannot access 'g' before initialization").
+          queueMicrotask(() => {
+            useAuthStore.setState({
+              _hasHydrated: true,
+              isInitialized: false,
+              isInitializing: false,
+            });
           });
         };
       },
