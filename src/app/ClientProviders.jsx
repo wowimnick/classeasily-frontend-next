@@ -24,6 +24,17 @@ export default function ClientProviders({ children }) {
     localStorage.setItem("cookie_consent", "true");
   }, []);
 
+  // When Zustand persist finishes hydrating, set _hasHydrated so we know to run initialize().
+  // This is a fallback in case the onRehydrateStorage callback doesn't run (e.g. sync storage timing).
+  useEffect(() => {
+    const persistApi = useAuthStore.persist;
+    if (!persistApi?.onFinishHydration) return;
+    const unsub = persistApi.onFinishHydration(() => {
+      useAuthStore.getState().setHydrated();
+    });
+    return () => unsub?.();
+  }, []);
+
   useEffect(() => {
     if (hasInitialized.current) return;
 

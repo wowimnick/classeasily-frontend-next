@@ -233,9 +233,22 @@ export const useAuthStore = create(
           console.log("[AuthStore] Starting initialization process...");
           set({ isLoading: true, isInitializing: true });
 
+          const REFRESH_TIMEOUT_MS = 15000; // 15s – avoid infinite load if prod API hangs (e.g. cookie/domain/CORS)
+
+          const refreshWithTimeout = () =>
+            Promise.race([
+              axiosInstance.post("/token/refresh/"),
+              new Promise((_, reject) =>
+                setTimeout(
+                  () => reject(new Error("Token refresh timed out")),
+                  REFRESH_TIMEOUT_MS
+                )
+              ),
+            ]);
+
           try {
             console.log("[AuthStore] Calling /token/refresh/ endpoint...");
-            const response = await axiosInstance.post("/token/refresh/");
+            const response = await refreshWithTimeout();
 
             console.log("[AuthStore] Refresh successful");
 
@@ -247,7 +260,10 @@ export const useAuthStore = create(
               isInitializing: false,
             });
           } catch (error) {
-            console.log("[AuthStore] Refresh failed:", error.message);
+            console.log(
+              "[AuthStore] Refresh failed:",
+              error?.message || error
+            );
 
             set({
               user: null,
@@ -276,10 +292,14 @@ export const useAuthStore = create(
             console.log("[AuthStore] Hydration complete");
           }
 
+          // Use queueMicrotask so the store update isn't dropped (Zustand persist
+          // can overwrite sync updates). Explicitly call setHydrated() so
+          // ClientProviders sees _hasHydrated and runs initialize() — otherwise
+          // the dashboard stays on "loading" forever on full page reload.
           if (state) {
-            state._hasHydrated = true;
-            state.isInitialized = false;
-            state.isInitializing = false;
+            queueMicrotask(() => {
+              useAuthStore.getState().setHydrated();
+            });
           }
         };
       },
