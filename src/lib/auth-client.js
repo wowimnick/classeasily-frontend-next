@@ -94,44 +94,17 @@ const handlePostLoginRedirect = (user, router) => {
 };
 
 // ============================================================================
-// OPTIMISTIC AUTH STATE - Read from localStorage synchronously
-// ============================================================================
-const getOptimisticAuthState = () => {
-  if (typeof window === "undefined") {
-    return { user: null, isAuthenticated: false };
-  }
-
-  try {
-    const stored = localStorage.getItem("auth-storage");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return {
-        user: parsed.state?.user || null,
-        isAuthenticated: parsed.state?.isAuthenticated || false,
-        isImpersonating: parsed.state?.isImpersonating || false,
-      };
-    }
-  } catch (error) {
-    console.error("[AuthStore] Failed to read optimistic state:", error);
-  }
-
-  return { user: null, isAuthenticated: false, isImpersonating: false };
-};
-
-// ============================================================================
 // ZUSTAND STORE - Client-side auth state management
 // ============================================================================
 export const useAuthStore = create(
   persist(
     (set, get) => {
-      // Get optimistic initial state
-      const optimisticState = getOptimisticAuthState();
-
+      // Use fixed initial state so server and client match (avoids hydration mismatch).
+      // Persist middleware will rehydrate from localStorage after mount and set _hasHydrated.
       return {
-        // START WITH OPTIMISTIC STATE
-        user: optimisticState.user,
-        isAuthenticated: optimisticState.isAuthenticated,
-        isImpersonating: optimisticState.isImpersonating,
+        user: null,
+        isAuthenticated: false,
+        isImpersonating: false,
 
         // Loading states
         isLoading: true,
