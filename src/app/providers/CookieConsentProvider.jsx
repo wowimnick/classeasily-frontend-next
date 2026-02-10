@@ -27,21 +27,9 @@ export default function CookieConsentProvider({ children }) {
     }
   }, []);
 
-  const gtag = (...args) => {
-    if (typeof window !== "undefined") {
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push(...args);
-    }
-  };
-
   const handleAccept = () => {
     localStorage.setItem("cookie_consent", "true");
     sessionStorage.removeItem("cookie_consent_dismissed");
-
-    gtag("consent", "update", {
-      analytics_storage: "granted",
-      ad_storage: "granted",
-    });
     setShowConsentBanner(false);
     message.success("Preferences saved", 2);
   };
@@ -49,11 +37,6 @@ export default function CookieConsentProvider({ children }) {
   const handleDecline = () => {
     localStorage.setItem("cookie_consent", "false");
     sessionStorage.removeItem("cookie_consent_dismissed");
-
-    gtag("consent", "update", {
-      analytics_storage: "denied",
-      ad_storage: "denied",
-    });
     setShowConsentBanner(false);
     message.info("Analytics opted out", 2);
   };

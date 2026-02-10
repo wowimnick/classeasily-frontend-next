@@ -28,6 +28,45 @@ const DisclaimerContainer = styled.div`
   color: #000;
 `;
 
+/* Bookmark variant (desktop): tab peeking from top of card, matches card width with small inset */
+const BookmarkContainer = styled.div`
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  /* Wider: ~82% of card (360px sidebar → ~295px) so it looks like a real bookmark with slight inset */
+  width: 82%;
+  min-width: 240px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.25rem;
+  min-height: 56px;
+  /* Glass bookmark tab */
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px) saturate(170%);
+  -webkit-backdrop-filter: blur(12px) saturate(170%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: none;
+  /* Bookmark shape: rounded top only, aligns with card radius below */
+  border-radius: 12px 12px 0 0;
+  box-shadow:
+    0 -1px 3px rgba(0, 0, 0, 0.04),
+    0 6px 24px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  color: #222;
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  lord-icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+  }
+`;
+
 const AnimatedText = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -77,6 +116,7 @@ const TooltipContent = styled.div`
 const PriceDisclaimer = ({
   cancellationPolicy,
   cancellationRefundPercentage,
+  variant = "default",
 }) => {
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [animationStarted, setAnimationStarted] = useState(false);
@@ -123,6 +163,13 @@ const PriceDisclaimer = ({
   };
 
   if (!isMounted) {
+    if (variant === "bookmark") {
+      return (
+        <BookmarkContainer aria-label={text}>
+          <span>{text}</span>
+        </BookmarkContainer>
+      );
+    }
     return (
       <DisclaimerContainer>
         <span>{text}</span>
@@ -130,17 +177,16 @@ const PriceDisclaimer = ({
     );
   }
 
-  return (
-    <DisclaimerContainer>
+  const content = (
+    <>
+      <LordIcon
+        src="https://cdn.lordicon.com/abgykmtd.json"
+        trigger="in"
+        state="in-label"
+        colors={variant === "bookmark" ? "primary:#222" : "primary:#000000"}
+        style={{ marginRight: variant === "bookmark" ? "0.25rem" : "0.5rem" }}
+      />
       <AnimatedText>
-        <LordIcon
-          src="https://cdn.lordicon.com/abgykmtd.json"
-          trigger="in"
-          state="in-label"
-          colors="primary:#000000"
-          style={{ marginRight: "0.5rem" }}
-        />
-
         {text.split("").map((letter, index) => (
           <AnimatedLetter
             key={index}
@@ -153,6 +199,20 @@ const PriceDisclaimer = ({
           </AnimatedLetter>
         ))}
       </AnimatedText>
+    </>
+  );
+
+  if (variant === "bookmark") {
+    return (
+      <BookmarkContainer aria-label={text}>
+        {content}
+      </BookmarkContainer>
+    );
+  }
+
+  return (
+    <DisclaimerContainer>
+      {content}
       {cancellationPolicy && (
         <TooltipWrapper
           onMouseEnter={() => setTooltipVisible(true)}

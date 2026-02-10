@@ -13,6 +13,7 @@ import PermissionProtectedRoute from "@/components/auth/PermissionProtectedRoute
 import BusinessHeader from "./_components/BusinessHeader";
 import SideMenu from "./_components/SideMenu";
 import SetupGuideWrapper from "./_components/SetupGuideWrapper";
+import DashboardContext from "./_components/DashboardContext";
 
 const PageLayout = styled.div`
   display: flex;
@@ -90,7 +91,16 @@ function DashboardLayoutInner({ children }) {
               activeKey={activeKey}
             />
           </SideMenuWrapper>
-          <MainContent>{children}</MainContent>
+          <MainContent>
+            <DashboardContext.Provider
+              value={{
+                openSettingsDrawer: (tab, sectionId) =>
+                  sideMenuRef.current?.openSettingsDrawer?.(tab, sectionId),
+              }}
+            >
+              {children}
+            </DashboardContext.Provider>
+          </MainContent>
         </DashboardContainer>
         <SetupGuideWrapper sideMenuRef={sideMenuRef} />
       </PageLayout>

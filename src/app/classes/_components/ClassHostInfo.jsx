@@ -215,7 +215,7 @@ const LoadingContainer = styled.div`
   }
 `;
 
-const HostInfo = React.memo(({ businessData, onHostClick }) => {
+const HostInfo = React.memo(({ businessData, onHostClick, classReviewCount }) => {
   const router = useRouter();
 
   const handleNavigation = () => {
@@ -271,10 +271,13 @@ const HostInfo = React.memo(({ businessData, onHostClick }) => {
       foundingYearDisplay: founding_year
         ? `Founded in ${founding_year}`
         : "History not provided",
-      totalReviews: total_reviews_count ?? 0,
+      totalReviews:
+        classReviewCount != null
+          ? classReviewCount
+          : (total_reviews_count ?? 0),
       businessImage: businessData.business_image_medium_url,
     };
-  }, [businessData]);
+  }, [businessData, classReviewCount]);
 
   if (isLoading) {
     return (

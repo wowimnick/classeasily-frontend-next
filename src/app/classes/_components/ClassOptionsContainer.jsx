@@ -31,6 +31,8 @@ const CardWrapper = styled.div`
   display: flex;
   justify-content: center;
   width: 100%;
+  position: relative;
+  overflow: visible;
   box-shadow: 0px 7px 12px 4px #0000000a;
   border-radius: 12px;
 `;
@@ -90,13 +92,16 @@ const ClassOptionsContainer = ({
 
   return (
     <Container>
-      <PriceDisclaimer
-        cancellationPolicy={cancellationPolicy}
-        cancellationRefundPercentage={cancellationRefundPercentage}
-      />
       <OptionsGrid>
-        {options.map((option) => (
+        {options.map((option, index) => (
           <CardWrapper key={option.optionId}>
+            {index === 0 && (
+              <PriceDisclaimer
+                variant="bookmark"
+                cancellationPolicy={cancellationPolicy}
+                cancellationRefundPercentage={cancellationRefundPercentage}
+              />
+            )}
             <ClassOptionCard
               option={option}
               classTitle={classTitle}

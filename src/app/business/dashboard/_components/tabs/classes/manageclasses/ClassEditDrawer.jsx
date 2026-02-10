@@ -65,7 +65,6 @@ import {
   Check,
   Type,
 } from "lucide-react";
-import heic2any from "heic2any";
 import { motion, AnimatePresence } from "framer-motion";
 import { businessClassService, uploadService } from "@/services/apiService";
 import debounce from "lodash/debounce";
@@ -1997,6 +1996,7 @@ const ClassEditDrawer = ({
         let blobToProcess = file;
 
         if (isHeic) {
+          const { default: heic2any } = await import("heic2any");
           blobToProcess = await heic2any({
             blob: file,
             toType: "image/jpeg",

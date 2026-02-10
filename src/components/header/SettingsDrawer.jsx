@@ -19,7 +19,6 @@ import {
   Save,
 } from "lucide-react";
 import dayjs from "dayjs";
-import heic2any from "heic2any";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import styled, { ThemeProvider } from "styled-components";
@@ -352,6 +351,7 @@ const SettingsModal = ({ open, onClose }) => {
 
       if (isHeic) {
         message.loading({ content: "Converting image...", key: "heic", duration: 0 });
+        const { default: heic2any } = await import("heic2any");
         const convertedBlob = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
         processedFile = new File([convertedBlob], file.name.replace(/\.(heic|heif)$/i, ".jpeg"), { type: "image/jpeg" });
         message.destroy("heic");

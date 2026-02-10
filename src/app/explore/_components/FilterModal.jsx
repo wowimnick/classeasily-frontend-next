@@ -17,20 +17,7 @@ import { ConfigProvider, Modal } from "antd";
 import Slider from "@/components/explore/Slider";
 import styled from "styled-components";
 import { Drawer } from "vaul";
-
-// ReactGA will be loaded dynamically when needed
-// Create a safe wrapper that loads ReactGA on demand
-const trackEvent = async (eventName, eventData) => {
-  if (typeof window === "undefined") return;
-  try {
-    const ReactGA = (await import("react-ga4")).default;
-    if (ReactGA.isInitialized) {
-      ReactGA.event(eventName, eventData);
-    }
-  } catch (e) {
-    // Silently fail if ReactGA can't be loaded
-  }
-};
+import posthog from "posthog-js";
 
 // --- Theme & Styled Components ---
 
@@ -344,10 +331,9 @@ export default function FilterModal({
   }, [filters, currentSortBy, isOpen]);
 
   const handleApply = () => {
-    trackEvent("apply_filters", {
+    posthog.capture("apply_filters", {
       category: "Explore Page",
-      action: "Apply Filters & Sort",
-      label: `Sort: ${tempSortBy}`,
+      sort: tempSortBy,
     });
     onApplyChanges(tempFilters, tempSortBy);
     onClose();

@@ -4,14 +4,15 @@ import React from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
 import { Button as AntButton } from "antd";
-import { Clock, Users, Calendar, Tag, ArrowRight } from "lucide-react";
-import { getScheduleSummary } from "./steps/utils";
+import { Calendar, Tag, ArrowRight } from "lucide-react";
 import dayjs from "dayjs";
 
 const CardWrapper = styled(motion.div)`
   display: flex;
   flex-direction: column;
   width: 100%;
+  position: relative;
+  z-index: 1;
   background: white;
   border-radius: 12px;
   border: 1px solid #e8e8e8;
@@ -45,34 +46,7 @@ const TypeBadge = styled.div`
   }
 `;
 
-const DetailsGrid = styled.div`
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-`;
-
-const DetailItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8rem;
-  color: #666;
-  padding: 0.5rem 0.75rem;
-  background: #fafafa;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-  svg {
-    color: #ff385c;
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-  }
-`;
-
-// Added Styles for Course Details
+// Course details and schedule
 const CourseDetailsContainer = styled.div`
   background: #f8f9fa;
   border-radius: 8px;
@@ -112,18 +86,20 @@ const ScheduleInfo = styled.div`
   background: #f8f9fa;
   box-shadow: 0px 0px 8px 4px #0000000c;
   border-radius: 8px;
-  padding: 0.75rem;
+  padding: 0.75rem 0.75rem 0.75rem 0.5rem;
   margin-bottom: 1rem;
   font-size: 0.8rem;
+  position: relative;
 `;
 
 const ScheduleTitle = styled.div`
   font-weight: 600;
   color: #333;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  padding-left: 0.3rem;
 
   svg {
     color: #ff385c;
@@ -132,17 +108,45 @@ const ScheduleTitle = styled.div`
   }
 `;
 
+const TimelineLine = styled.div`
+  position: absolute;
+  left: 1.22rem;
+  top: 2.5rem;
+  bottom: 1.25rem;
+  width: 1px;
+  background: linear-gradient(180deg, #ff385c 0%, rgba(255, 56, 92, 0.25) 100%);
+  border-radius: 1px;
+  pointer-events: none;
+`;
+
+const ScheduleList = styled.div`
+  position: relative;
+  padding-left: 1.0625rem;
+`;
+
 const ScheduleItem = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.25rem 0;
+  padding: 0.35rem 0 0.35rem 0.75rem;
   color: #666;
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: -0.56rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff385c;
+    box-shadow: 0 0 0 2px #fff;
+  }
 
   &:not(:last-child) {
-    border-bottom: 1px solid #eee;
-    padding-bottom: 0.5rem;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.15rem;
   }
 `;
 
@@ -204,8 +208,6 @@ const ClassOptionCard = ({
   const type = option.booking_type;
   const isCourse = type === "Full Course";
   const schedules = Array.isArray(option.schedules) ? option.schedules : [];
-
-  const summary = getScheduleSummary(schedules);
 
   // Logic for Courses
   const nextCourseSchedule = isCourse
@@ -309,22 +311,6 @@ const ClassOptionCard = ({
         </TypeBadge>
       </Header>
 
-      <DetailsGrid>
-        <DetailItem>
-          <Clock size={14} />
-          {summary?.duration || "Duration varies"}
-        </DetailItem>
-        <DetailItem>
-          <Users size={14} />
-          {summary?.capacity ? `${summary.capacity} spots` : "Spots vary"}
-        </DetailItem>
-        {summary?.minParticipants && (
-          <DetailItem>
-            <Users size={14} />
-            {summary.minParticipants}
-          </DetailItem>
-        )}
-      </DetailsGrid>
 
       {/* New Course Specific Details */}
       {isCourse && nextCourseSchedule && (
@@ -359,22 +345,25 @@ const ClassOptionCard = ({
         </CourseDetailsContainer>
       )}
 
-      {/* Existing Single Session List */}
+      {/* Upcoming Sessions with timeline */}
       {upcomingSchedules.length > 0 && (
         <ScheduleInfo>
           <ScheduleTitle>
             <Calendar size={14} />
             Upcoming Sessions
           </ScheduleTitle>
-          {upcomingSchedules.map((schedule, index) => (
-            <ScheduleItem key={schedule.id || index}>
-              <span>
-                {schedule.date ? formatDate(schedule.date) : schedule.day} at{" "}
-                {formatTime(schedule.time)}
-              </span>
-              <span>{formatSchedulePrice(schedule.price)}</span>
-            </ScheduleItem>
-          ))}
+          {upcomingSchedules.length > 1 && <TimelineLine />}
+          <ScheduleList>
+            {upcomingSchedules.map((schedule, index) => (
+              <ScheduleItem key={schedule.id || index}>
+                <span>
+                  {schedule.date ? formatDate(schedule.date) : schedule.day} at{" "}
+                  {formatTime(schedule.time)}
+                </span>
+                <span>{formatSchedulePrice(schedule.price)}</span>
+              </ScheduleItem>
+            ))}
+          </ScheduleList>
         </ScheduleInfo>
       )}
 

@@ -144,7 +144,6 @@ export default function RootLayout({ children }) {
 
         {/* DNS Prefetch and Preconnect for third-party domains */}
         <link rel="dns-prefetch" href="https://accounts.google.com" />
-        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://connect.facebook.net" />
         <link rel="dns-prefetch" href="https://ipapi.co" />
         

@@ -983,7 +983,7 @@ const BookingModal = ({
           initial="hidden"
           animate="visible"
           exit="exit"
-          onClick={handleClose}
+          onClick={(e) => e.stopPropagation()}
         >
           <DesktopModal
             variants={modalVariants}

@@ -45,7 +45,6 @@ import {
 import { motion } from "framer-motion";
 import { classManagementService } from "@/services/adminDash";
 import { uploadService } from "@/services/apiService";
-import heic2any from "heic2any";
 import debounce from "lodash/debounce";
 import {
   MapContainer,
@@ -1153,6 +1152,7 @@ const AdminClassEditDrawer = ({
 
         // Convert HEIC to JPEG if needed
         if (isHeic) {
+          const { default: heic2any } = await import("heic2any");
           blobToProcess = await heic2any({
             blob: file,
             toType: "image/jpeg",

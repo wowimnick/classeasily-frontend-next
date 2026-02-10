@@ -1230,20 +1230,67 @@ const ScheduleEditDrawer = ({
       await form.validateFields();
       const values = form.getFieldsValue(true);
       setIsLoading(true);
-      const scheduleData = {
-        name: values.name,
-        option: selectedOptionId,
-        time: values.time.format("HH:mm"),
-        duration: values.duration,
-        price: parseFloat(values.price).toFixed(2),
-        maxParticipants: values.maxParticipants,
-        minParticipants: values.minParticipants || 1,
-        date: values.date.format("YYYY-MM-DD"),
-      };
+      const timeStr = values.time.format("HH:mm");
+      const dateStr = values.date.format("YYYY-MM-DD");
+      const priceStr = parseFloat(values.price).toFixed(2);
+      const minPart = values.minParticipants || 1;
+
       if (editingSchedule) {
+        const initial = editingSchedule;
+        const current = {
+          name: values.name,
+          time: timeStr,
+          duration: values.duration,
+          price: priceStr,
+          maxParticipants: values.maxParticipants,
+          minParticipants: minPart,
+          date: dateStr,
+        };
+        const initialNorm = {
+          name: initial.name ?? "",
+          time: typeof initial.time === "string" ? initial.time.slice(0, 5) : "",
+          duration: initial.duration,
+          price:
+            initial.price != null
+              ? parseFloat(initial.price).toFixed(2)
+              : "0.00",
+          maxParticipants: initial.maxParticipants,
+          minParticipants: initial.minParticipants ?? 1,
+          date:
+            initial.date && typeof initial.date === "string"
+              ? initial.date
+              : initial.date?.format?.("YYYY-MM-DD") ?? "",
+        };
+        const scheduleData = {};
+        if (current.name !== initialNorm.name) scheduleData.name = current.name;
+        if (current.time !== initialNorm.time) scheduleData.time = current.time;
+        if (current.duration !== initialNorm.duration)
+          scheduleData.duration = current.duration;
+        if (current.price !== initialNorm.price)
+          scheduleData.price = current.price;
+        if (current.maxParticipants !== initialNorm.maxParticipants)
+          scheduleData.maxParticipants = current.maxParticipants;
+        if (current.minParticipants !== initialNorm.minParticipants)
+          scheduleData.minParticipants = current.minParticipants;
+        if (current.date !== initialNorm.date) scheduleData.date = current.date;
+
+        if (Object.keys(scheduleData).length === 0) {
+          message.info("No changes to save.");
+          return;
+        }
         await scheduleService.updateSchedule(editingSchedule.id, scheduleData);
         message.success("Schedule updated.");
       } else {
+        const scheduleData = {
+          name: values.name,
+          option: selectedOptionId,
+          time: timeStr,
+          duration: values.duration,
+          price: priceStr,
+          maxParticipants: values.maxParticipants,
+          minParticipants: minPart,
+          date: dateStr,
+        };
         await scheduleService.createSchedule(scheduleData);
         message.success("Schedule created.");
       }

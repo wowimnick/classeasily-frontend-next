@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useRef, useLayoutEffect } from "react";
+import React, { useState, useRef, useLayoutEffect, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
 import { Button, Typography, Tooltip, Divider } from "antd";
-import { Star, Award, User, Heart, Share2 } from "lucide-react";
+import { Share2, Heart, Star } from "lucide-react";
 import { LordIcon } from "@/services/ReactUtils";
 
 const { Paragraph, Title } = Typography;
@@ -11,10 +11,9 @@ const { Paragraph, Title } = Typography;
 const CLASSEASILY_RED = "#FF385C";
 const COLLAPSED_MAX_HEIGHT_PX = 200;
 
-// --- Icon Mapping ---
-const iconMap = {
+// LordIcon config (same as before) – rendered only after requestIdleCallback to avoid TBT
+const lordIconMap = {
   "Creative & Makers": {
-    // Reused "Art" icon
     icon: {
       src: "https://cdn.lordicon.com/usohfczy.json",
       trigger: "in",
@@ -23,76 +22,27 @@ const iconMap = {
         "primary:#ffc738,secondary:#b26836,tertiary:#3a3347,quaternary:#ebe6ef,quinary:#f24c00,senary:#eeca66,septenary:#2ca58d,octonary:#4bb3fd",
     },
     subcategories: {
-      "Visual Arts": {
-        // Reused "Painting" icon
-        src: "https://cdn.lordicon.com/spjlvfgs.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      "Crafts & DIY": {
-        // Reused "Crafts" icon
-        src: "https://cdn.lordicon.com/rpgzzvoy.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
+      "Visual Arts": { src: "https://cdn.lordicon.com/spjlvfgs.json", trigger: "in", state: "in-reveal" },
+      "Crafts & DIY": { src: "https://cdn.lordicon.com/rpgzzvoy.json", trigger: "in", state: "in-reveal" },
     },
   },
   "Food & Drink": {
-    // Reused "Culinary" icon
-    icon: {
-      src: "https://cdn.lordicon.com/tlhmniwg.json",
-      trigger: "in",
-      state: "in-reveal",
-    },
+    icon: { src: "https://cdn.lordicon.com/tlhmniwg.json", trigger: "in", state: "in-reveal" },
     subcategories: {
-      "Cooking & Baking": {
-        // Reused "Cooking" icon
-        src: "https://cdn.lordicon.com/qetumhhk.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      "Tastings & Mixology": {
-        // Reused "Cocktail Making" icon
-        src: "https://cdn.lordicon.com/ldbrwnqj.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
+      "Cooking & Baking": { src: "https://cdn.lordicon.com/qetumhhk.json", trigger: "in", state: "in-reveal" },
+      "Tastings & Mixology": { src: "https://cdn.lordicon.com/ldbrwnqj.json", trigger: "in", state: "in-reveal" },
     },
   },
   "Active & Social": {
-    // Reused "Performing Arts" icon
-    icon: {
-      src: "https://cdn.lordicon.com/hhqqenci.json",
-      trigger: "in",
-      state: "in-reveal",
-    },
+    icon: { src: "https://cdn.lordicon.com/hhqqenci.json", trigger: "in", state: "in-reveal" },
     subcategories: {
-      "Movement & Games": {
-        // Reused "Dance" icon
-        src: "https://cdn.lordicon.com/iujnhzgo.json",
-        trigger: "in",
-        state: "in-reveal",
-      },
-      "Performance & Culture": {
-        // Reused "Music" icon
-        src: "https://cdn.lordicon.com/nnnotppf.json",
-        trigger: "in",
-        state: "in-dynamic",
-      },
+      "Movement & Games": { src: "https://cdn.lordicon.com/iujnhzgo.json", trigger: "in", state: "in-reveal" },
+      "Performance & Culture": { src: "https://cdn.lordicon.com/nnnotppf.json", trigger: "in", state: "in-dynamic" },
     },
   },
 };
-
-const defaultCategoryIcon = {
-  src: "https://cdn.lordicon.com/xodeitpr.json",
-  trigger: "in",
-  state: "in-reveal",
-};
-const defaultSubcategoryIcon = {
-  src: "https://cdn.lordicon.com/xodeitpr.json",
-  trigger: "in",
-  state: "in-reveal",
-};
+const defaultLordIcon = { src: "https://cdn.lordicon.com/xodeitpr.json", trigger: "in", state: "in-reveal" };
+const partnerLordIcon = "https://cdn.lordicon.com/zopdjjjs.json";
 
 // --- Animations ---
 
@@ -360,6 +310,7 @@ const AnimatedIconWrapper = styled.div`
   animation: ${popAndSettle} 1.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
   animation-delay: ${(props) => props.$delay || "0ms"};
 
+  svg,
   lord-icon {
     width: 100%;
     height: 100%;
@@ -538,13 +489,13 @@ const ClassInformation = React.memo(
     else if (partnerTierName === "Premium Partner")
       partnerBadgeText = "Premium";
 
-    const categoryIcon =
-      (categoryName && iconMap[categoryName]?.icon) || defaultCategoryIcon;
-    const subcategoryIcon =
+    const categoryLordIcon =
+      (categoryName && lordIconMap[categoryName]?.icon) || defaultLordIcon;
+    const subcategoryLordIcon =
       (categoryName &&
         subcategoryName &&
-        iconMap[categoryName]?.subcategories[subcategoryName]) ||
-      defaultSubcategoryIcon;
+        lordIconMap[categoryName]?.subcategories?.[subcategoryName]) ||
+      defaultLordIcon;
 
     return (
       <InfoWrapper>
@@ -590,7 +541,13 @@ const ClassInformation = React.memo(
               {displayBusinessImage ? (
                 <HostImg src={displayBusinessImage} alt="" />
               ) : (
-                <User size={22} />
+                <LordIcon
+                  src="https://cdn.lordicon.com/bhfjfgqz.json"
+                  trigger="in"
+                  state="in-reveal"
+                  colors="primary:#767676"
+                  style={{ width: 22, height: 22 }}
+                />
               )}
             </BusinessAvatar>
             <div
@@ -616,7 +573,13 @@ const ClassInformation = React.memo(
                   <>
                     <MetaSeparator>•</MetaSeparator>
                     <MetaItem style={{ fontWeight: "500", color: "#FF385C" }}>
-                      <Award size={14} /> Top Rated
+                      <LordIcon
+                        src="https://cdn.lordicon.com/abgykmtd.json"
+                        trigger="in"
+                        colors="primary:#FF385C"
+                        style={{ width: 14, height: 14, flexShrink: 0 }}
+                      />
+                      {" "}Top Rated
                     </MetaItem>
                   </>
                 )}
@@ -632,8 +595,8 @@ const ClassInformation = React.memo(
             {partnerBadgeText && (
               <CategoryPill>
                 <AnimatedIconWrapper $delay="0ms">
-                  <lord-icon
-                    src="https://cdn.lordicon.com/zopdjjjs.json"
+                  <LordIcon
+                    src={partnerLordIcon}
                     trigger="in"
                     state="in-reveal"
                     style={{ width: "100%", height: "100%" }}
@@ -649,10 +612,10 @@ const ClassInformation = React.memo(
               <CategoryPill>
                 <AnimatedIconWrapper $delay="200ms">
                   <LordIcon
-                    src={categoryIcon.src}
-                    trigger={categoryIcon.trigger}
-                    state={categoryIcon.state}
-                    delay={categoryIcon.delay || 0}
+                    src={categoryLordIcon.src}
+                    trigger={categoryLordIcon.trigger}
+                    state={categoryLordIcon.state}
+                    delay={categoryLordIcon.delay || 0}
                     style={{ width: "100%", height: "100%" }}
                   />
                 </AnimatedIconWrapper>
@@ -666,10 +629,10 @@ const ClassInformation = React.memo(
               <CategoryPill>
                 <AnimatedIconWrapper $delay="400ms">
                   <LordIcon
-                    src={subcategoryIcon.src}
-                    trigger={subcategoryIcon.trigger}
-                    state={subcategoryIcon.state}
-                    delay={subcategoryIcon.delay || 0}
+                    src={subcategoryLordIcon.src}
+                    trigger={subcategoryLordIcon.trigger}
+                    state={subcategoryLordIcon.state}
+                    delay={subcategoryLordIcon.delay || 0}
                     style={{ width: "100%", height: "100%" }}
                   />
                 </AnimatedIconWrapper>

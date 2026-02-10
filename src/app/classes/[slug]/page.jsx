@@ -6,6 +6,7 @@ import { Breadcrumb } from "antd";
 import {
   fetchClassDetail,
   fetchBusinessDetail,
+  fetchClassReviews,
 } from "@/lib/server-data-fetchers";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 
@@ -96,47 +97,24 @@ async function getClassData(slug) {
     const classData = classResult.data;
     console.log(`✅ Experience data fetched: ${classData.classId}`);
 
-    // UPDATED: Use server-side fetcher with proper cache tags
-    let businessResult = null;
-    if (classData.business_slug) {
-      console.log(`Fetching host: ${classData.business_slug}`);
-      const businessFetchResult = await fetchBusinessDetail(
-        classData.business_slug,
-      );
-      if (businessFetchResult.success && businessFetchResult.data) {
-        businessResult = businessFetchResult.data;
-        console.log(`✅ Host data fetched`);
-      } else {
-        console.warn(`Host not found or error: ${classData.business_slug}`);
-      }
-    }
+    // Fetch business and reviews in parallel via lib server fetchers (cached)
+    const [businessFetchResult, reviewsFetchResult] = await Promise.all([
+      classData.business_slug
+        ? fetchBusinessDetail(classData.business_slug)
+        : Promise.resolve({ success: false, data: null }),
+      classData.review_count > 0
+        ? fetchClassReviews(slug, 1, 6)
+        : Promise.resolve({ success: true, data: [] }),
+    ]);
 
-    let reviewsResult = null;
-    if (classData.review_count > 0) {
-      console.log(`Fetching reviews for: ${slug}`);
-      try {
-        const response = await fetch(
-          `${BASE_URL}/classes/${slug}/reviews/?page=1&page_size=6`,
-          {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            cache: "force-cache",
-            next: {
-              revalidate: 86400,
-              tags: ["reviews", `class-${slug}-reviews`],
-            },
-          },
-        );
-
-        if (response.ok) {
-          const reviewsData = await response.json();
-          reviewsResult = reviewsData.results || reviewsData;
-          console.log(`✅ ${reviewsResult.length} reviews fetched`);
-        }
-      } catch (reviewError) {
-        console.error("Error fetching reviews:", reviewError);
-      }
-    }
+    const businessResult =
+      businessFetchResult.success && businessFetchResult.data
+        ? businessFetchResult.data
+        : null;
+    const reviewsResult =
+      reviewsFetchResult.success && Array.isArray(reviewsFetchResult.data)
+        ? reviewsFetchResult.data
+        : null;
 
     return {
       classData,

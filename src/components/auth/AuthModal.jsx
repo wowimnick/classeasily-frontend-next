@@ -12,7 +12,6 @@ import { Modal, Form, Input, Button, Steps, ConfigProvider, Alert } from "antd";
 import message from "@/lib/message";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, Phone, ArrowLeft, ArrowRight } from "lucide-react";
-import ReactGA from "react-ga4";
 import posthog from "posthog-js";
 import dynamic from "next/dynamic";
 import { Drawer } from "vaul";
@@ -416,13 +415,6 @@ const AuthModal = ({
 
       message.success("Welcome back!");
 
-      if (ReactGA.isInitialized) {
-        ReactGA.event({
-          category: "User",
-          action: "Login",
-          label: "Standard Login",
-        });
-      }
 
       // PostHog: Identify user and capture login event
       posthog.identify(values.email, {
@@ -462,13 +454,6 @@ const AuthModal = ({
 
       message.success("Welcome!");
 
-      if (ReactGA.isInitialized) {
-        ReactGA.event({
-          category: "User",
-          action: "Login",
-          label: "Google Login",
-        });
-      }
 
       // PostHog: Capture Google login event (identify happens server-side with Google data)
       posthog.capture("user_logged_in", {
@@ -541,13 +526,6 @@ const AuthModal = ({
         router
       );
 
-      if (ReactGA.isInitialized) {
-        ReactGA.event({
-          category: "User",
-          action: "Register",
-          label: "Successful Registration",
-        });
-      }
 
       // PostHog: Identify new user and capture signup event
       posthog.identify(currentFormData.email, {

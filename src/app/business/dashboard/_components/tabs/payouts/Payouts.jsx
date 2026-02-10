@@ -34,6 +34,7 @@ import {
   Info,
   Download,
   BookOpen,
+  Settings,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import NumberFlow from "@number-flow/react";
@@ -41,6 +42,7 @@ import dayjs from "dayjs";
 import { businessService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
 import { theme } from "@/components/theme";
+import { useDashboard } from "../../DashboardContext";
 
 const { Title, Text, Paragraph, Link } = Typography;
 const { useBreakpoint } = Grid;
@@ -1170,6 +1172,7 @@ const MobilePayoutItem = ({ payout, onExport, onViewBookings }) => {
 };
 
 const Payouts = () => {
+  const { openSettingsDrawer } = useDashboard();
   const [summary, setSummary] = useState(null);
   const [payouts, setPayouts] = useState([]);
   const [loadingSummary, setLoadingSummary] = useState(true);
@@ -1570,6 +1573,22 @@ const Payouts = () => {
                       </Tooltip>
                     </StatValue>
                     {stat.footer && <StatFooter>{stat.footer}</StatFooter>}
+                    {stat.key === "payout_status" &&
+                      !loadingSummary &&
+                      !summary?.payouts_enabled && (
+                      <div style={{ marginTop: 12 }}>
+                        <Button
+                          type="primary"
+                          size="small"
+                          icon={<Settings size={14} />}
+                          onClick={() =>
+                            openSettingsDrawer("preferences", "payout-setup-section")
+                          }
+                        >
+                          Set up in Settings
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
