@@ -1,8 +1,9 @@
-// app/business/layout.js
+// app/business/layout.jsx
 import {
   metadata as pageMetadata,
   generateFAQStructuredData,
 } from "./metadata";
+import ClientOnlyWrapper from "@/components/common/ClientOnlyWrapper";
 
 export const metadata = pageMetadata;
 
@@ -17,7 +18,7 @@ export default function BusinessLayout({ children }) {
           __html: JSON.stringify(faqStructuredData),
         }}
       />
-      {children}
+      <ClientOnlyWrapper>{children}</ClientOnlyWrapper>
     </>
   );
 }

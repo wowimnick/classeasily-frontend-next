@@ -9,6 +9,7 @@ import { theme as appTheme } from "@/components/theme";
 import { ConfigProvider } from "antd";
 
 // Import layout components
+import ClientOnlyWrapper from "@/components/common/ClientOnlyWrapper";
 import PermissionProtectedRoute from "@/components/auth/PermissionProtectedRoute";
 import BusinessHeader from "./_components/BusinessHeader";
 import SideMenu from "./_components/SideMenu";
@@ -110,8 +111,10 @@ function DashboardLayoutInner({ children }) {
 
 export default function DashboardLayout({ children }) {
   return (
-    <PermissionProtectedRoute requiredPermission="quickstart.access_business_dashboard">
-      <DashboardLayoutInner>{children}</DashboardLayoutInner>
-    </PermissionProtectedRoute>
+    <ClientOnlyWrapper>
+      <PermissionProtectedRoute requiredPermission="quickstart.access_business_dashboard">
+        <DashboardLayoutInner>{children}</DashboardLayoutInner>
+      </PermissionProtectedRoute>
+    </ClientOnlyWrapper>
   );
 }
