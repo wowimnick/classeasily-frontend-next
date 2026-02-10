@@ -262,6 +262,7 @@ export const useAuthStore = create(
     },
     {
       name: "auth-storage",
+      skipHydration: true, // Defer rehydration until after first paint so server and client initial render match (avoids React #418).
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,

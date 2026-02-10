@@ -24,6 +24,11 @@ export default function ClientProviders({ children }) {
     localStorage.setItem("cookie_consent", "true");
   }, []);
 
+  // Trigger auth store rehydration after first paint so server and client initial HTML match (avoids React #418).
+  useEffect(() => {
+    useAuthStore.persist.rehydrate();
+  }, []);
+
   useEffect(() => {
     if (hasInitialized.current) return;
 
