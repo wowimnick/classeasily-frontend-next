@@ -11,11 +11,7 @@ import React, {
   useMemo,
 } from "react";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
-const AuthModal = dynamic(() => import("@/components/auth/AuthModal"), {
-  ssr: false,
-  loading: () => null,
-});
+import AuthModal from "@/components/auth/AuthModal";
 import {
   useAuthStore,
   getRedirectPath,
@@ -32,10 +28,10 @@ export const AuthProvider = ({ children }) => {
 
   // Watch for global auth modal trigger
   const shouldOpenAuthModal = useAuthStore(
-    (state) => state.shouldOpenAuthModal,
+    (state) => state.shouldOpenAuthModal
   );
   const setShouldOpenAuthModal = useAuthStore(
-    (state) => state.setShouldOpenAuthModal,
+    (state) => state.setShouldOpenAuthModal
   );
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -57,10 +53,8 @@ export const AuthProvider = ({ children }) => {
       // FIX: Do not redirect if the user is in the "Forgot Password" flow.
       // This prevents phantom redirects if background auth refreshes/initializes
       // while the user is trying to reset their password.
-      if (authModalMode === "forgotPassword") {
-        console.log(
-          "[AuthContext] User authenticated but in Forgot Password mode. Preventing redirect.",
-        );
+      if (authModalMode === 'forgotPassword') {
+        console.log("[AuthContext] User authenticated but in Forgot Password mode. Preventing redirect.");
         return;
       }
 
@@ -81,7 +75,7 @@ export const AuthProvider = ({ children }) => {
       // Handle redirect logic
       if (user.has_business) {
         console.log(
-          "[AuthContext] User has business, redirecting to business dashboard",
+          "[AuthContext] User has business, redirecting to business dashboard"
         );
         clearRedirectPath();
         router.push("/business/dashboard/overview");
@@ -103,14 +97,7 @@ export const AuthProvider = ({ children }) => {
         clearRedirectPath();
       }
     }
-  }, [
-    isAuthenticated,
-    user,
-    isAuthModalVisible,
-    onSuccessCallback,
-    router,
-    authModalMode,
-  ]); // Added authModalMode dependency
+  }, [isAuthenticated, user, isAuthModalVisible, onSuccessCallback, router, authModalMode]); // Added authModalMode dependency
 
   const openLoginModal = useCallback((onSuccess = null) => {
     if (typeof window !== "undefined") {
@@ -159,26 +146,19 @@ export const AuthProvider = ({ children }) => {
       openForgotPasswordModal,
       closeAuthModal,
     }),
-    [
-      openLoginModal,
-      openRegisterModal,
-      openForgotPasswordModal,
-      closeAuthModal,
-    ],
+    [openLoginModal, openRegisterModal, openForgotPasswordModal, closeAuthModal]
   );
 
   return (
     <AuthContext.Provider value={authModalValue}>
       {children}
-      {(isAuthModalVisible || authModalMode !== "login") && (
-        <AuthModal
-          visible={isAuthModalVisible}
-          onClose={closeAuthModal}
-          defaultMode={authModalMode}
-          onLoginSuccessAction={executeLoginSuccessAction}
-          onModeChange={setAuthModalMode}
-        />
-      )}
+      <AuthModal
+        visible={isAuthModalVisible}
+        onClose={closeAuthModal}
+        defaultMode={authModalMode}
+        onLoginSuccessAction={executeLoginSuccessAction}
+        onModeChange={setAuthModalMode} // <--- Sync modal internal state with context
+      />
     </AuthContext.Provider>
   );
 };
