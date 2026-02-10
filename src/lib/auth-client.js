@@ -96,11 +96,11 @@ const handlePostLoginRedirect = (user, router) => {
 // ============================================================================
 // ZUSTAND STORE - Client-side auth state management
 // ============================================================================
+// Initial state is fixed (no localStorage read) so server and client match and
+// hydration does not throw. Persist middleware rehydrates after mount.
 export const useAuthStore = create(
   persist(
     (set, get) => {
-      // Use fixed initial state so server and client match (avoids hydration mismatch).
-      // Persist middleware will rehydrate from localStorage after mount and set _hasHydrated.
       return {
         user: null,
         isAuthenticated: false,

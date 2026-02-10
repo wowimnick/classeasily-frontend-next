@@ -67,15 +67,10 @@ const nextConfig = {
 
   reactStrictMode: true,
 
-  // Webpack optimizations (single merged config; second webpack was overwriting this)
-  webpack: (config, { dev, isServer }) => {
-    if (dev && !isServer) {
-      config.watchOptions = {
-        poll: 1000,
-        aggregateTimeout: 300,
-      };
-    }
+  // Webpack optimizations for better code splitting and smaller bundles
+  webpack: (config, { isServer }) => {
     if (!isServer) {
+      // Optimize chunk splitting
       config.optimization = {
         ...config.optimization,
         splitChunks: {
@@ -83,35 +78,28 @@ const nextConfig = {
           cacheGroups: {
             default: false,
             vendors: false,
-            framework: {
-              test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
-              name: "framework",
-              priority: 40,
+            // Vendor chunk for large libraries
+            vendor: {
+              name: "vendor",
+              chunks: "all",
+              test: /node_modules/,
+              priority: 20,
             },
+            // Separate chunk for framer-motion (if still used elsewhere)
             framerMotion: {
               name: "framer-motion",
               test: /[\\/]node_modules[\\/]framer-motion[\\/]/,
               chunks: "all",
               priority: 30,
             },
+            // Separate chunk for react-leaflet (map library)
             leaflet: {
               name: "leaflet",
               test: /[\\/]node_modules[\\/](react-leaflet|leaflet)[\\/]/,
               chunks: "all",
               priority: 30,
             },
-            lib: {
-              test: /[\\/]node_modules[\\/]/,
-              name(module) {
-                const packageName = module.context.match(
-                  /[\\/]node_modules[\\/](.*?)([\\/]|$)/,
-                )?.[1];
-                return `npm.${packageName?.replace("@", "")}`;
-              },
-              priority: 25,
-              minChunks: 1,
-              maxSize: 100000,
-            },
+            // Common chunk for shared code
             common: {
               name: "common",
               minChunks: 2,
@@ -327,6 +315,41 @@ const nextConfig = {
     ];
   },
 
+  webpack: (config, { dev, isServer }) => {
+    if (dev && !isServer) {
+      config.watchOptions = {
+        poll: 1000, // Check for changes every second
+        aggregateTimeout: 300,
+      };
+    }
+
+    if (!isServer) {
+      config.optimization.splitChunks = {
+        chunks: "all",
+        cacheGroups: {
+          framework: {
+            test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+            name: "framework",
+            priority: 40,
+          },
+          lib: {
+            test: /[\\/]node_modules[\\/]/,
+            name(module) {
+              const packageName = module.context.match(
+                /[\\/]node_modules[\\/](.*?)([\\/]|$)/,
+              )?.[1];
+              return `npm.${packageName?.replace("@", "")}`;
+            },
+            priority: 30,
+            minChunks: 1,
+            maxSize: 100000, // 100KB max per chunk
+          },
+        },
+      };
+    }
+    return config;
+  },
+
   // NEXT.JS 16: Turbopack is now stable and default (moved out of experimental)
   turbopack:
     process.env.NODE_ENV === "development"
@@ -393,4 +416,4 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);
