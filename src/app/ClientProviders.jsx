@@ -1,3 +1,4 @@
+console.error('app started');
 "use client";
 
 import { Suspense, useMemo, useEffect, useRef } from "react";
