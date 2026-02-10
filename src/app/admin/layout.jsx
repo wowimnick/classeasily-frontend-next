@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import ClientOnlyWrapper from "@/components/common/ClientOnlyWrapper";
 import PermissionProtectedRoute from "@/components/auth/PermissionProtectedRoute";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 
@@ -9,10 +10,12 @@ export const metadata = {
 
 export default function AdminLayout({ children }) {
   return (
-    <PermissionProtectedRoute requiredPermission="quickstart.access_admin_dashboard">
-      <Suspense fallback={<GlobalLoaderWithInlineStyles />}>
-        {children}
-      </Suspense>
-    </PermissionProtectedRoute>
+    <ClientOnlyWrapper>
+      <PermissionProtectedRoute requiredPermission="quickstart.access_admin_dashboard">
+        <Suspense fallback={<GlobalLoaderWithInlineStyles />}>
+          {children}
+        </Suspense>
+      </PermissionProtectedRoute>
+    </ClientOnlyWrapper>
   );
 }
