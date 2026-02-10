@@ -10,6 +10,7 @@ import React, {
   useImperativeHandle,
   useMemo,
 } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styled, { createGlobalStyle, ThemeProvider } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
@@ -422,6 +423,39 @@ const FooterActionsContainer = styled.div`
   align-items: center;
 `;
 
+const FooterLinkButton = styled(Link)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 20px;
+  font-family: ${(props) => props.theme.token.fontFamily} !important;
+  font-size: 14px;
+  font-weight: 500;
+  color: ${(props) => props.theme.token.colorText};
+  text-decoration: none;
+  border-radius: ${(props) => props.theme.token.borderRadius}px;
+  box-shadow: rgba(0, 0, 0, 0.05) 1px 4px 9px 0px;
+  transition: background-color 0.2s, color 0.2s;
+
+  &:hover {
+    color: ${(props) => props.theme.token.colorPrimary};
+    background-color: ${(props) =>
+      props.theme.token.colorBgSpotlight ?? props.theme.token.colorBgLayout ?? "#f5f5f5"};
+  }
+`;
+
+const FooterLinkButtonSmall = styled(FooterLinkButton)`
+  padding: 8px 16px;
+  font-size: 13px;
+`;
+
+const FooterLinkButtonMobile = styled(FooterLinkButton)`
+  box-shadow: rgba(0, 0, 0, 0.05) 0px 2px 8px 0px;
+  flex: 1;
+`;
+
 // Animation variants
 const overlayVariants = {
   hidden: { opacity: 0 },
@@ -672,9 +706,6 @@ const menuItemPermissions = {
 
 const SideMenuComponent = memo(
   forwardRef(({ onMenuSelect, activeKey }, ref) => {
-    console.error(
-      `[SideMenuComponent] Render start for activeKey: "${activeKey}"`,
-    );
     const [isMobile, setIsMobile] = useState(false);
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [settingsDrawerVisible, setSettingsDrawerVisible] = useState(false);
@@ -696,12 +727,7 @@ const SideMenuComponent = memo(
 
     const businessClickHandler =
       isBusinessClickable && businessData.slug
-        ? () => {
-            console.error(
-              "[SideMenuComponent] BusinessInfoWrapper click: Navigating to business page",
-            );
-            router.push(`/business/${businessData.slug}`);
-          }
+        ? () => router.push(`/business/${businessData.slug}`)
         : null;
 
     const businessClickableTitle = isBusinessClickable
@@ -731,9 +757,6 @@ const SideMenuComponent = memo(
       platformMenuRef,
 
       openSettingsDrawer: (tab = "general", sectionId = null) => {
-        console.error(
-          `[SideMenuComponent] openSettingsDrawer called with tab: ${tab}, section: ${sectionId}`,
-        );
         activeSettingsTab.current = tab;
         if (sectionId) {
           sessionStorage.setItem("scrollToSection", sectionId);
@@ -742,17 +765,11 @@ const SideMenuComponent = memo(
         }
         setSettingsDrawerVisible(true);
       },
-      closeSettingsDrawer: () => {
-        console.error("[SideMenuComponent] closeSettingsDrawer called");
-        setSettingsDrawerVisible(false);
-      },
+      closeSettingsDrawer: () => setSettingsDrawerVisible(false),
       getBusinessSettingsRef: () => businessSettingsRefInternal,
     }));
 
     useEffect(() => {
-      console.error(
-        "[SideMenuComponent] useEffect (mobile transform origin) triggered",
-      );
       if (typeof window === "undefined") return;
 
       if (drawerVisible && mobileButtonRef.current && isMobile) {
@@ -778,22 +795,14 @@ const SideMenuComponent = memo(
       }
     }, [drawerVisible, isMobile]);
 
-    const fetchBusinessProfile = useCallback(
-      async (context = "explicit call") => {
-        console.error(
-          `[SideMenuComponent] fetchBusinessProfile CALLED (context: ${context})`,
-        );
-        setLoadingBusiness(true);
+    const fetchBusinessProfile = useCallback(async () => {
+      setLoadingBusiness(true);
         setBusinessError(null);
         try {
           const result = await businessService.getMyBusinessProfile();
           if (result.success && result.data) {
-            console.error("[SideMenuComponent] fetchBusinessProfile SUCCESS");
             setBusinessData(result.data);
           } else if (result.status === 404) {
-            console.error(
-              "[SideMenuComponent] fetchBusinessProfile NOT FOUND (404)",
-            );
             setBusinessData({
               businessName: "Create Business Profile",
               businessImage: null,
@@ -801,47 +810,26 @@ const SideMenuComponent = memo(
               _isPlaceholder: true,
             });
           } else {
-            console.error(
-              "[SideMenuComponent] fetchBusinessProfile FAILED (API error)",
-            );
             setBusinessError(result.error || "Failed to load business info");
             setBusinessData(null);
           }
         } catch (error) {
-          console.error(
-            "[SideMenuComponent] fetchBusinessProfile CATCH ERROR:",
-            error,
-          );
           setBusinessError("Network error occurred while fetching profile");
           setBusinessData(null);
         } finally {
-          console.error("[SideMenuComponent] fetchBusinessProfile COMPLETE");
           setLoadingBusiness(false);
         }
-      },
-      [],
-    );
+    }, []);
 
     useEffect(() => {
-      console.error(
-        "[SideMenuComponent] useEffect (initial fetchBusinessProfile) triggered",
-      );
-      fetchBusinessProfile("initial mount");
+      fetchBusinessProfile();
     }, [fetchBusinessProfile]);
 
     useEffect(() => {
-      console.error(
-        "[SideMenuComponent] useEffect (resize listener) triggered",
-      );
       const handleResize = () => setIsMobile(window.innerWidth <= 1024);
       handleResize();
       window.addEventListener("resize", handleResize);
-      return () => {
-        console.error(
-          "[SideMenuComponent] useEffect (resize listener) cleanup",
-        );
-        window.removeEventListener("resize", handleResize);
-      };
+      return () => window.removeEventListener("resize", handleResize);
     }, []);
 
     useEffect(() => {
@@ -860,9 +848,6 @@ const SideMenuComponent = memo(
     }, [activeKey]);
 
     useEffect(() => {
-      console.error(
-        "[SideMenuComponent] useEffect (forceOpenSettingsTab) triggered",
-      );
       if (typeof window === "undefined") return;
 
       const forcedTab = sessionStorage.getItem("forceOpenSettingsTab");
@@ -870,29 +855,17 @@ const SideMenuComponent = memo(
         sessionStorage.removeItem("forceOpenSettingsTab");
         activeSettingsTab.current = forcedTab;
         setSettingsDrawerVisible(true);
-        console.error(
-          "[SideMenuComponent] Force opening settings drawer, fetching business profile.",
-        );
-        fetchBusinessProfile("after Stripe redirect");
+        fetchBusinessProfile();
       }
     }, [fetchBusinessProfile]);
 
-    const toggleMobileDrawer = () => {
-      console.error(
-        `[SideMenuComponent] toggleMobileDrawer called, drawerVisible: ${!drawerVisible}`,
-      );
-      setDrawerVisible(!drawerVisible);
-    };
+    const toggleMobileDrawer = () => setDrawerVisible(!drawerVisible);
 
     const handleMenuClick = (e) => {
-      console.error(
-        `[SideMenuComponent] handleMenuClick called with key: ${e.key}`,
-      );
       if (e.key === "settings") {
         activeSettingsTab.current = "general";
         setSettingsDrawerVisible(true);
         if (isMobile) setDrawerVisible(false);
-        console.error("[SideMenuComponent] Navigating to settings.");
         return;
       }
       onMenuSelect(e.key);
@@ -900,9 +873,6 @@ const SideMenuComponent = memo(
     };
 
     const handleOpenChange = (keys) => {
-      console.error(
-        `[SideMenuComponent] handleOpenChange called with keys: ${keys}`,
-      );
       const latestOpenKey = keys.find((key) => !openKeys.includes(key));
       if (
         menuItemsConfig.some(
@@ -917,24 +887,13 @@ const SideMenuComponent = memo(
       }
     };
 
-    const handleSettingsClose = () => {
-      console.error("[SideMenuComponent] handleSettingsClose called");
-      setSettingsDrawerVisible(false);
-    };
+    const handleSettingsClose = () => setSettingsDrawerVisible(false);
 
     const handleSettingsTabChange = (key) => {
-      console.error(
-        `[SideMenuComponent] handleSettingsTabChange called with key: ${key}`,
-      );
       activeSettingsTab.current = key;
     };
 
-    const handleSettingsSave = () => {
-      console.error(
-        "[SideMenuComponent] handleSettingsSave called, re-fetching business profile",
-      );
-      fetchBusinessProfile("after settings save");
-    };
+    const handleSettingsSave = () => fetchBusinessProfile();
 
     const handleMenuItemHover = useCallback((e, isEntering) => {
       // console.error(`[SideMenuComponent] handleMenuItemHover: ${isEntering ? 'entering' : 'leaving'} ${e.currentTarget.innerText}`);
@@ -942,20 +901,17 @@ const SideMenuComponent = memo(
       const icon = menuItem.querySelector("lord-icon");
       if (icon) {
         try {
-          if (isEntering) {
-            if (icon.playerInstance) {
-              icon.playerInstance.playFromBeginning();
-            }
+          if (isEntering && icon.playerInstance) {
+            icon.playerInstance.playFromBeginning();
           }
-        } catch (error) {
-          console.error("[SideMenuComponent] Icon animation error:", error);
+        } catch (_err) {
+          /* ignore lord-icon animation errors */
         }
       }
     }, []);
 
     const updateIconColors = useCallback(
       (menuItem, isSelected, isHovering = false, isSubmenuTitle = false) => {
-        // console.error(`[SideMenuComponent] updateIconColors for ${menuItem.innerText}, selected: ${isSelected}, hovering: ${isHovering}, submenu: ${isSubmenuTitle}`);
         const icon = menuItem.querySelector("lord-icon");
         if (icon) {
           const isDropdownParent =
@@ -978,9 +934,6 @@ const SideMenuComponent = memo(
     );
 
     useEffect(() => {
-      console.error(
-        "[SideMenuComponent] useEffect (icon color update) triggered",
-      );
       const updateAllIconColors = () => {
         const menuItems = document.querySelectorAll(
           ".ant-menu-item, .ant-menu-submenu-title",
@@ -1007,9 +960,6 @@ const SideMenuComponent = memo(
     }, [activeKey, openKeys]);
 
     const getMenuItemsForAntd = useMemo(() => {
-      console.error(
-        "[SideMenuComponent] useMemo (getMenuItemsForAntd) re-calculated",
-      );
       const attachRefToLabel = (label, key) => {
         let refToAttach;
         switch (key) {
@@ -1090,9 +1040,7 @@ const SideMenuComponent = memo(
       }));
     }, [handleMenuItemHover, permissions]);
 
-    const renderMenu = () => {
-      console.error("[SideMenuComponent] renderMenu called");
-      return (
+    const renderMenu = () => (
         <MenuContainer>
           <StyledAntMenu
             mode="inline"
@@ -1104,11 +1052,8 @@ const SideMenuComponent = memo(
           />
         </MenuContainer>
       );
-    };
 
-    const renderMobileMenu = () => {
-      console.error("[SideMenuComponent] renderMobileMenu called");
-      return (
+    const renderMobileMenu = () => (
         <MobileMenuContainer>
           <StyledAntMenu
             mode="inline"
@@ -1120,11 +1065,9 @@ const SideMenuComponent = memo(
           />
         </MobileMenuContainer>
       );
-    };
 
-    const renderLogoOrAvatar = (size = 36) => {
-      // console.error("[SideMenuComponent] renderLogoOrAvatar called");
-      return businessData.business_image_medium_url ? (
+    const renderLogoOrAvatar = (size = 36) =>
+      businessData.business_image_medium_url ? (
         <BusinessLogo
           src={businessData.business_image_medium_url}
           alt={`${businessData.businessName} Logo`}
@@ -1140,10 +1083,8 @@ const SideMenuComponent = memo(
           }}
         />
       );
-    };
 
     const renderHeaderContent = () => {
-      console.error("[SideMenuComponent] renderHeaderContent called");
       if (loadingBusiness) {
         return (
           <BusinessInfoContainer align="center" size={12}>
@@ -1245,7 +1186,6 @@ const SideMenuComponent = memo(
     };
 
     const renderFooterActions = () => {
-      console.error("[SideMenuComponent] renderFooterActions called");
       if (
         loadingBusiness ||
         businessError ||
@@ -1253,57 +1193,29 @@ const SideMenuComponent = memo(
         businessData._isPlaceholder
       ) {
         return (
-          <Button
-            type="text"
-            style={{ boxShadow: "rgba(0, 0, 0, 0.05) 1px 4px 9px 0px" }}
-            icon={<AlertCircle size={16} />}
-            onClick={() => {
-              console.error("[SideMenuComponent] Get Help (desktop) clicked");
-              router.push("/business/help/");
-            }}
-            block
-          >
+          <FooterLinkButton href="/business/help/">
+            <AlertCircle size={16} />
             Get Help
-          </Button>
+          </FooterLinkButton>
         );
       }
       return (
         <Space direction="vertical" style={{ width: "100%" }} size={8}>
-          <Button
-            type="text"
-            style={{ boxShadow: "rgba(0, 0, 0, 0.05) 1px 4px 9px 0px" }}
-            icon={<Eye size={16} />}
-            onClick={() => {
-              console.error("[SideMenuComponent] Preview (desktop) clicked");
-              businessData.slug &&
-                router.push(`/business/${businessData.slug}`);
-            }}
-            block
-            size="small"
-          >
-            Preview
-          </Button>
-          <Button
-            type="text"
-            style={{ boxShadow: "rgba(0, 0, 0, 0.05) 1px 4px 9px 0px" }}
-            icon={<AlertCircle size={16} />}
-            onClick={() => {
-              console.error(
-                "[SideMenuComponent] Help & Docs (desktop) clicked",
-              );
-              router.push("/business/help/");
-            }}
-            block
-            size="small"
-          >
+          {businessData.slug && (
+            <FooterLinkButtonSmall href={`/business/${businessData.slug}`}>
+              <Eye size={16} />
+              Preview
+            </FooterLinkButtonSmall>
+          )}
+          <FooterLinkButtonSmall href="/business/help/">
+            <AlertCircle size={16} />
             Help & Docs
-          </Button>
+          </FooterLinkButtonSmall>
         </Space>
       );
     };
 
     const renderMobileFooterActions = () => {
-      console.error("[SideMenuComponent] renderMobileFooterActions called");
       if (
         loadingBusiness ||
         businessError ||
@@ -1311,67 +1223,37 @@ const SideMenuComponent = memo(
         businessData._isPlaceholder
       ) {
         return (
-          <Button
-            type="text"
-            style={{
-              boxShadow: "rgba(0, 0, 0, 0.05) 0px 2px 8px 0px",
-              borderRadius: "12px",
-            }}
-            icon={<AlertCircle size={16} />}
-            onClick={() => {
-              console.error("[SideMenuComponent] Get Help (mobile) clicked");
-              router.push("/business/help/");
-              setDrawerVisible(false);
-            }}
-            block
+          <FooterLinkButtonMobile
+            href="/business/help/"
+            onClick={() => setDrawerVisible(false)}
           >
+            <AlertCircle size={16} />
             Get Help
-          </Button>
+          </FooterLinkButtonMobile>
         );
       }
       return (
         <Space direction="horizontal" style={{ width: "100%" }} size={12}>
-          <Button
-            type="text"
-            style={{
-              boxShadow: "rgba(0, 0, 0, 0.05) 0px 2px 8px 0px",
-              borderRadius: "12px",
-              flex: 1,
-            }}
-            icon={<Eye size={16} />}
-            onClick={() => {
-              console.error("[SideMenuComponent] Preview (mobile) clicked");
-              if (businessData.slug) {
-                router.push(`/business/${businessData.slug}`);
-              }
-              setDrawerVisible(false);
-            }}
+          {businessData.slug ? (
+            <FooterLinkButtonMobile
+              href={`/business/${businessData.slug}`}
+              onClick={() => setDrawerVisible(false)}
+            >
+              <Eye size={16} />
+              Preview
+            </FooterLinkButtonMobile>
+          ) : null}
+          <FooterLinkButtonMobile
+            href="/business/help/"
+            onClick={() => setDrawerVisible(false)}
           >
-            Preview
-          </Button>
-          <Button
-            type="text"
-            style={{
-              boxShadow: "rgba(0, 0, 0, 0.05) 0px 2px 8px 0px",
-              borderRadius: "12px",
-              flex: 1,
-            }}
-            icon={<AlertCircle size={16} />}
-            onClick={() => {
-              console.error("[SideMenuComponent] Help (mobile) clicked");
-              router.push("/business/help/");
-              setDrawerVisible(false);
-            }}
-          >
+            <AlertCircle size={16} />
             Help
-          </Button>
+          </FooterLinkButtonMobile>
         </Space>
       );
     };
 
-    console.error(
-      `[SideMenuComponent] Render end for activeKey: "${activeKey}"`,
-    );
     return (
       <ThemeProvider theme={augmentedTheme}>
         <ConfigProvider theme={augmentedTheme}>
