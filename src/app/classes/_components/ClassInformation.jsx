@@ -251,8 +251,18 @@ const MetaSeparator = styled.span`
   font-size: 0.6rem;
   opacity: 0.7;
 `;
+const HostingMeta = styled.span`
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
 
-// --- New Categories/Pills Section ---
+// --- New Categories/Pills Section (hidden on mobile to reduce lag) ---
+const CategoriesBlock = styled.div`
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
 const HeaderSection = styled.div`
   display: flex;
   flex-direction: column;
@@ -555,18 +565,18 @@ const ClassInformation = React.memo(
             >
               <BusinessName>Hosted by {displayBusinessName}</BusinessName>
               <BusinessMetaWrapper>
-                <MetaItem>
-                  {hostingDuration && `${hostingDuration} hosting`}
-                </MetaItem>
+                <HostingMeta>
+                  <MetaItem>
+                    {hostingDuration && `${hostingDuration} hosting`}
+                  </MetaItem>
+                  {reviewCount > 0 && <MetaSeparator>•</MetaSeparator>}
+                </HostingMeta>
 
                 {reviewCount > 0 && (
-                  <>
-                    <MetaSeparator>•</MetaSeparator>
-                    <MetaItem style={{ fontWeight: "500", color: "#000" }}>
-                      <Star size={12} fill="#000" strokeWidth={0} />
-                      {reviewCount} review{reviewCount !== 1 ? "s" : ""}
-                    </MetaItem>
-                  </>
+                  <MetaItem style={{ fontWeight: "500", color: "#000" }}>
+                    <Star size={12} fill="#000" strokeWidth={0} />
+                    {reviewCount} review{reviewCount !== 1 ? "s" : ""}
+                  </MetaItem>
                 )}
 
                 {shouldShowTopRated && (
@@ -590,61 +600,63 @@ const ClassInformation = React.memo(
 
         <Divider style={{ margin: "12px 0" }} />
 
-        <HeaderSection>
-          <CategoriesGrid>
-            {partnerBadgeText && (
-              <CategoryPill>
-                <AnimatedIconWrapper $delay="0ms">
-                  <LordIcon
-                    src={partnerLordIcon}
-                    trigger="in"
-                    state="in-reveal"
-                    style={{ width: "100%", height: "100%" }}
-                  />
-                </AnimatedIconWrapper>
-                <AnimatedTextWrapper $delay="0ms" style={{ color: "#b45309" }}>
-                  {partnerBadgeText}
-                </AnimatedTextWrapper>
-              </CategoryPill>
-            )}
+        <CategoriesBlock>
+          <HeaderSection>
+            <CategoriesGrid>
+              {partnerBadgeText && (
+                <CategoryPill>
+                  <AnimatedIconWrapper $delay="0ms">
+                    <LordIcon
+                      src={partnerLordIcon}
+                      trigger="in"
+                      state="in-reveal"
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  </AnimatedIconWrapper>
+                  <AnimatedTextWrapper $delay="0ms" style={{ color: "#b45309" }}>
+                    {partnerBadgeText}
+                  </AnimatedTextWrapper>
+                </CategoryPill>
+              )}
 
-            {categoryName && (
-              <CategoryPill>
-                <AnimatedIconWrapper $delay="200ms">
-                  <LordIcon
-                    src={categoryLordIcon.src}
-                    trigger={categoryLordIcon.trigger}
-                    state={categoryLordIcon.state}
-                    delay={categoryLordIcon.delay || 0}
-                    style={{ width: "100%", height: "100%" }}
-                  />
-                </AnimatedIconWrapper>
-                <AnimatedTextWrapper $delay="200ms">
-                  {categoryName}
-                </AnimatedTextWrapper>
-              </CategoryPill>
-            )}
+              {categoryName && (
+                <CategoryPill>
+                  <AnimatedIconWrapper $delay="200ms">
+                    <LordIcon
+                      src={categoryLordIcon.src}
+                      trigger={categoryLordIcon.trigger}
+                      state={categoryLordIcon.state}
+                      delay={categoryLordIcon.delay || 0}
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  </AnimatedIconWrapper>
+                  <AnimatedTextWrapper $delay="200ms">
+                    {categoryName}
+                  </AnimatedTextWrapper>
+                </CategoryPill>
+              )}
 
-            {subcategoryName && (
-              <CategoryPill>
-                <AnimatedIconWrapper $delay="400ms">
-                  <LordIcon
-                    src={subcategoryLordIcon.src}
-                    trigger={subcategoryLordIcon.trigger}
-                    state={subcategoryLordIcon.state}
-                    delay={subcategoryLordIcon.delay || 0}
-                    style={{ width: "100%", height: "100%" }}
-                  />
-                </AnimatedIconWrapper>
-                <AnimatedTextWrapper $delay="400ms">
-                  {subcategoryName}
-                </AnimatedTextWrapper>
-              </CategoryPill>
-            )}
-          </CategoriesGrid>
-        </HeaderSection>
+              {subcategoryName && (
+                <CategoryPill>
+                  <AnimatedIconWrapper $delay="400ms">
+                    <LordIcon
+                      src={subcategoryLordIcon.src}
+                      trigger={subcategoryLordIcon.trigger}
+                      state={subcategoryLordIcon.state}
+                      delay={subcategoryLordIcon.delay || 0}
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  </AnimatedIconWrapper>
+                  <AnimatedTextWrapper $delay="400ms">
+                    {subcategoryName}
+                  </AnimatedTextWrapper>
+                </CategoryPill>
+              )}
+            </CategoriesGrid>
+          </HeaderSection>
 
-        <Divider style={{ margin: "12px 0" }} />
+          <Divider style={{ margin: "12px 0" }} />
+        </CategoriesBlock>
 
         <DescriptionSection>
           <Description

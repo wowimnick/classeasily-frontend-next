@@ -696,6 +696,13 @@ const CalendarStep = ({
     return d;
   }, []);
 
+  // Only show date/times >= 2 days out (not today, not tomorrow)
+  const minSelectableDate = useMemo(() => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + 2);
+    return d;
+  }, [today]);
+
   // --- API Fetch ---
   const fetchMonthSlots = useCallback(async () => {
     if (abortControllerRef.current) abortControllerRef.current.abort();
@@ -744,6 +751,14 @@ const CalendarStep = ({
       }
     }
   }, [currentSelectedSlot, selectedDate, currentDate]);
+
+  // Clear selection if it's today or tomorrow (must be >= 2 days out)
+  useEffect(() => {
+    if (selectedDate && selectedDate < minSelectableDate) {
+      setSelectedDate(null);
+      onUpdate({ selectedSlots: [] });
+    }
+  }, [minSelectableDate, selectedDate, onUpdate]);
 
   // --- Handlers ---
   const handleDateClick = (date) => {
@@ -825,9 +840,9 @@ const CalendarStep = ({
   }, [currentDate]);
 
   const slotsForDate = useMemo(() => {
-    if (!selectedDate) return [];
+    if (!selectedDate || selectedDate < minSelectableDate) return [];
     return availableSlots[getLocalYYYYMMDD(selectedDate)] || [];
-  }, [selectedDate, availableSlots]);
+  }, [selectedDate, minSelectableDate, availableSlots]);
 
   const renderSlots = () => (
     <LayoutGroup>
@@ -1026,21 +1041,24 @@ const CalendarStep = ({
                     {daysInMonth.map((item, idx) => {
                       if (!item.date) return <div key={`empty-${idx}`} />;
                       const naive = getLocalYYYYMMDD(item.date);
-                      const hasSlots = availableSlots[naive]?.length > 0;
+                      const isBeforeMin = item.date < minSelectableDate;
+                      const hasSlots =
+                        !isBeforeMin && (availableSlots[naive]?.length > 0);
                       const isSel =
                         selectedDate &&
                         getLocalYYYYMMDD(selectedDate) === naive;
-                      const isPast = item.date < today;
 
                       return (
                         <DayButton
                           key={naive}
-                          disabled={isPast || (!hasSlots && !loading)}
+                          disabled={isBeforeMin || (!hasSlots && !loading)}
                           $inMonth={true}
                           $hasSlots={hasSlots}
                           $isSelected={isSel}
                           onClick={() => handleDateClick(item.date)}
-                          whileTap={!isPast && hasSlots ? { scale: 0.9 } : {}}
+                          whileTap={
+                            !isBeforeMin && hasSlots ? { scale: 0.9 } : {}
+                          }
                         >
                           {item.date.getDate()}
                         </DayButton>
