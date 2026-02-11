@@ -10,61 +10,28 @@ const SearchContext = createContext();
 const AWS_LOCATION_API_URL =
   "https://geocoding.classeasily.com/address-autocomplete-proxy";
 
-export const SUGGESTED_AREAS = [
-  {
-    name: "Toronto, ON",
-    description: "Popular area",
-    coords: { lat: 43.6532, lng: -79.3832 },
-    icon: (
-      <LordIcon
-        src="https://cdn.lordicon.com/luvlauio.json"
-        trigger="in"
-        delay="1500"
-        state="in-reveal"
-        colors="primary:#3a3347,secondary:#e4e4e4,tertiary:#ffc738"
-        style={{ width: 40, height: 40 }}
-      />
-    ),
-    provinceSlug: "ontario",
-    citySlug: "toronto",
-  },
-  {
-    name: "Hamilton, ON",
-    description: "Popular area",
-    coords: { lat: 43.2557, lng: -79.8711 },
-    icon: (
-      <LordIcon
-        src="https://cdn.lordicon.com/bpmglzll.json"
-        trigger="in"
-        delay="1500"
-        state="in-reveal"
-        colors="primary:#ee6d66,secondary:#ee6d66,tertiary:#b26836,quaternary:#e4e4e4,quinary:#646e78,senary:#e4e4e4"
-        style={{ width: 40, height: 35 }}
-      />
-    ),
-    provinceSlug: "ontario",
-    citySlug: "hamilton",
-  },
-  {
-    name: "Ottawa, ON",
-    description: "Growing area",
-    coords: { lat: 45.4215, lng: -75.6972 },
-    icon: (
-      <LordIcon
-        src="https://cdn.lordicon.com/bpmglzll.json"
-        trigger="in"
-        delay="1500"
-        state="in-reveal"
-        colors="primary:#ee6d66,secondary:#ee6d66,tertiary:#b26836,quaternary:#e4e4e4,quinary:#646e78,senary:#e4e4e4"
-        style={{ width: 40, height: 35 }}
-      />
-    ),
-    provinceSlug: "ontario",
-    citySlug: "ottawa",
-  },
+// Toronto only: LordIcon for desktop suggested areas; rest use Lucide + color palette (like mobile)
+const LORDICON_TORONTO = (
+  <LordIcon
+    src="https://cdn.lordicon.com/luvlauio.json"
+    trigger="in"
+    delay="1500"
+    state="in-reveal"
+    colors="primary:#3a3347,secondary:#e4e4e4,tertiary:#ffc738"
+    style={{ width: 40, height: 40 }}
+  />
+);
+
+// Same palette as mobile (SearchFullScreen) for Lucide MapPin icons
+const ICON_PALETTE = [
+  { bg: "#fff1f2", icon: "#e11d48" }, // Rose
+  { bg: "#fff7ed", icon: "#ea580c" }, // Orange
+  { bg: "#eff6ff", icon: "#2563eb" }, // Blue
+  { bg: "#f0fdf4", icon: "#16a34a" }, // Green
+  { bg: "#faf5ff", icon: "#9333ea" }, // Purple
 ];
 
-// Toronto / GTA towns for full-screen location presets (no drawers)
+// Toronto / GTA towns for full-screen location presets (mobile drawer + desktop banner)
 export const GTA_PRESETS = [
   { name: "Toronto", description: "Downtown & neighbourhoods", coords: { lat: 43.6532, lng: -79.3832 }, provinceSlug: "ontario", citySlug: "toronto" },
   { name: "Mississauga", description: "West of Toronto", coords: { lat: 43.589, lng: -79.6441 }, provinceSlug: "ontario", citySlug: "mississauga" },
@@ -74,6 +41,8 @@ export const GTA_PRESETS = [
   { name: "Richmond Hill", description: "York Region", coords: { lat: 43.8828, lng: -79.4403 }, provinceSlug: "ontario", citySlug: "richmond-hill" },
   { name: "Oakville", description: "Halton Region", coords: { lat: 43.4675, lng: -79.6877 }, provinceSlug: "ontario", citySlug: "oakville" },
   { name: "Burlington", description: "Halton Region", coords: { lat: 43.3255, lng: -79.799 }, provinceSlug: "ontario", citySlug: "burlington" },
+  { name: "Hamilton", description: "Popular area", coords: { lat: 43.2557, lng: -79.8711 }, provinceSlug: "ontario", citySlug: "hamilton" },
+  { name: "Ottawa", description: "Growing area", coords: { lat: 45.4215, lng: -75.6972 }, provinceSlug: "ontario", citySlug: "ottawa" },
   { name: "Pickering", description: "Durham Region", coords: { lat: 43.8374, lng: -79.0863 }, provinceSlug: "ontario", citySlug: "pickering" },
   { name: "Ajax", description: "Durham Region", coords: { lat: 43.8501, lng: -79.0329 }, provinceSlug: "ontario", citySlug: "ajax" },
   { name: "Whitby", description: "Durham Region", coords: { lat: 43.8762, lng: -78.9413 }, provinceSlug: "ontario", citySlug: "whitby" },
@@ -85,6 +54,17 @@ export const GTA_PRESETS = [
   { name: "Scarborough", description: "East Toronto", coords: { lat: 43.7731, lng: -79.2574 }, provinceSlug: "ontario", citySlug: "toronto" },
   { name: "North York", description: "North Toronto", coords: { lat: 43.7615, lng: -79.4111 }, provinceSlug: "ontario", citySlug: "toronto" },
 ];
+
+// Desktop banner: same neighborhoods as mobile; Toronto gets LordIcon, rest get Lucide MapPin + colored theme
+export const SUGGESTED_AREAS = GTA_PRESETS.map((preset, idx) => ({
+  name: preset.name,
+  description: preset.description,
+  coords: preset.coords,
+  icon: idx === 0 ? LORDICON_TORONTO : null,
+  lucideColorTheme: idx === 0 ? null : ICON_PALETTE[(idx - 1) % ICON_PALETTE.length],
+  provinceSlug: preset.provinceSlug,
+  citySlug: preset.citySlug,
+}));
 
 export const SearchProvider = ({ children }) => {
   const router = useRouter();

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import {
   Search,
   MapPin,
@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   X,
   Compass,
+  Loader2,
 } from "lucide-react";
 import dayjs from "dayjs";
 import posthog from "posthog-js";
@@ -336,6 +337,16 @@ const contentTransition = {
   ease: [0.4, 0, 0.2, 1]
 };
 
+// Loading spinner rotation
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+const LoadingSpinnerWrap = styled.span`
+  display: inline-flex;
+  animation: ${spin} 0.8s linear infinite;
+`;
+
 // --- Preset Icon Colors ---
 // A palette of warm/friendly colors for the location icons
 const ICON_PALETTE = [
@@ -356,6 +367,7 @@ export default function SearchFullScreen() {
     participantCount,
     setParticipantCount,
     geocodedAddressResults,
+    geocoding,
     handleLocationChange,
     handleLocationSelect,
     clearAll,
@@ -425,6 +437,16 @@ export default function SearchFullScreen() {
     const hasTerm = searchTerm && searchTerm.trim().length > 0;
     const list = hasTerm ? geocodedAddressResults : GTA_PRESETS;
 
+    if (hasTerm && geocoding) {
+      return (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 24px", color: "#717171" }}>
+          <LoadingSpinnerWrap>
+            <Loader2 size={22} strokeWidth={2.5} />
+          </LoadingSpinnerWrap>
+          <span style={{ fontSize: 15 }}>Finding locations nearby…</span>
+        </div>
+      );
+    }
     if (hasTerm && (!list || list.length === 0)) {
       return <p style={{ color: "#717171", margin: "16px 24px" }}>No experiences found.</p>;
     }

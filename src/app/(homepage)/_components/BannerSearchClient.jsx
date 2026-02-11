@@ -221,13 +221,13 @@ const LocationOption = styled.div`
 const IconBox = styled.div`
   width: 40px;
   height: 40px;
-  background: #f3f4f6;
+  background: ${(props) => props.$bgColor ?? "#f3f4f6"};
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 16px;
-  color: #374151;
+  color: ${(props) => props.$iconColor ?? "#374151"};
   flex-shrink: 0;
 `;
 
@@ -779,7 +779,16 @@ export default function BannerSearchClient({ mode }) {
           setIsSwitching(false);
         }}
       >
-        <IconBox>{area.icon}</IconBox>
+        {area.icon ? (
+          <IconBox>{area.icon}</IconBox>
+        ) : (
+          <IconBox
+            $bgColor={area.lucideColorTheme?.bg}
+            $iconColor={area.lucideColorTheme?.icon}
+          >
+            <MapPin size={20} strokeWidth={2.5} />
+          </IconBox>
+        )}
         <div
           style={{
             display: "flex",
