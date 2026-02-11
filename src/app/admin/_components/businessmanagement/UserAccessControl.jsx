@@ -1049,8 +1049,9 @@ const UserAccessControl = () => {
       setActionLoading(true);
       const data = {
         status: values.decision,
-        notes: values.notes,
-        rejection_reason: values.decision === "rejected" ? values.notes : "",
+        notes: values.notes ?? "",
+        rejection_reason:
+          values.decision === "rejected" ? (values.notes ?? "") : "",
       };
       const response = await verificationService.processVerification(
         selectedRequest.id,
@@ -1386,7 +1387,7 @@ const UserAccessControl = () => {
               Cancel
             </Button>,
             <Button
-              key={`btn-${actionLoading}`}
+              key={actionLoading ? "loading" : "idle"}
               type="primary"
               loading={actionLoading}
               onClick={() => decisionForm.submit()}
@@ -1394,60 +1395,66 @@ const UserAccessControl = () => {
               Submit Decision
             </Button>,
           ]}
-          width={isMobile ? "95vw" : 500}
+          width={isMobile ? "95vw" : 380}
           centered
           destroyOnClose
         >
           {detailLoading || !selectedRequest ? (
-            <div style={{ padding: 24 }}>
-              <Skeleton active paragraph={{ rows: 4 }} />
+            <div style={{ padding: 16 }}>
+              <Skeleton active paragraph={{ rows: 3 }} />
             </div>
           ) : (
-            <>
-              <div style={{ padding: "24px 24px 0 24px" }}>
-                <Title level={4}>
-                  Process Request: {selectedRequest.user_name}
-                </Title>
-                <Text type="secondary">
-                  For Business: {selectedRequest.business_name}
+            <div style={{ padding: "0 16px 16px" }}>
+              <div style={{ marginBottom: 12 }}>
+                <Text strong>{selectedRequest.user_name}</Text>
+                <br />
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  {selectedRequest.business_name}
                 </Text>
               </div>
-              <div style={{ padding: 24 }}>
-                <Form
-                  form={decisionForm}
-                  layout="vertical"
-                  onFinish={handleSubmitDecision}
+              <Form
+                form={decisionForm}
+                layout="vertical"
+                onFinish={handleSubmitDecision}
+              >
+                <Form.Item
+                  name="decision"
+                  label="Decision"
+                  rules={[
+                    { required: true, message: "Please select a decision" },
+                  ]}
                 >
-                  <Form.Item
-                    name="decision"
-                    label="Decision"
-                    rules={[
-                      { required: true, message: "Please select a decision" },
-                    ]}
-                  >
-                    <Select placeholder="Approve or Reject">
-                      <Option value="approved">Approve</Option>
-                      <Option value="rejected">Reject</Option>
-                    </Select>
-                  </Form.Item>
-                  <Form.Item
-                    name="notes"
-                    label="Internal Notes / Rejection Reason"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Please provide notes for your decision",
-                      },
-                    ]}
-                  >
-                    <Input.TextArea
-                      rows={4}
-                      placeholder="This will be shown to the user if rejected."
-                    />
-                  </Form.Item>
-                </Form>
-              </div>
-            </>
+                  <Select placeholder="Approve or Reject">
+                    <Option value="approved">Approve</Option>
+                    <Option value="rejected">Reject</Option>
+                  </Select>
+                </Form.Item>
+                <Form.Item
+                  noStyle
+                  shouldUpdate={(prev, curr) => prev.decision !== curr.decision}
+                >
+                  {({ getFieldValue }) =>
+                    getFieldValue("decision") === "rejected" ? (
+                      <Form.Item
+                        name="notes"
+                        label="Rejection reason (shown to user)"
+                        rules={[
+                          {
+                            required: true,
+                            message: "Please provide a reason for rejection",
+                          },
+                        ]}
+                      >
+                        <Input.TextArea
+                          rows={2}
+                          placeholder="Reason for rejection"
+                        />
+                      </Form.Item>
+                    ) : null
+                  }
+                </Form.Item>
+              </Form>
+            </div>
           )}
         </Modal>
       </DashboardWrapper>

@@ -26,6 +26,7 @@ const HomeClassCard = ({
   distance = null,
   onFavoriteChange,
   priority = false,
+  soonest_next_week = null,
 }) => {
   const { user: currentUser } = useAuthUser();
   const isAuthenticated = !!currentUser;
@@ -97,6 +98,11 @@ const HomeClassCard = ({
   return (
     <div className={styles.cardContainer} onClick={handleNavigate}>
       <div className={styles.imageContainer}>
+        {soonest_next_week && (
+          <span className={styles.soonestTag} title={`Next: ${soonest_next_week}`}>
+            {soonest_next_week}
+          </span>
+        )}
         <button
           className={styles.favoriteBtn}
           onClick={toggleFavorite}

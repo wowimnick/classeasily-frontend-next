@@ -1,24 +1,31 @@
 "use client";
 
-import React from "react";
-import { useAuthUser } from "@/hooks/useAuthUser";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth, getOptimisticAuthState, useAuthStore } from "@/lib/auth-client";
 import { signOutFull } from "@/lib/auth-client";
+import { userAdminService } from "@/services/adminDash";
+import message from "@/lib/message";
 import styled from "styled-components";
+
+const BANNER_HEIGHT_PX = 48;
 
 const BannerContainer = styled.div`
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
+  height: ${BANNER_HEIGHT_PX}px;
   background: #dc3545;
   color: white;
-  padding: 8px 16px;
-  z-index: 9999;
+  padding: 0 16px;
+  z-index: 2147483647;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
   font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 `;
 
 const BannerContent = styled.div`
@@ -27,7 +34,7 @@ const BannerContent = styled.div`
   gap: 16px;
 `;
 
-const StopButton = styled.button`
+const BannerButton = styled.button`
   background: none;
   border: 1px solid white;
   color: white;
@@ -48,8 +55,27 @@ const StopButton = styled.button`
 `;
 
 const ImpersonationBanner = () => {
-  const { user: currentUser } = useAuthUser();
-  const isImpersonating = currentUser?.is_impersonating || false;
+  const router = useRouter();
+  const { user: currentUser, isImpersonating: storeImpersonating } = useAuth();
+  const [optimisticImpersonating, setOptimisticImpersonating] = useState(false);
+
+  useEffect(() => {
+    setOptimisticImpersonating(getOptimisticAuthState().isImpersonating || false);
+  }, []);
+
+  const isImpersonating = storeImpersonating || optimisticImpersonating;
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (isImpersonating) {
+      document.body.style.paddingTop = `${BANNER_HEIGHT_PX}px`;
+    } else {
+      document.body.style.paddingTop = "";
+    }
+    return () => {
+      document.body.style.paddingTop = "";
+    };
+  }, [isImpersonating]);
 
   const handleStopImpersonation = async () => {
     try {
@@ -60,22 +86,51 @@ const ImpersonationBanner = () => {
     }
   };
 
-  if (!isImpersonating || !currentUser) {
+  const handleReturnToAdmin = async () => {
+    try {
+      const result = await userAdminService.endImpersonation();
+      if (result.success && result.data?.user) {
+        useAuthStore.setState({
+          user: result.data.user,
+          isAuthenticated: true,
+          isImpersonating: false,
+          isLoading: false,
+        });
+        message.success("Back to your admin account.");
+        router.push("/admin/class-listings");
+      } else {
+        await signOutFull();
+        message.info("Session expired. Log back in as admin to continue.");
+        router.push("/admin/class-listings");
+      }
+    } catch (error) {
+      console.error("Error returning to admin:", error);
+      await signOutFull();
+      message.info("Could not restore session. Log back in as admin.");
+      router.push("/admin/class-listings");
+    }
+  };
+
+  if (!isImpersonating) {
     return null;
   }
 
-  const impersonatedUserName =
-    currentUser.first_name && currentUser.last_name
+  const impersonatedUserName = currentUser
+    ? currentUser.first_name && currentUser.last_name
       ? `${currentUser.first_name} ${currentUser.last_name}`
-      : currentUser.email || "Unknown User";
+      : currentUser.email || "Unknown User"
+    : "User";
 
   return (
     <BannerContainer>
       <BannerContent>
-        <span>
-          Impersonating <strong>{impersonatedUserName}</strong>
-        </span>
-        <StopButton onClick={handleStopImpersonation}>Stop</StopButton>
+          <span>
+            Impersonating <strong>{impersonatedUserName}</strong>
+          </span>
+          <BannerButton onClick={handleReturnToAdmin}>
+            Return to admin
+          </BannerButton>
+          <BannerButton onClick={handleStopImpersonation}>Stop</BannerButton>
       </BannerContent>
     </BannerContainer>
   );

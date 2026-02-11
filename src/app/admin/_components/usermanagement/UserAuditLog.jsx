@@ -127,16 +127,6 @@ const RefreshButton = styled(Button)`
   }
 `;
 
-const ExportButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-`;
-
 // --- SKELETON COMPONENTS ---
 const SkeletonWrapper = styled.div`
   display: flex;
@@ -615,7 +605,6 @@ const UserAuditLog = () => {
   const [auditLogs, setAuditLogs] = useState([]);
   const [userActivity, setUserActivity] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
   const [activityLoading, setActivityLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -694,35 +683,6 @@ const UserAuditLog = () => {
     setIsDrawerVisible(true);
     if (log.user_id) fetchUserActivity(log.user_id);
     else setUserActivity([]);
-  };
-
-  const handleExport = async () => {
-    setExporting(true);
-    message.loading({ content: "Preparing export...", key: "export" });
-    try {
-      const response = await auditService.exportAuditLogs({
-        ...(filters.action !== "all" && { action: filters.action }),
-        ...(filters.search && { search: filters.search }),
-        ...(filters.dateRange?.[0] && {
-          start_date: filters.dateRange[0].format("YYYY-MM-DD"),
-        }),
-        ...(filters.dateRange?.[1] && {
-          end_date: filters.dateRange[1].format("YYYY-MM-DD"),
-        }),
-      });
-      if (!response.success) {
-        message.error({
-          content: response.error || "Export failed.",
-          key: "export",
-        });
-      } else {
-        message.success({ content: "Export started!", key: "export" });
-      }
-    } catch (error) {
-      message.error({ content: "Export failed.", key: "export" });
-    } finally {
-      setExporting(false);
-    }
   };
 
   const refreshData = () => {
@@ -1044,14 +1004,8 @@ const UserAuditLog = () => {
             </HeaderSubtitle>
           </div>
           <ActionButtonsContainer>
-            <ExportButton
-              icon={<Download size={16} />}
-              onClick={handleExport}
-              loading={exporting}
-            >
-              {!isMobile && "Export Logs"}
-            </ExportButton>
             <RefreshButton
+              key={loading ? "loading" : "idle"}
               icon={
                 <LordIcon
                   src="https://cdn.lordicon.com/valwmkhs.json"

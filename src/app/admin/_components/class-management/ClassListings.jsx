@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import styled, { keyframes } from "styled-components";
 import {
   Table,
@@ -40,7 +41,7 @@ import {
   Award,
   Lock,
   Unlock,
-  Download,
+  LogIn,
   BookOpen,
   User as UserIcon,
   Tag as TagIcon,
@@ -58,7 +59,8 @@ import {
   DollarSign,
   Plus,
 } from "lucide-react";
-import { classManagementService } from "@/services/adminDash";
+import { classManagementService, userAdminService } from "@/services/adminDash";
+import { useAuthStore } from "@/lib/auth-client";
 import { theme as appTheme } from "@/components/theme";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
@@ -168,19 +170,6 @@ const RefreshButton = styled(Button)`
     box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
     transform: translateY(-1px);
   }
-  @media (max-width: 768px) {
-    flex: 1;
-  }
-`;
-
-const ExportButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
   @media (max-width: 768px) {
     flex: 1;
   }
@@ -1128,6 +1117,7 @@ const ClassDetailDrawer = ({
 };
 
 export default function ClassListings() {
+  const router = useRouter();
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -1430,6 +1420,27 @@ export default function ClassListings() {
     fetchClasses(filterParams, { ...pagination, current: 1 }, sortedInfo);
     fetchStats();
     fetchCollections();
+  };
+
+  const handleLoginAsOwner = async (ownerId) => {
+    try {
+      const result = await userAdminService.impersonateUser(ownerId);
+      if (result.success && result.data?.user) {
+        useAuthStore.setState({
+          user: result.data.user,
+          isAuthenticated: true,
+          isImpersonating: true,
+          isLoading: false,
+        });
+        message.success("Now logged in as business owner. Add schedules, then use the banner to return to admin.");
+        router.push("/");
+      } else {
+        message.error(result.error || "Could not log in as user.");
+      }
+    } catch (e) {
+      console.error("Impersonation error:", e);
+      message.error("An unexpected error occurred.");
+    }
   };
 
   // --- Collection Modal Handlers ---
@@ -1926,7 +1937,16 @@ export default function ClassListings() {
                 >
                   View Class
                 </Button>,
-              ]}
+                item.ownerId && (
+                  <Button
+                    key="login-as"
+                    icon={<LogIn size={14} />}
+                    onClick={() => handleLoginAsOwner(item.ownerId)}
+                  >
+                    Login as them
+                  </Button>
+                ),
+              ].filter(Boolean)}
               style={{ paddingLeft: 0, paddingRight: 0 }}
             >
               <List.Item.Meta
@@ -1974,9 +1994,6 @@ export default function ClassListings() {
             </HeaderSubtitle>
           </div>
           <ActionButtonsContainer>
-            <ExportButton icon={<Download size={16} />}>
-              {!isMobile && "Export Data"}
-            </ExportButton>
             <RefreshButton
               icon={
                 <LordIcon

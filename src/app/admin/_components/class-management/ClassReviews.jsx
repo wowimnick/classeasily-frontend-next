@@ -41,7 +41,6 @@ import {
   MessageSquare,
   CheckCircle,
   Clock,
-  Download,
   Send,
   Eye,
   Edit,
@@ -158,19 +157,6 @@ const RefreshButton = styled(Button)`
     box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
     transform: translateY(-1px);
   }
-  @media (max-width: 768px) {
-    flex: 1;
-  }
-`;
-
-const ExportButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
   @media (max-width: 768px) {
     flex: 1;
   }
@@ -980,9 +966,6 @@ const ClassReviews = () => {
             </HeaderSubtitle>
           </div>
           <ActionButtonsContainer>
-            <ExportButton icon={<Download size={16} />} disabled>
-              {!isMobile && "Export Data"}
-            </ExportButton>
             <RefreshButton
               icon={
                 <LordIcon

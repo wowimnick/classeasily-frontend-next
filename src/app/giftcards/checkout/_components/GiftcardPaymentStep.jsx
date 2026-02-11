@@ -130,6 +130,7 @@ const StripePaymentForm = ({
   formData,
   setFormData,
   designUrl,
+  deliveryMethod,
   onSuccess,
 }) => {
   const stripe = useStripe();
@@ -164,14 +165,16 @@ const StripePaymentForm = ({
       }
 
       // 2. Call Backend to create the specific Gift Card Intent
+      const isSendToSelf = deliveryMethod === "self";
       const purchasePayload = {
         amount: amount,
-        recipient_email: formData.recipientEmail,
-        recipient_name: formData.recipientName,
+        recipient_email: isSendToSelf ? formData.senderEmail : formData.recipientEmail,
+        recipient_name: isSendToSelf ? formData.senderName : formData.recipientName,
         sender_name: formData.senderName,
         message: formData.message,
         date: formData.date ? dayjs(formData.date).format("YYYY-MM-DD") : null,
-        delivery_method: "email",
+        delivery_method: deliveryMethod,
+        send_to_self: isSendToSelf,
         design_url: designUrl,
       };
 
@@ -211,7 +214,8 @@ const StripePaymentForm = ({
       ) {
         posthog.capture("giftcard_purchase_completed", {
           amount,
-          recipient_email: formData.recipientEmail,
+          recipient_email: isSendToSelf ? formData.senderEmail : formData.recipientEmail,
+          send_to_self: isSendToSelf,
         });
         message.success("Gift card ordered successfully!");
         if (onSuccess) onSuccess();
@@ -314,9 +318,13 @@ const StripePaymentForm = ({
           ) : (
             <EditableRow>
               <div>
-                <div style={{ fontWeight: 500 }}>Recipient Email</div>
+                <div style={{ fontWeight: 500 }}>
+                  {deliveryMethod === "self" ? "Your Email" : "Recipient Email"}
+                </div>
                 <div style={{ color: "#666" }}>
-                  {formData.recipientEmail || "Not provided"}
+                  {deliveryMethod === "self"
+                    ? (formData.senderEmail || "Not provided")
+                    : (formData.recipientEmail || "Not provided")}
                 </div>
               </div>
               <button
@@ -445,7 +453,9 @@ const StripePaymentForm = ({
                 Gift Card for
               </div>
               <div style={{ fontWeight: 500, fontSize: "1.05rem" }}>
-                {formData.recipientName || "A Friend"}
+                {deliveryMethod === "self"
+                  ? "You"
+                  : (formData.recipientName || "A Friend")}
               </div>
             </div>
           </SummaryItem>
@@ -504,6 +514,7 @@ export default function GiftcardPaymentStep({
   designUrl,
   formData,
   setFormData,
+  deliveryMethod = "email",
   onBack,
   onSuccess,
 }) {
@@ -611,6 +622,7 @@ export default function GiftcardPaymentStep({
           formData={formData}
           setFormData={setFormData}
           designUrl={designUrl}
+          deliveryMethod={deliveryMethod}
           onSuccess={onSuccess}
         />
       </Elements>

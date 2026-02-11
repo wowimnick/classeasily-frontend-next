@@ -1028,15 +1028,8 @@ export default function GiftCardsPage() {
             <HeroVisual>
               <Suspense
                 fallback={
-                  <CanvasFallback>
-                    <Image
-                      src={Card2}
-                      alt="Gift Card Preview"
-                      width={400}
-                      height={250}
-                      style={{ objectFit: "contain" }}
-                      priority
-                    />
+                  <CanvasFallback aria-hidden="true">
+                    <Spinner size={32} />
                   </CanvasFallback>
                 }
               >
@@ -1106,14 +1099,8 @@ export default function GiftCardsPage() {
 
               <Suspense
                 fallback={
-                  <CanvasFallback>
-                    <Image
-                      src={HERO_CARD_IMAGES[carouselIndex]}
-                      alt="Select Card Design"
-                      width={300}
-                      height={190}
-                      style={{ objectFit: "contain" }}
-                    />
+                  <CanvasFallback aria-hidden="true">
+                    <Spinner size={28} />
                   </CanvasFallback>
                 }
               >
@@ -1262,14 +1249,8 @@ export default function GiftCardsPage() {
             <VisualColumn>
               <Suspense
                 fallback={
-                  <CanvasFallback>
-                    <Image
-                      src={Card5}
-                      alt="Corporate Gift Cards"
-                      width={300}
-                      height={200}
-                      style={{ objectFit: "contain" }}
-                    />
+                  <CanvasFallback aria-hidden="true">
+                    <Spinner size={28} />
                   </CanvasFallback>
                 }
               >

@@ -32,7 +32,6 @@ import message from "@/lib/message";
 import {
   Users,
   Shield,
-  Download,
   MoreHorizontal,
   Edit,
   Lock,
@@ -558,13 +557,15 @@ const StatCard = styled(Card)`
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
+  margin-bottom: 0;
+  min-height: 140px;
   transition: all 0.2s ease;
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
   .ant-card-body {
-    padding: 12px !important;
+    padding: 20px !important;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -616,10 +617,16 @@ const StatLabel = styled.div`
 
 const ChartCard = styled(Card)`
   border-radius: 16px;
+  overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
+  min-height: 400px;
   .ant-card-body {
     padding: 20px !important;
+    height: 100%;
+  }
+  @media (max-width: 768px) {
+    min-height: 350px;
   }
 `;
 const GridRow = styled.div`
@@ -631,7 +638,11 @@ const GridRow = styled.div`
 const ChartContainer = styled.div`
   height: 300px;
   width: 100%;
-  margin-top: 24px;
+  margin-top: 16px;
+  position: relative;
+  @media (max-width: 768px) {
+    height: 250px;
+  }
 `;
 const CardTitle = styled(Title).attrs({ level: 5 })`
   &.ant-typography {
@@ -1177,52 +1188,6 @@ const UserManagementDashboard = () => {
       "User deleted",
       "Error deleting user."
     );
-
-  const handleExportData = () => {
-    if (!users || users.length === 0)
-      return message.warning("No data to export.");
-    try {
-      const headers = [
-        "User ID",
-        "First Name",
-        "Last Name",
-        "Email",
-        "Role",
-        "Status",
-        "Registration Date",
-        "Last Login",
-      ];
-      const rows = users.map((user) => [
-        user.userId,
-        user.first_name,
-        user.last_name,
-        user.email,
-        user.role_name,
-        user.status,
-        formatDate(user.createdAt),
-        formatDate(user.last_login_date),
-      ]);
-      let csvContent =
-        "data:text/csv;charset=utf-8," +
-        headers.join(",") +
-        "\n" +
-        rows
-          .map((e) =>
-            e
-              .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
-              .join(",")
-          )
-          .join("\n");
-      const link = document.createElement("a");
-      link.setAttribute("href", encodeURI(csvContent));
-      link.setAttribute("download", "user_data.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      message.error("Export failed.");
-    }
-  };
 
   const handlePieClick = useCallback(
     (data) => {
@@ -1892,13 +1857,6 @@ const UserManagementDashboard = () => {
             >
               Concierge Onboard
             </Button>
-            <Button
-              icon={<Download size={16} />}
-              onClick={handleExportData}
-              disabled={users.length === 0}
-            >
-              Export
-            </Button>
           </ActionButtonsContainer>
         </DashboardHeader>
 
@@ -2195,6 +2153,7 @@ const UserManagementDashboard = () => {
         </TableSection>
 
         <Modal
+          key={loading ? "loading" : "idle"}
           title="Edit User Role"
           open={isEditModalVisible}
           onCancel={() => setIsEditModalVisible(false)}

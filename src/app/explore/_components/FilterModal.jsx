@@ -341,9 +341,9 @@ export default function FilterModal({
 
   const clearFiltersAndSort = () => {
     setTempFilters({
-      ...filters, // Keep basic structure
+      ...filters,
       pricePerClass: [0, 500],
-      distance: [0, 50],
+      distance: [0, 50], // 50 km default
       timePreference: [],
     });
     setTempSortBy("relevance");
@@ -412,8 +412,8 @@ export default function FilterModal({
         <Slider
           label="Max Distance"
           min={1}
-          max={50}
-          value={tempFilters.distance[1]}
+          max={80}
+          value={tempFilters.distance[1] > 0 ? tempFilters.distance[1] : 50}
           onChange={(val) =>
             setTempFilters((prev) => ({ ...prev, distance: [0, val] }))
           }
@@ -431,10 +431,12 @@ export default function FilterModal({
                 key={time.id}
                 $selected={isSelected}
                 onClick={() => {
-                  const newPrefs = isSelected
-                    ? tempFilters.timePreference.filter((t) => t !== time.id)
-                    : [...tempFilters.timePreference, time.id];
-                  setTempFilters({ ...tempFilters, timePreference: newPrefs });
+                  setTempFilters((prev) => {
+                    const newPrefs = prev.timePreference.includes(time.id)
+                      ? prev.timePreference.filter((t) => t !== time.id)
+                      : [...prev.timePreference, time.id];
+                    return { ...prev, timePreference: newPrefs };
+                  });
                 }}
               >
                 <div className="icon-box">{time.icon}</div>

@@ -26,6 +26,30 @@
   object-fit: cover;
 }
 
+/* Soonest date tag (e.g. "Happening Next Week" cards) — top left, glass style */
+.soonestTag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  height: 28px;
+  max-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  background: #4f4f4f78;
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 50px);
+}
+
 .favoriteBtn {
   position: absolute;
   top: 10px;

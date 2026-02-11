@@ -1,34 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, memo, useMemo } from "react";
+import React, { useState, useEffect, memo, useMemo, useCallback } from "react";
 import styled, { ThemeProvider } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Button, Space } from "antd";
-import {
-  Activity,
-  Users,
-  UserPlus,
-  Shield as ShieldIcon,
-  ActivitySquare,
-  Briefcase,
-  BarChart2,
-  Building,
-  BookOpen,
-  List,
-  Star,
-  Bookmark,
-  CalendarCheck,
-  Mail,
-  HelpCircle,
-  Menu as MenuIcon,
-  X,
-  LayoutGrid,
-  Text,
-  ArrowRightFromLine,
-  SidebarOpen,
-  LifeBuoy,
-} from "lucide-react";
+import { Menu } from "antd";
+import { X, LayoutGrid, SidebarOpen } from "lucide-react";
+import { LordIcon } from "@/services/ReactUtils";
 import { theme as appTheme } from "@/components/theme";
+import { useAuth } from "@/lib/auth-client";
 
 const SidebarWrapper = styled.div`
   height: 100%;
@@ -139,6 +118,7 @@ const FooterActionsContainer = styled.div`
 const StyledAntMenu = styled(Menu)`
   border-right: none !important;
   background: transparent !important;
+
   .ant-menu-item,
   .ant-menu-submenu-title {
     margin: 4px 0 !important;
@@ -150,56 +130,80 @@ const StyledAntMenu = styled(Menu)`
     height: 44px !important;
     line-height: 44px !important;
     color: ${(props) => props.theme.token.colorTextSecondary};
-    font-weight: 500;
+    font-weight: 400;
     font-size: 14px;
-    .lucide {
-      transition: transform 0.2s ease, color 0.2s ease;
-      margin-right: 12px;
-      color: ${(props) => props.theme.token.colorTextSecondary};
-      font-size: 18px;
-      vertical-align: -0.2em; /* Better alignment */
+
+    .ant-menu-item-icon {
+      display: inline-block !important;
+      vertical-align: middle !important;
     }
+
+    lord-icon {
+      transition: all 0.3s ease;
+      margin-right: 0 !important;
+      vertical-align: middle;
+      display: inline-block;
+      pointer-events: none;
+    }
+
     &:hover {
       color: ${(props) => props.theme.token.colorPrimary} !important;
       background-color: ${(props) =>
         props.theme.token.colorBgSpotlight} !important;
-      .lucide {
-        color: ${(props) => props.theme.token.colorPrimary} !important;
+
+      lord-icon {
         transform: scale(1.1);
+        --lord-icon-primary: ${(props) => props.theme.token.colorPrimary};
+        --lord-icon-secondary: ${(props) => props.theme.token.colorPrimary};
       }
     }
   }
+
   .ant-menu-item-selected {
     background-color: ${(props) => props.theme.token.colorPrimary} !important;
     color: ${(props) => props.theme.token.colorHeaderText} !important;
     font-weight: 600 !important;
-    .lucide {
-      color: ${(props) => props.theme.token.colorHeaderText} !important;
+
+    lord-icon {
+      --lord-icon-primary: ${(props) =>
+        props.theme.token.colorHeaderText} !important;
+      --lord-icon-secondary: ${(props) =>
+        props.theme.token.colorHeaderText} !important;
+      transform: scale(1);
     }
+
     &::after {
       display: none;
     }
     &:hover {
       background-color: ${(props) => props.theme.token.colorPrimary} !important;
       color: ${(props) => props.theme.token.colorHeaderText} !important;
-      .lucide {
-        color: ${(props) => props.theme.token.colorHeaderText} !important;
+      lord-icon {
         transform: scale(1);
+        --lord-icon-primary: ${(props) =>
+          props.theme.token.colorHeaderText} !important;
+        --lord-icon-secondary: ${(props) =>
+          props.theme.token.colorHeaderText} !important;
       }
     }
   }
+
   .ant-menu-submenu-selected > .ant-menu-submenu-title,
   .ant-menu-submenu-open > .ant-menu-submenu-title {
     color: ${(props) => props.theme.token.colorPrimary} !important;
     font-weight: 600 !important;
     background-color: ${(props) =>
       props.theme.token.colorBgSpotlight} !important;
-    .lucide {
-      color: ${(props) => props.theme.token.colorPrimary} !important;
+
+    lord-icon {
+      --lord-icon-primary: ${(props) => props.theme.token.colorPrimary};
+      --lord-icon-secondary: ${(props) => props.theme.token.colorPrimary};
     }
   }
+
   .ant-menu-sub.ant-menu-inline {
     background-color: transparent !important;
+
     .ant-menu-item {
       font-size: 13.5px;
       color: ${(props) => props.theme.token.colorTextSecondary};
@@ -207,6 +211,7 @@ const StyledAntMenu = styled(Menu)`
       background-color: transparent !important;
       height: 40px !important;
       line-height: 40px !important;
+
       &:hover {
         color: ${(props) => props.theme.token.colorPrimary} !important;
         background-color: ${(props) =>
@@ -218,6 +223,7 @@ const StyledAntMenu = styled(Menu)`
       font-weight: 600 !important;
       background-color: ${(props) =>
         props.theme.token.colorBgSpotlight} !important;
+
       &:hover {
         color: ${(props) => props.theme.token.colorPrimary} !important;
       }
@@ -354,78 +360,118 @@ const MobileFooterContainer = styled.div`
   border-radius: 0 0 20px 20px;
 `;
 
+// Menu config: LordIcon on parents only; playOnLoad=false so icons don't replay on every nav
 export const menuItems = [
-  { key: "metrics", icon: <Activity size={18} />, label: "System Metrics" },
   {
     key: "user-management",
-    icon: <Users size={18} />,
+    icon: (
+      <LordIcon
+        src="https://cdn.lordicon.com/mdgrhyca.json"
+        colors="primary:#666,secondary:#666"
+        size="20px"
+        playOnLoad={false}
+        trigger="hover"
+      />
+    ),
     label: "User Management",
     children: [
-      { key: "users", icon: <UserPlus size={18} />, label: "Users" },
-      {
-        key: "roles",
-        icon: <ShieldIcon size={18} />,
-        label: "Roles & Permissions",
-      },
-      { key: "audit", icon: <ActivitySquare size={18} />, label: "Audit Log" },
+      { key: "users", label: "Users" },
+      { key: "roles", label: "Roles & Permissions" },
+      { key: "audit", label: "Audit Log" },
     ],
   },
   {
     key: "business-management",
-    icon: <Briefcase size={18} />,
+    icon: (
+      <LordIcon
+        src="https://cdn.lordicon.com/yraqammt.json"
+        colors="primary:#666,secondary:#666"
+        size="20px"
+        playOnLoad={false}
+        trigger="hover"
+        inState="in-newspaper"
+      />
+    ),
     label: "Business Management",
     children: [
-      {
-        key: "business-overview",
-        icon: <BarChart2 size={18} />,
-        label: "Business Overview",
-      },
-      {
-        key: "business-listings",
-        icon: <Building size={18} />,
-        label: "Business Listings",
-      },
-      {
-        key: "business-verification",
-        icon: <UserPlus size={18} />,
-        label: "Business Verification",
-      },
+      { key: "business-overview", label: "Business Overview" },
+      { key: "business-listings", label: "Business Listings" },
+      { key: "business-verification", label: "Business Verification" },
     ],
   },
   {
     key: "class-management",
-    icon: <BookOpen size={18} />,
+    icon: (
+      <LordIcon
+        src="https://cdn.lordicon.com/nocovwne.json"
+        colors="primary:#666,secondary:#666"
+        size="20px"
+        playOnLoad={false}
+        trigger="hover"
+      />
+    ),
     label: "Class Management",
     children: [
-      {
-        key: "class-listings",
-        icon: <List size={18} />,
-        label: "Class Listings",
-      },
-      {
-        key: "class-reviews",
-        icon: <Star size={18} />,
-        label: "Class Reviews",
-      },
-      {
-        key: "class-categories",
-        icon: <Bookmark size={18} />,
-        label: "Class Categories",
-      },
+      { key: "class-listings", label: "Class Listings" },
+      { key: "class-reviews", label: "Class Reviews" },
+      { key: "class-categories", label: "Class Categories" },
     ],
   },
   {
     key: "all-bookings",
-    icon: <CalendarCheck size={18} />,
+    icon: (
+      <LordIcon
+        src="https://cdn.lordicon.com/uoljexdg.json"
+        colors="primary:#666,secondary:#666"
+        size="20px"
+        playOnLoad={false}
+        trigger="hover"
+        state="in-booking"
+      />
+    ),
     label: "All Bookings",
   },
   {
     key: "payouts",
-    icon: <ArrowRightFromLine size={18} />,
+    icon: (
+      <LordIcon
+        src="https://cdn.lordicon.com/yycecovd.json"
+        colors="primary:#666,secondary:#666"
+        size="20px"
+        playOnLoad={false}
+        trigger="hover"
+        inState="in-wallet"
+      />
+    ),
     label: "Payouts",
   },
-  { key: "blog", icon: <Text size={18} />, label: "Blog" },
-  { key: "support", icon: <HelpCircle size={18} />, label: "Support" },
+  {
+    key: "blog",
+    icon: (
+      <LordIcon
+        src="https://cdn.lordicon.com/nocovwne.json"
+        colors="primary:#666,secondary:#666"
+        size="20px"
+        playOnLoad={false}
+        trigger="hover"
+      />
+    ),
+    label: "Blog",
+  },
+  {
+    key: "support",
+    icon: (
+      <LordIcon
+        src="https://cdn.lordicon.com/lrubprlz.json"
+        colors="primary:#666,secondary:#666"
+        size="20px"
+        playOnLoad={false}
+        trigger="hover"
+        state="in-code"
+      />
+    ),
+    label: "Support",
+  },
 ];
 
 const overlayVariants = {
@@ -483,7 +529,25 @@ const closeButtonVariants = {
   tap: { scale: 0.95 },
 };
 
-const PlatformSidebar = memo(({ onMenuSelect, activeKey, menuData }) => {
+const menuItemPermissions = {
+  "all-bookings": "quickstart.view_booking",
+  payouts: "quickstart.access_payout_admin",
+  blog: "quickstart.access_blog_admin",
+  support: "quickstart.access_support_admin",
+  users: "quickstart.view_customuser",
+  roles: "quickstart.view_role",
+  audit: "quickstart.view_auditlog",
+  "business-overview": "quickstart.view_business_metrics",
+  "business-listings": "quickstart.view_businessinfo",
+  "business-verification": "quickstart.view_all_verificationrequests",
+  "class-listings": "quickstart.view_classesmain",
+  "class-reviews": "quickstart.view_reviews",
+  "class-categories": "quickstart.view_classcategory",
+};
+
+const PlatformSidebar = memo(({ onMenuSelect, activeKey }) => {
+  const { user } = useAuth();
+  const permissions = user?.permissions || [];
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth <= 1024 : false
@@ -492,22 +556,58 @@ const PlatformSidebar = memo(({ onMenuSelect, activeKey, menuData }) => {
   const [transformOrigin, setTransformOrigin] = useState("bottom left");
   const mobileButtonRef = React.useRef(null);
 
+  const permissionsKey = useMemo(
+    () => (permissions || []).slice().sort().join(","),
+    [permissions]
+  );
+
+  const getMenuItemsForAntd = useMemo(() => {
+    const hasPermission = (key) => {
+      const required = menuItemPermissions[key];
+      if (!required) return true;
+      return permissions.some((p) => p === required);
+    };
+    const filteredConfig = menuItems.reduce((acc, item) => {
+      if (item.children) {
+        const visibleChildren = item.children.filter((child) =>
+          hasPermission(child.key)
+        );
+        if (visibleChildren.length > 0) {
+          acc.push({ ...item, children: visibleChildren });
+        }
+      } else if (hasPermission(item.key)) {
+        acc.push(item);
+      }
+      return acc;
+    }, []);
+    return filteredConfig.map((item) => ({
+      key: item.key,
+      icon: item.icon,
+      label: item.label,
+      children: item.children?.map((child) => ({
+        key: child.key,
+        label: child.label,
+      })),
+    }));
+  }, [permissionsKey]);
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 1024);
+    handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
-    if (activeKey) {
-      const parentKey = menuData.find((item) =>
-        item.children?.some((child) => child.key === activeKey)
-      )?.key;
-      if (parentKey && !openKeys.includes(parentKey)) {
-        setOpenKeys((prevOpenKeys) => [...prevOpenKeys, parentKey]);
-      }
+    const parentKey = menuItems.find((item) =>
+      item.children?.some((child) => child.key === activeKey)
+    )?.key;
+    if (parentKey) {
+      setOpenKeys((prev) =>
+        prev.includes(parentKey) ? prev : [parentKey]
+      );
     }
-  }, [activeKey, menuData, openKeys]);
+  }, [activeKey]);
 
   useEffect(() => {
     if (drawerVisible && mobileButtonRef.current && isMobile) {
@@ -534,21 +634,28 @@ const PlatformSidebar = memo(({ onMenuSelect, activeKey, menuData }) => {
     }
   }, [drawerVisible, isMobile]);
 
-  const handleMenuClick = (e) => {
-    onMenuSelect(e.key);
-    if (isMobile) {
-      setDrawerVisible(false);
-    }
-  };
+  const handleMenuClick = useCallback(
+    (e) => {
+      onMenuSelect(e.key);
+      if (isMobile) {
+        setDrawerVisible(false);
+      }
+    },
+    [onMenuSelect, isMobile]
+  );
 
-  const handleOpenChange = (keys) => {
-    const latestOpenKey = keys.find((key) => !openKeys.includes(key));
-    if (menuData.some((item) => item.key === latestOpenKey && item.children)) {
-      setOpenKeys(latestOpenKey ? [latestOpenKey] : []);
-    } else {
-      setOpenKeys(keys);
-    }
-  };
+  const handleOpenChange = useCallback((keys) => {
+    setOpenKeys((prev) => {
+      const latestOpenKey = keys.find((key) => !prev.includes(key));
+      if (
+        menuItems.some((item) => item.key === latestOpenKey && item.children)
+      ) {
+        return latestOpenKey ? [latestOpenKey] : [];
+      }
+      if (latestOpenKey) return keys;
+      return [];
+    });
+  }, []);
 
   const renderHeaderContent = () => (
     <InfoWrapper>
@@ -562,29 +669,15 @@ const PlatformSidebar = memo(({ onMenuSelect, activeKey, menuData }) => {
     </InfoWrapper>
   );
 
-  const menuItemsForAnt = useMemo(
-    () =>
-      menuData.map((item) => ({
-        key: item.key,
-        icon: item.icon,
-        label: item.label,
-        children: item.children?.map((child) => ({
-          key: child.key,
-          icon: child.icon,
-          label: child.label,
-        })),
-      })),
-    [menuData]
-  );
-
   const renderMenu = () => (
     <StyledAntMenu
+      key="admin-sidebar-menu"
       mode="inline"
       onClick={handleMenuClick}
       selectedKeys={[activeKey]}
       openKeys={openKeys}
       onOpenChange={handleOpenChange}
-      items={menuItemsForAnt}
+      items={getMenuItemsForAntd}
     />
   );
 

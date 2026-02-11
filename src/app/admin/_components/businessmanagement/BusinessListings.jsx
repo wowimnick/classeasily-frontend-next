@@ -17,7 +17,6 @@ import {
   Star,
   Award,
   Clock,
-  Download,
   Mail,
   AlertCircle,
   Trash2,
@@ -140,19 +139,6 @@ const RefreshButton = styled(Button)`
     box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
     transform: translateY(-1px);
   }
-  @media (max-width: 768px) {
-    flex: 1;
-  }
-`;
-
-const ExportButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
   @media (max-width: 768px) {
     flex: 1;
   }
@@ -1080,25 +1066,6 @@ const BusinessListings = () => {
     fetchBusinesses(filterParams, { ...pagination, current: 1 }, sortedInfo);
   };
 
-  const handleExportData = async () => {
-    message.loading({ content: "Preparing export...", key: "export" });
-    const response = await businessManagementService.exportBusinessesData(
-      filterParams
-    );
-    if (!response.success)
-      message.error({
-        content: response.error || "Export failed",
-        key: "export",
-        duration: 2,
-      });
-    else
-      message.success({
-        content: "Export started!",
-        key: "export",
-        duration: 2,
-      });
-  };
-
   const columns = [
     {
       title: "Business",
@@ -1144,13 +1111,21 @@ const BusinessListings = () => {
       sorter: true,
       sortOrder: sortedInfo.columnKey === "rating" && sortedInfo.order,
       width: 130,
-      render: (rating, b) => (
-        <Space>
-          <Star size={15} fill="#f59e0b" color="#f59e0b" />
-          <span>{rating || 0}</span>
-          <Text type="secondary">({b.review_count || 0})</Text>
-        </Space>
-      ),
+      render: (rating, b) => {
+        const platform = b.review_count || 0;
+        const google = b.google_review_count || 0;
+        const total = platform + google;
+        return (
+          <Space>
+            <Star size={15} fill="#f59e0b" color="#f59e0b" />
+            <span>{rating || 0}</span>
+            <Text type="secondary">
+              ({total} {total === 1 ? "review" : "reviews"}
+              {google > 0 ? `, ${platform} platform + ${google} Google` : ""})
+            </Text>
+          </Space>
+        );
+      },
     },
     {
       title: "Status",
@@ -1266,12 +1241,6 @@ const BusinessListings = () => {
             </HeaderSubtitle>
           </div>
           <ActionButtonsContainer>
-            <ExportButton
-              icon={<Download size={16} />}
-              onClick={handleExportData}
-            >
-              {!isMobile && "Export Data"}
-            </ExportButton>
             <RefreshButton
               icon={
                 <LordIcon

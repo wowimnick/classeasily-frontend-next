@@ -86,7 +86,7 @@ function ExploreClientContent({
 
   const currentFilters = useMemo(() => {
     const defaultMaxPrice = 500;
-    const defaultMaxDistance = 0;
+    const defaultMaxDistance = 50; // 50 km default; 0 was misleading (no radius sent)
     return {
       pricePerClass: [
         parseInt(searchParams.get("price_min") || "0", 10),
@@ -349,13 +349,14 @@ function ExploreClientContent({
       ].forEach((key) => newParams.delete(key));
 
       const defaultMaxPrice = 500;
-      const defaultMaxDistance = 0;
+      const defaultMaxDistance = 50;
 
       if (newFilters.pricePerClass[0] > 0)
         newParams.set("price_min", newFilters.pricePerClass[0].toString());
       if (newFilters.pricePerClass[1] < defaultMaxPrice)
         newParams.set("price_max", newFilters.pricePerClass[1].toString());
-      if (newFilters.distance[1] > defaultMaxDistance)
+      // Only put radius in URL when different from default (cleaner URLs)
+      if (newFilters.distance[1] !== defaultMaxDistance)
         newParams.set("radius", newFilters.distance[1].toString());
       newFilters.timePreference.forEach((tp) =>
         newParams.append("time_preference", tp)

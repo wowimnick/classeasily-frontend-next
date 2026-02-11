@@ -59,7 +59,6 @@ import {
   Shield,
   UserCheck,
   Users,
-  Download,
   Mail,
   RefreshCw,
   ToggleLeft,
@@ -613,6 +612,7 @@ const DetailDrawerContent = ({ business, onAction, actionLoading }) => {
     verificationStatus,
     average_rating,
     review_count,
+    google_review_count,
     createdAt,
     businessHours,
     businessDescription,
@@ -722,7 +722,11 @@ const DetailDrawerContent = ({ business, onAction, actionLoading }) => {
                 <InfoLabel>Avg. Rating</InfoLabel>
                 <InfoValue>
                   {parseFloat(average_rating || 0).toFixed(1)} (
-                  {review_count || 0} reviews)
+                  {(review_count || 0) + (google_review_count || 0)} reviews
+                  {(google_review_count || 0) > 0
+                    ? ` — ${review_count || 0} platform, ${google_review_count || 0} Google`
+                    : ""}
+                  )
                 </InfoValue>
               </InfoContent>
             </InfoItem>
@@ -1234,13 +1238,21 @@ const BusinessManagement = () => {
       sorter: true,
       sortOrder: sortedInfo.columnKey === "rating" && sortedInfo.order,
       width: 130,
-      render: (r, b) => (
-        <Space>
-          <Star size={15} fill="#f59e0b" color="#f59e0b" />
-          <span>{r || 0}</span>
-          <Text type="secondary">({b.review_count || 0})</Text>
-        </Space>
-      ),
+      render: (r, b) => {
+        const platform = b.review_count || 0;
+        const google = b.google_review_count || 0;
+        const total = platform + google;
+        return (
+          <Space>
+            <Star size={15} fill="#f59e0b" color="#f59e0b" />
+            <span>{r || 0}</span>
+            <Text type="secondary">
+              ({total}
+              {google > 0 ? ` — ${platform}+${google} Google` : ""})
+            </Text>
+          </Space>
+        );
+      },
     },
     {
       title: "Status",
@@ -1350,7 +1362,12 @@ const BusinessManagement = () => {
           <MobileCardLabel>Rating</MobileCardLabel>
           <Space>
             <Star size={14} fill="#f59e0b" color="#f59e0b" />
-            {business.rating || 0} ({business.review_count || 0})
+            {business.rating || 0} (
+            {(business.review_count || 0) + (business.google_review_count || 0)}
+            {(business.google_review_count || 0) > 0
+              ? ` — ${business.review_count || 0} platform, ${business.google_review_count || 0} Google`
+              : ""}
+            )
           </Space>
         </MobileCardRow>
       </MobileCardContent>
@@ -1410,16 +1427,11 @@ const BusinessManagement = () => {
           </div>
           <ActionButtonsContainer>
             <Button
-              icon={<Download size={16} />}
-              onClick={() => message.info("Export coming soon!")}
-            >
-              Export
-            </Button>
-            <Button
               icon={<RefreshCw size={14} />}
               onClick={refreshAllData}
               loading={loading || metricsLoading}
-              key={`btn-${loading || metricsLoading}`}>
+              key={loading || metricsLoading ? "loading" : "idle"}
+            >
               Refresh
             </Button>
           </ActionButtonsContainer>

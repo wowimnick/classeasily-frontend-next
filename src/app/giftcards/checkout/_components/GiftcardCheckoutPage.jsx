@@ -120,6 +120,7 @@ export default function GiftcardCheckoutPage() {
     recipientName: "",
     recipientEmail: "",
     senderName: "",
+    senderEmail: "",
     message: "",
     date: null,
   });
@@ -177,6 +178,7 @@ export default function GiftcardCheckoutPage() {
               designUrl={CARD_IMAGES[selectedDesignIndex]}
               formData={formData}
               setFormData={setFormData}
+              deliveryMethod={deliveryMethod}
               onBack={() => setStep("config")}
               onSuccess={handlePaymentSuccess}
             />
@@ -186,7 +188,11 @@ export default function GiftcardCheckoutPage() {
             <GiftcardSuccessStep
               designUrl={CARD_IMAGES[selectedDesignIndex]}
               amount={finalAmount}
-              recipientEmail={formData.recipientEmail}
+              recipientEmail={
+                deliveryMethod === "self"
+                  ? formData.senderEmail
+                  : formData.recipientEmail
+              }
             />
           )}
         </MainContainer>

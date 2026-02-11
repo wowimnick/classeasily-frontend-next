@@ -735,13 +735,20 @@ const DetailDrawerContent = ({
     <>
       <DrawerHeader>
         <StudentAvatar src={booking.user_details?.avatar_medium_url}>
-          {booking.user_name?.[0]}
+          {(booking.user_name || "?")[0]}
         </StudentAvatar>
         <div>
           <AntTitle level={4} style={{ margin: 0 }}>
-            {booking.user_name}
+            {booking.user_name || "Booker name unavailable"}
           </AntTitle>
-          <Text type="secondary">{booking.user_email}</Text>
+          <Text type="secondary">
+            {booking.user_email || "—"}
+          </Text>
+          {booking.user_phone_number && (
+            <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
+              {booking.user_phone_number}
+            </Text>
+          )}
         </div>
       </DrawerHeader>
 
@@ -842,7 +849,9 @@ const DetailDrawerContent = ({
                   </InfoIcon>
                   <InfoContent>
                     <InfoLabel>Participants</InfoLabel>
-                    <InfoValue>{booking.participants}</InfoValue>
+                    <InfoValue>
+                      {booking.participants != null ? booking.participants : "—"}
+                    </InfoValue>
                   </InfoContent>
                 </InfoItem>
                 {booking.notes && (
@@ -1057,26 +1066,32 @@ const DetailDrawerContent = ({
               </InfoGrid>
             </InfoGroup>
 
-            {booking.participant_details?.length > 0 && (
+            {(booking.participant_details?.length > 0 || (booking.participants != null && booking.participants > 0)) && (
               <InfoGroup>
                 <InfoGroupTitle>
                   <Users />
-                  Participants
+                  Participant{booking.participants !== 1 ? "s" : ""} Details
                 </InfoGroupTitle>
-                <List
-                  dataSource={booking.participant_details}
-                  renderItem={(item, index) => (
-                    <ParticipantListItem>
-                      <List.Item.Meta
-                        avatar={<Avatar icon={<UserCircle2 size={18} />} />}
-                        title={item.name}
-                        description={
-                          item.email || (index === 0 ? `(Same as booker)` : "")
-                        }
-                      />
-                    </ParticipantListItem>
-                  )}
-                />
+                {booking.participant_details?.length > 0 ? (
+                  <List
+                    dataSource={booking.participant_details}
+                    renderItem={(item, index) => (
+                      <ParticipantListItem>
+                        <List.Item.Meta
+                          avatar={<Avatar icon={<UserCircle2 size={18} />} />}
+                          title={item.name || "—"}
+                          description={
+                            item.email || (index === 0 ? "(Same as booker)" : "—")
+                          }
+                        />
+                      </ParticipantListItem>
+                    )}
+                  />
+                ) : (
+                  <InfoValue>
+                    {booking.participants} participant{booking.participants !== 1 ? "s" : ""} (names not stored)
+                  </InfoValue>
+                )}
               </InfoGroup>
             )}
           </motion.div>
@@ -1526,7 +1541,6 @@ const BookingsList = () => {
     if (payment) {
       refundForm.setFieldsValue({
         amount: payment.available_refund_amount,
-        reason: "requested_by_customer",
       });
       setIsRefundModalVisible(true);
     }
@@ -1537,7 +1551,7 @@ const BookingsList = () => {
     setIsActionLoading(true);
     const response = await paymentService.processRefund(
       selectedBooking.payment.id,
-      values
+      { amount: values.amount, reason: "requested_by_customer" }
     );
     setIsActionLoading(false);
     if (response.success) {
@@ -1697,6 +1711,14 @@ const BookingsList = () => {
           </Text>
         </div>
       ),
+    },
+    {
+      title: "Participants",
+      dataIndex: "participants",
+      key: "participants",
+      width: 100,
+      align: "center",
+      render: (val) => (val != null ? val : "—"),
     },
     {
       title: "Session Date",
@@ -2053,6 +2075,7 @@ const BookingsList = () => {
           footer={null}
           destroyOnClose
           zIndex={1060}
+          width={400}
         >
           {selectedBooking?.payment && (
             <Form
@@ -2061,34 +2084,30 @@ const BookingsList = () => {
               onFinish={handleProcessRefund}
               initialValues={{
                 amount: selectedBooking.payment.available_refund_amount,
-                reason: "requested_by_customer",
               }}
             >
               <Alert
-                message={`Available to Refund: ${formatCurrency(
-                  selectedBooking.payment.available_refund_amount
-                )}`}
+                message="Refund reason: Requested by customer"
                 type="info"
                 showIcon
-                style={{ marginBottom: 24 }}
+                style={{ marginBottom: 16 }}
               />
+              <div style={{ marginBottom: 16, fontSize: 13, color: colors.textSecondary }}>
+                Available to refund:{" "}
+                <strong style={{ color: colors.textPrimary }}>
+                  {formatCurrency(selectedBooking.payment.available_refund_amount)}
+                </strong>
+              </div>
               <Form.Item
                 name="amount"
-                label="Refund Amount"
+                label="Refund amount"
                 rules={[
-                  {
-                    required: true,
-                    message: "Please enter a refund amount.",
-                  },
-                  {
-                    type: "number",
-                    min: 0.01,
-                    message: "Amount must be greater than 0.",
-                  },
+                  { required: true, message: "Enter refund amount." },
+                  { type: "number", min: 0.01, message: "Must be greater than 0." },
                   {
                     type: "number",
                     max: selectedBooking.payment.available_refund_amount,
-                    message: "Amount cannot exceed available refund amount.",
+                    message: "Cannot exceed available amount.",
                   },
                 ]}
               >
@@ -2096,27 +2115,19 @@ const BookingsList = () => {
                   style={{ width: "100%" }}
                   min={0.01}
                   max={selectedBooking.payment.available_refund_amount}
-                  step={1.0}
+                  step={0.01}
                   precision={2}
                   addonBefore="$"
                 />
               </Form.Item>
-              <Form.Item name="reason" label="Reason for Refund (for Stripe)">
-                <Select>
-                  <Option value="duplicate">Duplicate</Option>
-                  <Option value="fraudulent">Fraudulent</Option>
-                  <Option value="requested_by_customer">
-                    Requested by Customer
-                  </Option>
-                </Select>
-              </Form.Item>
-              <Form.Item>
+              <Form.Item style={{ marginBottom: 0 }}>
                 <Button
                   type="primary"
                   htmlType="submit"
                   loading={isActionLoading}
                   block
-                  key={`btn-${isActionLoading}`}>
+                  key={isActionLoading ? "loading" : "idle"}
+                >
                   Submit Refund
                 </Button>
               </Form.Item>

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import styled from "styled-components";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import { useAuth, getOptimisticAuthState } from "@/lib/auth-client";
 import { motion, AnimatePresence } from "framer-motion";
 import { debounce } from "lodash";
 import { useAuthModal } from "@/context/AuthContext";
@@ -65,7 +66,7 @@ const HeaderWrapper = styled.header`
   position: ${(props) => (props.$isScrolled ? "fixed" : "absolute")};
 
   top: ${(props) => {
-    const baseTop = props.$isImpersonating ? 40 : 0;
+    const baseTop = props.$isImpersonating ? 48 : 0;
     const offset = props.$isScrolled ? 0 : props.$topOffset || 0;
     return `${baseTop + offset}px`;
   }};
@@ -82,7 +83,7 @@ const HeaderWrapper = styled.header`
   z-index: 999;
 
   @media (min-width: 757px) and (max-width: 768px) {
-    top: ${(props) => (props.$isImpersonating ? "40px" : "0px")};
+    top: ${(props) => (props.$isImpersonating ? "48px" : "0px")};
   }
 
   @media (min-width: 757px) {
@@ -104,7 +105,7 @@ const HeaderWrapper = styled.header`
     right: 1rem;
 
     top: ${(props) => {
-      const baseTop = props.$isImpersonating ? 48 : 8;
+      const baseTop = props.$isImpersonating ? 56 : 8;
       return `${baseTop}px`;
     }};
 
@@ -420,12 +421,21 @@ const HeaderContent = ({
   const router = useRouter();
   const pathname = usePathname();
   const { user: currentUser } = useAuthUser();
+  const { isImpersonating: storeImpersonating } = useAuth();
+  const [optimisticImpersonating, setOptimisticImpersonating] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const menuTriggerRef = useRef(null);
   const { openLoginModal, openRegisterModal } = useAuthModal();
-  const isImpersonating = currentUser?.is_impersonating || false;
+  useEffect(() => {
+    setOptimisticImpersonating(getOptimisticAuthState().isImpersonating || false);
+  }, []);
+  const isImpersonating =
+    storeImpersonating ||
+    optimisticImpersonating ||
+    currentUser?.is_impersonating ||
+    false;
 
   const { searchTerm, datePickerValue, participantCount, setIsDrawerOpen } =
     useSearch();

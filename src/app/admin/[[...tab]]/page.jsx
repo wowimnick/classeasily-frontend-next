@@ -5,13 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-client";
 import styled from "styled-components";
 import { ConfigProvider } from "antd";
-import PlatformSidebar, { menuItems } from "../_components/PlatformSidebar";
+import PlatformSidebar from "../_components/PlatformSidebar";
 import { theme as appTheme } from "@/components/theme";
 import dynamic from "next/dynamic";
 import SupportTicketTab from "../_components/support/SupportTicketTab";
 import PayoutsList from "../_components/payouts-management/PayoutsList";
-import MetricsDashboard from "../_components/metrics/MetricsDashboard";
 import BusinessHeader from "@/app/business/dashboard/_components/BusinessHeader";
+import ImpersonationBanner from "@/components/header/ImpersonationBanner";
 
 // Dynamically import tab components
 const UserManagement = dynamic(
@@ -81,93 +81,53 @@ const ContentArea = styled.div`
   min-width: 0;
 `;
 
-const permissionMap = {
-  metrics: "quickstart.view_system_metrics",
-  "all-bookings": "quickstart.view_booking",
-  payouts: "quickstart.access_payout_admin",
-  blog: "quickstart.access_blog_admin",
-  support: "quickstart.access_support_admin",
-  users: "quickstart.view_customuser",
-  roles: "quickstart.view_role",
-  audit: "quickstart.view_auditlog",
-  "business-overview": "quickstart.view_business_metrics",
-  "business-listings": "quickstart.view_businessinfo",
-  "business-verification": "quickstart.view_all_verificationrequests",
-  "class-listings": "quickstart.view_classesmain",
-  "class-reviews": "quickstart.view_reviews",
-  "class-categories": "quickstart.view_classcategory",
-};
-
 export default function AdminPage() {
   const { user } = useAuth();
   const permissions = user?.permissions || [];
   const params = useParams();
   const router = useRouter();
 
-  const tabParam = params.tab?.[0] || "metrics";
-  const [activeKey, setActiveKey] = useState(tabParam);
-
-  const visibleMenuItems = useMemo(() => {
-    const hasPermission = (perm) => permissions.includes(perm);
-
-    return menuItems
-      .map((item) => {
-        if (item.children) {
-          const visibleChildren = item.children.filter((child) => {
-            const requiredPerm = permissionMap[child.key];
-            return !requiredPerm || hasPermission(requiredPerm);
-          });
-
-          if (visibleChildren.length > 0) {
-            return { ...item, children: visibleChildren };
-          }
-          return null;
-        }
-
-        const requiredPerm = permissionMap[item.key];
-        if (!requiredPerm || hasPermission(requiredPerm)) {
-          return item;
-        }
-        return null;
-      })
-      .filter(Boolean);
-  }, [permissions]);
+  const activeKey = params.tab?.[0] || "users";
 
   useEffect(() => {
-    setActiveKey(tabParam);
-  }, [tabParam]);
-
-  useEffect(() => {
-    if (!tabParam && visibleMenuItems.length > 0) {
-      const firstKey = visibleMenuItems[0].children
-        ? visibleMenuItems[0].children[0].key
-        : visibleMenuItems[0].key;
-      router.replace(`/admin/${firstKey}`);
+    const hasTab = params.tab?.length > 0;
+    if (permissions.length > 0 && !hasTab) {
+      router.replace("/admin/users");
     }
-  }, [tabParam, visibleMenuItems, router]);
+  }, [params.tab, permissions.length, router]);
 
   useEffect(() => {
-    if (permissions.length > 0 && visibleMenuItems.length > 0) {
-      const isCurrentTabVisible = visibleMenuItems.some(
-        (item) =>
-          item.key === activeKey ||
-          item.children?.some((child) => child.key === activeKey)
-      );
-
-      if (!isCurrentTabVisible) {
-        const firstVisibleKey = visibleMenuItems[0].children
-          ? visibleMenuItems[0].children[0].key
-          : visibleMenuItems[0].key;
-        router.replace(`/admin/${firstVisibleKey}`);
-      }
-    } else if (permissions.length > 0 && visibleMenuItems.length === 0) {
-      router.replace("/");
+    if (permissions.length === 0) return;
+    const allowedKeys = [
+      "users", "roles", "audit",
+      "business-overview", "business-listings", "business-verification",
+      "class-listings", "class-reviews", "class-categories",
+      "all-bookings", "payouts", "blog", "support",
+    ];
+    const permissionMap = {
+      "all-bookings": "quickstart.view_booking",
+      payouts: "quickstart.access_payout_admin",
+      blog: "quickstart.access_blog_admin",
+      support: "quickstart.access_support_admin",
+      users: "quickstart.view_customuser",
+      roles: "quickstart.view_role",
+      audit: "quickstart.view_auditlog",
+      "business-overview": "quickstart.view_business_metrics",
+      "business-listings": "quickstart.view_businessinfo",
+      "business-verification": "quickstart.view_all_verificationrequests",
+      "class-listings": "quickstart.view_classesmain",
+      "class-reviews": "quickstart.view_reviews",
+      "class-categories": "quickstart.view_classcategory",
+    };
+    const isCurrentTabVisible = allowedKeys.includes(activeKey) &&
+      (!permissionMap[activeKey] || permissions.includes(permissionMap[activeKey]));
+    if (!isCurrentTabVisible) {
+      router.replace("/admin/users");
     }
-  }, [activeKey, visibleMenuItems, permissions, router]);
+  }, [activeKey, permissions, router]);
 
   const handleMenuSelect = useCallback(
     (key) => {
-      setActiveKey(key);
       router.push(`/admin/${key}`);
     },
     [router]
@@ -175,8 +135,6 @@ export default function AdminPage() {
 
   const renderContent = () => {
     switch (activeKey) {
-      case "metrics":
-        return <MetricsDashboard />;
       case "users":
         return <UserManagement />;
       case "roles":
@@ -208,19 +166,15 @@ export default function AdminPage() {
     }
   };
 
-  if (visibleMenuItems.length === 0 && permissions.length > 0) {
-    return null;
-  }
-
   return (
     <ConfigProvider theme={appTheme}>
+      <ImpersonationBanner />
       <PageContainer>
         <BusinessHeader />
         <PageWrapper>
           <PlatformSidebar
             onMenuSelect={handleMenuSelect}
             activeKey={activeKey}
-            menuData={visibleMenuItems}
           />
           <ContentArea>{renderContent()}</ContentArea>
         </PageWrapper>

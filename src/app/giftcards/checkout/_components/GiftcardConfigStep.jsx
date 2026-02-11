@@ -459,6 +459,7 @@ export default function GiftcardConfigStep({
       "recipientName",
       "recipientEmail",
       "senderName",
+      "senderEmail",
       "message",
       "date",
     ];
@@ -712,6 +713,39 @@ export default function GiftcardConfigStep({
                         size="middle"
                         type="email"
                         placeholder="e.g. john@example.com"
+                      />
+                    </Form.Item>
+                  </div>
+                )}
+                {deliveryMethod === "self" && (
+                  <div>
+                    <label
+                      htmlFor="senderEmail"
+                      style={{
+                        display: "block",
+                        marginBottom: 8,
+                        fontWeight: 600,
+                        fontSize: "13px",
+                      }}
+                    >
+                      Your Email
+                    </label>
+                    <Form.Item
+                      name="senderEmail"
+                      rules={[
+                        {
+                          required: true,
+                          type: "email",
+                          message: "Your email is required to send the card to you",
+                        },
+                      ]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <Input
+                        id="senderEmail"
+                        size="middle"
+                        type="email"
+                        placeholder="e.g. you@example.com"
                       />
                     </Form.Item>
                   </div>

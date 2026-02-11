@@ -96,9 +96,9 @@ const handlePostLoginRedirect = (user, router) => {
 // ============================================================================
 // OPTIMISTIC AUTH STATE - Read from localStorage synchronously
 // ============================================================================
-const getOptimisticAuthState = () => {
+export const getOptimisticAuthState = () => {
   if (typeof window === "undefined") {
-    return { user: null, isAuthenticated: false };
+    return { user: null, isAuthenticated: false, isImpersonating: false };
   }
 
   try {

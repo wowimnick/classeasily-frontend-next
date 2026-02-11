@@ -318,6 +318,26 @@ export const userAdminService = {
     }
   },
   /**
+   * End impersonation and restore the admin session (no re-login).
+   * Backend returns new tokens via Set-Cookie and the admin user in the body.
+   */
+  endImpersonation: async () => {
+    try {
+      const response = await axiosInstance.post("/admin/end-impersonation/");
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail ||
+          "Could not restore admin session.",
+      };
+    }
+  },
+  /**
    * Get a list of users with optional filtering
    * @param {Object} params - Query parameters
    * @param {string} params.search - Search term for filtering users
@@ -603,10 +623,13 @@ export const userAdminService = {
 
   /**
    * Get user dashboard metrics
+   * @param {Object} params - Optional query params: start_date, end_date (YYYY-MM-DD)
    */
-  getUserMetrics: async () => {
+  getUserMetrics: async (params = {}) => {
     try {
-      const response = await axiosInstance.get("/admin/users/metrics/");
+      const response = await axiosInstance.get("/admin/users/metrics/", {
+        params,
+      });
       return {
         success: true,
         data: response.data,
@@ -813,6 +836,27 @@ export const verificationService = {
         error:
           error.response?.data?.error ||
           "Failed to fetch verification requests",
+      };
+    }
+  },
+
+  /**
+   * Get verification overview stats (pending, verified_30d, rejected_30d)
+   */
+  getVerificationStats: async () => {
+    try {
+      const response = await axiosInstance.get("/admin/verification/stats/");
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      console.error("Error fetching verification stats:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.error ||
+          "Failed to fetch verification stats",
       };
     }
   },

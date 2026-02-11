@@ -129,7 +129,12 @@ const ShadowUserModal = ({
           }}
         >
           <Button onClick={handleClose}>Cancel</Button>
-          <Button type="primary" onClick={handleSubmit} loading={loading}>
+          <Button
+            key={loading ? "loading" : "idle"}
+            type="primary"
+            onClick={handleSubmit}
+            loading={loading}
+          >
             Create Shadow Account
           </Button>
         </div>

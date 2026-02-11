@@ -46,7 +46,6 @@ import {
   ExternalLink,
   Users,
   X,
-  PlayCircle, // Icon for Trigger button
 } from "lucide-react";
 import { adminPayoutService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
@@ -926,27 +925,6 @@ const PayoutsList = () => {
       });
   };
 
-  const handleTriggerManualPayout = async () => {
-    message.loading({
-      content: "Triggering manual payout run...",
-      key: "manual_payout",
-    });
-    const response = await adminPayoutService.triggerManualPayout();
-    if (response.success) {
-      message.success({
-        content: response.message || "Payout process initiated!",
-        key: "manual_payout",
-        duration: 3,
-      });
-    } else {
-      message.error({
-        content: response.error || "Failed to trigger payout run.",
-        key: "manual_payout",
-        duration: 3,
-      });
-    }
-  };
-
   const handleRetryPayout = async (payoutId) => {
     message.loading({ content: "Retrying payout...", key: "retry_payout" });
     const response = await adminPayoutService.retryPayout(payoutId);
@@ -1086,14 +1064,6 @@ const PayoutsList = () => {
             </HeaderSubtitle>
           </div>
           <ActionButtonsContainer>
-            <Button
-              type="primary"
-              icon={<PlayCircle size={16} />}
-              onClick={handleTriggerManualPayout}
-              style={{ height: 44, borderRadius: 12 }}
-            >
-              {!isMobile && "Trigger Payout Run"}
-            </Button>
             <ExportButton
               icon={<Download size={16} />}
               onClick={handleExportData}

@@ -12,6 +12,7 @@ import { ConfigProvider } from "antd";
 import ClientOnlyWrapper from "@/components/common/ClientOnlyWrapper";
 import PermissionProtectedRoute from "@/components/auth/PermissionProtectedRoute";
 import BusinessHeader from "./_components/BusinessHeader";
+import ImpersonationBanner from "@/components/header/ImpersonationBanner";
 import SideMenu from "./_components/SideMenu";
 import SetupGuideWrapper from "./_components/SetupGuideWrapper";
 import DashboardContext from "./_components/DashboardContext";
@@ -80,6 +81,7 @@ function DashboardLayoutInner({ children }) {
 
   return (
     <ConfigProvider theme={appTheme}>
+      <ImpersonationBanner />
       <PageLayout>
         <HeaderWrapper>
           <BusinessHeader />
