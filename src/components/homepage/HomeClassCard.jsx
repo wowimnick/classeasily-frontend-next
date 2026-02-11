@@ -138,15 +138,13 @@ const HomeClassCard = ({
         <div className={styles.topRow}>
           <div className={styles.title}>{title}</div>
           {rating > 0 && (
-            <div className={styles.rating}>
+            <div className={styles.ratingBlock}>
               <Star size={12} fill="#222" />
               <span>{Number(rating).toFixed(1)}</span>
               <span className={styles.reviewCount}>({totalReviews})</span>
             </div>
           )}
         </div>
-
-        <div className={styles.companyInfo}>{business_name}</div>
 
         <div className={styles.locationRow}>
           <span className={styles.locationText}>{displayLocation}</span>
@@ -161,13 +159,15 @@ const HomeClassCard = ({
         </div>
 
         <div className={styles.priceRow}>
-          {min_session_price
-            ? `$${min_session_price}`
-            : min_course_price
-              ? `$${min_course_price}`
-              : "Price varies"}
-          <span className={styles.priceLabel}>
-            {min_session_price ? "/person" : min_course_price ? "/course" : ""}
+          <span className={styles.priceBlock}>
+            {min_session_price
+              ? `$${min_session_price}`
+              : min_course_price
+                ? `$${min_course_price}`
+                : "Price varies"}
+            <span className={styles.priceLabel}>
+              {min_session_price ? "/ person" : min_course_price ? "/ course" : ""}
+            </span>
           </span>
         </div>
       </div>

@@ -5,6 +5,7 @@
   cursor: pointer;
   position: relative;
   width: 100%;
+  max-width: 230px;
   padding: 0;
   transition: opacity 0.25s ease;
   isolation: isolate;
@@ -14,7 +15,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  border-radius: 10px;
+  border-radius: 20px;
   overflow: hidden;
   margin-bottom: 6px;
   background: #f7f7f7;
@@ -49,7 +50,6 @@
 .contentContainer {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
 .topRow {
@@ -72,18 +72,24 @@
   flex: 1;
 }
 
-.rating {
+.ratingBlock {
   display: flex;
   align-items: center;
   gap: 4px;
   color: #222;
-  font-size: 13px;
-  white-space: nowrap; /* Prevent rating from breaking lines */
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .reviewCount {
   color: #717171;
   font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .reviewCount {
+    display: none;
+  }
 }
 
 .companyInfo {
@@ -131,11 +137,17 @@
 .priceRow {
   display: flex;
   align-items: baseline;
-  gap: 4px;
-  margin-top: 2px;
+  gap: 6px;
   color: #222;
   font-size: 14px;
   font-weight: 600;
+  flex-wrap: wrap;
+}
+
+.priceBlock {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
 }
 
 .priceLabel {
@@ -166,7 +178,7 @@
   }
   .companyInfo,
   .locationRow,
-  .rating {
+  .ratingBlock {
     font-size: 12px;
   }
 }

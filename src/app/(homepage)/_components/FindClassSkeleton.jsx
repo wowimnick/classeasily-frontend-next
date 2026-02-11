@@ -34,7 +34,7 @@ const SkeletonWrapper = styled.div`
   box-sizing: border-box;
 
   @media (max-width: 1425px) { padding: 0 3rem; }
-  @media (max-width: 768px) { padding: 0 1.5rem; margin: 1.5rem auto; }
+  @media (max-width: 768px) { padding: 0 1.5rem; margin: 1rem auto; }
   @media (max-width: 616px) { padding: 0 1rem; }
 `;
 
@@ -64,17 +64,21 @@ const CarouselContainer = styled.div`
 
 const CardSkeleton = styled.div`
   flex: 0 0 auto;
-  width: 250px;
+  width: 230px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+
+  @media (max-width: 768px) {
+    width: 160px;
+  }
 `;
 
 // Image Container to match ExplorePage styling
 const CardImageContainer = styled.div`
   width: 100%;
   aspect-ratio: 1 / 1;
-  border-radius: 10px;
+  border-radius: 20px;
   margin-bottom: 6px;
   overflow: hidden;
   position: relative;
@@ -83,7 +87,7 @@ const CardImageContainer = styled.div`
 const CardImage = styled(SkeletonBase)`
   width: 100%;
   height: 100%;
-  border-radius: 10px;
+  border-radius: 20px;
 `;
 
 export function FindClassSkeleton({ style }) {

@@ -12,7 +12,7 @@ import CookieConsentProvider from "./providers/CookieConsentProvider";
 import { ToastProvider } from "@/lib/toast/ToastContext";
 import SessionMonitor from "@/components/auth/SessionMonitor";
 import { SearchProvider } from "@/context/SearchContext";
-import SearchDrawer from "@/components/common/SearchDrawer";
+import SearchFullScreen from "@/components/common/SearchFullScreen";
 import SearchUrlHandler from "@/components/common/SearchUrlHandler";
 
 export default function ClientProviders({ children }) {
@@ -84,7 +84,7 @@ export default function ClientProviders({ children }) {
               <SessionMonitor />
               <SearchProvider>
                 <AnalyticsProvider>
-                  <SearchDrawer />
+                  <SearchFullScreen />
                   <Suspense fallback={null}>
                     <SearchUrlHandler />
                   </Suspense>

@@ -23,7 +23,7 @@ const MainWrapper = styled.section`
   }
   @media (max-width: 768px) {
     padding: 0 1.5rem;
-    margin: 1.5rem auto;
+    margin: 1rem auto;
   }
   @media (max-width: 616px) {
     padding: 0 1rem;
@@ -41,6 +41,14 @@ const HeaderContainer = styled.div`
 const HeaderLeft = styled.div`
   display: flex;
   flex-direction: column;
+  align-items: baseline;
+  gap: 0.05rem;
+  margin-bottom: 0;
+
+  @media (max-width: 768px) {
+    
+    gap: 0.05rem;
+  }
 `;
 
 const HeaderRight = styled.div`
@@ -51,11 +59,11 @@ const HeaderRight = styled.div`
 `;
 
 const StyledTitle = styled.h3`
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  margin: 0 0 0.2rem 0;
-  color: #222222;
-  line-height: 1.25;
+  margin: 0;
+  color: #000;
+  line-height: 1;
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
     Arial, sans-serif;
@@ -73,19 +81,20 @@ const StyledTitle = styled.h3`
   }
 
   @media (max-width: 768px) {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
   }
 `;
 
 const StyledSubtitle = styled.p`
-  font-size: 0.95rem;
-  color: #717171;
+  font-size: 0.9rem;
+  color: #000;
   margin: 0;
-  line-height: 1.4;
+  line-height: 1;
   font-weight: 400;
 
   @media (max-width: 768px) {
     font-size: 0.85rem;
+    font-weight: 300;
   }
 `;
 
@@ -101,19 +110,19 @@ const EmblaViewport = styled.div`
 
 const EmblaContainer = styled.div`
   display: flex;
-  gap: 20px;
+  gap: 12px;
   padding: 4px;
   margin: -4px;
 
   .embla__slide {
     flex: 0 0 auto;
-    width: 250px;
+    width: 230px;
   }
 
   @media (max-width: 768px) {
-    gap: 16px;
+    gap: 12px;
     .embla__slide {
-      width: 190px;
+      width: 160px;
     }
   }
 `;

@@ -64,6 +64,28 @@ export const SUGGESTED_AREAS = [
   },
 ];
 
+// Toronto / GTA towns for full-screen location presets (no drawers)
+export const GTA_PRESETS = [
+  { name: "Toronto", description: "Downtown & neighbourhoods", coords: { lat: 43.6532, lng: -79.3832 }, provinceSlug: "ontario", citySlug: "toronto" },
+  { name: "Mississauga", description: "West of Toronto", coords: { lat: 43.589, lng: -79.6441 }, provinceSlug: "ontario", citySlug: "mississauga" },
+  { name: "Brampton", description: "Peel Region", coords: { lat: 43.7315, lng: -79.7624 }, provinceSlug: "ontario", citySlug: "brampton" },
+  { name: "Vaughan", description: "North of Toronto", coords: { lat: 43.8367, lng: -79.4982 }, provinceSlug: "ontario", citySlug: "vaughan" },
+  { name: "Markham", description: "York Region", coords: { lat: 43.8561, lng: -79.337 }, provinceSlug: "ontario", citySlug: "markham" },
+  { name: "Richmond Hill", description: "York Region", coords: { lat: 43.8828, lng: -79.4403 }, provinceSlug: "ontario", citySlug: "richmond-hill" },
+  { name: "Oakville", description: "Halton Region", coords: { lat: 43.4675, lng: -79.6877 }, provinceSlug: "ontario", citySlug: "oakville" },
+  { name: "Burlington", description: "Halton Region", coords: { lat: 43.3255, lng: -79.799 }, provinceSlug: "ontario", citySlug: "burlington" },
+  { name: "Pickering", description: "Durham Region", coords: { lat: 43.8374, lng: -79.0863 }, provinceSlug: "ontario", citySlug: "pickering" },
+  { name: "Ajax", description: "Durham Region", coords: { lat: 43.8501, lng: -79.0329 }, provinceSlug: "ontario", citySlug: "ajax" },
+  { name: "Whitby", description: "Durham Region", coords: { lat: 43.8762, lng: -78.9413 }, provinceSlug: "ontario", citySlug: "whitby" },
+  { name: "Oshawa", description: "Durham Region", coords: { lat: 43.8971, lng: -78.8658 }, provinceSlug: "ontario", citySlug: "oshawa" },
+  { name: "Milton", description: "Halton Region", coords: { lat: 43.5183, lng: -79.8774 }, provinceSlug: "ontario", citySlug: "milton" },
+  { name: "Newmarket", description: "York Region", coords: { lat: 44.0553, lng: -79.4593 }, provinceSlug: "ontario", citySlug: "newmarket" },
+  { name: "Aurora", description: "York Region", coords: { lat: 44.0056, lng: -79.4663 }, provinceSlug: "ontario", citySlug: "aurora" },
+  { name: "Etobicoke", description: "West Toronto", coords: { lat: 43.6532, lng: -79.5672 }, provinceSlug: "ontario", citySlug: "toronto" },
+  { name: "Scarborough", description: "East Toronto", coords: { lat: 43.7731, lng: -79.2574 }, provinceSlug: "ontario", citySlug: "toronto" },
+  { name: "North York", description: "North Toronto", coords: { lat: 43.7615, lng: -79.4111 }, provinceSlug: "ontario", citySlug: "toronto" },
+];
+
 export const SearchProvider = ({ children }) => {
   const router = useRouter();
   // REMOVED: usePathname and useSearchParams to prevent build errors on static pages

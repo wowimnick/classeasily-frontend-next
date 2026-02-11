@@ -994,7 +994,7 @@ export async function preloadHomepageData() {
     const row_collections = [
       {
         title: "Trending",
-        subtitle: "Most popular classes right now",
+        subtitle: "Most Popular Experiences",
         slug: "trending",
         classes: data.trending || [],
       },
