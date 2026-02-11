@@ -1013,7 +1013,19 @@ export async function preloadHomepageData() {
       });
     }
 
-    // 4. Return row_collections (for the rows) and categories (for the pills)
+    // 4. Next Week — experiences with at least one schedule next week (prioritized by reviews)
+    const nextWeekClasses = data.next_week || [];
+    if (nextWeekClasses.length > 0) {
+      row_collections.push({
+        title: "Happening Next Week",
+        subtitle: "Book an experience with availability next week",
+        slug: "next-week",
+        classes: nextWeekClasses,
+        seeAllLink: "/explore",
+      });
+    }
+
+    // 5. Return row_collections (for the rows) and categories (for the pills)
     return {
       row_collections,
       categories: data.collections || [],

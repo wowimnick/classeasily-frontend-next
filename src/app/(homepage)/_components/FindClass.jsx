@@ -42,7 +42,7 @@ const HeaderLeft = styled.div`
   display: flex;
   flex-direction: column;
   align-items: baseline;
-  gap: 0.05rem;
+  gap: 0.1rem;
   margin-bottom: 0;
 
   @media (max-width: 768px) {
