@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useAuth, getOptimisticAuthState } from "@/lib/auth-client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -649,6 +649,62 @@ const HeaderContent = ({
   );
 };
 
+// --- FALLBACK LOGO (inline so it shows immediately on mobile without dynamic import) ---
+// No width/height on SVG so LogoContainer & > svg controls size = same as real header (no layout shift).
+const FallbackLogoIcon = ({ color = "#fff" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 64.81 105.86"
+    fill={color}
+    role="img"
+    aria-label="Classeasily Logo"
+    style={{ flexShrink: 0 }}
+  >
+    <circle cx="64" cy="30" r="4" fill={color} />
+    <circle cx="36" cy="30" r="4" fill={color} />
+    <path
+      d="M55,64c0-3.3,2.7-6,6-6v10c0,10.5,8.5,19,19,19V10c0,0-10-9-30.1-9C29.9,1,20,10,20,10v47c0,23.2,18.8,42,42,42h18v-6 c-13.8,0-25-11.2-25-25V64z M49.9,51C35.1,51,26,43,26,38V14c23,0,23,25,24,28c1-3,1-28,24-28v24C74,42.1,64.8,51,49.9,51z"
+      fill={color}
+    />
+  </svg>
+);
+
+// Shimmer animation for skeleton (matches RoundedButton exact shape/size to avoid layout shift).
+const headerShimmer = keyframes`
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+`;
+
+const FallbackMenuSkeleton = styled.div`
+  height: 48px;
+  padding: 4px 8px 4px 14px;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-left: 0.5rem;
+  min-width: 73px;
+  box-sizing: border-box;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.2) 100%
+  );
+  background-size: 1000px 100%;
+  animation: ${headerShimmer} 2s infinite linear;
+
+  @media (max-width: 756px) {
+    height: 40px;
+    padding: 4px 6px 4px 10px;
+    gap: 6px;
+    margin-left: 0.5rem;
+    min-width: 68px;
+  }
+`;
+
 // --- FALLBACK COMPONENT ---
 const HeaderFallback = ({ logoTitleColor = "#fff", topOffset = 0 }) => {
   return (
@@ -658,9 +714,18 @@ const HeaderFallback = ({ logoTitleColor = "#fff", topOffset = 0 }) => {
       $isImpersonating={false}
       $topOffset={topOffset}
     >
-      <div style={{ gridColumn: "1 / 2" }}>
-        <Title color={logoTitleColor}>classeasily</Title>
-      </div>
+      <LogoLink href="/">
+        <LogoContainer $isScrolled={false}>
+          <FallbackLogoIcon color={logoTitleColor} />
+          <Title color={logoTitleColor} $isScrolled={false}>
+            classeasily
+          </Title>
+        </LogoContainer>
+      </LogoLink>
+      <Spacer />
+      <Selection>
+        <FallbackMenuSkeleton aria-hidden />
+      </Selection>
     </HeaderWrapper>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import styled from "styled-components";
 import { ChevronLeft } from "lucide-react";
 import Image from "next/image";
@@ -6,7 +6,6 @@ import { message, Input, Alert, Button, Divider } from "antd";
 import NumberFlow from "@number-flow/react";
 import posthog from "posthog-js";
 import dayjs from "dayjs";
-import axios from "axios"; // Ensure axios is installed
 import { ActionButton, CheckoutLink } from "./GiftcardStyles";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -111,17 +110,126 @@ const EditableRow = styled.div`
   margin-bottom: 12px;
 `;
 
-// --- EXPRESS CHECKOUT COMPONENT ---
-const ExpressCheckoutButton = ({ amount, onPaymentComplete }) => {
-  // Keeping logic simple for now as per previous implementation
+// --- EXPRESS CHECKOUT COMPONENT (Apple Pay / Google Pay as first option, then "or pay with card") ---
+const ExpressCheckoutButton = ({
+  amount,
+  formData,
+  designUrl,
+  deliveryMethod,
+  onSuccess,
+}) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
 
-  // Note: For a real implementation, you would need to create the intent upfront
-  // or use Stripe's deferred intent creation for Payment Request Buttons.
-  // This is a placeholder visual from the original file.
+  useEffect(() => {
+    if (!stripe || amount == null || amount <= 0) return;
 
-  return null;
+    const pr = stripe.paymentRequest({
+      country: "CA",
+      currency: "cad",
+      total: {
+        label: "Gift Card",
+        amount: Math.round(amount * 100),
+      },
+      requestPayerName: true,
+      requestPayerEmail: true,
+    });
+
+    pr.canMakePayment().then((result) => {
+      if (result) {
+        setPaymentRequest(pr);
+      }
+    });
+
+    pr.on("paymentmethod", async (ev) => {
+      const payerName = ev.payerName;
+      const payerEmail = ev.payerEmail;
+
+      try {
+        const isSendToSelf = deliveryMethod === "self";
+        const purchasePayload = {
+          amount,
+          recipient_email: isSendToSelf ? formData.senderEmail : formData.recipientEmail,
+          recipient_name: isSendToSelf ? formData.senderName : formData.recipientName,
+          sender_name: formData.senderName,
+          message: formData.message,
+          date: formData.date ? dayjs(formData.date).format("YYYY-MM-DD") : null,
+          delivery_method: deliveryMethod,
+          send_to_self: isSendToSelf,
+          design_url: designUrl,
+        };
+
+        const intentData = await giftCardService.createPurchaseIntent(purchasePayload);
+        const clientSecret = intentData.clientSecret;
+
+        if (!clientSecret) {
+          ev.complete("fail");
+          message.error("Failed to initialize payment. Please try again.");
+          return;
+        }
+
+        const { error, paymentIntent } = await stripe.confirmCardPayment(
+          clientSecret,
+          {
+            payment_method: ev.paymentMethod.id,
+            receipt_email: payerEmail || undefined,
+          },
+          { handleActions: false },
+        );
+
+        if (error) {
+          ev.complete("fail");
+          message.error(error.message);
+        } else {
+          ev.complete("success");
+          if (paymentIntent?.status === "succeeded") {
+            posthog.capture("giftcard_purchase_completed", {
+              amount,
+              recipient_email: isSendToSelf ? formData.senderEmail : formData.recipientEmail,
+              send_to_self: isSendToSelf,
+            });
+            message.success("Gift card ordered successfully!");
+            if (onSuccess) onSuccess();
+          }
+        }
+      } catch (err) {
+        console.error("Apple/Google Pay error:", err);
+        ev.complete("fail");
+        message.error(err.message || "Payment failed. Please try again.");
+      }
+    });
+  }, [
+    stripe,
+    amount,
+    formData,
+    designUrl,
+    deliveryMethod,
+    onSuccess,
+  ]);
+
+  if (!paymentRequest) return null;
+
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <PaymentRequestButtonElement options={{ paymentRequest }} />
+      <div
+        style={{
+          textAlign: "center",
+          margin: "16px 0",
+          color: "#6b7280",
+          fontSize: "13px",
+          fontWeight: 500,
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+        }}
+      >
+        <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }} />
+        <span>Or pay with card</span>
+        <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }} />
+      </div>
+    </div>
+  );
 };
 
 // --- INNER FORM COMPONENT ---
@@ -246,8 +354,14 @@ const StripePaymentForm = ({
             />
           )}
 
-          {/* Express Checkout Placeholder */}
-          <ExpressCheckoutButton amount={amount} />
+          {/* Apple Pay / Google Pay first, then "or pay with card" */}
+          <ExpressCheckoutButton
+            amount={amount}
+            formData={formData}
+            designUrl={designUrl}
+            deliveryMethod={deliveryMethod}
+            onSuccess={onSuccess}
+          />
 
           <div style={{ marginBottom: 16 }}>
             <label
@@ -271,6 +385,10 @@ const StripePaymentForm = ({
           <PaymentElement
             options={{
               layout: "tabs",
+              wallets: {
+                applePay: "never",
+                googlePay: "never",
+              },
               fields: {
                 billingDetails: {
                   address: {
