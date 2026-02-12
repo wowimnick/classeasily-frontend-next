@@ -38,13 +38,27 @@ const HomeClassCard = ({
   const [isFavorite, setIsFavorite] = useState(is_favorited);
   const [isToggling, setIsToggling] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  // Presigned URLs expire (e.g. 1h); when we show cached cards, the URL may be expired.
+  const [imageError, setImageError] = useState(false);
 
   const imageUrl = useMemo(() => {
     return images?.[0]?.medium_url || images?.[0]?.original_url || null;
   }, [images]);
 
+  // Presigned S3 URLs are very long; passing them through /_next/image causes 502 (URL/proxy limits).
+  // Use unoptimized so the browser loads the image directly from S3.
+  const isPresignedOrLongUrl = useMemo(() => {
+    if (!imageUrl || typeof imageUrl !== "string") return false;
+    return (
+      imageUrl.includes("X-Amz-") ||
+      imageUrl.includes("X-Amz-Algorithm") ||
+      imageUrl.length > 1800
+    );
+  }, [imageUrl]);
+
   useEffect(() => {
     setImageLoaded(false);
+    setImageError(false);
   }, [imageUrl]);
 
   const displayLocation = useMemo(() => {
@@ -154,7 +168,7 @@ const HomeClassCard = ({
           )}
         </button>
 
-        {imageUrl ? (
+        {imageUrl && !imageError ? (
           <>
             <div
               className={`${styles.imageSkeleton} ${imageLoaded ? styles.imageSkeletonHidden : ""}`}
@@ -171,8 +185,12 @@ const HomeClassCard = ({
               quality={priority ? 90 : 85}
               loading={priority ? "eager" : "lazy"}
               onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+              unoptimized={isPresignedOrLongUrl}
             />
           </>
+        ) : imageUrl && imageError ? (
+          <div className={styles.imageSkeleton} aria-hidden="true" />
         ) : (
           <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
             No Image
@@ -194,7 +212,7 @@ const HomeClassCard = ({
 
         <div className={styles.locationRow}>
           <span className={styles.locationText}>{displayLocation}</span>
-          {distance !== null && (
+          {distance != null && (
             <>
               <span className={styles.separator}>•</span>
               <span className={styles.distanceWrapper}>
