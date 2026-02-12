@@ -2,8 +2,9 @@
 
 import React, { useState, useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Heart, Star, Navigation } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import styles from "./HomeClassCard.module.css";
 import message from "@/lib/message";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -29,7 +30,6 @@ const HomeClassCard = ({
   priority = false,
   soonest_next_week = null,
 }) => {
-  const router = useRouter();
   const pathname = usePathname();
   const { user: currentUser } = useAuthUser();
   const isAuthenticated = !!currentUser;
@@ -52,13 +52,12 @@ const HomeClassCard = ({
     return d < 1 ? `${Math.round(d * 1000)}m` : `${d.toFixed(1)}km`;
   };
 
-  const handleNavigate = () => {
-    const identifier = slug || classId;
+  const identifier = slug || classId;
+  const handleLinkClick = () => {
     if (!identifier) return;
     const pathnameWithSearch =
       pathname + (typeof window !== "undefined" ? window.location.search : "");
     saveBeforeNavigate(pathnameWithSearch);
-    router.push(`/classes/${identifier}`);
   };
 
   const toggleFavorite = async (e) => {
@@ -101,8 +100,8 @@ const HomeClassCard = ({
     }
   };
 
-  return (
-    <div className={styles.cardContainer} onClick={handleNavigate}>
+  const cardContent = (
+    <>
       <div className={styles.imageContainer}>
         {soonest_next_week && (
           <span className={styles.soonestTag} title={`Next: ${soonest_next_week}`}>
@@ -183,8 +182,23 @@ const HomeClassCard = ({
           </span>
         </div>
       </div>
-    </div>
+    </>
   );
-};
+
+  if (!identifier) {
+    return <div className={styles.cardContainer}>{cardContent}</div>;
+  }
+
+  return (
+    <Link
+      href={`/classes/${identifier}`}
+      className={styles.cardContainer}
+      onClick={handleLinkClick}
+      prefetch={true}
+    >
+      {cardContent}
+    </Link>
+  );
+}
 
 export default React.memo(HomeClassCard);
