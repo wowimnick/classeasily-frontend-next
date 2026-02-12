@@ -1,10 +1,16 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, Star, Navigation } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import styles from "./HomeClassCard.module.css";
 import message from "@/lib/message";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -31,15 +37,35 @@ const HomeClassCard = ({
   soonest_next_week = null,
 }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const { user: currentUser } = useAuthUser();
   const isAuthenticated = !!currentUser;
 
   const [isFavorite, setIsFavorite] = useState(is_favorited);
   const [isToggling, setIsToggling] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  // Presigned URLs expire (e.g. 1h); when we show cached cards, the URL may be expired.
+  const [imageError, setImageError] = useState(false);
 
   const imageUrl = useMemo(() => {
     return images?.[0]?.medium_url || images?.[0]?.original_url || null;
   }, [images]);
+
+  // Presigned S3 URLs are very long; passing them through /_next/image causes 502 (URL/proxy limits).
+  // Use unoptimized so the browser loads the image directly from S3.
+  const isPresignedOrLongUrl = useMemo(() => {
+    if (!imageUrl || typeof imageUrl !== "string") return false;
+    return (
+      imageUrl.includes("X-Amz-") ||
+      imageUrl.includes("X-Amz-Algorithm") ||
+      imageUrl.length > 1800
+    );
+  }, [imageUrl]);
+
+  useEffect(() => {
+    setImageLoaded(false);
+    setImageError(false);
+  }, [imageUrl]);
 
   const displayLocation = useMemo(() => {
     if (location) return location;
@@ -59,6 +85,28 @@ const HomeClassCard = ({
       pathname + (typeof window !== "undefined" ? window.location.search : "");
     saveBeforeNavigate(pathnameWithSearch);
   };
+
+  // Prefetch class page on hover so navigation is instant on click (RSC payload ready before click)
+  const handlePrefetch = useCallback(() => {
+    if (identifier) router.prefetch(`/classes/${identifier}`);
+  }, [identifier, router]);
+
+  const cardRef = useRef(null);
+  // Prefetch when card is near viewport (industry standard: Airbnb-style instant nav on mobile tap / quick click)
+  useEffect(() => {
+    if (!identifier || !cardRef.current) return;
+    const el = cardRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          router.prefetch(`/classes/${identifier}`);
+        }
+      },
+      { rootMargin: "100px", threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [identifier, router]);
 
   const toggleFavorite = async (e) => {
     e.stopPropagation();
@@ -104,7 +152,10 @@ const HomeClassCard = ({
     <>
       <div className={styles.imageContainer}>
         {soonest_next_week && (
-          <span className={styles.soonestTag} title={`Next: ${soonest_next_week}`}>
+          <span
+            className={styles.soonestTag}
+            title={`Next: ${soonest_next_week}`}
+          >
             {soonest_next_week}
           </span>
         )}
@@ -126,18 +177,29 @@ const HomeClassCard = ({
           )}
         </button>
 
-        {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={title || "Class experience"}
-            fill
-            sizes="(max-width: 600px) 50vw, (max-width: 1048px) 33vw, (max-width: 1400px) 25vw, 20vw"
-            className={styles.cardImage}
-            priority={priority}
-            fetchPriority={priority ? "high" : "auto"}
-            quality={priority ? 90 : 85}
-            loading={priority ? "eager" : "lazy"}
-          />
+        {imageUrl && !imageError ? (
+          <>
+            <div
+              className={`${styles.imageSkeleton} ${imageLoaded ? styles.imageSkeletonHidden : ""}`}
+              aria-hidden="true"
+            />
+            <Image
+              src={imageUrl}
+              alt={title || "Class experience"}
+              fill
+              sizes="(max-width: 600px) 50vw, (max-width: 1048px) 33vw, (max-width: 1400px) 25vw, 20vw"
+              className={`${styles.cardImage} ${imageLoaded ? styles.cardImageLoaded : ""}`}
+              priority={priority}
+              fetchPriority={priority ? "high" : "auto"}
+              quality={priority ? 90 : 85}
+              loading={priority ? "eager" : "lazy"}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+              unoptimized={isPresignedOrLongUrl}
+            />
+          </>
+        ) : imageUrl && imageError ? (
+          <div className={styles.imageSkeleton} aria-hidden="true" />
         ) : (
           <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
             No Image
@@ -159,7 +221,7 @@ const HomeClassCard = ({
 
         <div className={styles.locationRow}>
           <span className={styles.locationText}>{displayLocation}</span>
-          {distance !== null && (
+          {distance != null && (
             <>
               <span className={styles.separator}>•</span>
               <span className={styles.distanceWrapper}>
@@ -177,7 +239,11 @@ const HomeClassCard = ({
                 ? `$${min_course_price}`
                 : "Price varies"}
             <span className={styles.priceLabel}>
-              {min_session_price ? "/ person" : min_course_price ? "/ course" : ""}
+              {min_session_price
+                ? "/ person"
+                : min_course_price
+                  ? "/ course"
+                  : ""}
             </span>
           </span>
         </div>
@@ -191,14 +257,17 @@ const HomeClassCard = ({
 
   return (
     <Link
+      ref={cardRef}
       href={`/classes/${identifier}`}
       className={styles.cardContainer}
       onClick={handleLinkClick}
+      onMouseEnter={handlePrefetch}
+      onFocus={handlePrefetch}
       prefetch={true}
     >
       {cardContent}
     </Link>
   );
-}
+};
 
 export default React.memo(HomeClassCard);

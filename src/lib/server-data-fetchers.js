@@ -72,18 +72,32 @@ export async function searchClasses(params = {}) {
     const url = `${BASE_URL}/classes/search/?${queryParams.toString()}`;
     const cacheTags = generateSearchCacheTags(params);
 
-    // CHANGED: Use no-store to prevent stale data and race conditions with client loaders
-    const cacheStrategy = "no-store";
+    // No location/keyword/tag/collection and no date/participant filters: cache for instant explore page
+    const hasNoGeoOrFilters =
+      !params.lat &&
+      !params.lng &&
+      !params.location_search &&
+      !params.keyword &&
+      !params.tag &&
+      !params.collection;
+    const hasNoExtraFilters =
+      !params.date &&
+      !params.start_date &&
+      !params.end_date &&
+      !params.participants &&
+      (!params.time_preference || (Array.isArray(params.time_preference) && params.time_preference.length === 0)) &&
+      (!params.days || (Array.isArray(params.days) && params.days.length === 0));
+    const isCategoryOnlyCacheable = hasNoGeoOrFilters && hasNoExtraFilters;
 
-    // We remove revalidate since we are not storing, but we keep tags for invalidation reference if needed later
+    const cacheStrategy = isCategoryOnlyCacheable ? "force-cache" : "no-store";
     const nextConfig = { tags: cacheTags };
 
-    console.log(`[Server] Fetching classes: ${url}`);
-    console.log(
-      `[Server] Cache Strategy: ${cacheStrategy}, Tags: ${JSON.stringify(
-        cacheTags,
-      )}`,
-    );
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[Server] Fetching classes: ${url}`);
+      console.log(
+        `[Server] Cache Strategy: ${cacheStrategy}, Tags: ${JSON.stringify(cacheTags)}`,
+      );
+    }
 
     const response = await fetch(url, {
       method: "GET",
@@ -423,8 +437,9 @@ export async function fetchInitialClasses() {
 }
 
 /**
- * Fetch homepage categories
+ * Fetch homepage categories (explore page, header, etc.)
  * Endpoint: /categories/
+ * Cached indefinitely; revalidate only when categories change (admin triggers revalidateTag("categories")).
  */
 export async function fetchHomepageCategories() {
   try {
@@ -435,7 +450,6 @@ export async function fetchHomepageCategories() {
       },
       cache: "force-cache",
       next: {
-        revalidate: 7200,
         tags: ["categories"],
       },
     });
