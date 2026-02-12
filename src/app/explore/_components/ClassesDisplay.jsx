@@ -1,8 +1,13 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import styled from "styled-components";
 import { Map as MapIcon, List, SearchX } from "lucide-react";
 import dynamic from "next/dynamic";
+import { usePathname, useSearchParams } from "next/navigation";
 import HomeClassCard from "../../../components/homepage/HomeClassCard.jsx";
+import {
+  registerScrollGetter,
+  restoreScroll,
+} from "@/lib/scrollRestoration";
 import ExploreCategories from "./ExploreCategories.jsx";
 import {
   ClassesContentSkeleton,
@@ -83,29 +88,39 @@ const ClassGridWrapper = styled.div`
   }
 `;
 
+/* Tighter column mins so more columns fit; cards stay smaller on explore. */
 const ClassGrid = styled.div`
   display: grid;
   width: 100%;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
 
   @media (max-width: 1400px) {
-    gap: 20px;
-    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
 
   @media (max-width: 1048px) {
     gap: 16px;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   }
 
   @media (max-width: 600px) {
     gap: 12px;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 
   @media (max-width: 360px) {
     grid-template-columns: 1fr;
+  }
+`;
+
+/* Let cards fill their grid cell at every breakpoint so there's no white space (override card max-width only here). */
+const CardGridItem = styled.div`
+  width: 100%;
+  min-width: 0;
+  & > * {
+    max-width: 100%;
   }
 `;
 
@@ -271,6 +286,10 @@ const ClassesDisplay = ({
   // Prefer userLocation from parent, fallback to hook
   const ipLocation = userLocation || ipLocationHook;
 
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const gridWrapperRef = useRef(null);
+
   const [selectedClassId, setSelectedClassId] = useState(null);
   const [isMapVisible, setIsMapVisible] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -278,6 +297,21 @@ const ClassesDisplay = ({
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [mapKey, setMapKey] = useState(0);
   const [shouldLoadMap, setShouldLoadMap] = useState(false);
+
+  const pathnameWithSearch = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : "");
+
+  useEffect(() => {
+    const unregister = registerScrollGetter(
+      () => gridWrapperRef.current?.scrollTop ?? 0
+    );
+    return unregister;
+  }, []);
+
+  useEffect(() => {
+    restoreScroll(pathnameWithSearch, gridWrapperRef);
+    // Only run on mount: we have one saved position per path when returning from class page
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -463,7 +497,7 @@ const ClassesDisplay = ({
     return (
       <ClassGrid>
         {classesToRender.map((classItem, index) => (
-          <div
+          <CardGridItem
             id={`class-${classItem.classId}`}
             key={classItem.classId}
             onMouseEnter={() => setSelectedClassId(classItem.classId)}
@@ -490,7 +524,7 @@ const ClassesDisplay = ({
               is_favorited={classItem.is_favorited}
               priority={index < 6}
             />
-          </div>
+          </CardGridItem>
         ))}
         {isLoadingMore &&
           [...Array(6)].map((_, i) => (
@@ -523,7 +557,7 @@ const ClassesDisplay = ({
             onShowMap={() => setIsMapVisible(true)}
           />
         </CategoriesWrapper>
-        <ClassGridWrapper>
+        <ClassGridWrapper ref={gridWrapperRef}>
           {renderContent()}
 
           {classesWithDistance.length > 0 && hasMorePages && !isLoadingMore && (

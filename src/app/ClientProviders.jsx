@@ -14,6 +14,7 @@ import SessionMonitor from "@/components/auth/SessionMonitor";
 import { SearchProvider } from "@/context/SearchContext";
 import SearchFullScreen from "@/components/common/SearchFullScreen";
 import SearchUrlHandler from "@/components/common/SearchUrlHandler";
+import ScrollRestorationHome from "@/components/ScrollRestorationHome";
 
 export default function ClientProviders({ children }) {
   const memoizedTheme = useMemo(() => theme, []);
@@ -87,6 +88,9 @@ export default function ClientProviders({ children }) {
                   <SearchFullScreen />
                   <Suspense fallback={null}>
                     <SearchUrlHandler />
+                  </Suspense>
+                  <Suspense fallback={null}>
+                    <ScrollRestorationHome />
                   </Suspense>
                   {children}
                 </AnalyticsProvider>

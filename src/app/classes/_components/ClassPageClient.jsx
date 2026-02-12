@@ -820,6 +820,13 @@ export default function ClassPageClient({
     setMounted(true);
   }, []);
 
+  // Scroll to top when opening the class page (e.g. from a scrolled list)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+    }
+  }, []);
+
   useEffect(() => {
     // 1. Determine a price to send to Pixel (matches your card display logic)
     let pixelPrice = 0;

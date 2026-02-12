@@ -3,11 +3,12 @@
 import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import { Heart, Star, Navigation } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
 import styles from "./HomeClassCard.module.css";
-// NOTE: Assuming these utility hooks/services exist in your project
 import message from "@/lib/message";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { classService } from "@/services/apiService.js";
+import { saveBeforeNavigate } from "@/lib/scrollRestoration";
 
 const HomeClassCard = ({
   classId,
@@ -28,6 +29,8 @@ const HomeClassCard = ({
   priority = false,
   soonest_next_week = null,
 }) => {
+  const router = useRouter();
+  const pathname = usePathname();
   const { user: currentUser } = useAuthUser();
   const isAuthenticated = !!currentUser;
 
@@ -52,7 +55,10 @@ const HomeClassCard = ({
   const handleNavigate = () => {
     const identifier = slug || classId;
     if (!identifier) return;
-    window.open(`/classes/${identifier}`, "_blank");
+    const pathnameWithSearch =
+      pathname + (typeof window !== "undefined" ? window.location.search : "");
+    saveBeforeNavigate(pathnameWithSearch);
+    router.push(`/classes/${identifier}`);
   };
 
   const toggleFavorite = async (e) => {

@@ -1,7 +1,9 @@
 // components/explore/MapDisplay.jsx
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { saveBeforeNavigate } from "@/lib/scrollRestoration";
 import {
   MapContainer,
   TileLayer,
@@ -448,7 +450,7 @@ function InvalidateSizeOnShow({ isVisible }) {
 }
 
 const MarkerComponent = React.memo(
-  ({ position, id, isSelected, onClick, classInfo }) => {
+  ({ position, id, isSelected, onClick, classInfo, onViewClass }) => {
     const displayPrice =
       classInfo.min_session_price ?? classInfo.min_course_price;
     const icon = createPriceIcon(displayPrice, isSelected);
@@ -536,8 +538,7 @@ const MarkerComponent = React.memo(
               <ViewButton
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (typeof window !== "undefined")
-                    window.open(`/classes/${classInfo.slug}`, "_blank");
+                  if (onViewClass && classInfo?.slug) onViewClass(classInfo.slug);
                 }}
               >
                 View Class
@@ -558,9 +559,22 @@ const MapDisplay = ({
   userLocation,
   onHideMap,
 }) => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isMounted, setIsMounted] = useState(false);
   const [mapBounds, setMapBounds] = useState(null);
   const [mapKey, setMapKey] = useState(null);
+
+  const handleViewClass = useCallback(
+    (slug) => {
+      const pathnameWithSearch =
+        pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : "");
+      saveBeforeNavigate(pathnameWithSearch);
+      router.push(`/classes/${slug}`);
+    },
+    [pathname, searchParams, router]
+  );
 
   useEffect(() => {
     setMapKey(`map-instance-${Date.now()}`);
@@ -707,6 +721,7 @@ const MapDisplay = ({
                       isSelected={selectedClassId === marker.id}
                       onClick={onMarkerClick}
                       classInfo={marker}
+                      onViewClass={handleViewClass}
                     />
                   ),
               )}
