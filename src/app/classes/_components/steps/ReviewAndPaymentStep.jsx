@@ -1574,7 +1574,8 @@ const ReviewAndPaymentStep = ({
           <TicketRow style={{ color: "#059669" }}>
             <span>
               Discount
-              {appliedDiscount ? ` (${appliedDiscount.code})` : ""}
+              {appliedDiscount && ` (${appliedDiscount.code})`}
+              {activeGlobalDiscount && (appliedDiscount ? ` · ${activeGlobalDiscount.name}` : ` (${activeGlobalDiscount.name})`)}
             </span>
             <span>
               <NumberFlow
