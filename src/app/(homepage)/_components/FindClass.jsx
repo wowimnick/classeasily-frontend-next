@@ -280,22 +280,11 @@ const FindClass = ({
               return (
                 <div className="embla__slide" key={cls.classId || index}>
                   <HomeClassCard
-                    classId={cls.classId}
-                    slug={cls.slug}
-                    images={cls.images || []}
-                    title={cls.title}
-                    rating={cls.average_rating}
-                    min_session_price={cls.min_session_price}
-                    min_course_price={cls.min_course_price}
-                    totalReviews={cls.review_count}
-                    business_name={cls.business_name}
+                    {...cls}
                     location={cls.location || cls.business_city}
-                    city={cls.city}
-                    state={cls.state}
-                    coordinates={cls.coordinates}
+                    rating={cls.average_rating}
+                    totalReviews={cls.review_count}
                     distance={dist}
-                    is_favorited={cls.is_favorited}
-                    soonest_next_week={cls.soonest_next_week}
                     priority={index < 4}
                   />
                 </div>

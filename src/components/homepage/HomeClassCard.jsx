@@ -47,6 +47,7 @@ const HomeClassCard = ({
   // Presigned URLs expire (e.g. 1h); when we show cached cards, the URL may be expired.
   const [imageError, setImageError] = useState(false);
 
+  // Backend sends cover (or first) image only for cards; prefer medium then original (same as explore).
   const imageUrl = useMemo(() => {
     return images?.[0]?.medium_url || images?.[0]?.original_url || null;
   }, [images]);
