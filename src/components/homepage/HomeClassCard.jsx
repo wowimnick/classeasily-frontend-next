@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import { Heart, Star, Navigation } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
@@ -36,10 +36,15 @@ const HomeClassCard = ({
 
   const [isFavorite, setIsFavorite] = useState(is_favorited);
   const [isToggling, setIsToggling] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const imageUrl = useMemo(() => {
     return images?.[0]?.medium_url || images?.[0]?.original_url || null;
   }, [images]);
+
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [imageUrl]);
 
   const displayLocation = useMemo(() => {
     if (location) return location;
@@ -128,17 +133,24 @@ const HomeClassCard = ({
         </button>
 
         {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={title || "Class experience"}
-            fill
-            sizes="(max-width: 600px) 50vw, (max-width: 1048px) 33vw, (max-width: 1400px) 25vw, 20vw"
-            className={styles.cardImage}
-            priority={priority}
-            fetchPriority={priority ? "high" : "auto"}
-            quality={priority ? 90 : 85}
-            loading={priority ? "eager" : "lazy"}
-          />
+          <>
+            <div
+              className={`${styles.imageSkeleton} ${imageLoaded ? styles.imageSkeletonHidden : ""}`}
+              aria-hidden="true"
+            />
+            <Image
+              src={imageUrl}
+              alt={title || "Class experience"}
+              fill
+              sizes="(max-width: 600px) 50vw, (max-width: 1048px) 33vw, (max-width: 1400px) 25vw, 20vw"
+              className={`${styles.cardImage} ${imageLoaded ? styles.cardImageLoaded : ""}`}
+              priority={priority}
+              fetchPriority={priority ? "high" : "auto"}
+              quality={priority ? 90 : 85}
+              loading={priority ? "eager" : "lazy"}
+              onLoad={() => setImageLoaded(true)}
+            />
+          </>
         ) : (
           <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
             No Image

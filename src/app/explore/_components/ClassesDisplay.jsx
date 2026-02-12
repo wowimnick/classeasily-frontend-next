@@ -338,18 +338,14 @@ const ClassesDisplay = ({
     };
   }, [isMobile, showMap]);
 
-  // Defer map initialization significantly to prioritize LCP
-  // Wait for LCP to complete (typically 2-3 seconds) before loading map
+  // Defer map briefly to prioritize LCP, then load map sooner for better UX
   useEffect(() => {
-    // Delay map loading to ensure class card images become LCP element
-    // Use requestIdleCallback if available, otherwise setTimeout
     const loadMap = () => {
-      // Additional delay to ensure LCP has completed
-      setTimeout(() => setShouldLoadMap(true), 2500);
+      setTimeout(() => setShouldLoadMap(true), 800);
     };
 
     if (typeof window !== "undefined" && window.requestIdleCallback) {
-      window.requestIdleCallback(loadMap, { timeout: 3000 });
+      window.requestIdleCallback(loadMap, { timeout: 1200 });
     } else {
       loadMap();
     }
