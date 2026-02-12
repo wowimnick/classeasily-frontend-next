@@ -23,7 +23,7 @@ const LORDICON_TORONTO = (
 );
 
 // Same palette as mobile (SearchFullScreen) for Lucide MapPin icons
-const ICON_PALETTE = [
+export const ICON_PALETTE = [
   { bg: "#fff1f2", icon: "#e11d48" }, // Rose
   { bg: "#fff7ed", icon: "#ea580c" }, // Orange
   { bg: "#eff6ff", icon: "#2563eb" }, // Blue

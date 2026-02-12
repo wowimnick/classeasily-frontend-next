@@ -399,7 +399,7 @@ export default function SearchFullScreen() {
   }, [expandedSection]);
 
   const getDateDisplay = () => {
-    if (!datePickerValue) return "Add dates";
+    if (!datePickerValue) return "Whenever";
     if (datePickerValue.start && datePickerValue.end) {
       const s = dayjs(datePickerValue.start);
       const e = dayjs(datePickerValue.end);
@@ -417,7 +417,7 @@ export default function SearchFullScreen() {
       citySlug: item.citySlug,
       provinceSlug: item.provinceSlug,
     });
-    setExpandedSection("date");
+    setExpandedSection(null);
     if (mainScrollRef.current) {
       mainScrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
     }

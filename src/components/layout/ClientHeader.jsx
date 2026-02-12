@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 import { useAuthUser } from "@/hooks/useAuthUser";
-import { useSearch, SUGGESTED_AREAS } from "@/context/SearchContext";
+import { useSearch, SUGGESTED_AREAS, ICON_PALETTE } from "@/context/SearchContext";
 
 // Dynamic Imports
 const CustomUserMenu = dynamic(
@@ -706,16 +706,16 @@ const LocationOption = styled.div`
   }
 `;
 const IconBox = styled.div`
-  width: 36px;
-  height: 36px;
-  background: #f3f4f6;
-  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 14px;
-  color: #374151;
   flex-shrink: 0;
+  background: ${(p) => p.$bgColor ?? "#f3f4f6"};
+  color: ${(p) => p.$iconColor ?? "#374151"};
 `;
 
 // --- CONSTANTS ---
@@ -852,21 +852,23 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
       ? geocodedAddressResults
       : [];
     if (searchTerm && safeResults.length > 0) {
-      return safeResults.map((result, idx) => (
-        <LocationOption
-          key={idx}
-          onClick={() => {
-            handleLocationSelect(result.displayName, {
-              coordinates: result.coordinates,
-              citySlug: result.citySlug,
-              provinceSlug: result.provinceSlug,
-            });
-            setActiveField(null);
-          }}
-        >
-          <IconBox>
-            <MapPin size={20} />
-          </IconBox>
+      return safeResults.map((result, idx) => {
+        const colorTheme = ICON_PALETTE[idx % ICON_PALETTE.length];
+        return (
+          <LocationOption
+            key={idx}
+            onClick={() => {
+              handleLocationSelect(result.displayName, {
+                coordinates: result.coordinates,
+                citySlug: result.citySlug,
+                provinceSlug: result.provinceSlug,
+              });
+              setActiveField(null);
+            }}
+          >
+            <IconBox $bgColor={colorTheme.bg} $iconColor={colorTheme.icon}>
+              <MapPin size={18} strokeWidth={2.5} />
+            </IconBox>
           <div
             style={{
               display: "flex",
@@ -882,21 +884,30 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
             </span>
           </div>
         </LocationOption>
-      ));
+        );
+      });
     }
-    return SUGGESTED_AREAS.map((area, idx) => (
-      <LocationOption
-        key={idx}
-        onClick={() => {
-          handleLocationSelect(area.name, {
-            coordinates: area.coords,
-            citySlug: area.citySlug,
-            provinceSlug: area.provinceSlug,
-          });
-          setActiveField(null);
-        }}
-      >
-        <IconBox>{area.icon}</IconBox>
+    return SUGGESTED_AREAS.map((area, idx) => {
+      const isToronto = idx === 0;
+      const colorTheme = area.lucideColorTheme;
+      return (
+        <LocationOption
+          key={idx}
+          onClick={() => {
+            handleLocationSelect(area.name, {
+              coordinates: area.coords,
+              citySlug: area.citySlug,
+              provinceSlug: area.provinceSlug,
+            });
+            setActiveField(null);
+          }}
+        >
+          <IconBox
+            $bgColor={isToronto ? ICON_PALETTE[0].bg : colorTheme?.bg}
+            $iconColor={isToronto ? undefined : colorTheme?.icon}
+          >
+            {isToronto ? area.icon : <MapPin size={18} strokeWidth={2.5} />}
+          </IconBox>
         <div
           style={{
             display: "flex",
@@ -912,7 +923,8 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
           </span>
         </div>
       </LocationOption>
-    ));
+      );
+    });
   };
 
   // Mobile Trigger (Visible < 768px)
