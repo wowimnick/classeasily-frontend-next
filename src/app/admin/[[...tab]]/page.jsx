@@ -58,6 +58,10 @@ const BlogManagement = dynamic(
   () => import("../_components/content-management/BlogManagement"),
   { ssr: false }
 );
+const GlobalDiscountsManagement = dynamic(
+  () => import("../_components/global-discounts/GlobalDiscountsManagement"),
+  { ssr: false }
+);
 
 const PageContainer = styled.div`
   display: flex;
@@ -102,11 +106,12 @@ export default function AdminPage() {
       "users", "roles", "audit",
       "business-overview", "business-listings", "business-verification",
       "class-listings", "class-reviews", "class-categories",
-      "all-bookings", "payouts", "blog", "support",
+      "all-bookings", "payouts", "global-discounts", "blog", "support",
     ];
     const permissionMap = {
       "all-bookings": "quickstart.view_booking",
       payouts: "quickstart.access_payout_admin",
+      "global-discounts": "quickstart.access_global_discount_admin",
       blog: "quickstart.access_blog_admin",
       support: "quickstart.access_support_admin",
       users: "quickstart.view_customuser",
@@ -161,6 +166,8 @@ export default function AdminPage() {
         return <SupportTicketTab />;
       case "payouts":
         return <PayoutsList />;
+      case "global-discounts":
+        return <GlobalDiscountsManagement />;
       default:
         return <div>Loading or Access Denied...</div>;
     }

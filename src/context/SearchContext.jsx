@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import debounce from "lodash/debounce";
 import { useRouter } from "next/navigation"; // Removed usePathname, useSearchParams
 import { LordIcon } from "@/services/ReactUtils";
@@ -211,6 +211,28 @@ export const SearchProvider = ({ children }) => {
 
     setIsDrawerOpen(false);
   };
+
+  // Prefetch explore page when user has a location so it loads instantly on Search
+  useEffect(() => {
+    const { displayName, coordinates } = selectedLocation;
+    const hasLocation = (displayName || searchTerm.trim()) && coordinates;
+    if (!hasLocation) return;
+    const params = new URLSearchParams();
+    params.set("location", (displayName || searchTerm.trim()).replace(/,?\s*ON\s*$/, "").trim() || "Toronto");
+    params.set("lat", coordinates.lat.toString());
+    params.set("lng", coordinates.lng.toString());
+    params.set("participants", participantCount.toString());
+    if (datePickerValue) {
+      if (datePickerValue.start && datePickerValue.end) {
+        params.set("start_date", datePickerValue.start);
+        params.set("end_date", datePickerValue.end);
+      } else if (datePickerValue.format) {
+        params.set("date", datePickerValue.format("YYYY-MM-DD"));
+      }
+    }
+    const exploreUrl = `/explore?${params.toString()}`;
+    router.prefetch(exploreUrl);
+  }, [selectedLocation, searchTerm, participantCount, datePickerValue, router]);
 
   const value = {
     isDrawerOpen,

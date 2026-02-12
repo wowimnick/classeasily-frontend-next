@@ -446,6 +446,19 @@ export const menuItems = [
     label: "Payouts",
   },
   {
+    key: "global-discounts",
+    icon: (
+      <LordIcon
+        src="https://cdn.lordicon.com/nocovwne.json"
+        colors="primary:#666,secondary:#666"
+        size="20px"
+        playOnLoad={false}
+        trigger="hover"
+      />
+    ),
+    label: "Global Discounts",
+  },
+  {
     key: "blog",
     icon: (
       <LordIcon
@@ -532,6 +545,7 @@ const closeButtonVariants = {
 const menuItemPermissions = {
   "all-bookings": "quickstart.view_booking",
   payouts: "quickstart.access_payout_admin",
+  "global-discounts": "quickstart.access_global_discount_admin",
   blog: "quickstart.access_blog_admin",
   support: "quickstart.access_support_admin",
   users: "quickstart.view_customuser",

@@ -50,6 +50,7 @@ export const API_ENDPOINTS = {
   PUBLIC_SCHEDULES: "/schedules/",
   PUBLIC_BLOG_POSTS: "/blog/posts/",
   PUBLIC_BLOG_CATEGORIES: "/blog/categories/",
+  GLOBAL_DISCOUNT_ACTIVE: "/global-discount/active/",
 
   // Reviews
   REVIEWS_SUBMIT: "/reviews/submit/",
@@ -1381,6 +1382,25 @@ export const businessDiscountService = {
         success: false,
         error: error.response?.data || "Coupon validation failed",
       };
+    }
+  },
+};
+
+/** Public: fetch currently active platform-wide discount. Optional subtotal for calculated amount. */
+export const globalDiscountService = {
+  getActive: async (subtotal = null) => {
+    try {
+      const params = subtotal != null && subtotal > 0 ? { subtotal } : {};
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.GLOBAL_DISCOUNT_ACTIVE,
+        { params },
+      );
+      return {
+        success: true,
+        data: response.data?.active_discount ?? null,
+      };
+    } catch (error) {
+      return { success: false, data: null };
     }
   },
 };

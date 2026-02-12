@@ -474,8 +474,8 @@ export async function fetchHomepageCategories() {
 }
 
 /**
- * Fetch class detail by ID or slug
- * Endpoint: /classes/{classId}/
+ * Fetch class detail by ID or slug.
+ * Cached until invalidated (revalidateTag) when class details or schedules change — no time-based revalidate so pages stay instant.
  */
 export async function fetchClassDetail(classIdOrSlug) {
   try {
@@ -486,7 +486,6 @@ export async function fetchClassDetail(classIdOrSlug) {
       },
       cache: "force-cache",
       next: {
-        revalidate: 3600,
         tags: ["classes", `class-${classIdOrSlug}`],
       },
     });

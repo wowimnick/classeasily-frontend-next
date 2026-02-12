@@ -2536,6 +2536,75 @@ export const supportTicketService = {
   },
 };
 
+export const globalDiscountAdminService = {
+  list: async () => {
+    try {
+      const response = await axiosInstance.get("/admin/global-discounts/");
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to fetch global discounts",
+      };
+    }
+  },
+  get: async (id) => {
+    try {
+      const response = await axiosInstance.get(`/admin/global-discounts/${id}/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to fetch global discount",
+      };
+    }
+  },
+  getStats: async (id) => {
+    try {
+      const response = await axiosInstance.get(`/admin/global-discounts/${id}/stats/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to fetch stats",
+      };
+    }
+  },
+  create: async (payload) => {
+    try {
+      const response = await axiosInstance.post("/admin/global-discounts/", payload);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data || "Failed to create global discount",
+      };
+    }
+  },
+  update: async (id, payload) => {
+    try {
+      const response = await axiosInstance.patch(`/admin/global-discounts/${id}/`, payload);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data || "Failed to update global discount",
+      };
+    }
+  },
+  delete: async (id) => {
+    try {
+      await axiosInstance.delete(`/admin/global-discounts/${id}/`);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to delete global discount",
+      };
+    }
+  },
+};
+
 export const notificationService = {
   /**
    * Get all notifications with optional filtering

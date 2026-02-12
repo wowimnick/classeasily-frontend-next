@@ -41,6 +41,7 @@ import { getCancellationPolicyText, getDurationText } from "./utils";
 import {
   businessDiscountService,
   giftCardService,
+  globalDiscountService,
 } from "@/services/apiService";
 import posthog from "posthog-js";
 import { theme as appTheme } from "@/components/theme";
@@ -896,6 +897,9 @@ const ReviewAndPaymentStep = ({
   const [appliedGiftCard, setAppliedGiftCard] = useState(null); // { code, balance }
   const [gcLoading, setGcLoading] = useState(false);
 
+  // Global (platform) discount – applied automatically; shown in same Discount line as business coupon
+  const [activeGlobalDiscount, setActiveGlobalDiscount] = useState(null);
+
   // --- TIMER STATE ---
   const [timeRemaining, setTimeRemaining] = useState(15 * 60);
   const [isExpired, setIsExpired] = useState(false);
@@ -1002,32 +1006,56 @@ const ReviewAndPaymentStep = ({
   const basePrice = parseFloat(selectedSlot?.price || option?.price || 0);
   const subtotal = basePrice * participantsCount;
 
-  // Calculate totals including Gift Card deductions
+  // Basis for global discount (backend applies it on subtotal after business discount)
+  const subtotalForGlobal =
+    subtotal -
+    (appliedDiscount ? parseFloat(appliedDiscount.calculated_discount_amount) || 0 : 0);
+
+  useEffect(() => {
+    if (subtotalForGlobal <= 0) {
+      setActiveGlobalDiscount(null);
+      return;
+    }
+    let cancelled = false;
+    globalDiscountService.getActive(subtotalForGlobal).then((res) => {
+      if (!cancelled && res.success && res.data) {
+        setActiveGlobalDiscount(res.data);
+      } else if (!cancelled) {
+        setActiveGlobalDiscount(null);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [subtotalForGlobal]);
+
+  // Calculate totals: one combined discount (business coupon + global/platform)
   const { discountAmount, taxAmount, finalTotal, gcDeduction } = useMemo(() => {
-    // 1. Calculate Standard Subtotal with Coupon
-    const calculatedDiscount = appliedDiscount
+    const businessDiscount = appliedDiscount
       ? parseFloat(appliedDiscount.calculated_discount_amount) || 0
       : 0;
-    const subtotalAfterDiscount = Math.max(0, subtotal - calculatedDiscount);
+    const globalDiscount = activeGlobalDiscount?.calculated_discount_amount
+      ? parseFloat(activeGlobalDiscount.calculated_discount_amount) || 0
+      : 0;
+    const totalDiscount = businessDiscount + globalDiscount;
+    const subtotalAfterDiscount = Math.max(0, subtotal - totalDiscount);
     const tax = subtotalAfterDiscount * HST_RATE;
     const grossTotal = subtotalAfterDiscount + tax;
 
-    // 2. Apply Gift Card Logic (Payment Method, applied AFTER tax)
     let deduction = 0;
     if (appliedGiftCard) {
-      // We can't deduct more than the total, and we can't deduct more than the balance
       deduction = Math.min(grossTotal, parseFloat(appliedGiftCard.balance));
     }
 
     const payable = Math.max(0, grossTotal - deduction);
 
     return {
-      discountAmount: calculatedDiscount,
+      discountAmount: totalDiscount,
       taxAmount: tax,
       finalTotal: payable,
       gcDeduction: deduction,
     };
-  }, [subtotal, appliedDiscount, appliedGiftCard]);
+  }, [subtotal, appliedDiscount, appliedGiftCard, activeGlobalDiscount]);
 
   const isFree = finalTotal === 0;
 
@@ -1133,9 +1161,9 @@ const ReviewAndPaymentStep = ({
   );
 
   useEffect(() => {
-    // Re-fetch intent when discount or gift card changes
+    // Re-fetch intent when discount or gift card changes (backend applies global discount server-side)
     fetchPaymentIntent(appliedDiscount?.id);
-  }, [appliedDiscount?.id, appliedGiftCard]);
+  }, [appliedDiscount?.id, appliedGiftCard, activeGlobalDiscount]);
 
   // --- COUPON HANDLERS ---
   const handleApplyCoupon = async () => {
@@ -1542,9 +1570,12 @@ const ReviewAndPaymentStep = ({
           </span>
         </TicketRow>
 
-        {appliedDiscount && (
+        {(appliedDiscount || activeGlobalDiscount) && discountAmount > 0 && (
           <TicketRow style={{ color: "#059669" }}>
-            <span>Discount ({appliedDiscount.code})</span>
+            <span>
+              Discount
+              {appliedDiscount ? ` (${appliedDiscount.code})` : ""}
+            </span>
             <span>
               <NumberFlow
                 value={-discountAmount}
