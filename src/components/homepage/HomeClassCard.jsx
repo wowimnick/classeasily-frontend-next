@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Heart, Star, Navigation } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import styles from "./HomeClassCard.module.css";
 import message from "@/lib/message";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -29,8 +30,8 @@ const HomeClassCard = ({
   priority = false,
   soonest_next_week = null,
 }) => {
-  const router = useRouter();
   const pathname = usePathname();
+  const router = useRouter();
   const { user: currentUser } = useAuthUser();
   const isAuthenticated = !!currentUser;
 
@@ -57,14 +58,35 @@ const HomeClassCard = ({
     return d < 1 ? `${Math.round(d * 1000)}m` : `${d.toFixed(1)}km`;
   };
 
-  const handleNavigate = () => {
-    const identifier = slug || classId;
+  const identifier = slug || classId;
+  const handleLinkClick = () => {
     if (!identifier) return;
     const pathnameWithSearch =
       pathname + (typeof window !== "undefined" ? window.location.search : "");
     saveBeforeNavigate(pathnameWithSearch);
-    router.push(`/classes/${identifier}`);
   };
+
+  // Prefetch class page on hover so navigation is instant on click (RSC payload ready before click)
+  const handlePrefetch = useCallback(() => {
+    if (identifier) router.prefetch(`/classes/${identifier}`);
+  }, [identifier, router]);
+
+  const cardRef = useRef(null);
+  // Prefetch when card is near viewport (industry standard: Airbnb-style instant nav on mobile tap / quick click)
+  useEffect(() => {
+    if (!identifier || !cardRef.current) return;
+    const el = cardRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          router.prefetch(`/classes/${identifier}`);
+        }
+      },
+      { rootMargin: "100px", threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [identifier, router]);
 
   const toggleFavorite = async (e) => {
     e.stopPropagation();
@@ -106,8 +128,8 @@ const HomeClassCard = ({
     }
   };
 
-  return (
-    <div className={styles.cardContainer} onClick={handleNavigate}>
+  const cardContent = (
+    <>
       <div className={styles.imageContainer}>
         {soonest_next_week && (
           <span className={styles.soonestTag} title={`Next: ${soonest_next_week}`}>
@@ -195,8 +217,26 @@ const HomeClassCard = ({
           </span>
         </div>
       </div>
-    </div>
+    </>
   );
-};
+
+  if (!identifier) {
+    return <div className={styles.cardContainer}>{cardContent}</div>;
+  }
+
+  return (
+    <Link
+      ref={cardRef}
+      href={`/classes/${identifier}`}
+      className={styles.cardContainer}
+      onClick={handleLinkClick}
+      onMouseEnter={handlePrefetch}
+      onFocus={handlePrefetch}
+      prefetch={true}
+    >
+      {cardContent}
+    </Link>
+  );
+}
 
 export default React.memo(HomeClassCard);
