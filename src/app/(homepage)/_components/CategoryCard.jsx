@@ -10,6 +10,8 @@ const CategoryCard = ({
   alt,
   priority = false,
 }) => {
+  // Use placeholder when API returns no image (e.g. collection has no image or backend fallback unavailable)
+  const imageSrc = image || "/placeholder.webp";
   return (
     <div
       className={styles.cardWrapper}
@@ -26,7 +28,7 @@ const CategoryCard = ({
     >
       <div className={styles.imageContainer}>
         <Image
-          src={image}
+          src={imageSrc}
           alt={alt || `${category} category`}
           fill
           sizes="(max-width: 768px) 220px, (max-width: 992px) 240px, 280px"
