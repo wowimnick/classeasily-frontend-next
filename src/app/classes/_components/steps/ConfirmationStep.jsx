@@ -290,16 +290,6 @@ const ConfirmationStep = ({
   onBookingDetailsFetched,
   onRetryBooking,
 }) => {
-  // --- LOGGING ---
-  console.error("[ConfirmationStep Debug] Props Received:", {
-    bookingId: propBookingId,
-    bookingDataId: bookingData?.bookingId,
-    propReference: propReference,
-    reference: bookingData?.user_facing_reference,
-    participants: bookingData?.participant_details,
-    paymentIntentId
-  });
-
   const [fetchedReference, setFetchedReference] = useState(null);
   const [isPolling, setIsPolling] = useState(false);
   const [pollingError, setPollingError] = useState(null);

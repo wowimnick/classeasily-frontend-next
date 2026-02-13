@@ -299,6 +299,12 @@ const FormCard = styled.div`
     0 2px 4px -2px rgba(0, 0, 0, 0.05);
   @media (max-width: 968px) {
     padding: 16px;
+    /* Prevent iOS zoom on focus: inputs must be at least 16px */
+    .ant-input,
+    .ant-input-affix-wrapper input,
+    textarea.ant-input {
+      font-size: 16px !important;
+    }
   }
 `;
 
@@ -306,6 +312,18 @@ const SectionTitle = styled.h4`
   margin: 0 0 16px 0;
   font-size: 18px;
   font-weight: 600;
+  color: #111827;
+
+  @media (max-width: 968px) {
+    font-size: 0.95rem;
+    text-align: center;
+  }
+`;
+
+/* Label above fields: small, 600 weight */
+const FieldLabel = styled.span`
+  font-weight: 600;
+  font-size: 0.8125rem;
   color: #111827;
 `;
 
@@ -391,21 +409,38 @@ const InfoPanel = styled.div`
   }
 `;
 
-// -- Updated Coupon Components --
+// -- Promo / Gift card: unified styles and reveal button --
+const PromoRevealButton = styled.button`
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 0 12px 0;
+  margin-bottom: 4px;
+  text-decoration: underline;
+
+  &:hover {
+    color: #111827;
+  }
+`;
+
 const CouponTicketInput = styled.div`
   display: flex;
   gap: 8px;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   background: #f9fafb;
   border-radius: 12px;
   border: 1px dashed #e5e7eb;
 
-  .ant-input {
-    font-size: 13px;
+  .ant-input,
+  .ant-input-affix-wrapper input {
+    font-size: 14px;
   }
 
   .ant-btn {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     box-shadow: none;
     border: 1px solid #111827;
@@ -633,9 +668,14 @@ const ParticipantNameInputs = ({
             { required: true, message: `Guest ${index + 1} name is required` },
           ]}
           style={{ marginBottom: 12 }}
+          label={
+            <FieldLabel>
+              {count > 1 ? `Guest ${index + 1} full name` : "Full name"}
+            </FieldLabel>
+          }
         >
           <Input
-            placeholder={`Guest ${index + 1} Full Name`}
+            placeholder="e.g. Jane Smith"
             readOnly={
               index === 0 && isUserLoggedIn && !!bookerNameFromBookingData
             }
@@ -716,7 +756,9 @@ const ExpressCheckoutButton = ({
                 applied_discount_id: bookingData.applied_discount_id || null,
               });
             } catch (backendErr) {
-              console.error("Error:", backendErr);
+              if (process.env.NODE_ENV === "development") {
+                console.error("Error updating intent for Apple Pay:", backendErr);
+              }
             }
           }
         }
@@ -743,7 +785,9 @@ const ExpressCheckoutButton = ({
           }
         }
       } catch (err) {
-        console.error("🍎 Apple Pay: EXCEPTION:", err);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Apple Pay exception:", err);
+        }
         ev.complete("fail");
         message.error("Payment failed. Please try again.");
       }
@@ -782,6 +826,11 @@ const ExpressCheckoutButton = ({
   );
 };
 
+const PaymentElementWrapper = styled.div`
+  min-height: 240px;
+  width: 100%;
+`;
+
 const PaymentFormContent = ({
   form,
   handleSubmit,
@@ -798,6 +847,22 @@ const PaymentFormContent = ({
   const stripe = useStripe();
   const elements = useElements();
   const [isReady, setIsReady] = useState(false);
+  const [mountPaymentElement, setMountPaymentElement] = useState(false);
+
+  useEffect(() => {
+    if (!clientSecret || isFree) {
+      setMountPaymentElement(false);
+      return;
+    }
+    let cancelled = false;
+    const t = requestAnimationFrame(() => {
+      if (!cancelled) setMountPaymentElement(true);
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(t);
+    };
+  }, [clientSecret, isFree]);
 
   useEffect(() => {
     const canSubmit = isFree
@@ -839,30 +904,34 @@ const PaymentFormContent = ({
             paymentService={paymentService}
             bookingData={bookingData}
           />
-          <PaymentElement
-            options={{
-              layout: "tabs",
-              wallets: {
-                applePay: "never",
-                googlePay: "never",
-              },
-              defaultValues: {
-                billingDetails: {
-                  address: {
-                    country: "CA",
+          <PaymentElementWrapper>
+            {mountPaymentElement && (
+              <PaymentElement
+                options={{
+                  layout: "tabs",
+                  wallets: {
+                    applePay: "never",
+                    googlePay: "never",
                   },
-                },
-              },
-              fields: {
-                billingDetails: {
-                  address: {
-                    country: "never",
+                  defaultValues: {
+                    billingDetails: {
+                      address: {
+                        country: "CA",
+                      },
+                    },
                   },
-                },
-              },
-            }}
-            onReady={() => setIsReady(true)}
-          />
+                  fields: {
+                    billingDetails: {
+                      address: {
+                        country: "never",
+                      },
+                    },
+                  },
+                }}
+                onReady={() => setIsReady(true)}
+              />
+            )}
+          </PaymentElementWrapper>
         </div>
       )}
     </>
@@ -883,9 +952,16 @@ const ReviewAndPaymentStep = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [clientSecret, setClientSecret] = useState(null);
+  const [clientSecret, setClientSecret] = useState(
+    () => bookingData?.clientSecret ?? null
+  );
   const [isFormValid, setIsFormValid] = useState(false);
   const [showMobileSummary, setShowMobileSummary] = useState(false);
+
+  useEffect(() => {
+    const fromStorage = bookingData?.clientSecret;
+    if (fromStorage && !clientSecret) setClientSecret(fromStorage);
+  }, [bookingData?.clientSecret]);
 
   // Coupon State
   const [couponCode, setCouponCode] = useState("");
@@ -897,6 +973,8 @@ const ReviewAndPaymentStep = ({
   const [appliedGiftCard, setAppliedGiftCard] = useState(null); // { code, balance }
   const [gcLoading, setGcLoading] = useState(false);
 
+  const [showPromoGiftCard, setShowPromoGiftCard] = useState(false);
+
   // Global (platform) discount – applied automatically; shown in same Discount line as business coupon
   const [activeGlobalDiscount, setActiveGlobalDiscount] = useState(null);
 
@@ -905,6 +983,11 @@ const ReviewAndPaymentStep = ({
   const [isExpired, setIsExpired] = useState(false);
   const expirationTimestampRef = useRef(null);
   const debounceTimerRef = useRef(null);
+  const intentDepsRef = useRef({
+    discountId: null,
+    gcCode: null,
+    globalId: null,
+  });
 
   useEffect(() => {
     // PostHog: Track payment step entry in booking funnel
@@ -923,24 +1006,27 @@ const ReviewAndPaymentStep = ({
 
   const validateValues = useCallback(
     (values) => {
-      const { email, phone, guest_full_name, participant_details } = values;
-
-      const contactFields = isUserLoggedIn
-        ? [email, phone]
-        : [email, phone, guest_full_name];
-
+      const { email, phone, participant_details } = values;
+      const contactFields = [email, phone];
       const allTextFieldsFilled = contactFields.every(
         (val) => val && String(val).trim().length > 0,
       );
-
       const currentParticipants = participant_details || [];
       const participantsFilled =
         currentParticipants.length === bookingData.participants &&
         currentParticipants.every((p) => p?.name?.trim());
-
       return !!(allTextFieldsFilled && participantsFilled);
     },
-    [isUserLoggedIn, bookingData.participants],
+    [bookingData.participants],
+  );
+
+  const getGuestFullName = useCallback(
+    (values) => {
+      if (isUserLoggedIn) return bookingData.userName || "";
+      const first = values?.participant_details?.[0]?.name;
+      return (first && String(first).trim()) || "Pending Guest";
+    },
+    [isUserLoggedIn, bookingData.userName],
   );
 
   useEffect(() => {
@@ -950,7 +1036,6 @@ const ReviewAndPaymentStep = ({
       if (isUserLoggedIn) {
         formData.email = bookingData.userEmail || "";
         formData.phone = bookingData.userPhone || "";
-        formData.guest_full_name = "";
 
         const currentParticipants = bookingData.participant_details || [];
         const newParticipants = Array.from(
@@ -968,8 +1053,6 @@ const ReviewAndPaymentStep = ({
         const currentValues = form.getFieldsValue(true);
         if (currentValues.email === undefined) formData.email = "";
         if (currentValues.phone === undefined) formData.phone = "";
-        if (currentValues.guest_full_name === undefined)
-          formData.guest_full_name = "";
 
         const currentPart = currentValues.participant_details || [];
         if (currentPart.length !== bookingData.participants) {
@@ -1126,7 +1209,7 @@ const ReviewAndPaymentStep = ({
           participant_details: participantDetailsPayload,
           applied_discount_id: currentDiscountId,
           guest_email: values.email || "pending@example.com",
-          guest_full_name: values.guest_full_name || "Pending Guest",
+          guest_full_name: getGuestFullName(values),
           guest_phone: values.phone || "555-555-5555",
           // Pass Gift Card info so backend knows we might be partially or fully covering it
           gift_card_code: appliedGiftCard?.code || null,
@@ -1146,7 +1229,9 @@ const ReviewAndPaymentStep = ({
           }
         }
       } catch (err) {
-        console.error("Error creating draft intent:", err);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Error creating draft intent:", err);
+        }
       }
     },
     [
@@ -1157,13 +1242,47 @@ const ReviewAndPaymentStep = ({
       paymentService,
       onUpdateBookingData,
       appliedGiftCard,
+      getGuestFullName,
     ],
   );
 
   useEffect(() => {
-    // Re-fetch intent when discount or gift card changes (backend applies global discount server-side)
-    fetchPaymentIntent(appliedDiscount?.id);
-  }, [appliedDiscount?.id, appliedGiftCard, activeGlobalDiscount]);
+    if (isFree) return;
+    const discountId = appliedDiscount?.id ?? null;
+    const gcCode = appliedGiftCard?.code ?? null;
+    const globalId = activeGlobalDiscount?.id ?? null;
+    const currentDeps = { discountId, gcCode, globalId };
+    const prev = intentDepsRef.current;
+
+    if (clientSecret) {
+      const depsMatch =
+        prev.discountId === discountId &&
+        prev.gcCode === gcCode &&
+        prev.globalId === globalId;
+      if (depsMatch) return;
+      const isFirstRunWithRehydratedIntent =
+        prev.discountId === null &&
+        prev.gcCode === null &&
+        prev.globalId === null;
+      if (isFirstRunWithRehydratedIntent) {
+        intentDepsRef.current = currentDeps;
+        return;
+      }
+      const paymentIntentId = clientSecret.split("_secret_")[0];
+      paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
+      setClientSecret(null);
+    }
+
+    intentDepsRef.current = currentDeps;
+    fetchPaymentIntent(discountId);
+  }, [
+    appliedDiscount?.id,
+    appliedGiftCard?.code,
+    activeGlobalDiscount?.id,
+    clientSecret,
+    isFree,
+    fetchPaymentIntent,
+  ]);
 
   // --- COUPON HANDLERS ---
   const handleApplyCoupon = async () => {
@@ -1274,17 +1393,22 @@ const ReviewAndPaymentStep = ({
             participant_details: values.participant_details,
             applied_discount_id: appliedDiscount?.id || null,
             guest_email: values.email,
-            guest_full_name: values.guest_full_name,
+            guest_full_name: getGuestFullName(values),
             guest_phone: values.phone,
             gift_card_code: appliedGiftCard?.code || null,
           };
 
           // Logic: For $0 total, createPaymentIntent returns booking_id directly
           const res = await paymentService.createPaymentIntent(payload);
-          if (res.booking_id) {
+          if (res?.booking_id) {
             onPaymentComplete(res);
             return;
           }
+          setError(
+            res?.error || "We couldn’t complete your free booking. Please try again or contact support."
+          );
+          setLoading(false);
+          return;
         }
 
         // --- STANDARD STRIPE FLOW ---
@@ -1305,9 +1429,7 @@ const ReviewAndPaymentStep = ({
               await paymentService.updatePaymentIntent({
                 payment_intent_id: paymentIntentId,
                 guest_email: values.email,
-                guest_full_name: isUserLoggedIn
-                  ? bookingData.userName
-                  : values.guest_full_name,
+                guest_full_name: getGuestFullName(values),
                 guest_phone: values.phone,
                 participant_details: values.participant_details,
                 notes: values.notes,
@@ -1315,10 +1437,9 @@ const ReviewAndPaymentStep = ({
               });
             }
           } catch (updateErr) {
-            console.error(
-              "Failed to update booking details before payment:",
-              updateErr,
-            );
+            if (process.env.NODE_ENV === "development") {
+              console.error("Failed to update booking details before payment:", updateErr);
+            }
           }
         }
 
@@ -1330,9 +1451,7 @@ const ReviewAndPaymentStep = ({
               return_url: `${window.location.origin}/booking/status`,
               payment_method_data: {
                 billing_details: {
-                  name: isUserLoggedIn
-                    ? bookingData.userName
-                    : values.guest_full_name,
+                  name: getGuestFullName(values),
                   email: values.email,
                   phone: values.phone,
                   address: { country: "CA" },
@@ -1369,6 +1488,7 @@ const ReviewAndPaymentStep = ({
       clientSecret,
       isExpired,
       appliedGiftCard,
+      getGuestFullName,
     ],
   );
 
@@ -1463,7 +1583,10 @@ const ReviewAndPaymentStep = ({
           <DesktopTimerContainer>{renderTimerContent()}</DesktopTimerContainer>
         </div>
 
-        {option?.title && <OptionLabel>{option.title}</OptionLabel>}
+        {option?.title &&
+          classData?.options?.length > 1 && (
+            <OptionLabel>{option.title}</OptionLabel>
+          )}
 
         <TicketHeaderTitle>{classData?.title}</TicketHeaderTitle>
         <TicketSubHeader>
@@ -1477,81 +1600,91 @@ const ReviewAndPaymentStep = ({
       <TicketDivider />
 
       <TicketBottom>
-        {/* Coupon Section */}
-        {!appliedDiscount ? (
-          <CouponTicketInput>
-            <Input
-              size="middle"
-              placeholder="Promo Code"
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-              bordered={false}
-              onPressEnter={handleApplyCoupon}
-            />
-            <Button
-              size="middle"
-              onClick={handleApplyCoupon}
-              loading={couponLoading}
-              style={{ height: 45 }}
-            >
-              Apply
-            </Button>
-          </CouponTicketInput>
-        ) : (
-          <AppliedCouponTicket>
-            <div className="coupon-info">
-              <Percent size={14} />
-              <span>{appliedDiscount.code.toUpperCase()} Applied</span>
-            </div>
-            <Button
-              type="text"
-              size="small"
-              icon={<X size={14} />}
-              onClick={handleRemoveCoupon}
-            />
-          </AppliedCouponTicket>
-        )}
-
-        {/* Gift Card Section */}
-        {!appliedGiftCard ? (
-          <CouponTicketInput style={{ marginTop: 12 }}>
-            <Input
-              prefix={<Gift size={14} color="#9ca3af" />}
-              placeholder="Gift Card Code"
-              value={giftCardCode}
-              onChange={(e) => setGiftCardCode(e.target.value)}
-              onPressEnter={handleApplyGiftCard}
-              bordered={false}
-            />
-            <Button
-              size="middle"
-              onClick={handleApplyGiftCard}
-              loading={gcLoading}
-              style={{ height: 45 }}
-            >
-              Apply
-            </Button>
-          </CouponTicketInput>
-        ) : (
-          <AppliedCouponTicket
-            style={{
-              marginTop: 12,
-              borderColor: "#8b5cf6",
-              backgroundColor: "#f5f3ff",
-              color: "#7c3aed",
-            }}
+        {/* Promo / Gift card: reveal section to reduce cognitive load */}
+        {!showPromoGiftCard && !appliedDiscount && !appliedGiftCard ? (
+          <PromoRevealButton
+            type="button"
+            onClick={() => setShowPromoGiftCard(true)}
           >
-            <div className="coupon-info">
-              <Gift size={14} />
-              <span>Gift Card ending in {appliedGiftCard.code.slice(-4)}</span>
-            </div>
-            <Button
-              type="text"
-              size="small"
-              icon={<X size={14} />}
-              onClick={handleRemoveGiftCard}
-            />
-          </AppliedCouponTicket>
+            Add promo or gift card
+          </PromoRevealButton>
+        ) : (
+          <>
+            {!appliedDiscount ? (
+              <CouponTicketInput>
+                <Input
+                  size="middle"
+                  placeholder="e.g. SAVE10"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  bordered={false}
+                  onPressEnter={handleApplyCoupon}
+                />
+                <Button
+                  size="middle"
+                  onClick={handleApplyCoupon}
+                  loading={couponLoading}
+                  style={{ height: 45 }}
+                >
+                  Apply
+                </Button>
+              </CouponTicketInput>
+            ) : (
+              <AppliedCouponTicket>
+                <div className="coupon-info">
+                  <Percent size={14} />
+                  <span>{appliedDiscount.code.toUpperCase()} Applied</span>
+                </div>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<X size={14} />}
+                  onClick={handleRemoveCoupon}
+                />
+              </AppliedCouponTicket>
+            )}
+
+            {!appliedGiftCard ? (
+              <CouponTicketInput style={{ marginTop: 12 }}>
+                <Input
+                  prefix={<Gift size={14} color="#9ca3af" />}
+                  placeholder="e.g. XXXX-XXXX-XXXX"
+                  value={giftCardCode}
+                  onChange={(e) => setGiftCardCode(e.target.value)}
+                  onPressEnter={handleApplyGiftCard}
+                  bordered={false}
+                />
+                <Button
+                  size="middle"
+                  onClick={handleApplyGiftCard}
+                  loading={gcLoading}
+                  style={{ height: 45 }}
+                >
+                  Apply
+                </Button>
+              </CouponTicketInput>
+            ) : (
+              <AppliedCouponTicket
+                style={{
+                  marginTop: 12,
+                  borderColor: "#8b5cf6",
+                  backgroundColor: "#f5f3ff",
+                  color: "#7c3aed",
+                }}
+              >
+                <div className="coupon-info">
+                  <Gift size={14} />
+                  <span>Gift Card ending in {appliedGiftCard.code.slice(-4)}</span>
+                </div>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<X size={14} />}
+                  onClick={handleRemoveGiftCard}
+                />
+              </AppliedCouponTicket>
+            )}
+          </>
         )}
 
         <TicketRow>
@@ -1941,14 +2074,6 @@ const ReviewAndPaymentStep = ({
                       }}
                     >
                       <SectionTitle>Contact Info</SectionTitle>
-                      {!isUserLoggedIn && (
-                        <Form.Item
-                          name="guest_full_name"
-                          rules={[{ required: true, message: "Required" }]}
-                        >
-                          <Input placeholder="Full Name" />
-                        </Form.Item>
-                      )}
                       <div
                         style={{
                           display: "grid",
@@ -1959,15 +2084,20 @@ const ReviewAndPaymentStep = ({
                         <Form.Item
                           name="email"
                           rules={[{ required: true, type: "email" }]}
+                          label={<FieldLabel>Email</FieldLabel>}
                         >
                           <Input
-                            placeholder="Email"
+                            placeholder="e.g. jane@example.com"
                             disabled={isUserLoggedIn}
                           />
                         </Form.Item>
-                        <Form.Item name="phone" rules={[{ required: true }]}>
+                        <Form.Item
+                          name="phone"
+                          rules={[{ required: true }]}
+                          label={<FieldLabel>Phone</FieldLabel>}
+                        >
                           <Input
-                            placeholder="Phone"
+                            placeholder="e.g. (555) 123-4567"
                             disabled={isUserLoggedIn}
                           />
                         </Form.Item>
@@ -1989,9 +2119,12 @@ const ReviewAndPaymentStep = ({
                     />
 
                     <div>
-                      <Form.Item name="notes" label="Additional Notes">
+                      <Form.Item
+                        name="notes"
+                        label={<FieldLabel>Additional Notes</FieldLabel>}
+                      >
                         <Input.TextArea
-                          placeholder="Any special requests for the host?"
+                          placeholder="e.g. Any dietary restrictions or special requests"
                           rows={2}
                         />
                       </Form.Item>
