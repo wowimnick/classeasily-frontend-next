@@ -122,7 +122,9 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
   const [paymentAction, setPaymentAction] = useState(null);
   const cancelledIntentRef = useRef(false);
 
-  // Load checkout state from sessionStorage (persists across refresh); redirect only if invalid
+  // Load checkout state from sessionStorage (persists across refresh); redirect only if invalid.
+  // When restoring, we must await cancel of the previous PaymentIntent so spots are released before
+  // the payment step creates a new one (otherwise "not enough spots" race can occur).
   useEffect(() => {
     if (typeof window === "undefined" || !slug) return;
 
@@ -132,47 +134,53 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
       return;
     }
 
-    try {
-      const state = JSON.parse(raw);
-      if (state.classSlug !== slug) {
-        router.replace(`/classes/${slug}`);
-        return;
-      }
+    let cancelled = false;
 
-      const hasSlots =
-        state.bookingData?.selectedSlots?.length > 0 &&
-        state.bookingData?.selectedOption;
-      if (!hasSlots) {
-        router.replace(`/classes/${slug}`);
-        return;
-      }
+    const load = async () => {
+      try {
+        const state = JSON.parse(raw);
+        if (state.classSlug !== slug) {
+          router.replace(`/classes/${slug}`);
+          return;
+        }
 
-      // Never rehydrate PaymentIntent: it may be succeeded, canceled, or expired (terminal state).
-      // Always create a fresh PaymentIntent when loading checkout so Elements never gets a stale client_secret.
-      const { paymentIntentId, clientSecret, ...restBookingData } =
-        state.bookingData || {};
-      // Release the previous session's hold so spots aren't left held after refresh.
-      if (paymentIntentId) {
-        paymentService
-          .cancelPaymentIntent(paymentIntentId)
-          .catch(() => {});
+        const hasSlots =
+          state.bookingData?.selectedSlots?.length > 0 &&
+          state.bookingData?.selectedOption;
+        if (!hasSlots) {
+          router.replace(`/classes/${slug}`);
+          return;
+        }
+
+        const { paymentIntentId, clientSecret, ...restBookingData } =
+          state.bookingData || {};
+        // Release the previous session's hold before we render the payment step.
+        // Await so spots are freed before createPaymentIntent runs (avoids "not enough spots" race).
+        if (paymentIntentId && !cancelled) {
+          await paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
+        }
+        if (cancelled) return;
+
+        setBookingData(restBookingData);
+        if (state.classData) {
+          setClassData(state.classData);
+        } else if (initialClassData) {
+          setClassData(initialClassData);
+        } else {
+          classService
+            .fetchClassDetail(slug)
+            .then((data) => !cancelled && setClassData(data))
+            .catch(() => !cancelled && router.replace(`/classes/${slug}`));
+        }
+      } catch {
+        if (!cancelled) router.replace(`/classes/${slug}`);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setBookingData(restBookingData);
-      if (state.classData) {
-        setClassData(state.classData);
-      } else if (initialClassData) {
-        setClassData(initialClassData);
-      } else {
-        classService
-          .fetchClassDetail(slug)
-          .then((data) => setClassData(data))
-          .catch(() => router.replace(`/classes/${slug}`));
-      }
-    } catch {
-      router.replace(`/classes/${slug}`);
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    load();
+    return () => { cancelled = true; };
   }, [slug, initialClassData, router]);
 
   const clearIntentFromStorage = useCallback(() => {

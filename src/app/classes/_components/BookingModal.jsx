@@ -387,9 +387,7 @@ const BookingModal = ({
 
       const participantDetails = Array.from(
         { length: validInitialParticipantCount },
-        (_, i) => ({
-          name: i === 0 && bookerName ? bookerName : "",
-        }),
+        () => ({ name: bookerName || "" }),
       );
 
       let initialPrice = 0;
@@ -596,22 +594,15 @@ const BookingModal = ({
           ) {
             newState.participant_details = data.participant_details;
           } else {
-            const currentDetails = prev.participant_details || [];
-            let bookerNameForPrefill = prev.userName;
-            if (!bookerNameForPrefill && currentUserFromRedux) {
-              bookerNameForPrefill = `${
-                currentUserFromRedux.first_name || ""
-              } ${currentUserFromRedux.last_name || ""}`.trim();
-            }
+            const bookerNameForPrefill =
+              prev.participant_details?.[0]?.name ||
+              prev.userName ||
+              (currentUserFromRedux
+                ? `${currentUserFromRedux.first_name || ""} ${currentUserFromRedux.last_name || ""}`.trim()
+                : "");
             newState.participant_details = Array.from(
               { length: newCount },
-              (_, i) => {
-                let name = currentDetails[i]?.name || "";
-                if (i === 0 && bookerNameForPrefill && !name) {
-                  name = bookerNameForPrefill;
-                }
-                return { name: name || "" };
-              },
+              () => ({ name: bookerNameForPrefill || "" }),
             );
           }
         } else if (

@@ -539,11 +539,9 @@ const ConfirmationStep = ({
     const count = (participants ?? (Array.isArray(participant_details) ? participant_details.length : 0)) || 1;
     if (!count) return null;
 
-    const list = Array.isArray(participant_details) ? participant_details : [];
-    const displayNames = list
-      .map((d) => (d && d.name != null ? String(d.name).trim() : null))
-      .filter(Boolean);
-    const hasNames = displayNames.length > 0;
+    const bookerName = Array.isArray(participant_details)?.[0]?.name != null
+      ? String(participant_details[0].name).trim()
+      : null;
 
     return (
       <DetailRow>
@@ -553,12 +551,10 @@ const ConfirmationStep = ({
             {count} Participant{count > 1 ? "s" : ""}
           </strong>
           <ParticipantList>
-            {hasNames ? (
+            {bookerName ? (
               <>
-                {displayNames.slice(0, 5).map((name, index) => (
-                  <li key={index}>{name}</li>
-                ))}
-                {count > 5 && <li>...and {count - 5} more</li>}
+                <li>Booked by {bookerName}</li>
+                {count > 1 && <li>{count} spots</li>}
               </>
             ) : (
               <li>Guest{count > 1 ? "s" : ""}</li>
