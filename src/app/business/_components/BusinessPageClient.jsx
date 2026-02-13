@@ -7,6 +7,7 @@ import dynamic from "next/dynamic"; // Import dynamic
 import ExploreHeader from "@/components/explore/ExploreHeader.jsx";
 import FooterClient from "@/components/homepage/FooterClient";
 import BusinessHero from "./BusinessHero";
+import BusinessUpcomingClasses from "./BusinessUpcomingClasses";
 import BusinessNavigation from "./BusinessNavigation";
 import ClassesTab from "./ClassesTab";
 import ReviewsTab from "./ReviewsTab";
@@ -143,6 +144,12 @@ const BusinessPageClient = ({ initialData, slug }) => {
       ) : (
         <BusinessHeroSkeleton />
       )}
+
+      <BusinessUpcomingClasses
+        classes={classes}
+        businessName={businessName}
+        handleFavoriteChange={handleFavoriteChange}
+      />
 
       <BusinessNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
 

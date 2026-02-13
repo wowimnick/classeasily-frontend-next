@@ -15,15 +15,15 @@ const SectionBlock = styled.section`
 `;
 
 const SectionHeader = styled.div`
-  margin-bottom: 2.5rem;
+  margin-bottom: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 2rem;
+  gap: 1rem;
 
   @media (max-width: 768px) {
-    margin-bottom: 2rem;
-    gap: 1rem;
+    margin-bottom: 0.75rem;
+    gap: 0.75rem;
   }
 `;
 
@@ -31,7 +31,7 @@ const TitleGroup = styled.div`
   h2 {
     font-size: 1.5rem;
     font-weight: 700;
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 0.25rem 0;
     color: #111;
     letter-spacing: -0.01em;
   }
@@ -40,6 +40,7 @@ const TitleGroup = styled.div`
     color: #666;
     font-size: 0.9rem;
     font-weight: 500;
+    margin: 0;
   }
 
   @media (max-width: 768px) {
@@ -56,7 +57,7 @@ const TitleGroup = styled.div`
 const ClassGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2rem;
+  gap: 1rem;
 
   @media (max-width: 768px) {
     display: none;
@@ -82,9 +83,8 @@ const EmblaViewport = styled.div`
 
 const EmblaContainer = styled.div`
   display: flex;
-  gap: 16px;
-  padding: 1rem 0.5rem;
-  margin: 0 -0.5rem;
+  gap: 10px;
+  padding: 0.25rem 0;
 
   .embla__slide {
     flex: 0 0 auto;

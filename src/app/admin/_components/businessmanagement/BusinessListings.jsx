@@ -43,6 +43,9 @@ import {
   Hash,
   ShieldAlert,
   BookOpen,
+  Upload,
+  FileUp,
+  Building2,
 } from "lucide-react";
 import { businessManagementService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
@@ -885,6 +888,19 @@ const DetailDrawerModal = ({
   return ReactDOM.createPortal(drawerComponent, document.body);
 };
 
+const ImportLogPre = styled.pre`
+  margin: 0;
+  padding: 12px;
+  background: #1e293b;
+  color: #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  max-height: 280px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+`;
+
 const BusinessListings = () => {
   const [businesses, setBusinesses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -892,6 +908,14 @@ const BusinessListings = () => {
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [isDetailDrawerVisible, setIsDetailDrawerVisible] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
+
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importBusinesses, setImportBusinesses] = useState([]);
+  const [importBusinessesLoading, setImportBusinessesLoading] = useState(false);
+  const [importSelectedBusinessId, setImportSelectedBusinessId] = useState(null);
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   const [filterParams, setFilterParams] = useState({
     search: "",
@@ -1065,6 +1089,66 @@ const BusinessListings = () => {
   const refreshData = () => {
     fetchBusinesses(filterParams, { ...pagination, current: 1 }, sortedInfo);
   };
+
+  useEffect(() => {
+    if (importModalOpen && importBusinesses.length === 0) {
+      setImportBusinessesLoading(true);
+      businessManagementService
+        .getBusinesses({ page_size: 500 })
+        .then((res) => {
+          if (res.success && res.data) {
+            const list = res.data.results || res.data;
+            setImportBusinesses(Array.isArray(list) ? list : []);
+            if (list.length && !importSelectedBusinessId)
+              setImportSelectedBusinessId(list[0].businessId ?? list[0].id);
+          }
+        })
+        .finally(() => setImportBusinessesLoading(false));
+    }
+  }, [importModalOpen]);
+
+  const handleImportFileChange = (e) => {
+    const f = e.target.files?.[0];
+    setImportFile(f || null);
+    setImportResult(null);
+  };
+
+  const handleRunImportReviews = async () => {
+    if (!importSelectedBusinessId) {
+      message.error("Please select a business.");
+      return;
+    }
+    if (!importFile) {
+      message.error("Please choose a CSV or JSON file.");
+      return;
+    }
+    const ext = (importFile.name || "").toLowerCase();
+    if (!ext.endsWith(".csv") && !ext.endsWith(".json")) {
+      message.error("File must be .csv or .json");
+      return;
+    }
+    setImporting(true);
+    setImportResult(null);
+    const res = await businessManagementService.importGoogleReviews(
+      importSelectedBusinessId,
+      importFile
+    );
+    setImporting(false);
+    setImportResult(res);
+    if (res.success) {
+      message.success("Import completed.");
+      refreshData();
+    } else {
+      message.error(res.error || "Import failed.");
+    }
+  };
+
+  const importBusinessOptions = importBusinesses.map((b) => ({
+    value: b.businessId ?? b.id,
+    label: b.businessName
+      ? `${b.businessName} (ID: ${b.businessId ?? b.id})`
+      : `Business ${b.businessId ?? b.id}`,
+  }));
 
   const columns = [
     {
@@ -1242,6 +1326,12 @@ const BusinessListings = () => {
           </div>
           <ActionButtonsContainer>
             <RefreshButton
+              icon={<Upload size={18} />}
+              onClick={() => setImportModalOpen(true)}
+            >
+              {!isMobile && "Import Google Reviews"}
+            </RefreshButton>
+            <RefreshButton
               icon={
                 <LordIcon
                   src="https://cdn.lordicon.com/valwmkhs.json"
@@ -1370,6 +1460,114 @@ const BusinessListings = () => {
             handleFeatureBusiness,
           }}
         />
+
+        <Modal
+          title={
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Upload size={20} />
+              Import Google Reviews
+            </span>
+          }
+          open={importModalOpen}
+          onCancel={() => {
+            setImportModalOpen(false);
+            setImportResult(null);
+            setImportFile(null);
+            setImportBusinesses([]);
+          }}
+          footer={null}
+          width={560}
+          destroyOnClose
+        >
+          <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
+            Select a business and upload a CSV or JSON file. Runs the same logic
+            as the <code>import_google_reviews</code> management command. Runs on
+            the <strong>main server thread</strong> (not Celery); large files may
+            take a minute.
+          </Text>
+          <div style={{ marginBottom: 16 }}>
+            <Text strong style={{ display: "block", marginBottom: 6 }}>
+              <Building2 size={14} style={{ verticalAlign: "middle", marginRight: 6 }} />
+              Business
+            </Text>
+            <Select
+              placeholder="Select a business"
+              value={importSelectedBusinessId ?? undefined}
+              onChange={setImportSelectedBusinessId}
+              options={importBusinessOptions}
+              loading={importBusinessesLoading}
+              style={{ width: "100%" }}
+              showSearch
+              optionFilterProp="label"
+              filterOption={(input, opt) =>
+                (opt?.label ?? "").toLowerCase().includes(input.toLowerCase())
+              }
+            />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <Text strong style={{ display: "block", marginBottom: 6 }}>
+              <FileUp size={14} style={{ verticalAlign: "middle", marginRight: 6 }} />
+              File (CSV or JSON)
+            </Text>
+            <input
+              type="file"
+              accept=".csv,.json"
+              onChange={handleImportFileChange}
+              disabled={importing}
+              style={{
+                padding: 8,
+                border: "1px dashed #cbd5e1",
+                borderRadius: 8,
+                background: "#f8fafc",
+                width: "100%",
+                fontSize: 14,
+              }}
+            />
+            {importFile && (
+              <Text type="secondary" style={{ display: "block", marginTop: 6 }}>
+                {importFile.name} ({(importFile.size / 1024).toFixed(1)} KB)
+              </Text>
+            )}
+          </div>
+          <Button
+            type="primary"
+            icon={<Upload size={18} />}
+            onClick={handleRunImportReviews}
+            loading={importing}
+            disabled={!importSelectedBusinessId || !importFile}
+          >
+            Run import
+          </Button>
+          {(importing || importResult) && (
+            <div style={{ marginTop: 20 }}>
+              <Text strong style={{ display: "block", marginBottom: 8 }}>
+                {importing ? "Running import…" : "Import output"}
+              </Text>
+              {importing ? (
+                <ImportLogPre>
+                  Running import_google_reviews on the server… This may take a
+                  minute for large files. Do not close this modal.
+                </ImportLogPre>
+              ) : importResult?.data?.output ? (
+                <ImportLogPre>{importResult.data.output}</ImportLogPre>
+              ) : importResult?.success ? (
+                <Alert
+                  type="success"
+                  message={importResult.data?.message || "Import completed."}
+                  showIcon
+                  style={{ marginTop: 8 }}
+                />
+              ) : importResult ? (
+                <Alert
+                  type="error"
+                  message={importResult.error}
+                  showIcon
+                  style={{ marginTop: 8 }}
+                />
+              ) : null}
+            </div>
+          )}
+        </Modal>
       </DashboardWrapper>
     </ConfigProvider>
   );
