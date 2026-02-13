@@ -163,7 +163,7 @@ export default function BookingStatusClient() {
 
         setStatus("failed");
         setErrorMessage(
-          data?.message || "Booking confirmation is still processing. Please check your email or return to the class page.";
+          data?.message || "Booking confirmation is still processing. Please check your email or return to the class page."
         );
       } catch (err) {
         if (process.env.NODE_ENV === "development") {
