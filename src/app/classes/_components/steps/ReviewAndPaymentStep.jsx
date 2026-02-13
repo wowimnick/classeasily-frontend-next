@@ -289,6 +289,15 @@ const MobileSummaryInner = styled.div`
   padding: 20px;
 `;
 
+/* Promo / Gift card section visible only on mobile (desktop has it in the sidebar ticket) */
+const MobilePromoSection = styled.div`
+  display: block;
+  margin-bottom: 16px;
+  @media (min-width: 969px) {
+    display: none;
+  }
+`;
+
 const FormCard = styled.div`
   background: white;
   border-radius: 16px;
@@ -993,7 +1002,7 @@ const ReviewAndPaymentStep = ({
     () => bookingData?.clientSecret ?? null
   );
   const [isFormValid, setIsFormValid] = useState(false);
-  const [showMobileSummary, setShowMobileSummary] = useState(false);
+  const [showMobileSummary, setShowMobileSummary] = useState(true);
 
   useEffect(() => {
     const fromStorage = bookingData?.clientSecret;
@@ -1959,30 +1968,169 @@ const ReviewAndPaymentStep = ({
     );
   };
 
-  const renderMobileSimpleSummary = () => (
-    <>
-      <div style={{ marginBottom: 12 }}>
-        <strong>{classData?.title}</strong>
-        <div style={{ fontSize: 13, color: "#6b7280" }}>
-          {selectedSlot && formatNaiveDate(selectedSlot.date, "MMM d, yyyy")} •{" "}
-          {participantsCount} Guest{participantsCount > 1 && "s"}
+  const renderMobileSimpleSummary = () => {
+    const slot = selectedSlot;
+    return (
+      <>
+        <div style={{ marginBottom: 12 }}>
+          <strong>{classData?.title}</strong>
+          {classData?.options?.length > 1 && option?.title && (
+            <OptionLabel style={{ marginTop: 6, display: "inline-block" }}>
+              {option.title}
+            </OptionLabel>
+          )}
         </div>
-      </div>
-      <TicketRow>
-        <span>Total</span>
-        <span>
-          {finalTotal === 0 ? (
-            "Free"
-          ) : (
+
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, fontSize: 13, color: "#6b7280" }}>
+          <MapPin size={14} />
+          <span>{classData?.business_name || "Host Location"}</span>
+        </div>
+
+        {slot && (
+          <SummaryMetaBlock style={{ marginBottom: 16 }}>
+            <TicketMetaItem>
+              <div className="icon-box">
+                <CalendarDays />
+              </div>
+              <div className="text-content">
+                <span className="label">
+                  {slot.isCourse ? "Course Dates" : "Date"}
+                </span>
+                <span className="value">
+                  {slot.isCourse
+                    ? `${formatNaiveDate(slot.date, "MMM d")} - ${formatNaiveDate(slot.end_date, "MMM d, yyyy")}`
+                    : formatNaiveDate(slot.date, "EEEE, MMMM d, yyyy")}
+                </span>
+              </div>
+            </TicketMetaItem>
+            <TicketMetaItem>
+              <div className="icon-box">
+                <Clock />
+              </div>
+              <div className="text-content">
+                <span className="label">Time</span>
+                <span className="value">
+                  {slot.isCourse
+                    ? `Every ${slot.days.join(", ")} at ${formatTimeRangeForDisplay(
+                        slot.date,
+                        slot.time,
+                        slot.duration,
+                        businessTimeZone,
+                        userTimeZone,
+                      )}`
+                    : `${formatTimeRangeForDisplay(
+                        slot.date,
+                        slot.time,
+                        slot.duration,
+                        businessTimeZone,
+                        userTimeZone,
+                      )} (${getDurationText(slot.duration)})`}
+                </span>
+              </div>
+            </TicketMetaItem>
+          </SummaryMetaBlock>
+        )}
+
+        <TicketRow>
+          <span>
+            {participantsCount} {participantsCount > 1 ? "Guests" : "Guest"}
+          </span>
+          <span>
+            {subtotal === 0 ? (
+              "Free"
+            ) : (
+              <NumberFlow
+                value={subtotal}
+                format={{ style: "currency", currency: "CAD" }}
+              />
+            )}
+          </span>
+        </TicketRow>
+
+        {(appliedDiscount || activeGlobalDiscount) && discountAmount > 0 && (
+          <TicketRow style={{ color: "#059669" }}>
+            <span>
+              Discount
+              {appliedDiscount && ` (${appliedDiscount.code})`}
+              {activeGlobalDiscount &&
+                (appliedDiscount
+                  ? ` · ${activeGlobalDiscount.name}`
+                  : ` (${activeGlobalDiscount.name})`)}
+            </span>
+            <span>
+              <NumberFlow
+                value={-discountAmount}
+                format={{ style: "currency", currency: "CAD" }}
+              />
+            </span>
+          </TicketRow>
+        )}
+
+        {appliedGiftCard && (
+          <TicketRow style={{ color: "#7c3aed" }}>
+            <span>Gift Card</span>
+            <span>
+              -{" "}
+              <NumberFlow
+                value={gcDeduction}
+                format={{ style: "currency", currency: "CAD" }}
+              />
+            </span>
+          </TicketRow>
+        )}
+
+        <TicketRow>
+          <span>HST (13%)</span>
+          <span>
             <NumberFlow
-              value={finalTotal}
+              value={taxAmount}
               format={{ style: "currency", currency: "CAD" }}
             />
+          </span>
+        </TicketRow>
+
+        <TicketTotalRow>
+          <span>Total</span>
+          <span>
+            {finalTotal === 0 ? (
+              "Free"
+            ) : (
+              <NumberFlow
+                value={finalTotal}
+                format={{ style: "currency", currency: "CAD" }}
+              />
+            )}
+          </span>
+        </TicketTotalRow>
+
+        {cancellationPolicyText && (
+          <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid #e5e7eb" }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+              <Shield size={16} style={{ color: "#6b7280", flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <div style={{ fontSize: 11, textTransform: "uppercase", color: "#9ca3af", fontWeight: 700, letterSpacing: "0.5px", marginBottom: 4 }}>Cancellation Policy</div>
+                <div style={{ fontSize: 13, color: "#4b5563", lineHeight: 1.5 }}>{cancellationPolicyText}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#15803d" }}>
+          {isFree ? (
+            <>
+              <CheckCircle size={16} />
+              <span>This booking is fully covered. No payment required.</span>
+            </>
+          ) : (
+            <>
+              <Lock size={16} />
+              <span>Your payment is encrypted and processed securely.</span>
+            </>
           )}
-        </span>
-      </TicketRow>
-    </>
-  );
+        </div>
+      </>
+    );
+  };
 
   return (
     <ConfigProvider theme={appTheme}>
@@ -2131,6 +2279,94 @@ const ReviewAndPaymentStep = ({
                   )}
                 </AnimatePresence>
               </MobileSummaryContainer>
+
+              <MobilePromoSection>
+                {!showPromoGiftCard && !appliedDiscount && !appliedGiftCard ? (
+                  <PromoRevealButton
+                    type="button"
+                    onClick={() => setShowPromoGiftCard(true)}
+                  >
+                    Add promo or gift card
+                  </PromoRevealButton>
+                ) : (
+                  <>
+                    {!appliedDiscount ? (
+                      <CouponTicketInput>
+                        <Input
+                          size="middle"
+                          placeholder="e.g. SAVE10"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                          bordered={false}
+                          onPressEnter={handleApplyCoupon}
+                        />
+                        <Button
+                          size="middle"
+                          onClick={handleApplyCoupon}
+                          loading={couponLoading}
+                          style={{ height: 45 }}
+                        >
+                          Apply
+                        </Button>
+                      </CouponTicketInput>
+                    ) : (
+                      <AppliedCouponTicket>
+                        <div className="coupon-info">
+                          <Percent size={14} />
+                          <span>{appliedDiscount.code.toUpperCase()} Applied</span>
+                        </div>
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<X size={14} />}
+                          onClick={handleRemoveCoupon}
+                        />
+                      </AppliedCouponTicket>
+                    )}
+
+                    {!appliedGiftCard ? (
+                      <CouponTicketInput style={{ marginTop: 12 }}>
+                        <Input
+                          prefix={<Gift size={14} color="#9ca3af" />}
+                          placeholder="e.g. XXXX-XXXX-XXXX"
+                          value={giftCardCode}
+                          onChange={(e) => setGiftCardCode(e.target.value)}
+                          onPressEnter={handleApplyGiftCard}
+                          bordered={false}
+                        />
+                        <Button
+                          size="middle"
+                          onClick={handleApplyGiftCard}
+                          loading={gcLoading}
+                          style={{ height: 45 }}
+                        >
+                          Apply
+                        </Button>
+                      </CouponTicketInput>
+                    ) : (
+                      <AppliedCouponTicket
+                        style={{
+                          marginTop: 12,
+                          borderColor: "#8b5cf6",
+                          backgroundColor: "#f5f3ff",
+                          color: "#7c3aed",
+                        }}
+                      >
+                        <div className="coupon-info">
+                          <Gift size={14} />
+                          <span>Gift Card ending in {appliedGiftCard.code.slice(-4)}</span>
+                        </div>
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<X size={14} />}
+                          onClick={handleRemoveGiftCard}
+                        />
+                      </AppliedCouponTicket>
+                    )}
+                  </>
+                )}
+              </MobilePromoSection>
 
               <FormCard>
                 <fieldset
