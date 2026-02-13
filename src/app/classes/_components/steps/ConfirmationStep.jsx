@@ -536,7 +536,7 @@ const ConfirmationStep = ({
 
   const renderParticipantInfo = () => {
     const { participants, participant_details } = bookingData;
-    const count = participants ?? (Array.isArray(participant_details) ? participant_details.length : 0) || 1;
+    const count = (participants ?? (Array.isArray(participant_details) ? participant_details.length : 0)) || 1;
     if (!count) return null;
 
     const list = Array.isArray(participant_details) ? participant_details : [];
