@@ -708,7 +708,6 @@ const ExpressCheckoutButton = ({
   onPaymentComplete,
   paymentService,
   bookingData,
-  isFormValid,
   form,
   getGuestFullName,
 }) => {
@@ -738,9 +737,9 @@ const ExpressCheckoutButton = ({
 
     pr.on("paymentmethod", async (ev) => {
       try {
-        if (!form || !isFormValid) {
+        if (!form) {
           ev.complete("fail");
-          message.error("Please enter contact details and all participant names above first.");
+          message.error("Please try again.");
           return;
         }
 
@@ -817,31 +816,11 @@ const ExpressCheckoutButton = ({
     onPaymentComplete,
     paymentService,
     bookingData,
-    isFormValid,
     form,
     getGuestFullName,
   ]);
 
   if (!paymentRequest) return null;
-
-  if (!isFormValid) {
-    return (
-      <div
-        style={{
-          marginBottom: 24,
-          padding: "14px 16px",
-          background: "#f9fafb",
-          borderRadius: 8,
-          border: "1px solid #e5e7eb",
-          fontSize: 13,
-          color: "#6b7280",
-          lineHeight: 1.45,
-        }}
-      >
-        Enter contact details and all participant names above, then you can pay with Apple Pay or Google Pay below.
-      </div>
-    );
-  }
 
   return (
     <div style={{ marginBottom: 24 }}>
@@ -937,19 +916,34 @@ const PaymentFormContent = ({
             paddingTop: 24,
           }}
         >
-          <SectionTitle>Payment Method</SectionTitle>
-          <ExpressCheckoutButton
-            finalTotal={finalTotal}
-            clientSecret={clientSecret}
-            onPaymentComplete={onPaymentComplete}
-            paymentService={paymentService}
-            bookingData={bookingData}
-            isFormValid={isFormValid}
-            form={form}
-            getGuestFullName={getGuestFullName}
-          />
-          <PaymentElementWrapper>
-            {mountPaymentElement && (
+          {!isFormValid ? (
+            <div
+              style={{
+                padding: "14px 16px",
+                background: "#f9fafb",
+                borderRadius: 8,
+                border: "1px solid #e5e7eb",
+                fontSize: 13,
+                color: "#6b7280",
+                lineHeight: 1.45,
+              }}
+            >
+              Please enter your contact details and all participant names above to continue to payment.
+            </div>
+          ) : (
+            <>
+              <SectionTitle>Payment Method</SectionTitle>
+              <ExpressCheckoutButton
+                finalTotal={finalTotal}
+                clientSecret={clientSecret}
+                onPaymentComplete={onPaymentComplete}
+                paymentService={paymentService}
+                bookingData={bookingData}
+                form={form}
+                getGuestFullName={getGuestFullName}
+              />
+              <PaymentElementWrapper>
+                {mountPaymentElement && (
               <PaymentElement
                 options={{
                   layout: "tabs",
@@ -975,7 +969,9 @@ const PaymentFormContent = ({
                 onReady={() => setIsReady(true)}
               />
             )}
-          </PaymentElementWrapper>
+              </PaymentElementWrapper>
+            </>
+          )}
         </div>
       )}
     </>
