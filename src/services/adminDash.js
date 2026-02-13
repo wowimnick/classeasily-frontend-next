@@ -52,6 +52,39 @@ export const businessManagementService = {
       };
     }
   },
+
+  /**
+   * Import Google reviews for a business (upload CSV or JSON and run import_google_reviews).
+   * @param {number} businessId - Business ID
+   * @param {File} file - CSV or JSON file
+   */
+  importGoogleReviews: async (businessId, file) => {
+    try {
+      const formData = new FormData();
+      formData.append("business_id", String(businessId));
+      formData.append("file", file);
+      const response = await axiosInstance.post(
+        "/admin/import-google-reviews/",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          timeout: 300000,
+        }
+      );
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error) {
+      console.error("Error importing Google reviews:", error);
+      return {
+        success: false,
+        error: error.response?.data?.error || error.message || "Import failed",
+        data: error.response?.data,
+      };
+    }
+  },
+
   getGeographicalData: async () => {
     try {
       const response = await axiosInstance.get("/admin/geographical-data/");

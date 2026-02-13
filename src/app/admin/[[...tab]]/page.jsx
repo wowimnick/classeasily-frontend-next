@@ -62,6 +62,10 @@ const GlobalDiscountsManagement = dynamic(
   () => import("../_components/global-discounts/GlobalDiscountsManagement"),
   { ssr: false }
 );
+const ImportGoogleReviews = dynamic(
+  () => import("../_components/import-google-reviews/ImportGoogleReviews"),
+  { ssr: false }
+);
 
 const PageContainer = styled.div`
   display: flex;
@@ -104,7 +108,7 @@ export default function AdminPage() {
     if (permissions.length === 0) return;
     const allowedKeys = [
       "users", "roles", "audit",
-      "business-overview", "business-listings", "business-verification",
+      "business-overview", "business-listings", "business-verification", "import-google-reviews",
       "class-listings", "class-reviews", "class-categories",
       "all-bookings", "payouts", "global-discounts", "blog", "support",
     ];
@@ -120,6 +124,7 @@ export default function AdminPage() {
       "business-overview": "quickstart.view_business_metrics",
       "business-listings": "quickstart.view_businessinfo",
       "business-verification": "quickstart.view_all_verificationrequests",
+      "import-google-reviews": "quickstart.view_businessinfo",
       "class-listings": "quickstart.view_classesmain",
       "class-reviews": "quickstart.view_reviews",
       "class-categories": "quickstart.view_classcategory",
@@ -154,6 +159,8 @@ export default function AdminPage() {
         return <BusinessManagement />;
       case "business-verification":
         return <UserAccessControl />;
+      case "import-google-reviews":
+        return <ImportGoogleReviews />;
       case "class-listings":
         return <ClassListings />;
       case "class-categories":

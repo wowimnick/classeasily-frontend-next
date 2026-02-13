@@ -397,6 +397,7 @@ export const menuItems = [
       { key: "business-overview", label: "Business Overview" },
       { key: "business-listings", label: "Business Listings" },
       { key: "business-verification", label: "Business Verification" },
+      { key: "import-google-reviews", label: "Import Google Reviews" },
     ],
   },
   {
@@ -554,6 +555,7 @@ const menuItemPermissions = {
   "business-overview": "quickstart.view_business_metrics",
   "business-listings": "quickstart.view_businessinfo",
   "business-verification": "quickstart.view_all_verificationrequests",
+  "import-google-reviews": "quickstart.view_businessinfo",
   "class-listings": "quickstart.view_classesmain",
   "class-reviews": "quickstart.view_reviews",
   "class-categories": "quickstart.view_classcategory",
