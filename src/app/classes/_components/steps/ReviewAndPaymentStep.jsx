@@ -860,6 +860,7 @@ const PaymentFormContent = ({
   clientSecret,
   onPaymentAction,
   onPaymentComplete,
+  onPaymentLoadError,
   paymentService,
   bookingData,
   getGuestFullName,
@@ -868,6 +869,19 @@ const PaymentFormContent = ({
   const elements = useElements();
   const [isReady, setIsReady] = useState(false);
   const [mountPaymentElement, setMountPaymentElement] = useState(false);
+
+  const handleLoadError = useCallback(
+    (event) => {
+      const msg = event?.error?.message || "";
+      const isTerminalState =
+        msg.includes("terminal state") ||
+        msg.includes("cannot be used to initialize Elements");
+      if (isTerminalState && onPaymentLoadError) {
+        onPaymentLoadError();
+      }
+    },
+    [onPaymentLoadError]
+  );
 
   useEffect(() => {
     if (!clientSecret || isFree) {
@@ -967,6 +981,7 @@ const PaymentFormContent = ({
                   },
                 }}
                 onReady={() => setIsReady(true)}
+                onLoadError={handleLoadError}
               />
             )}
               </PaymentElementWrapper>
@@ -1322,6 +1337,27 @@ const ReviewAndPaymentStep = ({
     clientSecret,
     isFree,
     fetchPaymentIntent,
+  ]);
+
+  // When PaymentElement fires loaderror (e.g. PaymentIntent in terminal state after refresh/expiry),
+  // release the old intent's hold, then clear and fetch a new PaymentIntent so Elements can initialize correctly.
+  const handlePaymentElementLoadError = useCallback(() => {
+    const paymentIntentId =
+      clientSecret?.split("_secret_")[0] || bookingData?.paymentIntentId;
+    if (paymentIntentId) {
+      paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
+    }
+    setClientSecret(null);
+    onUpdateBookingData?.({ clientSecret: null, paymentIntentId: null });
+    const discountId = appliedDiscount?.id ?? null;
+    fetchPaymentIntent(discountId);
+  }, [
+    clientSecret,
+    bookingData?.paymentIntentId,
+    onUpdateBookingData,
+    appliedDiscount?.id,
+    fetchPaymentIntent,
+    paymentService,
   ]);
 
   // --- COUPON HANDLERS ---
@@ -2161,6 +2197,7 @@ const ReviewAndPaymentStep = ({
                       clientSecret={clientSecret}
                       onPaymentAction={onPaymentAction}
                       onPaymentComplete={onPaymentComplete}
+                      onPaymentLoadError={handlePaymentElementLoadError}
                       paymentService={paymentService}
                       bookingData={bookingData}
                       getGuestFullName={getGuestFullName}

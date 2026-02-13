@@ -147,7 +147,17 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
         return;
       }
 
-      setBookingData(state.bookingData);
+      // Never rehydrate PaymentIntent: it may be succeeded, canceled, or expired (terminal state).
+      // Always create a fresh PaymentIntent when loading checkout so Elements never gets a stale client_secret.
+      const { paymentIntentId, clientSecret, ...restBookingData } =
+        state.bookingData || {};
+      // Release the previous session's hold so spots aren't left held after refresh.
+      if (paymentIntentId) {
+        paymentService
+          .cancelPaymentIntent(paymentIntentId)
+          .catch(() => {});
+      }
+      setBookingData(restBookingData);
       if (state.classData) {
         setClassData(state.classData);
       } else if (initialClassData) {
