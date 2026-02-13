@@ -290,16 +290,6 @@ const ConfirmationStep = ({
   onBookingDetailsFetched,
   onRetryBooking,
 }) => {
-  // --- LOGGING ---
-  console.error("[ConfirmationStep Debug] Props Received:", {
-    bookingId: propBookingId,
-    bookingDataId: bookingData?.bookingId,
-    propReference: propReference,
-    reference: bookingData?.user_facing_reference,
-    participants: bookingData?.participant_details,
-    paymentIntentId
-  });
-
   const [fetchedReference, setFetchedReference] = useState(null);
   const [isPolling, setIsPolling] = useState(false);
   const [pollingError, setPollingError] = useState(null);
@@ -546,26 +536,29 @@ const ConfirmationStep = ({
 
   const renderParticipantInfo = () => {
     const { participants, participant_details } = bookingData;
-    if (!participants) return null;
+    const count = (participants ?? (Array.isArray(participant_details) ? participant_details.length : 0)) || 1;
+    if (!count) return null;
 
-    const displayNames =
-      participant_details
-        ?.map((d) => d.name)
-        .filter(Boolean)
-        .slice(0, 5) || [];
+    const bookerName = Array.isArray(participant_details)?.[0]?.name != null
+      ? String(participant_details[0].name).trim()
+      : null;
 
     return (
       <DetailRow>
         <Users />
         <div>
           <strong>
-            {participants} Participant{participants > 1 ? "s" : ""}
+            {count} Participant{count > 1 ? "s" : ""}
           </strong>
           <ParticipantList>
-            {displayNames.map((name, index) => (
-              <li key={index}>{name}</li>
-            ))}
-            {participants > 5 && <li>...and {participants - 5} more</li>}
+            {bookerName ? (
+              <>
+                <li>Booked by {bookerName}</li>
+                {count > 1 && <li>{count} spots</li>}
+              </>
+            ) : (
+              <li>Guest{count > 1 ? "s" : ""}</li>
+            )}
           </ParticipantList>
         </div>
       </DetailRow>

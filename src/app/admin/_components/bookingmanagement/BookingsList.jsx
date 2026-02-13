@@ -1066,32 +1066,17 @@ const DetailDrawerContent = ({
               </InfoGrid>
             </InfoGroup>
 
-            {(booking.participant_details?.length > 0 || (booking.participants != null && booking.participants > 0)) && (
+            {(booking.participants != null && booking.participants > 0) && (
               <InfoGroup>
                 <InfoGroupTitle>
                   <Users />
-                  Participant{booking.participants !== 1 ? "s" : ""} Details
+                  Participant{booking.participants !== 1 ? "s" : ""}
                 </InfoGroupTitle>
-                {booking.participant_details?.length > 0 ? (
-                  <List
-                    dataSource={booking.participant_details}
-                    renderItem={(item, index) => (
-                      <ParticipantListItem>
-                        <List.Item.Meta
-                          avatar={<Avatar icon={<UserCircle2 size={18} />} />}
-                          title={item.name || "—"}
-                          description={
-                            item.email || (index === 0 ? "(Same as booker)" : "—")
-                          }
-                        />
-                      </ParticipantListItem>
-                    )}
-                  />
-                ) : (
-                  <InfoValue>
-                    {booking.participants} participant{booking.participants !== 1 ? "s" : ""} (names not stored)
-                  </InfoValue>
-                )}
+                <InfoValue>
+                  {booking.participant_details?.[0]?.name
+                    ? `Booked by ${booking.participant_details[0].name} · ${booking.participants} spot${booking.participants !== 1 ? "s" : ""}`
+                    : `${booking.participants} participant${booking.participants !== 1 ? "s" : ""}`}
+                </InfoValue>
               </InfoGroup>
             )}
           </motion.div>

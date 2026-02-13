@@ -299,6 +299,12 @@ const FormCard = styled.div`
     0 2px 4px -2px rgba(0, 0, 0, 0.05);
   @media (max-width: 968px) {
     padding: 16px;
+    /* Prevent iOS zoom on focus: inputs must be at least 16px */
+    .ant-input,
+    .ant-input-affix-wrapper input,
+    textarea.ant-input {
+      font-size: 16px !important;
+    }
   }
 `;
 
@@ -306,6 +312,18 @@ const SectionTitle = styled.h4`
   margin: 0 0 16px 0;
   font-size: 18px;
   font-weight: 600;
+  color: #111827;
+
+  @media (max-width: 968px) {
+    font-size: 0.95rem;
+    text-align: center;
+  }
+`;
+
+/* Label above fields: small, 600 weight */
+const FieldLabel = styled.span`
+  font-weight: 600;
+  font-size: 0.8125rem;
   color: #111827;
 `;
 
@@ -391,21 +409,38 @@ const InfoPanel = styled.div`
   }
 `;
 
-// -- Updated Coupon Components --
+// -- Promo / Gift card: unified styles and reveal button --
+const PromoRevealButton = styled.button`
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 0 12px 0;
+  margin-bottom: 4px;
+  text-decoration: underline;
+
+  &:hover {
+    color: #111827;
+  }
+`;
+
 const CouponTicketInput = styled.div`
   display: flex;
   gap: 8px;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   background: #f9fafb;
   border-radius: 12px;
   border: 1px dashed #e5e7eb;
 
-  .ant-input {
-    font-size: 13px;
+  .ant-input,
+  .ant-input-affix-wrapper input {
+    font-size: 14px;
   }
 
   .ant-btn {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     box-shadow: none;
     border: 1px solid #111827;
@@ -615,52 +650,36 @@ const Countdown = ({ seconds }) => {
   );
 };
 
-const ParticipantNameInputs = ({
-  count,
-  isUserLoggedIn,
-  bookerNameFromBookingData,
-}) => {
-  if (count <= 0) return null;
-
-  return (
-    <div style={{ paddingTop: 8 }}>
-      <SectionTitle>Who's Coming?</SectionTitle>
-      {Array.from({ length: count }).map((_, index) => (
-        <Form.Item
-          key={index}
-          name={["participant_details", index, "name"]}
-          rules={[
-            { required: true, message: `Guest ${index + 1} name is required` },
-          ]}
-          style={{ marginBottom: 12 }}
-        >
-          <Input
-            placeholder={`Guest ${index + 1} Full Name`}
-            readOnly={
-              index === 0 && isUserLoggedIn && !!bookerNameFromBookingData
-            }
-            style={
-              index === 0 && isUserLoggedIn && !!bookerNameFromBookingData
-                ? {
-                    backgroundColor: "#f0f0f0",
-                    cursor: "not-allowed",
-                    color: "#555",
-                  }
-                : {}
-            }
-            suffix={
-              index === 0 &&
-              isUserLoggedIn &&
-              !!bookerNameFromBookingData && (
-                <UserCheck size={16} color="#52c41a" />
-              )
-            }
-          />
-        </Form.Item>
-      ))}
-    </div>
-  );
-};
+const BookerNameInput = ({ isUserLoggedIn, bookerNameFromBookingData }) => (
+  <div style={{ paddingTop: 8 }}>
+    <SectionTitle>Your name</SectionTitle>
+    <Form.Item
+      name="booker_name"
+      rules={[{ required: true, message: "Your name is required" }]}
+      style={{ marginBottom: 12 }}
+      label={<FieldLabel>Full name</FieldLabel>}
+    >
+      <Input
+        placeholder="e.g. Jane Smith"
+        readOnly={isUserLoggedIn && !!bookerNameFromBookingData}
+        style={
+          isUserLoggedIn && !!bookerNameFromBookingData
+            ? {
+                backgroundColor: "#f0f0f0",
+                cursor: "not-allowed",
+                color: "#555",
+              }
+            : {}
+        }
+        suffix={
+          isUserLoggedIn && !!bookerNameFromBookingData && (
+            <UserCheck size={16} color="#52c41a" />
+          )
+        }
+      />
+    </Form.Item>
+  </div>
+);
 
 const ExpressCheckoutButton = ({
   finalTotal,
@@ -668,6 +687,8 @@ const ExpressCheckoutButton = ({
   onPaymentComplete,
   paymentService,
   bookingData,
+  form,
+  getGuestFullName,
 }) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
@@ -694,30 +715,48 @@ const ExpressCheckoutButton = ({
     });
 
     pr.on("paymentmethod", async (ev) => {
-      const payerName = ev.payerName;
-      const payerEmail = ev.payerEmail;
-      const payerPhone = ev.payerPhone;
-
       try {
-        if (clientSecret) {
-          const paymentIntentId = clientSecret.split("_secret_")[0];
+        if (!form) {
+          ev.complete("fail");
+          message.error("Please try again.");
+          return;
+        }
 
-          if (paymentService && paymentService.updatePaymentIntent) {
-            try {
-              await paymentService.updatePaymentIntent({
-                payment_intent_id: paymentIntentId,
-                guest_email: payerEmail,
-                guest_full_name: payerName,
-                guest_phone: payerPhone,
-                participant_details: bookingData.participant_details || [
-                  { name: payerName },
-                ],
-                notes: bookingData.notes || "",
-                applied_discount_id: bookingData.applied_discount_id || null,
-              });
-            } catch (backendErr) {
-              console.error("Error:", backendErr);
+        const values = form.getFieldsValue();
+        const email = values?.email?.trim?.() || "";
+        const phone = values?.phone?.trim?.() || "";
+        const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "Guest";
+        const participantsCount = bookingData?.participants || 1;
+        const participantDetailsPayload = Array.from(
+          { length: participantsCount },
+          () => ({ name: bookerName }),
+        );
+
+        if (!email || !phone || !bookerName) {
+          ev.complete("fail");
+          message.error("Please enter your name and contact details above first.");
+          return;
+        }
+
+        if (clientSecret && paymentService?.updatePaymentIntent) {
+          try {
+            const paymentIntentId = clientSecret.split("_secret_")[0];
+            await paymentService.updatePaymentIntent({
+              payment_intent_id: paymentIntentId,
+              guest_email: email,
+              guest_full_name: bookerName,
+              guest_phone: phone,
+              participant_details: participantDetailsPayload,
+              notes: values?.notes || bookingData?.notes || "",
+              applied_discount_id: bookingData?.applied_discount_id ?? null,
+            });
+          } catch (backendErr) {
+            if (process.env.NODE_ENV === "development") {
+              console.error("Error updating intent for Apple Pay:", backendErr);
             }
+            ev.complete("fail");
+            message.error("Could not update booking details. Please try again.");
+            return;
           }
         }
 
@@ -725,7 +764,7 @@ const ExpressCheckoutButton = ({
           clientSecret,
           {
             payment_method: ev.paymentMethod.id,
-            receipt_email: payerEmail || undefined,
+            receipt_email: email || undefined,
           },
           { handleActions: false },
         );
@@ -735,15 +774,18 @@ const ExpressCheckoutButton = ({
           message.error(error.message);
         } else {
           ev.complete("success");
-          if (paymentIntent.status === "succeeded") {
+          if (paymentIntent?.status === "succeeded") {
             onPaymentComplete({
               payment_intent_id: paymentIntent.id,
               client_secret: clientSecret,
+              participant_details: participantDetailsPayload,
             });
           }
         }
       } catch (err) {
-        console.error("🍎 Apple Pay: EXCEPTION:", err);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Apple Pay exception:", err);
+        }
         ev.complete("fail");
         message.error("Payment failed. Please try again.");
       }
@@ -755,6 +797,8 @@ const ExpressCheckoutButton = ({
     onPaymentComplete,
     paymentService,
     bookingData,
+    form,
+    getGuestFullName,
   ]);
 
   if (!paymentRequest) return null;
@@ -782,6 +826,11 @@ const ExpressCheckoutButton = ({
   );
 };
 
+const PaymentElementWrapper = styled.div`
+  min-height: 240px;
+  width: 100%;
+`;
+
 const PaymentFormContent = ({
   form,
   handleSubmit,
@@ -792,12 +841,43 @@ const PaymentFormContent = ({
   clientSecret,
   onPaymentAction,
   onPaymentComplete,
+  onPaymentLoadError,
   paymentService,
   bookingData,
+  getGuestFullName,
 }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [isReady, setIsReady] = useState(false);
+  const [mountPaymentElement, setMountPaymentElement] = useState(false);
+
+  const handleLoadError = useCallback(
+    (event) => {
+      const msg = event?.error?.message || "";
+      const isTerminalState =
+        msg.includes("terminal state") ||
+        msg.includes("cannot be used to initialize Elements");
+      if (isTerminalState && onPaymentLoadError) {
+        onPaymentLoadError();
+      }
+    },
+    [onPaymentLoadError]
+  );
+
+  useEffect(() => {
+    if (!clientSecret || isFree) {
+      setMountPaymentElement(false);
+      return;
+    }
+    let cancelled = false;
+    const t = requestAnimationFrame(() => {
+      if (!cancelled) setMountPaymentElement(true);
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(t);
+    };
+  }, [clientSecret, isFree]);
 
   useEffect(() => {
     const canSubmit = isFree
@@ -831,38 +911,63 @@ const PaymentFormContent = ({
             paddingTop: 24,
           }}
         >
-          <SectionTitle>Payment Method</SectionTitle>
-          <ExpressCheckoutButton
-            finalTotal={finalTotal}
-            clientSecret={clientSecret}
-            onPaymentComplete={onPaymentComplete}
-            paymentService={paymentService}
-            bookingData={bookingData}
-          />
-          <PaymentElement
-            options={{
-              layout: "tabs",
-              wallets: {
-                applePay: "never",
-                googlePay: "never",
-              },
-              defaultValues: {
-                billingDetails: {
-                  address: {
-                    country: "CA",
+          {!isFormValid ? (
+            <div
+              style={{
+                padding: "14px 16px",
+                background: "#f9fafb",
+                borderRadius: 8,
+                border: "1px solid #e5e7eb",
+                fontSize: 13,
+                color: "#6b7280",
+                lineHeight: 1.45,
+              }}
+            >
+              Please enter your name and contact details above to continue to payment.
+            </div>
+          ) : (
+            <>
+              <SectionTitle>Payment Method</SectionTitle>
+              <ExpressCheckoutButton
+                finalTotal={finalTotal}
+                clientSecret={clientSecret}
+                onPaymentComplete={onPaymentComplete}
+                paymentService={paymentService}
+                bookingData={bookingData}
+                form={form}
+                getGuestFullName={getGuestFullName}
+              />
+              <PaymentElementWrapper>
+                {mountPaymentElement && (
+              <PaymentElement
+                options={{
+                  layout: "tabs",
+                  wallets: {
+                    applePay: "never",
+                    googlePay: "never",
                   },
-                },
-              },
-              fields: {
-                billingDetails: {
-                  address: {
-                    country: "never",
+                  defaultValues: {
+                    billingDetails: {
+                      address: {
+                        country: "CA",
+                      },
+                    },
                   },
-                },
-              },
-            }}
-            onReady={() => setIsReady(true)}
-          />
+                  fields: {
+                    billingDetails: {
+                      address: {
+                        country: "never",
+                      },
+                    },
+                  },
+                }}
+                onReady={() => setIsReady(true)}
+                onLoadError={handleLoadError}
+              />
+            )}
+              </PaymentElementWrapper>
+            </>
+          )}
         </div>
       )}
     </>
@@ -883,9 +988,17 @@ const ReviewAndPaymentStep = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [clientSecret, setClientSecret] = useState(null);
+  const [paymentIntentError, setPaymentIntentError] = useState(null);
+  const [clientSecret, setClientSecret] = useState(
+    () => bookingData?.clientSecret ?? null
+  );
   const [isFormValid, setIsFormValid] = useState(false);
   const [showMobileSummary, setShowMobileSummary] = useState(false);
+
+  useEffect(() => {
+    const fromStorage = bookingData?.clientSecret;
+    if (fromStorage && !clientSecret) setClientSecret(fromStorage);
+  }, [bookingData?.clientSecret]);
 
   // Coupon State
   const [couponCode, setCouponCode] = useState("");
@@ -897,6 +1010,8 @@ const ReviewAndPaymentStep = ({
   const [appliedGiftCard, setAppliedGiftCard] = useState(null); // { code, balance }
   const [gcLoading, setGcLoading] = useState(false);
 
+  const [showPromoGiftCard, setShowPromoGiftCard] = useState(false);
+
   // Global (platform) discount – applied automatically; shown in same Discount line as business coupon
   const [activeGlobalDiscount, setActiveGlobalDiscount] = useState(null);
 
@@ -905,6 +1020,11 @@ const ReviewAndPaymentStep = ({
   const [isExpired, setIsExpired] = useState(false);
   const expirationTimestampRef = useRef(null);
   const debounceTimerRef = useRef(null);
+  const intentDepsRef = useRef({
+    discountId: null,
+    gcCode: null,
+    globalId: null,
+  });
 
   useEffect(() => {
     // PostHog: Track payment step entry in booking funnel
@@ -923,24 +1043,22 @@ const ReviewAndPaymentStep = ({
 
   const validateValues = useCallback(
     (values) => {
-      const { email, phone, guest_full_name, participant_details } = values;
-
-      const contactFields = isUserLoggedIn
-        ? [email, phone]
-        : [email, phone, guest_full_name];
-
-      const allTextFieldsFilled = contactFields.every(
+      const { email, phone, booker_name } = values;
+      const contactFields = [email, phone, booker_name];
+      return contactFields.every(
         (val) => val && String(val).trim().length > 0,
       );
-
-      const currentParticipants = participant_details || [];
-      const participantsFilled =
-        currentParticipants.length === bookingData.participants &&
-        currentParticipants.every((p) => p?.name?.trim());
-
-      return !!(allTextFieldsFilled && participantsFilled);
     },
-    [isUserLoggedIn, bookingData.participants],
+    [],
+  );
+
+  const getGuestFullName = useCallback(
+    (values) => {
+      if (isUserLoggedIn) return bookingData.userName || "";
+      const name = values?.booker_name;
+      return (name && String(name).trim()) || "Pending Guest";
+    },
+    [isUserLoggedIn, bookingData.userName],
   );
 
   useEffect(() => {
@@ -950,36 +1068,14 @@ const ReviewAndPaymentStep = ({
       if (isUserLoggedIn) {
         formData.email = bookingData.userEmail || "";
         formData.phone = bookingData.userPhone || "";
-        formData.guest_full_name = "";
-
-        const currentParticipants = bookingData.participant_details || [];
-        const newParticipants = Array.from(
-          { length: bookingData.participants },
-          (_, i) => {
-            let name = currentParticipants[i]?.name || "";
-            if (i === 0 && bookingData.userName && !name) {
-              name = bookingData.userName;
-            }
-            return { name };
-          },
-        );
-        formData.participant_details = newParticipants;
+        formData.booker_name = bookingData.userName || "";
       } else {
         const currentValues = form.getFieldsValue(true);
         if (currentValues.email === undefined) formData.email = "";
         if (currentValues.phone === undefined) formData.phone = "";
-        if (currentValues.guest_full_name === undefined)
-          formData.guest_full_name = "";
-
-        const currentPart = currentValues.participant_details || [];
-        if (currentPart.length !== bookingData.participants) {
-          const newGuestParticipants = Array.from(
-            { length: bookingData.participants },
-            (_, i) => {
-              return { name: currentPart[i]?.name || "" };
-            },
-          );
-          formData.participant_details = newGuestParticipants;
+        const bookerFromDetails = bookingData.participant_details?.[0]?.name;
+        if (bookerFromDetails && currentValues.booker_name !== bookerFromDetails) {
+          formData.booker_name = bookerFromDetails;
         }
       }
 
@@ -1104,20 +1200,13 @@ const ReviewAndPaymentStep = ({
       }
 
       try {
+        setPaymentIntentError(null);
         const values = form.getFieldsValue();
-        let participantDetailsPayload =
-          values.participant_details?.map((d) => ({
-            name: d?.name || "Guest",
-          })) || [];
-
-        if (participantDetailsPayload.length < participantsCount) {
-          participantDetailsPayload = Array.from(
-            { length: participantsCount },
-            (_, i) => ({
-              name: participantDetailsPayload[i]?.name || "Guest",
-            }),
-          );
-        }
+        const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "Guest";
+        const participantDetailsPayload = Array.from(
+          { length: participantsCount },
+          () => ({ name: bookerName }),
+        );
 
         const payload = {
           selectedSlots: bookingData.selectedSlots,
@@ -1126,7 +1215,7 @@ const ReviewAndPaymentStep = ({
           participant_details: participantDetailsPayload,
           applied_discount_id: currentDiscountId,
           guest_email: values.email || "pending@example.com",
-          guest_full_name: values.guest_full_name || "Pending Guest",
+          guest_full_name: bookerName,
           guest_phone: values.phone || "555-555-5555",
           // Pass Gift Card info so backend knows we might be partially or fully covering it
           gift_card_code: appliedGiftCard?.code || null,
@@ -1136,6 +1225,7 @@ const ReviewAndPaymentStep = ({
 
         if (response.clientSecret) {
           setClientSecret(response.clientSecret);
+          setPaymentIntentError(null);
 
           if (onUpdateBookingData) {
             const paymentIntentId = response.clientSecret.split("_secret_")[0];
@@ -1146,7 +1236,19 @@ const ReviewAndPaymentStep = ({
           }
         }
       } catch (err) {
-        console.error("Error creating draft intent:", err);
+        const data = err?.response?.data;
+        const errObj = data?.error;
+        const msg =
+          (Array.isArray(data?.non_field_errors) && data.non_field_errors[0]) ||
+          (Array.isArray(errObj?.non_field_errors) && errObj.non_field_errors[0]) ||
+          (typeof data?.error === "string" ? data.error : null) ||
+          (typeof errObj === "string" ? errObj : null) ||
+          err?.message ||
+          "We couldn't reserve the spots right now. Please try again.";
+        setPaymentIntentError(msg);
+        if (process.env.NODE_ENV === "development") {
+          console.error("Error creating draft intent:", err);
+        }
       }
     },
     [
@@ -1157,13 +1259,68 @@ const ReviewAndPaymentStep = ({
       paymentService,
       onUpdateBookingData,
       appliedGiftCard,
+      getGuestFullName,
     ],
   );
 
   useEffect(() => {
-    // Re-fetch intent when discount or gift card changes (backend applies global discount server-side)
-    fetchPaymentIntent(appliedDiscount?.id);
-  }, [appliedDiscount?.id, appliedGiftCard, activeGlobalDiscount]);
+    if (isFree) return;
+    const discountId = appliedDiscount?.id ?? null;
+    const gcCode = appliedGiftCard?.code ?? null;
+    const globalId = activeGlobalDiscount?.id ?? null;
+    const currentDeps = { discountId, gcCode, globalId };
+    const prev = intentDepsRef.current;
+
+    if (clientSecret) {
+      const depsMatch =
+        prev.discountId === discountId &&
+        prev.gcCode === gcCode &&
+        prev.globalId === globalId;
+      if (depsMatch) return;
+      const isFirstRunWithRehydratedIntent =
+        prev.discountId === null &&
+        prev.gcCode === null &&
+        prev.globalId === null;
+      if (isFirstRunWithRehydratedIntent) {
+        intentDepsRef.current = currentDeps;
+        return;
+      }
+      const paymentIntentId = clientSecret.split("_secret_")[0];
+      paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
+      setClientSecret(null);
+    }
+
+    intentDepsRef.current = currentDeps;
+    fetchPaymentIntent(discountId);
+  }, [
+    appliedDiscount?.id,
+    appliedGiftCard?.code,
+    activeGlobalDiscount?.id,
+    clientSecret,
+    isFree,
+    fetchPaymentIntent,
+  ]);
+
+  // When PaymentElement fires loaderror (e.g. PaymentIntent in terminal state after refresh/expiry),
+  // release the old intent's hold, then clear and fetch a new PaymentIntent so Elements can initialize correctly.
+  const handlePaymentElementLoadError = useCallback(() => {
+    const paymentIntentId =
+      clientSecret?.split("_secret_")[0] || bookingData?.paymentIntentId;
+    if (paymentIntentId) {
+      paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
+    }
+    setClientSecret(null);
+    onUpdateBookingData?.({ clientSecret: null, paymentIntentId: null });
+    const discountId = appliedDiscount?.id ?? null;
+    fetchPaymentIntent(discountId);
+  }, [
+    clientSecret,
+    bookingData?.paymentIntentId,
+    onUpdateBookingData,
+    appliedDiscount?.id,
+    fetchPaymentIntent,
+    paymentService,
+  ]);
 
   // --- COUPON HANDLERS ---
   const handleApplyCoupon = async () => {
@@ -1267,24 +1424,34 @@ const ReviewAndPaymentStep = ({
             }
           }
 
+          const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "Guest";
+          const participantDetailsPayload = Array.from(
+            { length: participantsCount },
+            () => ({ name: bookerName }),
+          );
           const payload = {
             selectedSlots: bookingData.selectedSlots,
             participants: participantsCount,
             notes: values.notes || "",
-            participant_details: values.participant_details,
+            participant_details: participantDetailsPayload,
             applied_discount_id: appliedDiscount?.id || null,
             guest_email: values.email,
-            guest_full_name: values.guest_full_name,
+            guest_full_name: bookerName,
             guest_phone: values.phone,
             gift_card_code: appliedGiftCard?.code || null,
           };
 
           // Logic: For $0 total, createPaymentIntent returns booking_id directly
           const res = await paymentService.createPaymentIntent(payload);
-          if (res.booking_id) {
+          if (res?.booking_id) {
             onPaymentComplete(res);
             return;
           }
+          setError(
+            res?.error || "We couldn’t complete your free booking. Please try again or contact support."
+          );
+          setLoading(false);
+          return;
         }
 
         // --- STANDARD STRIPE FLOW ---
@@ -1301,24 +1468,26 @@ const ReviewAndPaymentStep = ({
           try {
             const paymentIntentId = clientSecret.split("_secret_")[0];
 
+            const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "Guest";
+            const participantDetailsPayload = Array.from(
+              { length: participantsCount },
+              () => ({ name: bookerName }),
+            );
             if (paymentService.updatePaymentIntent) {
               await paymentService.updatePaymentIntent({
                 payment_intent_id: paymentIntentId,
                 guest_email: values.email,
-                guest_full_name: isUserLoggedIn
-                  ? bookingData.userName
-                  : values.guest_full_name,
+                guest_full_name: bookerName,
                 guest_phone: values.phone,
-                participant_details: values.participant_details,
+                participant_details: participantDetailsPayload,
                 notes: values.notes,
                 applied_discount_id: appliedDiscount?.id || null,
               });
             }
           } catch (updateErr) {
-            console.error(
-              "Failed to update booking details before payment:",
-              updateErr,
-            );
+            if (process.env.NODE_ENV === "development") {
+              console.error("Failed to update booking details before payment:", updateErr);
+            }
           }
         }
 
@@ -1330,9 +1499,7 @@ const ReviewAndPaymentStep = ({
               return_url: `${window.location.origin}/booking/status`,
               payment_method_data: {
                 billing_details: {
-                  name: isUserLoggedIn
-                    ? bookingData.userName
-                    : values.guest_full_name,
+                  name: getGuestFullName(values),
                   email: values.email,
                   phone: values.phone,
                   address: { country: "CA" },
@@ -1345,9 +1512,15 @@ const ReviewAndPaymentStep = ({
         if (confirmError) {
           throw new Error(confirmError.message);
         } else if (paymentIntent && paymentIntent.status === "succeeded") {
+          const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "Guest";
+          const participantDetails = Array.from(
+            { length: participantsCount },
+            () => ({ name: bookerName }),
+          );
           onPaymentComplete({
             payment_intent_id: paymentIntent.id,
             client_secret: clientSecret,
+            participant_details: participantDetails,
           });
         }
       } catch (err) {
@@ -1369,6 +1542,7 @@ const ReviewAndPaymentStep = ({
       clientSecret,
       isExpired,
       appliedGiftCard,
+      getGuestFullName,
     ],
   );
 
@@ -1463,7 +1637,10 @@ const ReviewAndPaymentStep = ({
           <DesktopTimerContainer>{renderTimerContent()}</DesktopTimerContainer>
         </div>
 
-        {option?.title && <OptionLabel>{option.title}</OptionLabel>}
+        {option?.title &&
+          classData?.options?.length > 1 && (
+            <OptionLabel>{option.title}</OptionLabel>
+          )}
 
         <TicketHeaderTitle>{classData?.title}</TicketHeaderTitle>
         <TicketSubHeader>
@@ -1477,81 +1654,91 @@ const ReviewAndPaymentStep = ({
       <TicketDivider />
 
       <TicketBottom>
-        {/* Coupon Section */}
-        {!appliedDiscount ? (
-          <CouponTicketInput>
-            <Input
-              size="middle"
-              placeholder="Promo Code"
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-              bordered={false}
-              onPressEnter={handleApplyCoupon}
-            />
-            <Button
-              size="middle"
-              onClick={handleApplyCoupon}
-              loading={couponLoading}
-              style={{ height: 45 }}
-            >
-              Apply
-            </Button>
-          </CouponTicketInput>
-        ) : (
-          <AppliedCouponTicket>
-            <div className="coupon-info">
-              <Percent size={14} />
-              <span>{appliedDiscount.code.toUpperCase()} Applied</span>
-            </div>
-            <Button
-              type="text"
-              size="small"
-              icon={<X size={14} />}
-              onClick={handleRemoveCoupon}
-            />
-          </AppliedCouponTicket>
-        )}
-
-        {/* Gift Card Section */}
-        {!appliedGiftCard ? (
-          <CouponTicketInput style={{ marginTop: 12 }}>
-            <Input
-              prefix={<Gift size={14} color="#9ca3af" />}
-              placeholder="Gift Card Code"
-              value={giftCardCode}
-              onChange={(e) => setGiftCardCode(e.target.value)}
-              onPressEnter={handleApplyGiftCard}
-              bordered={false}
-            />
-            <Button
-              size="middle"
-              onClick={handleApplyGiftCard}
-              loading={gcLoading}
-              style={{ height: 45 }}
-            >
-              Apply
-            </Button>
-          </CouponTicketInput>
-        ) : (
-          <AppliedCouponTicket
-            style={{
-              marginTop: 12,
-              borderColor: "#8b5cf6",
-              backgroundColor: "#f5f3ff",
-              color: "#7c3aed",
-            }}
+        {/* Promo / Gift card: reveal section to reduce cognitive load */}
+        {!showPromoGiftCard && !appliedDiscount && !appliedGiftCard ? (
+          <PromoRevealButton
+            type="button"
+            onClick={() => setShowPromoGiftCard(true)}
           >
-            <div className="coupon-info">
-              <Gift size={14} />
-              <span>Gift Card ending in {appliedGiftCard.code.slice(-4)}</span>
-            </div>
-            <Button
-              type="text"
-              size="small"
-              icon={<X size={14} />}
-              onClick={handleRemoveGiftCard}
-            />
-          </AppliedCouponTicket>
+            Add promo or gift card
+          </PromoRevealButton>
+        ) : (
+          <>
+            {!appliedDiscount ? (
+              <CouponTicketInput>
+                <Input
+                  size="middle"
+                  placeholder="e.g. SAVE10"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  bordered={false}
+                  onPressEnter={handleApplyCoupon}
+                />
+                <Button
+                  size="middle"
+                  onClick={handleApplyCoupon}
+                  loading={couponLoading}
+                  style={{ height: 45 }}
+                >
+                  Apply
+                </Button>
+              </CouponTicketInput>
+            ) : (
+              <AppliedCouponTicket>
+                <div className="coupon-info">
+                  <Percent size={14} />
+                  <span>{appliedDiscount.code.toUpperCase()} Applied</span>
+                </div>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<X size={14} />}
+                  onClick={handleRemoveCoupon}
+                />
+              </AppliedCouponTicket>
+            )}
+
+            {!appliedGiftCard ? (
+              <CouponTicketInput style={{ marginTop: 12 }}>
+                <Input
+                  prefix={<Gift size={14} color="#9ca3af" />}
+                  placeholder="e.g. XXXX-XXXX-XXXX"
+                  value={giftCardCode}
+                  onChange={(e) => setGiftCardCode(e.target.value)}
+                  onPressEnter={handleApplyGiftCard}
+                  bordered={false}
+                />
+                <Button
+                  size="middle"
+                  onClick={handleApplyGiftCard}
+                  loading={gcLoading}
+                  style={{ height: 45 }}
+                >
+                  Apply
+                </Button>
+              </CouponTicketInput>
+            ) : (
+              <AppliedCouponTicket
+                style={{
+                  marginTop: 12,
+                  borderColor: "#8b5cf6",
+                  backgroundColor: "#f5f3ff",
+                  color: "#7c3aed",
+                }}
+              >
+                <div className="coupon-info">
+                  <Gift size={14} />
+                  <span>Gift Card ending in {appliedGiftCard.code.slice(-4)}</span>
+                </div>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<X size={14} />}
+                  onClick={handleRemoveGiftCard}
+                />
+              </AppliedCouponTicket>
+            )}
+          </>
         )}
 
         <TicketRow>
@@ -1692,6 +1879,10 @@ const ReviewAndPaymentStep = ({
   ]);
 
   const stripeAppearance = useMemo(() => {
+    // System font stack so Stripe iframe renders correctly on mobile; 16px prevents iOS zoom on focus
+    const stripeFont =
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+    const stripeFontSize = "16px";
     return {
       theme: "stripe",
       variables: {
@@ -1699,11 +1890,10 @@ const ReviewAndPaymentStep = ({
         colorBackground: "#ffffff",
         colorText: appTheme.token.colorText,
         colorDanger: appTheme.token.colorError,
-        // Set global font variable
-        fontFamily: '"Proxima Soft", sans-serif',
+        fontFamily: stripeFont,
         spacingUnit: "4px",
         borderRadius: `${appTheme.token.borderRadius}px`,
-        fontSizeBase: `${appTheme.token.fontSize}px`,
+        fontSizeBase: stripeFontSize,
       },
       rules: {
         ".Input": {
@@ -1714,8 +1904,8 @@ const ReviewAndPaymentStep = ({
           borderColor: appTheme.token.colorBorder,
           boxShadow: "none",
           transition: "border-color 0.2s, box-shadow 0.2s",
-          // Force font usage on input text
-          fontFamily: '"Proxima Soft", sans-serif',
+          fontFamily: stripeFont,
+          fontSize: stripeFontSize,
           fontWeight: "500",
         },
         // Added Hover Effect
@@ -1736,22 +1926,20 @@ const ReviewAndPaymentStep = ({
           boxShadow: `0 0 0 2px ${appTheme.token.colorError}20`,
         },
         ".Label": {
-          // Heavier weight for labels
           fontWeight: "600",
           color: "#000",
           marginBottom: "8px",
-          fontFamily: '"Proxima Soft", sans-serif',
+          fontFamily: stripeFont,
         },
-        // Target placeholders specifically
         ".Input::placeholder": {
           color: "#c5c5c5",
           fontWeight: "600",
-          fontFamily: '"Proxima Soft", sans-serif',
+          fontFamily: stripeFont,
         },
         ".Tab": {
           borderColor: appTheme.token.colorBorder,
           borderRadius: `${appTheme.token.borderRadius}px`,
-          fontFamily: '"Proxima Soft", sans-serif',
+          fontFamily: stripeFont,
           fontWeight: "600",
         },
         ".Tab:selected": {
@@ -1803,15 +1991,44 @@ const ReviewAndPaymentStep = ({
           If free (via GC/coupon), we skip Elements and show just the form.
       */}
       {!isFree && !clientSecret ? (
-        <LottieContainer>
-          <Lottie
-            animationData={loadingAnimation}
-            loop={true}
-            style={{ width: 180, height: 180 }}
-          />
-          <LottieText>We're getting things ready</LottieText>
-          <LottieSubText>Let's get that booked for you!</LottieSubText>
-        </LottieContainer>
+        paymentIntentError ? (
+          <LottieContainer>
+            <Alert
+              message="Couldn't reserve spots"
+              description={paymentIntentError}
+              type="warning"
+              showIcon
+              style={{ marginBottom: 16, maxWidth: 400 }}
+            />
+            <Button
+              type="primary"
+              size="large"
+              onClick={() => {
+                setPaymentIntentError(null);
+                fetchPaymentIntent(appliedDiscount?.id ?? null);
+              }}
+              icon={<RefreshCw size={16} />}
+              style={{
+                background: "#ff385c",
+                border: "none",
+                height: "44px",
+                fontWeight: 600,
+              }}
+            >
+              Try again
+            </Button>
+          </LottieContainer>
+        ) : (
+          <LottieContainer>
+            <Lottie
+              animationData={loadingAnimation}
+              loop={true}
+              style={{ width: 180, height: 180 }}
+            />
+            <LottieText>We're getting things ready</LottieText>
+            <LottieSubText>Let's get that booked for you!</LottieSubText>
+          </LottieContainer>
+        )
       ) : (
         <Elements
           stripe={stripePromise}
@@ -1926,10 +2143,8 @@ const ReviewAndPaymentStep = ({
                     requiredMark={false}
                     onValuesChange={handleFormValuesChange}
                   >
-                    <ParticipantNameInputs
-                      count={bookingData.participants}
+                    <BookerNameInput
                       bookerNameFromBookingData={bookingData.userName}
-                      form={form}
                       isUserLoggedIn={isUserLoggedIn}
                     />
 
@@ -1941,14 +2156,6 @@ const ReviewAndPaymentStep = ({
                       }}
                     >
                       <SectionTitle>Contact Info</SectionTitle>
-                      {!isUserLoggedIn && (
-                        <Form.Item
-                          name="guest_full_name"
-                          rules={[{ required: true, message: "Required" }]}
-                        >
-                          <Input placeholder="Full Name" />
-                        </Form.Item>
-                      )}
                       <div
                         style={{
                           display: "grid",
@@ -1959,15 +2166,20 @@ const ReviewAndPaymentStep = ({
                         <Form.Item
                           name="email"
                           rules={[{ required: true, type: "email" }]}
+                          label={<FieldLabel>Email</FieldLabel>}
                         >
                           <Input
-                            placeholder="Email"
+                            placeholder="e.g. jane@example.com"
                             disabled={isUserLoggedIn}
                           />
                         </Form.Item>
-                        <Form.Item name="phone" rules={[{ required: true }]}>
+                        <Form.Item
+                          name="phone"
+                          rules={[{ required: true }]}
+                          label={<FieldLabel>Phone</FieldLabel>}
+                        >
                           <Input
-                            placeholder="Phone"
+                            placeholder="e.g. (555) 123-4567"
                             disabled={isUserLoggedIn}
                           />
                         </Form.Item>
@@ -1984,14 +2196,19 @@ const ReviewAndPaymentStep = ({
                       clientSecret={clientSecret}
                       onPaymentAction={onPaymentAction}
                       onPaymentComplete={onPaymentComplete}
+                      onPaymentLoadError={handlePaymentElementLoadError}
                       paymentService={paymentService}
                       bookingData={bookingData}
+                      getGuestFullName={getGuestFullName}
                     />
 
                     <div>
-                      <Form.Item name="notes" label="Additional Notes">
+                      <Form.Item
+                        name="notes"
+                        label={<FieldLabel>Additional Notes</FieldLabel>}
+                      >
                         <Input.TextArea
-                          placeholder="Any special requests for the host?"
+                          placeholder="e.g. Any dietary restrictions or special requests"
                           rows={2}
                         />
                       </Form.Item>

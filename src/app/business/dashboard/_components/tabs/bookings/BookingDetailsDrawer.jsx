@@ -1105,31 +1105,19 @@ const BookingDetailsDrawer = ({
                 </InfoContent>
               </InfoItem>
             </InfoGrid>
-            {booking.participant_details?.length > 0 && (
+            {booking.participants != null && booking.participants > 0 && (
               <>
                 <Divider style={{ margin: "20px 0 16px" }} />
-                <List
-                  header={<Text strong>Guests ({booking.participants})</Text>}
-                  itemLayout="horizontal"
-                  dataSource={booking.participant_details}
-                  renderItem={(participant, index) => (
-                    <GuestListItem>
-                      <List.Item.Meta
-                        avatar={
-                          <Avatar
-                            style={{ backgroundColor: colors.primary }}
-                            icon={<UserCircle2 size={18} />}
-                          />
-                        }
-                        title={participant.name || `Guest ${index + 1}`}
-                        description={
-                          participant.email ||
-                          (booking.participants === 1 ? "Same as booker" : "")
-                        }
-                      />
-                    </GuestListItem>
-                  )}
-                />
+                <InfoGroup>
+                  <InfoGroupTitle>
+                    <UsersIcon /> Booked by
+                  </InfoGroupTitle>
+                  <InfoValue>
+                    {booking.participant_details?.[0]?.name
+                      ? `${booking.participant_details[0].name} · ${booking.participants} spot${booking.participants !== 1 ? "s" : ""}`
+                      : `${booking.participants} participant${booking.participants !== 1 ? "s" : ""}`}
+                  </InfoValue>
+                </InfoGroup>
               </>
             )}
           </InfoGroup>

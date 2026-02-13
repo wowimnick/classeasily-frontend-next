@@ -8,6 +8,7 @@ import React, {
   useRef,
   useLayoutEffect,
 } from "react";
+import { useRouter } from "next/navigation";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
@@ -19,6 +20,8 @@ import { paymentService } from "@/services/apiService";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import posthog from "posthog-js";
 import dayjs from "dayjs";
+
+const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
 
 // Initialize Stripe outside component
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
@@ -261,6 +264,7 @@ const BookingModal = ({
   optionId: initialOptionId,
   initialParticipantCount = 1,
 }) => {
+  const router = useRouter();
   const { user: currentUserFromRedux } = useAuthUser();
   const [isLoading, setIsLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -383,9 +387,7 @@ const BookingModal = ({
 
       const participantDetails = Array.from(
         { length: validInitialParticipantCount },
-        (_, i) => ({
-          name: i === 0 && bookerName ? bookerName : "",
-        }),
+        () => ({ name: bookerName || "" }),
       );
 
       let initialPrice = 0;
@@ -592,22 +594,15 @@ const BookingModal = ({
           ) {
             newState.participant_details = data.participant_details;
           } else {
-            const currentDetails = prev.participant_details || [];
-            let bookerNameForPrefill = prev.userName;
-            if (!bookerNameForPrefill && currentUserFromRedux) {
-              bookerNameForPrefill = `${
-                currentUserFromRedux.first_name || ""
-              } ${currentUserFromRedux.last_name || ""}`.trim();
-            }
+            const bookerNameForPrefill =
+              prev.participant_details?.[0]?.name ||
+              prev.userName ||
+              (currentUserFromRedux
+                ? `${currentUserFromRedux.first_name || ""} ${currentUserFromRedux.last_name || ""}`.trim()
+                : "");
             newState.participant_details = Array.from(
               { length: newCount },
-              (_, i) => {
-                let name = currentDetails[i]?.name || "";
-                if (i === 0 && bookerNameForPrefill && !name) {
-                  name = bookerNameForPrefill;
-                }
-                return { name: name || "" };
-              },
+              () => ({ name: bookerNameForPrefill || "" }),
             );
           }
         } else if (
@@ -745,8 +740,49 @@ const BookingModal = ({
       handleClose();
       return;
     }
+    // From Calendar step, redirect to dedicated checkout page instead of showing payment in modal
+    if (currentStep === CALENDAR_STEP && classData?.slug) {
+      const nextBookingState = {
+        ...bookingData,
+        selectedOption,
+        selectedSlots: bookingData.selectedSlots,
+        participants: bookingData.participants,
+        participant_details: bookingData.participant_details,
+        userName: bookingData.userName,
+        userEmail: bookingData.userEmail,
+        userPhone: bookingData.userPhone,
+        price: bookingData.price,
+        notes: bookingData.notes,
+      };
+      try {
+        sessionStorage.setItem(
+          CHECKOUT_STORAGE_KEY,
+          JSON.stringify({
+            classSlug: classData.slug,
+            classData,
+            bookingData: nextBookingState,
+          })
+        );
+        onClose();
+        router.push(`/classes/${classData.slug}/checkout`);
+      } catch (e) {
+        console.error("Checkout redirect failed:", e);
+        setCurrentStep((prev) => prev + 1);
+      }
+      return;
+    }
     setCurrentStep((prev) => prev + 1);
-  }, [currentStep, CONFIRM_STEP, handleClose]);
+  }, [
+    currentStep,
+    CONFIRM_STEP,
+    CALENDAR_STEP,
+    classData,
+    bookingData,
+    selectedOption,
+    onClose,
+    router,
+    handleClose,
+  ]);
 
   const handleBack = useCallback(async () => {
     if (currentStep > 1) {
@@ -877,7 +913,7 @@ const BookingModal = ({
   };
 
   const headerSteps = useMemo(() => {
-    const base = ["Date", "Payment", "Confirm"];
+    const base = ["Date", "Payment"];
     if (hasMultipleOptions) {
       return ["Option", ...base];
     }
