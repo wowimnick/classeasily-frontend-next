@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import styled from "styled-components";
 import { ChevronLeft } from "lucide-react";
 import { Divider } from "antd";
@@ -40,7 +41,7 @@ const MainContainer = styled.div`
   padding: 40px 24px 100px;
 
   @media (max-width: 900px) {
-    padding: 20px 16px 80px;
+    padding: 20px 16px 120px;
   }
 `;
 
@@ -75,17 +76,45 @@ const CheckoutFooter = styled.footer`
   bottom: 0;
   left: 0;
   right: 0;
-  background: white;
-  border-top: 1px solid #e5e7eb;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px) saturate(180%);
+  -webkit-backdrop-filter: blur(8px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.125);
+  box-shadow: 0 -8px 32px 0 rgba(31, 38, 135, 0.08);
   padding: 16px 24px;
   padding-bottom: max(16px, env(safe-area-inset-bottom));
   z-index: 100;
 
   @media (min-width: 969px) {
     position: static;
+    background: white;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     border-top: none;
+    box-shadow: none;
     padding: 24px 0 0;
     margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+`;
+
+const TermsText = styled.p`
+  margin: 0 0 12px 0;
+  font-size: 0.75rem;
+  color: #6b7280;
+  line-height: 1.45;
+  text-align: center;
+
+  a {
+    color: #ff385c;
+    text-decoration: underline;
+    font-weight: 500;
+  }
+  a:hover {
+    color: #e31c5f;
   }
 `;
 
@@ -312,6 +341,9 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
   const canSubmit =
     paymentAction?.canSubmit !== false && paymentAction?.handleSubmit;
 
+  /* Show Confirm and Pay footer only when form is valid / Stripe ready (or free) so button is not shown until ready */
+  const showConfirmFooter = paymentAction && canSubmit;
+
   return (
     <>
       <ExploreHeader showOptionsWrapper={false} />
@@ -354,11 +386,17 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
             businessTimeZone={businessTimeZone}
           />
 
-          {paymentAction && (
+          {showConfirmFooter && (
             <CheckoutFooter>
+              <TermsText>
+                By selecting the button below, I agree to the{" "}
+                <Link href="/host-terms">Host Terms</Link>,{" "}
+                <Link href="/payment-terms">Payment Terms of Service</Link>, and{" "}
+                <Link href="/privacy-policy">Privacy Policy</Link>.
+              </TermsText>
               <ConfirmButton
                 type="button"
-                disabled={!canSubmit || paymentAction.loading}
+                disabled={paymentAction.loading}
                 onClick={() => paymentAction.handleSubmit?.()}
                 whileTap={{ scale: 0.98 }}
               >
