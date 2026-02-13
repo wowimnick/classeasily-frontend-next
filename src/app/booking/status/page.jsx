@@ -1,10 +1,7 @@
-import dynamic from "next/dynamic";
-import ExploreHeader from "@/components/explore/ExploreHeader";
+"use client";
 
-const BookingStatusClient = dynamic(
-  () => import("./BookingStatusClient"),
-  { ssr: false }
-);
+import ExploreHeader from "@/components/explore/ExploreHeader";
+import BookingStatusClient from "./BookingStatusClient";
 
 export default function BookingStatusPage() {
   return (
