@@ -536,26 +536,33 @@ const ConfirmationStep = ({
 
   const renderParticipantInfo = () => {
     const { participants, participant_details } = bookingData;
-    if (!participants) return null;
+    const count = participants ?? (Array.isArray(participant_details) ? participant_details.length : 0) || 1;
+    if (!count) return null;
 
-    const displayNames =
-      participant_details
-        ?.map((d) => d.name)
-        .filter(Boolean)
-        .slice(0, 5) || [];
+    const list = Array.isArray(participant_details) ? participant_details : [];
+    const displayNames = list
+      .map((d) => (d && d.name != null ? String(d.name).trim() : null))
+      .filter(Boolean);
+    const hasNames = displayNames.length > 0;
 
     return (
       <DetailRow>
         <Users />
         <div>
           <strong>
-            {participants} Participant{participants > 1 ? "s" : ""}
+            {count} Participant{count > 1 ? "s" : ""}
           </strong>
           <ParticipantList>
-            {displayNames.map((name, index) => (
-              <li key={index}>{name}</li>
-            ))}
-            {participants > 5 && <li>...and {participants - 5} more</li>}
+            {hasNames ? (
+              <>
+                {displayNames.slice(0, 5).map((name, index) => (
+                  <li key={index}>{name}</li>
+                ))}
+                {count > 5 && <li>...and {count - 5} more</li>}
+              </>
+            ) : (
+              <li>Guest{count > 1 ? "s" : ""}</li>
+            )}
           </ParticipantList>
         </div>
       </DetailRow>

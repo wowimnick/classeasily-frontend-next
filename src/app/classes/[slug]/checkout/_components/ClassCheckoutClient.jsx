@@ -204,14 +204,27 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
   const handlePaymentComplete = useCallback(
     (dataFromReviewStep) => {
       cancelledIntentRef.current = true;
+      const rawDetails =
+        dataFromReviewStep.participant_details ??
+        bookingData?.participant_details ??
+        [];
+      const participantCount = bookingData?.participants ?? 1;
+      const participant_details = Array.isArray(rawDetails)
+        ? Array.from({ length: Math.max(rawDetails.length, participantCount) }, (_, i) => ({
+            name: rawDetails[i]?.name != null ? String(rawDetails[i].name).trim() || "Guest" : "Guest",
+          }))
+        : Array.from({ length: participantCount }, () => ({ name: "Guest" }));
       const successPayload = {
         bookingId: dataFromReviewStep.booking_id,
         user_facing_reference: dataFromReviewStep.user_facing_reference,
         booking_group_id: dataFromReviewStep.booking_group_id,
-        participant_details: dataFromReviewStep.participant_details,
+        participant_details,
         payment_intent_id: dataFromReviewStep.payment_intent_id,
         client_secret: dataFromReviewStep.client_secret,
-        bookingData,
+        bookingData: {
+          ...bookingData,
+          participant_details,
+        },
         classData,
       };
       sessionStorage.setItem(

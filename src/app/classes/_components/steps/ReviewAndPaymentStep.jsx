@@ -708,6 +708,9 @@ const ExpressCheckoutButton = ({
   onPaymentComplete,
   paymentService,
   bookingData,
+  isFormValid,
+  form,
+  getGuestFullName,
 }) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
@@ -734,32 +737,46 @@ const ExpressCheckoutButton = ({
     });
 
     pr.on("paymentmethod", async (ev) => {
-      const payerName = ev.payerName;
-      const payerEmail = ev.payerEmail;
-      const payerPhone = ev.payerPhone;
-
       try {
-        if (clientSecret) {
-          const paymentIntentId = clientSecret.split("_secret_")[0];
+        if (!form || !isFormValid) {
+          ev.complete("fail");
+          message.error("Please enter contact details and all participant names above first.");
+          return;
+        }
 
-          if (paymentService && paymentService.updatePaymentIntent) {
-            try {
-              await paymentService.updatePaymentIntent({
-                payment_intent_id: paymentIntentId,
-                guest_email: payerEmail,
-                guest_full_name: payerName,
-                guest_phone: payerPhone,
-                participant_details: bookingData.participant_details || [
-                  { name: payerName },
-                ],
-                notes: bookingData.notes || "",
-                applied_discount_id: bookingData.applied_discount_id || null,
-              });
-            } catch (backendErr) {
-              if (process.env.NODE_ENV === "development") {
-                console.error("Error updating intent for Apple Pay:", backendErr);
-              }
+        const values = form.getFieldsValue();
+        const email = values?.email?.trim?.() || "";
+        const phone = values?.phone?.trim?.() || "";
+        const participantDetails = values?.participant_details || [];
+        const participantDetailsPayload = participantDetails.map((p) => ({
+          name: (p?.name && String(p.name).trim()) || "Guest",
+        }));
+
+        if (!email || !phone || participantDetailsPayload.length < (bookingData?.participants || 1)) {
+          ev.complete("fail");
+          message.error("Please enter contact details and all participant names above first.");
+          return;
+        }
+
+        if (clientSecret && paymentService?.updatePaymentIntent) {
+          try {
+            const paymentIntentId = clientSecret.split("_secret_")[0];
+            await paymentService.updatePaymentIntent({
+              payment_intent_id: paymentIntentId,
+              guest_email: email,
+              guest_full_name: getGuestFullName?.(values) || participantDetailsPayload[0]?.name,
+              guest_phone: phone,
+              participant_details: participantDetailsPayload,
+              notes: values?.notes || bookingData?.notes || "",
+              applied_discount_id: bookingData?.applied_discount_id ?? null,
+            });
+          } catch (backendErr) {
+            if (process.env.NODE_ENV === "development") {
+              console.error("Error updating intent for Apple Pay:", backendErr);
             }
+            ev.complete("fail");
+            message.error("Could not update booking details. Please try again.");
+            return;
           }
         }
 
@@ -767,7 +784,7 @@ const ExpressCheckoutButton = ({
           clientSecret,
           {
             payment_method: ev.paymentMethod.id,
-            receipt_email: payerEmail || undefined,
+            receipt_email: email || undefined,
           },
           { handleActions: false },
         );
@@ -777,10 +794,11 @@ const ExpressCheckoutButton = ({
           message.error(error.message);
         } else {
           ev.complete("success");
-          if (paymentIntent.status === "succeeded") {
+          if (paymentIntent?.status === "succeeded") {
             onPaymentComplete({
               payment_intent_id: paymentIntent.id,
               client_secret: clientSecret,
+              participant_details: participantDetailsPayload,
             });
           }
         }
@@ -799,9 +817,31 @@ const ExpressCheckoutButton = ({
     onPaymentComplete,
     paymentService,
     bookingData,
+    isFormValid,
+    form,
+    getGuestFullName,
   ]);
 
   if (!paymentRequest) return null;
+
+  if (!isFormValid) {
+    return (
+      <div
+        style={{
+          marginBottom: 24,
+          padding: "14px 16px",
+          background: "#f9fafb",
+          borderRadius: 8,
+          border: "1px solid #e5e7eb",
+          fontSize: 13,
+          color: "#6b7280",
+          lineHeight: 1.45,
+        }}
+      >
+        Enter contact details and all participant names above, then you can pay with Apple Pay or Google Pay below.
+      </div>
+    );
+  }
 
   return (
     <div style={{ marginBottom: 24 }}>
@@ -843,6 +883,7 @@ const PaymentFormContent = ({
   onPaymentComplete,
   paymentService,
   bookingData,
+  getGuestFullName,
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -903,6 +944,9 @@ const PaymentFormContent = ({
             onPaymentComplete={onPaymentComplete}
             paymentService={paymentService}
             bookingData={bookingData}
+            isFormValid={isFormValid}
+            form={form}
+            getGuestFullName={getGuestFullName}
           />
           <PaymentElementWrapper>
             {mountPaymentElement && (
@@ -1464,9 +1508,15 @@ const ReviewAndPaymentStep = ({
         if (confirmError) {
           throw new Error(confirmError.message);
         } else if (paymentIntent && paymentIntent.status === "succeeded") {
+          const details = values.participant_details || [];
+          const participantDetails = Array.from(
+            { length: participantsCount },
+            (_, i) => ({ name: (details[i]?.name && String(details[i].name).trim()) || "Guest" })
+          );
           onPaymentComplete({
             payment_intent_id: paymentIntent.id,
             client_secret: clientSecret,
+            participant_details: participantDetails,
           });
         }
       } catch (err) {
@@ -1825,6 +1875,10 @@ const ReviewAndPaymentStep = ({
   ]);
 
   const stripeAppearance = useMemo(() => {
+    // System font stack so Stripe iframe renders correctly on mobile; 16px prevents iOS zoom on focus
+    const stripeFont =
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+    const stripeFontSize = "16px";
     return {
       theme: "stripe",
       variables: {
@@ -1832,11 +1886,10 @@ const ReviewAndPaymentStep = ({
         colorBackground: "#ffffff",
         colorText: appTheme.token.colorText,
         colorDanger: appTheme.token.colorError,
-        // Set global font variable
-        fontFamily: '"Proxima Soft", sans-serif',
+        fontFamily: stripeFont,
         spacingUnit: "4px",
         borderRadius: `${appTheme.token.borderRadius}px`,
-        fontSizeBase: `${appTheme.token.fontSize}px`,
+        fontSizeBase: stripeFontSize,
       },
       rules: {
         ".Input": {
@@ -1847,8 +1900,8 @@ const ReviewAndPaymentStep = ({
           borderColor: appTheme.token.colorBorder,
           boxShadow: "none",
           transition: "border-color 0.2s, box-shadow 0.2s",
-          // Force font usage on input text
-          fontFamily: '"Proxima Soft", sans-serif',
+          fontFamily: stripeFont,
+          fontSize: stripeFontSize,
           fontWeight: "500",
         },
         // Added Hover Effect
@@ -1869,22 +1922,20 @@ const ReviewAndPaymentStep = ({
           boxShadow: `0 0 0 2px ${appTheme.token.colorError}20`,
         },
         ".Label": {
-          // Heavier weight for labels
           fontWeight: "600",
           color: "#000",
           marginBottom: "8px",
-          fontFamily: '"Proxima Soft", sans-serif',
+          fontFamily: stripeFont,
         },
-        // Target placeholders specifically
         ".Input::placeholder": {
           color: "#c5c5c5",
           fontWeight: "600",
-          fontFamily: '"Proxima Soft", sans-serif',
+          fontFamily: stripeFont,
         },
         ".Tab": {
           borderColor: appTheme.token.colorBorder,
           borderRadius: `${appTheme.token.borderRadius}px`,
-          fontFamily: '"Proxima Soft", sans-serif',
+          fontFamily: stripeFont,
           fontWeight: "600",
         },
         ".Tab:selected": {
@@ -2116,6 +2167,7 @@ const ReviewAndPaymentStep = ({
                       onPaymentComplete={onPaymentComplete}
                       paymentService={paymentService}
                       bookingData={bookingData}
+                      getGuestFullName={getGuestFullName}
                     />
 
                     <div>

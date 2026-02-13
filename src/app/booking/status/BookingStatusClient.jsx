@@ -134,14 +134,31 @@ export default function BookingStatusClient() {
 
         const data = result.data;
         if (data?.status === "confirmed" && data?.booking_id) {
+          const rawDetails = data.participant_details ?? state.bookingData?.participant_details ?? [];
+          const count = state.bookingData?.participants ?? 1;
+          const participant_details = Array.isArray(rawDetails)
+            ? Array.from(
+                { length: Math.max(rawDetails.length, count) },
+                (_, i) => ({
+                  name:
+                    rawDetails[i]?.name != null
+                      ? String(rawDetails[i].name).trim() || "Guest"
+                      : "Guest",
+                })
+              )
+            : Array.from({ length: count }, () => ({ name: "Guest" }));
+          const bookingDataWithParticipants = {
+            ...state.bookingData,
+            participant_details,
+          };
           const successPayload = {
             bookingId: data.booking_id,
             user_facing_reference: data.user_facing_reference,
             booking_group_id: data.booking_group_id,
-            participant_details: data.participant_details,
+            participant_details,
             payment_intent_id: paymentIntent,
             client_secret: clientSecret,
-            bookingData: state.bookingData,
+            bookingData: bookingDataWithParticipants,
             classData: state.classData,
           };
           sessionStorage.setItem(
