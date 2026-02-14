@@ -114,10 +114,6 @@ const TitleCard = styled.div`
   border-radius: 0 0 20px 20px;
   grid-column: 2;
   justify-self: center;
-  @media (min-width: 970px) {
-    grid-column: 1;
-    width: 100%;
-  }
 `;
 const CheckoutModalTitle = styled.h1`
   font-size: 1.25rem;
@@ -125,18 +121,6 @@ const CheckoutModalTitle = styled.h1`
   margin: 0;
   color: #222;
   text-align: center;
-`;
-const TitleMobile = styled(CheckoutModalTitle)`
-  display: block;
-  @media (min-width: 970px) {
-    display: none;
-  }
-`;
-const TitleDesktop = styled(CheckoutModalTitle)`
-  display: none;
-  @media (min-width: 970px) {
-    display: block;
-  }
 `;
 
 const MainContainer = styled.div`
@@ -421,8 +405,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
             <X size={20} />
           </CloseButton>
           <TitleCard>
-            <TitleMobile>Review and continue</TitleMobile>
-            <TitleDesktop>Review and continue</TitleDesktop>
+            <CheckoutModalTitle>Review and continue</CheckoutModalTitle>
           </TitleCard>
         </CheckoutModalBar>
         <MainContainer>
@@ -464,8 +447,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
           <X size={20} />
         </CloseButton>
         <TitleCard>
-          <TitleMobile>Review and continue</TitleMobile>
-          <TitleDesktop>Review and continue</TitleDesktop>
+          <CheckoutModalTitle>Review and continue</CheckoutModalTitle>
         </TitleCard>
       </CheckoutModalBar>
       <MainContainer>

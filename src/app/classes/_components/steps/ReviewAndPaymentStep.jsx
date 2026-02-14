@@ -6,7 +6,7 @@ import React, {
   useRef,
 } from "react";
 import { ConfigProvider, Form, Input, Alert, Button } from "antd";
-import message, { useToast } from "@/lib/message";
+import message from "@/lib/message";
 import {
   PaymentElement,
   useStripe,
@@ -103,11 +103,6 @@ const DesktopConfirmFooterWrap = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    width: 100%;
-    max-width: 400px;
-    margin-left: auto;
-    margin-right: auto;
     padding: 24px;
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 12px;
@@ -782,7 +777,7 @@ const BookerNameInput = ({ isUserLoggedIn, bookerNameFromBookingData }) => (
   <div style={{ paddingTop: 8 }}>
     <Form.Item
       name="booker_name"
-      rules={[{ required: true, message: "Please enter your full name" }]}
+      rules={[{ required: true, message: "Your name is required" }]}
       style={{ marginBottom: 12 }}
       label={<FieldLabel>Full name</FieldLabel>}
     >
@@ -821,12 +816,9 @@ const ExpressCheckoutButton = ({
   inSelectorMode,
   /** When provided (e.g. mobile custom selector), render this instead of Stripe's button; it receives paymentRequest so the parent can call paymentRequest.show() */
   customTrigger,
-  /** Toast API for error/success (from useToast); falls back to message if not provided */
-  toast,
 }) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
-  const notify = toast || message;
 
   useEffect(() => {
     if (!stripe || !finalTotal) return;
@@ -854,7 +846,7 @@ const ExpressCheckoutButton = ({
       try {
         if (!form) {
           ev.complete("fail");
-          notify.error("Please try again.");
+          message.error("Please try again.");
           return;
         }
 
@@ -870,7 +862,7 @@ const ExpressCheckoutButton = ({
 
         if (!email || !phone || !bookerName) {
           ev.complete("fail");
-          notify.error("Please enter your full name, email, and phone number above first.");
+          message.error("Please enter your name and contact details above first.");
           return;
         }
 
@@ -891,7 +883,7 @@ const ExpressCheckoutButton = ({
               console.error("Error updating intent for Apple Pay:", backendErr);
             }
             ev.complete("fail");
-            notify.error("Could not update booking details. Please try again.");
+            message.error("Could not update booking details. Please try again.");
             return;
           }
         }
@@ -907,7 +899,7 @@ const ExpressCheckoutButton = ({
 
         if (error) {
           ev.complete("fail");
-          notify.error(error.message || "Payment was declined. Please try again.");
+          message.error(error.message);
         } else {
           ev.complete("success");
           if (paymentIntent?.status === "succeeded") {
@@ -923,7 +915,7 @@ const ExpressCheckoutButton = ({
           console.error("Apple Pay exception:", err);
         }
         ev.complete("fail");
-        notify.error("Payment failed. Please try again.");
+        message.error("Payment failed. Please try again.");
       }
     });
   }, [
@@ -971,49 +963,33 @@ const ExpressCheckoutButton = ({
 const PaymentElementWrapper = styled.div`
   min-height: 240px;
   width: 100%;
-  @media (min-width: 969px) {
-    min-height: 0;
-  }
 `;
 
-/* Accordion for payment methods when a second method (e.g. Apple Pay) is available */
-const PaymentAccordion = styled.div`
+/* Payment method selector (Apple Pay vs Card) */
+const PaymentMethodSelector = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 0;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  overflow: hidden;
+  gap: 10px;
+  margin-bottom: 20px;
 `;
-const PaymentAccordionItem = styled.div`
-  border-bottom: 1px solid #e5e7eb;
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-const PaymentAccordionHeader = styled.button`
-  width: 100%;
+const PaymentMethodOption = styled.button`
+  flex: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 20px;
-  border: none;
-  background: ${(p) => (p.$expanded ? "#fff5f6" : "white")};
-  color: #222;
-  font-size: 16px;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid ${(p) => (p.$selected ? "#ff385c" : "#e5e7eb")};
+  background: ${(p) => (p.$selected ? "#fff5f6" : "white")};
+  color: ${(p) => (p.$selected ? "#ff385c" : "#374151")};
+  font-size: 14px;
   font-weight: 600;
-  font-family: "Proxima Soft", sans-serif;
   cursor: pointer;
-  text-align: left;
-  transition: background 0.2s;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
   &:hover {
-    background: ${(p) => (p.$expanded ? "#fff5f6" : "#f9fafb")};
+    border-color: ${(p) => (p.$selected ? "#ff385c" : "#d1d5db")};
+    background: ${(p) => (p.$selected ? "#fff5f6" : "#f9fafb")};
   }
-`;
-const PaymentAccordionContent = styled.div`
-  padding: 0 20px 16px;
-  background: white;
 `;
 const OpenCardDrawerButton = styled.button`
   width: 100%;
@@ -1122,7 +1098,7 @@ const CardDrawerConfirmButton = styled.button`
 `;
 
 const paymentElementOptions = {
-  layout: "accordion",
+  layout: "tabs",
   wallets: {
     applePay: "never",
     googlePay: "never",
@@ -1157,7 +1133,6 @@ const PaymentFormContent = ({
   paymentService,
   bookingData,
   getGuestFullName,
-  toast,
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -1253,104 +1228,85 @@ const PaymentFormContent = ({
           }}
         >
           {useSelectorLayout ? (
-            <PaymentAccordion>
-              <PaymentAccordionItem>
-                <PaymentAccordionHeader
+            <>
+              <PaymentMethodSelector>
+                <PaymentMethodOption
                   type="button"
-                  $expanded={selectedMethod === "apple_pay"}
+                  $selected={selectedMethod === "apple_pay"}
                   onClick={() => setSelectedMethod("apple_pay")}
                 >
-                  <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <Wallet size={20} />
-                    Apple Pay
-                  </span>
-                  {selectedMethod === "apple_pay" ? (
-                    <ChevronDown size={20} style={{ flexShrink: 0 }} />
-                  ) : (
-                    <ChevronRight size={20} style={{ flexShrink: 0 }} />
-                  )}
-                </PaymentAccordionHeader>
-                {selectedMethod === "apple_pay" && (
-                  <PaymentAccordionContent>
-                    <ExpressCheckoutButton
-                      finalTotal={finalTotal}
-                      clientSecret={clientSecret}
-                      onPaymentComplete={onPaymentComplete}
-                      paymentService={paymentService}
-                      bookingData={bookingData}
-                      form={form}
-                      getGuestFullName={getGuestFullName}
-                      isFormValid={isFormValid}
-                      onPaymentRequestReady={() => setHasApplePay(true)}
-                      inSelectorMode
-                      toast={toast}
-                      customTrigger={(paymentRequest) => (
-                        <CustomApplePayButton
-                          type="button"
-                          onClick={() => paymentRequest.show()}
-                        >
-                          <Wallet size={20} />
-                          Pay with Apple Pay
-                        </CustomApplePayButton>
-                      )}
-                    />
-                  </PaymentAccordionContent>
-                )}
-              </PaymentAccordionItem>
-              <PaymentAccordionItem>
-                <PaymentAccordionHeader
+                  <Wallet size={18} />
+                  Apple Pay
+                </PaymentMethodOption>
+                <PaymentMethodOption
                   type="button"
-                  $expanded={selectedMethod === "card"}
+                  $selected={selectedMethod === "card"}
                   onClick={() => setSelectedMethod("card")}
                 >
-                  <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <CreditCard size={20} />
-                    Credit / Debit card
-                  </span>
-                  {selectedMethod === "card" ? (
-                    <ChevronDown size={20} style={{ flexShrink: 0 }} />
-                  ) : (
-                    <ChevronRight size={20} style={{ flexShrink: 0 }} />
-                  )}
-                </PaymentAccordionHeader>
-                {selectedMethod === "card" && (
-                  <PaymentAccordionContent>
-                    <OpenCardDrawerButton
+                  <CreditCard size={18} />
+                  Credit / Debit card
+                </PaymentMethodOption>
+              </PaymentMethodSelector>
+              {selectedMethod === "apple_pay" && (
+                <ExpressCheckoutButton
+                  finalTotal={finalTotal}
+                  clientSecret={clientSecret}
+                  onPaymentComplete={onPaymentComplete}
+                  paymentService={paymentService}
+                  bookingData={bookingData}
+                  form={form}
+                  getGuestFullName={getGuestFullName}
+                  isFormValid={isFormValid}
+                  onPaymentRequestReady={() => setHasApplePay(true)}
+                  inSelectorMode
+                  customTrigger={(paymentRequest) => (
+                    <CustomApplePayButton
                       type="button"
-                      onClick={() => setCardDrawerOpen(true)}
+                      onClick={() => paymentRequest.show()}
                     >
-                      <CreditCard size={20} />
-                      Pay with credit or debit card
-                    </OpenCardDrawerButton>
-                    <Drawer.Root
-                      open={cardDrawerOpen}
-                      onOpenChange={(open) => setCardDrawerOpen(open)}
-                    >
-                      <Drawer.Portal>
-                        <CardDrawerOverlay />
-                        <CardDrawerContent>
-                          <CardDrawerHandle />
-                          <CardDrawerBody>
-                            <PaymentElementWrapper style={{ minHeight: 200 }}>
-                              {paymentElementBlock}
-                            </PaymentElementWrapper>
-                          </CardDrawerBody>
-                          <CardDrawerFooter>
-                            <CardDrawerConfirmButton
-                              type="button"
-                              disabled={!stripe || !elements || !isFormValid || !isReady || loading}
-                              onClick={() => handleSubmit(stripe, elements)?.()}
-                            >
-                              {loading ? "Processing…" : "Confirm and Pay"}
-                            </CardDrawerConfirmButton>
-                          </CardDrawerFooter>
-                        </CardDrawerContent>
-                      </Drawer.Portal>
-                    </Drawer.Root>
-                  </PaymentAccordionContent>
-                )}
-              </PaymentAccordionItem>
-            </PaymentAccordion>
+                      <Wallet size={20} />
+                      Pay with Apple Pay
+                    </CustomApplePayButton>
+                  )}
+                />
+              )}
+              {selectedMethod === "card" && (
+                <>
+                  <OpenCardDrawerButton
+                    type="button"
+                    onClick={() => setCardDrawerOpen(true)}
+                  >
+                    <CreditCard size={20} />
+                    Pay with credit or debit card
+                  </OpenCardDrawerButton>
+                  <Drawer.Root
+                    open={cardDrawerOpen}
+                    onOpenChange={(open) => setCardDrawerOpen(open)}
+                  >
+                    <Drawer.Portal>
+                      <CardDrawerOverlay />
+                      <CardDrawerContent>
+                        <CardDrawerHandle />
+                        <CardDrawerBody>
+                          <PaymentElementWrapper style={{ minHeight: 200 }}>
+                            {paymentElementBlock}
+                          </PaymentElementWrapper>
+                        </CardDrawerBody>
+                        <CardDrawerFooter>
+                          <CardDrawerConfirmButton
+                            type="button"
+                            disabled={!stripe || !elements || !isFormValid || !isReady || loading}
+                            onClick={() => handleSubmit(stripe, elements)?.()}
+                          >
+                            {loading ? "Processing…" : "Confirm and Pay"}
+                          </CardDrawerConfirmButton>
+                        </CardDrawerFooter>
+                      </CardDrawerContent>
+                    </Drawer.Portal>
+                  </Drawer.Root>
+                </>
+              )}
+            </>
           ) : (
             <>
               <ExpressCheckoutButton
@@ -1363,7 +1319,6 @@ const PaymentFormContent = ({
                 getGuestFullName={getGuestFullName}
                 isFormValid={isFormValid}
                 onPaymentRequestReady={() => setHasApplePay(true)}
-                toast={toast}
               />
               <PaymentElementWrapper>
                 {paymentElementBlock}
@@ -1388,7 +1343,6 @@ const ReviewAndPaymentStep = ({
   businessTimeZone,
   confirmFooter,
 }) => {
-  const toast = useToast();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -1654,7 +1608,6 @@ const ReviewAndPaymentStep = ({
           err?.message ||
           "We couldn't reserve the spots right now. Please try again.";
         setPaymentIntentError(msg);
-        toast.error(msg);
         if (process.env.NODE_ENV === "development") {
           console.error("Error creating draft intent:", err);
         }
@@ -1669,7 +1622,6 @@ const ReviewAndPaymentStep = ({
       onUpdateBookingData,
       appliedGiftCard,
       getGuestFullName,
-      toast,
     ],
   );
 
@@ -1735,7 +1687,7 @@ const ReviewAndPaymentStep = ({
   // --- COUPON HANDLERS ---
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
-      toast.error("Please enter a coupon code.");
+      message.error("Please enter a coupon code.");
       return;
     }
     setCouponLoading(true);
@@ -1747,7 +1699,7 @@ const ReviewAndPaymentStep = ({
       });
       if (result.success) {
         setAppliedDiscount(result.data);
-        toast.success(`Coupon "${result.data.code}" applied!`);
+        message.success(`Coupon "${result.data.code}" applied!`);
         confetti({
           particleCount: 150,
           spread: 60,
@@ -1755,11 +1707,11 @@ const ReviewAndPaymentStep = ({
           colors: ["#ff385c", "#000000", "#ffffff"],
         });
       } else {
-        toast.error(result.error?.detail || "Invalid coupon code. Please check and try again.");
+        message.error(result.error?.detail || "Invalid coupon.");
         setAppliedDiscount(null);
       }
     } catch (err) {
-      toast.error("We couldn't apply the coupon. Please try again.");
+      message.error("Error applying coupon.");
     } finally {
       setCouponLoading(false);
     }
@@ -1778,9 +1730,9 @@ const ReviewAndPaymentStep = ({
       const data = await giftCardService.validateGiftCard(giftCardCode);
 
       setAppliedGiftCard(data); // Should return { code, balance }
-        toast.success(`Gift card applied: $${data.balance} available`);
+      message.success(`Gift card applied: $${data.balance} available`);
     } catch (err) {
-      toast.error(err.error || "Invalid gift card. Please check the code and try again.");
+      message.error(err.error || "Invalid Gift Card"); // apiService throws the response.data directly
       setAppliedGiftCard(null);
     } finally {
       setGcLoading(false);
@@ -1857,10 +1809,9 @@ const ReviewAndPaymentStep = ({
             onPaymentComplete(res);
             return;
           }
-          const freeMsg =
-            res?.error || "We couldn’t complete your free booking. Please try again or contact support.";
-          setError(freeMsg);
-          toast.error(freeMsg);
+          setError(
+            res?.error || "We couldn’t complete your free booking. Please try again or contact support."
+          );
           setLoading(false);
           return;
         }
@@ -1870,9 +1821,7 @@ const ReviewAndPaymentStep = ({
 
         const { error: submitError } = await elements.submit();
         if (submitError) {
-          const msg = submitError.message || "Please check your payment details and try again.";
-          setError(msg);
-          toast.error(msg);
+          setError(submitError.message);
           setLoading(false);
           return;
         }
@@ -1937,9 +1886,7 @@ const ReviewAndPaymentStep = ({
           });
         }
       } catch (err) {
-        const msg = err.message || "Payment processing failed. Please try again.";
-        setError(msg);
-        toast.error(msg);
+        setError(err.message || "Payment processing failed.");
       } finally {
         setLoading(false);
       }
@@ -1958,7 +1905,6 @@ const ReviewAndPaymentStep = ({
       isExpired,
       appliedGiftCard,
       getGuestFullName,
-      toast,
     ],
   );
 
@@ -2754,10 +2700,7 @@ const ReviewAndPaymentStep = ({
                       >
                         <Form.Item
                           name="email"
-                          rules={[
-                            { required: true, message: "Please enter your email" },
-                            { type: "email", message: "Please enter a valid email address" },
-                          ]}
+                          rules={[{ required: true, type: "email" }]}
                           label={<FieldLabel>Email</FieldLabel>}
                         >
                           <Input
@@ -2767,7 +2710,7 @@ const ReviewAndPaymentStep = ({
                         </Form.Item>
                         <Form.Item
                           name="phone"
-                          rules={[{ required: true, message: "Please enter your phone number" }]}
+                          rules={[{ required: true }]}
                           label={<FieldLabel>Phone</FieldLabel>}
                         >
                           <Input
@@ -2792,7 +2735,6 @@ const ReviewAndPaymentStep = ({
                       paymentService={paymentService}
                       bookingData={bookingData}
                       getGuestFullName={getGuestFullName}
-                      toast={toast}
                     />
 
                     <div>
