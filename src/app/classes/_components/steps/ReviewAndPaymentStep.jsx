@@ -6,7 +6,7 @@ import React, {
   useRef,
 } from "react";
 import { ConfigProvider, Form, Input, Alert, Button } from "antd";
-import message from "@/lib/message";
+import message, { useToast } from "@/lib/message";
 import {
   PaymentElement,
   useStripe,
@@ -103,6 +103,11 @@ const DesktopConfirmFooterWrap = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
     padding: 24px;
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 12px;
@@ -777,7 +782,7 @@ const BookerNameInput = ({ isUserLoggedIn, bookerNameFromBookingData }) => (
   <div style={{ paddingTop: 8 }}>
     <Form.Item
       name="booker_name"
-      rules={[{ required: true, message: "Your name is required" }]}
+      rules={[{ required: true, message: "Please enter your full name" }]}
       style={{ marginBottom: 12 }}
       label={<FieldLabel>Full name</FieldLabel>}
     >
@@ -816,9 +821,12 @@ const ExpressCheckoutButton = ({
   inSelectorMode,
   /** When provided (e.g. mobile custom selector), render this instead of Stripe's button; it receives paymentRequest so the parent can call paymentRequest.show() */
   customTrigger,
+  /** Toast API for error/success (from useToast); falls back to message if not provided */
+  toast,
 }) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
+  const notify = toast || message;
 
   useEffect(() => {
     if (!stripe || !finalTotal) return;
@@ -846,7 +854,7 @@ const ExpressCheckoutButton = ({
       try {
         if (!form) {
           ev.complete("fail");
-          message.error("Please try again.");
+          notify.error("Please try again.");
           return;
         }
 
@@ -862,7 +870,7 @@ const ExpressCheckoutButton = ({
 
         if (!email || !phone || !bookerName) {
           ev.complete("fail");
-          message.error("Please enter your name and contact details above first.");
+          notify.error("Please enter your full name, email, and phone number above first.");
           return;
         }
 
@@ -883,7 +891,7 @@ const ExpressCheckoutButton = ({
               console.error("Error updating intent for Apple Pay:", backendErr);
             }
             ev.complete("fail");
-            message.error("Could not update booking details. Please try again.");
+            notify.error("Could not update booking details. Please try again.");
             return;
           }
         }
@@ -899,7 +907,7 @@ const ExpressCheckoutButton = ({
 
         if (error) {
           ev.complete("fail");
-          message.error(error.message);
+          notify.error(error.message || "Payment was declined. Please try again.");
         } else {
           ev.complete("success");
           if (paymentIntent?.status === "succeeded") {
@@ -915,7 +923,7 @@ const ExpressCheckoutButton = ({
           console.error("Apple Pay exception:", err);
         }
         ev.complete("fail");
-        message.error("Payment failed. Please try again.");
+        notify.error("Payment failed. Please try again.");
       }
     });
   }, [
@@ -963,6 +971,9 @@ const ExpressCheckoutButton = ({
 const PaymentElementWrapper = styled.div`
   min-height: 240px;
   width: 100%;
+  @media (min-width: 969px) {
+    min-height: 0;
+  }
 `;
 
 /* Payment method selector (Apple Pay vs Card) */
@@ -1133,6 +1144,7 @@ const PaymentFormContent = ({
   paymentService,
   bookingData,
   getGuestFullName,
+  toast,
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -1259,6 +1271,7 @@ const PaymentFormContent = ({
                   isFormValid={isFormValid}
                   onPaymentRequestReady={() => setHasApplePay(true)}
                   inSelectorMode
+                  toast={toast}
                   customTrigger={(paymentRequest) => (
                     <CustomApplePayButton
                       type="button"
@@ -1319,6 +1332,7 @@ const PaymentFormContent = ({
                 getGuestFullName={getGuestFullName}
                 isFormValid={isFormValid}
                 onPaymentRequestReady={() => setHasApplePay(true)}
+                toast={toast}
               />
               <PaymentElementWrapper>
                 {paymentElementBlock}
@@ -1343,6 +1357,7 @@ const ReviewAndPaymentStep = ({
   businessTimeZone,
   confirmFooter,
 }) => {
+  const toast = useToast();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -1608,6 +1623,7 @@ const ReviewAndPaymentStep = ({
           err?.message ||
           "We couldn't reserve the spots right now. Please try again.";
         setPaymentIntentError(msg);
+        toast.error(msg);
         if (process.env.NODE_ENV === "development") {
           console.error("Error creating draft intent:", err);
         }
@@ -1622,6 +1638,7 @@ const ReviewAndPaymentStep = ({
       onUpdateBookingData,
       appliedGiftCard,
       getGuestFullName,
+      toast,
     ],
   );
 
@@ -1687,7 +1704,7 @@ const ReviewAndPaymentStep = ({
   // --- COUPON HANDLERS ---
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
-      message.error("Please enter a coupon code.");
+      toast.error("Please enter a coupon code.");
       return;
     }
     setCouponLoading(true);
@@ -1699,7 +1716,7 @@ const ReviewAndPaymentStep = ({
       });
       if (result.success) {
         setAppliedDiscount(result.data);
-        message.success(`Coupon "${result.data.code}" applied!`);
+        toast.success(`Coupon "${result.data.code}" applied!`);
         confetti({
           particleCount: 150,
           spread: 60,
@@ -1707,11 +1724,11 @@ const ReviewAndPaymentStep = ({
           colors: ["#ff385c", "#000000", "#ffffff"],
         });
       } else {
-        message.error(result.error?.detail || "Invalid coupon.");
+        toast.error(result.error?.detail || "Invalid coupon code. Please check and try again.");
         setAppliedDiscount(null);
       }
     } catch (err) {
-      message.error("Error applying coupon.");
+      toast.error("We couldn't apply the coupon. Please try again.");
     } finally {
       setCouponLoading(false);
     }
@@ -1730,9 +1747,9 @@ const ReviewAndPaymentStep = ({
       const data = await giftCardService.validateGiftCard(giftCardCode);
 
       setAppliedGiftCard(data); // Should return { code, balance }
-      message.success(`Gift card applied: $${data.balance} available`);
+        toast.success(`Gift card applied: $${data.balance} available`);
     } catch (err) {
-      message.error(err.error || "Invalid Gift Card"); // apiService throws the response.data directly
+      toast.error(err.error || "Invalid gift card. Please check the code and try again.");
       setAppliedGiftCard(null);
     } finally {
       setGcLoading(false);
@@ -1809,9 +1826,10 @@ const ReviewAndPaymentStep = ({
             onPaymentComplete(res);
             return;
           }
-          setError(
-            res?.error || "We couldn’t complete your free booking. Please try again or contact support."
-          );
+          const freeMsg =
+            res?.error || "We couldn’t complete your free booking. Please try again or contact support.";
+          setError(freeMsg);
+          toast.error(freeMsg);
           setLoading(false);
           return;
         }
@@ -1821,7 +1839,9 @@ const ReviewAndPaymentStep = ({
 
         const { error: submitError } = await elements.submit();
         if (submitError) {
-          setError(submitError.message);
+          const msg = submitError.message || "Please check your payment details and try again.";
+          setError(msg);
+          toast.error(msg);
           setLoading(false);
           return;
         }
@@ -1886,7 +1906,9 @@ const ReviewAndPaymentStep = ({
           });
         }
       } catch (err) {
-        setError(err.message || "Payment processing failed.");
+        const msg = err.message || "Payment processing failed. Please try again.";
+        setError(msg);
+        toast.error(msg);
       } finally {
         setLoading(false);
       }
@@ -1905,6 +1927,7 @@ const ReviewAndPaymentStep = ({
       isExpired,
       appliedGiftCard,
       getGuestFullName,
+      toast,
     ],
   );
 
@@ -2700,7 +2723,10 @@ const ReviewAndPaymentStep = ({
                       >
                         <Form.Item
                           name="email"
-                          rules={[{ required: true, type: "email" }]}
+                          rules={[
+                            { required: true, message: "Please enter your email" },
+                            { type: "email", message: "Please enter a valid email address" },
+                          ]}
                           label={<FieldLabel>Email</FieldLabel>}
                         >
                           <Input
@@ -2710,7 +2736,7 @@ const ReviewAndPaymentStep = ({
                         </Form.Item>
                         <Form.Item
                           name="phone"
-                          rules={[{ required: true }]}
+                          rules={[{ required: true, message: "Please enter your phone number" }]}
                           label={<FieldLabel>Phone</FieldLabel>}
                         >
                           <Input
@@ -2735,6 +2761,7 @@ const ReviewAndPaymentStep = ({
                       paymentService={paymentService}
                       bookingData={bookingData}
                       getGuestFullName={getGuestFullName}
+                      toast={toast}
                     />
 
                     <div>
