@@ -1122,9 +1122,16 @@ const CardDrawerConfirmButton = styled.button`
   }
 `;
 
+// Card-only: no Stripe tabs/selector. We control Apple Pay vs card with our own UI (mobile).
+// See https://docs.stripe.com/payments/payment-element/custom-payment-methods
 const paymentElementOptions = {
-  layout: "tabs",
-  // Show only card in Payment Element; we use our own selector for Apple Pay vs card on mobile.
+  layout: {
+    type: "accordion",
+    defaultCollapsed: false,
+    radios: true,
+    spacedAccordionItems: false,
+    visibleAccordionItemsCount: 1,
+  },
   paymentMethodOrder: ["card"],
   wallets: {
     applePay: "never",
@@ -1268,9 +1275,11 @@ const PaymentFormContent = ({
               onPaymentRequestReady={() => setHasApplePay(true)}
               toast={toast}
             />
-            <PaymentElementWrapper>
-              {paymentElementBlock}
-            </PaymentElementWrapper>
+            {!isMobile && (
+              <PaymentElementWrapper>
+                {paymentElementBlock}
+              </PaymentElementWrapper>
+            )}
           </DesktopPaymentOnly>
 
           {/* Mobile: custom selector (Apple Pay | Card). Hidden on desktop. */}
@@ -1335,9 +1344,11 @@ const PaymentFormContent = ({
                     <CardDrawerContent>
                       <CardDrawerHandle />
                       <CardDrawerBody>
-                        <PaymentElementWrapper style={{ minHeight: 200 }}>
-                          {paymentElementBlock}
-                        </PaymentElementWrapper>
+                        {isMobile && (
+                          <PaymentElementWrapper style={{ minHeight: 200 }}>
+                            {paymentElementBlock}
+                          </PaymentElementWrapper>
+                        )}
                       </CardDrawerBody>
                       <CardDrawerFooter>
                         <CardDrawerConfirmButton
