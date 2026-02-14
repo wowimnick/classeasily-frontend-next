@@ -133,12 +133,12 @@ const SectionHeader = styled.div`
 `;
 
 const SectionContent = styled(motion.div)`
-  padding: 0 24px 24px 24px;
+  padding: 8px 24px 24px 24px;
   border-top: 1px solid #f3f4f6;
 `;
 
 const SectionContentInner = styled.div`
-  padding: 0 24px 24px 24px;
+  padding: 8px 24px 24px 24px;
   border-top: 1px solid #f3f4f6;
 `;
 
@@ -1735,7 +1735,6 @@ const ReviewAndPaymentStep = ({
       businessTimeZone,
   ]);
 
-  // Stripe font size
   const [stripeFontSize, setStripeFontSize] = useState("16px");
   useEffect(() => {
     const updateStripeFontSize = () => {
@@ -1775,10 +1774,45 @@ const ReviewAndPaymentStep = ({
           fontSize: stripeFontSize,
           fontWeight: "500",
         },
+        ".Input:hover": {
+          borderColor: appTheme.token.colorPrimary,
+        },
+        ".Input:focus": {
+          borderColor: appTheme.token.colorPrimary,
+          boxShadow: `0 0 0 2px ${appTheme.token.colorPrimary}20`,
+          outline: "none",
+        },
+        ".Input--invalid": {
+          borderColor: appTheme.token.colorError,
+          boxShadow: "none",
+        },
+        ".Input--invalid:focus": {
+          borderColor: appTheme.token.colorError,
+          boxShadow: `0 0 0 2px ${appTheme.token.colorError}20`,
+        },
+        ".Label": {
+          fontWeight: "600",
+          color: "#000",
+          marginBottom: "8px",
+          fontFamily: stripeFont,
+        },
+        ".Input::placeholder": {
+          color: "#c5c5c5",
+          fontWeight: "600",
+          fontFamily: stripeFont,
+        },
+        ".Tab": {
+          borderColor: appTheme.token.colorBorder,
+          borderRadius: `${appTheme.token.borderRadius}px`,
+          fontFamily: stripeFont,
+          fontWeight: "600",
+        },
+        ".Tab:selected": {
+          borderColor: appTheme.token.colorPrimary,
+        },
       },
     };
   }, [stripeFontSize]);
-
   const renderTimerContent = () => {
     if (isFree || isExpired) return null;
     return (
