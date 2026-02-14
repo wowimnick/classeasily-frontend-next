@@ -1787,10 +1787,21 @@ const ReviewAndPaymentStep = ({
     return () => window.removeEventListener("resize", updateStripeFontSize);
   }, []);
 
+  /* Proxima Soft for Stripe: load via fonts option so the iframe gets the font on mobile (Stripe docs) */
+  const stripeFontCssUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/fonts/proxima-soft.css`
+      : "";
+  const stripeFonts = useMemo(
+    () =>
+      stripeFontCssUrl
+        ? [{ cssSrc: stripeFontCssUrl }]
+        : [],
+    [stripeFontCssUrl]
+  );
+
   const stripeAppearance = useMemo(() => {
-    /* System font stack so Stripe iframe renders correctly on mobile (iframe cannot use page's Proxima Soft) */
-    const fontStack =
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif';
+    const fontFamily = '"Proxima Soft", sans-serif';
     return {
       theme: "stripe",
       variables: {
@@ -1798,7 +1809,7 @@ const ReviewAndPaymentStep = ({
         colorBackground: "#ffffff",
         colorText: appTheme.token.colorText,
         colorDanger: appTheme.token.colorError,
-        fontFamily: fontStack,
+        fontFamily,
         spacingUnit: "4px",
         borderRadius: `${appTheme.token.borderRadius}px`,
         fontSizeBase: `${appTheme.token.fontSize}px`,
@@ -1812,7 +1823,7 @@ const ReviewAndPaymentStep = ({
           borderColor: appTheme.token.colorBorder,
           boxShadow: "none",
           transition: "border-color 0.2s, box-shadow 0.2s",
-          fontFamily: fontStack,
+          fontFamily,
           fontWeight: "500",
         },
         ".Input:hover": {
@@ -1835,17 +1846,17 @@ const ReviewAndPaymentStep = ({
           fontWeight: "600",
           color: "#000",
           marginBottom: "8px",
-          fontFamily: fontStack,
+          fontFamily,
         },
         ".Input::placeholder": {
           color: "#c5c5c5",
           fontWeight: "600",
-          fontFamily: fontStack,
+          fontFamily,
         },
         ".Tab": {
           borderColor: appTheme.token.colorBorder,
           borderRadius: `${appTheme.token.borderRadius}px`,
-          fontFamily: fontStack,
+          fontFamily,
           fontWeight: "600",
         },
         ".Tab:selected": {
@@ -2162,8 +2173,16 @@ const ReviewAndPaymentStep = ({
       ) : (
         <Elements
           stripe={stripePromise}
-          key={`${clientSecret || "free-mode"}-${stripeFontSize}`}
-          options={isFree ? undefined : { clientSecret, appearance: stripeAppearance }}
+          key={`${clientSecret || "free-mode"}-${stripeFontSize}-${stripeFontCssUrl}`}
+          options={
+            isFree
+              ? undefined
+              : {
+                  clientSecret,
+                  appearance: stripeAppearance,
+                  fonts: stripeFonts,
+                }
+          }
         >
           <StepContainer>
             <LeftColumnWrap>
