@@ -293,6 +293,7 @@ const MobileSummaryInner = styled.div`
 const MobilePromoSection = styled.div`
   display: block;
   margin-bottom: 16px;
+  text-align: center;
   @media (min-width: 969px) {
     display: none;
   }
@@ -571,6 +572,23 @@ const ExpiredContent = styled.div`
     line-height: 1.5;
     font-size: 13px;
   }
+`;
+
+const ContactDetailsNotice = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #ff385c;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.5;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 `;
 
 const OptionLabel = styled.div`
@@ -921,19 +939,9 @@ const PaymentFormContent = ({
           }}
         >
           {!isFormValid ? (
-            <div
-              style={{
-                padding: "14px 16px",
-                background: "#f9fafb",
-                borderRadius: 8,
-                border: "1px solid #e5e7eb",
-                fontSize: 13,
-                color: "#6b7280",
-                lineHeight: 1.45,
-              }}
-            >
+            <ContactDetailsNotice>
               Please enter your name and contact details above to continue to payment.
-            </div>
+            </ContactDetailsNotice>
           ) : (
             <>
               <SectionTitle>Payment Method</SectionTitle>
@@ -1002,7 +1010,7 @@ const ReviewAndPaymentStep = ({
     () => bookingData?.clientSecret ?? null
   );
   const [isFormValid, setIsFormValid] = useState(false);
-  const [showMobileSummary, setShowMobileSummary] = useState(true);
+  const [showMobileSummary, setShowMobileSummary] = useState(false);
 
   useEffect(() => {
     const fromStorage = bookingData?.clientSecret;

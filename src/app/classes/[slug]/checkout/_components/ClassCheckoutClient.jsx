@@ -38,10 +38,10 @@ const MainContainer = styled.div`
   max-width: 1000px;
   width: 100%;
   margin: 0 auto;
-  padding: 40px 24px 100px;
+  padding: 40px 6px 100px;
 
   @media (max-width: 900px) {
-    padding: 20px 16px 120px;
+    padding: 20px 6px 120px;
   }
 `;
 
