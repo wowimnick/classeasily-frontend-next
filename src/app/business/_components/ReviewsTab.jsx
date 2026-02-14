@@ -61,25 +61,32 @@ const SectionHeader = styled.div`
   }
 
   @media (max-width: 768px) {
+    margin-bottom: 1.25rem;
     h2 {
       font-size: 1.5rem;
     }
+  }
+  @media (max-width: 480px) {
+    margin-bottom: 1rem;
   }
 `;
 
 const ReviewsColumnContainer = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
   align-items: start;
+  min-width: 0;
+  /* Columns only when enough space; min 320px per column to avoid squishing */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
 
-  @media (max-width: 1200px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (max-width: 768px) {
+  @media (max-width: 900px) {
     grid-template-columns: 1fr;
-    gap: 1rem;
+  }
+  @media (max-width: 768px) {
+    gap: 0.75rem;
+  }
+  @media (max-width: 480px) {
+    gap: 0.5rem;
   }
 `;
 
@@ -87,9 +94,13 @@ const ReviewColumn = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  min-width: 0;
 
   @media (max-width: 768px) {
-    gap: 1rem;
+    gap: 0.75rem;
+  }
+  @media (max-width: 480px) {
+    gap: 0.5rem;
   }
 `;
 
@@ -133,6 +144,7 @@ const ReviewCard = styled(motion.div)`
   transition: all 0.2s ease;
   position: relative;
   break-inside: avoid;
+  min-width: 0;
 
   &:hover {
     transform: translateY(-2px);
@@ -141,7 +153,7 @@ const ReviewCard = styled(motion.div)`
   }
 
   @media (max-width: 768px) {
-    padding: 1rem;
+    padding: 0.875rem;
     border-radius: 10px;
 
     &:hover {
@@ -151,7 +163,7 @@ const ReviewCard = styled(motion.div)`
   }
 
   @media (max-width: 480px) {
-    padding: 0.875rem;
+    padding: 0.75rem;
     border-radius: 8px;
   }
 `;
@@ -458,6 +470,7 @@ const ViewAllButton = styled(motion.button)`
 
   @media (max-width: 768px) {
     max-width: 100%;
+    margin: 1.25rem auto 0 auto;
     padding: 0.875rem 1.25rem;
     font-size: 0.875rem;
     border-radius: 10px;
@@ -469,6 +482,7 @@ const ViewAllButton = styled(motion.button)`
   }
 
   @media (max-width: 480px) {
+    margin: 1rem auto 0 auto;
     padding: 0.75rem 1rem;
     font-size: 0.85rem;
     gap: 0.375rem;
@@ -535,8 +549,11 @@ const ModalHeader = styled.div`
     color: #000;
   }
 
-  @media (max-width: 480px) {
+  @media (max-width: 768px) {
     padding: 1rem;
+  }
+  @media (max-width: 480px) {
+    padding: 0.75rem;
 
     h3 {
       font-size: 1.125rem;
@@ -567,8 +584,11 @@ const ModalContent = styled.div`
   overflow-y: auto;
   padding: 1.5rem;
 
-  @media (max-width: 480px) {
+  @media (max-width: 768px) {
     padding: 1rem;
+  }
+  @media (max-width: 480px) {
+    padding: 0.75rem;
   }
 `;
 
@@ -707,6 +727,19 @@ const EmptyState = styled.div`
     font-size: 1.25rem;
     margin: 0;
     color: #666;
+  }
+
+  @media (max-width: 768px) {
+    padding: 2rem 1rem;
+    svg {
+      margin-bottom: 1rem;
+    }
+  }
+  @media (max-width: 480px) {
+    padding: 1.5rem 0.75rem;
+    svg {
+      margin-bottom: 0.75rem;
+    }
   }
 
   p {

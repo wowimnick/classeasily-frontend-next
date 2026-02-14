@@ -21,7 +21,7 @@ import {
   Globe,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { classService, businessService } from "@/services/apiService";
+import { classService } from "@/services/apiService";
 
 // --- ANIMATIONS & SKELETONS ---
 
@@ -497,10 +497,6 @@ const normalizeReview = (review) => ({
         ? [review.image_medium_url]
         : [],
   business_response: review.business_response || review.owner_response,
-  date:
-    review.date ||
-    review.createdAt ||
-    review.review_date,
 });
 
 const ReviewSkeletonLoader = () => (
@@ -526,9 +522,9 @@ const Reviews = ({
   slug,
   initialRating,
   initialReviewCount,
-  platformReviewCount = 0,
+  platformReviewCount,
   serverReviews = null,
-  reviewsContext = "class", // "class" | "business"
+  mode = "class", // "class" | "business" - when "business", slug is business slug and we fetch business reviews
 }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false); // Track client-side mount
@@ -591,8 +587,6 @@ const Reviews = ({
   );
 
   // --- Data Fetching ---
-  const isBusinessContext = reviewsContext === "business";
-
   useEffect(() => {
     const fetchPreviewReviews = async () => {
       if (
@@ -605,9 +599,9 @@ const Reviews = ({
       }
       try {
         setLoadingPreview(true);
-        if (isBusinessContext) {
-          const result = await businessService.fetchBusinessReviews(slug, 1, 6);
-          if (result.success) {
+        if (mode === "business") {
+          const result = await classService.fetchBusinessReviews(slug, 1, 6);
+          if (result.success && result.data) {
             setPreviewReviews((result.data || []).map(normalizeReview));
           }
         } else {
@@ -627,16 +621,16 @@ const Reviews = ({
       }
     };
     fetchPreviewReviews();
-  }, [slug, initialReviewCount, normalizedServerReviews.length, isBusinessContext]);
+  }, [slug, initialReviewCount, normalizedServerReviews.length, mode]);
 
   const loadModalReviews = async (page) => {
     if (!slug) return;
 
     try {
       setLoadingMore(true);
-      if (isBusinessContext) {
-        const result = await businessService.fetchBusinessReviews(slug, page, 10);
-        if (result.success) {
+      if (mode === "business") {
+        const result = await classService.fetchBusinessReviews(slug, page, 10);
+        if (result.success && result.data) {
           const newReviews = (result.data || []).map(normalizeReview);
           setModalReviews((prev) =>
             page === 1 ? newReviews : [...prev, ...newReviews],

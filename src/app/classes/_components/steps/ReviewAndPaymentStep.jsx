@@ -1788,6 +1788,9 @@ const ReviewAndPaymentStep = ({
   }, []);
 
   const stripeAppearance = useMemo(() => {
+    /* System font stack so Stripe iframe renders correctly on mobile (iframe cannot use page's Proxima Soft) */
+    const fontStack =
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif';
     return {
       theme: "stripe",
       variables: {
@@ -1795,7 +1798,7 @@ const ReviewAndPaymentStep = ({
         colorBackground: "#ffffff",
         colorText: appTheme.token.colorText,
         colorDanger: appTheme.token.colorError,
-        fontFamily: '"Proxima Soft", sans-serif',
+        fontFamily: fontStack,
         spacingUnit: "4px",
         borderRadius: `${appTheme.token.borderRadius}px`,
         fontSizeBase: `${appTheme.token.fontSize}px`,
@@ -1809,7 +1812,7 @@ const ReviewAndPaymentStep = ({
           borderColor: appTheme.token.colorBorder,
           boxShadow: "none",
           transition: "border-color 0.2s, box-shadow 0.2s",
-          fontFamily: '"Proxima Soft", sans-serif',
+          fontFamily: fontStack,
           fontWeight: "500",
         },
         ".Input:hover": {
@@ -1832,17 +1835,17 @@ const ReviewAndPaymentStep = ({
           fontWeight: "600",
           color: "#000",
           marginBottom: "8px",
-          fontFamily: '"Proxima Soft", sans-serif',
+          fontFamily: fontStack,
         },
         ".Input::placeholder": {
           color: "#c5c5c5",
           fontWeight: "600",
-          fontFamily: '"Proxima Soft", sans-serif',
+          fontFamily: fontStack,
         },
         ".Tab": {
           borderColor: appTheme.token.colorBorder,
           borderRadius: `${appTheme.token.borderRadius}px`,
-          fontFamily: '"Proxima Soft", sans-serif',
+          fontFamily: fontStack,
           fontWeight: "600",
         },
         ".Tab:selected": {

@@ -9,22 +9,13 @@ import HomeClassCard from "@/components/homepage/HomeClassCard.jsx";
 const MainWrapper = styled.section`
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 4rem 1rem;
+  padding: 0;
   margin: 0 auto;
   width: 100%;
   max-width: 1400px;
+  min-width: 0;
   box-sizing: border-box;
-  background: #fafafa;
-
-  @media (max-width: 1425px) {
-    padding: 0 3rem;
-  }
-  @media (max-width: 768px) {
-    padding: 0 1.5rem;
-  }
-  @media (max-width: 616px) {
-    padding: 0 1rem;
-  }
+  background: transparent;
 `;
 
 const HeaderContainer = styled.div`
@@ -101,12 +92,19 @@ const ScrollButton = styled.button`
 const CarouselContainer = styled.div`
   position: relative;
   width: 100%;
+  min-width: 0;
 `;
 
-const EmblaViewport = styled.div`
+const EmblaViewportInner = styled.div`
   overflow: hidden;
   width: 100%;
+  min-width: 0;
 `;
+
+const EmblaViewport = React.forwardRef((props, ref) => (
+  <EmblaViewportInner ref={ref} {...props} />
+));
+EmblaViewport.displayName = "EmblaViewport";
 
 const EmblaContainer = styled.div`
   display: flex;
@@ -149,6 +147,13 @@ const BusinessUpcomingClasses = ({ classes = [], businessName, handleFavoriteCha
     emblaApi.on("select", onSelect);
   }, [emblaApi, onSelect]);
 
+  useEffect(() => {
+    if (emblaApi && upcoming.length > 0) {
+      emblaApi.reInit();
+      onSelect(emblaApi);
+    }
+  }, [upcoming.length, emblaApi, onSelect]);
+
   if (!upcoming.length) return null;
 
   return (
@@ -156,7 +161,7 @@ const BusinessUpcomingClasses = ({ classes = [], businessName, handleFavoriteCha
       <HeaderContainer>
         <HeaderLeft>
           <StyledTitle>Upcoming classes</StyledTitle>
-          <StyledSubtitle>Book a spot at an upcoming session</StyledSubtitle>
+          <StyledSubtitle>Book your next session.</StyledSubtitle>
         </HeaderLeft>
         <HeaderRight>
           <ScrollButton onClick={scrollPrev} disabled={prevBtnDisabled} aria-label="Previous">

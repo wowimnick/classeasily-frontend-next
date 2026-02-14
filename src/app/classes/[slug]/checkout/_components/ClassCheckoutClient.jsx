@@ -159,7 +159,7 @@ const MainContainer = styled.div`
   }
 
   @media (max-width: 969px) {
-    padding: 0;
+    padding: 16px 12px 220px;
   }
 `;
 

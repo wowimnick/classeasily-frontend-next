@@ -1,25 +1,22 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import styled, { createGlobalStyle, css } from "styled-components";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
 import { 
   MapPin, Star, Phone, Mail, Clock, 
-  Share2, ChevronRight, ExternalLink, Facebook, Twitter, Instagram, Linkedin, Youtube 
+  ExternalLink, Facebook, Twitter, Instagram, Linkedin, Youtube 
 } from "lucide-react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import NumberFlow from "@number-flow/react";
-import { motion, AnimatePresence } from "framer-motion";
 
-// Imported component (Assumption: path is correct based on prompt)
-import HomeClassCard from "@/components/homepage/HomeClassCard.jsx";
+// Imported components
 import ClientHeader from "@/components/layout/ClientHeader";
 import FooterClient from "@/components/homepage/FooterClient";
-import ClassReviews from "@/app/classes/_components/ClassReviews.jsx";
+import ReviewsTab from "./ReviewsTab.jsx";
+import BusinessUpcomingClasses from "./BusinessUpcomingClasses.jsx";
 
 // --- GLOBAL STYLES & LEAFLET FIXES ---
 const GlobalStyles = createGlobalStyle`
@@ -46,36 +43,50 @@ const MainContainer = styled.main`
   margin: 0 auto;
   padding: 2rem;
   padding-top: 1.5rem;
-  
+  min-width: 0;
+  box-sizing: border-box;
+
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   grid-auto-rows: minmax(min-content, auto);
   gap: 1.5rem;
 
   @media (max-width: 1024px) {
-    grid-template-columns: repeat(2, 1fr); /* Tablet: 2 cols */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 1.5rem;
   }
 
   @media (max-width: 768px) {
-    display: flex; /* Mobile: Stack everything */
+    display: flex;
     flex-direction: column;
-    padding: 1rem;
-    gap: 1rem;
+    padding: 0.5rem;
+    gap: 0.75rem;
+  }
+  @media (max-width: 480px) {
+    padding: 0.5rem;
+    gap: 0.5rem;
   }
 `;
 
 // Base Card Style
-const BentoCard = styled(motion.div)`
+const BentoCard = styled.div`
   background: white;
   border-radius: 24px;
-  padding: 1.75rem;
+  padding: 1.25rem;
   box-shadow: 0 4px 20px rgba(0,0,0,0.03);
   border: 1px solid rgba(0,0,0,0.04);
   overflow: hidden;
   position: relative;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 
+  @media (max-width: 768px) {
+    padding: 1rem;
+    border-radius: 16px;
+  }
+  @media (max-width: 480px) {
+    padding: 0.75rem;
+    border-radius: 12px;
+  }
 
   ${props => props.$noPadding && css`
     padding: 0;
@@ -97,10 +108,11 @@ const HeroCell = styled(BentoCard)`
   flex-direction: column;
   justify-content: flex-end;
   min-height: 380px;
+  min-width: 0;
   position: relative;
 
   @media (max-width: 1024px) {
-    grid-column: span 2;
+    grid-column: 1 / -1;
     min-height: 350px;
   }
 `;
@@ -169,195 +181,107 @@ const BusinessBio = styled.p`
   text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 `;
 
-// 2. At a glance — completely different layout: hero stat left, secondary stats right
+// 2. At a glance — compact single row: Rating | Reviews | Classes
 const StatsCell = styled(BentoCard)`
   grid-column: span 4;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto;
-  gap: 0;
-  align-content: center;
-  min-height: 140px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 0;
+  padding: 0.875rem 1.25rem;
+  min-width: 0;
 
-  @media (max-width: 1024px) { grid-column: span 1; }
+  @media (max-width: 1024px) {
+    grid-column: 1 / -1;
+  }
   @media (max-width: 480px) {
-    grid-template-columns: 1fr;
-    min-height: auto;
-    padding: 1.25rem;
+    padding: 0.75rem 1rem;
+    gap: 0.75rem;
   }
 `;
 
-const GlanceHero = styled.div`
+const GlanceStat = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+  padding-right: 1rem;
+  border-right: 1px solid #eee;
+
+  &:last-child {
+    padding-right: 0;
+    border-right: none;
+  }
+  @media (max-width: 480px) {
+    padding-right: 0.75rem;
+    &:last-child {
+      padding-right: 0;
+    }
+  }
+`;
+
+const GlanceStatBlock = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  border-right: 1px solid #eee;
-  text-align: center;
-
-  @media (max-width: 480px) {
-    border-right: none;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 1rem;
-    margin-bottom: 0.5rem;
-  }
+  gap: 0.15rem;
 `;
 
-const GlanceBigValue = styled.span`
-  font-size: 2.5rem;
-  font-weight: 800;
-  line-height: 1;
+const GlanceValue = styled.span`
+  font-size: 1.35rem;
+  font-weight: 700;
   color: #111;
   font-variant-numeric: tabular-nums;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.25rem;
 
-  @media (max-width: 480px) { font-size: 2rem; }
+  @media (max-width: 480px) {
+    font-size: 1.2rem;
+  }
 `;
 
-const GlanceHeroLabel = styled.span`
-  font-size: 0.75rem;
+const GlanceLabel = styled.span`
+  font-size: 0.7rem;
   font-weight: 600;
   color: #888;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-top: 0.35rem;
-`;
+  letter-spacing: 0.04em;
 
-const GlanceSecondary = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 1rem 1.25rem;
-`;
-
-const GlanceRow = styled.div`
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-
-  .num {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #111;
-    font-variant-numeric: tabular-nums;
-  }
-  .txt {
-    font-size: 0.8rem;
-    color: #666;
-    font-weight: 500;
+  @media (max-width: 480px) {
+    font-size: 0.65rem;
   }
 `;
 
-// 3. Classes Section (Full Width)
+// 3. Classes Section (Full Width) - uses BusinessUpcomingClasses
 const ClassesCell = styled(BentoCard)`
   grid-column: span 12;
   background: transparent;
   box-shadow: none;
   border: none;
   padding: 0;
-  overflow: visible; /* Allow shadows of cards to show */
-  min-width: 0; /* Let grid child shrink so horizontal scroll can overflow */
-`;
-
-const ClassesSectionHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding: 0 0.25rem;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-
-  .title-block h2 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin: 0 0 2px 0;
-    color: #1a1a1a;
-    line-height: 1.2;
-  }
-
-  .title-block span {
-    font-size: 0.8rem;
-    color: #666;
-  }
-
-  .scroll-actions {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-`;
-
-const ScrollBtn = styled.button`
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid #e5e5e5;
-  background: white;
-  color: #333;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0;
-
-  &:hover:not(:disabled) {
-    border-color: #ff385c;
-    color: #ff385c;
-    background: #fff8f6;
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-`;
-
-const HorizontalScroll = styled.div`
-  display: flex;
-  gap: 1.5rem;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 0.5rem 0.5rem 2rem 0.5rem;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  min-height: 0;
-
-  &::-webkit-scrollbar {
-    height: 6px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: #e0e0e0;
-    border-radius: 10px;
-  }
-
-  > * {
-    flex: 0 0 auto;
-    width: 280px;
-    scroll-snap-align: start;
+  overflow: visible;
+  min-width: 0;
+  @media (max-width: 1024px) {
+    grid-column: 1 / -1;
   }
 `;
 
 // 4. Contact & Hours (Sticky Sidebar on Desktop)
 const SidebarWrapper = styled.div`
   grid-column: span 4;
-  grid-row: span 2; /* Span alongside reviews */
+  grid-row: span 2;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  min-width: 0;
 
-  @media (max-width: 1024px) { grid-column: span 1; }
+  @media (max-width: 1024px) {
+    grid-column: 1 / -1;
+  }
 `;
 
 const ActionButton = styled.a`
@@ -384,6 +308,21 @@ const ActionButton = styled.a`
   `}
 `;
 
+const HoursDivider = styled.div`
+  margin: 1.5rem 0;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  padding: 1rem 0;
+  @media (max-width: 768px) {
+    margin: 1rem 0;
+    padding: 0.75rem 0;
+  }
+  @media (max-width: 480px) {
+    margin: 0.75rem 0;
+    padding: 0.5rem 0;
+  }
+`;
+
 const ContactRow = styled.div`
   display: flex;
   align-items: center;
@@ -401,9 +340,15 @@ const ContactRow = styled.div`
   .text {
     display: flex; flex-direction: column;
     font-size: 0.9rem;
-    
+    min-width: 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
+
     strong { color: #111; }
-    span { color: #666; word-break: break-all;}
+    span { color: #666; }
+  }
+  @media (max-width: 480px) {
+    padding: 0.5rem 0;
   }
 `;
 
@@ -425,46 +370,45 @@ const SocialBtn = styled.a`
   svg { width: 18px; height: 18px; }
 `;
 
-const ShareBtn = styled.button`
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: #f5f5f5;
-  border: none;
-  display: flex; align-items: center; justify-content: center;
-  color: #555;
-  cursor: pointer;
-  transition: 0.2s;
-  &:hover { background: #ff385c; color: white; }
-  svg { width: 18px; height: 18px; }
+// 5. Map Cell — compact "View in Google Maps" link like ClassPageMap
+const MapLink = styled.a`
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  color: #222;
+  padding: 14px 14px;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-size: 1rem;
+  font-weight: 500;
+  z-index: 401;
+  white-space: nowrap;
+  text-decoration: none;
+  &:hover {
+    background: #f7f7f7;
+  }
+  @media (max-width: 480px) {
+    padding: 12px 12px;
+    font-size: 0.9rem;
+  }
 `;
 
-// 5. Map Cell
 const MapCell = styled(BentoCard)`
   height: 300px;
   padding: 0;
   position: relative;
-  
-  .overlay {
-    position: absolute;
-    bottom: 1rem; left: 1rem; right: 1rem;
-    background: white;
-    padding: 0.75rem 1rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    z-index: 400;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.9rem;
-    font-weight: 600;
-  }
 `;
 
 // 6. Reviews Cell
 const ReviewsCell = styled(BentoCard)`
   grid-column: span 8;
-  
-  @media (max-width: 1024px) { grid-column: span 2; }
+  min-width: 0;
+
+  @media (max-width: 1024px) {
+    grid-column: 1 / -1;
+  }
 `;
 
 // --- HELPER COMPONENTS ---
@@ -516,56 +460,13 @@ const HoursList = ({ businessHours }) => {
 
 // --- MAIN COMPONENT ---
 
-const SCROLL_AMOUNT = 320;
-
 const BusinessPageClient = ({ initialData, slug }) => {
-  const router = useRouter();
   const [businessData, setBusinessData] = useState(initialData);
   const [isMounted, setIsMounted] = useState(false);
-  const [shareFeedback, setShareFeedback] = useState("");
-  const classesScrollRef = useRef(null);
-  const reviewsSectionRef = useRef(null);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  const handleShare = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (typeof window === "undefined") return;
-    const url = window.location.href;
-    const title = businessData?.businessName || "Business";
-    setShareFeedback("");
-    const doCopy = () => {
-      try {
-        navigator.clipboard.writeText(url);
-        setShareFeedback("Link copied!");
-        setTimeout(() => setShareFeedback(""), 2000);
-      } catch {
-        setShareFeedback("Copy the URL from your browser");
-      }
-    };
-    if (navigator.share) {
-      navigator.share({ title, url }).then(() => setShareFeedback("Shared!")).catch((err) => {
-        if (err.name !== "AbortError") doCopy();
-      });
-    } else {
-      doCopy();
-    }
-  };
-
-  const scrollClassesLeft = (e) => {
-    e.preventDefault();
-    const el = classesScrollRef.current;
-    if (el) el.scrollBy({ left: -SCROLL_AMOUNT, behavior: "smooth" });
-  };
-
-  const scrollClassesRight = (e) => {
-    e.preventDefault();
-    const el = classesScrollRef.current;
-    if (el) el.scrollBy({ left: SCROLL_AMOUNT, behavior: "smooth" });
-  };
 
   const handleFavoriteChange = (classId, newIsFavorited) => {
     setBusinessData((currentData) => {
@@ -598,13 +499,7 @@ const BusinessPageClient = ({ initialData, slug }) => {
   } = businessData;
 
   const ratingAsNumber = average_rating ? parseFloat(average_rating) : 0;
-
-  // Only show classes that have an upcoming session (day/time on card)
-  const upcomingClasses = useMemo(
-    () => (classes || []).filter((c) => c.soonest_next_week),
-    [classes],
-  );
-
+  
   // Coordinates for map (fallback to first class location if business loc missing)
   const mapCoordinates = useMemo(() => {
     if (classes.length > 0 && classes[0].coordinates) {
@@ -630,7 +525,7 @@ const BusinessPageClient = ({ initialData, slug }) => {
       <MainContainer>
         
         {/* 1. HERO CARD */}
-        <HeroCell initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5}}>
+        <HeroCell>
           <HeroBackground>
             <Image 
               src={business_image_medium_url || "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1600&q=80"} 
@@ -661,96 +556,46 @@ const BusinessPageClient = ({ initialData, slug }) => {
           </HeroContent>
         </HeroCell>
 
-        {/* 2. AT A GLANCE — new layout: hero stat left, secondary right */}
-        <StatsCell initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, delay: 0.1}}>
-          <GlanceHero>
-            <GlanceBigValue>
-              <Star size={28} fill="#ff385c" color="#ff385c" />
-              <NumberFlow value={ratingAsNumber} format={{ minimumFractionDigits: 1, maximumFractionDigits: 1 }} />
-            </GlanceBigValue>
-            <GlanceHeroLabel>Rating</GlanceHeroLabel>
-          </GlanceHero>
-          <GlanceSecondary>
-            <GlanceRow>
-              <span className="num"><NumberFlow value={totalReviews} /></span>
-              <span className="txt">Reviews</span>
-            </GlanceRow>
-            <GlanceRow>
-              <span className="num"><NumberFlow value={classes.length} /></span>
-              <span className="txt">Classes</span>
-            </GlanceRow>
-          </GlanceSecondary>
+        {/* 2. AT A GLANCE — compact row: Rating | Reviews | Classes */}
+        <StatsCell>
+          <GlanceStat>
+            <GlanceStatBlock>
+              <GlanceValue>
+                <Star size={18} fill="#ff385c" color="#ff385c" />
+                <NumberFlow value={ratingAsNumber} format={{ minimumFractionDigits: 1, maximumFractionDigits: 1 }} />
+              </GlanceValue>
+              <GlanceLabel>Rating</GlanceLabel>
+            </GlanceStatBlock>
+          </GlanceStat>
+          <GlanceStat>
+            <GlanceStatBlock>
+              <GlanceValue><NumberFlow value={totalReviews} /></GlanceValue>
+              <GlanceLabel>Reviews</GlanceLabel>
+            </GlanceStatBlock>
+          </GlanceStat>
+          <GlanceStat>
+            <GlanceStatBlock>
+              <GlanceValue><NumberFlow value={classes.length} /></GlanceValue>
+              <GlanceLabel>Classes</GlanceLabel>
+            </GlanceStatBlock>
+          </GlanceStat>
         </StatsCell>
 
-        {/* 3. CLASSES SECTION (Horizontal Scroll) */}
-        <ClassesCell initial={{opacity: 0, x: -20}} animate={{opacity: 1, x: 0}} transition={{duration: 0.5, delay: 0.2}}>
-          <ClassesSectionHeader>
-            <div className="title-block">
-              <h2>Upcoming Classes</h2>
-              <span>Book your next session</span>
-            </div>
-            <div className="scroll-actions">
-              <ScrollBtn
-                type="button"
-                aria-label="Scroll left"
-                onClick={scrollClassesLeft}
-                disabled={upcomingClasses.length === 0}
-              >
-                <ChevronRight size={18} style={{ transform: 'rotate(180deg)' }} />
-              </ScrollBtn>
-              <ScrollBtn
-                type="button"
-                aria-label="Scroll right"
-                onClick={scrollClassesRight}
-                disabled={upcomingClasses.length === 0}
-              >
-                <ChevronRight size={18} />
-              </ScrollBtn>
-            </div>
-          </ClassesSectionHeader>
-
-          <HorizontalScroll
-            ref={classesScrollRef}
-            role="region"
-            aria-label="Upcoming classes carousel"
-          >
-            {upcomingClasses.length > 0 ? (
-              upcomingClasses.map((cls, idx) => (
-                <HomeClassCard
-                  key={cls.classId}
-                  {...cls}
-                  rating={parseFloat(cls.average_rating) || 0}
-                  totalReviews={cls.review_count}
-                  business_name={businessName}
-                  soonest_next_week={cls.soonest_next_week}
-                  onFavoriteChange={(isFav) => handleFavoriteChange(cls.classId, isFav)}
-                  priority={idx < 4}
-                />
-              ))
-            ) : (
-              <div
-                style={{
-                  padding: "2rem",
-                  color: "#888",
-                  fontStyle: "italic",
-                  flex: "0 0 auto",
-                  minWidth: "100%",
-                }}
-              >
-                No upcoming classes listed at the moment.
-              </div>
-            )}
-          </HorizontalScroll>
+        {/* 3. UPCOMING CLASSES (scrollable, only classes with upcoming sessions) */}
+        <ClassesCell>
+          <BusinessUpcomingClasses
+            classes={classes}
+            businessName={businessName}
+            handleFavoriteChange={handleFavoriteChange}
+          />
         </ClassesCell>
 
-        {/* 4. REVIEWS (Left Column) — ClassReviews component */}
-        <ReviewsCell ref={reviewsSectionRef} id="reviews-section" initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, delay: 0.3}}>
-          <ClassReviews
+        {/* 4. REVIEWS (ReviewsTab - What people are saying) */}
+        <ReviewsCell id="reviews-section">
+          <ReviewsTab
             slug={slug}
-            initialRating={ratingAsNumber}
-            initialReviewCount={totalReviews || 0}
-            platformReviewCount={totalReviews || 0}
-            reviewsContext="business"
+            totalReviews={totalReviews || 0}
+            ratingAsNumber={ratingAsNumber}
           />
         </ReviewsCell>
 
@@ -758,7 +603,7 @@ const BusinessPageClient = ({ initialData, slug }) => {
         <SidebarWrapper>
           
           {/* MAP CARD */}
-          <MapCell initial={{opacity: 0, scale: 0.95}} animate={{opacity: 1, scale: 1}} transition={{duration: 0.5, delay: 0.4}}>
+          <MapCell>
             {isMounted && (
                <MapContainer 
                  center={mapCoordinates} 
@@ -771,20 +616,18 @@ const BusinessPageClient = ({ initialData, slug }) => {
                  <Marker position={mapCoordinates} icon={createBrandIcon() || undefined} />
                </MapContainer>
             )}
-            <div className="overlay">
-               <span>{businessCity}</span>
-               <a 
-                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(businessAddress)}`}
-                 target="_blank" rel="noreferrer"
-                 style={{color: '#ff385c', textDecoration: 'none'}}
-               >
-                 <ExternalLink size={16} />
-               </a>
-            </div>
+            <MapLink
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(businessAddress || "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="View in Google Maps"
+            >
+              View in Google Maps
+            </MapLink>
           </MapCell>
 
           {/* CONTACT INFO CARD */}
-          <BentoCard initial={{opacity: 0, y: 20}} animate={{opacity: 1, y: 0}} transition={{duration: 0.5, delay: 0.5}}>
+          <BentoCard>
             <h3 style={{fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.25rem'}}>Contact & Hours</h3>
             
             <ContactRow>
@@ -803,12 +646,12 @@ const BusinessPageClient = ({ initialData, slug }) => {
               </div>
             </ContactRow>
 
-            <div style={{margin: '1.5rem 0', borderTop: '1px solid #eee', borderBottom: '1px solid #eee', padding: '1rem 0'}}>
+            <HoursDivider>
               <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', fontWeight: 600}}>
                 <Clock size={16} color="#666" /> Opening Hours
               </div>
               <HoursList businessHours={businessHours} />
-            </div>
+            </HoursDivider>
 
             {website ? (
               <ActionButton $primary href={website} target="_blank" rel="noreferrer">
@@ -822,8 +665,6 @@ const BusinessPageClient = ({ initialData, slug }) => {
                   <SocialBtn key={key} href={url} target="_blank" rel="noreferrer">{socialIcons[key]}</SocialBtn>
                 ) : null
               ))}
-              <ShareBtn type="button" onClick={handleShare} aria-label="Share page"><Share2 size={16} /></ShareBtn>
-              {shareFeedback ? <span style={{ fontSize: "0.75rem", color: "#ff385c", alignSelf: "center" }}>{shareFeedback}</span> : null}
             </SocialGrid>
           </BentoCard>
 
