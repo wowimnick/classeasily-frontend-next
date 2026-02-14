@@ -24,6 +24,7 @@ import {
   Shield,
   Clock,
   ChevronDown,
+  ChevronRight,
   CheckCircle,
   Lock,
   Percent,
@@ -34,8 +35,11 @@ import {
   CalendarDays,
   X,
   Gift,
+  CreditCard,
+  Wallet,
 } from "lucide-react";
 import Lottie from "lottie-react";
+import { Drawer } from "vaul";
 
 import { getCancellationPolicyText, getDurationText } from "./utils";
 import {
@@ -83,6 +87,27 @@ const SummarySection = styled.div`
     display: block;
     position: sticky;
     top: 20px;
+  }
+`;
+
+const LeftColumnWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+`;
+
+const DesktopConfirmFooterWrap = styled.div`
+  display: none;
+  @media (min-width: 969px) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    background: white;
   }
 `;
 
@@ -145,7 +170,7 @@ const TicketDivider = styled.div`
     content: "";
     width: 86%;
     height: 0;
-    border-top: 2px dashed #e5e7eb;
+    border-top: 1px dashed #e5e7eb;
   }
 `;
 
@@ -204,7 +229,7 @@ const TicketRow = styled.div`
 const TicketTotalRow = styled(TicketRow)`
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 2px solid #f3f4f6;
+  border-top: 1px solid #f3f4f6;
   margin-bottom: 0;
   align-items: center;
 
@@ -287,6 +312,95 @@ const MobileSummaryContent = styled(motion.div)`
 const MobileSummaryInner = styled.div`
   border-top: 1px solid #f0f0f0;
   padding: 20px;
+`;
+
+/* Scannable row containers for mobile booking summary (Airbnb-style) */
+const MobileSummaryRowCard = styled.div`
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  &:last-of-type {
+    margin-bottom: 0;
+  }
+`;
+
+const ViewDetailsButton = styled.button`
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-top: 6px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  &:hover {
+    color: #374151;
+  }
+`;
+
+const AdditionalNotesRevealButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 0;
+  margin-top: 8px;
+  border: none;
+  background: none;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  border-top: 1px solid #e5e7eb;
+  transition: color 0.15s ease;
+  &:hover {
+    color: #374151;
+  }
+  svg {
+    flex-shrink: 0;
+  }
+`;
+
+/* Price details drawer (Vaul) - padding only, no new background */
+const PriceDetailsDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1049;
+`;
+const PriceDetailsDrawerContent = styled(Drawer.Content)`
+  background: white;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  max-height: 70vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  outline: none;
+`;
+const PriceDetailsDrawerHandle = styled.div`
+  width: 36px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  margin: 12px auto 8px;
+  flex-shrink: 0;
+`;
+const PriceDetailsDrawerBody = styled.div`
+  overflow-y: auto;
+  padding: 24px 24px 32px;
+  min-height: 0;
 `;
 
 /* Promo / Gift card section visible only on mobile (desktop has it in the sidebar ticket) */
@@ -524,7 +638,6 @@ const MobileTimerContainer = styled.div`
 
 const DesktopTimerContainer = styled.div`
   display: none;
-  margin-bottom: 12px;
   text-align: right;
   @media (min-width: 969px) {
     display: block;
@@ -662,7 +775,6 @@ const Countdown = ({ seconds }) => {
 
 const BookerNameInput = ({ isUserLoggedIn, bookerNameFromBookingData }) => (
   <div style={{ paddingTop: 8 }}>
-    <SectionTitle>Your name</SectionTitle>
     <Form.Item
       name="booker_name"
       rules={[{ required: true, message: "Your name is required" }]}
@@ -700,6 +812,8 @@ const ExpressCheckoutButton = ({
   form,
   getGuestFullName,
   isFormValid,
+  onPaymentRequestReady,
+  inSelectorMode,
 }) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
@@ -722,6 +836,7 @@ const ExpressCheckoutButton = ({
     pr.canMakePayment().then((result) => {
       if (result) {
         setPaymentRequest(pr);
+        onPaymentRequestReady?.();
       }
     });
 
@@ -815,24 +930,26 @@ const ExpressCheckoutButton = ({
   if (!paymentRequest || !isFormValid) return null;
 
   return (
-    <div style={{ marginBottom: 24 }}>
+    <div style={{ marginBottom: inSelectorMode ? 0 : 24 }}>
       <PaymentRequestButtonElement options={{ paymentRequest }} />
-      <div
-        style={{
-          textAlign: "center",
-          margin: "16px 0",
-          color: "#6b7280",
-          fontSize: "13px",
-          fontWeight: 500,
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}
-      >
-        <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }}></div>
-        <span>Or pay with card</span>
-        <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }}></div>
-      </div>
+      {!inSelectorMode && (
+        <div
+          style={{
+            textAlign: "center",
+            margin: "16px 0",
+            color: "#6b7280",
+            fontSize: "13px",
+            fontWeight: 500,
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }}></div>
+          <span>Or pay with card</span>
+          <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }}></div>
+        </div>
+      )}
     </div>
   );
 };
@@ -841,6 +958,134 @@ const PaymentElementWrapper = styled.div`
   min-height: 240px;
   width: 100%;
 `;
+
+/* Payment method selector (Apple Pay vs Card) */
+const PaymentMethodSelector = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+`;
+const PaymentMethodOption = styled.button`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid ${(p) => (p.$selected ? "#ff385c" : "#e5e7eb")};
+  background: ${(p) => (p.$selected ? "#fff5f6" : "white")};
+  color: ${(p) => (p.$selected ? "#ff385c" : "#374151")};
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+  &:hover {
+    border-color: ${(p) => (p.$selected ? "#ff385c" : "#d1d5db")};
+    background: ${(p) => (p.$selected ? "#fff5f6" : "#f9fafb")};
+  }
+`;
+const OpenCardDrawerButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 24px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #222;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  &:hover {
+    border-color: #ff385c;
+    background: #fff5f6;
+  }
+`;
+/* Vaul drawer for card payment */
+const CardDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1049;
+`;
+const CardDrawerContent = styled(Drawer.Content)`
+  background: white;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  max-height: 85vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  outline: none;
+`;
+const CardDrawerHandle = styled.div`
+  width: 36px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  margin: 12px auto 8px;
+  flex-shrink: 0;
+`;
+const CardDrawerBody = styled.div`
+  overflow-y: auto;
+  padding: 20px 24px 16px;
+  min-height: 0;
+  flex: 1;
+`;
+const CardDrawerFooter = styled.div`
+  flex-shrink: 0;
+  padding: 16px 24px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  border-top: 1px solid #e5e7eb;
+  background: white;
+`;
+const CardDrawerConfirmButton = styled.button`
+  width: 100%;
+  background: #ff385c;
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  &:hover:not(:disabled) {
+    background: #e31c5f;
+  }
+`;
+
+const paymentElementOptions = {
+  layout: "tabs",
+  wallets: {
+    applePay: "never",
+    googlePay: "never",
+  },
+  defaultValues: {
+    billingDetails: {
+      address: {
+        country: "CA",
+      },
+    },
+  },
+  fields: {
+    billingDetails: {
+      address: {
+        country: "never",
+      },
+    },
+  },
+};
 
 const PaymentFormContent = ({
   form,
@@ -861,6 +1106,9 @@ const PaymentFormContent = ({
   const elements = useElements();
   const [isReady, setIsReady] = useState(false);
   const [mountPaymentElement, setMountPaymentElement] = useState(false);
+  const [hasApplePay, setHasApplePay] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState("apple_pay");
+  const [cardDrawerOpen, setCardDrawerOpen] = useState(false);
 
   const handleLoadError = useCallback(
     (event) => {
@@ -875,8 +1123,12 @@ const PaymentFormContent = ({
     [onPaymentLoadError]
   );
 
+  const showCardInline = !hasApplePay;
+  const showCardInDrawer = hasApplePay && selectedMethod === "card" && cardDrawerOpen;
+  const shouldMountPaymentElement = !!clientSecret && !isFree && (showCardInline || showCardInDrawer);
+
   useEffect(() => {
-    if (!clientSecret || isFree) {
+    if (!shouldMountPaymentElement) {
       setMountPaymentElement(false);
       return;
     }
@@ -888,7 +1140,9 @@ const PaymentFormContent = ({
       cancelled = true;
       cancelAnimationFrame(t);
     };
-  }, [clientSecret, isFree]);
+  }, [shouldMountPaymentElement]);
+
+  const hideFooterButton = hasApplePay && selectedMethod === "card";
 
   useEffect(() => {
     const canSubmit = isFree
@@ -900,6 +1154,7 @@ const PaymentFormContent = ({
       loading,
       canSubmit,
       finalTotal,
+      showFooterButton: hideFooterButton ? false : undefined,
     });
   }, [
     onPaymentAction,
@@ -911,7 +1166,16 @@ const PaymentFormContent = ({
     isFormValid,
     isReady,
     isFree,
+    hideFooterButton,
   ]);
+
+  const paymentElementBlock = mountPaymentElement && (
+    <PaymentElement
+      options={paymentElementOptions}
+      onReady={() => setIsReady(true)}
+      onLoadError={handleLoadError}
+    />
+  );
 
   return (
     <>
@@ -922,9 +1186,80 @@ const PaymentFormContent = ({
             paddingTop: 24,
           }}
         >
-          <>
-            <SectionTitle>Payment Method</SectionTitle>
-            <ExpressCheckoutButton
+          {hasApplePay ? (
+            <>
+              <PaymentMethodSelector>
+                <PaymentMethodOption
+                  type="button"
+                  $selected={selectedMethod === "apple_pay"}
+                  onClick={() => setSelectedMethod("apple_pay")}
+                >
+                  <Wallet size={18} />
+                  Apple Pay
+                </PaymentMethodOption>
+                <PaymentMethodOption
+                  type="button"
+                  $selected={selectedMethod === "card"}
+                  onClick={() => setSelectedMethod("card")}
+                >
+                  <CreditCard size={18} />
+                  Credit / Debit card
+                </PaymentMethodOption>
+              </PaymentMethodSelector>
+              {selectedMethod === "apple_pay" && (
+                <ExpressCheckoutButton
+                  finalTotal={finalTotal}
+                  clientSecret={clientSecret}
+                  onPaymentComplete={onPaymentComplete}
+                  paymentService={paymentService}
+                  bookingData={bookingData}
+                  form={form}
+                  getGuestFullName={getGuestFullName}
+                  isFormValid={isFormValid}
+                  onPaymentRequestReady={() => setHasApplePay(true)}
+                  inSelectorMode
+                />
+              )}
+              {selectedMethod === "card" && (
+                <>
+                  <OpenCardDrawerButton
+                    type="button"
+                    onClick={() => setCardDrawerOpen(true)}
+                  >
+                    <CreditCard size={20} />
+                    Pay with credit or debit card
+                  </OpenCardDrawerButton>
+                  <Drawer.Root
+                    open={cardDrawerOpen}
+                    onOpenChange={(open) => setCardDrawerOpen(open)}
+                  >
+                    <Drawer.Portal>
+                      <CardDrawerOverlay />
+                      <CardDrawerContent>
+                        <CardDrawerHandle />
+                        <CardDrawerBody>
+                          <PaymentElementWrapper style={{ minHeight: 200 }}>
+                            {paymentElementBlock}
+                          </PaymentElementWrapper>
+                        </CardDrawerBody>
+                        <CardDrawerFooter>
+                          <CardDrawerConfirmButton
+                            type="button"
+                            disabled={!stripe || !elements || !isFormValid || !isReady || loading}
+                            onClick={() => handleSubmit(stripe, elements)?.()}
+                          >
+                            {loading ? "Processing…" : "Confirm and Pay"}
+                          </CardDrawerConfirmButton>
+                        </CardDrawerFooter>
+                      </CardDrawerContent>
+                    </Drawer.Portal>
+                  </Drawer.Root>
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <ExpressCheckoutButton
                 finalTotal={finalTotal}
                 clientSecret={clientSecret}
                 onPaymentComplete={onPaymentComplete}
@@ -933,37 +1268,13 @@ const PaymentFormContent = ({
                 form={form}
                 getGuestFullName={getGuestFullName}
                 isFormValid={isFormValid}
+                onPaymentRequestReady={() => setHasApplePay(true)}
               />
               <PaymentElementWrapper>
-                {mountPaymentElement && (
-              <PaymentElement
-                options={{
-                  layout: "tabs",
-                  wallets: {
-                    applePay: "never",
-                    googlePay: "never",
-                  },
-                  defaultValues: {
-                    billingDetails: {
-                      address: {
-                        country: "CA",
-                      },
-                    },
-                  },
-                  fields: {
-                    billingDetails: {
-                      address: {
-                        country: "never",
-                      },
-                    },
-                  },
-                }}
-                onReady={() => setIsReady(true)}
-                onLoadError={handleLoadError}
-              />
-            )}
+                {paymentElementBlock}
               </PaymentElementWrapper>
-          </>
+            </>
+          )}
         </div>
       )}
     </>
@@ -980,6 +1291,7 @@ const ReviewAndPaymentStep = ({
   onPaymentAction,
   userTimeZone,
   businessTimeZone,
+  confirmFooter,
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -990,6 +1302,8 @@ const ReviewAndPaymentStep = ({
   );
   const [isFormValid, setIsFormValid] = useState(false);
   const [showMobileSummary, setShowMobileSummary] = useState(false);
+  const [priceDetailsDrawerOpen, setPriceDetailsDrawerOpen] = useState(false);
+  const [showAdditionalNotes, setShowAdditionalNotes] = useState(false);
 
   useEffect(() => {
     const fromStorage = bookingData?.clientSecret;
@@ -1635,11 +1949,6 @@ const ReviewAndPaymentStep = ({
           <DesktopTimerContainer>{renderTimerContent()}</DesktopTimerContainer>
         </div>
 
-        {option?.title &&
-          classData?.options?.length > 1 && (
-            <OptionLabel>{option.title}</OptionLabel>
-          )}
-
         <TicketHeaderTitle>{classData?.title}</TicketHeaderTitle>
         <TicketSubHeader>
           <MapPin />
@@ -1838,21 +2147,7 @@ const ReviewAndPaymentStep = ({
             <p>This booking is fully covered.</p>
           </div>
         </InfoPanel>
-      ) : (
-        <InfoPanel
-          $bgColor="#f0fdf4"
-          $borderColor="#bbf7d0"
-          $iconColor="#22c55e"
-          $titleColor="#15803d"
-          $textColor="#166534"
-        >
-          <Lock />
-          <div>
-            <h5>Secure Payment</h5>
-            <p>Your payment is encrypted and processed securely.</p>
-          </div>
-        </InfoPanel>
-      )}
+      ) : null}
     </TicketWrapper>
   );
 
@@ -1968,15 +2263,16 @@ const ReviewAndPaymentStep = ({
 
   const renderMobileSimpleSummary = () => {
     const slot = selectedSlot;
+    const dateTimeLabel = slot?.isCourse ? "Course dates & time" : "Date & time";
+    const dateTimeValue = slot
+      ? slot.isCourse
+        ? `${formatNaiveDate(slot.date, "MMM d")} - ${formatNaiveDate(slot.end_date, "MMM d, yyyy")} · Every ${slot.days.join(", ")} at ${formatTimeRangeForDisplay(slot.date, slot.time, slot.duration, businessTimeZone, userTimeZone)}`
+        : `${formatNaiveDate(slot.date, "EEEE, MMM d, yyyy")} · ${formatTimeRangeForDisplay(slot.date, slot.time, slot.duration, businessTimeZone, userTimeZone)} (${getDurationText(slot.duration)})`
+      : "";
     return (
       <>
-        <div style={{ marginBottom: 12 }}>
+        <div>
           <strong>{classData?.title}</strong>
-          {classData?.options?.length > 1 && option?.title && (
-            <OptionLabel style={{ marginTop: 6, display: "inline-block" }}>
-              {option.title}
-            </OptionLabel>
-          )}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, fontSize: 13, color: "#6b7280" }}>
@@ -1985,121 +2281,32 @@ const ReviewAndPaymentStep = ({
         </div>
 
         {slot && (
-          <SummaryMetaBlock style={{ marginBottom: 16 }}>
-            <TicketMetaItem>
-              <div className="icon-box">
-                <CalendarDays />
-              </div>
-              <div className="text-content">
-                <span className="label">
-                  {slot.isCourse ? "Course Dates" : "Date"}
-                </span>
-                <span className="value">
-                  {slot.isCourse
-                    ? `${formatNaiveDate(slot.date, "MMM d")} - ${formatNaiveDate(slot.end_date, "MMM d, yyyy")}`
-                    : formatNaiveDate(slot.date, "EEEE, MMMM d, yyyy")}
-                </span>
-              </div>
-            </TicketMetaItem>
-            <TicketMetaItem>
-              <div className="icon-box">
-                <Clock />
-              </div>
-              <div className="text-content">
-                <span className="label">Time</span>
-                <span className="value">
-                  {slot.isCourse
-                    ? `Every ${slot.days.join(", ")} at ${formatTimeRangeForDisplay(
-                        slot.date,
-                        slot.time,
-                        slot.duration,
-                        businessTimeZone,
-                        userTimeZone,
-                      )}`
-                    : `${formatTimeRangeForDisplay(
-                        slot.date,
-                        slot.time,
-                        slot.duration,
-                        businessTimeZone,
-                        userTimeZone,
-                      )} (${getDurationText(slot.duration)})`}
-                </span>
-              </div>
-            </TicketMetaItem>
-          </SummaryMetaBlock>
+          <MobileSummaryRowCard>
+            <span style={{ fontSize: 13, color: "#6b7280" }}>{dateTimeLabel}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#111827", textAlign: "right", maxWidth: "60%" }}>
+              {dateTimeValue}
+            </span>
+          </MobileSummaryRowCard>
         )}
 
-        <TicketRow>
-          <span>
-            {participantsCount} {participantsCount > 1 ? "Guests" : "Guest"}
-          </span>
-          <span>
-            {subtotal === 0 ? (
-              "Free"
-            ) : (
-              <NumberFlow
-                value={subtotal}
-                format={{ style: "currency", currency: "CAD" }}
-              />
-            )}
-          </span>
-        </TicketRow>
-
-        {(appliedDiscount || activeGlobalDiscount) && discountAmount > 0 && (
-          <TicketRow style={{ color: "#059669" }}>
-            <span>
-              Discount
-              {appliedDiscount && ` (${appliedDiscount.code})`}
-              {activeGlobalDiscount &&
-                (appliedDiscount
-                  ? ` · ${activeGlobalDiscount.name}`
-                  : ` (${activeGlobalDiscount.name})`)}
+        <MobileSummaryRowCard style={{ borderWidth: 1, borderColor: "#111827", flexDirection: "column", alignItems: "stretch" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>Total</span>
+            <span style={{ fontSize: 18, fontWeight: 800, color: "#111827" }}>
+              {finalTotal === 0 ? (
+                "Free"
+              ) : (
+                <NumberFlow
+                  value={finalTotal}
+                  format={{ style: "currency", currency: "CAD" }}
+                />
+              )}
             </span>
-            <span>
-              <NumberFlow
-                value={-discountAmount}
-                format={{ style: "currency", currency: "CAD" }}
-              />
-            </span>
-          </TicketRow>
-        )}
-
-        {appliedGiftCard && (
-          <TicketRow style={{ color: "#7c3aed" }}>
-            <span>Gift Card</span>
-            <span>
-              -{" "}
-              <NumberFlow
-                value={gcDeduction}
-                format={{ style: "currency", currency: "CAD" }}
-              />
-            </span>
-          </TicketRow>
-        )}
-
-        <TicketRow>
-          <span>HST (13%)</span>
-          <span>
-            <NumberFlow
-              value={taxAmount}
-              format={{ style: "currency", currency: "CAD" }}
-            />
-          </span>
-        </TicketRow>
-
-        <TicketTotalRow>
-          <span>Total</span>
-          <span>
-            {finalTotal === 0 ? (
-              "Free"
-            ) : (
-              <NumberFlow
-                value={finalTotal}
-                format={{ style: "currency", currency: "CAD" }}
-              />
-            )}
-          </span>
-        </TicketTotalRow>
+          </div>
+          <ViewDetailsButton type="button" onClick={() => setPriceDetailsDrawerOpen(true)}>
+            View details
+          </ViewDetailsButton>
+        </MobileSummaryRowCard>
 
         {cancellationPolicyText && (
           <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid #e5e7eb" }}>
@@ -2113,22 +2320,54 @@ const ReviewAndPaymentStep = ({
           </div>
         )}
 
-        <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#15803d" }}>
-          {isFree ? (
-            <>
-              <CheckCircle size={16} />
-              <span>This booking is fully covered. No payment required.</span>
-            </>
-          ) : (
-            <>
-              <Lock size={16} />
-              <span>Your payment is encrypted and processed securely.</span>
-            </>
-          )}
-        </div>
+        {isFree && (
+          <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#15803d" }}>
+            <CheckCircle size={16} />
+            <span>This booking is fully covered. No payment required.</span>
+          </div>
+        )}
       </>
     );
   };
+
+  const renderPriceDetailsDrawerContent = () => (
+    <>
+      <TicketRow>
+        <span>
+          {participantsCount} {participantsCount > 1 ? "Guests" : "Guest"}
+        </span>
+        <span>
+          {subtotal === 0 ? "Free" : <NumberFlow value={subtotal} format={{ style: "currency", currency: "CAD" }} />}
+        </span>
+      </TicketRow>
+      {(appliedDiscount || activeGlobalDiscount) && discountAmount > 0 && (
+        <TicketRow style={{ color: "#059669" }}>
+          <span>
+            Discount
+            {appliedDiscount && ` (${appliedDiscount.code})`}
+            {activeGlobalDiscount && (appliedDiscount ? ` · ${activeGlobalDiscount.name}` : ` (${activeGlobalDiscount.name})`)}
+          </span>
+          <span><NumberFlow value={-discountAmount} format={{ style: "currency", currency: "CAD" }} /></span>
+        </TicketRow>
+      )}
+      {appliedGiftCard && (
+        <TicketRow style={{ color: "#7c3aed" }}>
+          <span>Gift Card</span>
+          <span>- <NumberFlow value={gcDeduction} format={{ style: "currency", currency: "CAD" }} /></span>
+        </TicketRow>
+      )}
+      <TicketRow>
+        <span>HST (13%)</span>
+        <span><NumberFlow value={taxAmount} format={{ style: "currency", currency: "CAD" }} /></span>
+      </TicketRow>
+      <TicketTotalRow>
+        <span>Total</span>
+        <span>
+          {finalTotal === 0 ? "Free" : <NumberFlow value={finalTotal} format={{ style: "currency", currency: "CAD" }} />}
+        </span>
+      </TicketTotalRow>
+    </>
+  );
 
   return (
     <ConfigProvider theme={appTheme}>
@@ -2189,6 +2428,7 @@ const ReviewAndPaymentStep = ({
           }
         >
           <StepContainer>
+            <LeftColumnWrap>
             {isExpired && (
               <ExpiredOverlay>
                 <ExpiredContent>
@@ -2277,6 +2517,18 @@ const ReviewAndPaymentStep = ({
                   )}
                 </AnimatePresence>
               </MobileSummaryContainer>
+
+              <Drawer.Root open={priceDetailsDrawerOpen} onOpenChange={setPriceDetailsDrawerOpen}>
+                <Drawer.Portal>
+                  <PriceDetailsDrawerOverlay />
+                  <PriceDetailsDrawerContent>
+                    <PriceDetailsDrawerHandle />
+                    <PriceDetailsDrawerBody>
+                      {renderPriceDetailsDrawerContent()}
+                    </PriceDetailsDrawerBody>
+                  </PriceDetailsDrawerContent>
+                </Drawer.Portal>
+              </Drawer.Root>
 
               <MobilePromoSection>
                 {!showPromoGiftCard && !appliedDiscount && !appliedGiftCard ? (
@@ -2389,7 +2641,6 @@ const ReviewAndPaymentStep = ({
                         marginTop: 16,
                       }}
                     >
-                      <SectionTitle>Contact Info</SectionTitle>
                       <div
                         style={{
                           display: "grid",
@@ -2437,20 +2688,34 @@ const ReviewAndPaymentStep = ({
                     />
 
                     <div>
-                      <Form.Item
-                        name="notes"
-                        label={<FieldLabel>Additional Notes</FieldLabel>}
-                      >
-                        <Input.TextArea
-                          placeholder="e.g. Any dietary restrictions or special requests"
-                          rows={2}
-                        />
-                      </Form.Item>
+                      {!showAdditionalNotes ? (
+                        <AdditionalNotesRevealButton
+                          type="button"
+                          onClick={() => setShowAdditionalNotes(true)}
+                        >
+                          <ChevronRight size={18} />
+                          <span>Additional notes</span>
+                        </AdditionalNotesRevealButton>
+                      ) : (
+                        <Form.Item
+                          name="notes"
+                          label={<FieldLabel>Additional Notes</FieldLabel>}
+                        >
+                          <Input.TextArea
+                            placeholder="e.g. Any dietary restrictions or special requests"
+                            rows={2}
+                          />
+                        </Form.Item>
+                      )}
                     </div>
                   </Form>
                 </fieldset>
               </FormCard>
             </PaymentSection>
+            {confirmFooter && (
+              <DesktopConfirmFooterWrap>{confirmFooter}</DesktopConfirmFooterWrap>
+            )}
+            </LeftColumnWrap>
 
             <SummarySection>{renderTicketSummary()}</SummarySection>
           </StepContainer>

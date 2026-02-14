@@ -137,30 +137,43 @@ const ReviewsContainer = styled(motion.div)`
   border-radius: 16px;
   width: 100%;
   max-width: 800px;
+  padding: 1rem;
 
   @media (max-width: 768px) {
-    padding: 1.5rem;
+    padding: 1rem;
     border-radius: 12px;
   }
 `;
 
 const Header = styled.h2`
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #000;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  flex-wrap: wrap;
 
   svg {
     color: #ff385c;
   }
 
   @media (max-width: 768px) {
-    font-size: 1.375rem;
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.75rem;
   }
+`;
+
+const HeaderTitle = styled.span`
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
+
+const HeaderRating = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
 `;
 
 const ReviewsColumn = styled.div`
@@ -747,8 +760,10 @@ const Reviews = ({
     return (
       <ReviewsContainer>
         <Header>
-          <Star size={24} />
-          {initialRating.toFixed(1)} · {initialReviewCount} reviews
+          <HeaderTitle>What guests are saying</HeaderTitle>
+          <HeaderRating>
+            <Star size={20} /> {initialRating.toFixed(1)} · {initialReviewCount} reviews
+          </HeaderRating>
         </Header>
         <ReviewsColumn>
           <ReviewSkeletonLoader />
@@ -763,7 +778,8 @@ const Reviews = ({
     return (
       <ReviewsContainer>
         <Header>
-          <Star size={24} /> New Experience
+          <Star size={24} />
+          <HeaderTitle>What guests are saying</HeaderTitle>
         </Header>
         <EmptyState>
           <h3>No reviews yet</h3>
@@ -815,9 +831,11 @@ const Reviews = ({
         transition={{ duration: 0.3 }}
       >
         <Header>
-          <Star size={24} />
-          {initialRating.toFixed(1)} · {initialReviewCount} review
-          {initialReviewCount !== 1 ? "s" : ""}
+          <HeaderTitle>What guests are saying</HeaderTitle>
+          <HeaderRating>
+            <Star size={20} /> {initialRating.toFixed(1)} · {initialReviewCount} review
+            {initialReviewCount !== 1 ? "s" : ""}
+          </HeaderRating>
         </Header>
 
         <ReviewsColumn>

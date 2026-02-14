@@ -79,8 +79,9 @@ const MobileHeaderSection = styled.div`
 `;
 const MobileTitleRow = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
+  text-align: center;
   gap: 1rem;
 `;
 const MobileStyledTitle = styled(Title)`
@@ -136,30 +137,21 @@ const InfoWrapper = styled.section`
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 0 1rem;
+  padding: 1rem;
   background: white;
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
   /* Removed gap to allow Divider to control spacing */
-  @media (max-width: 1024px) {
-    padding-top: 1.5rem;
-  }
-  @media (max-width: 768px) {
-    padding: 1.5rem 0 0 0;
-  }
-  @media (max-width: 480px) {
-    padding: 1rem;
-  }
 `;
 const BusinessSection = styled.div`
-  /* Removed border-bottom and large padding */
   padding: 0;
   @media (max-width: 768px) {
-    padding: 0 0.75rem;
+    padding: 0 1rem;
+    display: flex;
+    justify-content: center;
   }
   @media (max-width: 480px) {
-    padding: 0 0.5rem;
-    /* Removed border-top */
+    padding: 0 1rem;
   }
 `;
 const BusinessInfo = styled.button`
@@ -187,6 +179,9 @@ const BusinessInfo = styled.button`
     cursor: default;
     background-color: transparent;
     opacity: 0.7;
+  }
+  @media (max-width: 768px) {
+    justify-content: center;
   }
   @media (max-width: 480px) {
     gap: 0.6rem;
@@ -512,23 +507,6 @@ const ClassInformation = React.memo(
         <MobileHeaderSection>
           <MobileTitleRow>
             <MobileStyledTitle level={1}>{title}</MobileStyledTitle>
-            <MobileActionsWrapper>
-              <Tooltip title="Share this class">
-                <MobileActionButton onClick={onShareClick}>
-                  <Share2 size={20} />
-                </MobileActionButton>
-              </Tooltip>
-              <MobileActionButton
-                onClick={onFavoriteClick}
-                disabled={isTogglingFavorite}
-              >
-                <Heart
-                  size={20}
-                  fill={isFavorite ? CLASSEASILY_RED : "none"}
-                  color={isFavorite ? CLASSEASILY_RED : "#333"}
-                />
-              </MobileActionButton>
-            </MobileActionsWrapper>
           </MobileTitleRow>
         </MobileHeaderSection>
 

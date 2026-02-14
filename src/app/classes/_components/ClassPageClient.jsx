@@ -15,10 +15,11 @@ import confetti from "canvas-confetti";
 import dynamic from "next/dynamic";
 
 import posthog from "posthog-js";
+import ExploreHeader from "@/components/explore/ExploreHeader";
 import ClassPageImagesTitle from "./ClassPageImagesTitle";
 import ClassInformation from "./ClassInformation";
 import { classService } from "@/services/apiService.js";
-import { Alert, Button as AntButton } from "antd";
+import { Alert, Button as AntButton, Divider } from "antd";
 import message from "@/lib/message";
 
 // Dynamic imports for better code splitting
@@ -67,15 +68,11 @@ const Skel_MapSection = styled.div`
   border-radius: 14px;
   overflow: hidden;
   height: 400px;
-  margin-top: 2.5rem;
-  margin-bottom: 2.5rem;
 
   @media (max-width: 768px) {
     height: 300px;
     border-radius: 12px;
-    margin-top: 0;
-    margin-bottom: 0;
-    padding: 2rem 0.75rem;
+    padding: 1rem;
   }
 `;
 
@@ -94,9 +91,9 @@ const Skel_Map = styled(Skel_Base)`
 const Skel_FeaturesSection = styled.div`
   background: white;
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1rem;
   @media (max-width: 768px) {
-    padding: 1.5rem;
+    padding: 1rem;
     border-radius: 12px;
   }
 `;
@@ -121,9 +118,9 @@ const Skel_FeatureTag = styled(Skel_Base)`
 const Skel_ReviewsSection = styled.div`
   background: white;
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1rem;
   @media (max-width: 768px) {
-    padding: 1.5rem;
+    padding: 1rem;
     border-radius: 12px;
   }
 `;
@@ -179,9 +176,9 @@ const Skel_ReviewComment = styled(Skel_Base)`
 const Skel_HostSection = styled.div`
   background: white;
   border-radius: 16px;
-  padding: 2rem;
+  padding: 1rem;
   @media (max-width: 768px) {
-    padding: 1.5rem;
+    padding: 1rem;
     border-radius: 12px;
   }
 `;
@@ -298,7 +295,6 @@ const MainContentLayout = styled.div`
 const PrimaryContentArea = styled.main`
   display: flex;
   flex-direction: column;
-  gap: 2rem;
   min-width: 0;
 
   @media (max-width: 768px) {
@@ -438,14 +434,49 @@ const MobileBestPriceSingleLine = styled(motion.div)`
   white-space: nowrap;
 `;
 
-const MapSectionWrapper = styled.section`
-  margin-top: 2.5rem;
-  margin-bottom: 2.5rem;
-
+const DesktopHeaderWrapper = styled.div`
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 100;
   @media (max-width: 768px) {
-    padding: 2rem 0.75rem;
+    display: none;
+  }
+`;
+
+const PageSectionTitle = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 1rem 0;
+  line-height: 1.3;
+  @media (max-width: 768px) {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+`;
+
+const MapSectionWrapper = styled.section.attrs({ className: "map-section-wrapper" })`
+  /* Override globals.css .map-section-wrapper for this component */
+  &.map-section-wrapper {
     margin-top: 0;
     margin-bottom: 0;
+    padding: 0;
+  }
+
+  @media (max-width: 768px) {
+    &.map-section-wrapper {
+      padding: 1rem;
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+  }
+`;
+
+const SectionDividerAnt = styled(Divider)`
+  margin: 2rem 0 !important;
+  @media (max-width: 768px) {
+    margin: 0.5rem 0 !important;
   }
 `;
 
@@ -986,6 +1017,9 @@ export default function ClassPageClient({
 
   return (
     <>
+      <DesktopHeaderWrapper>
+        <ExploreHeader showOptionsWrapper={false} />
+      </DesktopHeaderWrapper>
       <ContentWrapper>
         {/* Render Title & Images immediately for SEO */}
         <ClassPageImagesTitle
@@ -1021,6 +1055,8 @@ export default function ClassPageClient({
               onFavoriteClick={handleFavoriteClick}
               onShareClick={handleOpenShareModal}
             />
+
+            <SectionDividerAnt />
 
             {/* Suspense fallback for client-heavy components */}
             <Suspense
@@ -1073,27 +1109,32 @@ export default function ClassPageClient({
               }
             >
               {classData.coordinates && (
-                <MapSectionWrapper>
-                  <MapInnerContainer>
-                    <ClassPageMap
-                      coordinates={classData.coordinates}
-                      saltLocation={classData.saltLocation}
-                      businessName={
-                        businessData?.businessName || classData.title
-                      }
-                      fullAddress={!classData.saltLocation ? fullAddress : null}
-                    />
-                  </MapInnerContainer>
-                  {!classData.saltLocation && fullAddress && (
-                    <AddressDisplay>{fullAddress}</AddressDisplay>
-                  )}
-                </MapSectionWrapper>
+                <>
+                  <MapSectionWrapper>
+                    <PageSectionTitle>Where you&apos;ll be</PageSectionTitle>
+                    <MapInnerContainer>
+                      <ClassPageMap
+                        coordinates={classData.coordinates}
+                        saltLocation={classData.saltLocation}
+                        businessName={
+                          businessData?.businessName || classData.title
+                        }
+                        fullAddress={!classData.saltLocation ? fullAddress : null}
+                      />
+                    </MapInnerContainer>
+                    {!classData.saltLocation && fullAddress && (
+                      <AddressDisplay>{fullAddress}</AddressDisplay>
+                    )}
+                  </MapSectionWrapper>
+                  <SectionDividerAnt />
+                </>
               )}
               <ClassOffers
                 features={
                   Array.isArray(classData.features) ? classData.features : []
                 }
               />
+              <SectionDividerAnt />
               <Reviews
                 slug={classData.slug}
                 initialRating={classData.average_rating || 0}
@@ -1101,6 +1142,7 @@ export default function ClassPageClient({
                 platformReviewCount={classData.platform_review_count || 0}
                 serverReviews={initialReviews || null}
               />
+              <SectionDividerAnt />
               {businessData && (
                 <HostInfo
                   businessData={businessData}
