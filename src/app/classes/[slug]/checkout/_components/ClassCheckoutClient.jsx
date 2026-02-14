@@ -4,12 +4,13 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styled from "styled-components";
-import { X, ArrowLeft } from "lucide-react";
+import { X, ArrowLeft, ChevronLeft } from "lucide-react";
 import dynamic from "next/dynamic";
 import { paymentService } from "@/services/apiService";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { classService } from "@/services/apiService";
 import { motion, AnimatePresence } from "framer-motion";
+import ClientHeader from "@/components/layout/ClientHeader";
 
 const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
 
@@ -18,12 +19,8 @@ const ReviewAndPaymentStep = dynamic(
   { loading: () => <div style={{ minHeight: "400px" }} />, ssr: false }
 );
 
-const ClientHeader = dynamic(
-  () => import("@/components/layout/ClientHeader"),
-  { ssr: false, loading: () => null }
-);
+// --- STYLED COMPONENTS ---
 
-// --- Modal-style checkout (no header, harder to leave; "Review and continue" bar) ---
 const PageWrapper = styled.div`
   width: 100%;
   min-height: 100vh;
@@ -31,19 +28,74 @@ const PageWrapper = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  background:rgb(252, 252, 252);
+  background: rgb(252, 252, 252);
 `;
 
-const DesktopHeaderWrap = styled.div`
+/* ClientHeader wrapper: show only on desktop, above checkout bar */
+const DesktopClientHeaderWrap = styled.div`
   display: none;
   @media (min-width: 970px) {
     display: block;
     width: 100%;
-    flex-shrink: 0;
   }
 `;
 
-const CheckoutModalBar = styled.header`
+/* --- NEW CUSTOM DESKTOP HEADER --- */
+const DesktopHeaderBar = styled.header`
+  display: none;
+  @media (min-width: 970px) {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    border-bottom: 1px solid #e5e7eb;
+    height: 80px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+`;
+
+const DesktopHeaderContent = styled.div`
+  max-width: 1000px; /* Matches MainContainer */
+  width: 100%;
+  padding: 0 16px; /* Matches MainContainer padding */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+`;
+
+const HeaderTitle = styled.h1`
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+`;
+
+const DesktopBackButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 50%;
+  background: white;
+  color: #111827;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+  }
+`;
+
+/* Mobile Header (unchanged) */
+const MobileHeaderBar = styled.header`
   display: grid;
   grid-template-columns: 52px 1fr 52px;
   align-items: center;
@@ -53,9 +105,10 @@ const CheckoutModalBar = styled.header`
   background: transparent;
   box-sizing: border-box;
   @media (min-width: 970px) {
-    grid-template-columns: 1fr;
+    display: none;
   }
 `;
+
 const CloseButton = styled.button`
   display: flex;
   align-items: center;
@@ -74,34 +127,8 @@ const CloseButton = styled.button`
   &:hover {
     color: #374151;
   }
-  @media (min-width: 970px) {
-    display: none;
-  }
 `;
 
-const BackButtonDesktop = styled.button`
-  display: none;
-  @media (min-width: 970px) {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    width: 40px;
-    height: 40px;
-    margin-bottom: 16px;
-    border: none;
-    border-radius: 50%;
-    background: transparent;
-    color: #6b7280;
-    cursor: pointer;
-    transition: color 0.15s ease, background 0.15s ease;
-    flex-shrink: 0;
-    &:hover {
-      color: #374151;
-      background: rgba(0, 0, 0, 0.04);
-    }
-  }
-`;
 const TitleCard = styled.div`
   display: flex;
   align-items: center;
@@ -115,6 +142,7 @@ const TitleCard = styled.div`
   grid-column: 2;
   justify-self: center;
 `;
+
 const CheckoutModalTitle = styled.h1`
   font-size: 1.25rem;
   font-weight: 600;
@@ -158,11 +186,15 @@ const MobileFooterWrap = styled.div`
 `;
 
 const TermsText = styled.p`
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
   font-size: 0.75rem;
   color: #6b7280;
   line-height: 1.45;
   text-align: center;
+  
+  @media (max-width: 968px) {
+    margin-bottom: 12px;
+  }
 
   a {
     color: #ff385c;
@@ -181,20 +213,22 @@ const ConfirmButton = styled(motion.button)`
   border: none;
   padding: 14px 24px;
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.1s ease, background-color 0.2s;
 
   &:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+    background: #ff385c;
   }
   &:hover:not(:disabled) {
     background: #e31c5f;
   }
-
-  @media (min-width: 969px) {
-    max-width: 320px;
+  &:active:not(:disabled) {
+    transform: scale(0.98);
   }
 `;
 
@@ -207,9 +241,6 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
   const [paymentAction, setPaymentAction] = useState(null);
   const cancelledIntentRef = useRef(false);
 
-  // Load checkout state from sessionStorage (persists across refresh); redirect only if invalid.
-  // When restoring, we must await cancel of the previous PaymentIntent so spots are released before
-  // the payment step creates a new one (otherwise "not enough spots" race can occur).
   useEffect(() => {
     if (typeof window === "undefined" || !slug) return;
 
@@ -239,8 +270,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
 
         const { paymentIntentId, clientSecret, ...restBookingData } =
           state.bookingData || {};
-        // Release the previous session's hold before we render the payment step.
-        // Await so spots are freed before createPaymentIntent runs (avoids "not enough spots" race).
+        
         if (paymentIntentId && !cancelled) {
           await paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
         }
@@ -362,9 +392,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
               }
             }
           } catch (e) {
-            if (process.env.NODE_ENV === "development") {
-              console.warn("[Checkout] Persist booking data failed:", e);
-            }
+            console.warn("[Checkout] Persist booking data failed:", e);
           }
         }
         return next;
@@ -382,13 +410,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
   const handleCloseCheckout = () => {
     const intentId = bookingData?.paymentIntentId;
     if (intentId && !cancelledIntentRef.current) {
-      paymentService
-        .cancelPaymentIntent(intentId)
-        .catch((e) => {
-          if (process.env.NODE_ENV === "development") {
-            console.warn("[Checkout] Cancel intent on close failed:", e);
-          }
-        });
+      paymentService.cancelPaymentIntent(intentId).catch(() => {});
     }
     clearIntentFromStorage();
     router.replace(`/classes/${slug}`);
@@ -397,67 +419,79 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
   if (loading || !bookingData || !classData) {
     return (
       <PageWrapper>
-        <DesktopHeaderWrap>
-          <ClientHeader showOptionsWrapper={false} />
-        </DesktopHeaderWrap>
-        <CheckoutModalBar>
-          <CloseButton type="button" onClick={() => router.replace(`/classes/${slug}`)} aria-label="Close">
-            <X size={20} />
-          </CloseButton>
-          <TitleCard>
-            <CheckoutModalTitle>Review and continue</CheckoutModalTitle>
-          </TitleCard>
-        </CheckoutModalBar>
+        <DesktopClientHeaderWrap>
+          <ClientHeader />
+        </DesktopClientHeaderWrap>
+        <DesktopHeaderBar>
+           <DesktopHeaderContent>
+              <DesktopBackButton onClick={() => router.replace(`/classes/${slug}`)}>
+                 <ChevronLeft size={20} />
+              </DesktopBackButton>
+              <HeaderTitle>Review and continue</HeaderTitle>
+           </DesktopHeaderContent>
+        </DesktopHeaderBar>
+        
+        <MobileHeaderBar>
+          <CloseButton onClick={() => router.replace(`/classes/${slug}`)}><X size={20} /></CloseButton>
+          <TitleCard><CheckoutModalTitle>Review and continue</CheckoutModalTitle></TitleCard>
+        </MobileHeaderBar>
+
         <MainContainer>
-          <BackButtonDesktop
-            type="button"
-            onClick={() => router.replace(`/classes/${slug}`)}
-            aria-label="Back to experience"
-          >
-            <ArrowLeft size={22} />
-          </BackButtonDesktop>
-          <div style={{ padding: "60px 0", textAlign: "center" }}>
-            Loading checkout…
-          </div>
+          <div style={{ padding: "60px 0", textAlign: "center" }}>Loading checkout…</div>
         </MainContainer>
       </PageWrapper>
     );
   }
 
-  const canSubmit =
-    paymentAction?.canSubmit !== false && paymentAction?.handleSubmit;
-
-  /* Show Confirm and Pay footer only when form is valid / Stripe ready (or free); hide when payment button is in card drawer */
-  const showConfirmFooter =
-    paymentAction &&
-    canSubmit &&
-    (paymentAction.showFooterButton !== false);
+  const canSubmit = paymentAction?.canSubmit !== false && paymentAction?.handleSubmit;
+  
+  // Logic for the button content
+  const FooterContent = (
+    <>
+      <TermsText>
+        By selecting the button below, I agree to the{" "}
+        <Link href="/terms-of-service">Host Terms</Link>,{" "}
+        <Link href="/fees">Payment Terms of Service</Link>, and{" "}
+        <Link href="/privacy-policy">Privacy Policy</Link>.
+      </TermsText>
+      <ConfirmButton
+        type="button"
+        disabled={paymentAction?.loading || !canSubmit}
+        onClick={() => paymentAction?.handleSubmit?.()}
+        whileTap={{ scale: 0.98 }}
+      >
+        {paymentAction?.loading ? "Processing…" : "Complete Booking"}
+      </ConfirmButton>
+    </>
+  );
 
   return (
     <PageWrapper>
-      <DesktopHeaderWrap>
+      {/* ClientHeader on desktop only, above checkout nav */}
+      <DesktopClientHeaderWrap>
         <ClientHeader showOptionsWrapper={false} />
-      </DesktopHeaderWrap>
-      <CheckoutModalBar>
-        <CloseButton
-          type="button"
-          onClick={handleCloseCheckout}
-          aria-label="Close and return to experience"
-        >
+      </DesktopClientHeaderWrap>
+      {/* 1. Custom Desktop Header */}
+      <DesktopHeaderBar>
+         <DesktopHeaderContent>
+            <DesktopBackButton onClick={handleCloseCheckout} aria-label="Back">
+               <ChevronLeft size={24} />
+            </DesktopBackButton>
+            <HeaderTitle>Review and continue</HeaderTitle>
+         </DesktopHeaderContent>
+      </DesktopHeaderBar>
+
+      {/* Mobile Header (Hidden on Desktop) */}
+      <MobileHeaderBar>
+        <CloseButton type="button" onClick={handleCloseCheckout} aria-label="Close">
           <X size={20} />
         </CloseButton>
         <TitleCard>
           <CheckoutModalTitle>Review and continue</CheckoutModalTitle>
         </TitleCard>
-      </CheckoutModalBar>
+      </MobileHeaderBar>
+
       <MainContainer>
-          <BackButtonDesktop
-            type="button"
-            onClick={handleCloseCheckout}
-            aria-label="Back to experience"
-          >
-            <ArrowLeft size={22} />
-          </BackButtonDesktop>
           <ReviewAndPaymentStep
             bookingData={bookingData}
             classData={classData}
@@ -468,51 +502,22 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
             onPaymentAction={setPaymentAction}
             userTimeZone={userTimeZone}
             businessTimeZone={businessTimeZone}
-            confirmFooter={
-              showConfirmFooter ? (
-                <>
-                  <TermsText>
-                    By selecting the button below, I agree to the{" "}
-                    <Link href="/terms-of-service">Host Terms</Link>,{" "}
-                    <Link href="/fees">Payment Terms of Service</Link>, and{" "}
-                    <Link href="/privacy-policy">Privacy Policy</Link>.
-                  </TermsText>
-                  <ConfirmButton
-                    type="button"
-                    disabled={paymentAction.loading}
-                    onClick={() => paymentAction.handleSubmit?.()}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {paymentAction.loading ? "Processing…" : "Confirm and Pay"}
-                  </ConfirmButton>
-                </>
-              ) : null
-            }
+            confirmFooter={FooterContent}
           />
 
+          {/* Mobile Floating Footer */}
           <MobileFooterWrap>
             <AnimatePresence>
-              {showConfirmFooter && (
+              {/* Show footer only when payment step is active (controlled inside ReviewAndPaymentStep logic) 
+                  but we receive the signal via paymentAction.showFooterButton */}
+              {paymentAction?.showFooterButton && (
                 <CheckoutFooter
                   initial={{ y: 32, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: 24, opacity: 0 }}
                   transition={{ type: "spring", damping: 26, stiffness: 300 }}
                 >
-                  <TermsText>
-                    By selecting the button below, I agree to the{" "}
-                    <Link href="/terms-of-service">Host Terms</Link>,{" "}
-                    <Link href="/fees">Payment Terms of Service</Link>, and{" "}
-                    <Link href="/privacy-policy">Privacy Policy</Link>.
-                  </TermsText>
-                  <ConfirmButton
-                    type="button"
-                    disabled={paymentAction.loading}
-                    onClick={() => paymentAction.handleSubmit?.()}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {paymentAction.loading ? "Processing…" : "Confirm and Pay"}
-                  </ConfirmButton>
+                  {FooterContent}
                 </CheckoutFooter>
               )}
             </AnimatePresence>
