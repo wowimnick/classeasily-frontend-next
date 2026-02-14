@@ -1874,11 +1874,21 @@ const ReviewAndPaymentStep = ({
     businessTimeZone,
   ]);
 
+  // Stripe font size: 14px desktop, 16px mobile (16px avoids iOS zoom on focus)
+  const [stripeFontSize, setStripeFontSize] = useState("16px");
+  useEffect(() => {
+    const updateStripeFontSize = () => {
+      setStripeFontSize(
+        typeof window !== "undefined" && window.innerWidth < 969 ? "16px" : "14px"
+      );
+    };
+    updateStripeFontSize();
+    window.addEventListener("resize", updateStripeFontSize);
+    return () => window.removeEventListener("resize", updateStripeFontSize);
+  }, []);
+
   const stripeAppearance = useMemo(() => {
-    // System font stack so Stripe iframe renders correctly on mobile; 16px prevents iOS zoom on focus
-    const stripeFont =
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-    const stripeFontSize = "16px";
+    const stripeFont = '"Proxima Soft", sans-serif';
     return {
       theme: "stripe",
       variables: {
@@ -1893,8 +1903,8 @@ const ReviewAndPaymentStep = ({
       },
       rules: {
         ".Input": {
-          paddingTop: "16px",
-          paddingBottom: "16px",
+          paddingTop: stripeFontSize,
+          paddingBottom: stripeFontSize,
           paddingLeft: "16px",
           paddingRight: "16px",
           borderColor: appTheme.token.colorBorder,
@@ -1904,7 +1914,6 @@ const ReviewAndPaymentStep = ({
           fontSize: stripeFontSize,
           fontWeight: "500",
         },
-        // Added Hover Effect
         ".Input:hover": {
           borderColor: appTheme.token.colorPrimary,
         },
@@ -1943,7 +1952,7 @@ const ReviewAndPaymentStep = ({
         },
       },
     };
-  }, []);
+  }, [stripeFontSize]);
 
   const renderTimerContent = () => {
     if (isFree || isExpired) return null;
@@ -2167,7 +2176,7 @@ const ReviewAndPaymentStep = ({
       ) : (
         <Elements
           stripe={stripePromise}
-          key={clientSecret || "free-mode"}
+          key={`${clientSecret || "free-mode"}-${stripeFontSize}`}
           options={
             isFree
               ? undefined
