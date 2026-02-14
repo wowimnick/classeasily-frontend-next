@@ -1152,12 +1152,14 @@ const ReviewAndPaymentStep = ({
   const isFree = finalTotal === 0;
 
   // --- TIMER EFFECT ---
+  // Reset timer whenever we have a (possibly new) PaymentIntent so each hold gets a full 15 min.
   useEffect(() => {
-    if (!clientSecret || isFree || isExpired) return;
+    if (!clientSecret || isFree) return;
 
-    if (!expirationTimestampRef.current) {
-      expirationTimestampRef.current = Date.now() + 15 * 60 * 1000;
-    }
+    const fifteenMinutesMs = 15 * 60 * 1000;
+    expirationTimestampRef.current = Date.now() + fifteenMinutesMs;
+    setTimeRemaining(15 * 60);
+    setIsExpired(false);
 
     const timer = setInterval(() => {
       const now = Date.now();
@@ -1175,7 +1177,7 @@ const ReviewAndPaymentStep = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [clientSecret, isFree, isExpired]);
+  }, [clientSecret, isFree]);
 
   const handleSessionExpired = () => {
     window.location.reload();
