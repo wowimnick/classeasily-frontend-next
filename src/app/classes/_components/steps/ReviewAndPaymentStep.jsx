@@ -814,6 +814,8 @@ const ExpressCheckoutButton = ({
   isFormValid,
   onPaymentRequestReady,
   inSelectorMode,
+  /** When provided (e.g. mobile custom selector), render this instead of Stripe's button; it receives paymentRequest so the parent can call paymentRequest.show() */
+  customTrigger,
 }) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
@@ -929,6 +931,10 @@ const ExpressCheckoutButton = ({
 
   if (!paymentRequest || !isFormValid) return null;
 
+  if (customTrigger) {
+    return <div style={{ marginBottom: 0 }}>{customTrigger(paymentRequest)}</div>;
+  }
+
   return (
     <div style={{ marginBottom: inSelectorMode ? 0 : 24 }}>
       <PaymentRequestButtonElement options={{ paymentRequest }} />
@@ -1005,6 +1011,29 @@ const OpenCardDrawerButton = styled.button`
     background: #fff5f6;
   }
 `;
+
+/* Custom Apple Pay button for mobile (calls paymentRequest.show(); font matches app) */
+const CustomApplePayButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 24px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #222;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Proxima Soft", sans-serif;
+  transition: border-color 0.2s, background 0.2s;
+  &:hover {
+    border-color: #ff385c;
+    background: #fff5f6;
+  }
+`;
 /* Vaul drawer for card payment */
 const CardDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
@@ -1038,6 +1067,7 @@ const CardDrawerBody = styled.div`
   padding: 20px 24px 16px;
   min-height: 0;
   flex: 1;
+  font-family: "Proxima Soft", sans-serif;
 `;
 const CardDrawerFooter = styled.div`
   flex-shrink: 0;
@@ -1045,6 +1075,7 @@ const CardDrawerFooter = styled.div`
   padding-bottom: max(16px, env(safe-area-inset-bottom));
   border-top: 1px solid #e5e7eb;
   background: white;
+  font-family: "Proxima Soft", sans-serif;
 `;
 const CardDrawerConfirmButton = styled.button`
   width: 100%;
@@ -1055,6 +1086,7 @@ const CardDrawerConfirmButton = styled.button`
   border-radius: 8px;
   font-weight: 600;
   font-size: 1rem;
+  font-family: "Proxima Soft", sans-serif;
   cursor: pointer;
   &:disabled {
     opacity: 0.7;
@@ -1110,6 +1142,14 @@ const PaymentFormContent = ({
   const [selectedMethod, setSelectedMethod] = useState("apple_pay");
   const [cardDrawerOpen, setCardDrawerOpen] = useState(false);
 
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(typeof window !== "undefined" && window.innerWidth < 969);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   const handleLoadError = useCallback(
     (event) => {
       const msg = event?.error?.message || "";
@@ -1123,8 +1163,9 @@ const PaymentFormContent = ({
     [onPaymentLoadError]
   );
 
-  const showCardInline = !hasApplePay;
-  const showCardInDrawer = hasApplePay && selectedMethod === "card" && cardDrawerOpen;
+  const useSelectorLayout = isMobile && hasApplePay;
+  const showCardInline = !useSelectorLayout;
+  const showCardInDrawer = useSelectorLayout && selectedMethod === "card" && cardDrawerOpen;
   const shouldMountPaymentElement = !!clientSecret && !isFree && (showCardInline || showCardInDrawer);
 
   useEffect(() => {
@@ -1142,7 +1183,7 @@ const PaymentFormContent = ({
     };
   }, [shouldMountPaymentElement]);
 
-  const hideFooterButton = hasApplePay && selectedMethod === "card";
+  const hideFooterButton = useSelectorLayout && selectedMethod === "card";
 
   useEffect(() => {
     const canSubmit = isFree
@@ -1186,7 +1227,7 @@ const PaymentFormContent = ({
             paddingTop: 24,
           }}
         >
-          {hasApplePay ? (
+          {useSelectorLayout ? (
             <>
               <PaymentMethodSelector>
                 <PaymentMethodOption
@@ -1218,6 +1259,15 @@ const PaymentFormContent = ({
                   isFormValid={isFormValid}
                   onPaymentRequestReady={() => setHasApplePay(true)}
                   inSelectorMode
+                  customTrigger={(paymentRequest) => (
+                    <CustomApplePayButton
+                      type="button"
+                      onClick={() => paymentRequest.show()}
+                    >
+                      <Wallet size={20} />
+                      Pay with Apple Pay
+                    </CustomApplePayButton>
+                  )}
                 />
               )}
               {selectedMethod === "card" && (
