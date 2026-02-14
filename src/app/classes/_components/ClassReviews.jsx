@@ -21,7 +21,7 @@ import {
   Globe,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { classService } from "@/services/apiService";
+import { classService, businessService } from "@/services/apiService";
 
 // --- ANIMATIONS & SKELETONS ---
 
@@ -486,11 +486,21 @@ const EmptyState = styled.div`
 // --- Helpers ---
 const normalizeReview = (review) => ({
   ...review,
+  id: review.id ?? review.reviewId ?? review.google_review_id,
   reviewer_avatar_url:
     review.reviewer_avatar_url || review.user?.avatar_thumb_url,
   reviewer_name: review.reviewer_name || review.user?.name,
-  image_urls: review.image_urls || [],
+  image_urls:
+    review.image_urls?.length > 0
+      ? review.image_urls
+      : review.image_medium_url
+        ? [review.image_medium_url]
+        : [],
   business_response: review.business_response || review.owner_response,
+  date:
+    review.date ||
+    review.createdAt ||
+    review.review_date,
 });
 
 const ReviewSkeletonLoader = () => (
@@ -516,8 +526,9 @@ const Reviews = ({
   slug,
   initialRating,
   initialReviewCount,
-  platformReviewCount,
+  platformReviewCount = 0,
   serverReviews = null,
+  reviewsContext = "class", // "class" | "business"
 }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false); // Track client-side mount
@@ -580,6 +591,8 @@ const Reviews = ({
   );
 
   // --- Data Fetching ---
+  const isBusinessContext = reviewsContext === "business";
+
   useEffect(() => {
     const fetchPreviewReviews = async () => {
       if (
@@ -592,13 +605,20 @@ const Reviews = ({
       }
       try {
         setLoadingPreview(true);
-        const result = await classService.fetchClassReviewsPaginated(
-          slug,
-          1,
-          6,
-        );
-        if (result.success) {
-          setPreviewReviews((result.reviews || []).map(normalizeReview));
+        if (isBusinessContext) {
+          const result = await businessService.fetchBusinessReviews(slug, 1, 6);
+          if (result.success) {
+            setPreviewReviews((result.data || []).map(normalizeReview));
+          }
+        } else {
+          const result = await classService.fetchClassReviewsPaginated(
+            slug,
+            1,
+            6,
+          );
+          if (result.success) {
+            setPreviewReviews((result.reviews || []).map(normalizeReview));
+          }
         }
       } catch (error) {
         console.error("Error fetching preview reviews:", error);
@@ -607,28 +627,38 @@ const Reviews = ({
       }
     };
     fetchPreviewReviews();
-  }, [slug, initialReviewCount, normalizedServerReviews.length]);
+  }, [slug, initialReviewCount, normalizedServerReviews.length, isBusinessContext]);
 
   const loadModalReviews = async (page) => {
     if (!slug) return;
 
     try {
       setLoadingMore(true);
-      const result = await classService.fetchClassReviewsPaginated(
-        slug,
-        page,
-        10,
-      );
-
-      if (result.success) {
-        const newReviews = (result.reviews || []).map(normalizeReview);
-        const pagination = result.pagination || {};
-
-        setModalReviews((prev) =>
-          page === 1 ? newReviews : [...prev, ...newReviews],
+      if (isBusinessContext) {
+        const result = await businessService.fetchBusinessReviews(slug, page, 10);
+        if (result.success) {
+          const newReviews = (result.data || []).map(normalizeReview);
+          setModalReviews((prev) =>
+            page === 1 ? newReviews : [...prev, ...newReviews],
+          );
+          setModalPage(page);
+          setModalHasMore(result.hasMore || false);
+        }
+      } else {
+        const result = await classService.fetchClassReviewsPaginated(
+          slug,
+          page,
+          10,
         );
-        setModalPage(page);
-        setModalHasMore(pagination.has_more || false);
+        if (result.success) {
+          const newReviews = (result.reviews || []).map(normalizeReview);
+          const pagination = result.pagination || {};
+          setModalReviews((prev) =>
+            page === 1 ? newReviews : [...prev, ...newReviews],
+          );
+          setModalPage(page);
+          setModalHasMore(pagination.has_more || false);
+        }
       }
     } catch (error) {
       console.error("Error loading modal reviews:", error);

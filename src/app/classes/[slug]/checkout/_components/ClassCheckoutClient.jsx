@@ -94,7 +94,7 @@ const DesktopBackButton = styled.button`
   }
 `;
 
-/* Mobile Header (unchanged) */
+/* Mobile Header: full white background */
 const MobileHeaderBar = styled.header`
   display: grid;
   grid-template-columns: 52px 1fr 52px;
@@ -102,7 +102,7 @@ const MobileHeaderBar = styled.header`
   justify-items: center;
   width: 100%;
   min-height: 56px;
-  background: transparent;
+  background: white;
   box-sizing: border-box;
   @media (min-width: 970px) {
     display: none;
@@ -134,11 +134,7 @@ const TitleCard = styled.div`
   align-items: center;
   justify-content: center;
   padding: 12px 20px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(8px) saturate(180%);
-  -webkit-backdrop-filter: blur(8px) saturate(180%);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  border-radius: 0 0 20px 20px;
+  background: transparent;
   grid-column: 2;
   justify-self: center;
 `;
@@ -160,6 +156,10 @@ const MainContainer = styled.div`
 
   @media (max-width: 900px) {
     padding: 16px 12px 120px;
+  }
+
+  @media (max-width: 969px) {
+    padding: 0;
   }
 `;
 

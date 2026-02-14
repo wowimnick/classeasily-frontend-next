@@ -254,6 +254,25 @@ const AdditionalNotesRevealButton = styled.button`
   }
 `;
 
+/* Divider between express pay and card */
+const PaymentMethodDivider = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 500;
+
+  &::before,
+  &::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #e5e7eb;
+  }
+`;
+
 /* Payment Method Toggles */
 const CardRevealButton = styled.button`
   width: 100%;
@@ -439,11 +458,10 @@ const TicketTotalRow = styled(TicketRow)`
 const MobileSummaryContainer = styled.div`
   display: block;
   background: white;
-  border-radius: 16px;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e5e7eb;
-  margin-bottom: 16px;
+  margin-bottom: 0;
+  border-bottom: 1px solid #e5e7eb;
 
   @media (min-width: 969px) {
     display: none;
@@ -754,18 +772,29 @@ const TimerBadge = styled.div`
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: ${(props) => (props.$urgent ? "13px" : "12px")};
+  font-weight: ${(props) => (props.$urgent ? "700" : "500")};
   border-radius: 20px;
   transition: all 0.3s ease;
-  color: ${(props) => (props.$urgent ? "#dc2626" : "#4b5563")};
+  color: ${(props) => (props.$urgent ? "#dc2626" : "#9ca3af")};
   white-space: nowrap;
 `;
 
 const MobileTimerContainer = styled.div`
   display: flex;
   justify-content: center;
+  align-items: center;
+  padding: ${(props) => (props.$urgent ? "10px 12px" : "8px 0")};
+  margin-top: 8px;
   margin-bottom: 12px;
+  transition: background 0.3s ease, padding 0.3s ease;
+  ${(props) =>
+    props.$urgent &&
+    `
+    background: #fef2f2;
+    border-radius: 8px;
+    margin-top: 12px;
+  `}
   @media (min-width: 969px) {
     display: none;
   }
@@ -1144,6 +1173,10 @@ const PaymentFormContent = ({
             }}
         />
 
+        {hasExpressPay && (
+            <PaymentMethodDivider>or</PaymentMethodDivider>
+        )}
+
         {hasExpressPay && !showCardFields && (
             <CardRevealButton type="button" onClick={() => setShowCardFields(true)}>
                 <span><CreditCard size={18} /> Pay with Credit or Debit card</span>
@@ -1189,6 +1222,7 @@ const ReviewAndPaymentStep = ({
   
   // Step State: 'guest' | 'payment'
   const [checkoutStep, setCheckoutStep] = useState("guest");
+  const paymentStepRef = useRef(null);
   // Notes UI state
   const [showNotes, setShowNotes] = useState(false);
 
@@ -1571,7 +1605,13 @@ const ReviewAndPaymentStep = ({
   const handleGoToPayment = async () => {
     try {
         await form.validateFields(['booker_name', 'email', 'phone']);
+        setShowMobileSummary(false);
         setCheckoutStep("payment");
+        if (typeof window !== "undefined" && window.innerWidth < 969) {
+          setTimeout(() => {
+            paymentStepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 100);
+        }
         // Update intent with the now valid data so metadata is ready for Payment Request Button
         if (clientSecret) {
              const paymentIntentId = clientSecret.split("_secret_")[0];
@@ -1748,7 +1788,6 @@ const ReviewAndPaymentStep = ({
   }, []);
 
   const stripeAppearance = useMemo(() => {
-    const stripeFont = '"Proxima Soft", sans-serif';
     return {
       theme: "stripe",
       variables: {
@@ -1756,22 +1795,21 @@ const ReviewAndPaymentStep = ({
         colorBackground: "#ffffff",
         colorText: appTheme.token.colorText,
         colorDanger: appTheme.token.colorError,
-        fontFamily: stripeFont,
+        fontFamily: '"Proxima Soft", sans-serif',
         spacingUnit: "4px",
         borderRadius: `${appTheme.token.borderRadius}px`,
-        fontSizeBase: stripeFontSize,
+        fontSizeBase: `${appTheme.token.fontSize}px`,
       },
       rules: {
         ".Input": {
-          paddingTop: stripeFontSize,
-          paddingBottom: stripeFontSize,
+          paddingTop: "16px",
+          paddingBottom: "16px",
           paddingLeft: "16px",
           paddingRight: "16px",
           borderColor: appTheme.token.colorBorder,
           boxShadow: "none",
           transition: "border-color 0.2s, box-shadow 0.2s",
-          fontFamily: stripeFont,
-          fontSize: stripeFontSize,
+          fontFamily: '"Proxima Soft", sans-serif',
           fontWeight: "500",
         },
         ".Input:hover": {
@@ -1794,17 +1832,17 @@ const ReviewAndPaymentStep = ({
           fontWeight: "600",
           color: "#000",
           marginBottom: "8px",
-          fontFamily: stripeFont,
+          fontFamily: '"Proxima Soft", sans-serif',
         },
         ".Input::placeholder": {
           color: "#c5c5c5",
           fontWeight: "600",
-          fontFamily: stripeFont,
+          fontFamily: '"Proxima Soft", sans-serif',
         },
         ".Tab": {
           borderColor: appTheme.token.colorBorder,
           borderRadius: `${appTheme.token.borderRadius}px`,
-          fontFamily: stripeFont,
+          fontFamily: '"Proxima Soft", sans-serif',
           fontWeight: "600",
         },
         ".Tab:selected": {
@@ -1812,7 +1850,7 @@ const ReviewAndPaymentStep = ({
         },
       },
     };
-  }, [stripeFontSize]);
+  }, []);
   const renderTimerContent = () => {
     if (isFree || isExpired) return null;
     return (
@@ -2157,8 +2195,6 @@ const ReviewAndPaymentStep = ({
                 />
               )}
 
-              <MobileTimerContainer>{renderTimerContent()}</MobileTimerContainer>
-
               <MobileSummaryContainer>
                 <MobileSummaryHeader onClick={() => setShowMobileSummary(!showMobileSummary)}>
                   <div className="title-group"><Ticket size={20} /><span>Booking Summary</span></div>
@@ -2175,6 +2211,8 @@ const ReviewAndPaymentStep = ({
                   )}
                 </AnimatePresence>
               </MobileSummaryContainer>
+
+              <MobileTimerContainer $urgent={timeRemaining < 120}>{renderTimerContent()}</MobileTimerContainer>
 
               <Drawer.Root open={priceDetailsDrawerOpen} onOpenChange={setPriceDetailsDrawerOpen}>
                 <Drawer.Portal>
@@ -2353,7 +2391,7 @@ const ReviewAndPaymentStep = ({
                   </SectionCard>
 
                   {/* SECTION 2: PAYMENT */}
-                  <SectionCard style={{ marginTop: 24 }} $disabled={checkoutStep !== "payment"}>
+                  <SectionCard ref={paymentStepRef} style={{ marginTop: 24 }} $disabled={checkoutStep !== "payment"}>
                       <SectionHeader>
                           <h3>2. Payment</h3>
                       </SectionHeader>
