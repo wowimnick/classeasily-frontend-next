@@ -1124,6 +1124,8 @@ const CardDrawerConfirmButton = styled.button`
 
 const paymentElementOptions = {
   layout: "tabs",
+  // Show only card in Payment Element; we use our own selector for Apple Pay vs card on mobile.
+  paymentMethodOrder: ["card"],
   wallets: {
     applePay: "never",
     googlePay: "never",
