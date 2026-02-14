@@ -54,6 +54,7 @@ const CheckoutModalBar = styled.header`
   box-sizing: border-box;
   @media (min-width: 970px) {
     grid-template-columns: 1fr;
+    justify-items: center;
   }
 `;
 const CloseButton = styled.button`
@@ -121,6 +122,24 @@ const CheckoutModalTitle = styled.h1`
   margin: 0;
   color: #222;
   text-align: center;
+`;
+
+/* Mobile: title in grid column 2. Desktop: separate title so it can be centered in the bar. */
+const TitleMobile = styled.div`
+  grid-column: 2;
+  justify-self: center;
+  @media (min-width: 970px) {
+    display: none;
+  }
+`;
+const TitleDesktop = styled.div`
+  display: none;
+  @media (min-width: 970px) {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 12px 20px;
+  }
 `;
 
 const MainContainer = styled.div`
@@ -404,9 +423,14 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
           <CloseButton type="button" onClick={() => router.replace(`/classes/${slug}`)} aria-label="Close">
             <X size={20} />
           </CloseButton>
-          <TitleCard>
+          <TitleMobile>
+            <TitleCard>
+              <CheckoutModalTitle>Review and continue</CheckoutModalTitle>
+            </TitleCard>
+          </TitleMobile>
+          <TitleDesktop>
             <CheckoutModalTitle>Review and continue</CheckoutModalTitle>
-          </TitleCard>
+          </TitleDesktop>
         </CheckoutModalBar>
         <MainContainer>
           <BackButtonDesktop
@@ -446,9 +470,14 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
         >
           <X size={20} />
         </CloseButton>
-        <TitleCard>
+        <TitleMobile>
+          <TitleCard>
+            <CheckoutModalTitle>Review and continue</CheckoutModalTitle>
+          </TitleCard>
+        </TitleMobile>
+        <TitleDesktop>
           <CheckoutModalTitle>Review and continue</CheckoutModalTitle>
-        </TitleCard>
+        </TitleDesktop>
       </CheckoutModalBar>
       <MainContainer>
           <BackButtonDesktop

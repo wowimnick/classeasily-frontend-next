@@ -976,6 +976,20 @@ const PaymentElementWrapper = styled.div`
   }
 `;
 
+/* Desktop: Express + card only. Mobile: custom selector (Apple Pay | Card). CSS shows one. */
+const DesktopPaymentOnly = styled.div`
+  display: block;
+  @media (max-width: 968px) {
+    display: none !important;
+  }
+`;
+const MobilePaymentOnly = styled.div`
+  display: none;
+  @media (max-width: 968px) {
+    display: block;
+  }
+`;
+
 /* Payment method selector (Apple Pay vs Card) */
 const PaymentMethodSelector = styled.div`
   display: flex;
@@ -1175,9 +1189,8 @@ const PaymentFormContent = ({
     [onPaymentLoadError]
   );
 
-  const useSelectorLayout = isMobile && hasApplePay;
-  const showCardInline = !useSelectorLayout;
-  const showCardInDrawer = useSelectorLayout && selectedMethod === "card" && cardDrawerOpen;
+  const showCardInline = !isMobile;
+  const showCardInDrawer = isMobile && selectedMethod === "card" && cardDrawerOpen;
   const shouldMountPaymentElement = !!clientSecret && !isFree && (showCardInline || showCardInDrawer);
 
   useEffect(() => {
@@ -1195,7 +1208,7 @@ const PaymentFormContent = ({
     };
   }, [shouldMountPaymentElement]);
 
-  const hideFooterButton = useSelectorLayout && selectedMethod === "card";
+  const hideFooterButton = isMobile && selectedMethod === "card";
 
   useEffect(() => {
     const canSubmit = isFree
@@ -1239,89 +1252,46 @@ const PaymentFormContent = ({
             paddingTop: 24,
           }}
         >
-          {useSelectorLayout ? (
-            <>
-              <PaymentMethodSelector>
-                <PaymentMethodOption
-                  type="button"
-                  $selected={selectedMethod === "apple_pay"}
-                  onClick={() => setSelectedMethod("apple_pay")}
-                >
-                  <Wallet size={18} />
-                  Apple Pay
-                </PaymentMethodOption>
-                <PaymentMethodOption
-                  type="button"
-                  $selected={selectedMethod === "card"}
-                  onClick={() => setSelectedMethod("card")}
-                >
-                  <CreditCard size={18} />
-                  Credit / Debit card
-                </PaymentMethodOption>
-              </PaymentMethodSelector>
-              {selectedMethod === "apple_pay" && (
-                <ExpressCheckoutButton
-                  finalTotal={finalTotal}
-                  clientSecret={clientSecret}
-                  onPaymentComplete={onPaymentComplete}
-                  paymentService={paymentService}
-                  bookingData={bookingData}
-                  form={form}
-                  getGuestFullName={getGuestFullName}
-                  isFormValid={isFormValid}
-                  onPaymentRequestReady={() => setHasApplePay(true)}
-                  inSelectorMode
-                  toast={toast}
-                  customTrigger={(paymentRequest) => (
-                    <CustomApplePayButton
-                      type="button"
-                      onClick={() => paymentRequest.show()}
-                    >
-                      <Wallet size={20} />
-                      Pay with Apple Pay
-                    </CustomApplePayButton>
-                  )}
-                />
-              )}
-              {selectedMethod === "card" && (
-                <>
-                  <OpenCardDrawerButton
-                    type="button"
-                    onClick={() => setCardDrawerOpen(true)}
-                  >
-                    <CreditCard size={20} />
-                    Pay with credit or debit card
-                  </OpenCardDrawerButton>
-                  <Drawer.Root
-                    open={cardDrawerOpen}
-                    onOpenChange={(open) => setCardDrawerOpen(open)}
-                  >
-                    <Drawer.Portal>
-                      <CardDrawerOverlay />
-                      <CardDrawerContent>
-                        <CardDrawerHandle />
-                        <CardDrawerBody>
-                          <PaymentElementWrapper style={{ minHeight: 200 }}>
-                            {paymentElementBlock}
-                          </PaymentElementWrapper>
-                        </CardDrawerBody>
-                        <CardDrawerFooter>
-                          <CardDrawerConfirmButton
-                            type="button"
-                            disabled={!stripe || !elements || !isFormValid || !isReady || loading}
-                            onClick={() => handleSubmit(stripe, elements)?.()}
-                          >
-                            {loading ? "Processing…" : "Confirm and Pay"}
-                          </CardDrawerConfirmButton>
-                        </CardDrawerFooter>
-                      </CardDrawerContent>
-                    </Drawer.Portal>
-                  </Drawer.Root>
-                </>
-              )}
-            </>
-          ) : (
-            <>
+          {/* Desktop: Express + card only (no selector). Hidden on mobile. */}
+          <DesktopPaymentOnly>
+            <ExpressCheckoutButton
+              finalTotal={finalTotal}
+              clientSecret={clientSecret}
+              onPaymentComplete={onPaymentComplete}
+              paymentService={paymentService}
+              bookingData={bookingData}
+              form={form}
+              getGuestFullName={getGuestFullName}
+              isFormValid={isFormValid}
+              onPaymentRequestReady={() => setHasApplePay(true)}
+              toast={toast}
+            />
+            <PaymentElementWrapper>
+              {paymentElementBlock}
+            </PaymentElementWrapper>
+          </DesktopPaymentOnly>
+
+          {/* Mobile: custom selector (Apple Pay | Card). Hidden on desktop. */}
+          <MobilePaymentOnly>
+            <PaymentMethodSelector>
+              <PaymentMethodOption
+                type="button"
+                $selected={selectedMethod === "apple_pay"}
+                onClick={() => setSelectedMethod("apple_pay")}
+              >
+                <Wallet size={18} />
+                Apple Pay
+              </PaymentMethodOption>
+              <PaymentMethodOption
+                type="button"
+                $selected={selectedMethod === "card"}
+                onClick={() => setSelectedMethod("card")}
+              >
+                <CreditCard size={18} />
+                Credit / Debit card
+              </PaymentMethodOption>
+            </PaymentMethodSelector>
+            {selectedMethod === "apple_pay" && (
               <ExpressCheckoutButton
                 finalTotal={finalTotal}
                 clientSecret={clientSecret}
@@ -1332,13 +1302,56 @@ const PaymentFormContent = ({
                 getGuestFullName={getGuestFullName}
                 isFormValid={isFormValid}
                 onPaymentRequestReady={() => setHasApplePay(true)}
+                inSelectorMode
                 toast={toast}
+                customTrigger={(paymentRequest) => (
+                  <CustomApplePayButton
+                    type="button"
+                    onClick={() => paymentRequest.show()}
+                  >
+                    <Wallet size={20} />
+                    Pay with Apple Pay
+                  </CustomApplePayButton>
+                )}
               />
-              <PaymentElementWrapper>
-                {paymentElementBlock}
-              </PaymentElementWrapper>
-            </>
-          )}
+            )}
+            {selectedMethod === "card" && (
+              <>
+                <OpenCardDrawerButton
+                  type="button"
+                  onClick={() => setCardDrawerOpen(true)}
+                >
+                  <CreditCard size={20} />
+                  Pay with credit or debit card
+                </OpenCardDrawerButton>
+                <Drawer.Root
+                  open={cardDrawerOpen}
+                  onOpenChange={(open) => setCardDrawerOpen(open)}
+                >
+                  <Drawer.Portal>
+                    <CardDrawerOverlay />
+                    <CardDrawerContent>
+                      <CardDrawerHandle />
+                      <CardDrawerBody>
+                        <PaymentElementWrapper style={{ minHeight: 200 }}>
+                          {paymentElementBlock}
+                        </PaymentElementWrapper>
+                      </CardDrawerBody>
+                      <CardDrawerFooter>
+                        <CardDrawerConfirmButton
+                          type="button"
+                          disabled={!stripe || !elements || !isFormValid || !isReady || loading}
+                          onClick={() => handleSubmit(stripe, elements)?.()}
+                        >
+                          {loading ? "Processing…" : "Confirm and Pay"}
+                        </CardDrawerConfirmButton>
+                      </CardDrawerFooter>
+                    </CardDrawerContent>
+                  </Drawer.Portal>
+                </Drawer.Root>
+              </>
+            )}
+          </MobilePaymentOnly>
         </div>
       )}
     </>
