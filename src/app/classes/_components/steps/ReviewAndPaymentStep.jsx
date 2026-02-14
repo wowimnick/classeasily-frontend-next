@@ -574,23 +574,6 @@ const ExpiredContent = styled.div`
   }
 `;
 
-const ContactDetailsNotice = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px 18px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border: 1px solid #e2e8f0;
-  border-left: 4px solid #ff385c;
-  border-radius: 10px;
-  margin-bottom: 24px;
-  font-size: 14px;
-  color: #475569;
-  line-height: 1.5;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-`;
-
 const OptionLabel = styled.div`
   display: inline-block;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -716,6 +699,7 @@ const ExpressCheckoutButton = ({
   bookingData,
   form,
   getGuestFullName,
+  isFormValid,
 }) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
@@ -750,9 +734,9 @@ const ExpressCheckoutButton = ({
         }
 
         const values = form.getFieldsValue();
-        const email = values?.email?.trim?.() || "";
-        const phone = values?.phone?.trim?.() || "";
-        const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "Guest";
+        const email = (values?.email && String(values.email).trim()) || "";
+        const phone = (values?.phone && String(values.phone).trim()) || "";
+        const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "";
         const participantsCount = bookingData?.participants || 1;
         const participantDetailsPayload = Array.from(
           { length: participantsCount },
@@ -828,7 +812,7 @@ const ExpressCheckoutButton = ({
     getGuestFullName,
   ]);
 
-  if (!paymentRequest) return null;
+  if (!paymentRequest || !isFormValid) return null;
 
   return (
     <div style={{ marginBottom: 24 }}>
@@ -938,14 +922,9 @@ const PaymentFormContent = ({
             paddingTop: 24,
           }}
         >
-          {!isFormValid ? (
-            <ContactDetailsNotice>
-              Please enter your name and contact details above to continue to payment.
-            </ContactDetailsNotice>
-          ) : (
-            <>
-              <SectionTitle>Payment Method</SectionTitle>
-              <ExpressCheckoutButton
+          <>
+            <SectionTitle>Payment Method</SectionTitle>
+            <ExpressCheckoutButton
                 finalTotal={finalTotal}
                 clientSecret={clientSecret}
                 onPaymentComplete={onPaymentComplete}
@@ -953,6 +932,7 @@ const PaymentFormContent = ({
                 bookingData={bookingData}
                 form={form}
                 getGuestFullName={getGuestFullName}
+                isFormValid={isFormValid}
               />
               <PaymentElementWrapper>
                 {mountPaymentElement && (
@@ -983,8 +963,7 @@ const PaymentFormContent = ({
               />
             )}
               </PaymentElementWrapper>
-            </>
-          )}
+          </>
         </div>
       )}
     </>
