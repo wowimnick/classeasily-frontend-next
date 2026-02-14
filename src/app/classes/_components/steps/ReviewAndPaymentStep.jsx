@@ -976,45 +976,44 @@ const PaymentElementWrapper = styled.div`
   }
 `;
 
-/* Desktop: Express + card only. Mobile: custom selector (Apple Pay | Card). CSS shows one. */
-const DesktopPaymentOnly = styled.div`
-  display: block;
-  @media (max-width: 968px) {
-    display: none !important;
-  }
-`;
-const MobilePaymentOnly = styled.div`
-  display: none;
-  @media (max-width: 968px) {
-    display: block;
-  }
-`;
-
-/* Payment method selector (Apple Pay vs Card) */
-const PaymentMethodSelector = styled.div`
+/* Accordion for payment methods when a second method (e.g. Apple Pay) is available */
+const PaymentAccordion = styled.div`
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
 `;
-const PaymentMethodOption = styled.button`
-  flex: 1;
+const PaymentAccordionItem = styled.div`
+  border-bottom: 1px solid #e5e7eb;
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+const PaymentAccordionHeader = styled.button`
+  width: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid ${(p) => (p.$selected ? "#ff385c" : "#e5e7eb")};
-  background: ${(p) => (p.$selected ? "#fff5f6" : "white")};
-  color: ${(p) => (p.$selected ? "#ff385c" : "#374151")};
-  font-size: 14px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border: none;
+  background: ${(p) => (p.$expanded ? "#fff5f6" : "white")};
+  color: #222;
+  font-size: 16px;
   font-weight: 600;
+  font-family: "Proxima Soft", sans-serif;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, color 0.2s;
+  text-align: left;
+  transition: background 0.2s;
   &:hover {
-    border-color: ${(p) => (p.$selected ? "#ff385c" : "#d1d5db")};
-    background: ${(p) => (p.$selected ? "#fff5f6" : "#f9fafb")};
+    background: ${(p) => (p.$expanded ? "#fff5f6" : "#f9fafb")};
   }
+`;
+const PaymentAccordionContent = styled.div`
+  padding: 0 20px 16px;
+  background: white;
 `;
 const OpenCardDrawerButton = styled.button`
   width: 100%;
@@ -1122,17 +1121,8 @@ const CardDrawerConfirmButton = styled.button`
   }
 `;
 
-// Card-only: no Stripe tabs/selector. We control Apple Pay vs card with our own UI (mobile).
-// See https://docs.stripe.com/payments/payment-element/custom-payment-methods
 const paymentElementOptions = {
-  layout: {
-    type: "accordion",
-    defaultCollapsed: false,
-    radios: true,
-    spacedAccordionItems: false,
-    visibleAccordionItemsCount: 1,
-  },
-  paymentMethodOrder: ["card"],
+  layout: "accordion",
   wallets: {
     applePay: "never",
     googlePay: "never",
@@ -1198,8 +1188,9 @@ const PaymentFormContent = ({
     [onPaymentLoadError]
   );
 
-  const showCardInline = !isMobile;
-  const showCardInDrawer = isMobile && selectedMethod === "card" && cardDrawerOpen;
+  const useSelectorLayout = isMobile && hasApplePay;
+  const showCardInline = !useSelectorLayout;
+  const showCardInDrawer = useSelectorLayout && selectedMethod === "card" && cardDrawerOpen;
   const shouldMountPaymentElement = !!clientSecret && !isFree && (showCardInline || showCardInDrawer);
 
   useEffect(() => {
@@ -1217,7 +1208,7 @@ const PaymentFormContent = ({
     };
   }, [shouldMountPaymentElement]);
 
-  const hideFooterButton = isMobile && selectedMethod === "card";
+  const hideFooterButton = useSelectorLayout && selectedMethod === "card";
 
   useEffect(() => {
     const canSubmit = isFree
@@ -1261,48 +1252,107 @@ const PaymentFormContent = ({
             paddingTop: 24,
           }}
         >
-          {/* Desktop: Express + card only (no selector). Hidden on mobile. */}
-          <DesktopPaymentOnly>
-            <ExpressCheckoutButton
-              finalTotal={finalTotal}
-              clientSecret={clientSecret}
-              onPaymentComplete={onPaymentComplete}
-              paymentService={paymentService}
-              bookingData={bookingData}
-              form={form}
-              getGuestFullName={getGuestFullName}
-              isFormValid={isFormValid}
-              onPaymentRequestReady={() => setHasApplePay(true)}
-              toast={toast}
-            />
-            {!isMobile && (
-              <PaymentElementWrapper>
-                {paymentElementBlock}
-              </PaymentElementWrapper>
-            )}
-          </DesktopPaymentOnly>
-
-          {/* Mobile: custom selector (Apple Pay | Card). Hidden on desktop. */}
-          <MobilePaymentOnly>
-            <PaymentMethodSelector>
-              <PaymentMethodOption
-                type="button"
-                $selected={selectedMethod === "apple_pay"}
-                onClick={() => setSelectedMethod("apple_pay")}
-              >
-                <Wallet size={18} />
-                Apple Pay
-              </PaymentMethodOption>
-              <PaymentMethodOption
-                type="button"
-                $selected={selectedMethod === "card"}
-                onClick={() => setSelectedMethod("card")}
-              >
-                <CreditCard size={18} />
-                Credit / Debit card
-              </PaymentMethodOption>
-            </PaymentMethodSelector>
-            {selectedMethod === "apple_pay" && (
+          {useSelectorLayout ? (
+            <PaymentAccordion>
+              <PaymentAccordionItem>
+                <PaymentAccordionHeader
+                  type="button"
+                  $expanded={selectedMethod === "apple_pay"}
+                  onClick={() => setSelectedMethod("apple_pay")}
+                >
+                  <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <Wallet size={20} />
+                    Apple Pay
+                  </span>
+                  {selectedMethod === "apple_pay" ? (
+                    <ChevronDown size={20} style={{ flexShrink: 0 }} />
+                  ) : (
+                    <ChevronRight size={20} style={{ flexShrink: 0 }} />
+                  )}
+                </PaymentAccordionHeader>
+                {selectedMethod === "apple_pay" && (
+                  <PaymentAccordionContent>
+                    <ExpressCheckoutButton
+                      finalTotal={finalTotal}
+                      clientSecret={clientSecret}
+                      onPaymentComplete={onPaymentComplete}
+                      paymentService={paymentService}
+                      bookingData={bookingData}
+                      form={form}
+                      getGuestFullName={getGuestFullName}
+                      isFormValid={isFormValid}
+                      onPaymentRequestReady={() => setHasApplePay(true)}
+                      inSelectorMode
+                      toast={toast}
+                      customTrigger={(paymentRequest) => (
+                        <CustomApplePayButton
+                          type="button"
+                          onClick={() => paymentRequest.show()}
+                        >
+                          <Wallet size={20} />
+                          Pay with Apple Pay
+                        </CustomApplePayButton>
+                      )}
+                    />
+                  </PaymentAccordionContent>
+                )}
+              </PaymentAccordionItem>
+              <PaymentAccordionItem>
+                <PaymentAccordionHeader
+                  type="button"
+                  $expanded={selectedMethod === "card"}
+                  onClick={() => setSelectedMethod("card")}
+                >
+                  <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <CreditCard size={20} />
+                    Credit / Debit card
+                  </span>
+                  {selectedMethod === "card" ? (
+                    <ChevronDown size={20} style={{ flexShrink: 0 }} />
+                  ) : (
+                    <ChevronRight size={20} style={{ flexShrink: 0 }} />
+                  )}
+                </PaymentAccordionHeader>
+                {selectedMethod === "card" && (
+                  <PaymentAccordionContent>
+                    <OpenCardDrawerButton
+                      type="button"
+                      onClick={() => setCardDrawerOpen(true)}
+                    >
+                      <CreditCard size={20} />
+                      Pay with credit or debit card
+                    </OpenCardDrawerButton>
+                    <Drawer.Root
+                      open={cardDrawerOpen}
+                      onOpenChange={(open) => setCardDrawerOpen(open)}
+                    >
+                      <Drawer.Portal>
+                        <CardDrawerOverlay />
+                        <CardDrawerContent>
+                          <CardDrawerHandle />
+                          <CardDrawerBody>
+                            <PaymentElementWrapper style={{ minHeight: 200 }}>
+                              {paymentElementBlock}
+                            </PaymentElementWrapper>
+                          </CardDrawerBody>
+                          <CardDrawerFooter>
+                            <CardDrawerConfirmButton
+                              type="button"
+                              disabled={!stripe || !elements || !isFormValid || !isReady || loading}
+                              onClick={() => handleSubmit(stripe, elements)?.()}
+                            >
+                              {loading ? "Processing…" : "Confirm and Pay"}
+                            </CardDrawerConfirmButton>
+                          </CardDrawerFooter>
+                        </CardDrawerContent>
+                      </Drawer.Portal>
+                    </Drawer.Root>
+                  </PaymentAccordionContent>
+                )}
+              </PaymentAccordionItem>
+            </PaymentAccordion>
+          ) : (
+            <>
               <ExpressCheckoutButton
                 finalTotal={finalTotal}
                 clientSecret={clientSecret}
@@ -1313,58 +1363,13 @@ const PaymentFormContent = ({
                 getGuestFullName={getGuestFullName}
                 isFormValid={isFormValid}
                 onPaymentRequestReady={() => setHasApplePay(true)}
-                inSelectorMode
                 toast={toast}
-                customTrigger={(paymentRequest) => (
-                  <CustomApplePayButton
-                    type="button"
-                    onClick={() => paymentRequest.show()}
-                  >
-                    <Wallet size={20} />
-                    Pay with Apple Pay
-                  </CustomApplePayButton>
-                )}
               />
-            )}
-            {selectedMethod === "card" && (
-              <>
-                <OpenCardDrawerButton
-                  type="button"
-                  onClick={() => setCardDrawerOpen(true)}
-                >
-                  <CreditCard size={20} />
-                  Pay with credit or debit card
-                </OpenCardDrawerButton>
-                <Drawer.Root
-                  open={cardDrawerOpen}
-                  onOpenChange={(open) => setCardDrawerOpen(open)}
-                >
-                  <Drawer.Portal>
-                    <CardDrawerOverlay />
-                    <CardDrawerContent>
-                      <CardDrawerHandle />
-                      <CardDrawerBody>
-                        {isMobile && (
-                          <PaymentElementWrapper style={{ minHeight: 200 }}>
-                            {paymentElementBlock}
-                          </PaymentElementWrapper>
-                        )}
-                      </CardDrawerBody>
-                      <CardDrawerFooter>
-                        <CardDrawerConfirmButton
-                          type="button"
-                          disabled={!stripe || !elements || !isFormValid || !isReady || loading}
-                          onClick={() => handleSubmit(stripe, elements)?.()}
-                        >
-                          {loading ? "Processing…" : "Confirm and Pay"}
-                        </CardDrawerConfirmButton>
-                      </CardDrawerFooter>
-                    </CardDrawerContent>
-                  </Drawer.Portal>
-                </Drawer.Root>
-              </>
-            )}
-          </MobilePaymentOnly>
+              <PaymentElementWrapper>
+                {paymentElementBlock}
+              </PaymentElementWrapper>
+            </>
+          )}
         </div>
       )}
     </>
