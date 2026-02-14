@@ -293,6 +293,7 @@ const MobileSummaryInner = styled.div`
 const MobilePromoSection = styled.div`
   display: block;
   margin-bottom: 16px;
+  text-align: center;
   @media (min-width: 969px) {
     display: none;
   }
@@ -698,6 +699,7 @@ const ExpressCheckoutButton = ({
   bookingData,
   form,
   getGuestFullName,
+  isFormValid,
 }) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
@@ -732,9 +734,9 @@ const ExpressCheckoutButton = ({
         }
 
         const values = form.getFieldsValue();
-        const email = values?.email?.trim?.() || "";
-        const phone = values?.phone?.trim?.() || "";
-        const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "Guest";
+        const email = (values?.email && String(values.email).trim()) || "";
+        const phone = (values?.phone && String(values.phone).trim()) || "";
+        const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "";
         const participantsCount = bookingData?.participants || 1;
         const participantDetailsPayload = Array.from(
           { length: participantsCount },
@@ -810,7 +812,7 @@ const ExpressCheckoutButton = ({
     getGuestFullName,
   ]);
 
-  if (!paymentRequest) return null;
+  if (!paymentRequest || !isFormValid) return null;
 
   return (
     <div style={{ marginBottom: 24 }}>
@@ -920,24 +922,9 @@ const PaymentFormContent = ({
             paddingTop: 24,
           }}
         >
-          {!isFormValid ? (
-            <div
-              style={{
-                padding: "14px 16px",
-                background: "#f9fafb",
-                borderRadius: 8,
-                border: "1px solid #e5e7eb",
-                fontSize: 13,
-                color: "#6b7280",
-                lineHeight: 1.45,
-              }}
-            >
-              Please enter your name and contact details above to continue to payment.
-            </div>
-          ) : (
-            <>
-              <SectionTitle>Payment Method</SectionTitle>
-              <ExpressCheckoutButton
+          <>
+            <SectionTitle>Payment Method</SectionTitle>
+            <ExpressCheckoutButton
                 finalTotal={finalTotal}
                 clientSecret={clientSecret}
                 onPaymentComplete={onPaymentComplete}
@@ -945,6 +932,7 @@ const PaymentFormContent = ({
                 bookingData={bookingData}
                 form={form}
                 getGuestFullName={getGuestFullName}
+                isFormValid={isFormValid}
               />
               <PaymentElementWrapper>
                 {mountPaymentElement && (
@@ -975,8 +963,7 @@ const PaymentFormContent = ({
               />
             )}
               </PaymentElementWrapper>
-            </>
-          )}
+          </>
         </div>
       )}
     </>
@@ -1002,7 +989,7 @@ const ReviewAndPaymentStep = ({
     () => bookingData?.clientSecret ?? null
   );
   const [isFormValid, setIsFormValid] = useState(false);
-  const [showMobileSummary, setShowMobileSummary] = useState(true);
+  const [showMobileSummary, setShowMobileSummary] = useState(false);
 
   useEffect(() => {
     const fromStorage = bookingData?.clientSecret;
@@ -1165,12 +1152,14 @@ const ReviewAndPaymentStep = ({
   const isFree = finalTotal === 0;
 
   // --- TIMER EFFECT ---
+  // Reset timer whenever we have a (possibly new) PaymentIntent so each hold gets a full 15 min.
   useEffect(() => {
-    if (!clientSecret || isFree || isExpired) return;
+    if (!clientSecret || isFree) return;
 
-    if (!expirationTimestampRef.current) {
-      expirationTimestampRef.current = Date.now() + 15 * 60 * 1000;
-    }
+    const fifteenMinutesMs = 15 * 60 * 1000;
+    expirationTimestampRef.current = Date.now() + fifteenMinutesMs;
+    setTimeRemaining(15 * 60);
+    setIsExpired(false);
 
     const timer = setInterval(() => {
       const now = Date.now();
@@ -1188,7 +1177,7 @@ const ReviewAndPaymentStep = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [clientSecret, isFree, isExpired]);
+  }, [clientSecret, isFree]);
 
   const handleSessionExpired = () => {
     window.location.reload();
@@ -1887,11 +1876,21 @@ const ReviewAndPaymentStep = ({
     businessTimeZone,
   ]);
 
+  // Stripe font size: 14px desktop, 16px mobile (16px avoids iOS zoom on focus)
+  const [stripeFontSize, setStripeFontSize] = useState("16px");
+  useEffect(() => {
+    const updateStripeFontSize = () => {
+      setStripeFontSize(
+        typeof window !== "undefined" && window.innerWidth < 969 ? "16px" : "14px"
+      );
+    };
+    updateStripeFontSize();
+    window.addEventListener("resize", updateStripeFontSize);
+    return () => window.removeEventListener("resize", updateStripeFontSize);
+  }, []);
+
   const stripeAppearance = useMemo(() => {
-    // System font stack so Stripe iframe renders correctly on mobile; 16px prevents iOS zoom on focus
-    const stripeFont =
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-    const stripeFontSize = "16px";
+    const stripeFont = '"Proxima Soft", sans-serif';
     return {
       theme: "stripe",
       variables: {
@@ -1906,8 +1905,8 @@ const ReviewAndPaymentStep = ({
       },
       rules: {
         ".Input": {
-          paddingTop: "16px",
-          paddingBottom: "16px",
+          paddingTop: stripeFontSize,
+          paddingBottom: stripeFontSize,
           paddingLeft: "16px",
           paddingRight: "16px",
           borderColor: appTheme.token.colorBorder,
@@ -1917,7 +1916,6 @@ const ReviewAndPaymentStep = ({
           fontSize: stripeFontSize,
           fontWeight: "500",
         },
-        // Added Hover Effect
         ".Input:hover": {
           borderColor: appTheme.token.colorPrimary,
         },
@@ -1956,7 +1954,7 @@ const ReviewAndPaymentStep = ({
         },
       },
     };
-  }, []);
+  }, [stripeFontSize]);
 
   const renderTimerContent = () => {
     if (isFree || isExpired) return null;
@@ -2180,7 +2178,7 @@ const ReviewAndPaymentStep = ({
       ) : (
         <Elements
           stripe={stripePromise}
-          key={clientSecret || "free-mode"}
+          key={`${clientSecret || "free-mode"}-${stripeFontSize}`}
           options={
             isFree
               ? undefined
