@@ -151,8 +151,9 @@ const Header = styled.h2`
   color: #000;
   margin-bottom: 1rem;
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
 
   svg {
     color: #ff385c;
@@ -163,11 +164,7 @@ const Header = styled.h2`
   }
 `;
 
-const HeaderTitle = styled.span`
-  @media (max-width: 768px) {
-    width: 100%;
-  }
-`;
+const HeaderTitle = styled.span``;
 
 const HeaderRating = styled.span`
   display: inline-flex;
