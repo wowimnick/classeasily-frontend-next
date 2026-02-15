@@ -55,22 +55,15 @@
   }
 }
 
-/* Fix for stretched images */
+/* Fix for stretched images; start hidden to avoid flash when skeleton fades */
 .cardImage {
   object-fit: cover;
+  opacity: 0;
 }
 
 .cardImageLoaded {
-  animation: cardImageFadeIn 0.25s ease-out forwards;
-}
-
-@keyframes cardImageFadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  opacity: 1;
+  transition: opacity 0.2s ease-out;
 }
 
 /* Soonest date tag (e.g. "Happening Next Week" cards) — top left, glass style */
