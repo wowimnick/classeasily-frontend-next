@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
@@ -388,6 +389,16 @@ const SupportTicketTab = () => {
   const screens = useBreakpoint();
   const isMobile = !screens.lg;
   const abortControllerRef = useRef(null);
+  const searchParams = useSearchParams();
+
+  // Open ticket drawer from URL ?ticket=<ticket_id> (e.g. from admin notification email)
+  useEffect(() => {
+    const ticketId = searchParams.get("ticket");
+    if (ticketId) {
+      setSelectedTicketId(ticketId);
+      setIsDetailDrawerVisible(true);
+    }
+  }, [searchParams]);
 
   const handleFilterChange = (updates) => {
     setPagination((prev) => ({ ...prev, current: 1 }));
@@ -421,8 +432,9 @@ const SupportTicketTab = () => {
             total: response.pagination.count,
           }));
         } else {
-          if (!axios.isCancel(new Error()))
+          if (!abortControllerRef.current.signal.aborted) {
             message.error(response.error || "Failed to load tickets");
+          }
         }
       } catch (error) {
         if (!axios.isCancel(error)) message.error("Error fetching tickets");
