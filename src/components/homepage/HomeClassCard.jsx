@@ -7,7 +7,6 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Heart, Star, Navigation } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
@@ -49,17 +48,6 @@ const HomeClassCard = ({
   const imageUrl = useMemo(() => {
     return images?.[0]?.medium_url || images?.[0]?.original_url || null;
   }, [images]);
-
-  // Very long URLs (e.g. legacy presigned S3) can cause 502 when passed through next/image.
-  // CloudFront URLs are stable and included in the API response; use unoptimized when URL is long.
-  const isPresignedOrLongUrl = useMemo(() => {
-    if (!imageUrl || typeof imageUrl !== "string") return false;
-    return (
-      imageUrl.includes("X-Amz-") ||
-      imageUrl.includes("X-Amz-Algorithm") ||
-      imageUrl.length > 1800
-    );
-  }, [imageUrl]);
 
   useEffect(() => {
     setImageLoaded(false);
@@ -182,19 +170,14 @@ const HomeClassCard = ({
               className={`${styles.imageSkeleton} ${imageLoaded ? styles.imageSkeletonHidden : ""}`}
               aria-hidden="true"
             />
-            <Image
+            <img
               src={imageUrl}
               alt={title || "Class experience"}
-              fill
-              sizes="(max-width: 600px) 50vw, (max-width: 1048px) 33vw, (max-width: 1400px) 25vw, 20vw"
-              className={`${styles.cardImage} ${imageLoaded ? styles.cardImageLoaded : ""}`}
-              priority={priority}
-              fetchPriority={priority ? "high" : "auto"}
-              quality={priority ? 90 : 85}
               loading={priority ? "eager" : "lazy"}
+              decoding="async"
+              className={`${styles.cardImage} ${imageLoaded ? styles.cardImageLoaded : ""}`}
               onLoad={() => setImageLoaded(true)}
               onError={() => setImageError(true)}
-              unoptimized={isPresignedOrLongUrl}
             />
           </>
         ) : imageUrl && imageError ? (
