@@ -42,6 +42,7 @@ export const API_ENDPOINTS = {
 
   // Public Endpoints
   PUBLIC_CLASSES: "/classes/",
+  PUBLIC_CLASS_IMAGE_URL: "/classes/image-url/",
   PUBLIC_CATEGORIES: "/categories/",
   GIFTCARD_PURCHASE_INTENT: "/gift-cards/purchase-intent/",
   GIFTCARD_VALIDATE: "/gift-cards/validate/",
@@ -1018,6 +1019,22 @@ export const classService = {
       console.error("Error searching classes:", error.response?.data || error);
       throw error.response?.data || error;
     }
+  },
+
+  /**
+   * Fetch pre-signed image URL(s) for class images. Backend caches URLs for 45 min.
+   * @param {number|number[]} imageIds - Single imageId or array of imageIds
+   * @returns {Promise<{ url?: string, urls?: Array<{ image_id: number, url: string }> }>}
+   */
+  getClassImageUrls: async (imageIds) => {
+    const ids = Array.isArray(imageIds) ? imageIds : [imageIds];
+    if (ids.length === 0) return ids.length === 1 ? { url: "" } : { urls: [] };
+    const params = new URLSearchParams();
+    ids.forEach((id) => params.append("image_id", id));
+    const response = await axiosInstance.get(
+      `${API_ENDPOINTS.PUBLIC_CLASS_IMAGE_URL}?${params.toString()}`,
+    );
+    return response.data;
   },
 
   fetchClassReviewsPaginated: async (classId, page = 1, pageSize = 10) => {
