@@ -14,6 +14,7 @@ import { usePathname, useRouter } from "next/navigation";
 import styles from "./HomeClassCard.module.css";
 import message from "@/lib/message";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import { useClassImageUrl } from "@/hooks/useClassImageUrl";
 import { classService } from "@/services/apiService.js";
 import { saveBeforeNavigate } from "@/lib/scrollRestoration";
 
@@ -47,10 +48,21 @@ const HomeClassCard = ({
   // Presigned URLs expire (e.g. 1h); when we show cached cards, the URL may be expired.
   const [imageError, setImageError] = useState(false);
 
-  // Backend sends cover (or first) image only for cards; prefer medium then original (same as explore).
-  const imageUrl = useMemo(() => {
-    return images?.[0]?.medium_url || images?.[0]?.original_url || null;
-  }, [images]);
+  // Legacy: API may still send medium_url/original_url. New: API sends imageId only; resolve via hook.
+  const firstImage = images?.[0];
+  const legacyUrl = useMemo(
+    () => firstImage?.medium_url || firstImage?.original_url || null,
+    [firstImage],
+  );
+  const imageId = firstImage?.imageId ?? null;
+  const {
+    url: resolvedUrl,
+    isLoading: isImageUrlLoading,
+    refetch: refetchImageUrl,
+  } = useClassImageUrl(legacyUrl ? null : imageId);
+  const imageUrl = legacyUrl || resolvedUrl;
+  const showImagePlaceholder =
+    (imageId != null || legacyUrl) && !imageUrl && isImageUrlLoading;
 
   // Presigned S3 URLs are very long; passing them through /_next/image causes 502 (URL/proxy limits).
   // Use unoptimized so the browser loads the image directly from S3.
@@ -195,11 +207,16 @@ const HomeClassCard = ({
               quality={priority ? 90 : 85}
               loading={priority ? "eager" : "lazy"}
               onLoad={() => setImageLoaded(true)}
-              onError={() => setImageError(true)}
+              onError={() => {
+                setImageError(true);
+                if (imageId != null) refetchImageUrl();
+              }}
               unoptimized={isPresignedOrLongUrl}
             />
           </>
         ) : imageUrl && imageError ? (
+          <div className={styles.imageSkeleton} aria-hidden="true" />
+        ) : showImagePlaceholder ? (
           <div className={styles.imageSkeleton} aria-hidden="true" />
         ) : (
           <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
