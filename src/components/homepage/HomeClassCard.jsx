@@ -55,10 +55,14 @@ const HomeClassCard = ({
     [firstImage],
   );
   const imageId = firstImage?.imageId ?? null;
-  const { url: resolvedUrl, refetch: refetchImageUrl } = useClassImageUrl(
-    legacyUrl ? null : imageId,
-  );
+  const {
+    url: resolvedUrl,
+    isLoading: isImageUrlLoading,
+    refetch: refetchImageUrl,
+  } = useClassImageUrl(legacyUrl ? null : imageId);
   const imageUrl = legacyUrl || resolvedUrl;
+  const showImagePlaceholder =
+    (imageId != null || legacyUrl) && !imageUrl && isImageUrlLoading;
 
   // Presigned S3 URLs are very long; passing them through /_next/image causes 502 (URL/proxy limits).
   // Use unoptimized so the browser loads the image directly from S3.
@@ -211,6 +215,8 @@ const HomeClassCard = ({
             />
           </>
         ) : imageUrl && imageError ? (
+          <div className={styles.imageSkeleton} aria-hidden="true" />
+        ) : showImagePlaceholder ? (
           <div className={styles.imageSkeleton} aria-hidden="true" />
         ) : (
           <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
