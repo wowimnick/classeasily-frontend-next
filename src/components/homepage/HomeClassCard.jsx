@@ -79,6 +79,29 @@ const HomeClassCard = ({
   }, [identifier, router]);
 
   const cardRef = useRef(null);
+  const imgRef = useRef(null);
+
+  // Cached or already-loaded images may not fire onLoad; check complete when img mounts or url changes
+  useEffect(() => {
+    if (!imageUrl || imageError) return;
+    const img = imgRef.current;
+    if (!img) return;
+    if (img.complete && img.naturalWidth > 0) {
+      setImageLoaded(true);
+      return;
+    }
+    const handleLoad = () => setImageLoaded(true);
+    img.addEventListener("load", handleLoad);
+    return () => img.removeEventListener("load", handleLoad);
+  }, [imageUrl, imageError]);
+
+  // Fallback: if load never fires (e.g. cross-origin/cache quirk), stop showing skeleton after a short delay
+  useEffect(() => {
+    if (!imageUrl || imageError || imageLoaded) return;
+    const t = setTimeout(() => setImageLoaded(true), 1500);
+    return () => clearTimeout(t);
+  }, [imageUrl, imageError, imageLoaded]);
+
   // Prefetch when card is near viewport (industry standard: Airbnb-style instant nav on mobile tap / quick click)
   useEffect(() => {
     if (!identifier || !cardRef.current) return;
@@ -171,6 +194,7 @@ const HomeClassCard = ({
               aria-hidden="true"
             />
             <img
+              ref={imgRef}
               src={imageUrl}
               alt={title || "Class experience"}
               loading={priority ? "eager" : "lazy"}
