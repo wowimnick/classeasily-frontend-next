@@ -21,6 +21,17 @@
   background: #f7f7f7;
 }
 
+.noImage {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
 /* Image skeleton: exact same layout as the image (fill container, same radius) */
 .imageSkeleton {
   position: absolute;
@@ -43,7 +54,7 @@
 .imageSkeletonHidden {
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: none;
 }
 
 @keyframes imageShimmer {
@@ -55,7 +66,7 @@
   }
 }
 
-/* Fix for stretched images; start hidden to avoid flash when skeleton fades */
+/* Fix for stretched images; hidden until loaded to avoid flash over skeleton */
 .cardImage {
   object-fit: cover;
   opacity: 0;
@@ -63,7 +74,6 @@
 
 .cardImageLoaded {
   opacity: 1;
-  transition: opacity 0.2s ease-out;
 }
 
 /* Soonest date tag (e.g. "Happening Next Week" cards) — top left, glass style */

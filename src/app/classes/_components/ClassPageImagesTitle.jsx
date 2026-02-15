@@ -815,7 +815,8 @@ const ClassPageImagesTitle = React.memo(
                   ? image
                   : image?.large_url ||
                     image?.medium_url ||
-                    image?.thumbnail_url;
+                    image?.thumbnail_url ||
+                    (typeof image === "string" ? image : undefined);
                 const isLcp = index === 0;
 
                 return (
@@ -858,7 +859,10 @@ const ClassPageImagesTitle = React.memo(
                     const imgSrc =
                       typeof img === "string"
                         ? img
-                        : img?.large_url || img?.medium_url || img;
+                        : img?.large_url ||
+                          img?.medium_url ||
+                          img?.thumbnail_url ||
+                          undefined;
                     const isLcp = index === 0;
                     return (
                       <EmblaSlide
@@ -925,7 +929,9 @@ const ClassPageImagesTitle = React.memo(
                             >
                               <img
                                 src={
-                                  img?.thumbnail_url || img?.medium_url || img
+                                  img?.thumbnail_url ||
+                                  img?.medium_url ||
+                                  (typeof img === "string" ? img : undefined)
                                 }
                                 alt={`Thumbnail ${index + 1}`}
                               />
@@ -942,7 +948,11 @@ const ClassPageImagesTitle = React.memo(
                       {classImages.map((img, index) => (
                         <GalleryEmblaSlide key={index}>
                           <GalleryImage
-                            src={img?.large_url || img?.medium_url || img}
+                            src={
+                              img?.large_url ||
+                              img?.medium_url ||
+                              (typeof img === "string" ? img : undefined)
+                            }
                             alt={`Class image ${index + 1}`}
                             $isZoomed={zoom.scale > 1}
                             style={{
@@ -986,7 +996,13 @@ const ClassPageImagesTitle = React.memo(
             </ShareModalHeader>
             <PlaceInfo>
               <img
-                src={imagesToDisplay[0]?.thumbnail_url || imagesToDisplay[0]}
+                src={
+                  imagesToDisplay[0]?.thumbnail_url ||
+                  imagesToDisplay[0]?.medium_url ||
+                  (typeof imagesToDisplay[0] === "string"
+                    ? imagesToDisplay[0]
+                    : null)
+                }
                 alt={title}
               />
               <div>

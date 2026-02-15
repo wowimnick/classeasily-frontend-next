@@ -147,7 +147,7 @@ export async function generateMetadata({ params }) {
   const canonicalUrl = `https://classeasily.com/classes/${classData.slug}`;
   const imageUrl =
     classData.images?.length > 0
-      ? classData.images[0].original_url
+      ? classData.images[0].medium_url || classData.images[0].original_url
       : "https://classeasily.com/placeholder-image.jpg";
 
   // Parse Coordinates for Schema
