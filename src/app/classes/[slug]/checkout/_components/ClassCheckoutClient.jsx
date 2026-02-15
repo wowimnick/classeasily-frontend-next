@@ -7,6 +7,7 @@ import styled from "styled-components";
 import { X, ArrowLeft, ChevronLeft } from "lucide-react";
 import dynamic from "next/dynamic";
 import Lottie from "lottie-react";
+import posthog from "posthog-js";
 import { paymentService } from "@/services/apiService";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { classService } from "@/services/apiService";
@@ -408,6 +409,55 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
         },
         classData,
       };
+
+      // --- Analytics: fire only when booking actually completed (has booking_id) ---
+      const revenue = (bookingData?.price || 0) * (bookingData?.participants || 1);
+      if (dataFromReviewStep.booking_id) {
+        // PostHog: booking_completed
+        posthog.capture("booking_completed", {
+          class_id: classData?.classId || classData?.id,
+          class_title: classData?.title,
+          business_name: classData?.business_name,
+          booking_id: dataFromReviewStep.booking_id,
+          revenue,
+          currency: classData?.currency_code || "CAD",
+          participants: bookingData?.participants ?? 1,
+        });
+
+        // Meta Pixel: Purchase (fbq is loaded globally in layout.js)
+        if (typeof window !== "undefined" && window.fbq) {
+          const userEmail = bookingData?.email || bookingData?.userEmail;
+          const userPhone = bookingData?.phone || bookingData?.userPhone;
+          const fullName = bookingData?.fullName || bookingData?.userName || "";
+          const nameParts = fullName.trim().split(" ");
+          const firstName = nameParts[0] || "";
+          const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
+          window.fbq(
+            "track",
+            "Purchase",
+            {
+              content_name: classData?.title,
+              content_ids: [classData?.classId || classData?.id],
+              content_type: "product",
+              value: revenue,
+              currency: classData?.currency_code || "CAD",
+              num_items: bookingData?.participants ?? 1,
+              order_id: dataFromReviewStep.booking_id || dataFromReviewStep.payment_intent_id,
+            },
+            {
+              em: userEmail,
+              ph: userPhone,
+              fn: firstName,
+              ln: lastName,
+              ct: bookingData?.city,
+              st: bookingData?.state,
+              zp: bookingData?.zipCode,
+              country: "ca",
+            }
+          );
+        }
+      }
+
       sessionStorage.setItem(
         "classeasily_booking_success",
         JSON.stringify(successPayload)

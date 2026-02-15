@@ -1,3 +1,5 @@
+// --- START OF FILE TicketsLoadingSkeleton.jsx ---
+
 "use client";
 
 import styled, { keyframes, ThemeProvider } from "styled-components";
@@ -18,25 +20,24 @@ const PageWrapper = styled.div`
 
 const PageContainer = styled.div`
   flex-grow: 1;
-  max-width: 1200px;
-  min-height: 90vh;
+  max-width: 900px;
   width: 100%;
   margin: 0 auto;
-  padding: 32px 24px 64px;
+  padding: 24px 24px 48px;
 
   @media (max-width: 768px) {
-    padding: 24px 16px 48px;
+    padding: 20px 16px 40px;
   }
 `;
 
 const SkeletonBase = styled.div`
-  background: #f6f7f8;
+  background: #f0f0f0;
   background-image: linear-gradient(
     to right,
-    #f6f7f8 0%,
-    #edeef1 20%,
-    #f6f7f8 40%,
-    #f6f7f8 100%
+    #f0f0f0 0%,
+    #e8e8e8 20%,
+    #f0f0f0 40%,
+    #f0f0f0 100%
   );
   background-repeat: no-repeat;
   background-size: 800px 100%;
@@ -47,52 +48,37 @@ const SkeletonBase = styled.div`
   margin-bottom: ${(props) => props.$mb || "0"};
 `;
 
+// --- List Page Skeletons ---
+
 const HeaderSkeleton = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 32px;
+  align-items: center;
+  margin-bottom: 28px;
 `;
 
-const ControlsSkeleton = styled.div`
-  margin-bottom: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-`;
-
-const GridSkeleton = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-`;
-
-const CardSkeleton = styled.div`
-  background: white;
-  border: 1px solid #e8e8e8;
+const ListSkeleton = styled.div`
+  border: 1px solid #ebebeb;
   border-radius: 12px;
-  padding: 0;
-  height: 180px;
-  display: flex;
-  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
 `;
 
-const CardSkeletonHeader = styled.div`
-  padding: 16px 16px 12px;
+const RowSkeleton = styled.div`
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #ebebeb;
+
+  &:last-child {
+    border-bottom: none;
+  }
 `;
 
-const CardSkeletonBody = styled.div`
-  padding: 0 16px;
+const RowMain = styled.div`
   flex: 1;
-`;
-
-const CardSkeletonFooter = styled.div`
-  padding: 12px 16px;
-  border-top: 1px solid #f0f0f0;
-  display: flex;
-  justify-content: space-between;
+  min-width: 0;
 `;
 
 export function TicketsListLoadingSkeleton() {
@@ -101,50 +87,42 @@ export function TicketsListLoadingSkeleton() {
       <PageWrapper>
         <ExploreHeader showOptionsWrapper={false} />
         <PageContainer>
-          {/* Header */}
           <HeaderSkeleton>
             <div>
-              <SkeletonBase $width="200px" $height="32px" $mb="8px" />
-              <SkeletonBase $width="300px" $height="16px" />
+              <SkeletonBase $width="180px" $height="28px" $mb="6px" />
+              <SkeletonBase $width="140px" $height="14px" />
             </div>
-            <SkeletonBase $width="120px" $height="40px" $radius="10px" />
+            <SkeletonBase $width="120px" $height="44px" $radius="8px" />
           </HeaderSkeleton>
 
-          {/* Controls */}
-          <ControlsSkeleton>
-            <SkeletonBase $width="100%" $height="40px" $radius="10px" />
+          <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+            <SkeletonBase $width="240px" $height="44px" $radius="8px" />
             <div style={{ display: "flex", gap: 8 }}>
               {[1, 2, 3, 4].map((i) => (
                 <SkeletonBase
                   key={i}
-                  $width="80px"
-                  $height="32px"
-                  $radius="20px"
+                  $width="70px"
+                  $height="36px"
+                  $radius="24px"
                 />
               ))}
             </div>
-          </ControlsSkeleton>
+          </div>
 
-          {/* Grid */}
-          <GridSkeleton>
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <CardSkeleton key={i}>
-                <CardSkeletonHeader>
-                  <SkeletonBase $width="60px" $height="20px" />
-                  <SkeletonBase $width="80px" $height="20px" $radius="12px" />
-                </CardSkeletonHeader>
-                <CardSkeletonBody>
-                  <SkeletonBase $width="90%" $height="20px" $mb="8px" />
-                  <SkeletonBase $width="60%" $height="14px" $mb="6px" />
-                  <SkeletonBase $width="40%" $height="14px" />
-                </CardSkeletonBody>
-                <CardSkeletonFooter>
-                  <SkeletonBase $width="80px" $height="16px" />
-                  <SkeletonBase $width="20px" $height="16px" />
-                </CardSkeletonFooter>
-              </CardSkeleton>
+          <ListSkeleton>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <RowSkeleton key={i}>
+                <RowMain>
+                  <SkeletonBase $width="60%" $height="18px" $mb="8px" />
+                  <div style={{ display: "flex", gap: 16 }}>
+                    <SkeletonBase $width="80px" $height="14px" />
+                    <SkeletonBase $width="70px" $height="14px" />
+                  </div>
+                </RowMain>
+                <SkeletonBase $width="90px" $height="26px" $radius="6px" />
+              </RowSkeleton>
             ))}
-          </GridSkeleton>
+          </ListSkeleton>
         </PageContainer>
         <FooterClient />
       </PageWrapper>
@@ -152,157 +130,85 @@ export function TicketsListLoadingSkeleton() {
   );
 }
 
-// --- Detail Page Skeleton Components ---
+// --- Detail Page Skeleton ---
 
 const DetailPageContainer = styled.div`
   flex-grow: 1;
-  max-width: 1400px;
+  max-width: 720px;
   width: 100%;
   margin: 0 auto;
-  padding: 24px;
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 32px;
-
-  @media (max-width: 1200px) {
-    grid-template-columns: 1fr;
-    max-width: 900px;
-    padding: 24px 20px;
-  }
+  padding: 24px 24px 48px;
 
   @media (max-width: 768px) {
-    padding: 16px;
+    padding: 20px 16px 40px;
   }
 `;
 
-const MainContent = styled.div`
+const TicketHeaderSkeleton = styled.div`
+  margin-bottom: 24px;
+`;
+
+const ConversationSkeleton = styled.div`
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  height: 600px;
+`;
+
+const ConversationHeaderSkeleton = styled.div`
+  padding: 16px 20px;
+  border-bottom: 1px solid #ebebeb;
+  flex-shrink: 0;
+`;
+
+const MessagesSkeleton = styled.div`
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  background: #fafafa;
+  flex-grow: 1;
 `;
 
-const Sidebar = styled.div`
+const MessageRowSkeleton = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 20px;
-
-  @media (max-width: 1200px) {
-    order: -1;
-  }
-`;
-
-const BackButtonSkeleton = styled(SkeletonBase)`
-  height: 16px;
-  width: 140px;
-  margin-bottom: 16px;
-`;
-
-const TicketHeader = styled.div`
-  background: ${(props) => props.theme.token.colorBgContainer};
-  border-radius: 12px;
-  padding: 24px 0;
-`;
-
-const MetaSection = styled.div`
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 20px;
-  padding-top: 16px;
-  border-top: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
-  margin-top: 16px;
-`;
-
-const ConversationCard = styled.div`
-  border-radius: 12px;
-  border: 1px solid ${(props) => props.theme.token.colorBorder};
-  background: ${(props) => props.theme.token.colorBgContainer};
-  overflow: hidden;
-`;
-
-const ConversationHeader = styled.div`
-  border-bottom: 1px solid ${(props) => props.theme.token.colorBorder};
-  padding: 16px 24px;
-`;
-
-const MessagesContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  height: 65vh;
-  max-height: 600px;
-  padding: 24px;
-  background: ${(props) => props.theme.token.colorBgLayout};
-`;
-
-const MessageSkeleton = styled.div`
-  display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   gap: 12px;
   justify-content: ${(props) => (props.$isUser ? "flex-end" : "flex-start")};
 `;
 
-const MessageBubbleSkeleton = styled.div`
+const BubbleSkeleton = styled.div`
+  max-width: 60%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: ${(props) => (props.$isUser ? "#fce7f3" : "#fff")};
+  border: ${(props) => (props.$isUser ? "none" : "1px solid #eee")};
+  order: ${(props) => (props.$isUser ? "2" : "1")};
+  
+  /* Make the skeleton inside the bubble look like lines of text */
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-width: 75%;
-  order: ${(props) => (props.$isUser ? "2" : "1")};
+  gap: 6px;
 `;
 
-const AvatarSkeleton = styled(SkeletonBase)`
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  margin-top: 4px;
-  order: ${(props) => (props.$isUser ? "3" : "0")};
+const ReplySkeleton = styled.div`
+  padding: 16px 20px;
+  border-top: 1px solid #ebebeb;
+  background: #fff;
 `;
 
-const ReplyInputArea = styled.div`
-  display: flex;
-  gap: 12px;
-  padding: 20px 24px;
-  border-top: 1px solid ${(props) => props.theme.token.colorBorder};
-  align-items: center;
-  background: ${(props) => props.theme.token.colorBgContainer};
-`;
-
-const InfoCard = styled.div`
-  border-radius: 12px;
-  background-color: ${(props) => props.theme.token.colorBgContainer};
-  border: 1px solid ${(props) => props.theme.token.colorBorder};
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  padding: 20px;
-`;
-
-const InfoCardHeader = styled.div`
-  padding-bottom: 16px;
-  border-bottom: 1px solid ${(props) => props.theme.token.colorBorder};
-  margin-bottom: 20px;
-`;
-
-const InfoItem = styled.div`
+const InputCapsuleSkeleton = styled.div`
+  height: 52px;
+  border-radius: 26px;
+  background: #f7f7f7;
+  border: 1px solid #ebebeb;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
-
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const AgentCard = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  background: ${(props) => props.theme.token.colorBgContainer};
-  border: 1px solid ${(props) => props.theme.token.colorBorder};
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border-radius: 12px;
+  padding: 0 8px 0 20px;
 `;
 
 export function TicketDetailLoadingSkeleton() {
@@ -311,75 +217,76 @@ export function TicketDetailLoadingSkeleton() {
       <PageWrapper>
         <ExploreHeader showOptionsWrapper={false} />
         <DetailPageContainer>
-          <MainContent>
-            <div>
-              <BackButtonSkeleton />
-              <TicketHeader>
-                <SkeletonBase $height="28px" $width="80%" $mb="16px" />
-                <MetaSection>
-                  <SkeletonBase $height="14px" $width="140px" $mb="0" />
-                  <SkeletonBase $height="14px" $width="180px" $mb="0" />
-                  <SkeletonBase $height="14px" $width="160px" $mb="0" />
-                </MetaSection>
-              </TicketHeader>
+          {/* Back Button */}
+          <SkeletonBase
+            $width="120px"
+            $height="16px"
+            $mb="24px"
+            $radius="4px"
+          />
+
+          {/* Title Area */}
+          <TicketHeaderSkeleton>
+            <SkeletonBase $width="70%" $height="28px" $mb="16px" />
+            
+            {/* Meta Row */}
+            <div style={{ display: "flex", gap: 24, marginBottom: 16 }}>
+              <SkeletonBase $width="80px" $height="14px" />
+              <SkeletonBase $width="120px" $height="14px" />
+              <SkeletonBase $width="100px" $height="14px" />
             </div>
 
-            <ConversationCard>
-              <ConversationHeader>
-                <SkeletonBase $height="20px" $width="180px" $mb="0" />
-              </ConversationHeader>
-              <MessagesContainer>
-                {[1, 2, 3, 4].map((i) => (
-                  <MessageSkeleton key={i} $isUser={i % 2 === 0}>
-                    <AvatarSkeleton $isUser={i % 2 === 0} />
-                    <MessageBubbleSkeleton $isUser={i % 2 === 0}>
-                      <SkeletonBase $height="12px" $width="60px" $mb="4px" />
-                      <SkeletonBase $height="16px" $width="100%" $mb="4px" />
-                      <SkeletonBase $height="16px" $width="90%" $mb="4px" />
-                      <SkeletonBase $height="11px" $width="80px" $mb="0" />
-                    </MessageBubbleSkeleton>
-                  </MessageSkeleton>
-                ))}
-              </MessagesContainer>
-              <ReplyInputArea>
-                <SkeletonBase $height="44px" $width="100%" $radius="8px" />
-                <SkeletonBase $height="44px" $width="44px" $radius="8px" />
-              </ReplyInputArea>
-            </ConversationCard>
-          </MainContent>
+            {/* Tags (Pills) */}
+            <div style={{ display: "flex", gap: 10 }}>
+              <SkeletonBase $width="90px" $height="34px" $radius="10px" />
+              <SkeletonBase $width="80px" $height="34px" $radius="10px" />
+              <SkeletonBase $width="100px" $height="34px" $radius="10px" />
+            </div>
+          </TicketHeaderSkeleton>
 
-          <Sidebar>
-            <InfoCard>
-              <InfoCardHeader>
-                <SkeletonBase $height="18px" $width="120px" $mb="0" />
-              </InfoCardHeader>
-              <InfoItem>
-                <SkeletonBase $height="14px" $width="60px" $mb="0" />
-                <SkeletonBase $height="24px" $width="80px" $mb="0" />
-              </InfoItem>
-              <InfoItem>
-                <SkeletonBase $height="14px" $width="60px" $mb="0" />
-                <SkeletonBase $height="24px" $width="70px" $mb="0" />
-              </InfoItem>
-              <InfoItem>
-                <SkeletonBase $height="14px" $width="70px" $mb="0" />
-                <SkeletonBase $height="24px" $width="100px" $mb="0" />
-              </InfoItem>
-            </InfoCard>
+          {/* Chat Interface */}
+          <ConversationSkeleton>
+            <ConversationHeaderSkeleton>
+              <SkeletonBase $width="100px" $height="18px" />
+            </ConversationHeaderSkeleton>
 
-            <AgentCard>
-              <SkeletonBase
-                $height="40px"
-                $width="40px"
-                $radius="50%"
-                $mb="0"
-              />
-              <div style={{ flex: 1 }}>
-                <SkeletonBase $height="14px" $width="120px" $mb="8px" />
-                <SkeletonBase $height="12px" $width="90px" $mb="0" />
-              </div>
-            </AgentCard>
-          </Sidebar>
+            <MessagesSkeleton>
+              {/* Agent Message */}
+              <MessageRowSkeleton $isUser={false}>
+                <SkeletonBase $width="32px" $height="32px" $radius="50%" />
+                <BubbleSkeleton $isUser={false} style={{ width: "240px" }}>
+                  <SkeletonBase $height="14px" $width="90%" />
+                  <SkeletonBase $height="14px" $width="60%" />
+                </BubbleSkeleton>
+              </MessageRowSkeleton>
+
+              {/* User Message */}
+              <MessageRowSkeleton $isUser={true}>
+                <BubbleSkeleton $isUser={true} style={{ width: "180px" }}>
+                  <SkeletonBase $height="14px" $width="100%" />
+                  <SkeletonBase $height="14px" $width="80%" />
+                </BubbleSkeleton>
+                <SkeletonBase $width="32px" $height="32px" $radius="50%" />
+              </MessageRowSkeleton>
+
+              {/* Agent Message Long */}
+              <MessageRowSkeleton $isUser={false}>
+                <SkeletonBase $width="32px" $height="32px" $radius="50%" />
+                <BubbleSkeleton $isUser={false} style={{ width: "300px" }}>
+                  <SkeletonBase $height="14px" $width="100%" />
+                  <SkeletonBase $height="14px" $width="95%" />
+                  <SkeletonBase $height="14px" $width="40%" />
+                </BubbleSkeleton>
+              </MessageRowSkeleton>
+            </MessagesSkeleton>
+
+            <ReplySkeleton>
+              <InputCapsuleSkeleton>
+                <SkeletonBase $width="140px" $height="14px" />
+                <SkeletonBase $width="36px" $height="36px" $radius="50%" />
+              </InputCapsuleSkeleton>
+            </ReplySkeleton>
+          </ConversationSkeleton>
         </DetailPageContainer>
         <FooterClient />
       </PageWrapper>
