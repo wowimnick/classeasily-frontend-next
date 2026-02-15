@@ -2351,6 +2351,7 @@ const ReviewAndPaymentStep = ({
                 layout="vertical"
                 requiredMark={false}
                 onValuesChange={handleFormValuesChange}
+                style={{ padding: "0 4px" }}
               >
                   {/* SECTION 1: GUEST DETAILS */}
                   <SectionCard>

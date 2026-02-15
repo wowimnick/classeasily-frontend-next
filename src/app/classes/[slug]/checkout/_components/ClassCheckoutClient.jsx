@@ -6,11 +6,13 @@ import Link from "next/link";
 import styled from "styled-components";
 import { X, ArrowLeft, ChevronLeft } from "lucide-react";
 import dynamic from "next/dynamic";
+import Lottie from "lottie-react";
 import { paymentService } from "@/services/apiService";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { classService } from "@/services/apiService";
 import { motion, AnimatePresence } from "framer-motion";
 import ClientHeader from "@/components/layout/ClientHeader";
+import loadingAnimation from "@/assets/animations/Scene.json";
 
 const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
 
@@ -155,12 +157,38 @@ const MainContainer = styled.div`
   flex: 1;
 
   @media (max-width: 900px) {
-    padding: 16px 12px 120px;
+    padding: 16px 0px 120px;
   }
 
   @media (max-width: 969px) {
-    padding: 16px 12px 220px;
+    padding: 16px 0px 220px;
   }
+`;
+
+const CheckoutLoaderContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+`;
+
+const CheckoutLoaderTitle = styled.h3`
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin-top: 16px;
+  margin-bottom: 0;
+`;
+
+const CheckoutLoaderSubtext = styled.p`
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 4px;
 `;
 
 const CheckoutFooter = styled(motion.footer)`
@@ -457,7 +485,11 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
         </MobileHeaderBar>
 
         <MainContainer>
-          <div style={{ padding: "60px 0", textAlign: "center" }}>Loading checkout…</div>
+          <CheckoutLoaderContainer>
+            <Lottie animationData={loadingAnimation} loop style={{ width: 180, height: 180 }} />
+            <CheckoutLoaderTitle>We're getting things ready</CheckoutLoaderTitle>
+            <CheckoutLoaderSubtext>Let's get that booked for you!</CheckoutLoaderSubtext>
+          </CheckoutLoaderContainer>
         </MainContainer>
       </PageWrapper>
     );
