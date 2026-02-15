@@ -157,11 +157,11 @@ const MainContainer = styled.div`
   flex: 1;
 
   @media (max-width: 900px) {
-    padding: 16px 0px 120px;
+    padding: 0x 0px 120px;
   }
 
   @media (max-width: 969px) {
-    padding: 16px 0px 220px;
+    padding: 0px 0px 220px;
   }
 `;
 
