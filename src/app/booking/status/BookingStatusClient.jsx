@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import styled from "styled-components";
@@ -70,6 +70,7 @@ export default function BookingStatusClient() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState("loading"); // loading | success | failed | no_slug
   const [errorMessage, setErrorMessage] = useState(null);
+  const hasStartedPollingRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -118,6 +119,9 @@ export default function BookingStatusClient() {
       setErrorMessage("Payment status could not be determined. Please check your bookings or try again.");
       return;
     }
+
+    if (hasStartedPollingRef.current) return;
+    hasStartedPollingRef.current = true;
 
     (async () => {
       try {

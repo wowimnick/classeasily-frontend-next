@@ -8,8 +8,6 @@ import {
   fetchBusinessDetail,
   fetchClassReviews,
 } from "@/lib/server-data-fetchers";
-import ExploreHeader from "@/components/explore/ExploreHeader";
-
 import FooterSmart from "@/components/homepage/FooterSmart.jsx";
 import ClassPageClient from "../_components/ClassPageClient";
 
@@ -294,7 +292,6 @@ export default async function ClassPage({ params }) {
     <div
       style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
     >
-      <ExploreHeader showOptionsWrapper={false} />
       <main style={{ flex: 1 }}>
         <ClassPageClient
           classData={classData}

@@ -12,20 +12,21 @@ const OffersContainer = styled(motion.div)`
   background: white;
   border-radius: 16px;
   max-width: 800px;
+  padding: 1rem;
   @media (max-width: 768px) {
-    padding: 1.5rem;
+    padding: 1rem;
     border-radius: 12px;
   }
   @media (max-width: 480px) {
-    padding: 1.25rem;
+    padding: 1rem;
     border-radius: 10px;
   }
 `;
 const Title = styled.h2`
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #000;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -34,13 +35,10 @@ const Title = styled.h2`
     flex-shrink: 0;
   }
   @media (max-width: 768px) {
-    font-size: 1.375rem;
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.75rem;
     gap: 0.625rem;
   }
   @media (max-width: 480px) {
-    font-size: 1.25rem;
-    margin-bottom: 1rem;
     gap: 0.5rem;
     svg {
       width: 20px;
@@ -212,7 +210,7 @@ const StyledModal = styled(Modal)`
     overflow: hidden;
   }
   .ant-modal-header {
-    padding: 1.5rem;
+    padding: 1rem;
     border-bottom: 1px solid #eaeaea;
   }
   .ant-modal-body {
@@ -230,32 +228,20 @@ const StyledModal = styled(Modal)`
   }
   @media (max-width: 768px) {
     max-width: 95vw !important;
-    .ant-modal-header {
-      padding: 1.25rem;
-    }
     .ant-modal-title {
       font-size: 1.125rem;
     }
   }
   @media (max-width: 480px) {
-    .ant-modal-header {
-      padding: 1rem;
-    }
     .ant-modal-title {
       font-size: 1rem;
     }
   }
 `;
 const ModalSection = styled.div`
-  padding: 1.5rem;
+  padding: 1rem;
   &:not(:last-child) {
     border-bottom: 1px solid #f0f0f0;
-  }
-  @media (max-width: 768px) {
-    padding: 1.25rem;
-  }
-  @media (max-width: 480px) {
-    padding: 1rem;
   }
 `;
 const ModalSectionTitle = styled.h3`
@@ -475,7 +461,7 @@ const ClassOffers = React.memo(({ features }) => {
     >
       <Title id="class-offers-title">
         <AwardIcon size={24} aria-hidden="true" />
-        What this experience offers
+        The good stuff
       </Title>
       <TagsGrid role="list">
         <AnimatePresence>

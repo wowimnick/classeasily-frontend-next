@@ -4,15 +4,15 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styled from "styled-components";
-import { ChevronLeft } from "lucide-react";
-import { Divider } from "antd";
+import { X, ArrowLeft, ChevronLeft } from "lucide-react";
 import dynamic from "next/dynamic";
+import Lottie from "lottie-react";
 import { paymentService } from "@/services/apiService";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { classService } from "@/services/apiService";
-import ExploreHeader from "@/components/explore/ExploreHeader";
-import FooterSmart from "@/components/homepage/FooterSmart";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import ClientHeader from "@/components/layout/ClientHeader";
+import loadingAnimation from "@/assets/animations/Scene.json";
 
 const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
 
@@ -21,57 +21,177 @@ const ReviewAndPaymentStep = dynamic(
   { loading: () => <div style={{ minHeight: "400px" }} />, ssr: false }
 );
 
-// --- Giftcard-style layout (same structure as GiftcardPaymentStep) ---
+// --- STYLED COMPONENTS ---
+
 const PageWrapper = styled.div`
   width: 100%;
   min-height: 100vh;
-  padding-top: 100px;
+  padding-top: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  @media (max-width: 768px) {
-    padding-top: 80px;
+  background: rgb(252, 252, 252);
+`;
+
+/* ClientHeader wrapper: show only on desktop, above checkout bar */
+const DesktopClientHeaderWrap = styled.div`
+  display: none;
+  @media (min-width: 970px) {
+    display: block;
+    width: 100%;
   }
+`;
+
+/* --- NEW CUSTOM DESKTOP HEADER --- */
+const DesktopHeaderBar = styled.header`
+  display: none;
+  @media (min-width: 970px) {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    border-bottom: 1px solid #e5e7eb;
+    height: 80px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+`;
+
+const DesktopHeaderContent = styled.div`
+  max-width: 1000px; /* Matches MainContainer */
+  width: 100%;
+  padding: 0 16px; /* Matches MainContainer padding */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+`;
+
+const HeaderTitle = styled.h1`
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+`;
+
+const DesktopBackButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 50%;
+  background: white;
+  color: #111827;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+  }
+`;
+
+/* Mobile Header: full white background */
+const MobileHeaderBar = styled.header`
+  display: grid;
+  grid-template-columns: 52px 1fr 52px;
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+  min-height: 56px;
+  background: white;
+  box-sizing: border-box;
+  @media (min-width: 970px) {
+    display: none;
+  }
+`;
+
+const CloseButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  flex-shrink: 0;
+  justify-self: start;
+  grid-column: 1;
+  &:hover {
+    color: #374151;
+  }
+`;
+
+const TitleCard = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  background: transparent;
+  grid-column: 2;
+  justify-self: center;
+`;
+
+const CheckoutModalTitle = styled.h1`
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  color: #222;
+  text-align: center;
 `;
 
 const MainContainer = styled.div`
   max-width: 1000px;
   width: 100%;
   margin: 0 auto;
-  padding: 40px 6px 100px;
+  padding: 24px 16px 120px;
+  flex: 1;
 
   @media (max-width: 900px) {
-    padding: 20px 6px 120px;
+    padding: 0x 0px 120px;
+  }
+
+  @media (max-width: 969px) {
+    padding: 0px 0px 220px;
   }
 `;
 
-const BackLink = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
+const CheckoutLoaderContainer = styled.div`
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 0;
-  margin-bottom: 24px;
-  font-size: 0.95rem;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+`;
+
+const CheckoutLoaderTitle = styled.h3`
+  font-size: 16px;
   font-weight: 600;
-  color: #222;
-  text-decoration: underline;
-
-  &:hover {
-    color: #ff385c;
-  }
+  color: #374151;
+  margin-top: 16px;
+  margin-bottom: 0;
 `;
 
-const CheckoutPageTitle = styled.h1`
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 2rem;
-  margin-top: -10px;
+const CheckoutLoaderSubtext = styled.p`
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 4px;
 `;
 
-const CheckoutFooter = styled.footer`
+const CheckoutFooter = styled(motion.footer)`
   position: fixed;
   bottom: 0;
   left: 0;
@@ -85,28 +205,24 @@ const CheckoutFooter = styled.footer`
   padding: 16px 24px;
   padding-bottom: max(16px, env(safe-area-inset-bottom));
   z-index: 100;
+`;
 
+const MobileFooterWrap = styled.div`
   @media (min-width: 969px) {
-    position: static;
-    background: white;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    border-top: none;
-    box-shadow: none;
-    padding: 24px 0 0;
-    margin-top: 24px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    display: none;
   }
 `;
 
 const TermsText = styled.p`
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
   font-size: 0.75rem;
   color: #6b7280;
   line-height: 1.45;
   text-align: center;
+  
+  @media (max-width: 968px) {
+    margin-bottom: 12px;
+  }
 
   a {
     color: #ff385c;
@@ -125,20 +241,22 @@ const ConfirmButton = styled(motion.button)`
   border: none;
   padding: 14px 24px;
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.1s ease, background-color 0.2s;
 
   &:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+    background: #ff385c;
   }
   &:hover:not(:disabled) {
     background: #e31c5f;
   }
-
-  @media (min-width: 969px) {
-    max-width: 320px;
+  &:active:not(:disabled) {
+    transform: scale(0.98);
   }
 `;
 
@@ -151,14 +269,12 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
   const [paymentAction, setPaymentAction] = useState(null);
   const cancelledIntentRef = useRef(false);
 
-  // Load checkout state from sessionStorage (persists across refresh); redirect only if invalid.
-  // When restoring, we must await cancel of the previous PaymentIntent so spots are released before
-  // the payment step creates a new one (otherwise "not enough spots" race can occur).
   useEffect(() => {
     if (typeof window === "undefined" || !slug) return;
 
     const raw = sessionStorage.getItem(CHECKOUT_STORAGE_KEY);
     if (!raw) {
+      setLoading(false);
       router.replace(`/classes/${slug}`);
       return;
     }
@@ -169,6 +285,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
       try {
         const state = JSON.parse(raw);
         if (state.classSlug !== slug) {
+          setLoading(false);
           router.replace(`/classes/${slug}`);
           return;
         }
@@ -177,14 +294,14 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
           state.bookingData?.selectedSlots?.length > 0 &&
           state.bookingData?.selectedOption;
         if (!hasSlots) {
+          setLoading(false);
           router.replace(`/classes/${slug}`);
           return;
         }
 
         const { paymentIntentId, clientSecret, ...restBookingData } =
           state.bookingData || {};
-        // Release the previous session's hold before we render the payment step.
-        // Await so spots are freed before createPaymentIntent runs (avoids "not enough spots" race).
+        
         if (paymentIntentId && !cancelled) {
           await paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
         }
@@ -199,10 +316,18 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
           classService
             .fetchClassDetail(slug)
             .then((data) => !cancelled && setClassData(data))
-            .catch(() => !cancelled && router.replace(`/classes/${slug}`));
+            .catch(() => {
+              if (!cancelled) {
+                setLoading(false);
+                router.replace(`/classes/${slug}`);
+              }
+            });
         }
       } catch {
-        if (!cancelled) router.replace(`/classes/${slug}`);
+        if (!cancelled) {
+          setLoading(false);
+          router.replace(`/classes/${slug}`);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -244,9 +369,18 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
         credentials: "include",
       }).catch(() => {});
     };
+    const handlePopState = () => {
+      if (cancelledIntentRef.current) return;
+      paymentService.cancelPaymentIntent(intentId).catch(() => {});
+      clearIntentFromStorage();
+    };
     window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [bookingData?.paymentIntentId]);
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [bookingData?.paymentIntentId, clearIntentFromStorage]);
 
   const handlePaymentComplete = useCallback(
     (dataFromReviewStep) => {
@@ -306,9 +440,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
               }
             }
           } catch (e) {
-            if (process.env.NODE_ENV === "development") {
-              console.warn("[Checkout] Persist booking data failed:", e);
-            }
+            console.warn("[Checkout] Persist booking data failed:", e);
           }
         }
         return next;
@@ -323,57 +455,95 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
       ? Intl.DateTimeFormat().resolvedOptions().timeZone
       : "America/Toronto";
 
+  const handleCloseCheckout = () => {
+    const intentId = bookingData?.paymentIntentId;
+    if (intentId && !cancelledIntentRef.current) {
+      paymentService.cancelPaymentIntent(intentId).catch(() => {});
+    }
+    clearIntentFromStorage();
+    router.replace(`/classes/${slug}`);
+  };
+
   if (loading || !bookingData || !classData) {
     return (
-      <>
-        <ExploreHeader showOptionsWrapper={false} />
-        <PageWrapper>
-          <MainContainer>
-            <div style={{ padding: "60px 0", textAlign: "center" }}>
-              Loading checkout…
-            </div>
-          </MainContainer>
-        </PageWrapper>
-      </>
+      <PageWrapper>
+        <DesktopClientHeaderWrap>
+          <ClientHeader />
+        </DesktopClientHeaderWrap>
+        <DesktopHeaderBar>
+           <DesktopHeaderContent>
+              <DesktopBackButton onClick={() => router.replace(`/classes/${slug}`)}>
+                 <ChevronLeft size={20} />
+              </DesktopBackButton>
+              <HeaderTitle>Review and continue</HeaderTitle>
+           </DesktopHeaderContent>
+        </DesktopHeaderBar>
+        
+        <MobileHeaderBar>
+          <CloseButton onClick={() => router.replace(`/classes/${slug}`)}><X size={20} /></CloseButton>
+          <TitleCard><CheckoutModalTitle>Review and continue</CheckoutModalTitle></TitleCard>
+        </MobileHeaderBar>
+
+        <MainContainer>
+          <CheckoutLoaderContainer>
+            <Lottie animationData={loadingAnimation} loop style={{ width: 180, height: 180 }} />
+            <CheckoutLoaderTitle>We're getting things ready</CheckoutLoaderTitle>
+            <CheckoutLoaderSubtext>Let's get that booked for you!</CheckoutLoaderSubtext>
+          </CheckoutLoaderContainer>
+        </MainContainer>
+      </PageWrapper>
     );
   }
 
-  const canSubmit =
-    paymentAction?.canSubmit !== false && paymentAction?.handleSubmit;
-
-  /* Show Confirm and Pay footer only when form is valid / Stripe ready (or free) so button is not shown until ready */
-  const showConfirmFooter = paymentAction && canSubmit;
+  const canSubmit = paymentAction?.canSubmit !== false && paymentAction?.handleSubmit;
+  
+  // Logic for the button content
+  const FooterContent = (
+    <>
+      <TermsText>
+        By selecting the button below, I agree to the{" "}
+        <Link href="/terms-of-service">Host Terms</Link>,{" "}
+        <Link href="/fees">Payment Terms of Service</Link>, and{" "}
+        <Link href="/privacy-policy">Privacy Policy</Link>.
+      </TermsText>
+      <ConfirmButton
+        type="button"
+        disabled={paymentAction?.loading || !canSubmit}
+        onClick={() => paymentAction?.handleSubmit?.()}
+        whileTap={{ scale: 0.98 }}
+      >
+        {paymentAction?.loading ? "Processing…" : "Complete Booking"}
+      </ConfirmButton>
+    </>
+  );
 
   return (
-    <>
-      <ExploreHeader showOptionsWrapper={false} />
-      <PageWrapper>
-        <MainContainer>
-          <BackLink
-            type="button"
-            onClick={() => {
-              const intentId = bookingData?.paymentIntentId;
-              if (intentId && !cancelledIntentRef.current) {
-                paymentService
-                  .cancelPaymentIntent(intentId)
-                  .catch((e) => {
-                    if (process.env.NODE_ENV === "development") {
-                      console.warn("[Checkout] Cancel intent on back failed:", e);
-                    }
-                  });
-              }
-              clearIntentFromStorage();
-              router.push(`/classes/${slug}`);
-            }}
-            aria-label="Back to experience"
-          >
-            <ChevronLeft size={18} />
-            Back to experience
-          </BackLink>
+    <PageWrapper>
+      {/* ClientHeader on desktop only, above checkout nav */}
+      <DesktopClientHeaderWrap>
+        <ClientHeader showOptionsWrapper={false} />
+      </DesktopClientHeaderWrap>
+      {/* 1. Custom Desktop Header */}
+      <DesktopHeaderBar>
+         <DesktopHeaderContent>
+            <DesktopBackButton onClick={handleCloseCheckout} aria-label="Back">
+               <ChevronLeft size={24} />
+            </DesktopBackButton>
+            <HeaderTitle>Review and continue</HeaderTitle>
+         </DesktopHeaderContent>
+      </DesktopHeaderBar>
 
-          <CheckoutPageTitle>Confirm and Pay</CheckoutPageTitle>
-          <Divider style={{ margin: "0 0 32px 0" }} />
+      {/* Mobile Header (Hidden on Desktop) */}
+      <MobileHeaderBar>
+        <CloseButton type="button" onClick={handleCloseCheckout} aria-label="Close">
+          <X size={20} />
+        </CloseButton>
+        <TitleCard>
+          <CheckoutModalTitle>Review and continue</CheckoutModalTitle>
+        </TitleCard>
+      </MobileHeaderBar>
 
+      <MainContainer>
           <ReviewAndPaymentStep
             bookingData={bookingData}
             classData={classData}
@@ -384,29 +554,27 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
             onPaymentAction={setPaymentAction}
             userTimeZone={userTimeZone}
             businessTimeZone={businessTimeZone}
+            confirmFooter={FooterContent}
           />
 
-          {showConfirmFooter && (
-            <CheckoutFooter>
-              <TermsText>
-                By selecting the button below, I agree to the{" "}
-                <Link href="/host-terms">Host Terms</Link>,{" "}
-                <Link href="/payment-terms">Payment Terms of Service</Link>, and{" "}
-                <Link href="/privacy-policy">Privacy Policy</Link>.
-              </TermsText>
-              <ConfirmButton
-                type="button"
-                disabled={paymentAction.loading}
-                onClick={() => paymentAction.handleSubmit?.()}
-                whileTap={{ scale: 0.98 }}
-              >
-                {paymentAction.loading ? "Processing…" : "Confirm and Pay"}
-              </ConfirmButton>
-            </CheckoutFooter>
-          )}
+          {/* Mobile Floating Footer */}
+          <MobileFooterWrap>
+            <AnimatePresence>
+              {/* Show footer only when payment step is active (controlled inside ReviewAndPaymentStep logic) 
+                  but we receive the signal via paymentAction.showFooterButton */}
+              {paymentAction?.showFooterButton && (
+                <CheckoutFooter
+                  initial={{ y: 32, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 24, opacity: 0 }}
+                  transition={{ type: "spring", damping: 26, stiffness: 300 }}
+                >
+                  {FooterContent}
+                </CheckoutFooter>
+              )}
+            </AnimatePresence>
+          </MobileFooterWrap>
         </MainContainer>
-      </PageWrapper>
-      <FooterSmart />
-    </>
+    </PageWrapper>
   );
 }

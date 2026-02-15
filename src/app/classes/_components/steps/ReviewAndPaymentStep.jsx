@@ -1,6 +1,7 @@
 import React, {
   useState,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useMemo,
   useRef,
@@ -15,17 +16,16 @@ import {
   PaymentRequestButtonElement,
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow, { NumberFlowGroup } from "@number-flow/react";
 import confetti from "canvas-confetti";
-import axios from "axios";
 import {
   Shield,
   Clock,
   ChevronDown,
+  ChevronRight,
   CheckCircle,
-  Lock,
   Percent,
   UserCheck,
   RefreshCw,
@@ -34,8 +34,12 @@ import {
   CalendarDays,
   X,
   Gift,
+  CreditCard,
+  Edit2,
+  ChevronUp,
 } from "lucide-react";
 import Lottie from "lottie-react";
+import { Drawer } from "vaul";
 
 import { getCancellationPolicyText, getDurationText } from "./utils";
 import {
@@ -58,23 +62,248 @@ const StepContainer = styled.div`
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
-  padding: 0 4px;
-  padding-top: 4px;
-  padding-bottom: 20px;
   position: relative;
 
   @media (min-width: 969px) {
     grid-template-columns: minmax(0, 1.2fr) 400px;
     gap: 40px;
     align-items: flex-start;
-    padding-bottom: 0;
+  }
+`;
+
+const LeftColumnWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+
+  @media (max-width: 968px) {
+    .ant-input,
+    .ant-input-affix-wrapper input,
+    .ant-input-number-input {
+      font-size: 16px !important;
+    }
   }
 `;
 
 const PaymentSection = styled.div`
   display: flex;
   flex-direction: column;
+`;
+
+/* ACCORDION / SECTION STYLES */
+const SectionCard = styled.div`
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  padding-left: 4px;
+  padding-right: 4px;
+
+  ${(props) =>
+    props.$disabled &&
+    css`
+      opacity: 0.6;
+      pointer-events: none;
+      background: #f9fafb;
+    `}
+`;
+
+const SectionHeader = styled.div`
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: ${(props) => (props.$clickable ? "pointer" : "default")};
+  background: white;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .edit-btn {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    text-decoration: underline;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+`;
+
+const SectionContent = styled(motion.div)`
+  padding: 8px 24px 24px 24px;
+  border-top: 1px solid #f3f4f6;
+`;
+
+const SectionContentInner = styled.div`
+  padding: 8px 24px 24px 24px;
+  border-top: 1px solid #f3f4f6;
+`;
+
+const COLLAPSE_TRANSITION = { duration: 0.25, ease: [0.4, 0, 0.2, 1] };
+
+function MeasuredCollapseSection({ children, ...motionProps }) {
+  const ref = useRef(null);
+  const [height, setHeight] = useState(0);
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    const el = ref.current;
+    const ro = new ResizeObserver(() => setHeight(el.scrollHeight));
+    ro.observe(el);
+    setHeight(el.scrollHeight);
+    return () => ro.disconnect();
+  }, [children]);
+  return (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height, opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      transition={COLLAPSE_TRANSITION}
+      style={{ overflow: "hidden" }}
+      {...motionProps}
+    >
+      <SectionContentInner ref={ref}>{children}</SectionContentInner>
+    </motion.div>
+  );
+}
+
+function MeasuredMobileSummaryCollapse({ children }) {
+  const ref = useRef(null);
+  const [height, setHeight] = useState(0);
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    const el = ref.current;
+    const ro = new ResizeObserver(() => setHeight(el.scrollHeight));
+    ro.observe(el);
+    setHeight(el.scrollHeight);
+    return () => ro.disconnect();
+  }, [children]);
+  return (
+    <MobileSummaryContent
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height, opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      transition={COLLAPSE_TRANSITION}
+      style={{ overflow: "hidden" }}
+    >
+      <div ref={ref}>{children}</div>
+    </MobileSummaryContent>
+  );
+}
+
+const SummaryDataRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+  
+  .label {
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 500;
+  }
+  .value {
+    font-size: 15px;
+    color: #111827;
+    font-weight: 500;
+  }
+`;
+
+/* REFINED NEXT BUTTON */
+const NextButtonContainer = styled.div`
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+`;
+
+const NextButton = styled(Button)`
+  height: 48px;
+  min-width: 140px;
+  font-size: 16px;
+  font-weight: 600;
+  background: #ff385c;
+  border-color: #ff385c;
+  border-radius: 8px;
+  
+  &:hover {
+    background: #e31c5f !important;
+    border-color: #e31c5f !important;
+    opacity: 1 !important;
+  }
+`;
+
+const AdditionalNotesRevealButton = styled.button`
+  display: flex;
+  align-items: center;
   gap: 8px;
+  width: 100%;
+  padding: 0;
+  margin-top: 12px;
+  border: none;
+  background: none;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  transition: color 0.15s ease;
+  &:hover {
+    color: #374151;
+  }
+`;
+
+/* Divider between express pay and card */
+const PaymentMethodDivider = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 500;
+
+  &::before,
+  &::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #e5e7eb;
+  }
+`;
+
+/* Payment Method Toggles */
+const CardRevealButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 16px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #f3f4f6;
+  }
+
+  span {
+    font-weight: 600;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 `;
 
 const SummarySection = styled.div`
@@ -82,12 +311,22 @@ const SummarySection = styled.div`
   @media (min-width: 969px) {
     display: block;
     position: sticky;
-    top: 20px;
+    top: 100px; /* Account for sticky header */
   }
 `;
 
-// --- TICKET DESIGN COMPONENTS ---
+/* Desktop Footer rendered INSIDE the payment section, so we just style the container */
+const DesktopInlineFooter = styled.div`
+  display: none;
+  @media (min-width: 969px) {
+    display: block;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #e5e7eb;
+  }
+`;
 
+// --- TICKET DESIGN COMPONENTS (Kept as is) ---
 const TicketWrapper = styled.div`
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.05));
   width: 100%;
@@ -145,7 +384,7 @@ const TicketDivider = styled.div`
     content: "";
     width: 86%;
     height: 0;
-    border-top: 2px dashed #e5e7eb;
+    border-top: 1px dashed #e5e7eb;
   }
 `;
 
@@ -204,7 +443,7 @@ const TicketRow = styled.div`
 const TicketTotalRow = styled(TicketRow)`
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 2px solid #f3f4f6;
+  border-top: 1px solid #f3f4f6;
   margin-bottom: 0;
   align-items: center;
 
@@ -225,10 +464,10 @@ const TicketTotalRow = styled(TicketRow)`
 const MobileSummaryContainer = styled.div`
   display: block;
   background: white;
-  border-radius: 16px;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e5e7eb;
+  margin-bottom: 0;
+  border-bottom: 1px solid #e5e7eb;
 
   @media (min-width: 969px) {
     display: none;
@@ -289,44 +528,77 @@ const MobileSummaryInner = styled.div`
   padding: 20px;
 `;
 
-/* Promo / Gift card section visible only on mobile (desktop has it in the sidebar ticket) */
+const MobileSummaryRowCard = styled.div`
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  &:last-of-type {
+    margin-bottom: 0;
+  }
+`;
+
+const ViewDetailsButton = styled.button`
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-top: 6px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  &:hover {
+    color: #374151;
+  }
+`;
+
+/* Price details drawer (Vaul) */
+const PriceDetailsDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1049;
+`;
+const PriceDetailsDrawerContent = styled(Drawer.Content)`
+  background: white;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  max-height: 70vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  outline: none;
+`;
+const PriceDetailsDrawerHandle = styled.div`
+  width: 36px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  margin: 12px auto 8px;
+  flex-shrink: 0;
+`;
+const PriceDetailsDrawerBody = styled.div`
+  overflow-y: auto;
+  padding: 24px 24px 32px;
+  min-height: 0;
+`;
+
+/* Promo / Gift card section visible only on mobile */
 const MobilePromoSection = styled.div`
   display: block;
   margin-bottom: 16px;
   text-align: center;
   @media (min-width: 969px) {
     display: none;
-  }
-`;
-
-const FormCard = styled.div`
-  background: white;
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-  padding: 24px;
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.05),
-    0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  @media (max-width: 968px) {
-    padding: 16px;
-    /* Prevent iOS zoom on focus: inputs must be at least 16px */
-    .ant-input,
-    .ant-input-affix-wrapper input,
-    textarea.ant-input {
-      font-size: 16px !important;
-    }
-  }
-`;
-
-const SectionTitle = styled.h4`
-  margin: 0 0 16px 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
-
-  @media (max-width: 968px) {
-    font-size: 0.95rem;
-    text-align: center;
   }
 `;
 
@@ -448,6 +720,12 @@ const CouponTicketInput = styled.div`
   .ant-input-affix-wrapper input {
     font-size: 14px;
   }
+  @media (max-width: 968px) {
+    .ant-input,
+    .ant-input-affix-wrapper input {
+      font-size: 16px;
+    }
+  }
 
   .ant-btn {
     font-size: 14px;
@@ -506,17 +784,29 @@ const TimerBadge = styled.div`
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: ${(props) => (props.$urgent ? "13px" : "12px")};
+  font-weight: ${(props) => (props.$urgent ? "700" : "500")};
   border-radius: 20px;
   transition: all 0.3s ease;
-  color: ${(props) => (props.$urgent ? "#dc2626" : "#4b5563")};
+  color: ${(props) => (props.$urgent ? "#dc2626" : "#9ca3af")};
   white-space: nowrap;
 `;
 
 const MobileTimerContainer = styled.div`
   display: flex;
   justify-content: center;
+  align-items: center;
+  padding: ${(props) => (props.$urgent ? "10px 12px" : "8px 0")};
+  margin-top: 8px;
+  margin-bottom: 12px;
+  transition: background 0.3s ease, padding 0.3s ease;
+  ${(props) =>
+    props.$urgent &&
+    `
+    background: #fef2f2;
+    border-radius: 8px;
+    margin-top: 12px;
+  `}
   @media (min-width: 969px) {
     display: none;
   }
@@ -524,7 +814,6 @@ const MobileTimerContainer = styled.div`
 
 const DesktopTimerContainer = styled.div`
   display: none;
-  margin-bottom: 12px;
   text-align: right;
   @media (min-width: 969px) {
     display: block;
@@ -574,19 +863,6 @@ const ExpiredContent = styled.div`
   }
 `;
 
-const OptionLabel = styled.div`
-  display: inline-block;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  color: #374151;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  padding: 4px 8px;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  letter-spacing: 0.5px;
-`;
-
 const ExpiredIconWrapper = styled.div`
   width: 48px;
   height: 48px;
@@ -600,7 +876,6 @@ const ExpiredIconWrapper = styled.div`
 `;
 
 // --- NEW LOADER STYLES ---
-
 const LottieContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -660,37 +935,6 @@ const Countdown = ({ seconds }) => {
   );
 };
 
-const BookerNameInput = ({ isUserLoggedIn, bookerNameFromBookingData }) => (
-  <div style={{ paddingTop: 8 }}>
-    <SectionTitle>Your name</SectionTitle>
-    <Form.Item
-      name="booker_name"
-      rules={[{ required: true, message: "Your name is required" }]}
-      style={{ marginBottom: 12 }}
-      label={<FieldLabel>Full name</FieldLabel>}
-    >
-      <Input
-        placeholder="e.g. Jane Smith"
-        readOnly={isUserLoggedIn && !!bookerNameFromBookingData}
-        style={
-          isUserLoggedIn && !!bookerNameFromBookingData
-            ? {
-                backgroundColor: "#f0f0f0",
-                cursor: "not-allowed",
-                color: "#555",
-              }
-            : {}
-        }
-        suffix={
-          isUserLoggedIn && !!bookerNameFromBookingData && (
-            <UserCheck size={16} color="#52c41a" />
-          )
-        }
-      />
-    </Form.Item>
-  </div>
-);
-
 const ExpressCheckoutButton = ({
   finalTotal,
   clientSecret,
@@ -698,8 +942,10 @@ const ExpressCheckoutButton = ({
   paymentService,
   bookingData,
   form,
-  getGuestFullName,
   isFormValid,
+  onPaymentRequestReady,
+  /** When provided, render this instead of Stripe's button; it receives paymentRequest so the parent can call paymentRequest.show() */
+  customTrigger,
 }) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
@@ -722,6 +968,7 @@ const ExpressCheckoutButton = ({
     pr.canMakePayment().then((result) => {
       if (result) {
         setPaymentRequest(pr);
+        onPaymentRequestReady?.();
       }
     });
 
@@ -729,7 +976,7 @@ const ExpressCheckoutButton = ({
       try {
         if (!form) {
           ev.complete("fail");
-          message.error("Please try again.");
+          message.error("Whoops! Something went wrong. Please try again.");
           return;
         }
 
@@ -742,13 +989,7 @@ const ExpressCheckoutButton = ({
           { length: participantsCount },
           () => ({ name: bookerName }),
         );
-
-        if (!email || !phone || !bookerName) {
-          ev.complete("fail");
-          message.error("Please enter your name and contact details above first.");
-          return;
-        }
-
+        
         if (clientSecret && paymentService?.updatePaymentIntent) {
           try {
             const paymentIntentId = clientSecret.split("_secret_")[0];
@@ -762,11 +1003,8 @@ const ExpressCheckoutButton = ({
               applied_discount_id: bookingData?.applied_discount_id ?? null,
             });
           } catch (backendErr) {
-            if (process.env.NODE_ENV === "development") {
-              console.error("Error updating intent for Apple Pay:", backendErr);
-            }
             ev.complete("fail");
-            message.error("Could not update booking details. Please try again.");
+            message.error("Whoops! We couldn't save your details. Please try again.");
             return;
           }
         }
@@ -782,7 +1020,7 @@ const ExpressCheckoutButton = ({
 
         if (error) {
           ev.complete("fail");
-          message.error(error.message);
+          message.error(error.message || "Whoops! Payment didn't go through. Please try again.");
         } else {
           ev.complete("success");
           if (paymentIntent?.status === "succeeded") {
@@ -794,11 +1032,8 @@ const ExpressCheckoutButton = ({
           }
         }
       } catch (err) {
-        if (process.env.NODE_ENV === "development") {
-          console.error("Apple Pay exception:", err);
-        }
         ev.complete("fail");
-        message.error("Payment failed. Please try again.");
+        message.error("Whoops! Something went wrong. Please try again.");
       }
     });
   }, [
@@ -809,38 +1044,46 @@ const ExpressCheckoutButton = ({
     paymentService,
     bookingData,
     form,
-    getGuestFullName,
   ]);
 
   if (!paymentRequest || !isFormValid) return null;
 
+  if (customTrigger) {
+    return <div style={{ marginBottom: 0 }}>{customTrigger(paymentRequest)}</div>;
+  }
+
   return (
     <div style={{ marginBottom: 24 }}>
       <PaymentRequestButtonElement options={{ paymentRequest }} />
-      <div
-        style={{
-          textAlign: "center",
-          margin: "16px 0",
-          color: "#6b7280",
-          fontSize: "13px",
-          fontWeight: 500,
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}
-      >
-        <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }}></div>
-        <span>Or pay with card</span>
-        <div style={{ flex: 1, height: "1px", background: "#e5e7eb" }}></div>
-      </div>
     </div>
   );
 };
 
 const PaymentElementWrapper = styled.div`
-  min-height: 240px;
   width: 100%;
 `;
+
+const paymentElementOptions = {
+  layout: "tabs",
+  wallets: {
+    applePay: "never", // We use the custom Express button above
+    googlePay: "never",
+  },
+  defaultValues: {
+    billingDetails: {
+      address: {
+        country: "CA",
+      },
+    },
+  },
+  fields: {
+    billingDetails: {
+      address: {
+        country: "never",
+      },
+    },
+  },
+};
 
 const PaymentFormContent = ({
   form,
@@ -855,12 +1098,14 @@ const PaymentFormContent = ({
   onPaymentLoadError,
   paymentService,
   bookingData,
-  getGuestFullName,
+  currentStep,
+  isVisible
 }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [isReady, setIsReady] = useState(false);
-  const [mountPaymentElement, setMountPaymentElement] = useState(false);
+  const [hasExpressPay, setHasExpressPay] = useState(false);
+  const [showCardFields, setShowCardFields] = useState(false);
 
   const handleLoadError = useCallback(
     (event) => {
@@ -875,21 +1120,15 @@ const PaymentFormContent = ({
     [onPaymentLoadError]
   );
 
+  // Auto-expand card fields if no express pay is available after a short timeout
   useEffect(() => {
-    if (!clientSecret || isFree) {
-      setMountPaymentElement(false);
-      return;
+    if (!hasExpressPay && !showCardFields && clientSecret && !isFree) {
+        const t = setTimeout(() => setShowCardFields(true), 1500);
+        return () => clearTimeout(t);
     }
-    let cancelled = false;
-    const t = requestAnimationFrame(() => {
-      if (!cancelled) setMountPaymentElement(true);
-    });
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(t);
-    };
-  }, [clientSecret, isFree]);
+  }, [hasExpressPay, showCardFields, clientSecret, isFree]);
 
+  // Sync with parent for the footer button state
   useEffect(() => {
     const canSubmit = isFree
       ? !loading && isFormValid
@@ -900,6 +1139,8 @@ const PaymentFormContent = ({
       loading,
       canSubmit,
       finalTotal,
+      // Hide footer button if user is in Step 1
+      showFooterButton: currentStep === 'payment',
     });
   }, [
     onPaymentAction,
@@ -911,62 +1152,60 @@ const PaymentFormContent = ({
     isFormValid,
     isReady,
     isFree,
+    currentStep,
   ]);
 
+  if (isFree) {
+    if (!isVisible) return null;
+    return (
+        <Alert 
+            message="No payment required" 
+            description="Your booking is fully covered by the discount or gift card." 
+            type="success" 
+            showIcon 
+            style={{marginTop: 16}}
+        />
+    );
+  }
+
+  if (!clientSecret) return null;
+
   return (
-    <>
-      {!isFree && clientSecret && (
-        <div
-          style={{
-            borderTop: "1px solid #e5e7eb",
-            paddingTop: 24,
-          }}
-        >
-          <>
-            <SectionTitle>Payment Method</SectionTitle>
-            <ExpressCheckoutButton
-                finalTotal={finalTotal}
-                clientSecret={clientSecret}
-                onPaymentComplete={onPaymentComplete}
-                paymentService={paymentService}
-                bookingData={bookingData}
-                form={form}
-                getGuestFullName={getGuestFullName}
-                isFormValid={isFormValid}
-              />
-              <PaymentElementWrapper>
-                {mountPaymentElement && (
-              <PaymentElement
-                options={{
-                  layout: "tabs",
-                  wallets: {
-                    applePay: "never",
-                    googlePay: "never",
-                  },
-                  defaultValues: {
-                    billingDetails: {
-                      address: {
-                        country: "CA",
-                      },
-                    },
-                  },
-                  fields: {
-                    billingDetails: {
-                      address: {
-                        country: "never",
-                      },
-                    },
-                  },
-                }}
-                onReady={() => setIsReady(true)}
-                onLoadError={handleLoadError}
-              />
-            )}
-              </PaymentElementWrapper>
-          </>
+    <div style={{ display: isVisible ? 'block' : 'none' }}>
+        <ExpressCheckoutButton
+            finalTotal={finalTotal}
+            clientSecret={clientSecret}
+            onPaymentComplete={onPaymentComplete}
+            paymentService={paymentService}
+            bookingData={bookingData}
+            form={form}
+            isFormValid={isFormValid}
+            onPaymentRequestReady={() => {
+                setHasExpressPay(true);
+            }}
+        />
+
+        {hasExpressPay && (
+            <PaymentMethodDivider>or</PaymentMethodDivider>
+        )}
+
+        {hasExpressPay && !showCardFields && (
+            <CardRevealButton type="button" onClick={() => setShowCardFields(true)}>
+                <span><CreditCard size={18} /> Pay with Credit or Debit card</span>
+                <ChevronDown size={16} color="#6b7280" />
+            </CardRevealButton>
+        )}
+
+        <div style={{ display: showCardFields ? 'block' : 'none', marginTop: 24 }}>
+            <PaymentElementWrapper>
+                <PaymentElement
+                    options={paymentElementOptions}
+                    onReady={() => setIsReady(true)}
+                    onLoadError={handleLoadError}
+                />
+            </PaymentElementWrapper>
         </div>
-      )}
-    </>
+    </div>
   );
 };
 
@@ -980,16 +1219,23 @@ const ReviewAndPaymentStep = ({
   onPaymentAction,
   userTimeZone,
   businessTimeZone,
+  confirmFooter,
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [paymentIntentError, setPaymentIntentError] = useState(null);
   const [clientSecret, setClientSecret] = useState(
     () => bookingData?.clientSecret ?? null
   );
   const [isFormValid, setIsFormValid] = useState(false);
   const [showMobileSummary, setShowMobileSummary] = useState(false);
+  const [priceDetailsDrawerOpen, setPriceDetailsDrawerOpen] = useState(false);
+  
+  // Step State: 'guest' | 'payment'
+  const [checkoutStep, setCheckoutStep] = useState("guest");
+  const paymentStepRef = useRef(null);
+  // Notes UI state
+  const [showNotes, setShowNotes] = useState(false);
 
   useEffect(() => {
     const fromStorage = bookingData?.clientSecret;
@@ -1003,12 +1249,10 @@ const ReviewAndPaymentStep = ({
 
   // Gift Card State
   const [giftCardCode, setGiftCardCode] = useState("");
-  const [appliedGiftCard, setAppliedGiftCard] = useState(null); // { code, balance }
+  const [appliedGiftCard, setAppliedGiftCard] = useState(null);
   const [gcLoading, setGcLoading] = useState(false);
 
   const [showPromoGiftCard, setShowPromoGiftCard] = useState(false);
-
-  // Global (platform) discount – applied automatically; shown in same Discount line as business coupon
   const [activeGlobalDiscount, setActiveGlobalDiscount] = useState(null);
 
   // --- TIMER STATE ---
@@ -1021,19 +1265,16 @@ const ReviewAndPaymentStep = ({
     gcCode: null,
     globalId: null,
   });
+  const fetchIntentInFlightRef = useRef(false);
 
   useEffect(() => {
-    // PostHog: Track payment step entry in booking funnel
     posthog.capture("booking_payment_initiated", {
       class_id: classData?.classId || classData?.id,
       class_title: classData?.title,
       participants: bookingData.participants,
     });
-
     return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
   }, []);
 
@@ -1098,7 +1339,6 @@ const ReviewAndPaymentStep = ({
   const basePrice = parseFloat(selectedSlot?.price || option?.price || 0);
   const subtotal = basePrice * participantsCount;
 
-  // Basis for global discount (backend applies it on subtotal after business discount)
   const subtotalForGlobal =
     subtotal -
     (appliedDiscount ? parseFloat(appliedDiscount.calculated_discount_amount) || 0 : 0);
@@ -1121,7 +1361,6 @@ const ReviewAndPaymentStep = ({
     };
   }, [subtotalForGlobal]);
 
-  // Calculate totals: one combined discount (business coupon + global/platform)
   const { discountAmount, taxAmount, finalTotal, gcDeduction } = useMemo(() => {
     const businessDiscount = appliedDiscount
       ? parseFloat(appliedDiscount.calculated_discount_amount) || 0
@@ -1152,10 +1391,8 @@ const ReviewAndPaymentStep = ({
   const isFree = finalTotal === 0;
 
   // --- TIMER EFFECT ---
-  // Reset timer whenever we have a (possibly new) PaymentIntent so each hold gets a full 15 min.
   useEffect(() => {
     if (!clientSecret || isFree) return;
-
     const fifteenMinutesMs = 15 * 60 * 1000;
     expirationTimestampRef.current = Date.now() + fifteenMinutesMs;
     setTimeRemaining(15 * 60);
@@ -1185,11 +1422,7 @@ const ReviewAndPaymentStep = ({
 
   const fetchPaymentIntent = useCallback(
     async (currentDiscountId = null) => {
-      // If fully covered by Gift Card, we don't need a Stripe Intent upfront.
-      // But we DO need to ensure we have a valid booking state to submit.
-      // We skip fetching payment intent if it's already free, unless we're just updating metadata.
       if (isFree && !appliedGiftCard) return;
-
       if (
         !bookingData.selectedSlots ||
         bookingData.selectedSlots.length === 0
@@ -1197,6 +1430,7 @@ const ReviewAndPaymentStep = ({
         return;
       }
 
+      fetchIntentInFlightRef.current = true;
       try {
         setPaymentIntentError(null);
         const values = form.getFieldsValue();
@@ -1215,16 +1449,15 @@ const ReviewAndPaymentStep = ({
           guest_email: values.email || "pending@example.com",
           guest_full_name: bookerName,
           guest_phone: values.phone || "555-555-5555",
-          // Pass Gift Card info so backend knows we might be partially or fully covering it
           gift_card_code: appliedGiftCard?.code || null,
         };
 
         const response = await paymentService.createPaymentIntent(payload);
 
         if (response.clientSecret) {
+          fetchIntentInFlightRef.current = false;
           setClientSecret(response.clientSecret);
           setPaymentIntentError(null);
-
           if (onUpdateBookingData) {
             const paymentIntentId = response.clientSecret.split("_secret_")[0];
             onUpdateBookingData({
@@ -1232,8 +1465,11 @@ const ReviewAndPaymentStep = ({
               clientSecret: response.clientSecret,
             });
           }
+        } else {
+          fetchIntentInFlightRef.current = false;
         }
       } catch (err) {
+        fetchIntentInFlightRef.current = false;
         const data = err?.response?.data;
         const errObj = data?.error;
         const msg =
@@ -1242,11 +1478,9 @@ const ReviewAndPaymentStep = ({
           (typeof data?.error === "string" ? data.error : null) ||
           (typeof errObj === "string" ? errObj : null) ||
           err?.message ||
-          "We couldn't reserve the spots right now. Please try again.";
+          "Whoops! We couldn't reserve the spots right now. Please try again.";
+        message.error(msg);
         setPaymentIntentError(msg);
-        if (process.env.NODE_ENV === "development") {
-          console.error("Error creating draft intent:", err);
-        }
       }
     },
     [
@@ -1285,8 +1519,11 @@ const ReviewAndPaymentStep = ({
       }
       const paymentIntentId = clientSecret.split("_secret_")[0];
       paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
+      fetchIntentInFlightRef.current = false;
       setClientSecret(null);
     }
+
+    if (!clientSecret && fetchIntentInFlightRef.current) return;
 
     intentDepsRef.current = currentDeps;
     fetchPaymentIntent(discountId);
@@ -1299,8 +1536,6 @@ const ReviewAndPaymentStep = ({
     fetchPaymentIntent,
   ]);
 
-  // When PaymentElement fires loaderror (e.g. PaymentIntent in terminal state after refresh/expiry),
-  // release the old intent's hold, then clear and fetch a new PaymentIntent so Elements can initialize correctly.
   const handlePaymentElementLoadError = useCallback(() => {
     const paymentIntentId =
       clientSecret?.split("_secret_")[0] || bookingData?.paymentIntentId;
@@ -1320,10 +1555,9 @@ const ReviewAndPaymentStep = ({
     paymentService,
   ]);
 
-  // --- COUPON HANDLERS ---
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
-      message.error("Please enter a coupon code.");
+      message.error("Please enter a coupon code to apply.");
       return;
     }
     setCouponLoading(true);
@@ -1343,11 +1577,11 @@ const ReviewAndPaymentStep = ({
           colors: ["#ff385c", "#000000", "#ffffff"],
         });
       } else {
-        message.error(result.error?.detail || "Invalid coupon.");
+        message.error(result.error?.detail || "That coupon isn't valid. Double-check the code and try again.");
         setAppliedDiscount(null);
       }
     } catch (err) {
-      message.error("Error applying coupon.");
+      message.error("Whoops! Something went wrong applying the coupon. Please try again.");
     } finally {
       setCouponLoading(false);
     }
@@ -1364,11 +1598,10 @@ const ReviewAndPaymentStep = ({
     setGcLoading(true);
     try {
       const data = await giftCardService.validateGiftCard(giftCardCode);
-
-      setAppliedGiftCard(data); // Should return { code, balance }
+      setAppliedGiftCard(data);
       message.success(`Gift card applied: $${data.balance} available`);
     } catch (err) {
-      message.error(err.error || "Invalid Gift Card"); // apiService throws the response.data directly
+      message.error(err.error || "That gift card code didn't work. Please check and try again."); 
       setAppliedGiftCard(null);
     } finally {
       setGcLoading(false);
@@ -1390,36 +1623,62 @@ const ReviewAndPaymentStep = ({
     setIsFormValid(isValid);
   };
 
+  const handleGoToPayment = async () => {
+    try {
+        await form.validateFields(['booker_name', 'email', 'phone']);
+        setShowMobileSummary(false);
+        setCheckoutStep("payment");
+        if (typeof window !== "undefined" && window.innerWidth < 969) {
+          setTimeout(() => {
+            paymentStepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 100);
+        }
+        // Update intent with the now valid data so metadata is ready for Payment Request Button
+        if (clientSecret) {
+             const paymentIntentId = clientSecret.split("_secret_")[0];
+             // Fire and forget update
+             const values = form.getFieldsValue();
+             const bookerName = values.booker_name || "Guest";
+             const participantDetailsPayload = Array.from(
+                { length: participantsCount },
+                () => ({ name: bookerName }),
+             );
+             paymentService.updatePaymentIntent({
+                 payment_intent_id: paymentIntentId,
+                 guest_email: values.email,
+                 guest_full_name: bookerName,
+                 guest_phone: values.phone,
+                 participant_details: participantDetailsPayload,
+                 notes: values.notes || "",
+                 applied_discount_id: appliedDiscount?.id || null,
+             }).catch(() => {});
+        }
+    } catch (e) {
+        // Validation failed
+        const errorField = e.errorFields?.[0]?.name?.[0];
+        if (errorField) {
+            form.scrollToField(errorField);
+        }
+    }
+  };
+
   const handleSubmit = useCallback(
     async (stripe, elements) => {
       if (isExpired) return;
       if (!selectedSlot) {
-        setError("Slot not selected.");
+        message.error("Whoops! Please select a date and time to continue.");
         return;
       }
 
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-
       setLoading(true);
-      setError(null);
 
       try {
         const values = await form.validateFields();
 
-        // --- FREE / FULLY COVERED BOOKING FLOW ---
-        // If final total is 0 (due to 100% coupon OR 100% gift card coverage)
+        // --- FREE BOOKING FLOW ---
         if (isFree) {
-          // If we had a previous stripe intent, cancel it to release hold
           if (bookingData.paymentIntentId) {
-            try {
-              await paymentService.cancelPaymentIntent(
-                bookingData.paymentIntentId,
-              );
-            } catch (cancelErr) {
-              // Ignore
-            }
+            await paymentService.cancelPaymentIntent(bookingData.paymentIntentId).catch(() => {});
           }
 
           const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "Guest";
@@ -1439,14 +1698,13 @@ const ReviewAndPaymentStep = ({
             gift_card_code: appliedGiftCard?.code || null,
           };
 
-          // Logic: For $0 total, createPaymentIntent returns booking_id directly
           const res = await paymentService.createPaymentIntent(payload);
           if (res?.booking_id) {
             onPaymentComplete(res);
             return;
           }
-          setError(
-            res?.error || "We couldn’t complete your free booking. Please try again or contact support."
+          message.error(
+            res?.error || "Whoops! We couldn’t complete your free booking. Please try again."
           );
           setLoading(false);
           return;
@@ -1457,36 +1715,9 @@ const ReviewAndPaymentStep = ({
 
         const { error: submitError } = await elements.submit();
         if (submitError) {
-          setError(submitError.message);
+          message.error(submitError.message || "Whoops! Something went wrong. Please try again.");
           setLoading(false);
           return;
-        }
-
-        if (clientSecret) {
-          try {
-            const paymentIntentId = clientSecret.split("_secret_")[0];
-
-            const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "Guest";
-            const participantDetailsPayload = Array.from(
-              { length: participantsCount },
-              () => ({ name: bookerName }),
-            );
-            if (paymentService.updatePaymentIntent) {
-              await paymentService.updatePaymentIntent({
-                payment_intent_id: paymentIntentId,
-                guest_email: values.email,
-                guest_full_name: bookerName,
-                guest_phone: values.phone,
-                participant_details: participantDetailsPayload,
-                notes: values.notes,
-                applied_discount_id: appliedDiscount?.id || null,
-              });
-            }
-          } catch (updateErr) {
-            if (process.env.NODE_ENV === "development") {
-              console.error("Failed to update booking details before payment:", updateErr);
-            }
-          }
         }
 
         const { error: confirmError, paymentIntent } =
@@ -1508,8 +1739,11 @@ const ReviewAndPaymentStep = ({
           });
 
         if (confirmError) {
-          throw new Error(confirmError.message);
-        } else if (paymentIntent && paymentIntent.status === "succeeded") {
+          message.error(confirmError.message || "Whoops! Something went wrong. Please try again.");
+          setLoading(false);
+          return;
+        }
+        if (paymentIntent && paymentIntent.status === "succeeded") {
           const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "Guest";
           const participantDetails = Array.from(
             { length: participantsCount },
@@ -1522,7 +1756,7 @@ const ReviewAndPaymentStep = ({
           });
         }
       } catch (err) {
-        setError(err.message || "Payment processing failed.");
+        message.error(err.message || "Whoops! Something went wrong. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -1544,318 +1778,6 @@ const ReviewAndPaymentStep = ({
     ],
   );
 
-  const renderBookingDetailsTicket = () => {
-    if (!selectedSlot) return null;
-    const { date, time, duration, isCourse, end_date, days } = selectedSlot;
-
-    if (isCourse) {
-      return (
-        <SummaryMetaBlock>
-          <TicketMetaItem>
-            <div className="icon-box">
-              <CalendarDays />
-            </div>
-            <div className="text-content">
-              <span className="label">Course Dates</span>
-              <span className="value">
-                {formatNaiveDate(date, "MMM d")} -{" "}
-                {formatNaiveDate(end_date, "MMM d, yyyy")}
-              </span>
-            </div>
-          </TicketMetaItem>
-          <TicketMetaItem>
-            <div className="icon-box">
-              <Clock />
-            </div>
-            <div className="text-content">
-              <span className="label">Time</span>
-              <span className="value">
-                Every {days.join(", ")} at{" "}
-                {formatTimeRangeForDisplay(
-                  date,
-                  time,
-                  duration,
-                  businessTimeZone,
-                  userTimeZone,
-                )}
-              </span>
-            </div>
-          </TicketMetaItem>
-        </SummaryMetaBlock>
-      );
-    }
-
-    return (
-      <SummaryMetaBlock>
-        <TicketMetaItem>
-          <div className="icon-box">
-            <CalendarDays />
-          </div>
-          <div className="text-content">
-            <span className="label">Date</span>
-            <span className="value">
-              {formatNaiveDate(date, "EEEE, MMMM d, yyyy")}
-            </span>
-          </div>
-        </TicketMetaItem>
-        <TicketMetaItem>
-          <div className="icon-box">
-            <Clock />
-          </div>
-          <div className="text-content">
-            <span className="label">Time</span>
-            <span className="value">
-              {formatTimeRangeForDisplay(
-                date,
-                time,
-                duration,
-                businessTimeZone,
-                userTimeZone,
-              )}{" "}
-              ({getDurationText(duration)})
-            </span>
-          </div>
-        </TicketMetaItem>
-      </SummaryMetaBlock>
-    );
-  };
-
-  // --- RENDER TICKET SUMMARY (Replaces Card) ---
-  const renderTicketSummary = () => (
-    <TicketWrapper>
-      <TicketTop>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: 12,
-          }}
-        >
-          <DesktopTimerContainer>{renderTimerContent()}</DesktopTimerContainer>
-        </div>
-
-        {option?.title &&
-          classData?.options?.length > 1 && (
-            <OptionLabel>{option.title}</OptionLabel>
-          )}
-
-        <TicketHeaderTitle>{classData?.title}</TicketHeaderTitle>
-        <TicketSubHeader>
-          <MapPin />
-          <span>{classData?.business_name || "Host Location"}</span>
-        </TicketSubHeader>
-
-        {renderBookingDetailsTicket()}
-      </TicketTop>
-
-      <TicketDivider />
-
-      <TicketBottom>
-        {/* Promo / Gift card: reveal section to reduce cognitive load */}
-        {!showPromoGiftCard && !appliedDiscount && !appliedGiftCard ? (
-          <PromoRevealButton
-            type="button"
-            onClick={() => setShowPromoGiftCard(true)}
-          >
-            Add promo or gift card
-          </PromoRevealButton>
-        ) : (
-          <>
-            {!appliedDiscount ? (
-              <CouponTicketInput>
-                <Input
-                  size="middle"
-                  placeholder="e.g. SAVE10"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                  bordered={false}
-                  onPressEnter={handleApplyCoupon}
-                />
-                <Button
-                  size="middle"
-                  onClick={handleApplyCoupon}
-                  loading={couponLoading}
-                  style={{ height: 45 }}
-                >
-                  Apply
-                </Button>
-              </CouponTicketInput>
-            ) : (
-              <AppliedCouponTicket>
-                <div className="coupon-info">
-                  <Percent size={14} />
-                  <span>{appliedDiscount.code.toUpperCase()} Applied</span>
-                </div>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<X size={14} />}
-                  onClick={handleRemoveCoupon}
-                />
-              </AppliedCouponTicket>
-            )}
-
-            {!appliedGiftCard ? (
-              <CouponTicketInput style={{ marginTop: 12 }}>
-                <Input
-                  prefix={<Gift size={14} color="#9ca3af" />}
-                  placeholder="e.g. XXXX-XXXX-XXXX"
-                  value={giftCardCode}
-                  onChange={(e) => setGiftCardCode(e.target.value)}
-                  onPressEnter={handleApplyGiftCard}
-                  bordered={false}
-                />
-                <Button
-                  size="middle"
-                  onClick={handleApplyGiftCard}
-                  loading={gcLoading}
-                  style={{ height: 45 }}
-                >
-                  Apply
-                </Button>
-              </CouponTicketInput>
-            ) : (
-              <AppliedCouponTicket
-                style={{
-                  marginTop: 12,
-                  borderColor: "#8b5cf6",
-                  backgroundColor: "#f5f3ff",
-                  color: "#7c3aed",
-                }}
-              >
-                <div className="coupon-info">
-                  <Gift size={14} />
-                  <span>Gift Card ending in {appliedGiftCard.code.slice(-4)}</span>
-                </div>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<X size={14} />}
-                  onClick={handleRemoveGiftCard}
-                />
-              </AppliedCouponTicket>
-            )}
-          </>
-        )}
-
-        <TicketRow>
-          <span>
-            {participantsCount} {participantsCount > 1 ? "Guests" : "Guest"}
-          </span>
-          <span>
-            {subtotal === 0 ? (
-              "Free"
-            ) : (
-              <NumberFlow
-                value={subtotal}
-                format={{ style: "currency", currency: "CAD" }}
-              />
-            )}
-          </span>
-        </TicketRow>
-
-        {(appliedDiscount || activeGlobalDiscount) && discountAmount > 0 && (
-          <TicketRow style={{ color: "#059669" }}>
-            <span>
-              Discount
-              {appliedDiscount && ` (${appliedDiscount.code})`}
-              {activeGlobalDiscount && (appliedDiscount ? ` · ${activeGlobalDiscount.name}` : ` (${activeGlobalDiscount.name})`)}
-            </span>
-            <span>
-              <NumberFlow
-                value={-discountAmount}
-                format={{ style: "currency", currency: "CAD" }}
-              />
-            </span>
-          </TicketRow>
-        )}
-
-        {appliedGiftCard && (
-          <TicketRow style={{ color: "#7c3aed" }}>
-            <span>Gift Card</span>
-            <span>
-              -{" "}
-              <NumberFlow
-                value={gcDeduction}
-                format={{ style: "currency", currency: "CAD" }}
-              />
-            </span>
-          </TicketRow>
-        )}
-
-        <TicketRow>
-          <span>HST (13%)</span>
-          <span>
-            <NumberFlow
-              value={taxAmount}
-              format={{ style: "currency", currency: "CAD" }}
-            />
-          </span>
-        </TicketRow>
-
-        <TicketTotalRow>
-          <span>Total</span>
-          <span>
-            {finalTotal === 0 ? (
-              "Free"
-            ) : (
-              <NumberFlow
-                value={finalTotal}
-                format={{ style: "currency", currency: "CAD" }}
-              />
-            )}
-          </span>
-        </TicketTotalRow>
-      </TicketBottom>
-
-      {/* Policies below ticket */}
-      <InfoPanel
-        $bgColor="#f9fafb"
-        $borderColor="#e5e7eb"
-        $iconColor="#6b7280"
-        $titleColor="#111827"
-        $textColor="#4b5563"
-      >
-        <Shield />
-        <div>
-          <h5>Cancellation Policy</h5>
-          <p>{cancellationPolicyText}</p>
-        </div>
-      </InfoPanel>
-
-      {isFree ? (
-        <InfoPanel
-          $bgColor="#f0fdf4"
-          $borderColor="#bbf7d0"
-          $iconColor="#22c55e"
-          $titleColor="#15803d"
-          $textColor="#166534"
-        >
-          <CheckCircle />
-          <div>
-            <h5>No Payment Required</h5>
-            <p>This booking is fully covered.</p>
-          </div>
-        </InfoPanel>
-      ) : (
-        <InfoPanel
-          $bgColor="#f0fdf4"
-          $borderColor="#bbf7d0"
-          $iconColor="#22c55e"
-          $titleColor="#15803d"
-          $textColor="#166534"
-        >
-          <Lock />
-          <div>
-            <h5>Secure Payment</h5>
-            <p>Your payment is encrypted and processed securely.</p>
-          </div>
-        </InfoPanel>
-      )}
-    </TicketWrapper>
-  );
-
   const cancellationPolicyText = useMemo(() => {
     return getCancellationPolicyText(
       option?.cancellationPolicy,
@@ -1868,15 +1790,14 @@ const ReviewAndPaymentStep = ({
       businessTimeZone,
     );
   }, [
-    option?.cancellationPolicy,
-    option?.cancellationRefundPercentage,
-    option?.cancellationCustomHours,
-    selectedSlot,
-    userTimeZone,
-    businessTimeZone,
+      option?.cancellationPolicy,
+      option?.cancellationRefundPercentage,
+      option?.cancellationCustomHours,
+      selectedSlot,
+      userTimeZone,
+      businessTimeZone,
   ]);
 
-  // Stripe font size: 14px desktop, 16px mobile (16px avoids iOS zoom on focus)
   const [stripeFontSize, setStripeFontSize] = useState("16px");
   useEffect(() => {
     const updateStripeFontSize = () => {
@@ -1889,8 +1810,21 @@ const ReviewAndPaymentStep = ({
     return () => window.removeEventListener("resize", updateStripeFontSize);
   }, []);
 
+  /* Proxima Soft for Stripe: load via fonts option so the iframe gets the font on mobile (Stripe docs) */
+  const stripeFontCssUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/fonts/proxima-soft.css`
+      : "";
+  const stripeFonts = useMemo(
+    () =>
+      stripeFontCssUrl
+        ? [{ cssSrc: stripeFontCssUrl }]
+        : [],
+    [stripeFontCssUrl]
+  );
+
   const stripeAppearance = useMemo(() => {
-    const stripeFont = '"Proxima Soft", sans-serif';
+    const fontFamily = '"Proxima Soft", sans-serif';
     return {
       theme: "stripe",
       variables: {
@@ -1898,22 +1832,21 @@ const ReviewAndPaymentStep = ({
         colorBackground: "#ffffff",
         colorText: appTheme.token.colorText,
         colorDanger: appTheme.token.colorError,
-        fontFamily: stripeFont,
+        fontFamily,
         spacingUnit: "4px",
         borderRadius: `${appTheme.token.borderRadius}px`,
         fontSizeBase: stripeFontSize,
       },
       rules: {
         ".Input": {
-          paddingTop: stripeFontSize,
-          paddingBottom: stripeFontSize,
+          paddingTop: "16px",
+          paddingBottom: "16px",
           paddingLeft: "16px",
           paddingRight: "16px",
           borderColor: appTheme.token.colorBorder,
           boxShadow: "none",
           transition: "border-color 0.2s, box-shadow 0.2s",
-          fontFamily: stripeFont,
-          fontSize: stripeFontSize,
+          fontFamily,
           fontWeight: "500",
         },
         ".Input:hover": {
@@ -1936,17 +1869,17 @@ const ReviewAndPaymentStep = ({
           fontWeight: "600",
           color: "#000",
           marginBottom: "8px",
-          fontFamily: stripeFont,
+          fontFamily,
         },
         ".Input::placeholder": {
           color: "#c5c5c5",
           fontWeight: "600",
-          fontFamily: stripeFont,
+          fontFamily,
         },
         ".Tab": {
           borderColor: appTheme.token.colorBorder,
           borderRadius: `${appTheme.token.borderRadius}px`,
-          fontFamily: stripeFont,
+          fontFamily,
           fontWeight: "600",
         },
         ".Tab:selected": {
@@ -1955,7 +1888,6 @@ const ReviewAndPaymentStep = ({
       },
     };
   }, [stripeFontSize]);
-
   const renderTimerContent = () => {
     if (isFree || isExpired) return null;
     return (
@@ -1968,15 +1900,16 @@ const ReviewAndPaymentStep = ({
 
   const renderMobileSimpleSummary = () => {
     const slot = selectedSlot;
+    const dateTimeLabel = slot?.isCourse ? "Course dates & time" : "Date & time";
+    const dateTimeValue = slot
+      ? slot.isCourse
+        ? `${formatNaiveDate(slot.date, "MMM d")} - ${formatNaiveDate(slot.end_date, "MMM d, yyyy")} · Every ${slot.days.join(", ")} at ${formatTimeRangeForDisplay(slot.date, slot.time, slot.duration, businessTimeZone, userTimeZone)}`
+        : `${formatNaiveDate(slot.date, "EEEE, MMM d, yyyy")} · ${formatTimeRangeForDisplay(slot.date, slot.time, slot.duration, businessTimeZone, userTimeZone)} (${getDurationText(slot.duration)})`
+      : "";
     return (
       <>
-        <div style={{ marginBottom: 12 }}>
+        <div>
           <strong>{classData?.title}</strong>
-          {classData?.options?.length > 1 && option?.title && (
-            <OptionLabel style={{ marginTop: 6, display: "inline-block" }}>
-              {option.title}
-            </OptionLabel>
-          )}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, fontSize: 13, color: "#6b7280" }}>
@@ -1985,122 +1918,34 @@ const ReviewAndPaymentStep = ({
         </div>
 
         {slot && (
-          <SummaryMetaBlock style={{ marginBottom: 16 }}>
-            <TicketMetaItem>
-              <div className="icon-box">
-                <CalendarDays />
-              </div>
-              <div className="text-content">
-                <span className="label">
-                  {slot.isCourse ? "Course Dates" : "Date"}
-                </span>
-                <span className="value">
-                  {slot.isCourse
-                    ? `${formatNaiveDate(slot.date, "MMM d")} - ${formatNaiveDate(slot.end_date, "MMM d, yyyy")}`
-                    : formatNaiveDate(slot.date, "EEEE, MMMM d, yyyy")}
-                </span>
-              </div>
-            </TicketMetaItem>
-            <TicketMetaItem>
-              <div className="icon-box">
-                <Clock />
-              </div>
-              <div className="text-content">
-                <span className="label">Time</span>
-                <span className="value">
-                  {slot.isCourse
-                    ? `Every ${slot.days.join(", ")} at ${formatTimeRangeForDisplay(
-                        slot.date,
-                        slot.time,
-                        slot.duration,
-                        businessTimeZone,
-                        userTimeZone,
-                      )}`
-                    : `${formatTimeRangeForDisplay(
-                        slot.date,
-                        slot.time,
-                        slot.duration,
-                        businessTimeZone,
-                        userTimeZone,
-                      )} (${getDurationText(slot.duration)})`}
-                </span>
-              </div>
-            </TicketMetaItem>
-          </SummaryMetaBlock>
+          <MobileSummaryRowCard>
+            <span style={{ fontSize: 13, color: "#6b7280" }}>{dateTimeLabel}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#111827", textAlign: "right", maxWidth: "60%" }}>
+              {dateTimeValue}
+            </span>
+          </MobileSummaryRowCard>
         )}
 
-        <TicketRow>
-          <span>
-            {participantsCount} {participantsCount > 1 ? "Guests" : "Guest"}
-          </span>
-          <span>
-            {subtotal === 0 ? (
-              "Free"
-            ) : (
-              <NumberFlow
-                value={subtotal}
-                format={{ style: "currency", currency: "CAD" }}
-              />
-            )}
-          </span>
-        </TicketRow>
-
-        {(appliedDiscount || activeGlobalDiscount) && discountAmount > 0 && (
-          <TicketRow style={{ color: "#059669" }}>
-            <span>
-              Discount
-              {appliedDiscount && ` (${appliedDiscount.code})`}
-              {activeGlobalDiscount &&
-                (appliedDiscount
-                  ? ` · ${activeGlobalDiscount.name}`
-                  : ` (${activeGlobalDiscount.name})`)}
+        <MobileSummaryRowCard style={{ borderWidth: 1, borderColor: "#111827", flexDirection: "column", alignItems: "stretch" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>Total</span>
+            <span style={{ fontSize: 18, fontWeight: 800, color: "#111827" }}>
+              {finalTotal === 0 ? (
+                "Free"
+              ) : (
+                <NumberFlow
+                  value={finalTotal}
+                  format={{ style: "currency", currency: "CAD" }}
+                />
+              )}
             </span>
-            <span>
-              <NumberFlow
-                value={-discountAmount}
-                format={{ style: "currency", currency: "CAD" }}
-              />
-            </span>
-          </TicketRow>
-        )}
+          </div>
+          <ViewDetailsButton type="button" onClick={() => setPriceDetailsDrawerOpen(true)}>
+            View details
+          </ViewDetailsButton>
+        </MobileSummaryRowCard>
 
-        {appliedGiftCard && (
-          <TicketRow style={{ color: "#7c3aed" }}>
-            <span>Gift Card</span>
-            <span>
-              -{" "}
-              <NumberFlow
-                value={gcDeduction}
-                format={{ style: "currency", currency: "CAD" }}
-              />
-            </span>
-          </TicketRow>
-        )}
-
-        <TicketRow>
-          <span>HST (13%)</span>
-          <span>
-            <NumberFlow
-              value={taxAmount}
-              format={{ style: "currency", currency: "CAD" }}
-            />
-          </span>
-        </TicketRow>
-
-        <TicketTotalRow>
-          <span>Total</span>
-          <span>
-            {finalTotal === 0 ? (
-              "Free"
-            ) : (
-              <NumberFlow
-                value={finalTotal}
-                format={{ style: "currency", currency: "CAD" }}
-              />
-            )}
-          </span>
-        </TicketTotalRow>
-
+        {/* RESTORED CANCELLATION POLICY & FREE CHECK */}
         {cancellationPolicyText && (
           <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid #e5e7eb" }}>
             <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
@@ -2113,29 +1958,211 @@ const ReviewAndPaymentStep = ({
           </div>
         )}
 
-        <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#15803d" }}>
-          {isFree ? (
-            <>
-              <CheckCircle size={16} />
-              <span>This booking is fully covered. No payment required.</span>
-            </>
-          ) : (
-            <>
-              <Lock size={16} />
-              <span>Your payment is encrypted and processed securely.</span>
-            </>
-          )}
-        </div>
+        {isFree && (
+          <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#15803d" }}>
+            <CheckCircle size={16} />
+            <span>This booking is fully covered. No payment required.</span>
+          </div>
+        )}
       </>
     );
   };
+  
+  const renderPriceDetailsDrawerContent = () => (
+    <>
+      <TicketRow>
+        <span>
+          {participantsCount} {participantsCount > 1 ? "Guests" : "Guest"}
+        </span>
+        <span>
+          {subtotal === 0 ? "Free" : <NumberFlow value={subtotal} format={{ style: "currency", currency: "CAD" }} />}
+        </span>
+      </TicketRow>
+      {(appliedDiscount || activeGlobalDiscount) && discountAmount > 0 && (
+        <TicketRow style={{ color: "#059669" }}>
+          <span>
+            Discount
+            {appliedDiscount && ` (${appliedDiscount.code})`}
+            {activeGlobalDiscount && (appliedDiscount ? ` · ${activeGlobalDiscount.name}` : ` (${activeGlobalDiscount.name})`)}
+          </span>
+          <span><NumberFlow value={-discountAmount} format={{ style: "currency", currency: "CAD" }} /></span>
+        </TicketRow>
+      )}
+      {appliedGiftCard && (
+        <TicketRow style={{ color: "#7c3aed" }}>
+          <span>Gift Card</span>
+          <span>- <NumberFlow value={gcDeduction} format={{ style: "currency", currency: "CAD" }} /></span>
+        </TicketRow>
+      )}
+      <TicketRow>
+        <span>HST (13%)</span>
+        <span><NumberFlow value={taxAmount} format={{ style: "currency", currency: "CAD" }} /></span>
+      </TicketRow>
+      <TicketTotalRow>
+        <span>Total</span>
+        <span>
+          {finalTotal === 0 ? "Free" : <NumberFlow value={finalTotal} format={{ style: "currency", currency: "CAD" }} />}
+        </span>
+      </TicketTotalRow>
+    </>
+  );
+
+  const renderBookingDetailsTicket = () => {
+    if (!selectedSlot) return null;
+    const { date, time, duration, isCourse, end_date, days } = selectedSlot;
+    if (isCourse) {
+      return (
+        <SummaryMetaBlock>
+          <TicketMetaItem>
+            <div className="icon-box"><CalendarDays /></div>
+            <div className="text-content">
+              <span className="label">Course Dates</span>
+              <span className="value">{formatNaiveDate(date, "MMM d")} - {formatNaiveDate(end_date, "MMM d, yyyy")}</span>
+            </div>
+          </TicketMetaItem>
+          <TicketMetaItem>
+            <div className="icon-box"><Clock /></div>
+            <div className="text-content">
+              <span className="label">Time</span>
+              <span className="value">Every {days.join(", ")} at {formatTimeRangeForDisplay(date, time, duration, businessTimeZone, userTimeZone)}</span>
+            </div>
+          </TicketMetaItem>
+        </SummaryMetaBlock>
+      );
+    }
+    return (
+      <SummaryMetaBlock>
+        <TicketMetaItem>
+          <div className="icon-box"><CalendarDays /></div>
+          <div className="text-content">
+            <span className="label">Date</span>
+            <span className="value">{formatNaiveDate(date, "EEEE, MMMM d, yyyy")}</span>
+          </div>
+        </TicketMetaItem>
+        <TicketMetaItem>
+          <div className="icon-box"><Clock /></div>
+          <div className="text-content">
+            <span className="label">Time</span>
+            <span className="value">{formatTimeRangeForDisplay(date, time, duration, businessTimeZone, userTimeZone)} ({getDurationText(duration)})</span>
+          </div>
+        </TicketMetaItem>
+      </SummaryMetaBlock>
+    );
+  };
+
+  const renderTicketSummary = () => (
+    <TicketWrapper>
+      <TicketTop>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+          <DesktopTimerContainer>{renderTimerContent()}</DesktopTimerContainer>
+        </div>
+        <TicketHeaderTitle>{classData?.title}</TicketHeaderTitle>
+        <TicketSubHeader>
+          <MapPin />
+          <span>{classData?.business_name || "Host Location"}</span>
+        </TicketSubHeader>
+        {renderBookingDetailsTicket()}
+      </TicketTop>
+      <TicketDivider />
+      <TicketBottom>
+        {!showPromoGiftCard && !appliedDiscount && !appliedGiftCard ? (
+          <PromoRevealButton type="button" onClick={() => setShowPromoGiftCard(true)}>
+            Add promo or gift card
+          </PromoRevealButton>
+        ) : (
+          <>
+            {!appliedDiscount ? (
+              <CouponTicketInput>
+                <Input
+                  size="middle"
+                  placeholder="e.g. SAVE10"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  bordered={false}
+                  onPressEnter={handleApplyCoupon}
+                />
+                <Button size="middle" onClick={handleApplyCoupon} loading={couponLoading} style={{ height: 45 }}>Apply</Button>
+              </CouponTicketInput>
+            ) : (
+              <AppliedCouponTicket>
+                <div className="coupon-info">
+                  <Percent size={14} />
+                  <span>{appliedDiscount.code.toUpperCase()} Applied</span>
+                </div>
+                <Button type="text" size="small" icon={<X size={14} />} onClick={handleRemoveCoupon} />
+              </AppliedCouponTicket>
+            )}
+
+            {!appliedGiftCard ? (
+              <CouponTicketInput style={{ marginTop: 12 }}>
+                <Input
+                  prefix={<Gift size={14} color="#9ca3af" />}
+                  placeholder="e.g. XXXX-XXXX-XXXX"
+                  value={giftCardCode}
+                  onChange={(e) => setGiftCardCode(e.target.value)}
+                  onPressEnter={handleApplyGiftCard}
+                  bordered={false}
+                />
+                <Button size="middle" onClick={handleApplyGiftCard} loading={gcLoading} style={{ height: 45 }}>Apply</Button>
+              </CouponTicketInput>
+            ) : (
+              <AppliedCouponTicket style={{ marginTop: 12, borderColor: "#8b5cf6", backgroundColor: "#f5f3ff", color: "#7c3aed" }}>
+                <div className="coupon-info">
+                  <Gift size={14} />
+                  <span>Gift Card ending in {appliedGiftCard.code.slice(-4)}</span>
+                </div>
+                <Button type="text" size="small" icon={<X size={14} />} onClick={handleRemoveGiftCard} />
+              </AppliedCouponTicket>
+            )}
+          </>
+        )}
+
+        <TicketRow>
+          <span>{participantsCount} {participantsCount > 1 ? "Guests" : "Guest"}</span>
+          <span>{subtotal === 0 ? "Free" : <NumberFlow value={subtotal} format={{ style: "currency", currency: "CAD" }} />}</span>
+        </TicketRow>
+
+        {(appliedDiscount || activeGlobalDiscount) && discountAmount > 0 && (
+          <TicketRow style={{ color: "#059669" }}>
+            <span>
+              Discount
+              {appliedDiscount && ` (${appliedDiscount.code})`}
+              {activeGlobalDiscount && (appliedDiscount ? ` · ${activeGlobalDiscount.name}` : ` (${activeGlobalDiscount.name})`)}
+            </span>
+            <span><NumberFlow value={-discountAmount} format={{ style: "currency", currency: "CAD" }} /></span>
+          </TicketRow>
+        )}
+
+        {appliedGiftCard && (
+          <TicketRow style={{ color: "#7c3aed" }}>
+            <span>Gift Card</span>
+            <span>- <NumberFlow value={gcDeduction} format={{ style: "currency", currency: "CAD" }} /></span>
+          </TicketRow>
+        )}
+
+        <TicketRow>
+          <span>HST (13%)</span>
+          <span><NumberFlow value={taxAmount} format={{ style: "currency", currency: "CAD" }} /></span>
+        </TicketRow>
+
+        <TicketTotalRow>
+          <span>Total</span>
+          <span>{finalTotal === 0 ? "Free" : <NumberFlow value={finalTotal} format={{ style: "currency", currency: "CAD" }} />}</span>
+        </TicketTotalRow>
+      </TicketBottom>
+
+      <InfoPanel $bgColor="#f9fafb" $borderColor="#e5e7eb" $iconColor="#6b7280" $titleColor="#111827" $textColor="#4b5563">
+        <Shield />
+        <div>
+          <h5>Cancellation Policy</h5>
+          <p>{cancellationPolicyText}</p>
+        </div>
+      </InfoPanel>
+    </TicketWrapper>
+  );
 
   return (
     <ConfigProvider theme={appTheme}>
-      {/* 
-          If NOT free and NO clientSecret yet, show loader. 
-          If free (via GC/coupon), we skip Elements and show just the form.
-      */}
       {!isFree && !clientSecret ? (
         paymentIntentError ? (
           <LottieContainer>
@@ -2154,23 +2181,14 @@ const ReviewAndPaymentStep = ({
                 fetchPaymentIntent(appliedDiscount?.id ?? null);
               }}
               icon={<RefreshCw size={16} />}
-              style={{
-                background: "#ff385c",
-                border: "none",
-                height: "44px",
-                fontWeight: 600,
-              }}
+              style={{ background: "#ff385c", border: "none", height: "44px", fontWeight: 600 }}
             >
               Try again
             </Button>
           </LottieContainer>
         ) : (
           <LottieContainer>
-            <Lottie
-              animationData={loadingAnimation}
-              loop={true}
-              style={{ width: 180, height: 180 }}
-            />
+            <Lottie animationData={loadingAnimation} loop={true} style={{ width: 180, height: 180 }} />
             <LottieText>We're getting things ready</LottieText>
             <LottieSubText>Let's get that booked for you!</LottieSubText>
           </LottieContainer>
@@ -2178,40 +2196,31 @@ const ReviewAndPaymentStep = ({
       ) : (
         <Elements
           stripe={stripePromise}
-          key={`${clientSecret || "free-mode"}-${stripeFontSize}`}
+          key={`${clientSecret || "free-mode"}-${stripeFontSize}-${stripeFontCssUrl}`}
           options={
             isFree
               ? undefined
               : {
                   clientSecret,
                   appearance: stripeAppearance,
+                  fonts: stripeFonts,
                 }
           }
         >
           <StepContainer>
+            <LeftColumnWrap>
             {isExpired && (
               <ExpiredOverlay>
                 <ExpiredContent>
-                  <ExpiredIconWrapper>
-                    <Clock size={24} />
-                  </ExpiredIconWrapper>
+                  <ExpiredIconWrapper><Clock size={24} /></ExpiredIconWrapper>
                   <h3>Session Expired</h3>
-                  <p>
-                    To ensure fairness for all guests, we only hold spots for 15
-                    minutes. Please find a spot again to check availability.
-                  </p>
+                  <p>To ensure fairness for all guests, we only hold spots for 15 minutes. Please find a spot again to check availability.</p>
                   <Button
                     type="primary"
                     size="large"
                     onClick={handleSessionExpired}
                     icon={<RefreshCw size={16} />}
-                    style={{
-                      width: "100%",
-                      background: "#ff385c",
-                      border: "none",
-                      height: "44px",
-                      fontWeight: 600,
-                    }}
+                    style={{ width: "100%", background: "#ff385c", border: "none", height: "44px", fontWeight: 600 }}
                   >
                     Find a Spot
                   </Button>
@@ -2220,63 +2229,34 @@ const ReviewAndPaymentStep = ({
             )}
 
             <PaymentSection>
-              {error && (
-                <Alert
-                  message={error}
-                  type="error"
-                  showIcon
-                  closable
-                  onClose={() => setError(null)}
-                  style={{ marginBottom: 16 }}
-                />
-              )}
-
-              <MobileTimerContainer>
-                {renderTimerContent()}
-              </MobileTimerContainer>
-
               <MobileSummaryContainer>
-                <MobileSummaryHeader
-                  onClick={() => setShowMobileSummary(!showMobileSummary)}
-                >
-                  <div className="title-group">
-                    <Ticket size={20} />
-                    <span>Booking Summary</span>
-                  </div>
+                <MobileSummaryHeader onClick={() => setShowMobileSummary(!showMobileSummary)}>
+                  <div className="title-group"><Ticket size={20} /><span>Booking Summary</span></div>
                   <div className="price-group">
-                    <span className="total-price">
-                      <NumberFlow
-                        value={finalTotal}
-                        format={{ style: "currency", currency: "CAD" }}
-                      />
-                    </span>
-                    <ChevronDown
-                      className="toggle-icon"
-                      size={20}
-                      style={{
-                        transform: showMobileSummary
-                          ? "rotate(180deg)"
-                          : "none",
-                      }}
-                    />
+                    <span className="total-price"><NumberFlow value={finalTotal} format={{ style: "currency", currency: "CAD" }} /></span>
+                    <ChevronDown className="toggle-icon" size={20} style={{ transform: showMobileSummary ? "rotate(180deg)" : "none" }} />
                   </div>
                 </MobileSummaryHeader>
                 <AnimatePresence initial={false}>
                   {showMobileSummary && (
-                    <MobileSummaryContent
-                      key="content"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                    >
-                      <MobileSummaryInner>
-                        {renderMobileSimpleSummary()}
-                      </MobileSummaryInner>
-                    </MobileSummaryContent>
+                    <MeasuredMobileSummaryCollapse key="content">
+                      <MobileSummaryInner>{renderMobileSimpleSummary()}</MobileSummaryInner>
+                    </MeasuredMobileSummaryCollapse>
                   )}
                 </AnimatePresence>
               </MobileSummaryContainer>
+
+              <MobileTimerContainer $urgent={timeRemaining < 120}>{renderTimerContent()}</MobileTimerContainer>
+
+              <Drawer.Root open={priceDetailsDrawerOpen} onOpenChange={setPriceDetailsDrawerOpen}>
+                <Drawer.Portal>
+                  <PriceDetailsDrawerOverlay />
+                  <PriceDetailsDrawerContent>
+                    <PriceDetailsDrawerHandle />
+                    <PriceDetailsDrawerBody>{renderPriceDetailsDrawerContent()}</PriceDetailsDrawerBody>
+                  </PriceDetailsDrawerContent>
+                </Drawer.Portal>
+              </Drawer.Root>
 
               <MobilePromoSection>
                 {!showPromoGiftCard && !appliedDiscount && !appliedGiftCard ? (
@@ -2366,91 +2346,129 @@ const ReviewAndPaymentStep = ({
                 )}
               </MobilePromoSection>
 
-              <FormCard>
-                <fieldset
-                  disabled={isExpired}
-                  style={{ border: "none", padding: 0, margin: 0 }}
-                >
-                  <Form
-                    form={form}
-                    layout="vertical"
-                    requiredMark={false}
-                    onValuesChange={handleFormValuesChange}
-                  >
-                    <BookerNameInput
-                      bookerNameFromBookingData={bookingData.userName}
-                      isUserLoggedIn={isUserLoggedIn}
-                    />
+              <Form
+                form={form}
+                layout="vertical"
+                requiredMark={false}
+                onValuesChange={handleFormValuesChange}
+                style={{ padding: "0 4px" }}
+              >
+                  {/* SECTION 1: GUEST DETAILS */}
+                  <SectionCard>
+                      <SectionHeader $clickable={checkoutStep === "payment"} onClick={() => checkoutStep === "payment" && setCheckoutStep("guest")}>
+                          <h3>1. Guest Details</h3>
+                          {checkoutStep === "payment" && (
+                              <button type="button" className="edit-btn">Edit</button>
+                          )}
+                      </SectionHeader>
+                      
+                      <AnimatePresence initial={false}>
+                        {checkoutStep === "guest" ? (
+                             <MeasuredCollapseSection key="content">
+                                <div style={{ paddingTop: 8 }}>
+                                    <Form.Item
+                                    name="booker_name"
+                                    rules={[{ required: true, message: "Please enter your full name" }, { whitespace: true, message: "Please enter your full name" }]}
+                                    style={{ marginBottom: 12 }}
+                                    label={<FieldLabel>Full name</FieldLabel>}
+                                    >
+                                    <Input
+                                        placeholder="e.g. Jane Smith"
+                                        readOnly={isUserLoggedIn && !!bookingData.userName}
+                                        style={isUserLoggedIn && !!bookingData.userName ? { backgroundColor: "#f0f0f0", cursor: "not-allowed", color: "#555" } : {}}
+                                        suffix={isUserLoggedIn && !!bookingData.userName && <UserCheck size={16} color="#52c41a" />}
+                                    />
+                                    </Form.Item>
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                                    <Form.Item name="email" rules={[{ required: true, message: "Please enter your email" }, { type: "email", message: "Please enter a valid email address" }]} label={<FieldLabel>Email</FieldLabel>}>
+                                        <Input placeholder="e.g. jane@example.com" disabled={isUserLoggedIn} />
+                                    </Form.Item>
+                                    <Form.Item name="phone" rules={[{ required: true, message: "Please enter your phone number" }, { whitespace: true, message: "Please enter your phone number" }]} label={<FieldLabel>Phone</FieldLabel>}>
+                                        <Input placeholder="e.g. (555) 123-4567" disabled={isUserLoggedIn} />
+                                    </Form.Item>
+                                </div>
+                                
+                                <div>
+                                    {!showNotes ? (
+                                        <AdditionalNotesRevealButton type="button" onClick={() => setShowNotes(true)}>
+                                            <ChevronRight size={18} />
+                                            <span>Add additional notes (optional)</span>
+                                        </AdditionalNotesRevealButton>
+                                    ) : (
+                                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={COLLAPSE_TRANSITION} style={{ overflow: "hidden" }}>
+                                            <Form.Item name="notes" label={<FieldLabel>Additional Notes</FieldLabel>} style={{ marginBottom: 0, marginTop: 12 }}>
+                                                <Input.TextArea placeholder="Any special requests or dietary restrictions?" rows={2} />
+                                            </Form.Item>
+                                        </motion.div>
+                                    )}
+                                </div>
 
-                    <div
-                      style={{
-                        paddingTop: "16px",
-                        borderTop: "1px solid #e5e7eb",
-                        marginTop: 16,
-                      }}
-                    >
-                      <SectionTitle>Contact Info</SectionTitle>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr",
-                          gap: 12,
-                        }}
+                                <NextButtonContainer>
+                                    <NextButton type="primary" onClick={handleGoToPayment}>
+                                        Next
+                                    </NextButton>
+                                </NextButtonContainer>
+                             </MeasuredCollapseSection>
+                        ) : (
+                            <MeasuredCollapseSection key="summary">
+                                <SummaryDataRow>
+                                    <span className="label">Name</span>
+                                    <span className="value">{form.getFieldValue("booker_name")}</span>
+                                </SummaryDataRow>
+                                <SummaryDataRow>
+                                    <span className="label">Contact</span>
+                                    <span className="value">{form.getFieldValue("email")} · {form.getFieldValue("phone")}</span>
+                                </SummaryDataRow>
+                            </MeasuredCollapseSection>
+                        )}
+                      </AnimatePresence>
+                  </SectionCard>
+
+                  {/* SECTION 2: PAYMENT */}
+                  <SectionCard ref={paymentStepRef} style={{ marginTop: 24 }} $disabled={checkoutStep !== "payment"}>
+                      <SectionHeader>
+                          <h3>2. Payment</h3>
+                      </SectionHeader>
+                      
+                      {/* PRELOAD: We always render PaymentFormContent but toggle visibility via display: block/none 
+                          and opacity to allow the iframe to load. 
+                      */}
+                      <SectionContent 
+                          style={{ 
+                             display: checkoutStep === "payment" ? 'block' : 'none' 
+                          }}
+                          initial={{ opacity: 0 }} 
+                          animate={{ opacity: checkoutStep === "payment" ? 1 : 0 }}
                       >
-                        <Form.Item
-                          name="email"
-                          rules={[{ required: true, type: "email" }]}
-                          label={<FieldLabel>Email</FieldLabel>}
-                        >
-                          <Input
-                            placeholder="e.g. jane@example.com"
-                            disabled={isUserLoggedIn}
-                          />
-                        </Form.Item>
-                        <Form.Item
-                          name="phone"
-                          rules={[{ required: true }]}
-                          label={<FieldLabel>Phone</FieldLabel>}
-                        >
-                          <Input
-                            placeholder="e.g. (555) 123-4567"
-                            disabled={isUserLoggedIn}
-                          />
-                        </Form.Item>
-                      </div>
-                    </div>
+                            <PaymentFormContent
+                                form={form}
+                                handleSubmit={handleSubmit}
+                                loading={loading}
+                                isFree={isFree}
+                                isFormValid={isFormValid}
+                                finalTotal={finalTotal}
+                                clientSecret={clientSecret}
+                                onPaymentAction={onPaymentAction}
+                                onPaymentComplete={onPaymentComplete}
+                                onPaymentLoadError={handlePaymentElementLoadError}
+                                paymentService={paymentService}
+                                bookingData={bookingData}
+                                currentStep={checkoutStep}
+                                isVisible={checkoutStep === "payment"}
+                            />
+                            {/* Render footer inside payment section on desktop */}
+                            {confirmFooter && (
+                                <DesktopInlineFooter>
+                                    {confirmFooter}
+                                </DesktopInlineFooter>
+                            )}
+                      </SectionContent>
+                  </SectionCard>
+              </Form>
 
-                    <PaymentFormContent
-                      form={form}
-                      handleSubmit={handleSubmit}
-                      loading={loading}
-                      isFree={isFree}
-                      isFormValid={isFormValid}
-                      finalTotal={finalTotal}
-                      clientSecret={clientSecret}
-                      onPaymentAction={onPaymentAction}
-                      onPaymentComplete={onPaymentComplete}
-                      onPaymentLoadError={handlePaymentElementLoadError}
-                      paymentService={paymentService}
-                      bookingData={bookingData}
-                      getGuestFullName={getGuestFullName}
-                    />
-
-                    <div>
-                      <Form.Item
-                        name="notes"
-                        label={<FieldLabel>Additional Notes</FieldLabel>}
-                      >
-                        <Input.TextArea
-                          placeholder="e.g. Any dietary restrictions or special requests"
-                          rows={2}
-                        />
-                      </Form.Item>
-                    </div>
-                  </Form>
-                </fieldset>
-              </FormCard>
             </PaymentSection>
+            </LeftColumnWrap>
 
             <SummarySection>{renderTicketSummary()}</SummarySection>
           </StepContainer>

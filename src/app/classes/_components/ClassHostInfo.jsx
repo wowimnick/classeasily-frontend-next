@@ -2,26 +2,38 @@
 
 import React, { useMemo } from "react";
 import styled from "styled-components";
-import { Building } from "lucide-react";
+import { Building2, Star, Calendar } from "lucide-react";
 import { Skeleton } from "antd";
 import { motion } from "framer-motion";
-import { LordIcon } from "@/services/ReactUtils";
 import { useRouter } from "next/navigation";
 
-// --- Styled Components --- (No changes needed)
-const HostInfoContainer = styled(motion.button)`
+const HostSectionWrapper = styled.section`
+  padding: 1rem;
+`;
+
+const SectionTitle = styled.h2`
+  font-size: 1.25rem;
+  padding-bottom: 1rem;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 0 0;
+  line-height: 1.3;
+  text-align: center;
+`;
+
+const HostCard = styled(motion.button)`
   background: white;
-  border-radius: 16px;
+  border-radius: 12px;
   width: 100%;
   max-width: 800px;
-  padding: 2rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: none;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
   text-align: left;
   cursor: pointer;
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   &:hover:not(:disabled) {
-    transform: translateY(-2px);
+    border-color: #ff385c;
+    box-shadow: 0 2px 8px rgba(255, 56, 92, 0.08);
   }
   &:focus-visible {
     outline: 2px solid #ff385c;
@@ -31,188 +43,104 @@ const HostInfoContainer = styled(motion.button)`
     cursor: default;
   }
   @media (max-width: 768px) {
-    padding: 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-    border-top: 1px solid #f0f0f0;
-  }
-  @media (max-width: 480px) {
-    padding: 1.25rem;
-    text-align: initial;
+    padding: 1rem;
     border-radius: 10px;
-    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
-    border-bottom: 1px solid #f0f0f0;
   }
 `;
-const HostHeader = styled.div`
+
+const HostRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding-bottom: 1.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #eaeaea;
-  @media (max-width: 600px) {
-    flex-direction: column;
-    text-align: center;
-    gap: 1.25rem;
-    padding-bottom: 1.25rem;
-    margin-bottom: 1.25rem;
-  }
-  @media (max-width: 480px) {
-    gap: 1rem;
-    padding-bottom: 1rem;
-    margin-bottom: 1rem;
-  }
+  gap: 1rem;
 `;
+
 const HostAvatar = styled.div`
-  width: 80px;
-  height: 80px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   overflow: hidden;
-  border: 3px solid #f0f0f0;
-  background-color: #f8f9fa;
+  background: #f3f4f6;
   flex-shrink: 0;
-  @media (max-width: 600px) {
-    width: 72px;
-    height: 72px;
-    border-width: 2px;
-  }
-  @media (max-width: 480px) {
-    width: 64px;
-    height: 64px;
-  }
 `;
+
 const HostImg = styled.img`
   width: 100%;
   height: 100%;
   object-fit: cover;
 `;
-const HostDetails = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  flex-grow: 1;
-  @media (max-width: 600px) {
-    align-items: center;
-  }
-`;
-const HostName = styled.h2`
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #000;
-  margin: 0;
-  line-height: 1.3;
-  @media (max-width: 768px) {
-    font-size: 1.375rem;
-  }
-  @media (max-width: 480px) {
-    font-size: 1.25rem;
-  }
-`;
-const HostSince = styled.p`
-  font-size: 0.95rem;
-  color: #767676;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  @media (max-width: 480px) {
-    font-size: 0.9rem;
-    gap: 0.375rem;
-  }
-`;
-const HostStatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 0.875rem;
-  }
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
-    max-width: 300px;
-    margin: 0 auto;
-  }
-  @media (max-width: 480px) {
-    gap: 0.75rem;
-    max-width: 280px;
-  }
-`;
-const StatBlock = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 12px;
-  svg {
-    width: 20px;
-    height: 20px;
-    color: #ff385c;
-    flex-shrink: 0;
-  }
-  @media (max-width: 768px) {
-    padding: 0.875rem;
-    gap: 0.875rem;
-  }
-  @media (max-width: 600px) {
-    flex-direction: row;
-    align-items: center;
-    text-align: left;
-    padding: 1rem;
-    gap: 1rem;
-  }
-  @media (max-width: 480px) {
-    padding: 0.875rem 0.75rem;
-    gap: 0.75rem;
-    border-radius: 10px;
-    svg {
-      width: 18px;
-      height: 18px;
-    }
-  }
-`;
-const StatTextContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
+
+const HostMain = styled.div`
+  flex: 1;
   min-width: 0;
 `;
-const StatValue = styled.span`
+
+const HostName = styled.span`
   font-size: 1rem;
   font-weight: 600;
-  color: #000;
-  line-height: 1.2;
+  color: #111827;
+  display: block;
+  margin-bottom: 2px;
+`;
+
+const HostMeta = styled.span`
+  font-size: 0.8125rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+  }
+`;
+
+const HostStats = styled.div`
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar {
+    height: 0;
+    display: none;
+  }
+  scrollbar-width: none;
+`;
+
+const StatItem = styled.span`
+  font-size: 0.75rem;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  svg {
+    width: 12px;
+    height: 12px;
+    color: #9ca3af;
+    flex-shrink: 0;
+  }
+`;
+
+const StatItemHiddenOnMobile = styled(StatItem)`
   @media (max-width: 768px) {
-    font-size: 0.95rem;
-  }
-  @media (max-width: 480px) {
-    font-size: 0.9rem;
+    display: none !important;
   }
 `;
-const StatLabel = styled.span`
-  font-size: 0.85rem;
-  color: #5a5a5a;
-  line-height: 1.3;
-  margin-top: 2px;
-  @media (max-width: 480px) {
-    font-size: 0.8rem;
-  }
-`;
+
 const LoadingContainer = styled.div`
-  padding: 2rem;
+  padding: 1rem;
   max-width: 800px;
   background: white;
-  border-radius: 16px;
-  @media (max-width: 768px) {
-    padding: 1.5rem;
-    border-radius: 12px;
-  }
-  @media (max-width: 480px) {
-    padding: 1.25rem;
-    border-radius: 10px;
-  }
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
 `;
 
 const HostInfo = React.memo(({ businessData, onHostClick, classReviewCount }) => {
@@ -222,7 +150,7 @@ const HostInfo = React.memo(({ businessData, onHostClick, classReviewCount }) =>
     if (businessData?.slug) {
       router.push(`/business/${businessData.slug}`);
     } else if (onHostClick) {
-      onHostClick(); // Fallback to modal if no slug is present
+      onHostClick();
     }
   };
 
@@ -240,7 +168,7 @@ const HostInfo = React.memo(({ businessData, onHostClick, classReviewCount }) =>
 
     const { founding_year, createdAt, businessName, total_reviews_count } =
       businessData;
-    let tenureValue = "New Partner";
+    let tenureValue = "New";
     let tenureLabel = "on Classeasily";
     if (createdAt) {
       const registrationDate = new Date(createdAt);
@@ -248,19 +176,19 @@ const HostInfo = React.memo(({ businessData, onHostClick, classReviewCount }) =>
       const diffMonths = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 30.44));
       if (diffMonths >= 12) {
         const diffYears = Math.floor(diffMonths / 12);
-        tenureValue = `${diffYears} year${diffYears > 1 ? "s" : ""}`;
+        tenureValue = `${diffYears} yr${diffYears > 1 ? "s" : ""}`;
       } else if (diffMonths >= 1) {
-        tenureValue = `${diffMonths} month${diffMonths > 1 ? "s" : ""}`;
+        tenureValue = `${diffMonths} mo`;
       }
     }
 
     const since = createdAt
       ? new Date(createdAt).toLocaleDateString("en-US", {
-          month: "long",
+          month: "short",
           year: "numeric",
           timeZone: "UTC",
         })
-      : "N/A";
+      : "—";
 
     return {
       isLoading: false,
@@ -269,8 +197,8 @@ const HostInfo = React.memo(({ businessData, onHostClick, classReviewCount }) =>
       platformTenureLabel: tenureLabel,
       memberSince: since,
       foundingYearDisplay: founding_year
-        ? `Founded in ${founding_year}`
-        : "History not provided",
+        ? `Founded ${founding_year}`
+        : null,
       totalReviews:
         classReviewCount != null
           ? classReviewCount
@@ -282,77 +210,65 @@ const HostInfo = React.memo(({ businessData, onHostClick, classReviewCount }) =>
   if (isLoading) {
     return (
       <LoadingContainer>
-        <Skeleton active avatar={{ size: 80 }} paragraph={{ rows: 2 }} />
+        <Skeleton active avatar={{ size: 56 }} paragraph={{ rows: 1 }} />
       </LoadingContainer>
     );
   }
 
   return (
-    <HostInfoContainer
-      onClick={handleNavigation}
-      disabled={!businessData?.slug && !onHostClick}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      aria-label={`View details for host: ${hostDisplayName}`}
-    >
-      <HostHeader>
-        <HostAvatar>
-          <HostImg
-            src={businessImage}
-            alt={`Profile picture of ${hostDisplayName}`}
-          />
-        </HostAvatar>
-        <HostDetails>
-          <HostName id="host-info-name">Hosted by {hostDisplayName}</HostName>
-          <HostSince>
-            <Building size={16} aria-hidden="true" />
-            {foundingYearDisplay}
-          </HostSince>
-        </HostDetails>
-      </HostHeader>
-      <HostStatsGrid>
-        <StatBlock>
-          <LordIcon
-            src="https://cdn.lordicon.com/uwnsxkfm.json"
-            trigger="in"
-            delay="1500"
-            state="in-thumbs"
-            colors="primary:#fa395f"
-          />
-          <StatTextContainer>
-            <StatValue>{totalReviews}</StatValue>
-            <StatLabel>Total Reviews</StatLabel>
-          </StatTextContainer>
-        </StatBlock>
-        <StatBlock>
-          <LordIcon
-            src="https://cdn.lordicon.com/cfkiwvcc.json"
-            trigger="in"
-            delay="1500"
-            state="in-article"
-            colors="primary:#fa395f"
-          />
-          <StatTextContainer>
-            <StatValue>{platformTenure}</StatValue>
-            <StatLabel>{platformTenureLabel}</StatLabel>
-          </StatTextContainer>
-        </StatBlock>
-        <StatBlock>
-          <LordIcon
-            src="https://cdn.lordicon.com/okqjaags.json"
-            trigger="in"
-            delay="1500"
-            state="in-clock"
-            colors="primary:#fa395f"
-          />
-          <StatTextContainer>
-            <StatValue>{memberSince}</StatValue>
-            <StatLabel>Member Since</StatLabel>
-          </StatTextContainer>
-        </StatBlock>
-      </HostStatsGrid>
-    </HostInfoContainer>
+    <HostSectionWrapper>
+      <SectionTitle>Meet your host</SectionTitle>
+      <HostCard
+        onClick={handleNavigation}
+        disabled={!businessData?.slug && !onHostClick}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        aria-label={`View details for ${hostDisplayName}`}
+      >
+        <HostRow>
+          <HostAvatar>
+            {businessImage ? (
+              <HostImg
+                src={businessImage}
+                alt={`${hostDisplayName}`}
+              />
+            ) : (
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#9ca3af",
+                }}
+              >
+                <Building2 size={24} />
+              </div>
+            )}
+          </HostAvatar>
+          <HostMain>
+            <HostName>{hostDisplayName}</HostName>
+            <HostMeta>
+              <Building2 size={14} />
+              {foundingYearDisplay || "Host on Classeasily"}
+            </HostMeta>
+          </HostMain>
+        </HostRow>
+        <HostStats>
+          <StatItem>
+            <Star size={14} />
+            {totalReviews} review{totalReviews !== 1 ? "s" : ""}
+          </StatItem>
+          <StatItem>
+            <Calendar size={14} />
+            {platformTenure} {platformTenureLabel}
+          </StatItem>
+          <StatItemHiddenOnMobile>Member since {memberSince}</StatItemHiddenOnMobile>
+      </HostStats>
+      </HostCard>
+    </HostSectionWrapper>
   );
 });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import useEmblaCarousel from "embla-carousel-react";
 import { Modal, Typography, Tooltip } from "antd";
 import message from "@/lib/message";
@@ -20,6 +21,7 @@ import {
   Twitter,
   Phone,
   Grid3x3,
+  ArrowLeft,
 } from "lucide-react";
 
 const { Title } = Typography;
@@ -111,10 +113,62 @@ const ImagesContainer = styled.div`
   width: 100%;
   box-sizing: border-box;
   margin-bottom: 1.5rem;
+  position: relative;
   @media (max-width: 768px) {
     order: 1;
     margin-bottom: 0;
   }
+`;
+
+/* Glassy overlay bar on images (back left, share/favorite right) - mobile only */
+const ImageOverlayBar = styled.div`
+  display: none;
+  @media (max-width: 768px) {
+    display: flex;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    pointer-events: none;
+    & > * {
+      pointer-events: auto;
+    }
+  }
+`;
+const GlassyButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px) saturate(180%);
+  -webkit-backdrop-filter: blur(8px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.125);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  color: #222;
+  transition: transform 0.2s ease, background 0.2s ease;
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.9);
+    transform: scale(1.05);
+  }
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+`;
+const GlassyButtonGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 // --- Dynamic Grid Components ---
@@ -673,6 +727,9 @@ const ClassPageImagesTitle = React.memo(
       exit: { scale: 0.95, opacity: 0 },
     };
 
+    const router = useRouter();
+    const handleBack = () => router.back();
+
     return (
       <MainContent>
         <OrderWrapper>
@@ -717,6 +774,40 @@ const ClassPageImagesTitle = React.memo(
             </TitleSection>
           )}
           <ImagesContainer>
+            <ImageOverlayBar>
+              <GlassyButton
+                type="button"
+                onClick={handleBack}
+                aria-label="Back to previous page"
+              >
+                <ArrowLeft size={20} />
+              </GlassyButton>
+              <GlassyButtonGroup>
+                <GlassyButton
+                  type="button"
+                  onClick={onFavoriteClick}
+                  disabled={isTogglingFavorite}
+                  aria-label={
+                    isFavorite
+                      ? "Remove from favorites"
+                      : "Save to favorites"
+                  }
+                >
+                  <Heart
+                    size={20}
+                    fill={isFavorite ? CLASSEASILY_RED_ACCESSIBLE : "none"}
+                    color={isFavorite ? CLASSEASILY_RED_ACCESSIBLE : "#333"}
+                  />
+                </GlassyButton>
+                <GlassyButton
+                  type="button"
+                  onClick={onShareClick}
+                  aria-label="Share this class"
+                >
+                  <Share2 size={20} />
+                </GlassyButton>
+              </GlassyButtonGroup>
+            </ImageOverlayBar>
             {/* Dynamic Desktop Grid */}
             <DynamicGridContainer $count={desktopGridImages.length}>
               {desktopGridImages.map((image, index) => {

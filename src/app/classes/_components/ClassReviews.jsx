@@ -137,30 +137,43 @@ const ReviewsContainer = styled(motion.div)`
   border-radius: 16px;
   width: 100%;
   max-width: 800px;
+  padding: 1rem;
 
   @media (max-width: 768px) {
-    padding: 1.5rem;
+    padding: 1rem;
     border-radius: 12px;
   }
 `;
 
 const Header = styled.h2`
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #000;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  flex-wrap: wrap;
 
   svg {
     color: #ff385c;
   }
 
   @media (max-width: 768px) {
-    font-size: 1.375rem;
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.75rem;
   }
+`;
+
+const HeaderTitle = styled.span`
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+`;
+
+const HeaderRating = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
 `;
 
 const ReviewsColumn = styled.div`
@@ -473,10 +486,16 @@ const EmptyState = styled.div`
 // --- Helpers ---
 const normalizeReview = (review) => ({
   ...review,
+  id: review.id ?? review.reviewId ?? review.google_review_id,
   reviewer_avatar_url:
     review.reviewer_avatar_url || review.user?.avatar_thumb_url,
   reviewer_name: review.reviewer_name || review.user?.name,
-  image_urls: review.image_urls || [],
+  image_urls:
+    review.image_urls?.length > 0
+      ? review.image_urls
+      : review.image_medium_url
+        ? [review.image_medium_url]
+        : [],
   business_response: review.business_response || review.owner_response,
 });
 
@@ -505,6 +524,7 @@ const Reviews = ({
   initialReviewCount,
   platformReviewCount,
   serverReviews = null,
+  mode = "class", // "class" | "business" - when "business", slug is business slug and we fetch business reviews
 }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false); // Track client-side mount
@@ -579,13 +599,20 @@ const Reviews = ({
       }
       try {
         setLoadingPreview(true);
-        const result = await classService.fetchClassReviewsPaginated(
-          slug,
-          1,
-          6,
-        );
-        if (result.success) {
-          setPreviewReviews((result.reviews || []).map(normalizeReview));
+        if (mode === "business") {
+          const result = await classService.fetchBusinessReviews(slug, 1, 6);
+          if (result.success && result.data) {
+            setPreviewReviews((result.data || []).map(normalizeReview));
+          }
+        } else {
+          const result = await classService.fetchClassReviewsPaginated(
+            slug,
+            1,
+            6,
+          );
+          if (result.success) {
+            setPreviewReviews((result.reviews || []).map(normalizeReview));
+          }
         }
       } catch (error) {
         console.error("Error fetching preview reviews:", error);
@@ -594,28 +621,38 @@ const Reviews = ({
       }
     };
     fetchPreviewReviews();
-  }, [slug, initialReviewCount, normalizedServerReviews.length]);
+  }, [slug, initialReviewCount, normalizedServerReviews.length, mode]);
 
   const loadModalReviews = async (page) => {
     if (!slug) return;
 
     try {
       setLoadingMore(true);
-      const result = await classService.fetchClassReviewsPaginated(
-        slug,
-        page,
-        10,
-      );
-
-      if (result.success) {
-        const newReviews = (result.reviews || []).map(normalizeReview);
-        const pagination = result.pagination || {};
-
-        setModalReviews((prev) =>
-          page === 1 ? newReviews : [...prev, ...newReviews],
+      if (mode === "business") {
+        const result = await classService.fetchBusinessReviews(slug, page, 10);
+        if (result.success && result.data) {
+          const newReviews = (result.data || []).map(normalizeReview);
+          setModalReviews((prev) =>
+            page === 1 ? newReviews : [...prev, ...newReviews],
+          );
+          setModalPage(page);
+          setModalHasMore(result.hasMore || false);
+        }
+      } else {
+        const result = await classService.fetchClassReviewsPaginated(
+          slug,
+          page,
+          10,
         );
-        setModalPage(page);
-        setModalHasMore(pagination.has_more || false);
+        if (result.success) {
+          const newReviews = (result.reviews || []).map(normalizeReview);
+          const pagination = result.pagination || {};
+          setModalReviews((prev) =>
+            page === 1 ? newReviews : [...prev, ...newReviews],
+          );
+          setModalPage(page);
+          setModalHasMore(pagination.has_more || false);
+        }
       }
     } catch (error) {
       console.error("Error loading modal reviews:", error);
@@ -747,8 +784,10 @@ const Reviews = ({
     return (
       <ReviewsContainer>
         <Header>
-          <Star size={24} />
-          {initialRating.toFixed(1)} · {initialReviewCount} reviews
+          <HeaderTitle>What guests are saying</HeaderTitle>
+          <HeaderRating>
+            <Star size={20} /> {initialRating.toFixed(1)} · {initialReviewCount} reviews
+          </HeaderRating>
         </Header>
         <ReviewsColumn>
           <ReviewSkeletonLoader />
@@ -763,7 +802,8 @@ const Reviews = ({
     return (
       <ReviewsContainer>
         <Header>
-          <Star size={24} /> New Experience
+          <Star size={24} />
+          <HeaderTitle>What guests are saying</HeaderTitle>
         </Header>
         <EmptyState>
           <h3>No reviews yet</h3>
@@ -815,9 +855,11 @@ const Reviews = ({
         transition={{ duration: 0.3 }}
       >
         <Header>
-          <Star size={24} />
-          {initialRating.toFixed(1)} · {initialReviewCount} review
-          {initialReviewCount !== 1 ? "s" : ""}
+          <HeaderTitle>What guests are saying</HeaderTitle>
+          <HeaderRating>
+            <Star size={20} /> {initialRating.toFixed(1)} · {initialReviewCount} review
+            {initialReviewCount !== 1 ? "s" : ""}
+          </HeaderRating>
         </Header>
 
         <ReviewsColumn>
