@@ -1265,6 +1265,7 @@ const ReviewAndPaymentStep = ({
     gcCode: null,
     globalId: null,
   });
+  const fetchIntentInFlightRef = useRef(false);
 
   useEffect(() => {
     posthog.capture("booking_payment_initiated", {
@@ -1429,6 +1430,7 @@ const ReviewAndPaymentStep = ({
         return;
       }
 
+      fetchIntentInFlightRef.current = true;
       try {
         setPaymentIntentError(null);
         const values = form.getFieldsValue();
@@ -1453,6 +1455,7 @@ const ReviewAndPaymentStep = ({
         const response = await paymentService.createPaymentIntent(payload);
 
         if (response.clientSecret) {
+          fetchIntentInFlightRef.current = false;
           setClientSecret(response.clientSecret);
           setPaymentIntentError(null);
           if (onUpdateBookingData) {
@@ -1462,8 +1465,11 @@ const ReviewAndPaymentStep = ({
               clientSecret: response.clientSecret,
             });
           }
+        } else {
+          fetchIntentInFlightRef.current = false;
         }
       } catch (err) {
+        fetchIntentInFlightRef.current = false;
         const data = err?.response?.data;
         const errObj = data?.error;
         const msg =
@@ -1513,8 +1519,11 @@ const ReviewAndPaymentStep = ({
       }
       const paymentIntentId = clientSecret.split("_secret_")[0];
       paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
+      fetchIntentInFlightRef.current = false;
       setClientSecret(null);
     }
+
+    if (!clientSecret && fetchIntentInFlightRef.current) return;
 
     intentDepsRef.current = currentDeps;
     fetchPaymentIntent(discountId);
