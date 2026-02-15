@@ -55,6 +55,7 @@ export default function ClassCheckoutSuccessClient() {
 
     const raw = sessionStorage.getItem(SUCCESS_STORAGE_KEY);
     if (!raw) {
+      setLoading(false);
       router.replace(`/classes/${slug}`);
       return;
     }
@@ -62,12 +63,15 @@ export default function ClassCheckoutSuccessClient() {
     try {
       const data = JSON.parse(raw);
       if (!data.bookingData || !data.classData) {
+        setLoading(false);
         router.replace(`/classes/${slug}`);
         return;
       }
       setSuccessData(data);
     } catch {
+      setLoading(false);
       router.replace(`/classes/${slug}`);
+      return;
     } finally {
       setLoading(false);
     }

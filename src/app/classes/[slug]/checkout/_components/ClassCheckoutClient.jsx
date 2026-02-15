@@ -246,6 +246,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
 
     const raw = sessionStorage.getItem(CHECKOUT_STORAGE_KEY);
     if (!raw) {
+      setLoading(false);
       router.replace(`/classes/${slug}`);
       return;
     }
@@ -256,6 +257,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
       try {
         const state = JSON.parse(raw);
         if (state.classSlug !== slug) {
+          setLoading(false);
           router.replace(`/classes/${slug}`);
           return;
         }
@@ -264,6 +266,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
           state.bookingData?.selectedSlots?.length > 0 &&
           state.bookingData?.selectedOption;
         if (!hasSlots) {
+          setLoading(false);
           router.replace(`/classes/${slug}`);
           return;
         }
@@ -285,10 +288,18 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
           classService
             .fetchClassDetail(slug)
             .then((data) => !cancelled && setClassData(data))
-            .catch(() => !cancelled && router.replace(`/classes/${slug}`));
+            .catch(() => {
+              if (!cancelled) {
+                setLoading(false);
+                router.replace(`/classes/${slug}`);
+              }
+            });
         }
       } catch {
-        if (!cancelled) router.replace(`/classes/${slug}`);
+        if (!cancelled) {
+          setLoading(false);
+          router.replace(`/classes/${slug}`);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -330,9 +341,18 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
         credentials: "include",
       }).catch(() => {});
     };
+    const handlePopState = () => {
+      if (cancelledIntentRef.current) return;
+      paymentService.cancelPaymentIntent(intentId).catch(() => {});
+      clearIntentFromStorage();
+    };
     window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [bookingData?.paymentIntentId]);
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [bookingData?.paymentIntentId, clearIntentFromStorage]);
 
   const handlePaymentComplete = useCallback(
     (dataFromReviewStep) => {

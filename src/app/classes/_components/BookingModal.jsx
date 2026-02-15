@@ -18,6 +18,7 @@ import dynamic from "next/dynamic";
 import { Drawer } from "vaul";
 import { paymentService } from "@/services/apiService";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import message from "@/lib/message";
 import posthog from "posthog-js";
 import dayjs from "dayjs";
 
@@ -430,7 +431,7 @@ const BookingModal = ({
   const cancelPendingIntent = useCallback(async (intentId) => {
     if (!intentId) return;
     try {
-      await paymentService.cancelPaymentIntent({ payment_intent_id: intentId });
+      await paymentService.cancelPaymentIntent(intentId);
     } catch (error) {
       console.error("[BookingModal] Failed to release spot:", error);
     }
@@ -767,7 +768,7 @@ const BookingModal = ({
         router.push(`/classes/${classData.slug}/checkout`);
       } catch (e) {
         console.error("Checkout redirect failed:", e);
-        setCurrentStep((prev) => prev + 1);
+        message.error("Whoops! Couldn't open checkout. Please try again.");
       }
       return;
     }

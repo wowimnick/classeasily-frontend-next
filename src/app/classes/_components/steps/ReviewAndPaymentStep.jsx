@@ -62,16 +62,12 @@ const StepContainer = styled.div`
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
-  padding: 0 4px;
-  padding-top: 4px;
-  padding-bottom: 20px;
   position: relative;
 
   @media (min-width: 969px) {
     grid-template-columns: minmax(0, 1.2fr) 400px;
     gap: 40px;
     align-items: flex-start;
-    padding-bottom: 0;
   }
 `;
 
@@ -80,6 +76,14 @@ const LeftColumnWrap = styled.div`
   flex-direction: column;
   gap: 24px;
   min-width: 0;
+
+  @media (max-width: 968px) {
+    .ant-input,
+    .ant-input-affix-wrapper input,
+    .ant-input-number-input {
+      font-size: 16px !important;
+    }
+  }
 `;
 
 const PaymentSection = styled.div`
@@ -95,6 +99,8 @@ const SectionCard = styled.div`
   overflow: hidden;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
+  padding-left: 4px;
+  padding-right: 4px;
 
   ${(props) =>
     props.$disabled &&
@@ -714,6 +720,12 @@ const CouponTicketInput = styled.div`
   .ant-input-affix-wrapper input {
     font-size: 14px;
   }
+  @media (max-width: 968px) {
+    .ant-input,
+    .ant-input-affix-wrapper input {
+      font-size: 16px;
+    }
+  }
 
   .ant-btn {
     font-size: 14px;
@@ -964,7 +976,7 @@ const ExpressCheckoutButton = ({
       try {
         if (!form) {
           ev.complete("fail");
-          message.error("Please try again.");
+          message.error("Whoops! Something went wrong. Please try again.");
           return;
         }
 
@@ -992,7 +1004,7 @@ const ExpressCheckoutButton = ({
             });
           } catch (backendErr) {
             ev.complete("fail");
-            message.error("Could not update booking details. Please try again.");
+            message.error("Whoops! We couldn't save your details. Please try again.");
             return;
           }
         }
@@ -1008,7 +1020,7 @@ const ExpressCheckoutButton = ({
 
         if (error) {
           ev.complete("fail");
-          message.error(error.message);
+          message.error(error.message || "Whoops! Payment didn't go through. Please try again.");
         } else {
           ev.complete("success");
           if (paymentIntent?.status === "succeeded") {
@@ -1021,7 +1033,7 @@ const ExpressCheckoutButton = ({
         }
       } catch (err) {
         ev.complete("fail");
-        message.error("Payment failed. Please try again.");
+        message.error("Whoops! Something went wrong. Please try again.");
       }
     });
   }, [
@@ -1211,7 +1223,6 @@ const ReviewAndPaymentStep = ({
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [paymentIntentError, setPaymentIntentError] = useState(null);
   const [clientSecret, setClientSecret] = useState(
     () => bookingData?.clientSecret ?? null
@@ -1461,7 +1472,8 @@ const ReviewAndPaymentStep = ({
           (typeof data?.error === "string" ? data.error : null) ||
           (typeof errObj === "string" ? errObj : null) ||
           err?.message ||
-          "We couldn't reserve the spots right now. Please try again.";
+          "Whoops! We couldn't reserve the spots right now. Please try again.";
+        message.error(msg);
         setPaymentIntentError(msg);
       }
     },
@@ -1536,7 +1548,7 @@ const ReviewAndPaymentStep = ({
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
-      message.error("Please enter a coupon code.");
+      message.error("Please enter a coupon code to apply.");
       return;
     }
     setCouponLoading(true);
@@ -1556,11 +1568,11 @@ const ReviewAndPaymentStep = ({
           colors: ["#ff385c", "#000000", "#ffffff"],
         });
       } else {
-        message.error(result.error?.detail || "Invalid coupon.");
+        message.error(result.error?.detail || "That coupon isn't valid. Double-check the code and try again.");
         setAppliedDiscount(null);
       }
     } catch (err) {
-      message.error("Error applying coupon.");
+      message.error("Whoops! Something went wrong applying the coupon. Please try again.");
     } finally {
       setCouponLoading(false);
     }
@@ -1580,7 +1592,7 @@ const ReviewAndPaymentStep = ({
       setAppliedGiftCard(data);
       message.success(`Gift card applied: $${data.balance} available`);
     } catch (err) {
-      message.error(err.error || "Invalid Gift Card"); 
+      message.error(err.error || "That gift card code didn't work. Please check and try again."); 
       setAppliedGiftCard(null);
     } finally {
       setGcLoading(false);
@@ -1645,12 +1657,11 @@ const ReviewAndPaymentStep = ({
     async (stripe, elements) => {
       if (isExpired) return;
       if (!selectedSlot) {
-        setError("Slot not selected.");
+        message.error("Whoops! Please select a date and time to continue.");
         return;
       }
 
       setLoading(true);
-      setError(null);
 
       try {
         const values = await form.validateFields();
@@ -1683,8 +1694,8 @@ const ReviewAndPaymentStep = ({
             onPaymentComplete(res);
             return;
           }
-          setError(
-            res?.error || "We couldn’t complete your free booking. Please try again."
+          message.error(
+            res?.error || "Whoops! We couldn’t complete your free booking. Please try again."
           );
           setLoading(false);
           return;
@@ -1695,7 +1706,7 @@ const ReviewAndPaymentStep = ({
 
         const { error: submitError } = await elements.submit();
         if (submitError) {
-          setError(submitError.message);
+          message.error(submitError.message || "Whoops! Something went wrong. Please try again.");
           setLoading(false);
           return;
         }
@@ -1719,8 +1730,11 @@ const ReviewAndPaymentStep = ({
           });
 
         if (confirmError) {
-          throw new Error(confirmError.message);
-        } else if (paymentIntent && paymentIntent.status === "succeeded") {
+          message.error(confirmError.message || "Whoops! Something went wrong. Please try again.");
+          setLoading(false);
+          return;
+        }
+        if (paymentIntent && paymentIntent.status === "succeeded") {
           const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "Guest";
           const participantDetails = Array.from(
             { length: participantsCount },
@@ -1733,7 +1747,7 @@ const ReviewAndPaymentStep = ({
           });
         }
       } catch (err) {
-        setError(err.message || "Payment processing failed.");
+        message.error(err.message || "Whoops! Something went wrong. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -1812,7 +1826,7 @@ const ReviewAndPaymentStep = ({
         fontFamily,
         spacingUnit: "4px",
         borderRadius: `${appTheme.token.borderRadius}px`,
-        fontSizeBase: `${appTheme.token.fontSize}px`,
+        fontSizeBase: stripeFontSize,
       },
       rules: {
         ".Input": {
@@ -1864,7 +1878,7 @@ const ReviewAndPaymentStep = ({
         },
       },
     };
-  }, []);
+  }, [stripeFontSize]);
   const renderTimerContent = () => {
     if (isFree || isExpired) return null;
     return (
@@ -2206,17 +2220,6 @@ const ReviewAndPaymentStep = ({
             )}
 
             <PaymentSection>
-              {error && (
-                <Alert
-                  message={error}
-                  type="error"
-                  showIcon
-                  closable
-                  onClose={() => setError(null)}
-                  style={{ marginBottom: 16 }}
-                />
-              )}
-
               <MobileSummaryContainer>
                 <MobileSummaryHeader onClick={() => setShowMobileSummary(!showMobileSummary)}>
                   <div className="title-group"><Ticket size={20} /><span>Booking Summary</span></div>
@@ -2355,7 +2358,7 @@ const ReviewAndPaymentStep = ({
                                 <div style={{ paddingTop: 8 }}>
                                     <Form.Item
                                     name="booker_name"
-                                    rules={[{ required: true, message: "Your name is required" }]}
+                                    rules={[{ required: true, message: "Please enter your full name" }, { whitespace: true, message: "Please enter your full name" }]}
                                     style={{ marginBottom: 12 }}
                                     label={<FieldLabel>Full name</FieldLabel>}
                                     >
@@ -2368,10 +2371,10 @@ const ReviewAndPaymentStep = ({
                                     </Form.Item>
                                 </div>
                                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                                    <Form.Item name="email" rules={[{ required: true, type: "email" }]} label={<FieldLabel>Email</FieldLabel>}>
+                                    <Form.Item name="email" rules={[{ required: true, message: "Please enter your email" }, { type: "email", message: "Please enter a valid email address" }]} label={<FieldLabel>Email</FieldLabel>}>
                                         <Input placeholder="e.g. jane@example.com" disabled={isUserLoggedIn} />
                                     </Form.Item>
-                                    <Form.Item name="phone" rules={[{ required: true }]} label={<FieldLabel>Phone</FieldLabel>}>
+                                    <Form.Item name="phone" rules={[{ required: true, message: "Please enter your phone number" }, { whitespace: true, message: "Please enter your phone number" }]} label={<FieldLabel>Phone</FieldLabel>}>
                                         <Input placeholder="e.g. (555) 123-4567" disabled={isUserLoggedIn} />
                                     </Form.Item>
                                 </div>

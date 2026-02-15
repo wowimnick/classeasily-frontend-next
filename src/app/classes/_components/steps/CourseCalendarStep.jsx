@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { getCourseDuration } from "./utils";
 import { courseService } from "@/services/apiService";
+import message from "@/lib/message";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
 
@@ -349,10 +350,13 @@ const CourseCalendarStep = ({
           relevantSlots.sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
           setCourseSlots(relevantSlots);
         } else {
-          setError(response.error || "Could not load schedules.");
+          const errMsg = response.error || "Could not load schedules.";
+          setError(errMsg);
+          message.error("Whoops! We couldn't load schedules. Please try again.");
         }
       } catch (err) {
         setError("Unable to load schedules.");
+        message.error("Whoops! Something went wrong. Please try again.");
       } finally {
         setLoading(false);
       }
