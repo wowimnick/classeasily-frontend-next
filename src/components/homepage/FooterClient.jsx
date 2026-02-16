@@ -394,11 +394,6 @@ export default function FooterClient({ categories = [] }) {
                 <FooterLinkSection>
                   <li>
                     <StyledP>
-                      <Link href="/about-us">About us</Link>
-                    </StyledP>
-                  </li>
-                  <li>
-                    <StyledP>
                       <Link href="/blog">Our Blog</Link>
                     </StyledP>
                   </li>

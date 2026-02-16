@@ -27,12 +27,6 @@ test.describe('Public pages and navigation', () => {
     await expect(page).toHaveURL(/\/business/);
   });
 
-  test('footer: About us link works', async ({ page }) => {
-    await scrollFooterIntoView(page);
-    await page.getByRole('link', { name: 'About us' }).click();
-    await expect(page).toHaveURL('/about-us');
-  });
-
   test('footer: Our Blog link works', async ({ page }) => {
     await scrollFooterIntoView(page);
     await page.getByRole('link', { name: 'Our Blog' }).click();

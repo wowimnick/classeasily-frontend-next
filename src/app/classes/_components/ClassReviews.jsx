@@ -481,6 +481,9 @@ const EmptyState = styled.div`
 `;
 
 // --- Helpers ---
+/** On the class page we only show positive reviews (4–5 stars); "See all reviews" shows everything. */
+const isPositiveReview = (review) => (Number(review?.rating) || 0) >= 4;
+
 const normalizeReview = (review) => ({
   ...review,
   id: review.id ?? review.reviewId ?? review.google_review_id,
@@ -554,6 +557,12 @@ const Reviews = ({
   const [expandedReviews, setExpandedReviews] = useState({});
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+
+  // On the class page only show positive reviews; modal "See all" shows every review.
+  const displayPreviewReviews = useMemo(
+    () => previewReviews.filter(isPositiveReview),
+    [previewReviews],
+  );
 
   // --- CRITICAL FIX: SYNC STATE WITH PARENT COMPONENT ---
   useEffect(() => {
@@ -861,7 +870,7 @@ const Reviews = ({
 
         <ReviewsColumn>
           <AnimatePresence>
-            {previewReviews.map((review, index) =>
+            {displayPreviewReviews.map((review, index) =>
               renderReviewContent(review, index, false),
             )}
           </AnimatePresence>

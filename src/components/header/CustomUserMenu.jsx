@@ -704,18 +704,6 @@ const MenuContents = React.forwardRef(
                 <MenuGroup>
                   <GroupLabel>Information</GroupLabel>
                   <MenuItem
-                    onClick={() => onNavigate("/about-us")}
-                    onMouseEnter={(e) => handleMenuItemEnter(e, "/about-us")}
-                    onMouseLeave={handleMenuItemLeave}
-                  >
-                    <LordIcon
-                      src="https://cdn.lordicon.com/yhtmwrae.json"
-                      colors="primary:#1a1a1a,secondary:#1a1a1a"
-                    />
-                    <MenuText>About Us</MenuText>
-                    <ArrowIcon />
-                  </MenuItem>
-                  <MenuItem
                     onClick={() => onNavigate("/my-tickets")}
                     onMouseEnter={(e) => handleMenuItemEnter(e, "/my-tickets")}
                     onMouseLeave={handleMenuItemLeave}
