@@ -1,9 +1,21 @@
 import React, { useState, useEffect, useCallback } from "react";
+import {
+  Check,
+  Calendar as CalendarIcon,
+  Users,
+  MapPin,
+  Copy,
+  ArrowRight,
+  Shield,
+  Mail,
+  Phone,
+  Clock,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import styled, { keyframes, css } from "styled-components";
-import { 
-  getDurationText, 
-  getCancellationPolicyText 
-} from "./utils";
+import { getDurationText, getCancellationPolicyText } from "./utils";
 import { isValid, addMinutes, format as dateFnsFormat } from "date-fns";
 import {
   formatBusinessLocalToUserDisplay,
@@ -14,248 +26,297 @@ import { createEvent } from "ics";
 import { saveAs } from "file-saver";
 import { fromZonedTime } from "date-fns-tz";
 import { bookingService } from "@/services/apiService";
+import { Button, message, Tooltip } from "antd";
 
 // --- ANIMATIONS ---
-const slideUp = keyframes`
+const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
-// --- STYLED COMPONENTS ---
+const pulse = keyframes`
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+`;
 
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+// --- LAYOUT COMPONENTS ---
+
+const Wrapper = styled.div`
+  max-width: 680px;
+  margin: 0 auto;
   padding: 40px 20px;
-  width: 100%;
-  animation: ${slideUp} 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-`;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #222222;
+  animation: ${fadeInUp} 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 
-const Card = styled.div`
-  background: white;
-  width: 100%;
-  max-width: 600px;
-  border-radius: 24px;
-  box-shadow: 0 16px 40px rgba(0,0,0,0.08);
-  overflow: hidden;
-  border: 1px solid #f3f4f6;
-  position: relative;
-`;
-
-const HeaderSection = styled.div`
-  background: ${(props) => (props.$failed ? "#fef2f2" : "#ffffff")};
-  padding: 40px 32px 20px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`;
-
-// Place for Lord Icon
-const IconWrapper = styled.div`
-  width: 120px;
-  height: 120px;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const StatusTitle = styled.h1`
-  font-size: 28px;
-  font-weight: 800;
-  color: #111827;
-  margin: 0 0 8px 0;
-  letter-spacing: -0.5px;
-`;
-
-const StatusMessage = styled.p`
-  font-size: 16px;
-  color: #6b7280;
-  margin: 0;
-  line-height: 1.5;
-  max-width: 400px;
-`;
-
-const ReferenceBadge = styled.div`
-  margin-top: 24px;
-  background: #f9fafb;
-  border: 1px dashed #d1d5db;
-  padding: 8px 16px;
-  border-radius: 100px;
-  font-size: 13px;
-  color: #6b7280;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-
-  strong {
-    color: #111827;
-    font-weight: 700;
-    margin-left: 4px;
-    font-family: monospace;
-    font-size: 14px;
+  @media (max-width: 640px) {
+    padding: 24px 16px;
   }
 `;
 
 const Divider = styled.div`
   height: 1px;
-  background: #e5e7eb;
-  margin: 0 32px;
+  background-color: #dddddd;
+  margin: 32px 0;
+  width: 100%;
 `;
 
-const ContentSection = styled.div`
-  padding: 32px;
+// --- HERO SECTION ---
+
+const HeroSection = styled.div`
+  margin-bottom: 32px;
+  text-align: left;
 `;
 
-const ClassTitle = styled.h2`
-  font-size: 22px;
-  font-weight: 700;
-  color: #111827;
-  margin: 0 0 4px 0;
-`;
-
-const ClassSubtitle = styled.p`
-  font-size: 15px;
-  color: #6b7280;
-  margin: 0 0 24px 0;
+const HeroImagePlaceholder = styled.div`
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #ff385c 0%, #e31c5f 100%);
+  border-radius: 12px;
   display: flex;
   align-items: center;
-  gap: 6px;
-`;
+  justify-content: center;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 20px rgba(255, 56, 92, 0.15);
+  color: white;
 
-const GridSection = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
-  
-  @media (min-width: 500px) {
-    grid-template-columns: 1fr 1fr;
+  svg {
+    width: 40px;
+    height: 40px;
   }
 `;
 
-const InfoGroup = styled.div`
-  display: flex;
-  flex-direction: column;
+const StatusBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: ${(props) => (props.$failed ? "#c13515" : "#008a05")};
+  margin-bottom: 12px;
+  
+  svg {
+    width: 18px;
+    height: 18px;
+  }
 `;
 
-const Label = styled.span`
+const BigTitle = styled.h1`
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.125;
+  margin: 0 0 12px 0;
+  color: #222222;
+
+  @media (max-width: 640px) {
+    font-size: 26px;
+  }
+`;
+
+const SubTitle = styled.p`
+  font-size: 16px;
+  color: #717171;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 500px;
+`;
+
+// --- REFERENCE SECTION ---
+
+const ReferenceContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #f7f7f7;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 32px;
+`;
+
+const RefLabel = styled.div`
   font-size: 12px;
   text-transform: uppercase;
-  font-weight: 700;
-  color: #9ca3af;
   letter-spacing: 0.5px;
+  font-weight: 700;
+  color: #717171;
+  margin-bottom: 4px;
 `;
 
-const Value = styled.span`
-  font-size: 16px;
+const RefCode = styled.div`
+  font-size: 18px;
   font-weight: 600;
-  color: #111827;
+  font-family: monospace;
+  color: #222222;
+  letter-spacing: 1px;
+`;
+
+const CopyButton = styled.button`
+  background: white;
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #222222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: #f0f0f0;
+    border-color: #cdcdcd;
+  }
+`;
+
+const LoadingSkeleton = styled.div`
+  height: 20px;
+  width: 100px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  animation: ${pulse} 1.5s infinite;
+`;
+
+// --- DETAILS GRID ---
+
+const DetailsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+`;
+
+const DetailRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+`;
+
+const IconColumn = styled.div`
+  flex-shrink: 0;
+  width: 24px;
+  display: flex;
+  justify-content: center;
+  padding-top: 2px;
+  color: #222222;
+`;
+
+const TextColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+`;
+
+const DetailLabel = styled.span`
+  font-weight: 600;
+  font-size: 16px;
+  color: #222222;
+  margin-bottom: 4px;
+`;
+
+const DetailValue = styled.span`
+  font-size: 15px;
+  color: #717171;
   line-height: 1.4;
 `;
 
-const SubValue = styled.span`
-  font-size: 14px;
-  color: #6b7280;
-  font-weight: 400;
-`;
-
-const PolicySection = styled.div`
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid #f3f4f6;
-  font-size: 13px;
-  color: #6b7280;
-  line-height: 1.6;
-
-  strong {
-    color: #374151;
-    font-weight: 600;
-  }
-  
-  a {
-    color: #ff385c;
-    text-decoration: none;
-    font-weight: 600;
-    &:hover { text-decoration: underline; }
-  }
-`;
-
-const FooterActions = styled.div`
-  padding: 24px 32px 32px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-`;
+// --- ACTION BUTTONS ---
 
 const PrimaryButton = styled.button`
-  background: #ff385c;
+  width: 100%;
+  background: linear-gradient(90deg, #ff385c 0%, #e61e4d 100%);
   color: white;
   border: none;
-  border-radius: 12px;
-  padding: 14px 32px;
+  border-radius: 8px;
+  padding: 16px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 12px;
-  width: 100%;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(255, 56, 92, 0.2);
+  gap: 10px;
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+  margin-top: 8px;
 
   &:hover {
-    background: #e31c5f;
+    box-shadow: 0 6px 16px rgba(255, 56, 92, 0.25);
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(255, 56, 92, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 
   &:disabled {
-    background: #e5e7eb;
-    color: #9ca3af;
+    background: #dddddd;
     cursor: not-allowed;
     box-shadow: none;
-    transform: none;
-  }
-
-  /* Target the lord-icon inside the button */
-  lord-icon {
-    width: 24px;
-    height: 24px;
   }
 `;
 
 const SecondaryAction = styled.button`
-  background: none;
+  background: transparent;
   border: none;
-  color: #4b5563;
+  color: #222222;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   text-decoration: underline;
   cursor: pointer;
-  &:hover { color: #111827; }
-`;
-
-const SkeletonLoader = styled.span`
-  display: inline-block;
-  width: 100px;
-  height: 1em;
-  background: #f3f4f6;
-  border-radius: 4px;
-  animation: pulse 1.5s infinite;
+  padding: 0;
+  margin-top: 16px;
   
-  @keyframes pulse {
-    0% { opacity: 0.6; }
-    50% { opacity: 1; }
-    100% { opacity: 0.6; }
+  &:hover {
+    color: #000;
   }
 `;
 
-// --- HELPER FUNCTIONS ---
+// --- FOOTER SECTIONS (Accordion Style) ---
+
+const ExpandableSection = styled.div`
+  border-bottom: 1px solid #dddddd;
+  
+  &:first-of-type {
+    border-top: 1px solid #dddddd;
+  }
+`;
+
+const SectionTrigger = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  padding: 24px 0;
+  cursor: pointer;
+  text-align: left;
+
+  span {
+    font-size: 16px;
+    font-weight: 600;
+    color: #222222;
+  }
+`;
+
+const SectionContent = styled.div`
+  padding-bottom: 24px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #717171;
+  animation: ${fadeInUp} 0.3s ease-out;
+
+  ul {
+    padding-left: 20px;
+    margin: 8px 0 0 0;
+  }
+  
+  strong {
+    color: #222222;
+    font-weight: 600;
+  }
+`;
+
+// --- UTILS ---
 
 const getUTCDateFromBusinessLocal = (
   naiveDateStr,
@@ -293,12 +354,19 @@ const ConfirmationStep = ({
   const [isPolling, setIsPolling] = useState(false);
   const [pollingError, setPollingError] = useState(null);
   const [bookingFailed, setBookingFailed] = useState(false);
+  
+  // UI States for accordions
+  const [expandedSection, setExpandedSection] = useState(null);
+
+  const toggleSection = (section) => {
+    setExpandedSection(expandedSection === section ? null : section);
+  };
 
   const actualBookingId = propBookingId || bookingData.bookingId;
   const displayReference =
     propReference || fetchedReference || bookingData.user_facing_reference;
 
-  // --- LOGIC ---
+  // --- POLLING LOGIC ---
   const pollForBookingReference = useCallback(async () => {
     if (!paymentIntentId || actualBookingId) {
       setIsPolling(false);
@@ -339,8 +407,7 @@ const ConfirmationStep = ({
           } else {
             setBookingFailed(true);
             setPollingError(
-              data.message ||
-                "Booking could not be confirmed in time. Please try again or contact support."
+              data.message || "Booking could not be confirmed in time."
             );
             setIsPolling(false);
           }
@@ -356,9 +423,7 @@ const ConfirmationStep = ({
           setTimeout(attemptFetch, pollInterval + attempts * 500);
         } else {
           setBookingFailed(true);
-          setPollingError(
-            "A network error occurred. Please check your connection or contact support."
-          );
+          setPollingError("Network error. Please check connection.");
           setIsPolling(false);
         }
       }
@@ -373,11 +438,7 @@ const ConfirmationStep = ({
     }
   }, [paymentIntentId, actualBookingId, pollForBookingReference]);
 
-  const handleRetry = () => {
-    if (onRetryBooking) onRetryBooking();
-    else window.location.reload();
-  };
-
+  // --- CALENDAR LOGIC ---
   const handleAddToCalendar = () => {
     const selectedSlot = bookingData.selectedSlots?.[0];
     if (!selectedSlot || !businessTimeZone) return;
@@ -397,7 +458,7 @@ const ConfirmationStep = ({
       businessTimeZone
     );
     if (!startUTC) {
-      alert("Could not generate calendar event due to invalid date/time.");
+      message.error("Could not generate calendar event.");
       return;
     }
 
@@ -422,22 +483,11 @@ const ConfirmationStep = ({
 
     if (isCourse && days?.length > 0 && naiveCourseEndDate) {
       const dayMap = {
-        Sun: "SU",
-        Mon: "MO",
-        Tue: "TU",
-        Wed: "WE",
-        Thu: "TH",
-        Fri: "FR",
-        Sat: "SA",
+        Sun: "SU", Mon: "MO", Tue: "TU", Wed: "WE", Thu: "TH", Fri: "FR", Sat: "SA",
       };
       const byDay = days.map((d) => dayMap[d]).filter(Boolean).join(",");
-
       const untilDate = new Date(`${naiveCourseEndDate}T23:59:59Z`);
-      const untilDateFormatted = dateFnsFormat(
-        untilDate,
-        "yyyyMMdd'T'HHmmss'Z'"
-      );
-
+      const untilDateFormatted = dateFnsFormat(untilDate, "yyyyMMdd'T'HHmmss'Z'");
       eventDetails.recurrenceRule = `FREQ=WEEKLY;BYDAY=${byDay};UNTIL=${untilDateFormatted}`;
     } else {
       const endUTC = addMinutes(startUTC, duration);
@@ -452,201 +502,228 @@ const ConfirmationStep = ({
       }
       saveAs(
         new Blob([value], { type: "text/calendar;charset=utf-8" }),
-        `${classData?.title
-          .replace(/[^a-z0-9]/gi, "_")
-          .toLowerCase()}_booking.ics`
+        "booking.ics"
       );
     });
+  };
+
+  const handleCopyReference = () => {
+    if (displayReference) {
+      navigator.clipboard.writeText(displayReference);
+      message.success("Reference copied!");
+    }
   };
 
   const selectedSlot = bookingData.selectedSlots?.[0];
   const effectiveUserTimeZone =
     userTimeZone || (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Toronto");
-
-  // --- RENDER HELPERS ---
   
-  const getContactInfo = () => {
-    const email =
-      classData?.student_contact_email ??
-      classData?.studentContactEmail ??
-      classData?.business_contact_email ??
-      classData?.businessContactEmail;
-    const phone =
-      classData?.student_contact_phone ??
-      classData?.studentContactPhone ??
-      classData?.business_contact_phone ??
-      classData?.businessContactPhone;
-    return { email, phone };
-  };
-
-  const { email, phone } = getContactInfo();
+  // --- DERIVED DATA STRINGS ---
   
-  const cancellationText = (() => {
-    if (!bookingData.selectedOption) return null;
-    const option = bookingData.selectedOption;
-    const classStartDateTime = selectedSlot?.date && selectedSlot?.time
-      ? `${selectedSlot.date}T${selectedSlot.time}`
-      : null;
-    return getCancellationPolicyText(
-      option?.cancellationPolicy,
-      option?.cancellationRefundPercentage,
-      option?.cancellationCustomHours,
-      classStartDateTime,
-      effectiveUserTimeZone,
-      businessTimeZone,
-    );
-  })();
+  // Date & Time String
+  let dateTimeLabel = "";
+  if (selectedSlot) {
+    if (selectedSlot.isCourse) {
+      dateTimeLabel = `Starts ${formatNaiveDate(selectedSlot.date, "MMM d")} · Every ${selectedSlot.days.join(", ")} at ${formatTimeRangeForDisplay(
+        selectedSlot.date,
+        selectedSlot.time,
+        selectedSlot.duration,
+        businessTimeZone,
+        effectiveUserTimeZone
+      )}`;
+    } else {
+      dateTimeLabel = formatBusinessLocalToUserDisplay(
+        selectedSlot.date,
+        selectedSlot.time,
+        businessTimeZone,
+        effectiveUserTimeZone,
+        { dateTimeFormat: "EEEE, MMM d · p" }
+      );
+    }
+  }
 
-  const participantsCount = (bookingData.participants ?? (Array.isArray(bookingData.participant_details) ? bookingData.participant_details.length : 0)) || 1;
+  // Participants
+  const participantsCount = bookingData.participants ?? (Array.isArray(bookingData.participant_details) ? bookingData.participant_details.length : 1);
+  const guestsLabel = `${participantsCount} ${participantsCount === 1 ? 'guest' : 'guests'}`;
+
+  // Contact Info
+  const businessName = classData?.business_name || "the host";
+  const contactEmail = classData?.student_contact_email || classData?.business_contact_email;
+  const contactPhone = classData?.student_contact_phone || classData?.business_contact_phone;
+
+  // Cancellation
+  const cancellationText = getCancellationPolicyText(
+    bookingData.selectedOption?.cancellationPolicy,
+    bookingData.selectedOption?.cancellationRefundPercentage,
+    bookingData.selectedOption?.cancellationCustomHours,
+    selectedSlot?.date ? `${selectedSlot.date}T${selectedSlot.time}` : null,
+    effectiveUserTimeZone,
+    businessTimeZone
+  );
 
   if (bookingFailed) {
     return (
-      <Container>
-        <Card>
-          <HeaderSection $failed>
-            <IconWrapper>
-              {/* Alert Icon */}
-              <lord-icon
-                src="https://cdn.lordicon.com/keaiwoeo.json"
-                trigger="loop"
-                delay="2000"
-                colors="primary:#ef4444,secondary:#ef4444"
-                style={{ width: "100%", height: "100%" }}
-              />
-            </IconWrapper>
-            <StatusTitle style={{ color: "#ef4444" }}>Booking Failed</StatusTitle>
-            <StatusMessage>{pollingError || "We were unable to complete your booking."}</StatusMessage>
-          </HeaderSection>
-          <FooterActions>
-            <PrimaryButton onClick={handleRetry} style={{ backgroundColor: "#ef4444" }}>
-              Try Booking Again
-            </PrimaryButton>
-            {email && (
-              <SecondaryAction as="a" href={`mailto:${email}`}>
-                Contact Support
-              </SecondaryAction>
-            )}
-          </FooterActions>
-        </Card>
-      </Container>
+      <Wrapper>
+        <HeroSection>
+          <StatusBadge $failed>
+             <AlertCircle /> Booking Failed
+          </StatusBadge>
+          <BigTitle>Something went wrong</BigTitle>
+          <SubTitle>{pollingError || "We couldn't complete your booking."}</SubTitle>
+        </HeroSection>
+        <PrimaryButton onClick={onRetryBooking || (() => window.location.reload())}>
+          Try Booking Again
+        </PrimaryButton>
+      </Wrapper>
     );
   }
 
   return (
-    <Container>
-      <Card>
-        {/* Header with Celebration Icon */}
-        <HeaderSection>
-          <IconWrapper>
-            {/* Celebration Confetti Icon */}
-            <lord-icon
-                src="https://cdn.lordicon.com/lupuorrc.json"
-                trigger="loop"
-                delay="3000"
-                colors="primary:#ff385c,secondary:#000000"
-                style={{ width: "100%", height: "100%" }}>
-            </lord-icon>
-          </IconWrapper>
-          <StatusTitle>You're going!</StatusTitle>
-          <StatusMessage>
-            We sent a confirmation email to <strong>{bookingData.userEmail || "your inbox"}</strong>.
-          </StatusMessage>
-          
-          <ReferenceBadge>
-            Reference: 
-            <strong>
-              {isPolling && !displayReference ? (
-                <SkeletonLoader style={{ marginLeft: 8 }} />
-              ) : (
-                displayReference || (actualBookingId ? "Confirmed" : "Generating...")
-              )}
-            </strong>
-          </ReferenceBadge>
-        </HeaderSection>
+    <Wrapper>
+      {/* 1. HERO */}
+      <HeroSection>
+        {!isPolling && <StatusBadge><Check /> Confirmed</StatusBadge>}
+        {isPolling && <StatusBadge style={{ color: "#eab308" }}><Clock /> Finalizing...</StatusBadge>}
+        
+        {/* Optional: If classData has an image, render it here visually like Airbnb */}
+        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+            <div style={{ flex: 1 }}>
+                <BigTitle>You're going to {classData?.location?.split(',')[0] || "class"}!</BigTitle>
+                <SubTitle>
+                    We sent a confirmation email to <strong>{bookingData?.userEmail || bookingData.email}</strong>.
+                </SubTitle>
+            </div>
+            {/* Minimal visual anchor */}
+            <HeroImagePlaceholder>
+                <Check />
+            </HeroImagePlaceholder>
+        </div>
+      </HeroSection>
 
-        <Divider />
+      {/* 2. REFERENCE CODE CARD */}
+      <ReferenceContainer>
+        <div>
+          <RefLabel>Booking Reference</RefLabel>
+          {isPolling && !displayReference ? (
+            <LoadingSkeleton />
+          ) : (
+            <RefCode>{displayReference}</RefCode>
+          )}
+        </div>
+        <Tooltip title="Copy reference">
+            <CopyButton onClick={handleCopyReference}>
+            <Copy size={16} />
+            </CopyButton>
+        </Tooltip>
+      </ReferenceContainer>
 
-        <ContentSection>
-          <ClassTitle>{classData?.title || "Class Title"}</ClassTitle>
-          <ClassSubtitle>
-            {classData?.business_name ? `Hosted by ${classData.business_name}` : ""}
-            {classData?.business_name && classData?.location ? " · " : ""}
-            {classData?.location}
-          </ClassSubtitle>
+      {/* 3. DETAILS LIST (Minimal, no borders) */}
+      <DetailsList>
+        {/* Time */}
+        <DetailRow>
+          <IconColumn><CalendarIcon size={20} /></IconColumn>
+          <TextColumn>
+            <DetailLabel>Date and time</DetailLabel>
+            <DetailValue>{dateTimeLabel}</DetailValue>
+          </TextColumn>
+        </DetailRow>
 
-          <GridSection>
-            {/* When */}
-            <InfoGroup>
-              <Label>Date & Time</Label>
-              {selectedSlot && (
-                <>
-                  <Value>
-                    {selectedSlot.isCourse 
-                      ? `${formatNaiveDate(selectedSlot.date, "MMM d")} – ${formatNaiveDate(selectedSlot.end_date, "MMM d")}`
-                      : formatBusinessLocalToUserDisplay(
-                          selectedSlot.date,
-                          selectedSlot.time,
-                          businessTimeZone,
-                          effectiveUserTimeZone,
-                          { dateTimeFormat: "EEE, MMM d, yyyy" }
-                        )
-                    }
-                  </Value>
-                  <SubValue>
-                    {selectedSlot.isCourse
-                      ? `Every ${selectedSlot.days.join(", ")} at ${formatTimeRangeForDisplay(selectedSlot.date, selectedSlot.time, selectedSlot.duration, businessTimeZone, effectiveUserTimeZone)}`
-                      : `${formatTimeRangeForDisplay(selectedSlot.date, selectedSlot.time, selectedSlot.duration, businessTimeZone, effectiveUserTimeZone)} (${getDurationText(selectedSlot.duration)})`
-                    }
-                  </SubValue>
-                </>
-              )}
-            </InfoGroup>
+        {/* Location */}
+        <DetailRow>
+          <IconColumn><MapPin size={20} /></IconColumn>
+          <TextColumn>
+            <DetailLabel>Address</DetailLabel>
+            <DetailValue>{classData?.location}</DetailValue>
+            <DetailValue style={{ fontSize: '13px', marginTop: '4px' }}>
+                {classData?.business_name}
+            </DetailValue>
+          </TextColumn>
+        </DetailRow>
 
-            {/* Who */}
-            <InfoGroup>
-              <Label>Guests</Label>
-              <Value>{participantsCount} {participantsCount === 1 ? "Person" : "People"}</Value>
-              <SubValue>General Admission</SubValue>
-            </InfoGroup>
-          </GridSection>
+        {/* Guests */}
+        <DetailRow>
+          <IconColumn><Users size={20} /></IconColumn>
+          <TextColumn>
+            <DetailLabel>Guests</DetailLabel>
+            <DetailValue>{guestsLabel}</DetailValue>
+          </TextColumn>
+        </DetailRow>
+      </DetailsList>
 
-          {/* Additional Info / Policies */}
-          <PolicySection>
-            {cancellationText && (
-               <div style={{ marginBottom: 12 }}>
-                 <strong>Cancellation Policy:</strong> {cancellationText}
-               </div>
+      <Divider />
+
+      {/* 4. PRIMARY ACTION */}
+      <PrimaryButton onClick={handleAddToCalendar} disabled={isPolling || !selectedSlot}>
+        <CalendarIcon size={18} /> Add to Calendar
+      </PrimaryButton>
+
+      {/* 5. FOOTER DETAILS (Accordion Style) */}
+      <div style={{ marginTop: 40 }}>
+        {/* Equipment */}
+        {bookingData.selectedOption?.equipment?.length > 0 && (
+          <ExpandableSection>
+            <SectionTrigger onClick={() => toggleSection('equipment')}>
+              <span>Things to bring</span>
+              {expandedSection === 'equipment' ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </SectionTrigger>
+            {expandedSection === 'equipment' && (
+              <SectionContent>
+                <ul style={{ listStyle: 'none', padding: 0 }}>
+                    {bookingData.selectedOption.equipment.map((item, i) => (
+                        <li key={i} style={{ marginBottom: 6, display: 'flex', gap: 10 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#222', marginTop: 8 }} />
+                            {item}
+                        </li>
+                    ))}
+                </ul>
+              </SectionContent>
             )}
-            {bookingData.selectedOption?.equipment?.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
-                <strong>What to bring:</strong> {bookingData.selectedOption.equipment.join(", ")}.
-              </div>
+          </ExpandableSection>
+        )}
+
+        {/* Cancellation */}
+        {cancellationText && (
+          <ExpandableSection>
+            <SectionTrigger onClick={() => toggleSection('cancellation')}>
+              <span>Cancellation policy</span>
+              {expandedSection === 'cancellation' ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </SectionTrigger>
+            {expandedSection === 'cancellation' && (
+              <SectionContent>
+                {cancellationText}
+              </SectionContent>
             )}
-             <div style={{ marginTop: 12 }}>
-                Need help? <a href={`mailto:${email || ""}`}>Contact Host</a>
-             </div>
-          </PolicySection>
+          </ExpandableSection>
+        )}
 
-        </ContentSection>
+        {/* Contact */}
+        {(contactEmail || contactPhone) && (
+          <ExpandableSection>
+            <SectionTrigger onClick={() => toggleSection('contact')}>
+              <span>Contact {businessName}</span>
+              {expandedSection === 'contact' ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            </SectionTrigger>
+            {expandedSection === 'contact' && (
+              <SectionContent>
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {contactEmail && (
+                        <a href={`mailto:${contactEmail}`} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#222', textDecoration: 'underline' }}>
+                            <Mail size={16} /> {contactEmail}
+                        </a>
+                    )}
+                    {contactPhone && (
+                        <a href={`tel:${contactPhone}`} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#222', textDecoration: 'underline' }}>
+                            <Phone size={16} /> {contactPhone}
+                        </a>
+                    )}
+                 </div>
+              </SectionContent>
+            )}
+          </ExpandableSection>
+        )}
+      </div>
 
-        <Divider />
-
-        <FooterActions>
-          <PrimaryButton onClick={handleAddToCalendar} disabled={!selectedSlot || isPolling}>
-             {/* Calendar Icon */}
-             <lord-icon
-                src="https://cdn.lordicon.com/abfverha.json"
-                trigger="morph"
-                colors="primary:#ffffff,secondary:#ffffff"
-             />
-             Add to Calendar
-          </PrimaryButton>
-          <SecondaryAction onClick={handleRetry}>
-            Book another spot
-          </SecondaryAction>
-        </FooterActions>
-      </Card>
-    </Container>
+    </Wrapper>
   );
 };
 
