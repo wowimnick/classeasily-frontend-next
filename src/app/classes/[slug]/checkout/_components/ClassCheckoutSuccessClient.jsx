@@ -77,6 +77,12 @@ export default function ClassCheckoutSuccessClient() {
     }
   }, [slug, router]);
 
+  useEffect(() => {
+    if (successData && typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+    }
+  }, [successData]);
+
   const handleRetryBooking = () => {
     sessionStorage.removeItem(SUCCESS_STORAGE_KEY);
     router.push(`/classes/${slug}`);

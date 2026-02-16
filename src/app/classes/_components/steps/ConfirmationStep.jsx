@@ -393,13 +393,6 @@ const TicketBody = styled.div`
     line-height: 1.4;
     margin: 0 0 12px 0;
   }
-  .contact-line {
-    font-size: 11px;
-    color: #374151;
-    line-height: 1.4;
-    margin: 0 0 12px 0;
-    font-weight: 700;
-  }
   .booking-section {
     margin-top: 12px;
     padding-top: 12px;
@@ -1083,20 +1076,6 @@ const ConfirmationStep = ({
               <p className="arrive-note">
                 Arrive a few minutes early. Questions? See contact below.
               </p>
-              {(() => {
-                const email = classData?.student_contact_email ?? classData?.studentContactEmail ?? classData?.business_contact_email ?? classData?.businessContactEmail;
-                const phone = classData?.student_contact_phone ?? classData?.studentContactPhone ?? classData?.business_contact_phone ?? classData?.businessContactPhone;
-                const businessName = classData?.business_name || "the business";
-                if (!email && !phone) return null;
-                const parts = [];
-                if (email) parts.push(`Send an email to ${businessName}`);
-                if (phone) parts.push(`call ${phone}`);
-                return (
-                  <p className="contact-line">
-                    {parts.join(" or ")}.
-                  </p>
-                );
-              })()}
               {(() => {
                 const count = (bookingData.participants ?? (Array.isArray(bookingData.participant_details) ? bookingData.participant_details.length : 0)) || 1;
                 const rawName = (Array.isArray(bookingData.participant_details) && bookingData.participant_details[0]?.name)
