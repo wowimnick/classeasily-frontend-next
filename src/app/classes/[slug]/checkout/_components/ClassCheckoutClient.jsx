@@ -8,6 +8,7 @@ import { X, ArrowLeft, ChevronLeft } from "lucide-react";
 import dynamic from "next/dynamic";
 import Lottie from "lottie-react";
 import posthog from "posthog-js";
+import { trackPurchaseIfProduction } from "@/lib/metaPixel";
 import { paymentService } from "@/services/apiService";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { classService } from "@/services/apiService";
@@ -424,38 +425,31 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
           participants: bookingData?.participants ?? 1,
         });
 
-        // Meta Pixel: Purchase (fbq is loaded globally in layout.js)
-        if (typeof window !== "undefined" && window.fbq) {
-          const userEmail = bookingData?.email || bookingData?.userEmail;
-          const userPhone = bookingData?.phone || bookingData?.userPhone;
-          const fullName = bookingData?.fullName || bookingData?.userName || "";
-          const nameParts = fullName.trim().split(" ");
-          const firstName = nameParts[0] || "";
-          const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
-          window.fbq(
-            "track",
-            "Purchase",
-            {
-              content_name: classData?.title,
-              content_ids: [classData?.classId || classData?.id],
-              content_type: "product",
-              value: revenue,
-              currency: classData?.currency_code || "CAD",
-              num_items: bookingData?.participants ?? 1,
-              order_id: dataFromReviewStep.booking_id || dataFromReviewStep.payment_intent_id,
-            },
-            {
-              em: userEmail,
-              ph: userPhone,
-              fn: firstName,
-              ln: lastName,
-              ct: bookingData?.city,
-              st: bookingData?.state,
-              zp: bookingData?.zipCode,
-              country: "ca",
-            }
-          );
-        }
+        // Meta Pixel: Purchase only on classeasily.com (value, currency, content_ids, etc.)
+        const userEmail = bookingData?.email || bookingData?.userEmail;
+        const fullName = bookingData?.fullName || bookingData?.userName || "";
+        const nameParts = fullName.trim().split(" ");
+        trackPurchaseIfProduction(
+          {
+            value: revenue,
+            currency: classData?.currency_code || "CAD",
+            content_name: classData?.title,
+            content_ids: [classData?.classId || classData?.id].filter(Boolean),
+            content_type: "product",
+            num_items: bookingData?.participants ?? 1,
+            order_id: dataFromReviewStep.booking_id || dataFromReviewStep.payment_intent_id,
+          },
+          {
+            em: userEmail,
+            ph: bookingData?.phone || bookingData?.userPhone,
+            fn: nameParts[0] || "",
+            ln: nameParts.length > 1 ? nameParts.slice(1).join(" ") : "",
+            ct: bookingData?.city,
+            st: bookingData?.state,
+            zp: bookingData?.zipCode,
+            country: "ca",
+          }
+        );
       }
 
       sessionStorage.setItem(

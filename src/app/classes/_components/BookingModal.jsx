@@ -20,6 +20,7 @@ import { paymentService } from "@/services/apiService";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import message from "@/lib/message";
 import posthog from "posthog-js";
+import { trackPurchaseIfProduction } from "@/lib/metaPixel";
 import dayjs from "dayjs";
 
 const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
@@ -621,44 +622,33 @@ const BookingModal = ({
 
   const handlePaymentComplete = useCallback(
     (dataFromReviewStep) => {
-      // --- FACEBOOK PIXEL - Purchase ---
+      // Meta Pixel: Purchase only on classeasily.com (value, currency, content_ids, etc.)
       const revenue =
         (bookingData.price || 0) * (bookingData.participants || 1);
-
-      // Extract user data for Advanced Matching
-      const userEmail = bookingData.email || bookingData.userEmail;
-      const userPhone = bookingData.phone || bookingData.userPhone;
       const fullName = bookingData.fullName || bookingData.userName || "";
       const nameParts = fullName.trim().split(" ");
-      const firstName = nameParts[0] || "";
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
-
-      import("react-facebook-pixel").then((x) =>
-        x.default.track(
-          "Purchase",
-          {
-            content_name: classData?.title,
-            content_ids: [classData?.classId || classData?.id],
-            content_type: "product",
-            value: revenue,
-            currency: classData?.currency_code || "CAD",
-            num_items: bookingData.participants,
-            order_id:
-              dataFromReviewStep.booking_id ||
-              dataFromReviewStep.payment_intent_id,
-          },
-          {
-            // Advanced Matching
-            em: userEmail,
-            ph: userPhone,
-            fn: firstName,
-            ln: lastName,
-            ct: bookingData.city,
-            st: bookingData.state,
-            zp: bookingData.zipCode,
-            country: "ca",
-          },
-        ),
+      trackPurchaseIfProduction(
+        {
+          value: revenue,
+          currency: classData?.currency_code || "CAD",
+          content_name: classData?.title,
+          content_ids: [classData?.classId || classData?.id].filter(Boolean),
+          content_type: "product",
+          num_items: bookingData.participants ?? 1,
+          order_id:
+            dataFromReviewStep.booking_id ||
+            dataFromReviewStep.payment_intent_id,
+        },
+        {
+          em: bookingData.email || bookingData.userEmail,
+          ph: bookingData.phone || bookingData.userPhone,
+          fn: nameParts[0] || "",
+          ln: nameParts.length > 1 ? nameParts.slice(1).join(" ") : "",
+          ct: bookingData.city,
+          st: bookingData.state,
+          zp: bookingData.zipCode,
+          country: "ca",
+        }
       );
 
       if (dataFromReviewStep.booking_id) {
