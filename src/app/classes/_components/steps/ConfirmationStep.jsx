@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  Calendar as CalendarIcon,
-  RefreshCw,
-  Download,
-  MapPin,
-} from "lucide-react";
 import styled, { keyframes, css } from "styled-components";
-import { getDurationText, getCancellationPolicyText } from "./utils";
+import { 
+  getDurationText, 
+  getCancellationPolicyText 
+} from "./utils";
 import { isValid, addMinutes, format as dateFnsFormat } from "date-fns";
 import {
   formatBusinessLocalToUserDisplay,
@@ -18,292 +15,247 @@ import { saveAs } from "file-saver";
 import { fromZonedTime } from "date-fns-tz";
 import { bookingService } from "@/services/apiService";
 
-// --- Animations ---
-
-const fadeInUp = keyframes`
+// --- ANIMATIONS ---
+const slideUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
-const shimmer = keyframes`
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-`;
-
-// --- Styled Components ---
+// --- STYLED COMPONENTS ---
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  width: 100%;
+  animation: ${slideUp} 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+`;
+
+const Card = styled.div`
+  background: white;
   width: 100%;
   max-width: 600px;
-  margin: 0 auto;
-  padding: 0 20px 40px;
-  animation: ${fadeInUp} 0.6s ease-out;
-`;
-
-// The "Golden Ticket" Wrapper
-const EventPass = styled.div`
-  background: #ffffff;
-  width: 100%;
   border-radius: 24px;
-  box-shadow: 
-    0 20px 25px -5px rgba(0, 0, 0, 0.1), 
-    0 10px 10px -5px rgba(0, 0, 0, 0.04),
-    0 0 0 1px rgba(0,0,0,0.03);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.08);
   overflow: hidden;
+  border: 1px solid #f3f4f6;
   position: relative;
-  margin-top: 24px;
-  text-align: center;
-  
-  /* decorative top border */
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 6px;
-    background: linear-gradient(90deg, #ff385c, #ff7e5f);
-  }
 `;
 
-const PassHeader = styled.div`
-  padding: 40px 32px 10px;
+const HeaderSection = styled.div`
+  background: ${(props) => (props.$failed ? "#fef2f2" : "#ffffff")};
+  padding: 40px 32px 20px;
+  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
 `;
 
-const SuccessTitle = styled.h2`
+// Place for Lord Icon
+const IconWrapper = styled.div`
+  width: 120px;
+  height: 120px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const StatusTitle = styled.h1`
   font-size: 28px;
   font-weight: 800;
   color: #111827;
-  margin: 16px 0 8px;
+  margin: 0 0 8px 0;
   letter-spacing: -0.5px;
 `;
 
-const SuccessSub = styled.p`
-  font-size: 15px;
+const StatusMessage = styled.p`
+  font-size: 16px;
   color: #6b7280;
   margin: 0;
-  max-width: 380px;
   line-height: 1.5;
+  max-width: 400px;
+`;
+
+const ReferenceBadge = styled.div`
+  margin-top: 24px;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  padding: 8px 16px;
+  border-radius: 100px;
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+
+  strong {
+    color: #111827;
+    font-weight: 700;
+    margin-left: 4px;
+    font-family: monospace;
+    font-size: 14px;
+  }
 `;
 
 const Divider = styled.div`
   height: 1px;
-  background: #f3f4f6;
-  width: 85%;
-  margin: 24px auto;
-  position: relative;
-  
-  /* Notches for ticket look */
-  &::before, &::after {
-    content: '';
-    position: absolute;
-    top: -10px;
-    width: 20px;
-    height: 20px;
-    background: #fafafa; /* Matches page bg */
-    border-radius: 50%;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
-  }
-  &::before { left: -34px; } /* Adjust based on padding */
-  &::after { right: -34px; }
+  background: #e5e7eb;
+  margin: 0 32px;
 `;
 
-const PassBody = styled.div`
-  padding: 0 32px 32px;
-  text-align: left;
+const ContentSection = styled.div`
+  padding: 32px;
 `;
 
-const ClassTitle = styled.h1`
+const ClassTitle = styled.h2`
   font-size: 22px;
   font-weight: 700;
   color: #111827;
   margin: 0 0 4px 0;
-  line-height: 1.3;
 `;
 
-const VendorName = styled.div`
-  font-size: 14px;
-  font-weight: 500;
+const ClassSubtitle = styled.p`
+  font-size: 15px;
   color: #6b7280;
-  margin-bottom: 24px;
+  margin: 0 0 24px 0;
   display: flex;
   align-items: center;
   gap: 6px;
-
-  svg { width: 14px; height: 14px; }
 `;
 
-const InfoGrid = styled.div`
+const GridSection = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px 16px;
-  margin-bottom: 24px;
-
-  @media (max-width: 480px) {
-    grid-template-columns: 1fr;
-    gap: 20px;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  
+  @media (min-width: 500px) {
+    grid-template-columns: 1fr 1fr;
   }
 `;
 
-const InfoItem = styled.div`
+const InfoGroup = styled.div`
   display: flex;
   flex-direction: column;
+  gap: 6px;
 `;
 
-const InfoLabel = styled.span`
-  font-size: 11px;
+const Label = styled.span`
+  font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #9ca3af;
   font-weight: 700;
-  margin-bottom: 6px;
+  color: #9ca3af;
+  letter-spacing: 0.5px;
 `;
 
-const InfoValue = styled.span`
-  font-size: 15px;
-  color: #111827;
+const Value = styled.span`
+  font-size: 16px;
   font-weight: 600;
+  color: #111827;
   line-height: 1.4;
 `;
 
-const ReferenceBadge = styled.div`
-  background: #f9fafb;
-  border: 1px dashed #d1d5db;
-  border-radius: 12px;
-  padding: 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 10px;
-
-  .label {
-    font-size: 13px;
-    color: #6b7280;
-    font-weight: 500;
-  }
-
-  .code {
-    font-family: monospace;
-    font-size: 16px;
-    font-weight: 700;
-    color: #111827;
-    letter-spacing: 1px;
-  }
+const SubValue = styled.span`
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 400;
 `;
 
-// Skeleton for the reference code
-const Skeleton = styled.div`
-  height: 20px;
-  width: 100px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: ${shimmer} 1.5s infinite linear;
-  border-radius: 4px;
-`;
+const PolicySection = styled.div`
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #f3f4f6;
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.6;
 
-// Secondary Info Section (Plain text, no boxes)
-const SecondaryInfo = styled.div`
-  width: 100%;
-  margin-top: 32px;
-  text-align: left;
-  padding: 0 12px;
-`;
-
-const SecondaryGroup = styled.div`
-  margin-bottom: 24px;
-  
-  h4 {
-    font-size: 14px;
-    font-weight: 700;
-    color: #111827;
-    margin: 0 0 8px 0;
-  }
-  
-  p, li {
-    font-size: 14px;
-    color: #4b5563;
-    line-height: 1.6;
-    margin: 0;
-  }
-
-  ul {
-    padding-left: 18px;
-    margin: 0;
+  strong {
+    color: #374151;
+    font-weight: 600;
   }
   
   a {
     color: #ff385c;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
     &:hover { text-decoration: underline; }
   }
 `;
 
-const EmailNotice = styled.div`
+const FooterActions = styled.div`
+  padding: 24px 32px 32px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #15803d;
-  padding: 12px 20px;
-  border-radius: 100px;
-  font-size: 13px;
-  font-weight: 600;
-  margin: 24px 0 8px;
-  width: fit-content;
-  align-self: center;
-  margin-left: auto;
-  margin-right: auto;
+  gap: 16px;
 `;
 
-const ActionButton = styled.button`
-  background: #111827;
+const PrimaryButton = styled.button`
+  background: #ff385c;
   color: white;
-  width: 100%;
   border: none;
-  padding: 16px;
   border-radius: 12px;
-  font-size: 15px;
+  padding: 14px 32px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.1s ease, background 0.2s;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
+  gap: 12px;
+  width: 100%;
   justify-content: center;
-  gap: 10px;
-  margin-top: 12px;
+  box-shadow: 0 4px 12px rgba(255, 56, 92, 0.2);
 
   &:hover {
-    background: #000;
+    background: #e31c5f;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  }
-  
-  &:active {
-    transform: translateY(0);
+    box-shadow: 0 6px 16px rgba(255, 56, 92, 0.3);
   }
 
   &:disabled {
-    background: #9ca3af;
+    background: #e5e7eb;
+    color: #9ca3af;
     cursor: not-allowed;
+    box-shadow: none;
     transform: none;
+  }
+
+  /* Target the lord-icon inside the button */
+  lord-icon {
+    width: 24px;
+    height: 24px;
   }
 `;
 
-const RetryButton = styled(ActionButton)`
-  background: #dc2626;
-  &:hover { background: #b91c1c; }
+const SecondaryAction = styled.button`
+  background: none;
+  border: none;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: underline;
+  cursor: pointer;
+  &:hover { color: #111827; }
 `;
 
-// --- Logic Helpers ---
+const SkeletonLoader = styled.span`
+  display: inline-block;
+  width: 100px;
+  height: 1em;
+  background: #f3f4f6;
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+  
+  @keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+  }
+`;
+
+// --- HELPER FUNCTIONS ---
 
 const getUTCDateFromBusinessLocal = (
   naiveDateStr,
@@ -346,7 +298,7 @@ const ConfirmationStep = ({
   const displayReference =
     propReference || fetchedReference || bookingData.user_facing_reference;
 
-  // --- Logic: Polling ---
+  // --- LOGIC ---
   const pollForBookingReference = useCallback(async () => {
     if (!paymentIntentId || actualBookingId) {
       setIsPolling(false);
@@ -479,6 +431,7 @@ const ConfirmationStep = ({
         Sat: "SA",
       };
       const byDay = days.map((d) => dayMap[d]).filter(Boolean).join(",");
+
       const untilDate = new Date(`${naiveCourseEndDate}T23:59:59Z`);
       const untilDateFormatted = dateFnsFormat(
         untilDate,
@@ -506,245 +459,193 @@ const ConfirmationStep = ({
     });
   };
 
-  // --- Logic: Data Prep ---
   const selectedSlot = bookingData.selectedSlots?.[0];
   const effectiveUserTimeZone =
-    userTimeZone ||
-    (typeof Intl !== "undefined"
-      ? Intl.DateTimeFormat().resolvedOptions().timeZone
-      : "America/Toronto");
+    userTimeZone || (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Toronto");
 
-  const { participants, participant_details } = bookingData;
-  const participantCount =
-    (participants ??
-      (Array.isArray(participant_details) ? participant_details.length : 0)) ||
-    1;
-
-  // -- Render Helpers --
-  const renderTimeInfo = () => {
-    if (!selectedSlot) return { date: "N/A", time: "N/A" };
-    const { date, time, duration, isCourse, end_date, days } = selectedSlot;
-
-    if (isCourse) {
-      return {
-        date: `${formatNaiveDate(date, "MMM d")} – ${formatNaiveDate(
-          end_date,
-          "MMM d, yyyy"
-        )}`,
-        time: `Every ${days.join(", ")} @ ${formatTimeRangeForDisplay(
-          date,
-          time,
-          duration,
-          businessTimeZone,
-          effectiveUserTimeZone
-        )}`,
-      };
-    }
-
-    return {
-      date: formatBusinessLocalToUserDisplay(
-        date,
-        time,
-        businessTimeZone,
-        effectiveUserTimeZone,
-        { dateTimeFormat: "EEEE, MMMM d, yyyy" }
-      ),
-      time: `${formatTimeRangeForDisplay(
-        date,
-        time,
-        duration,
-        businessTimeZone,
-        effectiveUserTimeZone
-      )} (${getDurationText(duration)})`,
-    };
+  // --- RENDER HELPERS ---
+  
+  const getContactInfo = () => {
+    const email =
+      classData?.student_contact_email ??
+      classData?.studentContactEmail ??
+      classData?.business_contact_email ??
+      classData?.businessContactEmail;
+    const phone =
+      classData?.student_contact_phone ??
+      classData?.studentContactPhone ??
+      classData?.business_contact_phone ??
+      classData?.businessContactPhone;
+    return { email, phone };
   };
 
-  const { date: dateText, time: timeText } = renderTimeInfo();
-
-  // Cancellation
-  const renderCancellationText = () => {
+  const { email, phone } = getContactInfo();
+  
+  const cancellationText = (() => {
+    if (!bookingData.selectedOption) return null;
     const option = bookingData.selectedOption;
-    const policyKey = option?.cancellationPolicy;
-    if (!policyKey) return null;
-    const classStartDateTime =
-      selectedSlot?.date && selectedSlot?.time
-        ? `${selectedSlot.date}T${selectedSlot.time}`
-        : null;
+    const classStartDateTime = selectedSlot?.date && selectedSlot?.time
+      ? `${selectedSlot.date}T${selectedSlot.time}`
+      : null;
     return getCancellationPolicyText(
-      policyKey,
+      option?.cancellationPolicy,
       option?.cancellationRefundPercentage,
       option?.cancellationCustomHours,
       classStartDateTime,
       effectiveUserTimeZone,
-      businessTimeZone
+      businessTimeZone,
     );
-  };
-  const cancellationText = renderCancellationText();
+  })();
 
-  // Contact
-  const email =
-    classData?.student_contact_email ??
-    classData?.studentContactEmail ??
-    classData?.business_contact_email ??
-    classData?.businessContactEmail;
-  const phone =
-    classData?.student_contact_phone ??
-    classData?.studentContactPhone ??
-    classData?.business_contact_phone ??
-    classData?.businessContactPhone;
-
-  // Equipment
-  const equipment = bookingData.selectedOption?.equipment;
-
-  // --- Render ---
+  const participantsCount = (bookingData.participants ?? (Array.isArray(bookingData.participant_details) ? bookingData.participant_details.length : 0)) || 1;
 
   if (bookingFailed) {
     return (
       <Container>
-        <EventPass style={{ borderTop: "none" }}>
-          <div style={{ padding: "40px" }}>
-            <lord-icon
-              src="https://cdn.lordicon.com/keaiwgyv.json"
-              trigger="loop"
-              delay="1000"
-              colors="primary:#ef4444,secondary:#fee2e2"
-              style={{ width: "80px", height: "80px" }}
-            />
-            <SuccessTitle style={{ color: "#ef4444" }}>
-              Booking Failed
-            </SuccessTitle>
-            <SuccessSub>
-              {pollingError || "We were unable to complete your booking."}
-            </SuccessSub>
-            <RetryButton onClick={handleRetry} style={{ marginTop: 24 }}>
-              <RefreshCw size={18} /> Try Booking Again
-            </RetryButton>
-          </div>
-        </EventPass>
+        <Card>
+          <HeaderSection $failed>
+            <IconWrapper>
+              {/* Alert Icon */}
+              <lord-icon
+                src="https://cdn.lordicon.com/keaiwoeo.json"
+                trigger="loop"
+                delay="2000"
+                colors="primary:#ef4444,secondary:#ef4444"
+                style={{ width: "100%", height: "100%" }}
+              />
+            </IconWrapper>
+            <StatusTitle style={{ color: "#ef4444" }}>Booking Failed</StatusTitle>
+            <StatusMessage>{pollingError || "We were unable to complete your booking."}</StatusMessage>
+          </HeaderSection>
+          <FooterActions>
+            <PrimaryButton onClick={handleRetry} style={{ backgroundColor: "#ef4444" }}>
+              Try Booking Again
+            </PrimaryButton>
+            {email && (
+              <SecondaryAction as="a" href={`mailto:${email}`}>
+                Contact Support
+              </SecondaryAction>
+            )}
+          </FooterActions>
+        </Card>
       </Container>
     );
   }
 
   return (
     <Container>
-      <EventPass>
-        <PassHeader>
-          {/* Animated Success Icon */}
-          <lord-icon
-            src="https://cdn.lordicon.com/fkaukecx.json"
-            trigger="in"
-            delay="200"
-            state="in-reveal"
-            colors="primary:#10b981,secondary:#a7f3d0"
-            style={{ width: "80px", height: "80px" }}
-          />
-          <SuccessTitle>You're in!</SuccessTitle>
-          <SuccessSub>
-            Your spot is secured. We've sent a confirmation email with all the details.
-          </SuccessSub>
-        </PassHeader>
+      <Card>
+        {/* Header with Celebration Icon */}
+        <HeaderSection>
+          <IconWrapper>
+            {/* Celebration Confetti Icon */}
+            <lord-icon
+                src="https://cdn.lordicon.com/lupuorrc.json"
+                trigger="loop"
+                delay="3000"
+                colors="primary:#ff385c,secondary:#000000"
+                style={{ width: "100%", height: "100%" }}>
+            </lord-icon>
+          </IconWrapper>
+          <StatusTitle>You're going!</StatusTitle>
+          <StatusMessage>
+            We sent a confirmation email to <strong>{bookingData.userEmail || "your inbox"}</strong>.
+          </StatusMessage>
+          
+          <ReferenceBadge>
+            Reference: 
+            <strong>
+              {isPolling && !displayReference ? (
+                <SkeletonLoader style={{ marginLeft: 8 }} />
+              ) : (
+                displayReference || (actualBookingId ? "Confirmed" : "Generating...")
+              )}
+            </strong>
+          </ReferenceBadge>
+        </HeaderSection>
 
         <Divider />
 
-        <PassBody>
-          <ClassTitle>
-            {classData?.title || bookingData.selectedOption?.classId?.title}
-          </ClassTitle>
-          
-          {(classData?.business_name || classData?.location) && (
-            <VendorName>
-               <MapPin />
-               {[classData?.business_name, classData?.location].filter(Boolean).join(" · ")}
-            </VendorName>
-          )}
+        <ContentSection>
+          <ClassTitle>{classData?.title || "Class Title"}</ClassTitle>
+          <ClassSubtitle>
+            {classData?.business_name ? `Hosted by ${classData.business_name}` : ""}
+            {classData?.business_name && classData?.location ? " · " : ""}
+            {classData?.location}
+          </ClassSubtitle>
 
-          <InfoGrid>
-            <InfoItem>
-              <InfoLabel>Date</InfoLabel>
-              <InfoValue>{dateText}</InfoValue>
-            </InfoItem>
+          <GridSection>
+            {/* When */}
+            <InfoGroup>
+              <Label>Date & Time</Label>
+              {selectedSlot && (
+                <>
+                  <Value>
+                    {selectedSlot.isCourse 
+                      ? `${formatNaiveDate(selectedSlot.date, "MMM d")} – ${formatNaiveDate(selectedSlot.end_date, "MMM d")}`
+                      : formatBusinessLocalToUserDisplay(
+                          selectedSlot.date,
+                          selectedSlot.time,
+                          businessTimeZone,
+                          effectiveUserTimeZone,
+                          { dateTimeFormat: "EEE, MMM d, yyyy" }
+                        )
+                    }
+                  </Value>
+                  <SubValue>
+                    {selectedSlot.isCourse
+                      ? `Every ${selectedSlot.days.join(", ")} at ${formatTimeRangeForDisplay(selectedSlot.date, selectedSlot.time, selectedSlot.duration, businessTimeZone, effectiveUserTimeZone)}`
+                      : `${formatTimeRangeForDisplay(selectedSlot.date, selectedSlot.time, selectedSlot.duration, businessTimeZone, effectiveUserTimeZone)} (${getDurationText(selectedSlot.duration)})`
+                    }
+                  </SubValue>
+                </>
+              )}
+            </InfoGroup>
 
-            <InfoItem>
-              <InfoLabel>Time</InfoLabel>
-              <InfoValue>{timeText}</InfoValue>
-            </InfoItem>
+            {/* Who */}
+            <InfoGroup>
+              <Label>Guests</Label>
+              <Value>{participantsCount} {participantsCount === 1 ? "Person" : "People"}</Value>
+              <SubValue>General Admission</SubValue>
+            </InfoGroup>
+          </GridSection>
 
-            <InfoItem>
-              <InfoLabel>Guests</InfoLabel>
-              <InfoValue>{participantCount} Person{participantCount > 1 ? 's' : ''}</InfoValue>
-            </InfoItem>
-
-            <InfoItem>
-              <InfoLabel>Total</InfoLabel>
-              <InfoValue>
-                 {/* Logic taken from existing props passing context, simplified for display here as 'Paid' or 'Confirmed' if exact price isn't easily prop-drilled without clutter, but assuming Paid */}
-                 Confirmed
-              </InfoValue>
-            </InfoItem>
-          </InfoGrid>
-
-          <ReferenceBadge>
-            <span className="label">Booking Reference</span>
-            {isPolling && !displayReference ? (
-              <Skeleton />
-            ) : (
-              <span className="code">{displayReference || "CONFIRMED"}</span>
+          {/* Additional Info / Policies */}
+          <PolicySection>
+            {cancellationText && (
+               <div style={{ marginBottom: 12 }}>
+                 <strong>Cancellation Policy:</strong> {cancellationText}
+               </div>
             )}
-          </ReferenceBadge>
+            {bookingData.selectedOption?.equipment?.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <strong>What to bring:</strong> {bookingData.selectedOption.equipment.join(", ")}.
+              </div>
+            )}
+             <div style={{ marginTop: 12 }}>
+                Need help? <a href={`mailto:${email || ""}`}>Contact Host</a>
+             </div>
+          </PolicySection>
 
-          <ActionButton
-            onClick={handleAddToCalendar}
-            disabled={!selectedSlot || isPolling}
-          >
-            <CalendarIcon size={18} /> Add to Calendar
-          </ActionButton>
-        </PassBody>
-      </EventPass>
+        </ContentSection>
 
-      <EmailNotice>
-        <lord-icon
-            src="https://cdn.lordicon.com/tmqaflqo.json"
-            trigger="loop"
-            delay="2000"
-            colors="primary:#15803d"
-            style={{ width: "24px", height: "24px" }}
-        />
-        <span>Check your inbox for the receipt</span>
-      </EmailNotice>
+        <Divider />
 
-      {/* Unified Secondary Details (No boxes, just clean text) */}
-      <SecondaryInfo>
-        
-        {equipment?.length > 0 && (
-          <SecondaryGroup>
-            <h4>What to bring</h4>
-            <ul>
-              {equipment.map((item, i) => (
-                <li key={i}>{item}</li>
-              ))}
-            </ul>
-          </SecondaryGroup>
-        )}
-
-        {cancellationText && (
-          <SecondaryGroup>
-            <h4>Cancellation Policy</h4>
-            <p>{cancellationText}</p>
-          </SecondaryGroup>
-        )}
-
-        {(email || phone) && (
-          <SecondaryGroup>
-            <h4>Need help?</h4>
-            <p>
-              Contact {classData?.business_name || "the organizer"} at{" "}
-              {email && <a href={`mailto:${email}`}>{email}</a>}
-              {email && phone && " or "}
-              {phone && <a href={`tel:${phone.replace(/\s/g, "")}`}>{phone}</a>}
-            </p>
-          </SecondaryGroup>
-        )}
-      </SecondaryInfo>
+        <FooterActions>
+          <PrimaryButton onClick={handleAddToCalendar} disabled={!selectedSlot || isPolling}>
+             {/* Calendar Icon */}
+             <lord-icon
+                src="https://cdn.lordicon.com/abfverha.json"
+                trigger="morph"
+                colors="primary:#ffffff,secondary:#ffffff"
+             />
+             Add to Calendar
+          </PrimaryButton>
+          <SecondaryAction onClick={handleRetry}>
+            Book another spot
+          </SecondaryAction>
+        </FooterActions>
+      </Card>
     </Container>
   );
 };
