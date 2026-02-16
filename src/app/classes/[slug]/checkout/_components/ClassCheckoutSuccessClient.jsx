@@ -17,13 +17,13 @@ const SUCCESS_STORAGE_KEY = "classeasily_booking_success";
 const PageWrapper = styled.div`
   width: 100%;
   min-height: 100vh;
-  padding-top: 100px;
+  padding-top: 48px;
   display: flex;
   flex-direction: column;
   align-items: center;
 
   @media (max-width: 768px) {
-    padding-top: 80px;
+    padding-top: 40px;
   }
 `;
 
@@ -31,10 +31,10 @@ const MainContainer = styled.div`
   max-width: 600px;
   width: 100%;
   margin: 0 auto;
-  padding: 40px 24px 60px;
+  padding: 24px 24px 60px;
 
   @media (max-width: 640px) {
-    padding: 24px 16px 40px;
+    padding: 16px 16px 40px;
   }
 `;
 

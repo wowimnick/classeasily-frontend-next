@@ -7,9 +7,13 @@ import {
   Package,
   AlertCircle,
   Mail,
+  MapPin,
+  Phone,
+  Info,
+  Shield,
 } from "lucide-react";
 import styled, { keyframes } from "styled-components";
-import { getDurationText } from "./utils";
+import { getDurationText, getCancellationPolicyText } from "./utils";
 import { isValid, addMinutes, format as dateFnsFormat } from "date-fns";
 import {
   formatBusinessLocalToUserDisplay,
@@ -30,12 +34,12 @@ const ConfirmationContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 40px 20px;
+  padding: 0 20px 24px;
   text-align: center;
   animation: ${fadeIn} 0.5s ease-out;
 
   @media (max-width: 640px) {
-    padding: 24px 16px;
+    padding: 0 16px 20px;
   }
 `;
 
@@ -43,7 +47,7 @@ const Header = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 `;
 
 const StatusIcon = styled.div`
@@ -119,6 +123,81 @@ const SkeletonPlaceholder = styled.div`
   }
 `;
 
+/* Grouped blocks (mobile-summary style) */
+const SummaryBlock = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  width: 100%;
+  max-width: 480px;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 12px;
+
+  @media (max-width: 640px) {
+    padding: 14px;
+  }
+`;
+
+const SummaryBlockLabel = styled.div`
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #9ca3af;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+`;
+
+const SummaryBlockValue = styled.div`
+  font-size: 14px;
+  color: #111827;
+  font-weight: 600;
+  line-height: 1.4;
+`;
+
+const SummaryMetaItem = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+
+  &:not(:last-child) {
+    margin-bottom: 12px;
+  }
+
+  .icon-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #f9fafb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    flex-shrink: 0;
+  }
+  .icon-box svg {
+    width: 16px;
+    height: 16px;
+  }
+  .text-content {
+    display: flex;
+    flex-direction: column;
+  }
+  .text-content .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #9ca3af;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .text-content .value {
+    font-size: 14px;
+    color: #111827;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+`;
+
 const BookingSummary = styled.div`
   background: white;
   border-radius: 16px;
@@ -169,24 +248,125 @@ const DetailRow = styled.div`
   }
 `;
 
-const ParticipantList = styled.ul`
-  list-style: none;
-  padding-left: 0;
-  margin: 4px 0 0 0;
-  li {
-    font-size: 14px;
-    color: #374151;
-    &:not(:last-child) {
-      margin-bottom: 4px;
-    }
-  }
-`;
-
 const EquipmentList = styled.ul`
   list-style: disc;
   padding-left: 20px;
   margin: 4px 0 0 0;
   color: #374151;
+`;
+
+const ArriveEarlyNote = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: #4b5563;
+  padding: 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 12px;
+  text-align: left;
+
+  .icon-box {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: #dcfce7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #16a34a;
+  }
+  .icon-box svg {
+    width: 16px;
+    height: 16px;
+  }
+  p {
+    margin: 0;
+    line-height: 1.5;
+  }
+`;
+
+const BusinessContactBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 12px;
+  text-align: left;
+
+  .contact-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #64748b;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  a {
+    font-size: 14px;
+    color: #0ea5e9;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+  .contact-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .contact-row svg {
+    width: 16px;
+    height: 16px;
+    color: #64748b;
+    flex-shrink: 0;
+  }
+`;
+
+const CancellationPolicyBlock = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: #4b5563;
+  padding: 14px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 12px;
+  text-align: left;
+
+  .icon-box {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: #fef3c7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d97706;
+  }
+  .icon-box svg {
+    width: 16px;
+    height: 16px;
+  }
+  p {
+    margin: 0;
+    line-height: 1.5;
+  }
 `;
 
 const AddToCalendar = styled.button`
@@ -461,12 +641,85 @@ const ConfirmationStep = ({
 
   const selectedSlot = bookingData.selectedSlots?.[0];
 
+  const effectiveUserTimeZone =
+    userTimeZone || (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Toronto");
+
+  const renderDateAndTimeBlock = () => {
+    if (!selectedSlot) return null;
+    const { date, time, duration, isCourse, end_date, days } = selectedSlot;
+
+    if (isCourse) {
+      return (
+        <SummaryBlock>
+          <SummaryMetaItem>
+            <div className="icon-box"><CalendarIcon /></div>
+            <div className="text-content">
+              <span className="label">Course dates</span>
+              <span className="value">
+                {formatNaiveDate(date, "MMM d, yyyy")} – {formatNaiveDate(end_date, "MMM d, yyyy")}
+              </span>
+            </div>
+          </SummaryMetaItem>
+          <SummaryMetaItem>
+            <div className="icon-box"><Clock /></div>
+            <div className="text-content">
+              <span className="label">Time</span>
+              <span className="value">
+                Every {days.join(", ")} at{" "}
+                {formatTimeRangeForDisplay(
+                  date,
+                  time,
+                  duration,
+                  businessTimeZone,
+                  effectiveUserTimeZone
+                )}
+              </span>
+            </div>
+          </SummaryMetaItem>
+        </SummaryBlock>
+      );
+    }
+
+    return (
+      <SummaryBlock>
+        <SummaryMetaItem>
+          <div className="icon-box"><CalendarIcon /></div>
+          <div className="text-content">
+            <span className="label">Date</span>
+            <span className="value">
+              {formatBusinessLocalToUserDisplay(
+                date,
+                time,
+                businessTimeZone,
+                effectiveUserTimeZone,
+                { dateTimeFormat: "EEEE, MMMM d, yyyy" }
+              )}
+            </span>
+          </div>
+        </SummaryMetaItem>
+        <SummaryMetaItem>
+          <div className="icon-box"><Clock /></div>
+          <div className="text-content">
+            <span className="label">Time</span>
+            <span className="value">
+              {formatTimeRangeForDisplay(
+                date,
+                time,
+                duration,
+                businessTimeZone,
+                effectiveUserTimeZone
+              )} ({getDurationText(duration)})
+            </span>
+          </div>
+        </SummaryMetaItem>
+      </SummaryBlock>
+    );
+  };
+
   const renderBookingDetails = () => {
     if (!selectedSlot) return null;
 
     const { date, time, duration, isCourse, end_date, days } = selectedSlot;
-    const effectiveUserTimeZone =
-      userTimeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     if (isCourse) {
       return (
@@ -538,30 +791,14 @@ const ConfirmationStep = ({
     const { participants, participant_details } = bookingData;
     const count = (participants ?? (Array.isArray(participant_details) ? participant_details.length : 0)) || 1;
     if (!count) return null;
-
-    const bookerName = Array.isArray(participant_details)?.[0]?.name != null
-      ? String(participant_details[0].name).trim()
-      : null;
-
     return (
-      <DetailRow>
-        <Users />
-        <div>
-          <strong>
-            {count} Participant{count > 1 ? "s" : ""}
-          </strong>
-          <ParticipantList>
-            {bookerName ? (
-              <>
-                <li>Booked by {bookerName}</li>
-                {count > 1 && <li>{count} spots</li>}
-              </>
-            ) : (
-              <li>Guest{count > 1 ? "s" : ""}</li>
-            )}
-          </ParticipantList>
+      <SummaryMetaItem>
+        <div className="icon-box"><Users /></div>
+        <div className="text-content">
+          <span className="label">Participants</span>
+          <span className="value">{count} Participants</span>
         </div>
-      </DetailRow>
+      </SummaryMetaItem>
     );
   };
 
@@ -570,17 +807,86 @@ const ConfirmationStep = ({
     if (!equipment?.length) return null;
 
     return (
-      <DetailRow>
-        <Package />
-        <div>
-          <strong>Required Equipment</strong>
-          <EquipmentList>
-            {equipment.map((item, index) => (
-              <li key={index}>{item}</li>
-            ))}
-          </EquipmentList>
+      <SummaryMetaItem>
+        <div className="icon-box"><Package /></div>
+        <div className="text-content">
+          <span className="label">Required equipment</span>
+          <span className="value">
+            <EquipmentList>
+              {equipment.map((item, index) => (
+                <li key={index}>{item}</li>
+              ))}
+            </EquipmentList>
+          </span>
         </div>
-      </DetailRow>
+      </SummaryMetaItem>
+    );
+  };
+
+  const renderArriveEarlyNote = () => (
+    <ArriveEarlyNote>
+      <div className="icon-box"><Info /></div>
+      <p>
+        <strong>Pro tip:</strong> Arrive a few minutes early and check in at the venue. Questions before the big day? Reach out to the business below.
+      </p>
+    </ArriveEarlyNote>
+  );
+
+  const renderCancellationPolicy = () => {
+    const option = bookingData.selectedOption;
+    const policyKey = option?.cancellationPolicy;
+    if (!policyKey) return null;
+    const classStartDateTime = selectedSlot?.date && selectedSlot?.time
+      ? `${selectedSlot.date}T${selectedSlot.time}`
+      : null;
+    const text = getCancellationPolicyText(
+      policyKey,
+      option?.cancellationRefundPercentage,
+      option?.cancellationCustomHours,
+      classStartDateTime,
+      effectiveUserTimeZone,
+      businessTimeZone,
+    );
+    if (!text) return null;
+    return (
+      <CancellationPolicyBlock>
+        <div className="icon-box"><Shield /></div>
+        <p><strong>The fine print:</strong> {text}</p>
+      </CancellationPolicyBlock>
+    );
+  };
+
+  const renderBusinessContact = () => {
+    const email =
+      classData?.student_contact_email ??
+      classData?.studentContactEmail ??
+      classData?.business_contact_email ??
+      classData?.businessContactEmail;
+    const phone =
+      classData?.student_contact_phone ??
+      classData?.studentContactPhone ??
+      classData?.business_contact_phone ??
+      classData?.businessContactPhone;
+    const businessName = classData?.business_name || "the business";
+
+    if (!email && !phone) return null;
+
+    return (
+      <BusinessContactBlock>
+        <div className="contact-label">Questions? Contact {businessName}</div>
+        {email && (
+          <div className="contact-row">
+            <Mail size={16} />
+            <a href={`mailto:${email}`}>{email}</a>
+          </div>
+        )}
+        {phone && (
+          <div className="contact-row">
+            <Phone size={16} />
+            <a href={`tel:${phone.replace(/\s/g, "")}`}>{phone}</a>
+          </div>
+        )}
+      </BusinessContactBlock>
     );
   };
 
@@ -590,11 +896,11 @@ const ConfirmationStep = ({
         <StatusIcon $failed={bookingFailed}>
           {bookingFailed ? <AlertCircle /> : <Check />}
         </StatusIcon>
-        <Title>{bookingFailed ? "Booking Failed" : "Booking Confirmed!"}</Title>
+        <Title>{bookingFailed ? "Booking Failed" : "You're in!"}</Title>
         <Subtitle>
           {bookingFailed
             ? pollingError || "We were unable to complete your booking."
-            : "Your spot is reserved. We're excited to see you!"}
+            : "Your spot's saved. We'll see you there—don't forget to show up."}
         </Subtitle>
       </Header>
 
@@ -603,7 +909,7 @@ const ConfirmationStep = ({
       ) : (
         <>
           <BookingReference>
-            Booking Reference:{" "}
+            Your reference (hold onto this):{" "}
             <strong>
               {isPolling && !displayReference ? (
                 <SkeletonPlaceholder />
@@ -613,28 +919,44 @@ const ConfirmationStep = ({
             </strong>
           </BookingReference>
 
-          <BookingSummary>
-            <SummaryHeader>
-              <h3>
-                {classData?.title ||
-                  bookingData.selectedOption?.classId?.title ||
-                  "Class Title"}
-              </h3>
-            </SummaryHeader>
-            {renderBookingDetails()}
+          {/* Class & location */}
+          <SummaryBlock>
+            <SummaryBlockValue style={{ marginBottom: classData?.business_name || classData?.location ? 8 : 0 }}>
+              {classData?.title ||
+                bookingData.selectedOption?.classId?.title ||
+                "Class Title"}
+            </SummaryBlockValue>
+            {(classData?.business_name || classData?.location) && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#6b7280" }}>
+                <MapPin size={14} style={{ flexShrink: 0 }} />
+                <span>{[classData?.business_name, classData?.location].filter(Boolean).join(" · ")}</span>
+              </div>
+            )}
+          </SummaryBlock>
+
+          {/* Date & time */}
+          {renderDateAndTimeBlock()}
+
+          {/* Participants & equipment */}
+          <SummaryBlock>
+            <SummaryBlockLabel>The details</SummaryBlockLabel>
             {renderParticipantInfo()}
             {renderEquipmentInfo()}
-          </BookingSummary>
+          </SummaryBlock>
+
+          {renderArriveEarlyNote()}
+          {renderCancellationPolicy()}
+          {renderBusinessContact()}
 
           <EmailConfirmationNote>
-            <Mail />A confirmation has been sent to your email.
+            <Mail />We've dropped the full details in your inbox—no carrier pigeons required.
           </EmailConfirmationNote>
 
           <AddToCalendar
             onClick={handleAddToCalendar}
             disabled={!selectedSlot || isPolling}
           >
-            <CalendarIcon size={16} /> Add to Calendar
+            <CalendarIcon size={16} /> Add to calendar
           </AddToCalendar>
         </>
       )}

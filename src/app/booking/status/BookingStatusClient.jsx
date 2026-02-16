@@ -155,6 +155,15 @@ export default function BookingStatusClient() {
             ...state.bookingData,
             participant_details,
           };
+          const classDataWithContact = {
+            ...state.classData,
+            ...(data.business_contact_email != null && {
+              student_contact_email: data.business_contact_email,
+            }),
+            ...(data.business_contact_phone != null && {
+              student_contact_phone: data.business_contact_phone,
+            }),
+          };
           const successPayload = {
             bookingId: data.booking_id,
             user_facing_reference: data.user_facing_reference,
@@ -163,7 +172,7 @@ export default function BookingStatusClient() {
             payment_intent_id: paymentIntent,
             client_secret: clientSecret,
             bookingData: bookingDataWithParticipants,
-            classData: state.classData,
+            classData: classDataWithContact,
           };
           sessionStorage.setItem(
             SUCCESS_STORAGE_KEY,
