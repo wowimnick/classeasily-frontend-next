@@ -92,24 +92,6 @@ const Subtitle = styled.p`
   max-width: 400px;
 `;
 
-const BookingReference = styled.div`
-  background-color: #f9fafb;
-  border: 1px dashed #d1d5db;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 24px;
-  font-size: 14px;
-  color: #4b5563;
-  width: 100%;
-  max-width: 400px;
-
-  strong {
-    color: #111827;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-  }
-`;
-
 const SkeletonPlaceholder = styled.div`
   display: inline-block;
   height: 18px;
@@ -352,92 +334,82 @@ const TicketCard = styled.div`
   margin-bottom: 20px;
 `;
 
+/* Hero = reference (main focus) */
 const TicketHero = styled.div`
   background-color: #f5f5f7;
-  padding: 24px;
+  padding: 20px 20px 18px;
   border-bottom: 1px solid #e5e7eb;
 
   .hero-label {
-    font-size: 13px;
+    font-size: 11px;
     color: #86868b;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
-  .hero-date {
-    font-size: 28px;
+  .hero-ref {
+    font-size: 24px;
     font-weight: 700;
     color: #1d1d1f;
-    line-height: 1.1;
-  }
-  .hero-time {
-    font-size: 18px;
-    color: #f81e3e;
-    font-weight: 600;
-    margin-top: 8px;
-  }
-  .hero-meta {
-    font-size: 12px;
-    color: #86868b;
-    margin-top: 4px;
+    font-family: ui-monospace, monospace;
+    letter-spacing: 0.02em;
   }
 `;
 
+/* Compact details body */
 const TicketBody = styled.div`
-  padding: 24px;
+  padding: 14px 20px 18px;
   text-align: left;
 
   .ticket-row {
-    margin-bottom: 16px;
+    margin-bottom: 10px;
   }
   .ticket-row:last-child {
     margin-bottom: 0;
   }
-  .ticket-label {
-    font-size: 12px;
+  .ticket-meta {
+    font-size: 11px;
     color: #86868b;
     text-transform: uppercase;
     letter-spacing: 0.02em;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
   .ticket-value {
-    font-size: 16px;
+    font-size: 13px;
     color: #1d1d1f;
     font-weight: 500;
   }
   .ticket-value.mono {
     font-family: ui-monospace, monospace;
   }
-  .ticket-value a {
-    color: #0ea5e9;
-    text-decoration: none;
-  }
-  .ticket-value a:hover {
-    text-decoration: underline;
+  .ticket-inline {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 10px;
   }
   .arrive-note {
-    font-size: 14px;
-    color: #4b5563;
-    line-height: 1.5;
-    margin: 0 0 16px 0;
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.4;
+    margin: 0 0 12px 0;
   }
   .booking-section {
-    margin-top: 20px;
-    padding-top: 16px;
+    margin-top: 12px;
+    padding-top: 12px;
     border-top: 1px dashed #d1d5db;
   }
   .booking-pills {
     display: flex;
     flex-wrap: wrap;
     gap: 4px 8px;
-    margin-top: 8px;
+    margin-top: 6px;
   }
   .booking-pill {
     display: inline-block;
     background: #f5f5f7;
     border-radius: 99px;
-    padding: 4px 12px;
-    font-size: 14px;
+    padding: 3px 10px;
+    font-size: 12px;
     color: #1d1d1f;
   }
 `;
@@ -1070,115 +1042,49 @@ const ConfirmationStep = ({
         <RetryButton onClick={handleRetry}>Try Booking Again</RetryButton>
       ) : (
         <>
-          <BookingReference>
-            Your reference (hold onto this):{" "}
-            <strong>
-              {isPolling && !displayReference ? (
-                <SkeletonPlaceholder />
-              ) : (
-                displayReference || (actualBookingId ? "Confirmed" : "Processing...")
-              )}
-            </strong>
-          </BookingReference>
-
-          {/* Email-style ticket card */}
+          {/* Ticket card: reference as hero, compact details below */}
           <TicketCard>
             <TicketHero>
-              <div className="hero-label">Mark your calendar</div>
-              {selectedSlot ? (
-                <>
-                  <div className="hero-date">
-                    {selectedSlot.isCourse
-                      ? `${formatNaiveDate(selectedSlot.date, "MMM d")} – ${formatNaiveDate(selectedSlot.end_date, "MMM d, yyyy")}`
-                      : formatNaiveDate(selectedSlot.date, "EEEE, MMM d")}
-                  </div>
-                  <div className="hero-time">
-                    {selectedSlot.isCourse
-                      ? `Every ${selectedSlot.days?.join(", ")} at ${formatTimeRangeForDisplay(
-                          selectedSlot.date,
-                          selectedSlot.time,
-                          selectedSlot.duration,
-                          businessTimeZone,
-                          effectiveUserTimeZone
-                        )}`
-                      : formatTimeRangeForDisplay(
-                          selectedSlot.date,
-                          selectedSlot.time,
-                          selectedSlot.duration,
-                          businessTimeZone,
-                          effectiveUserTimeZone
-                        )}
-                  </div>
-                  {selectedSlot.duration && !selectedSlot.isCourse && (
-                    <div className="hero-meta">{getDurationText(selectedSlot.duration)}</div>
-                  )}
-                  {businessTimeZone && (
-                    <div className="hero-meta">
-                      {(businessTimeZone || "").replace(/_/g, " ")} time
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="hero-date" style={{ color: "#9ca3af" }}>—</div>
-              )}
+              <div className="hero-label">Booking reference</div>
+              <div className="hero-ref">
+                {isPolling && !displayReference ? (
+                  <SkeletonPlaceholder />
+                ) : (
+                  displayReference || (actualBookingId ? "Confirmed" : "Processing...")
+                )}
+              </div>
             </TicketHero>
             <TicketBody>
-              <p className="arrive-note">
-                <strong>Pro tip:</strong> Arrive a few minutes early and check in at the venue. Questions? Use the contact details below.
-              </p>
-              <div className="ticket-row">
-                <div className="ticket-label">Class</div>
-                <div className="ticket-value">
-                  {classData?.title || bookingData.selectedOption?.classId?.title || "Class Title"}
-                </div>
+              <div className="ticket-inline">
+                {classData?.title || bookingData.selectedOption?.classId?.title || "Class Title"}
+                {classData?.business_name && (
+                  <> · {classData.business_name}</>
+                )}
               </div>
-              <div className="ticket-row">
-                <div className="ticket-label">Location</div>
-                <div className="ticket-value">
-                  {(() => {
-                    const loc = classData?.location || "";
-                    const coords = classData?.coordinates;
-                    const mapsUrl = coords
-                      ? `https://www.google.com/maps?q=${encodeURIComponent(coords.trim())}`
-                      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc || (classData?.business_name || ""))}`;
-                    const displayLocation = loc || classData?.business_name || "Online / TBD";
-                    return (
-                      <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
-                        {displayLocation}
-                      </a>
-                    );
-                  })()}
-                </div>
-              </div>
-              {classData?.business_name && (
-                <div className="ticket-row">
-                  <div className="ticket-label">Provider</div>
-                  <div className="ticket-value">{classData.business_name}</div>
+              {selectedSlot && (
+                <div className="ticket-inline">
+                  {selectedSlot.isCourse
+                    ? `${formatNaiveDate(selectedSlot.date, "MMM d")} – ${formatNaiveDate(selectedSlot.end_date, "MMM d, yyyy")} · Every ${selectedSlot.days?.join(", ")} at ${formatTimeRangeForDisplay(selectedSlot.date, selectedSlot.time, selectedSlot.duration, businessTimeZone, effectiveUserTimeZone)}`
+                    : `${formatNaiveDate(selectedSlot.date, "EEEE, MMM d")} · ${formatTimeRangeForDisplay(selectedSlot.date, selectedSlot.time, selectedSlot.duration, businessTimeZone, effectiveUserTimeZone)}${selectedSlot.duration ? ` (${getDurationText(selectedSlot.duration)})` : ""}`}
                 </div>
               )}
-              <div className="ticket-row">
-                <div className="ticket-label">Reference</div>
-                <div className="ticket-value mono">
-                  {isPolling && !displayReference ? (
-                    <SkeletonPlaceholder />
-                  ) : (
-                    displayReference || (actualBookingId ? "Confirmed" : "Processing...")
-                  )}
-                </div>
-              </div>
+              <p className="arrive-note">
+                Arrive a few minutes early. Questions? See contact below.
+              </p>
               {(() => {
                 const count = (bookingData.participants ?? (Array.isArray(bookingData.participant_details) ? bookingData.participant_details.length : 0)) || 1;
-                const bookerName = (Array.isArray(bookingData.participant_details) && bookingData.participant_details[0]?.name)
+                const rawName = (Array.isArray(bookingData.participant_details) && bookingData.participant_details[0]?.name)
                   ? String(bookingData.participant_details[0].name).trim()
-                  : null;
+                  : "";
+                const bookerDisplay = rawName && rawName.toLowerCase() !== "guest" ? rawName : "You";
                 if (!count) return null;
                 const othersCount = count - 1;
                 return (
                   <div className="booking-section">
-                    <div className="ticket-label">Booking</div>
+                    <div className="ticket-meta">Booking</div>
                     <div className="booking-pills">
                       <span className="booking-pill">
-                        Booked by {bookerName || "Guest"}
+                        Booked by {bookerDisplay}
                       </span>
                       {othersCount > 0 ? (
                         <span className="booking-pill">
