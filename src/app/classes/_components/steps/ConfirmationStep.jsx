@@ -393,6 +393,13 @@ const TicketBody = styled.div`
     line-height: 1.4;
     margin: 0 0 12px 0;
   }
+  .contact-line {
+    font-size: 11px;
+    color: #374151;
+    line-height: 1.4;
+    margin: 0 0 12px 0;
+    font-weight: 700;
+  }
   .booking-section {
     margin-top: 12px;
     padding-top: 12px;
@@ -418,12 +425,12 @@ const TicketBody = styled.div`
 const AccordionStack = styled.div`
   width: 100%;
   max-width: 480px;
-  margin-bottom: 20px;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   overflow: hidden;
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  text-align: left;
 `;
 
 const AccordionItem = styled.div`
@@ -467,10 +474,12 @@ const AccordionContent = styled(motion.div)`
   color: #374151;
   line-height: 1.5;
   background: #ffffff;
+  text-align: left;
 
   .inner {
     padding: 14px 18px 18px;
     border-top: 1px solid #e5e7eb;
+    text-align: left;
   }
   .inner ul {
     margin: 4px 0 0 0;
@@ -482,6 +491,9 @@ const AccordionContent = styled(motion.div)`
   }
   .inner a:hover {
     text-decoration: underline;
+  }
+  .inner strong {
+    font-weight: 700;
   }
   .contact-row {
     display: flex;
@@ -1072,6 +1084,20 @@ const ConfirmationStep = ({
                 Arrive a few minutes early. Questions? See contact below.
               </p>
               {(() => {
+                const email = classData?.student_contact_email ?? classData?.studentContactEmail ?? classData?.business_contact_email ?? classData?.businessContactEmail;
+                const phone = classData?.student_contact_phone ?? classData?.studentContactPhone ?? classData?.business_contact_phone ?? classData?.businessContactPhone;
+                const businessName = classData?.business_name || "the business";
+                if (!email && !phone) return null;
+                const parts = [];
+                if (email) parts.push(`Send an email to ${businessName}`);
+                if (phone) parts.push(`call ${phone}`);
+                return (
+                  <p className="contact-line">
+                    {parts.join(" or ")}.
+                  </p>
+                );
+              })()}
+              {(() => {
                 const count = (bookingData.participants ?? (Array.isArray(bookingData.participant_details) ? bookingData.participant_details.length : 0)) || 1;
                 const rawName = (Array.isArray(bookingData.participant_details) && bookingData.participant_details[0]?.name)
                   ? String(bookingData.participant_details[0].name).trim()
@@ -1206,13 +1232,13 @@ const ConfirmationStep = ({
                             {email && (
                               <div className="contact-row">
                                 <Mail size={16} style={{ flexShrink: 0 }} />
-                                <a href={`mailto:${email}`}>{email}</a>
+                                <span><strong>Email:</strong> <a href={`mailto:${email}`}>{email}</a></span>
                               </div>
                             )}
                             {phone && (
                               <div className="contact-row">
                                 <Phone size={16} style={{ flexShrink: 0 }} />
-                                <a href={`tel:${(phone || "").replace(/\s/g, "")}`}>{phone}</a>
+                                <span><strong>Phone:</strong> <a href={`tel:${(phone || "").replace(/\s/g, "")}`}>{phone}</a></span>
                               </div>
                             )}
                           </div>
