@@ -106,7 +106,7 @@ const CalendarCard = styled(motion.div)`
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: 420px;
+  max-width: 390px;
   margin: 0 auto;
 `;
 
@@ -184,7 +184,7 @@ const Weekday = styled.div`
 const DayButton = styled(motion.button)`
   width: 40px;
   height: 40px;
-  border: none;
+  border: 2px solid transparent;
   background: transparent;
   border-radius: 12px;
   display: flex;
@@ -196,7 +196,7 @@ const DayButton = styled(motion.button)`
   font-size: 14px;
   font-weight: 500;
   color: ${theme.textPrimary};
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 
   ${(props) =>
     !props.$inMonth &&
@@ -205,17 +205,38 @@ const DayButton = styled(motion.button)`
       opacity: 0.3;
     `}
 
+  /* Past: muted, no interaction */
   ${(props) =>
-    props.disabled &&
+    props.$isPast &&
+    css`
+      color: ${theme.textLight};
+      opacity: 0.45;
+      cursor: default;
+    `}
+
+  /* Future but not available (too soon or no slots): distinct from past */
+  ${(props) =>
+    props.$unavailableFuture &&
     css`
       cursor: not-allowed;
-      text-decoration: line-through;
-      color: ${theme.border};
+      color: ${theme.textLight};
+      opacity: 0.7;
+      background: ${theme.bgSecondary};
+    `}
+
+  /* Today: slight border so it stands out */
+  ${(props) =>
+    props.$isToday &&
+    !props.$isSelected &&
+    css`
+      border-color: ${theme.border};
+      font-weight: 600;
     `}
 
   ${(props) =>
     props.$hasSlots &&
     !props.$isSelected &&
+    !props.$isPast &&
     css`
       font-weight: 700;
       background: ${theme.bgSecondary};
@@ -232,6 +253,7 @@ const DayButton = styled(motion.button)`
       background: ${theme.primary} !important;
       color: white !important;
       font-weight: 600;
+      border-color: ${theme.primary} !important;
     `}
 `;
 
@@ -242,7 +264,12 @@ const TimeSlotsContainer = styled(motion.div)`
   flex-direction: column;
   width: 100%;
   height: 100%;
-  min-height: 400px;
+  padding: 0 12px;
+  border-left: 1px solid rgba(0, 0, 0, 0.06);
+
+  @media (max-width: 959px) {
+    border-left: none;
+  }
 `;
 
 const ColumnHeader = styled(motion.div)`
@@ -275,12 +302,13 @@ const DateBadge = styled.span`
 const ScrollableList = styled(motion.div)`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
   max-height: 480px;
   overflow-y: auto;
-  padding-right: 6px;
-  padding-bottom: 4px;
-  padding-left: 2px;
+  overflow-x: hidden;
+  border: 1px solid ${theme.border};
+  border-radius: ${theme.radiusSm};
+  padding: 0;
 
   &::-webkit-scrollbar {
     width: 5px;
@@ -297,27 +325,30 @@ const ScrollableList = styled(motion.div)`
   }
 `;
 
-// --- Compact Slot Design ---
+// --- Compact Slot Design (attached list: no gap, shared border) ---
 
 const CompactSlotContainer = styled(motion.div)`
   background: ${theme.bg};
-  border: 1px solid ${theme.border};
-  border-radius: ${theme.radiusSm};
+  border: none;
+  border-top: 1px solid ${theme.border};
+  border-radius: 0;
   overflow: hidden;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: background-color 0.2s, box-shadow 0.2s;
   cursor: pointer;
   flex-shrink: 0;
+
+  &:first-of-type {
+    border-top: none;
+  }
 
   ${(props) =>
     props.$selected
       ? css`
-          border-color: ${theme.primary};
-          background: ${theme.bg};
+          background: ${theme.primaryFade};
         `
       : css`
           &:hover {
-            border-color: ${theme.textLight};
-            background: ${theme.bg};
+            background: ${theme.bgSecondary};
           }
         `}
 
@@ -327,9 +358,8 @@ const CompactSlotContainer = styled(motion.div)`
       opacity: 0.5;
       background: ${theme.bgSecondary};
       cursor: not-allowed;
-      border-color: transparent;
       &:hover {
-        border-color: transparent;
+        background: ${theme.bgSecondary};
       }
     `}
 `;
@@ -628,6 +658,32 @@ const EmptyState = styled.div`
   background: transparent;
 `;
 
+// Skeleton rows that mimic time slot cards (for "Available times" when date changes)
+const TimeSlotsSkeleton = () => (
+  <ScrollableList
+    as={motion.div}
+    variants={staggerContainer}
+    initial="hidden"
+    animate="visible"
+  >
+    {[1, 2, 3].map((i) => (
+      <CompactSlotContainer
+        key={i}
+        as="div"
+        style={{ cursor: "default", pointerEvents: "none" }}
+      >
+        <SlotMainRow>
+          <TimeGroup style={{ gap: 6 }}>
+            <SkeletonBlock $width="120px" $height="18px" $radius="8px" />
+            <SkeletonBlock $width="140px" $height="12px" $radius="6px" />
+          </TimeGroup>
+          <SkeletonBlock $width="56px" $height="28px" $radius="20px" />
+        </SlotMainRow>
+      </CompactSlotContainer>
+    ))}
+  </ScrollableList>
+);
+
 const LoadingSpinner = styled(motion.div)`
   width: 24px;
   height: 24px;
@@ -661,12 +717,14 @@ const CalendarStep = ({
   const [currentDate, setCurrentDate] = useState(
     getInitialDateObj() || new Date()
   );
-  const [selectedDate, setSelectedDate] = useState(getInitialDateObj());
+  const [selectedDate, setSelectedDate] = useState(null);
   const [availableSlots, setAvailableSlots] = useState({});
   const [loading, setLoading] = useState(true);
+  const [slotsSkeleton, setSlotsSkeleton] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showMobileSheet, setShowMobileSheet] = useState(false);
   const abortControllerRef = useRef(null);
+  const slotsSkeletonTimeoutRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 960);
@@ -759,6 +817,20 @@ const CalendarStep = ({
       onUpdate({ selectedSlots: [] });
     }
   }, [minSelectableDate, selectedDate, onUpdate]);
+
+  // Brief skeleton for time cards when date changes (so user knows to tap there next)
+  useEffect(() => {
+    if (!selectedDate) return;
+    if (slotsSkeletonTimeoutRef.current) clearTimeout(slotsSkeletonTimeoutRef.current);
+    setSlotsSkeleton(true);
+    slotsSkeletonTimeoutRef.current = setTimeout(() => {
+      setSlotsSkeleton(false);
+      slotsSkeletonTimeoutRef.current = null;
+    }, 450);
+    return () => {
+      if (slotsSkeletonTimeoutRef.current) clearTimeout(slotsSkeletonTimeoutRef.current);
+    };
+  }, [selectedDate?.getTime()]);
 
   // --- Handlers ---
   const handleDateClick = (date) => {
@@ -857,6 +929,8 @@ const CalendarStep = ({
             ></lord-icon>
             <span>Select a date to view times</span>
           </EmptyState>
+        ) : slotsSkeleton ? (
+          <TimeSlotsSkeleton key="slots-skeleton" />
         ) : loading && !availableSlots[getLocalYYYYMMDD(selectedDate)] ? (
           <LoadingSpinner
             key="loading"
@@ -1041,23 +1115,33 @@ const CalendarStep = ({
                     {daysInMonth.map((item, idx) => {
                       if (!item.date) return <div key={`empty-${idx}`} />;
                       const naive = getLocalYYYYMMDD(item.date);
+                      const isPast = item.date < today;
                       const isBeforeMin = item.date < minSelectableDate;
                       const hasSlots =
                         !isBeforeMin && (availableSlots[naive]?.length > 0);
+                      const isUnavailableFuture =
+                        !isPast && (isBeforeMin || (!hasSlots && !loading));
                       const isSel =
                         selectedDate &&
                         getLocalYYYYMMDD(selectedDate) === naive;
+                      const isToday = item.date.getTime() === today.getTime();
 
                       return (
                         <DayButton
                           key={naive}
-                          disabled={isBeforeMin || (!hasSlots && !loading)}
+                          disabled={isPast || isUnavailableFuture}
                           $inMonth={true}
                           $hasSlots={hasSlots}
                           $isSelected={isSel}
-                          onClick={() => handleDateClick(item.date)}
+                          $isPast={isPast}
+                          $unavailableFuture={isUnavailableFuture}
+                          $isToday={isToday}
+                          onClick={() =>
+                            !isPast && !isUnavailableFuture &&
+                            handleDateClick(item.date)
+                          }
                           whileTap={
-                            !isBeforeMin && hasSlots ? { scale: 0.9 } : {}
+                            hasSlots && !isPast ? { scale: 0.9 } : {}
                           }
                         >
                           {item.date.getDate()}
@@ -1115,7 +1199,7 @@ const CalendarStep = ({
               <DrawerContent>
                 <div
                   style={{
-                    padding: "0 20px 20px 20px",
+                    padding: "0 5px 20px 5px",
                     display: "flex",
                     flexDirection: "column",
                     height: "100%",
@@ -1125,7 +1209,7 @@ const CalendarStep = ({
                   <div
                     style={{
                       display: "flex",
-                      justifyContent: "space-between",
+                      justifyContent: "center",
                       alignItems: "center",
                       marginBottom: 16,
                       flexShrink: 0,

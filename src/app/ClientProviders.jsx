@@ -15,6 +15,7 @@ import { SearchProvider } from "@/context/SearchContext";
 import SearchFullScreen from "@/components/common/SearchFullScreen";
 import SearchUrlHandler from "@/components/common/SearchUrlHandler";
 import ScrollRestorationHome from "@/components/ScrollRestorationHome";
+import ScrollToTopOnNavigate from "@/components/ScrollToTopOnNavigate";
 
 export default function ClientProviders({ children }) {
   const memoizedTheme = useMemo(() => theme, []);
@@ -91,6 +92,7 @@ export default function ClientProviders({ children }) {
                   </Suspense>
                   <Suspense fallback={null}>
                     <ScrollRestorationHome />
+                    <ScrollToTopOnNavigate />
                   </Suspense>
                   {children}
                 </AnalyticsProvider>

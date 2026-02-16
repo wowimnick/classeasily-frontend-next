@@ -1,4 +1,5 @@
-import { addMinutes, subHours, parseISO } from "date-fns";
+import { addMinutes, subHours, parseISO, isValid } from "date-fns";
+import { fromZonedTime } from "date-fns-tz";
 
 export const formatTimeRange = (
   naiveDateStr,
@@ -26,19 +27,23 @@ export const formatTimeRange = (
   try {
     const timeParts = naiveStartTimeStr.split(":");
     const formattedTimeStr = `${timeParts[0]}:${timeParts[1] || "00"}:${timeParts[2] || "00"}`;
+    const dateTimeInBusinessTZStr = `${naiveDateStr}T${formattedTimeStr}`;
 
-    // Parse the date and time in the business timezone
-    const startDateTime = new Date(`${naiveDateStr}T${formattedTimeStr}`);
-    const endDateTime = addMinutes(startDateTime, durationMinutes);
+    // Parse as business-local time, then we have a UTC instant to format in target TZ
+    const startDateTimeUtc = fromZonedTime(dateTimeInBusinessTZStr, businessTimeZoneStr);
+    if (!isValid(startDateTimeUtc)) {
+      return "Invalid time/duration";
+    }
+    const endDateTimeUtc = addMinutes(startDateTimeUtc, durationMinutes);
 
-    const startFormatted = startDateTime.toLocaleTimeString("en-US", {
+    const startFormatted = startDateTimeUtc.toLocaleTimeString("en-US", {
       timeZone: targetDisplayTimeZone,
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
     });
 
-    const endFormatted = endDateTime.toLocaleTimeString("en-US", {
+    const endFormatted = endDateTimeUtc.toLocaleTimeString("en-US", {
       timeZone: targetDisplayTimeZone,
       hour: "numeric",
       minute: "2-digit",
@@ -244,18 +249,10 @@ export const getCancellationPolicyText = (
   policyKey,
   percentage,
   customHours,
-  classStartDateTime = null, // ISO string: "2025-01-15T19:00:00"
+  classStartDateTime = null, // Naive string in business TZ: "2025-01-15T19:00:00"
   userTimeZone = null,
-  businessTimeZone = null // Added businessTimeZone parameter
+  businessTimeZone = null
 ) => {
-  console.log(
-    policyKey,
-    percentage,
-    customHours,
-    classStartDateTime,
-    userTimeZone,
-    businessTimeZone
-  );
   if (policyKey === null || policyKey === undefined) {
     return "No cancellation information available.";
   }
@@ -271,23 +268,25 @@ export const getCancellationPolicyText = (
   // If we have class start time, calculate the specific deadline
   const getDeadlineText = (hoursBeforeStart) => {
     if (!classStartDateTime || !userTimeZone) {
-      console.log("Missing classStartDateTime or userTimeZone:", {
-        classStartDateTime,
-        userTimeZone,
-      });
       return `at least ${formatHoursForDisplay(hoursBeforeStart)} before the class starts`;
     }
 
     try {
-      // Parse the class start time - assume it's in business timezone if provided
-      let classStart = new Date(classStartDateTime);
-
-      // If the parsed date is invalid, try parseISO
-      if (isNaN(classStart.getTime())) {
-        classStart = parseISO(classStartDateTime);
+      // Parse class start as business-local time so deadline is correct for any user TZ
+      let classStartUtc;
+      if (businessTimeZone) {
+        classStartUtc = fromZonedTime(classStartDateTime, businessTimeZone);
+      } else {
+        classStartUtc = parseISO(classStartDateTime);
+        if (!isValid(classStartUtc)) {
+          classStartUtc = new Date(classStartDateTime);
+        }
+      }
+      if (!isValid(classStartUtc) || isNaN(classStartUtc.getTime())) {
+        return `at least ${formatHoursForDisplay(hoursBeforeStart)} before the class starts`;
       }
 
-      const deadline = subHours(classStart, hoursBeforeStart);
+      const deadline = subHours(classStartUtc, hoursBeforeStart);
 
       const deadlineFormatted = deadline.toLocaleString("en-US", {
         timeZone: userTimeZone,
@@ -300,7 +299,6 @@ export const getCancellationPolicyText = (
         timeZoneName: "short",
       });
 
-      console.log("Calculated deadline:", deadlineFormatted);
       return `before ${deadlineFormatted}`;
     } catch (error) {
       console.error("Error calculating cancellation deadline:", error);

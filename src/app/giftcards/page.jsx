@@ -11,7 +11,7 @@ export const metadata = {
     siteName: "ClassEasily",
     images: [
       {
-        url: "/Card 6.png", // Make sure to add an OG image to your public folder
+        url: "https://classeasily.com/Card%206.png",
         width: 1200,
         height: 630,
         alt: "ClassEasily Gift Cards",

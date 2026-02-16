@@ -1,4 +1,5 @@
 export const metadata = {
   title: "Terms of Service | Classeasily",
-  description: "Read the Terms of Service for using the Classeasily platform...",
+  description:
+    "Read the Terms of Service for using the Classeasily platform. Covers guest and host responsibilities, bookings, payments, and account use.",
 };

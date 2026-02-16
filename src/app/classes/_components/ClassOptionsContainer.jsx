@@ -71,6 +71,7 @@ const ClassOptionsContainer = ({
   classImages,
   currency = "$",
   onBookNow,
+  businessTimeZone,
 }) => {
   if (!options || options.length === 0) {
     return (
@@ -108,6 +109,7 @@ const ClassOptionsContainer = ({
               classImages={classImages}
               currency={currency}
               onBookNow={onBookNow}
+              businessTimeZone={businessTimeZone}
             />
           </CardWrapper>
         ))}

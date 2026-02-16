@@ -73,6 +73,7 @@ import { Drawer } from "vaul";
 
 import { reviewService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
+import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
 dayjs.extend(relativeTime);
 
@@ -1597,12 +1598,22 @@ const BusinessReviews = () => {
             </HeaderSubtitle>
           </div>
           <ControlsBar>
-            <StyledRangePicker
-              value={analyticsDateRange}
-              onChange={handleAnalyticsDateChange}
-              placeholder={["All Time (Start)", "All Time (End)"]}
-              allowClear
-            />
+            {isMobile ? (
+              <MobileDateRangePicker
+                value={analyticsDateRange}
+                onChange={handleAnalyticsDateChange}
+                placeholder="All Time (Start – End)"
+                format="MMM D, YYYY"
+                allowClear
+              />
+            ) : (
+              <StyledRangePicker
+                value={analyticsDateRange}
+                onChange={handleAnalyticsDateChange}
+                placeholder={["All Time (Start)", "All Time (End)"]}
+                allowClear
+              />
+            )}
           </ControlsBar>
         </DashboardHeader>
 

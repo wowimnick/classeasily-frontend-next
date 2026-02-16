@@ -1,7 +1,6 @@
 // app/not-found.jsx
 import { Suspense } from "react";
 import ExploreHeader from "@/components/explore/ExploreHeader";
-import IllustrationSvg from "@/assets/404.svg";
 import Footer from "@/components/homepage/Footer";
 
 export const metadata = {
@@ -46,7 +45,10 @@ export default function NotFound() {
             }}
             aria-hidden
           >
-            <IllustrationSvg
+            {/* Use public SVG so it works in both dev and production build (no SVGR in prod) */}
+            <img
+              src="/404.svg"
+              alt=""
               style={{
                 width: "100%",
                 height: "100%",

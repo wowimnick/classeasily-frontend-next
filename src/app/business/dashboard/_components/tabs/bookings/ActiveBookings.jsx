@@ -39,6 +39,7 @@ import BookingDetailsDrawer from "./BookingDetailsDrawer";
 import RescheduleBookingModal from "./RescheduleBookingModal";
 import { LordIcon } from "@/services/ReactUtils";
 import { theme } from "@/components/theme";
+import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
 const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
@@ -658,13 +659,22 @@ const ActiveBookings = () => {
             allowClear
           />
           <div style={{ display: "flex", gap: "8px", flexWrap: "nowrap" }}>
-            <StyledRangePicker
-              format="MMM D, YYYY"
-              onChange={setDateRange}
-              value={dateRange}
-              allowClear
-              placeholder={["Start Date", "End Date"]}
-            />
+            {!screens.lg ? (
+              <MobileDateRangePicker
+                format="MMM D, YYYY"
+                onChange={setDateRange}
+                value={dateRange}
+                placeholder="Start Date – End Date"
+              />
+            ) : (
+              <StyledRangePicker
+                format="MMM D, YYYY"
+                onChange={setDateRange}
+                value={dateRange}
+                allowClear
+                placeholder={["Start Date", "End Date"]}
+              />
+            )}
             <ActionButton
               ref={refreshButtonRef}
               onMouseEnter={() => handleButtonHover(true)}

@@ -122,6 +122,38 @@ const CalendarGrid = styled.div`
   }
 `;
 
+// Range calendar: same grid but with in-range, range-start, range-end
+const RangeCalendarGrid = styled(CalendarGrid)`
+  button {
+    &.in-range {
+      background: ${(props) =>
+        (props.theme.token?.colorPrimary || "#1677ff") + "25"};
+      color: ${(props) => props.theme.token?.colorPrimary || "#1677ff"};
+      border-radius: 0;
+    }
+
+    &.range-start {
+      border-radius: 10px 0 0 10px;
+      background: ${(props) => props.theme.token?.colorPrimary || "#1677ff"};
+      color: white;
+      box-shadow: 0 2px 8px
+        ${(props) => (props.theme.token?.colorPrimary || "#1677ff") + "60"};
+    }
+
+    &.range-end {
+      border-radius: 0 10px 10px 0;
+      background: ${(props) => props.theme.token?.colorPrimary || "#1677ff"};
+      color: white;
+      box-shadow: 0 2px 8px
+        ${(props) => (props.theme.token?.colorPrimary || "#1677ff") + "60"};
+    }
+
+    &.range-start.range-end {
+      border-radius: 10px;
+    }
+  }
+`;
+
 export const MobileDatePicker = ({
   value,
   onChange,
@@ -511,6 +543,202 @@ export const MobileTimePicker = ({
                 loopCount={0}
               />
             </WheelContainer>
+          </PickerContainer>
+        </StyledDrawerContent>
+      </Drawer.Portal>
+    </Drawer.NestedRoot>
+  );
+};
+
+// --- MOBILE DATE RANGE PICKER (single trigger + Vaul drawer) ---
+
+export const MobileDateRangePicker = ({
+  value,
+  onChange,
+  placeholder = "Select date range",
+  error,
+  disabledDate,
+  format = "MMM D, YYYY",
+  allowClear = false,
+}) => {
+  const [open, setOpen] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(
+    () => (value?.[0] || value?.[1] || dayjs())
+  );
+  const [draftStart, setDraftStart] = useState(null);
+  const [draftEnd, setDraftEnd] = useState(null);
+  const [selectingEnd, setSelectingEnd] = useState(false);
+
+  // When drawer is closed, use value from parent so clearing works; when open use draft
+  const start = open ? (draftStart ?? value?.[0] ?? null) : (value?.[0] ?? null);
+  const end = open ? (draftEnd ?? value?.[1] ?? null) : (value?.[1] ?? null);
+  const hasValue = start && end;
+
+  useEffect(() => {
+    if (open) {
+      setDraftStart(value?.[0] ?? null);
+      setDraftEnd(value?.[1] ?? null);
+      setSelectingEnd(!!value?.[0] && !!value?.[1]);
+      const base = value?.[0] || value?.[1] || dayjs();
+      setCurrentMonth(base);
+    }
+  }, [open, value?.[0]?.valueOf(), value?.[1]?.valueOf()]);
+
+  const handleDayClick = (date) => {
+    if (disabledDate?.(date)) return;
+    if (!selectingEnd || !start || date.isBefore(start, "day")) {
+      setDraftStart(date);
+      setDraftEnd(null);
+      setSelectingEnd(true);
+    } else {
+      setDraftEnd(date);
+      setSelectingEnd(false);
+    }
+  };
+
+  const handleApply = () => {
+    if (start && end) {
+      onChange([start, end]);
+      setOpen(false);
+    }
+  };
+
+  const handleClear = () => {
+    onChange(null);
+    setOpen(false);
+  };
+
+  const displayText = hasValue
+    ? `${start.format(format)} – ${end.format(format)}`
+    : placeholder;
+
+  const generateRangeDays = () => {
+    const monthStart = currentMonth.startOf("month");
+    const monthEnd = currentMonth.endOf("month");
+    const startDay = monthStart.day();
+    const days = [];
+
+    for (let i = 0; i < startDay; i++) {
+      days.push(<div key={`empty-${i}`} />);
+    }
+
+    for (let i = 1; i <= monthEnd.date(); i++) {
+      const date = monthStart.date(i);
+      const isDisabled = disabledDate ? disabledDate(date) : false;
+      const isToday = date.isSame(dayjs(), "day");
+
+      const isStart = start && date.isSame(start, "day");
+      const isEnd = end && date.isSame(end, "day");
+      const isInRange =
+        start &&
+        end &&
+        date.isAfter(start, "day") &&
+        date.isBefore(end, "day");
+
+      const rangeClass = isStart && isEnd
+        ? "range-start range-end"
+        : isStart
+          ? "range-start"
+          : isEnd
+            ? "range-end"
+            : isInRange
+              ? "in-range"
+              : "";
+
+      days.push(
+        <button
+          key={i}
+          type="button"
+          className={`${rangeClass} ${isDisabled ? "disabled" : ""} ${
+            isToday ? "today" : ""
+          }`}
+          onClick={() => handleDayClick(date)}
+        >
+          {i}
+        </button>
+      );
+    }
+    return days;
+  };
+
+  return (
+    <Drawer.NestedRoot open={open} onOpenChange={setOpen}>
+      <Drawer.Trigger asChild>
+        <MobileInputTrigger $hasValue={!!hasValue} $error={error}>
+          {displayText}
+          <Calendar size={18} color={hasValue ? "#1e293b" : "#94a3b8"} />
+        </MobileInputTrigger>
+      </Drawer.Trigger>
+      <Drawer.Portal>
+        <StyledDrawerOverlay />
+        <StyledDrawerContent>
+          <DrawerHandle />
+          <PickerContainer>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 8,
+              }}
+            >
+              <Button
+                icon={<ChevronLeft size={20} />}
+                onClick={() =>
+                  setCurrentMonth(currentMonth.subtract(1, "month"))
+                }
+                type="text"
+              />
+              <span style={{ fontSize: 18, fontWeight: 600, color: "#0f172a" }}>
+                {currentMonth.format("MMMM YYYY")}
+              </span>
+              <Button
+                icon={<ChevronRight size={20} />}
+                onClick={() => setCurrentMonth(currentMonth.add(1, "month"))}
+                type="text"
+              />
+            </div>
+            <RangeCalendarGrid>
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+                <div key={d} className="day-header">
+                  {d}
+                </div>
+              ))}
+              {generateRangeDays()}
+            </RangeCalendarGrid>
+            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+              {allowClear && hasValue && (
+                <Button
+                  size="large"
+                  onClick={handleClear}
+                  style={{
+                    flex: 1,
+                    height: 48,
+                    borderRadius: 10,
+                    fontWeight: 600,
+                    fontSize: 16,
+                  }}
+                >
+                  Clear
+                </Button>
+              )}
+              <Button
+                type="primary"
+                block
+                size="large"
+                onClick={handleApply}
+                disabled={!start || !end}
+                style={{
+                  flex: allowClear && hasValue ? 1 : undefined,
+                  height: 48,
+                  borderRadius: 10,
+                  fontWeight: 600,
+                  fontSize: 16,
+                }}
+              >
+                Apply
+              </Button>
+            </div>
           </PickerContainer>
         </StyledDrawerContent>
       </Drawer.Portal>

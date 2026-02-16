@@ -1169,6 +1169,7 @@ export default function ClassPageClient({
                 classImages={classData.images}
                 currency={classData.currency_code || "$"}
                 onBookNow={handleOpenBookingModal}
+                businessTimeZone={classData?.business_timezone}
               />
             ) : null}
           </StickySidebar>

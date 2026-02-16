@@ -150,7 +150,30 @@ export async function generateMetadata({ params }) {
       ? classData.images[0].medium_url || classData.images[0].original_url
       : "https://classeasily.com/placeholder-image.jpg";
 
-  // Parse Coordinates for Schema
+  return {
+    title: pageTitle,
+    description: pageDescription,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: pageTitle,
+      description: pageDescription,
+      url: canonicalUrl,
+      images: [
+        { url: imageUrl, width: 1200, height: 630, alt: classData.title },
+      ],
+      type: "website",
+    },
+  };
+}
+
+// Build Course JSON-LD for <script type="application/ld+json"> (must not be in metadata.other)
+function buildCourseSchema(classData, businessData) {
+  const imageUrl =
+    classData.images?.length > 0
+      ? classData.images[0].medium_url || classData.images[0].original_url
+      : "https://classeasily.com/placeholder-image.jpg";
   let geoCoordinates = null;
   if (classData.coordinates) {
     const parts = classData.coordinates.split(",");
@@ -166,9 +189,7 @@ export async function generateMetadata({ params }) {
       }
     }
   }
-
-  // Construct Full Schema
-  const courseSchema = {
+  return {
     "@context": "https://schema.org",
     "@type": "Course",
     name: classData.title,
@@ -180,7 +201,6 @@ export async function generateMetadata({ params }) {
       name: businessData?.businessName || "Classeasily Host",
       url: businessData?.website || "https://classeasily.com",
     },
-    // Location Schema for "Near Me" search optimization
     location: {
       "@type": "Place",
       name: businessData?.businessName || "Event Location",
@@ -189,7 +209,7 @@ export async function generateMetadata({ params }) {
         streetAddress: classData.location || "",
         addressLocality: classData.business_city || "",
         addressRegion: classData.business_state || "",
-        addressCountry: "CA", // Defaulting to CA based on supported provinces
+        addressCountry: "CA",
       },
       ...(geoCoordinates && { geo: geoCoordinates }),
     },
@@ -212,25 +232,57 @@ export async function generateMetadata({ params }) {
         availability: "https://schema.org/InStock",
       })),
   };
+}
 
+// Build BreadcrumbList JSON-LD from class + category/location data
+function buildBreadcrumbSchema(classData) {
+  const base = "https://classeasily.com";
+  const items = [
+    { position: 1, name: "Home", item: `${base}/` },
+    { position: 2, name: "Explore", item: `${base}/explore` },
+  ];
+  let position = 3;
+  const locationText =
+    classData?.business_city && classData?.business_state
+      ? `${classData.business_city}, ${classData.business_state}`
+      : classData?.business_state || classData?.business_city || null;
+  if (locationText) {
+    items.push({
+      position: position++,
+      name: locationText,
+      item: `${base}/explore?${new URLSearchParams({ location: locationText }).toString()}`,
+    });
+  }
+  const { category_key, category_name, subcategory_key, subcategory_name } =
+    classData;
+  if (category_name && category_key) {
+    items.push({
+      position: position++,
+      name: category_name,
+      item: `${base}/explore/category/${category_key}`,
+    });
+    if (subcategory_name && subcategory_key) {
+      items.push({
+        position: position++,
+        name: subcategory_name,
+        item: `${base}/explore/category/${category_key}/${subcategory_key}`,
+      });
+    }
+  }
+  items.push({
+    position: position,
+    name: classData.title,
+    item: `${base}/classes/${classData.slug}`,
+  });
   return {
-    title: pageTitle,
-    description: pageDescription,
-    alternates: {
-      canonical: canonicalUrl,
-    },
-    openGraph: {
-      title: pageTitle,
-      description: pageDescription,
-      url: canonicalUrl,
-      images: [
-        { url: imageUrl, width: 1200, height: 630, alt: classData.title },
-      ],
-      type: "website",
-    },
-    other: {
-      "application/ld+json": JSON.stringify(courseSchema),
-    },
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map(({ position: pos, name, item }) => ({
+      "@type": "ListItem",
+      position: pos,
+      name,
+      item,
+    })),
   };
 }
 
@@ -288,10 +340,21 @@ export default async function ClassPage({ params }) {
     title: classData.title,
   });
 
+  const courseSchema = buildCourseSchema(classData, businessData);
+  const breadcrumbSchema = buildBreadcrumbSchema(classData);
+
   return (
     <div
       style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(courseSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <main style={{ flex: 1 }}>
         <ClassPageClient
           classData={classData}

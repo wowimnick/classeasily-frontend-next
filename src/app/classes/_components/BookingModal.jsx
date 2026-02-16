@@ -31,32 +31,23 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 // Dynamic imports
 const OptionSelectionStep = dynamic(
   () => import("./steps/OptionSelectionStep"),
-  {
-    loading: () => <div style={{ minHeight: "400px" }} />,
-    ssr: false,
-  },
+  { ssr: false },
 );
 
 const ReviewAndPaymentStep = dynamic(
   () => import("./steps/ReviewAndPaymentStep"),
-  {
-    loading: () => <div style={{ minHeight: "400px" }} />,
-    ssr: false,
-  },
+  { ssr: false },
 );
 
 const CourseCalendarStep = dynamic(() => import("./steps/CourseCalendarStep"), {
-  loading: () => <div style={{ minHeight: "400px" }} />,
   ssr: false,
 });
 
 const CalendarStep = dynamic(() => import("./steps/CalendarStep"), {
-  loading: () => <div style={{ minHeight: "400px" }} />,
   ssr: false,
 });
 
 const ConfirmationStep = dynamic(() => import("./steps/ConfirmationStep"), {
-  loading: () => <div style={{ minHeight: "400px" }} />,
   ssr: false,
 });
 
@@ -1026,23 +1017,26 @@ const BookingModal = ({
 
             {ModalContent}
 
-            {shouldShowFooter && (
-              <ModalFooter
-                currentStep={currentStep}
-                onBack={handleBack}
-                onNext={handleNext}
-                onClose={handleClose}
-                loading={isLoading}
-                hideNextButton={shouldHideNextButton}
-                hideBackButton={
-                  currentStep === 1 || currentStep === headerSteps.length
-                }
-                isNextDisabled={!validateStep(currentStep, bookingData)}
-                bookingData={bookingData}
-                paymentAction={paymentAction}
-                isPaymentStep={currentStep === PAYMENT_STEP}
-              />
-            )}
+            {shouldShowFooter &&
+              (currentStep > 1 ||
+                (currentStep === PAYMENT_STEP && paymentAction != null)) && (
+                <ModalFooter
+                  currentStep={currentStep}
+                  totalSteps={headerSteps.length}
+                  onBack={handleBack}
+                  onNext={handleNext}
+                  onClose={handleClose}
+                  loading={isLoading}
+                  hideNextButton={shouldHideNextButton}
+                  hideBackButton={
+                    currentStep === 1 || currentStep === headerSteps.length
+                  }
+                  isNextDisabled={!validateStep(currentStep, bookingData)}
+                  bookingData={bookingData}
+                  paymentAction={paymentAction}
+                  isPaymentStep={currentStep === PAYMENT_STEP}
+                />
+              )}
           </DesktopModal>
         </DesktopOverlay>
       )}

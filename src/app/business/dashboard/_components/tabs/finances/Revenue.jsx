@@ -58,6 +58,7 @@ import dayjs from "dayjs";
 import { revenueService, businessClassService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
 import { theme } from "@/components/theme";
+import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -799,12 +800,20 @@ const Revenue = forwardRef((props, ref) => {
             </HeaderSubtitle>
           </div>
           <Controls>
-            <StyledRangePicker
-              value={[filterParams.startDate, filterParams.endDate]}
-              onChange={handleDateChange}
-              format="MMM D, YYYY"
-              allowClear={false}
-            />
+            {isMobile ? (
+              <MobileDateRangePicker
+                value={[filterParams.startDate, filterParams.endDate]}
+                onChange={handleDateChange}
+                format="MMM D, YYYY"
+              />
+            ) : (
+              <StyledRangePicker
+                value={[filterParams.startDate, filterParams.endDate]}
+                onChange={handleDateChange}
+                format="MMM D, YYYY"
+                allowClear={false}
+              />
+            )}
             <ExperienceFilterSelect
               placeholder="Filter by Experience"
               value={filterParams.classId}

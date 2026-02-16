@@ -11,6 +11,7 @@ import message from "@/lib/message";
 
 import { guestBookingService } from "@/services/apiService";
 import { getCancellationPolicyText } from "@/app/classes/_components/steps/utils";
+import { formatBusinessLocalToUserDisplay } from "@/services/utils";
 import { theme } from "@/components/theme";
 
 const { Title, Text, Paragraph } = Typography;
@@ -194,10 +195,33 @@ function CancellationContent({ token, onClose }) {
 
     if (status === "loading") return <CancellationSkeleton />;
 
-    // Formatting date and time for consistent spacing
-    const dateStr = booking ? new Date(booking.date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' }) : "";
-    const timeStr = booking ? new Date(`2000-01-01T${booking.time}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : "";
-    const fullSchedule = `${dateStr} at ${timeStr}`;
+    // Build one instant from booking date+time in business TZ, then format in user TZ
+    const userTz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "Etc/UTC";
+    const businessTz = booking?.business_timezone || "Etc/UTC";
+    let fullSchedule = "Date & time N/A";
+    if (booking?.date && booking?.time) {
+      try {
+        const datePart = formatBusinessLocalToUserDisplay(
+          booking.date,
+          booking.time,
+          businessTz,
+          userTz,
+          { dateTimeFormat: "EEEE, MMMM d, yyyy" }
+        );
+        const timePart = formatBusinessLocalToUserDisplay(
+          booking.date,
+          booking.time,
+          businessTz,
+          userTz,
+          { dateTimeFormat: "h:mm a zzz" }
+        );
+        if (datePart !== "Invalid Date" && timePart !== "Invalid Time") {
+          fullSchedule = `${datePart} at ${timePart}`;
+        }
+      } catch {
+        fullSchedule = `${booking.date} at ${booking.time}`;
+      }
+    }
 
     return (
         <ContentWrapper>

@@ -58,6 +58,7 @@ import dayjs from "dayjs";
 import { bookingAnalyticsService } from "@/services/apiService";
 import { theme } from "@/components/theme";
 import { LordIcon } from "@/services/ReactUtils";
+import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -869,10 +870,18 @@ const BookingTrends = () => {
             </HeaderSubtitle>
           </div>
           <Controls>
-            <StyledRangePicker
-              value={[filterParams.startDate, filterParams.endDate]}
-              onChange={handleDateChange}
-            />
+            {isMobile ? (
+              <MobileDateRangePicker
+                value={[filterParams.startDate, filterParams.endDate]}
+                onChange={handleDateChange}
+                format="MMM D, YYYY"
+              />
+            ) : (
+              <StyledRangePicker
+                value={[filterParams.startDate, filterParams.endDate]}
+                onChange={handleDateChange}
+              />
+            )}
             <ClassFilterSelect
               placeholder="Filter by Experience"
               value={filterParams.classId}

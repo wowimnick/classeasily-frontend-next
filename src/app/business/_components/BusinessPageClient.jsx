@@ -355,7 +355,6 @@ const ContactRow = styled.div`
 const SocialGrid = styled.div`
   display: flex;
   gap: 0.75rem;
-  margin-top: 1rem;
   flex-wrap: wrap;
 `;
 
@@ -433,13 +432,16 @@ const createBrandIcon = () => {
 };
 
 const HoursList = ({ businessHours }) => {
+  const [showAll, setShowAll] = useState(false);
   if (!businessHours || businessHours.length === 0) return <p style={{color: '#999'}}>No hours listed</p>;
-  
+
   const today = new Date().toLocaleDateString('en-US', { weekday: 'short' });
-  
+  const displayHours = showAll ? businessHours : businessHours.slice(0, 3);
+  const hasMore = businessHours.length > 3;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-      {businessHours.slice(0, 3).map((h, i) => (
+      {displayHours.map((h, i) => (
         <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
           <span style={{ fontWeight: h.day.includes(today) ? '700' : '400', color: h.day.includes(today) ? '#ff385c' : '#444' }}>
             {h.day}
@@ -449,10 +451,24 @@ const HoursList = ({ businessHours }) => {
           </span>
         </div>
       ))}
-      {businessHours.length > 3 && (
-         <div style={{ fontSize: '0.8rem', color: '#ff385c', marginTop: '4px', cursor: 'pointer' }}>
-           View all hours
-         </div>
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setShowAll((prev) => !prev)}
+          style={{
+            fontSize: '13px',
+            color: '#ff385c',
+            marginTop: '4px',
+            cursor: 'pointer',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            textAlign: 'left',
+            font: 'inherit',
+          }}
+        >
+          {showAll ? 'Show less' : 'View all hours'}
+        </button>
       )}
     </div>
   );

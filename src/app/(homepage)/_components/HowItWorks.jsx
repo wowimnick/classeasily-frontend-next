@@ -142,9 +142,9 @@ const HowItWorks = () => {
 
       <div className={styles.container}>
         <div className={styles.firstElement}>
-          <h1 className={styles.h1} id="how-it-works-title">
+          <h2 className={styles.h1} id="how-it-works-title">
             How does ClassEasily work?
-          </h1>
+          </h2>
           <div className={styles.buttonWrapper}>
             <button
               onClick={() => setSelectedButton("forExplorers")}

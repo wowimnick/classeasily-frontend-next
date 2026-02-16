@@ -1,11 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import styled from "styled-components";
 import { motion } from "framer-motion";
 import { Button as AntButton } from "antd";
 import { Calendar, Tag, ArrowRight } from "lucide-react";
 import dayjs from "dayjs";
+import { fromZonedTime } from "date-fns-tz";
+import { formatBusinessLocalToUserDisplay } from "@/services/utils";
 
 const CardWrapper = styled(motion.div)`
   display: flex;
@@ -121,7 +123,7 @@ const TimelineLine = styled.div`
 
 const ScheduleList = styled.div`
   position: relative;
-  padding-left: 1.0625rem;
+  padding-left: 1.092rem;
 `;
 
 const ScheduleItem = styled.div`
@@ -138,8 +140,8 @@ const ScheduleItem = styled.div`
     left: -0.56rem;
     top: 50%;
     transform: translateY(-50%);
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: #ff385c;
     box-shadow: 0 0 0 2px #fff;
@@ -160,7 +162,8 @@ const PricingSection = styled.div`
 
 const PriceDisplay = styled.div`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: baseline;
   gap: 0.25rem;
 `;
 
@@ -199,6 +202,7 @@ const ClassOptionCard = ({
   classImages,
   currency,
   onBookNow,
+  businessTimeZone,
 }) => {
   if (!option) {
     return <CardWrapper>No option details available.</CardWrapper>;
@@ -208,14 +212,45 @@ const ClassOptionCard = ({
   const type = option.booking_type;
   const isCourse = type === "Full Course";
   const schedules = Array.isArray(option.schedules) ? option.schedules : [];
+  const userTz = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "Etc/UTC";
+  const bizTz = businessTimeZone || "Etc/UTC";
 
-  // Logic for Courses
+  // Class start as UTC timestamp (date+time in business TZ). Falls back to local parse if no biz TZ.
+  const getClassStartMs = (s) => {
+    if (!s?.date || !s?.time) return 0;
+    const timeParts = String(s.time).split(":");
+    const timeStr = `${timeParts[0]}:${timeParts[1] || "00"}:${timeParts[2] || "00"}`;
+    const dateTimeStr = `${s.date}T${timeStr}`;
+    if (bizTz && bizTz !== "Etc/UTC") {
+      try {
+        return fromZonedTime(dateTimeStr, bizTz).getTime();
+      } catch {
+        return dayjs(dateTimeStr).valueOf();
+      }
+    }
+    return dayjs(dateTimeStr).valueOf();
+  };
+
+  // "Today" in business TZ (YYYY-MM-DD) for calendar-date comparison
+  const todayInBizTz = useMemo(() => {
+    if (!bizTz || bizTz === "Etc/UTC") return dayjs().format("YYYY-MM-DD");
+    try {
+      return new Date().toLocaleDateString("en-CA", { timeZone: bizTz });
+    } catch {
+      return dayjs().format("YYYY-MM-DD");
+    }
+  }, [bizTz]);
+
+  const now = Date.now();
+
+  // Logic for Courses: next upcoming start (by business-local date >= today, then by time)
   const nextCourseSchedule = isCourse
     ? schedules
-        .filter(
-          (s) => s.date && dayjs(s.date).isAfter(dayjs().subtract(1, "day")),
-        )
-        .sort((a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf())[0]
+        .filter((s) => s.date && s.date >= todayInBizTz)
+        .sort((a, b) => {
+          if (a.date !== b.date) return a.date.localeCompare(b.date);
+          return getClassStartMs(a) - getClassStartMs(b);
+        })[0]
     : null;
 
   const formatTime = (timeStr) => {
@@ -236,6 +271,35 @@ const ClassOptionCard = ({
     } catch (e) {
       return dateStr;
     }
+  };
+
+  // Format session date+time for display: in user TZ when business TZ is known
+  const formatSessionDateTime = (dateStr, timeStr) => {
+    if (!dateStr || !timeStr) return "";
+    if (bizTz && bizTz !== "Etc/UTC") {
+      try {
+        const datePart = formatBusinessLocalToUserDisplay(
+          dateStr,
+          timeStr,
+          bizTz,
+          userTz,
+          { dateTimeFormat: "EEE, MMM d" }
+        );
+        const timePart = formatBusinessLocalToUserDisplay(
+          dateStr,
+          timeStr,
+          bizTz,
+          userTz,
+          { dateTimeFormat: "h:mm a zzz" }
+        );
+        if (datePart !== "Invalid Date" && timePart !== "Invalid Time") {
+          return `${datePart} at ${timePart}`;
+        }
+      } catch (e) {
+        // fall through to naive
+      }
+    }
+    return `${formatDate(dateStr)} at ${formatTime(timeStr)}`;
   };
 
   // Updated logic to include $0 (Free) pricing
@@ -269,17 +333,11 @@ const ClassOptionCard = ({
 
   const priceInfo = getPriceRange();
 
-  // Filter generic upcoming sessions (non-course)
+  // Filter generic upcoming sessions (non-course): class start (in business TZ) must be in the future
   const upcomingSchedules = !isCourse
     ? schedules
-        .filter(
-          (s) => s.date && dayjs(s.date).isAfter(dayjs().subtract(1, "day")),
-        )
-        .sort((a, b) => {
-          const dateTimeA = dayjs(`${a.date}T${a.time}`);
-          const dateTimeB = dayjs(`${b.date}T${b.time}`);
-          return dateTimeA - dateTimeB;
-        })
+        .filter((s) => s.date && s.time && getClassStartMs(s) > now)
+        .sort((a, b) => getClassStartMs(a) - getClassStartMs(b))
         .slice(0, 3)
     : [];
 
@@ -302,13 +360,9 @@ const ClassOptionCard = ({
         <PricingSection>
           <PriceDisplay>
             <Price>{priceInfo.display}</Price>
-            <PriceRange>{isCourse ? "/ full course" : "/ session"}</PriceRange>
+            <PriceRange>{isCourse ? "/ full course" : "/ person"}</PriceRange>
           </PriceDisplay>
         </PricingSection>
-        <TypeBadge $isCourse={isCourse}>
-          <Tag size={12} />
-          {isCourse ? "Course" : "Single Session"}
-        </TypeBadge>
       </Header>
 
 
@@ -339,7 +393,23 @@ const ClassOptionCard = ({
               {Array.isArray(nextCourseSchedule.days)
                 ? nextCourseSchedule.days.join(", ")
                 : "Week"}{" "}
-              at {formatTime(nextCourseSchedule.time)}
+              at{" "}
+              {bizTz && bizTz !== "Etc/UTC" && nextCourseSchedule.date && nextCourseSchedule.time
+                ? (() => {
+                    try {
+                      const t = formatBusinessLocalToUserDisplay(
+                        nextCourseSchedule.date,
+                        nextCourseSchedule.time,
+                        bizTz,
+                        userTz,
+                        { dateTimeFormat: "h:mm a zzz" }
+                      );
+                      return t !== "Invalid Time" ? t : formatTime(nextCourseSchedule.time);
+                    } catch {
+                      return formatTime(nextCourseSchedule.time);
+                    }
+                  })()
+                : formatTime(nextCourseSchedule.time)}
             </div>
           </CourseDetailRow>
         </CourseDetailsContainer>
@@ -357,8 +427,8 @@ const ClassOptionCard = ({
             {upcomingSchedules.map((schedule, index) => (
               <ScheduleItem key={schedule.id || index}>
                 <span>
-                  {schedule.date ? formatDate(schedule.date) : schedule.day} at{" "}
-                  {formatTime(schedule.time)}
+                  {formatSessionDateTime(schedule.date, schedule.time) ||
+                    `${schedule.date ? formatDate(schedule.date) : schedule.day} at ${formatTime(schedule.time)}`}
                 </span>
                 <span>{formatSchedulePrice(schedule.price)}</span>
               </ScheduleItem>

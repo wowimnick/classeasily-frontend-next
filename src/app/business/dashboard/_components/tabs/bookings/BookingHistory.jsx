@@ -42,6 +42,7 @@ import MobileBookingHistory from "./MobileBookingHistory";
 import BookingDetailsDrawer from "./BookingDetailsDrawer";
 import { LordIcon } from "@/services/ReactUtils";
 import { theme } from "@/components/theme";
+import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
 const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
@@ -656,13 +657,22 @@ const BookingHistory = forwardRef((props, ref) => {
             allowClear
           />
           <div style={{ display: "flex", gap: "8px", flexWrap: "nowrap" }}>
-            <StyledRangePicker
-              format="MMM D, YYYY"
-              onChange={setDateRange}
-              value={dateRange}
-              allowClear
-              placeholder={["Booked From", "Booked To"]}
-            />
+            {!screens.lg ? (
+              <MobileDateRangePicker
+                format="MMM D, YYYY"
+                onChange={setDateRange}
+                value={dateRange}
+                placeholder="Booked From – Booked To"
+              />
+            ) : (
+              <StyledRangePicker
+                format="MMM D, YYYY"
+                onChange={setDateRange}
+                value={dateRange}
+                allowClear
+                placeholder={["Booked From", "Booked To"]}
+              />
+            )}
             <ActionButton
               ref={refreshButtonRef}
               onMouseEnter={() => handleButtonHover(true)}

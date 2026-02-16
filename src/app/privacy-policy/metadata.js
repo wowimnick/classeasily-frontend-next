@@ -1,4 +1,5 @@
 export const metadata = {
   title: "Privacy Policy | Classeasily",
-  description: "Review Classeasily's Privacy Policy...",
+  description:
+    "Review Classeasily's Privacy Policy: how we collect, use, and protect your personal data when you book experiences or host on our platform.",
 };

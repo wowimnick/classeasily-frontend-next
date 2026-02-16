@@ -158,8 +158,9 @@ const FooterContainer = styled.div`
     align-items: center;
   }
 
-  /* Desktop Flex */
+  /* Desktop Flex + reduced bottom padding */
   @media (min-width: 641px) {
+    padding: 12px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
