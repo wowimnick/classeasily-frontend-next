@@ -2,17 +2,12 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   Check,
   Calendar as CalendarIcon,
+  Clock,
   MapPin,
   ChevronDown,
   ChevronUp,
   Copy,
-  Mail,
-  Smartphone,
-  Shield,
-  Package,
-  Info,
-  Clock,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import styled, { keyframes, css } from "styled-components";
 import { getDurationText, getCancellationPolicyText } from "./utils";
@@ -26,26 +21,26 @@ import { createEvent } from "ics";
 import { saveAs } from "file-saver";
 import { fromZonedTime } from "date-fns-tz";
 import { bookingService } from "@/services/apiService";
-import message from "@/lib/message";
+import { message } from "antd";
 
 // --- Animations ---
-const fadeIn = keyframes`
+const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
 // --- Styled Components ---
 
-const MainContainer = styled.div`
+const Container = styled.div`
   max-width: 600px;
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 40px 20px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: #222222;
-  animation: ${fadeIn} 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: ${fadeInUp} 0.6s ease-out;
 
   @media (max-width: 640px) {
-    padding: 24px 20px;
+    padding: 24px 16px;
   }
 `;
 
@@ -58,243 +53,150 @@ const StatusCircle = styled.div`
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background-color: ${props => props.$failed ? "#FEE2E2" : "#222222"}; 
-  color: ${props => props.$failed ? "#EF4444" : "#FFFFFF"};
+  background-color: ${(props) => (props.$failed ? "#fee2e2" : "#222222")}; /* Black for modern look */
+  color: ${(props) => (props.$failed ? "#ef4444" : "#ffffff")};
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 24px;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  box-shadow: 0 10px 25px -10px rgba(0,0,0,0.3);
 
   svg {
     width: 40px;
     height: 40px;
-    stroke-width: 2.5px;
+    stroke-width: 3px;
   }
 `;
 
-const Headline = styled.h1`
+const Title = styled.h1`
   font-size: 32px;
   font-weight: 800;
   margin: 0 0 12px 0;
   letter-spacing: -0.02em;
-  line-height: 1.1;
+  color: #222222;
 
   @media (max-width: 640px) {
     font-size: 26px;
   }
 `;
 
-const SubHeadline = styled.p`
+const Subtitle = styled.p`
   font-size: 16px;
   color: #717171;
   margin: 0 auto;
-  max-width: 400px;
+  max-width: 420px;
   line-height: 1.5;
 `;
 
-const ReferenceBar = styled.div`
-  margin-top: 24px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: #F7F7F7;
-  border-radius: 30px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #222222;
-  cursor: pointer;
-  transition: background 0.2s;
-
-  &:hover {
-    background: #EBEBEB;
-  }
+/* The "Ticket" / Main Card */
+const BookingCard = styled.div`
+  background: #ffffff;
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  margin-bottom: 32px;
 `;
 
-const Divider = styled.div`
-  height: 1px;
-  background-color: #DDDDDD;
-  margin: 32px 0;
+const CardImagePlaceholder = styled.div`
+  height: 8px;
+  background: #222222;
   width: 100%;
 `;
 
-// --- Trip Details Section ---
-
-const TripGrid = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+const CardContent = styled.div`
+  padding: 24px;
 `;
 
-const TripRow = styled.div`
+const ClassTitle = styled.h2`
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+`;
+
+const BusinessName = styled.div`
+  font-size: 14px;
+  font-weight: 500;
+  color: #717171;
+  margin-bottom: 24px;
+`;
+
+const InfoRow = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  gap: 20px;
+  margin-bottom: 20px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
 `;
 
-const TripLabel = styled.div`
-  font-size: 16px;
+const InfoIcon = styled.div`
+  margin-right: 16px;
+  color: #222222;
+  display: flex;
+  align-items: center;
+  height: 24px; /* Align with line-height */
+  
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+`;
+
+const InfoText = styled.div`
+  flex: 1;
+`;
+
+const InfoLabel = styled.div`
+  font-size: 14px;
   font-weight: 600;
   color: #222222;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 `;
 
-const TripValue = styled.div`
-  font-size: 16px;
+const InfoValue = styled.div`
+  font-size: 14px;
   color: #717171;
   line-height: 1.4;
 `;
 
-const LocationBlock = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  
-  .icon-wrap {
-    margin-top: 2px;
-    color: #222222;
-  }
-`;
-
-// --- Action Buttons ---
-
-const ButtonGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 12px;
-`;
-
-const PrimaryButton = styled.button`
-  background-color: #FF385C;
-  color: white;
-  font-size: 16px;
-  font-weight: 600;
-  padding: 14px 24px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  transition: transform 0.1s ease, background-color 0.2s;
-
-  &:hover {
-    background-color: #D90B3E;
-  }
-  
-  &:active {
-    transform: scale(0.98);
-  }
-
-  &:disabled {
-    background-color: #DDDDDD;
-    cursor: not-allowed;
-  }
-`;
-
-const GhostButton = styled.button`
-  background: transparent;
-  color: #222222;
-  font-size: 15px;
-  font-weight: 600;
-  padding: 12px;
-  border: 1px solid #DDDDDD;
-  border-radius: 8px;
-  cursor: pointer;
-  width: 100%;
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: #000;
-    background: #F7F7F7;
-  }
-`;
-
-// --- Accordion / Dropdown Styles ---
-
-const AccordionSection = styled.div`
-  border-bottom: 1px solid #DDDDDD;
-  &:first-of-type {
-    border-top: 1px solid #DDDDDD;
-  }
-`;
-
-const AccordionHeader = styled.button`
-  width: 100%;
+const ReferenceSection = styled.div`
+  border-top: 1px solid #dddddd;
+  background-color: #f7f7f7;
+  padding: 16px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-
-  span {
-    font-size: 18px;
-    font-weight: 600;
-    color: #222222;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  svg {
-    color: #222222;
-    transition: transform 0.3s ease;
-    transform: ${props => props.$isOpen ? 'rotate(180deg)' : 'rotate(0)'};
-  }
 `;
 
-const AccordionContent = styled.div`
-  overflow: hidden;
-  max-height: ${props => props.$isOpen ? '500px' : '0'};
-  opacity: ${props => props.$isOpen ? '1' : '0'};
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  padding-bottom: ${props => props.$isOpen ? '24px' : '0'};
+const ReferenceLabel = styled.span`
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   color: #717171;
-  font-size: 15px;
-  line-height: 1.6;
+`;
 
-  ul {
-    padding-left: 20px;
-    margin: 0;
-  }
-  
-  li {
-    margin-bottom: 8px;
+const ReferenceCode = styled.div`
+  font-family: monospace;
+  font-size: 16px;
+  font-weight: 600;
+  color: #222222;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+
+  &:hover {
+    color: #000;
   }
 `;
 
-// --- Helpers ---
-
-const getUTCDateFromBusinessLocal = (
-  naiveDateStr,
-  naiveTimeStr,
-  businessTimeZoneStr
-) => {
-  if (!naiveDateStr || !naiveTimeStr || !businessTimeZoneStr) return null;
-  try {
-    const timeParts = naiveTimeStr.split(":");
-    const formattedTimeStr = `${timeParts[0]}:${timeParts[1] || "00"}:${timeParts[2] || "00"}`;
-    const dateTimeInBusinessTZStr = `${naiveDateStr}T${formattedTimeStr}`;
-    const utcDate = fromZonedTime(dateTimeInBusinessTZStr, businessTimeZoneStr);
-    return isValid(utcDate) ? utcDate : null;
-  } catch (error) {
-    console.error("Error creating UTC date:", error);
-    return null;
-  }
-};
-
-const SkeletonPlaceholder = styled.span`
-  display: inline-block;
-  height: 14px;
-  width: 80px;
+const SkeletonLoader = styled.div`
+  height: 20px;
+  width: 100px;
   background: #e0e0e0;
   border-radius: 4px;
   animation: pulse 1.5s infinite;
@@ -306,28 +208,137 @@ const SkeletonPlaceholder = styled.span`
   }
 `;
 
-// --- Sub-components ---
+/* Action Buttons */
+const ButtonGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 40px;
+`;
 
-const AccordionItem = ({ icon: Icon, title, children, defaultOpen = false }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+const PrimaryButton = styled.button`
+  background: #ffffff;
+  border: 1px solid #222222;
+  color: #222222;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 14px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
 
-  // If no content, don't render
-  if (!children) return null;
+  &:hover {
+    background: #f7f7f7;
+    transform: scale(1.01);
+  }
 
-  return (
-    <AccordionSection>
-      <AccordionHeader onClick={() => setIsOpen(!isOpen)} $isOpen={isOpen} type="button">
-        <span>
-          {Icon && <Icon size={20} />}
-          {title}
-        </span>
-        <ChevronDown size={20} />
-      </AccordionHeader>
-      <AccordionContent $isOpen={isOpen}>
-        {children}
-      </AccordionContent>
-    </AccordionSection>
-  );
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const RetryButton = styled(PrimaryButton)`
+  background: #e31c5f;
+  color: white;
+  border-color: #e31c5f;
+  
+  &:hover {
+    background: #d11a52;
+  }
+`;
+
+/* Accordion / Dropdown Section */
+const DropdownSection = styled.div`
+  border-top: 1px solid #dddddd;
+`;
+
+const DropdownItem = styled.div`
+  border-bottom: 1px solid #dddddd;
+`;
+
+const DropdownHeader = styled.button`
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  
+  span {
+    font-size: 16px;
+    font-weight: 600;
+    color: #222222;
+  }
+
+  svg {
+    color: #222222;
+    transition: transform 0.3s ease;
+    ${(props) => props.$isOpen && css`
+      transform: rotate(180deg);
+    `}
+  }
+
+  &:hover span {
+    text-decoration: underline;
+  }
+`;
+
+const DropdownContent = styled.div`
+  padding-bottom: 24px;
+  color: #717171;
+  font-size: 14px;
+  line-height: 1.6;
+  animation: ${fadeInUp} 0.3s ease-out;
+  
+  p {
+    margin: 0;
+  }
+  
+  ul {
+    padding-left: 20px;
+    margin: 0;
+  }
+  
+  li {
+    margin-bottom: 4px;
+  }
+
+  a {
+    color: #222222;
+    text-decoration: underline;
+    font-weight: 500;
+  }
+`;
+
+// --- Logic Helpers ---
+
+const getUTCDateFromBusinessLocal = (
+  naiveDateStr,
+  naiveTimeStr,
+  businessTimeZoneStr
+) => {
+  if (!naiveDateStr || !naiveTimeStr || !businessTimeZoneStr) return null;
+  try {
+    const timeParts = naiveTimeStr.split(":");
+    const formattedTimeStr = `${timeParts[0]}:${timeParts[1] || "00"}:${
+      timeParts[2] || "00"
+    }`;
+    const dateTimeInBusinessTZStr = `${naiveDateStr}T${formattedTimeStr}`;
+    const utcDate = fromZonedTime(dateTimeInBusinessTZStr, businessTimeZoneStr);
+    return isValid(utcDate) ? utcDate : null;
+  } catch (error) {
+    console.error("Error creating UTC date:", error);
+    return null;
+  }
 };
 
 const ConfirmationStep = ({
@@ -346,16 +357,18 @@ const ConfirmationStep = ({
   const [isPolling, setIsPolling] = useState(false);
   const [pollingError, setPollingError] = useState(null);
   const [bookingFailed, setBookingFailed] = useState(false);
+  
+  // Accordion States
+  const [openSection, setOpenSection] = useState(null);
+
+  const toggleSection = (section) => {
+    setOpenSection(openSection === section ? null : section);
+  };
 
   const actualBookingId = propBookingId || bookingData.bookingId;
   const displayReference =
     propReference || fetchedReference || bookingData.user_facing_reference;
 
-  const selectedSlot = bookingData.selectedSlots?.[0];
-  const effectiveUserTimeZone =
-    userTimeZone || (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Toronto");
-
-  // --- Polling Logic ---
   const pollForBookingReference = useCallback(async () => {
     if (!paymentIntentId || actualBookingId) {
       setIsPolling(false);
@@ -384,7 +397,9 @@ const ConfirmationStep = ({
             setIsPolling(false);
           } else if (data.status === "payment_failed") {
             setBookingFailed(true);
-            setPollingError(data.failure_message || "Your payment could not be processed.");
+            setPollingError(
+              data.failure_message || "Your payment could not be processed."
+            );
             setIsPolling(false);
           } else if (
             ["pending_webhook", "processing"].includes(data.status) &&
@@ -393,12 +408,17 @@ const ConfirmationStep = ({
             setTimeout(attemptFetch, pollInterval);
           } else {
             setBookingFailed(true);
-            setPollingError(data.message || "Booking could not be confirmed in time. Please contact support.");
+            setPollingError(
+              data.message ||
+                "Booking could not be confirmed in time. Please try again or contact support."
+            );
             setIsPolling(false);
           }
         } else {
           setBookingFailed(true);
-          setPollingError(result.error || "An error occurred while confirming your booking.");
+          setPollingError(
+            result.error || "An error occurred while confirming your booking."
+          );
           setIsPolling(false);
         }
       } catch (error) {
@@ -406,11 +426,14 @@ const ConfirmationStep = ({
           setTimeout(attemptFetch, pollInterval + attempts * 500);
         } else {
           setBookingFailed(true);
-          setPollingError("A network error occurred. Please check your connection.");
+          setPollingError(
+            "A network error occurred. Please check your connection or contact support."
+          );
           setIsPolling(false);
         }
       }
     };
+
     attemptFetch();
   }, [paymentIntentId, actualBookingId, clientSecret, onBookingDetailsFetched]);
 
@@ -420,7 +443,10 @@ const ConfirmationStep = ({
     }
   }, [paymentIntentId, actualBookingId, pollForBookingReference]);
 
-  // --- Handlers ---
+  const handleRetry = () => {
+    if (onRetryBooking) onRetryBooking();
+    else window.location.reload();
+  };
 
   const handleCopyReference = () => {
     if (displayReference) {
@@ -430,6 +456,7 @@ const ConfirmationStep = ({
   };
 
   const handleAddToCalendar = () => {
+    const selectedSlot = bookingData.selectedSlots?.[0];
     if (!selectedSlot || !businessTimeZone) return;
 
     const {
@@ -441,7 +468,11 @@ const ConfirmationStep = ({
       days,
     } = selectedSlot;
 
-    const startUTC = getUTCDateFromBusinessLocal(naiveStartDate, naiveTime, businessTimeZone);
+    const startUTC = getUTCDateFromBusinessLocal(
+      naiveStartDate,
+      naiveTime,
+      businessTimeZone
+    );
     if (!startUTC) {
       alert("Could not generate calendar event due to invalid date/time.");
       return;
@@ -457,7 +488,9 @@ const ConfirmationStep = ({
 
     const eventDetails = {
       title: classData?.title || "Booked Class",
-      description: `Your booking for ${classData?.title} with ${classData?.business_name}.\nRef: ${displayReference || "Pending..."}`,
+      description: `Your booking for ${classData?.title} with ${
+        classData?.business_name
+      }.\nRef: ${displayReference || "Pending..."}`,
       location: classData?.location || "",
       start: formatToICSDateArray(startUTC),
       startOutputType: "utc",
@@ -465,10 +498,23 @@ const ConfirmationStep = ({
     };
 
     if (isCourse && days?.length > 0 && naiveCourseEndDate) {
-      const dayMap = { Sun: "SU", Mon: "MO", Tue: "TU", Wed: "WE", Thu: "TH", Fri: "FR", Sat: "SA" };
+      const dayMap = {
+        Sun: "SU",
+        Mon: "MO",
+        Tue: "TU",
+        Wed: "WE",
+        Thu: "TH",
+        Fri: "FR",
+        Sat: "SA",
+      };
       const byDay = days.map((d) => dayMap[d]).filter(Boolean).join(",");
+
       const untilDate = new Date(`${naiveCourseEndDate}T23:59:59Z`);
-      const untilDateFormatted = dateFnsFormat(untilDate, "yyyyMMdd'T'HHmmss'Z'");
+      const untilDateFormatted = dateFnsFormat(
+        untilDate,
+        "yyyyMMdd'T'HHmmss'Z'"
+      );
+
       eventDetails.recurrenceRule = `FREQ=WEEKLY;BYDAY=${byDay};UNTIL=${untilDateFormatted}`;
     } else {
       const endUTC = addMinutes(startUTC, duration);
@@ -483,197 +529,275 @@ const ConfirmationStep = ({
       }
       saveAs(
         new Blob([value], { type: "text/calendar;charset=utf-8" }),
-        `${classData?.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_booking.ics`
+        `${classData?.title
+          .replace(/[^a-z0-9]/gi, "_")
+          .toLowerCase()}_booking.ics`
       );
     });
   };
 
+  const selectedSlot = bookingData.selectedSlots?.[0];
+  const effectiveUserTimeZone =
+    userTimeZone || (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Toronto");
+
   // --- Render Helpers ---
 
-  const getCancellationText = () => {
+  const renderDateTimeContent = () => {
+    if (!selectedSlot) return null;
+    const { date, time, duration, isCourse, end_date, days } = selectedSlot;
+
+    if (isCourse) {
+      return (
+        <>
+          <InfoRow>
+            <InfoIcon><CalendarIcon /></InfoIcon>
+            <InfoText>
+              <InfoLabel>Course Dates</InfoLabel>
+              <InfoValue>
+                {formatNaiveDate(date, "MMM d")} – {formatNaiveDate(end_date, "MMM d, yyyy")}
+              </InfoValue>
+            </InfoText>
+          </InfoRow>
+          <InfoRow>
+            <InfoIcon><Clock /></InfoIcon>
+            <InfoText>
+              <InfoLabel>Schedule</InfoLabel>
+              <InfoValue>
+                Every {days.join(", ")} at {formatTimeRangeForDisplay(
+                  date,
+                  time,
+                  duration,
+                  businessTimeZone,
+                  effectiveUserTimeZone
+                )}
+              </InfoValue>
+            </InfoText>
+          </InfoRow>
+        </>
+      );
+    }
+
+    return (
+      <InfoRow>
+        <InfoIcon><CalendarIcon /></InfoIcon>
+        <InfoText>
+          <InfoLabel>Date and time</InfoLabel>
+          <InfoValue>
+            {formatBusinessLocalToUserDisplay(
+              date,
+              time,
+              businessTimeZone,
+              effectiveUserTimeZone,
+              { dateTimeFormat: "EEEE, MMM d" }
+            )}
+            {" · "}
+            {formatBusinessLocalToUserDisplay(
+              date,
+              time,
+              businessTimeZone,
+              effectiveUserTimeZone,
+              { timeFormat: "p" }
+            )}
+            {" ("}{getDurationText(duration)}{")"}
+          </InfoValue>
+        </InfoText>
+      </InfoRow>
+    );
+  };
+
+  const cancellationText = (() => {
     const option = bookingData.selectedOption;
-    const policyKey = option?.cancellationPolicy;
-    if (!policyKey) return null;
+    if (!option?.cancellationPolicy) return null;
     const classStartDateTime = selectedSlot?.date && selectedSlot?.time
       ? `${selectedSlot.date}T${selectedSlot.time}`
       : null;
     return getCancellationPolicyText(
-      policyKey,
-      option?.cancellationRefundPercentage,
-      option?.cancellationCustomHours,
+      option.cancellationPolicy,
+      option.cancellationRefundPercentage,
+      option.cancellationCustomHours,
       classStartDateTime,
       effectiveUserTimeZone,
       businessTimeZone,
     );
-  };
+  })();
 
-  const getBusinessEmail = () => classData?.student_contact_email ?? classData?.business_contact_email;
-  const getBusinessPhone = () => classData?.student_contact_phone ?? classData?.business_contact_phone;
-
-  // --- Main Render ---
-
-  if (bookingFailed) {
-    return (
-      <MainContainer>
-        <HeaderSection>
-          <StatusCircle $failed={true}>
-            <AlertCircle />
-          </StatusCircle>
-          <Headline>Booking Failed</Headline>
-          <SubHeadline>{pollingError || "We were unable to complete your booking."}</SubHeadline>
-        </HeaderSection>
-        <PrimaryButton onClick={onRetryBooking || (() => window.location.reload())}>
-          Try Booking Again
-        </PrimaryButton>
-      </MainContainer>
-    );
-  }
+  const equipmentList = bookingData.selectedOption?.equipment || [];
+  
+  const businessEmail =
+    classData?.student_contact_email ??
+    classData?.studentContactEmail ??
+    classData?.business_contact_email ??
+    classData?.businessContactEmail;
+    
+  const businessPhone =
+    classData?.student_contact_phone ??
+    classData?.studentContactPhone ??
+    classData?.business_contact_phone ??
+    classData?.businessContactPhone;
 
   return (
-    <MainContainer>
-      {/* 1. Header: Success & Ref */}
+    <Container>
       <HeaderSection>
-        <StatusCircle>
-          <Check />
+        <StatusCircle $failed={bookingFailed}>
+          {bookingFailed ? <AlertCircle /> : <Check />}
         </StatusCircle>
-        <Headline>You're in!</Headline>
-        <SubHeadline>
-          Your spot's saved. We'll see you there—don't forget to show up.
-          <br />
-          We've dropped the full details in your inbox.
-        </SubHeadline>
-
-        <ReferenceBar onClick={handleCopyReference}>
-          <span>Reference:</span>
-          {isPolling && !displayReference ? (
-            <SkeletonPlaceholder />
-          ) : (
-            <strong>{displayReference || "Processing..."}</strong>
-          )}
-          <Copy size={12} style={{marginLeft: 4, opacity: 0.5}} />
-        </ReferenceBar>
+        <Title>{bookingFailed ? "Booking Failed" : "You're in!"}</Title>
+        <Subtitle>
+          {bookingFailed
+            ? pollingError || "We were unable to complete your booking."
+            : "We've sent a confirmation email with all the details to your inbox."}
+        </Subtitle>
       </HeaderSection>
 
-      <Divider />
+      {bookingFailed ? (
+         <ButtonGroup>
+            <RetryButton onClick={handleRetry}>Try Booking Again</RetryButton>
+         </ButtonGroup>
+      ) : (
+        <>
+          <BookingCard>
+            <CardImagePlaceholder />
+            <CardContent>
+              <ClassTitle>
+                {classData?.title || bookingData.selectedOption?.classId?.title || "Class Title"}
+              </ClassTitle>
+              {(classData?.business_name) && (
+                 <BusinessName>Hosted by {classData.business_name}</BusinessName>
+              )}
 
-      {/* 2. Main Details (Itinerary) */}
-      <div style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: "22px", fontWeight: "700", marginBottom: "24px" }}>
-          {classData?.title || "Class Details"}
-        </h2>
+              {renderDateTimeContent()}
 
-        <TripGrid>
-          {/* Business */}
-          <TripRow>
-            <div>
-              <TripLabel>Host</TripLabel>
-              <TripValue>{classData?.business_name || "The Business"}</TripValue>
-            </div>
-          </TripRow>
+              {(classData?.location) && (
+                <InfoRow>
+                  <InfoIcon><MapPin /></InfoIcon>
+                  <InfoText>
+                    <InfoLabel>Location</InfoLabel>
+                    <InfoValue>{classData.location}</InfoValue>
+                  </InfoText>
+                </InfoRow>
+              )}
+            </CardContent>
 
-          {/* Date & Time */}
-          {selectedSlot && (
-            <TripRow>
-               <div>
-                <TripLabel>When</TripLabel>
-                <TripValue>
-                  {selectedSlot.isCourse ? (
-                    <>
-                      {formatNaiveDate(selectedSlot.date, "MMM d")} – {formatNaiveDate(selectedSlot.end_date, "MMM d, yyyy")}
-                      <div style={{ fontSize: 14, color: '#717171', marginTop: 4 }}>
-                        Every {selectedSlot.days.join(", ")} at {formatTimeRangeForDisplay(selectedSlot.date, selectedSlot.time, selectedSlot.duration, businessTimeZone, effectiveUserTimeZone)}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      {formatBusinessLocalToUserDisplay(
-                        selectedSlot.date,
-                        selectedSlot.time,
-                        businessTimeZone,
-                        effectiveUserTimeZone,
-                        { dateTimeFormat: "EEEE, MMMM d, yyyy" }
-                      )}
-                      <br />
-                      {formatTimeRangeForDisplay(
-                        selectedSlot.date,
-                        selectedSlot.time,
-                        selectedSlot.duration,
-                        businessTimeZone,
-                        effectiveUserTimeZone
-                      )}
-                    </>
-                  )}
-                </TripValue>
-              </div>
-            </TripRow>
-          )}
+            <ReferenceSection>
+              <ReferenceLabel>Confirmation Code</ReferenceLabel>
+              <ReferenceCode onClick={handleCopyReference}>
+                {isPolling && !displayReference ? (
+                  <SkeletonLoader />
+                ) : (
+                  <>
+                    {displayReference || (actualBookingId ? "CONFIRMED" : "PROCESSING")}
+                    <Copy size={14} style={{ color: "#717171" }}/>
+                  </>
+                )}
+              </ReferenceCode>
+            </ReferenceSection>
+          </BookingCard>
 
-          {/* Location */}
-          {(classData?.location || classData?.business_name) && (
-            <LocationBlock>
-              <div className="icon-wrap"><MapPin size={24} /></div>
-              <div>
-                <TripLabel>Where</TripLabel>
-                <TripValue>
-                  {classData?.location || classData?.business_name}
-                </TripValue>
-              </div>
-            </LocationBlock>
-          )}
-        </TripGrid>
-      </div>
+          <ButtonGroup>
+            <PrimaryButton
+                onClick={handleAddToCalendar}
+                disabled={!selectedSlot || isPolling}
+            >
+                <CalendarIcon size={18} /> Add to calendar
+            </PrimaryButton>
+          </ButtonGroup>
 
-      <Divider />
+          {/* Accordion Sections for Extra Info */}
+          <DropdownSection>
+            {/* 1. What to bring */}
+            {equipmentList.length > 0 && (
+              <DropdownItem>
+                <DropdownHeader 
+                  $isOpen={openSection === 'equipment'} 
+                  onClick={() => toggleSection('equipment')}
+                >
+                  <span>What to bring</span>
+                  <ChevronDown size={20} />
+                </DropdownHeader>
+                {openSection === 'equipment' && (
+                  <DropdownContent>
+                    <ul>
+                      {equipmentList.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+                  </DropdownContent>
+                )}
+              </DropdownItem>
+            )}
 
-      {/* 3. Actions */}
-      <ButtonGroup>
-        <PrimaryButton onClick={handleAddToCalendar} disabled={!selectedSlot || isPolling}>
-          <CalendarIcon size={18} />
-          Add to calendar
-        </PrimaryButton>
+            {/* 2. Cancellation Policy */}
+            {cancellationText && (
+              <DropdownItem>
+                <DropdownHeader 
+                  $isOpen={openSection === 'cancellation'} 
+                  onClick={() => toggleSection('cancellation')}
+                >
+                  <span>Cancellation policy</span>
+                  <ChevronDown size={20} />
+                </DropdownHeader>
+                {openSection === 'cancellation' && (
+                  <DropdownContent>
+                    <p>{cancellationText}</p>
+                  </DropdownContent>
+                )}
+              </DropdownItem>
+            )}
 
-        {getBusinessEmail() && (
-           <GhostButton as="a" href={`mailto:${getBusinessEmail()}`} style={{textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8}}>
-             <Mail size={18} />
-             Contact Host
-           </GhostButton>
-        )}
-      </ButtonGroup>
+            {/* 3. Contact Info */}
+            {(businessEmail || businessPhone) && (
+               <DropdownItem>
+                 <DropdownHeader 
+                    $isOpen={openSection === 'contact'} 
+                    onClick={() => toggleSection('contact')}
+                 >
+                    <span>Contact host</span>
+                    <ChevronDown size={20} />
+                 </DropdownHeader>
+                 {openSection === 'contact' && (
+                   <DropdownContent>
+                     <p style={{ marginBottom: 8 }}>
+                        Have questions? Reach out to {classData?.business_name || "the host"} directly.
+                     </p>
+                     {businessEmail && (
+                        <div style={{ marginBottom: 4 }}>
+                           <strong>Email: </strong>
+                           <a href={`mailto:${businessEmail}`}>{businessEmail}</a>
+                        </div>
+                     )}
+                     {businessPhone && (
+                        <div>
+                           <strong>Phone: </strong>
+                           <a href={`tel:${businessPhone.replace(/\s/g, "")}`}>{businessPhone}</a>
+                        </div>
+                     )}
+                   </DropdownContent>
+                 )}
+               </DropdownItem>
+            )}
 
-      <div style={{ marginTop: 40 }}>
-        {/* 4. Dropdowns / Accordions */}
-        
-        {/* Things to bring */}
-        {bookingData.selectedOption?.equipment?.length > 0 && (
-            <AccordionItem icon={Package} title="What to bring">
-                <p style={{marginTop: 0}}>Make sure you have these with you:</p>
-                <ul>
-                    {bookingData.selectedOption.equipment.map((item, i) => (
-                        <li key={i}>{item}</li>
-                    ))}
-                </ul>
-            </AccordionItem>
-        )}
-
-        {/* Cancellation Policy */}
-        {getCancellationText() && (
-            <AccordionItem icon={Shield} title="Cancellation policy">
-                <p style={{marginTop: 0}}>{getCancellationText()}</p>
-            </AccordionItem>
-        )}
-
-        {/* Pro Tip / Need to Know */}
-        <AccordionItem icon={Info} title="Need to know">
-            <p style={{marginTop: 0}}>
-                <strong>Pro tip:</strong> Arrive a few minutes early to check in. 
-            </p>
-            <p>
-                Questions before the big day? You can reach out to {classData?.business_name || "the business"} directly at {getBusinessEmail() || "their email"}.
-            </p>
-        </AccordionItem>
-      </div>
-
-    </MainContainer>
+            {/* 4. Arrive Early Note (Kept as witty text inside a dropdown or just a static tip) */}
+            <DropdownItem>
+                <DropdownHeader 
+                   $isOpen={openSection === 'tips'} 
+                   onClick={() => toggleSection('tips')}
+                >
+                   <span>Good to know</span>
+                   <ChevronDown size={20} />
+                </DropdownHeader>
+                {openSection === 'tips' && (
+                   <DropdownContent>
+                      <p>
+                        <strong>Pro tip:</strong> Arrive a few minutes early to get settled. 
+                        Your spot's saved. We'll see you there—don't forget to show up.
+                      </p>
+                   </DropdownContent>
+                )}
+            </DropdownItem>
+          </DropdownSection>
+        </>
+      )}
+    </Container>
   );
 };
 
