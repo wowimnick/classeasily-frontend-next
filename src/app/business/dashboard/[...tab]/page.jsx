@@ -24,72 +24,49 @@ export default function DashboardPage() {
   // Calculate key
   const activeKey = params.tab ? params.tab.join("/") : "overview";
 
-  // EXTENSIVE LOGGING: Page Level
-  console.error(
-    `[Page] RENDER START >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>`
-  );
-  console.error(`[Page] Params received:`, JSON.stringify(params));
-  console.error(`[Page] Derived activeKey: "${activeKey}"`);
-
   let componentToRender;
-  let componentName = "";
 
   switch (activeKey) {
     case "overview":
       componentToRender = <Overview />;
-      componentName = "Overview";
       break;
     case "bookings/active":
       componentToRender = <ActiveBookings />;
-      componentName = "ActiveBookings";
       break;
     case "bookings/history":
       componentToRender = <BookingHistory />;
-      componentName = "BookingHistory";
       break;
     case "listings":
       componentToRender = <ClassManagement />;
-      componentName = "ClassManagement";
       break;
     case "reviews":
       componentToRender = <BusinessReviews />;
-      componentName = "BusinessReviews";
       break;
     case "guests":
       componentToRender = <Guests />;
-      componentName = "Guests";
       break;
     case "staff":
       componentToRender = <Staff />;
-      componentName = "Staff";
       break;
     case "revenue":
       componentToRender = <Revenue />;
-      componentName = "Revenue";
       break;
     case "payouts":
       componentToRender = <Payouts />;
-      componentName = "Payouts";
       break;
     case "trends":
       componentToRender = <BookingTrends />;
-      componentName = "BookingTrends";
       break;
     case "discounts":
       componentToRender = <Discounts />;
-      componentName = "Discounts";
       break;
     case "widget":
       componentToRender = <WidgetCustomizer />;
-      componentName = "WidgetCustomizer";
       break;
     case "settings":
       componentToRender = <Overview />;
-      componentName = "Overview (Settings Mode)";
       break;
     default:
-      console.error(`[Page] FATAL | Unknown key "${activeKey}"`);
-      componentName = "ErrorDisplay";
       componentToRender = (
         <div>
           <h2>Error: Page Not Found</h2>
@@ -97,9 +74,6 @@ export default function DashboardPage() {
         </div>
       );
   }
-
-  console.error(`[Page] DECISION | Returning component: <${componentName} />`);
-  console.error(`[Page] RENDER END <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<`);
 
   return componentToRender;
 }

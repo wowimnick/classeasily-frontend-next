@@ -34,8 +34,8 @@ export default function BannerSearch() {
             fill
             priority
             fetchPriority="high"
-            quality={85}
-            sizes="100vw"
+            quality={75}
+            sizes="(max-width: 1920px) 100vw, 1920px"
             style={{ objectFit: "cover" }}
             placeholder="blur"
             blurDataURL={BLACK_PIXEL}

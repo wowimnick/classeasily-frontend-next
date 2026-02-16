@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import Link from "next/link";
-import { Button } from "antd";
 import {
   ArrowRight,
   Check,
@@ -101,6 +100,29 @@ const SubText = styled.p`
 
   @media (max-width: 992px) {
     font-size: 1rem;
+  }
+`;
+
+const CtaLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2.5rem;
+  height: auto;
+  line-height: 1.5;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  background: #f81e3e;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+
+  &:hover {
+    background: #e01a38;
+    color: #fff;
   }
 `;
 
@@ -668,19 +690,9 @@ const ForHosts = () => {
           </SubText>
 
           <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
-            <Link href="/business" passHref legacyBehavior>
-              <Button
-                type="primary"
-                size="large"
-                style={{
-                  padding: "1rem 2.5rem",
-                  height: "auto",
-                  lineHeight: "1.5",
-                }}
-              >
-                Start Hosting <ArrowRight size={18} />
-              </Button>
-            </Link>
+            <CtaLink href="/business">
+              Start Hosting <ArrowRight size={18} />
+            </CtaLink>
           </div>
         </TextContent>
       </Container>

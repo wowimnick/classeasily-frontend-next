@@ -1,6 +1,5 @@
 // app/not-found.jsx
 import { Suspense } from "react";
-import Image from "next/image";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import IllustrationSvg from "@/assets/404.svg";
 import Footer from "@/components/homepage/Footer";
@@ -45,13 +44,14 @@ export default function NotFound() {
               opacity: 0.8,
               filter: "brightness(0.98)",
             }}
+            aria-hidden
           >
-            <Image
-              src={IllustrationSvg}
-              alt="404 Illustration"
-              fill
-              style={{ objectFit: "contain" }}
-              priority
+            <IllustrationSvg
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+              }}
             />
           </div>
 

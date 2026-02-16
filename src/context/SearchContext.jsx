@@ -162,6 +162,33 @@ export const SearchProvider = ({ children }) => {
     const { displayName, coordinates } = selectedLocation;
     const params = new URLSearchParams();
 
+    // When already on explore, preserve current category/collection/filters so location change doesn't reset them
+    if (typeof window !== "undefined" && window.location.pathname === "/explore" && window.location.search) {
+      const current = new URLSearchParams(window.location.search);
+      const preserveKeys = [
+        "category",
+        "subcategory",
+        "collection",
+        "tag",
+        "sort_by",
+        "keyword",
+        "price_min",
+        "price_max",
+        "radius",
+        "distance_max",
+        "class_type",
+        "date",
+        "start_date",
+        "end_date",
+      ];
+      preserveKeys.forEach((key) => {
+        const value = current.get(key);
+        if (value != null && value !== "") params.set(key, value);
+      });
+      current.getAll("time_preference").forEach((v) => params.append("time_preference", v));
+      current.getAll("days").forEach((v) => params.append("days", v));
+    }
+
     // HANDLE DATE (Range or Single)
     if (datePickerValue) {
       if (datePickerValue.start && datePickerValue.end) {
@@ -180,9 +207,11 @@ export const SearchProvider = ({ children }) => {
 
     // Default fallback logic if everything is empty
     if (!searchTerm.trim() && !displayName) {
-      params.set("location", "Toronto, ON");
-      params.set("lat", "43.6532");
-      params.set("lng", "-79.3832");
+      if (!params.get("lat")) {
+        params.set("location", "Toronto, ON");
+        params.set("lat", "43.6532");
+        params.set("lng", "-79.3832");
+      }
 
       const newUrl = `/explore?${params.toString()}`;
 

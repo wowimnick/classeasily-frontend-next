@@ -497,11 +497,11 @@ export default function FilterModal({
         footer={null} // We use our custom Footer
         title={null} // We use our custom Header
         closable={false} // We use our custom CloseButton
-        maskStyle={{
-          backgroundColor: "rgba(0, 0, 0, 0.4)",
-          backdropFilter: "blur(2px)",
-        }}
         styles={{
+          mask: {
+            backgroundColor: "rgba(0, 0, 0, 0.4)",
+            backdropFilter: "blur(2px)",
+          },
           content: {
             padding: 0,
             borderRadius: "24px",

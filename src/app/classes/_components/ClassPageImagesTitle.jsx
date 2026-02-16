@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import useEmblaCarousel from "embla-carousel-react";
 import { Modal, Typography, Tooltip } from "antd";
+import { Drawer } from "vaul";
 import message from "@/lib/message";
 import styled, { css } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
@@ -511,80 +512,180 @@ const StyledModal = styled(Modal)`
     display: none;
   }
 `;
+
+// --- Share: Vaul drawer (mobile) ---
+const ShareDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+`;
+const ShareDrawerContent = styled(Drawer.Content)`
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
+`;
+const ShareDrawerHandle = styled.div`
+  width: 40px;
+  height: 4px;
+  background: #e0e0e0;
+  border-radius: 2px;
+  margin: 12px auto 8px;
+  flex-shrink: 0;
+`;
+
+// --- Share: desktop modal & shared content ---
 const ShareModalWrapper = styled.div`
-  padding: 2rem 1.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
 `;
 const ShareModalHeader = styled.div`
   display: flex;
   align-items: center;
-  margin-bottom: 2rem;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
   border-bottom: 1px solid #f0f0f0;
-  padding-bottom: 1.25rem;
+  flex-shrink: 0;
   h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    text-align: center;
-    flex-grow: 1;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #111;
     margin: 0;
+    letter-spacing: -0.02em;
   }
+`;
+const ShareModalBody = styled.div`
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 `;
 const CloseButton = styled.button`
   background: transparent;
   border: none;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  color: #555;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
   &:hover {
-    background-color: #f7f7f7;
+    background-color: #f5f5f5;
+    color: #111;
   }
+`;
+const ShareCopySection = styled.div`
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  background: #f8f8f8;
+  border-radius: 12px;
+  padding: 0.25rem;
+  border: 1px solid #eee;
+`;
+const ShareCopyInput = styled.input`
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #222;
+  font-family: inherit;
+  min-width: 0;
+  &::placeholder {
+    color: #888;
+  }
+`;
+const ShareCopyBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  border: none;
+  background: #111;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+  white-space: nowrap;
+  &:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+  &:active {
+    transform: scale(0.98);
+  }
+`;
+const ShareSectionLabel = styled.p`
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #717171;
+  margin: 0 0 0.75rem 0;
 `;
 const PlaceInfo = styled.div`
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   img {
-    width: 72px;
-    height: 72px;
+    width: 56px;
+    height: 56px;
     border-radius: 12px;
     object-fit: cover;
   }
   p {
     margin: 0;
-    font-size: 1rem;
+    font-size: 0.9375rem;
     font-weight: 600;
+    color: #111;
   }
 `;
 const ShareGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
 `;
 const ShareOptionButton = styled.button`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  border: 1px solid #dddddd;
+  gap: 0.625rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid #e8e8e8;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
   color: #222;
   text-decoration: none;
-  font-weight: 600;
-  background: transparent;
+  font-weight: 500;
+  background: #fff;
   width: 100%;
   text-align: left;
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   &:hover {
-    background: #f7f7f7;
-    border-color: #b0b0b0;
+    background: #f8f8f8;
+    border-color: #ddd;
   }
 `;
 const EmbedModalContent = styled.div`
@@ -627,6 +728,7 @@ const ClassPageImagesTitle = React.memo(
   }) => {
     const [isGalleryModalVisible, setIsGalleryModalVisible] = useState(false);
     const [isEmbedModalVisible, setIsEmbedModalVisible] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
     const [galleryCurrentSlide, setGalleryCurrentSlide] = useState(0);
@@ -634,8 +736,13 @@ const ClassPageImagesTitle = React.memo(
     const [currentUrl, setCurrentUrl] = useState("");
 
     useEffect(() => {
-      // Ensure window object is available before accessing location
-      setCurrentUrl(window.location.href);
+      setCurrentUrl(typeof window !== "undefined" ? window.location.href : "");
+    }, []);
+    useEffect(() => {
+      const check = () => setIsMobile(window.innerWidth <= 768);
+      check();
+      window.addEventListener("resize", check);
+      return () => window.removeEventListener("resize", check);
     }, []);
 
     const classImages =
@@ -977,125 +1084,272 @@ const ClassPageImagesTitle = React.memo(
             </CustomGalleryModalOverlay>
           )}
         </AnimatePresence>
-        <StyledModal
-          open={isShareModalVisible}
-          onCancel={onShareModalClose}
-          footer={null}
-          width={580}
-          centered
-        >
-          <ShareModalWrapper>
-            <ShareModalHeader>
-              <CloseButton
-                onClick={onShareModalClose}
-                aria-label="Close share options"
-              >
-                <X size={18} />
-              </CloseButton>
-              <h3>Share this place</h3>
-            </ShareModalHeader>
-            <PlaceInfo>
-              <img
-                src={
-                  imagesToDisplay[0]?.thumbnail_url ||
-                  imagesToDisplay[0]?.medium_url ||
-                  (typeof imagesToDisplay[0] === "string"
-                    ? imagesToDisplay[0]
-                    : null)
-                }
-                alt={title}
-              />
-              <div>
-                <p>{title}</p>
-                <PlaceMeta>
-                  {rating && rating > 0 ? (
-                    <MetaItem>
-                      <Star size={14} fill="#FFB400" color="#FFB400" />
-                      {rating.toFixed(1)}
-                    </MetaItem>
-                  ) : (
-                    <MetaItem>
-                      <Star size={14} fill="#FFB400" color="#FFB400" />
-                      New Experience
-                    </MetaItem>
-                  )}
-                  {business_name && <MetaItem>· {business_name}</MetaItem>}
-                  {categoryName && <MetaItem>· {categoryName}</MetaItem>}
-                  {location && <MetaItem>· {location}</MetaItem>}
-                </PlaceMeta>
-              </div>
-            </PlaceInfo>
-            <ShareGrid>
-              <ShareOptionButton
-                onClick={() =>
-                  handleCopyToClipboard(currentUrl, "Link Copied!")
-                }
-              >
-                <Copy size={18} /> Copy Link
-              </ShareOptionButton>
-              <ShareOptionButton
-                as="a"
-                href={`mailto:?subject=${encodeURIComponent(
-                  title,
-                )}&body=${encodeURIComponent(currentUrl)}`}
-              >
-                <Mail size={18} /> Email
-              </ShareOptionButton>
-              <ShareOptionButton
-                as="a"
-                href={`sms:?&body=${encodeURIComponent(
-                  `${title}\n${currentUrl}`,
-                )}`}
-              >
-                <MessageSquare size={18} /> Messages
-              </ShareOptionButton>
-              <ShareOptionButton
-                as="a"
-                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-                  `${title}\n${currentUrl}`,
-                )}`}
-                target="_blank"
-              >
-                <Phone size={18} /> WhatsApp
-              </ShareOptionButton>
-              <ShareOptionButton
-                as="a"
-                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                  currentUrl,
-                )}`}
-                target="_blank"
-              >
-                <Facebook size={18} /> Facebook
-              </ShareOptionButton>
-              <ShareOptionButton
-                as="a"
-                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
-                  currentUrl,
-                )}&text=${encodeURIComponent(title)}`}
-                target="_blank"
-              >
-                <Twitter size={18} /> Twitter
-              </ShareOptionButton>
-              <ShareOptionButton
-                onClick={() => {
-                  onShareModalClose();
-                  setIsEmbedModalVisible(true);
-                }}
-              >
-                <Code size={18} /> Embed
-              </ShareOptionButton>
-              {typeof navigator !== "undefined" && navigator.share && (
-                <ShareOptionButton
-                  onClick={() =>
-                    navigator.share({ title, text: title, url: currentUrl })
-                  }
+        {/* Share: mobile = Vaul drawer from bottom */}
+        {isMobile && (
+          <Drawer.Root
+            open={isShareModalVisible}
+            onOpenChange={(open) => !open && onShareModalClose()}
+          >
+            <Drawer.Portal>
+              <ShareDrawerOverlay />
+              <ShareDrawerContent>
+                <ShareDrawerHandle />
+                <ShareModalHeader>
+                  <h3>Share this class</h3>
+                  <CloseButton
+                    onClick={onShareModalClose}
+                    aria-label="Close share options"
+                  >
+                    <X size={20} />
+                  </CloseButton>
+                </ShareModalHeader>
+                <ShareModalBody>
+                  <ShareCopySection>
+                    <ShareCopyInput
+                      type="text"
+                      readOnly
+                      value={currentUrl}
+                      aria-label="Share link"
+                    />
+                    <ShareCopyBtn
+                      type="button"
+                      onClick={() =>
+                        handleCopyToClipboard(currentUrl, "Link copied!")
+                      }
+                    >
+                      <Copy size={16} /> Copy
+                    </ShareCopyBtn>
+                  </ShareCopySection>
+                  <PlaceInfo>
+                    <img
+                      src={
+                        imagesToDisplay[0]?.thumbnail_url ||
+                        imagesToDisplay[0]?.medium_url ||
+                        (typeof imagesToDisplay[0] === "string"
+                          ? imagesToDisplay[0]
+                          : null)
+                      }
+                      alt=""
+                    />
+                    <div>
+                      <p>{title}</p>
+                      <PlaceMeta>
+                        {rating && rating > 0 ? (
+                          <MetaItem>
+                            <Star size={14} fill="#FFB400" color="#FFB400" />
+                            {rating.toFixed(1)}
+                          </MetaItem>
+                        ) : (
+                          <MetaItem>
+                            <Star size={14} fill="#FFB400" color="#FFB400" />
+                            New
+                          </MetaItem>
+                        )}
+                        {business_name && (
+                          <MetaItem>· {business_name}</MetaItem>
+                        )}
+                      </PlaceMeta>
+                    </div>
+                  </PlaceInfo>
+                  <ShareSectionLabel>Share to</ShareSectionLabel>
+                  <ShareGrid>
+                    <ShareOptionButton
+                      as="a"
+                      href={`mailto:?subject=${encodeURIComponent(
+                        title,
+                      )}&body=${encodeURIComponent(currentUrl)}`}
+                    >
+                      <Mail size={18} /> Email
+                    </ShareOptionButton>
+                    <ShareOptionButton
+                      as="a"
+                      href={`sms:?&body=${encodeURIComponent(
+                        `${title}\n${currentUrl}`,
+                      )}`}
+                    >
+                      <MessageSquare size={18} /> Messages
+                    </ShareOptionButton>
+                    <ShareOptionButton
+                      as="a"
+                      href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                        `${title}\n${currentUrl}`,
+                      )}`}
+                      target="_blank"
+                    >
+                      <Phone size={18} /> WhatsApp
+                    </ShareOptionButton>
+                    <ShareOptionButton
+                      as="a"
+                      href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+                        currentUrl,
+                      )}`}
+                      target="_blank"
+                    >
+                      <Facebook size={18} /> Facebook
+                    </ShareOptionButton>
+                    <ShareOptionButton
+                      as="a"
+                      href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
+                        currentUrl,
+                      )}&text=${encodeURIComponent(title)}`}
+                      target="_blank"
+                    >
+                      <Twitter size={18} /> Twitter
+                    </ShareOptionButton>
+                    {typeof navigator !== "undefined" && navigator.share && (
+                      <ShareOptionButton
+                        onClick={() =>
+                          navigator.share({
+                            title,
+                            text: title,
+                            url: currentUrl,
+                          })
+                        }
+                      >
+                        <MoreHorizontal size={18} /> More
+                      </ShareOptionButton>
+                    )}
+                  </ShareGrid>
+                </ShareModalBody>
+              </ShareDrawerContent>
+            </Drawer.Portal>
+          </Drawer.Root>
+        )}
+
+        {/* Share: desktop = centered modal */}
+        {!isMobile && (
+          <StyledModal
+            open={isShareModalVisible}
+            onCancel={onShareModalClose}
+            footer={null}
+            width={520}
+            centered
+          >
+            <ShareModalWrapper>
+              <ShareModalHeader>
+                <h3>Share this class</h3>
+                <CloseButton
+                  onClick={onShareModalClose}
+                  aria-label="Close share options"
                 >
-                  <MoreHorizontal size={18} /> More
-                </ShareOptionButton>
-              )}
-            </ShareGrid>
-          </ShareModalWrapper>
-        </StyledModal>
+                  <X size={20} />
+                </CloseButton>
+              </ShareModalHeader>
+              <ShareModalBody>
+                <ShareCopySection>
+                  <ShareCopyInput
+                    type="text"
+                    readOnly
+                    value={currentUrl}
+                    aria-label="Share link"
+                  />
+                  <ShareCopyBtn
+                    type="button"
+                    onClick={() =>
+                      handleCopyToClipboard(currentUrl, "Link copied!")
+                    }
+                  >
+                    <Copy size={16} /> Copy link
+                  </ShareCopyBtn>
+                </ShareCopySection>
+                <PlaceInfo>
+                  <img
+                    src={
+                      imagesToDisplay[0]?.thumbnail_url ||
+                      imagesToDisplay[0]?.medium_url ||
+                      (typeof imagesToDisplay[0] === "string"
+                        ? imagesToDisplay[0]
+                        : null)
+                    }
+                    alt=""
+                  />
+                  <div>
+                    <p>{title}</p>
+                    <PlaceMeta>
+                      {rating && rating > 0 ? (
+                        <MetaItem>
+                          <Star size={14} fill="#FFB400" color="#FFB400" />
+                          {rating.toFixed(1)}
+                        </MetaItem>
+                      ) : (
+                        <MetaItem>
+                          <Star size={14} fill="#FFB400" color="#FFB400" />
+                          New
+                        </MetaItem>
+                      )}
+                      {business_name && (
+                        <MetaItem>· {business_name}</MetaItem>
+                      )}
+                      {categoryName && (
+                        <MetaItem>· {categoryName}</MetaItem>
+                      )}
+                      {location && <MetaItem>· {location}</MetaItem>}
+                    </PlaceMeta>
+                  </div>
+                </PlaceInfo>
+                <ShareSectionLabel>Share to</ShareSectionLabel>
+                <ShareGrid>
+                  <ShareOptionButton
+                    as="a"
+                    href={`mailto:?subject=${encodeURIComponent(
+                      title,
+                    )}&body=${encodeURIComponent(currentUrl)}`}
+                  >
+                    <Mail size={18} /> Email
+                  </ShareOptionButton>
+                  <ShareOptionButton
+                    as="a"
+                    href={`sms:?&body=${encodeURIComponent(
+                      `${title}\n${currentUrl}`,
+                    )}`}
+                  >
+                    <MessageSquare size={18} /> Messages
+                  </ShareOptionButton>
+                  <ShareOptionButton
+                    as="a"
+                    href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                      `${title}\n${currentUrl}`,
+                    )}`}
+                    target="_blank"
+                  >
+                    <Phone size={18} /> WhatsApp
+                  </ShareOptionButton>
+                  <ShareOptionButton
+                    as="a"
+                    href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+                      currentUrl,
+                    )}`}
+                    target="_blank"
+                  >
+                    <Facebook size={18} /> Facebook
+                  </ShareOptionButton>
+                  <ShareOptionButton
+                    as="a"
+                    href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(
+                      currentUrl,
+                    )}&text=${encodeURIComponent(title)}`}
+                    target="_blank"
+                  >
+                    <Twitter size={18} /> Twitter
+                  </ShareOptionButton>
+                  {typeof navigator !== "undefined" && navigator.share && (
+                    <ShareOptionButton
+                      onClick={() =>
+                        navigator.share({
+                          title,
+                          text: title,
+                          url: currentUrl,
+                        })
+                      }
+                    >
+                      <MoreHorizontal size={18} /> More
+                    </ShareOptionButton>
+                  )}
+                </ShareGrid>
+              </ShareModalBody>
+            </ShareModalWrapper>
+          </StyledModal>
+        )}
         <Modal
           open={isEmbedModalVisible}
           onCancel={() => setIsEmbedModalVisible(false)}

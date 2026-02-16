@@ -36,9 +36,7 @@ const GiftCardsCTA = dynamic(
   { loading: () => <div style={{ height: "500px" }} /> },
 );
 
-const ForHosts = dynamic(() => import("./(homepage)/_components/ForHosts"), {
-  loading: () => <div style={{ height: "500px" }} />,
-});
+import ForHostsClient from "./(homepage)/_components/ForHostsClient";
 
 const Testimonials = dynamic(
   () => import("./(homepage)/_components/Testimonials"),
@@ -138,7 +136,7 @@ export default async function HomePage() {
           </Suspense>
 
           <Suspense fallback={<div style={{ height: "500px" }} />}>
-            <ForHosts />
+            <ForHostsClient />
           </Suspense>
 
           <Suspense fallback={<div style={{ height: "400px" }} />}>

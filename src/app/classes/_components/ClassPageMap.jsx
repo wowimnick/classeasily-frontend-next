@@ -120,18 +120,28 @@ const ClassPageMap = ({
   businessName,
   fullAddress,
 }) => {
-  // State to force unique map instances
+  // State to force unique map instances and avoid "container is being reused" (Leaflet)
   const [isMounted, setIsMounted] = useState(false);
   const [baseMapKey, setBaseMapKey] = useState(null);
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
-    // Generate a base unique key based on time to ensure a fresh DOM node on mount.
-    // This runs every time you navigate back to this page.
-    setBaseMapKey(`map-instance-${Date.now()}`);
+    // Generate a base unique key so each mount gets a fresh DOM node.
+    const key = `map-instance-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    setBaseMapKey(key);
     setIsMounted(true);
-    
+    setMapReady(false);
+
+    // Defer creating the map by one frame so any previous instance can fully
+    // clean up (fixes "Map container is being reused" with Strict Mode / fast remounts).
+    const rafId = requestAnimationFrame(() => {
+      setMapReady(true);
+    });
+
     return () => {
       setIsMounted(false);
+      setMapReady(false);
+      cancelAnimationFrame(rafId);
     };
   }, []);
 
@@ -199,9 +209,10 @@ const ClassPageMap = ({
         It forces React to tear down this div and create a new one
         whenever the component remounts or location changes.
       */}
-      {isMounted && dynamicMapKey && (
+      {isMounted && mapReady && dynamicMapKey && (
         <div key={dynamicMapKey} className="map-instance-wrapper">
           <MapContainer
+            key={dynamicMapKey}
             center={position}
             zoom={zoomLevel}
             scrollWheelZoom={true}

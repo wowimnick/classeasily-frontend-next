@@ -145,7 +145,7 @@ const UserProfileButton = styled.div`
   }
 
   ${(props) =>
-    props.isActive &&
+    props.$isActive &&
     css`
       background: linear-gradient(
         135deg,
@@ -300,7 +300,7 @@ const BusinessHeader = () => {
             <UserProfileContainer ref={userProfileRef}>
               <UserProfileButton
                 onClick={() => setUserMenuVisible(!userMenuVisible)}
-                isActive={userMenuVisible}
+                $isActive={userMenuVisible}
               >
                 <UserAvatar>{getUserInitials()}</UserAvatar>
                 {userDisplayName && (

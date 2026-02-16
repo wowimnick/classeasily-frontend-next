@@ -57,8 +57,8 @@ function ExploreClientContent({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Use Global Search Context to handle header search loading state
-  const { isSearching, setIsSearching } = useSearch();
+  // Use Global Search Context for loading state and to preserve header location when switching category/collection
+  const { isSearching, setIsSearching, selectedLocation, searchTerm } = useSearch();
 
   // Use geolocation hook - it's non-blocking as it uses async fetch
   const { location: userLocation } = useIpGeolocation();
@@ -289,6 +289,15 @@ function ExploreClientContent({
     (newCategoryKey, newSubcategoryKey) => {
       setIsNavigating(true);
       const newParams = new URLSearchParams(searchParams.toString());
+
+      // Preserve location from header if user selected a new place but hasn't searched yet
+      if (selectedLocation?.coordinates) {
+        newParams.set("lat", selectedLocation.coordinates.lat.toString());
+        newParams.set("lng", selectedLocation.coordinates.lng.toString());
+        const loc = selectedLocation.displayName || searchTerm?.trim();
+        if (loc) newParams.set("location", loc);
+      }
+
       newParams.delete("collection");
 
       if (newCategoryKey && newCategoryKey !== "all") {
@@ -305,13 +314,22 @@ function ExploreClientContent({
 
       router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
     },
-    [searchParams, router, pathname]
+    [searchParams, router, pathname, selectedLocation, searchTerm]
   );
 
   const handleCollectionChange = useCallback(
     (collectionSlug) => {
       setIsNavigating(true);
       const newParams = new URLSearchParams(searchParams.toString());
+
+      // Preserve location from header if user selected a new place but hasn't searched yet
+      if (selectedLocation?.coordinates) {
+        newParams.set("lat", selectedLocation.coordinates.lat.toString());
+        newParams.set("lng", selectedLocation.coordinates.lng.toString());
+        const loc = selectedLocation.displayName || searchTerm?.trim();
+        if (loc) newParams.set("location", loc);
+      }
+
       newParams.delete("category");
       newParams.delete("subcategory");
 
@@ -323,7 +341,7 @@ function ExploreClientContent({
 
       router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
     },
-    [searchParams, router, pathname]
+    [searchParams, router, pathname, selectedLocation, searchTerm]
   );
 
   const handleApplyModalChanges = useCallback(

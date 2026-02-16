@@ -672,12 +672,14 @@ const NotificationsButton = () => {
             open={popoverVisible}
             onOpenChange={setPopoverVisible}
             placement="bottomRight"
-            overlayStyle={{ paddingTop: "12px" }}
-            overlayInnerStyle={{
-              padding: 0,
-              backgroundColor: "transparent",
-              boxShadow: "none",
-              borderRadius: "16px",
+            styles={{
+              body: {
+                padding: 0,
+                backgroundColor: "transparent",
+                boxShadow: "none",
+                borderRadius: "16px",
+                marginTop: "12px",
+              },
             }}
             ref={popoverRef}
           >

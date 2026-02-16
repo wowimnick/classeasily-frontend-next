@@ -113,11 +113,11 @@ const CategoryGroup = styled.div`
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease-in-out;
-  cursor: ${({ isSelected }) => (isSelected ? "default" : "pointer")};
+  cursor: ${({ $isSelected }) => ($isSelected ? "default" : "pointer")};
   flex-shrink: 0;
   border-bottom: 1px solid transparent;
-  border-bottom-color: ${({ isSelected }) =>
-    isSelected ? "#ff385c" : "transparent"};
+  border-bottom-color: ${({ $isSelected }) =>
+    $isSelected ? "#ff385c" : "transparent"};
   width: 72px;
   height: 100%;
   padding-top: 8px;
@@ -131,8 +131,8 @@ const CategoryGroup = styled.div`
 
 const CategoryFont = styled.p`
   font-size: 11px;
-  font-weight: ${({ isSelected }) => (isSelected ? "700" : "500")};
-  color: ${({ isSelected }) => (isSelected ? "#000000" : "#717171")};
+  font-weight: ${({ $isSelected }) => ($isSelected ? "700" : "500")};
+  color: ${({ $isSelected }) => ($isSelected ? "#000000" : "#717171")};
   margin: 4px 0 0 0;
   transition: all 0.2s ease;
   text-align: center;
@@ -162,8 +162,8 @@ const ImageBackground = styled.div`
   svg {
     width: 20px;
     height: 20px;
-    color: ${({ isSelected }) => (isSelected ? "#000000" : "#717171")};
-    stroke-width: ${({ isSelected }) => (isSelected ? 2.5 : 2)};
+    color: ${({ $isSelected }) => ($isSelected ? "#000000" : "#717171")};
+    stroke-width: ${({ $isSelected }) => ($isSelected ? 2.5 : 2)};
     transition: all 0.2s ease;
   }
 
@@ -227,8 +227,8 @@ const VerticalSeparator = styled.div`
 // --- SUB-CATEGORY PILLS ---
 const SubCategoryGroup = styled.div`
   display: flex;
-  background-color: ${({ isSelected }) => (isSelected ? "#ffebee" : "#f5f5f5")};
-  color: ${({ isSelected }) => (isSelected ? "#ff385c" : "#595959")};
+  background-color: ${({ $isSelected }) => ($isSelected ? "#ffebee" : "#f5f5f5")};
+  color: ${({ $isSelected }) => ($isSelected ? "#ff385c" : "#595959")};
   white-space: nowrap;
   border-radius: 16px;
   padding: 0 12px;
@@ -240,11 +240,11 @@ const SubCategoryGroup = styled.div`
   flex-shrink: 0;
   font-size: 12px;
   font-weight: 500;
-  border: 1px solid ${({ isSelected }) => (isSelected ? "#ffb2b2" : "#e0e0e0")};
+  border: 1px solid ${({ $isSelected }) => ($isSelected ? "#ffb2b2" : "#e0e0e0")};
   &:hover {
-    background-color: ${({ isSelected }) =>
-      isSelected ? "#ffebee" : "#efefef"};
-    border-color: ${({ isSelected }) => (isSelected ? "#ffb2b2" : "#bdbdbd")};
+    background-color: ${({ $isSelected }) =>
+      $isSelected ? "#ffebee" : "#efefef"};
+    border-color: ${({ $isSelected }) => ($isSelected ? "#ffb2b2" : "#bdbdbd")};
   }
   @media (max-width: 768px) {
     height: 30px;
@@ -419,11 +419,11 @@ const setCachedMap = (map) => {
 };
 
 const CategoryItem = memo(({ category, isSelected, onClick }) => (
-  <CategoryGroup onClick={onClick} isSelected={isSelected}>
-    <ImageBackground isSelected={isSelected}>
+  <CategoryGroup onClick={onClick} $isSelected={isSelected}>
+    <ImageBackground $isSelected={isSelected}>
       <CategoryIcon iconName={category.icon_name} />
     </ImageBackground>
-    <CategoryFont isSelected={isSelected}>{category.name}</CategoryFont>
+    <CategoryFont $isSelected={isSelected}>{category.name}</CategoryFont>
   </CategoryGroup>
 ), (prevProps, nextProps) => 
   prevProps.category.key === nextProps.category.key &&
@@ -828,7 +828,7 @@ function ExploreCategoriesContent({
             {displayedSubcategories.map((subcategory) => (
               <SubCategoryGroup
                 key={subcategory.key}
-                isSelected={optimisticSubcategory === subcategory.key}
+                $isSelected={optimisticSubcategory === subcategory.key}
                 onClick={() => handleSubcategoryClick(subcategory.key)}
                 aria-pressed={optimisticSubcategory === subcategory.key}
               >

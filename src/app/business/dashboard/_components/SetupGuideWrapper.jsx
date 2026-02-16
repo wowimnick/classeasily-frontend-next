@@ -17,7 +17,6 @@ export default function SetupGuideWrapper({ sideMenuRef }) {
 
   // Data fetching logic is also isolated.
   const fetchSetupStatus = useCallback(async () => {
-    console.error("[SetupGuideWrapper] Fetching setup guide status...");
     try {
       const response = await businessService.fetchMyBusinessOverview();
       if (response.success && response.data?.setup_progress) {
@@ -36,7 +35,6 @@ export default function SetupGuideWrapper({ sideMenuRef }) {
         setDisplaySetupGuide(DEBUG_ALWAYS_SHOW_SETUP_GUIDE);
       }
     } catch (error) {
-      console.error("[SetupGuideWrapper] Failed to fetch status:", error);
       setDisplaySetupGuide(DEBUG_ALWAYS_SHOW_SETUP_GUIDE);
     } finally {
       setIsLoading(false);

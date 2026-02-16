@@ -718,6 +718,31 @@ const IconBox = styled.div`
   color: ${(p) => p.$iconColor ?? "#374151"};
 `;
 
+const MobileSearchTrigger = styled.div`
+  display: none;
+  @media (max-width: 768px) {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 40px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+    p {
+      margin: 0;
+      font-size: 14px;
+      color: #595959;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+  }
+`;
+
 // --- CONSTANTS ---
 const POPUP_SIZES = {
   location: 380,
@@ -926,32 +951,6 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
       );
     });
   };
-
-  // Mobile Trigger (Visible < 768px)
-  const MobileSearchTrigger = styled.div`
-    display: none;
-    @media (max-width: 768px) {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.5rem 1rem;
-      border: 1px solid #e0e0e0;
-      border-radius: 40px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      cursor: pointer;
-      flex: 1;
-      min-width: 0;
-      p {
-        margin: 0;
-        font-size: 14px;
-        color: #595959;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        flex: 1;
-      }
-    }
-  `;
 
   return (
     <>

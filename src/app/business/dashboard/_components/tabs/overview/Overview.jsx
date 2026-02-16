@@ -285,8 +285,8 @@ const IconContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${(props) => props.background || hexToRgba(colors.info, 0.1)};
-  color: ${(props) => props.iconcolor || colors.info};
+  background: ${(props) => props.$background || hexToRgba(colors.info, 0.1)};
+  color: ${(props) => props.$iconcolor || colors.info};
   flex-shrink: 0;
 
   svg {
@@ -318,7 +318,7 @@ const MetricValue = styled.div`
 `;
 
 const PercentChange = styled.span`
-  color: ${(props) => (props.isPositive ? colors.success : colors.error)};
+  color: ${(props) => (props.$isPositive ? colors.success : colors.error)};
   display: flex;
   align-items: center;
   gap: 3px;
@@ -528,7 +528,7 @@ const ActivityIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: ${(props) => props.background};
+  background: ${(props) => props.$background};
   color: white;
   flex-shrink: 0;
 
@@ -1061,26 +1061,19 @@ const Overview = forwardRef((props, ref) => {
   const [error, setError] = useState(null);
 
   const fetchOverviewData = useCallback(async () => {
-    console.error("🔵 Overview - fetchOverviewData CALLED");
     setLoading(true);
     setError(null);
     try {
-      console.error("🔵 Overview - Fetching from businessService...");
       const response = await businessService.fetchMyBusinessOverview();
-      console.error("🔵 Overview - Response received:", response.success);
 
       if (response.success && response.data) {
-        console.error("🔵 Overview - Setting overview data");
         setOverviewData(response.data);
       } else {
-        console.error("🔵 Overview - Fetch failed:", response.error);
         setError(response.error || "Failed to fetch overview data.");
       }
     } catch (err) {
-      console.error("🔵 Overview - ERROR:", err);
       setError("An unexpected error occurred.");
     } finally {
-      console.error("🔵 Overview - Fetch complete, setting loading to false");
       setLoading(false);
     }
   }, []);
@@ -1093,7 +1086,6 @@ const Overview = forwardRef((props, ref) => {
 
   // Fetch data on mount
   useEffect(() => {
-    console.error("🔵 Overview - Component mounted, fetching data");
     fetchOverviewData();
   }, [fetchOverviewData]);
 
@@ -1300,8 +1292,8 @@ const Overview = forwardRef((props, ref) => {
           <ActionRequiredThinBanner>
             <ActionRequiredThinBannerContent>
               <IconContainer
-                background={hexToRgba(colors.warning, 0.15)}
-                iconcolor={colors.warning}
+                $background={hexToRgba(colors.warning, 0.15)}
+                $iconcolor={colors.warning}
               >
                 <AlertTriangle size={18} />
               </IconContainer>
@@ -1366,8 +1358,8 @@ const Overview = forwardRef((props, ref) => {
                   <div>
                     <StatHeader>
                       <IconContainer
-                        background={hexToRgba(colors.error, 0.1)}
-                        iconcolor={colors.error}
+                        $background={hexToRgba(colors.error, 0.1)}
+                        $iconcolor={colors.error}
                       >
                         <Shield />
                       </IconContainer>
@@ -1399,8 +1391,8 @@ const Overview = forwardRef((props, ref) => {
                 <div>
                   <StatHeader>
                     <IconContainer
-                      background={iconBackground}
-                      iconcolor={iconcolor}
+                      $background={iconBackground}
+                      $iconcolor={iconcolor}
                     >
                       <MetricIconComponent />
                     </IconContainer>
@@ -1432,7 +1424,7 @@ const Overview = forwardRef((props, ref) => {
                   key !== "active_classes" &&
                   key !== "average_rating" ? (
                     <StatFooter>
-                      <PercentChange isPositive={changeValue >= 0}>
+                      <PercentChange $isPositive={changeValue >= 0}>
                         {changeValue >= 0 ? (
                           <TrendingUp size={12} />
                         ) : (
@@ -1489,8 +1481,8 @@ const Overview = forwardRef((props, ref) => {
                   <div>
                     <StatHeader>
                       <IconContainer
-                        background={hexToRgba(stat.color, 0.15)}
-                        iconcolor={stat.color}
+                        $background={hexToRgba(stat.color, 0.15)}
+                        $iconcolor={stat.color}
                       >
                         {React.createElement(stat.icon)}
                       </IconContainer>
@@ -1955,7 +1947,7 @@ const Overview = forwardRef((props, ref) => {
                         <ActivityItem key={index}>
                           <ActivityContent>
                             <ActivityIcon
-                              background={activity.color || colors.info}
+                              $background={activity.color || colors.info}
                             >
                               <IconComponent size={18} />
                             </ActivityIcon>
