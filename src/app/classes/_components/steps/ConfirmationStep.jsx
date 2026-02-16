@@ -9,11 +9,11 @@ import {
   Mail,
   MapPin,
   Phone,
-  Info,
   Shield,
   ChevronDown,
 } from "lucide-react";
 import styled, { keyframes } from "styled-components";
+import { motion, AnimatePresence } from "framer-motion";
 import { getDurationText, getCancellationPolicyText } from "./utils";
 import { isValid, addMinutes, format as dateFnsFormat } from "date-fns";
 import {
@@ -55,8 +55,8 @@ const StatusIcon = styled.div`
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: ${(props) => (props.$failed ? "#fee2e2" : "#dcfce7")};
-  color: ${(props) => (props.$failed ? "#ef4444" : "#22c55e")};
+  background: ${(props) => (props.$failed ? "#fee2e2" : "transparent")};
+  color: ${(props) => (props.$failed ? "#ef4444" : "inherit")};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -66,6 +66,12 @@ const StatusIcon = styled.div`
     width: 32px;
     height: 32px;
   }
+`;
+
+const SuccessEmoji = styled.div`
+  font-size: 48px;
+  line-height: 1;
+  margin-bottom: 16px;
 `;
 
 const Title = styled.h2`
@@ -402,69 +408,107 @@ const TicketBody = styled.div`
   .ticket-value.mono {
     font-family: ui-monospace, monospace;
   }
+  .ticket-value a {
+    color: #0ea5e9;
+    text-decoration: none;
+  }
+  .ticket-value a:hover {
+    text-decoration: underline;
+  }
   .arrive-note {
     font-size: 14px;
     color: #4b5563;
     line-height: 1.5;
     margin: 0 0 16px 0;
   }
+  .booking-section {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px dashed #d1d5db;
+  }
+  .booking-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    margin-top: 8px;
+  }
+  .booking-pill {
+    display: inline-block;
+    background: #f5f5f7;
+    border-radius: 99px;
+    padding: 4px 12px;
+    font-size: 14px;
+    color: #1d1d1f;
+  }
 `;
 
-/* Collapsible section (dropdown) - email-style */
-const AccordionSection = styled.div`
+/* Attached accordion stack (FAQ-style, like BusinessWelcomePage) */
+const AccordionStack = styled.div`
   width: 100%;
   max-width: 480px;
-  margin-bottom: 8px;
+  margin-bottom: 20px;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   overflow: hidden;
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+`;
 
-  .accordion-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 16px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    color: #1d1d1f;
-    background: #f9fafb;
-    border: none;
-    width: 100%;
-    text-align: left;
-    transition: background 0.15s;
-
-    &:hover {
-      background: #f3f4f6;
-    }
-    .accordion-icon {
-      color: #6b7280;
-      flex-shrink: 0;
-      transition: transform 0.2s;
-    }
-    .accordion-icon.open {
-      transform: rotate(180deg);
-    }
+const AccordionItem = styled.div`
+  border-bottom: 1px solid #e5e7eb;
+  &:last-child {
+    border-bottom: none;
   }
-  .accordion-content {
-    padding: 14px 16px;
-    font-size: 14px;
-    color: #374151;
-    line-height: 1.5;
-    background: #ffffff;
+`;
+
+const AccordionButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+  background: #f9fafb;
+  border: none;
+  width: 100%;
+  text-align: left;
+  transition: background 0.15s;
+
+  &:hover {
+    background: #f3f4f6;
+  }
+  .accordion-icon {
+    color: #6b7280;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+  .accordion-icon.open {
+    transform: rotate(180deg);
+  }
+`;
+
+const AccordionContent = styled(motion.div)`
+  overflow: hidden;
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.5;
+  background: #ffffff;
+
+  .inner {
+    padding: 14px 18px 18px;
     border-top: 1px solid #e5e7eb;
   }
-  .accordion-content ul {
+  .inner ul {
     margin: 4px 0 0 0;
     padding-left: 20px;
   }
-  .accordion-content a {
+  .inner a {
     color: #0ea5e9;
     text-decoration: none;
   }
-  .accordion-content a:hover {
+  .inner a:hover {
     text-decoration: underline;
   }
   .contact-row {
@@ -1007,9 +1051,13 @@ const ConfirmationStep = ({
   return (
     <ConfirmationContainer>
       <Header>
-        <StatusIcon $failed={bookingFailed}>
-          {bookingFailed ? <AlertCircle /> : <Check />}
-        </StatusIcon>
+        {bookingFailed ? (
+          <StatusIcon $failed>
+            <AlertCircle />
+          </StatusIcon>
+        ) : (
+          <SuccessEmoji aria-hidden>🎉</SuccessEmoji>
+        )}
         <Title>{bookingFailed ? "Booking Failed" : "You're in!"}</Title>
         <Subtitle>
           {bookingFailed
@@ -1084,12 +1132,28 @@ const ConfirmationStep = ({
                   {classData?.title || bookingData.selectedOption?.classId?.title || "Class Title"}
                 </div>
               </div>
-              {(classData?.business_name || classData?.location) && (
+              <div className="ticket-row">
+                <div className="ticket-label">Location</div>
+                <div className="ticket-value">
+                  {(() => {
+                    const loc = classData?.location || "";
+                    const coords = classData?.coordinates;
+                    const mapsUrl = coords
+                      ? `https://www.google.com/maps?q=${encodeURIComponent(coords.trim())}`
+                      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc || (classData?.business_name || ""))}`;
+                    const displayLocation = loc || classData?.business_name || "Online / TBD";
+                    return (
+                      <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
+                        {displayLocation}
+                      </a>
+                    );
+                  })()}
+                </div>
+              </div>
+              {classData?.business_name && (
                 <div className="ticket-row">
-                  <div className="ticket-label">Location</div>
-                  <div className="ticket-value">
-                    {[classData?.business_name, classData?.location].filter(Boolean).join(" · ")}
-                  </div>
+                  <div className="ticket-label">Provider</div>
+                  <div className="ticket-value">{classData.business_name}</div>
                 </div>
               )}
               <div className="ticket-row">
@@ -1104,108 +1168,156 @@ const ConfirmationStep = ({
               </div>
               {(() => {
                 const count = (bookingData.participants ?? (Array.isArray(bookingData.participant_details) ? bookingData.participant_details.length : 0)) || 1;
+                const bookerName = (Array.isArray(bookingData.participant_details) && bookingData.participant_details[0]?.name)
+                  ? String(bookingData.participant_details[0].name).trim()
+                  : null;
                 if (!count) return null;
+                const othersCount = count - 1;
                 return (
-                  <div className="ticket-row">
+                  <div className="booking-section">
                     <div className="ticket-label">Booking</div>
-                    <div className="ticket-value">{count} Participants</div>
+                    <div className="booking-pills">
+                      <span className="booking-pill">
+                        Booked by {bookerName || "Guest"}
+                      </span>
+                      {othersCount > 0 ? (
+                        <span className="booking-pill">
+                          + {othersCount} other{othersCount !== 1 ? "s" : ""}
+                        </span>
+                      ) : (
+                        <span className="booking-pill">
+                          {count} participant{count !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               })()}
             </TicketBody>
           </TicketCard>
 
-          {/* Collapsible sections (dropdowns) */}
-          {bookingData.selectedOption?.equipment?.length > 0 && (
-            <AccordionSection>
-              <button
-                type="button"
-                className="accordion-header"
-                onClick={() => toggleAccordion("equipment")}
-                aria-expanded={openAccordions.equipment}
-              >
-                <span><Package size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />What to bring</span>
-                <ChevronDown size={20} className={`accordion-icon ${openAccordions.equipment ? "open" : ""}`} />
-              </button>
-              {openAccordions.equipment && (
-                <div className="accordion-content">
-                  <ul>
-                    {bookingData.selectedOption.equipment.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
+          {/* Attached accordions (FAQ-style, animated) */}
+          {(bookingData.selectedOption?.equipment?.length > 0 ||
+            bookingData.selectedOption?.cancellationPolicy ||
+            (classData?.student_contact_email ?? classData?.studentContactEmail ?? classData?.business_contact_email ?? classData?.businessContactEmail) ||
+            (classData?.student_contact_phone ?? classData?.studentContactPhone ?? classData?.business_contact_phone ?? classData?.businessContactPhone)) && (
+            <AccordionStack>
+              {bookingData.selectedOption?.equipment?.length > 0 && (
+                <AccordionItem>
+                  <AccordionButton
+                    type="button"
+                    onClick={() => toggleAccordion("equipment")}
+                    aria-expanded={openAccordions.equipment}
+                  >
+                    <span><Package size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />What to bring</span>
+                    <ChevronDown size={20} className={`accordion-icon ${openAccordions.equipment ? "open" : ""}`} />
+                  </AccordionButton>
+                  <AnimatePresence initial={false}>
+                    {openAccordions.equipment && (
+                      <AccordionContent
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                      >
+                        <div className="inner">
+                          <ul>
+                            {bookingData.selectedOption.equipment.map((item, index) => (
+                              <li key={index}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </AccordionContent>
+                    )}
+                  </AnimatePresence>
+                </AccordionItem>
               )}
-            </AccordionSection>
+
+              {(() => {
+                const option = bookingData.selectedOption;
+                const policyKey = option?.cancellationPolicy;
+                if (!policyKey) return null;
+                const classStartDateTime = selectedSlot?.date && selectedSlot?.time ? `${selectedSlot.date}T${selectedSlot.time}` : null;
+                const text = getCancellationPolicyText(
+                  policyKey,
+                  option?.cancellationRefundPercentage,
+                  option?.cancellationCustomHours,
+                  classStartDateTime,
+                  effectiveUserTimeZone,
+                  businessTimeZone,
+                );
+                if (!text) return null;
+                return (
+                  <AccordionItem key="cancellation">
+                    <AccordionButton
+                      type="button"
+                      onClick={() => toggleAccordion("cancellation")}
+                      aria-expanded={openAccordions.cancellation}
+                    >
+                      <span><Shield size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />Cancellation policy</span>
+                      <ChevronDown size={20} className={`accordion-icon ${openAccordions.cancellation ? "open" : ""}`} />
+                    </AccordionButton>
+                    <AnimatePresence initial={false}>
+                      {openAccordions.cancellation && (
+                        <AccordionContent
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.25, ease: "easeInOut" }}
+                        >
+                          <div className="inner">{text}</div>
+                        </AccordionContent>
+                      )}
+                    </AnimatePresence>
+                  </AccordionItem>
+                );
+              })()}
+
+              {(() => {
+                const email = classData?.student_contact_email ?? classData?.studentContactEmail ?? classData?.business_contact_email ?? classData?.businessContactEmail;
+                const phone = classData?.student_contact_phone ?? classData?.studentContactPhone ?? classData?.business_contact_phone ?? classData?.businessContactPhone;
+                const businessName = classData?.business_name || "the business";
+                if (!email && !phone) return null;
+                return (
+                  <AccordionItem key="contact">
+                    <AccordionButton
+                      type="button"
+                      onClick={() => toggleAccordion("contact")}
+                      aria-expanded={openAccordions.contact}
+                    >
+                      <span><Mail size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />Contact {businessName}</span>
+                      <ChevronDown size={20} className={`accordion-icon ${openAccordions.contact ? "open" : ""}`} />
+                    </AccordionButton>
+                    <AnimatePresence initial={false}>
+                      {openAccordions.contact && (
+                        <AccordionContent
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.25, ease: "easeInOut" }}
+                        >
+                          <div className="inner">
+                            {email && (
+                              <div className="contact-row">
+                                <Mail size={16} style={{ flexShrink: 0 }} />
+                                <a href={`mailto:${email}`}>{email}</a>
+                              </div>
+                            )}
+                            {phone && (
+                              <div className="contact-row">
+                                <Phone size={16} style={{ flexShrink: 0 }} />
+                                <a href={`tel:${(phone || "").replace(/\s/g, "")}`}>{phone}</a>
+                              </div>
+                            )}
+                          </div>
+                        </AccordionContent>
+                      )}
+                    </AnimatePresence>
+                  </AccordionItem>
+                );
+              })()}
+            </AccordionStack>
           )}
-
-          {(() => {
-            const option = bookingData.selectedOption;
-            const policyKey = option?.cancellationPolicy;
-            if (!policyKey) return null;
-            const classStartDateTime = selectedSlot?.date && selectedSlot?.time ? `${selectedSlot.date}T${selectedSlot.time}` : null;
-            const text = getCancellationPolicyText(
-              policyKey,
-              option?.cancellationRefundPercentage,
-              option?.cancellationCustomHours,
-              classStartDateTime,
-              effectiveUserTimeZone,
-              businessTimeZone,
-            );
-            if (!text) return null;
-            return (
-              <AccordionSection>
-                <button
-                  type="button"
-                  className="accordion-header"
-                  onClick={() => toggleAccordion("cancellation")}
-                  aria-expanded={openAccordions.cancellation}
-                >
-                  <span><Shield size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />Cancellation policy</span>
-                  <ChevronDown size={20} className={`accordion-icon ${openAccordions.cancellation ? "open" : ""}`} />
-                </button>
-                {openAccordions.cancellation && (
-                  <div className="accordion-content">{text}</div>
-                )}
-              </AccordionSection>
-            );
-          })()}
-
-          {(() => {
-            const email = classData?.student_contact_email ?? classData?.studentContactEmail ?? classData?.business_contact_email ?? classData?.businessContactEmail;
-            const phone = classData?.student_contact_phone ?? classData?.studentContactPhone ?? classData?.business_contact_phone ?? classData?.businessContactPhone;
-            const businessName = classData?.business_name || "the business";
-            if (!email && !phone) return null;
-            return (
-              <AccordionSection>
-                <button
-                  type="button"
-                  className="accordion-header"
-                  onClick={() => toggleAccordion("contact")}
-                  aria-expanded={openAccordions.contact}
-                >
-                  <span><Mail size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />Contact {businessName}</span>
-                  <ChevronDown size={20} className={`accordion-icon ${openAccordions.contact ? "open" : ""}`} />
-                </button>
-                {openAccordions.contact && (
-                  <div className="accordion-content">
-                    {email && (
-                      <div className="contact-row">
-                        <Mail size={16} style={{ flexShrink: 0 }} />
-                        <a href={`mailto:${email}`}>{email}</a>
-                      </div>
-                    )}
-                    {phone && (
-                      <div className="contact-row">
-                        <Phone size={16} style={{ flexShrink: 0 }} />
-                        <a href={`tel:${(phone || "").replace(/\s/g, "")}`}>{phone}</a>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </AccordionSection>
-            );
-          })()}
 
           <EmailConfirmationNote>
             <Mail />We've dropped the full details in your inbox—no carrier pigeons required.
