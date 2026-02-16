@@ -33,6 +33,8 @@ export async function generateMetadata({ searchParams }) {
   const { title, description } = getExploreMeta(resolvedSearchParams);
 
   // Canonical and OG URL: include meaningful filters so filtered views get correct indexing
+  const category = resolvedSearchParams?.category;
+  const location = resolvedSearchParams?.location;
   const canonicalParams = new URLSearchParams();
   if (category && category !== "all") canonicalParams.set("category", category);
   if (location) canonicalParams.set("location", location);
