@@ -2,14 +2,18 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   Check,
   Calendar as CalendarIcon,
+  Users,
   Clock,
-  MapPin,
-  ChevronDown,
-  ChevronUp,
-  Copy,
+  Package,
   AlertCircle,
+  Mail,
+  MapPin,
+  Phone,
+  Info,
+  Shield,
+  ChevronDown,
 } from "lucide-react";
-import styled, { keyframes, css } from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { getDurationText, getCancellationPolicyText } from "./utils";
 import { isValid, addMinutes, format as dateFnsFormat } from "date-fns";
 import {
@@ -21,305 +25,526 @@ import { createEvent } from "ics";
 import { saveAs } from "file-saver";
 import { fromZonedTime } from "date-fns-tz";
 import { bookingService } from "@/services/apiService";
-import { message } from "antd";
 
-// --- Animations ---
-const fadeInUp = keyframes`
-  from { opacity: 0; transform: translateY(20px); }
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
-// --- Styled Components ---
-
-const Container = styled.div`
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 40px 20px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #222222;
-  animation: ${fadeInUp} 0.6s ease-out;
+const ConfirmationContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 20px 24px;
+  text-align: center;
+  animation: ${fadeIn} 0.5s ease-out;
 
   @media (max-width: 640px) {
-    padding: 24px 16px;
+    padding: 0 16px 20px;
   }
 `;
 
-const HeaderSection = styled.div`
-  text-align: center;
-  margin-bottom: 40px;
+const Header = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
 `;
 
-const StatusCircle = styled.div`
-  width: 80px;
-  height: 80px;
+const StatusIcon = styled.div`
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  background-color: ${(props) => (props.$failed ? "#fee2e2" : "#222222")}; /* Black for modern look */
-  color: ${(props) => (props.$failed ? "#ef4444" : "#ffffff")};
+  background: ${(props) => (props.$failed ? "#fee2e2" : "#dcfce7")};
+  color: ${(props) => (props.$failed ? "#ef4444" : "#22c55e")};
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 24px;
-  box-shadow: 0 10px 25px -10px rgba(0,0,0,0.3);
+  margin-bottom: 16px;
 
   svg {
-    width: 40px;
-    height: 40px;
-    stroke-width: 3px;
+    width: 32px;
+    height: 32px;
   }
 `;
 
-const Title = styled.h1`
-  font-size: 32px;
+const Title = styled.h2`
+  margin: 0 0 4px 0;
+  color: #111827;
+  font-size: 22px;
   font-weight: 800;
-  margin: 0 0 12px 0;
-  letter-spacing: -0.02em;
-  color: #222222;
 
   @media (max-width: 640px) {
-    font-size: 26px;
+    font-size: 20px;
   }
 `;
 
 const Subtitle = styled.p`
-  font-size: 16px;
-  color: #717171;
-  margin: 0 auto;
-  max-width: 420px;
-  line-height: 1.5;
-`;
-
-/* The "Ticket" / Main Card */
-const BookingCard = styled.div`
-  background: #ffffff;
-  border: 1px solid #dddddd;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-  margin-bottom: 32px;
-`;
-
-const CardImagePlaceholder = styled.div`
-  height: 8px;
-  background: #222222;
-  width: 100%;
-`;
-
-const CardContent = styled.div`
-  padding: 24px;
-`;
-
-const ClassTitle = styled.h2`
-  font-size: 22px;
-  font-weight: 700;
-  margin: 0 0 4px 0;
-  line-height: 1.3;
-`;
-
-const BusinessName = styled.div`
+  margin: 0;
+  color: #6b7280;
   font-size: 14px;
-  font-weight: 500;
-  color: #717171;
-  margin-bottom: 24px;
+  max-width: 400px;
 `;
 
-const InfoRow = styled.div`
+const BookingReference = styled.div`
+  background-color: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  color: #4b5563;
+  width: 100%;
+  max-width: 400px;
+
+  strong {
+    color: #111827;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+`;
+
+const SkeletonPlaceholder = styled.div`
+  display: inline-block;
+  height: 18px;
+  width: 120px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite linear;
+  border-radius: 4px;
+  vertical-align: middle;
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+`;
+
+/* Grouped blocks (mobile-summary style) */
+const SummaryBlock = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  width: 100%;
+  max-width: 480px;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 12px;
+
+  @media (max-width: 640px) {
+    padding: 14px;
+  }
+`;
+
+const SummaryBlockLabel = styled.div`
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #9ca3af;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+`;
+
+const SummaryBlockValue = styled.div`
+  font-size: 14px;
+  color: #111827;
+  font-weight: 600;
+  line-height: 1.4;
+`;
+
+const SummaryMetaItem = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+
+  &:not(:last-child) {
+    margin-bottom: 12px;
+  }
+
+  .icon-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #f9fafb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    flex-shrink: 0;
+  }
+  .icon-box svg {
+    width: 16px;
+    height: 16px;
+  }
+  .text-content {
+    display: flex;
+    flex-direction: column;
+  }
+  .text-content .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #9ca3af;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .text-content .value {
+    font-size: 14px;
+    color: #111827;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+`;
+
+const BookingSummary = styled.div`
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05);
+
+  @media (max-width: 640px) {
+    padding: 20px;
+  }
+`;
+
+const SummaryHeader = styled.div`
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #111827;
+    font-weight: 600;
+  }
+`;
+
+const DetailRow = styled.div`
   display: flex;
   align-items: flex-start;
+  gap: 12px;
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.5;
+
+  &:not(:last-child) {
+    margin-bottom: 12px;
+  }
+
+  svg {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 3px;
+    color: #9ca3af;
+  }
+`;
+
+const EquipmentList = styled.ul`
+  list-style: disc;
+  padding-left: 20px;
+  margin: 4px 0 0 0;
+  color: #374151;
+`;
+
+const ArriveEarlyNote = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: #4b5563;
+  padding: 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 12px;
+  text-align: left;
+
+  .icon-box {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: #dcfce7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #16a34a;
+  }
+  .icon-box svg {
+    width: 16px;
+    height: 16px;
+  }
+  p {
+    margin: 0;
+    line-height: 1.5;
+  }
+`;
+
+const BusinessContactBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 12px;
+  text-align: left;
+
+  .contact-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #64748b;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  a {
+    font-size: 14px;
+    color: #0ea5e9;
+    font-weight: 500;
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+  .contact-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .contact-row svg {
+    width: 16px;
+    height: 16px;
+    color: #64748b;
+    flex-shrink: 0;
+  }
+`;
+
+/* Email-style ticket card (matches booking_confirmation_user.html) */
+const TicketCard = styled.div`
+  width: 100%;
+  max-width: 480px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
   margin-bottom: 20px;
-  
-  &:last-child {
+`;
+
+const TicketHero = styled.div`
+  background-color: #f5f5f7;
+  padding: 24px;
+  border-bottom: 1px solid #e5e7eb;
+
+  .hero-label {
+    font-size: 13px;
+    color: #86868b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  .hero-date {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1d1d1f;
+    line-height: 1.1;
+  }
+  .hero-time {
+    font-size: 18px;
+    color: #f81e3e;
+    font-weight: 600;
+    margin-top: 8px;
+  }
+  .hero-meta {
+    font-size: 12px;
+    color: #86868b;
+    margin-top: 4px;
+  }
+`;
+
+const TicketBody = styled.div`
+  padding: 24px;
+  text-align: left;
+
+  .ticket-row {
+    margin-bottom: 16px;
+  }
+  .ticket-row:last-child {
+    margin-bottom: 0;
+  }
+  .ticket-label {
+    font-size: 12px;
+    color: #86868b;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 4px;
+  }
+  .ticket-value {
+    font-size: 16px;
+    color: #1d1d1f;
+    font-weight: 500;
+  }
+  .ticket-value.mono {
+    font-family: ui-monospace, monospace;
+  }
+  .arrive-note {
+    font-size: 14px;
+    color: #4b5563;
+    line-height: 1.5;
+    margin: 0 0 16px 0;
+  }
+`;
+
+/* Collapsible section (dropdown) - email-style */
+const AccordionSection = styled.div`
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+  .accordion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1d1d1f;
+    background: #f9fafb;
+    border: none;
+    width: 100%;
+    text-align: left;
+    transition: background 0.15s;
+
+    &:hover {
+      background: #f3f4f6;
+    }
+    .accordion-icon {
+      color: #6b7280;
+      flex-shrink: 0;
+      transition: transform 0.2s;
+    }
+    .accordion-icon.open {
+      transform: rotate(180deg);
+    }
+  }
+  .accordion-content {
+    padding: 14px 16px;
+    font-size: 14px;
+    color: #374151;
+    line-height: 1.5;
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+  }
+  .accordion-content ul {
+    margin: 4px 0 0 0;
+    padding-left: 20px;
+  }
+  .accordion-content a {
+    color: #0ea5e9;
+    text-decoration: none;
+  }
+  .accordion-content a:hover {
+    text-decoration: underline;
+  }
+  .contact-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .contact-row:last-child {
     margin-bottom: 0;
   }
 `;
 
-const InfoIcon = styled.div`
-  margin-right: 16px;
-  color: #222222;
-  display: flex;
-  align-items: center;
-  height: 24px; /* Align with line-height */
-  
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-`;
-
-const InfoText = styled.div`
-  flex: 1;
-`;
-
-const InfoLabel = styled.div`
-  font-size: 14px;
-  font-weight: 600;
-  color: #222222;
-  margin-bottom: 2px;
-`;
-
-const InfoValue = styled.div`
-  font-size: 14px;
-  color: #717171;
-  line-height: 1.4;
-`;
-
-const ReferenceSection = styled.div`
-  border-top: 1px solid #dddddd;
-  background-color: #f7f7f7;
-  padding: 16px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const ReferenceLabel = styled.span`
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #717171;
-`;
-
-const ReferenceCode = styled.div`
-  font-family: monospace;
-  font-size: 16px;
-  font-weight: 600;
-  color: #222222;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-
-  &:hover {
-    color: #000;
-  }
-`;
-
-const SkeletonLoader = styled.div`
-  height: 20px;
-  width: 100px;
-  background: #e0e0e0;
-  border-radius: 4px;
-  animation: pulse 1.5s infinite;
-  
-  @keyframes pulse {
-    0% { opacity: 0.6; }
-    50% { opacity: 1; }
-    100% { opacity: 0.6; }
-  }
-`;
-
-/* Action Buttons */
-const ButtonGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 40px;
-`;
-
-const PrimaryButton = styled.button`
-  background: #ffffff;
-  border: 1px solid #222222;
-  color: #222222;
-  font-size: 16px;
-  font-weight: 600;
-  padding: 14px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
+const AddToCalendar = styled.button`
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  background: #ff385c;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 8px;
+  margin-top: 24px;
+  transition: all 0.2s;
   width: 100%;
+  width: fit-content;
 
   &:hover {
-    background: #f7f7f7;
-    transform: scale(1.01);
+    background: #e31c5f;
+    box-shadow: 0 4px 12px rgba(227, 28, 95, 0.2);
   }
 
   &:disabled {
-    opacity: 0.5;
+    background: #ccc;
     cursor: not-allowed;
   }
 `;
 
-const RetryButton = styled(PrimaryButton)`
-  background: #e31c5f;
-  color: white;
-  border-color: #e31c5f;
-  
-  &:hover {
-    background: #d11a52;
-  }
-`;
-
-/* Accordion / Dropdown Section */
-const DropdownSection = styled.div`
-  border-top: 1px solid #dddddd;
-`;
-
-const DropdownItem = styled.div`
-  border-bottom: 1px solid #dddddd;
-`;
-
-const DropdownHeader = styled.button`
-  width: 100%;
+const EmailConfirmationNote = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 24px 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  
-  span {
-    font-size: 16px;
-    font-weight: 600;
-    color: #222222;
-  }
+  gap: 8px;
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 16px;
+  padding: 12px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 480px;
+  justify-content: center;
 
   svg {
-    color: #222222;
-    transition: transform 0.3s ease;
-    ${(props) => props.$isOpen && css`
-      transform: rotate(180deg);
-    `}
-  }
-
-  &:hover span {
-    text-decoration: underline;
+    color: #9ca3af;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
   }
 `;
 
-const DropdownContent = styled.div`
-  padding-bottom: 24px;
-  color: #717171;
+const RetryButton = styled.button`
+  background: #ff385c;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
   font-size: 14px;
-  line-height: 1.6;
-  animation: ${fadeInUp} 0.3s ease-out;
-  
-  p {
-    margin: 0;
-  }
-  
-  ul {
-    padding-left: 20px;
-    margin: 0;
-  }
-  
-  li {
-    margin-bottom: 4px;
-  }
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 16px;
 
-  a {
-    color: #222222;
-    text-decoration: underline;
-    font-weight: 500;
+  &:hover {
+    background: #e31c5f;
   }
 `;
-
-// --- Logic Helpers ---
 
 const getUTCDateFromBusinessLocal = (
   naiveDateStr,
@@ -327,6 +552,7 @@ const getUTCDateFromBusinessLocal = (
   businessTimeZoneStr
 ) => {
   if (!naiveDateStr || !naiveTimeStr || !businessTimeZoneStr) return null;
+
   try {
     const timeParts = naiveTimeStr.split(":");
     const formattedTimeStr = `${timeParts[0]}:${timeParts[1] || "00"}:${
@@ -357,12 +583,10 @@ const ConfirmationStep = ({
   const [isPolling, setIsPolling] = useState(false);
   const [pollingError, setPollingError] = useState(null);
   const [bookingFailed, setBookingFailed] = useState(false);
-  
-  // Accordion States
-  const [openSection, setOpenSection] = useState(null);
+  const [openAccordions, setOpenAccordions] = useState({ equipment: false, cancellation: false, contact: false });
 
-  const toggleSection = (section) => {
-    setOpenSection(openSection === section ? null : section);
+  const toggleAccordion = (key) => {
+    setOpenAccordions((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const actualBookingId = propBookingId || bookingData.bookingId;
@@ -448,13 +672,6 @@ const ConfirmationStep = ({
     else window.location.reload();
   };
 
-  const handleCopyReference = () => {
-    if (displayReference) {
-      navigator.clipboard.writeText(displayReference);
-      message.success("Reference copied!");
-    }
-  };
-
   const handleAddToCalendar = () => {
     const selectedSlot = bookingData.selectedSlots?.[0];
     if (!selectedSlot || !businessTimeZone) return;
@@ -537,60 +754,134 @@ const ConfirmationStep = ({
   };
 
   const selectedSlot = bookingData.selectedSlots?.[0];
+
   const effectiveUserTimeZone =
     userTimeZone || (typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "America/Toronto");
 
-  // --- Render Helpers ---
-
-  const renderDateTimeContent = () => {
+  const renderDateAndTimeBlock = () => {
     if (!selectedSlot) return null;
     const { date, time, duration, isCourse, end_date, days } = selectedSlot;
 
     if (isCourse) {
       return (
-        <>
-          <InfoRow>
-            <InfoIcon><CalendarIcon /></InfoIcon>
-            <InfoText>
-              <InfoLabel>Course Dates</InfoLabel>
-              <InfoValue>
-                {formatNaiveDate(date, "MMM d")} – {formatNaiveDate(end_date, "MMM d, yyyy")}
-              </InfoValue>
-            </InfoText>
-          </InfoRow>
-          <InfoRow>
-            <InfoIcon><Clock /></InfoIcon>
-            <InfoText>
-              <InfoLabel>Schedule</InfoLabel>
-              <InfoValue>
-                Every {days.join(", ")} at {formatTimeRangeForDisplay(
+        <SummaryBlock>
+          <SummaryMetaItem>
+            <div className="icon-box"><CalendarIcon /></div>
+            <div className="text-content">
+              <span className="label">Course dates</span>
+              <span className="value">
+                {formatNaiveDate(date, "MMM d, yyyy")} – {formatNaiveDate(end_date, "MMM d, yyyy")}
+              </span>
+            </div>
+          </SummaryMetaItem>
+          <SummaryMetaItem>
+            <div className="icon-box"><Clock /></div>
+            <div className="text-content">
+              <span className="label">Time</span>
+              <span className="value">
+                Every {days.join(", ")} at{" "}
+                {formatTimeRangeForDisplay(
                   date,
                   time,
                   duration,
                   businessTimeZone,
                   effectiveUserTimeZone
                 )}
-              </InfoValue>
-            </InfoText>
-          </InfoRow>
+              </span>
+            </div>
+          </SummaryMetaItem>
+        </SummaryBlock>
+      );
+    }
+
+    return (
+      <SummaryBlock>
+        <SummaryMetaItem>
+          <div className="icon-box"><CalendarIcon /></div>
+          <div className="text-content">
+            <span className="label">Date</span>
+            <span className="value">
+              {formatBusinessLocalToUserDisplay(
+                date,
+                time,
+                businessTimeZone,
+                effectiveUserTimeZone,
+                { dateTimeFormat: "EEEE, MMMM d, yyyy" }
+              )}
+            </span>
+          </div>
+        </SummaryMetaItem>
+        <SummaryMetaItem>
+          <div className="icon-box"><Clock /></div>
+          <div className="text-content">
+            <span className="label">Time</span>
+            <span className="value">
+              {formatTimeRangeForDisplay(
+                date,
+                time,
+                duration,
+                businessTimeZone,
+                effectiveUserTimeZone
+              )} ({getDurationText(duration)})
+            </span>
+          </div>
+        </SummaryMetaItem>
+      </SummaryBlock>
+    );
+  };
+
+  const renderBookingDetails = () => {
+    if (!selectedSlot) return null;
+
+    const { date, time, duration, isCourse, end_date, days } = selectedSlot;
+
+    if (isCourse) {
+      return (
+        <>
+          <DetailRow>
+            <CalendarIcon />
+            <div>
+              <strong>Course Dates:</strong>{" "}
+              {formatNaiveDate(date, "MMM d, yyyy")} -{" "}
+              {formatNaiveDate(end_date, "MMM d, yyyy")}
+            </div>
+          </DetailRow>
+          <DetailRow>
+            <Clock />
+            <div>
+              <strong>Schedule:</strong> Every {days.join(", ")} at{" "}
+              {formatTimeRangeForDisplay(
+                date,
+                time,
+                duration,
+                businessTimeZone,
+                effectiveUserTimeZone
+              )}
+            </div>
+          </DetailRow>
         </>
       );
     }
 
     return (
-      <InfoRow>
-        <InfoIcon><CalendarIcon /></InfoIcon>
-        <InfoText>
-          <InfoLabel>Date and time</InfoLabel>
-          <InfoValue>
+      <>
+        <DetailRow>
+          <CalendarIcon />
+          <div>
+            <strong>Date:</strong>{" "}
             {formatBusinessLocalToUserDisplay(
               date,
               time,
               businessTimeZone,
               effectiveUserTimeZone,
-              { dateTimeFormat: "EEEE, MMM d" }
+              { dateTimeFormat: "MMMM d, yyyy" }
             )}
-            {" · "}
+          </div>
+        </DetailRow>
+        <DetailRow>
+          <Clock />
+          <div>
+            <strong>Time:</strong>{" "}
             {formatBusinessLocalToUserDisplay(
               date,
               time,
@@ -598,206 +889,337 @@ const ConfirmationStep = ({
               effectiveUserTimeZone,
               { timeFormat: "p" }
             )}
-            {" ("}{getDurationText(duration)}{")"}
-          </InfoValue>
-        </InfoText>
-      </InfoRow>
+          </div>
+        </DetailRow>
+        <DetailRow>
+          <Clock />
+          <div>
+            <strong>Duration:</strong> {getDurationText(duration)}
+          </div>
+        </DetailRow>
+      </>
     );
   };
 
-  const cancellationText = (() => {
+  const renderParticipantInfo = () => {
+    const { participants, participant_details } = bookingData;
+    const count = (participants ?? (Array.isArray(participant_details) ? participant_details.length : 0)) || 1;
+    if (!count) return null;
+    return (
+      <SummaryMetaItem>
+        <div className="icon-box"><Users /></div>
+        <div className="text-content">
+          <span className="label">Participants</span>
+          <span className="value">{count} Participants</span>
+        </div>
+      </SummaryMetaItem>
+    );
+  };
+
+  const renderEquipmentInfo = () => {
+    const equipment = bookingData.selectedOption?.equipment;
+    if (!equipment?.length) return null;
+
+    return (
+      <SummaryMetaItem>
+        <div className="icon-box"><Package /></div>
+        <div className="text-content">
+          <span className="label">Required equipment</span>
+          <span className="value">
+            <EquipmentList>
+              {equipment.map((item, index) => (
+                <li key={index}>{item}</li>
+              ))}
+            </EquipmentList>
+          </span>
+        </div>
+      </SummaryMetaItem>
+    );
+  };
+
+  const renderArriveEarlyNote = () => (
+    <ArriveEarlyNote>
+      <div className="icon-box"><Info /></div>
+      <p>
+        <strong>Pro tip:</strong> Arrive a few minutes early and check in at the venue. Questions before the big day? Reach out to the business below.
+      </p>
+    </ArriveEarlyNote>
+  );
+
+  const renderCancellationPolicy = () => {
     const option = bookingData.selectedOption;
-    if (!option?.cancellationPolicy) return null;
+    const policyKey = option?.cancellationPolicy;
+    if (!policyKey) return null;
     const classStartDateTime = selectedSlot?.date && selectedSlot?.time
       ? `${selectedSlot.date}T${selectedSlot.time}`
       : null;
-    return getCancellationPolicyText(
-      option.cancellationPolicy,
-      option.cancellationRefundPercentage,
-      option.cancellationCustomHours,
+    const text = getCancellationPolicyText(
+      policyKey,
+      option?.cancellationRefundPercentage,
+      option?.cancellationCustomHours,
       classStartDateTime,
       effectiveUserTimeZone,
       businessTimeZone,
     );
-  })();
+    if (!text) return null;
+    return (
+      <CancellationPolicyBlock>
+        <div className="icon-box"><Shield /></div>
+        <p><strong>The fine print:</strong> {text}</p>
+      </CancellationPolicyBlock>
+    );
+  };
 
-  const equipmentList = bookingData.selectedOption?.equipment || [];
-  
-  const businessEmail =
-    classData?.student_contact_email ??
-    classData?.studentContactEmail ??
-    classData?.business_contact_email ??
-    classData?.businessContactEmail;
-    
-  const businessPhone =
-    classData?.student_contact_phone ??
-    classData?.studentContactPhone ??
-    classData?.business_contact_phone ??
-    classData?.businessContactPhone;
+  const renderBusinessContact = () => {
+    const email =
+      classData?.student_contact_email ??
+      classData?.studentContactEmail ??
+      classData?.business_contact_email ??
+      classData?.businessContactEmail;
+    const phone =
+      classData?.student_contact_phone ??
+      classData?.studentContactPhone ??
+      classData?.business_contact_phone ??
+      classData?.businessContactPhone;
+    const businessName = classData?.business_name || "the business";
+
+    if (!email && !phone) return null;
+
+    return (
+      <BusinessContactBlock>
+        <div className="contact-label">Questions? Contact {businessName}</div>
+        {email && (
+          <div className="contact-row">
+            <Mail size={16} />
+            <a href={`mailto:${email}`}>{email}</a>
+          </div>
+        )}
+        {phone && (
+          <div className="contact-row">
+            <Phone size={16} />
+            <a href={`tel:${phone.replace(/\s/g, "")}`}>{phone}</a>
+          </div>
+        )}
+      </BusinessContactBlock>
+    );
+  };
 
   return (
-    <Container>
-      <HeaderSection>
-        <StatusCircle $failed={bookingFailed}>
+    <ConfirmationContainer>
+      <Header>
+        <StatusIcon $failed={bookingFailed}>
           {bookingFailed ? <AlertCircle /> : <Check />}
-        </StatusCircle>
+        </StatusIcon>
         <Title>{bookingFailed ? "Booking Failed" : "You're in!"}</Title>
         <Subtitle>
           {bookingFailed
             ? pollingError || "We were unable to complete your booking."
-            : "We've sent a confirmation email with all the details to your inbox."}
+            : "Your spot's saved. We'll see you there—don't forget to show up."}
         </Subtitle>
-      </HeaderSection>
+      </Header>
 
       {bookingFailed ? (
-         <ButtonGroup>
-            <RetryButton onClick={handleRetry}>Try Booking Again</RetryButton>
-         </ButtonGroup>
+        <RetryButton onClick={handleRetry}>Try Booking Again</RetryButton>
       ) : (
         <>
-          <BookingCard>
-            <CardImagePlaceholder />
-            <CardContent>
-              <ClassTitle>
-                {classData?.title || bookingData.selectedOption?.classId?.title || "Class Title"}
-              </ClassTitle>
-              {(classData?.business_name) && (
-                 <BusinessName>Hosted by {classData.business_name}</BusinessName>
+          <BookingReference>
+            Your reference (hold onto this):{" "}
+            <strong>
+              {isPolling && !displayReference ? (
+                <SkeletonPlaceholder />
+              ) : (
+                displayReference || (actualBookingId ? "Confirmed" : "Processing...")
               )}
+            </strong>
+          </BookingReference>
 
-              {renderDateTimeContent()}
-
-              {(classData?.location) && (
-                <InfoRow>
-                  <InfoIcon><MapPin /></InfoIcon>
-                  <InfoText>
-                    <InfoLabel>Location</InfoLabel>
-                    <InfoValue>{classData.location}</InfoValue>
-                  </InfoText>
-                </InfoRow>
+          {/* Email-style ticket card */}
+          <TicketCard>
+            <TicketHero>
+              <div className="hero-label">Mark your calendar</div>
+              {selectedSlot ? (
+                <>
+                  <div className="hero-date">
+                    {selectedSlot.isCourse
+                      ? `${formatNaiveDate(selectedSlot.date, "MMM d")} – ${formatNaiveDate(selectedSlot.end_date, "MMM d, yyyy")}`
+                      : formatNaiveDate(selectedSlot.date, "EEEE, MMM d")}
+                  </div>
+                  <div className="hero-time">
+                    {selectedSlot.isCourse
+                      ? `Every ${selectedSlot.days?.join(", ")} at ${formatTimeRangeForDisplay(
+                          selectedSlot.date,
+                          selectedSlot.time,
+                          selectedSlot.duration,
+                          businessTimeZone,
+                          effectiveUserTimeZone
+                        )}`
+                      : formatTimeRangeForDisplay(
+                          selectedSlot.date,
+                          selectedSlot.time,
+                          selectedSlot.duration,
+                          businessTimeZone,
+                          effectiveUserTimeZone
+                        )}
+                  </div>
+                  {selectedSlot.duration && !selectedSlot.isCourse && (
+                    <div className="hero-meta">{getDurationText(selectedSlot.duration)}</div>
+                  )}
+                  {businessTimeZone && (
+                    <div className="hero-meta">
+                      {(businessTimeZone || "").replace(/_/g, " ")} time
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="hero-date" style={{ color: "#9ca3af" }}>—</div>
               )}
-            </CardContent>
+            </TicketHero>
+            <TicketBody>
+              <p className="arrive-note">
+                <strong>Pro tip:</strong> Arrive a few minutes early and check in at the venue. Questions? Use the contact details below.
+              </p>
+              <div className="ticket-row">
+                <div className="ticket-label">Class</div>
+                <div className="ticket-value">
+                  {classData?.title || bookingData.selectedOption?.classId?.title || "Class Title"}
+                </div>
+              </div>
+              {(classData?.business_name || classData?.location) && (
+                <div className="ticket-row">
+                  <div className="ticket-label">Location</div>
+                  <div className="ticket-value">
+                    {[classData?.business_name, classData?.location].filter(Boolean).join(" · ")}
+                  </div>
+                </div>
+              )}
+              <div className="ticket-row">
+                <div className="ticket-label">Reference</div>
+                <div className="ticket-value mono">
+                  {isPolling && !displayReference ? (
+                    <SkeletonPlaceholder />
+                  ) : (
+                    displayReference || (actualBookingId ? "Confirmed" : "Processing...")
+                  )}
+                </div>
+              </div>
+              {(() => {
+                const count = (bookingData.participants ?? (Array.isArray(bookingData.participant_details) ? bookingData.participant_details.length : 0)) || 1;
+                if (!count) return null;
+                return (
+                  <div className="ticket-row">
+                    <div className="ticket-label">Booking</div>
+                    <div className="ticket-value">{count} Participants</div>
+                  </div>
+                );
+              })()}
+            </TicketBody>
+          </TicketCard>
 
-            <ReferenceSection>
-              <ReferenceLabel>Confirmation Code</ReferenceLabel>
-              <ReferenceCode onClick={handleCopyReference}>
-                {isPolling && !displayReference ? (
-                  <SkeletonLoader />
-                ) : (
-                  <>
-                    {displayReference || (actualBookingId ? "CONFIRMED" : "PROCESSING")}
-                    <Copy size={14} style={{ color: "#717171" }}/>
-                  </>
-                )}
-              </ReferenceCode>
-            </ReferenceSection>
-          </BookingCard>
+          {/* Collapsible sections (dropdowns) */}
+          {bookingData.selectedOption?.equipment?.length > 0 && (
+            <AccordionSection>
+              <button
+                type="button"
+                className="accordion-header"
+                onClick={() => toggleAccordion("equipment")}
+                aria-expanded={openAccordions.equipment}
+              >
+                <span><Package size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />What to bring</span>
+                <ChevronDown size={20} className={`accordion-icon ${openAccordions.equipment ? "open" : ""}`} />
+              </button>
+              {openAccordions.equipment && (
+                <div className="accordion-content">
+                  <ul>
+                    {bookingData.selectedOption.equipment.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </AccordionSection>
+          )}
 
-          <ButtonGroup>
-            <PrimaryButton
-                onClick={handleAddToCalendar}
-                disabled={!selectedSlot || isPolling}
-            >
-                <CalendarIcon size={18} /> Add to calendar
-            </PrimaryButton>
-          </ButtonGroup>
-
-          {/* Accordion Sections for Extra Info */}
-          <DropdownSection>
-            {/* 1. What to bring */}
-            {equipmentList.length > 0 && (
-              <DropdownItem>
-                <DropdownHeader 
-                  $isOpen={openSection === 'equipment'} 
-                  onClick={() => toggleSection('equipment')}
+          {(() => {
+            const option = bookingData.selectedOption;
+            const policyKey = option?.cancellationPolicy;
+            if (!policyKey) return null;
+            const classStartDateTime = selectedSlot?.date && selectedSlot?.time ? `${selectedSlot.date}T${selectedSlot.time}` : null;
+            const text = getCancellationPolicyText(
+              policyKey,
+              option?.cancellationRefundPercentage,
+              option?.cancellationCustomHours,
+              classStartDateTime,
+              effectiveUserTimeZone,
+              businessTimeZone,
+            );
+            if (!text) return null;
+            return (
+              <AccordionSection>
+                <button
+                  type="button"
+                  className="accordion-header"
+                  onClick={() => toggleAccordion("cancellation")}
+                  aria-expanded={openAccordions.cancellation}
                 >
-                  <span>What to bring</span>
-                  <ChevronDown size={20} />
-                </DropdownHeader>
-                {openSection === 'equipment' && (
-                  <DropdownContent>
-                    <ul>
-                      {equipmentList.map((item, idx) => (
-                        <li key={idx}>{item}</li>
-                      ))}
-                    </ul>
-                  </DropdownContent>
+                  <span><Shield size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />Cancellation policy</span>
+                  <ChevronDown size={20} className={`accordion-icon ${openAccordions.cancellation ? "open" : ""}`} />
+                </button>
+                {openAccordions.cancellation && (
+                  <div className="accordion-content">{text}</div>
                 )}
-              </DropdownItem>
-            )}
+              </AccordionSection>
+            );
+          })()}
 
-            {/* 2. Cancellation Policy */}
-            {cancellationText && (
-              <DropdownItem>
-                <DropdownHeader 
-                  $isOpen={openSection === 'cancellation'} 
-                  onClick={() => toggleSection('cancellation')}
+          {(() => {
+            const email = classData?.student_contact_email ?? classData?.studentContactEmail ?? classData?.business_contact_email ?? classData?.businessContactEmail;
+            const phone = classData?.student_contact_phone ?? classData?.studentContactPhone ?? classData?.business_contact_phone ?? classData?.businessContactPhone;
+            const businessName = classData?.business_name || "the business";
+            if (!email && !phone) return null;
+            return (
+              <AccordionSection>
+                <button
+                  type="button"
+                  className="accordion-header"
+                  onClick={() => toggleAccordion("contact")}
+                  aria-expanded={openAccordions.contact}
                 >
-                  <span>Cancellation policy</span>
-                  <ChevronDown size={20} />
-                </DropdownHeader>
-                {openSection === 'cancellation' && (
-                  <DropdownContent>
-                    <p>{cancellationText}</p>
-                  </DropdownContent>
+                  <span><Mail size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />Contact {businessName}</span>
+                  <ChevronDown size={20} className={`accordion-icon ${openAccordions.contact ? "open" : ""}`} />
+                </button>
+                {openAccordions.contact && (
+                  <div className="accordion-content">
+                    {email && (
+                      <div className="contact-row">
+                        <Mail size={16} style={{ flexShrink: 0 }} />
+                        <a href={`mailto:${email}`}>{email}</a>
+                      </div>
+                    )}
+                    {phone && (
+                      <div className="contact-row">
+                        <Phone size={16} style={{ flexShrink: 0 }} />
+                        <a href={`tel:${(phone || "").replace(/\s/g, "")}`}>{phone}</a>
+                      </div>
+                    )}
+                  </div>
                 )}
-              </DropdownItem>
-            )}
+              </AccordionSection>
+            );
+          })()}
 
-            {/* 3. Contact Info */}
-            {(businessEmail || businessPhone) && (
-               <DropdownItem>
-                 <DropdownHeader 
-                    $isOpen={openSection === 'contact'} 
-                    onClick={() => toggleSection('contact')}
-                 >
-                    <span>Contact host</span>
-                    <ChevronDown size={20} />
-                 </DropdownHeader>
-                 {openSection === 'contact' && (
-                   <DropdownContent>
-                     <p style={{ marginBottom: 8 }}>
-                        Have questions? Reach out to {classData?.business_name || "the host"} directly.
-                     </p>
-                     {businessEmail && (
-                        <div style={{ marginBottom: 4 }}>
-                           <strong>Email: </strong>
-                           <a href={`mailto:${businessEmail}`}>{businessEmail}</a>
-                        </div>
-                     )}
-                     {businessPhone && (
-                        <div>
-                           <strong>Phone: </strong>
-                           <a href={`tel:${businessPhone.replace(/\s/g, "")}`}>{businessPhone}</a>
-                        </div>
-                     )}
-                   </DropdownContent>
-                 )}
-               </DropdownItem>
-            )}
+          <EmailConfirmationNote>
+            <Mail />We've dropped the full details in your inbox—no carrier pigeons required.
+          </EmailConfirmationNote>
 
-            {/* 4. Arrive Early Note (Kept as witty text inside a dropdown or just a static tip) */}
-            <DropdownItem>
-                <DropdownHeader 
-                   $isOpen={openSection === 'tips'} 
-                   onClick={() => toggleSection('tips')}
-                >
-                   <span>Good to know</span>
-                   <ChevronDown size={20} />
-                </DropdownHeader>
-                {openSection === 'tips' && (
-                   <DropdownContent>
-                      <p>
-                        <strong>Pro tip:</strong> Arrive a few minutes early to get settled. 
-                        Your spot's saved. We'll see you there—don't forget to show up.
-                      </p>
-                   </DropdownContent>
-                )}
-            </DropdownItem>
-          </DropdownSection>
+          <AddToCalendar
+            onClick={handleAddToCalendar}
+            disabled={!selectedSlot || isPolling}
+          >
+            <CalendarIcon size={16} /> Add to calendar
+          </AddToCalendar>
         </>
       )}
-    </Container>
+    </ConfirmationContainer>
   );
 };
 
