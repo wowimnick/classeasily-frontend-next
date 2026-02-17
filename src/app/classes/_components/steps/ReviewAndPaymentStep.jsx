@@ -47,6 +47,7 @@ import {
   businessDiscountService,
   giftCardService,
   globalDiscountService,
+  bookingService,
 } from "@/services/apiService";
 import posthog from "posthog-js";
 import { theme as appTheme } from "@/components/theme";
@@ -2141,11 +2142,36 @@ const ReviewAndPaymentStep = ({
             { length: participantsCount },
             () => ({ name: bookerName }),
           );
-          onPaymentComplete({
+          const basePayload = {
             payment_intent_id: paymentIntent.id,
             client_secret: clientSecret,
             participant_details: participantDetails,
-          });
+          };
+          try {
+            for (let attempt = 0; attempt < 6; attempt++) {
+              const result = await bookingService.bookingStatusPolling(
+                paymentIntent.id,
+                clientSecret
+              );
+              if (
+                result.success &&
+                result.data?.status === "confirmed" &&
+                result.data?.booking_id != null
+              ) {
+                onPaymentComplete({
+                  ...basePayload,
+                  booking_id: result.data.booking_id,
+                  user_facing_reference: result.data.user_facing_reference,
+                  booking_group_id: result.data.booking_group_id,
+                });
+                return;
+              }
+              if (attempt < 5) await new Promise((r) => setTimeout(r, 800));
+            }
+          } catch (_) {
+            /* ignore */
+          }
+          onPaymentComplete(basePayload);
         }
       } catch (err) {
         message.error(err.message || "Whoops! Something went wrong. Please try again.");

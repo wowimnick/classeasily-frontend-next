@@ -605,6 +605,7 @@ const ConfirmationStep = ({
   onRetryBooking,
 }) => {
   const [fetchedReference, setFetchedReference] = useState(null);
+  const [fetchedBookingId, setFetchedBookingId] = useState(null);
   const [isPolling, setIsPolling] = useState(false);
   const [pollingError, setPollingError] = useState(null);
   const [bookingFailed, setBookingFailed] = useState(false);
@@ -614,18 +615,25 @@ const ConfirmationStep = ({
     setOpenAccordions((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const actualBookingId = propBookingId || bookingData.bookingId;
+  const actualBookingId = propBookingId || bookingData.bookingId || fetchedBookingId;
   const displayReference =
     propReference || fetchedReference || bookingData.user_facing_reference;
+  /** Prefer numeric booking id for Pixel order_id so it matches CAPI event_id and Meta deduplicates. */
+  const isNumericId = (v) => v != null && /^\d+$/.test(String(v));
+  const orderIdForPixel = isNumericId(actualBookingId)
+    ? actualBookingId
+    : (displayReference || paymentIntentId);
 
-  /* Fire PostHog + Meta Pixel Purchase once when payment went through and user is on confirmation page. Never re-fire on refresh. */
+  /* Fire PostHog + Meta Pixel Purchase once when payment went through and user is on confirmation page. Use numeric order_id when available so Pixel matches CAPI event_id for deduplication. */
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (bookingFailed) return;
-    const confirmedId = actualBookingId || displayReference;
+    const confirmedId = orderIdForPixel || actualBookingId || displayReference;
     if (!confirmedId) return;
     const alreadyTracked = sessionStorage.getItem(PURCHASE_TRACKED_KEY);
     if (alreadyTracked === String(confirmedId)) return;
+    /* If we have paymentIntentId but no numeric id yet, wait for poll to set fetchedBookingId so we send one Purchase with matching event_id. */
+    if (paymentIntentId && !isNumericId(actualBookingId)) return;
 
     const revenue = (bookingData?.price || 0) * (bookingData?.participants || 1);
     const currency = classData?.currency_code || "CAD";
@@ -651,7 +659,7 @@ const ConfirmationStep = ({
         content_ids: [classData?.classId || classData?.id].filter(Boolean),
         content_type: "product",
         num_items: bookingData?.participants ?? 1,
-        order_id: actualBookingId || displayReference || paymentIntentId,
+        order_id: orderIdForPixel,
       },
       {
         em: userEmail,
@@ -670,6 +678,8 @@ const ConfirmationStep = ({
     bookingFailed,
     actualBookingId,
     displayReference,
+    orderIdForPixel,
+    paymentIntentId,
     bookingData,
     classData,
   ]);
@@ -698,6 +708,7 @@ const ConfirmationStep = ({
           const data = result.data;
           if (data.status === "confirmed" && data.user_facing_reference) {
             setFetchedReference(data.user_facing_reference);
+            if (data.booking_id != null) setFetchedBookingId(data.booking_id);
             if (onBookingDetailsFetched) onBookingDetailsFetched(data);
             setIsPolling(false);
           } else if (data.status === "payment_failed") {
