@@ -339,6 +339,13 @@ const CarouselOverlay = styled.div`
   justify-content: space-between;
   align-items: center;
   pointer-events: none;
+  @media (max-width: 768px) {
+    justify-content: flex-end;
+    align-items: flex-end;
+    left: auto;
+    right: 0.75rem;
+    bottom: 0.75rem;
+  }
 `;
 const ImageCounter = styled.div`
   background: rgba(0, 0, 0, 0.5);
@@ -347,6 +354,11 @@ const ImageCounter = styled.div`
   border-radius: 20px;
   font-size: 0.825rem;
   backdrop-filter: blur(4px);
+  @media (max-width: 768px) {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 6px;
+  }
 `;
 const CustomGalleryModalOverlay = styled(motion.div)`
   position: fixed;

@@ -105,6 +105,9 @@ const SectionTitle = styled.h3`
   margin: 0 0 0.75rem 0;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  @media (max-width: 767px) {
+    text-align: center;
+  }
 `;
 
 const CategoryList = styled.ul`
@@ -206,6 +209,9 @@ const LogoWrapper = styled.div`
   justify-content: center;
   align-items: center;
   margin-bottom: 2rem;
+  @media (max-width: 767px) {
+    margin-bottom: 1.75rem;
+  }
   @media (min-width: 768px) {
     justify-content: left;
   }
@@ -213,8 +219,12 @@ const LogoWrapper = styled.div`
 
 const FooterGrid = styled.div`
   display: grid;
-  grid-template-areas: "links" "apps" "social";
+  grid-template-areas: "links" "social";
   gap: 2rem;
+  @media (max-width: 767px) {
+    gap: 2.25rem;
+    text-align: center;
+  }
   @media (min-width: 768px) {
     grid-template-areas: "links links apps" "links links social";
     grid-template-columns: 2fr 2fr 1fr;
@@ -231,20 +241,43 @@ const AllLinks = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 1.5rem;
+  @media (max-width: 767px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.75rem 2rem;
+    justify-items: center;
+    max-width: 320px;
+    margin: 0 auto;
+  }
 `;
 
 const FooterLinkSection = styled.ol`
   list-style-type: none;
   padding: 0;
   margin: 0;
+  @media (max-width: 767px) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
 `;
 
-const LinkSectionWrapper = styled.div``;
+const LinkSectionWrapper = styled.div`
+  @media (max-width: 767px) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+`;
 
 const Social = styled.div`
   grid-area: social;
   @media (max-width: 767px) {
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
   }
 `;
 
@@ -252,12 +285,17 @@ const Trademark = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   text-align: center;
   margin-top: 3rem;
   padding-top: 2rem;
   border-top: 1px solid rgba(255, 255, 255, 0.15);
   width: 100%;
+  @media (max-width: 767px) {
+    margin-top: 2.25rem;
+    padding-top: 1.75rem;
+    gap: 0.5rem;
+  }
   @media (min-width: 768px) {
     flex-direction: row;
     justify-content: space-between;
@@ -279,6 +317,9 @@ const StyledH2 = styled.h2`
   color: #fff;
   margin-bottom: 0.75rem;
   margin-top: 0;
+  @media (max-width: 767px) {
+    text-align: center;
+  }
 `;
 
 const StyledP = styled.p`

@@ -12,30 +12,19 @@ import { useRouter } from "next/navigation";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
-import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
 import dynamic from "next/dynamic";
 import { Drawer } from "vaul";
 import { paymentService } from "@/services/apiService";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import message from "@/lib/message";
 import posthog from "posthog-js";
-import { trackPurchaseIfProduction } from "@/lib/metaPixel";
 import dayjs from "dayjs";
 
 const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
 
-// Initialize Stripe outside component
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
-
 // Dynamic imports
 const OptionSelectionStep = dynamic(
   () => import("./steps/OptionSelectionStep"),
-  { ssr: false },
-);
-
-const ReviewAndPaymentStep = dynamic(
-  () => import("./steps/ReviewAndPaymentStep"),
   { ssr: false },
 );
 
@@ -44,10 +33,6 @@ const CourseCalendarStep = dynamic(() => import("./steps/CourseCalendarStep"), {
 });
 
 const CalendarStep = dynamic(() => import("./steps/CalendarStep"), {
-  ssr: false,
-});
-
-const ConfirmationStep = dynamic(() => import("./steps/ConfirmationStep"), {
   ssr: false,
 });
 
@@ -261,7 +246,6 @@ const BookingModal = ({
   const { user: currentUserFromRedux } = useAuthUser();
   const [isLoading, setIsLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [paymentAction, setPaymentAction] = useState(null);
   const [isVisible, setIsVisible] = useState(isOpen);
 
   // --- MULTI-TIER LOGIC ---
@@ -271,20 +255,14 @@ const BookingModal = ({
   // CHANGED: Initialize as null to ensure nothing is selected by default
   const [selectedOptionId, setSelectedOptionId] = useState(null);
 
-  // --- FIXED STEP DEFINITIONS ---
+  // --- STEP DEFINITIONS (Option + Calendar only; payment/confirmation happen on checkout page) ---
   const OPTION_STEP = hasMultipleOptions ? 1 : -1;
   const CALENDAR_STEP = hasMultipleOptions ? 2 : 1;
-  const PAYMENT_STEP = hasMultipleOptions ? 3 : 2;
-  const CONFIRM_STEP = hasMultipleOptions ? 4 : 3;
 
   const shouldShowFooter = currentStep !== OPTION_STEP;
 
   useEffect(() => {
-    if (isOpen) {
-      if (hasMultipleOptions) import("./steps/OptionSelectionStep");
-      import("./steps/ReviewAndPaymentStep");
-      import("./steps/ConfirmationStep");
-    }
+    if (isOpen && hasMultipleOptions) import("./steps/OptionSelectionStep");
   }, [isOpen, hasMultipleOptions]);
 
   useEffect(() => {
@@ -455,23 +433,6 @@ const BookingModal = ({
     }
   }, [isOpen, selectedOption, classData]);
 
-  // --- FACEBOOK PIXEL - InitiateCheckout ---
-  useEffect(() => {
-    if (isOpen && currentStep === PAYMENT_STEP) {
-      const totalPrice =
-        (bookingData.price || 0) * (bookingData.participants || 1);
-
-      import("react-facebook-pixel").then((x) =>
-        x.default.track("InitiateCheckout", {
-          content_name: classData?.title,
-          num_items: bookingData.participants,
-          value: totalPrice,
-          currency: classData?.currency_code || "CAD",
-        }),
-      );
-    }
-  }, [isOpen, currentStep, PAYMENT_STEP, bookingData, classData]);
-
   useEffect(() => {
     if (isOpen) {
       const newInitialState = getInitialBookingState();
@@ -527,7 +488,6 @@ const BookingModal = ({
 
     setBookingData(getInitialBookingState());
     setIsLoading(false);
-    setPaymentAction(null);
   }, [
     getInitialBookingState,
     bookingData.paymentIntentId,
@@ -611,89 +571,6 @@ const BookingModal = ({
     [currentUserFromRedux],
   );
 
-  const handlePaymentComplete = useCallback(
-    (dataFromReviewStep) => {
-      // Meta Pixel: Purchase only on classeasily.com (value, currency, content_ids, etc.)
-      const revenue =
-        (bookingData.price || 0) * (bookingData.participants || 1);
-      const fullName = bookingData.fullName || bookingData.userName || "";
-      const nameParts = fullName.trim().split(" ");
-      trackPurchaseIfProduction(
-        {
-          value: revenue,
-          currency: classData?.currency_code || "CAD",
-          content_name: classData?.title,
-          content_ids: [classData?.classId || classData?.id].filter(Boolean),
-          content_type: "product",
-          num_items: bookingData.participants ?? 1,
-          order_id:
-            dataFromReviewStep.booking_id ||
-            dataFromReviewStep.payment_intent_id,
-        },
-        {
-          em: bookingData.email || bookingData.userEmail,
-          ph: bookingData.phone || bookingData.userPhone,
-          fn: nameParts[0] || "",
-          ln: nameParts.length > 1 ? nameParts.slice(1).join(" ") : "",
-          ct: bookingData.city,
-          st: bookingData.state,
-          zp: bookingData.zipCode,
-          country: "ca",
-        }
-      );
-
-      if (dataFromReviewStep.booking_id) {
-        // PostHog: Track successful booking completion
-        posthog.capture("booking_completed", {
-          class_id: classData?.classId || classData?.id,
-          class_title: classData?.title,
-          business_name: classData?.business_name,
-          booking_id: dataFromReviewStep.booking_id,
-          revenue,
-          currency: classData?.currency_code || "CAD",
-          participants: bookingData.participants,
-        });
-
-        setBookingData((prev) => {
-          return {
-            ...prev,
-            bookingId: dataFromReviewStep.booking_id,
-            user_facing_reference: dataFromReviewStep.user_facing_reference,
-            booking_group_id: dataFromReviewStep.booking_group_id,
-            participant_details: dataFromReviewStep.participant_details,
-            paymentIntentId: null,
-          };
-        });
-        setCurrentStep(CONFIRM_STEP);
-        setIsLoading(false);
-      } else if (dataFromReviewStep.payment_intent_id) {
-        setBookingData((prev) => ({
-          ...prev,
-          paymentIntentId: dataFromReviewStep.payment_intent_id,
-          clientSecret: dataFromReviewStep.client_secret,
-          bookingId: null,
-        }));
-        setCurrentStep(CONFIRM_STEP);
-        setIsLoading(false);
-      } else {
-        setIsLoading(false);
-      }
-    },
-    [CONFIRM_STEP, bookingData, classData],
-  );
-
-  const updateBookingDetailsFromPolling = useCallback((details) => {
-    setBookingData((prev) => ({
-      ...prev,
-      bookingId: details.booking_id || prev.bookingId,
-      user_facing_reference:
-        details.user_facing_reference || prev.user_facing_reference,
-      booking_group_id: details.booking_group_id || prev.booking_group_id,
-      participant_details:
-        details.participant_details || prev.participant_details,
-    }));
-  }, []);
-
   const validateStep = useCallback(
     (step, dataToValidate) => {
       // Step 1: Option Selection
@@ -717,12 +594,7 @@ const BookingModal = ({
   );
 
   const handleNext = useCallback(async () => {
-    const maxStep = CONFIRM_STEP;
-    if (currentStep >= maxStep) {
-      handleClose();
-      return;
-    }
-    // From Calendar step, redirect to dedicated checkout page instead of showing payment in modal
+    // From Calendar step, redirect to dedicated checkout page (payment/confirmation happen there)
     if (currentStep === CALENDAR_STEP && classData?.slug) {
       const nextBookingState = {
         ...bookingData,
@@ -753,10 +625,14 @@ const BookingModal = ({
       }
       return;
     }
+    const maxStep = CALENDAR_STEP;
+    if (currentStep >= maxStep) {
+      handleClose();
+      return;
+    }
     setCurrentStep((prev) => prev + 1);
   }, [
     currentStep,
-    CONFIRM_STEP,
     CALENDAR_STEP,
     classData,
     bookingData,
@@ -766,22 +642,11 @@ const BookingModal = ({
     handleClose,
   ]);
 
-  const handleBack = useCallback(async () => {
+  const handleBack = useCallback(() => {
     if (currentStep > 1) {
-      // Fix: Clear payment action so button disappears immediately
-      setPaymentAction(null);
-
-      if (currentStep === PAYMENT_STEP && bookingData.paymentIntentId) {
-        await paymentService.cancelPaymentIntent(bookingData.paymentIntentId);
-        setBookingData((prev) => ({
-          ...prev,
-          paymentIntentId: null,
-          clientSecret: null,
-        }));
-      }
       setCurrentStep((prev) => prev - 1);
     }
-  }, [currentStep, bookingData.paymentIntentId, PAYMENT_STEP]);
+  }, [currentStep]);
 
   // -- FIXED SELECT HANDLERS --
 
@@ -816,23 +681,21 @@ const BookingModal = ({
   const shouldHideNextButton =
     currentStep === OPTION_STEP || // Hide next on step 1 so they use the 'Select' button
     (currentStep === CALENDAR_STEP && !isCourseBooking) ||
-    currentStep >= PAYMENT_STEP;
+    currentStep >= CALENDAR_STEP;
 
-  // --- RENDER CONTENT SWITCHER ---
+  // --- RENDER CONTENT SWITCHER (Option + Calendar only; then redirect to checkout) ---
   const renderStepContent = () => {
-    // 1. OPTION SELECTION
     if (currentStep === OPTION_STEP) {
       return (
         <OptionSelectionStep
           options={classData.options}
           selectedOptionId={selectedOptionId}
-          onHighlight={handleOptionHighlight} // Just sets ID
-          onSelect={handleOptionSelectNext} // Sets ID + Next
+          onHighlight={handleOptionHighlight}
+          onSelect={handleOptionSelectNext}
         />
       );
     }
 
-    // 2. CALENDAR
     if (currentStep === CALENDAR_STEP) {
       return isCourseBooking ? (
         <CourseCalendarStep
@@ -857,45 +720,11 @@ const BookingModal = ({
       );
     }
 
-    // 3. PAYMENT
-    if (currentStep === PAYMENT_STEP) {
-      return (
-        <ReviewAndPaymentStep
-          bookingData={bookingData}
-          classData={classData}
-          paymentService={paymentService}
-          onPaymentComplete={handlePaymentComplete}
-          isUserLoggedIn={!!currentUserFromRedux}
-          onUpdateBookingData={handleUpdateBooking}
-          onPaymentAction={setPaymentAction}
-          userTimeZone={userTimeZone}
-          businessTimeZone={businessTimeZone}
-        />
-      );
-    }
-
-    // 4. CONFIRMATION
-    if (currentStep === CONFIRM_STEP) {
-      return (
-        <ConfirmationStep
-          bookingData={bookingData}
-          classData={classData}
-          userTimeZone={userTimeZone}
-          businessTimeZone={businessTimeZone}
-          paymentIntentId={bookingData.paymentIntentId}
-          clientSecret={bookingData.clientSecret}
-          bookingId={bookingData.bookingId}
-          onBookingDetailsFetched={updateBookingDetailsFromPolling}
-          onRetryBooking={handleClose}
-        />
-      );
-    }
-
     return <div>Error: Step not found.</div>;
   };
 
   const headerSteps = useMemo(() => {
-    const base = ["Date", "Payment"];
+    const base = ["Date"];
     if (hasMultipleOptions) {
       return ["Option", ...base];
     }
@@ -949,24 +778,22 @@ const BookingModal = ({
               />
             </DrawerHeader>
             <DrawerBody>
-              <Elements stripe={stripePromise}>
-                <AnimatedModalContent>
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={currentStep}
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{
-                        duration: 0.3,
-                        ease: [0.25, 0.46, 0.45, 0.94],
-                      }}
-                    >
-                      {renderStepContent()}
-                    </motion.div>
-                  </AnimatePresence>
-                </AnimatedModalContent>
-              </Elements>
+              <AnimatedModalContent>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentStep}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{
+                      duration: 0.3,
+                      ease: [0.25, 0.46, 0.45, 0.94],
+                    }}
+                  >
+                    {renderStepContent()}
+                  </motion.div>
+                </AnimatePresence>
+              </AnimatedModalContent>
             </DrawerBody>
             <DrawerFooter>
               {shouldShowFooter && (
@@ -982,8 +809,8 @@ const BookingModal = ({
                   }
                   isNextDisabled={!validateStep(currentStep, bookingData)}
                   bookingData={bookingData}
-                  paymentAction={paymentAction}
-                  isPaymentStep={currentStep === PAYMENT_STEP}
+                  paymentAction={null}
+                  isPaymentStep={false}
                 />
               )}
             </DrawerFooter>
@@ -1017,26 +844,24 @@ const BookingModal = ({
 
             {ModalContent}
 
-            {shouldShowFooter &&
-              (currentStep > 1 ||
-                (currentStep === PAYMENT_STEP && paymentAction != null)) && (
-                <ModalFooter
-                  currentStep={currentStep}
-                  totalSteps={headerSteps.length}
-                  onBack={handleBack}
-                  onNext={handleNext}
-                  onClose={handleClose}
-                  loading={isLoading}
-                  hideNextButton={shouldHideNextButton}
-                  hideBackButton={
-                    currentStep === 1 || currentStep === headerSteps.length
-                  }
-                  isNextDisabled={!validateStep(currentStep, bookingData)}
-                  bookingData={bookingData}
-                  paymentAction={paymentAction}
-                  isPaymentStep={currentStep === PAYMENT_STEP}
-                />
-              )}
+            {shouldShowFooter && currentStep > 1 && (
+              <ModalFooter
+                currentStep={currentStep}
+                totalSteps={headerSteps.length}
+                onBack={handleBack}
+                onNext={handleNext}
+                onClose={handleClose}
+                loading={isLoading}
+                hideNextButton={shouldHideNextButton}
+                hideBackButton={
+                  currentStep === 1 || currentStep === headerSteps.length
+                }
+                isNextDisabled={!validateStep(currentStep, bookingData)}
+                bookingData={bookingData}
+                paymentAction={null}
+                isPaymentStep={false}
+              />
+            )}
           </DesktopModal>
         </DesktopOverlay>
       )}

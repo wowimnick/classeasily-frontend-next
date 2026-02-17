@@ -25,6 +25,10 @@ import { createEvent } from "ics";
 import { saveAs } from "file-saver";
 import { fromZonedTime } from "date-fns-tz";
 import { bookingService } from "@/services/apiService";
+import posthog from "posthog-js";
+import { trackPurchaseIfProduction } from "@/lib/metaPixel";
+
+const PURCHASE_TRACKED_KEY = "classeasily_purchase_tracked";
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(10px); }
@@ -613,6 +617,62 @@ const ConfirmationStep = ({
   const actualBookingId = propBookingId || bookingData.bookingId;
   const displayReference =
     propReference || fetchedReference || bookingData.user_facing_reference;
+
+  /* Fire PostHog + Meta Pixel Purchase once when payment went through and user is on confirmation page. Never re-fire on refresh. */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (bookingFailed) return;
+    const confirmedId = actualBookingId || displayReference;
+    if (!confirmedId) return;
+    const alreadyTracked = sessionStorage.getItem(PURCHASE_TRACKED_KEY);
+    if (alreadyTracked === String(confirmedId)) return;
+
+    const revenue = (bookingData?.price || 0) * (bookingData?.participants || 1);
+    const currency = classData?.currency_code || "CAD";
+
+    posthog.capture("booking_completed", {
+      class_id: classData?.classId || classData?.id,
+      class_title: classData?.title,
+      business_name: classData?.business_name,
+      booking_id: actualBookingId || undefined,
+      revenue,
+      currency,
+      participants: bookingData?.participants ?? 1,
+    });
+
+    const userEmail = bookingData?.email || bookingData?.userEmail;
+    const fullName = bookingData?.fullName || bookingData?.userName || "";
+    const nameParts = fullName.trim().split(" ");
+    trackPurchaseIfProduction(
+      {
+        value: revenue,
+        currency,
+        content_name: classData?.title,
+        content_ids: [classData?.classId || classData?.id].filter(Boolean),
+        content_type: "product",
+        num_items: bookingData?.participants ?? 1,
+        order_id: actualBookingId || displayReference || paymentIntentId,
+      },
+      {
+        em: userEmail,
+        ph: bookingData?.phone || bookingData?.userPhone,
+        fn: nameParts[0] || "",
+        ln: nameParts.length > 1 ? nameParts.slice(1).join(" ") : "",
+        ct: bookingData?.city,
+        st: bookingData?.state,
+        zp: bookingData?.zipCode,
+        country: "ca",
+      }
+    );
+
+    sessionStorage.setItem(PURCHASE_TRACKED_KEY, String(confirmedId));
+  }, [
+    bookingFailed,
+    actualBookingId,
+    displayReference,
+    bookingData,
+    classData,
+  ]);
 
   const pollForBookingReference = useCallback(async () => {
     if (!paymentIntentId || actualBookingId) {
