@@ -7,8 +7,9 @@ const nextConfig = {
   compiler: {
     styledComponents: true,
     styledJsx: false,
+    // Keep all console methods on test and staging (Vercel preview) so [Meta Pixel] logs are visible
     removeConsole:
-      process.env.STAGE === "test"
+      process.env.STAGE === "test" || process.env.VERCEL_ENV === "preview"
         ? false
         : process.env.NODE_ENV === "production"
           ? {

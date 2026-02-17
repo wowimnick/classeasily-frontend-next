@@ -68,8 +68,15 @@ export function shouldRunPixel() {
   if (typeof window === "undefined") return false;
   try {
     const host = window.location?.hostname?.toLowerCase() || "";
-    if (PRODUCTION_HOSTS.includes(host)) return true;
-    if (STAGING_HOSTS.includes(host) && getMetaPixelTestEventCode()) return true;
+    const isProd = PRODUCTION_HOSTS.includes(host);
+    const isStaging = STAGING_HOSTS.includes(host);
+    const testCode = isStaging ? getMetaPixelTestEventCode() : null;
+    const run = isProd || (isStaging && !!testCode);
+    if (isStaging) {
+      console.warn("[Meta Pixel] shouldRunPixel: host=", host, "isStaging=true testCode=", testCode ? "set" : "NOT SET", "-> run=", run);
+    }
+    if (isProd) return true;
+    if (isStaging && testCode) return true;
     return false;
   } catch {
     return false;
