@@ -1917,13 +1917,13 @@ const ReviewAndPaymentStep = ({
         loading: false,
         canSubmit: false,
         finalTotal: finalTotal ?? 0,
-        showFooterButton: currentStep === "payment",
+        showFooterButton: checkoutStep === "payment",
       });
     }
   }, [
     isFree,
     clientSecret,
-    currentStep,
+    checkoutStep,
     finalTotal,
     onPaymentAction,
   ]);

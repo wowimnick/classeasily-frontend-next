@@ -1204,22 +1204,18 @@ export default function ClassPageClient({
       }
     }
 
-    // 2. Fire the Event
-    // We check for NaN just in case parsing failed
+    // 2. Fire the Event (only on prod or staging with test code; staging uses test_event_code)
     const finalValue = isNaN(pixelPrice) ? 0 : pixelPrice;
-
-    import("react-facebook-pixel")
-      .then((x) => x.default)
-      .then((ReactPixel) => {
-        ReactPixel.track("ViewContent", {
-          content_name: classData.title,
-          content_ids: [classData.classId],
-          content_type: "product",
-          value: finalValue,
-          currency: classData.currency_code || "CAD",
-          content_category: classData.category_name,
-        });
+    import("@/lib/metaPixel").then(({ trackPixelEvent }) => {
+      trackPixelEvent("ViewContent", {
+        content_name: classData.title,
+        content_ids: [classData.classId],
+        content_type: "product",
+        value: finalValue,
+        currency: classData.currency_code || "CAD",
+        content_category: classData.category_name,
       });
+    });
 
     // PostHog: Track class view (booking funnel entry point)
     posthog.capture("class_viewed", {

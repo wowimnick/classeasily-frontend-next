@@ -418,18 +418,18 @@ const BookingModal = ({
     }
   }, [initialOptionId, hasMultipleOptions]);
 
-  // --- FACEBOOK PIXEL - AddToCart ---
+  // --- FACEBOOK PIXEL - AddToCart (only on prod or staging with test code) ---
   useEffect(() => {
     if (isOpen && selectedOption && classData) {
-      import("react-facebook-pixel").then((x) =>
-        x.default.track("AddToCart", {
+      import("@/lib/metaPixel").then(({ trackPixelEvent }) => {
+        trackPixelEvent("AddToCart", {
           content_name: classData.title,
           content_ids: [classData.classId || classData.id],
           content_type: "product",
           value: parseFloat(selectedOption.price || 0),
           currency: classData.currency_code || "CAD",
-        }),
-      );
+        });
+      });
     }
   }, [isOpen, selectedOption, classData]);
 
