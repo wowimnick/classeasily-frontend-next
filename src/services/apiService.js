@@ -1,4 +1,5 @@
 import axiosInstance from "@/lib/axiosInstance";
+import { getMetaPixelParams } from "@/lib/metaPixel";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -218,9 +219,12 @@ export const blogService = {
 export const paymentService = {
   createPaymentIntent: async (bookingPayload) => {
     try {
+      // Meta CAPI: include fbc/fbp from Pixel cookies (Parameter Builder best practice)
+      const metaParams = typeof window !== "undefined" ? getMetaPixelParams() : {};
+      const payload = { ...bookingPayload, ...metaParams };
       const response = await axiosInstance.post(
         API_ENDPOINTS.PAYMENTS_CREATE_INTENT,
-        bookingPayload,
+        payload,
       );
       return response.data;
     } catch (error) {

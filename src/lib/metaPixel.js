@@ -5,6 +5,38 @@
 
 const ALLOWED_HOSTS = ["classeasily.com", "www.classeasily.com"];
 
+/**
+ * Read a cookie value by name (for _fbc, _fbp used by Meta CAPI).
+ * @param {string} name - Cookie name
+ * @returns {string|null}
+ */
+function getCookie(name) {
+  if (typeof document === "undefined" || !document.cookie) return null;
+  const cookies = document.cookie.split(";");
+  for (let i = 0; i < cookies.length; i++) {
+    const cookie = cookies[i].trim();
+    if (cookie.substring(0, name.length + 1) === name + "=") {
+      return decodeURIComponent(cookie.substring(name.length + 1));
+    }
+  }
+  return null;
+}
+
+/**
+ * Get Meta Pixel cookie params for CAPI (fbc, fbp). Pass these in booking/payment API
+ * requests so the server can send them to Meta Conversions API (Parameter Builder best practice).
+ * Do not normalize or change case; _fbc is case-sensitive.
+ * @returns {{ meta_fbc?: string, meta_fbp?: string }}
+ */
+export function getMetaPixelParams() {
+  const meta_fbc = getCookie("_fbc");
+  const meta_fbp = getCookie("_fbp");
+  const out = {};
+  if (meta_fbc) out.meta_fbc = meta_fbc;
+  if (meta_fbp) out.meta_fbp = meta_fbp;
+  return out;
+}
+
 export function isClasseasilyProduction() {
   if (typeof window === "undefined") return false;
   try {
