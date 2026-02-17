@@ -835,7 +835,48 @@ const ClassPageImagesTitle = React.memo(
     };
 
     const router = useRouter();
-    const handleBack = () => router.back();
+    const handleBack = useCallback(() => {
+      if (typeof window === "undefined") return;
+      try {
+        const referrer = document.referrer || "";
+        const fromSameOrigin =
+          referrer &&
+          new URL(referrer).origin === window.location.origin;
+        if (fromSameOrigin) {
+          router.back();
+        } else {
+          router.push("/explore");
+        }
+      } catch {
+        router.push("/explore");
+      }
+    }, [router]);
+
+    // When user landed directly (or from external), ensure device back button stays on site
+    useEffect(() => {
+      if (typeof window === "undefined") return;
+      let referrerSameOrigin = false;
+      try {
+        const referrer = document.referrer || "";
+        referrerSameOrigin =
+          !!referrer && new URL(referrer).origin === window.location.origin;
+      } catch {
+        referrerSameOrigin = false;
+      }
+      if (referrerSameOrigin) return;
+
+      const sentinel = { backSentinel: true };
+      history.replaceState(sentinel, "", window.location.href);
+      history.pushState(sentinel, "", window.location.href);
+
+      const onPopState = (e) => {
+        if (e.state?.backSentinel) {
+          router.push("/explore");
+        }
+      };
+      window.addEventListener("popstate", onPopState);
+      return () => window.removeEventListener("popstate", onPopState);
+    }, [router]);
 
     return (
       <MainContent>
