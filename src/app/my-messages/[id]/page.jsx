@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import styled from "styled-components";
 import { ArrowLeft, Send, MessageSquare } from "lucide-react";
@@ -177,7 +177,7 @@ const formatTime = (dateString) => {
   });
 };
 
-export default function ConversationDetailPage() {
+function ConversationDetailContent() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id;
@@ -333,5 +333,29 @@ export default function ConversationDetailPage() {
         <FooterClient />
       </PageWrapper>
     </ConfigProvider>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <ConfigProvider theme={globalTheme}>
+      <PageWrapper>
+        <ExploreHeader showOptionsWrapper={false} />
+        <PageContent>
+          <div style={{ padding: "48px", textAlign: "center", color: "#717171" }}>
+            Loading conversation…
+          </div>
+        </PageContent>
+        <FooterClient />
+      </PageWrapper>
+    </ConfigProvider>
+  );
+}
+
+export default function ConversationDetailPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <ConversationDetailContent />
+    </Suspense>
   );
 }
