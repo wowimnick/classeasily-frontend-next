@@ -51,8 +51,8 @@ const SearchUrlHandler = () => {
     const participantsParam = searchParams.get("participants");
 
     // --- LOCATION ---
-    // Always set it if present. If it's missing (user cleared URL manually),
-    // we might want to clear state, but usually we just follow what's in the param.
+    // Only update context when URL has location; when missing, leave context unchanged
+    // so that search term/location persist in header and full-screen drawer.
     if (locParam) {
       setSearchTerm(locParam);
 

@@ -7,6 +7,27 @@ import { LordIcon } from "@/services/ReactUtils";
 
 const SearchContext = createContext();
 
+const SEARCH_STORAGE_KEY = "classeasily_search_state";
+
+function getStoredSearchState() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(SEARCH_STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function saveSearchState(state) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(SEARCH_STORAGE_KEY, JSON.stringify(state));
+  } catch (_) {}
+}
+
 const AWS_LOCATION_API_URL =
   "https://geocoding.classeasily.com/address-autocomplete-proxy";
 
@@ -33,31 +54,32 @@ export const ICON_PALETTE = [
 
 // Toronto / GTA towns for full-screen location presets (mobile drawer + desktop banner)
 export const GTA_PRESETS = [
-  { name: "Toronto", description: "Downtown & neighbourhoods", coords: { lat: 43.6532, lng: -79.3832 }, provinceSlug: "ontario", citySlug: "toronto" },
-  { name: "Mississauga", description: "West of Toronto", coords: { lat: 43.589, lng: -79.6441 }, provinceSlug: "ontario", citySlug: "mississauga" },
-  { name: "Brampton", description: "Peel Region", coords: { lat: 43.7315, lng: -79.7624 }, provinceSlug: "ontario", citySlug: "brampton" },
-  { name: "Vaughan", description: "North of Toronto", coords: { lat: 43.8367, lng: -79.4982 }, provinceSlug: "ontario", citySlug: "vaughan" },
-  { name: "Markham", description: "York Region", coords: { lat: 43.8561, lng: -79.337 }, provinceSlug: "ontario", citySlug: "markham" },
-  { name: "Richmond Hill", description: "York Region", coords: { lat: 43.8828, lng: -79.4403 }, provinceSlug: "ontario", citySlug: "richmond-hill" },
-  { name: "Oakville", description: "Halton Region", coords: { lat: 43.4675, lng: -79.6877 }, provinceSlug: "ontario", citySlug: "oakville" },
-  { name: "Burlington", description: "Halton Region", coords: { lat: 43.3255, lng: -79.799 }, provinceSlug: "ontario", citySlug: "burlington" },
-  { name: "Hamilton", description: "Popular area", coords: { lat: 43.2557, lng: -79.8711 }, provinceSlug: "ontario", citySlug: "hamilton" },
-  { name: "Ottawa", description: "Growing area", coords: { lat: 45.4215, lng: -75.6972 }, provinceSlug: "ontario", citySlug: "ottawa" },
-  { name: "Pickering", description: "Durham Region", coords: { lat: 43.8374, lng: -79.0863 }, provinceSlug: "ontario", citySlug: "pickering" },
-  { name: "Ajax", description: "Durham Region", coords: { lat: 43.8501, lng: -79.0329 }, provinceSlug: "ontario", citySlug: "ajax" },
-  { name: "Whitby", description: "Durham Region", coords: { lat: 43.8762, lng: -78.9413 }, provinceSlug: "ontario", citySlug: "whitby" },
-  { name: "Oshawa", description: "Durham Region", coords: { lat: 43.8971, lng: -78.8658 }, provinceSlug: "ontario", citySlug: "oshawa" },
-  { name: "Milton", description: "Halton Region", coords: { lat: 43.5183, lng: -79.8774 }, provinceSlug: "ontario", citySlug: "milton" },
-  { name: "Newmarket", description: "York Region", coords: { lat: 44.0553, lng: -79.4593 }, provinceSlug: "ontario", citySlug: "newmarket" },
-  { name: "Aurora", description: "York Region", coords: { lat: 44.0056, lng: -79.4663 }, provinceSlug: "ontario", citySlug: "aurora" },
-  { name: "Etobicoke", description: "West Toronto", coords: { lat: 43.6532, lng: -79.5672 }, provinceSlug: "ontario", citySlug: "toronto" },
-  { name: "Scarborough", description: "East Toronto", coords: { lat: 43.7731, lng: -79.2574 }, provinceSlug: "ontario", citySlug: "toronto" },
-  { name: "North York", description: "North Toronto", coords: { lat: 43.7615, lng: -79.4111 }, provinceSlug: "ontario", citySlug: "toronto" },
+  { name: "Toronto", displayName: "Toronto, ON", description: "Downtown & neighbourhoods", coords: { lat: 43.6532, lng: -79.3832 }, provinceSlug: "ontario", citySlug: "toronto" },
+  { name: "Mississauga", displayName: "Mississauga, ON", description: "West of Toronto", coords: { lat: 43.589, lng: -79.6441 }, provinceSlug: "ontario", citySlug: "mississauga" },
+  { name: "Brampton", displayName: "Brampton, ON", description: "Peel Region", coords: { lat: 43.7315, lng: -79.7624 }, provinceSlug: "ontario", citySlug: "brampton" },
+  { name: "Vaughan", displayName: "Vaughan, ON", description: "North of Toronto", coords: { lat: 43.8367, lng: -79.4982 }, provinceSlug: "ontario", citySlug: "vaughan" },
+  { name: "Markham", displayName: "Markham, ON", description: "York Region", coords: { lat: 43.8561, lng: -79.337 }, provinceSlug: "ontario", citySlug: "markham" },
+  { name: "Richmond Hill", displayName: "Richmond Hill, ON", description: "York Region", coords: { lat: 43.8828, lng: -79.4403 }, provinceSlug: "ontario", citySlug: "richmond-hill" },
+  { name: "Oakville", displayName: "Oakville, ON", description: "Halton Region", coords: { lat: 43.4675, lng: -79.6877 }, provinceSlug: "ontario", citySlug: "oakville" },
+  { name: "Burlington", displayName: "Burlington, ON", description: "Halton Region", coords: { lat: 43.3255, lng: -79.799 }, provinceSlug: "ontario", citySlug: "burlington" },
+  { name: "Hamilton", displayName: "Hamilton, ON", description: "Popular area", coords: { lat: 43.2557, lng: -79.8711 }, provinceSlug: "ontario", citySlug: "hamilton" },
+  { name: "Ottawa", displayName: "Ottawa, ON", description: "Growing area", coords: { lat: 45.4215, lng: -75.6972 }, provinceSlug: "ontario", citySlug: "ottawa" },
+  { name: "Pickering", displayName: "Pickering, ON", description: "Durham Region", coords: { lat: 43.8374, lng: -79.0863 }, provinceSlug: "ontario", citySlug: "pickering" },
+  { name: "Ajax", displayName: "Ajax, ON", description: "Durham Region", coords: { lat: 43.8501, lng: -79.0329 }, provinceSlug: "ontario", citySlug: "ajax" },
+  { name: "Whitby", displayName: "Whitby, ON", description: "Durham Region", coords: { lat: 43.8762, lng: -78.9413 }, provinceSlug: "ontario", citySlug: "whitby" },
+  { name: "Oshawa", displayName: "Oshawa, ON", description: "Durham Region", coords: { lat: 43.8971, lng: -78.8658 }, provinceSlug: "ontario", citySlug: "oshawa" },
+  { name: "Milton", displayName: "Milton, ON", description: "Halton Region", coords: { lat: 43.5183, lng: -79.8774 }, provinceSlug: "ontario", citySlug: "milton" },
+  { name: "Newmarket", displayName: "Newmarket, ON", description: "York Region", coords: { lat: 44.0553, lng: -79.4593 }, provinceSlug: "ontario", citySlug: "newmarket" },
+  { name: "Aurora", displayName: "Aurora, ON", description: "York Region", coords: { lat: 44.0056, lng: -79.4663 }, provinceSlug: "ontario", citySlug: "aurora" },
+  { name: "Etobicoke", displayName: "Etobicoke, ON", description: "West Toronto", coords: { lat: 43.6532, lng: -79.5672 }, provinceSlug: "ontario", citySlug: "toronto" },
+  { name: "Scarborough", displayName: "Scarborough, ON", description: "East Toronto", coords: { lat: 43.7731, lng: -79.2574 }, provinceSlug: "ontario", citySlug: "toronto" },
+  { name: "North York", displayName: "North York, ON", description: "North Toronto", coords: { lat: 43.7615, lng: -79.4111 }, provinceSlug: "ontario", citySlug: "toronto" },
 ];
 
 // Desktop banner: same neighborhoods as mobile; Toronto gets LordIcon, rest get Lucide MapPin + colored theme
 export const SUGGESTED_AREAS = GTA_PRESETS.map((preset, idx) => ({
   name: preset.name,
+  displayName: preset.displayName || `${preset.name}, ON`,
   description: preset.description,
   coords: preset.coords,
   icon: idx === 0 ? LORDICON_TORONTO : null,
@@ -74,16 +96,40 @@ export const SearchProvider = ({ children }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Search Data State
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState({
-    displayName: "",
-    coordinates: null,
-    citySlug: null,
-    provinceSlug: null,
+  // Search Data State — initialize from sessionStorage so search persists when closing drawer / navigating
+  const [searchTerm, setSearchTerm] = useState(() => {
+    const stored = getStoredSearchState();
+    return (stored && stored.searchTerm) || "";
   });
-  const [datePickerValue, setDatePickerValue] = useState(null);
-  const [participantCount, setParticipantCount] = useState(1);
+  const [selectedLocation, setSelectedLocation] = useState(() => {
+    const stored = getStoredSearchState();
+    if (stored && stored.selectedLocation && typeof stored.selectedLocation === "object") {
+      return {
+        displayName: stored.selectedLocation.displayName || "",
+        coordinates: stored.selectedLocation.coordinates || null,
+        citySlug: stored.selectedLocation.citySlug || null,
+        provinceSlug: stored.selectedLocation.provinceSlug || null,
+      };
+    }
+    return {
+      displayName: "",
+      coordinates: null,
+      citySlug: null,
+      provinceSlug: null,
+    };
+  });
+  const [datePickerValue, setDatePickerValue] = useState(() => {
+    const stored = getStoredSearchState();
+    if (stored && stored.datePickerValue != null) return stored.datePickerValue;
+    return null;
+  });
+  const [participantCount, setParticipantCount] = useState(() => {
+    const stored = getStoredSearchState();
+    if (stored && typeof stored.participantCount === "number" && stored.participantCount >= 1) {
+      return Math.min(20, stored.participantCount);
+    }
+    return 1;
+  });
 
   // Geocoding State
   const [geocoding, setGeocoding] = useState(false);
@@ -156,7 +202,20 @@ export const SearchProvider = ({ children }) => {
     setDatePickerValue(null);
     setParticipantCount(1);
     setGeocodedAddressResults([]);
+    try {
+      if (typeof window !== "undefined") sessionStorage.removeItem(SEARCH_STORAGE_KEY);
+    } catch (_) {}
   };
+
+  // Persist search state so it survives closing the drawer and shows in ExploreHeader
+  useEffect(() => {
+    saveSearchState({
+      searchTerm,
+      selectedLocation,
+      datePickerValue,
+      participantCount,
+    });
+  }, [searchTerm, selectedLocation, datePickerValue, participantCount]);
 
   const performSearch = () => {
     const { displayName, coordinates } = selectedLocation;
