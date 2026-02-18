@@ -79,6 +79,20 @@ import "leaflet/dist/leaflet.css";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { theme as appTheme } from "@/components/theme";
 import { Drawer } from "vaul";
+import {
+  bookingTheme,
+  InfoCard,
+  PageTitle,
+  FormLabel,
+  FormHelpText,
+  FieldDivider,
+} from "../_shared/BookingFlowDesign";
+
+const FormLabelWithIcon = styled(FormLabel)`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -144,9 +158,9 @@ const StyledDrawerContent = styled(Drawer.Content)`
 `;
 
 const DrawerHandle = styled.div`
-  width: 36px;
+  width: 40px;
   height: 4px;
-  background: rgba(0, 0, 0, 0.2);
+  background: #e5e7eb;
   border-radius: 2px;
   margin: 12px auto 8px;
   flex-shrink: 0;
@@ -172,10 +186,11 @@ const DrawerHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
-  border-bottom: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
-  background-color: white;
+  padding: 12px 24px;
+  background: white;
   flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid #e5e7eb;
   @media (max-width: 768px) {
     padding: 12px 16px;
   }
@@ -183,10 +198,70 @@ const DrawerHeader = styled.div`
 
 const DrawerContentWrapper = styled.div`
   flex: 1 1 auto;
-  overflow-y: auto;
-  background-color: #f8fafc;
+  overflow: hidden;
+  background: #fff;
   display: flex;
   flex-direction: column;
+`;
+
+const ScrollContainer = styled.div`
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  padding: 2rem;
+  @media (max-width: 768px) {
+    padding: 1.5rem 1rem;
+  }
+  @media (max-width: 480px) {
+    padding: 1rem;
+  }
+`;
+
+const FormContainer = styled(motion.div)`
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+`;
+
+const StepHeader = styled.div`
+  text-align: center;
+  margin-bottom: 24px;
+  position: relative;
+`;
+
+const StepDescription = styled.div`
+  font-size: 15px;
+  color: #000;
+  line-height: 1.5;
+`;
+
+const NavigationFooter = styled.footer`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  background: white;
+  flex-shrink: 0;
+  @media (max-width: 768px) {
+    padding: 0.75rem 1rem;
+  }
+`;
+
+const FooterButton = styled(Button)`
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+  font-weight: 500 !important;
+  min-width: 120px;
+  @media (max-width: 480px) {
+    min-width: 100px;
+    font-size: 14px !important;
+  }
 `;
 
 const DrawerFooter = styled.div`
@@ -225,38 +300,51 @@ const CloseButton = styled(Button)`
   }
 `;
 
-// Main navigation tabs
+// Tab navigation - select section directly
 const StyledTabs = styled(Tabs)`
-  height: 100%;
+  flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 
   > .ant-tabs-nav {
     margin: 0 !important;
-    padding: 0 16px;
+    padding: 0 24px;
     background: white;
     flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border-bottom: 1px solid #e5e7eb;
   }
 
+
   > .ant-tabs-nav .ant-tabs-tab {
-    padding: 12px 10px !important;
     font-weight: 500;
+    font-size: 14px;
+    color: #64748b;
+  }
+
+  > .ant-tabs-nav .ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: #222222;
+  }
+
+  > .ant-tabs-nav .ant-tabs-ink-bar {
+    background: #222222;
+    height: 3px;
+  }
+
+  > .ant-tabs-nav .ant-tabs-tab:hover {
+    color: #222222;
   }
 
   > .ant-tabs-content-holder {
     flex: 1;
-    background: #f8fafc;
-    overflow-y: auto;
+    overflow: auto;
+    background: #fff;
   }
 
   > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
     height: 100%;
-    padding: 0;
-    position: relative;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   @media (max-width: 768px) {
@@ -264,7 +352,7 @@ const StyledTabs = styled(Tabs)`
       padding: 0 16px;
     }
     > .ant-tabs-nav .ant-tabs-tab {
-      padding: 10px 8px !important;
+      padding: 12px 10px !important;
       font-size: 13px;
     }
   }
@@ -282,10 +370,16 @@ const TierInternalTabs = styled(Tabs)`
 `;
 
 const FormSection = styled(motion.div)`
-  margin-bottom: 2rem;
-  border-radius: 12px;
+  margin-bottom: 24px;
+  background: ${bookingTheme.bg};
+  border: 1px solid ${bookingTheme.borderLight};
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  padding: 20px;
   @media (max-width: 768px) {
-    margin-bottom: 1.5rem;
+    margin-bottom: 20px;
+    padding: 16px;
   }
 `;
 
@@ -304,19 +398,6 @@ const FormGrid = styled.div`
   }
 `;
 
-const FormLabel = styled.label`
-  display: block;
-  font-size: 15px;
-  font-weight: 600;
-  color: ${(props) => props.theme.token.colorText};
-  margin-bottom: ${(props) => props.theme.token.marginXS}px;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-`;
 
 const HelpText = styled.div`
   font-size: 13px;
@@ -472,25 +553,25 @@ const StyledInputNumber = styled(InputNumber)`
 const SectionDivider = styled.div`
   display: flex;
   align-items: center;
-  margin: 2rem 0;
+  margin: 24px 0;
   &::before,
   &::after {
     content: "";
     flex: 1;
     height: 1px;
-    background: ${(props) => props.theme.token.colorBorder};
+    background: ${bookingTheme.borderLight};
   }
   span {
     padding: 0 1rem;
-    color: ${(props) => props.theme.token.colorTextSecondary};
-    font-weight: 500;
-    font-size: 14px;
+    color: ${bookingTheme.textSecondary};
+    font-weight: 600;
+    font-size: 15px;
     display: flex;
     align-items: center;
     gap: 0.5rem;
   }
   @media (max-width: 768px) {
-    margin: 1.5rem 0;
+    margin: 20px 0;
   }
 `;
 
@@ -682,6 +763,9 @@ const MapWrapper = styled(motion.div)`
     width: 100%;
     border-radius: ${(props) => props.theme.token.borderRadius}px;
   }
+  .leaflet-control-attribution {
+    display: none !important;
+  }
   @media (max-width: 768px) {
     height: 250px;
   }
@@ -708,17 +792,16 @@ const ToggleGroup = styled.div`
 const ToggleButton = styled.button`
   flex: 1;
   padding: 12px 16px;
-  background: white;
+  background: ${(props) =>
+    props.$selected ? props.theme.token.colorPrimary : "white"};
   color: ${(props) =>
-    props.$selected
-      ? props.theme.token.colorPrimary
-      : props.theme.token.colorText};
+    props.$selected ? "#fff" : props.theme.token.colorText};
   border: 1px solid
     ${(props) =>
       props.$selected
         ? props.theme.token.colorPrimary
         : props.theme.token.colorBorder};
-  border-radius: ${(props) => props.theme.token.borderRadius}px;
+  border-radius: 999px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -727,18 +810,16 @@ const ToggleButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 8px;
-  &:hover {
+  &:hover:not(:disabled) {
     border-color: ${(props) => props.theme.token.colorPrimary};
-    background: ${(props) =>
-      props.$selected
-        ? props.theme.token.colorPrimaryBorder
-        : props.theme.token.colorBgTextHover};
+    ${(props) =>
+      !props.$selected &&
+      `background: ${props.theme.token.colorPrimaryBg}; color: ${props.theme.token.colorPrimary};`}
+    ${(props) => props.$selected && `filter: brightness(1.05);`}
   }
   svg {
-    color: ${(props) =>
-      props.$selected
-        ? props.theme.token.colorPrimary
-        : props.theme.token.colorTextSecondary};
+    color: inherit;
+    opacity: ${(props) => (props.$selected ? 1 : 0.85)};
   }
 `;
 
@@ -758,11 +839,8 @@ const LoaderWrapper = styled.div`
   min-height: 300px;
 `;
 
-const TabContentWrapper = styled.div`
-  padding: 16px;
-  @media (max-width: 768px) {
-    padding: 12px;
-  }
+const StepContentWrapper = styled.div`
+  padding: 0;
 `;
 
 // --- MULTI-TIER STYLES (MATCHING CLASS OPTIONS STEP) ---
@@ -902,7 +980,26 @@ const FooterActions = styled.div`
   padding-top: 24px;
   border-top: 1px solid ${(props) => props.theme.token.colorBorder};
 `;
-const FeatureBuilder = ({ form, tierIndex }) => {
+
+const AddOptionLink = styled.button`
+  background: none;
+  border: none;
+  color: ${bookingTheme.primary};
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 12px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const FeatureBuilder = ({ form, tierIndex, addButtonLabel }) => {
   // We watch the entire options array to derive the global list of Feature Keys (Rows)
   // This ensures that if Tier 1 adds "Duration", Tier 2 sees a "Duration" row immediately.
   const options = Form.useWatch("options", form) || [];
@@ -1163,11 +1260,285 @@ const FeatureBuilder = ({ form, tierIndex }) => {
           borderColor: "#e2e8f0",
         }}
       >
-        Add Comparison Row
+        {addButtonLabel || "Add comparison row"}
       </Button>
     </div>
   );
 };
+
+const CardSection = styled.div`
+  padding: 20px;
+  border-bottom: 1px solid ${bookingTheme.borderLight};
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const CardSectionTitle = styled.h3`
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: ${bookingTheme.textPrimary};
+`;
+
+// --- SINGLE OPTION LAYOUT (when user has only one booking option) ---
+const SingleOptionLayout = ({ field, form, bookingType }) => (
+  <div style={{ margin: "0 auto" }}>
+    <FormItemAntd {...field} name={[field.name, "title"]} hidden>
+      <Input />
+    </FormItemAntd>
+    <InfoCard>
+      <CardSection>
+        <CardSectionTitle>For guests</CardSectionTitle>
+        <FormLabelWithIcon><Activity size={16} /> Activity level</FormLabelWithIcon>
+        <FormHelpText>Difficulty or experience required.</FormHelpText>
+        <FormGrid>
+          <div>
+            <FormItemAntd
+              {...field}
+              name={[field.name, "level"]}
+              initialValue="all"
+            >
+            <Select size="middle">
+              <Option value="all">Open to everyone</Option>
+              <Option value="no-experience">No experience needed</Option>
+              <Option value="intermediate">Intermediate</Option>
+              <Option value="advanced">Advanced</Option>
+              <Option value="strenuous">Strenuous</Option>
+            </Select>
+          </FormItemAntd>
+          </div>
+        </FormGrid>
+        <FieldDivider />
+        <FormLabelWithIcon><Backpack size={16} /> Message for booker</FormLabelWithIcon>
+        <FormHelpText>
+          Optional message to show guests before their booking (e.g. what to bring, where to meet).
+        </FormHelpText>
+        <FormItemAntd {...field} name={[field.name, "equipment"]}>
+          <Input.TextArea
+            placeholder="e.g. Bring a towel and water. Meet at the north entrance."
+            rows={3}
+            size="middle"
+            style={{ resize: "vertical" }}
+          />
+        </FormItemAntd>
+      </CardSection>
+
+      <CardSection>
+        <CardSectionTitle>Cancellation & refunds</CardSectionTitle>
+        <FormLabelWithIcon><Clock size={16} /> Cancellation notice</FormLabelWithIcon>
+        <FormHelpText>Minimum notice required for a refund.</FormHelpText>
+        <FormItemAntd
+          {...field}
+          name={[field.name, "cancellationPolicy"]}
+          initialValue="flexible"
+          rules={[{ required: true }]}
+        >
+          <Select size="middle">
+            <Option value="flexible">Flexible (1hr)</Option>
+            <Option value="24h">24 hours</Option>
+            <Option value="48h">48 hours</Option>
+            <Option value="72h">72 hours</Option>
+            <Option value="strict">Strict (non-refundable)</Option>
+            <Option value="custom">Custom</Option>
+          </Select>
+        </FormItemAntd>
+
+        <FieldDivider />
+        <Form.Item
+          shouldUpdate={(prev, curr) =>
+            prev.options?.[field.key]?.cancellationPolicy !==
+            curr.options?.[field.key]?.cancellationPolicy
+          }
+          noStyle
+        >
+          {({ getFieldValue }) => {
+            const policy = getFieldValue([
+              "options",
+              field.name,
+              "cancellationPolicy",
+            ]);
+            const isStrict = policy === "strict";
+            return (
+              <>
+                <FormLabelWithIcon><Percent size={16} /> Refund amount</FormLabelWithIcon>
+                <FormHelpText>
+                  Percentage refunded when cancelled in time.
+                </FormHelpText>
+                <FormItemAntd
+                  {...field}
+                  name={[field.name, "cancellationRefundPercentage"]}
+                  initialValue={100}
+                >
+                  <StyledInputNumber
+                    min={0}
+                    max={100}
+                    formatter={(val) => `${val}%`}
+                    disabled={isStrict}
+                    size="middle"
+                  />
+                </FormItemAntd>
+              </>
+            );
+          }}
+        </Form.Item>
+
+        <Form.Item
+          shouldUpdate={(prev, curr) =>
+            prev.options?.[field.key]?.cancellationPolicy !==
+            curr.options?.[field.key]?.cancellationPolicy
+          }
+          noStyle
+        >
+          {({ getFieldValue, setFieldsValue }) => {
+            const policy = getFieldValue([
+              "options",
+              field.name,
+              "cancellationPolicy",
+            ]);
+            if (policy !== "custom") return null;
+            return (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                style={{ overflow: "hidden" }}
+              >
+                <FieldDivider />
+                <FormLabelWithIcon><CalendarDays size={16} /> Custom hours notice</FormLabelWithIcon>
+                <FormHelpText>Hours before start required.</FormHelpText>
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <FormItemAntd
+                  {...field}
+                  name={[field.name, "cancellationCustomHours"]}
+                  rules={[{ required: true, message: "Required" }]}
+                  style={{ marginBottom: 0, flex: 1, minWidth: 120 }}
+                >
+                  <InputNumber
+                    min={1}
+                    placeholder="e.g. 12"
+                    addonAfter="Hours"
+                    size="middle"
+                    style={{ width: "100%" }}
+                  />
+                </FormItemAntd>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {[12, 24, 48, 168].map((h) => (
+                    <QuickPill
+                      key={h}
+                      onClick={() => {
+                        const opts = getFieldValue("options") || [];
+                        const updated = [...opts];
+                        updated[field.name] = {
+                          ...(updated[field.name] || {}),
+                          cancellationCustomHours: h,
+                        };
+                        setFieldsValue({ options: updated });
+                      }}
+                    >
+                      {h < 25 ? `${h}h` : `${h / 24}d`}
+                    </QuickPill>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          );
+        }}
+      </Form.Item>
+
+      {bookingType === "Full Course" && (
+        <div
+          style={{
+            marginTop: "24px",
+            borderTop: "1px dashed #e2e8f0",
+            paddingTop: "24px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: "16px",
+            }}
+          >
+            <StandardLabel
+              icon={AlertCircle}
+              label="Mid-series drops"
+              help="Allow partial refunds after start?"
+            />
+            <FormItemAntd
+              {...field}
+              name={[field.name, "allowMidCourseDrops"]}
+              valuePropName="checked"
+              initialValue={false}
+              noStyle
+            >
+              <Switch checkedChildren="Yes" unCheckedChildren="No" />
+            </FormItemAntd>
+          </div>
+          <Form.Item
+            shouldUpdate={(prev, curr) =>
+              prev.options?.[field.key]?.allowMidCourseDrops !==
+              curr.options?.[field.key]?.allowMidCourseDrops
+            }
+          >
+            {({ getFieldValue }) => {
+              const allowed = getFieldValue([
+                "options",
+                field.name,
+                "allowMidCourseDrops",
+              ]);
+              if (!allowed) return null;
+              return (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                >
+                  <FormGrid>
+                    <div>
+                      <StandardLabel label="Drop notice" />
+                      <FormItemAntd
+                        {...field}
+                        name={[field.name, "midCourseCancellationPolicy"]}
+                        initialValue="24h"
+                      >
+                        <Select size="middle">
+                          <Option value="flexible">Flexible</Option>
+                          <Option value="24h">24 Hours</Option>
+                          <Option value="48h">48 Hours</Option>
+                          <Option value="strict">Strict</Option>
+                        </Select>
+                      </FormItemAntd>
+                    </div>
+                    <div>
+                      <StandardLabel label="Refund % (remaining)" />
+                      <FormItemAntd
+                        {...field}
+                        name={[
+                          field.name,
+                          "midCourseCancellationRefundPercentage",
+                        ]}
+                        initialValue={100}
+                      >
+                        <StyledInputNumber
+                          min={0}
+                          max={100}
+                          formatter={(val) => `${val}%`}
+                          size="middle"
+                        />
+                      </FormItemAntd>
+                    </div>
+                  </FormGrid>
+                </motion.div>
+              );
+            }}
+          </Form.Item>
+        </div>
+      )}
+      </CardSection>
+    </InfoCard>
+  </div>
+);
 
 // --- HELPER COMPONENTS ---
 
@@ -1239,8 +1610,8 @@ const TierBasicsTab = ({ field, isPrimary, form }) => {
     <div style={{ paddingTop: "8px" }}>
       <StandardLabel
         icon={Ticket}
-        label="Tier Name"
-        help="The name visible to customers (e.g., VIP)."
+        label="Option name"
+        help="Shown to customers when they pick this option."
       />
       <FormItemAntd
         {...field}
@@ -1256,8 +1627,8 @@ const TierBasicsTab = ({ field, isPrimary, form }) => {
       <div style={{ marginTop: "16px" }}>
         <StandardLabel
           icon={ListChecks}
-          label="Features & Comparison"
-          help="Define what is included in this tier. Rows are synced across all tiers."
+          label="Features"
+          help="Shown in a comparison table when customers choose between options."
         />
         {/* We do NOT bind this Form.Item to 'description' directly via 'name' property.
             Instead, FeatureBuilder manages the form state for 'options' globally.
@@ -1272,8 +1643,8 @@ const TierBasicsTab = ({ field, isPrimary, form }) => {
         <div style={{ marginTop: "24px" }}>
           <StandardLabel
             icon={CalendarRange}
-            label="Schedule Behavior"
-            help="Does this tier happen at the same time as your primary event?"
+            label="Schedule"
+            help="Same time as your primary option, or a different time?"
           />
           <FormItemAntd
             {...field}
@@ -1315,23 +1686,19 @@ const TierDetailsTab = ({ field, form }) => {
         </div>
       </FormGrid>
 
-      <div style={{ marginTop: "16px" }}>
-        <StandardLabel
-          icon={Backpack}
-          label="Packing List"
-          help="Items guests should bring (Type and press Enter)."
+      <FieldDivider />
+      <FormLabelWithIcon><Backpack size={16} /> Message for booker</FormLabelWithIcon>
+      <FormHelpText>
+        Optional message to show guests before their booking (e.g. what to bring, where to meet).
+      </FormHelpText>
+      <FormItemAntd {...field} name={[field.name, "equipment"]}>
+        <Input.TextArea
+          placeholder="e.g. Bring a towel and water. Meet at the north entrance."
+          rows={3}
+          size="middle"
+          style={{ resize: "vertical" }}
         />
-        <FormItemAntd {...field} name={[field.name, "equipment"]}>
-          <StyledTagsSelect
-            mode="tags"
-            size="middle"
-            placeholder="e.g. Towel, ID Card, Water"
-            style={{ width: "100%" }}
-            tokenSeparators={[","]}
-            open={false}
-          />
-        </FormItemAntd>
-      </div>
+      </FormItemAntd>
     </div>
   );
 };
@@ -1457,13 +1824,15 @@ const TierPoliciesTab = ({ field, form, bookingType }) => {
                     {[12, 24, 48, 168].map((h) => (
                       <QuickPill
                         key={h}
-                        onClick={() =>
-                          setFieldsValue({
-                            options: {
-                              [field.name]: { cancellationCustomHours: h },
-                            },
-                          })
-                        }
+                        onClick={() => {
+                          const opts = getFieldValue("options") || [];
+                          const updated = [...opts];
+                          updated[field.name] = {
+                            ...(updated[field.name] || {}),
+                            cancellationCustomHours: h,
+                          };
+                          setFieldsValue({ options: updated });
+                        }}
                       >
                         {h < 25 ? `${h}h` : `${h / 24}d`}
                       </QuickPill>
@@ -1801,7 +2170,9 @@ const ClassEditDrawer = ({
       // Ensure specific fields are present to avoid uncontrolled inputs
       title: opt.title || (index === 0 ? "General Admission" : "Option"),
       description: opt.description || "",
-      equipment: opt.equipment || [],
+      equipment: Array.isArray(opt.equipment)
+        ? opt.equipment.join("\n")
+        : (opt.equipment ?? ""),
       tags: opt.tags || [],
     }));
 
@@ -2080,7 +2451,12 @@ const ClassEditDrawer = ({
       title: "",
       schedule_mode: "synced",
       level: primaryTier.level || "all",
-      equipment: primaryTier.equipment || [],
+      equipment:
+        typeof primaryTier.equipment === "string"
+          ? primaryTier.equipment
+          : Array.isArray(primaryTier.equipment)
+            ? primaryTier.equipment.join("\n")
+            : "",
       tags: primaryTier.tags || [],
       cancellationPolicy: primaryTier.cancellationPolicy,
       cancellationRefundPercentage: primaryTier.cancellationRefundPercentage,
@@ -2189,7 +2565,12 @@ const ClassEditDrawer = ({
 
         // Activity & Details
         level: opt.level || "all",
-        equipment: opt.equipment || [],
+        equipment:
+          typeof opt.equipment === "string"
+            ? opt.equipment
+            : Array.isArray(opt.equipment)
+              ? opt.equipment.join("\n")
+              : "",
         tags: opt.tags || [],
 
         // Standard Policy
@@ -2300,6 +2681,13 @@ const ClassEditDrawer = ({
     </div>
   );
 
+  const STEP_TITLES = ["The Experience", "Meeting Point", "Details"];
+  const STEP_DESCRIPTIONS = [
+    "Basics & Photos",
+    "Location & Contact",
+    "Structure & Policies",
+  ];
+
   const renderDrawerContent = () => (
     <>
       <DrawerHeader>
@@ -2316,22 +2704,27 @@ const ClassEditDrawer = ({
             <GlobalLoaderWithoutInlineStyles />
           </LoaderWrapper>
         ) : (
-          <>
-            <StyledTabs
-              activeKey={activeTab}
-              onChange={setActiveTab}
-              items={[
-                {
-                  label: "Basic Info",
-                  key: "1",
-                  children: (
-                    <TabContentWrapper>
+          <StyledTabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            items={[
+              {
+                label: "Basic Info",
+                key: "1",
+                children: (
+                  <ScrollContainer>
+                    <FormContainer>
+                      <StepHeader>
+                        <PageTitle>{STEP_TITLES[0]}</PageTitle>
+                        <StepDescription>{STEP_DESCRIPTIONS[0]}</StepDescription>
+                      </StepHeader>
+                      <StepContentWrapper>
                       <FormSection>
                         <FormGroup>
-                          <FormLabel htmlFor="edit_class_title">
+                          <FormLabelWithIcon htmlFor="edit_class_title">
                             <Sparkles size={16} />
                             Experience Title
-                          </FormLabel>
+                          </FormLabelWithIcon>
                           <HelpText>
                             <Info size={14} />
                             Catchy and descriptive. e.g., "Secret Jazz Club &
@@ -2361,7 +2754,7 @@ const ClassEditDrawer = ({
                           </FormItemAntd>
                         </FormGroup>
                         <FormGroup>
-                          <FormLabel htmlFor="edit_class_description">
+                          <FormLabelWithIcon htmlFor="edit_class_description">
                             <Tent size={16} />
                             What you'll do (Description)
                             <Tooltip
@@ -2378,7 +2771,7 @@ const ClassEditDrawer = ({
                                 }}
                               />
                             </Tooltip>
-                          </FormLabel>
+                          </FormLabelWithIcon>
                           <HelpText>
                             <Info size={14} />
                             Describe the itinerary, the atmosphere, and what's
@@ -2421,10 +2814,10 @@ const ClassEditDrawer = ({
                       </SectionDivider>
                       <FormSection>
                         <FormGroup>
-                          <FormLabel>
+                          <FormLabelWithIcon>
                             <ImagePlus size={16} />
                             Photos (2-10 required)
-                          </FormLabel>
+                          </FormLabelWithIcon>
                           <HelpText>
                             <Info size={14} />
                             Show people having fun, the environment, and
@@ -2553,10 +2946,10 @@ const ClassEditDrawer = ({
                       <FormSection>
                         <FormGrid>
                           <FormGroup>
-                            <FormLabel htmlFor="edit_class_category">
+                            <FormLabelWithIcon htmlFor="edit_class_category">
                               <Building2 size={16} />
                               Primary Category
-                            </FormLabel>
+                            </FormLabelWithIcon>
                             <HelpText>
                               <Info size={14} />
                               What type of experience is this?
@@ -2585,10 +2978,10 @@ const ClassEditDrawer = ({
                             </FormItemAntd>
                           </FormGroup>
                           <FormGroup>
-                            <FormLabel htmlFor="edit_class_subcategory">
+                            <FormLabelWithIcon htmlFor="edit_class_subcategory">
                               <Hash size={16} />
                               Subcategory
-                            </FormLabel>
+                            </FormLabelWithIcon>
                             <HelpText>
                               <Info size={14} />
                               Select a specific tag for guests.
@@ -2623,10 +3016,10 @@ const ClassEditDrawer = ({
                           </FormGroup>
                         </FormGrid>
                         <FormGroup>
-                          <FormLabel htmlFor="edit_class_features">
+                          <FormLabelWithIcon htmlFor="edit_class_features">
                             <Hash size={16} />
                             Features & Highlights
-                          </FormLabel>
+                          </FormLabelWithIcon>
                           <HelpText>
                             <Info size={14} />
                             What's included? What's the vibe?
@@ -2652,21 +3045,29 @@ const ClassEditDrawer = ({
                           </FormItemAntd>
                         </FormGroup>
                       </FormSection>
-                    </TabContentWrapper>
-                  ),
-                },
-                {
-                  label: "Location & Contact",
-                  key: "2",
-                  children: (
-                    <TabContentWrapper>
+                    </StepContentWrapper>
+                    </FormContainer>
+                  </ScrollContainer>
+                ),
+              },
+              {
+                label: "Location & Contact",
+                key: "2",
+                children: (
+                  <ScrollContainer>
+                    <FormContainer>
+                      <StepHeader>
+                        <PageTitle>{STEP_TITLES[1]}</PageTitle>
+                        <StepDescription>{STEP_DESCRIPTIONS[1]}</StepDescription>
+                      </StepHeader>
+                      <StepContentWrapper>
                       <FormSection>
                         <FormGrid>
                           <FormGroup>
-                            <FormLabel htmlFor="edit_location_search_input_display_only">
+                            <FormLabelWithIcon htmlFor="edit_location_search_input_display_only">
                               <Search size={16} />
                               Meeting Point Search
-                            </FormLabel>
+                            </FormLabelWithIcon>
                             <HelpText>
                               <Info size={14} />
                               Address, landmark, or meeting spot.
@@ -2745,10 +3146,10 @@ const ClassEditDrawer = ({
                             </SearchWrapper>
                           </FormGroup>
                           <FormGroup>
-                            <FormLabel htmlFor="edit_class_unit_number">
+                            <FormLabelWithIcon htmlFor="edit_class_unit_number">
                               <Building2 size={16} />
                               Unit / Suite / Details (Optional)
-                            </FormLabel>
+                            </FormLabelWithIcon>
                             <HelpText>
                               <Info size={14} />
                               Specific instructions (e.g. "Look for red
@@ -2826,7 +3227,7 @@ const ClassEditDrawer = ({
                                 : `Exact location: ${selectedMapLocation.display_name}`}
                             </LocationText>
                             <FormGroup>
-                              <FormLabel>Location Privacy</FormLabel>
+                              <FormLabelWithIcon><Eye size={16} /> Location Privacy</FormLabelWithIcon>
                               <HelpText>
                                 <Info size={14} />
                                 Choose how your location is displayed.
@@ -2866,10 +3267,10 @@ const ClassEditDrawer = ({
                       <FormSection>
                         <FormGrid>
                           <FormGroup>
-                            <FormLabel htmlFor="edit_studentContactEmail">
+                            <FormLabelWithIcon htmlFor="edit_studentContactEmail">
                               <Mail size={16} />
                               Support Email
-                            </FormLabel>
+                            </FormLabelWithIcon>
                             <HelpText>
                               <Info size={14} />
                               Where can guests email you with questions?
@@ -2901,10 +3302,10 @@ const ClassEditDrawer = ({
                             </FormItemAntd>
                           </FormGroup>
                           <FormGroup>
-                            <FormLabel htmlFor="edit_studentContactPhone">
+                            <FormLabelWithIcon htmlFor="edit_studentContactPhone">
                               <Phone size={16} />
                               Support Phone
-                            </FormLabel>
+                            </FormLabelWithIcon>
                             <HelpText>
                               <Info size={14} />A number for guests to call or
                               text.
@@ -2938,38 +3339,60 @@ const ClassEditDrawer = ({
                           </FormGroup>
                         </FormGrid>
                       </FormSection>
-                    </TabContentWrapper>
-                  ),
-                },
-                {
-                  label: "Settings",
-                  key: "3",
-                  children: (
-                    <TabContentWrapper>
+                    </StepContentWrapper>
+                    </FormContainer>
+                  </ScrollContainer>
+                ),
+              },
+              {
+                label: "Settings",
+                key: "3",
+                children: (
+                  <ScrollContainer>
+                    <FormContainer>
+                      <StepHeader>
+                        <PageTitle>{STEP_TITLES[2]}</PageTitle>
+                        <StepDescription>{STEP_DESCRIPTIONS[2]}</StepDescription>
+                      </StepHeader>
+                      <StepContentWrapper>
                       {/* Hidden Booking Type Field for Logic */}
                       <FormItemAntd name="booking_type" hidden>
                         <Input />
                       </FormItemAntd>
 
-                      <StandardLabel
-                        icon={Ticket}
-                        label="Ticket Tiers & Variations"
-                        help="Create standard tickets, VIP options, or different schedules."
-                      />
-
                       <Form.List name="options">
-                        {(fields, { add, remove }) => (
-                          <>
-                            <AnimatePresence initial={false}>
-                              {fields.map((field, index) => {
-                                const isPrimary = index === 0;
-                                const isActive = activeTier === index;
-                                const tierValues =
-                                  form.getFieldValue(["options", index]) || {};
-                                const tierMode = tierValues.schedule_mode;
+                        {(fields, { add, remove }) => {
+                          const hasSingleOption = fields.length === 1;
+                          return (
+                            <>
+                              {!hasSingleOption && (
+                                <StandardLabel
+                                  icon={Ticket}
+                                  label="Options"
+                                  help="Each option can have different features or schedules. Customers pick one when booking."
+                                />
+                              )}
+                              <AnimatePresence initial={false}>
+                                {fields.map((field, index) => {
+                                  if (hasSingleOption) {
+                                    return (
+                                      <SingleOptionLayout
+                                        key={field.key}
+                                        field={field}
+                                        form={form}
+                                        bookingType={bookingType}
+                                      />
+                                    );
+                                  }
 
-                                return (
-                                  <TierCard
+                                  const isPrimary = index === 0;
+                                  const isActive = activeTier === index;
+                                  const tierValues =
+                                    form.getFieldValue(["options", index]) || {};
+                                  const tierMode = tierValues.schedule_mode;
+
+                                  return (
+                                    <TierCard
                                     key={field.key}
                                     $isActive={isActive}
                                     initial={{ opacity: 0, y: 15 }}
@@ -3010,9 +3433,7 @@ const ClassEditDrawer = ({
                                               index,
                                               "title",
                                             ]) ||
-                                              (isPrimary
-                                                ? "Primary Tier"
-                                                : "Untitled Option")}
+                                              `Option ${index + 1}`}
                                           </h4>
                                           <AnimatePresence>
                                             {!isActive && (
@@ -3037,10 +3458,10 @@ const ClassEditDrawer = ({
                                                   style={{ fontSize: "12px" }}
                                                 >
                                                   {isPrimary
-                                                    ? "Main Configuration"
+                                                    ? "Primary option"
                                                     : tierMode === "synced"
-                                                      ? "Synced to Primary Schedule"
-                                                      : "Independent Schedule"}
+                                                      ? "Same time as primary"
+                                                      : "Independent schedule"}
                                                 </Text>
                                               </motion.div>
                                             )}
@@ -3060,7 +3481,7 @@ const ClassEditDrawer = ({
                                             $bg="#fef9c3"
                                             $color="#854d0e"
                                           >
-                                            Primary
+                                            Option 1
                                           </TierBadge>
                                         ) : tierMode === "independent" ? (
                                           <TierBadge
@@ -3080,7 +3501,7 @@ const ClassEditDrawer = ({
 
                                         {!isPrimary && (
                                           <Popconfirm
-                                            title="Delete this tier?"
+                                            title="Remove this option?"
                                             onConfirm={(e) => {
                                               e.stopPropagation();
                                               remove(field.name);
@@ -3179,25 +3600,38 @@ const ClassEditDrawer = ({
                             </AnimatePresence>
 
                             <FooterActions>
-                              <Button
-                                type="dashed"
-                                icon={<Plus size={16} />}
-                                onClick={() => addTier(add)}
-                                block
-                                style={{ height: "48px", maxWidth: "300px" }}
-                              >
-                                Add Ticket Tier
-                              </Button>
+                              {hasSingleOption ? (
+                                <AddOptionLink
+                                  type="button"
+                                  onClick={() => addTier(add)}
+                                >
+                                  <Plus size={16} />
+                                  Add another option (e.g. different size or
+                                  upgrade)
+                                </AddOptionLink>
+                              ) : (
+                                <Button
+                                  type="dashed"
+                                  icon={<Plus size={16} />}
+                                  onClick={() => addTier(add)}
+                                  block
+                                  style={{ height: "48px", maxWidth: "300px" }}
+                                >
+                                  Add another option
+                                </Button>
+                              )}
                             </FooterActions>
                           </>
-                        )}
+                          );
+                        }}
                       </Form.List>
-                    </TabContentWrapper>
-                  ),
-                },
-              ]}
-            />
-          </>
+                    </StepContentWrapper>
+                    </FormContainer>
+                  </ScrollContainer>
+                ),
+              },
+            ]}
+          />
         )}
       </DrawerContentWrapper>
       <DrawerFooter>

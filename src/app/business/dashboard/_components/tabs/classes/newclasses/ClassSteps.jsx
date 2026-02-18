@@ -50,7 +50,7 @@ const NavigationFooter = styled.footer`
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #ebebeb;
+  border-top: 1px solid #e5e7eb;
   background: white;
   z-index: 2;
 
@@ -176,7 +176,12 @@ const ClassSteps = ({
             // Config
             booking_type: opt.booking_type || "Single Session",
             level: opt.level || "all",
-            equipment: opt.equipment || [],
+            equipment:
+              typeof opt.equipment === "string"
+                ? opt.equipment
+                : Array.isArray(opt.equipment)
+                  ? opt.equipment.join("\n")
+                  : "",
             tags: opt.tags || [],
             price_type: isCourse ? "full_course" : "per_session",
 

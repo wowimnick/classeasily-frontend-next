@@ -71,6 +71,16 @@ export const API_ENDPOINTS = {
   SUPPORT_TICKETS: "/support-tickets/",
   CHAT_MESSAGE: "/chat/message/",
 
+  // Guest–Business conversations (booker)
+  CONVERSATIONS: "/conversations/",
+  CONVERSATION_DETAIL: (id) => `/conversations/${id}/`,
+  CONVERSATION_SEND_MESSAGE: (id) => `/conversations/${id}/send_message/`,
+  // Business dashboard conversations
+  BUSINESS_CONVERSATIONS: "/business/conversations/",
+  BUSINESS_CONVERSATION_DETAIL: (id) => `/business/conversations/${id}/`,
+  BUSINESS_CONVERSATION_SEND_MESSAGE: (id) =>
+    `/business/conversations/${id}/send_message/`,
+
   // Notifications
   NOTIFICATIONS: "/business/notifications/",
   NOTIFICATIONS_UNREAD_COUNT: "/business/notifications/unread-count/",
@@ -2663,6 +2673,94 @@ export const CustomerSupportTicketService = {
         success: false,
         error: error.response?.data?.detail || "Failed to send reply",
       };
+    }
+  },
+};
+
+// --- Guest–Business Conversation Service (booker) ---
+export const conversationService = {
+  getList: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.CONVERSATIONS);
+      return { success: true, data: Array.isArray(response.data) ? response.data : response.data?.results ?? [] };
+    } catch (error) {
+      console.error("Error fetching conversations:", error.response?.data || error);
+      return { success: false, error: error.response?.data?.detail || "Failed to fetch conversations" };
+    }
+  },
+
+  getDetail: async (conversationId) => {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.CONVERSATION_DETAIL(conversationId)
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error fetching conversation:", error.response?.data || error);
+      return { success: false, error: error.response?.data?.detail || "Failed to fetch conversation" };
+    }
+  },
+
+  createOrGet: async (businessId, bookingId = null) => {
+    try {
+      const payload = { business_id: businessId };
+      if (bookingId != null) payload.booking_id = bookingId;
+      const response = await axiosInstance.post(API_ENDPOINTS.CONVERSATIONS, payload);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error creating conversation:", error.response?.data || error);
+      return { success: false, error: error.response?.data?.detail || "Failed to start conversation" };
+    }
+  },
+
+  sendMessage: async (conversationId, text) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.CONVERSATION_SEND_MESSAGE(conversationId),
+        { text }
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error sending message:", error.response?.data || error);
+      return { success: false, error: error.response?.data?.detail || "Failed to send message" };
+    }
+  },
+};
+
+// --- Business Conversation Service (dashboard) ---
+export const businessConversationService = {
+  getList: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.BUSINESS_CONVERSATIONS);
+      return { success: true, data: Array.isArray(response.data) ? response.data : response.data?.results ?? [] };
+    } catch (error) {
+      console.error("Error fetching business conversations:", error.response?.data || error);
+      return { success: false, error: error.response?.data?.detail || "Failed to fetch conversations" };
+    }
+  },
+
+  getDetail: async (conversationId) => {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.BUSINESS_CONVERSATION_DETAIL(conversationId)
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error fetching conversation:", error.response?.data || error);
+      return { success: false, error: error.response?.data?.detail || "Failed to fetch conversation" };
+    }
+  },
+
+  sendMessage: async (conversationId, text) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.BUSINESS_CONVERSATION_SEND_MESSAGE(conversationId),
+        { text }
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error sending reply:", error.response?.data || error);
+      return { success: false, error: error.response?.data?.detail || "Failed to send reply" };
     }
   },
 };

@@ -1010,19 +1010,21 @@ const ConfirmationStep = ({
 
   const renderEquipmentInfo = () => {
     const equipment = bookingData.selectedOption?.equipment;
-    if (!equipment?.length) return null;
+    const equipmentStr =
+      typeof equipment === "string"
+        ? equipment.trim()
+        : Array.isArray(equipment)
+          ? equipment.join("\n").trim()
+          : "";
+    if (!equipmentStr) return null;
 
     return (
       <SummaryMetaItem>
         <div className="icon-box"><Package /></div>
         <div className="text-content">
-          <span className="label">Required equipment</span>
-          <span className="value">
-            <EquipmentList>
-              {equipment.map((item, index) => (
-                <li key={index}>{item}</li>
-              ))}
-            </EquipmentList>
+          <span className="label">What to bring</span>
+          <span className="value" style={{ whiteSpace: "pre-line" }}>
+            {equipmentStr}
           </span>
         </div>
       </SummaryMetaItem>
@@ -1179,41 +1181,47 @@ const ConfirmationStep = ({
           </TicketCard>
 
           {/* Attached accordions (FAQ-style, animated) */}
-          {(bookingData.selectedOption?.equipment?.length > 0 ||
+          {((() => {
+            const eq = bookingData.selectedOption?.equipment;
+            const hasEquipment = typeof eq === "string" ? !!eq.trim() : Array.isArray(eq) && eq.length > 0;
+            return hasEquipment;
+          })() ||
             bookingData.selectedOption?.cancellationPolicy ||
             (classData?.student_contact_email ?? classData?.studentContactEmail ?? classData?.business_contact_email ?? classData?.businessContactEmail) ||
             (classData?.student_contact_phone ?? classData?.studentContactPhone ?? classData?.business_contact_phone ?? classData?.businessContactPhone)) && (
             <AccordionStack>
-              {bookingData.selectedOption?.equipment?.length > 0 && (
-                <AccordionItem>
-                  <AccordionButton
-                    type="button"
-                    onClick={() => toggleAccordion("equipment")}
-                    aria-expanded={openAccordions.equipment}
-                  >
-                    <span><Package size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />What to bring</span>
-                    <ChevronDown size={20} className={`accordion-icon ${openAccordions.equipment ? "open" : ""}`} />
-                  </AccordionButton>
-                  <AnimatePresence initial={false}>
-                    {openAccordions.equipment && (
-                      <AccordionContent
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.25, ease: "easeInOut" }}
-                      >
-                        <div className="inner">
-                          <ul>
-                            {bookingData.selectedOption.equipment.map((item, index) => (
-                              <li key={index}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </AccordionContent>
-                    )}
-                  </AnimatePresence>
-                </AccordionItem>
-              )}
+              {(() => {
+                const eq = bookingData.selectedOption?.equipment;
+                const hasEquipment = typeof eq === "string" ? !!eq.trim() : Array.isArray(eq) && eq.length > 0;
+                if (!hasEquipment) return null;
+                const displayText = typeof eq === "string" ? eq.trim() : eq.join("\n");
+                return (
+                  <AccordionItem>
+                    <AccordionButton
+                      type="button"
+                      onClick={() => toggleAccordion("equipment")}
+                      aria-expanded={openAccordions.equipment}
+                    >
+                      <span><Package size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />What to bring</span>
+                      <ChevronDown size={20} className={`accordion-icon ${openAccordions.equipment ? "open" : ""}`} />
+                    </AccordionButton>
+                    <AnimatePresence initial={false}>
+                      {openAccordions.equipment && (
+                        <AccordionContent
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.25, ease: "easeInOut" }}
+                        >
+                          <div className="inner" style={{ whiteSpace: "pre-line" }}>
+                            {displayText}
+                          </div>
+                        </AccordionContent>
+                      )}
+                    </AnimatePresence>
+                  </AccordionItem>
+                );
+              })()}
 
               {(() => {
                 const option = bookingData.selectedOption;

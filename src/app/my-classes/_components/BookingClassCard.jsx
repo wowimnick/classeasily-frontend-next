@@ -1,17 +1,18 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import styled, { keyframes, css } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin, CalendarDays, Users, MoreHorizontal, AlertCircle,
   Check, List, Undo2, Star, AlertTriangle, FileText, DollarSign,
-  Trash2, UploadCloud, Loader2
+  Trash2, UploadCloud, Loader2, MessageSquare
 } from "lucide-react";
 import { Button, Tooltip, Dropdown, Alert, Tag, Form, Input, Upload, message } from "antd";
 import imageCompression from "browser-image-compression";
 import { theme } from "@/components/theme";
-import { bookingService, reviewService, uploadService } from "@/services/apiService";
+import { bookingService, reviewService, uploadService, conversationService } from "@/services/apiService";
 
 // --- Styled Components ---
 
@@ -476,8 +477,10 @@ const BookingClassCard = ({
   onCancelSuccess,
   onReviewSuccess,
 }) => {
+  const router = useRouter();
   const [activeView, setActiveView] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [messageHostLoading, setMessageHostLoading] = useState(false);
 
   // Review State
   const [rating, setRating] = useState(0);
@@ -498,6 +501,28 @@ const BookingClassCard = ({
   const [cancelPolicy, setCancelPolicy] = useState(null);
 
   // --- ACTIONS ---
+
+  const handleMessageHost = async () => {
+    const businessId = booking.business_id;
+    const bookingId = booking.booking_id ?? booking.id;
+    if (!businessId) {
+      message.error("Cannot start conversation for this booking.");
+      return;
+    }
+    setMessageHostLoading(true);
+    try {
+      const result = await conversationService.createOrGet(businessId, bookingId);
+      if (result.success && result.data?.id) {
+        router.push(`/my-messages/${result.data.id}`);
+      } else {
+        message.error(result.error || "Could not open conversation.");
+      }
+    } catch (e) {
+      message.error("Something went wrong.");
+    } finally {
+      setMessageHostLoading(false);
+    }
+  };
 
   const fetchCancellationPolicy = async () => {
     setLoading(true);
@@ -943,6 +968,16 @@ const BookingClassCard = ({
           </CardContent>
 
           <CardFooter>
+            {booking.business_id != null && (
+              <Button
+                size="middle"
+                icon={messageHostLoading ? <Loader2 size={14} className="spin" /> : <MessageSquare size={14} />}
+                onClick={handleMessageHost}
+                disabled={messageHostLoading}
+              >
+                Message host
+              </Button>
+            )}
             {isUpcoming && (
               <Dropdown
                 menu={{

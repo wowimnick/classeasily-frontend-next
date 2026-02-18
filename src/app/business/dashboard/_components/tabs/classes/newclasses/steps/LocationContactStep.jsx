@@ -28,8 +28,13 @@ import { useClass } from "../ClassContext";
 import "leaflet/dist/leaflet.css";
 import { theme } from "@/components/theme";
 import { businessClassService } from "@/services/apiService";
+import {
+  bookingTheme,
+  PageTitle,
+  FieldDivider,
+} from "../../_shared/BookingFlowDesign";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const StyledForm = styled(Form)`
   .ant-form-item {
@@ -47,63 +52,60 @@ const StyledForm = styled(Form)`
 `;
 const StepHeader = styled.div`
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 24px;
   position: relative;
 `;
-const StepTitle = styled(Title)`
-  margin-bottom: ${(props) => props.theme.token.marginXS}px !important;
-  color: ${(props) => props.theme.token.colorText};
-  font-size: 28px !important;
-  font-weight: 700 !important;
-`;
-const StepDescription = styled(Text)`
-  display: block;
-  color: ${(props) => props.theme.token.colorTextSecondary};
-  font-size: ${(props) => props.theme.token.fontSizeLG || "16px"};
-  margin-bottom: ${(props) => props.theme.token.marginLG}px;
-  line-height: 1.6;
+const StepDescription = styled.div`
+  font-size: 15px;
+  color: ${bookingTheme.textSecondary};
+  margin-top: 8px;
+  line-height: 1.5;
 `;
 const SectionDivider = styled.div`
   display: flex;
   align-items: center;
-  margin: 2rem 0;
+  margin: 24px 0;
   &::before,
   &::after {
     content: "";
     flex: 1;
-    height: 2px;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      ${(props) => props.theme.token.colorBorder} 20%,
-      ${(props) => props.theme.token.colorBorder} 80%,
-      transparent 100%
-    );
+    height: 1px;
+    background: ${bookingTheme.borderLight};
   }
   span {
     padding: 0 1rem;
-    color: ${(props) => props.theme.token.colorTextSecondary};
-    font-weight: 500;
-    font-size: 14px;
+    color: ${bookingTheme.textSecondary};
+    font-weight: 600;
+    font-size: 15px;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: ${(props) => props.theme.token.colorBgContainer};
-    border-radius: 20px;
-    padding: 0.5rem 1rem;
-    border: 1px solid ${(props) => props.theme.token.colorBorder};
   }
 `;
 const ActionContainer = styled.div`
   display: flex;
   justify-content: flex-end;
-  margin-top: -1.5rem;
   margin-bottom: 1rem;
   padding-right: 4px;
 `;
+
+const ActionButton = styled(Button)`
+  border-radius: 999px !important;
+  font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 16px !important;
+  height: auto !important;
+`;
 const FormSection = styled(motion.div)`
-  margin-bottom: 2rem;
-  border-radius: 12px;
+  margin-bottom: 24px;
+  background: ${bookingTheme.bg};
+  border: 1px solid ${bookingTheme.borderLight};
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  padding: 20px;
 `;
 const FormGroup = styled.div`
   margin-bottom: ${(props) =>
@@ -208,12 +210,14 @@ const MapWrapper = styled(motion.div)`
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid ${(props) => props.theme.token.colorBorder};
-  margin-top: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   .leaflet-container {
     height: 100%;
     width: 100%;
     border-radius: ${(props) => props.theme.token.borderRadius}px;
+  }
+  .leaflet-control-attribution {
+    display: none !important;
   }
 `;
 const LocationText = styled(motion.div)`
@@ -236,17 +240,15 @@ const ToggleButton = styled.button`
   flex: 1;
   padding: 12px 16px;
   background: ${(props) =>
-    props.$selected ? props.theme.token.colorPrimaryBg : "white"};
+    props.$selected ? props.theme.token.colorPrimary : "white"};
   color: ${(props) =>
-    props.$selected
-      ? props.theme.token.colorPrimary
-      : props.theme.token.colorText};
+    props.$selected ? "#fff" : props.theme.token.colorText};
   border: 1px solid
     ${(props) =>
       props.$selected
         ? props.theme.token.colorPrimary
         : props.theme.token.colorBorder};
-  border-radius: ${(props) => props.theme.token.borderRadius}px;
+  border-radius: 999px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -255,18 +257,19 @@ const ToggleButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 8px;
-  &:hover {
+
+  &:hover:not(:disabled) {
     border-color: ${(props) => props.theme.token.colorPrimary};
-    background: ${(props) =>
-      props.$selected
-        ? props.theme.token.colorPrimaryBorder
-        : props.theme.token.colorBgTextHover};
+    ${(props) =>
+      !props.$selected &&
+      `background: ${props.theme.token.colorPrimaryBg}; color: ${props.theme.token.colorPrimary};`}
+    ${(props) =>
+      props.$selected &&
+      `filter: brightness(1.05);`}
   }
   svg {
-    color: ${(props) =>
-      props.$selected
-        ? props.theme.token.colorPrimary
-        : props.theme.token.colorTextSecondary};
+    color: inherit;
+    opacity: ${(props) => (props.$selected ? 1 : 0.85)};
   }
 `;
 
@@ -528,7 +531,7 @@ const LocationContactStep = ({ onValidatedNext }) => {
   return (
     <ConfigProvider theme={theme}>
       <StepHeader>
-        <StepTitle level={2}>Meeting Point & Contact</StepTitle>
+        <PageTitle>Meeting Point & Contact</PageTitle>
         <StepDescription>
           Where will guests meet you? Provide precise details so they can find
           you easily.
@@ -543,23 +546,16 @@ const LocationContactStep = ({ onValidatedNext }) => {
         id="step-1-form"
         preserve={true}
       >
-        <SectionDivider>
-          <span>
-            <MapPin size={16} />
-            Meeting Point
-          </span>
-        </SectionDivider>
-
         {!isLoadingBusinessContact && businessContact?.businessAddress && (
           <ActionContainer>
-            <Button
-              type="link"
+            <ActionButton
+              type="default"
               onClick={handleUseBusinessLocation}
               icon={<Building size={14} />}
               disabled={!businessContact.latitude || !businessContact.longitude}
             >
               Use Business Address
-            </Button>
+            </ActionButton>
           </ActionContainer>
         )}
 
@@ -675,6 +671,7 @@ const LocationContactStep = ({ onValidatedNext }) => {
                   center={[selectedLocation.lat, selectedLocation.lon]}
                   zoom={MAP_ZOOM_LEVEL}
                   scrollWheelZoom={false}
+                  attributionControl={false}
                 >
                   <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
                   {hideExactLocation ? (
@@ -712,6 +709,8 @@ const LocationContactStep = ({ onValidatedNext }) => {
                   : `Exact location: ${selectedLocation.display_name}`}
               </LocationText>
 
+              <FieldDivider />
+
               <FormGroup>
                 <FormLabel>Privacy Settings</FormLabel>
                 <HelpText>
@@ -748,8 +747,8 @@ const LocationContactStep = ({ onValidatedNext }) => {
 
         {!isLoadingBusinessContact && businessContact && (
           <ActionContainer>
-            <Button
-              type="link"
+            <ActionButton
+              type="default"
               onClick={handleUseBusinessContact}
               icon={<Copy size={14} />}
               disabled={
@@ -758,7 +757,7 @@ const LocationContactStep = ({ onValidatedNext }) => {
               }
             >
               Use Business Contact Info
-            </Button>
+            </ActionButton>
           </ActionContainer>
         )}
 

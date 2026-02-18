@@ -1323,6 +1323,14 @@ export default function ClassPageClient({
 
   const mobileReserve = useMobileReserveFlow(mounted, classData, optionToDisplayOnCard);
 
+  /* Preload review drawer chunk on mobile so Reserve button open works when tapped quickly after load */
+  useEffect(() => {
+    if (!mounted || typeof window === "undefined") return;
+    if (window.innerWidth <= MOBILE_RESERVE_BREAKPOINT) {
+      import("./MobileReserveReviewDrawer");
+    }
+  }, [mounted]);
+
   /* Mobile: show "Best Price Guaranteed" pop-up when options are available */
   useEffect(() => {
     if (!mounted || typeof window === "undefined") return;

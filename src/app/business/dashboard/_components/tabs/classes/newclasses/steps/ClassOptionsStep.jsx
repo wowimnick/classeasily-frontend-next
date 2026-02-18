@@ -12,8 +12,8 @@ import {
   Select,
   InputNumber,
   Input,
-  Typography,
   ConfigProvider,
+  Typography,
   Button,
   Switch,
   Tooltip,
@@ -41,13 +41,24 @@ import {
   Percent,
   Type,
   ToggleLeft,
+  ListChecks,
+  Info,
+  MessageSquare,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { theme } from "@/components/theme";
 import { useClass } from "../ClassContext";
+import {
+  bookingTheme,
+  InfoCard,
+  PageTitle,
+  FormLabel,
+  FormHelpText,
+  FieldDivider,
+} from "../../_shared/BookingFlowDesign";
 
 const { Option } = Select;
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 // --- ANIMATION HOOKS ---
 
@@ -88,44 +99,40 @@ const SmoothHeight = ({ children }) => {
 
 const StepHeader = styled.div`
   text-align: center;
-  margin-bottom: 2rem;
-`;
-
-const StepTitle = styled(Title)`
-  margin-bottom: 8px !important;
-  color: ${(props) => props.theme.token.colorText};
-  font-size: 28px !important;
-  font-weight: 700 !important;
-`;
-
-const StepDescription = styled(Text)`
-  display: block;
-  color: ${(props) => props.theme.token.colorTextSecondary};
-  font-size: 16px;
   margin-bottom: 24px;
 `;
 
+const StepDescription = styled.div`
+  font-size: 15px;
+  color: ${bookingTheme.textSecondary};
+  margin-top: 8px;
+  line-height: 1.5;
+`;
+
+const FormSection = styled(motion.div)`
+  margin-bottom: 24px;
+  background: ${bookingTheme.bg};
+  border: 1px solid ${bookingTheme.borderLight};
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  padding: 20px;
+`;
+
 const TierCard = styled(motion.div)`
-  background: #fff;
+  background: ${bookingTheme.bg};
   border: 1px solid
     ${(props) =>
-      props.$isActive
-        ? props.theme.token.colorPrimary
-        : props.theme.token.colorBorder};
-  border-radius: 12px;
+      props.$isActive ? bookingTheme.primary : bookingTheme.borderLight};
+  border-radius: 16px;
   margin-bottom: 16px;
   overflow: hidden;
-  transition:
-    border-color 0.3s ease,
-    box-shadow 0.3s ease;
-  box-shadow: ${(props) =>
-    props.$isActive ? "0 4px 12px rgba(0,0,0,0.08)" : "none"};
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
     border-color: ${(props) =>
-      props.$isActive
-        ? props.theme.token.colorPrimary
-        : props.theme.token.colorPrimaryBorder};
+      props.$isActive ? bookingTheme.primary : "#d1d5db"};
   }
 `;
 
@@ -136,8 +143,8 @@ const TierHeader = styled.div`
   justify-content: space-between;
   cursor: pointer;
   background: ${(props) =>
-    props.$isActive ? props.theme.token.colorPrimaryBg : "#fff"};
-  transition: background 0.3s ease;
+    props.$isActive ? "#f9fafb" : bookingTheme.bg};
+  transition: background 0.2s ease;
 `;
 
 const TierTitleSection = styled.div`
@@ -150,7 +157,7 @@ const TierTitleSection = styled.div`
     margin: 0;
     font-size: 16px;
     font-weight: 600;
-    color: ${(props) => props.theme.token.colorText};
+    color: ${bookingTheme.textPrimary};
   }
 `;
 
@@ -171,7 +178,7 @@ const TierBadge = styled.span`
 
 const TierBody = styled.div`
   padding: 0 24px 24px 24px;
-  border-top: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
+  border-top: 1px solid ${bookingTheme.borderLight};
 `;
 
 const TierInternalTabs = styled(Tabs)`
@@ -200,6 +207,198 @@ const FormItemAntd = styled(Form.Item)`
     font-size: 12px;
   }
 `;
+
+// --- SINGLE OPTION LAYOUT (when user has only one booking option) ---
+const SingleOptionLayout = ({ field, form }) => (
+  <FormSection
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3 }}
+    style={{ margin: "0 auto" }}
+  >
+    <FormItemAntd {...field} name={[field.name, "title"]} hidden>
+      <Input />
+    </FormItemAntd>
+
+    <CardSectionTitle style={{ marginTop: 0 }}>For guests</CardSectionTitle>
+    <FormLabel style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <Activity size={16} />
+      Activity level
+    </FormLabel>
+    <FormHelpText style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+      <Info size={14} />
+      Difficulty or experience required.
+    </FormHelpText>
+    <FormItemAntd
+      {...field}
+      name={[field.name, "level"]}
+      initialValue="all"
+    >
+      <Select size="middle">
+        <Option value="all">Open to everyone</Option>
+        <Option value="no-experience">No experience needed</Option>
+        <Option value="intermediate">Intermediate</Option>
+        <Option value="advanced">Advanced</Option>
+        <Option value="strenuous">Strenuous</Option>
+      </Select>
+    </FormItemAntd>
+
+    <FieldDivider />
+    <FormLabel style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <MessageSquare size={16} />
+      Message for booker
+    </FormLabel>
+    <FormHelpText style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+      <Info size={14} />
+      Optional message to show guests before their booking (e.g. what to bring, where to meet).
+    </FormHelpText>
+    <FormItemAntd {...field} name={[field.name, "equipment"]}>
+      <Input.TextArea
+        placeholder="e.g. Bring a towel and water. Meet at the north entrance."
+        rows={3}
+        size="middle"
+        style={{ resize: "vertical" }}
+      />
+    </FormItemAntd>
+
+    <FieldDivider />
+    <CardSectionTitle>Cancellation & refunds</CardSectionTitle>
+    <FormLabel style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <Clock size={16} />
+      Cancellation notice
+    </FormLabel>
+    <FormHelpText style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+      <Info size={14} />
+      Minimum notice required for a refund.
+    </FormHelpText>
+    <FormItemAntd
+      {...field}
+      name={[field.name, "cancellationPolicy"]}
+      initialValue="flexible"
+      rules={[{ required: true }]}
+    >
+      <Select size="middle">
+        <Option value="flexible">Flexible (1hr)</Option>
+        <Option value="24h">24 hours</Option>
+        <Option value="48h">48 hours</Option>
+        <Option value="72h">72 hours</Option>
+        <Option value="strict">Strict (non-refundable)</Option>
+        <Option value="custom">Custom</Option>
+      </Select>
+    </FormItemAntd>
+
+    <FieldDivider />
+    <Form.Item
+      shouldUpdate={(prev, curr) =>
+        prev.options?.[field.key]?.cancellationPolicy !==
+        curr.options?.[field.key]?.cancellationPolicy
+      }
+      noStyle
+    >
+      {({ getFieldValue }) => {
+        const policy = getFieldValue([
+          "options",
+          field.name,
+          "cancellationPolicy",
+        ]);
+        const isStrict = policy === "strict";
+        return (
+          <>
+            <FormLabel style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Percent size={16} />
+              Refund amount
+            </FormLabel>
+            <FormHelpText style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+              <Info size={14} />
+              Percentage refunded when cancelled in time.
+            </FormHelpText>
+            <FormItemAntd
+              {...field}
+              name={[field.name, "cancellationRefundPercentage"]}
+              initialValue={100}
+            >
+              <StyledInputNumber
+                min={0}
+                max={100}
+                formatter={(val) => `${val}%`}
+                disabled={isStrict}
+                size="middle"
+              />
+            </FormItemAntd>
+          </>
+        );
+      }}
+    </Form.Item>
+
+    <Form.Item
+      shouldUpdate={(prev, curr) =>
+        prev.options?.[field.key]?.cancellationPolicy !==
+        curr.options?.[field.key]?.cancellationPolicy
+      }
+      noStyle
+    >
+      {({ getFieldValue, setFieldsValue }) => {
+        const policy = getFieldValue([
+          "options",
+          field.name,
+          "cancellationPolicy",
+        ]);
+        if (policy !== "custom") return null;
+        return (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            style={{ overflow: "hidden" }}
+          >
+            <FieldDivider />
+            <FormLabel style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <CalendarDays size={16} />
+              Custom hours notice
+            </FormLabel>
+            <FormHelpText style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+              <Info size={14} />
+              Hours before start required.
+            </FormHelpText>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+              <FormItemAntd
+                {...field}
+                name={[field.name, "cancellationCustomHours"]}
+                rules={[{ required: true, message: "Required" }]}
+                style={{ marginBottom: 0, flex: 1, minWidth: 120 }}
+              >
+                <InputNumber
+                  min={1}
+                  placeholder="e.g. 12"
+                  addonAfter="Hours"
+                  size="middle"
+                  style={{ width: "100%" }}
+                />
+              </FormItemAntd>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                {[12, 24, 48, 168].map((h) => (
+                  <QuickPill
+                    key={h}
+                    onClick={() => {
+                      const opts = getFieldValue("options") || [];
+                      const updated = [...opts];
+                      updated[field.name] = {
+                        ...(updated[field.name] || {}),
+                        cancellationCustomHours: h,
+                      };
+                      setFieldsValue({ options: updated });
+                    }}
+                  >
+                    {h < 25 ? `${h}h` : `${h / 24}d`}
+                  </QuickPill>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        );
+      }}
+    </Form.Item>
+  </FormSection>
+);
 
 const StandardLabel = ({ icon: Icon, label, help }) => (
   <div style={{ marginBottom: 6 }}>
@@ -295,7 +494,41 @@ const FooterActions = styled.div`
   justify-content: center;
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid ${(props) => props.theme.token.colorBorder};
+  border-top: 1px solid ${bookingTheme.borderLight};
+`;
+
+const CardSection = styled.div`
+  padding: 20px;
+  border-bottom: 1px solid ${bookingTheme.borderLight};
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const CardSectionTitle = styled.h3`
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: ${bookingTheme.textPrimary};
+`;
+
+const AddOptionLink = styled.button`
+  background: none;
+  border: none;
+  color: ${bookingTheme.primary};
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 12px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 const StyledInputNumber = styled(InputNumber)`
@@ -311,7 +544,7 @@ const StyledTagsSelect = styled(Select)`
 // --- FEATURE BUILDER COMPONENT ---
 // Matches the logic from ClassEditDrawer exactly
 
-const FeatureBuilder = ({ form, tierIndex, onUpdate }) => {
+const FeatureBuilder = ({ form, tierIndex, onUpdate, addButtonLabel }) => {
   // We watch the entire options array to derive the global list of Feature Keys (Rows)
   const options = Form.useWatch("options", form) || [];
 
@@ -571,7 +804,7 @@ const FeatureBuilder = ({ form, tierIndex, onUpdate }) => {
           borderColor: "#e2e8f0",
         }}
       >
-        Add Comparison Row
+        {addButtonLabel || "Add comparison row"}
       </Button>
     </div>
   );
@@ -584,8 +817,8 @@ const TierBasicsTab = ({ field, isPrimary, form, onUpdate }) => {
     <div style={{ paddingTop: "8px" }}>
       <StandardLabel
         icon={Ticket}
-        label="Tier Name"
-        help="The name visible to customers (e.g., VIP)."
+        label="Option name"
+        help="Shown to customers when they pick this option."
       />
       <FormItemAntd
         {...field}
@@ -600,9 +833,9 @@ const TierBasicsTab = ({ field, isPrimary, form, onUpdate }) => {
 
       <div style={{ marginTop: "16px" }}>
         <StandardLabel
-          icon={FileText} // Changed icon slightly to match functionality
-          label="Features & Comparison"
-          help="Define what is included in this tier. Rows are synced across all tiers."
+          icon={ListChecks}
+          label="Features"
+          help="Shown in a comparison table when customers choose between options."
         />
         {/* We do NOT bind this Form.Item to 'description' directly via 'name' property.
             Instead, FeatureBuilder manages the form state for 'options' globally.
@@ -620,8 +853,8 @@ const TierBasicsTab = ({ field, isPrimary, form, onUpdate }) => {
         <div style={{ marginTop: "24px" }}>
           <StandardLabel
             icon={CalendarRange}
-            label="Schedule Behavior"
-            help="Does this tier happen at the same time as your primary event?"
+            label="Schedule"
+            help="Same time as your primary option, or a different time?"
           />
           <FormItemAntd
             {...field}
@@ -695,19 +928,21 @@ const TierDetailsTab = ({ field, form }) => {
       </FormGrid>
 
       <div style={{ marginTop: "16px" }}>
-        <StandardLabel
-          icon={Backpack}
-          label="Packing List"
-          help="Items guests should bring (Type and press Enter)."
-        />
+        <FieldDivider />
+        <FormLabel style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <MessageSquare size={16} />
+          Message for booker
+        </FormLabel>
+        <FormHelpText style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+          <Info size={14} />
+          Optional message to show guests before their booking (e.g. what to bring, where to meet).
+        </FormHelpText>
         <FormItemAntd {...field} name={[field.name, "equipment"]}>
-          <StyledTagsSelect
-            mode="tags"
+          <Input.TextArea
+            placeholder="e.g. Bring a towel and water. Meet at the north entrance."
+            rows={3}
             size="middle"
-            placeholder="e.g. Towel, ID Card, Water"
-            style={{ width: "100%" }}
-            tokenSeparators={[","]}
-            open={false}
+            style={{ resize: "vertical" }}
           />
         </FormItemAntd>
       </div>
@@ -718,70 +953,67 @@ const TierDetailsTab = ({ field, form }) => {
 const TierPoliciesTab = ({ field, form }) => {
   return (
     <div style={{ paddingTop: "8px" }}>
-      <FormGrid>
-        <div>
-          <StandardLabel
-            icon={FileText}
-            label="Cancellation Notice"
-            help="Minimum notice for refund."
-          />
-          <FormItemAntd
-            {...field}
-            name={[field.name, "cancellationPolicy"]}
-            initialValue="flexible"
-            rules={[{ required: true }]}
-          >
-            <Select size="middle">
-              <Option value="flexible">Flexible (1hr)</Option>
-              <Option value="24h">24 Hours</Option>
-              <Option value="48h">48 Hours</Option>
-              <Option value="72h">72 Hours</Option>
-              <Option value="strict">Strict (Non-refundable)</Option>
-              <Option value="custom">Custom</Option>
-            </Select>
-          </FormItemAntd>
-        </div>
-
-        <Form.Item
-          shouldUpdate={(prev, curr) =>
-            prev.options?.[field.key]?.cancellationPolicy !==
-            curr.options?.[field.key]?.cancellationPolicy
-          }
-          noStyle
+      <div style={{ marginBottom: 16 }}>
+        <StandardLabel
+          icon={Clock}
+          label="Cancellation notice"
+          help="Minimum notice required for a refund."
+        />
+        <FormItemAntd
+          {...field}
+          name={[field.name, "cancellationPolicy"]}
+          initialValue="flexible"
+          rules={[{ required: true }]}
         >
-          {({ getFieldValue }) => {
-            const policy = getFieldValue([
-              "options",
-              field.name,
-              "cancellationPolicy",
-            ]);
-            const isStrict = policy === "strict";
-
-            return (
-              <div>
-                <StandardLabel
-                  icon={Percent}
-                  label="Refund"
-                  help="Amount refunded."
+          <Select size="middle">
+            <Option value="flexible">Flexible (1hr)</Option>
+            <Option value="24h">24 Hours</Option>
+            <Option value="48h">48 Hours</Option>
+            <Option value="72h">72 Hours</Option>
+            <Option value="strict">Strict (Non-refundable)</Option>
+            <Option value="custom">Custom</Option>
+          </Select>
+        </FormItemAntd>
+      </div>
+      <FieldDivider />
+      <Form.Item
+        shouldUpdate={(prev, curr) =>
+          prev.options?.[field.key]?.cancellationPolicy !==
+          curr.options?.[field.key]?.cancellationPolicy
+        }
+        noStyle
+      >
+        {({ getFieldValue }) => {
+          const policy = getFieldValue([
+            "options",
+            field.name,
+            "cancellationPolicy",
+          ]);
+          const isStrict = policy === "strict";
+          return (
+            <div style={{ marginBottom: 16 }}>
+              <StandardLabel
+                icon={Percent}
+                label="Refund amount"
+                help="Percentage refunded when cancelled in time."
+              />
+              <FormItemAntd
+                {...field}
+                name={[field.name, "cancellationRefundPercentage"]}
+                initialValue={100}
+              >
+                <StyledInputNumber
+                  min={0}
+                  max={100}
+                  formatter={(val) => `${val}%`}
+                  disabled={isStrict}
+                  size="middle"
                 />
-                <FormItemAntd
-                  {...field}
-                  name={[field.name, "cancellationRefundPercentage"]}
-                  initialValue={100}
-                >
-                  <StyledInputNumber
-                    min={0}
-                    max={100}
-                    formatter={(val) => `${val}%`}
-                    disabled={isStrict}
-                    size="middle"
-                  />
-                </FormItemAntd>
-              </div>
-            );
-          }}
-        </Form.Item>
-      </FormGrid>
+              </FormItemAntd>
+            </div>
+          );
+        }}
+      </Form.Item>
 
       {/* Custom Hours Expansion */}
       <Form.Item
@@ -803,12 +1035,13 @@ const TierPoliciesTab = ({ field, form }) => {
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
-              style={{ overflow: "hidden", marginTop: 16 }}
+              style={{ overflow: "hidden" }}
             >
+              <FieldDivider />
               <div style={{ marginBottom: 16 }}>
                 <StandardLabel
-                  icon={Clock}
-                  label="Custom Hours Notice"
+                  icon={CalendarDays}
+                  label="Custom hours notice"
                   help="Hours before start required."
                 />
                 <div style={{ display: "flex", gap: "12px" }}>
@@ -895,7 +1128,7 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                 cancellationPolicy: "flexible",
                 cancellationRefundPercentage: 100,
                 level: "all",
-                equipment: [],
+                equipment: "",
                 tags: [],
               },
             ];
@@ -965,7 +1198,12 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
       title: "",
       schedule_mode: "synced",
       level: primaryTier.level || "all",
-      equipment: primaryTier.equipment || [],
+      equipment:
+        typeof primaryTier.equipment === "string"
+          ? primaryTier.equipment
+          : Array.isArray(primaryTier.equipment)
+            ? primaryTier.equipment.join("\n")
+            : "",
       tags: primaryTier.tags || [],
       cancellationPolicy: primaryTier.cancellationPolicy,
       cancellationRefundPercentage: primaryTier.cancellationRefundPercentage,
@@ -977,12 +1215,19 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
     setActiveTier(currentLen);
   };
 
+  const optionsCount = Form.useWatch("options", form)?.length ?? 1;
+  const hasSingleOption = optionsCount === 1;
+
   return (
     <ConfigProvider theme={theme}>
       <StepHeader>
-        <StepTitle level={2}>Experience Configuration</StepTitle>
+        <PageTitle>
+          {hasSingleOption ? "Booking details" : "Booking options"}
+        </PageTitle>
         <StepDescription>
-          Define your ticket tiers, activity details, and cancellation policies.
+          {hasSingleOption
+            ? "Configure who it's for and your cancellation policy."
+            : "Manage your options. Customers will choose one when booking."}
         </StepDescription>
       </StepHeader>
 
@@ -999,17 +1244,29 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
           <Input />
         </Form.Item>
 
-        <StandardLabel
-          icon={Ticket}
-          label="Ticket Tiers & Variations"
-          help="Create standard tickets, VIP options, or different schedules."
-        />
+        {!hasSingleOption && (
+          <StandardLabel
+            icon={Ticket}
+            label="Options"
+            help="Each option can have different features or schedules. Customers pick one when booking."
+          />
+        )}
 
         <Form.List name="options">
           {(fields, { add, remove }) => (
             <>
               <AnimatePresence initial={false}>
                 {fields.map((field, index) => {
+                  if (hasSingleOption) {
+                    return (
+                      <SingleOptionLayout
+                        key={field.key}
+                        field={field}
+                        form={form}
+                      />
+                    );
+                  }
+
                   const isPrimary = index === 0;
                   const isActive = activeTier === index;
                   const tierValues =
@@ -1045,9 +1302,7 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                                 index,
                                 "title",
                               ]) ||
-                                (isPrimary
-                                  ? "Primary Tier"
-                                  : "Untitled Option")}
+                                `Option ${index + 1}`}
                             </h4>
                             <AnimatePresence>
                               {!isActive && (
@@ -1065,10 +1320,10 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                                     style={{ fontSize: "12px" }}
                                   >
                                     {isPrimary
-                                      ? "Main Configuration"
+                                      ? "Primary option"
                                       : tierMode === "synced"
-                                        ? "Synced to Primary Schedule"
-                                        : "Independent Schedule"}
+                                        ? "Same time as primary"
+                                        : "Independent schedule"}
                                   </Text>
                                 </motion.div>
                               )}
@@ -1083,10 +1338,10 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                             gap: "12px",
                           }}
                         >
-                          {isPrimary ? (
-                            <TierBadge $bg="#fef9c3" $color="#854d0e">
-                              Primary
-                            </TierBadge>
+        {isPrimary ? (
+                                          <TierBadge $bg="#fef9c3" $color="#854d0e">
+                                            Option 1
+                                          </TierBadge>
                           ) : tierMode === "independent" ? (
                             <TierBadge $bg="#f1f5f9" $color="#475569">
                               Independent
@@ -1097,9 +1352,9 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                             </TierBadge>
                           )}
 
-                          {!isPrimary && (
-                            <Popconfirm
-                              title="Delete this tier?"
+                                        {!isPrimary && (
+                                          <Popconfirm
+                                            title="Remove this option?"
                               onConfirm={(e) => {
                                 e.stopPropagation();
                                 remove(field.name);
@@ -1188,15 +1443,25 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
               </AnimatePresence>
 
               <FooterActions>
-                <Button
-                  type="dashed"
-                  icon={<Plus size={16} />}
-                  onClick={() => addTier(add)}
-                  block
-                  style={{ height: "48px", maxWidth: "300px" }}
-                >
-                  Add Ticket Tier
-                </Button>
+                {hasSingleOption ? (
+                  <AddOptionLink
+                    type="button"
+                    onClick={() => addTier(add)}
+                  >
+                    <Plus size={16} />
+                    Add another option (e.g. different size or upgrade)
+                  </AddOptionLink>
+                ) : (
+                  <Button
+                    type="dashed"
+                    icon={<Plus size={16} />}
+                    onClick={() => addTier(add)}
+                    block
+                    style={{ height: "48px", maxWidth: "300px" }}
+                  >
+                    Add another option
+                  </Button>
+                )}
               </FooterActions>
             </>
           )}

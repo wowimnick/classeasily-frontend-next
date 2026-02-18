@@ -17,6 +17,7 @@ import BookingTrends from "../_components/tabs/bookings/BookingTrends";
 import Discounts from "../_components/tabs/discounts/Discounts";
 import WidgetCustomizer from "../_components/tabs/widget/WidgetCustomizer";
 import Guests from "../_components/tabs/students/Guests";
+import BusinessMessages from "../_components/tabs/messages/BusinessMessages";
 
 export default function DashboardPage() {
   const params = useParams();
@@ -47,6 +48,9 @@ export default function DashboardPage() {
       break;
     case "staff":
       componentToRender = <Staff />;
+      break;
+    case "messages":
+      componentToRender = <BusinessMessages />;
       break;
     case "revenue":
       componentToRender = <Revenue />;

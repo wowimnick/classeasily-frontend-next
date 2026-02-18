@@ -630,6 +630,7 @@ const menuItemsConfig = [
       { key: "guests", label: "Guests" },
       { key: "reviews", label: "Reviews & Feedback" },
       { key: "staff", label: "Staff Management" },
+      { key: "messages", label: "Messages" },
     ],
   },
   // 5. Results: Financials
@@ -700,6 +701,7 @@ const menuItemPermissions = {
   discounts: "manage_own_business_discounts",
   trends: "view_own_booking_analytics",
   staff: "manage_business_staff",
+  messages: "view_own_business_bookings",
   widget: "manage_own_business_profile",
   settings: "manage_own_business_profile",
 };

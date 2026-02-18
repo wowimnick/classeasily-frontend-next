@@ -25,6 +25,11 @@ import {
 import { motion } from "framer-motion";
 import { theme } from "@/components/theme";
 import { useClass } from "../ClassContext";
+import {
+  bookingTheme,
+  PageTitle,
+  FieldDivider,
+} from "../../_shared/BookingFlowDesign";
 import { businessClassService } from "@/services/apiService";
 import debounce from "lodash/debounce";
 
@@ -61,56 +66,45 @@ const StyledForm = styled(Form)`
 `;
 const StepHeader = styled.div`
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 24px;
   position: relative;
 `;
-const StepTitle = styled(Title)`
-  margin-bottom: ${(props) => props.theme.token.marginXS}px !important;
-  color: ${(props) => props.theme.token.colorText};
-  font-size: 28px !important;
-  font-weight: 700 !important;
-`;
-const StepDescription = styled(Text)`
-  display: block;
-  color: ${(props) => props.theme.token.colorTextSecondary};
-  font-size: ${(props) => props.theme.token.fontSizeLG || "16px"};
-  margin-bottom: ${(props) => props.theme.token.marginLG}px;
-  line-height: 1.6;
+const StepDescription = styled.div`
+  font-size: 15px;
+  max-width: 560px;
+  margin: 0 auto;
+  color: #000;
+  line-height: 1.5;
 `;
 const SectionDivider = styled.div`
   display: flex;
   align-items: center;
-  margin: 2rem 0;
+  margin: 24px 0;
   &::before,
   &::after {
     content: "";
     flex: 1;
-    height: 2px;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      ${(props) => props.theme.token.colorBorder} 20%,
-      ${(props) => props.theme.token.colorBorder} 80%,
-      transparent 100%
-    );
+    height: 1px;
+    background: ${bookingTheme.borderLight};
   }
   span {
     padding: 0 1rem;
-    color: ${(props) => props.theme.token.colorTextSecondary};
-    font-weight: 500;
-    font-size: 14px;
+    color: ${bookingTheme.textSecondary};
+    font-weight: 600;
+    font-size: 15px;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: ${(props) => props.theme.token.colorBgContainer};
-    border-radius: 20px;
-    padding: 0.5rem 1rem;
-    border: 1px solid ${(props) => props.theme.token.colorBorder};
   }
 `;
 const FormSection = styled(motion.div)`
-  margin-bottom: 2rem;
-  border-radius: 12px;
+  margin-bottom: 24px;
+  background: ${bookingTheme.bg};
+  border: 1px solid ${bookingTheme.borderLight};
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  padding: 20px;
 `;
 const FormGroup = styled.div`
   margin-bottom: ${(props) =>
@@ -718,7 +712,7 @@ const BasicInfoStep = ({ onValidatedNext }) => {
   return (
     <ConfigProvider theme={theme}>
       <StepHeader>
-        <StepTitle level={2}>The Experience</StepTitle>
+        <PageTitle>The Experience</PageTitle>
         <StepDescription>
           Showcase what makes your experience unique. Great photos and a
           compelling story help guests imagine themselves there.
@@ -763,6 +757,8 @@ const BasicInfoStep = ({ onValidatedNext }) => {
               />
             </Form.Item>
           </FormGroup>
+
+          <FieldDivider />
 
           <FormGroup>
             <FormLabel>

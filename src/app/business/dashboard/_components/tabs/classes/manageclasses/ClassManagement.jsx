@@ -843,6 +843,219 @@ const StyledMenu = styled(Menu)`
   }
 `;
 
+/* --- Table row content redesign: cell blocks --- */
+const RowCellExperience = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 0;
+  min-width: 0;
+`;
+const RowCellExperienceImage = styled.div`
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 100%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+const RowCellExperienceBody = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+const RowCellExperienceTitle = styled.span`
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+`;
+const RowCellExperienceMeta = styled.div`
+  min-width: 0;
+`;
+const RowCellExperienceDescription = styled.div`
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  word-break: break-word;
+`;
+const RowCellPill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  &.pill-type-course {
+    background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+    color: #5b21b6;
+  }
+  &.pill-type-single {
+    background: linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%);
+    color: #0e7490;
+  }
+  &.pill-category {
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 500;
+    text-transform: none;
+  }
+`;
+
+const RowCellSchedule = styled.div`
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  max-width: 300px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid ${(p) => (p.$hasSchedules ? "#bbf7d0" : "#fecaca")};
+  background: ${(p) => (p.$hasSchedules ? "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)" : "linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)")};
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+`;
+const RowCellScheduleIcon = styled.div`
+  width: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${(p) => (p.$hasSchedules ? "rgba(22, 163, 74, 0.15)" : "rgba(220, 38, 38, 0.15)")};
+  svg { flex-shrink: 0; }
+`;
+const RowCellScheduleText = styled.div`
+  flex: 1;
+  padding: 8px 12px;
+  min-width: 0;
+`;
+const RowCellSchedulePrimary = styled.div`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${(p) => (p.$hasSchedules ? "#166534" : "#991b1b")};
+  line-height: 1.35;
+`;
+const RowCellScheduleSecondary = styled.div`
+  font-size: 11px;
+  color: ${(p) => (p.$hasSchedules ? "#15803d" : "#b91c1c")};
+  margin-top: 2px;
+  opacity: 0.9;
+`;
+
+const RowCellStatus = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 12px 4px 8px;
+  border-radius: 12px;
+  cursor: ${(p) => (p.$loading ? "wait" : "pointer")};
+  opacity: ${(p) => (p.$loading ? 0.75 : 1)};
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+  border: 1px solid ${(p) => (p.$active ? "#a7f3d0" : "#fecaca")};
+  background: ${(p) => (p.$active ? "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)" : "linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)")};
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  &:hover {
+    box-shadow: ${(p) => (p.$loading ? "0 2px 6px rgba(0, 0, 0, 0.05)" : "0 4px 12px rgba(0, 0, 0, 0.08)")};
+  }
+`;
+const RowCellStatusLabel = styled.span`
+  font-size: 13px;
+  font-weight: 700;
+  color: ${(p) => (p.$active ? "#065f46" : "#991b1b")};
+  letter-spacing: 0.02em;
+`;
+const RowCellStatusNeedsConfig = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fcd34d;
+  font-size: 12px;
+  font-weight: 600;
+  color: #92400e;
+`;
+
+const RowCellActions = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+`;
+const RowCellActionBtn = styled(Button)`
+  height: 34px;
+  min-width: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  &:hover {
+    border-color: #ff385c;
+    color: #ff385c;
+    background: #fff5f7;
+  }
+  &.primary-action {
+    background: linear-gradient(135deg, #ff385c 0%, #e11d48 100%);
+    border: none;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(255, 56, 92, 0.35);
+  }
+  &.primary-action:hover {
+    background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 12px rgba(255, 56, 92, 0.4);
+  }
+`;
+const RowCellActionIconBtn = styled(Button)`
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  &:hover {
+    border-color: #cbd5e1;
+    color: #334155;
+    background: #f8fafc;
+  }
+`;
+
 const EmptyStateContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -1156,162 +1369,115 @@ function ClassManagementContent(props) {
     [classes, searchText, viewType], // viewType added as dependency
   );
 
+  // Responsive column widths so table fits viewport and avoids horizontal scroll
+  const columnWidths = useMemo(() => {
+    if (screens.xxl) return { class: 400, schedule: 350, status: 160, actions: 220 };
+    if (screens.xl) return { class: 340, schedule: 320, status: 150, actions: 210 };
+    if (screens.lg) return { class: 280, schedule: 260, status: 130, actions: 190 };
+    // md and up (table is only shown from md up)
+    return { class: 220, schedule: 200, status: 110, actions: 170 };
+  }, [screens.xxl, screens.xl, screens.lg]);
+
   const columns = [
     {
       title: "Experience",
       dataIndex: "title",
       key: "class",
-      width: 400,
+      width: columnWidths.class,
       render: (text, record) => {
-        const categoryDisplay = [record.category_name, record.subcategory_name]
-          .filter(Boolean)
-          .join(" / ");
-
-        // MODIFIED: Use formatClassType helper
-        const typeInfo = formatClassType(record.options?.[0]?.booking_type);
+        const hasScheduleWarning = needsSchedulesWarning(record.last_schedule_date);
+        const rawDescription = record.description ?? "";
+        const plainDescription =
+          typeof rawDescription === "string"
+            ? rawDescription.replace(/<[^>]*>/g, "").trim()
+            : "";
 
         return (
-          <Space size="middle">
-            <Avatar
-              shape="square"
-              size={56}
-              src={record.coverImageUrl}
-              icon={<ImageIcon size={24} />}
-              style={{ borderRadius: "8px", backgroundColor: "#f3f4f6" }}
-            />
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "4px" }}
-            >
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "8px" }}
-              >
-                <Text strong style={{ fontSize: "15px" }}>
-                  {text || "Untitled Experience"}
-                </Text>
-                {needsSchedulesWarning(record.last_schedule_date) && (
-                  <Tooltip title="This experience is running out of available schedules and may not be visible to new guests.">
-                    <AlertTriangle size={16} color={colors.warning} />
-                  </Tooltip>
-                )}
-              </div>
-              <Space size={4} style={{ display: "flex", alignItems: "center" }}>
-                {/* MODIFIED: Add type tag */}
-                <Tag
-                  icon={typeInfo.icon}
-                  color={typeInfo.color}
-                  bordered={false}
+          <RowCellExperience>
+            <RowCellExperienceImage>
+              {record.coverImageUrl ? (
+                <img src={record.coverImageUrl} alt="" />
+              ) : (
+                <div
                   style={{
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                    display: "inline-flex",
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
                     alignItems: "center",
-                    gap: "4px",
-                    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
+                    justifyContent: "center",
+                    color: "#94a3b8",
                   }}
                 >
-                  {typeInfo.label}
-                </Tag>
-                {categoryDisplay && (
-                  <CategoryTag
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px",
-                    }}
-                  >
-                    <TagIcon size={12} /> {categoryDisplay}
-                  </CategoryTag>
+                  <ImageIcon size={22} />
+                </div>
+              )}
+            </RowCellExperienceImage>
+            <RowCellExperienceBody>
+              <RowCellExperienceTitle>
+                {text || "Untitled Experience"}
+                {hasScheduleWarning && (
+                  <Tooltip title="This experience is running out of available schedules and may not be visible to new guests.">
+                    <span style={{ display: "inline-flex", lineHeight: 1 }}>
+                      <AlertTriangle size={18} color={colors.warning} />
+                    </span>
+                  </Tooltip>
                 )}
-              </Space>
-            </div>
-          </Space>
+              </RowCellExperienceTitle>
+              {plainDescription ? (
+                <RowCellExperienceMeta>
+                  <RowCellExperienceDescription title={plainDescription}>
+                    {plainDescription}
+                  </RowCellExperienceDescription>
+                </RowCellExperienceMeta>
+              ) : null}
+            </RowCellExperienceBody>
+          </RowCellExperience>
         );
       },
     },
-    // MODIFIED: New column for Schedule Info with enhanced design
     {
       title: "Schedule",
       key: "schedule",
-      width: 350,
+      width: columnWidths.schedule,
       render: (_, record) => {
         const scheduleInfo = formatScheduleInfo(record);
         const hasSchedules = !!record.last_schedule_date;
         const isCourse = record.options?.[0]?.booking_type === "Full Course";
 
         return (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              padding: "8px 12px",
-              background: hasSchedules ? "#f0fdf4" : "#fef2f2",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
-              borderRadius: "8px",
-              transition: "all 0.2s ease",
-              maxWidth: "320px",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "32px",
-                height: "32px",
-                borderRadius: "6px",
-                background: hasSchedules ? "#dcfce7" : "#fee2e2",
-                flexShrink: 0,
-              }}
-            >
+          <RowCellSchedule $hasSchedules={hasSchedules}>
+            <RowCellScheduleIcon $hasSchedules={hasSchedules}>
               {isCourse ? (
-                <BookOpen
-                  size={16}
-                  color={hasSchedules ? "#16a34a" : "#dc2626"}
-                />
+                <BookOpen size={20} color={hasSchedules ? "#16a34a" : "#dc2626"} />
               ) : (
-                <Clock size={16} color={hasSchedules ? "#16a34a" : "#dc2626"} />
+                <Clock size={20} color={hasSchedules ? "#16a34a" : "#dc2626"} />
               )}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <Text
-                style={{
-                  fontSize: "13px",
-                  color: hasSchedules ? "#166534" : "#991b1b",
-                  fontWeight: 500,
-                  display: "block",
-                  lineHeight: "1.4",
-                }}
-              >
+            </RowCellScheduleIcon>
+            <RowCellScheduleText>
+              <RowCellSchedulePrimary $hasSchedules={hasSchedules}>
                 {scheduleInfo}
-              </Text>
+              </RowCellSchedulePrimary>
               {hasSchedules && (
-                <Text
-                  type="secondary"
-                  style={{
-                    fontSize: "11px",
-                    color: "#16a34a",
-                    display: "block",
-                  }}
-                >
+                <RowCellScheduleSecondary $hasSchedules={hasSchedules}>
                   {isCourse ? "Course active" : "Sessions available"}
-                </Text>
+                </RowCellScheduleSecondary>
               )}
-            </div>
-          </div>
+            </RowCellScheduleText>
+          </RowCellSchedule>
         );
       },
     },
     {
       title: "Status",
       key: "status",
-      width: 150,
+      width: columnWidths.status,
       render: (_, record) => {
         if (!record.option) {
           return (
-            <StatusTag>
-              <AlertTriangle size={12} /> Needs Config
-            </StatusTag>
+            <RowCellStatusNeedsConfig>
+              <AlertTriangle size={14} />
+              Needs Config
+            </RowCellStatusNeedsConfig>
           );
         }
         const isActive = record.status === "active";
@@ -1322,31 +1488,17 @@ function ClassManagementContent(props) {
             title={
               isLoading
                 ? "Updating..."
-                : `Click to set experience to ${
-                    isActive ? "Inactive" : "Active"
-                  }`
+                : `Set experience to ${isActive ? "Inactive" : "Active"}`
             }
           >
-            <div
+            <RowCellStatus
+              $active={isActive}
+              $loading={isLoading}
               onClick={(e) => {
                 e.stopPropagation();
                 if (!isLoading) {
                   toggleClassVisibility(record.classId, record.status);
                 }
-              }}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "8px 14px",
-                background: isActive ? "#ecfdf5" : "#fef2f2",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.06)",
-                borderRadius: "10px",
-                transition: "all 0.3s ease",
-                cursor: isLoading ? "wait" : "pointer",
-                opacity: isLoading ? 0.7 : 1,
-                width: "140px", // FIX: Added fixed width
-                justifyContent: "center", // FIX: Centered content
               }}
             >
               <CustomSwitch
@@ -1354,18 +1506,10 @@ function ClassManagementContent(props) {
                 $loading={isLoading}
                 $disabled={isLoading}
               />
-              <Text
-                strong
-                style={{
-                  fontSize: "13px",
-                  color: isActive ? "#065f46" : "#991b1b",
-                  fontWeight: 600,
-                  lineHeight: "1",
-                }}
-              >
+              <RowCellStatusLabel $active={isActive}>
                 {isActive ? "Active" : "Inactive"}
-              </Text>
-            </div>
+              </RowCellStatusLabel>
+            </RowCellStatus>
           </Tooltip>
         );
       },
@@ -1374,9 +1518,8 @@ function ClassManagementContent(props) {
       title: "Actions",
       key: "actions",
       align: "right",
-      width: 200,
+      width: columnWidths.actions,
       render: (_, record) => {
-        // MODIFIED: Check class type
         const isCourse = record.options?.[0]?.booking_type === "Full Course";
 
         const menu = (
@@ -1399,42 +1542,43 @@ function ClassManagementContent(props) {
           </StyledMenu>
         );
 
+        const primaryLabel = record.option ? "Schedules" : "Configure";
+        const primaryClick = () => {
+          if (record.option) {
+            if (isCourse) openCourseSchedulesModal(record);
+            else openSchedulesModal(record);
+          } else {
+            handleEditClass(record);
+          }
+        };
+
         return (
-          <Space size="small" onClick={(e) => e.stopPropagation()}>
+          <RowCellActions onClick={(e) => e.stopPropagation()}>
             <Tooltip
               title={
                 record.option
-                  ? "Manage experience times, dates, and prices"
-                  : "Complete experience setup to add schedules"
+                  ? "Manage times, dates, and prices"
+                  : "Complete setup to add schedules"
               }
             >
-              <Button
-                onClick={() => {
-                  if (record.option) {
-                    // MODIFIED: Open correct modal depending on type
-                    if (isCourse) {
-                      openCourseSchedulesModal(record);
-                    } else {
-                      openSchedulesModal(record);
-                    }
-                  } else {
-                    handleEditClass(record);
-                  }
-                }}
+              <RowCellActionBtn
+                type="button"
+                className="primary-action"
+                onClick={primaryClick}
+                icon={<Calendar size={16} />}
               >
-                {record.option ? "Manage Schedules" : "Configure Experience"}
-              </Button>
+                {primaryLabel}
+              </RowCellActionBtn>
             </Tooltip>
-            <Dropdown
-              overlay={menu}
-              trigger={["click"]}
-              placement="bottomRight"
-            >
-              <Tooltip title="More experience options">
-                <TableActionButton icon={<MoreVertical size={16} />} />
+            <Dropdown overlay={menu} trigger={["click"]} placement="bottomRight">
+              <Tooltip title="More options">
+                <RowCellActionIconBtn
+                  type="button"
+                  icon={<MoreVertical size={18} />}
+                />
               </Tooltip>
             </Dropdown>
-          </Space>
+          </RowCellActions>
         );
       },
     },
@@ -1666,7 +1810,7 @@ function ClassManagementContent(props) {
               dataSource={filteredClasses}
               rowKey="classId"
               pagination={false}
-              scroll={{ x: "max-content" }}
+              scroll={undefined}
               onRow={(record) => ({
                 onClick: () => {
                   if (record.option) {

@@ -43,7 +43,7 @@ const defaultInitialState = {
       title: "General Admission",
       schedule_mode: "primary",
       booking_type: "Single Session",
-      equipment: [],
+      equipment: "",
       tags: [],
     },
   ],
@@ -95,7 +95,7 @@ const classReducer = (state, action) => {
                 title: "General Admission",
                 schedule_mode: "primary",
                 booking_type: "Single Session",
-                equipment: [],
+                equipment: "",
                 tags: [],
               },
             ];
@@ -107,7 +107,9 @@ const classReducer = (state, action) => {
         // Enforce Primary rule on index 0
         schedule_mode: index === 0 ? "primary" : opt.schedule_mode || "synced",
         title: opt.title || (index === 0 ? "General Admission" : ""),
-        equipment: opt.equipment || [],
+        equipment: Array.isArray(opt.equipment)
+          ? opt.equipment.join("\n")
+          : (opt.equipment ?? ""),
         tags: opt.tags || [],
       }));
 

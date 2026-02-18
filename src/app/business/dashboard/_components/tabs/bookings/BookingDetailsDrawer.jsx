@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import styled, { keyframes } from "styled-components";
 import {
   Typography,
@@ -685,6 +686,7 @@ const BookingDetailsDrawer = ({
   onBookingCancel,
   onReschedule,
 }) => {
+  const router = useRouter();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -1258,33 +1260,50 @@ const BookingDetailsDrawer = ({
     );
   };
 
+  const handleMessageGuest = () => {
+    if (booking?.id) {
+      onClose();
+      router.push(`/business/dashboard/messages?booking_id=${booking.id}`);
+    }
+  };
+
   const renderFooter = () => {
-    if (!loading && booking && booking.status === "confirmed") {
+    if (!loading && booking) {
       return (
         <DrawerFooter>
           <ActionSection>
-            <Button icon={<Repeat size={16} />} onClick={handleRescheduleClick}>
-              Reschedule
-            </Button>
-            <Popconfirm
-              title="Are you sure you want to cancel?"
-              description="The guest will be notified and a refund may be initiated."
-              onConfirm={handleInternalCancel}
-              okText="Yes, Cancel Booking"
-              cancelText="No"
-              placement="topRight"
-              disabled={isCancelling}
+            <Button
+              icon={<MessageSquare size={16} />}
+              onClick={handleMessageGuest}
             >
-              <Button
-                type="primary"
-                danger
-                icon={<XCircle size={16} />}
-                loading={isCancelling}
-                key={`btn-${isCancelling}`}
-              >
-                Cancel Booking
-              </Button>
-            </Popconfirm>
+              Message guest
+            </Button>
+            {booking.status === "confirmed" && (
+              <>
+                <Button icon={<Repeat size={16} />} onClick={handleRescheduleClick}>
+                  Reschedule
+                </Button>
+                <Popconfirm
+                  title="Are you sure you want to cancel?"
+                  description="The guest will be notified and a refund may be initiated."
+                  onConfirm={handleInternalCancel}
+                  okText="Yes, Cancel Booking"
+                  cancelText="No"
+                  placement="topRight"
+                  disabled={isCancelling}
+                >
+                  <Button
+                    type="primary"
+                    danger
+                    icon={<XCircle size={16} />}
+                    loading={isCancelling}
+                    key={`btn-${isCancelling}`}
+                  >
+                    Cancel Booking
+                  </Button>
+                </Popconfirm>
+              </>
+            )}
           </ActionSection>
         </DrawerFooter>
       );
