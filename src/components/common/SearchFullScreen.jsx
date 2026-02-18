@@ -436,7 +436,13 @@ export default function SearchFullScreen() {
   const renderLocationList = () => {
     const hasTerm = searchTerm && searchTerm.trim().length > 0;
     const trimmed = (searchTerm || "").trim().toLowerCase();
-    const isPresetTerm = trimmed && GTA_PRESETS.some((p) => p.name.toLowerCase() === trimmed);
+    const isPresetTerm =
+      trimmed &&
+      GTA_PRESETS.some(
+        (p) =>
+          p.name.toLowerCase() === trimmed ||
+          (p.displayName && p.displayName.toLowerCase() === trimmed)
+      );
     // When selected location is a preset (e.g. Toronto, Vaughan), still show presets under "Explore nearby"
     const usePresets = !hasTerm || isPresetTerm;
     const list = usePresets ? GTA_PRESETS : geocodedAddressResults;
@@ -456,7 +462,7 @@ export default function SearchFullScreen() {
     }
 
     return (list || []).map((item, idx) => {
-      const name = usePresets ? item.name : (item.displayName || "").split(",")[0];
+      const name = usePresets ? (item.displayName || item.name) : (item.displayName || "").split(",")[0];
       const desc = usePresets ? item.description : item.displayName;
       
       // Cycle through palette based on index

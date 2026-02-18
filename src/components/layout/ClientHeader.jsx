@@ -919,7 +919,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
         <LocationOption
           key={idx}
           onClick={() => {
-            handleLocationSelect(area.name, {
+            handleLocationSelect(area.displayName || area.name, {
               coordinates: area.coords,
               citySlug: area.citySlug,
               provinceSlug: area.provinceSlug,
@@ -941,7 +941,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
           }}
         >
           <span style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>
-            {area.name}
+            {area.displayName || area.name}
           </span>
           <span style={{ fontSize: 12, color: "#717171" }}>
             {area.description}
