@@ -1,20 +1,23 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styled from "styled-components";
-import { X, ArrowLeft, ChevronLeft } from "lucide-react";
+import { X, ChevronLeft } from "lucide-react";
 import dynamic from "next/dynamic";
 import Lottie from "lottie-react";
-import posthog from "posthog-js";
-import { trackPurchaseIfProduction } from "@/lib/metaPixel";
-import { paymentService } from "@/services/apiService";
+import { paymentService, scheduleService } from "@/services/apiService";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { classService } from "@/services/apiService";
 import { motion, AnimatePresence } from "framer-motion";
+import { Drawer } from "vaul";
 import ClientHeader from "@/components/layout/ClientHeader";
 import loadingAnimation from "@/assets/animations/Scene.json";
+import { getLocalYYYYMMDD } from "@/services/utils";
+import { formatTimeRangeForDisplay, formatNaiveDate } from "@/services/utils";
+import { getDurationText } from "@/app/classes/_components/steps/utils";
+import MiniCalendar from "@/app/classes/_components/MiniCalendar";
 
 const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
 
@@ -262,6 +265,143 @@ const ConfirmButton = styled(motion.button)`
   }
 `;
 
+const ChangeDateDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 3000;
+`;
+const ChangeDateDrawerContent = styled(Drawer.Content)`
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  max-height: 90vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 3001;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
+  outline: none;
+`;
+const ChangeDateDrawerHandle = styled.div`
+  width: 40px;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  margin: 12px auto;
+`;
+const ChangeDateTimeList = styled.div`
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+`;
+const ChangeDateTimeRow = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: #fff;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  width: 100%;
+  transition: background 0.2s;
+  &:first-of-type {
+    border-top: none;
+  }
+  &:hover {
+    background: rgba(255, 56, 92, 0.04);
+  }
+`;
+
+const ChangeParticipantsDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 3000;
+`;
+const ChangeParticipantsDrawerContent = styled(Drawer.Content)`
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  max-height: 90vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 3001;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
+  outline: none;
+`;
+const ChangeParticipantsDrawerHandle = styled.div`
+  width: 40px;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  margin: 12px auto;
+`;
+const ParticipantsStepperWrap = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 24px 1rem;
+`;
+const ParticipantsStepperBtn = styled.button`
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: white;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s;
+  &:hover:not(:disabled) {
+    background: #f9fafb;
+    border-color: #ff385c;
+    color: #ff385c;
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+`;
+const ParticipantsStepperValue = styled.span`
+  font-size: 1.25rem;
+  font-weight: 700;
+  min-width: 2rem;
+  text-align: center;
+`;
+const ParticipantsApplyButton = styled.button`
+  margin: 0 1rem 1.5rem;
+  padding: 14px 24px;
+  background: #ff385c;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  &:hover {
+    background: #e62e4e;
+  }
+`;
+
 export default function ClassCheckoutClient({ slug, initialClassData }) {
   const router = useRouter();
   const { user: currentUser } = useAuthUser();
@@ -270,6 +410,25 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
   const [loading, setLoading] = useState(true);
   const [paymentAction, setPaymentAction] = useState(null);
   const cancelledIntentRef = useRef(false);
+
+  const [changeDateDrawerOpen, setChangeDateDrawerOpen] = useState(false);
+  const [changeTimeDrawerOpen, setChangeTimeDrawerOpen] = useState(false);
+  const [changeDateAvailableSlots, setChangeDateAvailableSlots] = useState({});
+  const [changeDateLoading, setChangeDateLoading] = useState(false);
+  const [changeDateSelectedDate, setChangeDateSelectedDate] = useState(null);
+  const [changeDateCalendarMonth, setChangeDateCalendarMonth] = useState(() => new Date());
+  const [changeTimeLoading, setChangeTimeLoading] = useState(false);
+
+  const [changeParticipantsDrawerOpen, setChangeParticipantsDrawerOpen] = useState(false);
+  const [participantsDraft, setParticipantsDraft] = useState(1);
+
+  const [isMobileView, setIsMobileView] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobileView(typeof window !== "undefined" && window.innerWidth < 969);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || !slug) return;
@@ -411,47 +570,6 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
         classData,
       };
 
-      // --- Analytics: fire only when booking actually completed (has booking_id) ---
-      const revenue = (bookingData?.price || 0) * (bookingData?.participants || 1);
-      if (dataFromReviewStep.booking_id) {
-        // PostHog: booking_completed
-        posthog.capture("booking_completed", {
-          class_id: classData?.classId || classData?.id,
-          class_title: classData?.title,
-          business_name: classData?.business_name,
-          booking_id: dataFromReviewStep.booking_id,
-          revenue,
-          currency: classData?.currency_code || "CAD",
-          participants: bookingData?.participants ?? 1,
-        });
-
-        // Meta Pixel: Purchase only on classeasily.com (value, currency, content_ids, etc.)
-        const userEmail = bookingData?.email || bookingData?.userEmail;
-        const fullName = bookingData?.fullName || bookingData?.userName || "";
-        const nameParts = fullName.trim().split(" ");
-        trackPurchaseIfProduction(
-          {
-            value: revenue,
-            currency: classData?.currency_code || "CAD",
-            content_name: classData?.title,
-            content_ids: [classData?.classId || classData?.id].filter(Boolean),
-            content_type: "product",
-            num_items: bookingData?.participants ?? 1,
-            order_id: dataFromReviewStep.booking_id || dataFromReviewStep.payment_intent_id,
-          },
-          {
-            em: userEmail,
-            ph: bookingData?.phone || bookingData?.userPhone,
-            fn: nameParts[0] || "",
-            ln: nameParts.length > 1 ? nameParts.slice(1).join(" ") : "",
-            ct: bookingData?.city,
-            st: bookingData?.state,
-            zp: bookingData?.zipCode,
-            country: "ca",
-          }
-        );
-      }
-
       sessionStorage.setItem(
         "classeasily_booking_success",
         JSON.stringify(successPayload)
@@ -466,11 +584,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
     (data) => {
       setBookingData((prev) => {
         const next = prev ? { ...prev, ...data } : prev;
-        if (
-          next &&
-          slug &&
-          (data.paymentIntentId != null || data.clientSecret != null)
-        ) {
+        if (next && slug) {
           try {
             const raw = sessionStorage.getItem(CHECKOUT_STORAGE_KEY);
             if (raw) {
@@ -498,6 +612,138 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
     typeof Intl !== "undefined"
       ? Intl.DateTimeFormat().resolvedOptions().timeZone
       : "America/Toronto";
+
+  const changeDateMinSelectable = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 2);
+    return d;
+  }, []);
+  const changeDateToday = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+
+  useEffect(() => {
+    if (!changeDateDrawerOpen || !bookingData?.selectedOption?.optionId) return;
+    const slot = bookingData.selectedSlots?.[0];
+    if (slot?.date) {
+      const [y, m, d] = slot.date.split("-").map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      setChangeDateSelectedDate(dateObj);
+      setChangeDateCalendarMonth(dateObj);
+    }
+    const optionId = bookingData.selectedOption.optionId;
+    setChangeDateLoading(true);
+    const start = slot?.date
+      ? (() => {
+          const [yr, mo] = slot.date.split("-").map(Number);
+          return new Date(yr, mo - 1, 1);
+        })()
+      : new Date();
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + 2, 1);
+    scheduleService
+      .getAvailabilityForOption(optionId, {
+        start_date: getLocalYYYYMMDD(start),
+        end_date: getLocalYYYYMMDD(end),
+      })
+      .then((res) => {
+        if (res && typeof res === "object") setChangeDateAvailableSlots(res);
+      })
+      .finally(() => setChangeDateLoading(false));
+  }, [changeDateDrawerOpen, bookingData?.selectedOption?.optionId, bookingData?.selectedSlots]);
+
+  useEffect(() => {
+    if (!changeTimeDrawerOpen || !bookingData?.selectedOption?.optionId) return;
+    const dateStr = changeDateSelectedDate
+      ? getLocalYYYYMMDD(changeDateSelectedDate)
+      : bookingData?.selectedSlots?.[0]?.date;
+    if (!dateStr || changeDateAvailableSlots[dateStr]) return;
+    setChangeTimeLoading(true);
+    const [y, m] = dateStr.split("-").map(Number);
+    const start = new Date(y, m - 1, 1);
+    const end = new Date(y, m, 0);
+    scheduleService
+      .getAvailabilityForOption(bookingData.selectedOption.optionId, {
+        start_date: getLocalYYYYMMDD(start),
+        end_date: getLocalYYYYMMDD(end),
+      })
+      .then((res) => {
+        if (res && typeof res === "object")
+          setChangeDateAvailableSlots((prev) => ({ ...prev, ...res }));
+      })
+      .finally(() => setChangeTimeLoading(false));
+  }, [changeTimeDrawerOpen, changeDateSelectedDate, bookingData?.selectedOption?.optionId, bookingData?.selectedSlots?.[0]?.date, changeDateAvailableSlots]);
+
+  useEffect(() => {
+    if (changeParticipantsDrawerOpen && bookingData) {
+      setParticipantsDraft(Math.max(1, bookingData.participants || 1));
+    }
+  }, [changeParticipantsDrawerOpen, bookingData?.participants]);
+
+  const handleChangeDateSelect = useCallback((date) => {
+    setChangeDateSelectedDate(date);
+    setChangeDateDrawerOpen(false);
+    setChangeTimeDrawerOpen(true);
+  }, []);
+  const handleChangeDateMonthChange = useCallback((direction) => {
+    setChangeDateCalendarMonth((prev) => {
+      const next = new Date(prev);
+      next.setMonth(prev.getMonth() + direction, 1);
+      return next;
+    });
+  }, []);
+  const handleChangeTimeSelect = useCallback(
+    (slot) => {
+      if (!bookingData) return;
+      const dateStr =
+        changeDateSelectedDate
+          ? getLocalYYYYMMDD(changeDateSelectedDate)
+          : bookingData?.selectedSlots?.[0]?.date;
+      if (!dateStr) return;
+      const participants = Math.min(
+        bookingData.participants || 2,
+        slot.available_spots ?? 2
+      );
+      const newSlot = {
+        id: slot.instance_id,
+        date: dateStr,
+        time: slot.time,
+        available_spots: slot.available_spots,
+        price: slot.price,
+        duration: slot.duration,
+        minParticipants: slot.min_participants,
+      };
+      handleUpdateBookingData({
+        selectedSlots: [newSlot],
+        participants,
+        participant_details: Array.from({ length: participants }, () => ({ name: bookingData.participant_details?.[0]?.name || "" })),
+        price: parseFloat(slot.price) || 0,
+      });
+      setChangeDateSelectedDate(null);
+      setChangeTimeDrawerOpen(false);
+    },
+    [changeDateSelectedDate, bookingData, handleUpdateBookingData]
+  );
+
+  const changeParticipantsMax = useMemo(() => {
+    const slot = bookingData?.selectedSlots?.[0];
+    const spots = slot?.available_spots;
+    if (spots != null && typeof spots === "number") return Math.max(1, spots);
+    return 20;
+  }, [bookingData?.selectedSlots]);
+
+  const handleChangeParticipantsApply = useCallback(() => {
+    const count = Math.min(Math.max(1, participantsDraft), changeParticipantsMax);
+    const existingName = bookingData?.participant_details?.[0]?.name || "";
+    handleUpdateBookingData({
+      participants: count,
+      participant_details: Array.from({ length: count }, () => ({ name: existingName })),
+    });
+    setChangeParticipantsDrawerOpen(false);
+  }, [participantsDraft, changeParticipantsMax, bookingData?.participant_details, handleUpdateBookingData]);
 
   const handleCloseCheckout = () => {
     const intentId = bookingData?.paymentIntentId;
@@ -599,6 +845,9 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
             userTimeZone={userTimeZone}
             businessTimeZone={businessTimeZone}
             confirmFooter={FooterContent}
+            onRequestChangeDate={isMobileView ? () => setChangeDateDrawerOpen(true) : undefined}
+            onRequestChangeTime={isMobileView ? () => setChangeTimeDrawerOpen(true) : undefined}
+            onRequestChangeParticipants={isMobileView ? () => setChangeParticipantsDrawerOpen(true) : undefined}
           />
 
           {/* Mobile Floating Footer */}
@@ -619,6 +868,146 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
             </AnimatePresence>
           </MobileFooterWrap>
         </MainContainer>
+
+        {/* Date drawer: calendar only. Selecting a date closes this and opens the time drawer. */}
+        <Drawer.Root open={changeDateDrawerOpen} onOpenChange={setChangeDateDrawerOpen} shouldScaleBackground>
+          <Drawer.Portal>
+            <ChangeDateDrawerOverlay />
+            <ChangeDateDrawerContent>
+              <ChangeDateDrawerHandle />
+              <div style={{ padding: "0 1rem 1rem", overflowY: "auto" }}>
+                <h3 style={{ margin: "0 0 1.25rem", fontSize: "1.125rem", fontWeight: 700, color: "#111", textAlign: "center" }}>
+                  Pick a date
+                </h3>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: "1rem" }}>
+                  <MiniCalendar
+                    availableSlots={changeDateAvailableSlots}
+                    loading={changeDateLoading}
+                    selectedDate={changeDateSelectedDate}
+                    onDateSelect={handleChangeDateSelect}
+                    currentDate={changeDateCalendarMonth}
+                    onMonthChange={handleChangeDateMonthChange}
+                    minSelectableDate={changeDateMinSelectable}
+                    today={changeDateToday}
+                  />
+                </div>
+              </div>
+            </ChangeDateDrawerContent>
+          </Drawer.Portal>
+        </Drawer.Root>
+
+        {/* Time drawer: time list only (for current booking date or date just chosen in date drawer). */}
+        <Drawer.Root
+          open={changeTimeDrawerOpen}
+          onOpenChange={(open) => {
+            setChangeTimeDrawerOpen(open);
+            if (!open) setChangeDateSelectedDate(null);
+          }}
+          shouldScaleBackground
+        >
+          <Drawer.Portal>
+            <ChangeDateDrawerOverlay />
+            <ChangeDateDrawerContent>
+              <ChangeDateDrawerHandle />
+              <div style={{ padding: "0 1rem 1rem", overflowY: "auto" }}>
+                <h3 style={{ margin: "0 0 0.25rem", fontSize: "1.125rem", fontWeight: 700, color: "#111", textAlign: "center" }}>
+                  Select time
+                </h3>
+                {(() => {
+                  const timeDrawerDateStr =
+                    changeDateSelectedDate
+                      ? getLocalYYYYMMDD(changeDateSelectedDate)
+                      : bookingData?.selectedSlots?.[0]?.date;
+                  const timeDrawerDateLabel = timeDrawerDateStr
+                    ? formatNaiveDate(timeDrawerDateStr, "EEEE, MMMM d")
+                    : "";
+                  return (
+                    <>
+                      <p style={{ margin: "0 0 1rem", fontSize: "0.875rem", fontWeight: 500, color: "#6b7280", textAlign: "center" }}>
+                        {timeDrawerDateLabel}
+                      </p>
+                      {changeTimeLoading ? (
+                        <p style={{ margin: "0 1rem", fontSize: "0.875rem", color: "#6b7280" }}>Loading times…</p>
+                      ) : (
+                        <ChangeDateTimeList>
+                          {(changeDateAvailableSlots[timeDrawerDateStr] || []).map((slot) => {
+                            const price = parseFloat(slot.price);
+                            return (
+                              <ChangeDateTimeRow
+                                type="button"
+                                key={slot.instance_id}
+                                onClick={() => handleChangeTimeSelect(slot)}
+                              >
+                                <div>
+                                  <span style={{ fontSize: "1rem", fontWeight: 700, color: "#111" }}>
+                                    {formatTimeRangeForDisplay(
+                                      timeDrawerDateStr,
+                                      slot.time,
+                                      slot.duration,
+                                      businessTimeZone,
+                                      userTimeZone
+                                    )}
+                                  </span>
+                                  <span style={{ display: "block", fontSize: "0.75rem", color: "#6b7280", marginTop: 2 }}>
+                                    {getDurationText(slot.duration)} · {slot.available_spots} spots left
+                                  </span>
+                                </div>
+                                <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>
+                                  {price === 0 ? "Free" : `$${price.toFixed(2)}`}
+                                </span>
+                              </ChangeDateTimeRow>
+                            );
+                          })}
+                        </ChangeDateTimeList>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            </ChangeDateDrawerContent>
+          </Drawer.Portal>
+        </Drawer.Root>
+
+        <Drawer.Root
+          open={changeParticipantsDrawerOpen}
+          onOpenChange={setChangeParticipantsDrawerOpen}
+          shouldScaleBackground
+        >
+          <Drawer.Portal>
+            <ChangeParticipantsDrawerOverlay />
+            <ChangeParticipantsDrawerContent>
+              <ChangeParticipantsDrawerHandle />
+              <h3 style={{ margin: "0 1rem 0.25rem", fontSize: "1.125rem", fontWeight: 700, color: "#111", textAlign: "center" }}>
+                Number of guests
+              </h3>
+              <p style={{ margin: "0 1rem 1rem", fontSize: "0.875rem", color: "#6b7280", textAlign: "center" }}>
+                Up to {changeParticipantsMax} guests for this time slot.
+              </p>
+              <ParticipantsStepperWrap>
+                <ParticipantsStepperBtn
+                  type="button"
+                  disabled={participantsDraft <= 1}
+                  onClick={() => setParticipantsDraft((n) => Math.max(1, n - 1))}
+                  aria-label="Decrease guests"
+                >
+                  −
+                </ParticipantsStepperBtn>
+                <ParticipantsStepperValue>{participantsDraft}</ParticipantsStepperValue>
+                <ParticipantsStepperBtn
+                  type="button"
+                  disabled={participantsDraft >= changeParticipantsMax}
+                  onClick={() => setParticipantsDraft((n) => Math.min(changeParticipantsMax, n + 1))}
+                  aria-label="Increase guests"
+                >
+                  +
+                </ParticipantsStepperBtn>
+              </ParticipantsStepperWrap>
+              <ParticipantsApplyButton type="button" onClick={handleChangeParticipantsApply}>
+                Apply
+              </ParticipantsApplyButton>
+            </ChangeParticipantsDrawerContent>
+          </Drawer.Portal>
+        </Drawer.Root>
     </PageWrapper>
   );
 }

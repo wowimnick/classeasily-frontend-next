@@ -37,6 +37,7 @@ import {
   CreditCard,
   Edit2,
   ChevronUp,
+  Star,
 } from "lucide-react";
 import Lottie from "lottie-react";
 import { Drawer } from "vaul";
@@ -46,6 +47,7 @@ import {
   businessDiscountService,
   giftCardService,
   globalDiscountService,
+  bookingService,
 } from "@/services/apiService";
 import posthog from "posthog-js";
 import { theme as appTheme } from "@/components/theme";
@@ -91,7 +93,7 @@ const PaymentSection = styled.div`
   flex-direction: column;
 `;
 
-/* ACCORDION / SECTION STYLES */
+/* ACCORDION / SECTION STYLES – desktop and mobile (drawer-style on mobile) */
 const SectionCard = styled.div`
   background: white;
   border-radius: 16px;
@@ -101,6 +103,13 @@ const SectionCard = styled.div`
   transition: all 0.3s ease;
   padding-left: 4px;
   padding-right: 4px;
+
+  @media (max-width: 968px) {
+    padding-left: 0;
+    padding-right: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    margin-bottom: 24px;
+  }
 
   ${(props) =>
     props.$disabled &&
@@ -126,6 +135,16 @@ const SectionHeader = styled.div`
     color: #111827;
   }
 
+  @media (max-width: 968px) {
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+    h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #222222;
+    }
+  }
+
   .edit-btn {
     font-size: 14px;
     font-weight: 600;
@@ -136,16 +155,62 @@ const SectionHeader = styled.div`
     border: none;
     padding: 0;
   }
+
+  @media (max-width: 968px) {
+    .edit-btn {
+      color: #222222;
+    }
+  }
 `;
 
 const SectionContent = styled(motion.div)`
   padding: 8px 24px 24px 24px;
   border-top: 1px solid #f3f4f6;
+
+  @media (max-width: 968px) {
+    padding: 0;
+    border-top: 1px solid #e5e7eb;
+  }
 `;
 
 const SectionContentInner = styled.div`
   padding: 8px 24px 24px 24px;
   border-top: 1px solid #f3f4f6;
+
+  @media (max-width: 968px) {
+    padding: 0;
+    border-top: none;
+  }
+`;
+
+/* Drawer-style field rows on mobile (bordered rows like MobileReserveReviewDrawer) */
+const CheckoutFieldRow = styled.div`
+  @media (min-width: 969px) {
+    margin-bottom: 12px;
+  }
+  @media (max-width: 968px) {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 0;
+    &:last-of-type {
+      border-bottom: none;
+    }
+  }
+`;
+
+/* On desktop: email + phone side by side; on mobile: stacked with borders */
+const CheckoutContactRow = styled.div`
+  @media (min-width: 969px) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+`;
+
+const CheckoutPaymentBody = styled.div`
+  @media (max-width: 968px) {
+    padding: 20px;
+  }
 `;
 
 const COLLAPSE_TRANSITION = { duration: 0.25, ease: [0.4, 0, 0.2, 1] };
@@ -214,6 +279,25 @@ const SummaryDataRow = styled.div`
     color: #111827;
     font-weight: 500;
   }
+
+  @media (max-width: 968px) {
+    margin-bottom: 0;
+    padding: 16px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    .label {
+      font-size: 15px;
+      font-weight: 600;
+      color: #222222;
+    }
+    .value {
+      font-size: 14px;
+      color: #717171;
+      line-height: 1.4;
+    }
+    &:last-child {
+      border-bottom: none;
+    }
+  }
 `;
 
 /* REFINED NEXT BUTTON */
@@ -221,6 +305,11 @@ const NextButtonContainer = styled.div`
     display: flex;
     justify-content: flex-end;
     margin-top: 16px;
+    @media (max-width: 968px) {
+      padding: 16px 20px;
+      margin-top: 0;
+      justify-content: stretch;
+    }
 `;
 
 const NextButton = styled(Button)`
@@ -236,6 +325,18 @@ const NextButton = styled(Button)`
     background: #e31c5f !important;
     border-color: #e31c5f !important;
     opacity: 1 !important;
+  }
+
+  @media (max-width: 968px) {
+    width: 100%;
+    min-width: unset;
+    height: 52px;
+    background: #222222;
+    border-color: #222222;
+    &:hover {
+      background: #333 !important;
+      border-color: #333 !important;
+    }
   }
 `;
 
@@ -519,13 +620,13 @@ const MobileSummaryHeader = styled.div`
 `;
 
 const MobileSummaryContent = styled(motion.div)`
-  background: #fafafa;
+  background: #fff;
   overflow: hidden;
 `;
 
 const MobileSummaryInner = styled.div`
-  border-top: 1px solid #f0f0f0;
-  padding: 20px;
+  border-top: 1px solid #e5e7eb;
+  padding: 12px 12px 2px;
 `;
 
 const MobileSummaryRowCard = styled.div`
@@ -539,6 +640,41 @@ const MobileSummaryRowCard = styled.div`
   align-items: center;
   &:last-of-type {
     margin-bottom: 0;
+  }
+`;
+
+const MobileSummaryRowWithEdit = styled(MobileSummaryRowCard)`
+  align-items: center;
+  gap: 8px;
+  .row-label {
+    font-size: 13px;
+    color: #6b7280;
+    flex-shrink: 0;
+  }
+  .row-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    text-align: right;
+    flex: 1;
+    min-width: 0;
+  }
+`;
+
+const MobileSummaryEditPencil = styled.button`
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #9ca3af;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  &:hover {
+    color: #ff385c;
+    background: rgba(255, 56, 92, 0.08);
   }
 `;
 
@@ -556,6 +692,169 @@ const ViewDetailsButton = styled.button`
   &:hover {
     color: #374151;
   }
+`;
+
+/* Mobile summary dropdown – match MobileReserveReviewDrawer (InfoCard, DetailRow, TotalSummaryCard) */
+const MobileSummaryInfoCard = styled.div`
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  margin-bottom: 24px;
+`;
+const MobileSummaryListingHeader = styled.div`
+  display: flex;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+`;
+const MobileSummaryListingImage = styled.div`
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #f0f0f0;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+const MobileSummaryListingInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+`;
+const MobileSummaryListingTitle = styled.div`
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.3;
+  color: #222222;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+`;
+const MobileSummaryRatingBadge = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #222222;
+`;
+const MobileSummaryDetailRow = styled.div`
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+const MobileSummaryDetailContent = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+const MobileSummaryDetailLabel = styled.div`
+  font-size: 15px;
+  font-weight: 600;
+  color: #222222;
+`;
+const MobileSummaryDetailValue = styled.div`
+  font-size: 14px;
+  color: #717171;
+  line-height: 1.4;
+`;
+const MobileSummaryEditLink = styled.button`
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  color: #222222;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 12px;
+  flex-shrink: 0;
+`;
+const MobileSummaryTotalCard = styled.div`
+  background: white;
+  border: 1px solid #111827;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .label-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .label {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+  }
+  .label-sub {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+  }
+  .value {
+    font-size: 18px;
+    font-weight: 800;
+    color: #111827;
+  }
+`;
+const MobileSummaryViewDetailsBtn = styled.button`
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 0 0 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-align: center;
+  width: 100%;
+  &:hover {
+    color: #374151;
+  }
+`;
+const MobileSummaryPolicySection = styled.div`
+  margin-bottom: 24px;
+`;
+const MobileSummaryPolicyText = styled.div`
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.5;
+  margin-bottom: 6px;
+`;
+const MobileSummaryPolicyLink = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  color: #111827;
+  cursor: pointer;
 `;
 
 /* Price details drawer (Vaul) */
@@ -592,21 +891,35 @@ const PriceDetailsDrawerBody = styled.div`
   min-height: 0;
 `;
 
-/* Promo / Gift card section visible only on mobile */
-const MobilePromoSection = styled.div`
-  display: block;
-  margin-bottom: 16px;
-  text-align: center;
-  @media (min-width: 969px) {
-    display: none;
-  }
+const PolicyDetailsDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1055;
+`;
+const PolicyDetailsDrawerContent = styled(Drawer.Content)`
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  max-height: 85vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1056;
+  outline: none;
 `;
 
-/* Label above fields: small, 600 weight */
+/* Label above fields – drawer-style on mobile (15px, 600, #222) */
 const FieldLabel = styled.span`
   font-weight: 600;
   font-size: 0.8125rem;
   color: #111827;
+  @media (max-width: 968px) {
+    font-size: 15px;
+    color: #222222;
+  }
 `;
 
 const SummaryMetaBlock = styled.div`
@@ -614,6 +927,24 @@ const SummaryMetaBlock = styled.div`
   flex-direction: column;
   gap: 12px;
   margin-top: 8px;
+`;
+
+const TicketEditPencil = styled.button`
+  margin-left: auto;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #9ca3af;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  &:hover {
+    color: #ff385c;
+    background: rgba(255, 56, 92, 0.08);
+  }
 `;
 
 const TicketMetaItem = styled.div`
@@ -639,6 +970,8 @@ const TicketMetaItem = styled.div`
   }
 
   .text-content {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
 
@@ -803,7 +1136,6 @@ const MobileTimerContainer = styled.div`
   ${(props) =>
     props.$urgent &&
     `
-    background: #fef2f2;
     border-radius: 8px;
     margin-top: 12px;
   `}
@@ -1220,6 +1552,9 @@ const ReviewAndPaymentStep = ({
   userTimeZone,
   businessTimeZone,
   confirmFooter,
+  onRequestChangeDate,
+  onRequestChangeTime,
+  onRequestChangeParticipants,
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -1230,6 +1565,7 @@ const ReviewAndPaymentStep = ({
   const [isFormValid, setIsFormValid] = useState(false);
   const [showMobileSummary, setShowMobileSummary] = useState(false);
   const [priceDetailsDrawerOpen, setPriceDetailsDrawerOpen] = useState(false);
+  const [policyDetailsDrawerOpen, setPolicyDetailsDrawerOpen] = useState(false);
   
   // Step State: 'guest' | 'payment'
   const [checkoutStep, setCheckoutStep] = useState("guest");
@@ -1264,8 +1600,23 @@ const ReviewAndPaymentStep = ({
     discountId: null,
     gcCode: null,
     globalId: null,
+    bookingFingerprint: null,
   });
   const fetchIntentInFlightRef = useRef(false);
+
+  const bookingFingerprint = useMemo(() => {
+    const slot = bookingData?.selectedSlots?.[0];
+    if (!slot) return null;
+    const participants = bookingData?.participants ?? 1;
+    const price = bookingData?.price ?? 0;
+    return `${slot.id ?? ""}-${slot.date ?? ""}-${slot.time ?? ""}-${participants}-${price}`;
+  }, [
+    bookingData?.selectedSlots?.[0]?.id,
+    bookingData?.selectedSlots?.[0]?.date,
+    bookingData?.selectedSlots?.[0]?.time,
+    bookingData?.participants,
+    bookingData?.price,
+  ]);
 
   useEffect(() => {
     posthog.capture("booking_payment_initiated", {
@@ -1298,39 +1649,43 @@ const ReviewAndPaymentStep = ({
     [isUserLoggedIn, bookingData.userName],
   );
 
+  /* Sync bookingData into form only when we have explicit values to apply (logged-in user, participant_details, or notes).
+   * Avoid overwriting fields the user may be typing: don't set email/phone in else branch; only set booker_name from
+   * participant_details when form is still empty (initial load); only set notes when loading from storage. */
+  const hasSyncedInitialRef = useRef(false);
   useEffect(() => {
-    if (form) {
-      let formData = {};
+    if (!form) return;
+    let formData = {};
 
-      if (isUserLoggedIn) {
-        formData.email = bookingData.userEmail || "";
-        formData.phone = bookingData.userPhone || "";
-        formData.booker_name = bookingData.userName || "";
-      } else {
-        const currentValues = form.getFieldsValue(true);
-        if (currentValues.email === undefined) formData.email = "";
-        if (currentValues.phone === undefined) formData.phone = "";
-        const bookerFromDetails = bookingData.participant_details?.[0]?.name;
-        if (bookerFromDetails && currentValues.booker_name !== bookerFromDetails) {
-          formData.booker_name = bookerFromDetails;
-        }
+    if (isUserLoggedIn) {
+      formData.email = bookingData.userEmail || "";
+      formData.phone = bookingData.userPhone || "";
+      formData.booker_name = bookingData.userName || "";
+    } else {
+      const currentValues = form.getFieldsValue(true);
+      const bookerFromDetails = bookingData.participant_details?.[0]?.name;
+      /* Only push booker_name from participant_details on initial sync when form name is still empty, so we never overwrite user input */
+      if (bookerFromDetails && (!currentValues.booker_name || !String(currentValues.booker_name).trim()) && !hasSyncedInitialRef.current) {
+        formData.booker_name = bookerFromDetails;
       }
-
-      const currentNotes = form.getFieldValue("notes");
-      if (currentNotes !== bookingData.notes) {
-        formData.notes = bookingData.notes || "";
-      }
-
-      if (Object.keys(formData).length > 0) {
-        form.setFieldsValue(formData);
-      }
-
-      const isValid = validateValues({
-        ...form.getFieldsValue(true),
-        ...formData,
-      });
-      setIsFormValid(isValid);
     }
+    if (formData.booker_name !== undefined) hasSyncedInitialRef.current = true;
+
+    const currentNotes = form.getFieldValue("notes");
+    const notesFromBooking = bookingData.notes ?? "";
+    if (notesFromBooking !== "" && currentNotes !== notesFromBooking) {
+      formData.notes = notesFromBooking;
+    }
+
+    if (Object.keys(formData).length > 0) {
+      form.setFieldsValue(formData);
+    }
+
+    const isValid = validateValues({
+      ...form.getFieldsValue(true),
+      ...formData,
+    });
+    setIsFormValid(isValid);
   }, [isUserLoggedIn, bookingData, form, validateValues]);
 
   const selectedSlot = bookingData.selectedSlots?.[0];
@@ -1500,40 +1855,78 @@ const ReviewAndPaymentStep = ({
     const discountId = appliedDiscount?.id ?? null;
     const gcCode = appliedGiftCard?.code ?? null;
     const globalId = activeGlobalDiscount?.id ?? null;
-    const currentDeps = { discountId, gcCode, globalId };
     const prev = intentDepsRef.current;
 
     if (clientSecret) {
-      const depsMatch =
+      const discountMatch =
         prev.discountId === discountId &&
         prev.gcCode === gcCode &&
         prev.globalId === globalId;
-      if (depsMatch) return;
+      const bookingMatch = prev.bookingFingerprint === bookingFingerprint;
+
+      if (discountMatch && bookingMatch) return;
+
       const isFirstRunWithRehydratedIntent =
         prev.discountId === null &&
         prev.gcCode === null &&
-        prev.globalId === null;
+        prev.globalId === null &&
+        prev.bookingFingerprint === null;
       if (isFirstRunWithRehydratedIntent) {
-        intentDepsRef.current = currentDeps;
+        intentDepsRef.current = {
+          discountId,
+          gcCode,
+          globalId,
+          bookingFingerprint: bookingFingerprint ?? null,
+        };
         return;
       }
+
       const paymentIntentId = clientSecret.split("_secret_")[0];
       paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
       fetchIntentInFlightRef.current = false;
       setClientSecret(null);
+      onUpdateBookingData?.({ clientSecret: null, paymentIntentId: null });
     }
 
     if (!clientSecret && fetchIntentInFlightRef.current) return;
 
-    intentDepsRef.current = currentDeps;
+    intentDepsRef.current = {
+      discountId,
+      gcCode,
+      globalId,
+      bookingFingerprint: bookingFingerprint ?? null,
+    };
     fetchPaymentIntent(discountId);
   }, [
     appliedDiscount?.id,
     appliedGiftCard?.code,
     activeGlobalDiscount?.id,
+    bookingFingerprint,
     clientSecret,
     isFree,
     fetchPaymentIntent,
+    onUpdateBookingData,
+  ]);
+
+  // When there's no valid intent (loading or after clearing), disable submit so the user
+  // cannot confirm a stale/cancelled intent and get charged for the wrong slot or amount.
+  useEffect(() => {
+    if (isFree) return;
+    if (!clientSecret) {
+      onPaymentAction?.({
+        handleSubmit: undefined,
+        loading: false,
+        canSubmit: false,
+        finalTotal: finalTotal ?? 0,
+        showFooterButton: checkoutStep === "payment",
+      });
+    }
+  }, [
+    isFree,
+    clientSecret,
+    checkoutStep,
+    finalTotal,
+    onPaymentAction,
   ]);
 
   const handlePaymentElementLoadError = useCallback(() => {
@@ -1749,11 +2142,36 @@ const ReviewAndPaymentStep = ({
             { length: participantsCount },
             () => ({ name: bookerName }),
           );
-          onPaymentComplete({
+          const basePayload = {
             payment_intent_id: paymentIntent.id,
             client_secret: clientSecret,
             participant_details: participantDetails,
-          });
+          };
+          try {
+            for (let attempt = 0; attempt < 6; attempt++) {
+              const result = await bookingService.bookingStatusPolling(
+                paymentIntent.id,
+                clientSecret
+              );
+              if (
+                result.success &&
+                result.data?.status === "confirmed" &&
+                result.data?.booking_id != null
+              ) {
+                onPaymentComplete({
+                  ...basePayload,
+                  booking_id: result.data.booking_id,
+                  user_facing_reference: result.data.user_facing_reference,
+                  booking_group_id: result.data.booking_group_id,
+                });
+                return;
+              }
+              if (attempt < 5) await new Promise((r) => setTimeout(r, 800));
+            }
+          } catch (_) {
+            /* ignore */
+          }
+          onPaymentComplete(basePayload);
         }
       } catch (err) {
         message.error(err.message || "Whoops! Something went wrong. Please try again.");
@@ -1777,6 +2195,13 @@ const ReviewAndPaymentStep = ({
       getGuestFullName,
     ],
   );
+
+  const mobileSummaryImageUrl = useMemo(() => {
+    const img = classData?.images?.[0];
+    if (!img) return null;
+    if (typeof img === "string") return img;
+    return img?.thumbnail_url || img?.medium_url || img?.image_url || img?.url;
+  }, [classData?.images]);
 
   const cancellationPolicyText = useMemo(() => {
     return getCancellationPolicyText(
@@ -1900,66 +2325,179 @@ const ReviewAndPaymentStep = ({
 
   const renderMobileSimpleSummary = () => {
     const slot = selectedSlot;
-    const dateTimeLabel = slot?.isCourse ? "Course dates & time" : "Date & time";
-    const dateTimeValue = slot
-      ? slot.isCourse
-        ? `${formatNaiveDate(slot.date, "MMM d")} - ${formatNaiveDate(slot.end_date, "MMM d, yyyy")} · Every ${slot.days.join(", ")} at ${formatTimeRangeForDisplay(slot.date, slot.time, slot.duration, businessTimeZone, userTimeZone)}`
-        : `${formatNaiveDate(slot.date, "EEEE, MMM d, yyyy")} · ${formatTimeRangeForDisplay(slot.date, slot.time, slot.duration, businessTimeZone, userTimeZone)} (${getDurationText(slot.duration)})`
-      : "";
+    const averageRating = classData?.average_rating;
+    const reviewCount = classData?.review_count ?? 0;
+    const showRating = typeof averageRating === "number" || reviewCount > 0;
+
+    const dateText = slot && !slot.isCourse && slot.date
+      ? formatNaiveDate(slot.date, "MMM d, yyyy")
+      : slot && slot.isCourse && slot.end_date
+        ? `${formatNaiveDate(slot.date, "MMM d")} – ${formatNaiveDate(slot.end_date, "MMM d, yyyy")}`
+        : "Select date";
+    const timeText = slot && !slot.isCourse && slot?.time && typeof slot?.duration === "number"
+      ? formatTimeRangeForDisplay(slot.date, slot.time, slot.duration, businessTimeZone, userTimeZone)
+      : slot && slot.isCourse && slot.days
+        ? `Every ${slot.days.join(", ")} · ${formatTimeRangeForDisplay(slot.date, slot.time, slot.duration, businessTimeZone, userTimeZone)}`
+        : "";
+    const guestsText = participantsCount === 1 ? "1 participant" : `${participantsCount} participants`;
+
+    const currency = classData?.currency_code || "CAD";
+
     return (
       <>
-        <div>
-          <strong>{classData?.title}</strong>
-        </div>
+        <MobileSummaryInfoCard>
+          <MobileSummaryListingHeader>
+            <MobileSummaryListingImage>
+              {mobileSummaryImageUrl && <img src={mobileSummaryImageUrl} alt="" />}
+            </MobileSummaryListingImage>
+            <MobileSummaryListingInfo>
+              <MobileSummaryListingTitle>{classData?.title || "Class"}</MobileSummaryListingTitle>
+              {showRating && (
+                <MobileSummaryRatingBadge>
+                  <Star size={14} fill="currentColor" />
+                  {Number(averageRating ?? 0).toFixed(1)} ({reviewCount})
+                </MobileSummaryRatingBadge>
+              )}
+            </MobileSummaryListingInfo>
+          </MobileSummaryListingHeader>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, fontSize: 13, color: "#6b7280" }}>
-          <MapPin size={14} />
-          <span>{classData?.business_name || "Host Location"}</span>
-        </div>
+          {slot && !slot.isCourse && (
+            <>
+              <MobileSummaryDetailRow>
+                <MobileSummaryDetailContent>
+                  <MobileSummaryDetailLabel>Date</MobileSummaryDetailLabel>
+                  <MobileSummaryDetailValue>{dateText}</MobileSummaryDetailValue>
+                </MobileSummaryDetailContent>
+                {onRequestChangeDate && (
+                  <MobileSummaryEditLink type="button" onClick={onRequestChangeDate}>Edit</MobileSummaryEditLink>
+                )}
+              </MobileSummaryDetailRow>
+              <MobileSummaryDetailRow>
+                <MobileSummaryDetailContent>
+                  <MobileSummaryDetailLabel>Time</MobileSummaryDetailLabel>
+                  <MobileSummaryDetailValue>{timeText}{slot.duration ? ` (${getDurationText(slot.duration)})` : ""}</MobileSummaryDetailValue>
+                </MobileSummaryDetailContent>
+                {onRequestChangeTime && (
+                  <MobileSummaryEditLink type="button" onClick={onRequestChangeTime}>Edit</MobileSummaryEditLink>
+                )}
+              </MobileSummaryDetailRow>
+              <MobileSummaryDetailRow>
+                <MobileSummaryDetailContent>
+                  <MobileSummaryDetailLabel>Guests</MobileSummaryDetailLabel>
+                  <MobileSummaryDetailValue>{guestsText}</MobileSummaryDetailValue>
+                </MobileSummaryDetailContent>
+                {onRequestChangeParticipants && (
+                  <MobileSummaryEditLink type="button" onClick={onRequestChangeParticipants}>Edit</MobileSummaryEditLink>
+                )}
+              </MobileSummaryDetailRow>
+            </>
+          )}
 
-        {slot && (
-          <MobileSummaryRowCard>
-            <span style={{ fontSize: 13, color: "#6b7280" }}>{dateTimeLabel}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#111827", textAlign: "right", maxWidth: "60%" }}>
-              {dateTimeValue}
-            </span>
-          </MobileSummaryRowCard>
-        )}
+          {slot && slot.isCourse && (
+            <>
+              <MobileSummaryDetailRow>
+                <MobileSummaryDetailContent>
+                  <MobileSummaryDetailLabel>Date</MobileSummaryDetailLabel>
+                  <MobileSummaryDetailValue>{dateText}</MobileSummaryDetailValue>
+                </MobileSummaryDetailContent>
+              </MobileSummaryDetailRow>
+              <MobileSummaryDetailRow>
+                <MobileSummaryDetailContent>
+                  <MobileSummaryDetailLabel>Time</MobileSummaryDetailLabel>
+                  <MobileSummaryDetailValue>{timeText}</MobileSummaryDetailValue>
+                </MobileSummaryDetailContent>
+              </MobileSummaryDetailRow>
+              <MobileSummaryDetailRow>
+                <MobileSummaryDetailContent>
+                  <MobileSummaryDetailLabel>Guests</MobileSummaryDetailLabel>
+                  <MobileSummaryDetailValue>{guestsText}</MobileSummaryDetailValue>
+                </MobileSummaryDetailContent>
+                {onRequestChangeParticipants && (
+                  <MobileSummaryEditLink type="button" onClick={onRequestChangeParticipants}>Edit</MobileSummaryEditLink>
+                )}
+              </MobileSummaryDetailRow>
+            </>
+          )}
+        </MobileSummaryInfoCard>
 
-        <MobileSummaryRowCard style={{ borderWidth: 1, borderColor: "#111827", flexDirection: "column", alignItems: "stretch" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>Total</span>
-            <span style={{ fontSize: 18, fontWeight: 800, color: "#111827" }}>
+        <MobileSummaryTotalCard>
+          <div className="top-row">
+            <div className="label-wrap">
+              <span className="label">Total</span>
+              <span className="label-sub">includes taxes</span>
+            </div>
+            <span className="value">
               {finalTotal === 0 ? (
                 "Free"
               ) : (
                 <NumberFlow
                   value={finalTotal}
-                  format={{ style: "currency", currency: "CAD" }}
+                  format={{ style: "currency", currency: currency || "CAD" }}
                 />
               )}
             </span>
           </div>
-          <ViewDetailsButton type="button" onClick={() => setPriceDetailsDrawerOpen(true)}>
+          <MobileSummaryViewDetailsBtn type="button" onClick={() => setPriceDetailsDrawerOpen(true)}>
             View details
-          </ViewDetailsButton>
-        </MobileSummaryRowCard>
+          </MobileSummaryViewDetailsBtn>
+        </MobileSummaryTotalCard>
 
-        {/* RESTORED CANCELLATION POLICY & FREE CHECK */}
-        {cancellationPolicyText && (
-          <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid #e5e7eb" }}>
-            <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-              <Shield size={16} style={{ color: "#6b7280", flexShrink: 0, marginTop: 2 }} />
-              <div>
-                <div style={{ fontSize: 11, textTransform: "uppercase", color: "#9ca3af", fontWeight: 700, letterSpacing: "0.5px", marginBottom: 4 }}>Cancellation Policy</div>
-                <div style={{ fontSize: 13, color: "#4b5563", lineHeight: 1.5 }}>{cancellationPolicyText}</div>
-              </div>
-            </div>
-          </div>
-        )}
+        <div style={{ marginBottom: 24 }}>
+          {!showPromoGiftCard && !appliedDiscount && !appliedGiftCard ? (
+            <PromoRevealButton type="button" onClick={() => setShowPromoGiftCard(true)}>
+              Add promo or gift card
+            </PromoRevealButton>
+          ) : (
+            <>
+              {!appliedDiscount ? (
+                <CouponTicketInput>
+                  <Input
+                    size="middle"
+                    placeholder="e.g. SAVE10"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    bordered={false}
+                    onPressEnter={handleApplyCoupon}
+                  />
+                  <Button size="middle" onClick={handleApplyCoupon} loading={couponLoading} style={{ height: 45 }}>Apply</Button>
+                </CouponTicketInput>
+              ) : (
+                <AppliedCouponTicket>
+                  <div className="coupon-info">
+                    <Percent size={14} />
+                    <span>{appliedDiscount.code.toUpperCase()} Applied</span>
+                  </div>
+                  <Button type="text" size="small" icon={<X size={14} />} onClick={handleRemoveCoupon} />
+                </AppliedCouponTicket>
+              )}
+              {!appliedGiftCard ? (
+                <CouponTicketInput style={{ marginTop: 12 }}>
+                  <Input
+                    prefix={<Gift size={14} color="#9ca3af" />}
+                    placeholder="e.g. XXXX-XXXX-XXXX"
+                    value={giftCardCode}
+                    onChange={(e) => setGiftCardCode(e.target.value)}
+                    onPressEnter={handleApplyGiftCard}
+                    bordered={false}
+                  />
+                  <Button size="middle" onClick={handleApplyGiftCard} loading={gcLoading} style={{ height: 45 }}>Apply</Button>
+                </CouponTicketInput>
+              ) : (
+                <AppliedCouponTicket style={{ marginTop: 12, borderColor: "#8b5cf6", backgroundColor: "#f5f3ff", color: "#7c3aed" }}>
+                  <div className="coupon-info">
+                    <Gift size={14} />
+                    <span>Gift Card ending in {appliedGiftCard.code.slice(-4)}</span>
+                  </div>
+                  <Button type="text" size="small" icon={<X size={14} />} onClick={handleRemoveGiftCard} />
+                </AppliedCouponTicket>
+              )}
+            </>
+          )}
+        </div>
+
 
         {isFree && (
-          <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#15803d" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#15803d" }}>
             <CheckCircle size={16} />
             <span>This booking is fully covered. No payment required.</span>
           </div>
@@ -2038,6 +2576,11 @@ const ReviewAndPaymentStep = ({
             <span className="label">Date</span>
             <span className="value">{formatNaiveDate(date, "EEEE, MMMM d, yyyy")}</span>
           </div>
+          {onRequestChangeDate && (
+            <TicketEditPencil type="button" onClick={onRequestChangeDate} aria-label="Change date">
+              <Edit2 size={14} />
+            </TicketEditPencil>
+          )}
         </TicketMetaItem>
         <TicketMetaItem>
           <div className="icon-box"><Clock /></div>
@@ -2045,6 +2588,23 @@ const ReviewAndPaymentStep = ({
             <span className="label">Time</span>
             <span className="value">{formatTimeRangeForDisplay(date, time, duration, businessTimeZone, userTimeZone)} ({getDurationText(duration)})</span>
           </div>
+          {onRequestChangeTime && (
+            <TicketEditPencil type="button" onClick={onRequestChangeTime} aria-label="Change time">
+              <Edit2 size={14} />
+            </TicketEditPencil>
+          )}
+        </TicketMetaItem>
+        <TicketMetaItem>
+          <div className="icon-box"><Ticket /></div>
+          <div className="text-content">
+            <span className="label">Participants</span>
+            <span className="value">{participantsCount} {participantsCount === 1 ? "guest" : "guests"}</span>
+          </div>
+          {onRequestChangeParticipants && (
+            <TicketEditPencil type="button" onClick={onRequestChangeParticipants} aria-label="Change participants">
+              <Edit2 size={14} />
+            </TicketEditPencil>
+          )}
         </TicketMetaItem>
       </SummaryMetaBlock>
     );
@@ -2118,7 +2678,9 @@ const ReviewAndPaymentStep = ({
         )}
 
         <TicketRow>
-          <span>{participantsCount} {participantsCount > 1 ? "Guests" : "Guest"}</span>
+          <span>
+            {participantsCount} {participantsCount > 1 ? "Guests" : "Guest"}
+          </span>
           <span>{subtotal === 0 ? "Free" : <NumberFlow value={subtotal} format={{ style: "currency", currency: "CAD" }} />}</span>
         </TicketRow>
 
@@ -2196,7 +2758,7 @@ const ReviewAndPaymentStep = ({
       ) : (
         <Elements
           stripe={stripePromise}
-          key={`${clientSecret || "free-mode"}-${stripeFontSize}-${stripeFontCssUrl}`}
+          key={clientSecret || "free-mode"}
           options={
             isFree
               ? undefined
@@ -2258,105 +2820,32 @@ const ReviewAndPaymentStep = ({
                 </Drawer.Portal>
               </Drawer.Root>
 
-              <MobilePromoSection>
-                {!showPromoGiftCard && !appliedDiscount && !appliedGiftCard ? (
-                  <PromoRevealButton
-                    type="button"
-                    onClick={() => setShowPromoGiftCard(true)}
-                  >
-                    Add promo or gift card
-                  </PromoRevealButton>
-                ) : (
-                  <>
-                    {!appliedDiscount ? (
-                      <CouponTicketInput>
-                        <Input
-                          size="middle"
-                          placeholder="e.g. SAVE10"
-                          value={couponCode}
-                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                          bordered={false}
-                          onPressEnter={handleApplyCoupon}
-                        />
-                        <Button
-                          size="middle"
-                          onClick={handleApplyCoupon}
-                          loading={couponLoading}
-                          style={{ height: 45 }}
-                        >
-                          Apply
-                        </Button>
-                      </CouponTicketInput>
-                    ) : (
-                      <AppliedCouponTicket>
-                        <div className="coupon-info">
-                          <Percent size={14} />
-                          <span>{appliedDiscount.code.toUpperCase()} Applied</span>
-                        </div>
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<X size={14} />}
-                          onClick={handleRemoveCoupon}
-                        />
-                      </AppliedCouponTicket>
-                    )}
-
-                    {!appliedGiftCard ? (
-                      <CouponTicketInput style={{ marginTop: 12 }}>
-                        <Input
-                          prefix={<Gift size={14} color="#9ca3af" />}
-                          placeholder="e.g. XXXX-XXXX-XXXX"
-                          value={giftCardCode}
-                          onChange={(e) => setGiftCardCode(e.target.value)}
-                          onPressEnter={handleApplyGiftCard}
-                          bordered={false}
-                        />
-                        <Button
-                          size="middle"
-                          onClick={handleApplyGiftCard}
-                          loading={gcLoading}
-                          style={{ height: 45 }}
-                        >
-                          Apply
-                        </Button>
-                      </CouponTicketInput>
-                    ) : (
-                      <AppliedCouponTicket
-                        style={{
-                          marginTop: 12,
-                          borderColor: "#8b5cf6",
-                          backgroundColor: "#f5f3ff",
-                          color: "#7c3aed",
-                        }}
-                      >
-                        <div className="coupon-info">
-                          <Gift size={14} />
-                          <span>Gift Card ending in {appliedGiftCard.code.slice(-4)}</span>
-                        </div>
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<X size={14} />}
-                          onClick={handleRemoveGiftCard}
-                        />
-                      </AppliedCouponTicket>
-                    )}
-                  </>
-                )}
-              </MobilePromoSection>
+              <Drawer.Root open={policyDetailsDrawerOpen} onOpenChange={setPolicyDetailsDrawerOpen}>
+                <Drawer.Portal>
+                  <PolicyDetailsDrawerOverlay />
+                  <PolicyDetailsDrawerContent>
+                    <PriceDetailsDrawerHandle />
+                    <PriceDetailsDrawerBody>
+                      <h3 style={{ margin: "0 0 24px 0", fontSize: 18, fontWeight: 700, color: "#222", textAlign: "center" }}>Cancellation Policy</h3>
+                      <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
+                        {cancellationPolicyText || "Cancel before the start time for a full refund."}
+                      </div>
+                    </PriceDetailsDrawerBody>
+                  </PolicyDetailsDrawerContent>
+                </Drawer.Portal>
+              </Drawer.Root>
 
               <Form
                 form={form}
                 layout="vertical"
                 requiredMark={false}
                 onValuesChange={handleFormValuesChange}
-                style={{ padding: "0 4px" }}
+                style={{ padding: "0 12px" }}
               >
                   {/* SECTION 1: GUEST DETAILS */}
                   <SectionCard>
                       <SectionHeader $clickable={checkoutStep === "payment"} onClick={() => checkoutStep === "payment" && setCheckoutStep("guest")}>
-                          <h3>1. Guest Details</h3>
+                          <h3>Guest details</h3>
                           {checkoutStep === "payment" && (
                               <button type="button" className="edit-btn">Edit</button>
                           )}
@@ -2365,11 +2854,11 @@ const ReviewAndPaymentStep = ({
                       <AnimatePresence initial={false}>
                         {checkoutStep === "guest" ? (
                              <MeasuredCollapseSection key="content">
-                                <div style={{ paddingTop: 8 }}>
+                                <CheckoutFieldRow>
                                     <Form.Item
                                     name="booker_name"
                                     rules={[{ required: true, message: "Please enter your full name" }, { whitespace: true, message: "Please enter your full name" }]}
-                                    style={{ marginBottom: 12 }}
+                                    style={{ marginBottom: 0 }}
                                     label={<FieldLabel>Full name</FieldLabel>}
                                     >
                                     <Input
@@ -2379,17 +2868,20 @@ const ReviewAndPaymentStep = ({
                                         suffix={isUserLoggedIn && !!bookingData.userName && <UserCheck size={16} color="#52c41a" />}
                                     />
                                     </Form.Item>
-                                </div>
-                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                                    <Form.Item name="email" rules={[{ required: true, message: "Please enter your email" }, { type: "email", message: "Please enter a valid email address" }]} label={<FieldLabel>Email</FieldLabel>}>
-                                        <Input placeholder="e.g. jane@example.com" disabled={isUserLoggedIn} />
-                                    </Form.Item>
-                                    <Form.Item name="phone" rules={[{ required: true, message: "Please enter your phone number" }, { whitespace: true, message: "Please enter your phone number" }]} label={<FieldLabel>Phone</FieldLabel>}>
-                                        <Input placeholder="e.g. (555) 123-4567" disabled={isUserLoggedIn} />
-                                    </Form.Item>
-                                </div>
-                                
-                                <div>
+                                </CheckoutFieldRow>
+                                <CheckoutContactRow>
+                                    <CheckoutFieldRow>
+                                        <Form.Item name="email" rules={[{ required: true, message: "Please enter your email" }, { type: "email", message: "Please enter a valid email address" }]} label={<FieldLabel>Email</FieldLabel>} style={{ marginBottom: 0 }}>
+                                            <Input placeholder="e.g. jane@example.com" disabled={isUserLoggedIn} />
+                                        </Form.Item>
+                                    </CheckoutFieldRow>
+                                    <CheckoutFieldRow>
+                                        <Form.Item name="phone" rules={[{ required: true, message: "Please enter your phone number" }, { whitespace: true, message: "Please enter your phone number" }]} label={<FieldLabel>Phone</FieldLabel>} style={{ marginBottom: 0 }}>
+                                            <Input placeholder="e.g. (555) 123-4567" disabled={isUserLoggedIn} />
+                                        </Form.Item>
+                                    </CheckoutFieldRow>
+                                </CheckoutContactRow>
+                                <CheckoutFieldRow>
                                     {!showNotes ? (
                                         <AdditionalNotesRevealButton type="button" onClick={() => setShowNotes(true)}>
                                             <ChevronRight size={18} />
@@ -2397,12 +2889,12 @@ const ReviewAndPaymentStep = ({
                                         </AdditionalNotesRevealButton>
                                     ) : (
                                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} transition={COLLAPSE_TRANSITION} style={{ overflow: "hidden" }}>
-                                            <Form.Item name="notes" label={<FieldLabel>Additional Notes</FieldLabel>} style={{ marginBottom: 0, marginTop: 12 }}>
+                                            <Form.Item name="notes" label={<FieldLabel>Additional notes</FieldLabel>} style={{ marginBottom: 0 }}>
                                                 <Input.TextArea placeholder="Any special requests or dietary restrictions?" rows={2} />
                                             </Form.Item>
                                         </motion.div>
                                     )}
-                                </div>
+                                </CheckoutFieldRow>
 
                                 <NextButtonContainer>
                                     <NextButton type="primary" onClick={handleGoToPayment}>
@@ -2428,7 +2920,7 @@ const ReviewAndPaymentStep = ({
                   {/* SECTION 2: PAYMENT */}
                   <SectionCard ref={paymentStepRef} style={{ marginTop: 24 }} $disabled={checkoutStep !== "payment"}>
                       <SectionHeader>
-                          <h3>2. Payment</h3>
+                          <h3>Payment</h3>
                       </SectionHeader>
                       
                       {/* PRELOAD: We always render PaymentFormContent but toggle visibility via display: block/none 
@@ -2441,6 +2933,7 @@ const ReviewAndPaymentStep = ({
                           initial={{ opacity: 0 }} 
                           animate={{ opacity: checkoutStep === "payment" ? 1 : 0 }}
                       >
+                            <CheckoutPaymentBody>
                             <PaymentFormContent
                                 form={form}
                                 handleSubmit={handleSubmit}
@@ -2463,6 +2956,7 @@ const ReviewAndPaymentStep = ({
                                     {confirmFooter}
                                 </DesktopInlineFooter>
                             )}
+                            </CheckoutPaymentBody>
                       </SectionContent>
                   </SectionCard>
               </Form>

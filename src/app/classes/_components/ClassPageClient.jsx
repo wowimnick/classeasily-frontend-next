@@ -8,11 +8,12 @@ import React, {
   Suspense,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import styled, { keyframes } from "styled-components";
-import { motion } from "framer-motion";
+import styled, { keyframes, createGlobalStyle } from "styled-components";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import confetti from "canvas-confetti";
 import dynamic from "next/dynamic";
+import { Drawer } from "vaul";
 
 import posthog from "posthog-js";
 import ExploreHeader from "@/components/explore/ExploreHeader";
@@ -21,6 +22,10 @@ import ClassInformation from "./ClassInformation";
 import { classService } from "@/services/apiService.js";
 import { Alert, Button as AntButton, Divider } from "antd";
 import message from "@/lib/message";
+import { getLocalYYYYMMDD, formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
+import MiniCalendar from "./MiniCalendar";
+import { getDurationText } from "./steps/utils";
+import { useMobileReserveFlow, MOBILE_RESERVE_BREAKPOINT } from "./useMobileReserveFlow";
 
 // Dynamic imports for better code splitting
 const ClassOffers = dynamic(() => import("./ClassOffers"));
@@ -45,10 +50,28 @@ const ClassOptionsContainer = dynamic(() => import("./ClassOptionsContainer"), {
   ssr: false,
 });
 
+const MobileReserveReviewDrawer = dynamic(() => import("./MobileReserveReviewDrawer"), {
+  ssr: false,
+});
+
 const LordIcon = dynamic(
   () => import("@/services/ReactUtils").then((mod) => mod.LordIcon),
   { ssr: false }
 );
+
+const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
+
+const HideScrollbarStyles = createGlobalStyle`
+  html,
+  body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;
+  }
+`;
 
 // Skeleton loader styles (ORIGINAL)
 const shimmer = keyframes`
@@ -261,6 +284,26 @@ const Skel_Schedule = styled(Skel_Base)`
 const Skel_Button = styled(Skel_Base)`
   height: 48px;
   border-radius: 14px;
+`;
+
+/* Footer specific skeletons */
+const Skel_FooterPriceLine = styled(Skel_Base)`
+  height: 18px;
+  width: 100px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+`;
+
+const Skel_FooterSubLine = styled(Skel_Base)`
+  height: 12px;
+  width: 70px;
+  border-radius: 4px;
+`;
+
+const Skel_FooterBtn = styled(Skel_Base)`
+  height: 44px;
+  width: 96px;
+  border-radius: 8px;
 `;
 
 // Styled Components (original)
@@ -513,6 +556,272 @@ const letterVariants = {
   }),
 };
 
+/* --- Mobile Reserve flow: mini calendar section (mobile only) --- */
+const WhenSection = styled.section`
+  display: none;
+  
+  @media (max-width: 1024px) {
+    display: block;
+    margin-bottom: 1.5rem;
+    padding: 0 1rem;
+  }
+`;
+const WhenTitle = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+const WhenCalendarWrap = styled.div`
+  display: flex;
+  justify-content: center;
+  width: 100%;
+`;
+
+/* --- Mobile drawers (date / time / participants) - shared chrome, same pattern as checkout --- */
+const mobileDrawerTheme = {
+  primary: "#ff385c",
+  primaryFade: "rgba(255, 56, 92, 0.04)",
+  textPrimary: "#111827",
+  textSecondary: "#6b7280",
+  border: "#e5e7eb",
+  bg: "#ffffff",
+  bgSecondary: "#f3f4f6",
+  radiusSm: "16px",
+};
+const MobileDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 3000;
+`;
+const MobileDrawerContent = styled(Drawer.Content)`
+  background: ${mobileDrawerTheme.bg};
+  display: flex;
+  flex-direction: column;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  max-height: 85vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 3001;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
+  outline: none;
+`;
+const MobileDrawerHandle = styled.div`
+  width: 40px;
+  height: 4px;
+  background: ${mobileDrawerTheme.border};
+  border-radius: 2px;
+  margin: 12px auto;
+  flex-shrink: 0;
+`;
+const MobileDrawerTitle = styled.h3`
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: ${mobileDrawerTheme.textPrimary};
+  text-align: center;
+`;
+const MobileDrawerBody = styled.div`
+  padding: 0 1rem 1rem;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+`;
+const MobileDrawerSubtitle = styled.span`
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-top: 4px;
+`;
+const ParticipantsDrawerHint = styled.p`
+  margin: 0 1rem 0.25rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: center;
+`;
+const TimeSlotList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+  flex: 1;
+  padding: 0;
+  border: 1px solid ${mobileDrawerTheme.border};
+  border-radius: ${mobileDrawerTheme.radiusSm};
+  margin: 0 1rem 1rem;
+`;
+const TimeSlotRow = styled(motion.button)`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: ${mobileDrawerTheme.bg};
+  border: none;
+  border-top: 1px solid ${mobileDrawerTheme.border};
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  width: 100%;
+  transition: background 0.2s;
+
+  &:first-of-type {
+    border-top: none;
+  }
+  &:hover:not(:disabled) {
+    background: ${mobileDrawerTheme.primaryFade};
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  ${(p) =>
+    p.$selected &&
+    `
+    background: ${mobileDrawerTheme.primaryFade};
+  `}
+`;
+const TimeSlotTime = styled.span`
+  font-size: 1rem;
+  font-weight: 700;
+  color: ${mobileDrawerTheme.textPrimary};
+`;
+const TimeSlotMeta = styled.span`
+  font-size: 0.75rem;
+  color: ${mobileDrawerTheme.textSecondary};
+  display: block;
+  margin-top: 2px;
+`;
+const TimeSlotPrice = styled.span`
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: ${mobileDrawerTheme.textPrimary};
+  background: ${mobileDrawerTheme.bgSecondary};
+  padding: 6px 12px;
+  border-radius: 8px;
+  min-width: 70px;
+  text-align: center;
+  ${(p) => p.$selected && `background: ${mobileDrawerTheme.primaryFade}; color: ${mobileDrawerTheme.primary};`}
+`;
+
+/* --- Participants edit drawer (mobile reserve flow, same pattern as checkout) --- */
+const ParticipantsStepperWrap = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 24px 1rem;
+`;
+const ParticipantsStepperBtn = styled.button`
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: white;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s;
+  &:hover:not(:disabled) {
+    background: #f9fafb;
+    border-color: #ff385c;
+    color: #ff385c;
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+`;
+const ParticipantsStepperValue = styled.span`
+  font-size: 1.25rem;
+  font-weight: 700;
+  min-width: 2rem;
+  text-align: center;
+`;
+const ParticipantsApplyButton = styled.button`
+  margin: 0 1rem 1.5rem;
+  padding: 14px 24px;
+  background: #ff385c;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  &:hover {
+    background: #e62e4e;
+  }
+`;
+
+/* --- Mobile Reserve footer (replaces Select Time when slot is chosen) --- */
+const ReserveFooterContainer = styled.div`
+  display: none;
+  @media (max-width: ${MOBILE_RESERVE_BREAKPOINT}px) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    right: 0.75rem;
+    width: auto;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    padding: 0.75rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    &[data-hidden="true"] {
+      transform: translateY(calc(100% + 2rem));
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+`;
+const ReserveFooterSummary = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: 0.75rem;
+  min-width: 0;
+`;
+const ReserveFooterPrice = styled.span`
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111;
+`;
+const ReserveFooterMeta = styled.span`
+  font-size: 0.75rem;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+const ReserveButton = styled(AntButton)`
+  flex-shrink: 0;
+  border-radius: 10px;
+  font-weight: 600;
+  height: 44px;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  font-size: 0.9375rem;
+`;
+
 /* Footer layout constants (match MobileBookingFooterContainer) */
 const FOOTER_BOTTOM_REM = 0.75;
 const FOOTER_HEIGHT_PX = 52;
@@ -612,12 +921,13 @@ function MobileBestPricePopUp({ visible, onComplete }) {
     opacity: 0.85,
     x: "-50%",
   };
-  /* Paused state in pixels so collapse starts here and can expand symmetrically (left = center - width/2). */
+  /* Paused state in pixels so collapse starts here and can expand symmetrically (left = center - width/2). Raised so expanded card finishes higher on mobile. */
+  const expandedBottomOffset = 40;
   const centerState = {
     left: centerLeftPx,
     right: "auto",
     width: 200,
-    bottom: footerTop + 24,
+    bottom: footerTop + expandedBottomOffset,
     minHeight: 48,
     padding: "0.75rem 1rem",
     borderRadius: "12px",
@@ -626,11 +936,13 @@ function MobileBestPricePopUp({ visible, onComplete }) {
     opacity: 1,
     x: 0,
   };
+  /* Bookmark strip sits slightly above footer so "animates down" doesn't end too low */
+  const bookmarkBottomOffset = 10;
   const bookmarkState = {
     left: bookmarkLeftPx,
     right: "auto",
     width: bookmarkWidth,
-    bottom: footerTop,
+    bottom: footerTop + bookmarkBottomOffset,
     padding: "0.35rem 1rem",
     borderRadius: "10px 10px 0 0",
     scale: 1,
@@ -645,7 +957,7 @@ function MobileBestPricePopUp({ visible, onComplete }) {
     phase === "bookmark"
       ? {
           ...bookmarkState,
-          bottom: [footerTop + 24, footerTop + 8, footerTop],
+          bottom: [footerTop + expandedBottomOffset, footerTop + 16, footerTop + bookmarkBottomOffset],
           scale: [1, 0.98, 1],
           minHeight: [48, 40, 36],
           width: [200, 200, bookmarkWidth],
@@ -669,7 +981,7 @@ function MobileBestPricePopUp({ visible, onComplete }) {
   const expandAnimate = isExpanding
     ? {
         ...centerState,
-        bottom: [footerTop, footerTop + 28, footerTop + 24],
+        bottom: [footerTop, footerTop + 28, footerTop + expandedBottomOffset],
         scale: [0.7, 0.94, 1],
         scaleY: [0.25, 0.96, 1],
         opacity: [0.85, 1, 1],
@@ -784,7 +1096,7 @@ const MobileBookingFooter = ({ option, onBookNow, hidden }) => {
       min === max
         ? `$${min.toFixed(0)}`
         : `$${min.toFixed(0)} - ${max.toFixed(0)}`;
-    const perWhat = isCourse ? "course" : "session";
+    const perWhat = isCourse ? "course" : "person";
     return { display: priceDisplay, per: perWhat };
   };
 
@@ -818,6 +1130,16 @@ const MobileBookingFooter = ({ option, onBookNow, hidden }) => {
   );
 };
 
+const MobileBookingFooterSkeleton = ({ hidden }) => (
+  <MobileBookingFooterContainer data-hidden={hidden}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+      <Skel_FooterPriceLine />
+      <Skel_FooterSubLine />
+    </div>
+    <Skel_FooterBtn />
+  </MobileBookingFooterContainer>
+);
+
 export default function ClassPageClient({
   classData,
   businessData,
@@ -840,6 +1162,7 @@ export default function ClassPageClient({
   const [showMobileBestPriceBanner, setShowMobileBestPriceBanner] =
     useState(false);
 
+  /* Mobile Reserve flow: pre-selected date/time, mini calendar, time drawer — state lives in useMobileReserveFlow */
   // Simulate booking options loading state if needed, or derived from props
   // Since options come from server props, they are technically loaded.
   // We keep this state to maintain existing logic if desired, or set true immediately.
@@ -881,22 +1204,18 @@ export default function ClassPageClient({
       }
     }
 
-    // 2. Fire the Event
-    // We check for NaN just in case parsing failed
+    // 2. Fire the Event (only on prod or staging with test code; staging uses test_event_code)
     const finalValue = isNaN(pixelPrice) ? 0 : pixelPrice;
-
-    import("react-facebook-pixel")
-      .then((x) => x.default)
-      .then((ReactPixel) => {
-        ReactPixel.track("ViewContent", {
-          content_name: classData.title,
-          content_ids: [classData.classId],
-          content_type: "product",
-          value: finalValue,
-          currency: classData.currency_code || "CAD",
-          content_category: classData.category_name,
-        });
+    import("@/lib/metaPixel").then(({ trackPixelEvent }) => {
+      trackPixelEvent("ViewContent", {
+        content_name: classData.title,
+        content_ids: [classData.classId],
+        content_type: "product",
+        value: finalValue,
+        currency: classData.currency_code || "CAD",
+        content_category: classData.category_name,
       });
+    });
 
     // PostHog: Track class view (booking funnel entry point)
     posthog.capture("class_viewed", {
@@ -1002,11 +1321,12 @@ export default function ClassPageClient({
     );
   }, [classData]);
 
-  /* Mobile: show "Best Price Guaranteed" pop-up every time when options are available */
+  const mobileReserve = useMobileReserveFlow(mounted, classData, optionToDisplayOnCard);
+
+  /* Mobile: show "Best Price Guaranteed" pop-up when options are available */
   useEffect(() => {
     if (!mounted || typeof window === "undefined") return;
-    const isMobile = window.innerWidth <= 1024;
-    if (!isMobile || !optionToDisplayOnCard) return;
+    if (window.innerWidth > MOBILE_RESERVE_BREAKPOINT || !optionToDisplayOnCard) return;
     setShowMobileBestPriceBanner(true);
   }, [mounted, optionToDisplayOnCard]);
 
@@ -1017,6 +1337,7 @@ export default function ClassPageClient({
 
   return (
     <>
+      <HideScrollbarStyles />
       <DesktopHeaderWrapper>
         <ExploreHeader showOptionsWrapper={false} />
       </DesktopHeaderWrapper>
@@ -1134,6 +1455,26 @@ export default function ClassPageClient({
                   Array.isArray(classData.features) ? classData.features : []
                 }
               />
+              {mobileReserve.isMobileView && optionToDisplayOnCard && (
+                <>
+                  <SectionDividerAnt />
+                  <WhenSection id="when-section">
+                    <WhenTitle>Pick a date</WhenTitle>
+                    <WhenCalendarWrap>
+                      <MiniCalendar
+                        availableSlots={mobileReserve.mobileAvailableSlots}
+                        loading={mobileReserve.mobileSlotsLoading}
+                        selectedDate={mobileReserve.mobileSelectedDate}
+                        onDateSelect={mobileReserve.handleMobileDateSelect}
+                        currentDate={mobileReserve.mobileCalendarMonth}
+                        onMonthChange={mobileReserve.handleMobileCalendarMonthChange}
+                        minSelectableDate={mobileReserve.mobileMinSelectableDate}
+                        today={mobileReserve.mobileToday}
+                      />
+                    </WhenCalendarWrap>
+                  </WhenSection>
+                </>
+              )}
               <SectionDividerAnt />
               <Reviews
                 slug={classData.slug}
@@ -1184,13 +1525,184 @@ export default function ClassPageClient({
               onComplete={() => setShowMobileBestPriceBanner(false)}
             />
           )}
-          {optionToDisplayOnCard && (
-            <MobileBookingFooter
-              option={optionToDisplayOnCard}
-              onBookNow={handleOpenBookingModal}
-              hidden={isReviewsModalOpen}
-            />
+
+          {/* Mobile Footer Logic */}
+          {optionToDisplayOnCard && mounted && (
+            mobileReserve.mobileSlotsLoading ? (
+              <MobileBookingFooterSkeleton hidden={isReviewsModalOpen} />
+            ) : mobileReserve.mobileSelectedSlot ? (
+              mobileReserve.isMobileView && (
+                <ReserveFooterContainer data-hidden={isReviewsModalOpen}>
+                  <ReserveFooterSummary>
+                    <ReserveFooterPrice>
+                      {mobileReserve.mobileSelectedSlot.price != null && parseFloat(mobileReserve.mobileSelectedSlot.price) > 0
+                        ? `$${parseFloat(mobileReserve.mobileSelectedSlot.price).toFixed(0)}`
+                        : "Free"}
+                      <span style={{ fontWeight: 400, color: "#6b7280", fontSize: "0.8rem" }}> / person</span>
+                    </ReserveFooterPrice>
+                    <ReserveFooterMeta>
+                      {formatNaiveDate(mobileReserve.mobileSelectedSlot.date, "EEE, MMM d")} ·{" "}
+                      {formatTimeRangeForDisplay(
+                        mobileReserve.mobileSelectedSlot.date,
+                        mobileReserve.mobileSelectedSlot.time,
+                        mobileReserve.mobileSelectedSlot.duration,
+                        classData?.business_timezone || "Etc/UTC",
+                        Intl.DateTimeFormat().resolvedOptions().timeZone
+                      )}
+                      {` · ${mobileReserve.mobileParticipants} guest${mobileReserve.mobileParticipants !== 1 ? "s" : ""}`}
+                    </ReserveFooterMeta>
+                  </ReserveFooterSummary>
+                  <ReserveButton type="primary" onClick={mobileReserve.handleReserveClick}>
+                    Reserve
+                  </ReserveButton>
+                </ReserveFooterContainer>
+              )
+            ) : (
+              <MobileBookingFooter
+                option={optionToDisplayOnCard}
+                onBookNow={handleOpenBookingModal}
+                hidden={isReviewsModalOpen}
+              />
+            )
           )}
+
+          {/* Date drawer: calendar only. Selecting a date closes this and opens the time drawer (same as checkout). */}
+          <Drawer.Root
+            open={mobileReserve.mobileDateDrawerOpen}
+            onOpenChange={mobileReserve.createEditDrawerOnOpenChange(mobileReserve.setMobileDateDrawerOpen)}
+            shouldScaleBackground
+          >
+            <Drawer.Portal>
+              <MobileDrawerOverlay />
+              <MobileDrawerContent>
+                <MobileDrawerHandle />
+                <MobileDrawerTitle>Pick a date</MobileDrawerTitle>
+                <MobileDrawerBody>
+                  <MiniCalendar
+                    availableSlots={mobileReserve.mobileAvailableSlots}
+                    loading={mobileReserve.mobileSlotsLoading}
+                    selectedDate={mobileReserve.mobileSelectedDate}
+                    onDateSelect={mobileReserve.handleMobileDateSelectFromDrawer}
+                    currentDate={mobileReserve.mobileCalendarMonth}
+                    onMonthChange={mobileReserve.handleMobileCalendarMonthChange}
+                    minSelectableDate={mobileReserve.mobileMinSelectableDate}
+                    today={mobileReserve.mobileToday}
+                  />
+                </MobileDrawerBody>
+              </MobileDrawerContent>
+            </Drawer.Portal>
+          </Drawer.Root>
+
+          <Drawer.Root
+            open={mobileReserve.mobileTimeDrawerOpen}
+            onOpenChange={mobileReserve.createEditDrawerOnOpenChange(mobileReserve.setMobileTimeDrawerOpen)}
+            shouldScaleBackground
+          >
+            <Drawer.Portal>
+              <MobileDrawerOverlay />
+              <MobileDrawerContent>
+                <MobileDrawerHandle />
+                <MobileDrawerTitle>
+                  Select time
+                  {mobileReserve.mobileSelectedDate && (
+                    <MobileDrawerSubtitle>
+                      {formatNaiveDate(getLocalYYYYMMDD(mobileReserve.mobileSelectedDate), "EEEE, MMMM d")}
+                    </MobileDrawerSubtitle>
+                  )}
+                </MobileDrawerTitle>
+                <TimeSlotList>
+                  {mobileReserve.mobileSelectedDate &&
+                    (mobileReserve.mobileAvailableSlots[getLocalYYYYMMDD(mobileReserve.mobileSelectedDate)] || []).map((slot) => {
+                      const isSelected = mobileReserve.mobileSelectedSlot?.id === slot.instance_id;
+                      const price = parseFloat(slot.price);
+                      return (
+                        <TimeSlotRow
+                          type="button"
+                          key={slot.instance_id}
+                          $selected={isSelected}
+                          onClick={() => mobileReserve.handleMobileTimeSelect(slot)}
+                        >
+                          <div>
+                            <TimeSlotTime>
+                              {formatTimeRangeForDisplay(
+                                getLocalYYYYMMDD(mobileReserve.mobileSelectedDate),
+                                slot.time,
+                                slot.duration,
+                                classData?.business_timezone || "Etc/UTC",
+                                Intl.DateTimeFormat().resolvedOptions().timeZone
+                              )}
+                            </TimeSlotTime>
+                            <TimeSlotMeta>
+                              {getDurationText(slot.duration)} · {slot.available_spots} spots left
+                            </TimeSlotMeta>
+                          </div>
+                          <TimeSlotPrice $selected={isSelected}>
+                            {price === 0 ? "Free" : `$${price.toFixed(2)}`}
+                          </TimeSlotPrice>
+                        </TimeSlotRow>
+                      );
+                    })}
+                </TimeSlotList>
+              </MobileDrawerContent>
+            </Drawer.Portal>
+          </Drawer.Root>
+
+          {/* Participants drawer: open from Edit guests in review drawer; closing reopens review. */}
+          <Drawer.Root
+            open={mobileReserve.mobileParticipantsDrawerOpen}
+            onOpenChange={mobileReserve.createEditDrawerOnOpenChange(mobileReserve.setMobileParticipantsDrawerOpen)}
+            shouldScaleBackground
+          >
+            <Drawer.Portal>
+              <MobileDrawerOverlay />
+              <MobileDrawerContent>
+                <MobileDrawerHandle />
+                <MobileDrawerTitle>Number of guests</MobileDrawerTitle>
+                <ParticipantsDrawerHint>
+                  Up to {mobileReserve.mobileParticipantsMax} guests for this time slot.
+                </ParticipantsDrawerHint>
+                <ParticipantsStepperWrap>
+                  <ParticipantsStepperBtn
+                    type="button"
+                    disabled={mobileReserve.mobileParticipantsDraft <= 1}
+                    onClick={() => mobileReserve.setMobileParticipantsDraft((n) => Math.max(1, n - 1))}
+                    aria-label="Decrease guests"
+                  >
+                    −
+                  </ParticipantsStepperBtn>
+                  <ParticipantsStepperValue>{mobileReserve.mobileParticipantsDraft}</ParticipantsStepperValue>
+                  <ParticipantsStepperBtn
+                    type="button"
+                    disabled={mobileReserve.mobileParticipantsDraft >= mobileReserve.mobileParticipantsMax}
+                    onClick={() => mobileReserve.setMobileParticipantsDraft((n) => Math.min(mobileReserve.mobileParticipantsMax, n + 1))}
+                    aria-label="Increase guests"
+                  >
+                    +
+                  </ParticipantsStepperBtn>
+                </ParticipantsStepperWrap>
+                <ParticipantsApplyButton
+                  type="button"
+                  onClick={mobileReserve.handleParticipantsApply}
+                >
+                  Apply
+                </ParticipantsApplyButton>
+              </MobileDrawerContent>
+            </Drawer.Portal>
+          </Drawer.Root>
+
+          <MobileReserveReviewDrawer
+            open={mobileReserve.mobileReviewDrawerOpen}
+            onClose={() => mobileReserve.setMobileReviewDrawerOpen(false)}
+            classData={classData}
+            reserveData={{
+              selectedSlot: mobileReserve.mobileSelectedSlot,
+              selectedOption: optionToDisplayOnCard,
+              participants: mobileReserve.mobileParticipants,
+            }}
+            onEditDate={mobileReserve.handleMobileEditDate}
+            onEditTime={mobileReserve.handleMobileEditTime}
+            onEditGuests={mobileReserve.handleMobileEditGuests}
+          />
 
           {isBookingModalOpen && (
             <BookingModal

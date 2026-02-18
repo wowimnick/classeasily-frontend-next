@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Circle } from "react-leaflet";
 import styled, { createGlobalStyle } from "styled-components";
-import { Building } from "lucide-react";
+import { Building, Hand } from "lucide-react";
 import ReactDOMServer from "react-dom/server";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -49,6 +49,40 @@ const MapWrapper = styled.div`
     height: 100%;
     width: 100%;
     font-family: "ProximaSoft", sans-serif;
+  }
+`;
+
+/* Mobile: overlay so page scroll doesn't move the map; tap to enable map interaction */
+const TapToActivateOverlay = styled.button`
+  position: absolute;
+  inset: 0;
+  z-index: 400;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  transition: background 0.2s, color 0.2s;
+  border-radius: inherit;
+  @media (min-width: 769px) {
+    display: none;
+  }
+  &:hover {
+    background: rgba(255, 255, 255, 0.96);
+    color: #111;
+  }
+  svg {
+    flex-shrink: 0;
+    opacity: 0.85;
   }
 `;
 
@@ -124,6 +158,9 @@ const ClassPageMap = ({
   const [isMounted, setIsMounted] = useState(false);
   const [baseMapKey, setBaseMapKey] = useState(null);
   const [mapReady, setMapReady] = useState(false);
+  // Mobile: tap-to-activate so scrolling the page doesn't accidentally pan the map
+  const [isMobile, setIsMobile] = useState(false);
+  const [mapInteractionEnabled, setMapInteractionEnabled] = useState(false);
 
   useEffect(() => {
     // Generate a base unique key so each mount gets a fresh DOM node.
@@ -143,6 +180,13 @@ const ClassPageMap = ({
       setMapReady(false);
       cancelAnimationFrame(rafId);
     };
+  }, []);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(typeof window !== "undefined" && window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   const position = useMemo(() => {
@@ -200,10 +244,21 @@ const ClassPageMap = ({
   const zoomLevel = saltLocation ? 13 : 15;
   const approximateRadius = 800;
 
+  const showTapOverlay = isMobile && !mapInteractionEnabled;
+
   return (
     <MapWrapper>
       <LeafletMarkerStyles />
-      
+      {showTapOverlay && (
+        <TapToActivateOverlay
+          type="button"
+          onClick={() => setMapInteractionEnabled(true)}
+          aria-label="Tap to enable map – then you can pan and zoom"
+        >
+          <Hand size={28} aria-hidden />
+          Tap to move map
+        </TapToActivateOverlay>
+      )}
       {/* 
         The key={dynamicMapKey} on this div is the critical fix.
         It forces React to tear down this div and create a new one

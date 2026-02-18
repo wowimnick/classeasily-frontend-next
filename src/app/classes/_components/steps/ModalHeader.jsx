@@ -410,11 +410,6 @@ export const ModalFooter = ({
           </Button>
         )}
 
-        {!showPayButton && onClose && currentStep === totalSteps && (
-          <Button $primary onClick={onClose}>
-            Done
-          </Button>
-        )}
       </DesktopRightSlot>
     </FooterContainer>
   );

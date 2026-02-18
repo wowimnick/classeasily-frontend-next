@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
 import { Modal } from "antd";
+import { Drawer } from "vaul";
 import { motion, AnimatePresence } from "framer-motion";
-import { Award as AwardIcon, Plus } from "lucide-react";
+import { Award as AwardIcon, Plus, X } from "lucide-react";
 import { LordIcon } from "@/services/ReactUtils";
 
 // --- Styled Components ---
@@ -64,6 +65,41 @@ const TagsGrid = styled.ul`
   }
   @media (max-width: 480px) {
     margin-bottom: 1.25rem;
+  }
+`;
+
+/* Mobile: single column, attached rows with divider lines (like CalendarStep timeslots) */
+const MobileAmenitiesList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+  display: none;
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+  }
+`;
+const MobileAmenityRow = styled(motion.li)`
+  display: flex;
+  align-items: center;
+  padding: 1rem 1rem;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  font-family: "ProximaSoft", sans-serif;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #000;
+  word-break: break-word;
+  &:first-of-type {
+    border-top: none;
+  }
+  @media (max-width: 480px) {
+    padding: 0.875rem 1rem;
+    font-size: 0.875rem;
   }
 `;
 const ModalTagsContainer = styled.ul`
@@ -254,6 +290,106 @@ const ModalSectionTitle = styled.h3`
   }
 `;
 
+const DesktopTagsWrap = styled.div`
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+/* Mobile: Vaul drawer — same pattern as ClassPageClient date/time drawers (fixed bottom sheet) */
+const AmenitiesDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 3000;
+`;
+const AmenitiesDrawerContent = styled(Drawer.Content)`
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  max-height: 85vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 3001;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
+  outline: none;
+`;
+const AmenitiesDrawerHandle = styled.div`
+  width: 40px;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  margin: 12px auto;
+  flex-shrink: 0;
+`;
+const AmenitiesDrawerList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+`;
+const AmenitiesDrawerRow = styled.li`
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  font-family: "ProximaSoft", sans-serif;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #000;
+  word-break: break-word;
+  &:first-of-type {
+    border-top: none;
+  }
+`;
+const AmenitiesDrawerTitle = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #000;
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  svg {
+    color: #ff385c;
+    flex-shrink: 0;
+  }
+`;
+const AmenitiesDrawerClose = styled.button`
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #374151;
+  &:hover {
+    background: #e5e7eb;
+    color: #111;
+  }
+`;
+const AmenitiesDrawerBody = styled.div`
+  padding: 0 1rem 1rem;
+  overflow-y: auto;
+  flex: 1;
+  position: relative;
+`;
+
 // --- Feature Icons Configuration ---
 const ICONS = {
   materials: {
@@ -355,8 +491,9 @@ const ICONS = {
     delay: 2000,
   },
   default: {
-    src: "https://cdn.lordicon.com/vjhdnjhx.json",
+    src: "https://cdn.lordicon.com/xodeitpr.json",
     trigger: "in",
+    state: "in-reveal",
     delay: 2000,
   },
 };
@@ -427,8 +564,47 @@ const FeatureTag = ({ feature, isModal = false, index }) => {
   );
 };
 
+const MobileAmenityRowContent = ({ feature, index }) => {
+  const normalizedFeature =
+    typeof feature === "string" ? feature.toLowerCase().trim() : "unknown";
+  const featureConfig =
+    featureIcons[normalizedFeature] || featureIcons["default"];
+  const displayFeature = typeof feature === "string" ? feature : "Amenity";
+  return (
+    <MobileAmenityRow
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2, delay: (index % 10) * 0.03 }}
+    >
+      <IconWrapper $highlighted={featureConfig.highlight}>
+        <LordIcon
+          {...featureConfig.icon}
+          style={{ width: "24px", height: "24px" }}
+        />
+      </IconWrapper>
+      {displayFeature.charAt(0).toUpperCase() + displayFeature.slice(1)}
+    </MobileAmenityRow>
+  );
+};
+
 const ClassOffers = React.memo(({ features }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const drawerCloseRef = useRef(null);
+
+  useEffect(() => {
+    const check = () => setIsMobile(typeof window !== "undefined" && window.innerWidth <= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Move focus into the drawer when it opens so the trigger button (inside aria-hidden region) does not retain focus
+  useEffect(() => {
+    if (!isModalVisible || !isMobile) return;
+    const id = setTimeout(() => drawerCloseRef.current?.focus?.(), 0);
+    return () => clearTimeout(id);
+  }, [isModalVisible, isMobile]);
 
   const validFeatures = Array.isArray(features)
     ? features.filter((f) => typeof f === "string" && f.trim() !== "")
@@ -440,7 +616,7 @@ const ClassOffers = React.memo(({ features }) => {
   const visibleFeatures = validFeatures.slice(0, 6);
   const hasMoreFeatures = validFeatures.length > 6;
 
-  // Split features into Highlighted vs Others for the modal
+  // Split features into Highlighted vs Others for the modal/drawer
   const highlightedFeatures = validFeatures.filter(
     (f) =>
       (featureIcons[f.toLowerCase().trim()] || featureIcons["default"])
@@ -451,6 +627,10 @@ const ClassOffers = React.memo(({ features }) => {
       !(featureIcons[f.toLowerCase().trim()] || featureIcons["default"])
         .highlight
   );
+
+  const openAll = () => setIsModalVisible(true);
+  const closeAll = () => setIsModalVisible(false);
+  const setDrawerOpen = (open) => setIsModalVisible(!!open);
 
   return (
     <OffersContainer
@@ -463,18 +643,33 @@ const ClassOffers = React.memo(({ features }) => {
         <AwardIcon size={24} aria-hidden="true" />
         The good stuff
       </Title>
-      <TagsGrid role="list">
-        <AnimatePresence>
-          {visibleFeatures.map((feature, index) => (
-            <FeatureTagListItem key={`visible-${feature}-${index}`}>
-              <FeatureTag feature={feature} index={index} />
-            </FeatureTagListItem>
-          ))}
-        </AnimatePresence>
-      </TagsGrid>
+
+      <DesktopTagsWrap>
+        <TagsGrid role="list">
+          <AnimatePresence>
+            {visibleFeatures.map((feature, index) => (
+              <FeatureTagListItem key={`visible-${feature}-${index}`}>
+                <FeatureTag feature={feature} index={index} />
+              </FeatureTagListItem>
+            ))}
+          </AnimatePresence>
+        </TagsGrid>
+      </DesktopTagsWrap>
+
+      <MobileAmenitiesList role="list">
+        {visibleFeatures.map((feature, index) => (
+          <MobileAmenityRowContent key={`mobile-${feature}-${index}`} feature={feature} index={index} />
+        ))}
+      </MobileAmenitiesList>
+
       {hasMoreFeatures && (
         <ShowAllButton
-          onClick={() => setIsModalVisible(true)}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openAll();
+          }}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           aria-label={`Show all ${validFeatures.length} features and amenities`}
@@ -483,10 +678,44 @@ const ClassOffers = React.memo(({ features }) => {
           Show all {validFeatures.length} amenities
         </ShowAllButton>
       )}
+
+      {/* Mobile: Vaul drawer — same pattern as ClassPageClient date/time drawers (fixed bottom) */}
+      <Drawer.Root open={isModalVisible && isMobile} onOpenChange={setDrawerOpen} shouldScaleBackground>
+        <Drawer.Portal>
+          <AmenitiesDrawerOverlay />
+          <AmenitiesDrawerContent aria-describedby={undefined}>
+            <AmenitiesDrawerHandle aria-hidden />
+            <AmenitiesDrawerBody>
+              <AmenitiesDrawerTitle>
+                <AwardIcon size={24} aria-hidden="true" />
+                The good stuff
+              </AmenitiesDrawerTitle>
+              <AmenitiesDrawerList role="list">
+                {validFeatures.map((feature, index) => {
+                  const normalizedFeature =
+                    typeof feature === "string" ? feature.toLowerCase().trim() : "unknown";
+                  const featureConfig = featureIcons[normalizedFeature] || featureIcons["default"];
+                  const displayFeature = typeof feature === "string" ? feature : "Amenity";
+                  return (
+                    <AmenitiesDrawerRow key={`drawer-${feature}-${index}`}>
+                      <IconWrapper $highlighted={featureConfig.highlight}>
+                        <LordIcon {...featureConfig.icon} style={{ width: "24px", height: "24px" }} />
+                      </IconWrapper>
+                      {displayFeature.charAt(0).toUpperCase() + displayFeature.slice(1)}
+                    </AmenitiesDrawerRow>
+                  );
+                })}
+              </AmenitiesDrawerList>
+            </AmenitiesDrawerBody>
+          </AmenitiesDrawerContent>
+        </Drawer.Portal>
+      </Drawer.Root>
+
+      {/* Desktop: Ant Design modal with all amenities and mapped LordIcons */}
       <StyledModal
-        title={`What this experience offers`}
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
+        title="What this experience offers"
+        open={isModalVisible && !isMobile}
+        onCancel={closeAll}
         footer={null}
         width={800}
         centered
@@ -498,14 +727,8 @@ const ClassOffers = React.memo(({ features }) => {
             <ModalTagsContainer role="list">
               <AnimatePresence>
                 {highlightedFeatures.map((feature, index) => (
-                  <FeatureTagListItem
-                    key={`modal-highlight-${feature}-${index}`}
-                  >
-                    <FeatureTag
-                      feature={feature}
-                      isModal={true}
-                      index={index}
-                    />
+                  <FeatureTagListItem key={`modal-highlight-${feature}-${index}`}>
+                    <FeatureTag feature={feature} isModal={true} index={index} />
                   </FeatureTagListItem>
                 ))}
               </AnimatePresence>
@@ -519,11 +742,7 @@ const ClassOffers = React.memo(({ features }) => {
               <AnimatePresence>
                 {otherFeatures.map((feature, index) => (
                   <FeatureTagListItem key={`modal-other-${feature}-${index}`}>
-                    <FeatureTag
-                      feature={feature}
-                      isModal={true}
-                      index={index}
-                    />
+                    <FeatureTag feature={feature} isModal={true} index={index} />
                   </FeatureTagListItem>
                 ))}
               </AnimatePresence>
