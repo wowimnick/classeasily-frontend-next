@@ -7,6 +7,27 @@ import { LordIcon } from "@/services/ReactUtils";
 
 const SearchContext = createContext();
 
+const SEARCH_STORAGE_KEY = "classeasily_search_state";
+
+function getStoredSearchState() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(SEARCH_STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function saveSearchState(state) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(SEARCH_STORAGE_KEY, JSON.stringify(state));
+  } catch (_) {}
+}
+
 const AWS_LOCATION_API_URL =
   "https://geocoding.classeasily.com/address-autocomplete-proxy";
 
@@ -74,16 +95,40 @@ export const SearchProvider = ({ children }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Search Data State
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState({
-    displayName: "",
-    coordinates: null,
-    citySlug: null,
-    provinceSlug: null,
+  // Search Data State — initialize from sessionStorage so search persists when closing drawer / navigating
+  const [searchTerm, setSearchTerm] = useState(() => {
+    const stored = getStoredSearchState();
+    return (stored && stored.searchTerm) || "";
   });
-  const [datePickerValue, setDatePickerValue] = useState(null);
-  const [participantCount, setParticipantCount] = useState(1);
+  const [selectedLocation, setSelectedLocation] = useState(() => {
+    const stored = getStoredSearchState();
+    if (stored && stored.selectedLocation && typeof stored.selectedLocation === "object") {
+      return {
+        displayName: stored.selectedLocation.displayName || "",
+        coordinates: stored.selectedLocation.coordinates || null,
+        citySlug: stored.selectedLocation.citySlug || null,
+        provinceSlug: stored.selectedLocation.provinceSlug || null,
+      };
+    }
+    return {
+      displayName: "",
+      coordinates: null,
+      citySlug: null,
+      provinceSlug: null,
+    };
+  });
+  const [datePickerValue, setDatePickerValue] = useState(() => {
+    const stored = getStoredSearchState();
+    if (stored && stored.datePickerValue != null) return stored.datePickerValue;
+    return null;
+  });
+  const [participantCount, setParticipantCount] = useState(() => {
+    const stored = getStoredSearchState();
+    if (stored && typeof stored.participantCount === "number" && stored.participantCount >= 1) {
+      return Math.min(20, stored.participantCount);
+    }
+    return 1;
+  });
 
   // Geocoding State
   const [geocoding, setGeocoding] = useState(false);
@@ -156,7 +201,20 @@ export const SearchProvider = ({ children }) => {
     setDatePickerValue(null);
     setParticipantCount(1);
     setGeocodedAddressResults([]);
+    try {
+      if (typeof window !== "undefined") sessionStorage.removeItem(SEARCH_STORAGE_KEY);
+    } catch (_) {}
   };
+
+  // Persist search state so it survives closing the drawer and shows in ExploreHeader
+  useEffect(() => {
+    saveSearchState({
+      searchTerm,
+      selectedLocation,
+      datePickerValue,
+      participantCount,
+    });
+  }, [searchTerm, selectedLocation, datePickerValue, participantCount]);
 
   const performSearch = () => {
     const { displayName, coordinates } = selectedLocation;

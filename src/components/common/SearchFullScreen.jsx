@@ -435,9 +435,13 @@ export default function SearchFullScreen() {
 
   const renderLocationList = () => {
     const hasTerm = searchTerm && searchTerm.trim().length > 0;
-    const list = hasTerm ? geocodedAddressResults : GTA_PRESETS;
+    const trimmed = (searchTerm || "").trim().toLowerCase();
+    const isPresetTerm = trimmed && GTA_PRESETS.some((p) => p.name.toLowerCase() === trimmed);
+    // When selected location is a preset (e.g. Toronto, Vaughan), still show presets under "Explore nearby"
+    const usePresets = !hasTerm || isPresetTerm;
+    const list = usePresets ? GTA_PRESETS : geocodedAddressResults;
 
-    if (hasTerm && geocoding) {
+    if (hasTerm && !isPresetTerm && geocoding) {
       return (
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 24px", color: "#717171" }}>
           <LoadingSpinnerWrap>
@@ -447,13 +451,13 @@ export default function SearchFullScreen() {
         </div>
       );
     }
-    if (hasTerm && (!list || list.length === 0)) {
+    if (hasTerm && !isPresetTerm && (!list || list.length === 0)) {
       return <p style={{ color: "#717171", margin: "16px 24px" }}>No experiences found.</p>;
     }
 
     return (list || []).map((item, idx) => {
-      const name = hasTerm ? (item.displayName || "").split(",")[0] : item.name;
-      const desc = hasTerm ? item.displayName : item.description;
+      const name = usePresets ? item.name : (item.displayName || "").split(",")[0];
+      const desc = usePresets ? item.description : item.displayName;
       
       // Cycle through palette based on index
       const colorTheme = ICON_PALETTE[idx % ICON_PALETTE.length];

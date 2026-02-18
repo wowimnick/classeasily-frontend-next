@@ -285,17 +285,33 @@ function ExploreClientContent({
     };
   }, [nextPageUrl, loadingMore, fetchClassesApi]);
 
+  // Read current URL at call time to avoid stale closure when child calls this after location change
+  const getCurrentSearchString = useCallback(() => {
+    if (typeof window === "undefined") return searchParams.toString();
+    const q = window.location.search;
+    return q ? q.slice(1) : "";
+  }, [searchParams]);
+
   const handleCategoryChange = useCallback(
     (newCategoryKey, newSubcategoryKey) => {
       setIsNavigating(true);
-      const newParams = new URLSearchParams(searchParams.toString());
+      const currentQuery = getCurrentSearchString();
+      const newParams = new URLSearchParams(currentQuery);
+      const currentParams = new URLSearchParams(currentQuery);
 
-      // Preserve location from header if user selected a new place but hasn't searched yet
-      if (selectedLocation?.coordinates) {
-        newParams.set("lat", selectedLocation.coordinates.lat.toString());
-        newParams.set("lng", selectedLocation.coordinates.lng.toString());
+      // Keep location consistent: use actual current URL (avoids stale closure)
+      const urlLocation = currentParams.get("location");
+      const urlLat = currentParams.get("lat");
+      const urlLng = currentParams.get("lng");
+      if (urlLocation || urlLat || urlLng) {
+        if (urlLocation) newParams.set("location", urlLocation);
+        if (urlLat) newParams.set("lat", urlLat);
+        if (urlLng) newParams.set("lng", urlLng);
+      } else if (selectedLocation?.coordinates) {
         const loc = selectedLocation.displayName || searchTerm?.trim();
         if (loc) newParams.set("location", loc);
+        newParams.set("lat", selectedLocation.coordinates.lat.toString());
+        newParams.set("lng", selectedLocation.coordinates.lng.toString());
       }
 
       newParams.delete("collection");
@@ -314,20 +330,29 @@ function ExploreClientContent({
 
       router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
     },
-    [searchParams, router, pathname, selectedLocation, searchTerm]
+    [getCurrentSearchString, router, pathname, selectedLocation, searchTerm]
   );
 
   const handleCollectionChange = useCallback(
     (collectionSlug) => {
       setIsNavigating(true);
-      const newParams = new URLSearchParams(searchParams.toString());
+      const currentQuery = getCurrentSearchString();
+      const newParams = new URLSearchParams(currentQuery);
+      const currentParams = new URLSearchParams(currentQuery);
 
-      // Preserve location from header if user selected a new place but hasn't searched yet
-      if (selectedLocation?.coordinates) {
-        newParams.set("lat", selectedLocation.coordinates.lat.toString());
-        newParams.set("lng", selectedLocation.coordinates.lng.toString());
+      // Keep location consistent: use actual current URL (avoids stale closure)
+      const urlLocation = currentParams.get("location");
+      const urlLat = currentParams.get("lat");
+      const urlLng = currentParams.get("lng");
+      if (urlLocation || urlLat || urlLng) {
+        if (urlLocation) newParams.set("location", urlLocation);
+        if (urlLat) newParams.set("lat", urlLat);
+        if (urlLng) newParams.set("lng", urlLng);
+      } else if (selectedLocation?.coordinates) {
         const loc = selectedLocation.displayName || searchTerm?.trim();
         if (loc) newParams.set("location", loc);
+        newParams.set("lat", selectedLocation.coordinates.lat.toString());
+        newParams.set("lng", selectedLocation.coordinates.lng.toString());
       }
 
       newParams.delete("category");
@@ -341,7 +366,7 @@ function ExploreClientContent({
 
       router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
     },
-    [searchParams, router, pathname, selectedLocation, searchTerm]
+    [getCurrentSearchString, router, pathname, selectedLocation, searchTerm]
   );
 
   const handleApplyModalChanges = useCallback(
