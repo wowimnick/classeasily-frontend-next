@@ -40,6 +40,7 @@ const DrawerContent = styled(Drawer.Content)`
   display: flex;
   flex-direction: column;
   border-radius: 24px 24px 0 0;
+  height: 96vh;
   max-height: 96vh;
   position: fixed;
   bottom: 0;
@@ -47,6 +48,8 @@ const DrawerContent = styled(Drawer.Content)`
   right: 0;
   z-index: 1051;
   outline: none;
+  /* Constrain height so flex child (DrawerBody) can shrink and scroll */
+  min-height: 0;
 `;
 
 const NestedDrawerContent = styled(Drawer.Content)`
@@ -73,12 +76,22 @@ const DrawerHandle = styled.div`
 `;
 
 const DrawerBody = styled.div`
-  overflow-y: auto;
-  padding: 0 12px 32px;
+  overflow-y: scroll;
+  padding: 0 12px 16px;
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  -webkit-overflow-scrolling: touch;
+  /* Ensure scrollbar is visible when content overflows */
+  overflow-x: hidden;
+`;
+
+const DrawerFooter = styled.div`
+  flex-shrink: 0;
+  padding: 8px 12px 12px;
+  background: #fff;
+  border-top: 1px solid ${theme.borderLight};
 `;
 
 /* Header */
@@ -88,6 +101,7 @@ const HeaderRow = styled.div`
   align-items: center;
   margin-bottom: 20px;
   padding-top: 8px;
+  flex-shrink: 0;
 `;
 
 const Title = styled.h2`
@@ -124,6 +138,7 @@ const InfoCard = styled.div`
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0,0,0,0.03);
   margin-bottom: 24px;
+  flex-shrink: 0;
 `;
 
 const ListingHeader = styled.div`
@@ -230,6 +245,7 @@ const TotalSummaryCard = styled.div`
   align-items: stretch;
   margin-bottom: 24px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  flex-shrink: 0;
 
   .top-row {
     display: flex;
@@ -284,6 +300,7 @@ const ViewDetailsButton = styled.button`
 /* Cancellation Policy */
 const PolicySection = styled.div`
   margin-bottom: 24px;
+  flex-shrink: 0;
 `;
 
 const PolicyText = styled.div`
@@ -315,7 +332,6 @@ const NextButton = styled.button`
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  margin-top: auto;
   
   &:active {
     opacity: 0.95;
@@ -561,10 +577,13 @@ export default function MobileReserveReviewDrawer({
                  </div>
               </div>
             </PolicySection>
+          </DrawerBody>
 
+          <DrawerFooter>
             <NextButton type="button" onClick={handleNext}>
               Next
             </NextButton>
+          </DrawerFooter>
 
             {/* NESTED DRAWER: Price Details */}
             <Drawer.Root open={priceOpen} onOpenChange={setPriceOpen}>
@@ -607,8 +626,6 @@ export default function MobileReserveReviewDrawer({
                     </NestedDrawerContent>
                 </Drawer.Portal>
             </Drawer.Root>
-
-          </DrawerBody>
         </DrawerContent>
       </Drawer.Portal>
     </Drawer.Root>
