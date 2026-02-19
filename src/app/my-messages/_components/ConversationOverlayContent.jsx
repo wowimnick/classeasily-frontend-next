@@ -86,6 +86,19 @@ const Time = styled.div`
   color: ${(p) => (p.$isBooker ? "rgba(255,255,255,0.6)" : "#a3a3a3")};
 `;
 
+const ReadStatus = styled.span`
+  font-size: 10px;
+  margin-left: 6px;
+  color: ${(p) => (p.$isBooker ? "rgba(255,255,255,0.7)" : "#a3a3a3")};
+`;
+
+const TypingIndicator = styled.div`
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #717171;
+  font-style: italic;
+`;
+
 const ReplyForm = styled.form`
   padding: 16px 20px;
   border-top: 1px solid #ebebeb;
@@ -153,14 +166,21 @@ export default function ConversationOverlayContent({
   sending,
   onSend,
   loading,
+  messagesOverride,
+  typing,
+  readStatus,
+  onInputFocus,
+  onInputBlur,
+  onMessagesViewed,
 }) {
   const messagesEndRef = useRef(null);
+  const scrollRef = useRef(null);
+
+  const messages = messagesOverride !== undefined && Array.isArray(messagesOverride) ? messagesOverride : (conv?.messages || []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conv?.messages]);
-
-  const messages = conv?.messages || [];
+  }, [messages]);
 
   return (
     <>
@@ -178,7 +198,7 @@ export default function ConversationOverlayContent({
         </button>
       </OverlayHeader>
 
-      <MessagesScroll>
+      <MessagesScroll ref={scrollRef}>
         {loading && !messages.length ? (
           <div style={{ padding: "24px", textAlign: "center", color: "#717171" }}>
             Loading conversation…
@@ -188,6 +208,10 @@ export default function ConversationOverlayContent({
         ) : (
           messages.map((msg) => {
             const isBooker = msg.sender_type === "booker";
+            const createdAt = msg.created_at ? new Date(msg.created_at).getTime() : 0;
+            const lastReadByOther = isBooker ? readStatus?.last_read_by_business_at : readStatus?.last_read_by_booker_at;
+            const readAt = lastReadByOther ? new Date(lastReadByOther).getTime() : 0;
+            const isRead = readAt >= createdAt;
             return (
               <MessageRow key={msg.id} $isBooker={isBooker}>
                 <Bubble $isBooker={isBooker}>
@@ -195,11 +219,20 @@ export default function ConversationOverlayContent({
                     {isBooker ? "You" : msg.sender_display || "Host"}
                   </SenderLabel>
                   <Text>{msg.text}</Text>
-                  <Time $isBooker={isBooker}>{formatTime(msg.created_at)}</Time>
+                  <Time $isBooker={isBooker}>
+                    {formatTime(msg.created_at)}
+                    {isBooker && isRead && <ReadStatus $isBooker={isBooker}> · Read</ReadStatus>}
+                  </Time>
                 </Bubble>
               </MessageRow>
             );
           })
+        )}
+        {typing?.booker?.active && (
+          <TypingIndicator>{typing.booker.displayName || "Guest"} is typing…</TypingIndicator>
+        )}
+        {typing?.business?.active && (
+          <TypingIndicator>{typing.business.displayName || "Host"} is typing…</TypingIndicator>
         )}
         <div ref={messagesEndRef} />
       </MessagesScroll>
@@ -211,6 +244,8 @@ export default function ConversationOverlayContent({
             placeholder="Type your message…"
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
+            onFocus={onInputFocus}
+            onBlur={onInputBlur}
             disabled={sending}
             autoSize={{ minRows: 1, maxRows: 5 }}
             style={{ flex: 1, minWidth: 0 }}

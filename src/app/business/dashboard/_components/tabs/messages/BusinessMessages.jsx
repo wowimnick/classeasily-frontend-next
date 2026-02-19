@@ -9,6 +9,7 @@ import { Empty, Drawer as AntDrawer, Input, Button, ConfigProvider, Card, Typogr
 import message from "@/lib/message";
 import { businessConversationService } from "@/services/apiService";
 import EmojiQuickPick from "@/components/chat/EmojiQuickPick";
+import { useConversationWebSocket } from "@/hooks/useConversationWebSocket";
 
 const { Text } = Typography;
 
@@ -490,6 +491,7 @@ const InputCapsuleSkeleton = styled(SkeletonBase)`
 `;
 
 const POLL_MS = 12000;
+const POLL_MS_WHEN_WS_CONNECTED = 60000; // Fallback when WS is connected
 
 const formatTime = (dateString) => {
   if (!dateString) return "";
@@ -519,6 +521,21 @@ export default function BusinessMessages() {
   const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef(null);
   const hasAutoOpenedRef = useRef(false);
+
+  const ws = useConversationWebSocket({
+    conversationId: selected?.id ?? null,
+    guestInboxToken: null,
+    initialMessages: selected?.messages ?? [],
+    initialReadStatus: selected
+      ? {
+          last_read_by_booker_at: selected.last_read_by_booker_at ?? null,
+          last_read_by_business_at: selected.last_read_by_business_at ?? null,
+        }
+      : null,
+  });
+  const displayMessages = selected?.id && ws.messages?.length ? ws.messages : (selected?.messages ?? []);
+  const typingGuest = ws.typing?.booker?.active ? (ws.typing.booker.displayName || "Guest") : null;
+  const hasTyping = !!typingGuest;
 
   useEffect(() => {
     setMounted(true);
@@ -566,13 +583,14 @@ export default function BusinessMessages() {
 
   useEffect(() => {
     if (!selected?.id) return;
-    const t = setInterval(() => fetchDetail(selected.id, false), POLL_MS);
+    const interval = ws.connected ? POLL_MS_WHEN_WS_CONNECTED : POLL_MS;
+    const t = setInterval(() => fetchDetail(selected.id, false), interval);
     return () => clearInterval(t);
-  }, [selected?.id, fetchDetail]);
+  }, [selected?.id, fetchDetail, ws.connected]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [selected?.messages]);
+  }, [displayMessages]);
 
   const openConversation = (conv) => {
     setSelected(conv);
@@ -580,6 +598,10 @@ export default function BusinessMessages() {
     setReplyText("");
     fetchDetail(conv.id, true);
   };
+
+  useEffect(() => {
+    if (open && selected?.id) ws.sendMarkRead();
+  }, [open, selected?.id]);
 
   const closeConversation = () => setOpen(false);
 
@@ -796,10 +818,10 @@ export default function BusinessMessages() {
                             </button>
                           </DrawerHeader>
                           <MessagesArea>
-                            {(selected.messages || []).length === 0 ? (
+                            {displayMessages.length === 0 ? (
                               <Empty description="No messages yet" style={{ margin: "auto" }} />
                             ) : (
-                              (selected.messages || []).map((msg) => (
+                              displayMessages.map((msg) => (
                                 <MsgRow key={msg.id} $isBusiness={msg.sender_type === "business"}>
                                   <Bubble $isBusiness={msg.sender_type === "business"}>
                                     <div>{msg.text}</div>
@@ -808,13 +830,26 @@ export default function BusinessMessages() {
                                 </MsgRow>
                               ))
                             )}
+                            {hasTyping && (
+                              <div style={{ padding: "8px 16px", fontSize: 13, color: "#717171", fontStyle: "italic" }}>
+                                {typingGuest} is typing…
+                              </div>
+                            )}
                             <div ref={messagesEndRef} />
                           </MessagesArea>
                           <ReplyForm onSubmit={handleSendReply}>
                             <EmojiQuickPick onInsert={(emoji) => setReplyText((prev) => prev + emoji)} />
                             <InputContainer>
                               <ReplyTextareaWrapper>
-                                <Input.TextArea placeholder="Type your reply…" value={replyText} onChange={(e) => setReplyText(e.target.value)} disabled={sending} autoSize={{ minRows: 1, maxRows: 5 }} />
+                                <Input.TextArea
+                                  placeholder="Type your reply…"
+                                  value={replyText}
+                                  onChange={(e) => setReplyText(e.target.value)}
+                                  onFocus={ws.sendTypingStart}
+                                  onBlur={ws.sendTypingStop}
+                                  disabled={sending}
+                                  autoSize={{ minRows: 1, maxRows: 5 }}
+                                />
                               </ReplyTextareaWrapper>
                               <SendBtn htmlType="submit" type="primary" shape="circle" icon={<Send size={18} />} disabled={!replyText.trim() || sending} loading={sending} />
                             </InputContainer>
@@ -877,10 +912,10 @@ export default function BusinessMessages() {
                 ) : (
                 <ConversationPanel>
                   <MessagesArea style={{ flex: 1, minHeight: 0 }}>
-                    {(selected.messages || []).length === 0 ? (
+                    {displayMessages.length === 0 ? (
                       <Empty description="No messages yet" style={{ margin: "auto" }} />
                     ) : (
-                      (selected.messages || []).map((msg) => (
+                      displayMessages.map((msg) => (
                         <MsgRow key={msg.id} $isBusiness={msg.sender_type === "business"}>
                           <Bubble $isBusiness={msg.sender_type === "business"}>
                             <div>{msg.text}</div>
@@ -889,13 +924,26 @@ export default function BusinessMessages() {
                         </MsgRow>
                       ))
                     )}
+                    {hasTyping && (
+                      <div style={{ padding: "8px 16px", fontSize: 13, color: "#717171", fontStyle: "italic" }}>
+                        {typingGuest} is typing…
+                      </div>
+                    )}
                     <div ref={messagesEndRef} />
                   </MessagesArea>
                   <ReplyForm onSubmit={handleSendReply}>
                     <EmojiQuickPick onInsert={(emoji) => setReplyText((prev) => prev + emoji)} />
                     <InputContainer>
                       <ReplyTextareaWrapper>
-                        <Input.TextArea placeholder="Type your reply…" value={replyText} onChange={(e) => setReplyText(e.target.value)} disabled={sending} autoSize={{ minRows: 1, maxRows: 5 }} />
+                        <Input.TextArea
+                          placeholder="Type your reply…"
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          onFocus={ws.sendTypingStart}
+                          onBlur={ws.sendTypingStop}
+                          disabled={sending}
+                          autoSize={{ minRows: 1, maxRows: 5 }}
+                        />
                       </ReplyTextareaWrapper>
                       <SendBtn htmlType="submit" type="primary" shape="circle" icon={<Send size={18} />} disabled={!replyText.trim() || sending} loading={sending} />
                     </InputContainer>

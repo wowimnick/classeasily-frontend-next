@@ -75,15 +75,18 @@ export const API_ENDPOINTS = {
   CONVERSATIONS: "/conversations/",
   CONVERSATION_DETAIL: (id) => `/conversations/${id}/`,
   CONVERSATION_SEND_MESSAGE: (id) => `/conversations/${id}/send_message/`,
+  CONVERSATION_MARK_READ: (id) => `/conversations/${id}/mark_read/`,
   // Business dashboard conversations
   BUSINESS_CONVERSATIONS: "/business/conversations/",
   BUSINESS_CONVERSATION_DETAIL: (id) => `/business/conversations/${id}/`,
   BUSINESS_CONVERSATION_SEND_MESSAGE: (id) =>
     `/business/conversations/${id}/send_message/`,
+  BUSINESS_CONVERSATION_MARK_READ: (id) => `/business/conversations/${id}/mark_read/`,
   // Guest (no-account) messaging from class page + inbox via token
   GUEST_MESSAGE: "/guest-message/",
   GUEST_INBOX: (token) => `/guest-inbox/?token=${encodeURIComponent(token)}`,
   GUEST_INBOX_SEND: "/guest-inbox/send/",
+  GUEST_INBOX_MARK_READ: "/guest-inbox/mark-read/",
 
   // Notifications
   NOTIFICATIONS: "/business/notifications/",
@@ -2729,6 +2732,16 @@ export const conversationService = {
       return { success: false, error: error.response?.data?.detail || "Failed to send message" };
     }
   },
+
+  markRead: async (conversationId) => {
+    try {
+      await axiosInstance.post(API_ENDPOINTS.CONVERSATION_MARK_READ(conversationId));
+      return { success: true };
+    } catch (error) {
+      console.error("Error marking read:", error.response?.data || error);
+      return { success: false, error: error.response?.data?.detail || "Failed to mark read" };
+    }
+  },
 };
 
 // --- Business Conversation Service (dashboard) ---
@@ -2765,6 +2778,16 @@ export const businessConversationService = {
     } catch (error) {
       console.error("Error sending reply:", error.response?.data || error);
       return { success: false, error: error.response?.data?.detail || "Failed to send reply" };
+    }
+  },
+
+  markRead: async (conversationId) => {
+    try {
+      await axiosInstance.post(API_ENDPOINTS.BUSINESS_CONVERSATION_MARK_READ(conversationId));
+      return { success: true };
+    } catch (error) {
+      console.error("Error marking read:", error.response?.data || error);
+      return { success: false, error: error.response?.data?.detail || "Failed to mark read" };
     }
   },
 };
@@ -2804,6 +2827,19 @@ export const guestMessageService = {
       const msg = typeof detail === "object" && detail !== null
         ? (detail.detail || detail.token?.[0] || Object.values(detail).flat().join(" "))
         : "Failed to send message";
+      return { success: false, error: msg };
+    }
+  },
+
+  markRead: async (token) => {
+    try {
+      await axiosInstance.post(API_ENDPOINTS.GUEST_INBOX_MARK_READ, { token });
+      return { success: true };
+    } catch (error) {
+      const detail = error.response?.data;
+      const msg = typeof detail === "object" && detail !== null
+        ? (detail.detail || detail.token?.[0] || "Failed to mark read")
+        : "Failed to mark read";
       return { success: false, error: msg };
     }
   },

@@ -16,6 +16,7 @@ import { createPortal } from "react-dom";
 import { notificationService } from "@/services/apiService";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-client";
+import { useNotificationsWebSocket } from "@/hooks/useNotificationsWebSocket";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 
 const { Text, Title } = Typography;
@@ -377,6 +378,20 @@ const NotificationsButton = () => {
   const popoverRef = useRef(null);
   const notificationButtonRef = useRef(null);
 
+  useNotificationsWebSocket({
+    enabled: !!currentUser,
+    onNewNotification: (n) => {
+      setNotifications((prev) => {
+        const exists = prev.some((x) => x.id === n.id);
+        if (exists) return prev;
+        return [n, ...prev];
+      });
+    },
+    onUnreadDelta: (delta) => {
+      setUnreadCount((c) => Math.max(0, c + delta));
+    },
+  });
+
   useEffect(() => {
     setIsMobile(window.innerWidth <= 768);
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -472,8 +487,6 @@ const NotificationsButton = () => {
   useEffect(() => {
     if (currentUser) {
       fetchUnreadCount();
-      const countInterval = setInterval(fetchUnreadCount, 300000);
-      return () => clearInterval(countInterval);
     } else {
       setUnreadCount(0);
       setCountLoading(false);

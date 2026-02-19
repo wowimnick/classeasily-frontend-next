@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import { conversationService } from "@/services/apiService";
 import { theme as globalTheme } from "@/components/theme";
+import { useConversationWebSocket } from "@/hooks/useConversationWebSocket";
 import FooterClient from "@/components/homepage/FooterClient";
 import message from "@/lib/message";
 import ConversationOverlayContent from "./ConversationOverlayContent";
@@ -119,6 +120,7 @@ const ChevronWrap = styled.div`
 
 const DRAWER_BREAKPOINT = 768;
 const POLL_INTERVAL_MS = 12000;
+const POLL_INTERVAL_MS_WHEN_WS = 60000;
 
 const formatTime = (dateString) => {
   if (!dateString) return "";
@@ -184,6 +186,16 @@ export default function MyMessagesContent() {
   const [isMobile, setIsMobile] = useState(false);
   const hasOpenedFromUrlRef = useRef(false);
 
+  const ws = useConversationWebSocket({
+    conversationId: selectedId ?? null,
+    guestInboxToken: null,
+    initialMessages: conv?.messages ?? [],
+    initialReadStatus: conv
+      ? { last_read_by_booker_at: conv.last_read_by_booker_at ?? null, last_read_by_business_at: conv.last_read_by_business_at ?? null }
+      : null,
+  });
+  const displayMessages = selectedId && ws.messages?.length ? ws.messages : (conv?.messages ?? []);
+
   const fetchList = useCallback(async () => {
     setLoading(true);
     const result = await conversationService.getList();
@@ -227,9 +239,10 @@ export default function MyMessagesContent() {
 
   useEffect(() => {
     if (!selectedId) return;
-    const t = setInterval(() => fetchDetail(selectedId, false), POLL_INTERVAL_MS);
+    const interval = ws.connected ? POLL_INTERVAL_MS_WHEN_WS : POLL_INTERVAL_MS;
+    const t = setInterval(() => fetchDetail(selectedId, false), interval);
     return () => clearInterval(t);
-  }, [selectedId, fetchDetail]);
+  }, [selectedId, fetchDetail, ws.connected]);
 
   const openConversation = useCallback(
     (c) => {
@@ -271,6 +284,10 @@ export default function MyMessagesContent() {
 
   const isOverlayOpen = selectedId != null;
 
+  useEffect(() => {
+    if (isOverlayOpen && selectedId) ws.sendMarkRead();
+  }, [isOverlayOpen, selectedId]);
+
   const overlayContent = (
     <ConversationOverlayContent
       conv={conv}
@@ -280,6 +297,12 @@ export default function MyMessagesContent() {
       sending={sending}
       onSend={handleSend}
       loading={detailLoading && !conv}
+      messagesOverride={displayMessages}
+      typing={ws.typing}
+      readStatus={ws.readStatus}
+      onInputFocus={ws.sendTypingStart}
+      onInputBlur={ws.sendTypingStop}
+      onMessagesViewed={ws.sendMarkRead}
     />
   );
 

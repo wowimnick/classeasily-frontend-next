@@ -5,10 +5,12 @@ import { useSearchParams, useRouter } from "next/navigation";
 import styled, { createGlobalStyle } from "styled-components";
 import { Drawer } from "vaul";
 import { Modal, ConfigProvider } from "antd";
-import { conversationService } from "@/services/apiService";
+import { X } from "lucide-react";
+import { conversationService, guestMessageService } from "@/services/apiService";
 import message from "@/lib/message";
 import { theme as globalTheme } from "@/components/theme";
 import ConversationOverlayContent from "@/app/my-messages/_components/ConversationOverlayContent";
+import { useConversationWebSocket } from "@/hooks/useConversationWebSocket";
 
 const ModalGlobalStyle = createGlobalStyle`
   .homepage-conversation-modal .ant-modal-content {
@@ -24,6 +26,8 @@ const StyledModal = styled(Modal)`
 
 const DRAWER_BREAKPOINT = 768;
 const POLL_INTERVAL_MS = 12000;
+const GUEST_POLL_INTERVAL_MS = 15000;
+const POLL_MS_WHEN_WS = 60000;
 
 const OverlayPanel = styled.div`
   display: flex;
@@ -57,18 +61,85 @@ const DrawerBodyWrap = styled.div`
   overflow: hidden;
 `;
 
+const OverlayHeader = styled.div`
+  padding: 16px 20px;
+  border-bottom: 1px solid #ebebeb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #334155;
+  }
+  button[data-close] {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #717171;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    &:hover {
+      color: #ff385c;
+    }
+  }
+`;
+
+const TokenErrorBox = styled.div`
+  padding: 24px 20px;
+  text-align: center;
+  color: #717171;
+  background: #fafafa;
+  margin: 20px;
+  border-radius: 12px;
+  border: 1px solid #ebebeb;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+`;
+
 function HomepageConversationOverlayInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const conversationId = searchParams.get("conversation_id");
+  const guestInboxToken = searchParams.get("guest_inbox_token");
+
+  const isGuest = !!guestInboxToken;
+  const isOpen = !!conversationId || !!guestInboxToken;
 
   const [conv, setConv] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [tokenError, setTokenError] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  const fetchDetail = useCallback(async (id, isInitialLoad = false) => {
+  const effectiveConvId = conv?.id ?? conversationId;
+  const ws = useConversationWebSocket({
+    conversationId: effectiveConvId ?? null,
+    guestInboxToken: isGuest ? guestInboxToken : null,
+    initialMessages: conv?.messages ?? [],
+    initialReadStatus: conv
+      ? { last_read_by_booker_at: conv.last_read_by_booker_at ?? null, last_read_by_business_at: conv.last_read_by_business_at ?? null }
+      : null,
+  });
+  const displayMessages = effectiveConvId && ws.messages?.length ? ws.messages : (conv?.messages ?? []);
+
+  const handleClose = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("conversation_id");
+    params.delete("guest_inbox_token");
+    const qs = params.toString();
+    router.replace(qs ? `/?${qs}` : "/", { scroll: false });
+  }, [router, searchParams]);
+
+  const fetchDetailLoggedIn = useCallback(async (id, isInitialLoad = false) => {
     if (!id) return;
     if (isInitialLoad) setDetailLoading(true);
     const result = await conversationService.getDetail(id);
@@ -76,6 +147,21 @@ function HomepageConversationOverlayInner() {
     else if (result.error) {
       message.error(result.error);
       handleClose();
+    }
+    if (isInitialLoad) setDetailLoading(false);
+  }, [handleClose]);
+
+  const fetchDetailGuest = useCallback(async (token, isInitialLoad = false) => {
+    if (!token) return;
+    if (isInitialLoad) setDetailLoading(true);
+    const result = await guestMessageService.getInbox(token);
+    if (result.success) {
+      setConv(result.data);
+      setTokenError(null);
+    } else {
+      setConv(null);
+      setTokenError(result.error || "Invalid or expired link.");
+      if (isInitialLoad) message.error(result.error || "Invalid or expired link.");
     }
     if (isInitialLoad) setDetailLoading(false);
   }, []);
@@ -88,52 +174,91 @@ function HomepageConversationOverlayInner() {
   }, []);
 
   useEffect(() => {
-    if (!conversationId) return;
-    fetchDetail(conversationId, true);
-  }, [conversationId, fetchDetail]);
+    if (conversationId) fetchDetailLoggedIn(conversationId, true);
+    else if (guestInboxToken) fetchDetailGuest(guestInboxToken, true);
+  }, [conversationId, guestInboxToken, fetchDetailLoggedIn, fetchDetailGuest]);
 
   useEffect(() => {
-    if (!conversationId) return;
-    const t = setInterval(() => fetchDetail(conversationId, false), POLL_INTERVAL_MS);
-    return () => clearInterval(t);
-  }, [conversationId, fetchDetail]);
+    const interval = ws.connected ? POLL_MS_WHEN_WS : null;
+    if (conversationId) {
+      const ms = interval ?? POLL_INTERVAL_MS;
+      const t = setInterval(() => fetchDetailLoggedIn(conversationId, false), ms);
+      return () => clearInterval(t);
+    }
+    if (guestInboxToken && conv) {
+      const ms = interval ?? GUEST_POLL_INTERVAL_MS;
+      const t = setInterval(() => fetchDetailGuest(guestInboxToken, false), ms);
+      return () => clearInterval(t);
+    }
+  }, [conversationId, guestInboxToken, conv, fetchDetailLoggedIn, fetchDetailGuest, ws.connected]);
 
-  const handleClose = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("conversation_id");
-    const qs = params.toString();
-    router.replace(qs ? `/?${qs}` : "/", { scroll: false });
-  }, [router, searchParams]);
+  useEffect(() => {
+    if (isOpen && effectiveConvId) ws.sendMarkRead();
+  }, [isOpen, effectiveConvId]);
 
   const handleSend = useCallback(
     async (e) => {
       e.preventDefault();
-      if (!replyText.trim() || !conversationId) return;
+      if (!replyText.trim()) return;
       setSending(true);
-      const result = await conversationService.sendMessage(conversationId, replyText.trim());
-      if (result.success) {
-        setReplyText("");
-        fetchDetail(conversationId, false);
-      } else {
-        message.error(result.error || "Failed to send message");
+      if (conversationId) {
+        const result = await conversationService.sendMessage(conversationId, replyText.trim());
+        if (result.success) {
+          setReplyText("");
+          fetchDetailLoggedIn(conversationId, false);
+        } else {
+          message.error(result.error || "Failed to send message");
+        }
+      } else if (guestInboxToken) {
+        const result = await guestMessageService.sendMessage(guestInboxToken, replyText.trim());
+        if (result.success) {
+          setReplyText("");
+          fetchDetailGuest(guestInboxToken, false);
+        } else {
+          message.error(result.error || "Failed to send message");
+        }
       }
       setSending(false);
     },
-    [replyText, conversationId, fetchDetail]
+    [replyText, conversationId, guestInboxToken, fetchDetailLoggedIn, fetchDetailGuest]
   );
 
-  if (!conversationId) return null;
+  if (!isOpen) return null;
 
-  const overlayContent = (
-    <ConversationOverlayContent
-      conv={conv}
-      onClose={handleClose}
-      replyText={replyText}
-      setReplyText={setReplyText}
-      sending={sending}
-      onSend={handleSend}
-      loading={detailLoading && !conv}
-    />
+  const showError = isGuest && tokenError && !conv;
+  const overlayContent = showError ? (
+    <OverlayPanel>
+      <OverlayHeader>
+        <h2>Conversation</h2>
+        <button type="button" onClick={handleClose} data-close aria-label="Close">
+          <X size={20} />
+        </button>
+      </OverlayHeader>
+      <TokenErrorBox>
+        <p style={{ margin: "0 0 8px", fontWeight: 600 }}>This link is invalid or has expired.</p>
+        <p style={{ margin: 0, fontSize: 14 }}>
+          Ask the host to send you a new reply from their dashboard, or contact them by email.
+        </p>
+      </TokenErrorBox>
+    </OverlayPanel>
+  ) : (
+    <>
+      <ConversationOverlayContent
+        conv={conv}
+        onClose={handleClose}
+        replyText={replyText}
+        setReplyText={setReplyText}
+        sending={sending}
+        onSend={handleSend}
+        loading={detailLoading && !conv}
+        messagesOverride={displayMessages}
+        typing={ws.typing}
+        readStatus={ws.readStatus}
+        onInputFocus={ws.sendTypingStart}
+        onInputBlur={ws.sendTypingStop}
+        onMessagesViewed={ws.sendMarkRead}
+      />
+    </>
   );
 
   return (
