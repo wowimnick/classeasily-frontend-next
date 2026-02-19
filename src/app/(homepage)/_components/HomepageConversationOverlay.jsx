@@ -110,15 +110,20 @@ function HomepageConversationOverlayInner() {
   const conversationId = searchParams.get("conversation_id");
   const guestInboxToken = searchParams.get("guest_inbox_token");
 
-  const isGuest = !!guestInboxToken;
-  const isOpen = !!conversationId || !!guestInboxToken;
-
+  const [mounted, setMounted] = useState(false);
   const [conv, setConv] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [tokenError, setTokenError] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isGuest = !!guestInboxToken;
+  const isOpen = mounted && (!!conversationId || !!guestInboxToken);
 
   const effectiveConvId = conv?.id ?? conversationId;
   const ws = useConversationWebSocket({
