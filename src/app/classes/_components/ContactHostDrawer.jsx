@@ -123,15 +123,83 @@ const ModalTitle = styled.h2`
 
 const Subtitle = styled.p`
   margin: 0;
-  font-size: 15px;
-  color: ${theme.textSecondary};
+  font-size: 14px;
+  color: ${theme.textPrimary};
   line-height: 1.5;
+  text-align: center;
+`;
+
+/* Match MobileReserveReviewDrawer InfoCard exactly */
+const InfoCard = styled.div`
+  background: #fff;
+  border: 1px solid ${theme.borderLight};
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  margin-bottom: 24px;
+  flex-shrink: 0;
+`;
+
+const CardSection = styled.div`
+  padding: 12px;
+  border-bottom: 1px solid ${theme.borderLight};
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+/* Form in drawer: black text, same spacing as review drawer */
+const DrawerFormWrap = styled.div`
+  .ant-form {
+    margin-top: 0;
+  }
+  .ant-form-item-label > label {
+    color: ${theme.textPrimary} !important;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .ant-input,
+  .ant-input-affix-wrapper input,
+  .ant-input-textarea textarea {
+    color: ${theme.textPrimary} !important;
+    font-size: 16px;
+  }
+  @media (min-width: 769px) {
+    .ant-input,
+    .ant-input-affix-wrapper input,
+    .ant-input-textarea textarea {
+      font-size: 14px;
+    }
+  }
+  .ant-input::placeholder,
+  .ant-input-textarea textarea::placeholder {
+    color: #9ca3af;
+  }
+`;
+
+/* Input font-size: 16px mobile, 14px desktop (used in modal) */
+const FormFieldSizes = styled.div`
+  .ant-input,
+  .ant-input-affix-wrapper input,
+  .ant-input-textarea textarea {
+    font-size: 16px;
+  }
+  @media (min-width: 769px) {
+    .ant-input,
+    .ant-input-affix-wrapper input,
+    .ant-input-textarea textarea {
+      font-size: 14px;
+    }
+  }
 `;
 
 const NameRow = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  @media (max-width: 768px) {
+    gap: 0;
+  }
   @media (max-width: 400px) {
     grid-template-columns: 1fr;
   }
@@ -272,7 +340,7 @@ export default function ContactHostDrawer({
         <MessageCircle size={24} color="#ff385c" />
         Ask the host
       </ModalTitle>
-      <Subtitle>
+      <Subtitle style={{ marginTop: 24 }}>
         Send a message to {businessName || "the host"}. You don’t need an account — we’ll email you a link to continue the conversation.
       </Subtitle>
     </TitleBlock>
@@ -280,7 +348,7 @@ export default function ContactHostDrawer({
 
   if (isMobile) {
     return (
-      <Drawer.Root open={open} onOpenChange={onOpenChange}>
+      <Drawer.Root open={open} onOpenChange={onOpenChange} repositionInputs={false}>
         <Drawer.Portal>
           <DrawerOverlay />
           <DrawerContent>
@@ -289,18 +357,26 @@ export default function ContactHostDrawer({
               <HeaderRow>
                 <Title>Ask the host</Title>
               </HeaderRow>
-              <Subtitle style={{ marginBottom: 24 }}>
-                Send a message to {businessName || "the host"}. You don't need an account — we'll email you a link to continue the conversation.
-              </Subtitle>
-              <ContactHostForm
-                ref={formRef}
-                key={`${open}-${businessId}`}
-                businessName={businessName}
-                onSuccess={() => onOpenChange(false)}
-                initialValues={initialValues}
-                hideSubmitButton
-                onSubmittingChange={setDrawerSubmitting}
-              />
+              <InfoCard>
+                <CardSection>
+                  <Subtitle>
+                    Send a message to {businessName || "the host"}. You don't need an account — we'll email you a link to continue the conversation.
+                  </Subtitle>
+                </CardSection>
+                <CardSection>
+                  <DrawerFormWrap>
+                    <ContactHostForm
+                      ref={formRef}
+                      key={`${open}-${businessId}`}
+                      businessName={businessName}
+                      onSuccess={() => onOpenChange(false)}
+                      initialValues={initialValues}
+                      hideSubmitButton
+                      onSubmittingChange={setDrawerSubmitting}
+                    />
+                  </DrawerFormWrap>
+                </CardSection>
+              </InfoCard>
             </DrawerBody>
             <DrawerFooter>
               <NextButton
@@ -328,12 +404,14 @@ export default function ContactHostDrawer({
       destroyOnClose
       styles={{ body: { paddingTop: 0 } }}
     >
-      <ContactHostForm
-        key={`${open}-${businessId}`}
-        businessName={businessName}
-        onSuccess={() => onOpenChange(false)}
-        initialValues={initialValues}
-      />
+      <FormFieldSizes>
+        <ContactHostForm
+          key={`${open}-${businessId}`}
+          businessName={businessName}
+          onSuccess={() => onOpenChange(false)}
+          initialValues={initialValues}
+        />
+      </FormFieldSizes>
     </Modal>
   );
 }
