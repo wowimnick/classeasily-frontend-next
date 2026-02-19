@@ -49,10 +49,25 @@ export function useConversationWebSocket({
   const reconnectTimeoutRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
-  // Keep messages in sync with initialMessages when conversation or initial data changes
+  // Sync from REST when conversation changes or when initial data actually changes (by value).
+  // Don't depend on initialMessages/initialReadStatus directly — parent often passes new []/{} refs each render and causes an infinite loop.
+  const prevConvIdRef = useRef(null);
   useEffect(() => {
-    setMessages(Array.isArray(initialMessages) ? initialMessages : []);
-    setReadStatus(initialReadStatus || { last_read_by_booker_at: null, last_read_by_business_at: null });
+    const nextMessages = Array.isArray(initialMessages) ? initialMessages : [];
+    const nextRead = initialReadStatus || { last_read_by_booker_at: null, last_read_by_business_at: null };
+
+    setMessages((prev) => {
+      if (prevConvIdRef.current !== conversationId) return nextMessages;
+      if (prev.length !== nextMessages.length) return nextMessages;
+      if (nextMessages.length && prev[0]?.id !== nextMessages[0]?.id) return nextMessages;
+      return prev;
+    });
+    setReadStatus((prev) => {
+      if (prevConvIdRef.current !== conversationId) return nextRead;
+      if (prev.last_read_by_booker_at !== nextRead.last_read_by_booker_at || prev.last_read_by_business_at !== nextRead.last_read_by_business_at) return nextRead;
+      return prev;
+    });
+    prevConvIdRef.current = conversationId;
   }, [conversationId, initialMessages, initialReadStatus]);
 
   const clearTypingAfterDelay = useCallback((side, delay = 3000) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import styled, { createGlobalStyle } from "styled-components";
 import { Drawer } from "vaul";
@@ -15,6 +15,8 @@ import { useConversationWebSocket } from "@/hooks/useConversationWebSocket";
 const ModalGlobalStyle = createGlobalStyle`
   .homepage-conversation-modal .ant-modal-content {
     padding: 0 !important;
+    border-radius: 16px !important;
+    overflow: hidden;
   }
 `;
 
@@ -197,8 +199,13 @@ function HomepageConversationOverlayInner() {
     }
   }, [conversationId, guestInboxToken, conv, fetchDetailLoggedIn, fetchDetailGuest, ws.connected]);
 
+  const hasMarkedReadRef = useRef(false);
   useEffect(() => {
-    if (isOpen && effectiveConvId) ws.sendMarkRead();
+    if (isOpen && effectiveConvId && !hasMarkedReadRef.current) {
+      hasMarkedReadRef.current = true;
+      ws.sendMarkRead();
+    }
+    if (!isOpen) hasMarkedReadRef.current = false;
   }, [isOpen, effectiveConvId]);
 
   const handleSend = useCallback(
@@ -281,6 +288,10 @@ function HomepageConversationOverlayInner() {
               }}
             />
             <DrawerContentInner>
+              <Drawer.Title style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}>
+                Conversation
+              </Drawer.Title>
+              <Drawer.Description style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }} aria-describedby={undefined} />
               <div
                 style={{
                   width: 40,
