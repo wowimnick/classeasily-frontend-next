@@ -24,7 +24,7 @@ const PreferencesSettingsTab = React.lazy(() =>
   import("./PreferencesSettingsTab")
 );
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 const { useBreakpoint } = Grid;
 
 export const FormGroup = styled.div`
@@ -105,35 +105,44 @@ export const FormSectionCard = styled.div`
   }
 `;
 
-const SettingsDrawerOverlay = styled(VaulDrawer.Overlay)`
+// --- Drawer shell: exact match to ClassEditDrawer ---
+const StyledDrawerOverlay = styled(VaulDrawer.Overlay)`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  z-index: 1029;
+  z-index: 1049;
 `;
 
-const MobileSettingsDrawerContent = styled(VaulDrawer.Content)`
+const StyledDrawerContent = styled(VaulDrawer.Content)`
   background: white;
   display: flex;
   flex-direction: column;
   border-radius: 24px 24px 0 0;
-  height: 95vh;
+  height: 95%;
   max-height: 95vh;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 1030;
+  z-index: 1050;
   outline: none;
 `;
 
-const DesktopSettingsDrawerContent = styled(VaulDrawer.Content)`
+const DrawerHandle = styled.div`
+  width: 40px;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  margin: 12px auto 8px;
+  flex-shrink: 0;
+`;
+
+const DesktopDrawerContent = styled(VaulDrawer.Content)`
   right: 8px;
   top: 8px;
   bottom: 8px;
   position: fixed;
-  z-index: 1030;
+  z-index: 1050;
   outline: none;
   width: 800px;
   background: white;
@@ -144,198 +153,131 @@ const DesktopSettingsDrawerContent = styled(VaulDrawer.Content)`
   overflow: hidden;
 `;
 
-const SettingsDrawerHandle = styled.div`
-  width: 36px;
-  height: 4px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 2px;
-  margin: 12px auto 8px;
-  flex-shrink: 0;
-`;
-
-const SettingsDrawerHeader = styled.div`
-  flex-shrink: 0;
-  padding: 16px 24px;
-  border-bottom: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
-  background: white;
+const DrawerHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-
+  padding: 12px 24px;
+  background: white;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid #e5e7eb;
   @media (max-width: 768px) {
     padding: 12px 16px;
   }
 `;
 
-const SettingsDrawerTitle = styled.h2`
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #1a1a1a;
-
-  @media (max-width: 768px) {
-    font-size: 18px;
-  }
-`;
-
-const SettingsDrawerBody = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  background-color: ${(props) => props.theme.token.colorBgLayout};
+const DrawerContentWrapper = styled.div`
+  flex: 1 1 auto;
+  overflow: hidden;
+  background: #fff;
   display: flex;
   flex-direction: column;
 `;
 
-const SettingsDrawerFooter = styled.div`
-  flex-shrink: 0;
+const ScrollContainer = styled.div`
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  padding: 2rem;
+  @media (max-width: 768px) {
+    padding: 1.5rem 1rem;
+  }
+  @media (max-width: 480px) {
+    padding: 1rem;
+  }
+`;
+
+const DrawerFooter = styled.div`
   padding: 16px 24px;
-  border-top: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
-  background: white;
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-
+  border-top: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
+  background: white;
+  flex-shrink: 0;
   @media (max-width: 768px) {
     padding: 12px 16px;
     flex-direction: column-reverse;
-
     .ant-btn {
       width: 100%;
     }
   }
 `;
 
-const CloseIconButton = styled(Button)`
+const DrawerTitle = styled(Title)`
+  margin: 0 !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  @media (max-width: 768px) {
+    font-size: 18px !important;
+  }
+`;
+
+const CloseButton = styled(Button)`
   padding: 8px;
   height: auto;
   border: none;
   background: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
   &:hover {
     background: ${(props) => props.theme.token.colorBgTextHover};
   }
 `;
 
-const PageWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: white;
-`;
-
-const ContentContainer = styled.div`
-  flex: 1;
-  overflow-y: auto;
-`;
-
+// Tabs: exact match to ClassEditDrawer (underline style, borders)
 const StyledTabs = styled(Tabs)`
-  height: 100%;
+  flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 
-  .ant-tabs-nav-wrap {
-    position: sticky;
-    top: 0;
-    background: white;
-    z-index: 2;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding-top: 20px !important;
-    padding: 0 16px;
-  }
-
-  .ant-tabs-nav {
-    margin-bottom: 0 !important;
-
-    &::before {
-      border-bottom: none;
-    }
-  }
-
-  .ant-tabs-nav-list {
-    gap: 8px;
-    padding-bottom: 20px !important;
-  }
-
-  .ant-tabs-tab {
-    padding: 8px 12px !important;
+  > .ant-tabs-nav {
     margin: 0 !important;
-    border-radius: 8px !important;
-    border: 1.5px solid ${(props) => props.theme.token.colorBorderSecondary} !important;
-    background: ${(props) => props.theme.token.colorBgContainer} !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
-    min-height: auto !important;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(
-        135deg,
-        ${(props) => props.theme.token.colorPrimary}08,
-        ${(props) => props.theme.token.colorPrimary}02
-      );
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-
-    &:hover {
-      border-color: ${(props) => props.theme.token.colorPrimary} !important;
-      color: ${(props) => props.theme.token.colorPrimary} !important;
-      box-shadow: 0 4px 12px ${(props) => props.theme.token.colorPrimary}20;
-
-      &::before {
-        opacity: 1;
-      }
-    }
-
-    &.ant-tabs-tab-active {
-      background: ${(props) => props.theme.token.colorPrimary} !important;
-      border-color: ${(props) => props.theme.token.colorPrimary} !important;
-      color: white !important;
-      box-shadow: 0 6px 16px ${(props) => props.theme.token.colorPrimary}30;
-
-      &::before {
-        opacity: 0;
-      }
-
-      .ant-tabs-tab-btn {
-        color: white !important;
-      }
-    }
-
-    .ant-tabs-tab-btn {
-      color: ${(props) => props.theme.token.colorText} !important;
-      position: relative;
-      z-index: 1;
-    }
+    padding: 0 24px;
+    background: white;
+    flex-shrink: 0;
+    border-bottom: 1px solid #e5e7eb;
   }
 
-  .ant-tabs-content-holder {
-    padding: 0;
-    overflow-y: auto;
+  > .ant-tabs-nav .ant-tabs-tab {
+    font-weight: 500;
+    font-size: 14px;
+    color: #64748b;
+  }
+
+  > .ant-tabs-nav .ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: #222222;
+  }
+
+  > .ant-tabs-nav .ant-tabs-ink-bar {
+    background: #222222;
+    height: 3px;
+  }
+
+  > .ant-tabs-nav .ant-tabs-tab:hover {
+    color: #222222;
+  }
+
+  > .ant-tabs-content-holder {
     flex: 1;
-    background-color: ${(props) => props.theme.token.colorBgLayout};
+    overflow: auto;
+    background: #fff;
   }
 
-  @media (max-width: ${(props) => props.theme.screenMD}px) {
-    .ant-tabs-nav-wrap {
-      padding: 0 12px;
-    }
+  > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
 
-    .ant-tabs-tab {
-      padding: 6px 10px !important;
-      font-size: 12px !important;
+  @media (max-width: 768px) {
+    > .ant-tabs-nav {
+      padding: 0 16px;
+    }
+    > .ant-tabs-nav .ant-tabs-tab {
+      padding: 12px 10px !important;
+      font-size: 13px;
     }
   }
 `;
@@ -680,15 +622,17 @@ const BusinessSettingsContent = forwardRef(
           </TabIcon>
         ),
         children: (
-          <Suspense fallback={<TabLoader />}>
-            <GeneralSettingsTab
-              form={generalForm}
-              logoUrl={logoUrl}
-              setLogoUrl={setLogoUrl}
-              setLogoFile={setLogoFile}
-              isMobile={isMobile}
-            />
-          </Suspense>
+          <ScrollContainer>
+            <Suspense fallback={<TabLoader />}>
+              <GeneralSettingsTab
+                form={generalForm}
+                logoUrl={logoUrl}
+                setLogoUrl={setLogoUrl}
+                setLogoFile={setLogoFile}
+                isMobile={isMobile}
+              />
+            </Suspense>
+          </ScrollContainer>
         ),
         forceRender: true,
       },
@@ -700,21 +644,23 @@ const BusinessSettingsContent = forwardRef(
           </TabIcon>
         ),
         children: (
-          <Suspense fallback={<TabLoader />}>
-            <LocationSettingsTab
-              form={locationForm}
-              initialData={{
-                address: initialBusinessData?.businessAddress,
-                businessUnit: initialBusinessData?.businessUnit,
-                city: initialBusinessData?.businessCity,
-                state: initialBusinessData?.businessState,
-                zipCode: initialBusinessData?.businessZipCode,
-                lat: initialBusinessData?.latitude,
-                lon: initialBusinessData?.longitude,
-                hide: initialBusinessData?.showExactLocation === false,
-              }}
-            />
-          </Suspense>
+          <ScrollContainer>
+            <Suspense fallback={<TabLoader />}>
+              <LocationSettingsTab
+                form={locationForm}
+                initialData={{
+                  address: initialBusinessData?.businessAddress,
+                  businessUnit: initialBusinessData?.businessUnit,
+                  city: initialBusinessData?.businessCity,
+                  state: initialBusinessData?.businessState,
+                  zipCode: initialBusinessData?.businessZipCode,
+                  lat: initialBusinessData?.latitude,
+                  lon: initialBusinessData?.longitude,
+                  hide: initialBusinessData?.showExactLocation === false,
+                }}
+              />
+            </Suspense>
+          </ScrollContainer>
         ),
         forceRender: true,
       },
@@ -726,32 +672,29 @@ const BusinessSettingsContent = forwardRef(
           </TabIcon>
         ),
         children: (
-          <Suspense fallback={<TabLoader />}>
-            <PreferencesSettingsTab
-              form={preferencesForm}
-              stripeStatus={stripeAccountStatus}
-              isMobile={isMobile}
-            />
-          </Suspense>
+          <ScrollContainer>
+            <Suspense fallback={<TabLoader />}>
+              <PreferencesSettingsTab
+                form={preferencesForm}
+                stripeStatus={stripeAccountStatus}
+                isMobile={isMobile}
+              />
+            </Suspense>
+          </ScrollContainer>
         ),
         forceRender: true,
       },
     ];
 
     return (
-      <PageWrapper>
-        <ContentContainer>
-          <StyledTabs
-            items={tabItems}
-            activeKey={currentTab}
-            onChange={(key) => {
-              setCurrentTab(key);
-              onTabChangeExternal(key);
-            }}
-            type="card"
-          />
-        </ContentContainer>
-      </PageWrapper>
+      <StyledTabs
+        items={tabItems}
+        activeKey={currentTab}
+        onChange={(key) => {
+          setCurrentTab(key);
+          onTabChangeExternal(key);
+        }}
+      />
     );
   }
 );
@@ -813,51 +756,59 @@ const BusinessSettings = forwardRef((props, ref) => {
           onOpenChange={handleDrawerOpenChange}
           direction={isMobile ? "bottom" : "right"}
           dismissible
+          repositionInputs={false}
         >
           <VaulDrawer.Portal>
-            <SettingsDrawerOverlay />
+            <StyledDrawerOverlay />
             {isMobile ? (
-              <MobileSettingsDrawerContent>
-                <SettingsDrawerHandle />
-                <SettingsDrawerHeader>
-                  <SettingsDrawerTitle>Business Settings</SettingsDrawerTitle>
-                  <CloseIconButton icon={<X size={20} />} onClick={onClose} />
-                </SettingsDrawerHeader>
-                <SettingsDrawerBody>
+              <StyledDrawerContent>
+                <DrawerHandle />
+                <DrawerHeader>
+                  <DrawerTitle level={4}>Business Settings</DrawerTitle>
+                  <CloseButton
+                    icon={<X size={20} />}
+                    onClick={onClose}
+                  />
+                </DrawerHeader>
+                <DrawerContentWrapper>
                   <BusinessSettingsContent
                     ref={businessSettingsRef}
                     {...restProps}
                   />
-                </SettingsDrawerBody>
-                <SettingsDrawerFooter>
+                </DrawerContentWrapper>
+                <DrawerFooter>
+                  <Button onClick={onClose} disabled={saving} size="middle">
+                    Cancel
+                  </Button>
                   <Button
                     type="primary"
                     icon={<Save size={16} />}
                     onClick={handleSave}
                     loading={saving}
-                    block
-                    key={`btn-${saving}`}>
+                    size="middle"
+                    key={`btn-${saving}`}
+                  >
                     {saving ? "Saving..." : "Save All Settings"}
                   </Button>
-                  <Button onClick={onClose} disabled={saving} block>
-                    Cancel
-                  </Button>
-                </SettingsDrawerFooter>
-              </MobileSettingsDrawerContent>
+                </DrawerFooter>
+              </StyledDrawerContent>
             ) : (
-              <DesktopSettingsDrawerContent>
-                <SettingsDrawerHeader>
-                  <SettingsDrawerTitle>Business Settings</SettingsDrawerTitle>
-                  <CloseIconButton icon={<X size={20} />} onClick={onClose} />
-                </SettingsDrawerHeader>
-                <SettingsDrawerBody>
+              <DesktopDrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle level={4}>Business Settings</DrawerTitle>
+                  <CloseButton
+                    icon={<X size={20} />}
+                    onClick={onClose}
+                  />
+                </DrawerHeader>
+                <DrawerContentWrapper>
                   <BusinessSettingsContent
                     ref={businessSettingsRef}
                     {...restProps}
                   />
-                </SettingsDrawerBody>
-                <SettingsDrawerFooter>
-                  <Button onClick={onClose} disabled={saving}>
+                </DrawerContentWrapper>
+                <DrawerFooter>
+                  <Button onClick={onClose} disabled={saving} size="middle">
                     Cancel
                   </Button>
                   <Button
@@ -865,11 +816,13 @@ const BusinessSettings = forwardRef((props, ref) => {
                     icon={<Save size={16} />}
                     onClick={handleSave}
                     loading={saving}
-                    key={`btn-${saving}`}>
+                    size="middle"
+                    key={`btn-${saving}`}
+                  >
                     {saving ? "Saving..." : "Save All Settings"}
                   </Button>
-                </SettingsDrawerFooter>
-              </DesktopSettingsDrawerContent>
+                </DrawerFooter>
+              </DesktopDrawerContent>
             )}
           </VaulDrawer.Portal>
         </VaulDrawer.Root>

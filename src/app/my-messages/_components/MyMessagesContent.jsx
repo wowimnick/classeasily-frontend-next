@@ -286,7 +286,7 @@ export default function MyMessagesContent() {
 
   useEffect(() => {
     if (isOverlayOpen && selectedId) ws.sendMarkRead();
-  }, [isOverlayOpen, selectedId]);
+  }, [isOverlayOpen, selectedId, ws.sendMarkRead]);
 
   const overlayContent = (
     <ConversationOverlayContent

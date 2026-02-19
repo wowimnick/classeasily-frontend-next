@@ -367,6 +367,12 @@ const MsgTime = styled.div`
   color: ${(p) => (p.$isBusiness ? "rgba(255,255,255,0.7)" : "#a3a3a3")};
 `;
 
+const ReadStatus = styled.span`
+  font-size: 10px;
+  margin-left: 6px;
+  color: #a3a3a3;
+`;
+
 const ReplyForm = styled.form`
   padding: 20px;
   border-top: 1px solid #ebebeb;
@@ -393,7 +399,8 @@ const InputContainer = styled.div`
     box-shadow: 0 0 0 3px ${hexToRgba(colors.primary, 0.1)};
   }
 
-  .ant-input {
+  .ant-input,
+  textarea {
     padding: 8px 0 !important;
     background: transparent !important;
     border: none !important;
@@ -401,6 +408,12 @@ const InputContainer = styled.div`
     resize: none;
     font-size: 14px;
     line-height: 1.5;
+  }
+  @media (max-width: 768px) {
+    .ant-input,
+    textarea {
+      font-size: 16px !important; /* Prevents iOS zoom on focus in mobile drawer */
+    }
   }
 `;
 
@@ -601,7 +614,7 @@ export default function BusinessMessages() {
 
   useEffect(() => {
     if (open && selected?.id) ws.sendMarkRead();
-  }, [open, selected?.id]);
+  }, [open, selected?.id, ws.sendMarkRead]);
 
   const closeConversation = () => setOpen(false);
 
@@ -821,14 +834,24 @@ export default function BusinessMessages() {
                             {displayMessages.length === 0 ? (
                               <Empty description="No messages yet" style={{ margin: "auto" }} />
                             ) : (
-                              displayMessages.map((msg) => (
-                                <MsgRow key={msg.id} $isBusiness={msg.sender_type === "business"}>
-                                  <Bubble $isBusiness={msg.sender_type === "business"}>
-                                    <div>{msg.text}</div>
-                                    <MsgTime $isBusiness={msg.sender_type === "business"}>{formatTime(msg.created_at)}</MsgTime>
-                                  </Bubble>
-                                </MsgRow>
-                              ))
+                              displayMessages.map((msg) => {
+                                const isBusiness = msg.sender_type === "business";
+                                const lastReadByBooker = ws.readStatus?.last_read_by_booker_at;
+                                const readAt = lastReadByBooker ? new Date(lastReadByBooker).getTime() : 0;
+                                const createdAt = msg.created_at ? new Date(msg.created_at).getTime() : 0;
+                                const isReadByGuest = !isBusiness && createdAt > 0 && readAt >= createdAt;
+                                return (
+                                  <MsgRow key={msg.id} $isBusiness={isBusiness}>
+                                    <Bubble $isBusiness={isBusiness}>
+                                      <div>{msg.text}</div>
+                                      <MsgTime $isBusiness={isBusiness}>
+                                        {formatTime(msg.created_at)}
+                                        {isReadByGuest && <ReadStatus> · Read</ReadStatus>}
+                                      </MsgTime>
+                                    </Bubble>
+                                  </MsgRow>
+                                );
+                              })
                             )}
                             {hasTyping && (
                               <div style={{ padding: "8px 16px", fontSize: 13, color: "#717171", fontStyle: "italic" }}>
@@ -915,14 +938,24 @@ export default function BusinessMessages() {
                     {displayMessages.length === 0 ? (
                       <Empty description="No messages yet" style={{ margin: "auto" }} />
                     ) : (
-                      displayMessages.map((msg) => (
-                        <MsgRow key={msg.id} $isBusiness={msg.sender_type === "business"}>
-                          <Bubble $isBusiness={msg.sender_type === "business"}>
-                            <div>{msg.text}</div>
-                            <MsgTime $isBusiness={msg.sender_type === "business"}>{formatTime(msg.created_at)}</MsgTime>
-                          </Bubble>
-                        </MsgRow>
-                      ))
+                      displayMessages.map((msg) => {
+                        const isBusiness = msg.sender_type === "business";
+                        const lastReadByBooker = ws.readStatus?.last_read_by_booker_at;
+                        const readAt = lastReadByBooker ? new Date(lastReadByBooker).getTime() : 0;
+                        const createdAt = msg.created_at ? new Date(msg.created_at).getTime() : 0;
+                        const isReadByGuest = !isBusiness && createdAt > 0 && readAt >= createdAt;
+                        return (
+                          <MsgRow key={msg.id} $isBusiness={isBusiness}>
+                            <Bubble $isBusiness={isBusiness}>
+                              <div>{msg.text}</div>
+                              <MsgTime $isBusiness={isBusiness}>
+                                {formatTime(msg.created_at)}
+                                {isReadByGuest && <ReadStatus> · Read</ReadStatus>}
+                              </MsgTime>
+                            </Bubble>
+                          </MsgRow>
+                        );
+                      })
                     )}
                     {hasTyping && (
                       <div style={{ padding: "8px 16px", fontSize: 13, color: "#717171", fontStyle: "italic" }}>

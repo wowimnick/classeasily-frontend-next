@@ -32,6 +32,20 @@ import { useAuth } from "@/lib/auth-client";
 
 const { Title, Text } = Typography;
 import { theme as augmentedTheme } from "@/components/theme";
+
+// Must match GeneralSettingsTab / backend business type options
+const BUSINESS_TYPE_LABELS = {
+  individual: "Individual Host",
+  "tour-operator": "Tour Operator",
+  "experience-group": "Experience Group",
+  venue: "Venue / Studio",
+  "event-organizer": "Event Organizer",
+};
+
+function getBusinessTypeLabel(value) {
+  if (!value || value === "Not set") return value;
+  return BUSINESS_TYPE_LABELS[value] ?? value.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
 import { LordIcon } from "@/services/ReactUtils";
 
 const LocalGlobalStyleForSkeleton = createGlobalStyle`
@@ -1176,10 +1190,9 @@ const SideMenuComponent = memo(
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                 }}
-                title={businessData.businessType}
+                title={getBusinessTypeLabel(businessData.businessType)}
               >
-                {businessData.businessType.charAt(0).toUpperCase() +
-                  businessData.businessType.slice(1)}
+                {getBusinessTypeLabel(businessData.businessType)}
               </Text>
             )}
           </BusinessTextContainer>

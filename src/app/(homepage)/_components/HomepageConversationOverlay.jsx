@@ -206,7 +206,7 @@ function HomepageConversationOverlayInner() {
       ws.sendMarkRead();
     }
     if (!isOpen) hasMarkedReadRef.current = false;
-  }, [isOpen, effectiveConvId]);
+  }, [isOpen, effectiveConvId, ws.sendMarkRead]);
 
   const handleSend = useCallback(
     async (e) => {

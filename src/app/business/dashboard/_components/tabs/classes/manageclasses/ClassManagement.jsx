@@ -293,7 +293,22 @@ const PageContainer = styled.div`
   }
 `;
 
-const PageHeader = styled.div``;
+const PageHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
+const HeaderTextWrap = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
 
 const HeaderTitle = styled.h1`
   font-size: 24px;
@@ -1750,42 +1765,12 @@ function ClassManagementContent(props) {
     <ConfigProvider theme={theme}>
       <PageContainer>
         <PageHeader>
-          <HeaderTitle>Experience Management</HeaderTitle>
-          <HeaderSubtitle>
-            Oversee, edit, and manage all your experiences and their schedules.
-          </HeaderSubtitle>
-        </PageHeader>
-        <Divider />
-
-        <Controls>
-          {/* <div
-            style={{
-              display: "flex",
-              gap: "16px",
-              alignItems: "center",
-              flex: 1,
-              flexWrap: "wrap",
-            }}
-          >
-            <StyledSearchInput
-              prefix={<Search size={18} />}
-              placeholder="Search experiences by name or category..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              allowClear
-            />
-            <StyledSelect
-              value={viewType}
-              onChange={setViewType}
-              style={{
-                width: 200,
-              }}
-            >
-              <Option value="all">All Experiences</Option>
-              <Option value="single">Single Sessions</Option>
-              <Option value="course">Courses</Option>
-            </StyledSelect>
-          </div> */}
+          <HeaderTextWrap>
+            <HeaderTitle>Experience Management</HeaderTitle>
+            <HeaderSubtitle>
+              Oversee, edit, and manage all your experiences and their schedules.
+            </HeaderSubtitle>
+          </HeaderTextWrap>
           <ActionButton
             type="primary"
             icon={<Plus size={18} />}
@@ -1793,7 +1778,8 @@ function ClassManagementContent(props) {
           >
             Create New Experience
           </ActionButton>
-        </Controls>
+        </PageHeader>
+        <Divider />
 
         {loading ? (
           <ClassManagementSkeleton />

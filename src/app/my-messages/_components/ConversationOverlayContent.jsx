@@ -118,12 +118,20 @@ const InputRow = styled.div`
     border-color: #ff385c;
     box-shadow: 0 0 0 3px rgba(255, 56, 92, 0.1);
   }
-  .ant-input {
+  .ant-input,
+  textarea {
     padding: 8px 0 !important;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
     resize: none;
+    font-size: 14px;
+  }
+  @media (max-width: 768px) {
+    .ant-input,
+    textarea {
+      font-size: 16px !important; /* Prevents iOS zoom on focus */
+    }
   }
 `;
 
@@ -228,9 +236,7 @@ export default function ConversationOverlayContent({
             );
           })
         )}
-        {typing?.booker?.active && (
-          <TypingIndicator>{typing.booker.displayName || "Guest"} is typing…</TypingIndicator>
-        )}
+        {/* Only show other party typing (this overlay is always booker/guest view) */}
         {typing?.business?.active && (
           <TypingIndicator>{typing.business.displayName || "Host"} is typing…</TypingIndicator>
         )}
