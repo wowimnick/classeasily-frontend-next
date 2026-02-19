@@ -65,6 +65,7 @@ const VerifyEmailOverlay = dynamic(
 );
 const HomepageConversationOverlay = dynamic(
   () => import("./(homepage)/_components/HomepageConversationOverlay"),
+  { ssr: false },
 );
 
 export const metadata = {
