@@ -49,11 +49,12 @@ export function useConversationWebSocket({
   const reconnectTimeoutRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
-  // Keep messages in sync with initialMessages when conversation or initial data changes
+  // Sync from REST initial data only when conversationId changes (avoid loop from new array/object refs each render)
   useEffect(() => {
     setMessages(Array.isArray(initialMessages) ? initialMessages : []);
     setReadStatus(initialReadStatus || { last_read_by_booker_at: null, last_read_by_business_at: null });
-  }, [conversationId, initialMessages, initialReadStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only reset when conversation changes
+  }, [conversationId]);
 
   const clearTypingAfterDelay = useCallback((side, delay = 3000) => {
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
