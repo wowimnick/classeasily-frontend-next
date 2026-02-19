@@ -4,21 +4,34 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useSearchParams } from "next/navigation";
 import styled, { keyframes } from "styled-components";
 import { Drawer } from "vaul";
-import { MessageSquare, ChevronRight, Send, X, Inbox } from "lucide-react";
-import { Empty, Drawer as AntDrawer, Input, Button, ConfigProvider, Card } from "antd";
+import { MessageSquare, ChevronRight, Send, X, Inbox, MessageCircle } from "lucide-react";
+import { Empty, Drawer as AntDrawer, Input, Button, ConfigProvider, Card, Typography, Skeleton } from "antd";
 import message from "@/lib/message";
 import { businessConversationService } from "@/services/apiService";
-import { theme as globalTheme } from "@/components/theme";
 import EmojiQuickPick from "@/components/chat/EmojiQuickPick";
+
+const { Text } = Typography;
 
 const MODAL_DRAWER_BREAKPOINT = 768;
 
 const colors = {
-  primary: "#ff3562",
+  primary: "#ff385c",
   textPrimary: "#1f2937",
   textSecondary: "#64748b",
   border: "#f1f5f9",
+  lightBg: "#f8fafc",
   chart: { blue: "#3b82f6", purple: "#8b5cf6", teal: "#14b8a6" },
+};
+
+const localAntDTheme = {
+  token: {
+    colorPrimary: colors.primary,
+    borderRadius: 16,
+  },
+  components: {
+    Card: { borderRadiusLG: 16, paddingLG: 20 },
+    Button: { borderRadius: 12, controlHeight: 40 },
+  },
 };
 
 const hexToRgba = (hex, alpha = 1) => {
@@ -28,39 +41,182 @@ const hexToRgba = (hex, alpha = 1) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-
-const PageWrap = styled.div`
+/* --- Layout (aligned with Overview) --- */
+const DashboardWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   padding: 24px;
-  min-height: 0;
+  background-color: #fff;
+  box-shadow: inset 0px -1px 11px 1px #0000000d;
+  min-height: 100vh;
   @media (max-width: 768px) {
-    padding: 16px;
+    padding: 12px;
+    gap: 12px;
   }
 `;
 
 const DashboardHeader = styled.div`
-  margin-bottom: 24px;
-  h1 {
-    font-size: 24px;
-    font-weight: 700;
-    color: #222;
-    margin: 0 0 4px;
-  }
-  .sub {
-    font-size: 15px;
-    color: #64748b;
-  }
-  @media (max-width: 480px) {
-    h1 { font-size: 20px; }
-    .sub { font-size: 14px; }
+  display: flex;
+  width: fit-content;
+  justify-content: space-between;
+  align-items: center;
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 4px;
+    width: 100%;
   }
 `;
 
-const ListCard = styled.div`
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
+const StyledTitle = styled.h1`
+  font-size: 24px;
+  font-weight: 700;
+  color: #222222;
+  margin: 0 0 4px 0;
+  line-height: 1.2;
+  @media (max-width: 768px) {
+    font-size: 22px;
+  }
+`;
+
+const HeaderSubtitle = styled(Text)`
+  font-size: 15px;
+  color: ${colors.textSecondary};
+  display: block;
+  line-height: 1.4;
+  @media (max-width: 768px) {
+    font-size: 14px;
+  }
+`;
+
+const ResponsiveDivider = styled.hr`
+  margin: 24px 0;
+  border: none;
+  border-top: 1px solid ${colors.border};
+  @media (max-width: 768px) {
+    margin: 16px 0;
+  }
+`;
+
+const SectionTitle = styled.div`
+  font-weight: 600;
+  font-size: 17px;
+  color: ${colors.textPrimary};
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  @media (max-width: 768px) {
+    font-size: 16px;
+  }
+`;
+
+const SectionDescription = styled(Text)`
+  font-size: 14px;
+  color: ${colors.textSecondary};
+  display: block;
+  margin-bottom: 12px;
+`;
+
+/* --- Metric cards (Overview-style) --- */
+const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+`;
+
+const StatCardBase = styled(Card)`
+  border-radius: ${localAntDTheme.token.borderRadius}px;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid ${colors.border};
+  margin-bottom: 0;
+  height: 100%;
+  min-height: 140px;
+  transition: all 0.2s ease;
+  .ant-card-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+  }
+  @media (max-width: 768px) {
+    min-height: 120px;
+    border-radius: 12px;
+    .ant-card-body {
+      padding: 16px;
+    }
+  }
+`;
+
+const StatHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+`;
+
+const IconContainer = styled.div`
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${(p) => p.$background || hexToRgba(colors.chart.blue, 0.1)};
+  color: ${(p) => p.$iconcolor || colors.chart.blue};
+  flex-shrink: 0;
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+  @media (max-width: 768px) {
+    width: 32px;
+    height: 32px;
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+`;
+
+const MetricValue = styled.div`
+  font-size: 22px;
+  font-weight: 700;
+  color: ${colors.textPrimary};
+  display: flex;
+  align-items: baseline;
+  line-height: 1.2;
+  @media (max-width: 768px) {
+    font-size: 18px;
+  }
+`;
+
+const StatLabel = styled(Text)`
+  font-size: 13px;
+  color: ${colors.textSecondary};
+  display: block;
+  line-height: 1.3;
+  margin-bottom: auto;
+  @media (max-width: 768px) {
+    font-size: 12px;
+  }
+`;
+
+/* --- Conversation list (Overview-style card) --- */
+const ListCard = styled.div`
+  border-radius: ${localAntDTheme.token.borderRadius}px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid ${colors.border};
   background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 `;
 
 const Row = styled.div`
@@ -69,13 +225,13 @@ const Row = styled.div`
   gap: 16px;
   padding: 16px 20px;
   cursor: pointer;
-  border-bottom: 1px solid #e5e7eb;
-  transition: background 0.15s ease;
+  border-bottom: 1px solid ${colors.border};
+  transition: background-color 0.2s ease;
   &:last-child {
     border-bottom: none;
   }
   &:hover {
-    background: #f8fafc;
+    background-color: ${colors.lightBg};
   }
   @media (max-width: 640px) {
     padding: 14px 16px;
@@ -91,13 +247,13 @@ const RowMain = styled.div`
 const GuestName = styled.div`
   font-size: 15px;
   font-weight: 600;
-  color: #334155;
+  color: ${colors.textPrimary};
   margin-bottom: 2px;
 `;
 
 const Preview = styled.div`
   font-size: 13px;
-  color: #717171;
+  color: ${colors.textSecondary};
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
@@ -106,16 +262,18 @@ const Preview = styled.div`
 
 const Meta = styled.div`
   font-size: 12px;
-  color: #a3a3a3;
+  color: ${colors.textSecondary};
   margin-top: 2px;
+  opacity: 0.85;
 `;
 
 const ConversationPanel = styled.div`
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
   min-height: 0;
   padding: 0;
+  overflow: hidden;
 `;
 
 
@@ -131,8 +289,17 @@ const VaulDrawerContent = styled(Drawer.Content)`
   outline: none;
   display: flex;
   flex-direction: column;
+  height: 90vh;
   max-height: 90vh;
   min-height: 70vh;
+`;
+
+const DrawerBodyWrap = styled.div`
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 `;
 
 const DrawerHeader = styled.div`
@@ -184,8 +351,8 @@ const Bubble = styled.div`
   white-space: pre-wrap;
   ${(p) =>
     p.$isBusiness
-      ? "background: #ff3562; color: #fff; border-bottom-right-radius: 4px;"
-      : "background: #fff; color: #334155; border: 1px solid #e5e7eb; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);"}
+      ? `background: ${colors.primary}; color: #fff; border-bottom-right-radius: 4px;`
+      : `background: #fff; color: ${colors.textPrimary}; border: 1px solid ${colors.border}; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);`}
   @media (max-width: 480px) {
     max-width: 90%;
     padding: 10px 12px;
@@ -204,6 +371,7 @@ const ReplyForm = styled.form`
   border-top: 1px solid #ebebeb;
   background: #fff;
   flex-shrink: 0;
+  margin-top: auto;
   @media (max-width: 480px) {
     padding: 16px 20px;
   }
@@ -220,8 +388,8 @@ const InputContainer = styled.div`
   transition: all 0.2s ease;
 
   &:focus-within {
-    border-color: #ff3562;
-    box-shadow: 0 0 0 3px rgba(255, 53, 98, 0.1);
+    border-color: ${colors.primary};
+    box-shadow: 0 0 0 3px ${hexToRgba(colors.primary, 0.1)};
   }
 
   .ant-input {
@@ -250,7 +418,7 @@ const SendBtn = styled(Button)`
   align-items: center !important;
   justify-content: center !important;
   border: none !important;
-  background: ${(p) => (p.disabled ? "#f5f5f5" : "#ff3562")} !important;
+  background: ${(p) => (p.disabled ? "#f5f5f5" : colors.primary)} !important;
   &:hover {
     background: ${(p) => (p.disabled ? "#f5f5f5" : "#e01b46")} !important;
   }
@@ -276,71 +444,6 @@ const SkeletonBase = styled.div`
   margin-bottom: ${(p) => p.$mb ?? "0"};
 `;
 
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-`;
-
-const StatCardBase = styled(Card)`
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  border: 1px solid ${colors.border};
-  margin-bottom: 0;
-  min-height: 120px;
-  .ant-card-body {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-  }
-  @media (max-width: 768px) {
-    min-height: 100px;
-    .ant-card-body { padding: 16px; }
-  }
-`;
-
-const IconContainer = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${(p) => p.$bg || hexToRgba(colors.chart.blue, 0.1)};
-  color: ${(p) => p.$color || colors.chart.blue};
-  flex-shrink: 0;
-  svg { width: 18px; height: 18px; }
-  @media (max-width: 768px) {
-    width: 32px; height: 32px;
-    svg { width: 16px; height: 16px; }
-  }
-`;
-
-const MetricValue = styled.div`
-  font-size: 22px;
-  font-weight: 700;
-  color: ${colors.textPrimary};
-  margin-top: 8px;
-  line-height: 1.2;
-  @media (max-width: 768px) { font-size: 18px; }
-`;
-
-const StatLabel = styled.div`
-  font-size: 13px;
-  color: ${colors.textSecondary};
-  line-height: 1.3;
-  @media (max-width: 768px) { font-size: 12px; }
-`;
-
 const ListSkeletonCard = styled(ListCard)``;
 const RowSkeleton = styled(Row)`
   cursor: default;
@@ -350,9 +453,10 @@ const RowSkeleton = styled(Row)`
 const ConversationSkeletonWrap = styled.div`
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
   min-height: 0;
   padding: 0;
+  overflow: hidden;
 `;
 const ConvHeaderSkeleton = styled.div`
   padding: 20px 24px;
@@ -430,12 +534,12 @@ export default function BusinessMessages() {
     setLoading(false);
   }, []);
 
-  const fetchDetail = useCallback(async (id) => {
+  const fetchDetail = useCallback(async (id, isInitialLoad = false) => {
     if (!id) return;
-    setDetailLoading(true);
+    if (isInitialLoad) setDetailLoading(true);
     const result = await businessConversationService.getDetail(id);
     if (result.success) setSelected(result.data);
-    setDetailLoading(false);
+    if (isInitialLoad) setDetailLoading(false);
   }, []);
 
   useEffect(() => {
@@ -462,7 +566,7 @@ export default function BusinessMessages() {
 
   useEffect(() => {
     if (!selected?.id) return;
-    const t = setInterval(() => fetchDetail(selected.id), POLL_MS);
+    const t = setInterval(() => fetchDetail(selected.id, false), POLL_MS);
     return () => clearInterval(t);
   }, [selected?.id, fetchDetail]);
 
@@ -474,7 +578,7 @@ export default function BusinessMessages() {
     setSelected(conv);
     setOpen(true);
     setReplyText("");
-    fetchDetail(conv.id);
+    fetchDetail(conv.id, true);
   };
 
   const closeConversation = () => setOpen(false);
@@ -507,33 +611,86 @@ export default function BusinessMessages() {
   };
 
   return (
-    <ConfigProvider theme={globalTheme}>
-      <PageWrap>
+    <ConfigProvider theme={localAntDTheme}>
+      <DashboardWrapper>
         <DashboardHeader>
-          <h1>Messages</h1>
-          <div className="sub">Conversations with guests</div>
+          <div>
+            <StyledTitle>Messages</StyledTitle>
+            <HeaderSubtitle>Conversations with guests</HeaderSubtitle>
+          </div>
         </DashboardHeader>
 
+        <ResponsiveDivider />
+
+        <div>
+          <SectionTitle>
+            <MessageCircle size={20} color={colors.primary} />
+            Conversation overview
+          </SectionTitle>
+          <SectionDescription>
+            Key metrics and recent conversations with your guests.
+          </SectionDescription>
+        </div>
+
         <StatsGrid>
-          <StatCardBase>
-            <div>
-              <IconContainer $bg={hexToRgba(colors.chart.blue, 0.1)} $color={colors.chart.blue}>
-                <MessageSquare size={18} />
-              </IconContainer>
-              <StatLabel>Total conversations</StatLabel>
-            </div>
-            <MetricValue>{loading ? <SkeletonBase $width="60px" $height="28px" $mb="0" /> : stats.total}</MetricValue>
-          </StatCardBase>
-          <StatCardBase>
-            <div>
-              <IconContainer $bg={hexToRgba(colors.chart.teal, 0.1)} $color={colors.chart.teal}>
-                <Inbox size={18} />
-              </IconContainer>
-              <StatLabel>Active (last 7 days)</StatLabel>
-            </div>
-            <MetricValue>{loading ? <SkeletonBase $width="60px" $height="28px" $mb="0" /> : stats.recent}</MetricValue>
-          </StatCardBase>
+          {loading ? (
+            <>
+              <StatCardBase>
+                <Skeleton active paragraph={{ rows: 2 }} />
+              </StatCardBase>
+              <StatCardBase>
+                <Skeleton active paragraph={{ rows: 2 }} />
+              </StatCardBase>
+            </>
+          ) : (
+            <>
+              <StatCardBase>
+                <div>
+                  <StatHeader>
+                    <IconContainer
+                      $background={hexToRgba(colors.chart.blue, 0.1)}
+                      $iconcolor={colors.chart.blue}
+                    >
+                      <MessageSquare size={18} />
+                    </IconContainer>
+                  </StatHeader>
+                  <StatLabel>Total conversations</StatLabel>
+                </div>
+                <div>
+                  <MetricValue>{stats.total}</MetricValue>
+                </div>
+              </StatCardBase>
+              <StatCardBase>
+                <div>
+                  <StatHeader>
+                    <IconContainer
+                      $background={hexToRgba(colors.chart.teal, 0.1)}
+                      $iconcolor={colors.chart.teal}
+                    >
+                      <Inbox size={18} />
+                    </IconContainer>
+                  </StatHeader>
+                  <StatLabel>Active (last 7 days)</StatLabel>
+                </div>
+                <div>
+                  <MetricValue>{stats.recent}</MetricValue>
+                </div>
+              </StatCardBase>
+            </>
+          )}
         </StatsGrid>
+
+        <ResponsiveDivider />
+
+        <div>
+          <SectionTitle>
+            <MessageSquare size={20} color={colors.primary} />
+            Recent conversations
+          </SectionTitle>
+          <SectionDescription>
+            Click a conversation to view and reply to messages.
+          </SectionDescription>
+        </div>
 
         {loading ? (
           <ListSkeletonCard>
@@ -562,7 +719,7 @@ export default function BusinessMessages() {
           <ListCard>
             {list.map((c) => (
               <Row key={c.id} onClick={() => openConversation(c)}>
-                <div style={{ color: "#ff3562" }}>
+                <div style={{ color: colors.primary }}>
                   <MessageSquare size={24} />
                 </div>
                 <RowMain>
@@ -588,7 +745,7 @@ export default function BusinessMessages() {
         {mounted && selected && (
           <>
             {isMobile ? (
-              <Drawer.Root open={open} onOpenChange={(o) => !o && closeConversation()}>
+              <Drawer.Root open={open} onOpenChange={(o) => !o && closeConversation()} repositionInputs={false}>
                 <Drawer.Portal>
                   <Drawer.Overlay
                     style={{
@@ -600,69 +757,71 @@ export default function BusinessMessages() {
                   />
                   <VaulDrawerContent>
                     <div style={{ width: 40, height: 4, background: "#e5e7eb", borderRadius: 2, margin: "12px auto", flexShrink: 0 }} />
-                    {detailLoading ? (
-                      <ConversationSkeletonWrap>
-                        <ConvHeaderSkeleton>
-                          <SkeletonBase $width="120px" $height="18px" $mb="0" />
-                          <SkeletonBase $width="160px" $height="12px" $mb="0" />
-                        </ConvHeaderSkeleton>
-                        <MessagesSkeletonArea>
-                          <div style={{ display: "flex", justifyContent: "flex-start" }}>
-                            <BubbleSkeleton style={{ width: "70%" }} />
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                            <BubbleSkeleton style={{ width: "60%" }} />
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "flex-start" }}>
-                            <BubbleSkeleton style={{ width: "50%" }} />
-                          </div>
-                        </MessagesSkeletonArea>
-                        <ReplySkeletonBar>
-                          <InputCapsuleSkeleton />
-                        </ReplySkeletonBar>
-                      </ConversationSkeletonWrap>
-                    ) : (
-                    <ConversationPanel>
-                      <DrawerHeader style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <h3>{selected.booker_display || "Guest"}</h3>
-                          {selected.booker_email && <div className="sub">{selected.booker_email}</div>}
-                          {(selected.class_title || selected.booking_reference) && (
-                            <div className="sub">
-                              {[selected.class_title, selected.booking_reference].filter(Boolean).join(" · ")}
+                    <DrawerBodyWrap>
+                      {detailLoading ? (
+                        <ConversationSkeletonWrap>
+                          <ConvHeaderSkeleton>
+                            <SkeletonBase $width="120px" $height="18px" $mb="0" />
+                            <SkeletonBase $width="160px" $height="12px" $mb="0" />
+                          </ConvHeaderSkeleton>
+                          <MessagesSkeletonArea>
+                            <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                              <BubbleSkeleton style={{ width: "70%" }} />
                             </div>
-                          )}
-                        </div>
-                        <button type="button" onClick={closeConversation} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} aria-label="Close">
-                          <X size={20} />
-                        </button>
-                      </DrawerHeader>
-                      <MessagesArea>
-                        {(selected.messages || []).length === 0 ? (
-                          <Empty description="No messages yet" style={{ margin: "auto" }} />
-                        ) : (
-                          (selected.messages || []).map((msg) => (
-                            <MsgRow key={msg.id} $isBusiness={msg.sender_type === "business"}>
-                              <Bubble $isBusiness={msg.sender_type === "business"}>
-                                <div>{msg.text}</div>
-                                <MsgTime $isBusiness={msg.sender_type === "business"}>{formatTime(msg.created_at)}</MsgTime>
-                              </Bubble>
-                            </MsgRow>
-                          ))
-                        )}
-                        <div ref={messagesEndRef} />
-                      </MessagesArea>
-                      <ReplyForm onSubmit={handleSendReply}>
-                        <EmojiQuickPick onInsert={(emoji) => setReplyText((prev) => prev + emoji)} />
-                        <InputContainer>
-                          <ReplyTextareaWrapper>
-                            <Input.TextArea placeholder="Type your reply…" value={replyText} onChange={(e) => setReplyText(e.target.value)} disabled={sending} autoSize={{ minRows: 1, maxRows: 5 }} />
-                          </ReplyTextareaWrapper>
-                          <SendBtn htmlType="submit" type="primary" shape="circle" icon={<Send size={18} />} disabled={!replyText.trim() || sending} loading={sending} />
-                        </InputContainer>
-                      </ReplyForm>
-                    </ConversationPanel>
-                    )}
+                            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                              <BubbleSkeleton style={{ width: "60%" }} />
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                              <BubbleSkeleton style={{ width: "50%" }} />
+                            </div>
+                          </MessagesSkeletonArea>
+                          <ReplySkeletonBar>
+                            <InputCapsuleSkeleton />
+                          </ReplySkeletonBar>
+                        </ConversationSkeletonWrap>
+                      ) : (
+                        <ConversationPanel>
+                          <DrawerHeader style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <h3>{selected.booker_display || "Guest"}</h3>
+                              {selected.booker_email && <div className="sub">{selected.booker_email}</div>}
+                              {(selected.class_title || selected.booking_reference) && (
+                                <div className="sub">
+                                  {[selected.class_title, selected.booking_reference].filter(Boolean).join(" · ")}
+                                </div>
+                              )}
+                            </div>
+                            <button type="button" onClick={closeConversation} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} aria-label="Close">
+                              <X size={20} />
+                            </button>
+                          </DrawerHeader>
+                          <MessagesArea>
+                            {(selected.messages || []).length === 0 ? (
+                              <Empty description="No messages yet" style={{ margin: "auto" }} />
+                            ) : (
+                              (selected.messages || []).map((msg) => (
+                                <MsgRow key={msg.id} $isBusiness={msg.sender_type === "business"}>
+                                  <Bubble $isBusiness={msg.sender_type === "business"}>
+                                    <div>{msg.text}</div>
+                                    <MsgTime $isBusiness={msg.sender_type === "business"}>{formatTime(msg.created_at)}</MsgTime>
+                                  </Bubble>
+                                </MsgRow>
+                              ))
+                            )}
+                            <div ref={messagesEndRef} />
+                          </MessagesArea>
+                          <ReplyForm onSubmit={handleSendReply}>
+                            <EmojiQuickPick onInsert={(emoji) => setReplyText((prev) => prev + emoji)} />
+                            <InputContainer>
+                              <ReplyTextareaWrapper>
+                                <Input.TextArea placeholder="Type your reply…" value={replyText} onChange={(e) => setReplyText(e.target.value)} disabled={sending} autoSize={{ minRows: 1, maxRows: 5 }} />
+                              </ReplyTextareaWrapper>
+                              <SendBtn htmlType="submit" type="primary" shape="circle" icon={<Send size={18} />} disabled={!replyText.trim() || sending} loading={sending} />
+                            </InputContainer>
+                          </ReplyForm>
+                        </ConversationPanel>
+                      )}
+                    </DrawerBodyWrap>
                   </VaulDrawerContent>
                 </Drawer.Portal>
               </Drawer.Root>
@@ -747,7 +906,7 @@ export default function BusinessMessages() {
             )}
           </>
         )}
-      </PageWrap>
+      </DashboardWrapper>
     </ConfigProvider>
   );
 }

@@ -1,15 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Empty, ConfigProvider } from "antd";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import styled, { createGlobalStyle } from "styled-components";
+import { Drawer } from "vaul";
+import { Modal, Empty, ConfigProvider } from "antd";
 import { MessageSquare, ChevronRight } from "lucide-react";
-import styled from "styled-components";
 import { motion } from "framer-motion";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import { conversationService } from "@/services/apiService";
 import { theme as globalTheme } from "@/components/theme";
 import FooterClient from "@/components/homepage/FooterClient";
+import message from "@/lib/message";
+import ConversationOverlayContent from "./ConversationOverlayContent";
+
+const ModalGlobalStyle = createGlobalStyle`
+  .guest-chat-modal .ant-modal-content {
+    padding: 0 !important;
+  }
+`;
+
+const StyledModal = styled(Modal)`
+  .ant-modal-container {
+    padding: 0 !important;
+  }
+`;
 
 const PageWrapper = styled.div`
   display: flex;
@@ -102,6 +117,9 @@ const ChevronWrap = styled.div`
   flex-shrink: 0;
 `;
 
+const DRAWER_BREAKPOINT = 768;
+const POLL_INTERVAL_MS = 12000;
+
 const formatTime = (dateString) => {
   if (!dateString) return "";
   const d = new Date(dateString);
@@ -119,24 +137,169 @@ const formatTime = (dateString) => {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
-export default function MyMessagesContent() {
+const OverlayPanel = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+`;
+
+const DrawerContentInner = styled(Drawer.Content)`
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  z-index: 1001;
+  outline: none;
+  display: flex;
+  flex-direction: column;
+  height: 90vh;
+  max-height: 90vh;
+`;
+
+const DrawerBodyWrap = styled.div`
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+export default function MyMessagesContent({ initialConversationId = null }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const conversationIdFromUrl = searchParams.get("conversation_id");
+
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState(null);
+  const [conv, setConv] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const hasOpenedFromUrlRef = useRef(false);
+  const hasOpenedFromInitialRef = useRef(false);
 
-  const fetchList = async () => {
+  const fetchList = useCallback(async () => {
     setLoading(true);
     const result = await conversationService.getList();
     if (result.success) setConversations(result.data || []);
     setLoading(false);
-  };
+  }, []);
+
+  const fetchDetail = useCallback(async (id, isInitialLoad = false) => {
+    if (!id) return;
+    if (isInitialLoad) setDetailLoading(true);
+    const result = await conversationService.getDetail(id);
+    if (result.success) setConv(result.data);
+    else if (result.error) {
+      message.error(result.error);
+      setSelectedId(null);
+      setConv(null);
+    }
+    if (isInitialLoad) setDetailLoading(false);
+  }, []);
 
   useEffect(() => {
     fetchList();
+  }, [fetchList]);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= DRAWER_BREAKPOINT);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    if (initialConversationId && !hasOpenedFromInitialRef.current) {
+      hasOpenedFromInitialRef.current = true;
+      setSelectedId(initialConversationId);
+      fetchDetail(initialConversationId, true);
+      return;
+    }
+    if (hasOpenedFromUrlRef.current || !conversationIdFromUrl) return;
+    const found = conversations.some((c) => String(c.id) === conversationIdFromUrl);
+    if (found) {
+      hasOpenedFromUrlRef.current = true;
+      setSelectedId(conversationIdFromUrl);
+      fetchDetail(conversationIdFromUrl, true);
+    }
+  }, [loading, initialConversationId, conversationIdFromUrl, conversations, fetchDetail]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const t = setInterval(() => fetchDetail(selectedId, false), POLL_INTERVAL_MS);
+    return () => clearInterval(t);
+  }, [selectedId, fetchDetail]);
+
+  const openConversation = useCallback(
+    (c) => {
+      setSelectedId(c.id);
+      setReplyText("");
+      setConv(null);
+      fetchDetail(c.id, true);
+      if (!initialConversationId) {
+        router.replace(`/my-messages?conversation_id=${c.id}`, { scroll: false });
+      }
+    },
+    [fetchDetail, router, initialConversationId]
+  );
+
+  const closeConversation = useCallback(() => {
+    setSelectedId(null);
+    setConv(null);
+    setReplyText("");
+    if (initialConversationId) {
+      router.replace("/my-messages", { scroll: false });
+    } else {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("conversation_id");
+      const qs = params.toString();
+      router.replace(qs ? `/my-messages?${qs}` : "/my-messages", { scroll: false });
+    }
+  }, [router, searchParams, initialConversationId]);
+
+  const handleSend = useCallback(
+    async (e) => {
+      e.preventDefault();
+      if (!replyText.trim() || !selectedId) return;
+      setSending(true);
+      const result = await conversationService.sendMessage(selectedId, replyText.trim());
+      if (result.success) {
+        setReplyText("");
+        fetchDetail(selectedId, false);
+      } else {
+        message.error(result.error || "Failed to send message");
+      }
+      setSending(false);
+    },
+    [replyText, selectedId, fetchDetail]
+  );
+
+  const isOverlayOpen = selectedId != null;
+
+  const overlayContent = (
+    <ConversationOverlayContent
+      conv={conv}
+      onClose={closeConversation}
+      replyText={replyText}
+      setReplyText={setReplyText}
+      sending={sending}
+      onSend={handleSend}
+      loading={detailLoading && !conv}
+    />
+  );
 
   return (
     <ConfigProvider theme={globalTheme}>
+      <ModalGlobalStyle />
       <PageWrapper>
         <ExploreHeader showOptionsWrapper={false} />
         <PageContainer>
@@ -164,10 +327,10 @@ export default function MyMessagesContent() {
               {conversations.map((c) => (
                 <ConversationRow
                   key={c.id}
-                  onClick={() => router.push(`/my-messages/${c.id}`)}
+                  onClick={() => openConversation(c)}
                   whileHover={{ x: 2 }}
                 >
-                  <div style={{ fontSize: 24, color: "#ff3562" }}>
+                  <div style={{ fontSize: 24, color: "#ff385c" }}>
                     <MessageSquare size={28} />
                   </div>
                   <RowMain>
@@ -194,6 +357,63 @@ export default function MyMessagesContent() {
         </PageContainer>
         <FooterClient />
       </PageWrapper>
+
+      {isOverlayOpen &&
+        (isMobile ? (
+          <Drawer.Root
+            open={true}
+            onOpenChange={(open) => !open && closeConversation()}
+            repositionInputs={false}
+          >
+            <Drawer.Portal>
+              <Drawer.Overlay
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  backgroundColor: "rgba(0,0,0,0.4)",
+                  zIndex: 1000,
+                }}
+              />
+              <DrawerContentInner>
+                <div
+                  style={{
+                    width: 40,
+                    height: 4,
+                    background: "#e5e7eb",
+                    borderRadius: 2,
+                    margin: "12px auto",
+                    flexShrink: 0,
+                  }}
+                />
+                <DrawerBodyWrap>
+                  <OverlayPanel>{overlayContent}</OverlayPanel>
+                </DrawerBodyWrap>
+              </DrawerContentInner>
+            </Drawer.Portal>
+          </Drawer.Root>
+        ) : (
+          <StyledModal
+            open={true}
+            onCancel={closeConversation}
+            footer={null}
+            centered
+            width={480}
+            closable={false}
+            className="guest-chat-modal"
+            styles={{
+              body: {
+                padding: 0,
+                height: "85vh",
+                maxHeight: "85vh",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              },
+            }}
+          >
+            <OverlayPanel>{overlayContent}</OverlayPanel>
+          </StyledModal>
+        ))}
     </ConfigProvider>
   );
 }

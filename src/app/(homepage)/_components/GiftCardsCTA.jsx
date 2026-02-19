@@ -1,24 +1,16 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import dynamic from "next/dynamic";
+import React, { useRef, useEffect } from "react";
 import { Button } from "antd";
 import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useInView } from "framer-motion";
 import styles from "./GiftCardsCTA.module.css";
 
 // Assets
 import Card1 from "@/assets/card1.png";
 import Card5 from "@/assets/Card 9.png";
 
-// 1. Dynamic Import for the heavy 3D component
-const GiftCardsCanvas = dynamic(() => import("./GiftCardsCanvas"), {
-  ssr: false,
-  loading: () => <Fallback2D />,
-});
-
-// 2. Simple 2D Fallback (Instant load, no layout shift)
+// 2D static cards (no Three.js) — consistent look and faster load
 const Fallback2D = () => (
   <div className={styles.fallbackContainer}>
     <img
@@ -37,7 +29,6 @@ const Fallback2D = () => (
 const GiftCardsCTA = () => {
   const router = useRouter();
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "200px" });
 
   // Prefetch the giftcards page
   useEffect(() => {
@@ -78,13 +69,9 @@ const GiftCardsCTA = () => {
           </Button>
         </div>
 
-        {/* 3D Cards Area - Lazy Loaded */}
+        {/* Cards area — 2D only (no Three.js) */}
         <div className={styles.canvasArea}>
-          {isInView ? (
-            <GiftCardsCanvas img1={Card1.src} img2={Card5.src} />
-          ) : (
-            <Fallback2D />
-          )}
+          <Fallback2D />
         </div>
       </div>
     </section>

@@ -217,12 +217,15 @@ axiosInstance.interceptors.response.use(
             console.log('[Axios] Clearing user state due to session expiration');
             useAuthStore.getState().clearUser();
             
-            // Check if we are on the registration page
+            // Check if we are on the business or registration page (so after login we send them to registration)
             const currentPath = window.location.pathname + window.location.search;
-            const isRegistrationPage = currentPath.includes('/business/register');
+            const isBusinessOrRegisterPage =
+              currentPath.startsWith('/business/register') || currentPath === '/business';
 
-            if (isRegistrationPage) {
-              console.log('[Axios] Registration page detected. Opening auth modal to preserve state.');
+            if (isBusinessOrRegisterPage) {
+              const { saveRedirectPath } = await import('./auth-client');
+              saveRedirectPath('/business/register');
+              console.log('[Axios] Business/register page detected. Opening auth modal; will redirect to /business/register after auth.');
               useAuthStore.getState().setShouldOpenAuthModal(true);
             } else if (currentPath !== '/' && currentPath !== '') {
               // For other pages, use standard redirect logic

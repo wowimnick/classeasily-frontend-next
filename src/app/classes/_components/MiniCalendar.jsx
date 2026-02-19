@@ -21,41 +21,62 @@ const theme = {
 const CalendarCard = styled(motion.div)`
   background: ${theme.bg};
   border-radius: ${theme.radius};
-  padding: 24px;
+  padding: clamp(12px, 4vw, 24px);
   box-shadow: ${theme.shadow};
   border: 1px solid ${theme.border};
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: 390px;
+  max-width: min(390px, 100%);
+  min-width: 0;
   margin: 0 auto;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  @media (max-width: 380px) {
+    padding: 10px;
+    border-radius: 16px;
+  }
 `;
 
 const HeaderRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: clamp(12px, 3vw, 24px);
   width: 100%;
-  padding: 0 4px;
+  min-width: 0;
+  padding: 0 2px;
+  gap: 6px;
 `;
 
 const MonthLabel = styled(motion.h2)`
-  font-size: 16px;
+  font-size: clamp(13px, 3.8vw, 16px);
   font-weight: 700;
   color: ${theme.textPrimary};
   margin: 0;
-  min-width: 140px;
+  min-width: 0;
+  flex: 1;
   text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @media (max-width: 380px) {
+    font-size: 13px;
+  }
 `;
 
 const IconButton = styled(motion.button)`
   background: transparent;
   border: 1px solid ${theme.border};
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  width: clamp(28px, 8vw, 32px);
+  height: clamp(28px, 8vw, 32px);
+  min-width: 28px;
+  min-height: 28px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -72,53 +93,86 @@ const IconButton = styled(motion.button)`
     opacity: 0.3;
     cursor: not-allowed;
   }
+
+  @media (max-width: 380px) {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+  }
 `;
 
 const GridContainer = styled.div`
   width: 100%;
+  min-width: 0;
 `;
 
 const DaysGrid = styled(motion.div)`
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-  justify-content: center;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: clamp(4px, 1.5vw, 8px);
+  width: 100%;
+  min-width: 0;
   justify-items: center;
+  align-items: center;
 `;
 
 const WeekdayRow = styled.div`
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-  margin-bottom: 12px;
-  justify-content: center;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: clamp(4px, 1.5vw, 8px);
+  margin-bottom: clamp(6px, 1.5vw, 12px);
+  width: 100%;
+  min-width: 0;
   justify-items: center;
 `;
 
 const Weekday = styled.div`
   text-align: center;
-  font-size: 11px;
+  font-size: clamp(9px, 2.5vw, 11px);
   font-weight: 700;
   color: ${theme.textLight};
   text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  @media (max-width: 380px) {
+    font-size: 9px;
+  }
+`;
+
+const DayCell = styled.div`
+  width: 100%;
+  max-width: 44px;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
 `;
 
 const DayButton = styled(motion.button)`
-  width: 40px;
-  height: 40px;
+  width: 100%;
+  height: 100%;
+  min-width: 24px;
+  min-height: 24px;
+  max-width: 44px;
+  max-height: 44px;
+  aspect-ratio: 1;
   border: 2px solid transparent;
   background: transparent;
-  border-radius: 12px;
+  border-radius: clamp(8px, 2vw, 12px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   position: relative;
-  font-size: 14px;
+  font-size: clamp(12px, 3.2vw, 14px);
   font-weight: 500;
   color: ${theme.textPrimary};
   transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  box-sizing: border-box;
 
   ${(props) =>
     !props.$inMonth &&
@@ -244,7 +298,7 @@ function MiniCalendar({
           <IconButton disabled>
             <ChevronLeft size={20} />
           </IconButton>
-          <SkeletonBlock $width="140px" $height="20px" $radius="6px" />
+          <SkeletonBlock $width="min(140px, 50%)" $height="20px" $radius="6px" />
           <IconButton disabled>
             <ChevronRight size={20} />
           </IconButton>
@@ -256,13 +310,14 @@ function MiniCalendar({
         </WeekdayRow>
         <DaysGrid>
           {[...Array(35)].map((_, i) => (
-            <SkeletonBlock
-              key={i}
-              $width="40px"
-              $height="40px"
-              $radius="12px"
-              style={{ margin: 0 }}
-            />
+            <DayCell key={i}>
+              <SkeletonBlock
+                $width="100%"
+                $height="100%"
+                $radius="12px"
+                style={{ margin: 0 }}
+              />
+            </DayCell>
           ))}
         </DaysGrid>
       </CalendarCard>
@@ -314,7 +369,9 @@ function MiniCalendar({
             transition={{ duration: 0.2 }}
           >
             {daysInMonth.map((item, idx) => {
-              if (!item.date) return <div key={`empty-${idx}`} />;
+              if (!item.date) {
+                return <DayCell key={`empty-${idx}`} />;
+              }
               const naive = getLocalYYYYMMDD(item.date);
               const itemDayStart = getDayStart(item.date);
               const isPast = itemDayStart < todayStart;
@@ -328,25 +385,26 @@ function MiniCalendar({
               const isToday = itemDayStart === todayStart;
 
               return (
-                <DayButton
-                  key={naive}
-                  type="button"
-                  disabled={isPast || isUnavailableFuture}
-                  $inMonth={true}
-                  $hasSlots={hasSlots}
-                  $isSelected={isSel}
-                  $isPast={isPast}
-                  $unavailableFuture={isUnavailableFuture}
-                  $isToday={isToday}
-                  onClick={() =>
-                    !isPast &&
-                    !isUnavailableFuture &&
-                    handleDateClick(item.date)
-                  }
-                  whileTap={hasSlots && !isPast ? { scale: 0.9 } : {}}
-                >
-                  {item.date.getDate()}
-                </DayButton>
+                <DayCell key={naive}>
+                  <DayButton
+                    type="button"
+                    disabled={isPast || isUnavailableFuture}
+                    $inMonth={true}
+                    $hasSlots={hasSlots}
+                    $isSelected={isSel}
+                    $isPast={isPast}
+                    $unavailableFuture={isUnavailableFuture}
+                    $isToday={isToday}
+                    onClick={() =>
+                      !isPast &&
+                      !isUnavailableFuture &&
+                      handleDateClick(item.date)
+                    }
+                    whileTap={hasSlots && !isPast ? { scale: 0.9 } : {}}
+                  >
+                    {item.date.getDate()}
+                  </DayButton>
+                </DayCell>
               );
             })}
           </DaysGrid>

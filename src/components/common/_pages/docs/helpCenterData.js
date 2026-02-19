@@ -20,17 +20,31 @@ export const helpCenterData = [
       "Everything you need to know to launch your business, set up payments, and complete your Host profile.",
     articles: [
       {
+        slug: "dashboard-overview",
+        title: "Your Dashboard at a Glance",
+        content: [
+          {
+            type: "p",
+            text: "When you log in, the <strong>Dashboard</strong> (or <strong>Overview</strong>) tab gives you a snapshot of your business: key metrics, upcoming activity, and quick links to list your experiences, manage bookings, and view revenue.",
+          },
+          {
+            type: "p",
+            text: "Use the sidebar to move between: <strong>My Listings</strong> (create and manage experiences and schedules), <strong>Bookings</strong> (Active and History), <strong>People & Community</strong> (Guests, Reviews, Staff, Messages), <strong>Financials</strong> (Revenue, Payouts), <strong>Marketing & Analytics</strong> (Booking Trends, Promotions), and <strong>Settings</strong> (Business Settings and Payout Setup).",
+          },
+        ],
+      },
+      {
         slug: "setup-guide",
         title: "Your Host Setup Checklist",
         content: [
           {
             type: "p",
-            text: "Welcome to ClassEasily! Getting your business up and running as a Host is simple. Follow this checklist to ensure you are ready to accept bookings and payments.",
+            text: "Welcome to Classeasily! Getting your business up and running as a Host is simple. Follow this checklist to ensure you are ready to accept bookings and payments.",
           },
           { type: "h3", text: "1. Connect Stripe for Payouts" },
           {
             type: "p",
-            text: "This is the most critical step. You cannot receive money until you connect a Stripe account. Navigate to <strong>Settings</strong> &rarr; <strong>Payouts</strong> to link your bank account securely. This automatically enables credit card, <strong>Apple Pay</strong>, and <strong>Google Pay</strong> processing for your Guests.",
+            text: "This is the most critical step. You cannot receive money until you connect a Stripe account. Navigate to <strong>Settings</strong> &rarr; <strong>Business Settings</strong> &rarr; <strong>Preferences</strong> tab, then scroll to <strong>Payout Setup</strong> to link your bank account securely. This automatically enables credit card, <strong>Apple Pay</strong>, and <strong>Google Pay</strong> processing for your Guests.",
           },
           { type: "h3", text: "2. Complete Your Business Profile" },
           {
@@ -70,9 +84,24 @@ export const helpCenterData = [
             type: "p",
             text: "We partner with Stripe to handle all payments securely. We support major credit cards as well as seamless one-tap checkout via Apple Pay and Google Pay.",
           },
+          { type: "h3", text: "Where to Connect Your Payout Account" },
           {
             type: "p",
-            text: "When you click 'Connect Payouts', you will be redirected to a secure Stripe Express page to verify your identity and link your payout method.",
+            text: "Go to <strong>Settings</strong> &rarr; <strong>Business Settings</strong> &rarr; <strong>Preferences</strong> tab. Scroll to the <strong>Payout Setup</strong> section. If your account is not yet connected, you will see a <strong>Setup Payouts</strong> button. You can also reach this section from the <strong>Payouts</strong> tab (under Financials): when payouts are not enabled, a button there will take you directly to Payout Setup.",
+          },
+          {
+            type: "p",
+            text: "Click <strong>Setup Payouts</strong>. You will be redirected to Stripe's secure site. Classeasily does not store your bank or card details—Stripe handles everything. Complete the steps on Stripe, then return to your dashboard. Your status will sync automatically (you may see a short 'Synchronizing account status' message).",
+          },
+          { type: "h3", text: "Payout Account Statuses" },
+          {
+            type: "ul",
+            items: [
+              "<strong>Active:</strong> Your account is connected and you can receive payouts. No further action needed.",
+              "<strong>Pending:</strong> Stripe is reviewing your information. This can take a few business days.",
+              "<strong>Incomplete:</strong> You did not finish the Stripe onboarding. Click <strong>Continue Onboarding</strong> or <strong>Update Account Details</strong> to complete it.",
+              "<strong>Restricted:</strong> Stripe requires additional verification or information. Use <strong>Manage Payouts</strong> to open Stripe and resolve the issue.",
+            ],
           },
           { type: "h3", text: "The Stripe Setup Walkthrough (Canada)" },
           {
@@ -135,6 +164,28 @@ export const helpCenterData = [
               "<strong>Corporation Mismatch:</strong> Ensure your legal business name matches your Articles of Incorporation exactly (including 'Inc.', 'Ltd.', etc.).",
               "<strong>Address Verification:</strong> Stripe may ask for a photo of your driver's license or passport if they cannot verify you automatically via credit bureaus.",
             ],
+          },
+        ],
+      },
+      {
+        slug: "business-settings",
+        title: "Business Settings",
+        content: [
+          {
+            type: "p",
+            text: "Go to <strong>Settings</strong> &rarr; <strong>Business Settings</strong> to manage your profile, location, and preferences. The page has three tabs:",
+          },
+          {
+            type: "ul",
+            items: [
+              "<strong>General:</strong> Business name, description, logo, and other basic info that appears on your public profile.",
+              "<strong>Location:</strong> Your address and whether to show an exact map or a general area to Guests.",
+              "<strong>Preferences:</strong> Business hours, timezone, notification settings (e.g. new booking alerts, cancellation and reminder emails), and the <strong>Payout Setup</strong> section where you connect Stripe to receive payments.",
+            ],
+          },
+          {
+            type: "p",
+            text: "After you save changes, your public listing and dashboard behavior will update accordingly. Payout Setup is the same section described in <strong>Getting Paid: Stripe, Apple Pay & Google Pay</strong>—use it to connect or update your payout account.",
           },
         ],
       },
@@ -227,7 +278,7 @@ export const helpCenterData = [
           {
             type: "ol",
             items: [
-              "Go to <strong>Experience Management</strong> and click 'Manage Schedules' on an experience.",
+              "Go to <strong>My Listings</strong>, open the relevant experience, and click <strong>Manage Schedules</strong>.",
               "Select the <strong>Bulk Create</strong> tab.",
               "Choose a date range (e.g., Sept 1 to Dec 31).",
               "Select repeating days (e.g., every Monday and Friday).",
@@ -237,6 +288,56 @@ export const helpCenterData = [
           {
             type: "p",
             text: "The system will generate a unique schedule for every matching day in that range. If you need to cancel just one day (like a holiday), you can delete that specific instance later without affecting the others.",
+          },
+        ],
+      },
+      {
+        slug: "class-tiers-and-options",
+        title: "Booking Options (Tiers)",
+        content: [
+          {
+            type: "p",
+            text: "When you create or edit an Experience, you can offer one or multiple <strong>booking options</strong> (sometimes called tiers). This lets Guests choose between different variants—e.g. General Admission vs VIP, or different add-ons—often at different prices per schedule.",
+          },
+          { type: "h3", text: "When to Use One vs Multiple Options" },
+          {
+            type: "p",
+            text: "Use a <strong>single option</strong> when everyone books the same thing (one price, one experience type). Use <strong>multiple options</strong> when you want to offer choices such as:",
+          },
+          {
+            type: "ul",
+            items: [
+              "Different price tiers (e.g. Standard vs Premium seating).",
+              "Different feature sets (e.g. with or without equipment, different duration).",
+              "Same event with add-ons (e.g. base ticket vs ticket + materials).",
+            ],
+          },
+          { type: "h3", text: "What You Set Per Option" },
+          {
+            type: "ul",
+            items: [
+              "<strong>Option name:</strong> Shown to Guests when they pick (e.g. 'General Admission', 'VIP Access').",
+              "<strong>Features:</strong> A comparison table (e.g. 'Duration: 2 hours', 'Materials included: Yes/No') so Guests can compare options.",
+              "<strong>Activity level:</strong> e.g. Open to everyone, No experience needed, Intermediate, Advanced.",
+              "<strong>Message for booker:</strong> Optional text (e.g. what to bring, where to meet) shown before booking.",
+              "<strong>Cancellation & refunds:</strong> Each option can have its own cancellation notice (e.g. Flexible, 24h, 48h, Strict) and refund percentage. This is where you set your <strong>cancellation policy</strong> for that option.",
+            ],
+          },
+          { type: "h3", text: "Schedule Mode (Multiple Options Only)" },
+          {
+            type: "p",
+            text: "For options other than your primary one, you choose how they relate to the schedule:",
+          },
+          {
+            type: "ul",
+            items: [
+              "<strong>Same Spot / Time:</strong> This option runs alongside the primary option (same date and time). Good for upgrades or variations at the same event.",
+              "<strong>Separate Time:</strong> This option has its own schedule (different dates/times). Good for different rooms or dedicated sessions.",
+            ],
+          },
+          {
+            type: "p",
+            text: "Prices for each option are set when you create or edit <strong>Schedules</strong> for the Experience. You can set a different price per option per schedule (e.g. Tuesday Standard $50, Tuesday VIP $80).",
           },
         ],
       },
@@ -255,7 +356,7 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "The <strong>Bookings</strong> tab is your command center. Here you can see who is coming to your experience, check payment statuses, handle cancellations, and rescheduling.",
+            text: "The <strong>Bookings</strong> area is your command center. Under <strong>Bookings</strong> you have <strong>Active Bookings</strong> (upcoming reservations) and <strong>Booking History</strong> (past and cancelled). Here you can see who is coming to your experience, check payment statuses, handle cancellations, and rescheduling.",
           },
           { type: "h3", text: "Booking Statuses" },
           {
@@ -284,7 +385,7 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Moving from another system? You can bulk import your existing guest list into ClassEasily using a CSV or Excel file.",
+            text: "Moving from another system? You can bulk import your existing guest list into Classeasily using a CSV or Excel file.",
           },
           { type: "h3", text: "How to Import" },
           {
@@ -316,6 +417,34 @@ export const helpCenterData = [
           },
         ],
       },
+      {
+        slug: "messages",
+        title: "Messages",
+        content: [
+          {
+            type: "p",
+            text: "The <strong>Messages</strong> tab (under People & Community) is where you can view and reply to conversations with Guests. Use it to answer questions about your experiences, send updates, or coordinate details before or after a booking.",
+          },
+          {
+            type: "p",
+            text: "Messages are stored on the Platform and may be used for safety, support, and policy enforcement as described in our <a href='/privacy-policy'>Privacy Policy</a>. Keep communication professional and on-platform when possible.",
+          },
+        ],
+      },
+      {
+        slug: "reviews-and-feedback",
+        title: "Reviews & Feedback",
+        content: [
+          {
+            type: "p",
+            text: "The <strong>Reviews & Feedback</strong> tab (under People & Community) shows reviews and ratings that Guests have left after attending your experiences. You can see average ratings, recent reviews, and trends over time.",
+          },
+          {
+            type: "p",
+            text: "Reviews help build trust with future Guests. We encourage you to respond to reviews where appropriate. Reviews must follow our <a href='/content-policy'>Content Policy</a>. If you believe a review violates our policies, you can report it through the Platform or contact support.",
+          },
+        ],
+      },
     ],
   },
   {
@@ -339,7 +468,7 @@ export const helpCenterData = [
             items: [
               "<strong>Gross Revenue:</strong> Total money paid by Guests (before fees/taxes).",
               "<strong>Net Revenue:</strong> The actual amount you take home.",
-              "<strong>Platform Fees:</strong> The service fee charged by ClassEasily (includes credit card processing costs).",
+              "<strong>Platform Fees:</strong> The service fee charged by Classeasily (includes credit card processing costs).",
             ],
           },
           { type: "h3", text: "Exporting Data" },
@@ -350,35 +479,64 @@ export const helpCenterData = [
         ],
       },
       {
+        slug: "payouts-tab",
+        title: "Understanding the Payouts Tab",
+        content: [
+          {
+            type: "p",
+            text: "The <strong>Payouts</strong> tab (under <strong>Financials</strong>) is where you see your payout status, pending balance, and full payout history.",
+          },
+          { type: "h3", text: "What You'll See" },
+          {
+            type: "ul",
+            items: [
+              "<strong>Payouts Status:</strong> Whether your account is connected and eligible to receive payouts (e.g. Active, Pending, Incomplete). If not connected, a button will take you to Settings &rarr; Preferences &rarr; Payout Setup.",
+              "<strong>Pending Balance:</strong> Money from completed sessions that has been released to your balance but not yet sent to your bank.",
+              "<strong>Payout Schedule:</strong> When the next transfer to your bank is expected.",
+              "<strong>Last Payout:</strong> Your most recent successful payout amount.",
+            ],
+          },
+          { type: "h3", text: "Payout History" },
+          {
+            type: "p",
+            text: "The table lists each payout: amount, estimated arrival date, status, and number of bookings included. Expand a row to see the individual bookings that make up that payout. You can <strong>export</strong> payout details (e.g. for accounting) from the expanded view.",
+          },
+          {
+            type: "p",
+            text: "Each payout may have a Stripe transfer ID for reference. If you have not received any payouts yet, the table will be empty—payouts are created approximately 24–48 hours after each experience or session is completed.",
+          },
+        ],
+      },
+      {
         slug: "payout-schedule",
         title: "Payout Schedules & Adventure Payouts",
         content: [
           {
             type: "p",
-            text: "Payouts are automated. You do not need to manually request withdrawals.",
+            text: "Payouts are fully automated. You do not need to manually request withdrawals. Once your Stripe account is connected and active, funds flow as described below.",
           },
           { type: "h3", text: "When do I get paid?" },
           {
             type: "p",
-            text: "Funds for a session are released to your payout balance approximately 24-48 hours after the experience is <strong>completed</strong>.",
+            text: "Funds for a session are released to your payout balance <strong>approximately 24–48 hours</strong> after the experience or session is <strong>completed</strong>. After that, Stripe sends the money to your connected bank account on a rolling daily schedule. Depending on your bank, it may take an additional 1–3 business days for the funds to appear in your account.",
           },
           { type: "h3", text: "Payouts for Multi-Day Adventures (Important)" },
           {
             type: "p",
-            text: "If you are running a multi-session <strong>Adventure/Course</strong> (e.g., a 10-week bootcamp where guests pay upfront), you do not receive the entire lump sum immediately.",
+            text: "If you are running a multi-session <strong>Adventure/Course</strong> (e.g., a 10-week bootcamp where guests pay upfront), you do not receive the entire lump sum in one payout.",
           },
           {
             type: "p",
-            text: "Instead, the system takes the total amount paid by the Guest and divides it by the number of sessions in the adventure. The funds for each specific session are released <strong>after that specific session takes place</strong>.",
+            text: "The system divides the total amount paid by the Guest by the number of sessions. The share for each session is released only <strong>after that specific session has taken place</strong>. So you get a series of smaller payouts over time, not one large payout at the start.",
           },
           {
             type: "blockquote",
-            text: "<strong>Example:</strong> A Guest pays $100 for a 4-week adventure. You will receive $25 after Week 1 is completed, $25 after Week 2, and so on. This ensures that if an adventure is cancelled mid-way, refunds are easier to manage and protects you from liability.",
+            text: "<strong>Example:</strong> A Guest pays $100 for a 4-week adventure. You will receive $25 after Week 1 is completed, $25 after Week 2, and so on. This protects both you and the Guest if the adventure is cancelled partway through.",
           },
           { type: "h3", text: "Daily Bank Transfers" },
           {
             type: "p",
-            text: "Once funds are released to your balance (post-completion), Stripe automatically transfers them to your bank account on a rolling daily basis. Depending on your bank, it may take 1-3 business days for the funds to appear in your statement.",
+            text: "Once funds are released to your balance (post-completion), Stripe automatically transfers them to your bank account on a rolling daily basis. You can see the <strong>Est. Arrival</strong> date for each payout in the Payouts tab. If a payout is delayed, check your <strong>Payouts Status</strong> in Settings &rarr; Preferences &rarr; Payout Setup and resolve any Stripe requirements.",
           },
         ],
       },
@@ -416,7 +574,7 @@ export const helpCenterData = [
           { type: "h3", text: "Inviting Team Members" },
           {
             type: "p",
-            text: "Once a role exists, go to the <strong>Team</strong> tab and invite a team member by email. They will receive a link to create their own login. They will strictly see only what their role allows.",
+            text: "Once a role exists, go to <strong>Staff Management</strong> (under People & Community) and invite a team member by email. They will receive a link to create their own login. They will strictly see only what their role allows.",
           },
         ],
       },
@@ -429,18 +587,28 @@ export const helpCenterData = [
     description: "Embed bookings on your website and create discount codes.",
     articles: [
       {
+        slug: "booking-trends",
+        title: "Booking Trends",
+        content: [
+          {
+            type: "p",
+            text: "The <strong>Booking Trends</strong> tab (under Marketing & Analytics) shows how your bookings and revenue change over time. Use it to see which experiences or time periods perform best and to plan promotions or schedule more sessions when demand is high.",
+          },
+        ],
+      },
+      {
         slug: "website-widget",
         title: "Website Integration (Widget)",
         content: [
           {
             type: "p",
-            text: "Turn your own website into a booking engine. Our widget (beta) allows Guests to reserve experiences without leaving your site.",
+            text: "Turn your own website into a booking engine. Our widget (beta) allows Guests to reserve experiences without leaving your site. You can access widget settings from your dashboard setup guide or the widget section of your dashboard.",
           },
           { type: "h3", text: "Setup" },
           {
             type: "ol",
             items: [
-              "Go to <strong>Widget Settings</strong> in your dashboard.",
+              "Go to <strong>Widget Settings</strong> in your dashboard (via the setup guide or widget section).",
               "Customize the colors and fonts to match your brand.",
               "Copy the generated HTML code.",
               "Paste it into your website builder (Wix, Squarespace, WordPress, etc.) inside a 'Custom HTML' block.",
@@ -465,7 +633,7 @@ export const helpCenterData = [
             type: "ul",
             items: [
               "<strong>Coupon Codes:</strong> Requires the Guest to type a code (e.g., 'SUMMER20') at checkout.",
-              "<strong>Automatic Discounts:</strong> (Coming Soon) Automatically applied at checkout.",
+              "<strong>Automatic Discounts:</strong> Leave the coupon code blank when creating a discount to make it automatic—it will be applied to eligible purchases at checkout. If you provide a code, Guests must enter it to get the discount.",
             ],
           },
           { type: "h3", text: "Discount Scopes" },

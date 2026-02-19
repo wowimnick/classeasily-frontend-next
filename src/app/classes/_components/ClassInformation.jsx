@@ -138,10 +138,15 @@ const InfoWrapper = styled.section`
   flex-direction: column;
   width: 100%;
   padding: 1rem;
+  padding-top: 0;
   background: white;
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
   /* Removed gap to allow Divider to control spacing */
+
+  @media (max-width: 768px) {
+    padding-top: 1rem;
+  }
 `;
 const BusinessSection = styled.div`
   padding: 0;
@@ -447,19 +452,33 @@ const calculateHostingDuration = (dateString) => {
   return `${totalDays} day${totalDays > 1 ? "s" : ""}`;
 };
 
-const ContactHostLink = styled.button`
+const AskQuestionRow = styled.div`
+  display: flex;
+  justify-content: flex-start;
+  padding: 0 0.25rem;
+  @media (max-width: 768px) {
+    padding: 0 0.75rem;
+    justify-content: stretch;
+  }
+  @media (max-width: 480px) {
+    padding: 0 0.5rem;
+  }
+`;
+
+const AskQuestionButton = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  padding: 0;
+  justify-content: center;
+  gap: 8px;
   font-size: 14px;
   font-weight: 500;
   color: ${CLASSEASILY_RED};
   background: none;
   border: none;
   cursor: pointer;
-  transition: color 0.2s;
+  padding: 0.5rem 0;
+  transition: color 0.2s, background 0.2s;
+  border-radius: 12px;
   &:hover {
     color: #e03253;
     text-decoration: underline;
@@ -467,6 +486,25 @@ const ContactHostLink = styled.button`
   &:focus-visible {
     outline: 2px solid ${CLASSEASILY_RED};
     outline-offset: 2px;
+  }
+  @media (max-width: 768px) {
+    width: 100%;
+    padding: 14px 1rem;
+    font-size: 15px;
+    color: #222;
+    background: #f7f7f7;
+    border: 1px solid #ebebeb;
+    text-decoration: none;
+    &:hover {
+      background: #f0f0f0;
+      color: #222;
+      text-decoration: none;
+    }
+  }
+  @media (max-width: 480px) {
+    padding: 12px 1rem;
+    font-size: 14px;
+    min-height: 48px;
   }
 `;
 
@@ -566,19 +604,6 @@ const ClassInformation = React.memo(
               style={{ display: "flex", flexDirection: "column", gap: "2px" }}
             >
               <BusinessName>Hosted by {displayBusinessName}</BusinessName>
-              {onContactHost && (
-                <ContactHostLink
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onContactHost();
-                  }}
-                  aria-label="Ask the host a question"
-                >
-                  <MessageCircle size={16} />
-                  Ask a question
-                </ContactHostLink>
-              )}
               <BusinessMetaWrapper>
                 <HostingMeta>
                   <MetaItem>
@@ -612,6 +637,19 @@ const ClassInformation = React.memo(
             </div>
           </BusinessInfo>
         </BusinessSection>
+
+        {onContactHost && (
+          <AskQuestionRow>
+            <AskQuestionButton
+              type="button"
+              onClick={onContactHost}
+              aria-label="Ask the host a question"
+            >
+              <MessageCircle size={18} aria-hidden />
+              Ask a question
+            </AskQuestionButton>
+          </AskQuestionRow>
+        )}
 
         <Divider style={{ margin: "12px 0" }} />
 

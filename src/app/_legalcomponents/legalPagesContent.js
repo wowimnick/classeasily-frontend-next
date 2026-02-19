@@ -1,6 +1,6 @@
 export const termsContent = {
   title: "Terms of Service",
-  lastUpdated: "January 14, 2026", // Updated date
+  lastUpdated: "February 19, 2026",
   sections: [
     // Section 1: Introduction
     {
@@ -36,6 +36,7 @@ export const termsContent = {
             "<strong>User Content:</strong> Any text, images, videos, reviews, messages, or other materials uploaded, posted, or transmitted by Users on the Platform.",
             "<strong>Platform Content:</strong> All content on the Platform excluding User Content, including text, graphics, logos, icons, images, software, and underlying technology.",
             "<strong>Fees:</strong> Any charges applicable to Users, including Service Fees, Booking Fees, or Payment Processing Fees, as detailed on the Platform.",
+            "<strong>Gift Card:</strong> A prepaid balance issued by Classeasily that may be purchased on the Platform and redeemed toward Bookings or eligible purchases, subject to these Terms and any terms displayed at purchase or redemption.",
           ],
         },
       ],
@@ -178,6 +179,11 @@ export const termsContent = {
         {
           type: "p",
           text: "Classeasily utilizes Stripe, Inc. ('Stripe') for payment processing services. By using the payment features of the Platform, you agree to be bound by the Stripe Connected Account Agreement (available at https://stripe.com/en-ca/legal/connect-account) and the Stripe Services Agreement (available at https://stripe.com/en-ca/legal/ssa), which may be modified by Stripe from time to time. As a condition of Classeasily enabling payment processing services through Stripe, you agree to provide Classeasily accurate and complete information about you and your business, and you authorize Classeasily to share it and transaction information related to your use of the payment processing services provided by Stripe. Classeasily does not store your full credit card information.",
+        },
+        { type: "h3", text: "7.2.1. Gift Cards" },
+        {
+          type: "p",
+          text: "You may purchase Gift Cards on the Platform. Gift Cards are subject to any terms and conditions displayed at the time of purchase. Gift Card balances may be applied toward eligible Bookings and purchases as permitted on the Platform. Unless otherwise stated, Gift Cards are non-refundable for cash and may be subject to expiry or other limitations. Use of a Gift Card is subject to these Terms.",
         },
         { type: "h3", text: "7.3. Cancellations and Refunds" },
         {
@@ -362,7 +368,7 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "The arbitration will be administered by the Canadian Arbitration Association. The arbitration will be conducted in Toronto, Ontario, Canada, unless you and Classeasily agree otherwise. Judgment on the arbitration award may be entered in any court having jurisdiction thereof.",
+          text: "The arbitration will be administered by the ADR Institute of Canada, Inc. The arbitration will be conducted in Toronto, Ontario, Canada, unless you and Classeasily agree otherwise. Judgment on the arbitration award may be entered in any court having jurisdiction thereof.",
         },
         {
           type: "p",
@@ -415,7 +421,7 @@ export const termsContent = {
 
 export const privacyContent = {
   title: "Privacy Policy",
-  lastUpdated: "January 14, 2026", // Updated date
+  lastUpdated: "February 19, 2026",
   sections: [
     // Section 1: Introduction
     {
@@ -431,7 +437,7 @@ export const privacyContent = {
         },
         {
           type: "p",
-          text: "We comply with Canada's Personal Information Protection and Electronic Documents Act (PIPEDA) and applicable provincial privacy legislation, including Ontario's Personal Information Protection Act, 2024 (PIPA), where applicable.",
+          text: "We comply with Canada's Personal Information Protection and Electronic Documents Act (PIPEDA) and applicable provincial privacy legislation where applicable.",
         },
       ],
     },
@@ -450,8 +456,9 @@ export const privacyContent = {
             "<strong>Account Information:</strong> When you register, we collect information such as your name, email address, password (hashed), date of birth, phone number, and profile picture (optional). Hosts may provide additional business information, qualifications, or verification details.",
             "<strong>Listing Information (Hosts):</strong> Details about your Experiences or Workshops, including description, schedule, location (address or general area), pricing, capacity, images, videos, and rules.",
             "<strong>Booking Information (Guests):</strong> Information related to your bookings, including experiences booked, dates, times, number of participants, and any special requests or notes provided.",
+            "<strong>Gift Card Information:</strong> When you purchase or redeem a Gift Card, we collect purchaser and recipient details (e.g., name, email), amount, and redemption/usage information as needed to process and fulfill the transaction.",
             "<strong>Payment Information:</strong> While we use Stripe for payment processing, we may collect information necessary to facilitate transactions, such as billing address and transaction details. We do not store your full credit card number.",
-            "<strong>Communications:</strong> Records of communications with us (e.g., support requests via support@classeasily.com) or between Users via the Platform's messaging features (where applicable and monitored for safety/policy enforcement).",
+            "<strong>Communications and Messaging:</strong> Records of communications with us (e.g., support requests via support@classeasily.com) and messages sent between Guests and Hosts through the Platform's in-app messaging. We store these messages and may use them for safety, support, and policy enforcement.",
             "<strong>Reviews and Feedback:</strong> Content you submit as reviews, ratings, or feedback.",
             "<strong>Verification Information:</strong> Information required to verify identity or business details (e.g., government ID, business registration documents), collected only when necessary.",
           ],
@@ -463,7 +470,7 @@ export const privacyContent = {
             "<strong>Usage Data:</strong> Information about your interactions with the Platform, such as pages viewed, searches performed, bookings made, features used, clicks, timestamps, and referring URLs.",
             "<strong>Log Data and Device Information:</strong> IP address, browser type, operating system, device identifiers, crash data, and other technical information when you access the Platform.",
             "<strong>Location Information:</strong> We may collect approximate location information from your IP address or more precise location if you grant permission via your device settings (e.g., for finding nearby experiences).",
-            "<strong>Cookies and Similar Technologies:</strong> We use cookies, web beacons, pixels, and other tracking technologies. Please see Section 8 (Cookies) for details.",
+            "<strong>Cookies and Similar Technologies:</strong> We use cookies, web beacons, pixels, and other tracking technologies. We use analytics and advertising technologies such as Google Analytics, PostHog (product analytics), Meta (Facebook) Pixel (advertising and conversion tracking), and Vercel Analytics (site usage). For details, please see Section 8 (Cookies) and our <a href='/cookie-policy'>Cookie Policy</a>.",
           ],
         },
       ],
@@ -583,7 +590,7 @@ export const privacyContent = {
       content: [
         {
           type: "p",
-          text: "Under Canadian privacy laws (PIPEDA) and applicable provincial laws like Ontario's PIPA, you generally have the following rights regarding your personal information:",
+          text: "Under Canadian privacy laws (PIPEDA) and applicable provincial laws, you generally have the following rights regarding your personal information:",
         },
         {
           type: "ul",
@@ -662,7 +669,7 @@ export const privacyContent = {
 
 export const cookiePolicyContent = {
   title: "Cookie Policy",
-  lastUpdated: "January 14, 2026", // Updated date
+  lastUpdated: "February 19, 2026",
   sections: [
     {
       title: "1. What Are Cookies?",
@@ -704,7 +711,34 @@ export const cookiePolicyContent = {
       ],
     },
     {
-      title: "4. Your Choices and Managing Cookies",
+      title: "4. PostHog (Product Analytics)",
+      content: [
+        {
+          type: "p",
+          text: "We use PostHog for product and behavioral analytics. PostHog helps us understand how you use the Platform (e.g., events, feature usage, booking funnel steps) so we can improve the experience. PostHog may collect device and usage data. For more information, see <a href='https://posthog.com/privacy' target='_blank' rel='noopener noreferrer'>PostHog's Privacy Policy</a>.",
+        },
+      ],
+    },
+    {
+      title: "5. Meta (Facebook) Pixel",
+      content: [
+        {
+          type: "p",
+          text: "We use the Meta (Facebook) Pixel for advertising and conversion tracking. This helps us measure the effectiveness of ads and understand how visitors interact with our Platform. Data may be shared with Meta in accordance with their policies. Marketing cookies such as the Meta Pixel are used with your consent where required. For more information, see <a href='https://www.facebook.com/privacy/policy' target='_blank' rel='noopener noreferrer'>Meta's Data Policy</a>.",
+        },
+      ],
+    },
+    {
+      title: "6. Vercel Analytics",
+      content: [
+        {
+          type: "p",
+          text: "We use Vercel Analytics to collect basic site usage and performance metrics (e.g., page views, performance data). This helps us monitor and improve the technical performance of the Platform. For more information, see <a href='https://vercel.com/legal/privacy-policy' target='_blank' rel='noopener noreferrer'>Vercel's Privacy Policy</a>.",
+        },
+      ],
+    },
+    {
+      title: "7. Your Choices and Managing Cookies",
       content: [
         {
           type: "p",
@@ -717,7 +751,7 @@ export const cookiePolicyContent = {
       ],
     },
     {
-      title: "5. Contact Us",
+      title: "8. Contact Us",
       content: [
         {
           type: "p",
@@ -730,7 +764,7 @@ export const cookiePolicyContent = {
 
 export const feeContent = {
   title: "Fees and Pricing",
-  lastUpdated: "January 14, 2026", // Updated date
+  lastUpdated: "February 19, 2026",
   sections: [
     {
       title: "Our Fee Structure Explained",
@@ -794,7 +828,7 @@ export const feeContent = {
         { type: "h3", text: "Payouts" },
         {
           type: "p",
-          text: "Payouts to Hosts are typically processed via Stripe Connect 24 hours after an experience or session has been successfully completed, according to the schedule outlined in your Host dashboard and subject to Stripe's processing times. Payout details can be managed in your Host account settings.",
+          text: "Payouts to Hosts are typically processed via Stripe Connect approximately 24–48 hours after an experience or session has been successfully completed, according to the schedule outlined in your Host dashboard and subject to Stripe's processing times. Payout details can be managed in your Host account settings.",
         },
         { type: "h3", text: "Taxes (Host Responsibility)" },
         {
@@ -857,7 +891,7 @@ export const feeContent = {
 
 export const contentPolicyContent = {
   title: "Content Policy",
-  lastUpdated: "January 14, 2026", // Updated date
+  lastUpdated: "February 19, 2026",
   sections: [
     {
       title: "1. Introduction and Scope",
@@ -1040,7 +1074,7 @@ export const contentPolicyContent = {
 
 export const copyrightPolicyContent = {
   title: "Copyright Policy",
-  lastUpdated: "January 14, 2026", // Updated date
+  lastUpdated: "February 19, 2026",
   sections: [
     {
       title: "1. Introduction",
