@@ -2568,6 +2568,38 @@ export const supportTicketService = {
   },
 };
 
+export const adminConversationsService = {
+  getList: async (params = {}) => {
+    try {
+      const response = await axiosInstance.get("/admin/conversations/", {
+        params,
+      });
+      const data = Array.isArray(response.data) ? response.data : response.data?.results ?? [];
+      return { success: true, data };
+    } catch (error) {
+      console.error("Error fetching admin conversations:", error);
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to fetch conversations",
+      };
+    }
+  },
+  getDetail: async (conversationId) => {
+    try {
+      const response = await axiosInstance.get(
+        `/admin/conversations/${conversationId}/`
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error fetching conversation detail:", error);
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to fetch conversation",
+      };
+    }
+  },
+};
+
 export const globalDiscountAdminService = {
   list: async () => {
     try {

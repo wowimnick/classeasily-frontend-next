@@ -9,6 +9,7 @@ import PlatformSidebar from "../_components/PlatformSidebar";
 import { theme as appTheme } from "@/components/theme";
 import dynamic from "next/dynamic";
 import SupportTicketTab from "../_components/support/SupportTicketTab";
+import AdminConversationsTab from "../_components/conversations/AdminConversationsTab";
 import PayoutsList from "../_components/payouts-management/PayoutsList";
 import BusinessHeader from "@/app/business/dashboard/_components/BusinessHeader";
 import ImpersonationBanner from "@/components/header/ImpersonationBanner";
@@ -106,7 +107,7 @@ export default function AdminPage() {
       "users", "roles", "audit",
       "business-overview", "business-listings", "business-verification",
       "class-listings", "class-reviews", "class-categories",
-      "all-bookings", "payouts", "global-discounts", "blog", "support",
+      "all-bookings", "payouts", "global-discounts", "blog", "support", "conversations",
     ];
     const permissionMap = {
       "all-bookings": "quickstart.view_booking",
@@ -114,6 +115,7 @@ export default function AdminPage() {
       "global-discounts": "quickstart.access_global_discount_admin",
       blog: "quickstart.access_blog_admin",
       support: "quickstart.access_support_admin",
+      conversations: "quickstart.access_support_admin",
       users: "quickstart.view_customuser",
       roles: "quickstart.view_role",
       audit: "quickstart.view_auditlog",
@@ -164,6 +166,8 @@ export default function AdminPage() {
         return <BlogManagement />;
       case "support":
         return <SupportTicketTab />;
+      case "conversations":
+        return <AdminConversationsTab />;
       case "payouts":
         return <PayoutsList />;
       case "global-discounts":

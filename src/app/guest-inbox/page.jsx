@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import styled from "styled-components";
-import { ArrowLeft, Send, MessageSquare } from "lucide-react";
+import { Send, MessageSquare } from "lucide-react";
 import { Input, Button, ConfigProvider, Empty } from "antd";
 import message from "@/lib/message";
-import { conversationService } from "@/services/apiService";
+import { guestMessageService } from "@/services/apiService";
 import ExploreHeader from "@/components/explore/ExploreHeader";
 import { theme as globalTheme } from "@/components/theme";
 import FooterClient from "@/components/homepage/FooterClient";
@@ -29,23 +29,6 @@ const PageContent = styled.div`
   }
 `;
 
-const BackButton = styled.button`
-  background: none;
-  border: none;
-  color: #717171;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 8px 0;
-  margin-bottom: 20px;
-  &:hover {
-    color: #ff3562;
-  }
-`;
-
 const ConvHeader = styled.div`
   margin-bottom: 24px;
   h1 {
@@ -62,9 +45,10 @@ const ConvHeader = styled.div`
 
 const MessagesCard = styled.div`
   border: 1px solid #ebebeb;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
   background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 `;
 
 const MessagesHeader = styled.div`
@@ -73,6 +57,9 @@ const MessagesHeader = styled.div`
   font-size: 15px;
   font-weight: 600;
   color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 const MessagesContainer = styled.div`
@@ -83,11 +70,15 @@ const MessagesContainer = styled.div`
   max-height: 50vh;
   overflow-y: auto;
   background: #fafafa;
+  @media (max-width: 768px) {
+    max-height: 45vh;
+    padding: 16px;
+  }
 `;
 
 const MessageRow = styled.div`
   display: flex;
-  justify-content: ${(p) => (p.$isBooker ? "flex-end" : "flex-start")};
+  justify-content: ${(p) => (p.$isGuest ? "flex-end" : "flex-start")};
 `;
 
 const Bubble = styled.div`
@@ -95,7 +86,7 @@ const Bubble = styled.div`
   padding: 12px 16px;
   border-radius: 16px;
   ${(p) =>
-    p.$isBooker
+    p.$isGuest
       ? "background: #ff3562; color: #fff; border-bottom-right-radius: 4px;"
       : "background: #fff; color: #334155; border: 1px solid #ebebeb; border-bottom-left-radius: 4px;"}
 `;
@@ -106,25 +97,29 @@ const SenderLabel = styled.div`
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
-  color: ${(p) => (p.$isBooker ? "rgba(255,255,255,0.8)" : "#717171")};
+  color: ${(p) => (p.$isGuest ? "rgba(255,255,255,0.8)" : "#717171")};
 `;
 
 const Text = styled.div`
   font-size: 14px;
   line-height: 1.5;
   white-space: pre-wrap;
+  word-break: break-word;
 `;
 
 const Time = styled.div`
   font-size: 11px;
   margin-top: 4px;
-  color: ${(p) => (p.$isBooker ? "rgba(255,255,255,0.6)" : "#a3a3a3")};
+  color: ${(p) => (p.$isGuest ? "rgba(255,255,255,0.6)" : "#a3a3a3")};
 `;
 
 const ReplyForm = styled.form`
   padding: 20px;
   border-top: 1px solid #ebebeb;
   background: #fff;
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
 `;
 
 const InputRow = styled.div`
@@ -166,7 +161,16 @@ const SendBtn = styled(Button)`
   }
 `;
 
-const POLL_INTERVAL_MS = 12000;
+const TokenError = styled.div`
+  padding: 24px;
+  text-align: center;
+  color: #717171;
+  background: #fafafa;
+  border-radius: 16px;
+  border: 1px solid #ebebeb;
+`;
+
+const POLL_INTERVAL_MS = 15000;
 
 const formatTime = (dateString) => {
   if (!dateString) return "";
@@ -181,40 +185,48 @@ const formatTime = (dateString) => {
   });
 };
 
-function ConversationDetailContent() {
-  const params = useParams();
-  const router = useRouter();
-  const id = params?.id;
+function GuestInboxContent() {
+  const searchParams = useSearchParams();
+  const token = searchParams?.get("token") || "";
   const [conv, setConv] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [tokenError, setTokenError] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
 
   const fetchDetail = useCallback(async () => {
-    if (!id) return;
-    const result = await conversationService.getDetail(id);
-    if (result.success) setConv(result.data);
-    else if (result.error) {
-      message.error(result.error);
-      router.push("/my-messages");
-    }
-  }, [id, router]);
-
-  useEffect(() => {
-    if (!id) {
+    if (!token) {
+      setTokenError("Missing conversation link.");
       setLoading(false);
       return;
     }
-    setLoading(true);
-    fetchDetail().finally(() => setLoading(false));
-  }, [id, fetchDetail]);
+    const result = await guestMessageService.getInbox(token);
+    if (result.success) {
+      setConv(result.data);
+      setTokenError(null);
+    } else {
+      setConv(null);
+      setTokenError(result.error || "Invalid or expired link.");
+    }
+    setLoading(false);
+  }, [token]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!token) {
+      setLoading(false);
+      setTokenError("Missing conversation link.");
+      return;
+    }
+    setLoading(true);
+    fetchDetail();
+  }, [token, fetchDetail]);
+
+  useEffect(() => {
+    if (!token || !conv) return;
     const t = setInterval(fetchDetail, POLL_INTERVAL_MS);
     return () => clearInterval(t);
-  }, [id, fetchDetail]);
+  }, [token, conv, fetchDetail]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -222,9 +234,9 @@ function ConversationDetailContent() {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!replyText.trim() || !id) return;
+    if (!replyText.trim() || !token) return;
     setSending(true);
-    const result = await conversationService.sendMessage(id, replyText.trim());
+    const result = await guestMessageService.sendMessage(token, replyText.trim());
     if (result.success) {
       setReplyText("");
       fetchDetail();
@@ -250,13 +262,18 @@ function ConversationDetailContent() {
     );
   }
 
-  if (!conv) {
+  if (tokenError && !conv) {
     return (
       <ConfigProvider theme={globalTheme}>
         <PageWrapper>
           <ExploreHeader showOptionsWrapper={false} />
           <PageContent>
-            <Empty description="Conversation not found" />
+            <TokenError>
+              <p style={{ margin: "0 0 8px", fontWeight: 600 }}>This link is invalid or has expired.</p>
+              <p style={{ margin: 0, fontSize: 14 }}>
+                Ask the host to send you a new reply from their dashboard, or contact them by email.
+              </p>
+            </TokenError>
           </PageContent>
           <FooterClient />
         </PageWrapper>
@@ -264,20 +281,16 @@ function ConversationDetailContent() {
     );
   }
 
-  const messages = conv.messages || [];
+  const messages = conv?.messages || [];
 
   return (
     <ConfigProvider theme={globalTheme}>
       <PageWrapper>
         <ExploreHeader showOptionsWrapper={false} />
         <PageContent>
-          <BackButton onClick={() => router.push("/my-messages")}>
-            <ArrowLeft size={16} /> Back to messages
-          </BackButton>
-
           <ConvHeader>
-            <h1>{conv.business_name || "Host"}</h1>
-            {(conv.class_title || conv.booking_reference) && (
+            <h1>{conv?.business_name || "Host"}</h1>
+            {(conv?.class_title || conv?.booking_reference) && (
               <div className="meta">
                 {[conv.class_title, conv.booking_reference].filter(Boolean).join(" · ")}
               </div>
@@ -286,24 +299,24 @@ function ConversationDetailContent() {
 
           <MessagesCard>
             <MessagesHeader>
-              <MessageSquare size={18} style={{ marginRight: 8, verticalAlign: "middle" }} />
+              <MessageSquare size={18} />
               Conversation
             </MessagesHeader>
 
             <MessagesContainer>
               {messages.length === 0 ? (
-                <Empty description="No messages yet. Say hello!" style={{ padding: 24 }} />
+                <Empty description="No messages yet." style={{ padding: 24 }} />
               ) : (
                 messages.map((msg) => {
-                  const isBooker = msg.sender_type === "booker";
+                  const isGuest = msg.sender_type === "booker";
                   return (
-                    <MessageRow key={msg.id} $isBooker={isBooker}>
-                      <Bubble $isBooker={isBooker}>
-                        <SenderLabel $isBooker={isBooker}>
-                          {isBooker ? "You" : msg.sender_display || "Host"}
+                    <MessageRow key={msg.id} $isGuest={isGuest}>
+                      <Bubble $isGuest={isGuest}>
+                        <SenderLabel $isGuest={isGuest}>
+                          {isGuest ? "You" : msg.sender_display || "Host"}
                         </SenderLabel>
                         <Text>{msg.text}</Text>
-                        <Time $isBooker={isBooker}>{formatTime(msg.created_at)}</Time>
+                        <Time $isGuest={isGuest}>{formatTime(msg.created_at)}</Time>
                       </Bubble>
                     </MessageRow>
                   );
@@ -341,26 +354,24 @@ function ConversationDetailContent() {
   );
 }
 
-function LoadingFallback() {
+export default function GuestInboxPage() {
   return (
-    <ConfigProvider theme={globalTheme}>
-      <PageWrapper>
-        <ExploreHeader showOptionsWrapper={false} />
-        <PageContent>
-          <div style={{ padding: "48px", textAlign: "center", color: "#717171" }}>
-            Loading conversation…
-          </div>
-        </PageContent>
-        <FooterClient />
-      </PageWrapper>
-    </ConfigProvider>
-  );
-}
-
-export default function ConversationDetailPage() {
-  return (
-    <Suspense fallback={<LoadingFallback />}>
-      <ConversationDetailContent />
+    <Suspense
+      fallback={
+        <ConfigProvider theme={globalTheme}>
+          <PageWrapper>
+            <ExploreHeader showOptionsWrapper={false} />
+            <PageContent>
+              <div style={{ padding: "48px", textAlign: "center", color: "#717171" }}>
+                Loading…
+              </div>
+            </PageContent>
+            <FooterClient />
+          </PageWrapper>
+        </ConfigProvider>
+      }
+    >
+      <GuestInboxContent />
     </Suspense>
   );
 }

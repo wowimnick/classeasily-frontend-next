@@ -485,6 +485,19 @@ export const menuItems = [
     ),
     label: "Support",
   },
+  {
+    key: "conversations",
+    icon: (
+      <LordIcon
+        src="https://cdn.lordicon.com/nocovwne.json"
+        colors="primary:#666,secondary:#666"
+        size="20px"
+        playOnLoad={false}
+        trigger="hover"
+      />
+    ),
+    label: "Conversations",
+  },
 ];
 
 const overlayVariants = {
@@ -548,6 +561,7 @@ const menuItemPermissions = {
   "global-discounts": "quickstart.access_global_discount_admin",
   blog: "quickstart.access_blog_admin",
   support: "quickstart.access_support_admin",
+  conversations: "quickstart.access_support_admin",
   users: "quickstart.view_customuser",
   roles: "quickstart.view_role",
   audit: "quickstart.view_auditlog",

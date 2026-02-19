@@ -3,7 +3,7 @@
 import React, { useState, useRef, useLayoutEffect, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
 import { Button, Typography, Tooltip, Divider } from "antd";
-import { Share2, Heart, Star } from "lucide-react";
+import { Share2, Heart, Star, MessageCircle } from "lucide-react";
 import { LordIcon } from "@/services/ReactUtils";
 
 const { Paragraph, Title } = Typography;
@@ -447,6 +447,29 @@ const calculateHostingDuration = (dateString) => {
   return `${totalDays} day${totalDays > 1 ? "s" : ""}`;
 };
 
+const ContactHostLink = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: ${CLASSEASILY_RED};
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+  &:hover {
+    color: #e03253;
+    text-decoration: underline;
+  }
+  &:focus-visible {
+    outline: 2px solid ${CLASSEASILY_RED};
+    outline-offset: 2px;
+  }
+`;
+
 const ClassInformation = React.memo(
   ({
     title,
@@ -457,6 +480,7 @@ const ClassInformation = React.memo(
     subcategoryName,
     businessData,
     onBusinessClick,
+    onContactHost,
     partnerTierName,
     isFavorite,
     isTogglingFavorite,
@@ -542,6 +566,19 @@ const ClassInformation = React.memo(
               style={{ display: "flex", flexDirection: "column", gap: "2px" }}
             >
               <BusinessName>Hosted by {displayBusinessName}</BusinessName>
+              {onContactHost && (
+                <ContactHostLink
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onContactHost();
+                  }}
+                  aria-label="Ask the host a question"
+                >
+                  <MessageCircle size={16} />
+                  Ask a question
+                </ContactHostLink>
+              )}
               <BusinessMetaWrapper>
                 <HostingMeta>
                   <MetaItem>

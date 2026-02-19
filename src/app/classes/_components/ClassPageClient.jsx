@@ -54,6 +54,10 @@ const MobileReserveReviewDrawer = dynamic(() => import("./MobileReserveReviewDra
   ssr: false,
 });
 
+const ContactHostDrawer = dynamic(() => import("./ContactHostDrawer"), {
+  ssr: false,
+});
+
 const LordIcon = dynamic(
   () => import("@/services/ReactUtils").then((mod) => mod.LordIcon),
   { ssr: false }
@@ -1161,6 +1165,7 @@ export default function ClassPageClient({
   const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
   const [showMobileBestPriceBanner, setShowMobileBestPriceBanner] =
     useState(false);
+  const [contactHostOpen, setContactHostOpen] = useState(false);
 
   /* Mobile Reserve flow: pre-selected date/time, mini calendar, time drawer — state lives in useMobileReserveFlow */
   // Simulate booking options loading state if needed, or derived from props
@@ -1378,6 +1383,7 @@ export default function ClassPageClient({
               subcategoryName={classData.subcategory_name}
               businessData={businessData}
               onBusinessClick={businessData ? handleBusinessClick : undefined}
+              onContactHost={businessData ? () => setContactHostOpen(true) : undefined}
               partnerTierName={businessData?.partner_tier_name}
               isFavorite={isFavorite}
               isTogglingFavorite={isTogglingFavorite}
@@ -1527,6 +1533,16 @@ export default function ClassPageClient({
       {/* Render portals / overlays only after mount to avoid hydration mismatch on body append */}
       {mounted && (
         <>
+          {businessData && (
+            <ContactHostDrawer
+              open={contactHostOpen}
+              onOpenChange={setContactHostOpen}
+              businessId={businessData.businessId}
+              businessName={businessData.businessName}
+              classId={classData?.classId}
+              classTitle={classData?.title}
+            />
+          )}
           {showMobileBestPriceBanner && (
             <MobileBestPricePopUp
               visible={showMobileBestPriceBanner}

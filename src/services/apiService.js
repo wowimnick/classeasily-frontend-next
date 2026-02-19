@@ -80,6 +80,10 @@ export const API_ENDPOINTS = {
   BUSINESS_CONVERSATION_DETAIL: (id) => `/business/conversations/${id}/`,
   BUSINESS_CONVERSATION_SEND_MESSAGE: (id) =>
     `/business/conversations/${id}/send_message/`,
+  // Guest (no-account) messaging from class page + inbox via token
+  GUEST_MESSAGE: "/guest-message/",
+  GUEST_INBOX: (token) => `/guest-inbox/?token=${encodeURIComponent(token)}`,
+  GUEST_INBOX_SEND: "/guest-inbox/send/",
 
   // Notifications
   NOTIFICATIONS: "/business/notifications/",
@@ -2761,6 +2765,46 @@ export const businessConversationService = {
     } catch (error) {
       console.error("Error sending reply:", error.response?.data || error);
       return { success: false, error: error.response?.data?.detail || "Failed to send reply" };
+    }
+  },
+};
+
+// --- Guest (no-account) message from class page + inbox via token ---
+export const guestMessageService = {
+  submitMessage: async (payload) => {
+    try {
+      const response = await axiosInstance.post(API_ENDPOINTS.GUEST_MESSAGE, payload);
+      return { success: true, data: response.data };
+    } catch (error) {
+      const detail = error.response?.data;
+      const msg = typeof detail === "object" && detail !== null
+        ? (detail.detail || Object.values(detail).flat().join(" ") || "Failed to send message")
+        : (detail || "Failed to send message");
+      return { success: false, error: msg };
+    }
+  },
+  getInbox: async (token) => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.GUEST_INBOX(token));
+      return { success: true, data: response.data };
+    } catch (error) {
+      const detail = error.response?.data;
+      const msg = typeof detail === "object" && detail !== null
+        ? (detail.token?.[0] || detail.detail || "Invalid or expired link")
+        : "Invalid or expired link";
+      return { success: false, error: msg };
+    }
+  },
+  sendMessage: async (token, text) => {
+    try {
+      const response = await axiosInstance.post(API_ENDPOINTS.GUEST_INBOX_SEND, { token, text });
+      return { success: true, data: response.data };
+    } catch (error) {
+      const detail = error.response?.data;
+      const msg = typeof detail === "object" && detail !== null
+        ? (detail.detail || detail.token?.[0] || Object.values(detail).flat().join(" "))
+        : "Failed to send message";
+      return { success: false, error: msg };
     }
   },
 };

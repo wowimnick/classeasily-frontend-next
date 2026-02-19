@@ -1,17 +1,40 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import styled from "styled-components";
-import { MessageSquare, ChevronRight, Send, X } from "lucide-react";
-import { Empty, Drawer, Input, Button, ConfigProvider } from "antd";
+import styled, { keyframes } from "styled-components";
+import { Drawer } from "vaul";
+import { MessageSquare, ChevronRight, Send, X, Inbox } from "lucide-react";
+import { Empty, Drawer as AntDrawer, Input, Button, ConfigProvider, Card } from "antd";
 import message from "@/lib/message";
 import { businessConversationService } from "@/services/apiService";
 import { theme as globalTheme } from "@/components/theme";
+import EmojiQuickPick from "@/components/chat/EmojiQuickPick";
+
+const MODAL_DRAWER_BREAKPOINT = 768;
+
+const colors = {
+  primary: "#ff3562",
+  textPrimary: "#1f2937",
+  textSecondary: "#64748b",
+  border: "#f1f5f9",
+  chart: { blue: "#3b82f6", purple: "#8b5cf6", teal: "#14b8a6" },
+};
+
+const hexToRgba = (hex, alpha = 1) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 
 const PageWrap = styled.div`
-  padding: 0;
+  padding: 24px;
   min-height: 0;
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
 `;
 
 const DashboardHeader = styled.div`
@@ -26,13 +49,18 @@ const DashboardHeader = styled.div`
     font-size: 15px;
     color: #64748b;
   }
+  @media (max-width: 480px) {
+    h1 { font-size: 20px; }
+    .sub { font-size: 14px; }
+  }
 `;
 
 const ListCard = styled.div`
-  border: 1px solid #ebebeb;
-  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
   overflow: hidden;
   background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 `;
 
 const Row = styled.div`
@@ -41,13 +69,17 @@ const Row = styled.div`
   gap: 16px;
   padding: 16px 20px;
   cursor: pointer;
-  border-bottom: 1px solid #ebebeb;
+  border-bottom: 1px solid #e5e7eb;
   transition: background 0.15s ease;
   &:last-child {
     border-bottom: none;
   }
   &:hover {
-    background: #f7f7f7;
+    background: #f8fafc;
+  }
+  @media (max-width: 640px) {
+    padding: 14px 16px;
+    gap: 12px;
   }
 `;
 
@@ -78,16 +110,35 @@ const Meta = styled.div`
   margin-top: 2px;
 `;
 
-const DrawerBody = styled.div`
+const ConversationPanel = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
   padding: 0;
 `;
 
+
+const VaulDrawerContent = styled(Drawer.Content)`
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  z-index: 1001;
+  outline: none;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  min-height: 70vh;
+`;
+
 const DrawerHeader = styled.div`
-  padding: 16px 20px;
-  border-bottom: 1px solid #ebebeb;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
   h3 {
     margin: 0 0 4px;
     font-size: 18px;
@@ -98,16 +149,24 @@ const DrawerHeader = styled.div`
     font-size: 13px;
     color: #717171;
   }
+  @media (max-width: 480px) {
+    padding: 16px 20px;
+    h3 { font-size: 16px; }
+  }
 `;
 
 const MessagesArea = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
-  background: #fafafa;
+  padding: 20px;
+  background: #f8fafc;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
+  @media (max-width: 480px) {
+    padding: 16px;
+  }
 `;
 
 const MsgRow = styled.div`
@@ -118,13 +177,20 @@ const MsgRow = styled.div`
 const Bubble = styled.div`
   max-width: 85%;
   padding: 10px 14px;
-  border-radius: 14px;
+  border-radius: 16px;
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.5;
+  word-break: break-word;
+  white-space: pre-wrap;
   ${(p) =>
     p.$isBusiness
       ? "background: #ff3562; color: #fff; border-bottom-right-radius: 4px;"
-      : "background: #fff; color: #334155; border: 1px solid #ebebeb; border-bottom-left-radius: 4px;"}
+      : "background: #fff; color: #334155; border: 1px solid #e5e7eb; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);"}
+  @media (max-width: 480px) {
+    max-width: 90%;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
 `;
 
 const MsgTime = styled.div`
@@ -134,39 +200,189 @@ const MsgTime = styled.div`
 `;
 
 const ReplyForm = styled.form`
-  padding: 16px 20px;
+  padding: 20px;
   border-top: 1px solid #ebebeb;
   background: #fff;
+  flex-shrink: 0;
+  @media (max-width: 480px) {
+    padding: 16px 20px;
+  }
 `;
 
-const InputWrap = styled.div`
+const InputContainer = styled.div`
   display: flex;
   align-items: flex-end;
   gap: 8px;
   border: 1px solid #d9d9d9;
-  border-radius: 24px;
-  padding: 6px 6px 6px 14px;
+  border-radius: 26px;
+  background: #fff;
+  padding: 6px 6px 6px 16px;
+  transition: all 0.2s ease;
+
   &:focus-within {
     border-color: #ff3562;
-    box-shadow: 0 0 0 2px rgba(255, 53, 98, 0.1);
+    box-shadow: 0 0 0 3px rgba(255, 53, 98, 0.1);
   }
+
   .ant-input {
+    padding: 8px 0 !important;
+    background: transparent !important;
     border: none !important;
     box-shadow: none !important;
     resize: none;
+    font-size: 14px;
+    line-height: 1.5;
   }
 `;
 
+const ReplyTextareaWrapper = styled.div`
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 2px;
+`;
+
 const SendBtn = styled(Button)`
-  height: 34px !important;
-  width: 34px !important;
-  min-width: 34px !important;
+  height: 36px !important;
+  width: 36px !important;
+  min-width: 36px !important;
   border-radius: 50% !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   border: none !important;
   background: ${(p) => (p.disabled ? "#f5f5f5" : "#ff3562")} !important;
+  &:hover {
+    background: ${(p) => (p.disabled ? "#f5f5f5" : "#e01b46")} !important;
+  }
+  svg {
+    color: ${(p) => (p.disabled ? "#d9d9d9" : "#fff")};
+  }
+`;
+
+const shimmer = keyframes`
+  0% { background-position: -468px 0; }
+  100% { background-position: 468px 0; }
+`;
+
+const SkeletonBase = styled.div`
+  background: #f0f0f0;
+  background-image: linear-gradient(to right, #f0f0f0 0%, #e8e8e8 20%, #f0f0f0 40%, #f0f0f0 100%);
+  background-repeat: no-repeat;
+  background-size: 800px 100%;
+  animation: ${shimmer} 1.5s infinite linear;
+  border-radius: ${(p) => p.$radius || "6px"};
+  width: ${(p) => p.$width || "100%"};
+  height: ${(p) => p.$height || "20px"};
+  margin-bottom: ${(p) => p.$mb ?? "0"};
+`;
+
+const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+`;
+
+const StatCardBase = styled(Card)`
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid ${colors.border};
+  margin-bottom: 0;
+  min-height: 120px;
+  .ant-card-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+  }
+  @media (max-width: 768px) {
+    min-height: 100px;
+    .ant-card-body { padding: 16px; }
+  }
+`;
+
+const IconContainer = styled.div`
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${(p) => p.$bg || hexToRgba(colors.chart.blue, 0.1)};
+  color: ${(p) => p.$color || colors.chart.blue};
+  flex-shrink: 0;
+  svg { width: 18px; height: 18px; }
+  @media (max-width: 768px) {
+    width: 32px; height: 32px;
+    svg { width: 16px; height: 16px; }
+  }
+`;
+
+const MetricValue = styled.div`
+  font-size: 22px;
+  font-weight: 700;
+  color: ${colors.textPrimary};
+  margin-top: 8px;
+  line-height: 1.2;
+  @media (max-width: 768px) { font-size: 18px; }
+`;
+
+const StatLabel = styled.div`
+  font-size: 13px;
+  color: ${colors.textSecondary};
+  line-height: 1.3;
+  @media (max-width: 768px) { font-size: 12px; }
+`;
+
+const ListSkeletonCard = styled(ListCard)``;
+const RowSkeleton = styled(Row)`
+  cursor: default;
+  &:hover { background: #fff; }
+`;
+
+const ConversationSkeletonWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+`;
+const ConvHeaderSkeleton = styled.div`
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+const MessagesSkeletonArea = styled.div`
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+  min-height: 0;
+`;
+const BubbleSkeleton = styled(SkeletonBase)`
+  max-width: 70%;
+  height: 48px;
+  border-radius: 16px;
+`;
+const ReplySkeletonBar = styled.div`
+  padding: 20px;
+  border-top: 1px solid #ebebeb;
+  background: #fff;
+`;
+const InputCapsuleSkeleton = styled(SkeletonBase)`
+  height: 48px;
+  border-radius: 26px;
 `;
 
 const POLL_MS = 12000;
@@ -187,14 +403,26 @@ const formatTime = (dateString) => {
 export default function BusinessMessages() {
   const searchParams = useSearchParams();
   const openBookingId = searchParams.get("booking_id");
+  const openConversationId = searchParams.get("conversation_id");
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef(null);
   const hasAutoOpenedRef = useRef(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const checkMobile = () => setIsMobile(window.innerWidth <= MODAL_DRAWER_BREAKPOINT);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const fetchList = useCallback(async () => {
     const result = await businessConversationService.getList();
@@ -204,8 +432,10 @@ export default function BusinessMessages() {
 
   const fetchDetail = useCallback(async (id) => {
     if (!id) return;
+    setDetailLoading(true);
     const result = await businessConversationService.getDetail(id);
     if (result.success) setSelected(result.data);
+    setDetailLoading(false);
   }, []);
 
   useEffect(() => {
@@ -213,14 +443,22 @@ export default function BusinessMessages() {
   }, [fetchList]);
 
   useEffect(() => {
-    if (loading || !openBookingId || hasAutoOpenedRef.current || list.length === 0) return;
-    const bid = Number(openBookingId);
-    const conv = list.find((c) => c.booking === bid || c.booking === openBookingId);
-    if (conv) {
-      hasAutoOpenedRef.current = true;
-      openConversation(conv);
+    if (loading || hasAutoOpenedRef.current || list.length === 0) return;
+    if (openConversationId) {
+      const conv = list.find((c) => String(c.id) === openConversationId);
+      if (conv) {
+        hasAutoOpenedRef.current = true;
+        openConversation(conv);
+      }
+    } else if (openBookingId) {
+      const bid = Number(openBookingId);
+      const conv = list.find((c) => c.booking === bid || c.booking === openBookingId);
+      if (conv) {
+        hasAutoOpenedRef.current = true;
+        openConversation(conv);
+      }
     }
-  }, [loading, openBookingId, list]);
+  }, [loading, openBookingId, openConversationId, list]);
 
   useEffect(() => {
     if (!selected?.id) return;
@@ -234,10 +472,21 @@ export default function BusinessMessages() {
 
   const openConversation = (conv) => {
     setSelected(conv);
-    setDrawerOpen(true);
+    setOpen(true);
     setReplyText("");
     fetchDetail(conv.id);
   };
+
+  const closeConversation = () => setOpen(false);
+
+  const stats = useMemo(() => {
+    const total = list.length;
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const recent = list.filter(
+      (c) => new Date(c.last_message_at || c.created_at || 0).getTime() >= weekAgo
+    ).length;
+    return { total, recent };
+  }, [list]);
 
   const handleSendReply = async (e) => {
     e.preventDefault();
@@ -265,10 +514,40 @@ export default function BusinessMessages() {
           <div className="sub">Conversations with guests</div>
         </DashboardHeader>
 
+        <StatsGrid>
+          <StatCardBase>
+            <div>
+              <IconContainer $bg={hexToRgba(colors.chart.blue, 0.1)} $color={colors.chart.blue}>
+                <MessageSquare size={18} />
+              </IconContainer>
+              <StatLabel>Total conversations</StatLabel>
+            </div>
+            <MetricValue>{loading ? <SkeletonBase $width="60px" $height="28px" $mb="0" /> : stats.total}</MetricValue>
+          </StatCardBase>
+          <StatCardBase>
+            <div>
+              <IconContainer $bg={hexToRgba(colors.chart.teal, 0.1)} $color={colors.chart.teal}>
+                <Inbox size={18} />
+              </IconContainer>
+              <StatLabel>Active (last 7 days)</StatLabel>
+            </div>
+            <MetricValue>{loading ? <SkeletonBase $width="60px" $height="28px" $mb="0" /> : stats.recent}</MetricValue>
+          </StatCardBase>
+        </StatsGrid>
+
         {loading ? (
-          <div style={{ padding: 48, textAlign: "center", color: "#717171" }}>
-            Loading…
-          </div>
+          <ListSkeletonCard>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <RowSkeleton key={i}>
+                <SkeletonBase $width={32} $height={32} $radius="8px" />
+                <RowMain>
+                  <SkeletonBase $width="50%" $height={16} $mb="8px" />
+                  <SkeletonBase $width="70%" $height={12} />
+                </RowMain>
+                <SkeletonBase $width={64} $height={14} />
+              </RowSkeleton>
+            ))}
+          </ListSkeletonCard>
         ) : list.length === 0 ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -306,80 +585,168 @@ export default function BusinessMessages() {
           </ListCard>
         )}
 
-        <Drawer
-          title={null}
-          placement="right"
-          width={420}
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          closable={false}
-          styles={{ body: { padding: 0, display: "flex", flexDirection: "column", height: "100%" } }}
-          extra={
-            <button
-              type="button"
-              onClick={() => setDrawerOpen(false)}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}
-              aria-label="Close"
-            >
-              <X size={20} />
-            </button>
-          }
-        >
-          {selected && (
-            <DrawerBody>
-              <DrawerHeader>
-                <h3>{selected.booker_display || "Guest"}</h3>
-                {selected.booker_email && (
-                  <div className="sub">{selected.booker_email}</div>
-                )}
-                {(selected.class_title || selected.booking_reference) && (
-                  <div className="sub">
-                    {[selected.class_title, selected.booking_reference].filter(Boolean).join(" · ")}
+        {mounted && selected && (
+          <>
+            {isMobile ? (
+              <Drawer.Root open={open} onOpenChange={(o) => !o && closeConversation()}>
+                <Drawer.Portal>
+                  <Drawer.Overlay
+                    style={{
+                      position: "fixed",
+                      inset: 0,
+                      backgroundColor: "rgba(0,0,0,0.4)",
+                      zIndex: 1000,
+                    }}
+                  />
+                  <VaulDrawerContent>
+                    <div style={{ width: 40, height: 4, background: "#e5e7eb", borderRadius: 2, margin: "12px auto", flexShrink: 0 }} />
+                    {detailLoading ? (
+                      <ConversationSkeletonWrap>
+                        <ConvHeaderSkeleton>
+                          <SkeletonBase $width="120px" $height="18px" $mb="0" />
+                          <SkeletonBase $width="160px" $height="12px" $mb="0" />
+                        </ConvHeaderSkeleton>
+                        <MessagesSkeletonArea>
+                          <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                            <BubbleSkeleton style={{ width: "70%" }} />
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                            <BubbleSkeleton style={{ width: "60%" }} />
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                            <BubbleSkeleton style={{ width: "50%" }} />
+                          </div>
+                        </MessagesSkeletonArea>
+                        <ReplySkeletonBar>
+                          <InputCapsuleSkeleton />
+                        </ReplySkeletonBar>
+                      </ConversationSkeletonWrap>
+                    ) : (
+                    <ConversationPanel>
+                      <DrawerHeader style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <h3>{selected.booker_display || "Guest"}</h3>
+                          {selected.booker_email && <div className="sub">{selected.booker_email}</div>}
+                          {(selected.class_title || selected.booking_reference) && (
+                            <div className="sub">
+                              {[selected.class_title, selected.booking_reference].filter(Boolean).join(" · ")}
+                            </div>
+                          )}
+                        </div>
+                        <button type="button" onClick={closeConversation} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} aria-label="Close">
+                          <X size={20} />
+                        </button>
+                      </DrawerHeader>
+                      <MessagesArea>
+                        {(selected.messages || []).length === 0 ? (
+                          <Empty description="No messages yet" style={{ margin: "auto" }} />
+                        ) : (
+                          (selected.messages || []).map((msg) => (
+                            <MsgRow key={msg.id} $isBusiness={msg.sender_type === "business"}>
+                              <Bubble $isBusiness={msg.sender_type === "business"}>
+                                <div>{msg.text}</div>
+                                <MsgTime $isBusiness={msg.sender_type === "business"}>{formatTime(msg.created_at)}</MsgTime>
+                              </Bubble>
+                            </MsgRow>
+                          ))
+                        )}
+                        <div ref={messagesEndRef} />
+                      </MessagesArea>
+                      <ReplyForm onSubmit={handleSendReply}>
+                        <EmojiQuickPick onInsert={(emoji) => setReplyText((prev) => prev + emoji)} />
+                        <InputContainer>
+                          <ReplyTextareaWrapper>
+                            <Input.TextArea placeholder="Type your reply…" value={replyText} onChange={(e) => setReplyText(e.target.value)} disabled={sending} autoSize={{ minRows: 1, maxRows: 5 }} />
+                          </ReplyTextareaWrapper>
+                          <SendBtn htmlType="submit" type="primary" shape="circle" icon={<Send size={18} />} disabled={!replyText.trim() || sending} loading={sending} />
+                        </InputContainer>
+                      </ReplyForm>
+                    </ConversationPanel>
+                    )}
+                  </VaulDrawerContent>
+                </Drawer.Portal>
+              </Drawer.Root>
+            ) : (
+              <AntDrawer
+                open={open}
+                onClose={closeConversation}
+                placement="right"
+                width={480}
+                height="100%"
+                title={
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 18, color: "#334155", marginBottom: 4 }}>
+                      {selected.booker_display || "Guest"}
+                    </div>
+                    {selected.booker_email && (
+                      <div style={{ fontSize: 13, color: "#717171" }}>{selected.booker_email}</div>
+                    )}
+                    {(selected.class_title || selected.booking_reference) && (
+                      <div style={{ fontSize: 13, color: "#717171" }}>
+                        {[selected.class_title, selected.booking_reference].filter(Boolean).join(" · ")}
+                      </div>
+                    )}
                   </div>
-                )}
-              </DrawerHeader>
-
-              <MessagesArea>
-                {(selected.messages || []).length === 0 ? (
-                  <Empty description="No messages yet" style={{ margin: "auto" }} />
+                }
+                styles={{
+                  body: {
+                    padding: 0,
+                    height: "calc(100% - 56px)",
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                  },
+                }}
+              >
+                {detailLoading ? (
+                  <ConversationSkeletonWrap>
+                    <MessagesSkeletonArea style={{ flex: 1, minHeight: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                        <BubbleSkeleton style={{ width: "70%" }} />
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                        <BubbleSkeleton style={{ width: "60%" }} />
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                        <BubbleSkeleton style={{ width: "50%" }} />
+                      </div>
+                    </MessagesSkeletonArea>
+                    <ReplySkeletonBar>
+                      <InputCapsuleSkeleton />
+                    </ReplySkeletonBar>
+                  </ConversationSkeletonWrap>
                 ) : (
-                  (selected.messages || []).map((msg) => (
-                    <MsgRow key={msg.id} $isBusiness={msg.sender_type === "business"}>
-                      <Bubble $isBusiness={msg.sender_type === "business"}>
-                        <div>{msg.text}</div>
-                        <MsgTime $isBusiness={msg.sender_type === "business"}>
-                          {formatTime(msg.created_at)}
-                        </MsgTime>
-                      </Bubble>
-                    </MsgRow>
-                  ))
+                <ConversationPanel>
+                  <MessagesArea style={{ flex: 1, minHeight: 0 }}>
+                    {(selected.messages || []).length === 0 ? (
+                      <Empty description="No messages yet" style={{ margin: "auto" }} />
+                    ) : (
+                      (selected.messages || []).map((msg) => (
+                        <MsgRow key={msg.id} $isBusiness={msg.sender_type === "business"}>
+                          <Bubble $isBusiness={msg.sender_type === "business"}>
+                            <div>{msg.text}</div>
+                            <MsgTime $isBusiness={msg.sender_type === "business"}>{formatTime(msg.created_at)}</MsgTime>
+                          </Bubble>
+                        </MsgRow>
+                      ))
+                    )}
+                    <div ref={messagesEndRef} />
+                  </MessagesArea>
+                  <ReplyForm onSubmit={handleSendReply}>
+                    <EmojiQuickPick onInsert={(emoji) => setReplyText((prev) => prev + emoji)} />
+                    <InputContainer>
+                      <ReplyTextareaWrapper>
+                        <Input.TextArea placeholder="Type your reply…" value={replyText} onChange={(e) => setReplyText(e.target.value)} disabled={sending} autoSize={{ minRows: 1, maxRows: 5 }} />
+                      </ReplyTextareaWrapper>
+                      <SendBtn htmlType="submit" type="primary" shape="circle" icon={<Send size={18} />} disabled={!replyText.trim() || sending} loading={sending} />
+                    </InputContainer>
+                  </ReplyForm>
+                </ConversationPanel>
                 )}
-                <div ref={messagesEndRef} />
-              </MessagesArea>
-
-              <ReplyForm onSubmit={handleSendReply}>
-                <InputWrap>
-                  <Input.TextArea
-                    placeholder="Type your reply…"
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    disabled={sending}
-                    autoSize={{ minRows: 1, maxRows: 4 }}
-                    style={{ flex: 1, minWidth: 0 }}
-                  />
-                  <SendBtn
-                    htmlType="submit"
-                    type="primary"
-                    shape="circle"
-                    icon={<Send size={16} />}
-                    disabled={!replyText.trim() || sending}
-                    loading={sending}
-                  />
-                </InputWrap>
-              </ReplyForm>
-            </DrawerBody>
-          )}
-        </Drawer>
+              </AntDrawer>
+            )}
+          </>
+        )}
       </PageWrap>
     </ConfigProvider>
   );
