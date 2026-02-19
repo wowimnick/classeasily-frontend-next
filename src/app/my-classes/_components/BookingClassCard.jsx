@@ -513,7 +513,7 @@ const BookingClassCard = ({
     try {
       const result = await conversationService.createOrGet(businessId, bookingId);
       if (result.success && result.data?.id) {
-        router.push(`/my-messages/${result.data.id}`);
+        router.push(`/my-messages?conversation_id=${result.data.id}`);
       } else {
         message.error(result.error || "Could not open conversation.");
       }

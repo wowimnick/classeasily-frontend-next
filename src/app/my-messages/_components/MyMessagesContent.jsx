@@ -169,7 +169,7 @@ const DrawerBodyWrap = styled.div`
   overflow: hidden;
 `;
 
-export default function MyMessagesContent({ initialConversationId = null }) {
+export default function MyMessagesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const conversationIdFromUrl = searchParams.get("conversation_id");
@@ -183,7 +183,6 @@ export default function MyMessagesContent({ initialConversationId = null }) {
   const [sending, setSending] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const hasOpenedFromUrlRef = useRef(false);
-  const hasOpenedFromInitialRef = useRef(false);
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -217,21 +216,14 @@ export default function MyMessagesContent({ initialConversationId = null }) {
   }, []);
 
   useEffect(() => {
-    if (loading) return;
-    if (initialConversationId && !hasOpenedFromInitialRef.current) {
-      hasOpenedFromInitialRef.current = true;
-      setSelectedId(initialConversationId);
-      fetchDetail(initialConversationId, true);
-      return;
-    }
-    if (hasOpenedFromUrlRef.current || !conversationIdFromUrl) return;
+    if (loading || hasOpenedFromUrlRef.current || !conversationIdFromUrl) return;
     const found = conversations.some((c) => String(c.id) === conversationIdFromUrl);
     if (found) {
       hasOpenedFromUrlRef.current = true;
       setSelectedId(conversationIdFromUrl);
       fetchDetail(conversationIdFromUrl, true);
     }
-  }, [loading, initialConversationId, conversationIdFromUrl, conversations, fetchDetail]);
+  }, [loading, conversationIdFromUrl, conversations, fetchDetail]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -245,26 +237,20 @@ export default function MyMessagesContent({ initialConversationId = null }) {
       setReplyText("");
       setConv(null);
       fetchDetail(c.id, true);
-      if (!initialConversationId) {
-        router.replace(`/my-messages?conversation_id=${c.id}`, { scroll: false });
-      }
+      router.replace(`/my-messages?conversation_id=${c.id}`, { scroll: false });
     },
-    [fetchDetail, router, initialConversationId]
+    [fetchDetail, router]
   );
 
   const closeConversation = useCallback(() => {
     setSelectedId(null);
     setConv(null);
     setReplyText("");
-    if (initialConversationId) {
-      router.replace("/my-messages", { scroll: false });
-    } else {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("conversation_id");
-      const qs = params.toString();
-      router.replace(qs ? `/my-messages?${qs}` : "/my-messages", { scroll: false });
-    }
-  }, [router, searchParams, initialConversationId]);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("conversation_id");
+    const qs = params.toString();
+    router.replace(qs ? `/my-messages?${qs}` : "/my-messages", { scroll: false });
+  }, [router, searchParams]);
 
   const handleSend = useCallback(
     async (e) => {

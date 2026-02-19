@@ -63,6 +63,9 @@ const ClaimAccountOverlay = dynamic(
 const VerifyEmailOverlay = dynamic(
   () => import("./(homepage)/_components/VerifyEmailOverlay"),
 );
+const HomepageConversationOverlay = dynamic(
+  () => import("./(homepage)/_components/HomepageConversationOverlay"),
+);
 
 export const metadata = {
   title: "ClassEasily - Find Local Classes & Experiences Near You",
@@ -154,6 +157,7 @@ export default async function HomePage() {
         <PasswordResetOverlay />
         <ClaimAccountOverlay />
         <VerifyEmailOverlay />
+        <HomepageConversationOverlay />
       </div>
     </>
   );

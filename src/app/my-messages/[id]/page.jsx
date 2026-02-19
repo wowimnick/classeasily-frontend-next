@@ -1,41 +1,18 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { Suspense } from "react";
-import dynamic from "next/dynamic";
+import { useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 
-const MyMessagesContent = dynamic(
-  () => import("../_components/MyMessagesContent"),
-  {
-    ssr: false,
-    loading: () => (
-      <div style={{ padding: "48px 24px", textAlign: "center", color: "#717171" }}>
-        Loading…
-      </div>
-    ),
-  }
-);
-
-const loadingFallback = (
-  <div style={{ padding: "48px 24px", textAlign: "center", color: "#717171" }}>
-    Loading…
-  </div>
-);
-
-function MyMessagesIdInner() {
+/** Redirect /my-messages/[id] → /?conversation_id=id (homepage with overlay). No dedicated page. */
+export default function RedirectToHomepageConversation() {
   const params = useParams();
-  const id = params?.id ?? null;
-  return <MyMessagesContent initialConversationId={id} />;
-}
+  const router = useRouter();
+  const id = params?.id;
 
-/**
- * /my-messages/[id] – list + overlay with this conversation open (e.g. from email link).
- * No redirect; email links use this URL directly.
- */
-export default function MyMessagesIdPage() {
-  return (
-    <Suspense fallback={loadingFallback}>
-      <MyMessagesIdInner />
-    </Suspense>
-  );
+  useEffect(() => {
+    if (!id) router.replace("/my-messages");
+    else router.replace(`/?conversation_id=${id}`, { scroll: false });
+  }, [id, router]);
+
+  return null;
 }
