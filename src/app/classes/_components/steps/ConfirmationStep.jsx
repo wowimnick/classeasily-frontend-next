@@ -1022,7 +1022,7 @@ const ConfirmationStep = ({
       <SummaryMetaItem>
         <div className="icon-box"><Package /></div>
         <div className="text-content">
-          <span className="label">What to bring</span>
+          <span className="label">Note from host</span>
           <span className="value" style={{ whiteSpace: "pre-line" }}>
             {equipmentStr}
           </span>
@@ -1202,7 +1202,7 @@ const ConfirmationStep = ({
                       onClick={() => toggleAccordion("equipment")}
                       aria-expanded={openAccordions.equipment}
                     >
-                      <span><Package size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />What to bring</span>
+                      <span><Package size={16} style={{ verticalAlign: "middle", marginRight: 8 }} />Note from host</span>
                       <ChevronDown size={20} className={`accordion-icon ${openAccordions.equipment ? "open" : ""}`} />
                     </AccordionButton>
                     <AnimatePresence initial={false}>

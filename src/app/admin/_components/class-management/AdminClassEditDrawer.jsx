@@ -2128,7 +2128,7 @@ const AdminClassEditDrawer = ({
                           <FormGroup>
                             <FormLabel htmlFor="admin_edit_equipment">
                               <PackageIcon size={16} />
-                              Equipment to Bring
+                              Note from host
                             </FormLabel>
                             <HelpText>
                               <Info size={14} />

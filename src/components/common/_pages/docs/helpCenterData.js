@@ -319,7 +319,7 @@ export const helpCenterData = [
               "<strong>Option name:</strong> Shown to Guests when they pick (e.g. 'General Admission', 'VIP Access').",
               "<strong>Features:</strong> A comparison table (e.g. 'Duration: 2 hours', 'Materials included: Yes/No') so Guests can compare options.",
               "<strong>Activity level:</strong> e.g. Open to everyone, No experience needed, Intermediate, Advanced.",
-              "<strong>Message for booker:</strong> Optional text (e.g. what to bring, where to meet) shown before booking.",
+              "<strong>Message for booker:</strong> Optional text (e.g. note from host, where to meet) shown before booking.",
               "<strong>Cancellation & refunds:</strong> Each option can have its own cancellation notice (e.g. Flexible, 24h, 48h, Strict) and refund percentage. This is where you set your <strong>cancellation policy</strong> for that option.",
             ],
           },

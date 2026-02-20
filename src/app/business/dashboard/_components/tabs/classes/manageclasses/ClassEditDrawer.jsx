@@ -1312,7 +1312,7 @@ const SingleOptionLayout = ({ field, form, bookingType }) => (
         <FieldDivider />
         <FormLabelWithIcon><Backpack size={16} /> Message for booker</FormLabelWithIcon>
         <FormHelpText>
-          Optional message to show guests before their booking (e.g. what to bring, where to meet).
+          Optional message to show guests before their booking (e.g. note from host, where to meet).
         </FormHelpText>
         <FormItemAntd {...field} name={[field.name, "equipment"]}>
           <Input.TextArea
@@ -1688,7 +1688,7 @@ const TierDetailsTab = ({ field, form }) => {
       <FieldDivider />
       <FormLabelWithIcon><Backpack size={16} /> Message for booker</FormLabelWithIcon>
       <FormHelpText>
-        Optional message to show guests before their booking (e.g. what to bring, where to meet).
+        Optional message to show guests before their booking (e.g. note from host, where to meet).
       </FormHelpText>
       <FormItemAntd {...field} name={[field.name, "equipment"]}>
         <Input.TextArea
