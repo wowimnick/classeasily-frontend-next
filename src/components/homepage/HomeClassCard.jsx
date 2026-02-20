@@ -47,14 +47,9 @@ const HomeClassCard = ({
 
   const imageUrl = useMemo(() => {
     if (!images?.length) return null;
-    // Sort so cover is first (API may not send order or isCover; this guarantees correct thumb)
-    const sorted = [...images].sort((a, b) => {
-      const aCover = !!(a.is_cover ?? a.isCover);
-      const bCover = !!(b.is_cover ?? b.isCover);
-      return (aCover ? 0 : 1) - (bCover ? 0 : 1);
-    });
-    const coverImage = sorted[0];
-    return coverImage?.medium_url ?? coverImage?.original_url ?? null;
+    const coverImage =
+      images.find((img) => img.is_cover || img.isCover) || images[0];
+    return coverImage?.medium_url || coverImage?.original_url || null;
   }, [images]);
 
   useEffect(() => {
