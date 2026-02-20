@@ -66,7 +66,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
-const { Title: AntTitle, Text } = Typography;
+const { Title: AntTitle, Text, Paragraph } = Typography;
 const { useBreakpoint } = Grid;
 
 // --- STYLING & THEME ---
@@ -844,7 +844,6 @@ const ClassCategories = () => {
 
   const fetchDashboardStats = useCallback(async () => {
     setStatsLoading(true);
-    setChartLoading(true);
     try {
       const response = await classManagementService.getClassAnalytics();
       if (response.success) {
@@ -857,7 +856,6 @@ const ClassCategories = () => {
       message.error("Error fetching dashboard stats");
     } finally {
       setStatsLoading(false);
-      setChartLoading(false);
     }
   }, []);
 

@@ -190,12 +190,14 @@ const CollectionPill = styled.button`
   white-space: nowrap;
   padding: 20px;
   border-radius: 20px;
+  min-height: 40px;
   height: 40px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  box-sizing: border-box;
   box-shadow: ${({ $isSelected }) =>
     $isSelected ? "0 2px 8px rgba(0,0,0,0.15)" : "0 1px 3px rgba(0,0,0,0.05)"};
   position: relative;
@@ -209,6 +211,7 @@ const CollectionPill = styled.button`
   }
 
   @media (max-width: 768px) {
+    min-height: 40px;
     height: 40px;
     font-size: 11px;
     padding: 20px;
@@ -557,12 +560,16 @@ function ExploreCategoriesContent({
                   collection.key || collection.slug || `collection-${index}`;
                 const slug = collection.key || collection.slug;
                 return (
-                  <CollectionItem
-                    key={id}
-                    collection={collection}
-                    isSelected={optimisticCollection === slug}
-                    onClick={() => handleCollectionClick(slug)}
-                  />
+                  <React.Fragment key={id}>
+                    {index === 1 && (
+                      <VerticalSeparator aria-hidden="true" />
+                    )}
+                    <CollectionItem
+                      collection={collection}
+                      isSelected={optimisticCollection === slug}
+                      onClick={() => handleCollectionClick(slug)}
+                    />
+                  </React.Fragment>
                 );
               })}
             </Categories>
