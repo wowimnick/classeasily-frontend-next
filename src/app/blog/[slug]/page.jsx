@@ -73,6 +73,17 @@ export async function generateMetadata({ params }) {
       alternates: {
         canonical: `https://classeasily.com/blog/${post.slug}`,
       },
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+          "max-video-preview": -1,
+        },
+      },
     };
   } catch {
     return {

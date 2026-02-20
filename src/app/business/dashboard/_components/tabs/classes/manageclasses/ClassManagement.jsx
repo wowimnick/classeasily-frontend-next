@@ -515,29 +515,6 @@ const StatusTag = styled(Tag)`
   color: ${(props) => (props.$active ? "#065f46" : "#475569")};
 `;
 
-const CategoryTag = styled(Tag)`
-  border-radius: 6px;
-  padding: 3px 8px;
-  font-size: 12px;
-  font-weight: 500;
-  width: fit-content;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: none;
-  background-color: #f0f9ff;
-  color: #0284c7;
-  /* MODIFIED: Added for text truncation */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  svg {
-    width: 12px;
-    height: 12px;
-  }
-`;
-
 const CustomSwitch = styled.div`
   position: relative;
   width: 44px;
@@ -1357,11 +1334,8 @@ function ClassManagementContent(props) {
 
     if (searchText) {
       const lowerSearch = searchText.toLowerCase();
-      filtered = filtered.filter(
-        (c) =>
-          c.title?.toLowerCase().includes(lowerSearch) ||
-          c.category_name?.toLowerCase().includes(lowerSearch) ||
-          c.subcategory_name?.toLowerCase().includes(lowerSearch),
+      filtered = filtered.filter((c) =>
+        c.title?.toLowerCase().includes(lowerSearch),
       );
     }
 
@@ -1623,8 +1597,6 @@ function ClassManagementContent(props) {
       classId,
       coverImageUrl,
       title,
-      category_name,
-      subcategory_name,
       average_rating,
       review_count,
       status,
@@ -1632,13 +1604,8 @@ function ClassManagementContent(props) {
       last_schedule_date,
     } = classItem;
 
-    // MODIFIED: Determine type
     const isCourse = option?.booking_type === "Full Course";
     const typeInfo = formatClassType(option?.booking_type);
-
-    const categoryDisplay = [category_name, subcategory_name]
-      .filter(Boolean)
-      .join(" / ");
 
     const isActive = status === "active";
 
@@ -1700,7 +1667,6 @@ function ClassManagementContent(props) {
               >
                 {typeInfo.label}
               </Tag>
-              {categoryDisplay && <CategoryTag>{categoryDisplay}</CategoryTag>}
             </Space>
           </CardContent>
         </CardHeader>

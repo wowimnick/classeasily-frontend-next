@@ -503,7 +503,7 @@ const AskQuestionButton = styled.button`
   }
   @media (max-width: 480px) {
     padding: 12px 1rem;
-    font-size: 14px;
+    font-size: 13px;
     min-height: 48px;
   }
 `;

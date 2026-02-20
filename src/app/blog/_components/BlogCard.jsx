@@ -147,7 +147,7 @@ const BlogCard = ({ post, index = 0 }) => {
                   month: "long",
                   day: "numeric",
                 })}{" "}
-                · {post.readTime} min read
+                · {post.readTime != null ? `${post.readTime} min read` : "Read"}
               </MetaDetails>
             </AuthorInfo>
           </PostMeta>

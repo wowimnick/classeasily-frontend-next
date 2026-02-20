@@ -375,49 +375,11 @@ const presetFeatures = [
   { value: "Wheelchair Accessible", label: "Wheelchair Accessible" },
 ];
 
-const SubcategorySelect = ({ form, categoryOptions, loadingCategories }) => {
-  const categoryValue = Form.useWatch("category", form);
-
-  return (
-    <FormGroup>
-      <FormLabel>
-        <Hash size={16} />
-        Subcategory
-      </FormLabel>
-      <HelpText>
-        <Info size={14} />
-        Select a specific tag to help guests find exactly what they're looking
-        for.
-      </HelpText>
-      <Form.Item
-        name="subcategory"
-        rules={[{ required: true, message: "Please select a subcategory" }]}
-      >
-        <StyledSelect
-          placeholder="Select a subcategory"
-          disabled={!categoryValue || loadingCategories}
-          allowClear
-          size="large"
-        >
-          {categoryValue &&
-            categoryOptions[categoryValue]?.subcategories?.map((sub) => (
-              <Option key={sub.key} value={sub.key}>
-                {sub.label}
-              </Option>
-            ))}
-        </StyledSelect>
-      </Form.Item>
-    </FormGroup>
-  );
-};
-
 const BasicInfoStep = ({ onValidatedNext }) => {
   const [form] = Form.useForm();
   const { state, updateBasicInfo, debouncedUpdateBasicInfo, isLoaded } =
     useClass();
   const images = state.basicInfo?.images || [];
-  const [categoryOptions, setCategoryOptions] = useState({});
-  const [loadingCategories, setLoadingCategories] = useState(true);
   const isFormInitialized = useRef(false);
   const uploadBatchRef = useRef([]);
 
@@ -427,40 +389,11 @@ const BasicInfoStep = ({ onValidatedNext }) => {
       form.setFieldsValue({
         title: contextBasicInfo.title || "",
         description: contextBasicInfo.description || "",
-        category: contextBasicInfo.category || undefined,
-        subcategory: contextBasicInfo.subcategory || undefined,
         features: contextBasicInfo.features || [],
       });
       isFormInitialized.current = true;
     }
   }, [isLoaded, state.basicInfo, form]);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await businessClassService.getCategories();
-        if (response.success) {
-          const options = {};
-          response.data.forEach((cat) => {
-            options[cat.key] = {
-              label: cat.name,
-              subcategories: cat.subcategories.map((sub) => ({
-                key: sub.key,
-                label: sub.name,
-              })),
-            };
-          });
-          setCategoryOptions(options);
-        }
-      } catch (error) {
-        console.error("Error loading categories:", error);
-        message.error("An error occurred while loading categories");
-      } finally {
-        setLoadingCategories(false);
-      }
-    };
-    fetchCategories();
-  }, []);
 
   const handleFieldsChange = (changedFields, allFields) => {
     if (isFormInitialized.current) {
@@ -684,10 +617,6 @@ const BasicInfoStep = ({ onValidatedNext }) => {
       updated[0].isCover = true;
     }
     updateBasicInfo({ images: updated });
-  };
-
-  const handleCategoryChange = (value) => {
-    form.setFieldsValue({ subcategory: undefined });
   };
 
   const handleSubmit = (values) => {
@@ -919,41 +848,6 @@ const BasicInfoStep = ({ onValidatedNext }) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <FormGroup>
-            <FormLabel>
-              <Building2 size={16} />
-              Primary Category
-            </FormLabel>
-            <HelpText>
-              <Info size={14} />
-              What type of experience is this?
-            </HelpText>
-            <Form.Item
-              name="category"
-              rules={[{ required: true, message: "Please select a category" }]}
-            >
-              <StyledSelect
-                placeholder="Select category"
-                allowClear
-                onChange={handleCategoryChange}
-                loading={loadingCategories}
-                size="large"
-              >
-                {Object.entries(categoryOptions).map(([key, { label }]) => (
-                  <Option key={key} value={key}>
-                    {label}
-                  </Option>
-                ))}
-              </StyledSelect>
-            </Form.Item>
-          </FormGroup>
-
-          <SubcategorySelect
-            form={form}
-            categoryOptions={categoryOptions}
-            loadingCategories={loadingCategories}
-          />
-
           <FormGroup>
             <FormLabel>
               <Hash size={16} />

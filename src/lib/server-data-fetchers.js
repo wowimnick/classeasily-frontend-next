@@ -9,17 +9,6 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 function generateSearchCacheTags(params) {
   const tags = ["classes-search"];
 
-  // Add category-specific tags
-  if (params.category_key && params.category_key !== "all") {
-    tags.push(`category-${params.category_key}`);
-
-    // Add subcategory tag if present
-    if (params.subcategory_key) {
-      tags.push(`subcategory-${params.subcategory_key}`);
-    }
-  }
-
-  // ADDED: Add collection-specific tags
   if (params.collection) {
     tags.push(`collection-${params.collection}`);
   }
@@ -124,23 +113,13 @@ export async function searchClasses(params = {}) {
 }
 
 /**
- * Fetch classes by category (convenience function)
+ * Fetch classes by collection (convenience function)
  */
-export async function fetchClassesByCategory(
-  categoryKey,
-  subcategoryKey = null,
-  additionalParams = {},
-) {
-  const params = {
-    category_key: categoryKey,
+export async function fetchClassesByCollection(collectionSlug, additionalParams = {}) {
+  return searchClasses({
+    collection: collectionSlug,
     ...additionalParams,
-  };
-
-  if (subcategoryKey) {
-    params.subcategory_key = subcategoryKey;
-  }
-
-  return searchClasses(params);
+  });
 }
 
 /**
@@ -212,15 +191,21 @@ export async function fetchBlogPosts(pageSize = 50) {
     }
 
     const data = await response.json();
+    const posts = data?.results || [];
+    const count = data?.count || 0;
+
+    if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
+      console.log("[blog] fetchBlogPosts ok", { count, returned: posts.length });
+    }
 
     return {
       success: true,
-      posts: data?.results || [],
-      count: data?.count || 0,
+      posts,
+      count,
       next: data?.next || null,
     };
   } catch (error) {
-    console.error("Error fetching blog posts:", error);
+    console.error("[blog] fetchBlogPosts error", error?.message || error);
     return {
       success: false,
       posts: [],
@@ -256,12 +241,16 @@ export async function fetchBlogPostBySlug(slug) {
 
     const data = await response.json();
 
+    if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
+      console.log("[blog] fetchBlogPostBySlug ok", { slug, title: data?.title });
+    }
+
     return {
       success: true,
       data: data,
     };
   } catch (error) {
-    console.error(`Error fetching blog post ${slug}:`, error);
+    console.error("[blog] fetchBlogPostBySlug error", { slug, message: error?.message || error });
     return {
       success: false,
       error: error.message || "Failed to fetch blog post",
@@ -292,13 +281,18 @@ export async function fetchBlogCategories() {
     }
 
     const data = await response.json();
+    const categories = Array.isArray(data) ? data : [];
+
+    if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
+      console.log("[blog] fetchBlogCategories ok", { count: categories.length });
+    }
 
     return {
       success: true,
-      categories: Array.isArray(data) ? data : [],
+      categories,
     };
   } catch (error) {
-    console.error("Error fetching blog categories:", error);
+    console.error("[blog] fetchBlogCategories error", error?.message || error);
     return {
       success: false,
       categories: [],
@@ -329,13 +323,18 @@ export async function fetchRecentBlogPosts(limit = 4) {
     }
 
     const data = await response.json();
+    const posts = data?.results || [];
+
+    if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
+      console.log("[blog] fetchRecentBlogPosts ok", { limit, returned: posts.length });
+    }
 
     return {
       success: true,
-      posts: data?.results || [],
+      posts,
     };
   } catch (error) {
-    console.error("Error fetching recent blog posts:", error);
+    console.error("[blog] fetchRecentBlogPosts error", error?.message || error);
     return {
       success: false,
       posts: [],
@@ -372,14 +371,71 @@ export async function fetchBlogPostsByCategory(categorySlug, pageSize = 50) {
     }
 
     const data = await response.json();
+    const posts = data?.results || [];
+    const count = data?.count || 0;
+
+    if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
+      console.log("[blog] fetchBlogPostsByCategory ok", { categorySlug, count, returned: posts.length });
+    }
 
     return {
       success: true,
-      posts: data?.results || [],
-      count: data?.count || 0,
+      posts,
+      count,
     };
   } catch (error) {
-    console.error(`Error fetching posts for category ${categorySlug}:`, error);
+    console.error("[blog] fetchBlogPostsByCategory error", { categorySlug, message: error?.message || error });
+    return {
+      success: false,
+      posts: [],
+      count: 0,
+    };
+  }
+}
+
+/**
+ * Fetch blog posts by tag (tag slug from URL e.g. "education" -> matches tag "Education")
+ * Endpoint: /blog/posts/?tag={tagSlug}
+ */
+export async function fetchBlogPostsByTag(tagSlug, pageSize = 50) {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/blog/posts/?tag=${encodeURIComponent(tagSlug)}&page_size=${pageSize}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "force-cache",
+        next: {
+          revalidate: 86400,
+          tags: ["blog-posts", `blog-tag-${tagSlug}`],
+        },
+      },
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { success: true, posts: [], count: 0 };
+      }
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const posts = data?.results || [];
+    const count = data?.count || 0;
+
+    if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
+      console.log("[blog] fetchBlogPostsByTag ok", { tagSlug, count, returned: posts.length });
+    }
+
+    return {
+      success: true,
+      posts,
+      count,
+    };
+  } catch (error) {
+    console.error("[blog] fetchBlogPostsByTag error", { tagSlug, message: error?.message || error });
     return {
       success: false,
       posts: [],
@@ -918,32 +974,37 @@ export function generateBlogPostStructuredData(post) {
 }
 
 /**
- * Generate breadcrumb structured data for blog post
+ * Generate breadcrumb structured data for blog post (includes category when present for SEO)
  */
 export function generateBlogBreadcrumbStructuredData(post) {
+  const base = "https://classeasily.com";
+  const items = [
+    { position: 1, name: "Home", item: base },
+    { position: 2, name: "Blog", item: `${base}/blog` },
+  ];
+  let pos = 3;
+  if (post.category?.slug) {
+    items.push({
+      position: pos++,
+      name: post.category.name || post.category.slug,
+      item: `${base}/blog/category/${post.category.slug}`,
+    });
+  }
+  items.push({
+    position: pos,
+    name: post.title,
+    item: `${base}/blog/${post.slug}`,
+  });
+
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: "https://classeasily.com",
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Blog",
-        item: "https://classeasily.com/blog",
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: post.title,
-        item: `https://classeasily.com/blog/${post.slug}`,
-      },
-    ],
+    itemListElement: items.map(({ position, name, item }) => ({
+      "@type": "ListItem",
+      position,
+      name,
+      item,
+    })),
   };
 }
 

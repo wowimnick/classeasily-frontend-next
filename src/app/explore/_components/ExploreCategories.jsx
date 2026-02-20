@@ -209,9 +209,9 @@ const CollectionPill = styled.button`
   }
 
   @media (max-width: 768px) {
-    height: 30px;
+    height: 40px;
     font-size: 11px;
-    padding: 0 10px;
+    padding: 20px;
   }
 `;
 
@@ -445,18 +445,11 @@ const CollectionItem = memo(({ collection, isSelected, onClick }) => (
 );
 
 function ExploreCategoriesContent({
-  categories = [],
   collections = [],
-  onCategoryChange,
-
   currentCollection,
   onCollectionChange,
-
-  classes = [],
   filters,
   onFiltersChange,
-  currentCategory,
-  currentSubcategory,
   currentSortBy,
   onApplyModalChanges,
   isFilterModalOpen,
@@ -464,139 +457,18 @@ function ExploreCategoriesContent({
   isMapVisible,
   onShowMap,
 }) {
-  // NEW: Optimistic State
-  const [optimisticCategory, setOptimisticCategory] = useState(currentCategory);
-  const [optimisticSubcategory, setOptimisticSubcategory] =
-    useState(currentSubcategory);
   const [optimisticCollection, setOptimisticCollection] =
     useState(currentCollection);
 
-  // Sync state when props change (e.g. on server response or popstate)
   useEffect(() => {
-    setOptimisticCategory(currentCategory);
-    setOptimisticSubcategory(currentSubcategory);
     setOptimisticCollection(currentCollection);
-  }, [currentCategory, currentSubcategory, currentCollection]);
+  }, [currentCollection]);
 
-  const subcatWrapperRef = useRef(null);
   const categoriesRef = useRef(null);
-  const [isSubcategoriesVisible, setIsSubcategoriesVisible] = useState(false);
-
-  const [shouldShowScrollButtons, setShouldShowScrollButtons] = useState(false);
   const [showCategoryScrollButtons, setShowCategoryScrollButtons] =
     useState(false);
-
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
   const [canScrollCategoryLeft, setCanScrollCategoryLeft] = useState(false);
   const [canScrollCategoryRight, setCanScrollCategoryRight] = useState(false);
-
-  const [masterSubcategoryMap, setMasterSubcategoryMap] =
-    useState(getCachedMap);
-  const [displayedSubcategories, setDisplayedSubcategories] = useState([]);
-
-  // Combine "All" with categories
-  const dynamicCategoryConfig = useMemo(() => {
-    const allCategory = { key: "all", icon_name: "Layers", name: "All" };
-    return [allCategory, ...categories];
-  }, [categories]);
-
-  // Subcategory extraction logic
-  const subcategoriesFromClasses = useMemo(() => {
-    // Early return if no classes
-    if (!classes || classes.length === 0) return {};
-    
-    const subcategoryMap = {};
-    // Use for loop for better performance with large arrays
-    for (let i = 0; i < classes.length; i++) {
-      const classItem = classes[i];
-      const categoryKey = classItem.category_key;
-      const subcategoryKey = classItem.subcategory_key;
-      const subcategoryName = classItem.subcategory_name;
-      if (categoryKey) {
-        if (!subcategoryMap[categoryKey])
-          subcategoryMap[categoryKey] = new Map();
-        if (
-          subcategoryKey &&
-          subcategoryName &&
-          !subcategoryMap[categoryKey].has(subcategoryKey)
-        ) {
-          subcategoryMap[categoryKey].set(subcategoryKey, subcategoryName);
-        }
-      }
-    }
-    const finalMap = {};
-    for (const categoryKey in subcategoryMap) {
-      finalMap[categoryKey] = Array.from(subcategoryMap[categoryKey].entries())
-        .map(([key, name]) => ({ key, name }))
-        .sort((a, b) => a.name.localeCompare(b.name));
-    }
-    return finalMap;
-  }, [classes]);
-
-  useEffect(() => {
-    setMasterSubcategoryMap((prevMasterMap) => {
-      const newMasterMap = JSON.parse(JSON.stringify(prevMasterMap));
-      let hasChanges = false;
-      for (const categoryKey in subcategoriesFromClasses) {
-        if (!newMasterMap[categoryKey]) {
-          newMasterMap[categoryKey] = [];
-        }
-        const newSubcats = subcategoriesFromClasses[categoryKey];
-        const masterList = newMasterMap[categoryKey];
-        newSubcats.forEach((newSub) => {
-          const existingSubIndex = masterList.findIndex(
-            (s) => s.key === newSub.key
-          );
-          if (existingSubIndex === -1) {
-            masterList.push(newSub);
-            hasChanges = true;
-          } else if (masterList[existingSubIndex].name !== newSub.name) {
-            masterList[existingSubIndex].name = newSub.name;
-            hasChanges = true;
-          }
-        });
-        if (hasChanges) {
-          masterList.sort((a, b) => a.name.localeCompare(b.name));
-        }
-      }
-      if (hasChanges) {
-        try {
-          sessionStorage.setItem(
-            SUBCATEGORY_CACHE_KEY,
-            JSON.stringify(newMasterMap)
-          );
-        } catch (e) {
-          console.error("Could not write to subcategory cache", e);
-        }
-        return newMasterMap;
-      }
-      return prevMasterMap;
-    });
-  }, [subcategoriesFromClasses]);
-
-  useEffect(() => {
-    const subcats = masterSubcategoryMap[optimisticCategory] || [];
-    setDisplayedSubcategories(subcats);
-  }, [optimisticCategory, masterSubcategoryMap]);
-
-  // Visibility logic - UPDATED to use optimisticCollection
-  useEffect(() => {
-    setIsSubcategoriesVisible(
-      !optimisticCollection &&
-        optimisticCategory !== "all" &&
-        displayedSubcategories.length > 0
-    );
-  }, [optimisticCategory, displayedSubcategories, optimisticCollection]);
-
-  // --- Scroll Logic ---
-  const updateScrollPosition = useCallback(() => {
-    if (subcatWrapperRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = subcatWrapperRef.current;
-      setCanScrollLeft(scrollLeft > 1);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
-    }
-  }, []);
 
   const updateCategoryScrollPosition = useCallback(() => {
     if (categoriesRef.current) {
@@ -605,23 +477,6 @@ function ExploreCategoriesContent({
       setCanScrollCategoryRight(scrollLeft < scrollWidth - clientWidth - 1);
     }
   }, []);
-
-  useEffect(() => {
-    const checkScrollable = () => {
-      if (subcatWrapperRef.current) {
-        const elem = subcatWrapperRef.current;
-        const isScrollable = elem.scrollWidth > elem.clientWidth;
-        setShouldShowScrollButtons(isScrollable);
-        if (isScrollable) updateScrollPosition();
-      }
-    };
-
-    if (isSubcategoriesVisible) {
-      checkScrollable();
-      window.addEventListener("resize", checkScrollable);
-      return () => window.removeEventListener("resize", checkScrollable);
-    }
-  }, [isSubcategoriesVisible, displayedSubcategories, updateScrollPosition]);
 
   const handleCategoryScroll = (direction) => {
     if (categoriesRef.current) {
@@ -661,77 +516,15 @@ function ExploreCategoriesContent({
       clearTimeout(timeoutId);
       window.removeEventListener("resize", checkCatScrollable);
     };
-  }, [dynamicCategoryConfig, collections, updateCategoryScrollPosition]);
-
-  const handleScroll = (direction) => {
-    if (subcatWrapperRef.current) {
-      const scrollAmount = subcatWrapperRef.current.offsetWidth * 0.7;
-      subcatWrapperRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
-
-  useEffect(() => {
-    const currentRef = subcatWrapperRef.current;
-    if (currentRef && isSubcategoriesVisible) {
-      currentRef.addEventListener("scroll", updateScrollPosition, {
-        passive: true,
-      });
-      updateScrollPosition();
-      return () =>
-        currentRef.removeEventListener("scroll", updateScrollPosition);
-    }
-  }, [isSubcategoriesVisible, updateScrollPosition]);
-
-  // --- Handlers (UPDATED TO BE OPTIMISTIC) ---
-
-  const handleCategoryClick = useCallback(
-    (categoryKey) => {
-      if (optimisticCategory === categoryKey && !optimisticCollection) return;
-
-      // Optimistic updates
-      setOptimisticCategory(categoryKey);
-      setOptimisticSubcategory("");
-      setOptimisticCollection("");
-
-      onCategoryChange(categoryKey, "");
-    },
-    [onCategoryChange, optimisticCategory, optimisticCollection]
-  );
+  }, [collections, updateCategoryScrollPosition]);
 
   const handleCollectionClick = useCallback(
     (collectionSlug) => {
       if (optimisticCollection === collectionSlug) return;
-
-      // Optimistic updates
       setOptimisticCollection(collectionSlug);
-      setOptimisticCategory("all"); // Reset category to All
-      setOptimisticSubcategory("");
-
       onCollectionChange(collectionSlug);
     },
     [optimisticCollection, onCollectionChange]
-  );
-
-  const handleSubcategoryClick = useCallback(
-    (subcategoryKey) => {
-      const isDeselecting = optimisticSubcategory === subcategoryKey;
-      const newSub = isDeselecting ? "" : subcategoryKey;
-
-      setOptimisticSubcategory(newSub);
-      // Ensure collection is cleared (should be implicitly, but safely here)
-      if (optimisticCollection) setOptimisticCollection("");
-
-      onCategoryChange(optimisticCategory, newSub);
-    },
-    [
-      optimisticCategory,
-      optimisticSubcategory,
-      onCategoryChange,
-      optimisticCollection,
-    ]
   );
 
   return (
@@ -751,7 +544,6 @@ function ExploreCategoriesContent({
             </PrevButton>
 
             <Categories ref={categoriesRef}>
-              {/* --- SECTION 1: COLLECTIONS (VIBES) --- */}
               {collections.map((collection, index) => {
                 const id =
                   collection.key || collection.slug || `collection-${index}`;
@@ -765,21 +557,6 @@ function ExploreCategoriesContent({
                   />
                 );
               })}
-
-              {/* --- VISUAL SEPARATOR --- */}
-              {collections.length > 0 && <VerticalSeparator />}
-
-              {/* --- SECTION 2: CATEGORIES --- */}
-              {dynamicCategoryConfig.map((category) => (
-                <CategoryItem
-                  key={category.key}
-                  category={category}
-                  isSelected={
-                    !optimisticCollection && optimisticCategory === category.key
-                  }
-                  onClick={() => handleCategoryClick(category.key)}
-                />
-              ))}
             </Categories>
 
             <NextButton
@@ -807,44 +584,6 @@ function ExploreCategoriesContent({
           )}
         </ScrollFilterWrapper>
       </TopSection>
-
-      {isSubcategoriesVisible && (
-        <ScrollWrapper
-          $showLeftFade={shouldShowScrollButtons && canScrollLeft}
-          $showRightFade={shouldShowScrollButtons && canScrollRight}
-        >
-          <PrevButton
-            $show={shouldShowScrollButtons && canScrollLeft}
-            onClick={() => handleScroll("left")}
-            aria-label="Scroll previous subcategories"
-          >
-            <ChevronLeft size={16} />
-          </PrevButton>
-          <SubCategories
-            ref={subcatWrapperRef}
-            isVisible={isSubcategoriesVisible}
-            $shouldScroll={shouldShowScrollButtons}
-          >
-            {displayedSubcategories.map((subcategory) => (
-              <SubCategoryGroup
-                key={subcategory.key}
-                $isSelected={optimisticSubcategory === subcategory.key}
-                onClick={() => handleSubcategoryClick(subcategory.key)}
-                aria-pressed={optimisticSubcategory === subcategory.key}
-              >
-                {subcategory.name}
-              </SubCategoryGroup>
-            ))}
-          </SubCategories>
-          <NextButton
-            $show={shouldShowScrollButtons && canScrollRight}
-            onClick={() => handleScroll("right")}
-            aria-label="Scroll next subcategories"
-          >
-            <ChevronRight size={16} />
-          </NextButton>
-        </ScrollWrapper>
-      )}
 
       <FilterModal
         isOpen={isFilterModalOpen}

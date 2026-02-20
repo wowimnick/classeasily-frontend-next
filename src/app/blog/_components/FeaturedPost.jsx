@@ -144,7 +144,7 @@ const FeaturedPost = ({ post }) => (
                 month: "long",
                 day: "numeric",
               })}{" "}
-              · {post.readTime} min read
+              · {post.readTime != null ? `${post.readTime} min read` : "Read"}
             </MetaDetails>
           </AuthorInfo>
         </PostMeta>

@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import {
   searchClasses,
-  fetchHomepageCategories,
   fetchClassCollections,
 } from "@/lib/server-data-fetchers";
 import ExploreClient from "@/app/explore/_components/ExploreClient";
@@ -72,12 +71,12 @@ export async function generateMetadata({ params, searchParams }) {
       }
     }
 
-    const categoryKey = searchParams.category || "";
+    const collectionSlug = searchParams.collection || "";
     const tag = searchParams.tag || "";
     const locationParam = searchParams.location;
 
     const cityText = unslugify(
-      city || (identifier && !categoryKey ? identifier : ""),
+      city || (identifier && !collectionSlug ? identifier : ""),
     );
     const provinceText = unslugify(province);
     const locationText = cityText
@@ -86,26 +85,7 @@ export async function generateMetadata({ params, searchParams }) {
         ? unslugify(locationParam)
         : "";
     const tagText = unslugify(tag);
-
-    let categoryText = "";
-    if (categoryKey) {
-      try {
-        const categoriesResponse = await fetchHomepageCategories();
-        if (categoriesResponse.success) {
-          const categoryObj = categoriesResponse.data.find(
-            (c) => c.key === categoryKey,
-          );
-          categoryText = categoryObj
-            ? categoryObj.name
-            : unslugify(categoryKey);
-        } else {
-          categoryText = unslugify(categoryKey);
-        }
-      } catch (error) {
-        console.warn("Could not fetch category name for metadata:", error);
-        categoryText = unslugify(categoryKey);
-      }
-    }
+    const collectionText = unslugify(collectionSlug);
 
     let title = "Explore Experiences Near You | Classeasily";
     let description =
@@ -114,15 +94,15 @@ export async function generateMetadata({ params, searchParams }) {
     if (tagText && locationText) {
       title = `${tagText} Experiences in ${locationText} | Classeasily`;
       description = `Discover the best ${tagText.toLowerCase()} experiences and activities in ${locationText}. Book your spot on Classeasily.`;
-    } else if (categoryText && locationText) {
-      title = `${categoryText} Experiences in ${locationText} | Classeasily`;
-      description = `Find and book the best ${categoryText.toLowerCase()} experiences and activities in ${locationText}.`;
+    } else if (collectionText && locationText) {
+      title = `${collectionText} Experiences in ${locationText} | Classeasily`;
+      description = `Find and book the best ${collectionText.toLowerCase()} experiences and activities in ${locationText}.`;
     } else if (locationText) {
       title = `Experiences and Activities in ${locationText} | Classeasily`;
       description = `Explore a wide variety of experiences in ${locationText}. From art to cooking, find your next great memory.`;
-    } else if (categoryText) {
-      title = `Explore ${categoryText} Experiences | Classeasily`;
-      description = `Find and book the best ${categoryText.toLowerCase()} experiences and activities in your area.`;
+    } else if (collectionText) {
+      title = `Explore ${collectionText} Experiences | Classeasily`;
+      description = `Find and book the best ${collectionText.toLowerCase()} experiences and activities in your area.`;
     }
 
     const url = `/explore/${slug.join("/")}`;
@@ -199,17 +179,9 @@ async function fetchServerData({ params, searchParams }) {
     apiParams.location_search = unslugify(identifier);
   }
 
-  const category = searchParams.category;
-  const subcategory = searchParams.subcategory;
   const collection = searchParams.collection;
-
   if (collection) {
     apiParams.collection = collection;
-  } else if (category) {
-    apiParams.category_key = category;
-    if (subcategory) {
-      apiParams.subcategory_key = subcategory;
-    }
   }
 
   if (searchParams.tag) apiParams.tag = searchParams.tag;
@@ -231,12 +203,10 @@ async function fetchServerData({ params, searchParams }) {
 
   apiParams.page_size = 24;
 
-  const [categoriesResponse, classesResponse, collectionsList] =
-    await Promise.all([
-      fetchHomepageCategories(),
-      searchClasses(apiParams),
-      fetchClassCollections(),
-    ]);
+  const [classesResponse, collectionsList] = await Promise.all([
+    searchClasses(apiParams),
+    fetchClassCollections(),
+  ]);
 
   let locationName = "";
   if (locationDisplayNameFromUrl) {
@@ -248,7 +218,7 @@ async function fetchServerData({ params, searchParams }) {
   }
 
   return {
-    categories: categoriesResponse.success ? categoriesResponse.data : [],
+    categories: [],
     initialClasses: classesResponse.results || [],
     totalCount: classesResponse.count || 0,
     nextPageUrl: classesResponse.next || null,
@@ -262,19 +232,74 @@ async function fetchServerData({ params, searchParams }) {
   };
 }
 
+function buildExploreBreadcrumbSchema(searchParams, locationName) {
+  const base = "https://classeasily.com";
+  const items = [
+    { position: 1, name: "Home", item: `${base}/` },
+    { position: 2, name: "Explore", item: `${base}/explore` },
+  ];
+  let position = 3;
+  const location = searchParams?.location || locationName;
+  const collection = searchParams?.collection;
+  const tag = searchParams?.tag;
+  const params = new URLSearchParams();
+  if (location) params.set("location", location);
+  if (location) {
+    items.push({
+      position: position++,
+      name: typeof location === "string" ? location.split(",")[0].trim() : location,
+      item: `${base}/explore?${params.toString()}`,
+    });
+  }
+  if (collection) {
+    if (location) params.set("location", location);
+    params.set("collection", collection);
+    items.push({
+      position: position++,
+      name: collection.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      item: `${base}/explore?${params.toString()}`,
+    });
+  }
+  if (tag && !collection) {
+    if (location) params.set("location", location);
+    params.set("tag", tag);
+    items.push({
+      position: position++,
+      name: tag.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      item: `${base}/explore?${params.toString()}`,
+    });
+  }
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map(({ position: pos, name, item }) => ({
+      "@type": "ListItem",
+      position: pos,
+      name,
+      item,
+    })),
+  };
+}
+
 export default async function ExplorePage({ params, searchParams }) {
-  const serverData = await fetchServerData({ params, searchParams });
+  const resolvedSearchParams = typeof searchParams?.then === "function" ? await searchParams : searchParams;
+  const serverData = await fetchServerData({ params, searchParams: resolvedSearchParams });
   const structuredData = generateStructuredData(
     serverData.routeParams,
     serverData.initialClasses,
     serverData.locationName,
   );
+  const breadcrumbSchema = buildExploreBreadcrumbSchema(resolvedSearchParams, serverData.locationName);
 
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       <Suspense
         fallback={

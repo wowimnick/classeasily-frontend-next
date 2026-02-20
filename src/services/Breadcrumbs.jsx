@@ -121,32 +121,20 @@ function BreadcrumbsContent() {
       });
     }
 
-    if (categoryQuery && categoryQuery !== "all") {
-      const categoryParams = new URLSearchParams(searchParams.toString());
-      categoryParams.delete("subcategory");
-
+    const collectionQuery = searchParams.get("collection");
+    if (collectionQuery) {
+      const collectionParams = new URLSearchParams(searchParams.toString());
       items.push({
-        key: "category",
+        key: "collection",
         title: (
-          <Link href={`/explore?${categoryParams.toString()}`}>
-            {formatCrumbText(categoryQuery)}
+          <Link href={`/explore?${collectionParams.toString()}`}>
+            {formatCrumbText(collectionQuery)}
           </Link>
         ),
       });
-
-      if (subcategoryQuery) {
-        items.push({
-          key: "subcategory",
-          title: (
-            <Link href={`/explore?${searchParams.toString()}`}>
-              {formatCrumbText(subcategoryQuery)}
-            </Link>
-          ),
-        });
-      }
     }
 
-    if (tagQuery && !categoryQuery) {
+    if (tagQuery && !collectionQuery) {
       items.push({
         key: "tag",
         title: formatCrumbText(tagQuery),

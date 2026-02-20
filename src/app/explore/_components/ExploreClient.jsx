@@ -37,8 +37,16 @@ const ContentArea = styled.main`
 `;
 
 const BreadcrumbContainer = styled.div`
-  padding: 0 2.5rem;
-  border-bottom: 1px solid #f0f0f0;
+  /* Visually hidden but kept in DOM for SEO and screen readers */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 
   @media (max-width: 1048px) {
     padding: 0 1rem;
@@ -78,8 +86,6 @@ function ExploreClientContent({
   const previousSearchParamsRef = useRef(searchParams.toString());
 
   // --- DERIVED DATA FROM URL ---
-  const currentCategory = searchParams.get("category") || "all";
-  const currentSubcategory = searchParams.get("subcategory") || "";
   const currentCollection = searchParams.get("collection") || "";
   const tag = searchParams.get("tag") || "";
   const currentSortBy = searchParams.get("sort_by") || "relevance";
@@ -189,10 +195,7 @@ function ExploreClientContent({
       new URLSearchParams(prevParamsStr).entries()
     );
 
-    const isNavChange =
-      currentObj.category !== prevObj.category ||
-      currentObj.subcategory !== prevObj.subcategory ||
-      currentObj.collection !== prevObj.collection;
+    const isNavChange = currentObj.collection !== prevObj.collection;
 
     if (isNavChange) {
       return;
@@ -215,11 +218,6 @@ function ExploreClientContent({
 
     if (currentCollection) {
       apiParams.collection = currentCollection;
-    } else if (currentCategory && currentCategory !== "all") {
-      apiParams.category_key = currentCategory;
-      if (currentSubcategory) {
-        apiParams.subcategory_key = currentSubcategory;
-      }
     }
 
     if (tag) apiParams.tag = tag;
@@ -253,8 +251,6 @@ function ExploreClientContent({
     return () => controller.abort();
   }, [
     searchParams,
-    currentCategory,
-    currentSubcategory,
     currentCollection,
     tag,
     currentSortBy,
@@ -291,47 +287,6 @@ function ExploreClientContent({
     const q = window.location.search;
     return q ? q.slice(1) : "";
   }, [searchParams]);
-
-  const handleCategoryChange = useCallback(
-    (newCategoryKey, newSubcategoryKey) => {
-      setIsNavigating(true);
-      const currentQuery = getCurrentSearchString();
-      const newParams = new URLSearchParams(currentQuery);
-      const currentParams = new URLSearchParams(currentQuery);
-
-      // Keep location consistent: use actual current URL (avoids stale closure)
-      const urlLocation = currentParams.get("location");
-      const urlLat = currentParams.get("lat");
-      const urlLng = currentParams.get("lng");
-      if (urlLocation || urlLat || urlLng) {
-        if (urlLocation) newParams.set("location", urlLocation);
-        if (urlLat) newParams.set("lat", urlLat);
-        if (urlLng) newParams.set("lng", urlLng);
-      } else if (selectedLocation?.coordinates) {
-        const loc = selectedLocation.displayName || searchTerm?.trim();
-        if (loc) newParams.set("location", loc);
-        newParams.set("lat", selectedLocation.coordinates.lat.toString());
-        newParams.set("lng", selectedLocation.coordinates.lng.toString());
-      }
-
-      newParams.delete("collection");
-
-      if (newCategoryKey && newCategoryKey !== "all") {
-        newParams.set("category", newCategoryKey);
-      } else {
-        newParams.delete("category");
-      }
-
-      if (newSubcategoryKey) {
-        newParams.set("subcategory", newSubcategoryKey);
-      } else {
-        newParams.delete("subcategory");
-      }
-
-      router.push(`${pathname}?${newParams.toString()}`, { scroll: false });
-    },
-    [getCurrentSearchString, router, pathname, selectedLocation, searchTerm]
-  );
 
   const handleCollectionChange = useCallback(
     (collectionSlug) => {
@@ -441,16 +396,12 @@ function ExploreClientContent({
   const classesDisplayProps = useMemo(
     () => ({
       classes: displayClasses,
-      categories: initialCategories,
       collections: initialCollections,
       loading: showSkeleton,
       isNavigating,
       userLocation,
       filters: currentFilters,
       onFiltersChange: () => {},
-      currentCategory,
-      currentSubcategory,
-      onCategoryChange: handleCategoryChange,
       currentCollection,
       onCollectionChange: handleCollectionChange,
       currentSortBy,
@@ -465,15 +416,11 @@ function ExploreClientContent({
     }),
     [
       displayClasses,
-      initialCategories,
       initialCollections,
       showSkeleton,
       isNavigating,
       userLocation,
       currentFilters,
-      currentCategory,
-      currentSubcategory,
-      handleCategoryChange,
       currentCollection,
       handleCollectionChange,
       currentSortBy,

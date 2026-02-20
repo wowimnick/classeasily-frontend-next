@@ -80,7 +80,7 @@ const PostHeader = ({ post }) => (
             })}
             <span>·</span>
             <Clock size={14} />
-            {post.readTime} min read
+            {post.readTime != null ? `${post.readTime} min read` : "Read"}
           </MetaDetails>
         </AuthorInfo>
       </PostMeta>

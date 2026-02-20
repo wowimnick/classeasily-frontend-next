@@ -164,6 +164,11 @@ const DrawerFormWrap = styled.div`
     color: ${theme.textPrimary} !important;
     font-size: 16px;
   }
+  @media (max-width: 768px) {
+    .contact-message-textarea.ant-input-textarea textarea {
+      font-size: 16px !important;
+    }
+  }
   @media (min-width: 769px) {
     .ant-input,
     .ant-input-affix-wrapper input,
@@ -183,6 +188,11 @@ const FormFieldSizes = styled.div`
   .ant-input-affix-wrapper input,
   .ant-input-textarea textarea {
     font-size: 16px;
+  }
+  @media (max-width: 768px) {
+    .contact-message-textarea.ant-input-textarea textarea {
+      font-size: 16px !important;
+    }
   }
   @media (min-width: 769px) {
     .ant-input,
@@ -286,6 +296,7 @@ const ContactHostForm = forwardRef(function ContactHostForm(
         rules={[{ required: true, message: "Required" }]}
       >
         <Input.TextArea
+          className="contact-message-textarea"
           placeholder="Your question or message..."
           rows={4}
           maxLength={5000}

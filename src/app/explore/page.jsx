@@ -2,41 +2,90 @@ import { Suspense } from "react";
 import ExploreClient from "@/app/explore/_components/ExploreClient";
 import {
   searchClasses,
-  fetchHomepageCategories,
   fetchClassCollections,
 } from "@/lib/server-data-fetchers";
 import ExplorePageSkeleton from "./_components/ExplorePageSkeleton";
 
-// Shared title/description logic for metadata and page H1
 function getExploreMeta(resolvedSearchParams) {
-  const category = resolvedSearchParams?.category;
+  const collection = resolvedSearchParams?.collection;
   const location = resolvedSearchParams?.location;
   let title = "Explore Experiences Near You | Classeasily";
   let description =
     "Find and book amazing local experiences and activities. Plan your next date night or outing with friends today!";
 
-  if (category && category !== "all" && location) {
-    title = `Explore ${category.charAt(0).toUpperCase() + category.slice(1)} Experiences in ${location} | Classeasily`;
-    description = `Discover the best ${category.toLowerCase()} experiences and activities in ${location}. Book your spot today!`;
+  const collectionText = collection
+    ? collection.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    : "";
+  if (collectionText && location) {
+    title = `${collectionText} Experiences in ${location} | Classeasily`;
+    description = `Discover the best ${collectionText.toLowerCase()} experiences and activities in ${location}. Book your spot today!`;
   } else if (location) {
     title = `Experiences and Activities in ${location} | Classeasily`;
     description = `Explore a wide variety of experiences in ${location}. From art to cooking, find your next great memory.`;
-  } else if (category && category !== "all") {
-    title = `Explore ${category.charAt(0).toUpperCase() + category.slice(1)} Experiences | Classeasily`;
-    description = `Find and book the best ${category.toLowerCase()} experiences and activities in your area.`;
+  } else if (collectionText) {
+    title = `Explore ${collectionText} Experiences | Classeasily`;
+    description = `Find and book the best ${collectionText.toLowerCase()} experiences and activities in your area.`;
   }
   return { title, description };
+}
+
+function buildExploreBreadcrumbSchema(searchParams) {
+  const base = "https://classeasily.com";
+  const items = [
+    { position: 1, name: "Home", item: `${base}/` },
+    { position: 2, name: "Explore", item: `${base}/explore` },
+  ];
+  let position = 3;
+  const location = searchParams?.location;
+  const collection = searchParams?.collection;
+  const tag = searchParams?.tag;
+  const params = new URLSearchParams();
+  if (location) params.set("location", location);
+  if (location) {
+    items.push({
+      position: position++,
+      name: location.split(",")[0].trim(),
+      item: `${base}/explore?${params.toString()}`,
+    });
+  }
+  if (collection) {
+    if (location) params.set("location", location);
+    params.set("collection", collection);
+    items.push({
+      position: position++,
+      name: collection.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      item: `${base}/explore?${params.toString()}`,
+    });
+  }
+  if (tag && !collection) {
+    if (location) params.set("location", location);
+    params.set("tag", tag);
+    items.push({
+      position: position++,
+      name: tag.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      item: `${base}/explore?${params.toString()}`,
+    });
+  }
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map(({ position: pos, name, item }) => ({
+      "@type": "ListItem",
+      position: pos,
+      name,
+      item,
+    })),
+  };
 }
 
 export async function generateMetadata({ searchParams }) {
   const resolvedSearchParams = await searchParams;
   const { title, description } = getExploreMeta(resolvedSearchParams);
 
-  // Canonical and OG URL: include meaningful filters so filtered views get correct indexing
-  const category = resolvedSearchParams?.category;
+  const collection = resolvedSearchParams?.collection;
   const location = resolvedSearchParams?.location;
   const canonicalParams = new URLSearchParams();
-  if (category && category !== "all") canonicalParams.set("category", category);
+  if (collection) canonicalParams.set("collection", collection);
   if (location) canonicalParams.set("location", location);
   const queryString = canonicalParams.toString();
   const canonicalUrl = `https://classeasily.com/explore${queryString ? `?${queryString}` : ""}`;
@@ -97,18 +146,9 @@ async function fetchServerData(searchParams) {
     apiParams.location_search = locationDisplayNameFromUrl;
   }
 
-  // Handle category and subcategory from URL
-  const category = searchParams.category;
-  const subcategory = searchParams.subcategory;
   const collection = searchParams.collection;
-
   if (collection) {
     apiParams.collection = collection;
-  } else if (category && category !== "all") {
-    apiParams.category_key = category;
-    if (subcategory) {
-      apiParams.subcategory_key = subcategory;
-    }
   }
 
   // Handle all other search params
@@ -146,15 +186,13 @@ async function fetchServerData(searchParams) {
 
   // Removed console.log for production performance
 
-  const [categoriesResponse, classesResponse, collectionsList] =
-    await Promise.all([
-      fetchHomepageCategories(),
-      searchClasses(apiParams),
-      fetchClassCollections(),
-    ]);
+  const [classesResponse, collectionsList] = await Promise.all([
+    searchClasses(apiParams),
+    fetchClassCollections(),
+  ]);
 
   return {
-    categories: categoriesResponse.success ? categoriesResponse.data : [],
+    categories: [],
     initialClasses: classesResponse.results || [],
     totalCount: classesResponse.count || 0,
     nextPageUrl: classesResponse.next || null,
@@ -215,6 +253,7 @@ async function ExplorePageContent({ searchParams }) {
     serverData.initialClasses,
     serverData.locationName,
   );
+  const breadcrumbSchema = buildExploreBreadcrumbSchema(resolvedSearchParams);
   const { title: pageTitle } = getExploreMeta(resolvedSearchParams);
 
   return (
@@ -222,6 +261,10 @@ async function ExplorePageContent({ searchParams }) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       <h1
         style={{

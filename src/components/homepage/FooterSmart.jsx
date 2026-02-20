@@ -20,7 +20,7 @@ import FooterClient from "./FooterClient";
 export default function FooterSmart() {
   // Render footer with empty categories (shows locations only)
   // This prevents any fetch loops while still providing a functional footer
-  return <FooterClient categories={[]} />;
+  return <FooterClient collections={[]} />;
 }
 
 /**

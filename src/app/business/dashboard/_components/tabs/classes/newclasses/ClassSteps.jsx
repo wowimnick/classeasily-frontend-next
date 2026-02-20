@@ -211,8 +211,6 @@ const ClassSteps = ({
           // Basic Info
           title: state.basicInfo.title,
           description: state.basicInfo.description,
-          category_key: state.basicInfo.category,
-          subcategory_key: state.basicInfo.subcategory,
           features: state.basicInfo.features || [],
 
           // Location & Contact

@@ -359,27 +359,22 @@ const SocialLinks = styled.div`
 `;
 
 // --- MAIN COMPONENT ---
-export default function FooterClient({ categories = [] }) {
+export default function FooterClient({ collections = [] }) {
   const [showAll, setShowAll] = useState(false);
-  const hasCategories = categories.length > 0;
+  const hasCollections = collections.length > 0;
 
   const getDisplayData = () => {
-    if (!hasCategories) return [];
-    return categories.map((category) => ({
-      province: category.name,
-      key: category.key,
-      type: "category",
+    if (!hasCollections) return [];
+    return collections.map((collection) => ({
+      province: collection.name,
+      key: collection.slug || collection.key,
+      type: "collection",
       locations: [
         {
-          name: `All ${category.name}`,
-          path: `/explore?category_key=${category.key}`,
+          name: `All ${collection.name}`,
+          path: `/explore?collection=${collection.slug || collection.key}`,
           isMainCategory: true,
         },
-        ...(category.subcategories || []).map((sub) => ({
-          name: sub.name,
-          path: `/explore?category_key=${category.key}&subcategory_key=${sub.key}`,
-          isMainCategory: false,
-        })),
       ],
     }));
   };
@@ -389,7 +384,7 @@ export default function FooterClient({ categories = [] }) {
 
   return (
     <FooterWrapper>
-      {hasCategories && (
+      {hasCollections && (
         <InspirationContainer>
           <InspirationHeader>Find your next experience</InspirationHeader>
 

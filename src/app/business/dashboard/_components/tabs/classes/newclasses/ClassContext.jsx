@@ -16,8 +16,6 @@ const defaultInitialState = {
   basicInfo: {
     title: "",
     description: "",
-    category: "",
-    subcategory: "",
     features: [],
     images: [],
   },

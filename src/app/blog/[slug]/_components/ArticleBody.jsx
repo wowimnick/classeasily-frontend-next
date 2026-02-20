@@ -55,6 +55,7 @@ const ArticleBodyWrapper = styled.div`
 `;
 
 const ArticleBody = ({ content }) => {
+  if (!content || typeof content !== "string") return null;
   const sanitizedContent = DOMPurify.sanitize(content, {
     ADD_ATTR: ["loading"],
   });

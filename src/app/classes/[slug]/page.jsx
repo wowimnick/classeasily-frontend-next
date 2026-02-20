@@ -253,22 +253,6 @@ function buildBreadcrumbSchema(classData) {
       item: `${base}/explore?${new URLSearchParams({ location: locationText }).toString()}`,
     });
   }
-  const { category_key, category_name, subcategory_key, subcategory_name } =
-    classData;
-  if (category_name && category_key) {
-    items.push({
-      position: position++,
-      name: category_name,
-      item: `${base}/explore/category/${category_key}`,
-    });
-    if (subcategory_name && subcategory_key) {
-      items.push({
-        position: position++,
-        name: subcategory_name,
-        item: `${base}/explore/category/${category_key}/${subcategory_key}`,
-      });
-    }
-  }
   items.push({
     position: position,
     name: classData.title,
@@ -297,9 +281,6 @@ export default async function ClassPage({ params }) {
     { key: "explore", title: <Link href="/explore">Explore</Link> },
   ];
 
-  const { category_key, category_name, subcategory_key, subcategory_name } =
-    classData;
-
   const locationText =
     classData?.business_city && classData?.business_state
       ? `${classData.business_city}, ${classData.business_state}`
@@ -317,22 +298,6 @@ export default async function ClassPage({ params }) {
         </Link>
       ),
     });
-  }
-
-  if (category_name && category_key) {
-    const categoryUrl = `/explore/category/${category_key}`;
-    breadcrumbItems.push({
-      key: "category",
-      title: <Link href={categoryUrl}>{category_name}</Link>,
-    });
-
-    if (subcategory_name && subcategory_key) {
-      const subcategoryUrl = `${categoryUrl}/${subcategory_key}`;
-      breadcrumbItems.push({
-        key: "subcategory",
-        title: <Link href={subcategoryUrl}>{subcategory_name}</Link>,
-      });
-    }
   }
 
   breadcrumbItems.push({

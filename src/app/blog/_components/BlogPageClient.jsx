@@ -41,7 +41,11 @@ const PostGrid = styled.div`
   gap: 2.5rem;
 `;
 
-export default function BlogPageClient({ posts }) {
+export default function BlogPageClient({
+  posts,
+  title = "The ClassEasily Blog",
+  subtitle = "Inspiration and insights for our community of learners and instructors.",
+}) {
   const featuredPost = posts?.[0];
   const otherPosts = posts?.slice(1);
 
@@ -49,11 +53,8 @@ export default function BlogPageClient({ posts }) {
     <PageWrapper>
       <MainContent>
         <BlogHeader>
-          <BlogTitle>The ClassEasily Blog</BlogTitle>
-          <BlogSubtitle>
-            Inspiration and insights for our community of learners and
-            instructors.
-          </BlogSubtitle>
+          <BlogTitle>{title}</BlogTitle>
+          <BlogSubtitle>{subtitle}</BlogSubtitle>
         </BlogHeader>
 
         {featuredPost && <FeaturedPost post={featuredPost} />}

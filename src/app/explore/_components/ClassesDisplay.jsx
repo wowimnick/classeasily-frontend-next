@@ -254,16 +254,12 @@ const NoResultsView = () => {
 
 const ClassesDisplay = ({
   classes = [],
-  categories = [],
   collections = [],
   loading,
   isNavigating,
   userLocation,
   filters,
   onFiltersChange,
-  currentCategory,
-  currentSubcategory,
-  onCategoryChange,
   currentCollection,
   onCollectionChange,
   currentSortBy,
@@ -536,13 +532,9 @@ const ClassesDisplay = ({
         <CategoriesWrapper>
           <ExploreCategories
             classes={classesWithDistance}
-            categories={categories}
             collections={collections}
             filters={filters}
             onFiltersChange={onFiltersChange}
-            currentCategory={currentCategory}
-            currentSubcategory={currentSubcategory}
-            onCategoryChange={onCategoryChange}
             currentCollection={currentCollection}
             onCollectionChange={onCollectionChange}
             currentSortBy={currentSortBy}

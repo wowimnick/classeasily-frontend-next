@@ -2012,8 +2012,6 @@ const ClassEditDrawer = ({
   const [dataLoading, setDataLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("1");
   const [mainImages, setMainImages] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [subcategories, setSubcategories] = useState([]);
   const [mapSearchResults, setMapSearchResults] = useState([]);
   const [mapSearchValue, setMapSearchValue] = useState("");
   const [selectedMapLocation, setSelectedMapLocation] = useState(null);
@@ -2031,9 +2029,7 @@ const ClassEditDrawer = ({
   }, []);
 
   const initialClassDataRef = useRef(null);
-  const initialSubcategoryKeyRef = useRef(null);
 
-  const currentFormCategoryKey = Form.useWatch("category_key", form);
   // Watch booking type for Policy Tab logic
   const bookingType = Form.useWatch("booking_type", form);
 
@@ -2050,23 +2046,14 @@ const ClassEditDrawer = ({
   useEffect(() => {
     if (visible && initialClassDataProp) {
       setDataLoading(true);
-      initialSubcategoryKeyRef.current = null;
       initialClassDataRef.current = JSON.parse(
         JSON.stringify(initialClassDataProp),
       );
-      fetchCategories().then((loadedCategoriesFromFetch) => {
-        initializeFormAndStates(
-          initialClassDataRef.current,
-          loadedCategoriesFromFetch || [],
-        );
-        setDataLoading(false);
-      });
+      initializeFormAndStates(initialClassDataRef.current, []);
+      setDataLoading(false);
     } else if (!visible) {
       form.resetFields();
       setMainImages([]);
-      setCategories([]);
-      setSubcategories([]);
-      initialSubcategoryKeyRef.current = null;
       setMapSearchResults([]);
       setMapSearchValue("");
       setSelectedMapLocation(null);
@@ -2077,66 +2064,13 @@ const ClassEditDrawer = ({
     }
   }, [visible, initialClassDataProp, form]);
 
-  useEffect(() => {
-    const catKey = currentFormCategoryKey;
-    if (!catKey || categories.length === 0) {
-      setSubcategories([]);
-      if (!catKey && form.getFieldValue("subcategory_key")) {
-        form.setFieldsValue({ subcategory_key: undefined });
-      }
-      return;
-    }
-    const selectedCatData = categories.find((c) => c.key === catKey);
-    const newSubcategories = selectedCatData?.subcategories || [];
-    setSubcategories(newSubcategories);
-    const currentFormSubcategory = form.getFieldValue("subcategory_key");
-    if (
-      initialSubcategoryKeyRef.current &&
-      newSubcategories.some(
-        (sub) => sub.key === initialSubcategoryKeyRef.current,
-      )
-    ) {
-      if (currentFormSubcategory !== initialSubcategoryKeyRef.current) {
-        form.setFieldsValue({
-          subcategory_key: initialSubcategoryKeyRef.current,
-        });
-      }
-      initialSubcategoryKeyRef.current = null;
-    } else if (
-      currentFormSubcategory &&
-      !newSubcategories.some((sub) => sub.key === currentFormSubcategory)
-    ) {
-      form.setFieldsValue({ subcategory_key: undefined });
-    }
-  }, [currentFormCategoryKey, categories, form]);
-
   const handleOpenChange = (open) => {
     if (!open) {
       onClose();
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      const result = await businessClassService.getCategories();
-      if (result.success && Array.isArray(result.data)) {
-        setCategories(result.data);
-        return result.data;
-      }
-      message.error(result.error || "Failed to load categories");
-      setCategories([]);
-      return null;
-    } catch (error) {
-      message.error("An error occurred while loading categories.");
-      console.error("Category fetch error:", error);
-      setCategories([]);
-      return null;
-    }
-  };
-
-  const initializeFormAndStates = (classData, loadedCategories) => {
-    initialSubcategoryKeyRef.current = classData.subcategory_key || null;
-
+  const initializeFormAndStates = (classData) => {
     let featuresData = classData.features || [];
     if (typeof featuresData === "string") {
       try {
@@ -2182,8 +2116,6 @@ const ClassEditDrawer = ({
     form.setFieldsValue({
       title: classData.title || "",
       description: classData.description || "",
-      category_key: classData.category_key || undefined,
-      subcategory_key: classData.subcategory_key || undefined,
       features: featuresData,
       location: classData.location || "",
       unit_number: classData.unit_number || "",
@@ -2640,8 +2572,6 @@ const ClassEditDrawer = ({
           [
             "title",
             "description",
-            "category_key",
-            "subcategory_key",
             "features",
             "class_photos_validation_edit",
           ].includes(firstErrorField)
@@ -2937,84 +2867,7 @@ const ClassEditDrawer = ({
                           </FormItemAntd>
                         </FormGroup>
                       </FormSection>
-                      <SectionDivider>
-                        <span>
-                          <Building2 size={16} />
-                          Category & Tags
-                        </span>
-                      </SectionDivider>
                       <FormSection>
-                        <FormGrid>
-                          <FormGroup>
-                            <FormLabelWithIcon htmlFor="edit_class_category">
-                              <Building2 size={16} />
-                              Primary Category
-                            </FormLabelWithIcon>
-                            <HelpText>
-                              <Info size={14} />
-                              What type of experience is this?
-                            </HelpText>
-                            <FormItemAntd
-                              name="category_key"
-                              rules={[
-                                {
-                                  required: true,
-                                  message: "Please select a category",
-                                },
-                              ]}
-                            >
-                              <StyledSelect
-                                id="edit_class_category"
-                                placeholder="Select category"
-                                allowClear
-                                loading={categories.length === 0 && dataLoading}
-                              >
-                                {categories.map((cat) => (
-                                  <Option key={cat.key} value={cat.key}>
-                                    {cat.name}
-                                  </Option>
-                                ))}
-                              </StyledSelect>
-                            </FormItemAntd>
-                          </FormGroup>
-                          <FormGroup>
-                            <FormLabelWithIcon htmlFor="edit_class_subcategory">
-                              <Hash size={16} />
-                              Subcategory
-                            </FormLabelWithIcon>
-                            <HelpText>
-                              <Info size={14} />
-                              Select a specific tag for guests.
-                            </HelpText>
-                            <FormItemAntd
-                              name="subcategory_key"
-                              rules={[
-                                {
-                                  required: true,
-                                  message: "Please select a subcategory",
-                                },
-                              ]}
-                            >
-                              <StyledSelect
-                                id="edit_class_subcategory"
-                                placeholder="Select a subcategory"
-                                disabled={!currentFormCategoryKey}
-                                loading={
-                                  !!currentFormCategoryKey &&
-                                  subcategories.length === 0 &&
-                                  !dataLoading
-                                }
-                                allowClear
-                              >
-                                {subcategories.map((sub) => (
-                                  <Option key={sub.key} value={sub.key}>
-                                    {sub.name}
-                                  </Option>
-                                ))}
-                              </StyledSelect>
-                            </FormItemAntd>
-                          </FormGroup>
-                        </FormGrid>
                         <FormGroup>
                           <FormLabelWithIcon htmlFor="edit_class_features">
                             <Hash size={16} />

@@ -12,15 +12,15 @@ const PageLayout = styled.div`
 `;
 
 const BreadcrumbContainer = styled.div`
-  padding: 0 2.5rem;
-  border-bottom: 1px solid #f0f0f0;
-  display: flex; /* Added to fix vertical stacking */
-  align-items: center;
-  height: 50px; /* Consistent height */
-
-  @media (max-width: 1048px) {
-    padding: 0 1rem;
-  }
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 `;
 
 const ContentArea = styled.main`
