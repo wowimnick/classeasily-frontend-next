@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-client";
 import styled from "styled-components";
 import { ConfigProvider } from "antd";
@@ -90,9 +90,11 @@ export default function AdminPage() {
   const { user } = useAuth();
   const permissions = user?.permissions || [];
   const params = useParams();
+  const pathname = usePathname();
   const router = useRouter();
 
-  const activeKey = params.tab?.[0] || "users";
+  // Derive activeKey from pathname so tab content updates when URL changes (useParams can be stale on client nav)
+  const activeKey = pathname?.replace(/^\/admin\/?/, "").split("/")[0] || params.tab?.[0] || "users";
 
   useEffect(() => {
     const hasTab = params.tab?.length > 0;
