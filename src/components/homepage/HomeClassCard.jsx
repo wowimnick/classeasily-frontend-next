@@ -46,7 +46,10 @@ const HomeClassCard = ({
   const [imageError, setImageError] = useState(false);
 
   const imageUrl = useMemo(() => {
-    return images?.[0]?.medium_url || images?.[0]?.original_url || null;
+    if (!images?.length) return null;
+    const coverImage =
+      images.find((img) => img.is_cover || img.isCover) || images[0];
+    return coverImage?.medium_url || coverImage?.original_url || null;
   }, [images]);
 
   useEffect(() => {
