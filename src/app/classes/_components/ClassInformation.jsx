@@ -118,12 +118,31 @@ const InfoWrapper = styled.section`
     padding-top: 1rem;
   }
 `;
+const BusinessAndAskRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  /* Padding only in the viewport where option card has disappeared but layout isn't full mobile yet (769px–1024px) */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    padding-top: 1.25rem;
+  }
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+    padding-top: 0;
+  }
+`;
 const BusinessSection = styled.div`
   padding: 0;
+  min-width: 0;
+  flex: 1;
   @media (max-width: 768px) {
     padding: 0 1rem;
     display: flex;
     justify-content: center;
+    flex: none;
   }
   @media (max-width: 480px) {
     padding: 0 1rem;
@@ -416,11 +435,12 @@ const calculateHostingDuration = (dateString) => {
 
 const AskQuestionRow = styled.div`
   display: flex;
-  justify-content: flex-start;
+  justify-content: flex-end;
+  flex-shrink: 0;
   padding: 0 0.25rem;
   @media (max-width: 768px) {
-    padding: 0 0.75rem;
     justify-content: stretch;
+    padding: 0 0.75rem;
   }
   @media (max-width: 480px) {
     padding: 0 0.5rem;
@@ -434,16 +454,17 @@ const AskQuestionButton = styled.button`
   gap: 8px;
   font-size: 14px;
   font-weight: 500;
-  color: ${CLASSEASILY_RED};
-  background: none;
-  border: none;
+  color: #555;
+  background: #fff;
+  border: 1px solid #e0e0e0;
   cursor: pointer;
-  padding: 0.5rem 0;
-  transition: color 0.2s, background 0.2s;
-  border-radius: 12px;
+  padding: 10px 18px;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+  border-radius: 8px;
   &:hover {
-    color: #e03253;
-    text-decoration: underline;
+    background: #f7f7f7;
+    border-color: #d0d0d0;
+    color: #333;
   }
   &:focus-visible {
     outline: 2px solid ${CLASSEASILY_RED};
@@ -453,20 +474,11 @@ const AskQuestionButton = styled.button`
     width: 100%;
     padding: 14px 1rem;
     font-size: 15px;
-    color: #222;
-    background: #f7f7f7;
-    border: 1px solid #ebebeb;
-    text-decoration: none;
-    &:hover {
-      background: #f0f0f0;
-      color: #222;
-      text-decoration: none;
-    }
+    min-height: 48px;
   }
   @media (max-width: 480px) {
     padding: 12px 1rem;
     font-size: 13px;
-    min-height: 48px;
   }
 `;
 
@@ -524,79 +536,81 @@ const ClassInformation = React.memo(
           </MobileTitleRow>
         </MobileHeaderSection>
 
-        <BusinessSection>
-          <BusinessInfo
-            onClick={onBusinessClick}
-            disabled={!businessData}
-            aria-label={
-              businessData
-                ? `View details for ${displayBusinessName}`
-                : "Business information unavailable"
-            }
-            title={
-              businessData
-                ? `View details for ${displayBusinessName}`
-                : "Business information unavailable"
-            }
-          >
-            <BusinessAvatar aria-hidden="true">
-              {displayBusinessImage ? (
-                <HostImg src={displayBusinessImage} alt="" />
-              ) : (
-                <LordIcon
-                  src="https://cdn.lordicon.com/bhfjfgqz.json"
-                  trigger="in"
-                  state="in-reveal"
-                  colors="primary:#767676"
-                  style={{ width: 22, height: 22 }}
-                />
-              )}
-            </BusinessAvatar>
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "2px" }}
+        <BusinessAndAskRow>
+          <BusinessSection>
+            <BusinessInfo
+              onClick={onBusinessClick}
+              disabled={!businessData}
+              aria-label={
+                businessData
+                  ? `View details for ${displayBusinessName}`
+                  : "Business information unavailable"
+              }
+              title={
+                businessData
+                  ? `View details for ${displayBusinessName}`
+                  : "Business information unavailable"
+              }
             >
-              <BusinessName>Hosted by {displayBusinessName}</BusinessName>
-              <BusinessMetaWrapper>
-                <HostingMeta>
-                  <MetaItem>
-                    {hostingDuration && `${hostingDuration} hosting`}
-                  </MetaItem>
-                  {reviewCount > 0 && <MetaSeparator>•</MetaSeparator>}
-                </HostingMeta>
-
-                {reviewCount > 0 && (
-                  <MetaItem style={{ fontWeight: "500", color: "#000" }}>
-                    <Star size={12} fill="#000" strokeWidth={0} />
-                    {reviewCount} review{reviewCount !== 1 ? "s" : ""}
-                  </MetaItem>
+              <BusinessAvatar aria-hidden="true">
+                {displayBusinessImage ? (
+                  <HostImg src={displayBusinessImage} alt="" />
+                ) : (
+                  <LordIcon
+                    src="https://cdn.lordicon.com/bhfjfgqz.json"
+                    trigger="in"
+                    state="in-reveal"
+                    colors="primary:#767676"
+                    style={{ width: 22, height: 22 }}
+                  />
                 )}
-
-                {shouldShowTopRated && (
-                  <>
-                    <MetaSeparator>•</MetaSeparator>
-                    <MetaItem style={{ fontWeight: "500", color: "#FF385C" }}>
-                      <Star size={12} fill="#FF385C" strokeWidth={0} />
-                      {" "}Top Rated
+              </BusinessAvatar>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "2px" }}
+              >
+                <BusinessName>Hosted by {displayBusinessName}</BusinessName>
+                <BusinessMetaWrapper>
+                  <HostingMeta>
+                    <MetaItem>
+                      {hostingDuration && `${hostingDuration} hosting`}
                     </MetaItem>
-                  </>
-                )}
-              </BusinessMetaWrapper>
-            </div>
-          </BusinessInfo>
-        </BusinessSection>
+                    {reviewCount > 0 && <MetaSeparator>•</MetaSeparator>}
+                  </HostingMeta>
 
-        {onContactHost && (
-          <AskQuestionRow>
-            <AskQuestionButton
-              type="button"
-              onClick={onContactHost}
-              aria-label="Ask the host a question"
-            >
-              <MessageCircle size={18} aria-hidden />
-              Ask a question
-            </AskQuestionButton>
-          </AskQuestionRow>
-        )}
+                  {reviewCount > 0 && (
+                    <MetaItem style={{ fontWeight: "500", color: "#000" }}>
+                      <Star size={12} fill="#000" strokeWidth={0} />
+                      {reviewCount} review{reviewCount !== 1 ? "s" : ""}
+                    </MetaItem>
+                  )}
+
+                  {shouldShowTopRated && (
+                    <>
+                      <MetaSeparator>•</MetaSeparator>
+                      <MetaItem style={{ fontWeight: "500", color: "#FF385C" }}>
+                        <Star size={12} fill="#FF385C" strokeWidth={0} />
+                        {" "}Top Rated
+                      </MetaItem>
+                    </>
+                  )}
+                </BusinessMetaWrapper>
+              </div>
+            </BusinessInfo>
+          </BusinessSection>
+
+          {onContactHost && (
+            <AskQuestionRow>
+              <AskQuestionButton
+                type="button"
+                onClick={onContactHost}
+                aria-label="Ask the host a question"
+              >
+                <MessageCircle size={18} aria-hidden />
+                Ask a question
+              </AskQuestionButton>
+            </AskQuestionRow>
+          )}
+        </BusinessAndAskRow>
 
         {(partnerBadgeText || shouldShowTopRated) && (
           <>
@@ -629,7 +643,7 @@ const ClassInformation = React.memo(
                           style={{ width: "100%", height: "100%" }}
                         />
                       </AnimatedIconWrapper>
-                      <AnimatedTextWrapper $delay="0ms" style={{ color: "#FF385C" }}>
+                      <AnimatedTextWrapper $delay="0ms" style={{ color: "#b45309" }}>
                         Highly rated
                       </AnimatedTextWrapper>
                     </CategoryPill>
