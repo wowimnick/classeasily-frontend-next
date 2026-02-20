@@ -1650,17 +1650,18 @@ const ReviewAndPaymentStep = ({
   );
 
   /* Sync bookingData into form only when we have explicit values to apply (logged-in user, participant_details, or notes).
-   * Avoid overwriting fields the user may be typing: don't set email/phone in else branch; only set booker_name from
-   * participant_details when form is still empty (initial load); only set notes when loading from storage. */
+   * Avoid overwriting fields the user may be typing: prefer form-backed bookingData fields (email, phone, booker_name)
+   * over user profile (userEmail, userPhone, userName) so that after onValuesChange updates bookingData we don't overwrite. */
   const hasSyncedInitialRef = useRef(false);
   useEffect(() => {
     if (!form) return;
     let formData = {};
 
     if (isUserLoggedIn) {
-      formData.email = bookingData.userEmail || "";
-      formData.phone = bookingData.userPhone || "";
-      formData.booker_name = bookingData.userName || "";
+      /* Use form-backed values first so we never overwrite what the user just typed */
+      formData.email = bookingData.email ?? bookingData.userEmail ?? "";
+      formData.phone = bookingData.phone ?? bookingData.userPhone ?? "";
+      formData.booker_name = bookingData.booker_name ?? bookingData.userName ?? "";
     } else {
       const currentValues = form.getFieldsValue(true);
       const bookerFromDetails = bookingData.participant_details?.[0]?.name;

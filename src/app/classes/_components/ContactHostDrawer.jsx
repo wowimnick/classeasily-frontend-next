@@ -164,16 +164,16 @@ const DrawerFormWrap = styled.div`
     color: ${theme.textPrimary} !important;
     font-size: 16px;
   }
-  @media (max-width: 768px) {
-    .contact-message-textarea.ant-input-textarea textarea {
-      font-size: 16px !important;
-    }
+  .contact-message-textarea.ant-input-textarea textarea {
+    font-size: 16px !important;
   }
   @media (min-width: 769px) {
     .ant-input,
-    .ant-input-affix-wrapper input,
-    .ant-input-textarea textarea {
+    .ant-input-affix-wrapper input {
       font-size: 14px;
+    }
+    .contact-message-textarea.ant-input-textarea textarea {
+      font-size: 16px !important;
     }
   }
   .ant-input::placeholder,
@@ -182,23 +182,23 @@ const DrawerFormWrap = styled.div`
   }
 `;
 
-/* Input font-size: 16px mobile, 14px desktop (used in modal) */
+/* Input font-size: 16px mobile, 14px desktop (used in modal); message box always 16px */
 const FormFieldSizes = styled.div`
   .ant-input,
   .ant-input-affix-wrapper input,
   .ant-input-textarea textarea {
     font-size: 16px;
   }
-  @media (max-width: 768px) {
-    .contact-message-textarea.ant-input-textarea textarea {
-      font-size: 16px !important;
-    }
+  .contact-message-textarea.ant-input-textarea textarea {
+    font-size: 16px !important;
   }
   @media (min-width: 769px) {
     .ant-input,
-    .ant-input-affix-wrapper input,
-    .ant-input-textarea textarea {
+    .ant-input-affix-wrapper input {
       font-size: 14px;
+    }
+    .contact-message-textarea.ant-input-textarea textarea {
+      font-size: 16px !important;
     }
   }
 `;
