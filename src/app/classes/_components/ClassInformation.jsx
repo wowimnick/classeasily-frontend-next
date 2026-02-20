@@ -273,30 +273,6 @@ const CategoryPill = styled.div`
   }
 `;
 
-const CollectionPill = styled.a`
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 14px;
-  background: #fdfdfd;
-  border: 1px solid #e8e8e8;
-  border-radius: 100px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-  transition: all 0.2s ease;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #333;
-  text-decoration: none;
-  white-space: nowrap;
-  &:hover {
-    background: #f5f5f5;
-    border-color: #e0e0e0;
-  }
-  @media (max-width: 480px) {
-    padding: 5px 12px;
-    font-size: 0.85rem;
-  }
-`;
-
 const AnimatedIconWrapper = styled.div`
   display: flex;
   align-items: center;
@@ -504,7 +480,6 @@ const ClassInformation = React.memo(
     onBusinessClick,
     onContactHost,
     partnerTierName,
-    collections = [],
     isFavorite,
     isTogglingFavorite,
     onFavoriteClick,
@@ -540,8 +515,6 @@ const ClassInformation = React.memo(
     if (partnerTierName === "Founding Partner") partnerBadgeText = "Partner";
     else if (partnerTierName === "Premium Partner")
       partnerBadgeText = "Premium";
-
-    const singleCollection = Array.isArray(collections) && collections.length > 0 ? collections[0] : null;
 
     return (
       <InfoWrapper>
@@ -625,7 +598,7 @@ const ClassInformation = React.memo(
           </AskQuestionRow>
         )}
 
-        {(partnerBadgeText || singleCollection) && (
+        {(partnerBadgeText || shouldShowTopRated) && (
           <>
             <Divider style={{ margin: "12px 0" }} />
             <CategoriesBlock>
@@ -646,12 +619,15 @@ const ClassInformation = React.memo(
                       </AnimatedTextWrapper>
                     </CategoryPill>
                   )}
-                  {singleCollection && (
-                    <CollectionPill
-                      href={singleCollection.slug ? `/explore?collection=${encodeURIComponent(singleCollection.slug)}` : "/explore"}
-                    >
-                      {singleCollection.name}
-                    </CollectionPill>
+                  {shouldShowTopRated && (
+                    <CategoryPill>
+                      <AnimatedIconWrapper $delay="0ms">
+                        <Star size={18} fill="#FF385C" strokeWidth={0} />
+                      </AnimatedIconWrapper>
+                      <AnimatedTextWrapper $delay="0ms" style={{ color: "#FF385C" }}>
+                        Highly rated
+                      </AnimatedTextWrapper>
+                    </CategoryPill>
                   )}
                 </CategoriesGrid>
               </HeaderSection>
