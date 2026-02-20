@@ -238,13 +238,12 @@ const GeneralSettingsTab = ({
   return (
     <ThemeProvider theme={theme}>
       <Form form={form} layout="vertical" name="generalSettingsForm">
-        <FormSectionCard isDrawer={true}>
-          <SectionDivider>
-            <span>
-              <Info size={16} /> Business Profile
-            </span>
-          </SectionDivider>
-
+        <SectionDivider>
+          <span>
+            <Info size={16} /> Business Profile
+          </span>
+        </SectionDivider>
+        <FormSectionCard>
           <BusinessLogoWrapper>
             {logoUrl ? (
               <img src={logoUrl} alt="Logo" className="logo-preview" />
@@ -344,13 +343,15 @@ const GeneralSettingsTab = ({
               </Form.Item>
             </FormGroup>
           </FormGrid>
+        </FormSectionCard>
 
-          <SectionDivider>
-            <span>
-              <Info size={16} /> Public Details
-            </span>
-          </SectionDivider>
+        <SectionDivider>
+          <span>
+            <Info size={16} /> Public Details
+          </span>
+        </SectionDivider>
 
+        <FormSectionCard>
           <FormGrid>
             <FormGroup>
               <FormLabel>
@@ -467,13 +468,15 @@ const GeneralSettingsTab = ({
               </Form.Item>
             </FormGroup>
           </FormGrid>
+        </FormSectionCard>
 
-          <SectionDivider>
-            <span>
-              <Globe size={16} /> Social & Keywords
-            </span>
-          </SectionDivider>
+        <SectionDivider>
+          <span>
+            <Globe size={16} /> Social & Keywords
+          </span>
+        </SectionDivider>
 
+        <FormSectionCard>
           <FormGrid>
             <FormGroup>
               <FormLabel>

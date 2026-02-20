@@ -93,7 +93,7 @@ const StyledDrawerContent = styled(Drawer.Content)`
   outline: none;
 `;
 
-const DrawerHandle = styled.div`
+const DrawerHandle = styled(Drawer.Handle)`
   width: 36px;
   height: 4px;
   background: rgba(0, 0, 0, 0.2);
@@ -1333,7 +1333,7 @@ const BookingDetailsDrawer = ({
   if (!shouldRender) return null;
 
   return (
-    <ConfigProvider theme={appTheme}>
+    <>
       {isMobile ? (
         <Drawer.Root open={visible} onOpenChange={(open) => !open && onClose()}>
           <Drawer.Portal>
@@ -1350,18 +1350,20 @@ const BookingDetailsDrawer = ({
           onOpenChange={(open) => !open && onClose()}
           direction="right"
           dismissible
+          handleOnly
         >
           <Drawer.Portal>
             <StyledDrawerOverlay />
             <DesktopDrawerContent
               style={{ "--initial-transform": "calc(100% + 8px)" }}
             >
+              <DrawerHandle />
               <DesktopDrawerInner>{renderDrawerContent()}</DesktopDrawerInner>
             </DesktopDrawerContent>
           </Drawer.Portal>
         </Drawer.Root>
       )}
-    </ConfigProvider>
+    </>
   );
 };
 

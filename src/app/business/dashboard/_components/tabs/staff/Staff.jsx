@@ -2,9 +2,8 @@
 
 import React, { Suspense, lazy } from "react";
 import styled from "styled-components";
-import { Typography, ConfigProvider, Tabs, Skeleton, Divider } from "antd";
+import { Typography, Tabs, Skeleton, Divider } from "antd";
 import { Users, Shield } from "lucide-react";
-import { theme } from "@/components/theme";
 import { useAuth } from "@/lib/auth-client";
 
 // Lazy load the tab content for better performance
@@ -226,8 +225,7 @@ const Staff = () => {
   }
 
   return (
-    <ConfigProvider theme={theme}>
-      <DashboardWrapper>
+    <DashboardWrapper>
         <DashboardHeader>
           <HeaderContent>
             <PageTitle>Staff Management</PageTitle>
@@ -249,7 +247,6 @@ const Staff = () => {
           />
         </ContentWrapper>
       </DashboardWrapper>
-    </ConfigProvider>
   );
 };
 

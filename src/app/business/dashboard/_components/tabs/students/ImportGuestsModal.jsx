@@ -15,7 +15,6 @@ import {
   Select,
   Table,
   Typography,
-  ConfigProvider,
   Spin,
   Alert,
   Space,
@@ -30,7 +29,6 @@ import { DownloadOutlined } from "@ant-design/icons";
 import { X } from "lucide-react";
 import { contactImportService } from "@/services/apiService";
 import styled from "styled-components";
-import { theme } from "@/components/theme";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { LordIcon } from "@/services/ReactUtils";
@@ -104,7 +102,7 @@ const StyledDrawerContent = styled(Drawer.Content)`
   outline: none;
 `;
 
-const DrawerHandle = styled.div`
+const DrawerHandle = styled(Drawer.Handle)`
   width: 32px;
   height: 3px;
   background: #d1d5db;
@@ -622,7 +620,7 @@ const ImportGuestsModal = ({ visible, onClose, onImportComplete }) => {
 
   const mappingColumns = [
     {
-      title: "File Column",
+      title: "FILE COLUMN",
       dataIndex: "header",
       key: "header",
       render: (text) => (
@@ -632,7 +630,7 @@ const ImportGuestsModal = ({ visible, onClose, onImportComplete }) => {
       ),
     },
     {
-      title: "Map to System Field",
+      title: "MAP TO SYSTEM FIELD",
       dataIndex: "header",
       key: "mapping",
       render: (header) => (
@@ -1018,7 +1016,7 @@ const ImportGuestsModal = ({ visible, onClose, onImportComplete }) => {
   };
 
   return (
-    <ConfigProvider theme={theme}>
+    <>
       {/* --- MODIFIED: Desktop Modal with Animated Wrapper --- */}
       {!isMobile && (
         <DesktopModal
@@ -1082,7 +1080,7 @@ const ImportGuestsModal = ({ visible, onClose, onImportComplete }) => {
           </Drawer.Portal>
         </Drawer.Root>
       )}
-    </ConfigProvider>
+    </>
   );
 };
 

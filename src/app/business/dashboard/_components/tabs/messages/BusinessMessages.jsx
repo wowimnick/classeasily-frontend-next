@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import styled, { keyframes } from "styled-components";
 import { Drawer } from "vaul";
 import { MessageSquare, ChevronRight, Send, X, Inbox, MessageCircle } from "lucide-react";
-import { Empty, Drawer as AntDrawer, Input, Button, ConfigProvider, Card, Typography, Skeleton } from "antd";
+import { Empty, Drawer as AntDrawer, Input, Button, Card, Typography, Skeleton } from "antd";
 import message from "@/lib/message";
 import { businessConversationService } from "@/services/apiService";
 import EmojiQuickPick from "@/components/chat/EmojiQuickPick";
@@ -24,16 +24,7 @@ const colors = {
   chart: { blue: "#3b82f6", purple: "#8b5cf6", teal: "#14b8a6" },
 };
 
-const localAntDTheme = {
-  token: {
-    colorPrimary: colors.primary,
-    borderRadius: 16,
-  },
-  components: {
-    Card: { borderRadiusLG: 16, paddingLG: 20 },
-    Button: { borderRadius: 12, controlHeight: 40 },
-  },
-};
+import { theme } from "@/components/theme";
 
 const hexToRgba = (hex, alpha = 1) => {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -133,7 +124,7 @@ const StatsGrid = styled.div`
 `;
 
 const StatCardBase = styled(Card)`
-  border-radius: ${localAntDTheme.token.borderRadius}px;
+  border-radius: ${theme.token.borderRadius}px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
@@ -213,7 +204,7 @@ const StatLabel = styled(Text)`
 
 /* --- Conversation list (Overview-style card) --- */
 const ListCard = styled.div`
-  border-radius: ${localAntDTheme.token.borderRadius}px;
+  border-radius: ${theme.token.borderRadius}px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
@@ -646,8 +637,7 @@ export default function BusinessMessages() {
   };
 
   return (
-    <ConfigProvider theme={localAntDTheme}>
-      <DashboardWrapper>
+    <DashboardWrapper>
         <DashboardHeader>
           <div>
             <StyledTitle>Messages</StyledTitle>
@@ -791,7 +781,7 @@ export default function BusinessMessages() {
                     }}
                   />
                   <VaulDrawerContent>
-                    <div style={{ width: 40, height: 4, background: "#e5e7eb", borderRadius: 2, margin: "12px auto", flexShrink: 0 }} />
+                    <Drawer.Handle style={{ width: 40, height: 4, background: "#e5e7eb", borderRadius: 2, margin: "12px auto", flexShrink: 0 }} />
                     <DrawerBodyWrap>
                       {detailLoading ? (
                         <ConversationSkeletonWrap>
@@ -987,7 +977,6 @@ export default function BusinessMessages() {
             )}
           </>
         )}
-      </DashboardWrapper>
-    </ConfigProvider>
+    </DashboardWrapper>
   );
 }

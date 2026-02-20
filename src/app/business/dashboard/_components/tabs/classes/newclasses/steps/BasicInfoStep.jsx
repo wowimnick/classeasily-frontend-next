@@ -6,7 +6,6 @@ import {
   Input,
   Select,
   Typography,
-  ConfigProvider,
   Tooltip,
   Upload,
 } from "antd";
@@ -23,7 +22,6 @@ import {
   Tent,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { theme } from "@/components/theme";
 import { useClass } from "../ClassContext";
 import {
   bookingTheme,
@@ -639,7 +637,7 @@ const BasicInfoStep = ({ onValidatedNext }) => {
   );
 
   return (
-    <ConfigProvider theme={theme}>
+    <>
       <StepHeader>
         <PageTitle>The Experience</PageTitle>
         <StepDescription>
@@ -880,7 +878,7 @@ const BasicInfoStep = ({ onValidatedNext }) => {
           </FormGroup>
         </FormSection>
       </StyledForm>
-    </ConfigProvider>
+    </>
   );
 };
 

@@ -18,7 +18,6 @@ import {
   DatePicker,
   InputNumber,
   Typography,
-  ConfigProvider,
   Tabs,
   Button,
   Grid,
@@ -53,7 +52,6 @@ import {
   businessClassService,
   scheduleService,
 } from "@/services/apiService";
-import { theme } from "@/components/theme";
 import debounce from "lodash/debounce";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
@@ -124,7 +122,7 @@ const DesktopDrawerInner = styled.div`
   overflow: hidden;
 `;
 
-const DrawerHandle = styled.div`
+const DrawerHandle = styled(VaulDrawer.Handle)`
   width: 36px;
   height: 4px;
   background: rgba(0, 0, 0, 0.2);
@@ -1523,12 +1521,12 @@ const DiscountsDrawer = ({
   const isMobile = useIsMobile();
 
   return (
-    <ConfigProvider theme={theme}>
-      <DiscountProvider editingDiscount={editingDiscount}>
+    <DiscountProvider editingDiscount={editingDiscount}>
         <VaulDrawer.Root
           direction={placement}
           open={visible}
           onOpenChange={(open) => !open && onClose()}
+          handleOnly={!isMobile}
         >
           <VaulDrawer.Portal>
             <StyledDrawerOverlay />
@@ -1541,6 +1539,7 @@ const DiscountsDrawer = ({
               </StyledDrawerContent>
             ) : (
               <DesktopDrawerContent>
+                <DrawerHandle />
                 <DesktopDrawerInner>
                   <DiscountFlowWrapper
                     {...{ editingDiscount, onSuccess, onClose, businessId }}
@@ -1550,8 +1549,7 @@ const DiscountsDrawer = ({
             )}
           </VaulDrawer.Portal>
         </VaulDrawer.Root>
-      </DiscountProvider>
-    </ConfigProvider>
+    </DiscountProvider>
   );
 };
 

@@ -347,12 +347,12 @@ const LocationSettingsTab = ({ form, initialData }) => {
       }}
       requiredMark="optional"
     >
-      <FormSectionCard isDrawer={true}>
-        <SectionDivider>
-          <span>
-            <MapPin size={16} /> Business Location
-          </span>
-        </SectionDivider>
+      <SectionDivider>
+        <span>
+          <MapPin size={16} /> Business Location
+        </span>
+      </SectionDivider>
+      <FormSectionCard>
         <Row gutter={16}>
           <Col xs={24} md={12}>
             <FormGroup>

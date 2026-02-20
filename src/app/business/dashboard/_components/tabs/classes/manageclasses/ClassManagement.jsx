@@ -7,7 +7,6 @@ import {
   Tabs,
   Tooltip,
   Typography,
-  ConfigProvider,
   Button,
   Empty,
   Space,
@@ -95,7 +94,6 @@ const { TabPane } = Tabs;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 const { useBreakpoint } = Grid;
-import { theme } from "@/components/theme";
 import { LordIcon } from "@/services/ReactUtils";
 
 // --- ADDED: Skeleton component for mobile card view ---
@@ -130,7 +128,7 @@ const CardSkeleton = () => (
 const TableSkeleton = () => {
   const skeletonColumns = [
     {
-      title: "Experience",
+      title: "EXPERIENCE",
       key: "class",
       width: 400,
       render: () => (
@@ -149,7 +147,7 @@ const TableSkeleton = () => {
       ),
     },
     {
-      title: "Schedule",
+      title: "SCHEDULE",
       key: "schedule",
       width: 350,
       render: () => (
@@ -160,7 +158,7 @@ const TableSkeleton = () => {
       ),
     },
     {
-      title: "Status",
+      title: "STATUS",
       key: "status",
       width: 150,
       render: () => (
@@ -171,7 +169,7 @@ const TableSkeleton = () => {
       ),
     },
     {
-      title: "Actions",
+      title: "ACTIONS",
       key: "actions",
       align: "right",
       width: 200,
@@ -605,7 +603,7 @@ const StyledScheduleDrawerContent = styled(VaulDrawer.Content)`
   }
 `;
 
-const ScheduleDrawerHandle = styled.div`
+const ScheduleDrawerHandle = styled(VaulDrawer.Handle)`
   width: 36px;
   height: 4px;
   background: rgba(0, 0, 0, 0.2);
@@ -1369,7 +1367,7 @@ function ClassManagementContent(props) {
 
   const columns = [
     {
-      title: "Experience",
+      title: "EXPERIENCE",
       dataIndex: "title",
       key: "class",
       width: columnWidths.class,
@@ -1425,7 +1423,7 @@ function ClassManagementContent(props) {
       },
     },
     {
-      title: "Schedule",
+      title: "SCHEDULE",
       key: "schedule",
       width: columnWidths.schedule,
       render: (_, record) => {
@@ -1457,7 +1455,7 @@ function ClassManagementContent(props) {
       },
     },
     {
-      title: "Status",
+      title: "STATUS",
       key: "status",
       width: columnWidths.status,
       render: (_, record) => {
@@ -1504,7 +1502,7 @@ function ClassManagementContent(props) {
       },
     },
     {
-      title: "Actions",
+      title: "ACTIONS",
       key: "actions",
       align: "right",
       width: columnWidths.actions,
@@ -1728,8 +1726,7 @@ function ClassManagementContent(props) {
   };
 
   return (
-    <ConfigProvider theme={theme}>
-      <PageContainer>
+    <PageContainer>
         <PageHeader>
           <HeaderTextWrap>
             <HeaderTitle>Experience Management</HeaderTitle>
@@ -1819,6 +1816,7 @@ function ClassManagementContent(props) {
               if (!open) setCreateDrawerVisible(false);
             }}
             dismissible
+            handleOnly={!isMobile}
           >
             <VaulDrawer.Portal>
               <StyledScheduleDrawerOverlay />
@@ -1851,10 +1849,12 @@ function ClassManagementContent(props) {
             }}
             direction="right"
             dismissible
+            handleOnly={!isMobile}
           >
             <VaulDrawer.Portal>
               <StyledScheduleDrawerOverlay />
               <DesktopDrawerContent>
+                <ScheduleDrawerHandle />
                 <DrawerHeader>
                   <Title level={4} style={{ margin: 0 }}>
                     Create New Experience
@@ -1874,7 +1874,6 @@ function ClassManagementContent(props) {
           </VaulDrawer.Root>
         )}
       </PageContainer>
-    </ConfigProvider>
   );
 }
 

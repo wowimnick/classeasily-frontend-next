@@ -2,36 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import { ConfigProvider } from "antd";
 import ClassSteps from "./ClassSteps";
 import BasicInfoStep from "./steps/BasicInfoStep";
 import ClassOptionsStep from "./steps/ClassOptionsStep";
 import LocationContactStep from "./steps/LocationContactStep";
 import { useClass } from "./ClassContext";
-
-// Theme configuration - matches booking flow (MobileReserveReviewDrawer, ClassCheckoutClient)
-const theme = {
-  token: {
-    colorPrimary: "#222222",
-    colorLink: "#222222",
-    colorSuccess: "#00A699",
-    colorWarning: "#FFB400",
-    colorError: "#FF5A5F",
-    colorInfo: "#007A87",
-    borderRadius: 16,
-    colorText: "#1f2937",
-    colorTextSecondary: "#64748b",
-    colorBorder: "#e2e8f0",
-  },
-  components: {
-    Button: { borderRadius: 12, controlHeight: 44 },
-    Select: { borderRadius: 12, controlHeight: 44 },
-    Input: { borderRadius: 12, controlHeight: 44 },
-    InputNumber: { borderRadius: 12, controlHeight: 44 },
-    DatePicker: { borderRadius: 12, controlHeight: 44 },
-    TimePicker: { borderRadius: 12, controlHeight: 44 },
-  },
-};
 
 const FullScreenContainer = styled.div`
   display: flex;
@@ -108,8 +83,7 @@ const CreateClassPage = ({ onSuccess }) => {
   };
 
   return (
-    <ConfigProvider theme={theme}>
-      <FullScreenContainer>
+    <FullScreenContainer>
         <StepsNav>
           <ProgressBar>
             <ProgressSegment $filled={currentStep >= 0} />
@@ -131,8 +105,7 @@ const CreateClassPage = ({ onSuccess }) => {
             onCreationSuccess={handleCreationSuccess}
           />
         </StepsContainer>
-      </FullScreenContainer>
-    </ConfigProvider>
+    </FullScreenContainer>
   );
 };
 

@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import {
   Modal,
   Avatar,
-  ConfigProvider,
   Typography,
   Button,
   Tag,
@@ -44,7 +43,7 @@ const StyledDrawerContent = styled(Drawer.Content)`
   outline: none;
 `;
 
-const DrawerHandle = styled.div`
+const DrawerHandle = styled(Drawer.Handle)`
   width: 36px;
   height: 4px;
   background: rgba(0, 0, 0, 0.2);
@@ -372,7 +371,7 @@ const CompactContactModal = ({ guest: initialGuest, onClose, currentUser }) => {
   };
 
   return (
-    <ConfigProvider theme={appTheme}>
+    <>
       {/* Mobile Drawer */}
       {isMobile ? (
         <Drawer.Root
@@ -403,7 +402,7 @@ const CompactContactModal = ({ guest: initialGuest, onClose, currentUser }) => {
           {renderContent()}
         </StyledModal>
       )}
-    </ConfigProvider>
+    </>
   );
 };
 

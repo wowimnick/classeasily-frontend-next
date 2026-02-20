@@ -8,7 +8,6 @@ import {
   DatePicker,
   Card,
   Typography,
-  ConfigProvider,
   Spin,
   Select,
   Badge,
@@ -38,7 +37,6 @@ import MobileActiveBookings from "./MobileActiveBookings";
 import BookingDetailsDrawer from "./BookingDetailsDrawer";
 import RescheduleBookingModal from "./RescheduleBookingModal";
 import { LordIcon } from "@/services/ReactUtils";
-import { theme } from "@/components/theme";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
 const { RangePicker } = DatePicker;
@@ -604,8 +602,7 @@ const ActiveBookings = () => {
   }, []);
 
   return (
-    <ConfigProvider theme={theme}>
-      <DashboardWrapper>
+    <DashboardWrapper>
         <DashboardHeader>
           <div>
             <PageTitle>Active Bookings</PageTitle>
@@ -763,7 +760,6 @@ const ActiveBookings = () => {
           onCancel={handleRescheduleCancel}
         />
       </DashboardWrapper>
-    </ConfigProvider>
   );
 };
 

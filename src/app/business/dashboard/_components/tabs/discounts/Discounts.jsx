@@ -12,7 +12,6 @@ import {
   Popconfirm,
   Skeleton,
   Divider,
-  ConfigProvider,
   Card,
   Grid,
   Switch,
@@ -35,7 +34,6 @@ import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import NumberFlow from "@number-flow/react";
 import { businessDiscountService } from "@/services/apiService";
-import { theme } from "@/components/theme";
 import DiscountsDrawer from "./DiscountsDrawer";
 
 const { Title, Text } = Typography;
@@ -491,7 +489,7 @@ const Discounts = ({ businessId }) => {
 
   const columns = [
     {
-      title: "Code",
+      title: "CODE",
       dataIndex: "code",
       key: "code",
       render: (text) =>
@@ -509,14 +507,14 @@ const Discounts = ({ businessId }) => {
         ),
     },
     {
-      title: "Name",
+      title: "NAME",
       dataIndex: "name",
       key: "name",
       render: (text) =>
         React.isValidElement(text) ? text : <Text strong>{text}</Text>,
     },
     {
-      title: "Type",
+      title: "TYPE",
       dataIndex: "discount_type",
       key: "discount_type",
       render: (type, record) =>
@@ -529,7 +527,7 @@ const Discounts = ({ businessId }) => {
         ),
     },
     {
-      title: "Validity",
+      title: "VALIDITY",
       key: "validity",
       dataIndex: "validity",
       render: (text, record) =>
@@ -549,7 +547,7 @@ const Discounts = ({ businessId }) => {
         ),
     },
     {
-      title: "Usage",
+      title: "USAGE",
       key: "usage",
       dataIndex: "usage",
       render: (text, record) =>
@@ -567,7 +565,7 @@ const Discounts = ({ businessId }) => {
         ),
     },
     {
-      title: "Status",
+      title: "STATUS",
       dataIndex: "is_active",
       key: "is_active",
       render: (isActive, record) =>
@@ -589,7 +587,7 @@ const Discounts = ({ businessId }) => {
         ),
     },
     {
-      title: "Actions",
+      title: "ACTIONS",
       key: "actions",
       dataIndex: "actions",
       render: (text, record) =>
@@ -700,8 +698,7 @@ const Discounts = ({ businessId }) => {
   );
 
   return (
-    <ConfigProvider theme={theme}>
-      <DashboardWrapper>
+    <DashboardWrapper>
         <DashboardHeader>
           <div>
             <PageTitle>Discounts & Coupons</PageTitle>
@@ -819,7 +816,6 @@ const Discounts = ({ businessId }) => {
           height={isMobile ? "90%" : undefined}
         />
       </DashboardWrapper>
-    </ConfigProvider>
   );
 };
 

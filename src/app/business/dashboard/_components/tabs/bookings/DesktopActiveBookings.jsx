@@ -366,7 +366,7 @@ const DesktopActiveBookings = ({
 
   const columns = [
     {
-      title: "Reference",
+      title: "REFERENCE",
       dataIndex: "user_facing_reference",
       key: "booking_reference",
       sorter: true,
@@ -374,7 +374,7 @@ const DesktopActiveBookings = ({
       width: 160,
     },
     {
-      title: "Guest",
+      title: "GUEST",
       dataIndex: "user_name",
       key: "guest",
       sorter: true,
@@ -394,7 +394,7 @@ const DesktopActiveBookings = ({
       width: 220,
     },
     {
-      title: "Experience Details",
+      title: "EXPERIENCE DETAILS",
       dataIndex: "class_name",
       key: "class_name",
       sorter: true,
@@ -417,7 +417,7 @@ const DesktopActiveBookings = ({
       width: 280,
     },
     {
-      title: "Booking Type",
+      title: "BOOKING TYPE",
       dataIndex: "enrollment_type",
       key: "booking_type",
       sorter: true,
@@ -432,7 +432,7 @@ const DesktopActiveBookings = ({
       width: 180,
     },
     {
-      title: "Date & Time",
+      title: "DATE & TIME",
       dataIndex: "date",
       key: "date",
       sorter: true,
@@ -458,7 +458,7 @@ const DesktopActiveBookings = ({
       width: 160,
     },
     {
-      title: "Spots",
+      title: "SPOTS",
       dataIndex: "participants",
       key: "participants",
       sorter: true,
@@ -467,7 +467,7 @@ const DesktopActiveBookings = ({
       align: "center",
     },
     {
-      title: "Status",
+      title: "STATUS",
       dataIndex: "status",
       key: "status",
       sorter: true,
@@ -500,7 +500,7 @@ const DesktopActiveBookings = ({
       align: "center",
     },
     {
-      title: "Actions",
+      title: "ACTIONS",
       key: "action",
       render: (_, record) => (
         <Dropdown

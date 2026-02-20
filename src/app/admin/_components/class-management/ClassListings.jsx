@@ -405,7 +405,7 @@ const StyledDrawerContent = styled(Drawer.Content)`
   z-index: 1050;
   outline: none;
 `;
-const DrawerHandle = styled.div`
+const DrawerHandle = styled(Drawer.Handle)`
   width: 36px;
   height: 4px;
   background: rgba(0, 0, 0, 0.2);
@@ -1088,10 +1088,12 @@ const ClassDetailDrawer = ({
           onOpenChange={(open) => !open && onClose()}
           direction="right"
           dismissible
+          handleOnly
         >
           <Drawer.Portal>
             <StyledDrawerOverlay />
             <DesktopDrawerContent>
+              <DrawerHandle />
               <DesktopDrawerInner>{renderDrawerContent()}</DesktopDrawerInner>
             </DesktopDrawerContent>
           </Drawer.Portal>

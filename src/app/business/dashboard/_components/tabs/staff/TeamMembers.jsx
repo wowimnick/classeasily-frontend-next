@@ -141,7 +141,7 @@ const StyledDrawerContent = styled(Drawer.Content)`
   outline: none;
 `;
 
-const DrawerHandle = styled.div`
+const DrawerHandle = styled(Drawer.Handle)`
   width: 36px;
   height: 4px;
   background: rgba(0, 0, 0, 0.2);
@@ -570,12 +570,12 @@ const generateSkeletonData = (count = 5) => {
 };
 
 const skeletonColumns = [
-  { title: "Team Member", dataIndex: "member", key: "member" },
-  { title: "Email", dataIndex: "email", key: "email" },
-  { title: "Role", dataIndex: "role", key: "role" },
-  { title: "Status", dataIndex: "status", key: "status" },
-  { title: "Date Added", dataIndex: "created_at", key: "created_at" },
-  { title: "Actions", dataIndex: "actions", key: "actions", width: 120 },
+  { title: "TEAM MEMBER", dataIndex: "member", key: "member" },
+  { title: "EMAIL", dataIndex: "email", key: "email" },
+  { title: "ROLE", dataIndex: "role", key: "role" },
+  { title: "STATUS", dataIndex: "status", key: "status" },
+  { title: "DATE ADDED", dataIndex: "created_at", key: "created_at" },
+  { title: "ACTIONS", dataIndex: "actions", key: "actions", width: 120 },
 ];
 
 const TeamMembersSkeleton = ({ isMobile, count = 5 }) => {
@@ -852,7 +852,7 @@ const TeamMembers = () => {
   const columns = useMemo(
     () => [
       {
-        title: "Team Member",
+        title: "TEAM MEMBER",
         key: "member",
         render: (_, record) => (
           <MemberNameCell>
@@ -866,7 +866,7 @@ const TeamMembers = () => {
         ),
       },
       {
-        title: "Email",
+        title: "EMAIL",
         dataIndex: "invited_email",
         key: "email",
         render: (email) => (
@@ -876,7 +876,7 @@ const TeamMembers = () => {
         ),
       },
       {
-        title: "Role",
+        title: "ROLE",
         dataIndex: "role_name",
         key: "role",
         render: (role) => (
@@ -899,7 +899,7 @@ const TeamMembers = () => {
         ),
       },
       {
-        title: "Status",
+        title: "STATUS",
         dataIndex: "status",
         key: "status",
         render: (status) => {
@@ -937,7 +937,7 @@ const TeamMembers = () => {
         },
       },
       {
-        title: "Date Added",
+        title: "DATE ADDED",
         dataIndex: "created_at",
         key: "created_at",
         render: (date) => (
@@ -947,7 +947,7 @@ const TeamMembers = () => {
         ),
       },
       {
-        title: "Actions",
+        title: "ACTIONS",
         key: "actions",
         width: 120,
         render: (_, record) => {

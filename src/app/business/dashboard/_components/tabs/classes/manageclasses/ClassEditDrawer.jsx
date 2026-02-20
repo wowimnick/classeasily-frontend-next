@@ -14,7 +14,6 @@ import {
   Select,
   Button,
   Tabs,
-  ConfigProvider,
   Switch,
   Typography,
   Tooltip,
@@ -157,7 +156,7 @@ const StyledDrawerContent = styled(Drawer.Content)`
   outline: none;
 `;
 
-const DrawerHandle = styled.div`
+const DrawerHandle = styled(Drawer.Handle)`
   width: 40px;
   height: 4px;
   background: #e5e7eb;
@@ -3511,8 +3510,7 @@ const ClassEditDrawer = ({
 
   return (
     <ThemeProvider theme={appTheme}>
-      <ConfigProvider theme={appTheme}>
-        <Form
+      <Form
           form={form}
           layout="vertical"
           style={{ display: "flex", flexDirection: "column", height: "100%" }}
@@ -3522,6 +3520,7 @@ const ClassEditDrawer = ({
             onOpenChange={handleOpenChange}
             direction={isMobile ? "bottom" : "right"}
             dismissible
+            handleOnly={!isMobile}
             repositionInputs={false}
           >
             <Drawer.Portal>
@@ -3533,13 +3532,13 @@ const ClassEditDrawer = ({
                 </StyledDrawerContent>
               ) : (
                 <DesktopDrawerContent>
+                  <DrawerHandle />
                   {renderDrawerContent()}
                 </DesktopDrawerContent>
               )}
             </Drawer.Portal>
           </Drawer.Root>
-        </Form>
-      </ConfigProvider>
+      </Form>
     </ThemeProvider>
   );
 };

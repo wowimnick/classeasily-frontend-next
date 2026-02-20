@@ -410,7 +410,7 @@ const DrawerFooter = styled.div`
   background: #fcfcfc;
 `;
 
-const DrawerHandle = styled.div`
+const DrawerHandle = styled(Drawer.Handle)`
   width: 36px;
   height: 4px;
   background: rgba(0, 0, 0, 0.2);
@@ -804,6 +804,7 @@ const UniversalEditDrawer = ({
       onOpenChange={(open) => !open && onClose()}
       direction={isMobile ? "bottom" : "right"}
       dismissible
+      handleOnly={!isMobile}
     >
       <Drawer.Portal>
         <StyledDrawerOverlay />
@@ -814,6 +815,7 @@ const UniversalEditDrawer = ({
           </StyledDrawerContent>
         ) : (
           <DesktopDrawerContent>
+            <DrawerHandle />
             <DesktopDrawerInner>{renderDrawerContent()}</DesktopDrawerInner>
           </DesktopDrawerContent>
         )}

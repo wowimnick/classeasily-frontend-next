@@ -16,7 +16,6 @@ import {
   Tabs,
   Typography,
   Alert,
-  ConfigProvider,
   Modal,
   Menu,
   Divider,
@@ -37,7 +36,6 @@ import {
   CreditCard,
   Info,
 } from "lucide-react";
-import { theme } from "@/components/theme";
 import { LordIcon } from "@/services/ReactUtils";
 import { businessService } from "@/services/apiService";
 
@@ -1730,8 +1728,7 @@ const WidgetCustomizer = () => {
   const [currentView, setCurrentView] = useState("dashboard");
 
   return (
-    <ConfigProvider theme={theme}>
-      <CustomizerWrapper>
+    <CustomizerWrapper>
         {currentView === "dashboard" ? (
           <WidgetDashboard
             onCustomizeClick={() => setCurrentView("customizer")}
@@ -1741,8 +1738,7 @@ const WidgetCustomizer = () => {
             <CustomizerView onBack={() => setCurrentView("dashboard")} />
           </CustomizerViewWrapper>
         )}
-      </CustomizerWrapper>
-    </ConfigProvider>
+    </CustomizerWrapper>
   );
 };
 

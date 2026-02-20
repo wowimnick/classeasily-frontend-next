@@ -16,7 +16,6 @@ import {
   TimePicker,
   DatePicker,
   Button,
-  ConfigProvider,
   InputNumber,
   Typography,
   Tooltip,
@@ -152,7 +151,7 @@ const StyledDrawerContent = styled(Drawer.Content)`
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
 `;
 
-const DrawerHandle = styled.div`
+const DrawerHandle = styled(Drawer.Handle)`
   width: 32px;
   height: 3px;
   background: #d1d5db;
@@ -1497,7 +1496,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
   };
 
   return (
-    <ConfigProvider theme={appTheme}>
+    <>
       {!isMobile && (
         <DesktopModal
           centered
@@ -1602,7 +1601,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
           </Drawer.NestedRoot>
         </Drawer.Root>
       )}
-    </ConfigProvider>
+    </>
   );
 };
 

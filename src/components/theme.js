@@ -30,6 +30,7 @@ const fontStack =
 
 // 🔥 FIX 2: Create theme config once and freeze it
 const themeConfig = {
+  screenMD: 768,
   token: {
     colorPrimary: colors.primary,
     colorError: colors.error,
@@ -57,14 +58,19 @@ const themeConfig = {
     fontSize: 14,
 
     borderRadius: 12,
+    borderRadiusLG: 12,
+    boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)",
     controlHeight: 44, // Global height reference
     marginXS: 8,
     margin: 16,
     marginLG: 24,
     paddingXS: 8,
     padding: 16,
+    paddingMD: 20,
     paddingLG: 24,
     controlPaddingHorizontal: 16,
+    colorPrimaryBorderHover: "#e11d48",
+    colorBgTextHover: "rgba(0, 0, 0, 0.06)",
 
     colorBackgroundDark: "#0f172a",
     colorHeaderText: "#FFFFFF",

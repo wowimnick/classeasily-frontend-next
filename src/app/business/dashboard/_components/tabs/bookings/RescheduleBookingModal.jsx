@@ -7,7 +7,6 @@ import {
   Button,
   Typography,
   Skeleton,
-  ConfigProvider,
   Alert,
   Empty,
   Radio,
@@ -509,7 +508,7 @@ const RescheduleBookingModal = ({ visible, booking, onSuccess, onCancel }) => {
   if (!mounted) return null;
 
   return (
-    <ConfigProvider theme={theme}>
+    <>
       <ModalGlobalStyle />
       {isMobile ? (
         <Drawer.Root
@@ -542,7 +541,7 @@ const RescheduleBookingModal = ({ visible, booking, onSuccess, onCancel }) => {
                 maxHeight: "90vh",
               }}
             >
-              <div
+              <Drawer.Handle
                 style={{
                   width: 40,
                   height: 4,
@@ -580,7 +579,7 @@ const RescheduleBookingModal = ({ visible, booking, onSuccess, onCancel }) => {
           />
         </StyledModal>
       )}
-    </ConfigProvider>
+    </>
   );
 };
 

@@ -40,7 +40,7 @@ const BannerButton = styled.button`
   color: white;
   padding: 4px 12px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;

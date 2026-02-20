@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Modal, Typography, Button, ConfigProvider } from "antd";
+import { Modal, Typography, Button } from "antd";
 import { AlertTriangle } from "lucide-react";
 import styled from "styled-components";
-import { theme } from "@/components/theme";
 import { LordIcon } from "@/services/ReactUtils";
 import { Drawer } from "vaul";
+import { theme } from "@/components/theme";
 
 const { Text, Title, Paragraph } = Typography;
 
@@ -37,7 +37,7 @@ const StyledDrawerContent = styled(Drawer.Content)`
   }
 `;
 
-const DrawerHandle = styled.div`
+const DrawerHandle = styled(Drawer.Handle)`
   width: 36px;
   height: 4px;
   background: rgba(0, 0, 0, 0.2);
@@ -244,7 +244,7 @@ const DeleteClassModal = ({
   if (!visible) return null;
 
   return (
-    <ConfigProvider theme={theme}>
+    <>
       {isMobile ? (
         <Drawer.Root
           open={visible}
@@ -276,7 +276,7 @@ const DeleteClassModal = ({
           {renderContent()}
         </StyledModal>
       )}
-    </ConfigProvider>
+    </>
   );
 };
 

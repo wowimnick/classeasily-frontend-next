@@ -359,7 +359,7 @@ const DesktopBookingHistory = ({
 
   const columns = [
     {
-      title: "Reference",
+      title: "REFERENCE",
       dataIndex: "user_facing_reference",
       key: "booking_reference",
       sorter: true,
@@ -367,7 +367,7 @@ const DesktopBookingHistory = ({
       width: 160,
     },
     {
-      title: "Guest",
+      title: "GUEST",
       dataIndex: "user_name",
       key: "guest",
       sorter: true,
@@ -387,7 +387,7 @@ const DesktopBookingHistory = ({
       width: 220,
     },
     {
-      title: "Experience Details",
+      title: "EXPERIENCE DETAILS",
       dataIndex: "class_name",
       key: "class_name",
       sorter: true,
@@ -410,7 +410,7 @@ const DesktopBookingHistory = ({
       width: 280,
     },
     {
-      title: "Booking Type",
+      title: "BOOKING TYPE",
       dataIndex: "enrollment_type",
       key: "booking_type",
       render: (type, record) => {
@@ -423,7 +423,7 @@ const DesktopBookingHistory = ({
       width: 180,
     },
     {
-      title: "Experience Date",
+      title: "EXPERIENCE DATE",
       dataIndex: "date",
       key: "date",
       sorter: true,
@@ -449,7 +449,7 @@ const DesktopBookingHistory = ({
       width: 160,
     },
     {
-      title: "Booked On",
+      title: "BOOKED ON",
       dataIndex: "booking_date",
       key: "booked_on",
       sorter: true,
@@ -464,14 +464,14 @@ const DesktopBookingHistory = ({
       width: 130,
     },
     {
-      title: "Spots",
+      title: "SPOTS",
       dataIndex: "participants",
       key: "participants",
       width: 100,
       align: "center",
     },
     {
-      title: "Status",
+      title: "STATUS",
       dataIndex: "status",
       key: "status",
       sorter: true,
@@ -502,7 +502,7 @@ const DesktopBookingHistory = ({
       align: "center",
     },
     {
-      title: "Actions",
+      title: "ACTIONS",
       key: "action",
       render: (_, record) => (
         <Dropdown

@@ -18,7 +18,6 @@ import {
   Menu,
   Button,
   Typography,
-  ConfigProvider,
   Space,
   Avatar,
   Skeleton,
@@ -370,7 +369,7 @@ const StyledAntMenu = styled(Menu)`
     background-color: transparent !important;
 
     .ant-menu-item {
-      font-size: 13.5px;
+      font-size: 13px;
       color: ${(props) => props.theme.token.colorTextSecondary};
       padding-left: 46px !important;
       background-color: transparent !important;
@@ -462,7 +461,7 @@ const FooterLinkButton = styled(Link)`
 
 const FooterLinkButtonSmall = styled(FooterLinkButton)`
   padding: 8px 16px;
-  font-size: 13px;
+  font-size: 12px;
 `;
 
 const FooterLinkButtonMobile = styled(FooterLinkButton)`
@@ -609,23 +608,19 @@ const menuItemsConfig = [
     ),
     label: "My Listings",
   },
-  // 3. Operational Flow: Bookings (Active + History)
+  // 3. Bookings (top-level; Active + History combined in-page)
   {
     key: "bookings",
     label: "Bookings",
     icon: (
       <LordIcon
-        src="https://cdn.lordicon.com/uoljexdg.json" // Using the calendar/booking icon here
+        src="https://cdn.lordicon.com/uoljexdg.json"
         colors="primary:#666,secondary:#666"
         size="20px"
         playOnLoad={true}
         state="in-booking"
       />
     ),
-    children: [
-      { key: "bookings/active", label: "Active Bookings" },
-      { key: "bookings/history", label: "Booking History" },
-    ],
   },
   // 4. Relationships: People & Community (CRM)
   {
@@ -641,7 +636,7 @@ const menuItemsConfig = [
       />
     ),
     children: [
-      { key: "guests", label: "Guests" },
+      // { key: "guests", label: "Guests" }, // Hidden for now
       { key: "reviews", label: "Reviews & Feedback" },
       { key: "staff", label: "Staff Management" },
       { key: "messages", label: "Messages" },
@@ -683,9 +678,9 @@ const menuItemsConfig = [
       { key: "discounts", label: "Promotions & Discounts" },
     ],
   },
-  // 7. Configuration: Settings
+  // 7. Settings (top-level)
   {
-    key: "platform",
+    key: "settings",
     label: "Settings",
     icon: (
       <LordIcon
@@ -696,18 +691,13 @@ const menuItemsConfig = [
         state="in-code"
       />
     ),
-    children: [
-      { key: "settings", label: "Business Settings" },
-      // { key: "widget", label: "Widget Management" },
-    ],
   },
 ];
 
 const menuItemPermissions = {
   overview: "access_business_dashboard",
   listings: "manage_own_classes",
-  "bookings/active": "view_own_business_bookings",
-  "bookings/history": "view_own_business_bookings",
+  bookings: "view_own_business_bookings",
   guests: "view_business_students",
   reviews: "view_own_business_reviews",
   revenue: "view_business_revenue_analytics",
@@ -999,7 +989,7 @@ const SideMenuComponent = memo(
           case "growth":
             refToAttach = growthMenuRef;
             break;
-          case "platform":
+          case "settings":
             refToAttach = platformMenuRef;
             break;
           default:
@@ -1271,9 +1261,8 @@ const SideMenuComponent = memo(
 
     return (
       <ThemeProvider theme={augmentedTheme}>
-        <ConfigProvider theme={augmentedTheme}>
-          <LocalGlobalStyleForSkeleton />
-          <SideMenuWrapper>
+        <LocalGlobalStyleForSkeleton />
+        <SideMenuWrapper>
             <DesktopSideMenu
               className="desktop-sidemenu"
               initial={false}
@@ -1382,8 +1371,7 @@ const SideMenuComponent = memo(
               onTabChangeExternal={handleSettingsTabChange}
               onProfileUpdate={fetchBusinessProfile}
             />
-          </SideMenuWrapper>
-        </ConfigProvider>
+        </SideMenuWrapper>
       </ThemeProvider>
     );
   }),

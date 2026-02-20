@@ -620,7 +620,7 @@ const StyledDrawerContent = styled(Drawer.Content)`
   box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.15);
 `;
 
-const DrawerHandle = styled.div`
+const DrawerHandle = styled(Drawer.Handle)`
   width: 40px;
   height: 4px;
   background: #e2e8f0;
@@ -3010,7 +3010,7 @@ const ScheduleEditDrawer = ({
   };
 
   return (
-    <ConfigProvider theme={appTheme}>
+    <>
       {isMobile ? renderMobileView() : null}
 
       {!isMobile && (
@@ -3027,7 +3027,7 @@ const ScheduleEditDrawer = ({
           {renderDesktopContent()}
         </DesktopModal>
       )}
-    </ConfigProvider>
+    </>
   );
 };
 

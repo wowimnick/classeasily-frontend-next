@@ -4,7 +4,6 @@ import React, { useState, useMemo, useEffect } from "react";
 import {
   Modal,
   Avatar,
-  ConfigProvider,
   Table,
   Typography,
   Button,
@@ -61,7 +60,7 @@ const StyledDrawerContent = styled(Drawer.Content)`
   outline: none;
 `;
 
-const DrawerHandle = styled.div`
+const DrawerHandle = styled(Drawer.Handle)`
   width: 32px;
   height: 3px;
   background: #d1d5db;
@@ -382,7 +381,7 @@ const BookingHistoryModal = ({ visible, onClose, guest }) => {
 
   const bookingHistoryColumns = [
     {
-      title: "Experience Name",
+      title: "EXPERIENCE NAME",
       dataIndex: "class_name",
       key: "class",
       ellipsis: true,
@@ -393,7 +392,7 @@ const BookingHistoryModal = ({ visible, onClose, guest }) => {
       ),
     },
     {
-      title: "Date",
+      title: "DATE",
       dataIndex: "date",
       key: "date",
       width: 140,
@@ -402,7 +401,7 @@ const BookingHistoryModal = ({ visible, onClose, guest }) => {
       ),
     },
     {
-      title: "Time",
+      title: "TIME",
       dataIndex: "time",
       key: "time",
       width: 120,
@@ -411,7 +410,7 @@ const BookingHistoryModal = ({ visible, onClose, guest }) => {
       ),
     },
     {
-      title: "Status",
+      title: "STATUS",
       dataIndex: "status",
       key: "status",
       width: 120,
@@ -898,7 +897,7 @@ const GuestProfile = ({
   };
 
   return (
-    <ConfigProvider theme={appTheme}>
+    <>
       {/* Mobile Drawer with Vaul */}
       {isMobile ? (
         <Drawer.Root
@@ -940,7 +939,7 @@ const GuestProfile = ({
           {renderContent()}
         </CompactModal>
       )}
-    </ConfigProvider>
+    </>
   );
 };
 

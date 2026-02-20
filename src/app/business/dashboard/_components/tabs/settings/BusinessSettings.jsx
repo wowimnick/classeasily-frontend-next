@@ -7,7 +7,7 @@ import React, {
   Suspense,
 } from "react";
 import styled, { ThemeProvider } from "styled-components";
-import { Form, Button, Tabs, ConfigProvider, Grid, Typography,  } from 'antd';
+import { Form, Button, Tabs, Grid, Typography } from 'antd';
 import message from '@/lib/message';
 import { Building, MapPin, Settings, X, Save } from "lucide-react";
 import dayjs from "dayjs";
@@ -70,22 +70,23 @@ export const HelpText = styled.div`
     color: ${(props) => props.theme.token.colorTextDisabled};
   }
 `;
+/* Match ClassEditDrawer SectionDivider exactly */
 export const SectionDivider = styled.div`
   display: flex;
   align-items: center;
-  margin: 2rem 0 1.5rem;
+  margin: 24px 0;
   &::before,
   &::after {
     content: "";
     flex: 1;
     height: 1px;
-    background: ${(props) => props.theme.token.colorBorderSecondary};
+    background: #e5e7eb;
   }
   span {
     padding: 0 1rem;
-    color: ${(props) => props.theme.token.colorTextSecondary};
+    color: #717171;
     font-weight: 600;
-    font-size: 16px;
+    font-size: 15px;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -93,16 +94,33 @@ export const SectionDivider = styled.div`
       color: ${(props) => props.theme.token.colorPrimary};
     }
   }
-`;
-export const FormSectionCard = styled.div`
-  background: ${(props) => props.theme.token.colorBgContainer};
-  padding: ${(props) => props.theme.token.paddingLG}px;
-  border-radius: ${(props) => props.theme.token.borderRadiusLG}px;
-  box-shadow: ${(props) => props.theme.token.boxShadow};
-  margin-top: ${(props) => (props.isDrawer ? 0 : props.theme.token.marginLG)}px;
-  @media (max-width: ${(props) => props.theme.screenMD}px) {
-    padding: ${(props) => props.theme.token.paddingMD}px;
+  @media (max-width: 768px) {
+    margin: 20px 0;
   }
+`;
+
+/* Match ClassEditDrawer FormSection exactly: bordered card, padding, shadow */
+export const FormSectionCard = styled.div`
+  margin-bottom: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  padding: 20px;
+  @media (max-width: 768px) {
+    margin-bottom: 20px;
+    padding: 16px;
+  }
+`;
+
+/* Match ClassEditDrawer: center content with max-width inside ScrollContainer */
+export const FormContainer = styled.div`
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
 `;
 
 // --- Drawer shell: exact match to ClassEditDrawer ---
@@ -128,7 +146,7 @@ const StyledDrawerContent = styled(VaulDrawer.Content)`
   outline: none;
 `;
 
-const DrawerHandle = styled.div`
+const DrawerHandle = styled(VaulDrawer.Handle)`
   width: 40px;
   height: 4px;
   background: #e5e7eb;
@@ -623,15 +641,17 @@ const BusinessSettingsContent = forwardRef(
         ),
         children: (
           <ScrollContainer>
-            <Suspense fallback={<TabLoader />}>
-              <GeneralSettingsTab
-                form={generalForm}
-                logoUrl={logoUrl}
-                setLogoUrl={setLogoUrl}
-                setLogoFile={setLogoFile}
-                isMobile={isMobile}
-              />
-            </Suspense>
+            <FormContainer>
+              <Suspense fallback={<TabLoader />}>
+                <GeneralSettingsTab
+                  form={generalForm}
+                  logoUrl={logoUrl}
+                  setLogoUrl={setLogoUrl}
+                  setLogoFile={setLogoFile}
+                  isMobile={isMobile}
+                />
+              </Suspense>
+            </FormContainer>
           </ScrollContainer>
         ),
         forceRender: true,
@@ -645,21 +665,23 @@ const BusinessSettingsContent = forwardRef(
         ),
         children: (
           <ScrollContainer>
-            <Suspense fallback={<TabLoader />}>
-              <LocationSettingsTab
-                form={locationForm}
-                initialData={{
-                  address: initialBusinessData?.businessAddress,
-                  businessUnit: initialBusinessData?.businessUnit,
-                  city: initialBusinessData?.businessCity,
-                  state: initialBusinessData?.businessState,
-                  zipCode: initialBusinessData?.businessZipCode,
-                  lat: initialBusinessData?.latitude,
-                  lon: initialBusinessData?.longitude,
-                  hide: initialBusinessData?.showExactLocation === false,
-                }}
-              />
-            </Suspense>
+            <FormContainer>
+              <Suspense fallback={<TabLoader />}>
+                <LocationSettingsTab
+                  form={locationForm}
+                  initialData={{
+                    address: initialBusinessData?.businessAddress,
+                    businessUnit: initialBusinessData?.businessUnit,
+                    city: initialBusinessData?.businessCity,
+                    state: initialBusinessData?.businessState,
+                    zipCode: initialBusinessData?.businessZipCode,
+                    lat: initialBusinessData?.latitude,
+                    lon: initialBusinessData?.longitude,
+                    hide: initialBusinessData?.showExactLocation === false,
+                  }}
+                />
+              </Suspense>
+            </FormContainer>
           </ScrollContainer>
         ),
         forceRender: true,
@@ -673,13 +695,15 @@ const BusinessSettingsContent = forwardRef(
         ),
         children: (
           <ScrollContainer>
-            <Suspense fallback={<TabLoader />}>
-              <PreferencesSettingsTab
-                form={preferencesForm}
-                stripeStatus={stripeAccountStatus}
-                isMobile={isMobile}
-              />
-            </Suspense>
+            <FormContainer>
+              <Suspense fallback={<TabLoader />}>
+                <PreferencesSettingsTab
+                  form={preferencesForm}
+                  stripeStatus={stripeAccountStatus}
+                  isMobile={isMobile}
+                />
+              </Suspense>
+            </FormContainer>
           </ScrollContainer>
         ),
         forceRender: true,
@@ -750,12 +774,12 @@ const BusinessSettings = forwardRef((props, ref) => {
 
   return (
     <ThemeProvider theme={appProvidedTheme}>
-      <ConfigProvider theme={appProvidedTheme}>
-        <VaulDrawer.Root
+      <VaulDrawer.Root
           open={open}
           onOpenChange={handleDrawerOpenChange}
           direction={isMobile ? "bottom" : "right"}
           dismissible
+          handleOnly={!isMobile}
           repositionInputs={false}
         >
           <VaulDrawer.Portal>
@@ -794,6 +818,7 @@ const BusinessSettings = forwardRef((props, ref) => {
               </StyledDrawerContent>
             ) : (
               <DesktopDrawerContent>
+                <DrawerHandle />
                 <DrawerHeader>
                   <DrawerTitle level={4}>Business Settings</DrawerTitle>
                   <CloseButton
@@ -825,8 +850,7 @@ const BusinessSettings = forwardRef((props, ref) => {
               </DesktopDrawerContent>
             )}
           </VaulDrawer.Portal>
-        </VaulDrawer.Root>
-      </ConfigProvider>
+      </VaulDrawer.Root>
     </ThemeProvider>
   );
 });

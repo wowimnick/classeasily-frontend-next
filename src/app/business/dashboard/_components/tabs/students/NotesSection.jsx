@@ -6,7 +6,6 @@ import {
   Empty,
   Pagination,
   Avatar,
-  ConfigProvider,
   Tooltip,
 } from "antd";
 import message from "@/lib/message";
@@ -322,8 +321,7 @@ const NotesSection = ({ guest, currentUser, compact = false }) => {
   };
 
   return (
-    <ConfigProvider theme={{ token: { colorPrimary: colors.primary } }}>
-      <NotesContainer compact={compact}>
+    <NotesContainer compact={compact}>
         <AddNoteSection compact={compact}>
           <SectionTitle compact={compact}>Add New Note</SectionTitle>
           <Form form={form} onFinish={handleAddNote} layout="vertical">
@@ -446,8 +444,7 @@ const NotesSection = ({ guest, currentUser, compact = false }) => {
             )}
           </div>
         </NotesList>
-      </NotesContainer>
-    </ConfigProvider>
+    </NotesContainer>
   );
 };
 

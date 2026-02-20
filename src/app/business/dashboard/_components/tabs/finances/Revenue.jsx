@@ -24,7 +24,6 @@ import {
 import {
   DatePicker,
   Typography,
-  ConfigProvider,
   Card,
   Tooltip,
   Button,
@@ -57,7 +56,6 @@ import NumberFlow from "@number-flow/react";
 import dayjs from "dayjs";
 import { revenueService, businessClassService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
-import { theme } from "@/components/theme";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
 const { Title, Text } = Typography;
@@ -790,8 +788,7 @@ const Revenue = forwardRef((props, ref) => {
   ];
 
   return (
-    <ConfigProvider theme={theme}>
-      <DashboardWrapper ref={mainContentRef}>
+    <DashboardWrapper ref={mainContentRef}>
         <DashboardHeader>
           <div>
             <PageTitle>Revenue Analytics</PageTitle>
@@ -1224,7 +1221,6 @@ const Revenue = forwardRef((props, ref) => {
           </Col>
         </Row>
       </DashboardWrapper>
-    </ConfigProvider>
   );
 });
 

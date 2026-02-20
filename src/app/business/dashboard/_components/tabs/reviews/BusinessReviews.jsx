@@ -20,7 +20,6 @@ import {
   Select,
   DatePicker,
   Typography,
-  ConfigProvider,
   Empty,
   Pagination,
   Tooltip,
@@ -106,7 +105,7 @@ const StyledDrawerContent = styled(Drawer.Content)`
   outline: none;
 `;
 
-const DrawerHandle = styled.div`
+const DrawerHandle = styled(Drawer.Handle)`
   width: 36px;
   height: 4px;
   background: rgba(0, 0, 0, 0.2);
@@ -171,20 +170,7 @@ const colors = {
   },
 };
 
-const localAntDTheme = {
-  token: {
-    colorPrimary: colors.primary,
-    colorSuccess: colors.success,
-    colorWarning: colors.warning,
-    colorError: colors.error,
-    colorInfo: colors.info,
-    borderRadius: 16,
-  },
-  components: {
-    Card: { borderRadiusLG: 16, paddingLG: 20 },
-    Button: { borderRadius: 12, controlHeight: 40 },
-  },
-};
+import { theme } from "@/components/theme";
 
 const hexToRgba = (hex, alpha = 1) => {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -304,7 +290,7 @@ const ActionButton = styled(Button)`
 `;
 
 const StatCardBase = styled(Card)`
-  border-radius: ${localAntDTheme.token.borderRadius}px;
+  border-radius: ${theme.token.borderRadius}px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
@@ -1200,7 +1186,7 @@ const BusinessReviews = () => {
 
   const tableColumns = [
     {
-      title: "Guest",
+      title: "GUEST",
       dataIndex: "user",
       key: "reviewer",
       width: 240,
@@ -1226,7 +1212,7 @@ const BusinessReviews = () => {
       },
     },
     {
-      title: "Experience",
+      title: "EXPERIENCE",
       dataIndex: "class_info",
       key: "class",
       width: 190,
@@ -1252,7 +1238,7 @@ const BusinessReviews = () => {
       },
     },
     {
-      title: "Rating",
+      title: "RATING",
       dataIndex: "rating",
       key: "rating",
       width: 160,
@@ -1262,7 +1248,7 @@ const BusinessReviews = () => {
       ),
     },
     {
-      title: "Review",
+      title: "REVIEW",
       dataIndex: "comment",
       key: "review",
       width: 350,
@@ -1301,7 +1287,7 @@ const BusinessReviews = () => {
       },
     },
     {
-      title: "Business Response",
+      title: "BUSINESS RESPONSE",
       dataIndex: "business_response",
       key: "response",
       width: 300,
@@ -1336,7 +1322,7 @@ const BusinessReviews = () => {
       },
     },
     {
-      title: "Status",
+      title: "STATUS",
       dataIndex: "status",
       key: "status",
       width: 130,
@@ -1367,7 +1353,7 @@ const BusinessReviews = () => {
       },
     },
     {
-      title: "Actions",
+      title: "ACTIONS",
       key: "actions",
       width: 100,
       fixed: "right",
@@ -1588,8 +1574,7 @@ const BusinessReviews = () => {
   );
 
   return (
-    <ConfigProvider theme={localAntDTheme}>
-      <DashboardWrapper>
+    <DashboardWrapper>
         <DashboardHeader>
           <div>
             <StyledTitle>Manage Reviews</StyledTitle>
@@ -2056,8 +2041,7 @@ const BusinessReviews = () => {
             {renderReportContent()}
           </Modal>
         )}
-      </DashboardWrapper>
-    </ConfigProvider>
+    </DashboardWrapper>
   );
 };
 

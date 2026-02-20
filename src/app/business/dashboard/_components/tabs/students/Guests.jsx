@@ -26,7 +26,6 @@ import {
   Button,
   Input,
   Select,
-  ConfigProvider,
   Typography,
   Grid,
   Divider,
@@ -47,7 +46,6 @@ import GuestCard from "./GuestCard";
 import GuestProfile from "./GuestProfile";
 import ImportGuestsModal from "./ImportGuestsModal";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
-import { theme } from "@/components/theme";
 import dayjs from "dayjs";
 import { formatPhoneNumber } from "@/services/utils";
 import { useAuth } from "@/lib/auth-client";
@@ -613,7 +611,7 @@ const Guests = forwardRef((props, ref) => {
   const columns = useMemo(
     () => [
       {
-        title: "Guest",
+        title: "GUEST",
         key: "guest",
         sorter: true,
         render: (_, record) => {
@@ -653,7 +651,7 @@ const Guests = forwardRef((props, ref) => {
         width: 280,
       },
       {
-        title: "Contact Info",
+        title: "CONTACT INFO",
         key: "contact",
         render: (_, record) => (
           <Space direction="vertical" size={4}>
@@ -688,7 +686,7 @@ const Guests = forwardRef((props, ref) => {
         width: 250,
       },
       {
-        title: "Experiences",
+        title: "EXPERIENCES",
         dataIndex: "total_classes_taken",
         key: "total_classes_taken",
         align: "center",
@@ -697,7 +695,7 @@ const Guests = forwardRef((props, ref) => {
         render: (value) => value ?? 0,
       },
       {
-        title: "Total Spent",
+        title: "TOTAL SPENT",
         dataIndex: "total_spent_this_business",
         key: "total_spent_this_business",
         align: "right",
@@ -706,7 +704,7 @@ const Guests = forwardRef((props, ref) => {
         render: (value) => `$${parseFloat(value || 0).toFixed(2)}`,
       },
       {
-        title: "Last Booking",
+        title: "LAST BOOKING",
         dataIndex: "last_booking_date_this_business",
         key: "last_booking_date_this_business",
         sorter: true,
@@ -718,7 +716,7 @@ const Guests = forwardRef((props, ref) => {
         ),
       },
       {
-        title: "Actions",
+        title: "ACTIONS",
         key: "actions",
         align: "center",
         width: 100,
@@ -898,35 +896,35 @@ const Guests = forwardRef((props, ref) => {
 
   const skeletonColumns = useMemo(
     () => [
-      { title: "Guest", key: "guest", dataIndex: "guest", width: 280 },
+      { title: "GUEST", key: "guest", dataIndex: "guest", width: 280 },
       {
-        title: "Contact Info",
+        title: "CONTACT INFO",
         key: "contact",
         dataIndex: "contact",
         width: 250,
       },
       {
-        title: "Experiences",
+        title: "EXPERIENCES",
         key: "classes",
         dataIndex: "total_classes_taken",
         align: "center",
         width: 120,
       },
       {
-        title: "Total Spent",
+        title: "TOTAL SPENT",
         key: "spent",
         dataIndex: "total_spent_this_business",
         align: "right",
         width: 140,
       },
       {
-        title: "Last Booking",
+        title: "LAST BOOKING",
         key: "booking",
         dataIndex: "last_booking_date_this_business",
         width: 150,
       },
       {
-        title: "Actions",
+        title: "ACTIONS",
         key: "actions",
         dataIndex: "actions",
         align: "center",
@@ -968,8 +966,7 @@ const Guests = forwardRef((props, ref) => {
   };
 
   return (
-    <ConfigProvider theme={theme}>
-      <DashboardWrapper>
+    <DashboardWrapper>
         <DashboardHeader>
           <div>
             <PageTitle>Guest Management</PageTitle>
@@ -1158,7 +1155,6 @@ const Guests = forwardRef((props, ref) => {
           onImportComplete={handleImportComplete}
         />
       </DashboardWrapper>
-    </ConfigProvider>
   );
 });
 

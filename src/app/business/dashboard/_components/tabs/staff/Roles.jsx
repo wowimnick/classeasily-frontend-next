@@ -148,7 +148,7 @@ const StyledVaulDrawerContent = styled(VaulDrawer.Content)`
   outline: none;
 `;
 
-const VaulDrawerHandle = styled.div`
+const VaulDrawerHandle = styled(VaulDrawer.Handle)`
   width: 36px;
   height: 4px;
   background: rgba(0, 0, 0, 0.2);
@@ -571,10 +571,10 @@ const generateSkeletonData = (count = 3) => {
 };
 
 const skeletonColumns = [
-  { title: "Role Name", dataIndex: "name", key: "name" },
-  { title: "Description", dataIndex: "description", key: "description" },
-  { title: "Team Members", dataIndex: "user_count", key: "user_count" },
-  { title: "Actions", dataIndex: "actions", key: "actions", width: 120 },
+  { title: "ROLE NAME", dataIndex: "name", key: "name" },
+  { title: "DESCRIPTION", dataIndex: "description", key: "description" },
+  { title: "TEAM MEMBERS", dataIndex: "user_count", key: "user_count" },
+  { title: "ACTIONS", dataIndex: "actions", key: "actions", width: 120 },
 ];
 
 const RolesSkeleton = ({ isMobile, count = 3 }) => {
@@ -895,7 +895,7 @@ const Roles = () => {
   const columns = useMemo(
     () => [
       {
-        title: "Role Name",
+        title: "ROLE NAME",
         dataIndex: "name",
         key: "name",
         render: (name) => (
@@ -910,7 +910,7 @@ const Roles = () => {
         ),
       },
       {
-        title: "Description",
+        title: "DESCRIPTION",
         dataIndex: "description",
         key: "description",
         ellipsis: true,
@@ -921,7 +921,7 @@ const Roles = () => {
         ),
       },
       {
-        title: "Team Members",
+        title: "TEAM MEMBERS",
         dataIndex: "user_count",
         key: "user_count",
         render: (count) => (
@@ -934,7 +934,7 @@ const Roles = () => {
         ),
       },
       {
-        title: "Actions",
+        title: "ACTIONS",
         key: "actions",
         width: 120,
         render: (_, record) => {
@@ -1098,6 +1098,7 @@ const Roles = () => {
         onOpenChange={handleDrawerOpenChange}
         direction={isMobile ? "bottom" : "right"}
         dismissible
+        handleOnly={!isMobile}
       >
         <VaulDrawer.Portal>
           <StyledVaulDrawerOverlay />
@@ -1295,6 +1296,7 @@ const Roles = () => {
             </StyledVaulDrawerContent>
           ) : (
             <DesktopDrawerContent>
+              <VaulDrawerHandle />
               <DesktopDrawerHeader>
                 <DesktopDrawerTitle>
                   {editingRole ? "Edit Role" : "Create New Role"}

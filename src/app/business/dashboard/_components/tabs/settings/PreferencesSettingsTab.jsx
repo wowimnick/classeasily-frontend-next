@@ -368,12 +368,12 @@ function PreferencesSettingsTabContent({
       name="preferencesSettingsForm"
       requiredMark="optional"
     >
-      <FormSectionCard isDrawer={true}>
-        <SectionDivider>
-          <span>
-            <Clock size={16} /> Schedule & Display
-          </span>
-        </SectionDivider>
+      <SectionDivider>
+        <span>
+          <Clock size={16} /> Schedule & Display
+        </span>
+      </SectionDivider>
+      <FormSectionCard>
         <FormGroup>
           <FormLabel>
             <Clock /> Business Hours
@@ -494,14 +494,15 @@ function PreferencesSettingsTabContent({
             </Radio.Group>
           </Form.Item>
         </FormGroup>
+      </FormSectionCard>
 
-        <SectionDivider>
-          <span>
-            <Bell size={16} /> Notification Preferences
-          </span>
-        </SectionDivider>
-        
-        {/* CORRECTED: SwitchLabelContainer wraps Form.Item (with noStyle) */}
+      <SectionDivider>
+        <span>
+          <Bell size={16} /> Notification Preferences
+        </span>
+      </SectionDivider>
+
+      <FormSectionCard>
         <FormGroup>
           <SwitchLabelContainer>
             <SwitchInfo>
@@ -573,15 +574,16 @@ function PreferencesSettingsTabContent({
             (feature coming soon).
           </HelpText>
         </FormGroup>
+      </FormSectionCard>
 
-        <div id="payout-setup-section">
-          <SectionDivider>
-            <span>
-              <CreditCard size={16} /> Payout Setup
-            </span>
-          </SectionDivider>
+      <SectionDivider>
+        <span>
+          <CreditCard size={16} /> Payout Setup
+        </span>
+      </SectionDivider>
 
-          <Spin spinning={isSyncing} tip="Synchronizing account status...">
+      <FormSectionCard id="payout-setup-section">
+        <Spin spinning={isSyncing} tip="Synchronizing account status...">
             <StripeConnectCard>
               <CardHeader>
                 <HeaderInfo>
@@ -655,8 +657,7 @@ function PreferencesSettingsTabContent({
                 </HelpText>
               </CardBody>
             </StripeConnectCard>
-          </Spin>
-        </div>
+        </Spin>
       </FormSectionCard>
     </Form>
   );

@@ -37,7 +37,6 @@ import {
   Card,
   Tooltip,
   Space,
-  ConfigProvider,
   Grid,
   Spin,
   Alert,
@@ -69,6 +68,7 @@ import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoade
 import { businessService, scheduleService } from "@/services/apiService";
 import ScheduleEditDrawer from "../classes/manageclasses/ScheduleEditDrawer";
 import { LordIcon } from "@/services/ReactUtils";
+import { theme } from "@/components/theme";
 
 const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -90,27 +90,6 @@ const colors = {
     orange: "#f97316",
     red: "#ef4444",
     teal: "#14b8a6",
-  },
-};
-
-const localAntDTheme = {
-  token: {
-    colorPrimary: colors.primary,
-    colorSuccess: colors.success,
-    colorWarning: colors.warning,
-    colorError: colors.error,
-    colorInfo: colors.info,
-    borderRadius: 16,
-  },
-  components: {
-    Card: { borderRadiusLG: 16, paddingLG: 20 },
-    Button: { borderRadius: 12, controlHeight: 40 },
-    List: {
-      itemPadding: "12px 0",
-    },
-    Progress: {
-      circleTextFontSize: "0.8em",
-    },
   },
 };
 
@@ -222,7 +201,7 @@ const SnapshotGrid = styled.div`
 `;
 
 const StatCardBase = styled(Card)`
-  border-radius: ${localAntDTheme.token.borderRadius}px;
+  border-radius: ${theme.token.borderRadius}px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
@@ -995,7 +974,7 @@ const metricDisplayInfo = {
     title: "Guests This Month",
     icon: Users,
     color: colors.chart.blue,
-    link: "/business/dashboard/guests",
+    link: "/business/dashboard/bookings",
     footer: "vs last month",
   },
   active_classes: {
@@ -1259,24 +1238,20 @@ const Overview = forwardRef((props, ref) => {
 
   if (error && !loading)
     return (
-      <ConfigProvider theme={localAntDTheme}>
-        <DashboardWrapper>
-          <Alert
-            message="Error Loading Dashboard"
-            description={error}
-            type="error"
-            showIcon
-          />
-        </DashboardWrapper>
-      </ConfigProvider>
+      <DashboardWrapper>
+        <Alert
+          message="Error Loading Dashboard"
+          description={error}
+          type="error"
+          showIcon
+        />
+      </DashboardWrapper>
     );
   if (!loading && !error && !overviewData)
     return (
-      <ConfigProvider theme={localAntDTheme}>
-        <DashboardWrapper>
-          <Empty description="No overview data available." />
-        </DashboardWrapper>
-      </ConfigProvider>
+      <DashboardWrapper>
+        <Empty description="No overview data available." />
+      </DashboardWrapper>
     );
 
   const showActionBanner =
@@ -1286,8 +1261,7 @@ const Overview = forwardRef((props, ref) => {
     overviewData?.actionable_prompts?.classes_needing_schedules_count ?? 0;
 
   return (
-    <ConfigProvider theme={localAntDTheme}>
-      <DashboardWrapper>
+    <DashboardWrapper>
         {showActionBanner && (
           <ActionRequiredThinBanner>
             <ActionRequiredThinBannerContent>
@@ -1986,8 +1960,7 @@ const Overview = forwardRef((props, ref) => {
           hideBackButton={scheduleEditDrawer.hideBackButton}
           form={scheduleForm}
         />
-      </DashboardWrapper>
-    </ConfigProvider>
+    </DashboardWrapper>
   );
 });
 

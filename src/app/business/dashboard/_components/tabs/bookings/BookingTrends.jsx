@@ -23,7 +23,6 @@ import {
 import {
   DatePicker,
   Typography,
-  ConfigProvider,
   Card,
   Select,
   Empty,
@@ -56,7 +55,6 @@ import NumberFlow from "@number-flow/react";
 import debounce from "lodash/debounce";
 import dayjs from "dayjs";
 import { bookingAnalyticsService } from "@/services/apiService";
-import { theme } from "@/components/theme";
 import { LordIcon } from "@/services/ReactUtils";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
@@ -860,8 +858,7 @@ const BookingTrends = () => {
   ];
 
   return (
-    <ConfigProvider theme={theme}>
-      <DashboardWrapper>
+    <DashboardWrapper>
         <DashboardHeader>
           <div>
             <PageTitle>Booking Trends & Insights</PageTitle>
@@ -1416,7 +1413,6 @@ const BookingTrends = () => {
           </Col>
         </Row>
       </DashboardWrapper>
-    </ConfigProvider>
   );
 };
 

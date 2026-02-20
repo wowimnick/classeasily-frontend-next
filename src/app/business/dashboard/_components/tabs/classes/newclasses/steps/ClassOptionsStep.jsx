@@ -12,7 +12,6 @@ import {
   Select,
   InputNumber,
   Input,
-  ConfigProvider,
   Typography,
   Button,
   Switch,
@@ -46,7 +45,6 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { theme } from "@/components/theme";
 import { useClass } from "../ClassContext";
 import {
   bookingTheme,
@@ -1219,7 +1217,7 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
   const hasSingleOption = optionsCount === 1;
 
   return (
-    <ConfigProvider theme={theme}>
+    <>
       <StepHeader>
         <PageTitle>
           {hasSingleOption ? "Booking details" : "Booking options"}
@@ -1467,7 +1465,7 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
           )}
         </Form.List>
       </Form>
-    </ConfigProvider>
+    </>
   );
 };
 

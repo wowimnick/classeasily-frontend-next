@@ -15,7 +15,6 @@ import {
   DatePicker,
   Card,
   Typography,
-  ConfigProvider,
   Spin,
   Select,
   Grid,
@@ -41,7 +40,6 @@ import DesktopBookingHistory from "./DesktopBookingHistory";
 import MobileBookingHistory from "./MobileBookingHistory";
 import BookingDetailsDrawer from "./BookingDetailsDrawer";
 import { LordIcon } from "@/services/ReactUtils";
-import { theme } from "@/components/theme";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
 const { RangePicker } = DatePicker;
@@ -576,8 +574,7 @@ const BookingHistory = forwardRef((props, ref) => {
   }, []);
 
   return (
-    <ConfigProvider theme={theme}>
-      <DashboardWrapper ref={mainContentRef}>
+    <DashboardWrapper ref={mainContentRef}>
         <DashboardHeader>
           <div>
             <PageTitle>Booking History</PageTitle>
@@ -743,7 +740,6 @@ const BookingHistory = forwardRef((props, ref) => {
           bookingId={selectedBookingId}
         />
       </DashboardWrapper>
-    </ConfigProvider>
   );
 });
 

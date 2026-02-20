@@ -6,8 +6,7 @@ import { useParams } from "next/navigation";
 
 // Import all tab components
 import Overview from "../_components/tabs/overview/Overview";
-import ActiveBookings from "../_components/tabs/bookings/ActiveBookings";
-import BookingHistory from "../_components/tabs/bookings/BookingHistory";
+import BookingsCombined from "../_components/tabs/bookings/BookingsCombined";
 import ClassManagement from "../_components/tabs/classes/manageclasses/ClassManagement";
 import BusinessReviews from "../_components/tabs/reviews/BusinessReviews";
 import Staff from "../_components/tabs/staff/Staff";
@@ -31,11 +30,16 @@ export default function DashboardPage() {
     case "overview":
       componentToRender = <Overview />;
       break;
+    case "bookings":
     case "bookings/active":
-      componentToRender = <ActiveBookings />;
-      break;
     case "bookings/history":
-      componentToRender = <BookingHistory />;
+      componentToRender = (
+        <BookingsCombined
+          defaultActiveKey={
+            activeKey === "bookings/history" ? "history" : "active"
+          }
+        />
+      );
       break;
     case "listings":
       componentToRender = <ClassManagement />;

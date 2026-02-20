@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { Form, Input, Switch, ConfigProvider, Typography, Button } from "antd";
+import { Form, Input, Switch, Typography, Button } from "antd";
 import message from "@/lib/message";
 import styled from "styled-components";
 import {
@@ -26,7 +26,6 @@ import { motion } from "framer-motion";
 import debounce from "lodash/debounce";
 import { useClass } from "../ClassContext";
 import "leaflet/dist/leaflet.css";
-import { theme } from "@/components/theme";
 import { businessClassService } from "@/services/apiService";
 import {
   bookingTheme,
@@ -529,7 +528,7 @@ const LocationContactStep = ({ onValidatedNext }) => {
   };
 
   return (
-    <ConfigProvider theme={theme}>
+    <>
       <StepHeader>
         <PageTitle>Meeting Point & Contact</PageTitle>
         <StepDescription>
@@ -826,7 +825,7 @@ const LocationContactStep = ({ onValidatedNext }) => {
           </FormGrid>
         </FormSection>
       </StyledForm>
-    </ConfigProvider>
+    </>
   );
 };
 

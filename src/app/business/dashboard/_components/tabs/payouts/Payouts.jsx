@@ -6,7 +6,6 @@ import { Drawer } from "vaul";
 import {
   Card,
   Typography,
-  ConfigProvider,
   Skeleton,
   Table,
   Tooltip,
@@ -41,7 +40,6 @@ import NumberFlow from "@number-flow/react";
 import dayjs from "dayjs";
 import { businessService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
-import { theme } from "@/components/theme";
 import { useDashboard } from "../../DashboardContext";
 
 const { Title, Text, Paragraph, Link } = Typography;
@@ -107,7 +105,7 @@ const StyledDrawerContent = styled(Drawer.Content)`
   outline: none;
 `;
 
-const DrawerHandle = styled.div`
+const DrawerHandle = styled(Drawer.Handle)`
   width: 36px;
   height: 4px;
   background: rgba(0, 0, 0, 0.2);
@@ -894,28 +892,28 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
 
   const baseDesktopColumns = [
     {
-      title: "Booking Ref",
+      title: "BOOKING REFERENCE",
       dataIndex: "user_facing_reference",
       key: "ref",
       width: 120,
     },
-    { title: "Guest", dataIndex: "user_name", key: "user", ellipsis: true },
+    { title: "GUEST", dataIndex: "user_name", key: "user", ellipsis: true },
     {
-      title: "Experience / Course",
+      title: "EXPERIENCE / COURSE",
       dataIndex: "class_name",
       key: "class",
       ellipsis: true,
       render: renderExperienceInfo,
     },
     {
-      title: "Session Date",
+      title: "SESSION DATE",
       dataIndex: "session_date",
       key: "date",
       width: 120,
       render: (text) => dayjs(text).format("MMM D, YYYY"),
     },
     {
-      title: "Net Payout",
+      title: "NET PAYOUT",
       dataIndex: "net_amount_for_payout",
       key: "net",
       align: "right",
@@ -1328,7 +1326,7 @@ const Payouts = () => {
 
   const columns = [
     {
-      title: "Date (Est. Arrival)",
+      title: "DATE (ESTIMATED ARRIVAL)",
       dataIndex: "arrival_date",
       key: "arrival_date",
       width: 180,
@@ -1343,7 +1341,7 @@ const Payouts = () => {
         ),
     },
     {
-      title: "Stripe Transfer ID",
+      title: "STRIPE TRANSFER ID",
       dataIndex: "stripe_transfer_id",
       key: "stripe_transfer_id",
       ellipsis: true,
@@ -1366,7 +1364,7 @@ const Payouts = () => {
       },
     },
     {
-      title: "Amount",
+      title: "AMOUNT",
       dataIndex: "amount_display",
       key: "amount",
       align: "right",
@@ -1381,7 +1379,7 @@ const Payouts = () => {
         ),
     },
     {
-      title: "Status",
+      title: "STATUS",
       dataIndex: "status",
       key: "status",
       align: "center",
@@ -1389,7 +1387,7 @@ const Payouts = () => {
       render: getStatusTag,
     },
     {
-      title: "Bookings",
+      title: "BOOKINGS",
       dataIndex: "booking_count",
       key: "booking_count",
       align: "center",
@@ -1405,7 +1403,7 @@ const Payouts = () => {
         ),
     },
     {
-      title: "Actions",
+      title: "ACTIONS",
       dataIndex: "id",
       key: "actions",
       width: screens.lg ? 240 : 140,
@@ -1494,8 +1492,7 @@ const Payouts = () => {
   ];
 
   return (
-    <ConfigProvider theme={theme}>
-      <DashboardWrapper>
+    <DashboardWrapper>
         <DashboardHeader>
           <div>
             <PageTitle>Payouts</PageTitle>
@@ -1697,6 +1694,7 @@ const Payouts = () => {
           onOpenChange={handleDrawerOpenChange}
           direction={isMobile ? "bottom" : "right"}
           dismissible
+          handleOnly={!isMobile}
         >
           <Drawer.Portal>
             <StyledDrawerOverlay />
@@ -1723,6 +1721,7 @@ const Payouts = () => {
               </StyledDrawerContent>
             ) : (
               <DesktopDrawerContent>
+                <DrawerHandle />
                 <DesktopDrawerHeader>
                   <DesktopDrawerTitle>
                     <Box size={18} style={{ color: colors.primary }} />
@@ -1745,7 +1744,6 @@ const Payouts = () => {
           </Drawer.Portal>
         </Drawer.Root>
       </DashboardWrapper>
-    </ConfigProvider>
   );
 };
 

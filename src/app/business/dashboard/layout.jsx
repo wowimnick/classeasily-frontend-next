@@ -4,7 +4,7 @@
 
 import { useCallback, useRef, useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import styled from "styled-components";
+import styled, { ThemeProvider } from "styled-components";
 import { theme as appTheme } from "@/components/theme";
 import { ConfigProvider } from "antd";
 
@@ -80,8 +80,9 @@ function DashboardLayoutInner({ children }) {
   );
 
   return (
-    <ConfigProvider theme={appTheme}>
-      <ImpersonationBanner />
+    <ThemeProvider theme={appTheme}>
+      <ConfigProvider theme={appTheme}>
+        <ImpersonationBanner />
       <PageLayout>
         <HeaderWrapper>
           <BusinessHeader />
@@ -107,7 +108,8 @@ function DashboardLayoutInner({ children }) {
         </DashboardContainer>
         <SetupGuideWrapper sideMenuRef={sideMenuRef} />
       </PageLayout>
-    </ConfigProvider>
+      </ConfigProvider>
+    </ThemeProvider>
   );
 }
 

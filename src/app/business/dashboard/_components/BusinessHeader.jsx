@@ -166,7 +166,7 @@ const UserAvatar = styled.div`
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 12px;
   color: white;
   position: relative;
   overflow: hidden;
@@ -186,7 +186,7 @@ const UserAvatar = styled.div`
 `;
 
 const UserNameDisplay = styled.span`
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   color: #ffffff;
   white-space: nowrap;
