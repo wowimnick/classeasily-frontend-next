@@ -610,17 +610,19 @@ const BusinessPageClient = ({ initialData, slug }) => {
                   </div>
                 </CardHeader>
 
-                {/* Map Preview */}
+                {/* Map Preview - key per slug so Leaflet never reuses the same container */}
                 <MapPreviewBox>
                    {isMounted && (
-                    <MapContainer 
-                      center={mapCoordinates} 
-                      zoom={14} 
+                    <MapContainer
+                      key={`business-map-${slug ?? "unknown"}-${isMounted}`}
+                      center={mapCoordinates}
+                      zoom={14}
                       scrollWheelZoom={false}
                       zoomControl={false}
                       attributionControl={false}
                       dragging={false}
                       doubleClickZoom={false}
+                      style={{ height: "100%", width: "100%" }}
                     >
                       <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
                       <Marker position={mapCoordinates} icon={createBrandIcon() || undefined} />
