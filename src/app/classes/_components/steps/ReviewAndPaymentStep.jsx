@@ -2873,12 +2873,12 @@ const ReviewAndPaymentStep = ({
                                 <CheckoutContactRow>
                                     <CheckoutFieldRow>
                                         <Form.Item name="email" rules={[{ required: true, message: "Please enter your email" }, { type: "email", message: "Please enter a valid email address" }]} label={<FieldLabel>Email</FieldLabel>} style={{ marginBottom: 0 }}>
-                                            <Input placeholder="e.g. jane@example.com" disabled={isUserLoggedIn} />
+                                            <Input placeholder="e.g. jane@example.com" />
                                         </Form.Item>
                                     </CheckoutFieldRow>
                                     <CheckoutFieldRow>
                                         <Form.Item name="phone" rules={[{ required: true, message: "Please enter your phone number" }, { whitespace: true, message: "Please enter your phone number" }]} label={<FieldLabel>Phone</FieldLabel>} style={{ marginBottom: 0 }}>
-                                            <Input placeholder="e.g. (555) 123-4567" disabled={isUserLoggedIn} />
+                                            <Input placeholder="e.g. (555) 123-4567" />
                                         </Form.Item>
                                     </CheckoutFieldRow>
                                 </CheckoutContactRow>
