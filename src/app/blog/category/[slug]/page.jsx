@@ -14,7 +14,11 @@ const BASE = "https://classeasily.com";
 
 export async function generateStaticParams() {
   const { categories } = await fetchBlogCategories();
-  return (categories || []).map((cat) => ({ slug: cat.slug }));
+  const list = (categories || []).map((cat) => ({ slug: cat.slug }));
+  if (list.length === 0) {
+    return [{ slug: "_" }];
+  }
+  return list;
 }
 
 export async function generateMetadata({ params }) {
@@ -62,6 +66,10 @@ export async function generateMetadata({ params }) {
 
 export default async function BlogCategoryPage({ params }) {
   const { slug } = await params;
+
+  if (slug === "_") {
+    notFound();
+  }
 
   const [{ categories }, { posts }] = await Promise.all([
     fetchBlogCategories(),

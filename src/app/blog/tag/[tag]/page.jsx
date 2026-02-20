@@ -17,9 +17,25 @@ function tagSlugToName(tagSlug) {
   return tagSlug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Slugify a tag for URL (e.g. "Some Tag" -> "some-tag") */
+function tagToSlug(tag) {
+  return String(tag).toLowerCase().trim().replace(/\s+/g, "-");
+}
+
 export async function generateStaticParams() {
-  // Tag pages are dynamic; we don't pre-render every possible tag
-  return [];
+  // Next.js requires at least one result for build-time validation
+  const { posts } = await fetchBlogPosts(200);
+  const slugSet = new Set();
+  for (const post of posts || []) {
+    const tags = Array.isArray(post.tags) ? post.tags : [];
+    for (const t of tags) {
+      if (t != null && String(t).trim()) slugSet.add(tagToSlug(t));
+    }
+  }
+  if (slugSet.size === 0) {
+    return [{ tag: "_" }];
+  }
+  return Array.from(slugSet).map((tag) => ({ tag }));
 }
 
 export async function generateMetadata({ params }) {
@@ -58,6 +74,10 @@ export async function generateMetadata({ params }) {
 
 export default async function BlogTagPage({ params }) {
   const { tag: tagSlug } = await params;
+
+  if (tagSlug === "_") {
+    notFound();
+  }
 
   const { posts, count } = await fetchBlogPostsByTag(tagSlug, 50);
 
