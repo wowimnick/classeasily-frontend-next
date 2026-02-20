@@ -729,7 +729,6 @@ const ClassPageImagesTitle = React.memo(
     title,
     rating,
     business_name,
-    categoryName,
     location,
     isShareModalVisible,
     onShareModalClose,
@@ -1332,9 +1331,6 @@ const ClassPageImagesTitle = React.memo(
                       )}
                       {business_name && (
                         <MetaItem>· {business_name}</MetaItem>
-                      )}
-                      {categoryName && (
-                        <MetaItem>· {categoryName}</MetaItem>
                       )}
                       {location && <MetaItem>· {location}</MetaItem>}
                     </PlaceMeta>

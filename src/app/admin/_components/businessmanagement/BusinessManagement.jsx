@@ -1596,7 +1596,7 @@ const BusinessManagement = () => {
                 <Users /> Category Distribution
               </ContentTitle>
               <ContentDescription>
-                Business distribution across class categories.
+                Business distribution across collections.
               </ContentDescription>
             </ContentHeader>
             <div

@@ -1303,7 +1303,7 @@ export const classManagementService = {
   },
 
   /**
-   * Updates the display order for all class categories.
+   * Updates the display order for all collections.
    * @param {Array<Object>} orderedCategories - An array of objects, each containing a category ID and its new order index.
    * @param {number} orderedCategories[].id - The category ID.
    * @param {number} orderedCategories[].order - The new zero-based index for the category.

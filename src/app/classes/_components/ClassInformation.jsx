@@ -514,8 +514,6 @@ const ClassInformation = React.memo(
     description,
     reviewCount = 0,
     averageRating = 0,
-    categoryName,
-    subcategoryName,
     businessData,
     onBusinessClick,
     onContactHost,
@@ -555,14 +553,6 @@ const ClassInformation = React.memo(
     if (partnerTierName === "Founding Partner") partnerBadgeText = "Partner";
     else if (partnerTierName === "Premium Partner")
       partnerBadgeText = "Premium";
-
-    const categoryLordIcon =
-      (categoryName && lordIconMap[categoryName]?.icon) || defaultLordIcon;
-    const subcategoryLordIcon =
-      (categoryName &&
-        subcategoryName &&
-        lordIconMap[categoryName]?.subcategories?.[subcategoryName]) ||
-      defaultLordIcon;
 
     return (
       <InfoWrapper>
@@ -672,40 +662,7 @@ const ClassInformation = React.memo(
                 </CategoryPill>
               )}
 
-              {categoryName && (
-                <CategoryPill>
-                  <AnimatedIconWrapper $delay="200ms">
-                    <LordIcon
-                      src={categoryLordIcon.src}
-                      trigger={categoryLordIcon.trigger}
-                      state={categoryLordIcon.state}
-                      delay={categoryLordIcon.delay || 0}
-                      style={{ width: "100%", height: "100%" }}
-                    />
-                  </AnimatedIconWrapper>
-                  <AnimatedTextWrapper $delay="200ms">
-                    {categoryName}
-                  </AnimatedTextWrapper>
-                </CategoryPill>
-              )}
-
-              {subcategoryName && (
-                <CategoryPill>
-                  <AnimatedIconWrapper $delay="400ms">
-                    <LordIcon
-                      src={subcategoryLordIcon.src}
-                      trigger={subcategoryLordIcon.trigger}
-                      state={subcategoryLordIcon.state}
-                      delay={subcategoryLordIcon.delay || 0}
-                      style={{ width: "100%", height: "100%" }}
-                    />
-                  </AnimatedIconWrapper>
-                  <AnimatedTextWrapper $delay="400ms">
-                    {subcategoryName}
-                  </AnimatedTextWrapper>
-                </CategoryPill>
-              )}
-            </CategoriesGrid>
+              </CategoriesGrid>
           </HeaderSection>
 
           <Divider style={{ margin: "12px 0" }} />

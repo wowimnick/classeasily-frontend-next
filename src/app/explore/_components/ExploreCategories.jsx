@@ -188,9 +188,9 @@ const CollectionPill = styled.button`
   color: ${({ $isSelected }) => ($isSelected ? "#fff" : "#222")};
   border: 1px solid ${({ $isSelected }) => ($isSelected ? "#222" : "#e0e0e0")};
   white-space: nowrap;
+  padding: 20px;
   border-radius: 20px;
-  padding: 0 12px;
-  height: 32px;
+  height: 40px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -444,6 +444,10 @@ const CollectionItem = memo(({ collection, isSelected, onClick }) => (
   prevProps.isSelected === nextProps.isSelected
 );
 
+// Respect admin sort_order for explore page (collections from API are already ordered; this ensures client order)
+const sortCollectionsByOrder = (list) =>
+  [...(list || [])].sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+
 function ExploreCategoriesContent({
   collections = [],
   currentCollection,
@@ -457,6 +461,10 @@ function ExploreCategoriesContent({
   isMapVisible,
   onShowMap,
 }) {
+  const sortedCollections = useMemo(
+    () => sortCollectionsByOrder(collections),
+    [collections]
+  );
   const [optimisticCollection, setOptimisticCollection] =
     useState(currentCollection);
 
@@ -516,7 +524,7 @@ function ExploreCategoriesContent({
       clearTimeout(timeoutId);
       window.removeEventListener("resize", checkCatScrollable);
     };
-  }, [collections, updateCategoryScrollPosition]);
+  }, [sortedCollections, updateCategoryScrollPosition]);
 
   const handleCollectionClick = useCallback(
     (collectionSlug) => {
@@ -544,7 +552,7 @@ function ExploreCategoriesContent({
             </PrevButton>
 
             <Categories ref={categoriesRef}>
-              {collections.map((collection, index) => {
+              {sortedCollections.map((collection, index) => {
                 const id =
                   collection.key || collection.slug || `collection-${index}`;
                 const slug = collection.key || collection.slug;

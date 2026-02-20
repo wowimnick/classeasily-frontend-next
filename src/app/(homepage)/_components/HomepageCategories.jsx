@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, memo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "antd";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -60,6 +60,10 @@ export const HomepageCategoriesFallback = ({ categories = [] }) => {
   );
 };
 
+// Sort collections by admin sort_order (homepage respects reorder from admin)
+const sortBySortOrder = (list) =>
+  [...(list || [])].sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+
 // --- MAIN COMPONENT ---
 const HomepageCategories = ({ initialCategories = [] }) => {
   const router = useRouter();
@@ -71,7 +75,10 @@ const HomepageCategories = ({ initialCategories = [] }) => {
     dragFree: true,
   });
 
-  const categories = initialCategories;
+  const categories = useMemo(
+    () => sortBySortOrder(initialCategories),
+    [initialCategories]
+  );
   const isLoading = !categories || categories.length === 0;
 
   const [prevBtnDisabled, setPrevBtnDisabled] = useState(true);

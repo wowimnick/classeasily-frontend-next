@@ -89,8 +89,6 @@ function BreadcrumbsContent() {
 
   if (pathSnippets[0] === "explore") {
     const locationQuery = searchParams.get("location");
-    const categoryQuery = searchParams.get("category");
-    const subcategoryQuery = searchParams.get("subcategory");
     const tagQuery = searchParams.get("tag");
 
     // Base explore link

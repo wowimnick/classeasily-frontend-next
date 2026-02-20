@@ -17,59 +17,34 @@ import {
   ConfigProvider,
   Tag,
   Space,
-  Modal,
   Form,
   Divider,
-  Empty,
   Typography,
   Tooltip,
-  ColorPicker,
   Grid,
-  Popconfirm,
   Skeleton,
-  Select,
   Switch,
   Upload,
-  Tabs,
   Radio,
 } from "antd";
 import message from "@/lib/message";
-import * as allIcons from "lucide-react";
 import { theme as antdComponentTheme } from "@/components/theme";
 import {
   Plus,
   Edit,
   Trash2,
-  Tag as TagIcon,
-  Grid as GridIcon,
   BookOpen,
   BarChart2,
-  Copy,
   Info as InfoIcon,
-  AlertTriangle,
-  Edit2,
-  PieChart as PieChartIcon,
-  ArrowLeft,
-  PenLine,
   GripVertical,
   X,
   Sparkles,
   Layers,
   Bot,
   BrainCircuit,
-  Search,
 } from "lucide-react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  Legend,
-} from "recharts";
 import { classManagementService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { uploadService } from "@/services/apiService";
 import { motion } from "framer-motion";
 import { Drawer } from "vaul";
@@ -91,52 +66,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
-const { Title: AntTitle, Text, Paragraph } = Typography;
+const { Title: AntTitle, Text } = Typography;
 const { useBreakpoint } = Grid;
-
-// --- DYNAMIC ICON HANDLING ---
-const formatIconName = (pascalCaseName) => {
-  return pascalCaseName.replace(/([A-Z])/g, " $1").trim();
-};
-
-const excludedIcons = new Set([
-  "LucideProvider",
-  "createLucideIcon",
-  "IconNode",
-  "icons",
-  "default",
-  "__esModule",
-]);
-
-// Prepare options outside component to avoid recalculation
-const iconOptions = Object.keys(allIcons)
-  .filter((name) => {
-    const item = allIcons[name];
-    // Check for both function (components) and object (forwardRef components)
-    return (
-      (typeof item === "function" || typeof item === "object") &&
-      !excludedIcons.has(name)
-    );
-  })
-  .map((name) => {
-    const IconComponent = allIcons[name];
-    return {
-      value: name,
-      label: (
-        <Space>
-          <IconComponent size={16} />
-          {formatIconName(name)}
-        </Space>
-      ),
-      // Keep a text-only label for searching
-      searchLabel: formatIconName(name),
-    };
-  });
-
-const CategoryIcon = ({ iconName, ...props }) => {
-  const IconComponent = allIcons[iconName] || allIcons.Bookmark;
-  return <IconComponent {...props} />;
-};
 
 // --- STYLING & THEME ---
 const colors = {
@@ -348,19 +279,6 @@ const HelpText = styled(Text)`
   margin-bottom: 16px;
 `;
 
-const SubcategoryItem = styled.div`
-  display: inline-flex;
-  align-items: center;
-  background-color: ${(props) => hexToRgba(props.color, 0.1)};
-  color: ${(props) => props.color};
-  border: 1px solid ${(props) => hexToRgba(props.color, 0.3)};
-  border-radius: 6px;
-  padding: 2px 8px;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.2s ease-in-out;
-`;
-
 const ModalTitleWrapper = styled.div`
   display: flex;
   align-items: center;
@@ -558,130 +476,11 @@ const Row = (props) => {
   );
 };
 
-const CustomRechartsTooltip = ({ active, payload }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div
-        style={{
-          backgroundColor: "#fff",
-          padding: "8px 12px",
-          border: `1px solid ${colors.border}`,
-          borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-          fontSize: "13px",
-          fontFamily: appTheme.token.fontFamily,
-        }}
-      >
-        <p style={{ margin: 0, fontWeight: 600, color: colors.textPrimary }}>
-          {payload[0].name}
-        </p>
-        <p style={{ margin: "6px 0 0 0", color: payload[0].payload.fill }}>
-          Active Classes:{" "}
-          <strong style={{ color: colors.textPrimary }}>
-            {payload[0].value}
-          </strong>
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
-
-// --- Reassignment Modal ---
-const ReassignmentModal = ({
-  open,
-  onCancel,
-  onConfirm,
-  data,
-  options,
-  loading,
-}) => {
-  const [newId, setNewId] = useState(null);
-
-  useEffect(() => {
-    if (open) {
-      setNewId(null);
-    }
-  }, [open]);
-
-  if (!data) return null;
-
-  const { type, target } = data;
-  const count = target.class_count;
-  const name = target.name;
-
-  return (
-    <Modal
-      open={open}
-      onCancel={onCancel}
-      title={
-        <ModalTitleWrapper>
-          <AlertTriangle color={colors.warning} /> Reassign and Delete
-        </ModalTitleWrapper>
-      }
-      footer={[
-        <Button key="back" onClick={onCancel} disabled={loading}>
-          Cancel
-        </Button>,
-        <Button
-          key={`btn-${loading}`}
-          type="primary"
-          danger
-          disabled={!newId}
-          loading={loading}
-          onClick={() => onConfirm(newId)}
-        >
-          Reassign and Delete
-        </Button>,
-      ]}
-    >
-      <Paragraph>
-        The {type} <Text strong>"{name}"</Text> is currently used by{" "}
-        <Text strong>{count} class(es)</Text>.
-      </Paragraph>
-      <Paragraph>
-        To delete it, you must first reassign all associated classes to a new{" "}
-        {type}.
-      </Paragraph>
-      {type === "category" && (
-        <Paragraph
-          type="secondary"
-          style={{
-            fontStyle: "italic",
-            background: hexToRgba(colors.warning, 0.1),
-            padding: "8px 12px",
-            borderRadius: "8px",
-          }}
-        >
-          <InfoIcon
-            size={14}
-            style={{ marginRight: 8, verticalAlign: "middle" }}
-          />
-          This will also clear the subcategory for all affected classes. You may
-          need to set a new subcategory for them afterwards.
-        </Paragraph>
-      )}
-      <Select
-        style={{ width: "100%", marginTop: "12px" }}
-        placeholder={`Select a new ${type}...`}
-        value={newId}
-        onChange={setNewId}
-        options={options}
-        showSearch
-        filterOption={(input, option) =>
-          (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-        }
-      />
-    </Modal>
-  );
-};
-
-// --- Universal Edit Drawer (Updated Design with AI Features) ---
+// --- Universal Edit Drawer (Collection only) ---
 const UniversalEditDrawer = ({
   isVisible,
   onClose,
   data,
-  type = "category", // 'category' or 'collection'
   onSave,
   isLoading,
   form,
@@ -708,14 +507,11 @@ const UniversalEditDrawer = ({
 
   if (!shouldRender) return null;
 
-  const isCategory = type === "category";
-  const entityName = isCategory ? "Category" : "Collection";
-
   const renderDrawerContent = () => (
     <>
       <DrawerHeader>
         <DrawerHeaderTitle>
-          {data ? `Edit ${entityName}` : `Add New ${entityName}`}
+          {data ? "Edit Collection" : "Add New Collection"}
         </DrawerHeaderTitle>
         <CloseButton onClick={onClose} aria-label="Close">
           <X size={20} />
@@ -736,10 +532,10 @@ const UniversalEditDrawer = ({
         >
           <Form.Item
             name="name"
-            label={<span style={{ fontWeight: 600 }}>{entityName} Name</span>}
+            label={<span style={{ fontWeight: 600 }}>Collection Name</span>}
             rules={[{ required: true }]}
           >
-            <Input size="middle" placeholder="e.g., Music, Date Night" />
+            <Input size="middle" placeholder="e.g., Date Night, Under $50" />
           </Form.Item>
 
           <Form.Item
@@ -833,9 +629,7 @@ const UniversalEditDrawer = ({
             </Upload>
           </Form.Item>
 
-          {/* Conditional Fields based on Type */}
-          {!isCategory ? (
-            <div style={{ marginTop: 32 }}>
+          <div style={{ marginTop: 32 }}>
               <Divider
                 orientation="left"
                 style={{ borderColor: colors.border }}
@@ -977,76 +771,6 @@ const UniversalEditDrawer = ({
                 </div>
               </Form.Item>
             </div>
-          ) : (
-            <div style={{ marginTop: 32 }}>
-              <Divider
-                orientation="left"
-                style={{ borderColor: colors.border }}
-              >
-                <span
-                  style={{
-                    fontSize: 14,
-                    color: colors.textSecondary,
-                    fontWeight: 600,
-                  }}
-                >
-                  Admin Display
-                </span>
-              </Divider>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 16,
-                }}
-              >
-                <Form.Item
-                  name="icon_name"
-                  label={<span style={{ fontWeight: 600 }}>Icon</span>}
-                  rules={[{ required: true, message: "Select an icon." }]}
-                >
-                  {/* FIX: Use options prop instead of children for performance with large lists */}
-                  <Select
-                    size="middle"
-                    showSearch
-                    placeholder="Select icon..."
-                    options={iconOptions}
-                    optionFilterProp="searchLabel"
-                    // Removed virtual={false} to allow virtualization of 1000+ items
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="color"
-                  label={<span style={{ fontWeight: 600 }}>Color Label</span>}
-                  rules={[{ required: true }]}
-                >
-                  <ColorPicker
-                    size="middle"
-                    format="hex"
-                    presets={[
-                      {
-                        label: "Recommended",
-                        colors: [
-                          "#3b82f6",
-                          "#8b5cf6",
-                          "#ec4899",
-                          "#10b981",
-                          "#f97316",
-                          "#0ea5e9",
-                          "#ef4444",
-                          "#64748b",
-                        ],
-                      },
-                    ]}
-                    style={{ width: "100%", justifyContent: "flex-start" }}
-                    showText
-                  />
-                </Form.Item>
-              </div>
-            </div>
-          )}
         </Form>
       </DrawerFormContainer>
 
@@ -1068,7 +792,7 @@ const UniversalEditDrawer = ({
           size="middle"
           style={{ borderRadius: 10, padding: "0 32px" }}
         >
-          {data ? "Save Changes" : `Create ${entityName}`}
+          {data ? "Save Changes" : "Create Collection"}
         </Button>
       </DrawerFooter>
     </>
@@ -1098,37 +822,17 @@ const UniversalEditDrawer = ({
   );
 };
 
-// --- Main Component ---
+// --- Main Component (Collections only) ---
 const ClassCategories = () => {
-  const [categories, setCategories] = useState([]);
   const [collections, setCollections] = useState([]);
-  const [activeTab, setActiveTab] = useState("categories");
-
   const [dashboardStats, setDashboardStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
-  const [chartLoading, setChartLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [searchText, setSearchText] = useState("");
 
-  // Generic state for editing either category or collection
   const [selectedItem, setSelectedItem] = useState(null);
   const [isEditDrawerVisible, setIsEditDrawerVisible] = useState(false);
-
-  const [isAddSubcategoryModalVisible, setIsAddSubcategoryModalVisible] =
-    useState(false);
-  const [isEditSubcategoryModalVisible, setIsEditSubcategoryModalVisible] =
-    useState(false);
-  const [editingSubcategory, setEditingSubcategory] = useState(null);
-  const [reassignmentData, setReassignmentData] = useState(null);
-
-  const [chartView, setChartView] = useState({
-    type: "categories",
-    category: null,
-  });
   const [editForm] = Form.useForm();
-  const [subcategoryForm] = Form.useForm();
-  const [editSubcategoryForm] = Form.useForm();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -1157,32 +861,7 @@ const ClassCategories = () => {
     }
   }, []);
 
-  const fetchCategories = useCallback(async () => {
-    setLoading(true);
-    const params = searchText ? { search: searchText } : {};
-    try {
-      const response = await classManagementService.getCategories(params);
-      if (response.success) {
-        const data = (response.data || []).map((cat) => ({
-          ...cat,
-          subcategories: cat.subcategories || [],
-        }));
-        setCategories(data);
-      } else {
-        message.error(response.error || "Failed to fetch categories");
-        setCategories([]);
-      }
-    } catch (e) {
-      console.error("Fetch categories error:", e);
-      message.error("Error fetching categories");
-      setCategories([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [searchText]);
-
   const fetchCollections = useCallback(async () => {
-    if (activeTab !== "collections") return;
     setLoading(true);
     try {
       const response = await classManagementService.getCollections();
@@ -1198,110 +877,49 @@ const ClassCategories = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
+  }, []);
 
   useEffect(() => {
     fetchDashboardStats();
   }, [fetchDashboardStats]);
 
   useEffect(() => {
-    if (activeTab === "categories") {
-      fetchCategories();
-    } else {
-      fetchCollections();
-    }
-  }, [fetchCategories, fetchCollections, activeTab]);
+    fetchCollections();
+  }, [fetchCollections]);
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
     if (active && over && active.id !== over.id) {
-      if (activeTab === "categories") {
-        setCategories((prev) => {
-          const oldIndex = prev.findIndex((cat) => cat.id === active.id);
-          const newIndex = prev.findIndex((cat) => cat.id === over.id);
-          if (oldIndex === -1 || newIndex === -1) return prev;
-          const newArray = arrayMove(prev, oldIndex, newIndex);
-          updateOrder(newArray, "category");
-          return newArray;
-        });
-      } else {
-        setCollections((prev) => {
-          const oldIndex = prev.findIndex((c) => c.id === active.id);
-          const newIndex = prev.findIndex((c) => c.id === over.id);
-          if (oldIndex === -1 || newIndex === -1) return prev;
-          const newArray = arrayMove(prev, oldIndex, newIndex);
-          updateOrder(newArray, "collection");
-          return newArray;
-        });
-      }
+      setCollections((prev) => {
+        const oldIndex = prev.findIndex((c) => c.id === active.id);
+        const newIndex = prev.findIndex((c) => c.id === over.id);
+        if (oldIndex === -1 || newIndex === -1) return prev;
+        const newArray = arrayMove(prev, oldIndex, newIndex);
+        updateOrder(newArray);
+        return newArray;
+      });
     }
   };
 
-  const updateOrder = async (items, type) => {
+  const updateOrder = async (items) => {
     setActionLoading(true);
     try {
       const updatePayload = items.map((item, index) => ({
         id: item.id,
         order: index,
       }));
-
-      const apiCall =
-        type === "category"
-          ? classManagementService.updateCategoryOrder(updatePayload)
-          : classManagementService.updateCollectionOrder(updatePayload);
-
-      const response = await apiCall;
+      const response = await classManagementService.updateCollectionOrder(updatePayload);
       if (response?.success) {
-        message.success(
-          `${type === "category" ? "Category" : "Collection"} order updated.`
-        );
+        message.success("Collection order updated.");
       } else {
         message.error("Failed to update order. Reverting changes.");
-        if (type === "category") fetchCategories();
-        else fetchCollections();
+        fetchCollections();
       }
     } catch (error) {
       message.error("An error occurred while updating order.");
-      if (type === "category") fetchCategories();
-      else fetchCollections();
+      fetchCollections();
     } finally {
       setActionLoading(false);
-    }
-  };
-
-  const handleDeleteSubcategory = async (categoryId, subcategoryId) => {
-    setActionLoading(true);
-    message.loading({ content: "Deleting...", key: "deleteAction" });
-    const response = await classManagementService.deleteSubcategory(
-      categoryId,
-      subcategoryId
-    );
-    if (response.success) {
-      message.success({ content: "Subcategory deleted", key: "deleteAction" });
-      fetchCategories();
-      fetchDashboardStats();
-    } else {
-      message.error({
-        content: response.error || "Deletion failed",
-        key: "deleteAction",
-      });
-    }
-    setActionLoading(false);
-  };
-
-  const confirmDeleteCategory = (cat) => {
-    if (cat.class_count > 0) {
-      setReassignmentData({ type: "category", target: cat, parent: null });
-    } else {
-      handleDeleteCategory(cat.id);
-    }
-  };
-
-  const confirmDeleteSubcategory = (sub, cat) => {
-    if (sub.class_count > 0) {
-      setReassignmentData({ type: "subcategory", target: sub, parent: cat });
-    } else {
-      handleDeleteSubcategory(cat.id, sub.id);
     }
   };
 
@@ -1348,7 +966,7 @@ const ClassCategories = () => {
         });
         const uploadResult = await uploadService.uploadFile(
           fileToUpload,
-          "category_image"
+          "collection_image"
         );
 
         if (uploadResult.success) {
@@ -1375,50 +993,24 @@ const ClassCategories = () => {
       const payload = {
         name: values.name,
         description: values.description,
-        ...(values.slug && {
-          [activeTab === "categories" ? "key" : "slug"]: values.slug,
-        }),
+        ...(values.slug && { slug: values.slug }),
       };
 
       if (imageS3Key !== undefined) {
         payload.image_s3_key = imageS3Key;
       }
 
-      if (activeTab === "categories") {
-        payload.color =
-          typeof values.color === "object" && values.color.toHexString
-            ? values.color.toHexString()
-            : values.color;
-        payload.icon_name = values.icon_name;
+      payload.is_active = values.is_active;
+      payload.type = values.type;
+      if (values.type === "automated") {
+        payload.automation_rules = { ai_criteria: values.ai_criteria };
       } else {
-        payload.is_active = values.is_active;
-        payload.type = values.type;
-        // Handle Automation Rules
-        if (values.type === "automated") {
-          payload.automation_rules = {
-            ai_criteria: values.ai_criteria,
-          };
-        } else {
-          payload.automation_rules = {};
-        }
+        payload.automation_rules = {};
       }
 
-      let response;
-      if (activeTab === "categories") {
-        response = selectedItem
-          ? await classManagementService.updateCategory(
-              selectedItem.id,
-              payload
-            )
-          : await classManagementService.createCategory(payload);
-      } else {
-        response = selectedItem
-          ? await classManagementService.updateCollection(
-              selectedItem.id,
-              payload
-            )
-          : await classManagementService.createCollection(payload);
-      }
+      const response = selectedItem
+        ? await classManagementService.updateCollection(selectedItem.id, payload)
+        : await classManagementService.createCollection(payload);
 
       if (response.success) {
         message.success({
@@ -1427,7 +1019,7 @@ const ClassCategories = () => {
           duration: 2,
         });
         setIsEditDrawerVisible(false);
-        activeTab === "categories" ? fetchCategories() : fetchCollections();
+        fetchCollections();
         fetchDashboardStats();
       } else {
         message.error({
@@ -1445,124 +1037,6 @@ const ClassCategories = () => {
     }
   };
 
-  const handleAddSubcategory = async () => {
-    try {
-      const values = await subcategoryForm.validateFields();
-      setActionLoading(true);
-      message.loading({ content: "Adding...", key: "subcategoryAction" });
-      const response = await classManagementService.addSubcategory(
-        selectedItem.id,
-        values
-      );
-      if (response.success) {
-        message.success({
-          content: "Subcategory added",
-          key: "subcategoryAction",
-        });
-        setIsAddSubcategoryModalVisible(false);
-        fetchCategories();
-        fetchDashboardStats();
-      } else {
-        message.error({
-          content: response.error || "Failed to add subcategory",
-          key: "subcategoryAction",
-        });
-      }
-    } catch (e) {
-      console.error("Add subcategory error:", e);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleUpdateSubcategory = async () => {
-    try {
-      const values = await editSubcategoryForm.validateFields();
-      setActionLoading(true);
-      message.loading({ content: "Updating...", key: "subcategoryAction" });
-      const response = await classManagementService.updateSubcategory(
-        selectedItem.id,
-        editingSubcategory.id,
-        values
-      );
-      if (response.success) {
-        message.success({
-          content: "Subcategory updated",
-          key: "subcategoryAction",
-        });
-        setIsEditSubcategoryModalVisible(false);
-        fetchCategories();
-      } else {
-        message.error({
-          content: response.error || "Failed to update subcategory",
-          key: "subcategoryAction",
-        });
-      }
-    } catch (e) {
-      console.error("Update subcategory error:", e);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleDeleteCategory = async (categoryId) => {
-    setActionLoading(true);
-    message.loading({ content: "Deleting...", key: "deleteAction" });
-    const response = await classManagementService.deleteCategory(categoryId);
-    if (response.success) {
-      message.success({ content: "Category deleted", key: "deleteAction" });
-      fetchCategories();
-      fetchDashboardStats();
-    } else {
-      message.error({
-        content: response.error || "Failed to delete category",
-        key: "deleteAction",
-      });
-    }
-    setActionLoading(false);
-  };
-
-  const handleConfirmReassignment = async (newId) => {
-    if (!reassignmentData) return;
-    const { type, target, parent } = reassignmentData;
-
-    setActionLoading(true);
-    message.loading({
-      content: "Reassigning and deleting...",
-      key: "reassignAction",
-    });
-
-    let response;
-    if (type === "category") {
-      response = await classManagementService.deleteCategoryWithReassignment(
-        target.id,
-        newId
-      );
-    } else {
-      response = await classManagementService.deleteSubcategoryWithReassignment(
-        parent.id,
-        target.id,
-        newId
-      );
-    }
-
-    if (response.success) {
-      message.success({
-        content: "Deleted successfully.",
-        key: "reassignAction",
-      });
-      setReassignmentData(null);
-      fetchCategories();
-      fetchDashboardStats();
-    } else {
-      message.error({
-        content: response.error || "An error occurred.",
-        key: "reassignAction",
-      });
-    }
-    setActionLoading(false);
-  };
-
   const openDrawer = (item = null) => {
     setSelectedItem(item);
     if (item) {
@@ -1577,30 +1051,18 @@ const ClassCategories = () => {
           ]
         : [];
 
-      const initialValues = {
+      editForm.setFieldsValue({
         name: item.name,
-        slug: activeTab === "categories" ? item.key : item.slug,
+        slug: item.slug,
         description: item.description,
         image: fileList,
-      };
-
-      if (activeTab === "categories") {
-        initialValues.color = item.color || colors.primary;
-        initialValues.icon_name = item.icon_name || "Bookmark";
-      } else {
-        initialValues.is_active = item.is_active;
-        initialValues.type = item.type || "manual";
-        if (item.automation_rules?.ai_criteria) {
-          initialValues.ai_criteria = item.automation_rules.ai_criteria;
-        }
-      }
-
-      editForm.setFieldsValue(initialValues);
+        is_active: item.is_active,
+        type: item.type || "manual",
+        ai_criteria: item.automation_rules?.ai_criteria,
+      });
     } else {
       editForm.resetFields();
       editForm.setFieldsValue({
-        color: colors.primary,
-        icon_name: "Bookmark",
         is_active: true,
         type: "manual",
         image: [],
@@ -1608,133 +1070,6 @@ const ClassCategories = () => {
     }
     setIsEditDrawerVisible(true);
   };
-
-  const showAddSubcategoryModal = (category) => {
-    setSelectedItem(category);
-    subcategoryForm.resetFields();
-    setIsAddSubcategoryModalVisible(true);
-  };
-
-  const openEditSubcategoryModal = (subcategory, category) => {
-    setSelectedItem(category);
-    setEditingSubcategory(subcategory);
-    editSubcategoryForm.setFieldsValue({
-      name: subcategory.name,
-      key: subcategory.key,
-      description: subcategory.description,
-    });
-    setIsEditSubcategoryModalVisible(true);
-  };
-
-  const categoryColumns = [
-    { key: "sort", width: 50, fixed: "left", render: () => <DragHandle /> },
-    {
-      title: "Category",
-      key: "category",
-      render: (_, cat) => (
-        <Space>
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: 6,
-              backgroundColor: cat.color,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-            }}
-          >
-            <CategoryIcon iconName={cat.icon_name} size={14} />
-          </div>
-          <div>
-            <div
-              style={{
-                fontWeight: 500,
-                fontSize: 14,
-                color: colors.textPrimary,
-              }}
-            >
-              {cat.name}
-            </div>
-            <div style={{ fontSize: 12, color: colors.textSecondary }}>
-              {cat.key} ({cat.class_count} classes)
-            </div>
-          </div>
-        </Space>
-      ),
-    },
-    {
-      title: "Active Classes",
-      dataIndex: "activeClasses",
-      key: "activeClasses",
-      sorter: (a, b) => (a.activeClasses || 0) - (b.activeClasses || 0),
-      align: "center",
-      width: 130,
-      render: (val) => <span style={{ fontWeight: 500 }}>{val || 0}</span>,
-    },
-    {
-      title: "Subcategories",
-      key: "subcategories",
-      render: (_, cat) => (
-        <div style={{ maxWidth: 450 }}>
-          <Space size={[4, 8]} wrap>
-            {cat.subcategories.map((s) => (
-              <SubcategoryItem key={s.id} color={cat.color}>
-                <span>
-                  {s.name} ({s.class_count})
-                </span>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<PenLine size={12} />}
-                  onClick={() => openEditSubcategoryModal(s, cat)}
-                  style={{ padding: "0 2px", height: "auto", marginLeft: 4 }}
-                />
-                <Popconfirm
-                  title="Delete?"
-                  onConfirm={() => confirmDeleteSubcategory(s, cat)}
-                  okButtonProps={{ danger: true }}
-                >
-                  <Button
-                    type="text"
-                    size="small"
-                    danger
-                    icon={<Trash2 size={12} />}
-                    style={{ padding: "0 2px", height: "auto" }}
-                  />
-                </Popconfirm>
-              </SubcategoryItem>
-            ))}
-            <Button
-              type="dashed"
-              icon={<Plus size={12} />}
-              size="small"
-              onClick={() => showAddSubcategoryModal(cat)}
-            />
-          </Space>
-        </div>
-      ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      width: 120,
-      align: "right",
-      render: (_, cat) => (
-        <Space>
-          <Button icon={<Edit size={16} />} onClick={() => openDrawer(cat)} />
-          <Popconfirm
-            title="Delete?"
-            onConfirm={() => confirmDeleteCategory(cat)}
-            okButtonProps={{ danger: true }}
-          >
-            <Button danger icon={<Trash2 size={16} />} />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
 
   const collectionColumns = [
     { key: "sort", width: 50, fixed: "left", render: () => <DragHandle /> },
@@ -1825,37 +1160,20 @@ const ClassCategories = () => {
     },
   ];
 
-  const pieChartData =
-    chartView.type === "categories"
-      ? dashboardStats?.categoryClassCounts?.map((c) => ({
-          name: c.name,
-          value: c.class_count,
-          color: c.color,
-          id: c.id,
-        }))
-      : dashboardStats?.subcategoryClassCounts
-          ?.filter((sc) => sc.category_id === chartView.category.id)
-          .map((sc) => ({
-            name: sc.name,
-            value: sc.class_count,
-            color: sc.category__color,
-            id: sc.id,
-          }));
-
   const statCardsData = [
     {
-      title: "Total Categories",
-      value: dashboardStats?.totalCategories,
-      icon: TagIcon,
+      title: "Total Collections",
+      value: collections.length,
+      icon: Layers,
       color: colors.info,
       footer: "Platform-wide",
     },
     {
-      title: "Total Subcategories",
-      value: dashboardStats?.totalSubcategories,
-      icon: GridIcon,
+      title: "Active on Homepage",
+      value: collections.filter((c) => c.is_active).length,
+      icon: Sparkles,
       color: colors.success,
-      footer: "Across all categories",
+      footer: "Visible to users",
     },
     {
       title: "Total Active Classes",
@@ -1865,43 +1183,21 @@ const ClassCategories = () => {
       footer: "Currently listed",
     },
     {
-      title: "Most Active Category",
-      value: dashboardStats?.categoryClassCounts?.[0]?.name,
+      title: "Largest Collection",
+      value: collections.length
+        ? collections.reduce((a, b) =>
+            (a.class_count || 0) >= (b.class_count || 0) ? a : b
+          )?.name
+        : "—",
       icon: BarChart2,
       color: "#8b5cf6",
       footer: `${
-        dashboardStats?.categoryClassCounts?.[0]?.class_count ?? 0
-      } active classes`,
+        collections.length
+          ? Math.max(...collections.map((c) => c.class_count || 0), 0)
+          : 0
+      } classes`,
     },
   ];
-
-  const getReassignmentOptions = () => {
-    if (!reassignmentData) return [];
-    const { type, target } = reassignmentData;
-
-    if (type === "category") {
-      return categories
-        .filter((c) => c.id !== target.id)
-        .map((c) => ({ label: c.name, value: c.id }));
-    }
-
-    if (type === "subcategory") {
-      // MODIFIED: Return grouped options with all subcategories from all categories
-      return categories
-        .map((cat) => ({
-          label: cat.name,
-          options: cat.subcategories
-            .filter((s) => s.id !== target.id) // Exclude the one being deleted
-            .map((s) => ({
-              label: s.name,
-              value: s.id,
-            })),
-        }))
-        .filter((group) => group.options.length > 0); // Remove empty groups
-    }
-
-    return [];
-  };
 
   return (
     <ThemeProvider theme={appTheme}>
@@ -1909,9 +1205,9 @@ const ClassCategories = () => {
         <DashboardWrapper>
           <DashboardHeader>
             <div>
-              <PageTitle>Class Organization</PageTitle>
+              <PageTitle>Collections</PageTitle>
               <HeaderSubtitle>
-                Manage taxonomy (Categories) and curated lists (Collections).
+                Manage curated lists (e.g. Date Night, Under $50). Manual or AI automated.
               </HeaderSubtitle>
             </div>
           </DashboardHeader>
@@ -1924,8 +1220,7 @@ const ClassCategories = () => {
               Platform Overview
             </SectionTitle>
             <HelpText>
-              A high-level overview of class and category distribution on the
-              platform.
+              Collections appear on the homepage and explore. Classes can belong to multiple collections.
             </HelpText>
           </div>
 
@@ -1965,492 +1260,56 @@ const ClassCategories = () => {
 
           <Divider />
 
-          <ChartCard>
-            <ChartHeader>
-              <SectionTitle>
-                <PieChartIcon size={20} color={colors.primary} />
-                {chartView.type === "categories"
-                  ? "Class Distribution by Category"
-                  : `Subcategories in ${chartView.category.name}`}
-              </SectionTitle>
-              {chartView.type === "subcategories" && (
-                <Button
-                  icon={<ArrowLeft size={14} />}
-                  onClick={() =>
-                    setChartView({ type: "categories", category: null })
-                  }
-                >
-                  Back to Categories
-                </Button>
-              )}
-            </ChartHeader>
-            <HelpText>
-              Distribution of active classes. Click a category to see its
-              subcategory breakdown.
-            </HelpText>
-            <div
-              style={{
-                height: 300,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              {chartLoading ? (
-                <GlobalLoaderWithoutInlineStyles />
-              ) : !pieChartData || pieChartData.length === 0 ? (
-                <Empty
-                  description={
-                    chartView.type === "categories"
-                      ? "No category data"
-                      : "No subcategories with active classes"
-                  }
-                />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieChartData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={isMobile ? 50 : 70}
-                      outerRadius={isMobile ? 80 : 100}
-                      paddingAngle={2}
-                      onClick={(data) => {
-                        if (chartView.type === "categories") {
-                          setChartView({
-                            type: "subcategories",
-                            category: data.payload.payload,
-                          });
-                        }
-                      }}
-                    >
-                      {pieChartData.map((entry) => (
-                        <Cell
-                          key={`cell-${entry.name}`}
-                          fill={hexToRgba(entry.color, 0.8)}
-                          stroke={entry.color}
-                        />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip content={<CustomRechartsTooltip />} />
-                    <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </ChartCard>
-
-          <Divider />
-
           <TableSection
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <Tabs
-              activeKey={activeTab}
-              onChange={setActiveTab}
-              type="card"
-              tabBarStyle={{
-                margin: 0,
-                padding: "12px 24px 0",
-                borderBottom: `1px solid ${colors.border}`,
-              }}
-              items={[
-                {
-                  key: "categories",
-                  label: (
-                    <span
-                      style={{ display: "flex", alignItems: "center", gap: 8 }}
-                    >
-                      <Layers size={16} /> Categories (Taxonomy)
-                    </span>
-                  ),
-                  children: (
-                    <>
-                      <TableHeader>
-                        <div style={{ flex: 1 }}>
-                          <TableDescription>
-                            Define the core hierarchy. Every class must belong
-                            to one Category.
-                          </TableDescription>
-                        </div>
-                        <Button
-                          type="primary"
-                          icon={<Plus size={16} />}
-                          onClick={() => openDrawer(null)}
-                        >
-                          Add Category
-                        </Button>
-                      </TableHeader>
-                      <FilterBar>
-                        <SearchFilterContainer>
-                          <Input
-                            placeholder="Search categories..."
-                            allowClear
-                            prefix={
-                              <Search size={16} color={colors.textTertiary} />
-                            }
-                            value={searchText}
-                            onChange={(e) => setSearchText(e.target.value)}
-                            onSearch={fetchCategories}
-                            style={{ width: isMobile ? "100%" : 280 }}
-                          />
-                        </SearchFilterContainer>
-                      </FilterBar>
+            <TableHeader>
+              <div style={{ flex: 1 }}>
+                <TableDescription>
+                  Curated lists like "Date Night" or "Under $50". Can be manual or AI automated. Drag to reorder.
+                </TableDescription>
+              </div>
+              <Button
+                type="primary"
+                icon={<Plus size={16} />}
+                onClick={() => openDrawer(null)}
+              >
+                Add Collection
+              </Button>
+            </TableHeader>
 
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        modifiers={[restrictToVerticalAxis]}
-                        onDragEnd={handleDragEnd}
-                      >
-                        <SortableContext
-                          items={categories.map((c) => c.id)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          <Table
-                            columns={categoryColumns}
-                            dataSource={categories}
-                            rowKey="id"
-                            loading={loading}
-                            components={{ body: { row: Row } }}
-                            pagination={false}
-                          />
-                        </SortableContext>
-                      </DndContext>
-                    </>
-                  ),
-                },
-                {
-                  key: "collections",
-                  label: (
-                    <span
-                      style={{ display: "flex", alignItems: "center", gap: 8 }}
-                    >
-                      <Sparkles size={16} /> Collections
-                    </span>
-                  ),
-                  children: (
-                    <>
-                      <TableHeader>
-                        <div style={{ flex: 1 }}>
-                          <TableDescription>
-                            Curated lists like "Date Night" or "Under $50". Can
-                            be manual or AI automated.
-                          </TableDescription>
-                        </div>
-                        <Button
-                          type="primary"
-                          icon={<Plus size={16} />}
-                          onClick={() => openDrawer(null)}
-                        >
-                          Add Collection
-                        </Button>
-                      </TableHeader>
-
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        modifiers={[restrictToVerticalAxis]}
-                        onDragEnd={handleDragEnd}
-                      >
-                        <SortableContext
-                          items={collections.map((c) => c.id)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          <Table
-                            columns={collectionColumns}
-                            dataSource={collections}
-                            rowKey="id"
-                            loading={loading}
-                            components={{ body: { row: Row } }}
-                            pagination={false}
-                          />
-                        </SortableContext>
-                      </DndContext>
-                    </>
-                  ),
-                },
-              ]}
-            />
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              modifiers={[restrictToVerticalAxis]}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={collections.map((c) => c.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <Table
+                  columns={collectionColumns}
+                  dataSource={collections}
+                  rowKey="id"
+                  loading={loading}
+                  components={{ body: { row: Row } }}
+                  pagination={false}
+                />
+              </SortableContext>
+            </DndContext>
           </TableSection>
-
-          <ReassignmentModal
-            open={!!reassignmentData}
-            onCancel={() => setReassignmentData(null)}
-            onConfirm={handleConfirmReassignment}
-            data={reassignmentData}
-            options={getReassignmentOptions()}
-            loading={actionLoading}
-          />
 
           <UniversalEditDrawer
             isVisible={isEditDrawerVisible}
             onClose={() => setIsEditDrawerVisible(false)}
             data={selectedItem}
-            type={activeTab === "categories" ? "category" : "collection"}
             onSave={handleSaveItem}
             isLoading={actionLoading}
             form={editForm}
           />
-
-          <Modal
-            title={
-              <ModalTitleWrapper>
-                <Plus size={20} />
-                Add Subcategory to: {selectedItem?.name || ""}
-              </ModalTitleWrapper>
-            }
-            open={isAddSubcategoryModalVisible}
-            onCancel={() => setIsAddSubcategoryModalVisible(false)}
-            footer={null}
-            width={isMobile ? "95%" : 500}
-            destroyOnClose
-          >
-            {selectedItem && (
-              <Form
-                form={subcategoryForm}
-                layout="vertical"
-                onFinish={handleAddSubcategory}
-              >
-                <div
-                  style={{
-                    marginBottom: 20,
-                    padding: 12,
-                    background: hexToRgba(selectedItem.color, 0.1),
-                    borderRadius: 12,
-                  }}
-                >
-                  <Space>
-                    <div
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: 6,
-                        backgroundColor: selectedItem.color,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#fff",
-                      }}
-                    >
-                      <CategoryIcon
-                        iconName={selectedItem.icon_name}
-                        size={14}
-                      />
-                    </div>
-                    <Text
-                      strong
-                      style={{ fontSize: 16, color: selectedItem.color }}
-                    >
-                      {selectedItem.name}
-                    </Text>
-                  </Space>
-                </div>
-                <Form.Item
-                  name="name"
-                  label="Subcategory Name"
-                  rules={[{ required: true }]}
-                >
-                  <Input placeholder="e.g., Piano, Guitar" />
-                </Form.Item>
-                <Form.Item
-                  name="key"
-                  label="Subcategory Key"
-                  tooltip={{
-                    title: "URL-friendly identifier",
-                    icon: <InfoIcon size={13} />,
-                  }}
-                  rules={[
-                    { required: true },
-                    {
-                      pattern: /^[a-z0-9-]+$/,
-                      message: "Lowercase, numbers, hyphens only",
-                    },
-                  ]}
-                >
-                  <Input
-                    placeholder="e.g., piano, oil-painting"
-                    suffix={
-                      <Tooltip title="Auto-generate from name">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<Copy size={13} />}
-                          onClick={() => {
-                            const n = subcategoryForm.getFieldValue("name");
-                            if (n)
-                              subcategoryForm.setFieldsValue({
-                                key: n
-                                  .toLowerCase()
-                                  .replace(/\s+/g, "-")
-                                  .replace(/[^a-z0-9-]/g, ""),
-                              });
-                          }}
-                        />
-                      </Tooltip>
-                    }
-                  />
-                </Form.Item>
-                <Form.Item name="description" label="Description (Optional)">
-                  <Input.TextArea
-                    placeholder="A short description of this subcategory"
-                    rows={2}
-                  />
-                </Form.Item>
-                <Divider />
-                <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
-                  <Space>
-                    <Button
-                      onClick={() => setIsAddSubcategoryModalVisible(false)}
-                      disabled={actionLoading}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="primary"
-                      htmlType="submit"
-                      loading={actionLoading}
-                      key={`btn-${actionLoading}`}
-                    >
-                      Add Subcategory
-                    </Button>
-                  </Space>
-                </Form.Item>
-              </Form>
-            )}
-          </Modal>
-
-          <Modal
-            title={
-              <ModalTitleWrapper>
-                <PenLine size={20} />
-                Edit Subcategory in: {selectedItem?.name || ""}
-              </ModalTitleWrapper>
-            }
-            open={isEditSubcategoryModalVisible}
-            onCancel={() => setIsEditSubcategoryModalVisible(false)}
-            footer={null}
-            width={isMobile ? "95%" : 500}
-            destroyOnClose
-          >
-            {editingSubcategory && (
-              <Form
-                form={editSubcategoryForm}
-                layout="vertical"
-                onFinish={handleUpdateSubcategory}
-              >
-                <div
-                  style={{
-                    marginBottom: 20,
-                    padding: 12,
-                    background: hexToRgba(selectedItem?.color, 0.1),
-                    borderRadius: 12,
-                  }}
-                >
-                  <Space>
-                    <div
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: 6,
-                        backgroundColor: selectedItem?.color,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#fff",
-                      }}
-                    >
-                      <CategoryIcon
-                        iconName={selectedItem?.icon_name}
-                        size={14}
-                      />
-                    </div>
-                    <Text
-                      strong
-                      style={{ fontSize: 16, color: selectedItem?.color }}
-                    >
-                      {selectedItem?.name}
-                    </Text>
-                  </Space>
-                </div>
-                <Form.Item
-                  name="name"
-                  label="Subcategory Name"
-                  rules={[{ required: true }]}
-                >
-                  <Input placeholder="e.g., Piano, Guitar" />
-                </Form.Item>
-                <Form.Item
-                  name="key"
-                  label="Subcategory Key"
-                  tooltip={{
-                    title: "URL-friendly identifier",
-                    icon: <InfoIcon size={13} />,
-                  }}
-                  rules={[
-                    { required: true },
-                    {
-                      pattern: /^[a-z0-9-]+$/,
-                      message: "Lowercase, numbers, hyphens only",
-                    },
-                  ]}
-                >
-                  <Input
-                    placeholder="e.g., piano, oil-painting"
-                    suffix={
-                      <Tooltip title="Auto-generate from name">
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<Copy size={13} />}
-                          onClick={() => {
-                            const n = editSubcategoryForm.getFieldValue("name");
-                            if (n)
-                              editSubcategoryForm.setFieldsValue({
-                                key: n
-                                  .toLowerCase()
-                                  .replace(/\s+/g, "-")
-                                  .replace(/[^a-z0-9-]/g, ""),
-                              });
-                          }}
-                        />
-                      </Tooltip>
-                    }
-                  />
-                </Form.Item>
-                <Form.Item name="description" label="Description (Optional)">
-                  <Input.TextArea
-                    placeholder="A short description of this subcategory"
-                    rows={2}
-                  />
-                </Form.Item>
-                <Divider />
-                <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
-                  <Space>
-                    <Button
-                      onClick={() => setIsEditSubcategoryModalVisible(false)}
-                      disabled={actionLoading}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="primary"
-                      htmlType="submit"
-                      loading={actionLoading}
-                      key={`btn-${actionLoading}`}
-                    >
-                      Update Subcategory
-                    </Button>
-                  </Space>
-                </Form.Item>
-              </Form>
-            )}
-          </Modal>
         </DashboardWrapper>
       </ConfigProvider>
     </ThemeProvider>

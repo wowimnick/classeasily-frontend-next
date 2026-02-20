@@ -106,7 +106,7 @@ export default function AdminPage() {
     const allowedKeys = [
       "users", "roles", "audit",
       "business-overview", "business-listings", "business-verification",
-      "class-listings", "class-reviews", "class-categories",
+      "class-listings", "class-reviews", "collections",
       "all-bookings", "payouts", "global-discounts", "blog", "support", "conversations",
     ];
     const permissionMap = {
@@ -124,7 +124,7 @@ export default function AdminPage() {
       "business-verification": "quickstart.view_all_verificationrequests",
       "class-listings": "quickstart.view_classesmain",
       "class-reviews": "quickstart.view_reviews",
-      "class-categories": "quickstart.view_classcategory",
+      "collections": "quickstart.view_classcollection",
     };
     const isCurrentTabVisible = allowedKeys.includes(activeKey) &&
       (!permissionMap[activeKey] || permissions.includes(permissionMap[activeKey]));
@@ -158,7 +158,7 @@ export default function AdminPage() {
         return <UserAccessControl />;
       case "class-listings":
         return <ClassListings />;
-      case "class-categories":
+      case "collections":
         return <ClassCategories />;
       case "class-reviews":
         return <ClassReviews />;

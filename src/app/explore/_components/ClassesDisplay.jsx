@@ -33,7 +33,7 @@ const GridContainer = styled.div`
   grid-template-columns: ${({ $isMapVisible }) =>
     $isMapVisible ? "minmax(0, 1fr) minmax(200px, 40%)" : "1fr"};
   width: 100%;
-  height: calc(100vh - 130px);
+  height: calc(100vh - 80px);
   position: relative;
   overflow: hidden;
   transition: grid-template-columns 0.4s ease-in-out;

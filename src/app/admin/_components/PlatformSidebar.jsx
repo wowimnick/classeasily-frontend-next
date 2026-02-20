@@ -414,7 +414,7 @@ export const menuItems = [
     children: [
       { key: "class-listings", label: "Class Listings" },
       { key: "class-reviews", label: "Class Reviews" },
-      { key: "class-categories", label: "Class Categories" },
+      { key: "collections", label: "Collections" },
     ],
   },
   {
@@ -570,7 +570,7 @@ const menuItemPermissions = {
   "business-verification": "quickstart.view_all_verificationrequests",
   "class-listings": "quickstart.view_classesmain",
   "class-reviews": "quickstart.view_reviews",
-  "class-categories": "quickstart.view_classcategory",
+  "collections": "quickstart.view_classcollection",
 };
 
 const PlatformSidebar = memo(({ onMenuSelect, activeKey }) => {

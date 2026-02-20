@@ -676,8 +676,6 @@ const formatCurrency = (value) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
     value ?? 0
   );
-const getCategoryColor = (category) => category?.color || colors.textSecondary;
-const getCategoryName = (category) => category?.name || "Uncategorized";
 const capitalizeWords = (str) =>
   !str
     ? "N/A"
@@ -834,19 +832,6 @@ const ClassDetailDrawerContent = ({ classData, onShowLockModal }) => {
                           classData.price_range.min
                         )} - ${formatCurrency(classData.price_range.max)}`
                     : "N/A"}
-                </InfoValue>
-              </InfoContent>
-            </InfoItem>
-            <InfoItem>
-              <InfoIcon>
-                <TagIcon />
-              </InfoIcon>
-              <InfoContent>
-                <InfoLabel>Category</InfoLabel>
-                <InfoValue>
-                  <Tag color={getCategoryColor(classData.category)}>
-                    {getCategoryName(classData.category)}
-                  </Tag>
                 </InfoValue>
               </InfoContent>
             </InfoItem>
@@ -1127,7 +1112,6 @@ export default function ClassListings() {
   const editDrawerOperation = useRef(null);
   const [filterParams, setFilterParams] = useState({
     search: "",
-    category_id: "all",
     status: "all",
     featured: false,
   });
@@ -1136,7 +1120,6 @@ export default function ClassListings() {
   const [isLockModalVisible, setIsLockModalVisible] = useState(false);
   const [classToModify, setClassToModify] = useState(null);
   const [lockForm] = Form.useForm();
-  const [categories, setCategories] = useState([]);
   const [allCollections, setAllCollections] = useState([]);
   const [classStats, setClassStats] = useState({});
   const [pagination, setPagination] = useState({
@@ -1175,10 +1158,6 @@ export default function ClassListings() {
         page: currentPagination.current,
         page_size: currentPagination.pageSize,
         search: currentFilters.search,
-        category_id:
-          currentFilters.category_id !== "all"
-            ? currentFilters.category_id
-            : undefined,
         status:
           currentFilters.status !== "all" ? currentFilters.status : undefined,
         featured: currentFilters.featured || undefined,
@@ -1244,9 +1223,6 @@ export default function ClassListings() {
   }, []);
 
   useEffect(() => {
-    classManagementService
-      .getCategories()
-      .then((res) => res.success && setCategories(res.data || []));
     fetchStats();
     fetchCollections();
   }, [fetchStats, fetchCollections]);
@@ -1604,7 +1580,7 @@ export default function ClassListings() {
             size={48}
             src={c.images?.[0]?.image_thumb_url}
             style={{
-              backgroundColor: getCategoryColor(c.category),
+              backgroundColor: colors.border,
               borderRadius: 8,
             }}
           >
@@ -1631,16 +1607,6 @@ export default function ClassListings() {
           <MapPin size={14} style={{ color: colors.textSecondary }} />
           <span>{loc || "N/A"}</span>
         </Space>
-      ),
-    },
-    {
-      title: "Category",
-      key: "category",
-      width: 150,
-      render: (_, c) => (
-        <Tag color={getCategoryColor(c.category)}>
-          {getCategoryName(c.category)}
-        </Tag>
       ),
     },
     {
@@ -1779,7 +1745,7 @@ export default function ClassListings() {
             size={48}
             src={item.images?.[0]?.image_thumb_url}
             style={{
-              backgroundColor: getCategoryColor(item.category),
+              backgroundColor: colors.border,
               borderRadius: 8,
             }}
           >
@@ -1790,14 +1756,6 @@ export default function ClassListings() {
             <BusinessName>{item.business_name}</BusinessName>
           </MobileCardInfo>
         </MobileCardHeader>
-        <MobileCardRow>
-          <MobileCardLabel>Category</MobileCardLabel>
-          <MobileCardValue>
-            <Tag color={getCategoryColor(item.category)}>
-              {getCategoryName(item.category)}
-            </Tag>
-          </MobileCardValue>
-        </MobileCardRow>
         <MobileCardRow>
           <MobileCardLabel>Collections</MobileCardLabel>
           <MobileCardValue
@@ -2063,18 +2021,6 @@ export default function ClassListings() {
                 style={{ width: isMobile ? "100%" : 280 }}
                 allowClear
               />
-              <Select
-                value={filterParams.category_id}
-                style={{ width: isMobile ? "100%" : 180 }}
-                onChange={(val) => handleFilterChange({ category_id: val })}
-              >
-                <Option value="all">All Categories</Option>
-                {categories.map((c) => (
-                  <Option key={c.id} value={c.id}>
-                    {c.name}
-                  </Option>
-                ))}
-              </Select>
               <Select
                 value={filterParams.status}
                 style={{ width: isMobile ? "100%" : 150 }}

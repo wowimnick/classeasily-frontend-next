@@ -721,8 +721,6 @@ const AdminClassEditDrawer = ({
   const [dataLoading, setDataLoading] = useState(false); // Changed: start with false
   const [activeTab, setActiveTab] = useState("1");
   const [mainImages, setMainImages] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [subcategories, setSubcategories] = useState([]);
   const [mapSearchResults, setMapSearchResults] = useState([]);
   const [mapSearchValue, setMapSearchValue] = useState("");
   const [selectedMapLocation, setSelectedMapLocation] = useState(null);
@@ -733,8 +731,6 @@ const AdminClassEditDrawer = ({
   const currentAsyncOperation = useRef(null);
   const isMountedRef = useRef(true);
   const initialClassDataRef = useRef(null);
-  const initialSubcategoryKeyRef = useRef(null);
-
   // ADD: Cleanup function for async operations
   const cancelCurrentOperation = useCallback(() => {
     if (currentAsyncOperation.current) {
@@ -743,7 +739,6 @@ const AdminClassEditDrawer = ({
     }
   }, []);
 
-  const currentFormCategoryKey = Form.useWatch("category", form);
   const watchedCancellationPolicy = Form.useWatch("cancellationPolicy", form);
 
   useEffect(() => {
@@ -778,49 +773,11 @@ const AdminClassEditDrawer = ({
     }
   }, [watchedCancellationPolicy, form]);
 
-  const fetchCategories = useCallback(async () => {
-    // Cancel any existing operation
-    cancelCurrentOperation();
-
-    const operation = { cancelled: false };
-    currentAsyncOperation.current = operation;
-
-    try {
-      const result = await classManagementService.getCategories();
-
-      // Check if operation was cancelled or component unmounted
-      if (operation.cancelled || !isMountedRef.current) {
-        return null;
-      }
-
-      if (result.success && Array.isArray(result.data)) {
-        setCategories(result.data);
-        return result.data;
-      }
-      message.error(result.error || "Failed to load categories");
-      setCategories([]);
-      return null;
-    } catch (error) {
-      if (operation.cancelled || !isMountedRef.current) {
-        return null;
-      }
-      message.error("An error occurred while loading categories.");
-      console.error("Category fetch error:", error);
-      setCategories([]);
-      return null;
-    } finally {
-      if (currentAsyncOperation.current === operation) {
-        currentAsyncOperation.current = null;
-      }
-    }
-  }, [cancelCurrentOperation]);
-
   const initializeFormAndStates = useCallback(
     (classData, loadedCategories) => {
       if (!isMountedRef.current) return;
 
       const primaryOption = classData.options?.[0] || {};
-      initialSubcategoryKeyRef.current = classData.subcategory?.id || null;
 
       let featuresData = classData.features || [];
       if (typeof featuresData === "string") {
@@ -837,8 +794,6 @@ const AdminClassEditDrawer = ({
       form.setFieldsValue({
         title: classData.title || "",
         description: classData.description || "",
-        category: classData.category?.id || undefined,
-        subcategory: classData.subcategory?.id || undefined,
         features: featuresData,
         location: classData.location || "",
         unit_number: classData.unit_number || "",
@@ -932,24 +887,11 @@ const AdminClassEditDrawer = ({
         JSON.stringify(initialClassDataProp)
       );
 
-      // Reset subcategory reference
-      initialSubcategoryKeyRef.current = null;
-
-      // Fetch categories and initialize form
-      fetchCategories()
-        .then((loadedCategoriesFromFetch) => {
-          if (isMountedRef.current && visible) {
-            initializeFormAndStates(
-              initialClassDataRef.current,
-              loadedCategoriesFromFetch || []
-            );
-          }
-        })
-        .finally(() => {
-          if (isMountedRef.current && visible) {
-            setDataLoading(false);
-          }
-        });
+      // Initialize form with class data
+      if (isMountedRef.current && visible) {
+        initializeFormAndStates(initialClassDataRef.current, []);
+        setDataLoading(false);
+      }
     } else if (!visible) {
       // FIX: Immediate cleanup when closing, cancel ongoing operations
       cancelCurrentOperation();
@@ -967,60 +909,22 @@ const AdminClassEditDrawer = ({
         return [];
       });
       setIsActive(true);
-      setCategories([]);
-      setSubcategories([]);
       setMapSearchResults([]);
       setMapSearchValue("");
       setSelectedMapLocation(null);
       setHideExactLocation(false);
       setActiveTab("1");
-      initialSubcategoryKeyRef.current = null;
       initialClassDataRef.current = null;
     }
   }, [
     visible,
     initialClassDataProp,
-    form,
-    fetchCategories,
     initializeFormAndStates,
     cancelCurrentOperation,
   ]);
 
   const shouldShowLoader =
     dataLoading || (!initialClassDataRef.current && visible);
-
-  useEffect(() => {
-    const catId = currentFormCategoryKey;
-    if (!catId || categories.length === 0) {
-      setSubcategories([]);
-      if (!catId && form.getFieldValue("subcategory")) {
-        form.setFieldsValue({ subcategory: undefined });
-      }
-      return;
-    }
-    const selectedCatData = categories.find((c) => c.id === catId);
-    const newSubcategories = selectedCatData?.subcategories || [];
-    setSubcategories(newSubcategories);
-    const currentFormSubcategory = form.getFieldValue("subcategory");
-    if (
-      initialSubcategoryKeyRef.current &&
-      newSubcategories.some(
-        (sub) => sub.id === initialSubcategoryKeyRef.current
-      )
-    ) {
-      if (currentFormSubcategory !== initialSubcategoryKeyRef.current) {
-        form.setFieldsValue({
-          subcategory: initialSubcategoryKeyRef.current,
-        });
-      }
-      initialSubcategoryKeyRef.current = null;
-    } else if (
-      currentFormSubcategory &&
-      !newSubcategories.some((sub) => sub.id === currentFormSubcategory)
-    ) {
-      form.setFieldsValue({ subcategory: undefined });
-    }
-  }, [currentFormCategoryKey, categories, form]);
 
   const searchAwsLocation = async (query) => {
     if (!query || query.trim().length < 3) {
@@ -1357,8 +1261,6 @@ const AdminClassEditDrawer = ({
           [
             "title",
             "description",
-            "category",
-            "subcategory",
             "features",
             "class_photos_validation",
           ].includes(firstErrorField)
@@ -1707,83 +1609,10 @@ const AdminClassEditDrawer = ({
                       <SectionDivider>
                         <span>
                           <Building2 size={16} />
-                          Category & Features
+                          Class Features
                         </span>
                       </SectionDivider>
                       <FormSection>
-                        <FormGrid>
-                          <FormGroup>
-                            <FormLabel htmlFor="admin_edit_class_category">
-                              <Building2 size={16} />
-                              Main Category
-                            </FormLabel>
-                            <HelpText>
-                              <Info size={14} />
-                              Choose the primary subject area that best
-                              describes your class.
-                            </HelpText>
-                            <FormItemAntd
-                              name="category"
-                              rules={[
-                                {
-                                  required: true,
-                                  message: "Please select a category",
-                                },
-                              ]}
-                            >
-                              <StyledSelect
-                                id="admin_edit_class_category"
-                                placeholder="Select the main category"
-                                allowClear
-                                loading={categories.length === 0 && dataLoading}
-                              >
-                                {categories.map((cat) => (
-                                  <Option key={cat.id} value={cat.id}>
-                                    {cat.name}
-                                  </Option>
-                                ))}
-                              </StyledSelect>
-                            </FormItemAntd>
-                          </FormGroup>
-                          <FormGroup>
-                            <FormLabel htmlFor="admin_edit_class_subcategory">
-                              <Building2 size={16} />
-                              Subcategory
-                            </FormLabel>
-                            <HelpText>
-                              <Info size={14} />
-                              Select a specific subcategory to help students
-                              find exactly what they're looking for.
-                            </HelpText>
-                            <FormItemAntd
-                              name="subcategory"
-                              rules={[
-                                {
-                                  required: true,
-                                  message: "Please select a subcategory",
-                                },
-                              ]}
-                            >
-                              <StyledSelect
-                                id="admin_edit_class_subcategory"
-                                placeholder="Select a subcategory"
-                                disabled={!currentFormCategoryKey}
-                                loading={
-                                  !!currentFormCategoryKey &&
-                                  subcategories.length === 0 &&
-                                  !dataLoading
-                                }
-                                allowClear
-                              >
-                                {subcategories.map((sub) => (
-                                  <Option key={sub.id} value={sub.id}>
-                                    {sub.name}
-                                  </Option>
-                                ))}
-                              </StyledSelect>
-                            </FormItemAntd>
-                          </FormGroup>
-                        </FormGrid>
                         <FormGroup>
                           <FormLabel htmlFor="admin_edit_class_features">
                             <Hash size={16} />

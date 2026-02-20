@@ -1361,7 +1361,6 @@ export default function ClassPageClient({
           images={classData.images || []}
           rating={classData.average_rating}
           business_name={businessData?.businessName}
-          categoryName={classData.category_name}
           location={locationText}
           isShareModalVisible={isShareModalVisible}
           onShareModalClose={handleCloseShareModal}
@@ -1379,8 +1378,6 @@ export default function ClassPageClient({
               description={classData.description}
               reviewCount={classData.review_count || 0}
               averageRating={classData.average_rating || 0}
-              categoryName={classData.category_name}
-              subcategoryName={classData.subcategory_name}
               businessData={businessData}
               onBusinessClick={businessData ? handleBusinessClick : undefined}
               onContactHost={businessData ? () => setContactHostOpen(true) : undefined}
