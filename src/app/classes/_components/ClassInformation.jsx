@@ -541,6 +541,8 @@ const ClassInformation = React.memo(
     else if (partnerTierName === "Premium Partner")
       partnerBadgeText = "Premium";
 
+    const singleCollection = Array.isArray(collections) && collections.length > 0 ? collections[0] : null;
+
     return (
       <InfoWrapper>
         <MobileHeaderSection>
@@ -623,7 +625,7 @@ const ClassInformation = React.memo(
           </AskQuestionRow>
         )}
 
-        {(partnerBadgeText || (collections && collections.length > 0)) && (
+        {(partnerBadgeText || singleCollection) && (
           <>
             <Divider style={{ margin: "12px 0" }} />
             <CategoriesBlock>
@@ -644,15 +646,13 @@ const ClassInformation = React.memo(
                       </AnimatedTextWrapper>
                     </CategoryPill>
                   )}
-                  {Array.isArray(collections) &&
-                    collections.map((c) => (
-                      <CollectionPill
-                        key={c.slug || c.name}
-                        href={c.slug ? `/explore?collection=${encodeURIComponent(c.slug)}` : "/explore"}
-                      >
-                        {c.name}
-                      </CollectionPill>
-                    ))}
+                  {singleCollection && (
+                    <CollectionPill
+                      href={singleCollection.slug ? `/explore?collection=${encodeURIComponent(singleCollection.slug)}` : "/explore"}
+                    >
+                      {singleCollection.name}
+                    </CollectionPill>
+                  )}
                 </CategoriesGrid>
               </HeaderSection>
             </CategoriesBlock>
