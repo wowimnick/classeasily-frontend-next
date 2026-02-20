@@ -69,6 +69,9 @@ function DashboardLayoutInner({ children }) {
 
   // Derive activeKey directly from pathname - no state needed!
   const activeKey = pathname.replace("/business/dashboard/", "") || "overview";
+  // When on "bookings" (no sub-path), highlight "Active Bookings" in the sidebar
+  const menuActiveKey =
+    activeKey === "bookings" ? "bookings/active" : activeKey;
 
   const handleMenuSelect = useCallback(
     (key) => {
@@ -92,7 +95,7 @@ function DashboardLayoutInner({ children }) {
             <SideMenu
               ref={sideMenuRef}
               onMenuSelect={handleMenuSelect}
-              activeKey={activeKey}
+              activeKey={menuActiveKey}
             />
           </SideMenuWrapper>
           <MainContent>

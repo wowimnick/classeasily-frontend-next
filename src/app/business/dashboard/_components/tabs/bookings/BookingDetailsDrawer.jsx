@@ -82,7 +82,7 @@ const StyledDrawerContent = styled(Drawer.Content)`
   background: white;
   display: flex;
   flex-direction: column;
-  border-radius: 24px 24px 0 0;
+  border-radius: 24px;
   height: 90%;
   max-height: 90vh;
   position: fixed;
@@ -112,6 +112,8 @@ const DesktopDrawerContent = styled(Drawer.Content)`
   outline: none;
   width: 680px;
   display: flex;
+  border-radius: 16px;
+  overflow: hidden;
 `;
 
 const DesktopDrawerInner = styled.div`

@@ -50,7 +50,9 @@ const FlippableCard = styled(motion.div)`
   transform-style: preserve-3d;
   border-radius: 20px;
   background: transparent;
-  will-change: transform; 
+  /* Avoid will-change: transform to prevent blurry rasterization on mobile */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 `;
 
 const FaceBase = styled.div`
@@ -65,14 +67,18 @@ const FaceBase = styled.div`
   -webkit-backface-visibility: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Crisp rendering on mobile: avoid subpixel blur */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 `;
 
 const FrontFace = styled(FaceBase)`
-  position: relative; 
+  position: relative;
   width: 100%;
   height: 100%;
   z-index: 2;
-  transform: rotateY(0deg) translateZ(0.1px); 
+  transform: rotateY(0deg) translateZ(1px);
+  -webkit-transform: rotateY(0deg) translateZ(1px);
   background: white;
 `;
 
@@ -83,7 +89,8 @@ const BackFace = styled(FaceBase)`
   width: 100%;
   height: 100%;
   background: #fdfdfd;
-  transform: rotateY(180deg) translateZ(0.1px);
+  transform: rotateY(180deg) translateZ(1px);
+  -webkit-transform: rotateY(180deg) translateZ(1px);
 `;
 
 const ImageContainer = styled.div`

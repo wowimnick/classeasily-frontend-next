@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { Tabs } from "antd";
 import ActiveBookings from "./ActiveBookings";
 import BookingHistory from "./BookingHistory";
@@ -9,12 +9,10 @@ const TAB_ACTIVE = "active";
 const TAB_HISTORY = "history";
 
 /**
- * Combined Bookings view: one tab for Active, one for History.
- * Use defaultActiveKey to open a specific tab (e.g. from URL).
+ * Combined Bookings view: Active and History selected via sidebar (Bookings → Active Bookings / Booking History).
+ * defaultActiveKey comes from URL (e.g. bookings/active, bookings/history).
  */
 export default function BookingsCombined({ defaultActiveKey = TAB_ACTIVE }) {
-  const [activeKey, setActiveKey] = useState(defaultActiveKey);
-
   const items = useMemo(
     () => [
       {
@@ -33,11 +31,10 @@ export default function BookingsCombined({ defaultActiveKey = TAB_ACTIVE }) {
 
   return (
     <Tabs
-      activeKey={activeKey}
-      onChange={setActiveKey}
+      activeKey={defaultActiveKey}
       items={items}
-      size="large"
-      style={{ marginTop: -8 }}
+      tabBarStyle={{ display: "none" }}
+      style={{ marginTop: 0 }}
     />
   );
 }

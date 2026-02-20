@@ -608,7 +608,7 @@ const menuItemsConfig = [
     ),
     label: "My Listings",
   },
-  // 3. Bookings (top-level; Active + History combined in-page)
+  // 3. Bookings (sub-items: Active + History — switch lives in sidebar for easy access)
   {
     key: "bookings",
     label: "Bookings",
@@ -621,6 +621,10 @@ const menuItemsConfig = [
         state="in-booking"
       />
     ),
+    children: [
+      { key: "bookings/active", label: "Active Bookings" },
+      { key: "bookings/history", label: "Booking History" },
+    ],
   },
   // 4. Relationships: People & Community (CRM)
   {
