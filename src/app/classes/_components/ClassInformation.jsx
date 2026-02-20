@@ -622,7 +622,12 @@ const ClassInformation = React.memo(
                   {shouldShowTopRated && (
                     <CategoryPill>
                       <AnimatedIconWrapper $delay="0ms">
-                        <Star size={18} fill="#FF385C" strokeWidth={0} />
+                        <LordIcon
+                          src={partnerLordIcon}
+                          trigger="in"
+                          state="in-reveal"
+                          style={{ width: "100%", height: "100%" }}
+                        />
                       </AnimatedIconWrapper>
                       <AnimatedTextWrapper $delay="0ms" style={{ color: "#FF385C" }}>
                         Highly rated
