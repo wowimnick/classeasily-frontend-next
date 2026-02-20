@@ -1382,6 +1382,7 @@ export default function ClassPageClient({
               onBusinessClick={businessData ? handleBusinessClick : undefined}
               onContactHost={businessData ? () => setContactHostOpen(true) : undefined}
               partnerTierName={businessData?.partner_tier_name}
+              collections={classData.collections || []}
               isFavorite={isFavorite}
               isTogglingFavorite={isTogglingFavorite}
               onFavoriteClick={handleFavoriteClick}

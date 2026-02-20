@@ -11,37 +11,7 @@ const { Paragraph, Title } = Typography;
 const CLASSEASILY_RED = "#FF385C";
 const COLLAPSED_MAX_HEIGHT_PX = 200;
 
-// LordIcon config (same as before) – rendered only after requestIdleCallback to avoid TBT
-const lordIconMap = {
-  "Creative & Makers": {
-    icon: {
-      src: "https://cdn.lordicon.com/usohfczy.json",
-      trigger: "in",
-      state: "in-reveal",
-      colors:
-        "primary:#ffc738,secondary:#b26836,tertiary:#3a3347,quaternary:#ebe6ef,quinary:#f24c00,senary:#eeca66,septenary:#2ca58d,octonary:#4bb3fd",
-    },
-    subcategories: {
-      "Visual Arts": { src: "https://cdn.lordicon.com/spjlvfgs.json", trigger: "in", state: "in-reveal" },
-      "Crafts & DIY": { src: "https://cdn.lordicon.com/rpgzzvoy.json", trigger: "in", state: "in-reveal" },
-    },
-  },
-  "Food & Drink": {
-    icon: { src: "https://cdn.lordicon.com/tlhmniwg.json", trigger: "in", state: "in-reveal" },
-    subcategories: {
-      "Cooking & Baking": { src: "https://cdn.lordicon.com/qetumhhk.json", trigger: "in", state: "in-reveal" },
-      "Tastings & Mixology": { src: "https://cdn.lordicon.com/ldbrwnqj.json", trigger: "in", state: "in-reveal" },
-    },
-  },
-  "Active & Social": {
-    icon: { src: "https://cdn.lordicon.com/hhqqenci.json", trigger: "in", state: "in-reveal" },
-    subcategories: {
-      "Movement & Games": { src: "https://cdn.lordicon.com/iujnhzgo.json", trigger: "in", state: "in-reveal" },
-      "Performance & Culture": { src: "https://cdn.lordicon.com/nnnotppf.json", trigger: "in", state: "in-dynamic" },
-    },
-  },
-};
-const defaultLordIcon = { src: "https://cdn.lordicon.com/xodeitpr.json", trigger: "in", state: "in-reveal" };
+// LordIcon only for Partner / Premium badges
 const partnerLordIcon = "https://cdn.lordicon.com/zopdjjjs.json";
 
 // --- Animations ---
@@ -303,6 +273,30 @@ const CategoryPill = styled.div`
   }
 `;
 
+const CollectionPill = styled.a`
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  background: #fdfdfd;
+  border: 1px solid #e8e8e8;
+  border-radius: 100px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+  text-decoration: none;
+  white-space: nowrap;
+  &:hover {
+    background: #f5f5f5;
+    border-color: #e0e0e0;
+  }
+  @media (max-width: 480px) {
+    padding: 5px 12px;
+    font-size: 0.85rem;
+  }
+`;
+
 const AnimatedIconWrapper = styled.div`
   display: flex;
   align-items: center;
@@ -311,12 +305,8 @@ const AnimatedIconWrapper = styled.div`
   height: 28px;
   flex-shrink: 0;
 
-  /* Use fill-mode: both so the 0% keyframe applies immediately before animation starts. */
-  /* will-change and backface-visibility prevents the snap/flicker at end of animation */
   will-change: transform;
   backface-visibility: hidden;
-
-  /* Slower Duration: 1.4s */
   animation: ${popAndSettle} 1.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
   animation-delay: ${(props) => props.$delay || "0ms"};
 
@@ -337,12 +327,8 @@ const AnimatedTextWrapper = styled.span`
   font-weight: 500;
   color: #333;
   white-space: nowrap;
-
-  /* Use fill-mode: both to prevent Flash of Unstyled Content */
   will-change: transform, opacity;
   backface-visibility: hidden;
-
-  /* Slower Duration: 1.6s */
   animation: ${slideReveal} 1.6s cubic-bezier(0.215, 0.61, 0.355, 1) both;
   animation-delay: ${(props) => props.$delay || "0ms"};
 
@@ -518,6 +504,7 @@ const ClassInformation = React.memo(
     onBusinessClick,
     onContactHost,
     partnerTierName,
+    collections = [],
     isFavorite,
     isTogglingFavorite,
     onFavoriteClick,
@@ -613,12 +600,7 @@ const ClassInformation = React.memo(
                   <>
                     <MetaSeparator>•</MetaSeparator>
                     <MetaItem style={{ fontWeight: "500", color: "#FF385C" }}>
-                      <LordIcon
-                        src="https://cdn.lordicon.com/abgykmtd.json"
-                        trigger="in"
-                        colors="primary:#FF385C"
-                        style={{ width: 14, height: 14, flexShrink: 0 }}
-                      />
+                      <Star size={12} fill="#FF385C" strokeWidth={0} />
                       {" "}Top Rated
                     </MetaItem>
                   </>
@@ -641,32 +623,42 @@ const ClassInformation = React.memo(
           </AskQuestionRow>
         )}
 
-        <Divider style={{ margin: "12px 0" }} />
-
-        <CategoriesBlock>
-          <HeaderSection>
-            <CategoriesGrid>
-              {partnerBadgeText && (
-                <CategoryPill>
-                  <AnimatedIconWrapper $delay="0ms">
-                    <LordIcon
-                      src={partnerLordIcon}
-                      trigger="in"
-                      state="in-reveal"
-                      style={{ width: "100%", height: "100%" }}
-                    />
-                  </AnimatedIconWrapper>
-                  <AnimatedTextWrapper $delay="0ms" style={{ color: "#b45309" }}>
-                    {partnerBadgeText}
-                  </AnimatedTextWrapper>
-                </CategoryPill>
-              )}
-
-              </CategoriesGrid>
-          </HeaderSection>
-
-          <Divider style={{ margin: "12px 0" }} />
-        </CategoriesBlock>
+        {(partnerBadgeText || (collections && collections.length > 0)) && (
+          <>
+            <Divider style={{ margin: "12px 0" }} />
+            <CategoriesBlock>
+              <HeaderSection>
+                <CategoriesGrid>
+                  {partnerBadgeText && (
+                    <CategoryPill>
+                      <AnimatedIconWrapper $delay="0ms">
+                        <LordIcon
+                          src={partnerLordIcon}
+                          trigger="in"
+                          state="in-reveal"
+                          style={{ width: "100%", height: "100%" }}
+                        />
+                      </AnimatedIconWrapper>
+                      <AnimatedTextWrapper $delay="0ms" style={{ color: "#b45309" }}>
+                        {partnerBadgeText}
+                      </AnimatedTextWrapper>
+                    </CategoryPill>
+                  )}
+                  {Array.isArray(collections) &&
+                    collections.map((c) => (
+                      <CollectionPill
+                        key={c.slug || c.name}
+                        href={c.slug ? `/explore?collection=${encodeURIComponent(c.slug)}` : "/explore"}
+                      >
+                        {c.name}
+                      </CollectionPill>
+                    ))}
+                </CategoriesGrid>
+              </HeaderSection>
+            </CategoriesBlock>
+            <Divider style={{ margin: "12px 0" }} />
+          </>
+        )}
 
         <DescriptionSection>
           <Description
