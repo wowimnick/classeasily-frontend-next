@@ -1864,66 +1864,25 @@ const ReviewAndPaymentStep = ({
     ],
   );
 
+  /* Single rule: we only CREATE when we have no clientSecret. We never cancel from this effect.
+   * So: if we have clientSecret, sync ref and return. If we don't, create once (guarded). */
   useEffect(() => {
     if (isFree) return;
     const discountId = appliedDiscount?.id ?? null;
     const gcCode = appliedGiftCard?.code ?? null;
     const globalId = activeGlobalDiscount?.id ?? null;
-    const prev = intentDepsRef.current;
 
     if (clientSecret) {
-      const discountMatch =
-        prev.discountId === discountId &&
-        prev.gcCode === gcCode &&
-        prev.globalId === globalId;
-      const bookingMatch = prev.bookingFingerprint === bookingFingerprint;
-
-      if (discountMatch && bookingMatch) return;
-
-      const isFirstRunWithRehydratedIntent =
-        prev.discountId === null &&
-        prev.gcCode === null &&
-        prev.globalId === null &&
-        prev.bookingFingerprint === null;
-      if (isFirstRunWithRehydratedIntent) {
-        intentDepsRef.current = {
-          discountId,
-          gcCode,
-          globalId,
-          bookingFingerprint: bookingFingerprint ?? null,
-        };
-        return;
-      }
-      /* Don't cancel when the only change is activeGlobalDiscount loading (null -> id). Intent is still valid. */
-      if (
-        prev.discountId === discountId &&
-        prev.gcCode === gcCode &&
-        prev.bookingFingerprint === bookingFingerprint &&
-        prev.globalId === null &&
-        globalId !== null
-      ) {
-        intentDepsRef.current = {
-          discountId,
-          gcCode,
-          globalId,
-          bookingFingerprint: bookingFingerprint ?? null,
-        };
-        return;
-      }
-
-      const paymentIntentId = clientSecret.split("_secret_")[0];
-      fetchIntentInFlightRef.current = false;
-      setClientSecret(null);
-      onUpdateBookingData?.({ clientSecret: null, paymentIntentId: null });
-      createPaymentIntentInFlight = true;
-      (async () => {
-        await paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
-        fetchPaymentIntent(discountId);
-      })();
+      intentDepsRef.current = {
+        discountId,
+        gcCode,
+        globalId,
+        bookingFingerprint: bookingFingerprint ?? null,
+      };
       return;
     }
 
-    if (!clientSecret && (fetchIntentInFlightRef.current || createPaymentIntentInFlight)) return;
+    if (fetchIntentInFlightRef.current || createPaymentIntentInFlight) return;
 
     intentDepsRef.current = {
       discountId,
@@ -1942,7 +1901,6 @@ const ReviewAndPaymentStep = ({
     clientSecret,
     isFree,
     fetchPaymentIntent,
-    onUpdateBookingData,
   ]);
 
   // When there's no valid intent (loading or after clearing), disable submit so the user
@@ -2006,6 +1964,15 @@ const ReviewAndPaymentStep = ({
           origin: { y: 0.6 },
           colors: ["#ff385c", "#000000", "#ffffff"],
         });
+        if (clientSecret) {
+          const piId = clientSecret.split("_secret_")[0];
+          await paymentService.cancelPaymentIntent(piId).catch(() => {});
+          setClientSecret(null);
+          onUpdateBookingData?.({ clientSecret: null, paymentIntentId: null });
+          createPaymentIntentInFlight = false;
+          fetchIntentInFlightRef.current = false;
+          fetchPaymentIntent(result.data.id);
+        }
       } else {
         message.error(result.error?.detail || "That coupon isn't valid. Double-check the code and try again.");
         setAppliedDiscount(null);
@@ -2017,10 +1984,19 @@ const ReviewAndPaymentStep = ({
     }
   };
 
-  const handleRemoveCoupon = () => {
+  const handleRemoveCoupon = async () => {
     setAppliedDiscount(null);
     setCouponCode("");
     message.info("Coupon removed.");
+    if (clientSecret) {
+      const piId = clientSecret.split("_secret_")[0];
+      await paymentService.cancelPaymentIntent(piId).catch(() => {});
+      setClientSecret(null);
+      onUpdateBookingData?.({ clientSecret: null, paymentIntentId: null });
+      createPaymentIntentInFlight = false;
+      fetchIntentInFlightRef.current = false;
+      fetchPaymentIntent(null);
+    }
   };
 
   const handleApplyGiftCard = async () => {
