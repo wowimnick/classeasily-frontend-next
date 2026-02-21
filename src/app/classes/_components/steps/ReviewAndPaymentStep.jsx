@@ -1631,6 +1631,13 @@ const ReviewAndPaymentStep = ({
     if (fromStorage && !clientSecret) setClientSecret(fromStorage);
   }, [bookingData?.clientSecret]);
 
+  // When parent has no clientSecret (e.g. reopened checkout from session), show guest step so user sees form; don't leave them on payment with empty fields.
+  useEffect(() => {
+    if (!bookingData?.clientSecret && checkoutStep === "payment") {
+      setCheckoutStep("guest");
+    }
+  }, [bookingData?.clientSecret, checkoutStep]);
+
   // Coupon State
   const [couponCode, setCouponCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState(null);
@@ -1703,26 +1710,26 @@ const ReviewAndPaymentStep = ({
     [isUserLoggedIn, bookingData.userName],
   );
 
-  /* Sync bookingData into form only when we have explicit values to apply (logged-in user, participant_details, or notes).
-   * Avoid overwriting fields the user may be typing: prefer form-backed bookingData fields (email, phone, booker_name)
-   * over user profile (userEmail, userPhone, userName) so that after onValuesChange updates bookingData we don't overwrite. */
+  /* Sync bookingData into form so saved guest details (and notes) are shown when reopening checkout or going back to guest step. */
   const hasSyncedInitialRef = useRef(false);
   useEffect(() => {
     if (!form) return;
     let formData = {};
 
     if (isUserLoggedIn) {
-      /* Use form-backed values first so we never overwrite what the user just typed */
       formData.email = bookingData.email ?? bookingData.userEmail ?? "";
       formData.phone = bookingData.phone ?? bookingData.userPhone ?? "";
       formData.booker_name = bookingData.booker_name ?? bookingData.userName ?? "";
     } else {
-      const currentValues = form.getFieldsValue(true);
+      /* Guest: restore email, phone, booker_name from bookingData when present so fields aren't empty on reopen or back to guest. */
       const bookerFromDetails = bookingData.participant_details?.[0]?.name;
-      /* Only push booker_name from participant_details on initial sync when form name is still empty, so we never overwrite user input */
-      if (bookerFromDetails && (!currentValues.booker_name || !String(currentValues.booker_name).trim()) && !hasSyncedInitialRef.current) {
-        formData.booker_name = bookerFromDetails;
-      }
+      const name = bookingData.booker_name ?? bookerFromDetails ?? "";
+      const email = bookingData.email ?? "";
+      const phone = bookingData.phone ?? "";
+      const currentValues = form.getFieldsValue(true);
+      if (name && (!currentValues.booker_name || !String(currentValues.booker_name).trim())) formData.booker_name = name;
+      if (email && (!currentValues.email || !String(currentValues.email).trim())) formData.email = email;
+      if (phone && (!currentValues.phone || !String(currentValues.phone).trim())) formData.phone = phone;
     }
     if (formData.booker_name !== undefined) hasSyncedInitialRef.current = true;
 

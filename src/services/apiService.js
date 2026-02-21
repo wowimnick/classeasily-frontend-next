@@ -58,7 +58,7 @@ export const API_ENDPOINTS = {
 
   // Payments
   PAYMENTS_CREATE_INTENT: "/payments/create-payment-intent/",
-  PAYMENTS_UPDATE_INTENT: "/payments/update-payment-intent/",
+  PAYMENTS_UPDATE_INTENT: "/payments/update_intent/",
   PAYMENTS_CANCEL_INTENT: "/payments/cancel-payment-intent/",
   PAYMENTS_CHECK_AVAILABILITY: "/payments/check-slot-availability/",
   PAYMENTS_WEBHOOK: "/payments/webhook/",
