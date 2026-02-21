@@ -43,7 +43,6 @@ import Lottie from "lottie-react";
 import { Drawer } from "vaul";
 
 import { getCancellationPolicyText, getDurationText } from "./utils";
-import { setPaymentIntentCreatedThisSession } from "@/app/classes/[slug]/checkout/_components/checkoutSession";
 import {
   businessDiscountService,
   giftCardService,
@@ -56,9 +55,6 @@ import { formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
 import loadingAnimation from "@/assets/animations/Scene.json";
 
 const HST_RATE = 0.13;
-
-/** Survives remounts (e.g. Strict Mode) so we never send two create-payment-intent calls in parallel. */
-let createPaymentIntentInFlight = false;
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
@@ -1782,20 +1778,15 @@ const ReviewAndPaymentStep = ({
 
   const fetchPaymentIntent = useCallback(
     async (currentDiscountId = null) => {
-      if (isFree && !appliedGiftCard) {
-        createPaymentIntentInFlight = false;
-        return;
-      }
+      if (isFree && !appliedGiftCard) return;
       if (
         !bookingData.selectedSlots ||
         bookingData.selectedSlots.length === 0
       ) {
-        createPaymentIntentInFlight = false;
         return;
       }
 
       fetchIntentInFlightRef.current = true;
-      createPaymentIntentInFlight = true;
       try {
         setPaymentIntentError(null);
         const values = form.getFieldsValue();
@@ -1821,8 +1812,6 @@ const ReviewAndPaymentStep = ({
 
         if (response.clientSecret) {
           fetchIntentInFlightRef.current = false;
-          createPaymentIntentInFlight = false;
-          setPaymentIntentCreatedThisSession(true);
           setClientSecret(response.clientSecret);
           setPaymentIntentError(null);
           if (onUpdateBookingData) {
@@ -1834,11 +1823,9 @@ const ReviewAndPaymentStep = ({
           }
         } else {
           fetchIntentInFlightRef.current = false;
-          createPaymentIntentInFlight = false;
         }
       } catch (err) {
         fetchIntentInFlightRef.current = false;
-        createPaymentIntentInFlight = false;
         const data = err?.response?.data;
         const errObj = data?.error;
         const msg =
@@ -1864,25 +1851,45 @@ const ReviewAndPaymentStep = ({
     ],
   );
 
-  /* Single rule: we only CREATE when we have no clientSecret. We never cancel from this effect.
-   * So: if we have clientSecret, sync ref and return. If we don't, create once (guarded). */
   useEffect(() => {
     if (isFree) return;
     const discountId = appliedDiscount?.id ?? null;
     const gcCode = appliedGiftCard?.code ?? null;
     const globalId = activeGlobalDiscount?.id ?? null;
+    const prev = intentDepsRef.current;
 
     if (clientSecret) {
-      intentDepsRef.current = {
-        discountId,
-        gcCode,
-        globalId,
-        bookingFingerprint: bookingFingerprint ?? null,
-      };
-      return;
+      const discountMatch =
+        prev.discountId === discountId &&
+        prev.gcCode === gcCode &&
+        prev.globalId === globalId;
+      const bookingMatch = prev.bookingFingerprint === bookingFingerprint;
+
+      if (discountMatch && bookingMatch) return;
+
+      const isFirstRunWithRehydratedIntent =
+        prev.discountId === null &&
+        prev.gcCode === null &&
+        prev.globalId === null &&
+        prev.bookingFingerprint === null;
+      if (isFirstRunWithRehydratedIntent) {
+        intentDepsRef.current = {
+          discountId,
+          gcCode,
+          globalId,
+          bookingFingerprint: bookingFingerprint ?? null,
+        };
+        return;
+      }
+
+      const paymentIntentId = clientSecret.split("_secret_")[0];
+      paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
+      fetchIntentInFlightRef.current = false;
+      setClientSecret(null);
+      onUpdateBookingData?.({ clientSecret: null, paymentIntentId: null });
     }
 
-    if (fetchIntentInFlightRef.current || createPaymentIntentInFlight) return;
+    if (!clientSecret && fetchIntentInFlightRef.current) return;
 
     intentDepsRef.current = {
       discountId,
@@ -1890,8 +1897,6 @@ const ReviewAndPaymentStep = ({
       globalId,
       bookingFingerprint: bookingFingerprint ?? null,
     };
-    fetchIntentInFlightRef.current = true;
-    createPaymentIntentInFlight = true;
     fetchPaymentIntent(discountId);
   }, [
     appliedDiscount?.id,
@@ -1901,6 +1906,7 @@ const ReviewAndPaymentStep = ({
     clientSecret,
     isFree,
     fetchPaymentIntent,
+    onUpdateBookingData,
   ]);
 
   // When there's no valid intent (loading or after clearing), disable submit so the user
@@ -1964,15 +1970,6 @@ const ReviewAndPaymentStep = ({
           origin: { y: 0.6 },
           colors: ["#ff385c", "#000000", "#ffffff"],
         });
-        if (clientSecret) {
-          const piId = clientSecret.split("_secret_")[0];
-          await paymentService.cancelPaymentIntent(piId).catch(() => {});
-          setClientSecret(null);
-          onUpdateBookingData?.({ clientSecret: null, paymentIntentId: null });
-          createPaymentIntentInFlight = false;
-          fetchIntentInFlightRef.current = false;
-          fetchPaymentIntent(result.data.id);
-        }
       } else {
         message.error(result.error?.detail || "That coupon isn't valid. Double-check the code and try again.");
         setAppliedDiscount(null);
@@ -1984,19 +1981,10 @@ const ReviewAndPaymentStep = ({
     }
   };
 
-  const handleRemoveCoupon = async () => {
+  const handleRemoveCoupon = () => {
     setAppliedDiscount(null);
     setCouponCode("");
     message.info("Coupon removed.");
-    if (clientSecret) {
-      const piId = clientSecret.split("_secret_")[0];
-      await paymentService.cancelPaymentIntent(piId).catch(() => {});
-      setClientSecret(null);
-      onUpdateBookingData?.({ clientSecret: null, paymentIntentId: null });
-      createPaymentIntentInFlight = false;
-      fetchIntentInFlightRef.current = false;
-      fetchPaymentIntent(null);
-    }
   };
 
   const handleApplyGiftCard = async () => {

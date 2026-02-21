@@ -571,7 +571,7 @@ export default function MobileReserveReviewDrawer({
                         {cancellationPolicyText.includes(": ") ? cancellationPolicyText.split(": ")[0] : "Cancellation policy"}
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "4px" }}>
-                      <PolicyText style={{ marginBottom: 0 }}>This booking is subject to the following cancellation policy:</PolicyText>
+                      <PolicyText style={{ marginBottom: 0 }}>{cancellationPolicyText}</PolicyText>
                       <PolicyLink onClick={() => setPolicyOpen(true)}>Full policy</PolicyLink>
                     </div>
                  </div>
