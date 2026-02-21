@@ -60,6 +60,7 @@ export const API_ENDPOINTS = {
   PAYMENTS_CREATE_INTENT: "/payments/create-payment-intent/",
   PAYMENTS_UPDATE_INTENT: "/payments/update-payment-intent/",
   PAYMENTS_CANCEL_INTENT: "/payments/cancel-payment-intent/",
+  PAYMENTS_CHECK_AVAILABILITY: "/payments/check-slot-availability/",
   PAYMENTS_WEBHOOK: "/payments/webhook/",
 
   // --- CORRECTED COURSE ENDPOINTS ---
@@ -274,6 +275,18 @@ export const paymentService = {
     } catch (error) {
       console.error("Error canceling booking:", error);
       throw error.response?.data || error;
+    }
+  },
+  checkSlotAvailability: async (instanceId, participants = 1) => {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.PAYMENTS_CHECK_AVAILABILITY,
+        { params: { instance_id: instanceId, participants } },
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error checking slot availability:", error);
+      return { available: false, available_spots: 0 };
     }
   },
 };

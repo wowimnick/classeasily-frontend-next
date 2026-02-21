@@ -534,6 +534,9 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
       if (cancelledIntentRef.current) return;
       paymentService.cancelPaymentIntent(intentId).catch(() => {});
       clearIntentFromStorage();
+      setBookingData((prev) =>
+        prev ? { ...prev, clientSecret: undefined, paymentIntentId: undefined } : prev
+      );
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     window.addEventListener("popstate", handlePopState);
@@ -541,7 +544,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [bookingData?.paymentIntentId, clearIntentFromStorage]);
+  }, [bookingData?.paymentIntentId, clearIntentFromStorage, paymentService]);
 
   const handlePaymentComplete = useCallback(
     (dataFromReviewStep) => {
