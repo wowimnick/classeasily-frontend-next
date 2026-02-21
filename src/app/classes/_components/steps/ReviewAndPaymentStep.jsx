@@ -56,6 +56,9 @@ import loadingAnimation from "@/assets/animations/Scene.json";
 
 const HST_RATE = 0.13;
 
+/** Survives remounts (e.g. Strict Mode) so we never send two create-payment-intent calls in parallel. */
+let createPaymentIntentInFlight = false;
+
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
 // --- STYLED COMPONENTS ---
@@ -1778,15 +1781,20 @@ const ReviewAndPaymentStep = ({
 
   const fetchPaymentIntent = useCallback(
     async (currentDiscountId = null) => {
-      if (isFree && !appliedGiftCard) return;
+      if (isFree && !appliedGiftCard) {
+        createPaymentIntentInFlight = false;
+        return;
+      }
       if (
         !bookingData.selectedSlots ||
         bookingData.selectedSlots.length === 0
       ) {
+        createPaymentIntentInFlight = false;
         return;
       }
 
       fetchIntentInFlightRef.current = true;
+      createPaymentIntentInFlight = true;
       try {
         setPaymentIntentError(null);
         const values = form.getFieldsValue();
@@ -1812,6 +1820,7 @@ const ReviewAndPaymentStep = ({
 
         if (response.clientSecret) {
           fetchIntentInFlightRef.current = false;
+          createPaymentIntentInFlight = false;
           setClientSecret(response.clientSecret);
           setPaymentIntentError(null);
           if (onUpdateBookingData) {
@@ -1823,9 +1832,11 @@ const ReviewAndPaymentStep = ({
           }
         } else {
           fetchIntentInFlightRef.current = false;
+          createPaymentIntentInFlight = false;
         }
       } catch (err) {
         fetchIntentInFlightRef.current = false;
+        createPaymentIntentInFlight = false;
         const data = err?.response?.data;
         const errObj = data?.error;
         const msg =
@@ -1885,11 +1896,12 @@ const ReviewAndPaymentStep = ({
       const paymentIntentId = clientSecret.split("_secret_")[0];
       paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
       fetchIntentInFlightRef.current = false;
+      createPaymentIntentInFlight = false;
       setClientSecret(null);
       onUpdateBookingData?.({ clientSecret: null, paymentIntentId: null });
     }
 
-    if (!clientSecret && fetchIntentInFlightRef.current) return;
+    if (!clientSecret && (fetchIntentInFlightRef.current || createPaymentIntentInFlight)) return;
 
     intentDepsRef.current = {
       discountId,
@@ -1898,6 +1910,7 @@ const ReviewAndPaymentStep = ({
       bookingFingerprint: bookingFingerprint ?? null,
     };
     fetchIntentInFlightRef.current = true;
+    createPaymentIntentInFlight = true;
     fetchPaymentIntent(discountId);
   }, [
     appliedDiscount?.id,

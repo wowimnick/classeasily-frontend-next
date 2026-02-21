@@ -468,6 +468,12 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
         }
         if (cancelled) return;
 
+        state.bookingData = restBookingData;
+        try {
+          sessionStorage.setItem(CHECKOUT_STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {
+          if (process.env.NODE_ENV === "development") console.warn("[Checkout] persist after cancel failed", e);
+        }
         setBookingData(restBookingData);
         if (state.classData) {
           setClassData(state.classData);
