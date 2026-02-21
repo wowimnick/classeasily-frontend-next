@@ -232,7 +232,7 @@ const SkeletonGridContainer = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 40%);
   width: 100%;
-  height: calc(100vh - 130px);
+  height: calc(100vh - 80px);
   position: relative;
   overflow: hidden;
   @media (max-width: 1100px) {
@@ -240,7 +240,7 @@ const SkeletonGridContainer = styled.div`
   }
   @media (max-width: 1048px) {
     grid-template-columns: 1fr;
-    height: calc(100vh - 110px);
+    height: calc(100vh - 60px);
   }
 `;
 
@@ -642,7 +642,6 @@ export default function ExplorePageSkeleton() {
   return (
     <SkeletonPageWrapper>
       <ExploreHeaderSkeleton />
-      <SimpleBreadcrumbPlaceholder />
 
       <SkeletonGridContainer>
         <SkeletonLeftContainer>
@@ -672,14 +671,6 @@ export default function ExplorePageSkeleton() {
                 <SkeletonMapButton />
               </SkeletonFilterWrapper>
             </SkeletonTopSection>
-
-            <SkeletonSubCategories>
-              <SkeletonSubCategoryPill $width="100px" />
-              <SkeletonSubCategoryPill $width="130px" />
-              <SkeletonSubCategoryPill $width="110px" />
-              <SkeletonSubCategoryPill $width="90px" />
-              <SkeletonSubCategoryPill $width="120px" />
-            </SkeletonSubCategories>
           </SkeletonCategoriesWrapper>
 
           <SkeletonClassGridWrapper>

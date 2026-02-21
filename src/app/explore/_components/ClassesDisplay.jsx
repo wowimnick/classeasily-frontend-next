@@ -45,7 +45,7 @@ const GridContainer = styled.div`
   }
   @media (max-width: 1048px) {
     grid-template-columns: 1fr;
-    height: calc(100vh - 110px);
+    height: calc(100vh - 60px);
   }
 `;
 
@@ -115,11 +115,13 @@ const ClassGrid = styled.div`
   }
 `;
 
-/* Let cards fill their grid cell at every breakpoint so there's no white space (override card max-width only here). */
+/* Let cards fill their grid cell; min-width prevents card from shrinking when layout isn't ready (e.g. explore before paint). */
 const CardGridItem = styled.div`
   width: 100%;
   min-width: 0;
-  & > * {
+  & > a,
+  & > div {
+    min-width: 140px;
     max-width: 100%;
   }
 `;

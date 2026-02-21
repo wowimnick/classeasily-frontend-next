@@ -192,7 +192,7 @@ const CollectionPill = styled.button`
   border-radius: 20px;
   min-height: 40px;
   height: 40px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -213,7 +213,7 @@ const CollectionPill = styled.button`
   @media (max-width: 768px) {
     min-height: 40px;
     height: 40px;
-    font-size: 11px;
+    font-size: 13px;
     padding: 20px;
   }
 `;

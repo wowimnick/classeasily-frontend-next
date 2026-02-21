@@ -1816,7 +1816,7 @@ function ClassManagementContent(props) {
               if (!open) setCreateDrawerVisible(false);
             }}
             dismissible
-            handleOnly={!isMobileView}
+            handleOnly={!isMobile}
           >
             <VaulDrawer.Portal>
               <StyledScheduleDrawerOverlay />
@@ -1849,7 +1849,7 @@ function ClassManagementContent(props) {
             }}
             direction="right"
             dismissible
-            handleOnly={!isMobileView}
+            handleOnly={!isMobile}
           >
             <VaulDrawer.Portal>
               <StyledScheduleDrawerOverlay />

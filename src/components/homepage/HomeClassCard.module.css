@@ -5,6 +5,7 @@
   cursor: pointer;
   position: relative;
   width: 100%;
+  min-width: 140px; /* Prevent shrink on explore when grid/layout isn't ready (fixes "too small" until reload) */
   max-width: 230px;
   padding: 0;
   transition: opacity 0.25s ease;
