@@ -18,6 +18,7 @@ import { getLocalYYYYMMDD } from "@/services/utils";
 import { formatTimeRangeForDisplay, formatNaiveDate } from "@/services/utils";
 import { getDurationText } from "@/app/classes/_components/steps/utils";
 import MiniCalendar from "@/app/classes/_components/MiniCalendar";
+import { getPaymentIntentCreatedThisSession, setPaymentIntentCreatedThisSession } from "./checkoutSession";
 
 const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
 
@@ -464,6 +465,15 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
           state.bookingData || {};
         
         if (paymentIntentId && !cancelled) {
+          if (getPaymentIntentCreatedThisSession()) {
+            setPaymentIntentCreatedThisSession(false);
+            setBookingData(state.bookingData);
+            if (state.classData) setClassData(state.classData);
+            else if (initialClassData) setClassData(initialClassData);
+            else classService.fetchClassDetail(slug).then((data) => !cancelled && setClassData(data)).catch(() => { if (!cancelled) setLoading(false); router.replace(`/classes/${slug}`); });
+            if (!cancelled) setLoading(false);
+            return;
+          }
           await paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
         }
         if (cancelled) return;

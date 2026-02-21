@@ -43,6 +43,7 @@ import Lottie from "lottie-react";
 import { Drawer } from "vaul";
 
 import { getCancellationPolicyText, getDurationText } from "./utils";
+import { setPaymentIntentCreatedThisSession } from "@/app/classes/[slug]/checkout/_components/checkoutSession";
 import {
   businessDiscountService,
   giftCardService,
@@ -1821,6 +1822,7 @@ const ReviewAndPaymentStep = ({
         if (response.clientSecret) {
           fetchIntentInFlightRef.current = false;
           createPaymentIntentInFlight = false;
+          setPaymentIntentCreatedThisSession(true);
           setClientSecret(response.clientSecret);
           setPaymentIntentError(null);
           if (onUpdateBookingData) {
