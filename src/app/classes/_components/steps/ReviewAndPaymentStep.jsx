@@ -1897,6 +1897,7 @@ const ReviewAndPaymentStep = ({
       globalId,
       bookingFingerprint: bookingFingerprint ?? null,
     };
+    fetchIntentInFlightRef.current = true;
     fetchPaymentIntent(discountId);
   }, [
     appliedDiscount?.id,

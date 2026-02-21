@@ -568,10 +568,10 @@ export default function MobileReserveReviewDrawer({
                  <Shield size={20} style={{ color: "#4b5563", flexShrink: 0 }} />
                  <div>
                     <div style={{ fontWeight: 600, color: "#111827", fontSize: 15, marginBottom: 4 }}>
-                        Free cancellation
+                        {cancellationPolicyText.includes(": ") ? cancellationPolicyText.split(": ")[0] : "Cancellation policy"}
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "4px" }}>
-                      <PolicyText style={{ marginBottom: 0 }}>Cancel before the start time for a full refund.</PolicyText>
+                      <PolicyText style={{ marginBottom: 0 }}>This booking is subject to the following cancellation policy:</PolicyText>
                       <PolicyLink onClick={() => setPolicyOpen(true)}>Full policy</PolicyLink>
                     </div>
                  </div>
