@@ -805,6 +805,11 @@ const BookingDetailsDrawer = ({
         bgColor = "#fffbeb";
         icon = <Clock size={12} />;
         break;
+      case "forfeited":
+        color = colors.textSecondary;
+        bgColor = "#f1f5f9";
+        icon = <XCircle size={12} />;
+        break;
       default:
         break;
     }
@@ -833,6 +838,10 @@ const BookingDetailsDrawer = ({
         icon = <AlertTriangle size={12} />;
         break;
       case "refunded":
+        color = "processing";
+        icon = <Repeat size={12} />;
+        break;
+      case "partially_refunded":
         color = "processing";
         icon = <Repeat size={12} />;
         break;

@@ -17,8 +17,9 @@ import {
   XCircle,
   Calendar,
   Hash,
-  Repeat, // Added icon
+  Repeat,
   CheckCircle,
+  Clock,
 } from "lucide-react";
 import moment from "moment";
 
@@ -118,6 +119,16 @@ const StyledTag = styled(Tag)`
   &.confirmed {
     background: #eff6ff; /* Light Blue */
     color: #1d4ed8; /* Dark Blue */
+  }
+
+  &.pending {
+    background: #fffbeb;
+    color: #b45309;
+  }
+
+  &.forfeited {
+    background: #f1f5f9;
+    color: #475569;
   }
 `;
 
@@ -487,13 +498,18 @@ const DesktopActiveBookings = ({
             </StyledTag>
           );
         }
-        // Fallback for any unexpected statuses
+        const fallbackIcon =
+          statusLower === "pending" ? (
+            <Clock size={12} />
+          ) : statusLower === "cancelled" || statusLower === "forfeited" ? (
+            <XCircle size={12} />
+          ) : null;
         return (
-          <Tag>
+          <StyledTag className={statusLower} icon={fallbackIcon}>
             {status && typeof status === "string"
               ? status.toUpperCase()
               : "N/A"}
-          </Tag>
+          </StyledTag>
         );
       },
       width: 140,

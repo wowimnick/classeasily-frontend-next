@@ -10,6 +10,7 @@ import {
   Repeat,
   CheckCircle,
   XCircle,
+  Clock,
 } from "lucide-react";
 import moment from "moment";
 
@@ -114,6 +115,16 @@ const StyledTag = styled(Tag)`
   &.cancelled {
     background: #fee2e2; /* Light Red */
     color: #991b1b; /* Dark Red */
+  }
+
+  &.pending {
+    background: #fffbeb;
+    color: #b45309;
+  }
+
+  &.forfeited {
+    background: #f1f5f9;
+    color: #475569;
   }
 `;
 
@@ -487,8 +498,10 @@ const DesktopBookingHistory = ({
         const icon =
           statusLower === "completed" ? (
             <CheckCircle size={12} />
-          ) : statusLower === "cancelled" ? (
+          ) : statusLower === "cancelled" || statusLower === "forfeited" ? (
             <XCircle size={12} />
+          ) : statusLower === "pending" ? (
+            <Clock size={12} />
           ) : null;
         return (
           <StyledTag className={statusLower} icon={icon}>

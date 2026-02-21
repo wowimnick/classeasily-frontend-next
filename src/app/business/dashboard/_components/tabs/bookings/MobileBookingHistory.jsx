@@ -121,6 +121,14 @@ const StatusTag = styled(Tag)`
     background: #fee2e2;
     color: #991b1b;
   }
+  &.pending {
+    background: #fffbeb;
+    color: #b45309;
+  }
+  &.forfeited {
+    background: #f1f5f9;
+    color: #475569;
+  }
 `;
 
 const BookingTypeTag = styled(Tag)`
@@ -288,8 +296,10 @@ const MobileBookingHistory = ({ data, showViewDrawer, loading }) => {
         const statusIcon =
           statusLower === "completed" ? (
             <CheckCircle size={12} />
-          ) : statusLower === "cancelled" ? (
+          ) : statusLower === "cancelled" || statusLower === "forfeited" ? (
             <XCircle size={12} />
+          ) : statusLower === "pending" ? (
+            <Clock size={12} />
           ) : null;
 
         return (

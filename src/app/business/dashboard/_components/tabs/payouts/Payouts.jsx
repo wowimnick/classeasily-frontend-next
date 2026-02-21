@@ -32,7 +32,6 @@ import {
   Calendar,
   Info,
   Download,
-  BookOpen,
   Settings,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -403,6 +402,13 @@ const TableDescription = styled(Paragraph)`
   }
 `;
 
+const formatPayoutStatusLabel = (status) => {
+  if (!status || typeof status !== "string") return "Unknown";
+  return status
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
 const StatusBadge = styled.div`
   display: inline-flex;
   align-items: center;
@@ -430,7 +436,21 @@ const StatusBadge = styled.div`
           color: ${colors.warning};
           border: 1px solid rgba(245, 158, 11, 0.2);
         `;
+      case "scheduled":
+        return `
+          background: rgba(13, 148, 136, 0.1);
+          color: #0d9488;
+          border: 1px solid rgba(13, 148, 136, 0.25);
+        `;
+      case "in_transit":
+        return `
+          background: rgba(59, 130, 246, 0.1);
+          color: ${colors.info};
+          border: 1px solid rgba(59, 130, 246, 0.2);
+        `;
       case "failed":
+      case "canceled":
+      case "cancelled":
         return `
           background: rgba(239, 68, 68, 0.1);
           color: ${colors.error};
@@ -450,24 +470,6 @@ const BookingCountTag = styled(StatusBadge)`
   background: rgba(59, 130, 246, 0.1);
   color: ${colors.info};
   border: 1px solid rgba(59, 130, 246, 0.2);
-`;
-
-const CourseBadge = styled(Tag)`
-  border-radius: 12px;
-  font-weight: 600;
-  border: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 10px;
-  margin-left: 8px;
-  background: #f0f9ff;
-  color: #0284c7;
-
-  svg {
-    width: 12px;
-    height: 12px;
-  }
 `;
 
 const RefreshButton = styled(Button)`
@@ -788,7 +790,13 @@ const getStatusIcon = (status) => {
       return <CheckCircle size={12} />;
     case "pending":
       return <Clock size={12} />;
+    case "scheduled":
+      return <Calendar size={12} />;
+    case "in_transit":
+      return <Clock size={12} />;
     case "failed":
+    case "canceled":
+    case "cancelled":
       return <AlertCircle size={12} />;
     default:
       return <Info size={12} />;
@@ -797,10 +805,11 @@ const getStatusIcon = (status) => {
 
 const getStatusTag = (status) => {
   if (React.isValidElement(status)) return status;
+  const label = formatPayoutStatusLabel(status);
   return (
     <StatusBadge status={status}>
       {getStatusIcon(status)}
-      {status || "Unknown"}
+      {label}
     </StatusBadge>
   );
 };
@@ -857,39 +866,6 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
     }));
   };
 
-  // --- Helper to render experience info ---
-  const renderExperienceInfo = (text, record) => {
-    const isCourse = record.enrollment_type === "Full Course";
-
-    return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <Text strong style={{ fontSize: 14 }}>
-            {text}
-          </Text>
-          {isCourse && (
-            <CourseBadge>
-              <BookOpen size={12} />
-              Course
-            </CourseBadge>
-          )}
-        </div>
-        {isCourse && record.course_session_number && (
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            Session {record.course_session_number} of{" "}
-            {record.total_sessions || "?"}
-          </Text>
-        )}
-      </div>
-    );
-  };
-
   const baseDesktopColumns = [
     {
       title: "BOOKING REFERENCE",
@@ -899,11 +875,10 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
     },
     { title: "GUEST", dataIndex: "user_name", key: "user", ellipsis: true },
     {
-      title: "EXPERIENCE / COURSE",
+      title: "EXPERIENCE",
       dataIndex: "class_name",
       key: "class",
       ellipsis: true,
-      render: renderExperienceInfo,
     },
     {
       title: "SESSION DATE",
@@ -918,32 +893,14 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
       key: "net",
       align: "right",
       width: 140,
-      render: (val, record) => {
+      render: (val) => {
         const amount = Number(val).toFixed(2);
-        const isCourse = record.enrollment_type === "Full Course";
-
         return (
-          <Tooltip
-            title={
-              isCourse
-                ? "Course payments are split equally across all sessions (1/N payout)."
-                : "Single session payout."
-            }
-          >
-            <div style={{ textAlign: "right" }}>
-              <Text strong style={{ color: colors.success }}>
-                ${amount}
-              </Text>
-              {isCourse && (
-                <Text
-                  type="secondary"
-                  style={{ fontSize: 10, display: "block" }}
-                >
-                  (Allocated Split)
-                </Text>
-              )}
-            </div>
-          </Tooltip>
+          <div style={{ textAlign: "right" }}>
+            <Text strong style={{ color: colors.success }}>
+              ${amount}
+            </Text>
+          </div>
         );
       },
     },
@@ -1003,57 +960,30 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
         onChange={(page, pageSize) =>
           handleTableChange({ current: page, pageSize })
         }
-        renderItem={(item) => {
-          const isCourse = item.enrollment_type === "Full Course";
-          return (
-            <MobileBookingItem>
-              <List.Item.Meta
-                title={
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 6 }}
-                  >
-                    {item.class_name}
-                    {isCourse && <BookOpen size={12} color={colors.info} />}
-                  </div>
-                }
-                description={
-                  <Space direction="vertical" size={0}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {item.user_name} •{" "}
-                      {dayjs(item.session_date).format("MMM D")}
-                    </Text>
-                    {isCourse && (
-                      <Text
-                        type="secondary"
-                        style={{ fontSize: 11, color: colors.info }}
-                      >
-                        Session {item.course_session_number} of{" "}
-                        {item.total_sessions || "?"}
-                      </Text>
-                    )}
-                  </Space>
-                }
-              />
-              <div style={{ textAlign: "right" }}>
-                <Text
-                  strong
-                  style={{
-                    color: colors.success,
-                    fontSize: "14px",
-                    display: "block",
-                  }}
-                >
-                  ${Number(item.net_amount_for_payout).toFixed(2)}
+        renderItem={(item) => (
+          <MobileBookingItem>
+            <List.Item.Meta
+              title={item.class_name}
+              description={
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {item.user_name} • {dayjs(item.session_date).format("MMM D")}
                 </Text>
-                {isCourse && (
-                  <Text type="secondary" style={{ fontSize: 10 }}>
-                    (Split)
-                  </Text>
-                )}
-              </div>
-            </MobileBookingItem>
-          );
-        }}
+              }
+            />
+            <div style={{ textAlign: "right" }}>
+              <Text
+                strong
+                style={{
+                  color: colors.success,
+                  fontSize: "14px",
+                  display: "block",
+                }}
+              >
+                ${Number(item.net_amount_for_payout).toFixed(2)}
+              </Text>
+            </div>
+          </MobileBookingItem>
+        )}
       />
     ) : (
       <StyledTable
@@ -1082,18 +1012,23 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
           </SummaryLabel>
           <SummaryValue>{payout.booking_count}</SummaryValue>
         </SummaryItem>
+        <SummaryItem>
+          <SummaryLabel>
+            <Clock size={14} /> Status
+          </SummaryLabel>
+          <SummaryValue>{getStatusTag(payout.status)}</SummaryValue>
+        </SummaryItem>
+        <SummaryItem>
+          <SummaryLabel>
+            <Calendar size={14} /> Est. Arrival
+          </SummaryLabel>
+          <SummaryValue>
+            {payout.arrival_date
+              ? dayjs(payout.arrival_date).format("MMM D, YYYY")
+              : "—"}
+          </SummaryValue>
+        </SummaryItem>
       </DrawerSummary>
-
-      <div style={{ padding: "16px 24px 0 24px" }}>
-        <Alert
-          message="How Course Payouts Work"
-          description="For full courses, the total net revenue is split equally across all sessions. You receive a payout for each specific session only after it has been completed."
-          type="info"
-          showIcon
-          closable
-          style={{ fontSize: 13 }}
-        />
-      </div>
 
       <ExpandedRowWrapper>{renderContent()}</ExpandedRowWrapper>
     </DetailsContainer>
@@ -1101,10 +1036,16 @@ const ExpandedPayoutDetails = ({ payout, isMobile }) => {
 };
 
 // Mobile Payout Item
-const MobilePayoutItem = ({ payout, onExport, onViewBookings }) => {
+const MobilePayoutItem = ({
+  payout,
+  onExport,
+  onViewBookings,
+  isScheduled = false,
+}) => {
   const [exporting, setExporting] = useState(false);
 
   const handleExport = async () => {
+    if (isScheduled) return;
     setExporting(true);
     await onExport(payout.id);
     setExporting(false);
@@ -1120,7 +1061,10 @@ const MobilePayoutItem = ({ payout, onExport, onViewBookings }) => {
                 {payout.amount_display}
               </Text>
               <Text type="secondary" style={{ fontSize: "12px" }}>
-                Est. Arrival: {dayjs(payout.arrival_date).format("MMM D, YYYY")}
+                Est. Arrival:{" "}
+                {payout.arrival_date
+                  ? dayjs(payout.arrival_date).format("MMM D, YYYY")
+                  : "—"}
               </Text>
             </div>
             {getStatusTag(payout.status)}
@@ -1136,10 +1080,10 @@ const MobilePayoutItem = ({ payout, onExport, onViewBookings }) => {
           <MobileCardLabel>Transfer ID</MobileCardLabel>
           <Text
             style={{ fontSize: 12, maxWidth: 150 }}
-            copyable={{ text: payout.stripe_transfer_id }}
+            copyable={payout.stripe_transfer_id ? { text: payout.stripe_transfer_id } : false}
             ellipsis
           >
-            {payout.stripe_transfer_id}
+            {payout.stripe_transfer_id || "—"}
           </Text>
         </MobileCardRow>
         <Space
@@ -1153,6 +1097,7 @@ const MobilePayoutItem = ({ payout, onExport, onViewBookings }) => {
             icon={<Download size={14} />}
             onClick={handleExport}
             loading={exporting}
+            disabled={isScheduled}
           >
             Export
           </ActionButtonStyled>
@@ -1173,6 +1118,7 @@ const Payouts = () => {
   const { openSettingsDrawer } = useDashboard();
   const [summary, setSummary] = useState(null);
   const [payouts, setPayouts] = useState([]);
+  const [scheduledPayouts, setScheduledPayouts] = useState([]);
   const [loadingSummary, setLoadingSummary] = useState(true);
   const [loadingPayouts, setLoadingPayouts] = useState(true);
   const [exportingId, setExportingId] = useState(null);
@@ -1229,7 +1175,8 @@ const Payouts = () => {
     const params = { page, page_size: pageSize };
     const result = await businessService.fetchBusinessPayouts(params);
     if (result.success) {
-      setPayouts(result.data.results);
+      setPayouts(result.data.results || []);
+      setScheduledPayouts(result.data.scheduled_payouts || []);
       setPagination((prev) => ({
         ...prev,
         total: result.data.count,
@@ -1294,6 +1241,15 @@ const Payouts = () => {
       console.error("Lordicon animation failed:", error);
     }
   }, []);
+
+  const isScheduledPayout = (record) =>
+    record?.status === "scheduled" ||
+    (record?.id && String(record.id).startsWith("scheduled-"));
+
+  const displayPayouts =
+    pagination.current === 1
+      ? [...scheduledPayouts, ...payouts]
+      : payouts;
 
   const getStripeUrl = (record, isDevEnv) => {
     const id = record.stripe_transfer_id;
@@ -1411,16 +1367,28 @@ const Payouts = () => {
       render: (id, record) => {
         if (React.isValidElement(id)) return id;
         const isSmallDesktop = !screens.lg;
+        const scheduled = isScheduledPayout(record);
         return (
           <Space>
-            <Tooltip title={isSmallDesktop ? "Export" : ""}>
-              <ActionButtonStyled
-                icon={<Download size={14} />}
-                onClick={() => handleExportPayout(id)}
-                loading={exportingId === id}
-              >
-                {!isSmallDesktop && "Export"}
-              </ActionButtonStyled>
+            <Tooltip
+              title={
+                scheduled
+                  ? "Export available after payout is processed"
+                  : isSmallDesktop
+                    ? "Export"
+                    : ""
+              }
+            >
+              <span>
+                <ActionButtonStyled
+                  icon={<Download size={14} />}
+                  onClick={() => !scheduled && handleExportPayout(id)}
+                  loading={exportingId === id}
+                  disabled={scheduled}
+                >
+                  {!isSmallDesktop && "Export"}
+                </ActionButtonStyled>
+              </span>
             </Tooltip>
             <Tooltip title={isSmallDesktop ? "Bookings" : ""}>
               <ActionButtonStyled
@@ -1475,8 +1443,9 @@ const Payouts = () => {
     {
       key: "payout_status",
       title: "Payouts Status",
-      value:
-        summary?.stripe_account_status?.replace("_", " ") || "Not Connected",
+      value: summary?.stripe_account_status
+        ? formatPayoutStatusLabel(summary.stripe_account_status)
+        : "Not Connected",
       icon: summary?.payouts_enabled ? (
         <CheckCircle size={20} />
       ) : (
@@ -1615,13 +1584,14 @@ const Payouts = () => {
                 Array.from({ length: 5 }).map((_, index) => (
                   <MobilePayoutSkeleton key={index} />
                 ))
-              ) : payouts.length > 0 ? (
-                payouts.map((payout) => (
+              ) : displayPayouts.length > 0 ? (
+                displayPayouts.map((payout) => (
                   <MobilePayoutItem
                     key={payout.id}
                     payout={payout}
                     onExport={handleExportPayout}
                     onViewBookings={showBookingsDrawer}
+                    isScheduled={isScheduledPayout(payout)}
                   />
                 ))
               ) : (
@@ -1649,7 +1619,7 @@ const Payouts = () => {
               dataSource={
                 loadingPayouts
                   ? generateSkeletonData(pagination.pageSize)
-                  : payouts
+                  : displayPayouts
               }
               loading={false}
               pagination={
