@@ -1892,13 +1892,33 @@ const ReviewAndPaymentStep = ({
         };
         return;
       }
+      /* Don't cancel when the only change is activeGlobalDiscount loading (null -> id). Intent is still valid. */
+      if (
+        prev.discountId === discountId &&
+        prev.gcCode === gcCode &&
+        prev.bookingFingerprint === bookingFingerprint &&
+        prev.globalId === null &&
+        globalId !== null
+      ) {
+        intentDepsRef.current = {
+          discountId,
+          gcCode,
+          globalId,
+          bookingFingerprint: bookingFingerprint ?? null,
+        };
+        return;
+      }
 
       const paymentIntentId = clientSecret.split("_secret_")[0];
-      paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
       fetchIntentInFlightRef.current = false;
-      createPaymentIntentInFlight = false;
       setClientSecret(null);
       onUpdateBookingData?.({ clientSecret: null, paymentIntentId: null });
+      createPaymentIntentInFlight = true;
+      (async () => {
+        await paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
+        fetchPaymentIntent(discountId);
+      })();
+      return;
     }
 
     if (!clientSecret && (fetchIntentInFlightRef.current || createPaymentIntentInFlight)) return;
