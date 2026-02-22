@@ -560,18 +560,17 @@ function PreferencesSettingsTabContent({
         <FormGroup>
           <SwitchLabelContainer>
             <SwitchInfo>
-              <div className="title">SMS Notifications (Future)</div>
+              <div className="title">SMS Notifications</div>
               <div className="desc">
                 Receive critical notifications via SMS
               </div>
             </SwitchInfo>
             <Form.Item name="smsNotifications" valuePropName="checked" noStyle>
-              <Switch disabled />
+              <Switch />
             </Form.Item>
           </SwitchLabelContainer>
           <HelpText>
-            <InfoCircleOutlined /> SMS requires phone verification and setup
-            (feature coming soon).
+            <InfoCircleOutlined /> Receive reminders, new bookings, and cancellations via SMS when a phone number is on file.
           </HelpText>
         </FormGroup>
       </FormSectionCard>
