@@ -680,6 +680,7 @@ const menuItemsConfig = [
     children: [
       { key: "trends", label: "Booking Trends" },
       { key: "discounts", label: "Promotions & Discounts" },
+      { key: "widget", label: "Booking Widget" },
     ],
   },
   // 7. Settings (top-level)
@@ -708,6 +709,7 @@ const menuItemPermissions = {
   payouts: "view_business_revenue_analytics",
   discounts: "manage_own_business_discounts",
   trends: "view_own_booking_analytics",
+  widget: "access_business_dashboard",
   staff: "manage_business_staff",
   messages: "view_own_business_bookings",
   widget: "manage_own_business_profile",

@@ -619,6 +619,75 @@ export const helpCenterData = [
             type: "p",
             text: "To prevent others from using your widget, you must whitelist your website domain in the widget settings (e.g., <code>www.myadventures.com</code>).",
           },
+          { type: "h3", text: "Pricing" },
+          {
+            type: "p",
+            text: "Widget access is 4% per booking (added to the class price—customers pay class price + 4%) plus a $50/month subscription. Stripe processing fees are deducted from your payout. Example: for a $100 class, the customer pays $104; you receive $100 minus 4% minus Stripe's fee.",
+          },
+        ],
+      },
+      {
+        slug: "widget-functions-and-options",
+        title: "Booking Widget: Functions and Options",
+        content: [
+          {
+            type: "p",
+            text: "The Classeasily booking widget lets you embed a full booking flow on your own website. Guests can browse classes, choose dates, add options, and pay without leaving your site. This article explains all widget functions and customization options.",
+          },
+          { type: "h3", text: "Display modes" },
+          {
+            type: "p",
+            text: "You can show the widget in different ways:",
+          },
+          {
+            type: "ul",
+            items: [
+              "<strong>Inline / embedded:</strong> The widget is embedded in a section of your page (e.g. inside a div). It expands to show the class list and booking steps.",
+              "<strong>Button / popup:</strong> A floating or inline button opens the widget in a modal or slide-out panel. Good for keeping the page clean until the user is ready to book.",
+              "<strong>Full page:</strong> The widget can be loaded as the main content of a dedicated page (e.g. /book or /classes) on your site.",
+            ],
+          },
+          {
+            type: "p",
+            text: "The exact behavior depends on how you place the script and container element. In the dashboard, you can copy the default embed code (script + container) and optionally adjust the container size or position.",
+          },
+          { type: "h3", text: "Theming and branding" },
+          {
+            type: "p",
+            text: "In <strong>Widget Settings</strong> you can customize:",
+          },
+          {
+            type: "ul",
+            items: [
+              "<strong>Primary color:</strong> Used for buttons, links, and accents so the widget matches your brand.",
+              "<strong>Font family:</strong> Choose a font that matches your site (or use the default).",
+              "<strong>Border radius:</strong> Control how rounded buttons and cards appear.",
+              "<strong>Optional logo/header:</strong> Some layouts let you show your logo or a heading above the widget.",
+            ],
+          },
+          {
+            type: "p",
+            text: "Changes in the customizer are reflected in the preview and in the script snippet you embed. After publishing, your live widget will use the same theme.",
+          },
+          { type: "h3", text: "Security: Allowed origins (whitelist)" },
+          {
+            type: "p",
+            text: "To prevent other sites from using your widget and API key, you must whitelist the domains where the widget is allowed to run. In widget settings, add each full origin (e.g. <code>https://www.myadventures.com</code> or <code>https://myadventures.com</code>). Only requests from those origins will receive CORS headers and be able to load classes and complete bookings. Do not add untrusted or third-party domains.",
+          },
+          {
+            type: "p",
+            text: "For local development, <code>http://localhost</code> and <code>http://127.0.0.1</code> (any port) are automatically allowed by the API so you can test the widget before going live.",
+          },
+          { type: "h3", text: "Embedding the widget" },
+          {
+            type: "p",
+            text: "After customizing, copy the generated HTML from the dashboard. It typically includes: (1) a script tag that loads the widget bundle from Classeasily, and (2) a div with a specific id where the widget will mount. Paste the script in your page head or before the closing body, and place the div where you want the widget to appear. The script will automatically find the div and render the widget. Works with Wix, Squarespace, WordPress, custom HTML, and other builders that allow custom code.",
+          },
+          { type: "h3", text: "Subscription and pricing" },
+          {
+            type: "p",
+            text: "Widget access is subject to a per-booking fee (e.g. 4% added to the class price) and a monthly subscription (e.g. $50/month). Stripe processing fees are deducted from your payout. See the <strong>Website Integration (Widget)</strong> article in this section for current pricing details.",
+          },
         ],
       },
       {

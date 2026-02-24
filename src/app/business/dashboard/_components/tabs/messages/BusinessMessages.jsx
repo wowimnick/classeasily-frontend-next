@@ -40,7 +40,6 @@ const DashboardWrapper = styled.div`
   gap: 4px;
   padding: 24px;
   background-color: #fff;
-  box-shadow: inset 0px -1px 11px 1px #0000000d;
   min-height: 100vh;
   @media (max-width: 768px) {
     padding: 12px;

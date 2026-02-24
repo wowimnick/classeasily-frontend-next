@@ -1,4 +1,9 @@
+import { cache } from "react";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+// Shared cache tags for homepage-content so all callers hit the same Data Cache entry
+const HOMEPAGE_CONTENT_TAGS = ["homepage-content", "collections"];
 
 // ==================== CACHE TAG GENERATORS ====================
 
@@ -123,29 +128,33 @@ export async function fetchClassesByCollection(collectionSlug, additionalParams 
 }
 
 /**
+ * Single cached fetch for homepage-content (collections mode).
+ * Deduplicated per-request via React cache() and by Data Cache so building
+ * many pages (Footer on each) doesn't spam the API.
+ */
+const fetchHomepageContentCached = cache(async () => {
+  const response = await fetch(
+    `${BASE_URL}/classes/homepage-content/?mode=collections`,
+    {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: "force-cache",
+      next: { revalidate: 3600, tags: HOMEPAGE_CONTENT_TAGS },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status}`);
+  }
+  return response.json();
+});
+
+/**
  * Fetch Collections
  * Uses the homepage-content endpoint in 'collections' mode to get the list
  */
 export async function fetchClassCollections() {
   try {
-    // We reuse the homepage content endpoint but only extract collections
-    const response = await fetch(
-      `${BASE_URL}/classes/homepage-content/?mode=collections`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        cache: "force-cache",
-        next: { revalidate: 3600, tags: ["collections"] },
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // The endpoint returns { collections: [...], trending: [...], new: [...] }
+    const data = await fetchHomepageContentCached();
     return data.collections || [];
   } catch (error) {
     console.error("Error fetching collections:", error);
@@ -165,32 +174,30 @@ export async function fetchClassesByTag(tag, additionalParams = {}) {
 
 // ==================== BLOG FUNCTIONS ====================
 
+/** Deduplicated per-request so multiple pages (blog list, [slug], tag) don't each hit the API. */
+const fetchBlogPostsCached = cache(async (pageSize) => {
+  const response = await fetch(
+    `${BASE_URL}/blog/posts/?page_size=${pageSize}`,
+    {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      cache: "force-cache",
+      next: { revalidate: 3600, tags: ["blog-posts"] },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status}`);
+  }
+  return response.json();
+});
+
 /**
  * Fetch all blog posts for the blog listing page
  * Endpoint: /blog/posts/
  */
 export async function fetchBlogPosts(pageSize = 50) {
   try {
-    const response = await fetch(
-      `${BASE_URL}/blog/posts/?page_size=${pageSize}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        cache: "force-cache",
-        next: {
-          revalidate: 3600,
-          tags: ["blog-posts"],
-        },
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await fetchBlogPostsCached(pageSize);
     const posts = data?.results || [];
     const count = data?.count || 0;
 
@@ -1045,24 +1052,8 @@ export function generateBusinessBreadcrumbStructuredData(businessData) {
  */
 export async function preloadHomepageData() {
   try {
-    // Determine the API URL based on environment
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-    // 1. Fetch ONLY homepage-content
-    // This endpoint now returns:
-    // { trending: [...], date_night: [...], collections: [...] }
-    const homepageRes = await fetch(
-      `${API_URL}/classes/homepage-content/?mode=collections`,
-      {
-        next: { revalidate: 3600, tags: ["homepage-content"] },
-      },
-    );
-
-    if (!homepageRes.ok) {
-      throw new Error("Failed to fetch homepage data");
-    }
-
-    const data = await homepageRes.json();
+    // Reuse shared cached fetch (same as Footer/explore) so build doesn't spam the API
+    const data = await fetchHomepageContentCached();
 
     // 2. Extract "Trending"
     const row_collections = [
