@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styled, { keyframes } from "styled-components";
 import {
@@ -1271,24 +1272,20 @@ const BookingDetailsDrawer = ({
     );
   };
 
-  const handleMessageGuest = () => {
-    if (booking?.id) {
-      onClose();
-      router.push(`/business/dashboard/messages?booking_id=${booking.id}`);
-    }
-  };
+  const messagesHref = booking?.id
+    ? `/business/dashboard/messages?booking_id=${booking.id}`
+    : "#";
 
   const renderFooter = () => {
     if (!loading && booking) {
       return (
         <DrawerFooter>
           <ActionSection>
-            <Button
-              icon={<MessageSquare size={16} />}
-              onClick={handleMessageGuest}
-            >
-              Message guest
-            </Button>
+            <Link href={messagesHref} onClick={onClose} style={{ display: "inline-block" }}>
+              <Button icon={<MessageSquare size={16} />}>
+                Message guest
+              </Button>
+            </Link>
             {booking.status === "confirmed" && (
               <>
                 <Button icon={<Repeat size={16} />} onClick={handleRescheduleClick}>

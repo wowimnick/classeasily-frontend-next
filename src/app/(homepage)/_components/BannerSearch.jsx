@@ -9,7 +9,6 @@ import BannerSearchClient from "./BannerSearchClient";
 const BLACK_PIXEL =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
-// Loading fallback for the search bar to prevent layout shift
 const SearchBarFallback = () => (
   <div
     style={{

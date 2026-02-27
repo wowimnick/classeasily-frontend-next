@@ -67,10 +67,16 @@ export async function generateStaticParams() {
     console.log(
       `=== ✅ SUCCESS: ${slugs.length} experience pages will be pre-generated ===`,
     );
+    // Next.js 16 (Cache Components) requires at least one result from generateStaticParams.
+    if (slugs.length === 0) {
+      console.warn("No slugs from API; returning placeholder so build can succeed.");
+      return [{ slug: "__build_placeholder" }];
+    }
     return slugs;
   } catch (error) {
     console.error("❌ Error in generateStaticParams:", error);
-    return [];
+    // Return one placeholder so build succeeds when API is down (e.g. ECONNREFUSED).
+    return [{ slug: "__build_placeholder" }];
   }
 }
 

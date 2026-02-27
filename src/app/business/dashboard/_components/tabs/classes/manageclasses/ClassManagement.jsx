@@ -84,6 +84,7 @@ import DeleteClassModal from "./DeleteClassModal";
 import CourseScheduleDrawer from "./CourseScheduleDrawer"; // ADDED: New import
 import { ClassProvider } from "../newclasses/ClassContext";
 import CreateClassPage from "../newclasses/CreateClassPage";
+import DashboardBreadcrumb from "../../../DashboardBreadcrumb";
 
 dayjs.extend(isBetween);
 dayjs.extend(isToday);
@@ -1726,6 +1727,7 @@ function ClassManagementContent(props) {
 
   return (
     <PageContainer>
+        <DashboardBreadcrumb title="Experience Management" />
         <PageHeader>
           <HeaderTextWrap>
             <HeaderTitle>Experience Management</HeaderTitle>

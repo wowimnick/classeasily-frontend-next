@@ -11,6 +11,7 @@ import { ConfigProvider } from "antd";
 // Import layout components
 import ClientOnlyWrapper from "@/components/common/ClientOnlyWrapper";
 import PermissionProtectedRoute from "@/components/auth/PermissionProtectedRoute";
+import { SubscriptionProvider } from "@/context/SubscriptionContext";
 import BusinessHeader from "./_components/BusinessHeader";
 import ImpersonationBanner from "@/components/header/ImpersonationBanner";
 import SideMenu from "./_components/SideMenu";
@@ -22,7 +23,7 @@ const PageLayout = styled.div`
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  background-color: #f8fafc;
+  background-color: #ffffff;
 `;
 
 const HeaderWrapper = styled.div`
@@ -99,14 +100,16 @@ function DashboardLayoutInner({ children }) {
             />
           </SideMenuWrapper>
           <MainContent>
-            <DashboardContext.Provider
-              value={{
-                openSettingsDrawer: (tab, sectionId) =>
-                  sideMenuRef.current?.openSettingsDrawer?.(tab, sectionId),
-              }}
-            >
-              {children}
-            </DashboardContext.Provider>
+            <SubscriptionProvider>
+              <DashboardContext.Provider
+                value={{
+                  openSettingsDrawer: (tab, sectionId) =>
+                    sideMenuRef.current?.openSettingsDrawer?.(tab, sectionId),
+                }}
+              >
+                {children}
+              </DashboardContext.Provider>
+            </SubscriptionProvider>
           </MainContent>
         </DashboardContainer>
         <SetupGuideWrapper sideMenuRef={sideMenuRef} />

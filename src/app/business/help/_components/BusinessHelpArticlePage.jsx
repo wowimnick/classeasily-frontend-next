@@ -1,8 +1,6 @@
-// --- START OF FILE /src/app/business/help/_components/BusinessHelpArticlePage.jsx ---
-
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { redirect } from "next/navigation";
 import styled from "styled-components";
@@ -15,10 +13,13 @@ import { helpCenterData } from "@/components/common/_pages/docs/helpCenterData";
 import { LordIcon } from "@/services/ReactUtils";
 import BusinessHelpCenterLayout from "./BusinessHelpCenterLayout";
 
+// ─── Article Page Layout ──────────────────────────────────────────────────────
+
 const ArticleLayout = styled.div`
   display: grid;
-  grid-template-columns: 1fr 240px;
-  gap: 3rem;
+  grid-template-columns: 1fr 220px;
+  gap: 4rem;
+  align-items: start;
 
   @media (max-width: 1200px) {
     grid-template-columns: 1fr;
@@ -26,49 +27,79 @@ const ArticleLayout = styled.div`
   }
 `;
 
-const ArticleWrapper = styled(motion.article)`
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 3rem;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+// ─── Article Content (no card) ────────────────────────────────────────────────
 
-  @media (max-width: 768px) {
-    padding: 1.5rem;
-    border-radius: 8px;
-  }
+const ArticleContent = styled(motion.article)`
+  min-width: 0;
+  max-width: 720px;
 `;
 
 const ArticleHeader = styled.div`
   margin-bottom: 2.5rem;
   padding-bottom: 2rem;
   border-bottom: 1px solid #f1f5f9;
+`;
 
-  @media (max-width: 768px) {
-    margin-bottom: 1.5rem;
-    padding-bottom: 1.5rem;
+const ArticleBreadcrumbs = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+
+  a {
+    color: #94a3b8;
+    text-decoration: none;
+    transition: color 0.15s;
+
+    &:hover {
+      color: #64748b;
+    }
   }
+
+  span {
+    color: #64748b;
+    font-weight: 500;
+  }
+`;
+
+const BreadcrumbSep = styled.span`
+  color: #cbd5e1;
+  user-select: none;
 `;
 
 const ArticleTitle = styled.h1`
-  font-size: 2.25rem;
+  font-size: 2rem;
   font-weight: 700;
   color: #0f172a;
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.875rem 0;
   line-height: 1.2;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
 
   @media (max-width: 768px) {
-    font-size: 1.75rem;
+    font-size: 1.625rem;
   }
 `;
 
-const ArticleMeta = styled.div`
-  font-size: 0.875rem;
+const ArticleSubtitle = styled.p`
+  font-size: 1.0625rem;
   color: #64748b;
-  display: flex;
-  gap: 1rem;
+  margin: 0 0 1.25rem 0;
+  line-height: 1.6;
+  font-weight: 400;
 `;
+
+const ArticleMeta = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: #94a3b8;
+`;
+
+// ─── Content Body ─────────────────────────────────────────────────────────────
 
 const ContentArea = styled.div`
   color: #334155;
@@ -76,46 +107,46 @@ const ContentArea = styled.div`
   line-height: 1.75;
 
   p {
-    margin: 0 0 1.5rem 0;
+    margin: 0 0 1.375rem 0;
   }
 
   h3 {
-    font-size: 1.5rem;
+    font-size: 1.3125rem;
     font-weight: 700;
     color: #0f172a;
-    margin: 2.5rem 0 1rem;
-    letter-spacing: -0.01em;
-    scroll-margin-top: 120px;
+    margin: 2.75rem 0 0.875rem;
+    letter-spacing: -0.015em;
+    scroll-margin-top: 110px;
 
     &:first-child {
       margin-top: 0;
     }
 
     @media (max-width: 768px) {
-      font-size: 1.25rem;
+      font-size: 1.125rem;
       margin: 2rem 0 0.75rem;
     }
   }
-  
+
   h4 {
-    font-size: 1.125rem;
+    font-size: 1rem;
     font-weight: 600;
     color: #1e293b;
-    margin: 1.5rem 0 0.75rem;
+    margin: 1.5rem 0 0.625rem;
+    scroll-margin-top: 110px;
   }
 
   ul,
   ol {
-    margin: 0 0 1.5rem 0;
-    padding-left: 1.5rem;
+    margin: 0 0 1.375rem 0;
+    padding-left: 1.375rem;
   }
 
   li {
-    margin-bottom: 0.5rem;
-    position: relative;
+    margin-bottom: 0.4rem;
 
     &::marker {
-      color: #64748b;
+      color: #94a3b8;
     }
   }
 
@@ -124,34 +155,37 @@ const ContentArea = styled.div`
     color: #0f172a;
   }
 
+  /* Inline code pill */
   code {
     background: #f1f5f9;
-    padding: 0.2rem 0.4rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.15rem 0.45rem;
     border-radius: 4px;
-    font-size: 0.875em;
-    color: #0f172a;
-    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 0.84em;
+    color: #1e293b;
+    font-family: "Menlo", "Monaco", "Courier New", monospace;
     word-break: break-word;
   }
 
   blockquote {
     background: #fff0f2;
-    padding: 1.25rem 1.5rem;
-    margin: 2rem 0;
-    border-radius: 8px;
-    border-left: 4px solid #f83a54;
-    
+    padding: 1rem 1.25rem;
+    margin: 1.75rem 0;
+    border-radius: 6px;
+    border-left: 3px solid #f83a54;
+
     p {
       margin: 0;
-      color: #f83a54;
+      color: #be123c;
       font-weight: 500;
+      font-size: 0.9375rem;
     }
 
     strong {
-      color: #f83a54;
+      color: #be123c;
     }
   }
-  
+
   img {
     max-width: 100%;
     height: auto;
@@ -161,61 +195,11 @@ const ContentArea = styled.div`
   }
 `;
 
-const TableOfContents = styled(motion.div)`
-  position: sticky;
-  top: 120px;
-  align-self: start;
-
-  @media (max-width: 1200px) {
-    display: none;
-  }
-`;
-
-const TocTitle = styled.h4`
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 600;
-  color: #64748b;
-  margin-bottom: 1rem;
-`;
-
-const TocList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-`;
-
-const TocItem = styled.li`
-  font-size: 0.875rem;
-  
-  a {
-    color: #64748b;
-    text-decoration: none;
-    transition: all 0.2s;
-    display: block;
-    padding-left: 10px;
-    border-left: 2px solid transparent;
-
-    &:hover {
-      color: #f83a54;
-      border-left-color: #f83a54;
-    }
-    
-    &.active {
-      color: #f83a54;
-      font-weight: 500;
-      border-left-color: #f83a54;
-    }
-  }
-`;
+// ─── Feedback ─────────────────────────────────────────────────────────────────
 
 const FeedbackSection = styled.div`
-  margin-top: 4rem;
-  padding-top: 2rem;
+  margin-top: 3.5rem;
+  padding-top: 1.75rem;
   border-top: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
@@ -224,49 +208,49 @@ const FeedbackSection = styled.div`
   gap: 1rem;
 
   @media (max-width: 640px) {
-    margin-top: 3rem;
     flex-direction: column;
     align-items: flex-start;
   }
 `;
 
 const FeedbackTitle = styled.div`
+  font-size: 0.9375rem;
   font-weight: 500;
   color: #475569;
 `;
 
 const FeedbackButtons = styled.div`
   display: flex;
-  gap: 1rem;
+  gap: 0.625rem;
 `;
 
 const FeedbackButton = styled.button`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   background: transparent;
-  border: 1px solid #cbd5e1;
-  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  padding: 0.4rem 0.875rem;
   border-radius: 6px;
-  color: #475569;
-  font-size: 0.875rem;
+  color: #64748b;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
 
   &:hover {
     background: ${(props) => (props.disabled ? "transparent" : "#fff0f2")};
-    border-color: ${(props) => (props.disabled ? "#cbd5e1" : "#f83a54")};
-    color: ${(props) => (props.disabled ? "#475569" : "#f83a54")};
+    border-color: ${(props) => (props.disabled ? "#e2e8f0" : "#f83a54")};
+    color: ${(props) => (props.disabled ? "#64748b" : "#f83a54")};
   }
 
   ${(props) =>
     props.disabled &&
     `
-    opacity: 0.5;
+    opacity: 0.45;
     cursor: not-allowed;
   `}
-  
+
   ${(props) =>
     props.$active &&
     `
@@ -276,32 +260,76 @@ const FeedbackButton = styled.button`
   `}
 `;
 
-// Category Landing Components
-const CategoryLandingPage = styled(motion.div)`
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 3rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+// ─── Table of Contents ────────────────────────────────────────────────────────
 
-  @media (max-width: 768px) {
-    padding: 1.5rem;
+const TableOfContents = styled(motion.div)`
+  position: sticky;
+  top: 110px;
+  align-self: start;
+
+  @media (max-width: 1200px) {
+    display: none;
   }
 `;
+
+const TocTitle = styled.h4`
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #94a3b8;
+  margin: 0 0 0.875rem 0;
+`;
+
+const TocList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+`;
+
+const TocItem = styled.li`
+  a {
+    display: block;
+    font-size: 0.8125rem;
+    color: #64748b;
+    text-decoration: none;
+    padding: 0.3rem 0 0.3rem 0.75rem;
+    border-left: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    line-height: 1.4;
+
+    &:hover {
+      color: #0f172a;
+      border-left-color: #cbd5e1;
+    }
+
+    &.active {
+      color: #0f172a;
+      font-weight: 600;
+      border-left-color: #0f172a;
+    }
+  }
+`;
+
+// ─── Category Landing ─────────────────────────────────────────────────────────
+
+const CategoryLandingPage = styled(motion.div)``;
 
 const CategoryHeader = styled.div`
   display: flex;
   align-items: flex-start;
-  gap: 1.5rem;
-  margin-bottom: 2.5rem;
-  padding-bottom: 2rem;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.75rem;
   border-bottom: 1px solid #f1f5f9;
 
   @media (max-width: 640px) {
     flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 1rem;
+    align-items: flex-start;
+    gap: 0.875rem;
   }
 `;
 
@@ -309,10 +337,10 @@ const CategoryIconWrapper = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 52px;
+  height: 52px;
   background: #fff0f2;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid #ffe0e5;
   flex-shrink: 0;
 `;
@@ -322,32 +350,25 @@ const CategoryInfo = styled.div`
 `;
 
 const CategoryTitle = styled.h1`
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 700;
   color: #0f172a;
-  margin: 0 0 0.75rem 0;
-  line-height: 1.1;
-
-  @media (max-width: 640px) {
-    font-size: 1.75rem;
-  }
+  margin: 0 0 0.5rem 0;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 `;
 
 const CategoryDescription = styled.p`
-  font-size: 1.125rem;
+  font-size: 1rem;
   color: #64748b;
   margin: 0;
   line-height: 1.6;
-
-  @media (max-width: 640px) {
-    font-size: 1rem;
-  }
 `;
 
 const ArticleGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
@@ -357,19 +378,18 @@ const ArticleGrid = styled.div`
 const ArticleCard = styled(Link)`
   display: flex;
   flex-direction: column;
-  padding: 1.5rem;
+  padding: 1.25rem 1.375rem;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 8px;
   text-decoration: none;
   background: #ffffff;
-  transition: all 0.2s ease;
-  height: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
 
   &:hover {
     border-color: #f83a54;
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(248, 58, 84, 0.05);
-    
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px -4px rgba(248, 58, 84, 0.08);
+
     h3 {
       color: #f83a54;
     }
@@ -377,17 +397,18 @@ const ArticleCard = styled(Link)`
 `;
 
 const ArticleCardTitle = styled.h3`
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: #0f172a;
   margin: 0 0 0.5rem 0;
-  transition: color 0.2s;
+  transition: color 0.15s;
+  line-height: 1.35;
 `;
 
 const ArticleCardPreview = styled.p`
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: #64748b;
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 1.25rem 0;
   flex-grow: 1;
   line-height: 1.5;
 `;
@@ -396,24 +417,29 @@ const ReadMore = styled.div`
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: #f83a54;
   margin-top: auto;
 `;
 
-const ArticleRenderer = ({ content = [] }) => {
-  return content.map((item, index) => {
+// ─── Article Renderer ─────────────────────────────────────────────────────────
+
+const ArticleRenderer = ({ content = [] }) =>
+  content.map((item, index) => {
     const key = `content-${index}`;
     switch (item.type) {
       case "h3":
         return (
           <motion.h3
-            id={item.text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')}
+            id={item.text
+              .toLowerCase()
+              .replace(/\s+/g, "-")
+              .replace(/[^\w-]/g, "")}
             key={key}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
+            transition={{ duration: 0.25, delay: index * 0.03 }}
           >
             {item.text}
           </motion.h3>
@@ -422,9 +448,9 @@ const ArticleRenderer = ({ content = [] }) => {
         return (
           <motion.h4
             key={key}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
+            transition={{ duration: 0.25, delay: index * 0.03 }}
           >
             {item.text}
           </motion.h4>
@@ -434,20 +460,20 @@ const ArticleRenderer = ({ content = [] }) => {
           <motion.p
             key={key}
             dangerouslySetInnerHTML={{ __html: item.text }}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
+            transition={{ duration: 0.25, delay: index * 0.03 }}
           />
         );
       case "ul":
-      case "ol":
+      case "ol": {
         const ListTag = item.type;
         return (
           <motion.div
             key={key}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
+            transition={{ duration: 0.25, delay: index * 0.03 }}
           >
             <ListTag>
               {item.items.map((li, i) => (
@@ -459,21 +485,37 @@ const ArticleRenderer = ({ content = [] }) => {
             </ListTag>
           </motion.div>
         );
+      }
       case "blockquote":
         return (
           <motion.blockquote
             key={key}
             dangerouslySetInnerHTML={{ __html: item.text }}
-            initial={{ opacity: 0, x: -10 }}
+            initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
+            transition={{ duration: 0.25, delay: index * 0.03 }}
           />
         );
       default:
         return null;
     }
   });
+
+// ─── Category Icon Map ────────────────────────────────────────────────────────
+
+const getIconSrc = (slug) => {
+  const map = {
+    "getting-started": "https://cdn.lordicon.com/upjgggre.json",
+    "classes-and-scheduling": "https://cdn.lordicon.com/abfverha.json",
+    finances: "https://cdn.lordicon.com/yycecovd.json",
+    "team-and-community": "https://cdn.lordicon.com/cniwvohj.json",
+    "bookings-and-students": "https://cdn.lordicon.com/meaqueth.json",
+    "marketing-and-promotions": "https://cdn.lordicon.com/abgykmtd.json",
+  };
+  return map[slug] || "https://cdn.lordicon.com/nocovwne.json";
 };
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 const BusinessHelpArticlePage = () => {
   const searchParams = useSearchParams();
@@ -481,8 +523,10 @@ const BusinessHelpArticlePage = () => {
   const articleSlug = searchParams.get("article");
 
   const category = helpCenterData.find((c) => c.slug === categorySlug);
-
   const [feedbackState, setFeedbackState] = useState(null);
+  const [toc, setToc] = useState([]);
+  const [activeId, setActiveId] = useState(null);
+  const observerRef = useRef(null);
 
   useEffect(() => {
     setFeedbackState(null);
@@ -500,62 +544,84 @@ const BusinessHelpArticlePage = () => {
     redirect(`/business/help?category=${category.slug}`);
   }
 
-  const [toc, setToc] = useState([]);
-  
+  // Build TOC from h3 headings
   useEffect(() => {
     if (article) {
       const headers = article.content
-        .filter(item => item.type === 'h3')
-        .map(item => ({
-          id: item.text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, ''),
-          text: item.text
+        .filter((item) => item.type === "h3")
+        .map((item) => ({
+          id: item.text
+            .toLowerCase()
+            .replace(/\s+/g, "-")
+            .replace(/[^\w-]/g, ""),
+          text: item.text,
         }));
       setToc(headers);
+      setActiveId(headers[0]?.id || null);
     }
   }, [article]);
 
+  // Intersection Observer for active TOC item
+  useEffect(() => {
+    if (!toc.length) return;
+
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        // Pick the topmost visible heading
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+
+        if (visible.length > 0) {
+          setActiveId(visible[0].target.id);
+        }
+      },
+      { rootMargin: "-80px 0px -60% 0px", threshold: 0 }
+    );
+
+    toc.forEach(({ id }) => {
+      const el = document.getElementById(id);
+      if (el) observerRef.current.observe(el);
+    });
+
+    return () => observerRef.current?.disconnect();
+  }, [toc]);
+
   const handleFeedback = (isHelpful) => {
     if (feedbackState !== null) return;
-
     if (isHelpful) {
-      setFeedbackState('yes');
+      setFeedbackState("yes");
       message.success("Thanks for your feedback!");
     } else {
-      setFeedbackState('no');
-      message.success("Thanks for your feedback! We will work to improve this article.");
+      setFeedbackState("no");
+      message.success(
+        "Thanks for your feedback! We'll work to improve this article."
+      );
     }
   };
 
-  const getIconSrc = (categorySlug) => {
-    const iconMap = {
-      "getting-started": "https://cdn.lordicon.com/upjgggre.json",
-      "classes-and-scheduling": "https://cdn.lordicon.com/abfverha.json",
-      "finances": "https://cdn.lordicon.com/yycecovd.json",
-      "team-and-community": "https://cdn.lordicon.com/cniwvohj.json",
-      "bookings-and-students": "https://cdn.lordicon.com/meaqueth.json",
-      "marketing-and-promotions": "https://cdn.lordicon.com/abgykmtd.json",
-    };
-    return iconMap[categorySlug] || "https://cdn.lordicon.com/nocovwne.json";
-  };
+  // ─── Category Landing ───────────────────────────────────────────────────────
 
   if (!article) {
     return (
       <BusinessHelpCenterLayout categorySlug={categorySlug}>
         <CategoryLandingPage
           key={categorySlug}
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+          transition={{ duration: 0.3 }}
         >
           <CategoryHeader>
             <CategoryIconWrapper>
               <LordIcon
                 key={category.slug}
                 src={getIconSrc(category.slug)}
-                size="32px"
+                size="28px"
                 trigger="hover"
                 colors="primary:#f83a54,secondary:#64748b"
-                playOnLoad={true}
+                playOnLoad
               />
             </CategoryIconWrapper>
             <CategoryInfo>
@@ -563,27 +629,28 @@ const BusinessHelpArticlePage = () => {
               <CategoryDescription>{category.description}</CategoryDescription>
             </CategoryInfo>
           </CategoryHeader>
+
           <ArticleGrid>
             {category.articles.map((art, index) => (
               <motion.div
                 key={art.slug}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.4,
-                  delay: index * 0.05,
-                  ease: "easeOut",
-                }}
+                transition={{ duration: 0.3, delay: index * 0.04, ease: "easeOut" }}
               >
                 <ArticleCard
                   href={`/business/help?category=${category.slug}&article=${art.slug}`}
                 >
                   <ArticleCardTitle>{art.title}</ArticleCardTitle>
                   <ArticleCardPreview>
-                    {art.content.find(c => c.type === 'p')?.text.replace(/<[^>]*>/g, '').substring(0, 80)}...
+                    {art.content
+                      .find((c) => c.type === "p")
+                      ?.text.replace(/<[^>]*>/g, "")
+                      .substring(0, 90)}
+                    …
                   </ArticleCardPreview>
                   <ReadMore>
-                    Read article <ArrowRight size={16} />
+                    Read article <ArrowRight size={14} />
                   </ReadMore>
                 </ArticleCard>
               </motion.div>
@@ -594,25 +661,54 @@ const BusinessHelpArticlePage = () => {
     );
   }
 
+  // ─── Article View ───────────────────────────────────────────────────────────
+
+  // Extract subtitle from first paragraph
+  const subtitleRaw = article.content
+    .find((c) => c.type === "p")
+    ?.text.replace(/<[^>]*>/g, "");
+  const subtitle =
+    subtitleRaw && subtitleRaw.length > 140
+      ? subtitleRaw.substring(0, 140) + "…"
+      : subtitleRaw;
+
+  const readTime = Math.ceil(JSON.stringify(article.content).length / 1000);
+
   return (
     <BusinessHelpCenterLayout
       categorySlug={categorySlug}
       articleSlug={articleSlug}
     >
       <ArticleLayout>
-        <ArticleWrapper
+        {/* Article */}
+        <ArticleContent
           key={`${categorySlug}-${articleSlug}`}
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+          transition={{ duration: 0.3 }}
         >
           <ArticleHeader>
+            {/* In-article breadcrumbs */}
+            <ArticleBreadcrumbs>
+              <Link href="/business/help">Help Center</Link>
+              <BreadcrumbSep>/</BreadcrumbSep>
+              <Link href={`/business/help?category=${categorySlug}`}>
+                {category.title}
+              </Link>
+              <BreadcrumbSep>/</BreadcrumbSep>
+              <span>{article.title}</span>
+            </ArticleBreadcrumbs>
+
             <ArticleTitle>{article.title}</ArticleTitle>
+
+            {subtitle && <ArticleSubtitle>{subtitle}</ArticleSubtitle>}
+
             <ArticleMeta>
-              <span><FileText size={14} style={{marginRight: 6, verticalAlign: 'middle'}}/>{Math.ceil(JSON.stringify(article.content).length / 1000)} min read</span>
+              <FileText size={13} />
+              {readTime} min read
             </ArticleMeta>
           </ArticleHeader>
-          
+
           <ContentArea>
             <ArticleRenderer content={article.content} />
           </ContentArea>
@@ -620,39 +716,44 @@ const BusinessHelpArticlePage = () => {
           <FeedbackSection>
             <FeedbackTitle>Was this article helpful?</FeedbackTitle>
             <FeedbackButtons>
-              <FeedbackButton 
-                onClick={() => handleFeedback(true)} 
+              <FeedbackButton
+                onClick={() => handleFeedback(true)}
                 disabled={feedbackState !== null}
-                $active={feedbackState === 'yes'}
+                $active={feedbackState === "yes"}
               >
-                <ThumbsUp size={16} /> Yes
+                <ThumbsUp size={14} /> Yes
               </FeedbackButton>
-              <FeedbackButton 
-                onClick={() => handleFeedback(false)} 
+              <FeedbackButton
+                onClick={() => handleFeedback(false)}
                 disabled={feedbackState !== null}
-                $active={feedbackState === 'no'}
+                $active={feedbackState === "no"}
               >
-                <ThumbsDown size={16} /> No
+                <ThumbsDown size={14} /> No
               </FeedbackButton>
             </FeedbackButtons>
           </FeedbackSection>
-        </ArticleWrapper>
+        </ArticleContent>
 
+        {/* Right — On This Page */}
         {toc.length > 0 && (
           <TableOfContents
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: 0.35, delay: 0.15 }}
           >
             <TocTitle>On this page</TocTitle>
             <TocList>
               {toc.map((item) => (
                 <TocItem key={item.id}>
-                  <a 
-                    href={`#${item.id}`} 
+                  <a
+                    href={`#${item.id}`}
+                    className={activeId === item.id ? "active" : ""}
                     onClick={(e) => {
                       e.preventDefault();
-                      document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
+                      document
+                        .getElementById(item.id)
+                        ?.scrollIntoView({ behavior: "smooth" });
+                      setActiveId(item.id);
                     }}
                   >
                     {item.text}

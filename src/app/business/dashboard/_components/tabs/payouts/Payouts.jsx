@@ -40,6 +40,7 @@ import dayjs from "dayjs";
 import { businessService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
 import { useDashboard } from "../../DashboardContext";
+import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 
 const { Title, Text, Paragraph, Link } = Typography;
 const { useBreakpoint } = Grid;
@@ -1461,6 +1462,7 @@ const Payouts = () => {
 
   return (
     <DashboardWrapper>
+        <DashboardBreadcrumb title="Payouts" />
         <DashboardHeader>
           <div>
             <PageTitle>Payouts</PageTitle>

@@ -69,11 +69,11 @@ const colors = {
 const DashboardWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: ${(p) => (p.$noPadding ? "0" : "24px")};
   background-color: #fff;
   min-height: 100vh;
   @media (max-width: 768px) {
-    padding: 16px;
+    padding: ${(p) => (p.$noPadding ? "0" : "16px")};
     gap: 0px;
   }
 `;
@@ -572,8 +572,9 @@ const BookingHistory = forwardRef((props, ref) => {
     }
   }, []);
 
+  const { noWrapperPadding } = props || {};
   return (
-    <DashboardWrapper ref={mainContentRef}>
+    <DashboardWrapper ref={mainContentRef} $noPadding={noWrapperPadding}>
         <DashboardHeader>
           <div>
             <PageTitle>Booking History</PageTitle>

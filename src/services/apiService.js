@@ -37,6 +37,12 @@ export const API_ENDPOINTS = {
   BUSINESS_ROLES: "/business/roles/",
   ACCEPT_INVITE: "/business/accept-invitation/",
   MY_BUSINESS_WIDGET_CONFIG: "/my-business/widget-config/",
+  MY_BUSINESS_WIDGET_SUBSCRIPTION: "/my-business/widget-subscription/",
+  MY_BUSINESS_WIDGET_SUBSCRIPTION_CHECKOUT: "/my-business/widget-subscription/checkout/",
+  MY_BUSINESS_WIDGET_SUBSCRIPTION_PAYMENT_INTENT: "/my-business/widget-subscription/payment-intent/",
+  MY_BUSINESS_WIDGET_SUBSCRIPTION_CANCEL: "/my-business/widget-subscription/cancel/",
+  MY_BUSINESS_WIDGET_SUBSCRIPTION_REACTIVATE:
+    "/my-business/widget-subscription/reactivate/",
 
   // Student Self-Service
   STUDENT_BOOKINGS: "/my-bookings/",
@@ -83,6 +89,7 @@ export const API_ENDPOINTS = {
   BUSINESS_CONVERSATION_SEND_MESSAGE: (id) =>
     `/business/conversations/${id}/send_message/`,
   BUSINESS_CONVERSATION_MARK_READ: (id) => `/business/conversations/${id}/mark_read/`,
+  BUSINESS_CONVERSATION_START_BY_BOOKING: "/business/conversations/start-by-booking/",
   // Guest (no-account) messaging from class page + inbox via token
   GUEST_MESSAGE: "/guest-message/",
   GUEST_INBOX: (token) => `/guest-inbox/?token=${encodeURIComponent(token)}`,
@@ -625,6 +632,133 @@ export const businessService = {
         success: false,
         error: errorMessage || "An unknown error occurred.",
       };
+    }
+  },
+
+  getWidgetSubscription: async () => {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Error fetching widget subscription:",
+        error.response?.data || error,
+      );
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to load subscription.";
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  subscribeWidgetPlan: async (planId) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION,
+        { plan_id: planId },
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Error subscribing to widget plan:",
+        error.response?.data || error,
+      );
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to subscribe.";
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  /**
+   * Create a Stripe Subscription in default_incomplete mode for inline Elements checkout.
+   * Returns { client_secret, subscription_id }.
+   */
+  createWidgetSubscriptionPaymentIntent: async ({ plan_id } = {}) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION_PAYMENT_INTENT,
+        { plan_id },
+      );
+      return { success: true, ...response.data };
+    } catch (error) {
+      const data = error.response?.data;
+      const errorCode = data?.error;
+      const errorMessage =
+        (typeof errorCode === "string" ? errorCode : null) ||
+        data?.detail ||
+        "Failed to prepare payment.";
+      return { success: false, error: errorMessage, errorCode };
+    }
+  },
+
+  /**
+   * Create a Stripe Checkout Session for the widget subscription.
+   * Returns { url } to redirect the user to Stripe to complete payment.
+   */
+  createWidgetSubscriptionCheckoutSession: async ({
+    plan_id,
+    success_url,
+    cancel_url,
+  } = {}) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION_CHECKOUT,
+        { plan_id, success_url, cancel_url },
+      );
+      return { success: true, url: response.data?.url };
+    } catch (error) {
+      console.error(
+        "Error creating widget subscription checkout session:",
+        error.response?.data || error,
+      );
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to start checkout.";
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  cancelWidgetSubscription: async () => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION_CANCEL,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Error canceling widget subscription:",
+        error.response?.data || error,
+      );
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to cancel.";
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  reactivateWidgetSubscription: async () => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION_REACTIVATE,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Error reactivating widget subscription:",
+        error.response?.data || error,
+      );
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to reactivate.";
+      return { success: false, error: errorMessage };
     }
   },
 
@@ -2801,6 +2935,27 @@ export const businessConversationService = {
     } catch (error) {
       console.error("Error marking read:", error.response?.data || error);
       return { success: false, error: error.response?.data?.detail || "Failed to mark read" };
+    }
+  },
+
+  /**
+   * Get or create a conversation for a booking (business initiates messaging the guest).
+   * Optional `text` sends an initial message.
+   */
+  startByBooking: async (bookingId, text = "") => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.BUSINESS_CONVERSATION_START_BY_BOOKING,
+        { booking_id: bookingId, ...(text ? { text } : {}) }
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error starting conversation by booking:", error.response?.data || error);
+      const detail = error.response?.data;
+      const msg = typeof detail === "object" && detail !== null
+        ? (detail.detail || detail.booking_id?.[0] || JSON.stringify(detail))
+        : "Failed to start conversation";
+      return { success: false, error: msg };
     }
   },
 };

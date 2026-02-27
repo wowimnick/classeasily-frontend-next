@@ -35,6 +35,7 @@ import dayjs from "dayjs";
 import NumberFlow from "@number-flow/react";
 import { businessDiscountService } from "@/services/apiService";
 import DiscountsDrawer from "./DiscountsDrawer";
+import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 
 const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -698,6 +699,7 @@ const Discounts = ({ businessId }) => {
 
   return (
     <DashboardWrapper>
+        <DashboardBreadcrumb title="Discounts" />
         <DashboardHeader>
           <div>
             <PageTitle>Discounts & Coupons</PageTitle>

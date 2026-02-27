@@ -46,6 +46,7 @@ import GuestCard from "./GuestCard";
 import GuestProfile from "./GuestProfile";
 import ImportGuestsModal from "./ImportGuestsModal";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
+import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 import dayjs from "dayjs";
 import { formatPhoneNumber } from "@/services/utils";
 import { useAuth } from "@/lib/auth-client";
@@ -966,6 +967,7 @@ const Guests = forwardRef((props, ref) => {
 
   return (
     <DashboardWrapper>
+        <DashboardBreadcrumb title="Guests" />
         <DashboardHeader>
           <div>
             <PageTitle>Guest Management</PageTitle>

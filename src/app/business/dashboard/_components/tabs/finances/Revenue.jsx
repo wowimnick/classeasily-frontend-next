@@ -57,6 +57,7 @@ import dayjs from "dayjs";
 import { revenueService, businessClassService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
+import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -788,6 +789,7 @@ const Revenue = forwardRef((props, ref) => {
 
   return (
     <DashboardWrapper ref={mainContentRef}>
+        <DashboardBreadcrumb title="Revenue" />
         <DashboardHeader>
           <div>
             <PageTitle>Revenue Analytics</PageTitle>

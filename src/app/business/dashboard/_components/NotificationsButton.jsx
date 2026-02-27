@@ -718,10 +718,10 @@ const NotificationsButton = () => {
                 {!!currentUser &&
                 !countLoading &&
                 (popoverVisible || unreadCount > 0) ? (
-                  <BellFilled style={{ fontSize: "20px", color: "#ffffff" }} />
+                  <BellFilled style={{ fontSize: "20px", color: "#1f2937" }} />
                 ) : (
                   <BellOutlined
-                    style={{ fontSize: "20px", color: "#ffffff" }}
+                    style={{ fontSize: "20px", color: "#1f2937" }}
                   />
                 )}
               </Badge>
@@ -754,9 +754,9 @@ const NotificationsButton = () => {
               {!!currentUser &&
               !countLoading &&
               (mobileNotificationsVisible || unreadCount > 0) ? (
-                <BellFilled style={{ fontSize: "20px", color: "#ffffff" }} />
+                <BellFilled style={{ fontSize: "20px", color: "#1f2937" }} />
               ) : (
-                <BellOutlined style={{ fontSize: "20px", color: "#ffffff" }} />
+                <BellOutlined style={{ fontSize: "20px", color: "#1f2937" }} />
               )}
             </IconContainer>
           </Badge>

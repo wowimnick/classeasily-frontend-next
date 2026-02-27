@@ -71,6 +71,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { Drawer } from "vaul";
 
 import { reviewService } from "@/services/apiService";
+import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 import { LordIcon } from "@/services/ReactUtils";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
@@ -1574,6 +1575,7 @@ const BusinessReviews = () => {
 
   return (
     <DashboardWrapper>
+        <DashboardBreadcrumb title="Reviews" />
         <DashboardHeader>
           <div>
             <StyledTitle>Manage Reviews</StyledTitle>

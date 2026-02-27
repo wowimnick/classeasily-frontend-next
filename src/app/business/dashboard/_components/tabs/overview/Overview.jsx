@@ -8,7 +8,9 @@ import React, {
   useImperativeHandle,
   forwardRef,
   useCallback,
+  useContext,
 } from "react";
+import { useRouter } from "next/navigation";
 import styled, { css, keyframes } from "styled-components";
 import {
   Users,
@@ -31,7 +33,15 @@ import {
   Shield,
   AlertTriangle,
   ArrowRight,
+  Zap,
+  ChevronRight,
+  Settings2,
+  Sparkles,
+  Globe,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-client";
+import DashboardContext from "../../DashboardContext";
+import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 import {
   Typography,
   Card,
@@ -130,86 +140,50 @@ const getErrorMessage = (error) => {
 const DashboardWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
   padding: 24px;
-  background-color: #fff;
+  background-color: #ffffff;
   @media (max-width: 768px) {
-    padding: 12px;
-    gap: 12px;
+    padding: 16px;
   }
 `;
 
-const DashboardHeader = styled.div`
-  display: flex;
-  width: fit-content;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 4px;
-    width: 100%;
-  }
-`;
-
-const StyledTitle = styled.h1`
-  font-size: 24px;
-  font-weight: 700;
-  color: #222222;
-  margin: 0 0 4px 0;
-  line-height: 1.2;
-  @media (max-width: 768px) {
-    font-size: 22px;
-  }
-`;
-
-const HeaderSubtitle = styled(Text)`
-  font-size: 15px;
-  color: ${colors.textSecondary};
-  display: block;
-  line-height: 1.4;
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-`;
 
 const StatsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
 
   @media (max-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 10px;
   }
 `;
 
 const SnapshotGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
 
   @media (max-width: 768px) {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 10px;
   }
 `;
 
 const StatCardBase = styled(Card)`
-  border-radius: ${theme.token.borderRadius}px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   margin-bottom: 0;
   height: 100%;
-  min-height: 140px;
-  transition: all 0.2s ease;
+  min-height: 130px;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   .ant-card-body {
-    padding: 20px;
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -217,11 +191,8 @@ const StatCardBase = styled(Card)`
   }
 
   @media (max-width: 768px) {
-    min-height: 120px;
-    border-radius: 12px;
-    .ant-card-body {
-      padding: 16px;
-    }
+    min-height: 110px;
+    .ant-card-body { padding: 14px 16px; }
   }
 `;
 
@@ -235,18 +206,19 @@ const MetricStatCardLink = styled(Link)`
 `;
 
 const MetricStatCard = styled(StatCardBase)`
-  cursor: ${(props) => (props.$isClickable ? "pointer" : "default")};
+
   ${(props) =>
     props.$isClickable &&
     css`
       &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-color: #d1d5db;
       }
     `}
 `;
 
-const SnapshotStatCard = styled(StatCardBase)``;
+const SnapshotStatCard = styled(StatCardBase)`
+
+`;
 
 const StatHeader = styled.div`
   display: flex;
@@ -256,9 +228,9 @@ const StatHeader = styled.div`
 `;
 
 const IconContainer = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -266,31 +238,26 @@ const IconContainer = styled.div`
   color: ${(props) => props.$iconcolor || colors.info};
   flex-shrink: 0;
 
-  svg {
-    width: 18px;
-    height: 18px;
-  }
+  svg { width: 16px; height: 16px; }
 
   @media (max-width: 768px) {
-    width: 32px;
-    height: 32px;
-    svg {
-      width: 16px;
-      height: 16px;
-    }
+    width: 30px;
+    height: 30px;
+    svg { width: 14px; height: 14px; }
   }
 `;
 
 const MetricValue = styled.div`
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
-  color: ${colors.textPrimary};
+  color: #111827;
   display: flex;
   align-items: baseline;
   line-height: 1.2;
+  letter-spacing: -0.2px;
 
   @media (max-width: 768px) {
-    font-size: 18px;
+    font-size: 17px;
   }
 `;
 
@@ -312,15 +279,12 @@ const StatFooter = styled.div`
 `;
 
 const StatLabel = styled(Text)`
-  font-size: 13px;
-  color: ${colors.textSecondary};
+  font-size: 12px;
+  color: #9ca3af;
   display: block;
   line-height: 1.3;
   margin-bottom: auto;
-
-  @media (max-width: 768px) {
-    font-size: 12px;
-  }
+  font-weight: 500;
 `;
 
 const GridSection = styled(Row)`
@@ -334,9 +298,9 @@ const GridSection = styled(Row)`
 `;
 
 const ChartCard = styled(StatCardBase)`
-  min-height: 400px;
+  min-height: 380px;
   @media (max-width: 768px) {
-    min-height: 350px;
+    min-height: 330px;
   }
 `;
 
@@ -350,38 +314,25 @@ const ChartContainer = styled.div`
   }
 `;
 
-const CardTitle = styled(Title).attrs({ level: 5 })`
-  &.ant-typography {
-    font-weight: 600;
-    font-size: 17px;
-    color: ${colors.textPrimary};
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  @media (max-width: 768px) {
-    font-size: 16px;
-  }
+const CardTitle = styled.div`
+  font-weight: 600;
+  font-size: 14px;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 14px;
+  letter-spacing: -0.1px;
 `;
 
 const SectionTitle = styled(CardTitle)`
-  margin-bottom: 4px !important;
-`;
-
-const SectionDescription = styled(Text)`
-  font-size: 14px;
-  color: ${colors.textSecondary};
-  display: block;
-  margin-bottom: 12px;
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
+  margin-bottom: 4px;
 `;
 
 const ContentListCard = styled(StatCardBase)`
-  min-height: 400px;
+  min-height: 380px;
   @media (max-width: 768px) {
-    min-height: 350px;
+    min-height: 330px;
   }
 `;
 
@@ -400,22 +351,18 @@ const StyledListItem = styled(List.Item)`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  padding: 16px 8px !important;
-  border-radius: 12px;
-  transition: background-color 0.2s ease;
+  gap: 12px;
+  padding: 12px 8px !important;
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
 
   &:hover {
-    background-color: ${colors.lightBg};
+    background-color: #f9fafb;
   }
 
-  .ant-list-item-main {
-    min-width: 0;
-  }
+  .ant-list-item-main { min-width: 0; }
   .ant-list-item-extra {
-    @media (max-width: 576px) {
-      margin-left: 0;
-    }
+    @media (max-width: 576px) { margin-left: 0; }
   }
 `;
 
@@ -436,29 +383,21 @@ const ClassInfo = styled.div`
 
 const ClassName = styled(Text)`
   font-weight: 600;
-  color: ${colors.textPrimary};
-  margin-bottom: 4px;
-  font-size: 15px;
+  color: #111827;
+  margin-bottom: 3px;
+  font-size: 13.5px;
   line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
 `;
 
 const ClassMeta = styled(Text)`
-  color: ${colors.textSecondary};
-  font-size: 13px;
+  color: #9ca3af;
+  font-size: 12px;
   display: flex;
   align-items: center;
-  gap: 6px;
-
-  @media (max-width: 768px) {
-    font-size: 12px;
-  }
+  gap: 5px;
 `;
 
 const OccupancyText = styled.div`
@@ -499,8 +438,8 @@ const ActivityContent = styled.div`
 `;
 
 const ActivityIcon = styled.div`
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -509,30 +448,14 @@ const ActivityIcon = styled.div`
   color: white;
   flex-shrink: 0;
 
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  @media (max-width: 768px) {
-    width: 32px;
-    height: 32px;
-    svg {
-      width: 16px;
-      height: 16px;
-    }
-  }
+  svg { width: 15px; height: 15px; }
 `;
 
 const ActivityText = styled(Text)`
-  color: ${colors.textPrimary};
-  font-size: 14px;
+  color: #374151;
+  font-size: 13px;
   flex-grow: 1;
   line-height: 1.4;
-
-  @media (max-width: 768px) {
-    font-size: 13px;
-  }
 `;
 
 const TimeStamp = styled.span`
@@ -600,10 +523,9 @@ const PermissionDeniedSubtext = styled(Text)`
 `;
 
 const ResponsiveDivider = styled(Divider)`
-  margin: 24px 0;
-  @media (max-width: 768px) {
-    margin: 16px 0;
-  }
+  margin: 20px 0;
+  border-color: #f0f0f0;
+  @media (max-width: 768px) { margin: 14px 0; }
 `;
 
 const EmptyStateContainer = styled.div`
@@ -644,29 +566,29 @@ const EmptyStateSubtext = styled.div`
   max-width: 300px;
 `;
 
-/* Thin action banner — sits right under the black header, full-width */
-const ActionRequiredThinBanner = styled.div`
-  margin: -24px -24px 16px -24px;
-  padding: 10px 24px;
-  min-height: 44px;
+/* Action required — compact card above Performance stats */
+const ActionRequiredCard = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  background: linear-gradient(90deg, rgba(245, 158, 11, 0.12) 0%, rgba(245, 158, 11, 0.06) 100%);
-  border-bottom: 1px solid rgba(245, 158, 11, 0.25);
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
   flex-wrap: wrap;
 
   @media (max-width: 768px) {
-    margin: -12px -12px 12px -12px;
-    padding: 10px 16px;
-    min-height: auto;
+    padding: 12px 14px;
+    margin-bottom: 14px;
     flex-direction: column;
     align-items: flex-start;
+    gap: 12px;
   }
 `;
 
-const ActionRequiredThinBannerContent = styled.div`
+const ActionRequiredCardContent = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
@@ -674,11 +596,14 @@ const ActionRequiredThinBannerContent = styled.div`
   min-width: 0;
 `;
 
-const ActionRequiredThinBannerText = styled.div`
+const ActionRequiredCardText = styled.div`
   font-size: 14px;
   color: ${colors.textPrimary};
-  line-height: 1.4;
-  strong { color: ${colors.warning}; }
+  line-height: 1.45;
+  strong {
+    color: #b45309;
+    font-weight: 600;
+  }
   @media (max-width: 768px) {
     font-size: 13px;
   }
@@ -929,6 +854,200 @@ const RecentActivitySkeletonList = () => (
   </div>
 );
 
+/* ─── Welcome & Action Card Styled Components ──────────────────── */
+
+const WelcomeSection = styled.div`
+  margin-bottom: 24px;
+`;
+
+const WelcomeTitle = styled.h1`
+  font-size: 26px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 6px 0;
+  line-height: 1.25;
+  letter-spacing: -0.3px;
+
+  @media (max-width: 768px) {
+    font-size: 21px;
+  }
+`;
+
+const WelcomeSubtitle = styled.p`
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+`;
+
+const QuickActionsSection = styled.div`
+  margin-bottom: 8px;
+`;
+
+const QuickActionsHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 14px;
+`;
+
+const QuickActionsTitle = styled.h2`
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+`;
+
+const QuickActionsScroll = styled.div`
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
+
+  &::-webkit-scrollbar { height: 3px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 2px; }
+`;
+
+const ActionCard = styled.div`
+  min-width: 210px;
+  max-width: 230px;
+  background: #ffffff;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+    transform: translateY(-2px);
+  }
+`;
+
+const ActionCardIconBadge = styled.div`
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: ${(p) => p.$bg || "#f3f4f6"};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+`;
+
+const ActionCardTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+`;
+
+const ActionCardBody = styled.div`
+  padding: 14px 14px 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+`;
+
+const ActionCardTag = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+  border-radius: 20px;
+  padding: 2px 9px;
+  font-size: 10.5px;
+  color: #9ca3af;
+  font-weight: 500;
+  width: fit-content;
+`;
+
+const ActionCardTitle = styled.div`
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.3;
+`;
+
+const ActionCardDescription = styled.div`
+  font-size: 12px;
+  color: #9ca3af;
+  line-height: 1.5;
+`;
+
+const ActionCardFooter = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 13px;
+  margin-top: 6px;
+`;
+
+const LearnMoreBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color 0.15s ease;
+
+  &:hover { color: #374151; }
+`;
+
+const ActionBtn = styled.button`
+  background: #111827;
+  color: white;
+  border: none;
+  border-radius: 7px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    background: #1f2937;
+    transform: translateY(-1px);
+  }
+  &:active { transform: translateY(0); }
+`;
+
+/* ─── Section headers for analytics sections ─────────────────────── */
+
+const SectionHeader = styled.div`
+  margin-bottom: 16px;
+`;
+
+const SectionLabel = styled.div`
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #b0b7c3;
+  margin-bottom: 3px;
+`;
+
+const SectionHeading = styled.div`
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.2px;
+`;
+
+/* ─── end welcome styles ─────────────────────────────────────────── */
+
 const getOccupancyColor = (percentage) => {
   if (percentage < 50) return colors.success;
   if (percentage < 80) return colors.warning;
@@ -1032,6 +1151,15 @@ const AnimatedNumberFlow = ({
 };
 
 const Overview = forwardRef((props, ref) => {
+  const { user: currentUser } = useAuth();
+  const { openSettingsDrawer } = useContext(DashboardContext) || {};
+  const router = useRouter();
+
+  const userFirstName =
+    currentUser?.first_name ||
+    currentUser?.username ||
+    "there";
+
   // Fetch overview data locally in this component
   const [overviewData, setOverviewData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1260,57 +1388,27 @@ const Overview = forwardRef((props, ref) => {
 
   return (
     <DashboardWrapper>
-        {showActionBanner && (
-          <ActionRequiredThinBanner>
-            <ActionRequiredThinBannerContent>
-              <IconContainer
-                $background={hexToRgba(colors.warning, 0.15)}
-                $iconcolor={colors.warning}
-              >
-                <AlertTriangle size={18} />
-              </IconContainer>
-              <ActionRequiredThinBannerText>
-                <strong>Action required:</strong>{" "}
-                {actionCount === 1
-                  ? "1 experience is"
-                  : `${actionCount} experiences are`}{" "}
-                running out of available schedules.
-              </ActionRequiredThinBannerText>
-            </ActionRequiredThinBannerContent>
-            <Link href="/business/dashboard/listings">
-              <Button
-                type="primary"
-                size="small"
-                icon={<ArrowRight size={14} />}
-                style={{ flexShrink: 0 }}
-              >
-                Manage Experiences
-              </Button>
-            </Link>
-          </ActionRequiredThinBanner>
-        )}
+        {/* ── Breadcrumb ── */}
+        <DashboardBreadcrumb title="Dashboard Overview" />
 
-        <DashboardHeader ref={overviewTitleRef}>
-          <div>
-            <StyledTitle>Dashboard Overview</StyledTitle>
-            <HeaderSubtitle>
-              Welcome back! Here's a summary of your business activity.
-            </HeaderSubtitle>
-          </div>
-        </DashboardHeader>
+        {/* ── Welcome ── */}
+        <WelcomeSection>
+          <WelcomeTitle>
+            Welcome back, {userFirstName}!
+          </WelcomeTitle>
+          <WelcomeSubtitle>
+            Here&apos;s what&apos;s happening with your business today.
+          </WelcomeSubtitle>
+        </WelcomeSection>
 
-        <ResponsiveDivider />
+        <div ref={overviewTitleRef} />
 
-        <div>
-          <SectionTitle>
-            <BarChart size={isMobile ? 18 : 20} color={colors.primary} />
-            Monthly Overview
-          </SectionTitle>
-          <SectionDescription>
-            A high-level summary of your key performance indicators for the
-            current month.
-          </SectionDescription>
-        </div>
+        <SectionHeader>
+          <SectionLabel>Performance</SectionLabel>
+          <SectionHeading>Monthly Overview</SectionHeading>
+        </SectionHeader>
+
+ 
 
         <StatsGrid>
           {mainStats.map((key) => {
@@ -1430,18 +1528,10 @@ const Overview = forwardRef((props, ref) => {
 
         <ResponsiveDivider />
 
-        <div>
-          <SectionTitle>
-            <BarChartHorizontalBig
-              size={isMobile ? 18 : 20}
-              color={colors.primary}
-            />
-            Today's Snapshot
-          </SectionTitle>
-          <SectionDescription>
-            A real-time overview of your operational activities for today.
-          </SectionDescription>
-        </div>
+        <SectionHeader>
+          <SectionLabel>Today</SectionLabel>
+          <SectionHeading>Today&apos;s Snapshot</SectionHeading>
+        </SectionHeader>
 
         <SnapshotGrid>
           {todaySnapshotMetrics.map((stat) => (
@@ -1480,8 +1570,9 @@ const Overview = forwardRef((props, ref) => {
           <Col xs={24} lg={16}>
             <ChartCard>
               <CardTitle>
-                <TrendingUp size={isMobile ? 18 : 20} color={colors.primary} />
-                Revenue Trend (Last 30 days)
+                <TrendingUp size={15} color="#d1d5db" />
+                Revenue Trend
+                <span style={{ fontSize: "11px", fontWeight: 400, color: "#9ca3af", marginLeft: "2px" }}>Last 30 days</span>
               </CardTitle>
               <ChartContainer>
                 {loading ? (
@@ -1587,7 +1678,7 @@ const Overview = forwardRef((props, ref) => {
           <Col xs={24} lg={8}>
             <ContentListCard>
               <CardTitle>
-                <Calendar size={isMobile ? 18 : 20} color={colors.primary} />
+                <Calendar size={15} color="#d1d5db" />
                 Upcoming Experiences
               </CardTitle>
               {loading ? (
@@ -1754,7 +1845,7 @@ const Overview = forwardRef((props, ref) => {
           <Col xs={24} lg={8}>
             <ContentListCard>
               <CardTitle>
-                <Users size={isMobile ? 18 : 20} color={colors.primary} />
+                <Users size={15} color="#d1d5db" />
                 Most Popular Experiences
               </CardTitle>
               {loading ? (
@@ -1875,7 +1966,7 @@ const Overview = forwardRef((props, ref) => {
           <Col xs={24} lg={16}>
             <ContentListCard>
               <CardTitle>
-                <Activity size={isMobile ? 18 : 20} color={colors.primary} />
+                <Activity size={15} color="#d1d5db" />
                 Recent Activity
               </CardTitle>
               {loading ? (

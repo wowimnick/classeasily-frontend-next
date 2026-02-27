@@ -57,6 +57,7 @@ import dayjs from "dayjs";
 import { bookingAnalyticsService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
+import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -858,6 +859,7 @@ const BookingTrends = () => {
 
   return (
     <DashboardWrapper>
+        <DashboardBreadcrumb title="Booking Trends" />
         <DashboardHeader>
           <div>
             <PageTitle>Booking Trends & Insights</PageTitle>

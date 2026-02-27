@@ -49,15 +49,23 @@ export const clearRedirectPath = () => {
 const handlePostLoginRedirect = (user, router) => {
   if (typeof window === "undefined") return;
 
-  // ALWAYS prioritize business dashboard for business users
+  const { path: redirectPath, requiredPermission } = getRedirectPath();
+
+  // Business users: if they were heading to widget checkout, send them there first
   if (user?.has_business) {
+    if (redirectPath && redirectPath.startsWith("/booking-widget/checkout")) {
+      console.log("[Auth] User has business, redirecting to checkout:", redirectPath);
+      clearRedirectPath();
+      router.push(redirectPath);
+      return true;
+    }
     console.log("[Auth] User has business, redirecting to business dashboard");
-    clearRedirectPath(); // Clear any saved redirects
+    clearRedirectPath();
     router.push("/business/dashboard/overview");
     return true;
   }
 
-  const { path: redirectPath, requiredPermission } = getRedirectPath();
+  // Non-business users: honor saved redirect if any
 
   // Clear redirect data
   clearRedirectPath();

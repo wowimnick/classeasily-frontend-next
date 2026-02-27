@@ -59,11 +59,11 @@ const colors = {
 const DashboardWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: ${(p) => (p.$noPadding ? "0" : "24px")};
   background-color: #fff;
   min-height: 100vh;
   @media (max-width: 768px) {
-    padding: 16px;
+    padding: ${(p) => (p.$noPadding ? "0" : "16px")};
     gap: 0;
   }
 `;
@@ -372,7 +372,7 @@ const EmptyStateSubtext = styled.div`
   }
 `;
 
-const ActiveBookings = () => {
+const ActiveBookings = ({ noWrapperPadding } = {}) => {
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingTable, setLoadingTable] = useState(true);
   const [isViewDrawerVisible, setIsViewDrawerVisible] = useState(false);
@@ -601,7 +601,7 @@ const ActiveBookings = () => {
   }, []);
 
   return (
-    <DashboardWrapper>
+    <DashboardWrapper $noPadding={noWrapperPadding}>
         <DashboardHeader>
           <div>
             <PageTitle>Active Bookings</PageTitle>

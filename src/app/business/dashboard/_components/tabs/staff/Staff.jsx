@@ -4,6 +4,7 @@ import React, { Suspense, lazy } from "react";
 import styled from "styled-components";
 import { Typography, Tabs, Skeleton, Divider } from "antd";
 import { Users, Shield } from "lucide-react";
+import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 import { useAuth } from "@/lib/auth-client";
 
 // Lazy load the tab content for better performance
@@ -225,6 +226,7 @@ const Staff = () => {
 
   return (
     <DashboardWrapper>
+        <DashboardBreadcrumb title="Staff" />
         <DashboardHeader>
           <HeaderContent>
             <PageTitle>Staff Management</PageTitle>

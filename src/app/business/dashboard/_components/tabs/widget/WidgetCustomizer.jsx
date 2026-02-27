@@ -1,18 +1,24 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
-  Button, Typography, Input, Select, Tooltip,
+  Button, Typography, Input, Select, Tooltip, Modal,
   message as antMessage,
 } from "antd";
 import {
   Copy, Palette, Shield, Loader2,
   ExternalLink, LayoutTemplate, Save, Info,
   Monitor, Type, Layers, Check, Code,
-  Smartphone, AlignLeft, Square,
+  Smartphone, AlignLeft, Square, Plus, X, Globe,
+  CreditCard, ArrowRight, RefreshCw,
 } from "lucide-react";
 import { businessService } from "@/services/apiService";
 import message from "@/lib/message";
+import { useSubscription } from "@/context/SubscriptionContext";
+import { getPlanById, PLANS, isUpgrade } from "@/lib/subscriptionPlans";
+import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -247,12 +253,29 @@ export default function WidgetCustomizer() {
   const [isWide, setIsWide]     = useState(
     typeof window !== "undefined" ? window.innerWidth >= 1080 : true
   );
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const searchParams = useSearchParams();
+  const {
+    subscription,
+    loading: subLoading,
+    cancel,
+    reactivate,
+    refetch: refetchSubscription,
+  } = useSubscription();
 
   useEffect(() => {
     const check = () => setIsWide(window.innerWidth >= 1080);
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get("subscribed") === "1") {
+      message.success("You're now subscribed. Your widget is ready to use.");
+      window.history.replaceState({}, "", "/business/dashboard/widget");
+    }
+  }, [searchParams]);
 
   const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
 
@@ -378,9 +401,124 @@ export default function WidgetCustomizer() {
     </div>
   );
 
+  const currentPlan = subscription?.planId ? getPlanById(subscription.planId) : null;
+  const nextBilling = subscription?.currentPeriodEnd
+    ? new Date(subscription.currentPeriodEnd).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
+
+  const handleCancelConfirm = async () => {
+    setCancelling(true);
+    const result = await cancel();
+    setCancelling(false);
+    setCancelModalOpen(false);
+    if (result.success) {
+      message.success("Subscription will cancel at the end of the billing period.");
+      refetchSubscription();
+    } else {
+      antMessage.error(result.error || "Failed to cancel.");
+    }
+  };
+
+  const handleReactivate = async () => {
+    const result = await reactivate();
+    if (result.success) {
+      message.success("Subscription reactivated.");
+      refetchSubscription();
+    } else {
+      antMessage.error(result.error || "Failed to reactivate.");
+    }
+  };
+
   // ─── Settings panel ────────────────────────────────────────────────────────
   const settingsPanel = (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+      {/* Plan & Billing */}
+      <Section
+        title="Plan & Billing"
+        icon={<CreditCard size={16} />}
+        description="Your widget subscription and billing"
+      >
+        {subLoading ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 0" }}>
+            <Loader2 size={18} style={{ animation: "spin 1s linear infinite", color: "#9ca3af" }} />
+            <Text type="secondary" style={{ fontSize: 13 }}>Loading plan…</Text>
+          </div>
+        ) : !subscription?.planId ? (
+          <div>
+            <div style={{ fontSize: 14, color: "#374151", marginBottom: 12 }}>
+              You're not subscribed to a widget plan. Choose a plan to enable the booking widget.
+            </div>
+            <Link href="/booking-widget/checkout">
+              <Button type="primary" icon={<ArrowRight size={14} />} size="middle">
+                Choose a plan
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{
+              background: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              borderRadius: 12,
+              padding: "14px 16px",
+            }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#111827", marginBottom: 4 }}>
+                {currentPlan?.name ?? subscription.planId}
+              </div>
+              <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 2 }}>
+                ${currentPlan?.price ?? 0}/month + {currentPlan?.commission ?? 0}% per booking
+              </div>
+              {nextBilling && (
+                <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                  Next billing date: {nextBilling}
+                </div>
+              )}
+              {subscription.cancelAtPeriodEnd && (
+                <div style={{ marginTop: 10, padding: "8px 12px", background: "#fef3c7", borderRadius: 8, fontSize: 12, color: "#92400e" }}>
+                  Your subscription will cancel on {nextBilling || "the period end"}. You'll keep access until then.
+                </div>
+              )}
+            </div>
+            {subscription.cancelAtPeriodEnd ? (
+              <Button
+                type="primary"
+                icon={<RefreshCw size={14} />}
+                onClick={handleReactivate}
+                style={{ alignSelf: "flex-start" }}
+              >
+                Reactivate subscription
+              </Button>
+            ) : (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>Change plan</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {PLANS.filter((p) => p.id !== subscription.planId).map((p) => (
+                    <Link key={p.id} href={`/booking-widget/checkout?plan=${p.id}`}>
+                      <Button size="small" style={{ marginRight: 0 }}>
+                        {isUpgrade(subscription.planId, p.id) ? "Upgrade" : "Downgrade"} to {p.name}
+                      </Button>
+                    </Link>
+                  ))}
+                </div>
+                <Button
+                  type="default"
+                  danger
+                  size="small"
+                  onClick={() => setCancelModalOpen(true)}
+                  style={{ marginTop: 8 }}
+                >
+                  Cancel at end of billing period
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+      </Section>
 
       {/* Display */}
       <Section
@@ -681,7 +819,21 @@ export default function WidgetCustomizer() {
   );
 
   return (
-    <div style={{ padding: "24px 0 48px", maxWidth: 1100, margin: "0 auto" }}>
+    <div style={{ padding: "24px 24px 48px", maxWidth: 1100, margin: "0 auto" }}>
+      <DashboardBreadcrumb title="Booking Widget" />
+      <Modal
+        title="Cancel subscription"
+        open={cancelModalOpen}
+        onCancel={() => setCancelModalOpen(false)}
+        onOk={handleCancelConfirm}
+        okText={cancelling ? "Cancelling…" : "Cancel at period end"}
+        okButtonProps={{ danger: true, loading: cancelling }}
+        cancelText="Keep subscription"
+      >
+        <p style={{ margin: 0 }}>
+          Your subscription will cancel at the end of your current billing period ({nextBilling || "see above"}). You'll keep access until then. After that, you'll need to resubscribe to use the widget.
+        </p>
+      </Modal>
       {/* Page header */}
       <div style={{ marginBottom: 32 }}>
         <Title level={4} style={{ margin: "0 0 6px", fontSize: 24, fontWeight: 700, color: "#111827" }}>
@@ -712,10 +864,10 @@ export default function WidgetCustomizer() {
           </div>
           {settingsPanel}
           {/* Widget preview: iframe + actions, no container */}
-          {previewIframeUrl && (
+          {previewUrl && (
             <>
               <iframe
-                src={previewIframeUrl}
+                src={previewUrl}
                 title="Widget preview"
                 style={{ width: "100%", height: 280, border: "1px solid #e5e7eb", borderRadius: 12, background: "#f9fafb" }}
               />

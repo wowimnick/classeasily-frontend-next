@@ -16,14 +16,13 @@ import styled, { createGlobalStyle, ThemeProvider } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu,
-  Button,
   Typography,
   Space,
   Avatar,
   Skeleton,
   Tooltip,
 } from "antd";
-import { X, AlertCircle, SidebarOpen, Eye } from "lucide-react";
+import { X, AlertCircle, SidebarOpen, Eye, ChevronRight } from "lucide-react";
 
 import { businessService } from "@/services/apiService";
 import BusinessSettings from "./tabs/settings/BusinessSettings";
@@ -32,7 +31,6 @@ import { useAuth } from "@/lib/auth-client";
 const { Title, Text } = Typography;
 import { theme as augmentedTheme } from "@/components/theme";
 
-// Must match GeneralSettingsTab / backend business type options
 const BUSINESS_TYPE_LABELS = {
   individual: "Individual Host",
   "tour-operator": "Tour Operator",
@@ -43,145 +41,302 @@ const BUSINESS_TYPE_LABELS = {
 
 function getBusinessTypeLabel(value) {
   if (!value || value === "Not set") return value;
-  return BUSINESS_TYPE_LABELS[value] ?? value.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return (
+    BUSINESS_TYPE_LABELS[value] ??
+    value.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+  );
 }
 import { LordIcon } from "@/services/ReactUtils";
 
 const LocalGlobalStyleForSkeleton = createGlobalStyle`
-  .header-skeleton-title .ant-skeleton-title { height: 18px !important; margin-top: 2px !important; margin-bottom: 4px !important; border-radius: 4px; }
-  .header-skeleton-type .ant-skeleton-title { height: 14px !important; margin-top: 0px !important; margin-bottom: 0px !important; border-radius: 4px; }
+  .header-skeleton-title .ant-skeleton-title { height: 16px !important; margin-top: 2px !important; margin-bottom: 4px !important; border-radius: 4px; }
+  .header-skeleton-type .ant-skeleton-title  { height: 13px !important; margin-top: 0px  !important; margin-bottom: 0px  !important; border-radius: 4px; }
 `;
 
+/* ─── Outer wrapper ────────────────────────────────────────────── */
 const SideMenuWrapper = styled.div`
   position: relative;
   height: 100%;
   display: flex;
   flex-direction: column;
-  font-family: ${(props) => props.theme.token.fontFamily};
+  font-family: ${(p) => p.theme.token.fontFamily};
+
   @media (max-width: 1024px) {
-    .desktop-sidemenu {
-      display: none;
-    }
+    .desktop-sidemenu { display: none; }
   }
 `;
 
-const HeaderContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  gap: 12px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
-  flex-shrink: 0;
-  min-height: 64px;
-`;
-
-const BusinessInfoWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  overflow: hidden;
-  min-width: 0;
-  flex-grow: 1;
-  margin-right: 8px;
-  border-radius: ${(props) => props.theme.token.borderRadius}px;
-  padding: 5px;
-  justify-content: flex-start;
-  transition: all 0.1s;
-
-  &:hover {
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const BusinessInfoContainer = styled(Space)`
-  flex-grow: 1;
-  overflow: hidden;
-  min-width: 0;
-`;
-
-const BusinessTextContainer = styled(Space)`
-  overflow: hidden;
-  min-width: 0;
-  flex-grow: 1;
-`;
-
-const BusinessLogo = styled.img`
-  width: 36px;
-  height: 36px;
-  object-fit: cover;
-  border-radius: ${(props) => props.theme.token.borderRadius}px;
-  background-color: #f5f5f5;
-  flex-shrink: 0;
-`;
-
-const MenuContainer = styled.div`
-  flex-grow: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0 8px;
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background-color: ${(props) => props.theme.token.colorTextQuaternary};
-    border-radius: ${(props) => props.theme.token.borderRadius}px;
-  }
-  &::-webkit-scrollbar-thumb:hover {
-    background-color: ${(props) => props.theme.token.colorTextTertiary};
-  }
-  scrollbar-width: thin;
-  scrollbar-color: ${(props) => props.theme.token.colorTextQuaternary}
-    transparent;
-`;
-
+/* ─── Desktop sidebar ──────────────────────────────────────────── */
 const DesktopSideMenu = styled(motion.div)`
-  width: 280px;
-  background: ${(props) => props.theme.token.colorBgContainer};
-  box-shadow: 1px 0 8px rgba(0, 0, 0, 0.05);
+  width: 260px;
+  border-right: 1px solid #EBEBEB;
   height: 100%;
   display: flex;
   flex-direction: column;
   z-index: 1000;
+  overflow: hidden;
 `;
 
+/* ─── Profile card area ────────────────────────────────────────── */
+const ProfileCardArea = styled.div`
+  padding: 14px 14px 10px;
+  flex-shrink: 0;
+`;
+
+const BusinessProfileCard = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.05);
+  cursor: ${(p) => (p.$clickable ? "pointer" : "default")};
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  overflow: hidden;
+
+  &:hover {
+    ${(p) =>
+      p.$clickable &&
+      `
+      box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+      transform: translateY(-1px);
+    `}
+  }
+`;
+
+const BusinessLogoImg = styled.img`
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+`;
+
+const BusinessTextBlock = styled.div`
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+`;
+
+const BusinessNameText = styled.div`
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+`;
+
+const BusinessTypeText = styled.div`
+  font-size: 11.5px;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+  margin-top: 1px;
+`;
+
+/* ─── Menu container ───────────────────────────────────────────── */
+const MenuContainer = styled.div`
+  flex-grow: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 10px 8px;
+
+  &::-webkit-scrollbar       { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 2px;
+  }
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+`;
+
+/* ─── Ant Design Menu overrides ────────────────────────────────── */
+const StyledAntMenu = styled(Menu)`
+  border-right: none !important;
+  background: transparent !important;
+
+  /* Group header label */
+  .ant-menu-item-group-title {
+    font-size: 10.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.07em !important;
+    color: #111827 !important;
+    text-transform: uppercase !important;
+    padding: 14px 10px 5px !important;
+    line-height: 1 !important;
+  }
+
+  /* Every item / submenu title */
+  .ant-menu-item,
+  .ant-menu-submenu-title {
+    margin: 2px 0 !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 0 12px !important;
+    border-radius: 8px !important;
+    height: 40px !important;
+    line-height: 40px !important;
+    color: #4b5563;
+    font-weight: 500;
+    font-size: 13.5px;
+
+    .ant-menu-item-icon {
+      display: inline-block !important;
+      vertical-align: middle !important;
+    }
+
+    lord-icon {
+      transition: none;
+      margin-right: 0 !important;
+      vertical-align: middle;
+      display: inline-block;
+      pointer-events: none;
+    }
+
+    &:hover {
+      color: #111827 !important;
+      background-color: rgba(0,0,0,0.045) !important;
+
+      lord-icon {
+        --lord-icon-primary: #111827;
+        --lord-icon-secondary: #111827;
+      }
+    }
+  }
+
+  /* ACTIVE / selected top-level item */
+  .ant-menu-item-selected {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04) !important;
+
+    lord-icon {
+      --lord-icon-primary: ${(p) => p.theme.token.colorPrimary} !important;
+      --lord-icon-secondary: ${(p) => p.theme.token.colorPrimary} !important;
+    }
+
+    &::after { display: none; }
+
+    &:hover {
+      background-color: #ffffff !important;
+      color: #111827 !important;
+    }
+  }
+
+  /* Open / selected parent submenu title */
+  .ant-menu-submenu-selected > .ant-menu-submenu-title,
+  .ant-menu-submenu-open    > .ant-menu-submenu-title {
+    color: #111827 !important;
+    font-weight: 600 !important;
+    background-color: rgba(0,0,0,0.04) !important;
+
+    lord-icon {
+      --lord-icon-primary: ${(p) => p.theme.token.colorPrimary};
+      --lord-icon-secondary: ${(p) => p.theme.token.colorPrimary};
+    }
+  }
+
+  /* Sub-menu (children) items */
+  .ant-menu-sub.ant-menu-inline {
+    background-color: transparent !important;
+
+    .ant-menu-item {
+      font-size: 13px;
+      font-weight: 400;
+      color: #6b7280;
+      padding-left: 40px !important;
+      background-color: transparent !important;
+      height: 36px !important;
+      line-height: 36px !important;
+      box-shadow: none !important;
+
+      &:hover {
+        color: #111827 !important;
+        background-color: rgba(0,0,0,0.04) !important;
+      }
+    }
+
+    .ant-menu-item-selected {
+      color: ${(p) => p.theme.token.colorPrimary} !important;
+      font-weight: 600 !important;
+      background-color: rgba(255, 56, 92, 0.06) !important;
+      box-shadow: none !important;
+
+      &:hover {
+        color: ${(p) => p.theme.token.colorPrimary} !important;
+        background-color: rgba(255, 56, 92, 0.06) !important;
+      }
+    }
+  }
+`;
+
+/* ─── Footer ───────────────────────────────────────────────────── */
+const FooterActionsContainer = styled.div`
+  padding: 10px 14px 16px;
+  border-top: 1px solid #EBEBEB;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const FooterBtn = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+  background: transparent;
+
+  &:hover {
+    background: rgba(0,0,0,0.05);
+    color: #111827;
+    text-decoration: none;
+  }
+`;
+
+/* ─── Mobile sidebar ───────────────────────────────────────────── */
 const MobileSidebarOverlay = styled(motion.div)`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
+  inset: 0;
+  background: rgba(0,0,0,0.3);
   backdrop-filter: blur(4px);
   z-index: 1020;
-  @media (min-width: 1025px) {
-    display: none;
-  }
+
+  @media (min-width: 1025px) { display: none; }
 `;
 
 const MobileSidebarContainer = styled(motion.div)`
   position: fixed;
   left: 10px;
   top: 24px;
-  width: 320px;
+  width: 300px;
   max-width: calc(100vw - 48px);
   height: calc(100vh - 150px);
   max-height: calc(100vh - 48px);
-  background: ${(props) => props.theme.token.colorBgContainer};
+  background: #F8F9FA;
   border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   z-index: 1030;
-  @media (min-width: 1025px) {
-    display: none;
-  }
+
+  @media (min-width: 1025px) { display: none; }
 `;
 
 const MobileExpandableButton = styled(motion.div)`
@@ -189,27 +344,23 @@ const MobileExpandableButton = styled(motion.div)`
   left: 24px;
   bottom: 24px;
   z-index: 1001;
-  @media (min-width: 1025px) {
-    display: none;
-  }
+
+  @media (min-width: 1025px) { display: none; }
 `;
 
 const ExpandableButtonContent = styled(motion.div)`
   display: flex;
   align-items: center;
-  background: ${(props) => props.theme.token.colorPrimary};
+  background: ${(p) => p.theme.token.colorPrimary};
   border-radius: 50px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
   cursor: pointer;
   overflow: hidden;
-  border: none;
-  outline: none;
-  user-select: none;
 `;
 
 const ButtonIcon = styled(motion.div)`
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -220,9 +371,9 @@ const ButtonIcon = styled(motion.div)`
 const ButtonText = styled(motion.span)`
   color: white;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 15px;
   white-space: nowrap;
-  padding-right: 20px;
+  padding-right: 18px;
   overflow: hidden;
 `;
 
@@ -230,534 +381,277 @@ const MobileHeaderContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px 16px 24px;
-  gap: 12px;
-  border-bottom: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #EBEBEB;
   flex-shrink: 0;
-  background: ${(props) => props.theme.token.colorBgContainer};
-  border-radius: 20px 20px 0 0;
 `;
 
 const MobileCloseButton = styled(motion.button)`
-  background: ${(props) => props.theme.token.colorBgSpotlight};
+  background: #f3f4f6;
   border: none;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${(props) => props.theme.token.colorTextSecondary};
+  color: #6b7280;
   cursor: pointer;
   flex-shrink: 0;
-  transition: all 0.2s;
 `;
 
 const MobileMenuContainer = styled.div`
   flex-grow: 1;
   overflow-y: auto;
-  overflow-x: hidden;
-  padding: 8px 16px;
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background-color: ${(props) => props.theme.token.colorTextQuaternary};
-    border-radius: 2px;
-  }
+  padding: 4px 10px 8px;
   scrollbar-width: thin;
 `;
 
 const MobileFooterContainer = styled.div`
-  padding: 16px 24px 20px 24px;
-  border-top: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
-  flex-shrink: 0;
-  background: ${(props) => props.theme.token.colorBgContainer};
-  border-radius: 0 0 20px 20px;
-`;
-
-const StyledAntMenu = styled(Menu)`
-  border-right: none !important;
-  background: transparent !important;
-
-  .ant-menu-item,
-  .ant-menu-submenu-title {
-    margin: 4px 0 !important;
-    width: calc(100% - 16px) !important;
-    margin-left: 8px !important;
-    margin-right: 8px !important;
-    padding: 0 16px !important;
-    border-radius: ${(props) => props.theme.token.borderRadius}px !important;
-    height: 44px !important;
-    line-height: 44px !important;
-    color: ${(props) => props.theme.token.colorTextSecondary};
-    font-weight: 400;
-    font-size: 14px;
-
-    .ant-menu-item-icon {
-      display: inline-block !important;
-      vertical-align: middle !important;
-    }
-
-    lord-icon {
-      transition: all 0.3s ease;
-      margin-right: 0 !important;
-      vertical-align: middle;
-      display: inline-block;
-      pointer-events: none;
-    }
-
-    &:hover {
-      color: ${(props) => props.theme.token.colorPrimary} !important;
-      background-color: ${(props) =>
-        props.theme.token.colorBgSpotlight} !important;
-
-      lord-icon {
-        transform: scale(1.1);
-        --lord-icon-primary: ${(props) => props.theme.token.colorPrimary};
-        --lord-icon-secondary: ${(props) => props.theme.token.colorPrimary};
-      }
-    }
-  }
-
-  .ant-menu-item-selected {
-    background-color: ${(props) => props.theme.token.colorPrimary} !important;
-    color: ${(props) => props.theme.token.colorHeaderText} !important;
-    font-weight: 600 !important;
-
-    lord-icon {
-      --lord-icon-primary: ${(props) =>
-        props.theme.token.colorHeaderText} !important;
-      --lord-icon-secondary: ${(props) =>
-        props.theme.token.colorHeaderText} !important;
-      transform: scale(1);
-    }
-
-    &::after {
-      display: none;
-    }
-    &:hover {
-      background-color: ${(props) => props.theme.token.colorPrimary} !important;
-      color: ${(props) => props.theme.token.colorHeaderText} !important;
-      lord-icon {
-        transform: scale(1);
-        --lord-icon-primary: ${(props) =>
-          props.theme.token.colorHeaderText} !important;
-        --lord-icon-secondary: ${(props) =>
-          props.theme.token.colorHeaderText} !important;
-      }
-    }
-  }
-
-  .ant-menu-submenu-selected > .ant-menu-submenu-title,
-  .ant-menu-submenu-open > .ant-menu-submenu-title {
-    color: ${(props) => props.theme.token.colorPrimary} !important;
-    font-weight: 600 !important;
-    background-color: ${(props) =>
-      props.theme.token.colorBgSpotlight} !important;
-
-    lord-icon {
-      --lord-icon-primary: ${(props) => props.theme.token.colorPrimary};
-      --lord-icon-secondary: ${(props) => props.theme.token.colorPrimary};
-    }
-  }
-
-  .ant-menu-sub.ant-menu-inline {
-    background-color: transparent !important;
-
-    .ant-menu-item {
-      font-size: 13px;
-      color: ${(props) => props.theme.token.colorTextSecondary};
-      padding-left: 46px !important;
-      background-color: transparent !important;
-      height: 40px !important;
-      line-height: 40px !important;
-
-      .ant-menu-item-icon {
-        display: inline-block !important;
-        vertical-align: middle !important;
-        margin-inline-end: 10px !important;
-      }
-
-      lord-icon {
-        width: 18px !important;
-        height: 18px !important;
-        margin-right: 0 !important;
-        transition: all 0.3s ease;
-        pointer-events: none;
-        vertical-align: middle;
-        display: inline-block;
-      }
-
-      &:hover {
-        color: ${(props) => props.theme.token.colorPrimary} !important;
-        background-color: ${(props) =>
-          props.theme.token.colorBgSpotlight} !important;
-
-        lord-icon {
-          --lord-icon-primary: ${(props) => props.theme.token.colorPrimary};
-          --lord-icon-secondary: ${(props) => props.theme.token.colorPrimary};
-        }
-      }
-    }
-
-    .ant-menu-item-selected {
-      color: ${(props) => props.theme.token.colorPrimary} !important;
-      font-weight: 600 !important;
-      background-color: ${(props) =>
-        props.theme.token.colorBgSpotlight} !important;
-
-      lord-icon {
-        --lord-icon-primary: ${(props) => props.theme.token.colorPrimary};
-        --lord-icon-secondary: ${(props) => props.theme.token.colorPrimary};
-      }
-
-      &:hover {
-        color: ${(props) => props.theme.token.colorPrimary} !important;
-        lord-icon {
-          --lord-icon-primary: ${(props) => props.theme.token.colorPrimary};
-          --lord-icon-secondary: ${(props) => props.theme.token.colorPrimary};
-        }
-      }
-    }
-  }
-`;
-
-const FooterActionsContainer = styled.div`
-  padding: 12px 20px;
-  margin-top: auto;
-  border-top: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
+  padding: 12px 14px 18px;
+  border-top: 1px solid #EBEBEB;
   flex-shrink: 0;
   display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const FooterLinkButton = styled(Link)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
   gap: 8px;
-  width: 100%;
-  padding: 10px 20px;
-  font-family: ${(props) => props.theme.token.fontFamily} !important;
-  font-size: 14px;
+`;
+
+const MobileFooterBtn = styled(Link)`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  font-size: 13px;
   font-weight: 500;
-  color: ${(props) => props.theme.token.colorText};
+  color: #6b7280;
   text-decoration: none;
-  border-radius: ${(props) => props.theme.token.borderRadius}px;
-  box-shadow: rgba(0, 0, 0, 0.05) 1px 4px 9px 0px;
-  transition: background-color 0.2s, color 0.2s;
+  border-radius: 8px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  transition: background 0.15s ease;
 
   &:hover {
-    color: ${(props) => props.theme.token.colorPrimary};
-    background-color: ${(props) =>
-      props.theme.token.colorBgSpotlight ?? props.theme.token.colorBgLayout ?? "#f5f5f5"};
+    background: #e5e7eb;
+    text-decoration: none;
+    color: #111827;
   }
 `;
 
-const FooterLinkButtonSmall = styled(FooterLinkButton)`
-  padding: 8px 16px;
-  font-size: 12px;
-`;
-
-const FooterLinkButtonMobile = styled(FooterLinkButton)`
-  box-shadow: rgba(0, 0, 0, 0.05) 0px 2px 8px 0px;
-  flex: 1;
-`;
-
-// Animation variants
+/* ─── Motion variants ──────────────────────────────────────────── */
 const overlayVariants = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { duration: 0.2 },
-  },
+  visible: { opacity: 1, transition: { duration: 0.2 } },
 };
 
 const sidebarVariants = {
-  hidden: {
-    scale: 0.2,
-    opacity: 0,
-    x: 0,
-    y: 0,
-    borderRadius: "50px",
-  },
+  hidden: { scale: 0.2, opacity: 0, borderRadius: "50px" },
   visible: {
-    scale: 1,
-    opacity: 1,
-    x: 0,
-    y: 0,
-    borderRadius: "20px",
-    transition: {
-      type: "spring",
-      damping: 25,
-      stiffness: 300,
-      duration: 0.4,
-    },
+    scale: 1, opacity: 1, borderRadius: "20px",
+    transition: { type: "spring", damping: 25, stiffness: 300 },
   },
 };
 
 const expandableButtonVariants = {
-  hidden: {
-    scale: 0,
-    opacity: 0,
-  },
-  visible: {
-    scale: 1,
-    opacity: 1,
-    transition: {
-      type: "spring",
-      damping: 15,
-      stiffness: 300,
-    },
-  },
+  hidden: { scale: 0, opacity: 0 },
+  visible: { scale: 1, opacity: 1, transition: { type: "spring", damping: 15, stiffness: 300 } },
 };
 
-const buttonContentVariants = {
-  collapsed: {
-    width: 56,
-    transition: {
-      type: "spring",
-      damping: 20,
-      stiffness: 300,
-    },
-  },
-  expanded: {
-    width: 56,
-    transition: {
-      type: "spring",
-      damping: 20,
-      stiffness: 300,
-    },
-  },
-};
-
-const buttonTextVariants = {
-  collapsed: {
-    opacity: 0,
-    x: -10,
-    transition: {
-      duration: 0.1,
-    },
-  },
-  expanded: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      duration: 0.2,
-      delay: 0.1,
-    },
-  },
-};
-
-const buttonIconVariants = {
-  collapsed: {
-    rotate: 0,
-  },
-  expanded: {
-    rotate: 180,
-    transition: {
-      type: "spring",
-      damping: 20,
-      stiffness: 300,
-    },
-  },
-};
-
-const closeButtonVariants = {
-  hover: {
-    scale: 1.1,
-    backgroundColor: "#ff4757",
-  },
-  tap: {
-    scale: 0.95,
-  },
-};
-
-// Menu Configuration - REORGANIZED FOR UX
-const menuItemsConfig = [
-  // 1. Dashboard: The Command Center
+/* ─── Menu config (grouped) ────────────────────────────────────── */
+const menuGroupsConfig = [
   {
-    key: "overview",
-    icon: (
-      <LordIcon
-        src="https://cdn.lordicon.com/upjgggre.json"
-        colors="primary:#666,secondary:#666"
-        size="20px"
-        playOnLoad={true}
-        inState="in-home"
-      />
-    ),
-    label: "Dashboard",
-  },
-  // 2. Core Product: My Listings (High Frequency)
-  {
-    key: "listings",
-    icon: (
-      <LordIcon
-        src="https://cdn.lordicon.com/yraqammt.json"
-        colors="primary:#666,secondary:#666"
-        size="20px"
-        playOnLoad={true}
-        inState="in-newspaper"
-      />
-    ),
-    label: "My Listings",
-  },
-  // 3. Bookings (sub-items: Active + History — switch lives in sidebar for easy access)
-  {
-    key: "bookings",
-    label: "Bookings",
-    icon: (
-      <LordIcon
-        src="https://cdn.lordicon.com/uoljexdg.json"
-        colors="primary:#666,secondary:#666"
-        size="20px"
-        playOnLoad={true}
-        state="in-booking"
-      />
-    ),
-    children: [
-      { key: "bookings/active", label: "Active Bookings" },
-      { key: "bookings/history", label: "Booking History" },
+    groupKey: "main",
+    label: "Main Menu",
+    items: [
+      {
+        key: "overview",
+        label: "Dashboard",
+        icon: (
+          <LordIcon
+            src="https://cdn.lordicon.com/upjgggre.json"
+            colors="primary:#666,secondary:#666"
+            size="20px"
+            playOnLoad={true}
+            inState="in-home"
+          />
+        ),
+      },
+      {
+        key: "listings",
+        label: "My Experiences",
+        icon: (
+          <LordIcon
+            src="https://cdn.lordicon.com/yraqammt.json"
+            colors="primary:#666,secondary:#666"
+            size="20px"
+            playOnLoad={true}
+            inState="in-newspaper"
+          />
+        ),
+      },
+      {
+        key: "bookings",
+        label: "Bookings",
+        icon: (
+          <LordIcon
+            src="https://cdn.lordicon.com/uoljexdg.json"
+            colors="primary:#666,secondary:#666"
+            size="20px"
+            playOnLoad={true}
+            state="in-booking"
+          />
+        ),
+        children: [
+          { key: "bookings/active",  label: "Active Bookings" },
+          { key: "bookings/history", label: "Booking History" },
+        ],
+      },
     ],
   },
-  // 4. Relationships: People & Community (CRM)
   {
-    key: "people",
-    label: "People & Community",
-    icon: (
-      <LordIcon
-        src="https://cdn.lordicon.com/mudwpdhy.json" // Using the system/grid icon for general management
-        colors="primary:#666,secondary:#666"
-        size="20px"
-        playOnLoad={true}
-        inState="in-build"
-      />
-    ),
-    children: [
-      // { key: "guests", label: "Guests" }, // Hidden for now
-      { key: "reviews", label: "Reviews & Feedback" },
-      { key: "staff", label: "Staff Management" },
-      { key: "messages", label: "Messages" },
+    groupKey: "manage",
+    label: "Manage",
+    items: [
+      {
+        key: "people",
+        label: "People",
+        icon: (
+          <LordIcon
+            src="https://cdn.lordicon.com/mudwpdhy.json"
+            colors="primary:#666,secondary:#666"
+            size="20px"
+            playOnLoad={true}
+            inState="in-build"
+          />
+        ),
+        children: [
+          { key: "reviews",  label: "Reviews" },
+          { key: "staff",    label: "Staff" },
+          { key: "messages", label: "Messages" },
+        ],
+      },
+      {
+        key: "financials",
+        label: "Financials",
+        icon: (
+          <LordIcon
+            src="https://cdn.lordicon.com/yycecovd.json"
+            colors="primary:#666,secondary:#666"
+            size="20px"
+            playOnLoad={true}
+            inState="in-wallet"
+          />
+        ),
+        children: [
+          { key: "revenue", label: "Revenue" },
+          { key: "payouts", label: "Payouts" },
+        ],
+      },
+      {
+        key: "growth",
+        label: "Marketing",
+        icon: (
+          <LordIcon
+            src="https://cdn.lordicon.com/excswhey.json"
+            colors="primary:#666,secondary:#666"
+            size="20px"
+            playOnLoad={true}
+            inState="in-trend-up"
+          />
+        ),
+        children: [
+          { key: "trends",    label: "Booking Trends" },
+          { key: "discounts", label: "Discounts" },
+        ],
+      },
     ],
   },
-  // 5. Results: Financials
   {
-    key: "financials",
-    label: "Financials",
-    icon: (
-      <LordIcon
-        src="https://cdn.lordicon.com/yycecovd.json"
-        colors="primary:#666,secondary:#666"
-        size="20px"
-        playOnLoad={true}
-        inState="in-wallet"
-      />
-    ),
-    children: [
-      { key: "revenue", label: "Revenue Overview" },
-      { key: "payouts", label: "Payouts" },
+    groupKey: "platform",
+    label: "Platform",
+    items: [
+      {
+        key: "widget",
+        label: "Booking Widget",
+        icon: (
+          <LordIcon
+            src="https://cdn.lordicon.com/axroojxh.json"
+            colors="primary:#666,secondary:#666"
+            size="20px"
+            playOnLoad={true}
+          />
+        ),
+      },
+      {
+        key: "settings",
+        label: "Settings",
+        icon: (
+          <LordIcon
+            src="https://cdn.lordicon.com/lrubprlz.json"
+            colors="primary:#666,secondary:#666"
+            size="20px"
+            playOnLoad={true}
+            state="in-code"
+          />
+        ),
+      },
     ],
-  },
-  // 6. Strategy: Marketing & Analytics
-  {
-    key: "growth",
-    label: "Marketing & Analytics",
-    icon: (
-      <LordIcon
-        src="https://cdn.lordicon.com/excswhey.json"
-        colors="primary:#666,secondary:#666"
-        size="20px"
-        playOnLoad={true}
-        inState="in-trend-up"
-      />
-    ),
-    children: [
-      { key: "trends", label: "Booking Trends" },
-      { key: "discounts", label: "Promotions & Discounts" },
-      { key: "widget", label: "Booking Widget" },
-    ],
-  },
-  // 7. Settings (top-level)
-  {
-    key: "settings",
-    label: "Settings",
-    icon: (
-      <LordIcon
-        src="https://cdn.lordicon.com/lrubprlz.json"
-        colors="primary:#666,secondary:#666"
-        size="20px"
-        playOnLoad={true}
-        state="in-code"
-      />
-    ),
   },
 ];
 
+const allMenuItems = menuGroupsConfig.flatMap((g) => g.items);
+
 const menuItemPermissions = {
-  overview: "access_business_dashboard",
-  listings: "manage_own_classes",
-  bookings: "view_own_business_bookings",
-  guests: "view_business_students",
-  reviews: "view_own_business_reviews",
-  revenue: "view_business_revenue_analytics",
-  payouts: "view_business_revenue_analytics",
-  discounts: "manage_own_business_discounts",
-  trends: "view_own_booking_analytics",
-  widget: "access_business_dashboard",
-  staff: "manage_business_staff",
-  messages: "view_own_business_bookings",
-  widget: "manage_own_business_profile",
-  settings: "manage_own_business_profile",
+  overview:    "access_business_dashboard",
+  listings:    "manage_own_classes",
+  bookings:    "view_own_business_bookings",
+  guests:      "view_business_students",
+  reviews:     "view_own_business_reviews",
+  revenue:     "view_business_revenue_analytics",
+  payouts:     "view_business_revenue_analytics",
+  discounts:   "manage_own_business_discounts",
+  trends:      "view_own_booking_analytics",
+  widget:      "manage_own_business_profile",
+  staff:       "manage_business_staff",
+  messages:    "view_own_business_bookings",
+  settings:    "manage_own_business_profile",
 };
 
+/* ─── Component ────────────────────────────────────────────────── */
 const SideMenuComponent = memo(
   forwardRef(({ onMenuSelect, activeKey }, ref) => {
-    const [isMobile, setIsMobile] = useState(false);
-    const [drawerVisible, setDrawerVisible] = useState(false);
+    const [isMobile, setIsMobile]                       = useState(false);
+    const [drawerVisible, setDrawerVisible]             = useState(false);
     const [settingsDrawerVisible, setSettingsDrawerVisible] = useState(false);
-    const [openKeys, setOpenKeys] = useState([]);
-    const [businessData, setBusinessData] = useState(null);
-    const [loadingBusiness, setLoadingBusiness] = useState(true);
-    const [businessError, setBusinessError] = useState(null);
-    const [transformOrigin, setTransformOrigin] = useState("bottom left");
+    const [openKeys, setOpenKeys]                       = useState([]);
+    const [businessData, setBusinessData]               = useState(null);
+    const [loadingBusiness, setLoadingBusiness]         = useState(true);
+    const [businessError, setBusinessError]             = useState(null);
+    const [transformOrigin, setTransformOrigin]         = useState("bottom left");
     const router = useRouter();
 
     const { user } = useAuth();
     const permissions = user?.permissions || [];
 
     const isBusinessClickable =
-      !loadingBusiness &&
-      !businessError &&
-      businessData &&
-      !businessData._isPlaceholder;
+      !loadingBusiness && !businessError && businessData && !businessData._isPlaceholder;
 
     const businessClickHandler =
       isBusinessClickable && businessData.slug
         ? () => router.push(`/business/${businessData.slug}`)
-        : null;
+        : undefined;
 
-    const businessClickableTitle = isBusinessClickable
-      ? "Preview your public business page"
-      : "";
-
-    const activeSettingsTab = useRef("general");
+    const activeSettingsTab          = useRef("general");
     const businessSettingsRefInternal = useRef(null);
-    const mobileButtonRef = useRef(null);
+    const mobileButtonRef            = useRef(null);
 
-    // Refs for tours/highlights
-    const homeMenuRef = useRef(null);
-    const listingsMenuRef = useRef(null);
+    const homeMenuRef           = useRef(null);
+    const listingsMenuRef       = useRef(null);
     const activeBookingsMenuRef = useRef(null);
-    const managementMenuRef = useRef(null); // Used for People
-    const financialsMenuRef = useRef(null);
-    const growthMenuRef = useRef(null);
-    const platformMenuRef = useRef(null);
+    const managementMenuRef     = useRef(null);
+    const financialsMenuRef     = useRef(null);
+    const growthMenuRef         = useRef(null);
+    const platformMenuRef       = useRef(null);
 
     useImperativeHandle(ref, () => ({
       homeMenuRef,
@@ -767,7 +661,6 @@ const SideMenuComponent = memo(
       financialsMenuRef,
       growthMenuRef,
       platformMenuRef,
-
       openSettingsDrawer: (tab = "general", sectionId = null) => {
         activeSettingsTab.current = tab;
         if (sectionId) {
@@ -783,59 +676,48 @@ const SideMenuComponent = memo(
 
     useEffect(() => {
       if (typeof window === "undefined") return;
-
       if (drawerVisible && mobileButtonRef.current && isMobile) {
         const buttonRect = mobileButtonRef.current.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-
-        const modalLeft = 10;
-        const modalTop = 24;
-        const modalWidth = Math.min(320, viewportWidth - 48);
-        const modalHeight = Math.min(viewportHeight - 150, viewportHeight - 48);
-
-        const buttonCenterX = buttonRect.left + buttonRect.width / 2;
-        const buttonCenterY = buttonRect.top + buttonRect.height / 2;
-
-        const originX = ((buttonCenterX - modalLeft) / modalWidth) * 100;
-        const originY = ((buttonCenterY - modalTop) / modalHeight) * 100;
-
-        const clampedX = Math.max(0, Math.min(100, originX));
-        const clampedY = Math.max(0, Math.min(100, originY));
-
-        setTransformOrigin(`${clampedX}% ${clampedY}%`);
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const mL = 10, mT = 24;
+        const mW = Math.min(300, vw - 48);
+        const mH = Math.min(vh - 150, vh - 48);
+        const bX = buttonRect.left + buttonRect.width / 2;
+        const bY = buttonRect.top  + buttonRect.height / 2;
+        const oX = Math.max(0, Math.min(100, ((bX - mL) / mW) * 100));
+        const oY = Math.max(0, Math.min(100, ((bY - mT) / mH) * 100));
+        setTransformOrigin(`${oX}% ${oY}%`);
       }
     }, [drawerVisible, isMobile]);
 
     const fetchBusinessProfile = useCallback(async () => {
       setLoadingBusiness(true);
-        setBusinessError(null);
-        try {
-          const result = await businessService.getMyBusinessProfile();
-          if (result.success && result.data) {
-            setBusinessData(result.data);
-          } else if (result.status === 404) {
-            setBusinessData({
-              businessName: "Create Business Profile",
-              businessImage: null,
-              businessType: "Not set",
-              _isPlaceholder: true,
-            });
-          } else {
-            setBusinessError(result.error || "Failed to load business info");
-            setBusinessData(null);
-          }
-        } catch (error) {
-          setBusinessError("Network error occurred while fetching profile");
+      setBusinessError(null);
+      try {
+        const result = await businessService.getMyBusinessProfile();
+        if (result.success && result.data) {
+          setBusinessData(result.data);
+        } else if (result.status === 404) {
+          setBusinessData({
+            businessName: "Create Business Profile",
+            businessImage: null,
+            businessType: "Not set",
+            _isPlaceholder: true,
+          });
+        } else {
+          setBusinessError(result.error || "Failed to load business info");
           setBusinessData(null);
-        } finally {
-          setLoadingBusiness(false);
         }
+      } catch {
+        setBusinessError("Network error occurred while fetching profile");
+        setBusinessData(null);
+      } finally {
+        setLoadingBusiness(false);
+      }
     }, []);
 
-    useEffect(() => {
-      fetchBusinessProfile();
-    }, [fetchBusinessProfile]);
+    useEffect(() => { fetchBusinessProfile(); }, [fetchBusinessProfile]);
 
     useEffect(() => {
       const handleResize = () => setIsMobile(window.innerWidth <= 1024);
@@ -845,23 +727,16 @@ const SideMenuComponent = memo(
     }, []);
 
     useEffect(() => {
-      const parentKey = menuItemsConfig.find((item) =>
-        item.children?.some((child) => child.key === activeKey),
+      const parentKey = allMenuItems.find(
+        (item) => item.children?.some((child) => child.key === activeKey)
       )?.key;
-
       if (parentKey) {
-        setOpenKeys((prevOpenKeys) => {
-          if (prevOpenKeys.includes(parentKey)) {
-            return prevOpenKeys; // No change needed
-          }
-          return [parentKey]; // Set the new parent key
-        });
+        setOpenKeys((prev) => (prev.includes(parentKey) ? prev : [parentKey]));
       }
     }, [activeKey]);
 
     useEffect(() => {
       if (typeof window === "undefined") return;
-
       const forcedTab = sessionStorage.getItem("forceOpenSettingsTab");
       if (forcedTab) {
         sessionStorage.removeItem("forceOpenSettingsTab");
@@ -870,8 +745,6 @@ const SideMenuComponent = memo(
         fetchBusinessProfile();
       }
     }, [fetchBusinessProfile]);
-
-    const toggleMobileDrawer = () => setDrawerVisible(!drawerVisible);
 
     const handleMenuClick = (e) => {
       if (e.key === "settings") {
@@ -885,12 +758,8 @@ const SideMenuComponent = memo(
     };
 
     const handleOpenChange = (keys) => {
-      const latestOpenKey = keys.find((key) => !openKeys.includes(key));
-      if (
-        menuItemsConfig.some(
-          (item) => item.key === latestOpenKey && item.children,
-        )
-      ) {
+      const latestOpenKey = keys.find((k) => !openKeys.includes(k));
+      if (allMenuItems.some((item) => item.key === latestOpenKey && item.children)) {
         setOpenKeys(latestOpenKey ? [latestOpenKey] : []);
       } else if (latestOpenKey) {
         setOpenKeys(keys);
@@ -899,16 +768,7 @@ const SideMenuComponent = memo(
       }
     };
 
-    const handleSettingsClose = () => setSettingsDrawerVisible(false);
-
-    const handleSettingsTabChange = (key) => {
-      activeSettingsTab.current = key;
-    };
-
-    const handleSettingsSave = () => fetchBusinessProfile();
-
     const handleMenuItemHover = useCallback((e, isEntering) => {
-      // console.error(`[SideMenuComponent] handleMenuItemHover: ${isEntering ? 'entering' : 'leaving'} ${e.currentTarget.innerText}`);
       const menuItem = e.currentTarget;
       const icon = menuItem.querySelector("lord-icon");
       if (icon) {
@@ -916,171 +776,109 @@ const SideMenuComponent = memo(
           if (isEntering && icon.playerInstance) {
             icon.playerInstance.playFromBeginning();
           }
-        } catch (_err) {
-          /* ignore lord-icon animation errors */
+        } catch (_err) { /* ignore */ }
+      }
+    }, []);
+
+    const updateIconColors = useCallback((menuItem, isSelected, isHovering = false, isSubmenuTitle = false) => {
+      const icon = menuItem.querySelector("lord-icon");
+      if (icon) {
+        const isDropdownParent = menuItem.classList.contains("ant-menu-submenu-title") || isSubmenuTitle;
+        if (isSelected && !isDropdownParent) {
+          icon.setAttribute("colors", `primary:${augmentedTheme.token.colorPrimary},secondary:${augmentedTheme.token.colorPrimary}`);
+        } else if (isHovering || (isDropdownParent && isSelected)) {
+          icon.setAttribute("colors", `primary:${augmentedTheme.token.colorPrimary},secondary:${augmentedTheme.token.colorPrimary}`);
+        } else {
+          icon.setAttribute("colors", "primary:#9ca3af,secondary:#9ca3af");
         }
       }
     }, []);
 
-    const updateIconColors = useCallback(
-      (menuItem, isSelected, isHovering = false, isSubmenuTitle = false) => {
-        const icon = menuItem.querySelector("lord-icon");
-        if (icon) {
-          const isDropdownParent =
-            menuItem.classList.contains("ant-menu-submenu-title") ||
-            isSubmenuTitle;
-          if (isSelected && !isDropdownParent) {
-            icon.setAttribute("colors", "primary:#ffffff,secondary:#ffffff");
-          } else if (isHovering || (isDropdownParent && isSelected)) {
-            const primaryColor = augmentedTheme.token.colorPrimary;
-            icon.setAttribute(
-              "colors",
-              `primary:${primaryColor},secondary:${primaryColor}`,
-            );
-          } else {
-            icon.setAttribute("colors", "primary:#666,secondary:#666");
-          }
-        }
-      },
-      [],
-    );
-
     useEffect(() => {
-      const updateAllIconColors = () => {
-        const menuItems = document.querySelectorAll(
-          ".ant-menu-item, .ant-menu-submenu-title",
-        );
+      const updateAll = () => {
+        const menuItems = document.querySelectorAll(".ant-menu-item, .ant-menu-submenu-title");
         menuItems.forEach((item) => {
           const isSelected =
             item.classList.contains("ant-menu-item-selected") ||
-            item.parentElement.classList.contains(
-              "ant-menu-submenu-selected",
-            ) ||
+            item.parentElement.classList.contains("ant-menu-submenu-selected") ||
             item.parentElement.classList.contains("ant-menu-submenu-open");
-          const isSubmenuTitle = item.classList.contains(
-            "ant-menu-submenu-title",
-          );
+          const isSubmenuTitle = item.classList.contains("ant-menu-submenu-title");
           updateIconColors(item, isSelected, false, isSubmenuTitle);
         });
       };
-
-      const timeoutId = setTimeout(updateAllIconColors, 100);
-
-      return () => {
-        clearTimeout(timeoutId);
-      };
-    }, [activeKey, openKeys]);
+      const tid = setTimeout(updateAll, 100);
+      return () => clearTimeout(tid);
+    }, [activeKey, openKeys, updateIconColors]);
 
     const getMenuItemsForAntd = useMemo(() => {
       const attachRefToLabel = (label, key) => {
-        let refToAttach;
-        switch (key) {
-          case "overview":
-            refToAttach = homeMenuRef;
-            break;
-          case "listings":
-            refToAttach = listingsMenuRef;
-            break;
-          case "bookings":
-            // Attach ref to the "Bookings" parent
-            refToAttach = activeBookingsMenuRef;
-            break;
-          case "people":
-            // Attach ref to the "People" parent
-            refToAttach = managementMenuRef;
-            break;
-          case "financials":
-            refToAttach = financialsMenuRef;
-            break;
-          case "growth":
-            refToAttach = growthMenuRef;
-            break;
-          case "settings":
-            refToAttach = platformMenuRef;
-            break;
-          default:
-            refToAttach = null;
-        }
-        return refToAttach ? <span ref={refToAttach}>{label}</span> : label;
+        const refMap = {
+          overview:    homeMenuRef,
+          listings:    listingsMenuRef,
+          bookings:    activeBookingsMenuRef,
+          people:      managementMenuRef,
+          financials:  financialsMenuRef,
+          growth:      growthMenuRef,
+          settings:    platformMenuRef,
+        };
+        const r = refMap[key];
+        return r ? <span ref={r}>{label}</span> : label;
       };
 
       const hasPermission = (key) => {
-        const requiredPermCodename = menuItemPermissions[key];
-        if (!requiredPermCodename) return true;
-
-        const checkPermission = (codename) => {
-          return permissions.some((userPerm) => {
-            const parts = userPerm.split(".");
+        const required = menuItemPermissions[key];
+        if (!required) return true;
+        const check = (codename) =>
+          permissions.some((p) => {
+            const parts = p.split(".");
             return parts.length === 2 && parts[1] === codename;
           });
-        };
-
-        if (Array.isArray(requiredPermCodename)) {
-          return requiredPermCodename.some((p) => checkPermission(p));
-        }
-
-        return checkPermission(requiredPermCodename);
+        return Array.isArray(required) ? required.some(check) : check(required);
       };
 
-      const filteredConfig = menuItemsConfig.reduce((acc, item) => {
-        if (item.children) {
-          const visibleChildren = item.children.filter((child) =>
-            hasPermission(child.key),
-          );
-          if (visibleChildren.length > 0) {
-            acc.push({ ...item, children: visibleChildren });
-          }
-        } else if (hasPermission(item.key)) {
-          acc.push(item);
-        }
-        return acc;
-      }, []);
+      return menuGroupsConfig
+        .map((group) => {
+          const visibleItems = group.items.reduce((acc, item) => {
+            if (item.children) {
+              const visibleChildren = item.children.filter((c) => hasPermission(c.key));
+              if (visibleChildren.length > 0) {
+                acc.push({
+                  key: item.key,
+                  icon: item.icon,
+                  label: attachRefToLabel(item.label, item.key),
+                  onMouseEnter: ({ domEvent }) => handleMenuItemHover(domEvent, true),
+                  onMouseLeave: ({ domEvent }) => handleMenuItemHover(domEvent, false),
+                  children: visibleChildren.map((c) => ({
+                    key: c.key,
+                    label: c.label,
+                    onMouseEnter: ({ domEvent }) => handleMenuItemHover(domEvent, true),
+                    onMouseLeave: ({ domEvent }) => handleMenuItemHover(domEvent, false),
+                  })),
+                });
+              }
+            } else if (hasPermission(item.key)) {
+              acc.push({
+                key: item.key,
+                icon: item.icon,
+                label: attachRefToLabel(item.label, item.key),
+                onMouseEnter: ({ domEvent }) => handleMenuItemHover(domEvent, true),
+                onMouseLeave: ({ domEvent }) => handleMenuItemHover(domEvent, false),
+              });
+            }
+            return acc;
+          }, []);
 
-      return filteredConfig.map((item) => ({
-        key: item.key,
-        icon: item.icon,
-        label: attachRefToLabel(item.label, item.key),
-        onMouseEnter: ({ domEvent }) => handleMenuItemHover(domEvent, true),
-        onMouseLeave: ({ domEvent }) => handleMenuItemHover(domEvent, false),
-        children: item.children?.map((child) => ({
-          key: child.key,
-          label: child.label,
-          icon: child.icon,
-          onMouseEnter: ({ domEvent }) => handleMenuItemHover(domEvent, true),
-          onMouseLeave: ({ domEvent }) => handleMenuItemHover(domEvent, false),
-        })),
-      }));
+          if (visibleItems.length === 0) return null;
+          return { type: "group", label: group.label, children: visibleItems };
+        })
+        .filter(Boolean);
     }, [handleMenuItemHover, permissions]);
 
-    const renderMenu = () => (
-        <MenuContainer>
-          <StyledAntMenu
-            mode="inline"
-            selectedKeys={[activeKey]}
-            onOpenChange={setOpenKeys} // Directly connect the handler to the state setter
-            openKeys={openKeys}
-            onClick={handleMenuClick}
-            items={getMenuItemsForAntd}
-          />
-        </MenuContainer>
-      );
+    /* ── Render helpers ── */
 
-    const renderMobileMenu = () => (
-        <MobileMenuContainer>
-          <StyledAntMenu
-            mode="inline"
-            selectedKeys={[activeKey]}
-            onOpenChange={setOpenKeys} // Directly connect the handler to the state setter
-            openKeys={openKeys}
-            onClick={handleMenuClick}
-            items={getMenuItemsForAntd}
-          />
-        </MobileMenuContainer>
-      );
-
-    const renderLogoOrAvatar = (size = 36) =>
-      businessData.business_image_medium_url ? (
-        <BusinessLogo
+    const renderLogoOrAvatar = (size = 34) =>
+      businessData?.business_image_medium_url ? (
+        <BusinessLogoImg
           src={businessData.business_image_medium_url}
           alt={`${businessData.businessName} Logo`}
           style={{ width: size, height: size }}
@@ -1088,180 +886,114 @@ const SideMenuComponent = memo(
       ) : (
         <Avatar
           size={size}
-          icon={<div style={{ fontSize: size * 0.5 }}>B</div>} // Fallback icon since Building wasn't imported
           style={{
             backgroundColor: augmentedTheme.token.colorPrimary,
+            borderRadius: 8,
             flexShrink: 0,
+            fontWeight: 700,
+            fontSize: size * 0.4,
           }}
-        />
+        >
+          {businessData?.businessName?.charAt(0) ?? "B"}
+        </Avatar>
       );
 
-    const renderHeaderContent = () => {
+    const renderProfileCardContent = () => {
       if (loadingBusiness) {
         return (
-          <BusinessInfoContainer align="center" size={12}>
-            <Skeleton.Avatar
-              active
-              size={36}
-              shape="square"
-              style={{ borderRadius: augmentedTheme.token.borderRadius }}
-            />
-            <BusinessTextContainer
-              direction="vertical"
-              size={2}
-              style={{ flexGrow: 1 }}
-            >
-              <Skeleton
-                title={{ width: "70%" }}
-                paragraph={false}
-                active
-                className="header-skeleton-title"
-              />
-              <Skeleton
-                title={{ width: "50%" }}
-                paragraph={false}
-                active
-                className="header-skeleton-type"
-              />
-            </BusinessTextContainer>
-          </BusinessInfoContainer>
+          <>
+            <Skeleton.Avatar active size={34} shape="square" style={{ borderRadius: 8 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Skeleton title={{ width: "70%" }} paragraph={false} active className="header-skeleton-title" />
+              <Skeleton title={{ width: "50%" }} paragraph={false} active className="header-skeleton-type" />
+            </div>
+          </>
         );
       }
       if (businessError) {
         return (
-          <Tooltip title={businessError || "Error loading business profile"}>
-            <BusinessInfoContainer align="center" size={12}>
-              <Avatar
-                size={36}
-                icon={<AlertCircle size={20} />}
-                style={{
-                  backgroundColor: augmentedTheme.token.colorError,
-                  flexShrink: 0,
-                }}
-              />
-              <BusinessTextContainer direction="vertical" size={0}>
-                <Title
-                  level={5}
-                  type="danger"
-                  style={{ margin: 0, lineHeight: "1.3" }}
-                >
-                  Error
-                </Title>
-                <Text
-                  type="secondary"
-                  style={{ fontSize: "0.75rem", lineHeight: "1.2" }}
-                >
-                  Profile load failed
-                </Text>
-              </BusinessTextContainer>
-            </BusinessInfoContainer>
-          </Tooltip>
+          <>
+            <Avatar size={34} icon={<AlertCircle size={18} />} style={{ backgroundColor: augmentedTheme.token.colorError, borderRadius: 8, flexShrink: 0 }} />
+            <BusinessTextBlock>
+              <BusinessNameText style={{ color: augmentedTheme.token.colorError }}>Error</BusinessNameText>
+              <BusinessTypeText>Profile load failed</BusinessTypeText>
+            </BusinessTextBlock>
+          </>
         );
       }
       return (
         <>
           {renderLogoOrAvatar()}
-          <BusinessTextContainer direction="vertical" size={0}>
-            <Title
-              level={5}
-              style={{
-                margin: 0,
-                lineHeight: "1.3",
-                fontWeight: 600,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-              title={businessData.businessName}
-            >
-              {businessData.businessName}
-            </Title>
-            {businessData.businessType && (
-              <Text
-                type="secondary"
-                style={{
-                  fontSize: "0.75rem",
-                  lineHeight: "1.2",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-                title={getBusinessTypeLabel(businessData.businessType)}
-              >
-                {getBusinessTypeLabel(businessData.businessType)}
-              </Text>
-            )}
-          </BusinessTextContainer>
+          <BusinessTextBlock>
+            <BusinessNameText title={businessData?.businessName}>
+              {businessData?.businessName}
+            </BusinessNameText>
+            <BusinessTypeText title={getBusinessTypeLabel(businessData?.businessType)}>
+              {getBusinessTypeLabel(businessData?.businessType)}
+            </BusinessTypeText>
+          </BusinessTextBlock>
+          <ChevronRight size={14} style={{ color: "#d1d5db", flexShrink: 0 }} />
         </>
       );
     };
 
+    const renderMenu = (containerClass = "") => (
+      <MenuContainer className={containerClass}>
+        <StyledAntMenu
+          mode="inline"
+          selectedKeys={[activeKey]}
+          openKeys={openKeys}
+          onOpenChange={handleOpenChange}
+          onClick={handleMenuClick}
+          items={getMenuItemsForAntd}
+        />
+      </MenuContainer>
+    );
+
     const renderFooterActions = () => {
-      if (
-        loadingBusiness ||
-        businessError ||
-        !businessData ||
-        businessData._isPlaceholder
-      ) {
+      if (loadingBusiness || businessError || !businessData || businessData._isPlaceholder) {
         return (
-          <FooterLinkButton href="/business/help/">
-            <AlertCircle size={16} />
+          <FooterBtn href="/business/help/">
+            <AlertCircle size={15} />
             Get Help
-          </FooterLinkButton>
+          </FooterBtn>
         );
       }
       return (
-        <Space direction="vertical" style={{ width: "100%" }} size={8}>
+        <>
           {businessData.slug && (
-            <FooterLinkButtonSmall href={`/business/${businessData.slug}`}>
-              <Eye size={16} />
-              Preview
-            </FooterLinkButtonSmall>
+            <FooterBtn href={`/business/${businessData.slug}`}>
+              <Eye size={15} />
+              Preview page
+            </FooterBtn>
           )}
-          <FooterLinkButtonSmall href="/business/help/">
-            <AlertCircle size={16} />
-            Help & Docs
-          </FooterLinkButtonSmall>
-        </Space>
+          <FooterBtn href="/business/help/">
+            <AlertCircle size={15} />
+            Help &amp; Docs
+          </FooterBtn>
+        </>
       );
     };
 
-    const renderMobileFooterActions = () => {
-      if (
-        loadingBusiness ||
-        businessError ||
-        !businessData ||
-        businessData._isPlaceholder
-      ) {
+    const renderMobileFooter = () => {
+      if (loadingBusiness || businessError || !businessData || businessData._isPlaceholder) {
         return (
-          <FooterLinkButtonMobile
-            href="/business/help/"
-            onClick={() => setDrawerVisible(false)}
-          >
-            <AlertCircle size={16} />
-            Get Help
-          </FooterLinkButtonMobile>
+          <MobileFooterBtn href="/business/help/" onClick={() => setDrawerVisible(false)}>
+            <AlertCircle size={14} /> Get Help
+          </MobileFooterBtn>
         );
       }
       return (
-        <Space direction="horizontal" style={{ width: "100%" }} size={12}>
-          {businessData.slug ? (
-            <FooterLinkButtonMobile
-              href={`/business/${businessData.slug}`}
-              onClick={() => setDrawerVisible(false)}
-            >
-              <Eye size={16} />
-              Preview
-            </FooterLinkButtonMobile>
-          ) : null}
-          <FooterLinkButtonMobile
-            href="/business/help/"
-            onClick={() => setDrawerVisible(false)}
-          >
-            <AlertCircle size={16} />
-            Help
-          </FooterLinkButtonMobile>
-        </Space>
+        <>
+          {businessData.slug && (
+            <MobileFooterBtn href={`/business/${businessData.slug}`} onClick={() => setDrawerVisible(false)}>
+              <Eye size={14} /> Preview
+            </MobileFooterBtn>
+          )}
+          <MobileFooterBtn href="/business/help/" onClick={() => setDrawerVisible(false)}>
+            <AlertCircle size={14} /> Help
+          </MobileFooterBtn>
+        </>
       );
     };
 
@@ -1269,120 +1001,127 @@ const SideMenuComponent = memo(
       <ThemeProvider theme={augmentedTheme}>
         <LocalGlobalStyleForSkeleton />
         <SideMenuWrapper>
-            <DesktopSideMenu
-              className="desktop-sidemenu"
-              initial={false}
-              transition={{ type: "tween", duration: 0.2 }}
-            >
-              <HeaderContainer>
-                <BusinessInfoWrapper
-                  onClick={businessClickHandler}
-                  title={businessClickableTitle}
-                >
-                  {renderHeaderContent()}
-                </BusinessInfoWrapper>
-              </HeaderContainer>
-              {renderMenu()}
-              <FooterActionsContainer>
-                {renderFooterActions()}
-              </FooterActionsContainer>
-            </DesktopSideMenu>
+          {/* ── Desktop ── */}
+          <DesktopSideMenu className="desktop-sidemenu" initial={false}>
+            <ProfileCardArea>
+              <BusinessProfileCard
+                $clickable={!!businessClickHandler}
+                onClick={businessClickHandler}
+                title={isBusinessClickable ? "Preview your public page" : undefined}
+              >
+                {renderProfileCardContent()}
+              </BusinessProfileCard>
+            </ProfileCardArea>
 
-            {/* Enhanced Mobile Sidebar */}
-            {isMobile && (
-              <>
-                <AnimatePresence>
-                  {!drawerVisible && (
-                    <MobileExpandableButton
-                      ref={mobileButtonRef}
-                      variants={expandableButtonVariants}
+            {renderMenu()}
+
+            <FooterActionsContainer>
+              {renderFooterActions()}
+            </FooterActionsContainer>
+          </DesktopSideMenu>
+
+          {/* ── Mobile ── */}
+          {isMobile && (
+            <>
+              <AnimatePresence>
+                {!drawerVisible && (
+                  <MobileExpandableButton
+                    ref={mobileButtonRef}
+                    variants={expandableButtonVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="hidden"
+                  >
+                    <ExpandableButtonContent
+                      initial={{ width: 52 }}
+                      whileHover={{ width: 120 }}
+                      onClick={() => setDrawerVisible(true)}
+                      transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                    >
+                      <ButtonIcon>
+                        <SidebarOpen size={22} />
+                      </ButtonIcon>
+                      <ButtonText
+                        initial={{ opacity: 0, x: -8 }}
+                        whileHover={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.15, delay: 0.05 }}
+                      >
+                        Menu
+                      </ButtonText>
+                    </ExpandableButtonContent>
+                  </MobileExpandableButton>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {drawerVisible && (
+                  <>
+                    <MobileSidebarOverlay
+                      variants={overlayVariants}
                       initial="hidden"
                       animate="visible"
                       exit="hidden"
+                      onClick={() => setDrawerVisible(false)}
+                    />
+                    <MobileSidebarContainer
+                      variants={sidebarVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="hidden"
+                      style={{ transformOrigin }}
                     >
-                      <ExpandableButtonContent
-                        variants={buttonContentVariants}
-                        initial="collapsed"
-                        whileHover="expanded"
-                        onClick={toggleMobileDrawer}
-                      >
-                        <ButtonIcon
-                          variants={buttonIconVariants}
-                          initial="collapsed"
-                          whileHover="expanded"
+                      <MobileHeaderContainer>
+                        <BusinessProfileCard
+                          style={{ flex: 1, marginRight: 10 }}
+                          $clickable={false}
                         >
-                          <SidebarOpen size={24} />
-                        </ButtonIcon>
-                        <ButtonText
-                          variants={buttonTextVariants}
-                          initial="collapsed"
-                          whileHover="expanded"
+                          {renderProfileCardContent()}
+                        </BusinessProfileCard>
+                        <MobileCloseButton
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setDrawerVisible(false)}
                         >
-                          Menu
-                        </ButtonText>
-                      </ExpandableButtonContent>
-                    </MobileExpandableButton>
-                  )}
-                </AnimatePresence>
+                          <X size={18} />
+                        </MobileCloseButton>
+                      </MobileHeaderContainer>
 
-                <AnimatePresence>
-                  {drawerVisible && (
-                    <>
-                      <MobileSidebarOverlay
-                        variants={overlayVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="hidden"
-                        onClick={() => setDrawerVisible(false)}
-                      />
-                      <MobileSidebarContainer
-                        variants={sidebarVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="hidden"
-                        style={{ transformOrigin }}
-                      >
-                        <MobileHeaderContainer>
-                          {renderHeaderContent()}
-                          <MobileCloseButton
-                            variants={closeButtonVariants}
-                            whileHover="hover"
-                            whileTap="tap"
-                            onClick={() => setDrawerVisible(false)}
-                            aria-label="Close Menu"
-                          >
-                            <X size={20} />
-                          </MobileCloseButton>
-                        </MobileHeaderContainer>
-                        <MobileMenuContainer>
-                          {renderMobileMenu()}
-                        </MobileMenuContainer>
-                        <MobileFooterContainer>
-                          {renderMobileFooterActions()}
-                        </MobileFooterContainer>
-                      </MobileSidebarContainer>
-                    </>
-                  )}
-                </AnimatePresence>
-              </>
-            )}
+                      <MobileMenuContainer>
+                        <StyledAntMenu
+                          mode="inline"
+                          selectedKeys={[activeKey]}
+                          openKeys={openKeys}
+                          onOpenChange={handleOpenChange}
+                          onClick={handleMenuClick}
+                          items={getMenuItemsForAntd}
+                        />
+                      </MobileMenuContainer>
 
-            {/* Business Settings Drawer - Now handled by BusinessSettings component */}
-            <BusinessSettings
-              ref={businessSettingsRefInternal}
-              open={settingsDrawerVisible}
-              onClose={handleSettingsClose}
-              onSave={handleSettingsSave}
-              activeTabKey={activeSettingsTab.current}
-              onTabChangeExternal={handleSettingsTabChange}
-              onProfileUpdate={fetchBusinessProfile}
-            />
+                      <MobileFooterContainer>
+                        {renderMobileFooter()}
+                      </MobileFooterContainer>
+                    </MobileSidebarContainer>
+                  </>
+                )}
+              </AnimatePresence>
+            </>
+          )}
+
+          {/* ── Settings Drawer ── */}
+          <BusinessSettings
+            ref={businessSettingsRefInternal}
+            open={settingsDrawerVisible}
+            onClose={() => setSettingsDrawerVisible(false)}
+            onSave={fetchBusinessProfile}
+            activeTabKey={activeSettingsTab.current}
+            onTabChangeExternal={(key) => { activeSettingsTab.current = key; }}
+            onProfileUpdate={fetchBusinessProfile}
+          />
         </SideMenuWrapper>
       </ThemeProvider>
     );
-  }),
+  })
 );
 
 SideMenuComponent.displayName = "SideMenuComponent";
-
 export default SideMenuComponent;

@@ -22,46 +22,24 @@ const CustomUserMenu = dynamic(
   { ssr: false }
 );
 
-// Animations
-const pulseGlow = keyframes`
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(255, 56, 92, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 6px rgba(255, 56, 92, 0);
-  }
+const ringPulse = keyframes`
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 56, 92, 0.25); }
+  50%       { box-shadow: 0 0 0 5px rgba(255, 56, 92, 0); }
 `;
 
-// Styled Components
 const HeaderWrapper = styled.header`
-  background: linear-gradient(135deg, #1a1a1a, #141414);
-  color: #ffffff;
+  background: #ffffff;
   display: flex;
   align-items: center;
-  height: 4rem;
-  padding: 0 2rem;
-  border-bottom: 1px solid rgba(255, 56, 92, 0.2);
-  backdrop-filter: blur(10px);
+  height: 56px;
+  padding: 0 20px;
+  border-bottom: 1px solid #f0f0f0;
   position: relative;
   z-index: 999;
+  flex-shrink: 0;
 
   @media (max-width: 768px) {
-    padding: 0 1rem;
-  }
-
-  &::before {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 56, 92, 0.5),
-      transparent
-    );
+    padding: 0 14px;
   }
 `;
 
@@ -69,36 +47,32 @@ const LogoLinkWrapper = styled.div`
   color: inherit;
   display: flex;
   align-items: center;
-  padding: 0.75rem;
-  margin-right: 2rem;
-  border-radius: 12px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 6px 8px;
+  margin-right: 16px;
+  border-radius: 8px;
+  transition: background 0.15s ease;
   cursor: pointer;
 
-  @media (max-width: 768px) {
-    margin-right: 1rem;
-    padding: 0.5rem;
+  &:hover {
+    background: #f5f5f5;
   }
 
-  &:hover {
-    transform: translateY(-1px);
+  @media (max-width: 768px) {
+    margin-right: 8px;
   }
 `;
 
 const CenterSection = styled.div`
   flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 `;
 
 const RightSection = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 8px;
 
   @media (max-width: 768px) {
-    gap: 0.5rem;
+    gap: 6px;
   }
 `;
 
@@ -107,88 +81,56 @@ const UserProfileContainer = styled.div`
 `;
 
 const UserProfileButton = styled.div`
-  position: relative;
   display: flex;
   align-items: center;
-  padding: 6px 12px 6px 6px;
-  height: 44px;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.1),
-    rgba(255, 255, 255, 0.05)
-  );
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  padding: 5px 12px 5px 5px;
+  height: 38px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
+  transition: all 0.15s ease;
   gap: 8px;
 
   @media (max-width: 768px) {
-    padding: 6px;
+    padding: 5px;
     gap: 0;
   }
 
   &:hover {
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.15),
-      rgba(255, 255, 255, 0.08)
-    );
-    border-color: rgba(255, 255, 255, 0.2);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  }
-
-  &:active {
-    transform: translateY(0);
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
   }
 
   ${(props) =>
     props.$isActive &&
     css`
-      background: linear-gradient(
-        135deg,
-        rgba(255, 56, 92, 0.2),
-        rgba(255, 56, 92, 0.1)
-      );
-      border-color: rgba(255, 56, 92, 0.4);
-      animation: ${pulseGlow} 2s infinite;
+      background: rgba(255, 56, 92, 0.06);
+      border-color: rgba(255, 56, 92, 0.25);
+      animation: ${ringPulse} 2s infinite;
     `}
 `;
 
 const UserAvatar = styled.div`
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   background: linear-gradient(135deg, #ff385c, #e91e63);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
-  font-size: 12px;
+  font-weight: 700;
+  font-size: 11px;
   color: white;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(255, 56, 92, 0.3);
   flex-shrink: 0;
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent);
-    border-radius: 10px;
-  }
+  box-shadow: 0 1px 4px rgba(255, 56, 92, 0.25);
 `;
 
 const UserNameDisplay = styled.span`
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  color: #ffffff;
+  color: #374151;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -207,7 +149,6 @@ const BusinessHeader = () => {
   const router = useRouter();
   const userProfileRef = useRef(null);
 
-  // Close menu when component unmounts (route change)
   useEffect(() => {
     return () => {
       setUserMenuVisible(false);
@@ -220,7 +161,6 @@ const BusinessHeader = () => {
       await signOut();
     } catch (error) {
       console.error("Logout failed:", error);
-      // Force reload as fallback
       if (typeof window !== "undefined") {
         window.location.href = "/";
       }
@@ -237,12 +177,9 @@ const BusinessHeader = () => {
     setSettingsLoading(true);
   };
 
-  // Create proper navigation handler function that closes menu first
   const handleNavigate = (path) => {
-    // Close menu BEFORE navigation to prevent invisible overlay
     setUserMenuVisible(false);
     setSettingsDrawerVisible(false);
-    // Small delay to ensure menu closes before navigation
     setTimeout(() => {
       router.push(path);
     }, 100);
@@ -250,16 +187,10 @@ const BusinessHeader = () => {
 
   const getUserInitials = () => {
     if (currentUser?.first_name && currentUser?.last_name) {
-      return `${currentUser.first_name.charAt(0)}${currentUser.last_name.charAt(
-        0
-      )}`.toUpperCase();
+      return `${currentUser.first_name.charAt(0)}${currentUser.last_name.charAt(0)}`.toUpperCase();
     }
-    if (currentUser?.first_name) {
-      return currentUser.first_name.charAt(0).toUpperCase();
-    }
-    if (currentUser?.username) {
-      return currentUser.username.charAt(0).toUpperCase();
-    }
+    if (currentUser?.first_name) return currentUser.first_name.charAt(0).toUpperCase();
+    if (currentUser?.username) return currentUser.username.charAt(0).toUpperCase();
     return "U";
   };
 
@@ -267,12 +198,8 @@ const BusinessHeader = () => {
     if (currentUser?.first_name && currentUser?.last_name) {
       return `${currentUser.first_name} ${currentUser.last_name.charAt(0)}.`;
     }
-    if (currentUser?.first_name) {
-      return currentUser.first_name;
-    }
-    if (currentUser?.username) {
-      return currentUser.username;
-    }
+    if (currentUser?.first_name) return currentUser.first_name;
+    if (currentUser?.username) return currentUser.username;
     return null;
   };
 
@@ -283,15 +210,11 @@ const BusinessHeader = () => {
       <HeaderWrapper>
         <Link href="/" passHref legacyBehavior>
           <LogoLinkWrapper as="a">
-            <LogoIcon
-              size="2rem"
-              activeColor="#ff385c"
-              restingColor="#ffffff"
-            />
+            <LogoIcon size="1.75rem" activeColor="#ff385c" restingColor="#111827" />
           </LogoLinkWrapper>
         </Link>
 
-        <CenterSection></CenterSection>
+        <CenterSection />
 
         <RightSection>
           {currentUser && <NotificationsButton />}
