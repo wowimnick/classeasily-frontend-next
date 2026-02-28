@@ -65,6 +65,42 @@ const fadeUp = keyframes`from{opacity:0;transform:translateY(8px)}to{opacity:1;t
 // ─── Page shell ───────────────────────────────────────────────────────────────
 const PageWrap = styled.div`
   min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+`;
+
+/* Thin angled WebGL gradient strip (hidden on mobile) */
+const CheckoutGradientStrip = styled.div`
+  position: absolute;
+  left: -10%;
+  width: 120%;
+  height:150px;
+  top: 28%;
+  transform: translateY(-50%) rotate(-3deg);
+  z-index: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  @media (max-width: 640px) {
+    display: none;
+  }
+`;
+const CheckoutGradientStripInner = styled.div`
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+`;
+const CheckoutGradientCanvas = styled.canvas`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  --gradient-color-1: #ffffff;
+  --gradient-color-2: #fc4056;
+  --gradient-color-3: #ffffff;
+  --gradient-color-4: #ffcb57;
 `;
 
 const PageInner = styled.div`
@@ -72,6 +108,8 @@ const PageInner = styled.div`
   margin: 0 auto;
   padding: 32px 20px 80px;
   animation: ${fadeUp} 0.3s ease;
+  position: relative;
+  z-index: 1;
   @media (max-width: 600px) { padding: 20px 14px 60px; }
 `;
 
@@ -1007,6 +1045,13 @@ function WidgetCheckoutContent() {
     () => (stripeFontCssUrl ? [{ cssSrc: stripeFontCssUrl }] : []),
     [stripeFontCssUrl]
   );
+  useEffect(() => {
+    import("stripe-gradient").then(({ Gradient }) => {
+      const gradient = new Gradient();
+      gradient.initGradient("#checkout-gradient-canvas");
+    }).catch(() => {});
+  }, []);
+
   const stripeAppearance = useMemo(() => {
     const fontFamily = '"Proxima Soft", sans-serif';
     return {
@@ -1203,6 +1248,11 @@ function WidgetCheckoutContent() {
 
   return (
     <PageWrap>
+      <CheckoutGradientStrip>
+        <CheckoutGradientStripInner>
+          <CheckoutGradientCanvas id="checkout-gradient-canvas" data-transition-in />
+        </CheckoutGradientStripInner>
+      </CheckoutGradientStrip>
       <SuccessModal open={showSuccessModal} plan={plan} onClose={() => setShowSuccessModal(false)} />
       <ExploreHeader showOptionsWrapper={false} />
       <PageInner>

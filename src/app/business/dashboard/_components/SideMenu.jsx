@@ -12,7 +12,7 @@ import React, {
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import styled, { createGlobalStyle, ThemeProvider } from "styled-components";
+import styled, { createGlobalStyle, ThemeProvider, keyframes } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu,
@@ -21,11 +21,14 @@ import {
   Avatar,
   Skeleton,
   Tooltip,
+  Modal,
 } from "antd";
-import { X, AlertCircle, SidebarOpen, Eye, ChevronRight } from "lucide-react";
+import { X, AlertCircle, SidebarOpen, Eye, ChevronRight, Lock, ArrowRight } from "lucide-react";
+import { Drawer } from "vaul";
 
 import { businessService } from "@/services/apiService";
 import { useAuth } from "@/lib/auth-client";
+import { useSubscription } from "@/context/SubscriptionContext";
 
 const { Title, Text } = Typography;
 import { theme as augmentedTheme } from "@/components/theme";
@@ -51,6 +54,192 @@ const LocalGlobalStyleForSkeleton = createGlobalStyle`
   .header-skeleton-title .ant-skeleton-title { height: 16px !important; margin-top: 2px !important; margin-bottom: 4px !important; border-radius: 4px; }
   .header-skeleton-type .ant-skeleton-title  { height: 13px !important; margin-top: 0px  !important; margin-bottom: 0px  !important; border-radius: 4px; }
 `;
+
+/* ─── Widget upgrade modal: holographic blobs ────────────────────── */
+const shake = keyframes`
+  0%, 100% { transform: translateX(0); }
+  12%      { transform: translateX(-4px); }
+  24%      { transform: translateX(4px); }
+  36%      { transform: translateX(-3px); }
+  48%      { transform: translateX(3px); }
+  60%      { transform: translateX(-2px); }
+  72%      { transform: translateX(2px); }
+  84%      { transform: translateX(-1px); }
+`;
+
+const ModalBackgroundContainer = styled.div`
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+`;
+
+const ModalWhiteOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  /* An 80% opacity white overlay washes out the saturated blobs underneath, resulting in a premium, mostly-white holographic effect */
+  background: rgba(255, 255, 255, 0.9);
+  z-index: 1;
+`;
+
+const Blob = styled(motion.div)`
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  z-index: 0;
+  opacity: 0.8;
+  will-change: transform;
+`;
+
+const UpgradeModalInner = styled.div`
+  position: relative;
+  z-index: 2;
+  padding: 28px 24px 24px;
+  border-radius: 20px;
+`;
+
+const UpgradeModalTitle = styled.h3`
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a2e;
+  letter-spacing: -0.02em;
+`;
+
+const UpgradeModalBody = styled.p`
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+`;
+
+const UpgradeModalCta = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  background: #1a1a2e;
+  color: white;
+  text-decoration: none;
+  transition: opacity 0.15s, transform 0.15s;
+  &:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    color: white;
+  }
+`;
+
+function WidgetUpgradeModal({ open, onClose }) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const update = () => setIsMobile(window.innerWidth < 768);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  },[]);
+
+  const content = (
+    <>
+      <ModalBackgroundContainer>
+        {/* Cyan Orb */}
+        <Blob
+          style={{ width: 300, height: 300, background: "#00e1ff", top: "-100px", left: "-100px" }}
+          animate={{
+            x:[0, 60, -40, 20, 0],
+            y:[0, 40, 80, -20, 0],
+            scale:[1, 1.2, 0.9, 1.1, 1],
+          }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* Magenta Orb */}
+        <Blob
+          style={{ width: 280, height: 280, background: "#fff", top: "-80px", right: "-80px" }}
+          animate={{
+            x: [0, -70, 30, -50, 0],
+            y: [0, 50, -40, 30, 0],
+            scale:[1, 0.8, 1.15, 0.95, 1],
+          }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* Purple Orb */}
+        <Blob
+          style={{ width: 320, height: 320, background: "#F54927", bottom: "-120px", left: "-80px" }}
+          animate={{
+            x:[0, 80, -50, 40, 0],
+            y:[0, -60, 30, -70, 0],
+            scale:[1, 1.15, 0.85, 1.05, 1],
+          }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        />
+        {/* Yellow Orb */}
+        <Blob
+          style={{ width: 250, height: 250, background: "#F54927", bottom: "-80px", right: "-80px" }}
+          animate={{
+            x: [0, -90, 40, -30, 0],
+            y:[0, -40, 60, -20, 0],
+            scale:[1, 0.9, 1.2, 0.8, 1],
+          }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <ModalWhiteOverlay />
+      </ModalBackgroundContainer>
+      <UpgradeModalInner>
+        <UpgradeModalTitle>Unlock the Booking Widget</UpgradeModalTitle>
+        <UpgradeModalBody>
+          Subscribe to a widget plan to embed the booking widget on your website, customize its look, and start taking bookings.
+        </UpgradeModalBody>
+        <UpgradeModalCta href="/booking-widget#pricing" onClick={onClose}>
+          View plans <ArrowRight size={14} />
+        </UpgradeModalCta>
+      </UpgradeModalInner>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer.Root open={open} onOpenChange={(v) => !v && onClose()}>
+        <Drawer.Portal>
+          <Drawer.Overlay style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)", zIndex: 1000 }} />
+          <Drawer.Content
+            style={{
+              position: "fixed", bottom: 0, left: 0, right: 0,
+              background: "#fff",
+              borderRadius: "20px 20px 0 0",
+              overflow: "hidden",
+              zIndex: 1001,
+              outline: "none",
+            }}
+          >
+            <div style={{ position: "relative", minHeight: 120 }}>{content}</div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
+    );
+  }
+
+  return (
+    <Modal
+      open={open}
+      onCancel={onClose}
+      footer={null}
+      closable={true}
+      centered
+      width={400}
+      styles={{
+        mask: { backdropFilter: "blur(6px)", background: "rgba(0,0,0,0.28)" },
+        content: { padding: 0, borderRadius: 20, overflow: "hidden", border: "1px solid rgba(0,0,0,0.07)", boxShadow: "0 20px 60px rgba(0,0,0,0.16)" },
+        body: { padding: 0 },
+      }}
+    >
+      <div style={{ position: "relative", minHeight: 140, borderRadius: 20 }}>{content}</div>
+    </Modal>
+  );
+}
 
 /* ─── Outer wrapper ────────────────────────────────────────────── */
 const SideMenuWrapper = styled.div`
@@ -276,6 +465,11 @@ const StyledAntMenu = styled(Menu)`
       }
     }
   }
+
+  /* Widget item shake when locked and clicked */
+  .widget-menu-item-shake.ant-menu-item {
+    animation: ${shake} 0.4s ease-in-out;
+  }
 `;
 
 /* ─── Footer ───────────────────────────────────────────────────── */
@@ -457,11 +651,11 @@ const expandableButtonVariants = {
 };
 
 /* ─── Menu config (grouped) ────────────────────────────────────── */
-const menuGroupsConfig = [
+const menuGroupsConfig =[
   {
     groupKey: "main",
     label: "Main Menu",
-    items: [
+    items:[
       {
         key: "overview",
         label: "Dashboard",
@@ -513,7 +707,7 @@ const menuGroupsConfig = [
             state="in-booking"
           />
         ),
-        children: [
+        children:[
           { key: "bookings/active",  label: "Active Bookings" },
           { key: "bookings/history", label: "Booking History" },
         ],
@@ -523,7 +717,7 @@ const menuGroupsConfig = [
   {
     groupKey: "manage",
     label: "Manage",
-    items: [
+    items:[
       {
         key: "people",
         label: "People",
@@ -536,7 +730,7 @@ const menuGroupsConfig = [
             inState="in-build"
           />
         ),
-        children: [
+        children:[
           { key: "reviews",  label: "Reviews" },
           { key: "staff",    label: "Staff" },
           { key: "messages", label: "Messages" },
@@ -554,7 +748,7 @@ const menuGroupsConfig = [
             inState="in-wallet"
           />
         ),
-        children: [
+        children:[
           { key: "revenue", label: "Revenue" },
           { key: "payouts", label: "Payouts" },
         ],
@@ -571,7 +765,7 @@ const menuGroupsConfig = [
             inState="in-trend-up"
           />
         ),
-        children: [
+        children:[
           { key: "trends",    label: "Booking Trends" },
           { key: "discounts", label: "Discounts" },
         ],
@@ -581,7 +775,7 @@ const menuGroupsConfig = [
   {
     groupKey: "platform",
     label: "Platform",
-    items: [
+    items:[
       {
         key: "widget",
         label: "Booking Widget",
@@ -633,17 +827,23 @@ const menuItemPermissions = {
 /* ─── Component ────────────────────────────────────────────────── */
 const SideMenuComponent = memo(
   forwardRef(({ onMenuSelect, activeKey }, ref) => {
-    const [isMobile, setIsMobile]                       = useState(false);
+    const[isMobile, setIsMobile]                       = useState(false);
     const [drawerVisible, setDrawerVisible]             = useState(false);
     const [openKeys, setOpenKeys]                       = useState([]);
-    const [businessData, setBusinessData]               = useState(null);
+    const[businessData, setBusinessData]               = useState(null);
     const [loadingBusiness, setLoadingBusiness]         = useState(true);
     const [businessError, setBusinessError]             = useState(null);
-    const [transformOrigin, setTransformOrigin]         = useState("bottom left");
+    const[transformOrigin, setTransformOrigin]         = useState("bottom left");
+    const [shakeWidget, setShakeWidget]                 = useState(false);
+    const [showUpgradeModal, setShowUpgradeModal]       = useState(false);
     const router = useRouter();
 
     const { user } = useAuth();
-    const permissions = user?.permissions || [];
+    const permissions = user?.permissions ||[];
+    const { subscription } = useSubscription();
+    const hasWidgetPlan = Boolean(
+      subscription?.status && ["active", "trialing"].includes(subscription.status) && subscription?.planId
+    );
 
     const isBusinessClickable =
       !loadingBusiness && !businessError && businessData && !businessData._isPlaceholder;
@@ -662,6 +862,7 @@ const SideMenuComponent = memo(
     const financialsMenuRef     = useRef(null);
     const growthMenuRef         = useRef(null);
     const platformMenuRef       = useRef(null);
+    const widgetMenuRef         = useRef(null);
 
     useImperativeHandle(ref, () => ({
       homeMenuRef,
@@ -698,7 +899,7 @@ const SideMenuComponent = memo(
         const oY = Math.max(0, Math.min(100, ((bY - mT) / mH) * 100));
         setTransformOrigin(`${oX}% ${oY}%`);
       }
-    }, [drawerVisible, isMobile]);
+    },[drawerVisible, isMobile]);
 
     const fetchBusinessProfile = useCallback(async () => {
       setLoadingBusiness(true);
@@ -724,7 +925,7 @@ const SideMenuComponent = memo(
       } finally {
         setLoadingBusiness(false);
       }
-    }, []);
+    },[]);
 
     useEffect(() => { fetchBusinessProfile(); }, [fetchBusinessProfile]);
 
@@ -733,14 +934,14 @@ const SideMenuComponent = memo(
       handleResize();
       window.addEventListener("resize", handleResize);
       return () => window.removeEventListener("resize", handleResize);
-    }, []);
+    },[]);
 
     useEffect(() => {
       const parentKey = allMenuItems.find(
         (item) => item.children?.some((child) => child.key === activeKey)
       )?.key;
       if (parentKey) {
-        setOpenKeys((prev) => (prev.includes(parentKey) ? prev : [parentKey]));
+        setOpenKeys((prev) => (prev.includes(parentKey) ? prev :[parentKey]));
       }
     }, [activeKey]);
 
@@ -755,6 +956,16 @@ const SideMenuComponent = memo(
     }, [fetchBusinessProfile, router]);
 
     const handleMenuClick = (e) => {
+      if (e.key === "widget" && !hasWidgetPlan) {
+        e.domEvent?.preventDefault?.();
+        setShakeWidget(true);
+        setTimeout(() => {
+          setShowUpgradeModal(true);
+          setShakeWidget(false);
+        }, 400);
+        if (isMobile) setDrawerVisible(false);
+        return;
+      }
       onMenuSelect(e.key);
       if (isMobile) setDrawerVisible(false);
     };
@@ -762,7 +973,7 @@ const SideMenuComponent = memo(
     const handleOpenChange = (keys) => {
       const latestOpenKey = keys.find((k) => !openKeys.includes(k));
       if (allMenuItems.some((item) => item.key === latestOpenKey && item.children)) {
-        setOpenKeys(latestOpenKey ? [latestOpenKey] : []);
+        setOpenKeys(latestOpenKey ? [latestOpenKey] :[]);
       } else if (latestOpenKey) {
         setOpenKeys(keys);
       } else {
@@ -780,7 +991,7 @@ const SideMenuComponent = memo(
           }
         } catch (_err) { /* ignore */ }
       }
-    }, []);
+    },[]);
 
     const updateIconColors = useCallback((menuItem, isSelected, isHovering = false, isSubmenuTitle = false) => {
       const icon = menuItem.querySelector("lord-icon");
@@ -794,7 +1005,7 @@ const SideMenuComponent = memo(
           icon.setAttribute("colors", "primary:#9ca3af,secondary:#9ca3af");
         }
       }
-    }, []);
+    },[]);
 
     useEffect(() => {
       const updateAll = () => {
@@ -821,11 +1032,21 @@ const SideMenuComponent = memo(
           people:      managementMenuRef,
           financials:  financialsMenuRef,
           growth:      growthMenuRef,
+          widget:      widgetMenuRef,
           settings:    platformMenuRef,
         };
         const r = refMap[key];
         return r ? <span ref={r}>{label}</span> : label;
       };
+
+      const widgetLabel = hasWidgetPlan
+        ? attachRefToLabel("Booking Widget", "widget")
+        : (
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingRight: 2 }}>
+              <span ref={widgetMenuRef}>Booking Widget</span>
+              <Lock size={14} style={{ flexShrink: 0, color: "#9ca3af" }} />
+            </span>
+          );
 
       const hasPermission = (key) => {
         const required = menuItemPermissions[key];
@@ -862,19 +1083,20 @@ const SideMenuComponent = memo(
               acc.push({
                 key: item.key,
                 icon: item.icon,
-                label: attachRefToLabel(item.label, item.key),
+                label: item.key === "widget" ? widgetLabel : attachRefToLabel(item.label, item.key),
+                className: item.key === "widget" && shakeWidget ? "widget-menu-item-shake" : undefined,
                 onMouseEnter: ({ domEvent }) => handleMenuItemHover(domEvent, true),
                 onMouseLeave: ({ domEvent }) => handleMenuItemHover(domEvent, false),
               });
             }
             return acc;
-          }, []);
+          },[]);
 
           if (visibleItems.length === 0) return null;
           return { type: "group", label: group.label, children: visibleItems };
         })
         .filter(Boolean);
-    }, [handleMenuItemHover, permissions]);
+    },[handleMenuItemHover, permissions, hasWidgetPlan, shakeWidget]);
 
     /* ── Render helpers ── */
 
@@ -1002,6 +1224,7 @@ const SideMenuComponent = memo(
     return (
       <ThemeProvider theme={augmentedTheme}>
         <LocalGlobalStyleForSkeleton />
+        <WidgetUpgradeModal open={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
         <SideMenuWrapper>
           {/* ── Desktop ── */}
           <DesktopSideMenu className="desktop-sidemenu" initial={false}>

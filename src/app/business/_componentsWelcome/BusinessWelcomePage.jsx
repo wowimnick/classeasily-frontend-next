@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo, memo } from "react";
+import React, { useState, useCallback, useMemo, memo, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import styled, { createGlobalStyle } from "styled-components";
@@ -90,6 +90,40 @@ const GlassCard = styled(m.div)`
   border-radius: 24px;
 `;
 
+/* Thin angled WebGL gradient strip (hidden on mobile) */
+const WelcomeGradientStrip = styled.div`
+  position: absolute;
+  left: -50%;
+  width: 120%;
+  height: 150px;
+  top: 50%;
+  transform: translateY(-45%) rotate(-20deg);
+  z-index: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  @media (max-width: 640px) {
+    display: none;
+  }
+`;
+const WelcomeGradientStripInner = styled.div`
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+`;
+const WelcomeGradientCanvas = styled.canvas`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  --gradient-color-1: #ffffff;
+  --gradient-color-2: #fc4056;
+  --gradient-color-3: #ffffff;
+  --gradient-color-4: #ffffff;
+`;
+
 const HeroSection = styled.section`
   min-height: 60vh;
   padding-top: 20px;
@@ -97,6 +131,7 @@ const HeroSection = styled.section`
   display: flex;
   align-items: center;
   position: relative;
+  overflow: hidden;
   /* Prevent layout shift during font load */
   contain: content;
 
@@ -898,6 +933,13 @@ const BusinessWelcomePage = () => {
     });
   }, []);
 
+  useEffect(() => {
+    import("stripe-gradient").then(({ Gradient }) => {
+      const gradient = new Gradient();
+      gradient.initGradient("#welcome-gradient-canvas");
+    }).catch(() => {});
+  }, []);
+
   return (
     <LazyMotion features={domAnimation}>
       <PageWrapper>
@@ -907,6 +949,11 @@ const BusinessWelcomePage = () => {
         <main>
           {/* 1. Hero Section */}
           <HeroSection>
+            <WelcomeGradientStrip>
+              <WelcomeGradientStripInner>
+                <WelcomeGradientCanvas id="welcome-gradient-canvas" data-transition-in />
+              </WelcomeGradientStripInner>
+            </WelcomeGradientStrip>
             <SectionContainer>
               <HeroGrid>
                 <HeroTextContainer

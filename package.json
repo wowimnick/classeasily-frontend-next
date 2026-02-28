@@ -77,6 +77,7 @@
     "recharts": "^3.2.1",
     "redux-logger": "^3.0.6",
     "redux-persist": "^6.0.0",
+    "stripe-gradient": "^1.0.1",
     "styled-components": "^6.1.19",
     "three": "^0.182.0",
     "uuid": "^13.0.0",

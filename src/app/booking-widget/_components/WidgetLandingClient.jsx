@@ -160,17 +160,59 @@ const staggerContainer = {
 // HERO SECTION
 // ==========================================
 
+/* Thin angled strip: WebGL gradient is drawn inside this container only */
+const HeroGradientStrip = styled.div`
+  position: absolute;
+  left: -10%;
+  width: 120%;
+  height: 150px;
+  top: 50%;
+  transform: translateY(-50%) rotate(150deg);
+  z-index: 0;
+  overflow: hidden;
+  border-radius: 4px;
+
+  @media (max-width: 640px) {
+    display: none;
+  }
+`;
+
+const HeroGradientStripInner = styled.div`
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+`;
+
+const HeroGradientCanvas = styled.canvas`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  --gradient-color-1: #f5f5f5;
+  --gradient-color-2: #fc4056;
+  --gradient-color-3: #ffffff;
+  --gradient-color-4: #f5f5f5;
+`;
+
 const HeroWrapper = styled.section`
   padding: 72px 0 88px;
-  background: #fff;
   position: relative;
   overflow: hidden;
+  background: #fff;
   background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='1' fill='%230a2540' fill-opacity='0.06'/%3E%3C/svg%3E");
   background-size: 24px 24px;
 
   @media (max-width: 640px) {
     padding: 44px 0 0px;
   }
+`;
+
+const HeroContent = styled(Container)`
+  position: relative;
+  z-index: 1;
 `;
 
 const HeroGrid = styled.div`
@@ -910,9 +952,21 @@ const Hero = () => {
     return () => clearInterval(interval);
   }, [runTransition]);
 
+  useEffect(() => {
+    import('stripe-gradient').then(({ Gradient }) => {
+      const gradient = new Gradient();
+      gradient.initGradient('#hero-gradient-canvas');
+    }).catch(() => {});
+  }, []);
+
   return (
     <HeroWrapper>
-      <Container>
+      <HeroGradientStrip>
+        <HeroGradientStripInner>
+          <HeroGradientCanvas id="hero-gradient-canvas" data-transition-in />
+        </HeroGradientStripInner>
+      </HeroGradientStrip>
+      <HeroContent>
         <HeroGrid>
           <HeroTextBlock initial="hidden" animate="visible" variants={staggerContainer}>
             <motion.div variants={fadeUp}>
@@ -984,7 +1038,7 @@ const Hero = () => {
           )}
           </MockViewport>
         </HeroGrid>
-      </Container>
+      </HeroContent>
     </HeroWrapper>
   );
 };
@@ -2148,9 +2202,9 @@ export default function WidgetLandingClient() {
     <ThemeProvider theme={theme}>
       <main>
         <Hero />
-        <DiagonalDivider fromBg="#ffffff" toBg="#fafbfc" />
+        <DiagonalDivider fromBg="#fafbfc" toBg="#fafbfc" />
         <FeaturesIntro />
-        <DiagonalDivider fromBg="#fafbfc" toBg="#f8fafc" flip />
+        <DiagonalDivider fromBg="#fafbfc" toBg="#ffffff" flip />
         <LinkSection />
         <DiagonalDivider fromBg="#ffffff" toBg="#ffffff" flip />
         <Customization />
