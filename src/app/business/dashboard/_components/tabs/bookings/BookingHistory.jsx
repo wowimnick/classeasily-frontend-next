@@ -132,27 +132,28 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled(Card)`
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   margin-bottom: 0;
-  transition: transform 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
+  height: 100%;
+  min-height: 130px;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   .ant-card-body {
-    padding: 20px;
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
+  }
 
-    @media (max-width: 768px) {
-      padding: 16px;
+  @media (max-width: 768px) {
+    min-height: 110px;
+    .ant-card-body {
+      padding: 14px 16px;
     }
   }
 `;
@@ -161,7 +162,7 @@ const StatCardHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 `;
 
 const IconContainer = styled.div`

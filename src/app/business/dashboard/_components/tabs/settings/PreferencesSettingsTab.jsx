@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import styled from "styled-components";
-import { Form, Select, Switch, Button, TimePicker, Alert, Radio, Spin, Checkbox, Row, Col } from 'antd';
-import message from '@/lib/message';
-import { InfoCircleOutlined } from "@ant-design/icons";
+import { Form, Select, Switch, Button, TimePicker, Spin } from "antd";
+import message from "@/lib/message";
 import {
   Clock,
   Globe,
@@ -16,27 +15,22 @@ import {
   ExternalLink,
   Shield,
   CheckCircle,
+  Moon,
+  ChevronUp,
 } from "lucide-react";
-import {
-  FormGroup,
-  FormLabel,
-  HelpText,
-  SectionDivider,
-  FormSectionCard,
-} from "./BusinessSettings";
 import { businessService } from "@/services/apiService";
 
 const { Option } = Select;
+
+/* ─── Timezone list ─────────────────────────────────────────────── */
 
 const timezones = (() => {
   try {
     if (typeof Intl !== "undefined" && Intl.supportedValuesOf) {
       const allTimezones = Intl.supportedValuesOf("timeZone");
-      const filteredTimezones = allTimezones.filter(
-        (tz) => tz.includes("/") || tz === "UTC" || tz === "GMT"
-      );
       const now = new Date();
-      return filteredTimezones
+      return allTimezones
+        .filter((tz) => tz.includes("/") || tz === "UTC" || tz === "GMT")
         .map((tz) => {
           try {
             const offsetString = new Intl.DateTimeFormat("en", {
@@ -46,35 +40,26 @@ const timezones = (() => {
               .formatToParts(now)
               .find((part) => part.type === "timeZoneName")?.value;
             const displayName = tz.replace(/_/g, " ").split("/").pop();
-            const region = tz.includes("/")
-              ? tz.split("/")[0].replace(/_/g, " ")
-              : "";
+            const region = tz.includes("/") ? tz.split("/")[0].replace(/_/g, " ") : "";
             return {
               value: tz,
-              label: `${offsetString} - ${displayName}${
-                region ? ` (${region})` : ""
-              }`,
+              label: `${offsetString} - ${displayName}${region ? ` (${region})` : ""}`,
             };
-          } catch (e) {
+          } catch {
             return null;
           }
         })
         .filter(Boolean)
         .sort((a, b) => a.label.localeCompare(b.label));
-    } else {
-      throw new Error("Intl API not supported");
     }
-  } catch (e) {
-    console.error("Error generating timezone list, using fallback:", e);
+    throw new Error("Intl not supported");
+  } catch {
     return [
       { value: "UTC", label: "GMT+0:00 - UTC" },
       { value: "America/New_York", label: "GMT-4:00 - New York (America)" },
       { value: "America/Chicago", label: "GMT-5:00 - Chicago (America)" },
       { value: "America/Denver", label: "GMT-6:00 - Denver (America)" },
-      {
-        value: "America/Los_Angeles",
-        label: "GMT-7:00 - Los Angeles (America)",
-      },
+      { value: "America/Los_Angeles", label: "GMT-7:00 - Los Angeles (America)" },
       { value: "Europe/London", label: "GMT+1:00 - London (Europe)" },
       { value: "Europe/Paris", label: "GMT+2:00 - Paris (Europe)" },
       { value: "Asia/Tokyo", label: "GMT+9:00 - Tokyo (Asia)" },
@@ -82,249 +67,422 @@ const timezones = (() => {
   }
 })();
 
-const SwitchLabelContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-`;
-const SwitchInfo = styled.div`
-  flex: 1;
-  margin-right: 16px;
-  .title {
-    font-size: 15px;
-    font-weight: 600;
-    color: #222;
-    margin-bottom: 2px;
-  }
-  .desc {
-    font-size: 13px;
-    color: #717171;
-  }
-`;
+/* ─── Stripe status map ──────────────────────────────────────────── */
 
-const StripeConnectCard = styled.div`
+const statusMap = {
+  unlinked: {
+    text: "Not connected",
+    pillBg: "#f1f5f9",
+    pillColor: "#475569",
+    msgBg: "#f8fafc",
+    msgColor: "#475569",
+    msgBorder: "#e2e8f0",
+    msgIcon: <CreditCard size={15} />,
+    msgText: "Connect a Stripe account to start receiving payouts from your bookings.",
+  },
+  pending: {
+    text: "Pending verification",
+    pillBg: "#fef3c7",
+    pillColor: "#92400e",
+    msgBg: "#fffbeb",
+    msgColor: "#78350f",
+    msgBorder: "#fde68a",
+    msgIcon: <RefreshCw size={15} />,
+    msgText: "Stripe is reviewing your account. This typically takes a few business days.",
+  },
+  restricted: {
+    text: "Account restricted",
+    pillBg: "#fee2e2",
+    pillColor: "#991b1b",
+    msgBg: "#fff5f5",
+    msgColor: "#991b1b",
+    msgBorder: "#fecaca",
+    msgIcon: <Info size={15} />,
+    msgText: "Your Stripe account has restrictions. Visit Stripe to resolve them before you can receive payouts.",
+  },
+  active: {
+    text: "Connected & active",
+    pillBg: "#d1fae5",
+    pillColor: "#065f46",
+    msgBg: "#f0fdf4",
+    msgColor: "#166534",
+    msgBorder: "#bbf7d0",
+    msgIcon: <CheckCircle size={15} />,
+    msgText: "Your account is connected and ready to receive payouts. No further action needed.",
+  },
+  incomplete: {
+    text: "Setup incomplete",
+    pillBg: "#fee2e2",
+    pillColor: "#991b1b",
+    msgBg: "#fff5f5",
+    msgColor: "#991b1b",
+    msgBorder: "#fecaca",
+    msgIcon: <Info size={15} />,
+    msgText: "Your Stripe onboarding isn't finished yet. Continue setup to enable payouts.",
+  },
+};
+
+/* ─── Shared Section components ──────────────────────────────────── */
+
+const SectionCard = styled.div`
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
-  border: 1px solid #e2e3e5;
-  background-color: #ffffff;
-  margin-top: 16px;
   overflow: hidden;
+  margin-bottom: 20px;
 `;
 
-const CardHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e2e3e5;
-`;
-
-const HeaderInfo = styled.div`
+const SectionHeader = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
 `;
 
-const CardBody = styled.div`
-  padding: 24px;
+const SectionIconBox = styled.div`
+  width: 34px;
+  height: 34px;
+  background: #f3f4f6;
+  border-radius: 7px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 16px;
-  text-align: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #374151;
 `;
 
-const StatusBadge = styled.span`
+const SectionTitleBlock = styled.div`
+  flex: 1;
+`;
+
+const SectionTitle = styled.div`
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.2;
+`;
+
+const SectionSubtitle = styled.div`
+  font-size: 12.5px;
+  color: #6b7280;
+  margin-top: 1px;
+`;
+
+const SectionChevron = styled.div`
+  color: #9ca3af;
+  display: flex;
+`;
+
+const SettingRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  gap: 16px;
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const SettingInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const SettingLabel = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+`;
+
+const SettingDesc = styled.div`
+  font-size: 12.5px;
+  color: #6b7280;
+  margin-top: 2px;
+`;
+
+const SettingControl = styled.div`
+  flex-shrink: 0;
+`;
+
+/* ─── Business Hours ─────────────────────────────────────────────── */
+
+const DayGrid = styled.div`
+  padding: 8px 0;
+`;
+
+const DayRow = styled.div`
+  display: grid;
+  grid-template-columns: 160px 1fr 1fr;
+  align-items: center;
+  padding: 10px 20px;
+  gap: 10px;
+  border-bottom: 1px solid #f3f4f6;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 130px 1fr 1fr;
+    padding: 10px 14px;
+    gap: 8px;
+  }
+`;
+
+const DayToggleCol = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+const DayName = styled.span`
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #111827;
+`;
+
+const TimeInputBox = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  padding: 6px 10px;
+  background: #fff;
+  min-width: 0;
+
+  .ant-picker {
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+  }
+
+  .ant-picker-input input {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+  }
+`;
+
+const TimePrefix = styled.span`
+  font-size: 11.5px;
+  font-weight: 400;
+  color: #9ca3af;
+  white-space: nowrap;
+  flex-shrink: 0;
+`;
+
+const ClosedBar = styled.div`
+  grid-column: 2 / 4;
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+`;
+
+/* ─── Payout status ──────────────────────────────────────────────── */
+
+const StatusPill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 12px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
-  background-color: ${(props) => props.color || "#e2e8f0"};
-  color: ${(props) => props.$textColor || "#334155"};
-`;
+  background: ${p => p.$bg || "#e2e8f0"};
+  color: ${p => p.$color || "#334155"};
 
-const HoursRow = styled(Row)`
-  align-items: center;
-  margin-bottom: 12px;
-  padding: 8px;
-  border-radius: 8px;
-  background: ${(props) => (props.$isClosed ? "#f8f9fa" : "transparent")};
-
-  .day-label {
-    font-weight: 600;
-    color: ${(props) => props.theme.token.colorTextSecondary};
+  &::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.7;
+    flex-shrink: 0;
   }
 `;
 
-const statusMap = {
-  unlinked: {
-    text: "Not Connected",
-    color: "#e2e8f0",
-    textColor: "#334155",
-    icon: <CreditCard size={24} color="#64748b" />,
-  },
-  pending: {
-    text: "Pending Verification",
-    color: "#fef3c7",
-    textColor: "#92400e",
-    icon: <RefreshCw size={24} color="#d97706" />,
-  },
-  restricted: {
-    text: "Account Restricted",
-    color: "#fee2e2",
-    textColor: "#991b1b",
-    icon: <Info size={24} color="#ef4444" />,
-  },
-  active: {
-    text: "Connected & Active",
-    color: "#d1fae5",
-    textColor: "#065f46",
-    icon: <CheckCircle size={24} color="#059669" />,
-  },
-  incomplete: {
-    text: "Incomplete Setup",
-    color: "#fee2e2",
-    textColor: "#991b1b",
-    icon: <Info size={24} color="#ef4444" />,
-  },
-};
+const PayoutStatusMessage = styled.div`
+  margin: 20px 16px;
+  padding: 12px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  line-height: 1.5;
+  background: ${p => p.$bg};
+  color: ${p => p.$color};
+  border: 1px solid ${p => p.$border};
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
 
-function PreferencesSettingsTabContent({
-  form,
-  stripeStatus,
-  isMobile,
-  refetchBusinessData,
-}) {
+  svg { flex-shrink: 0; margin-top: 1px; }
+`;
+
+const PayoutActionRow = styled.div`
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid #e5e7eb;
+`;
+
+const PayoutActionInfo = styled.div`
+  font-size: 12px;
+  color: #9ca3af;
+`;
+
+const HelpNote = styled.p`
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0;
+  max-width: 320px;
+`;
+
+/* ─── Privacy Radio ──────────────────────────────────────────────── */
+
+const PrivacyRadioGroup = styled.div`
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+`;
+
+const PrivacyOption = styled.button`
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: 1.5px solid ${p => p.$active ? "#111827" : "#e5e7eb"};
+  background: ${p => p.$active ? "#111827" : "#fff"};
+  color: ${p => p.$active ? "#fff" : "#374151"};
+  font-size: 13px;
+  font-weight: ${p => p.$active ? "600" : "500"};
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: #111827;
+  }
+`;
+
+/* ─── TimePairPicker ──────────────────────────────────────────────── */
+
+const TimePairWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  grid-column: 2 / 4;
+`;
+
+function TimePairCell({ value = [null, null], onChange, disabled }) {
+  const [open, close] = Array.isArray(value) ? value : [null, null];
+  return (
+    <TimePairWrapper>
+      <TimeInputBox style={{ flex: 1, opacity: disabled ? 0.4 : 1 }}>
+        <TimePrefix>From</TimePrefix>
+        <TimePicker
+          value={open}
+          onChange={(t) => onChange?.([t, close])}
+          use12Hours
+          format="h:mm A"
+          minuteStep={15}
+          disabled={disabled}
+          placeholder="Open"
+          suffixIcon={null}
+          allowClear={false}
+          size="small"
+          variant="borderless"
+        />
+      </TimeInputBox>
+      <TimeInputBox style={{ flex: 1, opacity: disabled ? 0.4 : 1 }}>
+        <TimePrefix>To</TimePrefix>
+        <TimePicker
+          value={close}
+          onChange={(t) => onChange?.([open, t])}
+          use12Hours
+          format="h:mm A"
+          minuteStep={15}
+          disabled={disabled}
+          placeholder="Close"
+          suffixIcon={null}
+          allowClear={false}
+          size="small"
+          variant="borderless"
+        />
+      </TimeInputBox>
+    </TimePairWrapper>
+  );
+}
+
+/* ─── Main component ─────────────────────────────────────────────── */
+
+function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBusinessData }) {
   const [connectLoading, setConnectLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const businessHours = Form.useWatch("businessHours", form);
+  const contactPrivacy = Form.useWatch("contact_privacy", form);
 
-  // Replace react-router-dom hooks with Next.js hooks
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
-    const isStripeReturn =
-      localStorage.getItem("stripeOnboardingStatus") === "returned";
+    const isStripeReturn = localStorage.getItem("stripeOnboardingStatus") === "returned";
+    if (!isStripeReturn) return;
 
-    if (isStripeReturn) {
-      setIsSyncing(true);
-      message.loading({
-        content: "Syncing latest account status from Stripe...",
-        key: "syncing",
-        duration: 0,
-      });
+    setIsSyncing(true);
+    message.loading({ content: "Syncing latest account status from Stripe…", key: "syncing", duration: 0 });
 
-      let attempts = 0;
-      const maxAttempts = 5;
-
-      const intervalId = setInterval(async () => {
-        attempts++;
-        console.log(`Stripe status sync attempt #${attempts}`);
-
-        try {
-          const freshData = await businessService.getMyBusinessProfile();
-          const newStripeStatus = freshData?.data?.stripe_account_status;
-
-          if (
-            (newStripeStatus && newStripeStatus !== "incomplete") ||
-            attempts >= maxAttempts
-          ) {
-            clearInterval(intervalId);
-            message.success({
-              content: "Status synchronized!",
-              key: "syncing",
-              duration: 1,
-            });
-            setIsSyncing(false);
-            localStorage.removeItem("stripeOnboardingStatus");
-
-            // Replace navigate with router.replace
-            router.replace(pathname + "#payout-setup-section");
-
-            switch (newStripeStatus) {
-              case "active":
-                message.success({
-                  content:
-                    "Your Stripe account is now active! You can now receive payouts.",
-                  duration: 5,
-                });
-                break;
-              case "pending":
-                message.info({
-                  content:
-                    "Your Stripe account is pending verification. Please check back later.",
-                  duration: 5,
-                });
-                break;
-              case "restricted":
-                message.error({
-                  content:
-                    "Your Stripe account has restrictions. Please navigate to Stripe to resolve them.",
-                  duration: 5,
-                });
-                break;
-              case "incomplete":
-                message.warning({
-                  content:
-                    "Your Stripe account setup is incomplete. Please continue the onboarding process.",
-                  duration: 5,
-                });
-                break;
-              default:
-                message.info({
-                  content: "Your Stripe account status is unchanged.",
-                  duration: 5,
-                });
-                break;
-            }
-          }
-        } catch (error) {
-          console.error("Error during polling for Stripe status:", error);
+    let attempts = 0;
+    const intervalId = setInterval(async () => {
+      attempts++;
+      try {
+        const freshData = await businessService.getMyBusinessProfile();
+        const newStripeStatus = freshData?.data?.stripe_account_status;
+        if ((newStripeStatus && newStripeStatus !== "incomplete") || attempts >= 5) {
           clearInterval(intervalId);
-          message.error({
-            content: "Could not sync status. Please refresh.",
-            key: "syncing",
-            duration: 3,
-          });
+          message.success({ content: "Status synchronized!", key: "syncing", duration: 1 });
           setIsSyncing(false);
           localStorage.removeItem("stripeOnboardingStatus");
-
-          // Replace navigate with router.replace
           router.replace(pathname + "#payout-setup-section");
         }
-      }, 2500);
+      } catch {
+        clearInterval(intervalId);
+        message.error({ content: "Could not sync status. Please refresh.", key: "syncing", duration: 3 });
+        setIsSyncing(false);
+        localStorage.removeItem("stripeOnboardingStatus");
+        router.replace(pathname + "#payout-setup-section");
+      }
+    }, 2500);
 
-      return () => clearInterval(intervalId);
-    }
+    return () => clearInterval(intervalId);
   }, [refetchBusinessData, router, pathname]);
 
   const handleConnectStripe = async () => {
     setConnectLoading(true);
-    message.loading({ content: "Connecting to Stripe...", key: "stripe" });
+    message.loading({ content: "Connecting to Stripe…", key: "stripe" });
     try {
       const response = await businessService.createStripeAccountLink();
       if (response.success && response.data?.accountLinkUrl) {
         localStorage.setItem("stripeOnboardingStatus", "pending");
-        if (typeof window !== "undefined") {
-          window.location.href = response.data.accountLinkUrl;
-        }
+        if (typeof window !== "undefined") window.location.href = response.data.accountLinkUrl;
       } else {
-        message.error({
-          content: response.error || "Failed to create Stripe link.",
-          key: "stripe",
-        });
+        message.error({ content: response.error || "Failed to create Stripe link.", key: "stripe" });
       }
-    } catch (error) {
-      message.error({
-        content: "An unexpected error occurred.",
-        key: "stripe",
-      });
+    } catch {
+      message.error({ content: "An unexpected error occurred.", key: "stripe" });
     } finally {
       setConnectLoading(false);
     }
@@ -332,342 +490,224 @@ function PreferencesSettingsTabContent({
 
   const stripeButtonInfo = (() => {
     switch (stripeStatus) {
-      case "active":
-        return {
-          text: "Manage Payouts",
-          action: handleConnectStripe,
-          icon: <ExternalLink size={16} />,
-        };
-      case "pending":
-        return {
-          text: "Continue Onboarding",
-          action: handleConnectStripe,
-          icon: <ExternalLink size={16} />,
-        };
+      case "active":     return { text: "Manage Payouts",        icon: <ExternalLink size={15} /> };
+      case "pending":    return { text: "Continue Onboarding",   icon: <ExternalLink size={15} /> };
       case "restricted":
-      case "incomplete":
-        return {
-          text: "Update Account Details",
-          action: handleConnectStripe,
-          icon: <ExternalLink size={16} />,
-        };
-      default:
-        return {
-          text: "Setup Payouts",
-          action: handleConnectStripe,
-          icon: <CreditCard size={16} />,
-        };
+      case "incomplete": return { text: "Update Account Details", icon: <ExternalLink size={15} /> };
+      default:           return { text: "Setup Payouts",         icon: <CreditCard size={15} /> };
     }
   })();
+
   const stripeStatusInfo = statusMap[stripeStatus] || statusMap.unlinked;
 
   return (
-    <Form
-      form={form}
-      layout="vertical"
-      name="preferencesSettingsForm"
-      requiredMark="optional"
-    >
-      <SectionDivider>
-        <span>
-          <Clock size={16} /> Schedule & Display
-        </span>
-      </SectionDivider>
-      <FormSectionCard>
-        <FormGroup>
-          <FormLabel>
-            <Clock /> Business Hours
-          </FormLabel>
-          <HelpText>
-            <InfoCircleOutlined /> Default operating hours for each day of the
-            week.
-          </HelpText>
-          <Form.Item
-            name="businessHours"
-            rules={[
-              {
-                validator: async (_, hours) => {
-                  if (!hours || !hours.some((day) => day.isOpen)) {
-                    return Promise.reject(
-                      new Error("Please set hours for at least one open day.")
-                    );
-                  }
-                  for (const day of hours) {
-                    if (
-                      day.isOpen &&
-                      (!day.time || !day.time[0] || !day.time[1])
-                    ) {
-                      return Promise.reject(
-                        new Error(
-                          `Please set both opening and closing times for ${day.day}.`
-                        )
-                      );
-                    }
-                    if (
-                      day.isOpen &&
-                      day.time &&
-                      day.time[0] &&
-                      day.time[1] &&
-                      day.time[0].isAfter(day.time[1])
-                    ) {
-                      return Promise.reject(
-                        new Error(
-                          `Closing time must be after opening time for ${day.day}.`
-                        )
-                      );
-                    }
-                  }
-                  return Promise.resolve();
-                },
-              },
-            ]}
-          >
-            <>
-              {(businessHours || []).map((day, index) => (
-                <HoursRow key={day.day} gutter={16} $isClosed={!day.isOpen}>
-                  <Col xs={24} sm={4}>
-                    <span className="day-label">{day.day}</span>
-                  </Col>
-                  <Col xs={12} sm={4}>
-                    <Form.Item
-                      name={["businessHours", index, "isOpen"]}
-                      valuePropName="checked"
-                      noStyle
-                    >
-                      <Checkbox>{day.isOpen ? "Open" : "Closed"}</Checkbox>
-                    </Form.Item>
-                  </Col>
-                  <Col xs={12} sm={16}>
-                    <Form.Item name={["businessHours", index, "time"]} noStyle>
-                      <TimePicker.RangePicker
-                        use12Hours
-                        format="h:mm A"
-                        minuteStep={15}
-                        disabled={!day.isOpen}
-                        style={{ width: "100%" }}
-                      />
-                    </Form.Item>
-                  </Col>
-                </HoursRow>
-              ))}
-            </>
-          </Form.Item>
-        </FormGroup>
-        <FormGroup>
-          <FormLabel>
-            <Globe /> Timezone
-          </FormLabel>
-          <HelpText>
-            <InfoCircleOutlined /> Primary timezone for your business
-            operations.
-          </HelpText>
-          <Form.Item
-            name="business_timezone"
-            rules={[{ required: true, message: "Timezone is required" }]}
-          >
-            <Select
-              showSearch
-              placeholder="Select Time Zone"
-              optionFilterProp="children"
-              options={timezones}
-            />
-          </Form.Item>
-        </FormGroup>
+    <Form form={form} layout="vertical" name="preferencesSettingsForm" requiredMark="optional">
 
-        <FormGroup>
-          <FormLabel>
-            <Shield /> Contact Info Privacy
-          </FormLabel>
-          <HelpText>
-            <InfoCircleOutlined /> Control who can see your business phone and
-            email on public pages.
-          </HelpText>
-          <Form.Item
-            name="contact_privacy"
-            rules={[
-              { required: true, message: "Please select a privacy option" },
-            ]}
-          >
-            <Radio.Group>
-              <Radio.Button value="on_booking">Show After Booking</Radio.Button>
-              <Radio.Button value="public">Show Publicly</Radio.Button>
-            </Radio.Group>
-          </Form.Item>
-        </FormGroup>
-      </FormSectionCard>
+      {/* ── Business Hours ── */}
+      <SectionCard>
+        <SectionHeader>
+          <SectionIconBox><Clock size={17} /></SectionIconBox>
+          <SectionTitleBlock>
+            <SectionTitle>Business hours</SectionTitle>
+            <SectionSubtitle>Set your weekly schedule and operating timezone</SectionSubtitle>
+          </SectionTitleBlock>
+          <SectionChevron><ChevronUp size={16} /></SectionChevron>
+        </SectionHeader>
 
-      <SectionDivider>
-        <span>
-          <Bell size={16} /> Notification Preferences
-        </span>
-      </SectionDivider>
-
-      <FormSectionCard>
-        <FormGroup>
-          <SwitchLabelContainer>
-            <SwitchInfo>
-              <div className="title">New Booking Notifications</div>
-              <div className="desc">Receive email for new bookings</div>
-            </SwitchInfo>
-            <Form.Item name="newBookingNotification" valuePropName="checked" noStyle>
-              <Switch />
+        {/* Timezone row */}
+        <SettingRow>
+          <SettingInfo>
+            <SettingLabel>Timezone</SettingLabel>
+            <SettingDesc>Set your business timezone for accurate scheduling</SettingDesc>
+          </SettingInfo>
+          <SettingControl style={{ minWidth: 220 }}>
+            <Form.Item name="business_timezone" noStyle rules={[{ required: true, message: "Timezone is required" }]}>
+              <Select
+                showSearch
+                placeholder="Select timezone"
+                optionFilterProp="label"
+                options={timezones}
+                style={{ width: "100%" }}
+                size="middle"
+              />
             </Form.Item>
-          </SwitchLabelContainer>
-        </FormGroup>
+          </SettingControl>
+        </SettingRow>
 
-        <FormGroup>
-          <SwitchLabelContainer>
-            <SwitchInfo>
-              <div className="title">Cancellation Notifications</div>
-              <div className="desc">
-                Receive email when bookings are cancelled
-              </div>
-            </SwitchInfo>
-            <Form.Item name="cancellationNotification" valuePropName="checked" noStyle>
-              <Switch />
-            </Form.Item>
-          </SwitchLabelContainer>
-        </FormGroup>
+        {/* Day grid */}
+        <Form.Item
+          name="businessHours"
+          noStyle
+          rules={[{
+            validator: async (_, hours) => {
+              if (!hours || !hours.some((d) => d.isOpen))
+                return Promise.reject(new Error("Please set hours for at least one open day."));
+              for (const d of hours) {
+                if (d.isOpen && (!d.time || !d.time[0] || !d.time[1]))
+                  return Promise.reject(new Error(`Please set both times for ${d.day}.`));
+                if (d.isOpen && d.time?.[0] && d.time?.[1] && d.time[0].isAfter(d.time[1]))
+                  return Promise.reject(new Error(`Closing time must be after opening for ${d.day}.`));
+              }
+              return Promise.resolve();
+            },
+          }]}
+        >
+          <DayGrid>
+            {(businessHours || []).map((day, index) => (
+              <DayRow key={day.day}>
+                <DayToggleCol>
+                  <Form.Item name={["businessHours", index, "isOpen"]} valuePropName="checked" noStyle>
+                    <Switch size="small" />
+                  </Form.Item>
+                  <DayName>{day.day}</DayName>
+                </DayToggleCol>
 
-        <FormGroup>
-          <SwitchLabelContainer>
-            <SwitchInfo>
-              <div className="title">Student Reminders</div>
-              <div className="desc">
-                Automatically email students 24 hours before class
-              </div>
-            </SwitchInfo>
-            <Form.Item name="reminderNotification" valuePropName="checked" noStyle>
-              <Switch />
-            </Form.Item>
-          </SwitchLabelContainer>
-        </FormGroup>
+                {day.isOpen ? (
+                  <Form.Item name={["businessHours", index, "time"]} noStyle>
+                    <TimePairCell />
+                  </Form.Item>
+                ) : (
+                  <ClosedBar>
+                    <Moon size={15} />
+                    Closed
+                  </ClosedBar>
+                )}
+              </DayRow>
+            ))}
+          </DayGrid>
+        </Form.Item>
+      </SectionCard>
 
-        <FormGroup>
-          <SwitchLabelContainer>
-            <SwitchInfo>
-              <div className="title">Schedule Expiry Warnings</div>
-              <div className="desc">
-                Receive alerts when classes are running out of scheduled sessions
-              </div>
-            </SwitchInfo>
-            <Form.Item name="scheduleExpiryNotification" valuePropName="checked" noStyle>
-              <Switch />
-            </Form.Item>
-          </SwitchLabelContainer>
-        </FormGroup>
+      {/* ── Contact Privacy ── */}
+      <SectionCard>
+        <SectionHeader>
+          <SectionIconBox><Shield size={17} /></SectionIconBox>
+          <SectionTitleBlock>
+            <SectionTitle>Contact privacy</SectionTitle>
+            <SectionSubtitle>Control who can see your business contact details</SectionSubtitle>
+          </SectionTitleBlock>
+        </SectionHeader>
 
-        <FormGroup>
-          <SwitchLabelContainer>
-            <SwitchInfo>
-              <div className="title">SMS Notifications</div>
-              <div className="desc">
-                Receive critical notifications via SMS
-              </div>
-            </SwitchInfo>
-            <Form.Item name="smsNotifications" valuePropName="checked" noStyle>
-              <Switch />
-            </Form.Item>
-          </SwitchLabelContainer>
-          <HelpText>
-            <InfoCircleOutlined /> Receive reminders, new bookings, and cancellations via SMS when a phone number is on file.
-          </HelpText>
-        </FormGroup>
-      </FormSectionCard>
-
-      <SectionDivider>
-        <span>
-          <CreditCard size={16} /> Payout Setup
-        </span>
-      </SectionDivider>
-
-      <FormSectionCard id="payout-setup-section">
-        <Spin spinning={isSyncing} tip="Synchronizing account status...">
-            <StripeConnectCard>
-              <CardHeader>
-                <HeaderInfo>
-                  {stripeStatusInfo.icon}
-                  <span>Payout Account Status</span>
-                </HeaderInfo>
-                <StatusBadge
-                  color={stripeStatusInfo.color}
-                  $textColor={stripeStatusInfo.textColor}
+        <SettingRow>
+          <SettingInfo>
+            <SettingLabel>Contact info visibility</SettingLabel>
+            <SettingDesc>Choose when your phone and email are visible to customers</SettingDesc>
+          </SettingInfo>
+          <SettingControl>
+            <Form.Item name="contact_privacy" noStyle rules={[{ required: true, message: "Select a privacy option" }]}>
+              <PrivacyRadioGroup>
+                <PrivacyOption
+                  type="button"
+                  $active={contactPrivacy === "on_booking"}
+                  onClick={() => form.setFieldValue("contact_privacy", "on_booking")}
                 >
-                  {stripeStatusInfo.text}
-                </StatusBadge>
-              </CardHeader>
-
-              <CardBody>
-                {stripeStatus === "active" && (
-                  <Alert
-                    style={{ width: "100%" }}
-                    message="Payouts Active"
-                    description="Your account is connected and ready to receive payouts. No further action is required."
-                    type="success"
-                    showIcon
-                  />
-                )}
-                {stripeStatus === "restricted" && (
-                  <Alert
-                    style={{ width: "100%" }}
-                    message="Action Required"
-                    description="Please navigate to Stripe to resolve account restrictions. You may need to provide identity verification or additional business information."
-                    type="error"
-                    showIcon
-                  />
-                )}
-                {stripeStatus === "pending" && (
-                  <Alert
-                    style={{ width: "100%" }}
-                    message="Verification Pending"
-                    description="Stripe is reviewing your account. This can take a few business days."
-                    type="info"
-                    showIcon
-                  />
-                )}
-                {stripeStatus === "incomplete" && (
-                  <Alert
-                    style={{ width: "100%" }}
-                    message="Onboarding Incomplete"
-                    description="Click the button below to continue the setup process on Stripe."
-                    type="warning"
-                    showIcon
-                  />
-                )}
-
-                <Button
-                  type="primary"
-                  icon={stripeButtonInfo.icon}
-                  onClick={stripeButtonInfo.action}
-                  loading={connectLoading}
-                  style={{ marginTop: 8 }}
-                  key={`btn-${connectLoading}`}>
-                  {stripeButtonInfo.text}
-                </Button>
-                <HelpText
-                  style={{
-                    textAlign: "center",
-                    justifyContent: "center",
-                    maxWidth: "350px",
-                  }}
+                  After Booking
+                </PrivacyOption>
+                <PrivacyOption
+                  type="button"
+                  $active={contactPrivacy === "public"}
+                  onClick={() => form.setFieldValue("contact_privacy", "public")}
                 >
-                  You'll be redirected to Stripe's secure platform. ClassEasily
-                  does not store your bank details.
-                </HelpText>
-              </CardBody>
-            </StripeConnectCard>
+                  Public
+                </PrivacyOption>
+              </PrivacyRadioGroup>
+            </Form.Item>
+          </SettingControl>
+        </SettingRow>
+      </SectionCard>
+
+      {/* ── Notifications ── */}
+      <SectionCard>
+        <SectionHeader>
+          <SectionIconBox><Bell size={17} /></SectionIconBox>
+          <SectionTitleBlock>
+            <SectionTitle>Notifications</SectionTitle>
+            <SectionSubtitle>Manage email and SMS alerts for your business</SectionSubtitle>
+          </SectionTitleBlock>
+        </SectionHeader>
+
+        {[
+          { name: "newBookingNotification",      label: "New booking",          desc: "Get notified when a new booking is made" },
+          { name: "cancellationNotification",    label: "Cancellations",        desc: "Get notified when a booking is cancelled" },
+          { name: "reminderNotification",        label: "Student reminders",    desc: "Automatically remind students 24 hours before class" },
+          { name: "scheduleExpiryNotification",  label: "Schedule expiry",      desc: "Alert when classes are running low on sessions" },
+          { name: "smsNotifications",            label: "SMS notifications",    desc: "Receive critical alerts via text message" },
+        ].map(({ name, label, desc }) => (
+          <SettingRow key={name}>
+            <SettingInfo>
+              <SettingLabel>{label}</SettingLabel>
+              <SettingDesc>{desc}</SettingDesc>
+            </SettingInfo>
+            <SettingControl>
+              <Form.Item name={name} valuePropName="checked" noStyle>
+                <Switch size="small" />
+              </Form.Item>
+            </SettingControl>
+          </SettingRow>
+        ))}
+      </SectionCard>
+
+      {/* ── Payout Setup ── */}
+      <SectionCard id="payout-setup-section">
+        <SectionHeader>
+          <SectionIconBox><CreditCard size={17} /></SectionIconBox>
+          <SectionTitleBlock>
+            <SectionTitle>Payout setup</SectionTitle>
+            <SectionSubtitle>Connect Stripe to receive payments from bookings</SectionSubtitle>
+          </SectionTitleBlock>
+        </SectionHeader>
+
+        <Spin spinning={isSyncing} tip="Synchronizing…">
+          {/* Status row */}
+          <SettingRow>
+            <SettingInfo>
+              <SettingLabel>Account status</SettingLabel>
+              <SettingDesc>Your Stripe payout account connection</SettingDesc>
+            </SettingInfo>
+            <SettingControl>
+              <StatusPill $bg={stripeStatusInfo.pillBg} $color={stripeStatusInfo.pillColor}>
+                {stripeStatusInfo.text}
+              </StatusPill>
+            </SettingControl>
+          </SettingRow>
+
+          {/* Status message */}
+          <PayoutStatusMessage
+            $bg={stripeStatusInfo.msgBg}
+            $color={stripeStatusInfo.msgColor}
+            $border={stripeStatusInfo.msgBorder}
+          >
+            {stripeStatusInfo.msgIcon}
+            {stripeStatusInfo.msgText}
+          </PayoutStatusMessage>
+
+          {/* Action row */}
+          <PayoutActionRow>
+            <PayoutActionInfo>
+              You&apos;ll be redirected to Stripe&apos;s secure platform. ClassEasily does not store your bank details.
+            </PayoutActionInfo>
+            <Button
+              type={stripeStatus === "active" ? "default" : "primary"}
+              icon={stripeButtonInfo.icon}
+              onClick={handleConnectStripe}
+              loading={connectLoading}
+              key={`stripe-${connectLoading}`}
+              style={{ flexShrink: 0 }}
+            >
+              {stripeButtonInfo.text}
+            </Button>
+          </PayoutActionRow>
         </Spin>
-      </FormSectionCard>
+      </SectionCard>
+
     </Form>
   );
 }
 
-const PreferencesSettingsTab = (props) => {
-  return (
-    <Suspense fallback={<div style={{ minHeight: "400px" }} />}>
-      <PreferencesSettingsTabContent {...props} />
-    </Suspense>
-  );
-};
+const PreferencesSettingsTab = (props) => (
+  <Suspense fallback={<div style={{ minHeight: 400 }} />}>
+    <PreferencesSettingsTabContent {...props} />
+  </Suspense>
+);
 
 export default PreferencesSettingsTab;

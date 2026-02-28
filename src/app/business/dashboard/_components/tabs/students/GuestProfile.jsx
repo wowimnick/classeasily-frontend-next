@@ -311,19 +311,32 @@ const StyledTable = styled(Table)`
     background: #f8fafc !important;
     border-bottom: 1px solid #e2e8f0 !important;
     font-weight: 600;
-    color: #475569;
-    font-size: 13px;
+    color: #64748b;
+    font-size: 11px;
+    padding: 10px 14px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.05em;
   }
   .ant-table-tbody > tr:last-child > td {
     border-bottom: none;
   }
   .ant-table-tbody > tr > td {
     border-bottom: 1px solid #f1f5f9;
+    padding: 12px 14px;
+    font-size: 13px;
   }
   .ant-table-tbody > tr:hover > td {
     background: #f8fafc !important;
+  }
+  @media (max-width: 768px) {
+    .ant-table-thead > tr > th {
+      padding: 8px 12px;
+      font-size: 10px;
+    }
+    .ant-table-tbody > tr > td {
+      padding: 10px 12px;
+      font-size: 12px;
+    }
   }
 `;
 
@@ -481,14 +494,15 @@ const BookingHistoryModal = ({ visible, onClose, guest }) => {
       background: #f8fafc !important;
       border-bottom: 2px solid #e2e8f0 !important;
       font-weight: 600;
-      color: #475569;
-      font-size: 13px;
-      padding: 16px 20px;
+      color: #64748b;
+      font-size: 11px;
+      padding: 10px 14px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.05em;
     }
     .ant-table-tbody > tr > td {
-      padding: 16px 20px;
+      padding: 12px 14px;
+      font-size: 13px;
       border-bottom: 1px solid #f1f5f9;
     }
     .ant-table-tbody > tr:last-child > td {

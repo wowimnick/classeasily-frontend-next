@@ -111,32 +111,23 @@ const DashboardHeader = styled.div`
 `;
 
 const PageTitle = styled.h1`
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
-  color: #222222;
-  margin: 0 0 4px 0;
-  line-height: 1.2;
+  color: #111827;
+  margin: 0 0 6px 0;
+  line-height: 1.25;
+  letter-spacing: -0.3px;
   @media (max-width: 768px) {
-    font-size: 22px;
-    margin-bottom: 6px;
-  }
-  @media (max-width: 480px) {
-    font-size: 20px;
-    margin-bottom: 4px;
+    font-size: 21px;
   }
 `;
 
 const HeaderSubtitle = styled(Text)`
-  font-size: 15px;
-  color: ${colors.textSecondary};
+  font-size: 14px;
+  color: #6b7280;
   display: block;
-  line-height: 1.4;
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-  @media (max-width: 480px) {
-    font-size: 13px;
-  }
+  line-height: 1.5;
+  margin: 0;
 `;
 
 const ResponsiveDivider = styled(Divider)`
@@ -183,27 +174,28 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled(Card)`
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
-  transition: all 0.2s ease;
-  min-height: 140px;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
+  margin-bottom: 0;
+  height: 100%;
+  min-height: 130px;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   .ant-card-body {
-    padding: 20px;
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
+  }
 
-    @media (max-width: 768px) {
-      padding: 16px;
+  @media (max-width: 768px) {
+    min-height: 110px;
+    .ant-card-body {
+      padding: 14px 16px;
     }
   }
 `;
@@ -212,40 +204,43 @@ const StatCardHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 `;
 
 const IconContainer = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: ${(props) => props.background};
   color: ${(props) => props.color};
+  flex-shrink: 0;
   svg {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
 
   @media (max-width: 768px) {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     svg {
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
     }
   }
 `;
 
 const StatValue = styled.div`
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
-  color: ${colors.textPrimary};
+  color: #111827;
   margin-bottom: 4px;
   display: flex;
   align-items: baseline;
+  line-height: 1.2;
+  letter-spacing: -0.2px;
 
   @media (max-width: 768px) {
     font-size: 17px;
@@ -253,11 +248,12 @@ const StatValue = styled.div`
 `;
 
 const StatLabel = styled.div`
-  font-size: 13px;
-  color: ${colors.textSecondary};
+  font-size: 12px;
+  color: #9ca3af;
   display: flex;
   align-items: center;
   gap: 6px;
+  font-weight: 500;
 
   @media (max-width: 768px) {
     font-size: 12px;
@@ -302,19 +298,21 @@ const ChartTitleRow = styled.div`
 `;
 
 const ChartTitle = styled.h3`
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  color: ${colors.textPrimary};
+  color: #111827;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
+  letter-spacing: -0.1px;
 `;
 
 const ChartDescription = styled.p`
-  font-size: 13px;
-  color: ${colors.textSecondary};
+  font-size: 12px;
+  color: #9ca3af;
   margin: 0;
+  font-weight: 400;
 `;
 
 const InsightBadge = styled.div`
@@ -366,24 +364,38 @@ const StyledTable = styled.table`
   border-collapse: collapse;
   th,
   td {
-    padding: 14px 24px;
+    padding: 12px 14px;
     text-align: left;
     border-bottom: 1px solid ${colors.border};
     font-size: 13px;
   }
   th {
     font-weight: 600;
-    color: ${colors.textSecondary};
+    font-size: 11px;
+    color: #64748b;
     background-color: ${colors.lightBg};
     position: sticky;
     top: 0;
     z-index: 10;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 10px 14px;
   }
   tbody tr:hover {
     background-color: ${colors.lightBg};
   }
   tr:last-child td {
     border-bottom: none;
+  }
+  @media (max-width: 768px) {
+    th {
+      padding: 8px 12px;
+      font-size: 10px;
+    }
+    td {
+      padding: 10px 12px;
+      font-size: 12px;
+    }
   }
 `;
 
@@ -939,7 +951,8 @@ const BookingTrends = () => {
                   trigger="in"
                   delay="500"
                   state="in-trend-up"
-                  colors="primary:#ff385c"
+                  colors="primary:#94a3b8"
+                  size="15px"
                   playOnLoad={true}
                 />
                 Daily Booking Activity
@@ -965,10 +978,7 @@ const BookingTrends = () => {
                   <lord-icon
                     src="https://cdn.lordicon.com/uoljexdg.json"
                     trigger="in"
-                    delay="500"
-                    state="in-label"
                     colors="primary:#94a3b8"
-                    style={{ width: 40, height: 40 }}
                   />
                 </EmptyStateIcon>
                 <EmptyStateText>No Booking Activity Found</EmptyStateText>
@@ -1097,8 +1107,9 @@ const BookingTrends = () => {
                       trigger="in"
                       delay="500"
                       state="in-clock"
-                      colors="primary:#ff385c"
-                    />{" "}
+                      colors="primary:#94a3b8"
+                      size="15px"
+                    />
                     Popular Booking Times
                   </ChartTitle>
                   {!loading && peakHourInsight && (
@@ -1121,10 +1132,7 @@ const BookingTrends = () => {
                       <lord-icon
                         src="https://cdn.lordicon.com/okqjaags.json"
                         trigger="in"
-                        delay="500"
-                        state="in-clock"
                         colors="primary:#94a3b8"
-                        style={{ width: 40, height: 40 }}
                       />
                     </EmptyStateIcon>
                     <EmptyStateText>No Time Data</EmptyStateText>
@@ -1199,8 +1207,9 @@ const BookingTrends = () => {
                       trigger="in"
                       delay="500"
                       state="in-compare"
-                      colors="primary:#ff385c"
-                    />{" "}
+                      colors="primary:#94a3b8"
+                      size="15px"
+                    />
                     Guest Type
                   </ChartTitle>
                   {!loading && (
@@ -1267,8 +1276,8 @@ const BookingTrends = () => {
               <TableHeader>
                 <ChartTitleRow>
                   <ChartTitle>
-                    <TrendingUp size={18} color={colors.primary} /> Top
-                    Performing Experiences
+                    <TrendingUp size={15} color="#d1d5db" />
+                    Top Performing Experiences
                   </ChartTitle>
                 </ChartTitleRow>
                 <ChartDescription>
@@ -1353,7 +1362,8 @@ const BookingTrends = () => {
               <ChartHeader>
                 <ChartTitleRow>
                   <ChartTitle>
-                    <PieIcon size={18} color={colors.primary} /> Booking Types
+                    <PieIcon size={15} color="#d1d5db" />
+                    Booking Types
                   </ChartTitle>
                 </ChartTitleRow>
                 <ChartDescription>Single vs. Course.</ChartDescription>

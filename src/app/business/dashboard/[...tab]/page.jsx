@@ -2,12 +2,13 @@
 
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
 // Import all tab components
 import Overview from "../_components/tabs/overview/Overview";
 import BookingsCombined from "../_components/tabs/bookings/BookingsCombined";
 import ClassManagement from "../_components/tabs/classes/manageclasses/ClassManagement";
+import ScheduleCalendarView from "../_components/tabs/classes/manageclasses/ScheduleCalendarView";
 import BusinessReviews from "../_components/tabs/reviews/BusinessReviews";
 import Staff from "../_components/tabs/staff/Staff";
 import Revenue from "../_components/tabs/finances/Revenue";
@@ -17,9 +18,11 @@ import Discounts from "../_components/tabs/discounts/Discounts";
 import WidgetCustomizer from "../_components/tabs/widget/WidgetCustomizer";
 import Guests from "../_components/tabs/students/Guests";
 import BusinessMessages from "../_components/tabs/messages/BusinessMessages";
+import SettingsPage from "../_components/tabs/settings/SettingsPage";
 
 export default function DashboardPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
 
   // Calculate key
   const activeKey = params.tab ? params.tab.join("/") : "overview";
@@ -44,6 +47,16 @@ export default function DashboardPage() {
     case "listings":
       componentToRender = <ClassManagement />;
       break;
+    case "schedules": {
+      const classIdParam = searchParams.get("classId");
+      const initialClassId = classIdParam && !isNaN(Number(classIdParam)) ? Number(classIdParam) : classIdParam || undefined;
+      componentToRender = (
+        <div style={{ height: "100%", minHeight: "calc(100vh - 60px)" }}>
+          <ScheduleCalendarView initialClassId={initialClassId} />
+        </div>
+      );
+      break;
+    }
     case "reviews":
       componentToRender = <BusinessReviews />;
       break;
@@ -71,9 +84,11 @@ export default function DashboardPage() {
     case "widget":
       componentToRender = <WidgetCustomizer />;
       break;
-    case "settings":
-      componentToRender = <Overview />;
+    case "settings": {
+      const settingsTab = searchParams.get("tab") || "general";
+      componentToRender = <SettingsPage defaultTab={settingsTab} />;
       break;
+    }
     default:
       componentToRender = (
         <div>

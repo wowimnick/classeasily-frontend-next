@@ -207,32 +207,23 @@ const DashboardHeader = styled.div`
 `;
 
 const StyledTitle = styled.h1`
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
-  color: #222222;
-  margin: 0 0 4px 0;
-  line-height: 1.2;
+  color: #111827;
+  margin: 0 0 6px 0;
+  line-height: 1.25;
+  letter-spacing: -0.3px;
   @media (max-width: 768px) {
-    font-size: 22px;
-    margin-bottom: 6px;
-  }
-  @media (max-width: 480px) {
-    font-size: 20px;
-    margin-bottom: 4px;
+    font-size: 21px;
   }
 `;
 
 const HeaderSubtitle = styled(Text)`
-  font-size: 15px;
-  color: ${colors.textSecondary};
+  font-size: 14px;
+  color: #6b7280;
   display: block;
-  line-height: 1.4;
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-  @media (max-width: 480px) {
-    font-size: 13px;
-  }
+  line-height: 1.5;
+  margin: 0;
 `;
 
 const ResponsiveDivider = styled(Divider)`
@@ -290,22 +281,18 @@ const ActionButton = styled(Button)`
 `;
 
 const StatCardBase = styled(Card)`
-  border-radius: ${theme.token.borderRadius}px;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   margin-bottom: 0;
   height: 100%;
-  min-height: 140px;
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
+  min-height: 130px;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   .ant-card-body {
-    padding: 20px !important;
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -313,7 +300,10 @@ const StatCardBase = styled(Card)`
   }
 
   @media (max-width: 768px) {
-    min-height: 120px;
+    min-height: 110px;
+    .ant-card-body {
+      padding: 14px 16px;
+    }
   }
 `;
 
@@ -329,45 +319,57 @@ const StatsGrid = styled.div`
 
 const StatCard = styled(StatCardBase)``;
 
+const StatHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+`;
+
 const IconContainer = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: ${(props) => props.background};
   color: ${(props) => props.iconcolor};
+  flex-shrink: 0;
   svg {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
   @media (max-width: 768px) {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
+    svg {
+      width: 14px;
+      height: 14px;
+    }
   }
 `;
 
 const MetricValue = styled.div`
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
-  color: ${colors.textPrimary};
-  margin-top: 12px;
-  margin-bottom: 4px;
+  color: #111827;
   display: flex;
   align-items: baseline;
   line-height: 1.2;
+  letter-spacing: -0.2px;
   @media (max-width: 768px) {
     font-size: 17px;
   }
 `;
 
 const StatLabel = styled(Text)`
-  font-size: 13px;
-  color: ${colors.textSecondary};
+  font-size: 12px;
+  color: #9ca3af;
   display: block;
   line-height: 1.3;
-  margin-top: 10px;
+  margin-bottom: auto;
+  font-weight: 500;
   @media (max-width: 768px) {
     font-size: 12px;
   }
@@ -413,19 +415,21 @@ const ChartTitleRow = styled.div`
 `;
 
 const ChartTitle = styled.h3`
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  color: ${colors.textPrimary};
+  color: #111827;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
+  letter-spacing: -0.1px;
 `;
 
 const ChartDescription = styled.p`
-  font-size: 13px;
-  color: ${colors.textSecondary};
+  font-size: 12px;
+  color: #9ca3af;
   margin: 0;
+  font-weight: 400;
 `;
 
 const InsightBadge = styled.div`
@@ -460,27 +464,37 @@ const ReviewTableContainer = styled(StatCardBase)`
 
 const StyledTable = styled(Table)`
   .ant-table {
-    border-radius: 16px;
+    border-radius: 12px;
     overflow: hidden;
   }
   .ant-table-thead > tr > th {
     background-color: #f8fafc !important;
-    color: #475569;
+    color: #64748b;
     font-weight: 600;
-    font-size: 13px;
-    padding: 16px 20px;
+    font-size: 11px;
+    padding: 10px 14px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.05em;
   }
   .ant-table-tbody > tr > td {
     vertical-align: top;
-    padding: 16px 20px;
-    font-size: 14px;
+    padding: 12px 14px;
+    font-size: 13px;
     color: #1e293b;
     border-bottom: 1px solid ${colors.border};
   }
   .ant-table-tbody > tr:last-child > td {
     border-bottom: none;
+  }
+  @media (max-width: 768px) {
+    .ant-table-thead > tr > th {
+      padding: 8px 12px;
+      font-size: 10px;
+    }
+    .ant-table-tbody > tr > td {
+      padding: 10px 12px;
+      font-size: 12px;
+    }
   }
 `;
 
@@ -594,6 +608,12 @@ const EmptyStateIcon = styled.div`
   lord-icon {
     width: 80px;
     height: 80px;
+  }
+  @media (max-width: 768px) {
+    lord-icon {
+      width: 64px;
+      height: 64px;
+    }
   }
 `;
 
@@ -1154,7 +1174,7 @@ const BusinessReviews = () => {
           trigger="in"
           delay="1500"
           state="in-reveal"
-          colors="primary:#ff385c"
+          colors="primary:#94a3b8"
           style={{ marginLeft: 4, paddingTop: 2 }}
         />
       ),
@@ -1613,12 +1633,14 @@ const BusinessReviews = () => {
               ) : (
                 <>
                   <div>
-                    <IconContainer
-                      background={hexToRgba(stat.color, 0.1)}
-                      iconcolor={stat.color}
-                    >
-                      {stat.icon}
-                    </IconContainer>
+                    <StatHeader>
+                      <IconContainer
+                        background={hexToRgba(stat.color, 0.1)}
+                        iconcolor={stat.color}
+                      >
+                        {stat.icon}
+                      </IconContainer>
+                    </StatHeader>
                     <StatLabel>{stat.title}</StatLabel>
                   </div>
                   <div>
@@ -1649,11 +1671,11 @@ const BusinessReviews = () => {
                   <ChartTitle>
                     <LordIcon
                       src="https://cdn.lordicon.com/excswhey.json"
-                      colors="primary:#f56231"
-                      size={isMobile ? "18px" : "20px"}
+                      colors="primary:#94a3b8"
+                      size="15px"
                       trigger="in"
                       playOnLoad={true}
-                    />{" "}
+                    />
                     New Reviews Trend
                   </ChartTitle>
                   {!loadingAnalytics && peakDayInsight && (
@@ -1673,13 +1695,10 @@ const BusinessReviews = () => {
                 ) : !analyticsData?.reviews_over_time?.length ? (
                   <EmptyStateContainer>
                     <EmptyStateIcon>
-                      <LordIcon
+                      <lord-icon
                         src="https://cdn.lordicon.com/zezznfug.json"
                         trigger="in"
-                        delay="1500"
-                        state="in-chat"
                         colors="primary:#94a3b8"
-                        style={{ width: 40, height: 40 }}
                       />
                     </EmptyStateIcon>
                     <EmptyStateText>No Reviews Yet</EmptyStateText>
@@ -1763,9 +1782,10 @@ const BusinessReviews = () => {
                     <LordIcon
                       src="https://cdn.lordicon.com/mubdgyyw.json"
                       trigger="in"
-                      colors="primary:#ff385c"
+                      colors="primary:#94a3b8"
+                      size="15px"
                       playOnLoad={true}
-                    />{" "}
+                    />
                     Ratings
                   </ChartTitle>
                   {!loadingAnalytics && dominantRatingInsight && (
@@ -1905,13 +1925,10 @@ const BusinessReviews = () => {
         ) : !loadingReviews && reviews.length === 0 ? (
           <EmptyStateContainer>
             <EmptyStateIcon>
-              <LordIcon
+              <lord-icon
                 src="https://cdn.lordicon.com/zezznfug.json"
                 trigger="in"
-                delay="1500"
-                state="in-chat"
                 colors="primary:#94a3b8"
-                style={{ width: 40, height: 40 }}
               />
             </EmptyStateIcon>
             <EmptyStateText>No Reviews Found</EmptyStateText>

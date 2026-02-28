@@ -145,106 +145,103 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled(Card)`
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
-  min-height: 140px;
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
+  margin-bottom: 0;
+  height: 100%;
+  min-height: 130px;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   .ant-card-body {
-    padding: 20px;
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
-    @media (max-width: 768px) {
-      padding: 16px;
+  }
+
+  @media (max-width: 768px) {
+    min-height: 110px;
+    .ant-card-body {
+      padding: 14px 16px;
     }
   }
 `;
 
 const PageTitle = styled.h1`
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
-  color: #222222;
-  margin: 0 0 4px 0;
-  line-height: 1.2;
+  color: #111827;
+  margin: 0 0 6px 0;
+  line-height: 1.25;
+  letter-spacing: -0.3px;
   @media (max-width: 768px) {
-    font-size: 22px;
-    margin-bottom: 6px;
-  }
-  @media (max-width: 480px) {
-    font-size: 20px;
-    margin-bottom: 4px;
+    font-size: 21px;
   }
 `;
 
 const HeaderSubtitle = styled(Text)`
-  font-size: 15px;
-  color: ${colors.textSecondary};
+  font-size: 14px;
+  color: #6b7280;
   display: block;
-  line-height: 1.4;
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-  @media (max-width: 480px) {
-    font-size: 13px;
-  }
+  line-height: 1.5;
+  margin: 0;
 `;
 
 const StatCardHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 `;
 
 const IconContainer = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: ${(props) => props.background || "#f1f5f9"};
   color: ${(props) => props.color || colors.textSecondary};
+  flex-shrink: 0;
   svg {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
   @media (max-width: 768px) {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     svg {
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
     }
   }
 `;
 
 const StatValue = styled.div`
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
-  color: ${colors.textPrimary};
+  color: #111827;
   display: flex;
   align-items: baseline;
+  line-height: 1.2;
+  letter-spacing: -0.2px;
   @media (max-width: 768px) {
     font-size: 17px;
   }
 `;
 
 const StatLabel = styled.div`
-  font-size: 13px;
-  color: ${colors.textSecondary};
+  font-size: 12px;
+  color: #9ca3af;
   display: flex;
   align-items: center;
   gap: 6px;
+  font-weight: 500;
   @media (max-width: 768px) {
     font-size: 12px;
   }
@@ -258,6 +255,15 @@ const StatFooter = styled.div`
   @media (max-width: 768px) {
     font-size: 11px;
   }
+`;
+
+const PercentChange = styled.span`
+  color: ${(props) => (props.$isPositive ? colors.success : colors.error)};
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 500;
 `;
 
 const MetricTrend = styled.div`
@@ -300,19 +306,21 @@ const ChartTitleRow = styled.div`
 `;
 
 const ChartTitle = styled.h3`
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  color: ${colors.textPrimary};
+  color: #111827;
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
+  letter-spacing: -0.1px;
 `;
 
 const ChartDescription = styled.p`
-  font-size: 13px;
-  color: ${colors.textSecondary};
+  font-size: 12px;
+  color: #9ca3af;
   margin: 0;
+  font-weight: 400;
 `;
 
 const InsightBadge = styled.div`
@@ -355,6 +363,12 @@ const EmptyStateIcon = styled.div`
   lord-icon {
     width: 80px;
     height: 80px;
+  }
+  @media (max-width: 768px) {
+    lord-icon {
+      width: 64px;
+      height: 64px;
+    }
   }
 `;
 
@@ -855,30 +869,6 @@ const Revenue = forwardRef((props, ref) => {
                       >
                         {stat.icon}
                       </IconContainer>
-                      {stat.key === "total_gross_revenue" &&
-                        stat.change !== undefined &&
-                        stat.change !== null && (
-                          <MetricTrend positive={stat.change >= 0}>
-                            {stat.change >= 0 ? (
-                              <LordIcon
-                                src="https://cdn.lordicon.com/excswhey.json"
-                                trigger="in"
-                                delay="1500"
-                                state="in-trend-up"
-                                colors="primary:#30c702"
-                              />
-                            ) : (
-                              <LordIcon
-                                src="https://cdn.lordicon.com/zwtssiaj.json"
-                                colors="primary:#f56231"
-                                size={isMobile ? "16px" : "20px"}
-                                trigger="hover"
-                                playOnLoad={true}
-                              />
-                            )}
-                            {Math.abs(stat.change).toFixed(1)}%
-                          </MetricTrend>
-                        )}
                     </StatCardHeader>
                     <StatLabel>{stat.title}</StatLabel>
                   </div>
@@ -894,7 +884,21 @@ const Revenue = forwardRef((props, ref) => {
                         }}
                       />
                     </StatValue>
-                    {stat.footer && <StatFooter>{stat.footer}</StatFooter>}
+                    {stat.change !== undefined && stat.change !== null ? (
+                      <StatFooter>
+                        <PercentChange $isPositive={stat.change >= 0}>
+                          {stat.change >= 0 ? (
+                            <TrendingUp size={12} />
+                          ) : (
+                            <TrendingDown size={12} />
+                          )}
+                          {Math.abs(stat.change).toFixed(1)}%
+                        </PercentChange>
+                        {stat.footer}
+                      </StatFooter>
+                    ) : (
+                      stat.footer && <StatFooter>{stat.footer}</StatFooter>
+                    )}
                   </div>
                 </>
               )}
@@ -913,7 +917,8 @@ const Revenue = forwardRef((props, ref) => {
                   trigger="in"
                   delay="1500"
                   state="in-trend-up"
-                  colors="primary:#ff385c"
+                  colors="primary:#94a3b8"
+                  size="15px"
                 />
                 Revenue Trends
               </ChartTitle>
@@ -943,10 +948,7 @@ const Revenue = forwardRef((props, ref) => {
                   <lord-icon
                     src="https://cdn.lordicon.com/qfkpvtbg.json"
                     trigger="in"
-                    delay="500"
-                    state="in-coin"
                     colors="primary:#94a3b8"
-                    style={{ width: 40, height: 40 }}
                   />
                 </EmptyStateIcon>
                 <EmptyStateText>No Revenue Activity</EmptyStateText>
@@ -1048,7 +1050,8 @@ const Revenue = forwardRef((props, ref) => {
                       trigger="in"
                       delay="1500"
                       state="in-assessment"
-                      colors="primary:#ff385c"
+                      colors="primary:#94a3b8"
+                      size="15px"
                     />
                     Revenue by Experience
                   </ChartTitle>
@@ -1067,7 +1070,6 @@ const Revenue = forwardRef((props, ref) => {
                         src="https://cdn.lordicon.com/qfkpvtbg.json"
                         trigger="in"
                         colors="primary:#94a3b8"
-                        style={{ width: 40, height: 40 }}
                       />
                     </EmptyStateIcon>
                     <EmptyStateText>No Revenue Data</EmptyStateText>
@@ -1140,13 +1142,14 @@ const Revenue = forwardRef((props, ref) => {
             <ChartCard>
               <ChartHeader>
                 <ChartTitleRow>
-                  <ChartTitle>
+                    <ChartTitle>
                     <LordIcon
                       src="https://cdn.lordicon.com/btfbysou.json"
                       trigger="in"
                       delay="1500"
                       state="in-pie-chart"
-                      colors="primary:#ff385c"
+                      colors="primary:#94a3b8"
+                      size="15px"
                     />
                     Revenue Source
                   </ChartTitle>
@@ -1168,7 +1171,6 @@ const Revenue = forwardRef((props, ref) => {
                         src="https://cdn.lordicon.com/idcmwtrd.json"
                         trigger="in"
                         colors="primary:#94a3b8"
-                        style={{ width: 40, height: 40 }}
                       />
                     </EmptyStateIcon>
                     <EmptyStateText>No Data</EmptyStateText>

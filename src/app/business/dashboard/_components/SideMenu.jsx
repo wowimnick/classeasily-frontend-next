@@ -25,7 +25,6 @@ import {
 import { X, AlertCircle, SidebarOpen, Eye, ChevronRight } from "lucide-react";
 
 import { businessService } from "@/services/apiService";
-import BusinessSettings from "./tabs/settings/BusinessSettings";
 import { useAuth } from "@/lib/auth-client";
 
 const { Title, Text } = Typography;
@@ -490,11 +489,24 @@ const menuGroupsConfig = [
         ),
       },
       {
+        key: "schedules",
+        label: "Schedules",
+        icon: (
+          <LordIcon
+            src="https://cdn.lordicon.com/uoljexdg.json"
+            colors="primary:#666,secondary:#666"
+            size="20px"
+            playOnLoad={true}
+            inState="in-calendar"
+          />
+        ),
+      },
+      {
         key: "bookings",
         label: "Bookings",
         icon: (
           <LordIcon
-            src="https://cdn.lordicon.com/uoljexdg.json"
+            src="https://cdn.lordicon.com/bushiqea.json"
             colors="primary:#666,secondary:#666"
             size="20px"
             playOnLoad={true}
@@ -604,6 +616,7 @@ const allMenuItems = menuGroupsConfig.flatMap((g) => g.items);
 const menuItemPermissions = {
   overview:    "access_business_dashboard",
   listings:    "manage_own_classes",
+  schedules:   "manage_own_classes",
   bookings:    "view_own_business_bookings",
   guests:      "view_business_students",
   reviews:     "view_own_business_reviews",
@@ -622,7 +635,6 @@ const SideMenuComponent = memo(
   forwardRef(({ onMenuSelect, activeKey }, ref) => {
     const [isMobile, setIsMobile]                       = useState(false);
     const [drawerVisible, setDrawerVisible]             = useState(false);
-    const [settingsDrawerVisible, setSettingsDrawerVisible] = useState(false);
     const [openKeys, setOpenKeys]                       = useState([]);
     const [businessData, setBusinessData]               = useState(null);
     const [loadingBusiness, setLoadingBusiness]         = useState(true);
@@ -641,9 +653,7 @@ const SideMenuComponent = memo(
         ? () => router.push(`/business/${businessData.slug}`)
         : undefined;
 
-    const activeSettingsTab          = useRef("general");
-    const businessSettingsRefInternal = useRef(null);
-    const mobileButtonRef            = useRef(null);
+    const mobileButtonRef = useRef(null);
 
     const homeMenuRef           = useRef(null);
     const listingsMenuRef       = useRef(null);
@@ -662,16 +672,15 @@ const SideMenuComponent = memo(
       growthMenuRef,
       platformMenuRef,
       openSettingsDrawer: (tab = "general", sectionId = null) => {
-        activeSettingsTab.current = tab;
         if (sectionId) {
           sessionStorage.setItem("scrollToSection", sectionId);
         } else {
           sessionStorage.removeItem("scrollToSection");
         }
-        setSettingsDrawerVisible(true);
+        router.push(`/business/dashboard/settings${tab !== "general" ? `?tab=${tab}` : ""}`);
       },
-      closeSettingsDrawer: () => setSettingsDrawerVisible(false),
-      getBusinessSettingsRef: () => businessSettingsRefInternal,
+      closeSettingsDrawer: () => {},
+      getBusinessSettingsRef: () => null,
     }));
 
     useEffect(() => {
@@ -740,19 +749,12 @@ const SideMenuComponent = memo(
       const forcedTab = sessionStorage.getItem("forceOpenSettingsTab");
       if (forcedTab) {
         sessionStorage.removeItem("forceOpenSettingsTab");
-        activeSettingsTab.current = forcedTab;
-        setSettingsDrawerVisible(true);
+        router.push(`/business/dashboard/settings${forcedTab !== "general" ? `?tab=${forcedTab}` : ""}`);
         fetchBusinessProfile();
       }
-    }, [fetchBusinessProfile]);
+    }, [fetchBusinessProfile, router]);
 
     const handleMenuClick = (e) => {
-      if (e.key === "settings") {
-        activeSettingsTab.current = "general";
-        setSettingsDrawerVisible(true);
-        if (isMobile) setDrawerVisible(false);
-        return;
-      }
       onMenuSelect(e.key);
       if (isMobile) setDrawerVisible(false);
     };
@@ -1107,16 +1109,6 @@ const SideMenuComponent = memo(
             </>
           )}
 
-          {/* ── Settings Drawer ── */}
-          <BusinessSettings
-            ref={businessSettingsRefInternal}
-            open={settingsDrawerVisible}
-            onClose={() => setSettingsDrawerVisible(false)}
-            onSave={fetchBusinessProfile}
-            activeTabKey={activeSettingsTab.current}
-            onTabChangeExternal={(key) => { activeSettingsTab.current = key; }}
-            onProfileUpdate={fetchBusinessProfile}
-          />
         </SideMenuWrapper>
       </ThemeProvider>
     );

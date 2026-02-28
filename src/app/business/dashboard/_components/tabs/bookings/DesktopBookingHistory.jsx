@@ -25,13 +25,13 @@ const StyledTable = styled(Table)`
 
   .ant-table-thead > tr > th {
     background-color: #f8fafc !important;
-    color: #475569;
+    color: #64748b;
     font-weight: 600;
-    font-size: 13px; /* Smaller font for better fit */
-    padding: 16px 20px;
+    font-size: 11px;
+    padding: 10px 14px;
     border-bottom: 1px solid #e2e8f0;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.05em;
 
     &::before {
       display: none;
@@ -40,9 +40,9 @@ const StyledTable = styled(Table)`
 
   .ant-table-tbody > tr > td {
     vertical-align: middle;
-    padding: 16px 20px; /* Consistent padding */
-    border-bottom: 1px solid #f1f5f9; /* Lighter border */
-    font-size: 14px;
+    padding: 12px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
     color: #1e293b;
   }
 

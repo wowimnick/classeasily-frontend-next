@@ -76,9 +76,7 @@ function DashboardLayoutInner({ children }) {
 
   const handleMenuSelect = useCallback(
     (key) => {
-      if (key !== "settings") {
-        router.push(`/business/dashboard/${key}`);
-      }
+      router.push(`/business/dashboard/${key}`);
     },
     [router]
   );
@@ -103,8 +101,11 @@ function DashboardLayoutInner({ children }) {
             <SubscriptionProvider>
               <DashboardContext.Provider
                 value={{
-                  openSettingsDrawer: (tab, sectionId) =>
-                    sideMenuRef.current?.openSettingsDrawer?.(tab, sectionId),
+                  openSettingsDrawer: (tab = "general", sectionId = null) => {
+                    if (sectionId) sessionStorage.setItem("scrollToSection", sectionId);
+                    else sessionStorage.removeItem("scrollToSection");
+                    router.push(`/business/dashboard/settings${tab !== "general" ? `?tab=${tab}` : ""}`);
+                  },
                 }}
               >
                 {children}

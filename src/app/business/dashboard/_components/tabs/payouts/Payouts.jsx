@@ -224,32 +224,23 @@ const ExpandedRowWrapper = styled.div`
 `;
 
 const PageTitle = styled.h1`
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
-  color: #222222;
-  margin: 0 0 4px 0;
-  line-height: 1.2;
+  color: #111827;
+  margin: 0 0 6px 0;
+  line-height: 1.25;
+  letter-spacing: -0.3px;
   @media (max-width: 768px) {
-    font-size: 22px;
-    margin-bottom: 6px;
-  }
-  @media (max-width: 480px) {
-    font-size: 20px;
-    margin-bottom: 4px;
+    font-size: 21px;
   }
 `;
 
 const HeaderSubtitle = styled(Text)`
-  font-size: 15px;
-  color: ${colors.textSecondary};
+  font-size: 14px;
+  color: #6b7280;
   display: block;
-  line-height: 1.4;
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-  @media (max-width: 480px) {
-    font-size: 13px;
-  }
+  line-height: 1.5;
+  margin: 0;
 `;
 
 const StatsGrid = styled.div`
@@ -264,26 +255,28 @@ const StatsGrid = styled.div`
 `;
 
 const StatCard = styled(Card)`
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
+  margin-bottom: 0;
+  height: 100%;
+  min-height: 130px;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   .ant-card-body {
-    padding: 20px;
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
+  }
 
-    @media (max-width: 768px) {
-      padding: 16px;
+  @media (max-width: 768px) {
+    min-height: 110px;
+    .ant-card-body {
+      padding: 14px 16px;
     }
   }
 `;
@@ -292,39 +285,42 @@ const StatCardHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 `;
 
 const IconContainer = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: ${(props) => props.background || "#f1f5f9"};
   color: ${(props) => props.color || colors.textSecondary};
+  flex-shrink: 0;
   svg {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
 
   @media (max-width: 768px) {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     svg {
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
     }
   }
 `;
 
 const StatValue = styled.div`
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
-  color: ${colors.textPrimary};
+  color: #111827;
   display: flex;
   align-items: baseline;
+  line-height: 1.2;
+  letter-spacing: -0.2px;
 
   @media (max-width: 768px) {
     font-size: 17px;
@@ -332,11 +328,12 @@ const StatValue = styled.div`
 `;
 
 const StatLabel = styled.div`
-  font-size: 13px;
-  color: ${colors.textSecondary};
+  font-size: 12px;
+  color: #9ca3af;
   display: flex;
   align-items: center;
   gap: 6px;
+  font-weight: 500;
 
   @media (max-width: 768px) {
     font-size: 12px;
@@ -375,30 +372,33 @@ const TableHeader = styled.div`
 
 const TableTitle = styled(Title).attrs({ level: 4 })`
   margin: 0 0 4px 0 !important;
-  color: ${colors.textPrimary};
+  color: #111827;
   font-weight: 600;
+  font-size: 14px !important;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 7px;
+  letter-spacing: -0.1px;
 
   svg {
-    color: ${colors.primary};
-    width: 18px;
-    height: 18px;
+    color: #d1d5db;
+    width: 15px;
+    height: 15px;
   }
 
   @media (max-width: 768px) {
-    font-size: 16px !important;
+    font-size: 14px !important;
   }
 `;
 
 const TableDescription = styled(Paragraph)`
   margin: 0 !important;
-  color: ${colors.textSecondary};
-  font-size: 14px;
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 400;
 
   @media (max-width: 768px) {
-    font-size: 13px;
+    font-size: 12px;
   }
 `;
 
@@ -503,18 +503,20 @@ const RefreshButton = styled(Button)`
 
 const StyledTable = styled(Table)`
   .ant-table-thead > tr > th {
-    background: #fafbfc;
+    background: #f8fafc !important;
     border-bottom: 1px solid ${colors.border};
     font-weight: 600;
-    color: ${colors.textPrimary};
-    font-size: 13px;
-    padding: 16px 24px;
+    color: #64748b;
+    font-size: 11px;
+    padding: 10px 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .ant-table-tbody > tr > td {
-    padding: 16px 24px;
+    padding: 12px 14px;
     border-bottom: 1px solid ${colors.border};
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .ant-table-expanded-row > td {
@@ -523,6 +525,17 @@ const StyledTable = styled(Table)`
 
   .ant-empty {
     padding: 40px 20px;
+  }
+
+  @media (max-width: 768px) {
+    .ant-table-thead > tr > th {
+      padding: 8px 12px;
+      font-size: 10px;
+    }
+    .ant-table-tbody > tr > td {
+      padding: 10px 12px;
+      font-size: 12px;
+    }
   }
 `;
 
@@ -1477,8 +1490,8 @@ const Payouts = () => {
             icon={
               <LordIcon
                 src="https://cdn.lordicon.com/valwmkhs.json"
-                colors="primary:#666,secondary:#666"
-                size="20px"
+                colors="primary:#94a3b8,secondary:#94a3b8"
+                size="15px"
                 trigger="hover"
                 playOnLoad={false}
               />
@@ -1572,7 +1585,7 @@ const Payouts = () => {
         >
           <TableHeader>
             <TableTitle>
-              <Landmark />
+              <Landmark size={15} color="#d1d5db" />
               Payout History
             </TableTitle>
             <TableDescription>
@@ -1601,9 +1614,7 @@ const Payouts = () => {
                     <lord-icon
                       src="https://cdn.lordicon.com/vmztfafm.json"
                       trigger="in"
-                      state="morph-card-cash-1"
                       colors="primary:#94a3b8"
-                      style={{ width: 40, height: 40 }}
                     />
                   </EmptyStateIcon>
                   <EmptyStateText>No Payouts Found</EmptyStateText>
@@ -1643,10 +1654,7 @@ const Payouts = () => {
                       <lord-icon
                         src="https://cdn.lordicon.com/vmztfafm.json"
                         trigger="in"
-                        delay="2000"
-                        state="morph-card-cash-1"
                         colors="primary:#94a3b8"
-                        style={{ width: 40, height: 40 }}
                       />
                     </EmptyStateIcon>
                     <EmptyStateText>No Payouts Found</EmptyStateText>
@@ -1674,7 +1682,7 @@ const Payouts = () => {
                 <DrawerHandle />
                 <DrawerHeader>
                   <DrawerTitle>
-                    <Box size={16} style={{ color: colors.primary }} />
+                    <Box size={15} style={{ color: "#d1d5db" }} />
                     {selectedPayout &&
                       `Bookings in Payout (${dayjs(
                         selectedPayout?.arrival_date
@@ -1695,7 +1703,7 @@ const Payouts = () => {
                 <DrawerHandle />
                 <DesktopDrawerHeader>
                   <DesktopDrawerTitle>
-                    <Box size={18} style={{ color: colors.primary }} />
+                    <Box size={15} style={{ color: "#d1d5db" }} />
                     {selectedPayout &&
                       `Bookings in Payout (${dayjs(
                         selectedPayout?.arrival_date

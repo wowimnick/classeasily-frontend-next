@@ -28,53 +28,58 @@ const { Text, Title } = Typography;
 const { useBreakpoint } = Grid;
 
 export const FormGroup = styled.div`
-  margin-bottom: ${(props) => props.theme.token.marginLG}px;
+  margin-bottom: 20px;
   width: 100%;
 `;
+
 export const FormGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0 ${(props) => props.theme.token.marginLG}px;
-  @media (max-width: ${(props) => props.theme.screenMD}px) {
+  gap: 0 20px;
+  @media (max-width: 768px) {
     grid-template-columns: 1fr;
     gap: 0;
   }
 `;
+
 export const FormLabel = styled.label`
+  font-size: 13.5px;
   font-weight: 600;
-  color: ${(props) => props.theme.token.colorText};
-  margin-bottom: ${(props) => props.theme.token.marginXS}px;
+  color: #111827;
+  margin-bottom: 4px;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 6px;
   svg {
-    width: 16px;
-    height: 16px;
-    color: ${(props) => props.theme.token.colorPrimary};
+    width: 15px;
+    height: 15px;
+    color: #6b7280;
   }
 `;
+
 export const HelpText = styled.div`
-  font-size: 13px;
-  color: ${(props) => props.theme.token.colorTextSecondary};
-  margin-top: 4px;
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 3px;
   margin-bottom: 8px;
   line-height: 1.4;
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
+  gap: 5px;
   svg {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
     flex-shrink: 0;
-    margin-top: 2px;
-    color: ${(props) => props.theme.token.colorTextDisabled};
+    margin-top: 1px;
+    color: #d1d5db;
   }
 `;
-/* Match ClassEditDrawer SectionDivider exactly */
+
 export const SectionDivider = styled.div`
   display: flex;
   align-items: center;
-  margin: 24px 0;
+  margin: 22px 0 14px;
+
   &::before,
   &::after {
     content: "";
@@ -82,39 +87,41 @@ export const SectionDivider = styled.div`
     height: 1px;
     background: #e5e7eb;
   }
+
   span {
-    padding: 0 1rem;
-    color: #717171;
+    padding: 0 12px;
+    color: #374151;
     font-weight: 600;
-    font-size: 15px;
+    font-size: 13px;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 6px;
     svg {
-      color: ${(props) => props.theme.token.colorPrimary};
+      color: #6b7280;
+      width: 14px;
+      height: 14px;
     }
   }
+
   @media (max-width: 768px) {
-    margin: 20px 0;
+    margin: 18px 0 12px;
   }
 `;
 
-/* Match ClassEditDrawer FormSection exactly: bordered card, padding, shadow */
 export const FormSectionCard = styled.div`
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-  padding: 20px;
+  padding: 18px 20px;
+
   @media (max-width: 768px) {
-    margin-bottom: 20px;
-    padding: 16px;
+    margin-bottom: 16px;
+    padding: 14px 16px;
   }
 `;
 
-/* Match ClassEditDrawer: center content with max-width inside ScrollContainer */
 export const FormContainer = styled.div`
   width: 100%;
   max-width: 800px;

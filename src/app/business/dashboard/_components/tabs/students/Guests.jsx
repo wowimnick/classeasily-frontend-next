@@ -193,13 +193,13 @@ const TableViewWrapper = styled(motion.div)`
 
   .ant-table-thead > tr > th {
     background-color: #f8fafc !important;
-    color: #475569;
+    color: #64748b;
     font-weight: 600;
-    font-size: 13px;
-    padding: 16px 20px;
+    font-size: 11px;
+    padding: 10px 14px;
     border-bottom: 1px solid #e2e8f0;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.05em;
 
     &::before {
       display: none;
@@ -208,10 +208,20 @@ const TableViewWrapper = styled(motion.div)`
 
   .ant-table-tbody > tr > td {
     vertical-align: middle;
-    padding: 16px 20px;
+    padding: 12px 14px;
     border-bottom: 1px solid #f1f5f9;
-    font-size: 14px;
+    font-size: 13px;
     color: #1e293b;
+  }
+  @media (max-width: 768px) {
+    .ant-table-thead > tr > th {
+      padding: 8px 12px;
+      font-size: 10px;
+    }
+    .ant-table-tbody > tr > td {
+      padding: 10px 12px;
+      font-size: 12px;
+    }
   }
 
   .ant-table-tbody > tr:last-child > td {

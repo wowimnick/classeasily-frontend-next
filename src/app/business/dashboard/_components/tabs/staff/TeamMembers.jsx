@@ -211,9 +211,11 @@ const StyledTable = styled(Table)`
     background: #fafbfc;
     border-bottom: 1px solid ${colors.border};
     font-weight: 600;
-    color: ${colors.textPrimary};
-    font-size: 13px;
-    padding: 16px 24px;
+    color: #64748b;
+    font-size: 11px;
+    padding: 10px 14px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
 
     &:first-child {
       border-top-left-radius: 0;
@@ -221,31 +223,16 @@ const StyledTable = styled(Table)`
     &:last-child {
       border-top-right-radius: 0;
     }
-
-    @media (max-width: 768px) {
-      padding: 12px 16px;
-      font-size: 12px;
-    }
-
-    @media (max-width: 480px) {
-      padding: 8px 12px;
-      font-size: 11px;
-    }
   }
 
   .ant-table-tbody > tr > td {
-    padding: 16px 24px;
+    padding: 12px 14px;
     border-bottom: 1px solid ${colors.border};
-    font-size: 14px;
+    font-size: 13px;
     vertical-align: middle;
 
     @media (max-width: 768px) {
-      padding: 12px 16px;
-      font-size: 13px;
-    }
-
-    @media (max-width: 480px) {
-      padding: 8px 12px;
+      padding: 10px 12px;
       font-size: 12px;
     }
   }

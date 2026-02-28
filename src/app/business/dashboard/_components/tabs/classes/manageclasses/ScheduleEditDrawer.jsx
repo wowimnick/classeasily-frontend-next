@@ -1129,13 +1129,15 @@ const RULES = {
 const ScheduleEditDrawer = ({
   open,
   onClose,
-  form,
+  form: externalForm,
   classData,
   onSchedulesUpdate,
   editingSchedule: directEditingSchedule,
   startInEditMode = false,
 }) => {
-  // Original Form State
+  // Original Form State – use external form if provided, otherwise own internal instance
+  const [internalForm] = Form.useForm();
+  const form = externalForm ?? internalForm;
   const [bulkForm] = Form.useForm();
   const [isLoading, setIsLoading] = useState(false);
   const [isBulkLoading, setIsBulkLoading] = useState(false);

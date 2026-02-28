@@ -55,32 +55,22 @@ const HeaderContent = styled.div`
 `;
 
 const PageTitle = styled.h1`
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
-  color: #222222;
+  color: #111827;
   margin: 0 0 4px 0;
   line-height: 1.2;
+  letter-spacing: -0.3px;
   @media (max-width: 768px) {
-    font-size: 22px;
-    margin-bottom: 6px;
-  }
-  @media (max-width: 480px) {
-    font-size: 20px;
-    margin-bottom: 4px;
+    font-size: 21px;
   }
 `;
 
 const HeaderSubtitle = styled(Text)`
-  font-size: 15px;
-  color: ${colors.textSecondary};
+  font-size: 14px;
+  color: #6b7280;
   display: block;
   line-height: 1.4;
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
-  @media (max-width: 480px) {
-    font-size: 13px;
-  }
 `;
 
 const ContentWrapper = styled.div`

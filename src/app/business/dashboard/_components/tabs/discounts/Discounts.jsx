@@ -93,21 +93,28 @@ const StatsGrid = styled.div`
   }
 `;
 const StatCard = styled(Card)`
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid ${colors.border};
   margin-bottom: 0;
-  min-height: 140px;
+  height: 100%;
+  min-height: 130px;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   .ant-card-body {
-    padding: 20px;
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
-    @media (max-width: 768px) {
-      padding: 16px;
+  }
+
+  @media (max-width: 768px) {
+    min-height: 110px;
+    .ant-card-body {
+      padding: 14px 16px;
     }
   }
 `;
@@ -180,8 +187,27 @@ const TableDescription = styled(Text)`
 `;
 const StyledTable = styled(Table)`
   .ant-table-thead > tr > th {
-    background: ${colors.lightBg};
-    color: ${colors.textPrimary};
+    background: #f8fafc !important;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 11px;
+    padding: 10px 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .ant-table-tbody > tr > td {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  @media (max-width: 768px) {
+    .ant-table-thead > tr > th {
+      padding: 8px 12px;
+      font-size: 10px;
+    }
+    .ant-table-tbody > tr > td {
+      padding: 10px 12px;
+      font-size: 12px;
+    }
   }
 `;
 const EmptyStateContainer = styled.div`

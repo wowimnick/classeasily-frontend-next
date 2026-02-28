@@ -117,24 +117,23 @@ const DashboardHeader = styled.div`
 `;
 
 const StyledTitle = styled.h1`
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
-  color: #222222;
-  margin: 0 0 4px 0;
-  line-height: 1.2;
+  color: #111827;
+  margin: 0 0 6px 0;
+  line-height: 1.25;
+  letter-spacing: -0.3px;
   @media (max-width: 768px) {
-    font-size: 22px;
+    font-size: 21px;
   }
 `;
 
 const HeaderSubtitle = styled(Text)`
-  font-size: 15px;
-  color: ${colors.textSecondary};
+  font-size: 14px;
+  color: #6b7280;
   display: block;
-  line-height: 1.4;
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
+  line-height: 1.5;
+  margin: 0;
 `;
 
 const ResponsiveDivider = styled.hr`
@@ -148,22 +147,25 @@ const ResponsiveDivider = styled.hr`
 
 const SectionTitle = styled.div`
   font-weight: 600;
-  font-size: 17px;
-  color: ${colors.textPrimary};
+  font-size: 14px;
+  color: #111827;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: 7px;
+  margin-bottom: 14px;
+  letter-spacing: -0.1px;
   @media (max-width: 768px) {
-    font-size: 16px;
+    font-size: 14px;
+    margin-bottom: 14px;
   }
 `;
 
 const SectionDescription = styled(Text)`
-  font-size: 14px;
-  color: ${colors.textSecondary};
+  font-size: 12px;
+  color: #9ca3af;
   display: block;
   margin-bottom: 12px;
+  font-weight: 400;
 `;
 
 /* ── Two-column Messages Layout ── */
@@ -938,7 +940,7 @@ export default function BusinessMessages() {
 
       <div>
         <SectionTitle>
-          <MessageSquare size={20} color={colors.primary} />
+          <MessageSquare size={15} color="#d1d5db" />
           Conversations
         </SectionTitle>
         <SectionDescription>

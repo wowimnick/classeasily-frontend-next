@@ -81,7 +81,7 @@ import {
 import ScheduleEditDrawer from "./ScheduleEditDrawer";
 import ClassEditDrawer from "./ClassEditDrawer";
 import DeleteClassModal from "./DeleteClassModal";
-import CourseScheduleDrawer from "./CourseScheduleDrawer"; // ADDED: New import
+import CourseScheduleDrawer from "./CourseScheduleDrawer";
 import { ClassProvider } from "../newclasses/ClassContext";
 import CreateClassPage from "../newclasses/CreateClassPage";
 import DashboardBreadcrumb from "../../../DashboardBreadcrumb";
@@ -631,13 +631,13 @@ const TableViewWrapper = styled(motion.div)`
 
   .ant-table-thead > tr > th {
     background-color: #f8fafc !important;
-    color: #475569;
+    color: #64748b;
     font-weight: 600;
-    font-size: 12px;
-    padding: 16px 20px;
+    font-size: 11px;
+    padding: 10px 14px;
     border-bottom: 2px solid #e2e8f0;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.05em;
 
     &::before {
       display: none;
@@ -646,10 +646,20 @@ const TableViewWrapper = styled(motion.div)`
 
   .ant-table-tbody > tr > td {
     vertical-align: middle;
-    padding: 12px 20px;
+    padding: 12px 14px;
     border-bottom: 1px solid #f1f5f9;
-    font-size: 14px;
+    font-size: 13px;
     color: #1e293b;
+  }
+  @media (max-width: 768px) {
+    .ant-table-thead > tr > th {
+      padding: 8px 12px;
+      font-size: 10px;
+    }
+    .ant-table-tbody > tr > td {
+      padding: 10px 12px;
+      font-size: 12px;
+    }
   }
 
   .ant-table-tbody > tr:last-child > td {
@@ -1181,47 +1191,24 @@ function ClassManagementContent(props) {
   const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState([]);
   const [searchText, setSearchText] = useState("");
-  // ADDED: State for view type filter (all, single, course)
+  // State for view type filter (all, single, course)
   const [viewType, setViewType] = useState("all");
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [selectedClassForAction, setSelectedClassForAction] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editDrawerVisible, setEditDrawerVisible] = useState(false);
   const [createDrawerVisible, setCreateDrawerVisible] = useState(false);
-  const [scheduleDrawer, setScheduleDrawer] = useState({
-    visible: false,
-    classData: null,
-  });
-  // ADDED: State for the new course drawer
-  const [courseDrawer, setCourseDrawer] = useState({
-    visible: false,
-    classData: null,
-  });
-  const [scheduleForm] = Form.useForm();
   const [togglingClassId, setTogglingClassId] = useState(null);
   const screens = useBreakpoint();
   const isMobileView = !screens.md;
   const openClassId = searchParams.get("classId");
-  const scrollToScheduleId = searchParams.get("scheduleId");
-  const openScheduleGroup = searchParams.get("scheduleGroup");
 
+  // If listings URL has ?classId=xyz, redirect to Schedules tab with that class pre-selected
   useEffect(() => {
     if (openClassId && classes.length > 0) {
-      const classToOpen = classes.find(
-        (c) => c.classId === parseInt(openClassId),
-      );
-      if (classToOpen) {
-        const isCourse =
-          classToOpen.options?.[0]?.booking_type === "Full Course";
-        router.replace(pathname, { scroll: false });
-        if (isCourse) {
-          openCourseSchedulesModal(classToOpen);
-        } else {
-          openSchedulesModal(classToOpen);
-        }
-      }
+      router.replace(`/business/dashboard/schedules?classId=${openClassId}`, { scroll: false });
     }
-  }, [openClassId, classes, pathname, router]);
+  }, [openClassId, classes, router]);
 
   useEffect(() => {
     loadClasses();
@@ -1259,13 +1246,9 @@ function ClassManagementContent(props) {
     }
   };
 
-  const openSchedulesModal = (classItem) => {
-    setScheduleDrawer({ visible: true, classData: classItem });
-  };
-
-  // ADDED: Function to open the new course drawer
-  const openCourseSchedulesModal = (classItem) => {
-    setCourseDrawer({ visible: true, classData: classItem });
+  // Navigate to Schedules tab, optionally filtered to this class
+  const goToSchedules = (classItem) => {
+    router.push(`/business/dashboard/schedules?classId=${classItem.classId}`);
   };
 
   const handleEditClass = (classItem) => {
@@ -1532,8 +1515,7 @@ function ClassManagementContent(props) {
         const primaryLabel = record.option ? "Schedules" : "Configure";
         const primaryClick = () => {
           if (record.option) {
-            if (isCourse) openCourseSchedulesModal(record);
-            else openSchedulesModal(record);
+            goToSchedules(record);
           } else {
             handleEditClass(record);
           }
@@ -1701,12 +1683,7 @@ function ClassManagementContent(props) {
             ghost
             onClick={() => {
               if (option) {
-                // MODIFIED: Open correct modal based on type
-                if (isCourse) {
-                  openCourseSchedulesModal(classItem);
-                } else {
-                  openSchedulesModal(classItem);
-                }
+                goToSchedules(classItem);
               } else {
                 handleEditClass(classItem);
               }
@@ -1727,14 +1704,15 @@ function ClassManagementContent(props) {
 
   return (
     <PageContainer>
-        <DashboardBreadcrumb title="Experience Management" />
-        <PageHeader>
-          <HeaderTextWrap>
-            <HeaderTitle>Experience Management</HeaderTitle>
-            <HeaderSubtitle>
-              Oversee, edit, and manage all your experiences and their schedules.
-            </HeaderSubtitle>
-          </HeaderTextWrap>
+      <DashboardBreadcrumb title="Experience Management" />
+      <PageHeader>
+        <HeaderTextWrap>
+          <HeaderTitle>Experience Management</HeaderTitle>
+          <HeaderSubtitle>
+            Oversee and manage all your experiences. Use Schedules to set when each experience runs.
+          </HeaderSubtitle>
+        </HeaderTextWrap>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <ActionButton
             type="primary"
             icon={<Plus size={18} />}
@@ -1742,60 +1720,37 @@ function ClassManagementContent(props) {
           >
             Create New Experience
           </ActionButton>
-        </PageHeader>
-        <Divider />
+        </div>
+      </PageHeader>
+      <Divider />
 
-        {loading ? (
-          <ClassManagementSkeleton />
-        ) : filteredClasses.length === 0 ? (
-          renderEmptyState()
-        ) : isMobileView ? (
-          <MobileCardContainer>
-            {filteredClasses.map(renderClassCard)}
-          </MobileCardContainer>
-        ) : (
-          <TableViewWrapper>
-            <Table
-              columns={columns}
-              dataSource={filteredClasses}
-              rowKey="classId"
-              pagination={false}
-              scroll={undefined}
-              onRow={(record) => ({
-                onClick: () => {
-                  if (record.option) {
-                    const isCourse =
-                      record.options?.[0]?.booking_type === "Full Course";
-                    if (isCourse) {
-                      openCourseSchedulesModal(record);
-                    } else {
-                      openSchedulesModal(record);
-                    }
-                  }
-                },
-                className: record.option ? "clickable-row" : "",
-              })}
-            />
-          </TableViewWrapper>
-        )}
+      {loading ? (
+        <ClassManagementSkeleton />
+      ) : filteredClasses.length === 0 ? (
+        renderEmptyState()
+      ) : isMobileView ? (
+        <MobileCardContainer>
+          {filteredClasses.map(renderClassCard)}
+        </MobileCardContainer>
+      ) : (
+        <TableViewWrapper>
+          <Table
+            columns={columns}
+            dataSource={filteredClasses}
+            rowKey="classId"
+            pagination={false}
+            scroll={undefined}
+            onRow={(record) => ({
+              onClick: () => {
+                if (record.option) goToSchedules(record);
+              },
+              className: record.option ? "clickable-row" : "",
+            })}
+          />
+        </TableViewWrapper>
+      )}
 
-        {/* ADDED: New Course Schedule Drawer */}
-        <CourseScheduleDrawer
-          open={courseDrawer.visible}
-          onClose={() => setCourseDrawer({ visible: false, classData: null })}
-          classData={courseDrawer.classData}
-          onSchedulesUpdate={loadClasses}
-        />
-
-        <ScheduleEditDrawer
-          open={scheduleDrawer.visible}
-          onClose={() => setScheduleDrawer({ visible: false, classData: null })}
-          classData={scheduleDrawer.classData}
-          onSchedulesUpdate={loadClasses}
-          form={scheduleForm}
-        />
-
-        <DeleteClassModal
+      <DeleteClassModal
           visible={deleteModalVisible}
           onCancel={() => setDeleteModalVisible(false)}
           onConfirm={handleDeleteClassConfirm}
