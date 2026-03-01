@@ -429,6 +429,7 @@ const HoursListSimple = ({ businessHours }) => {
 const BusinessPageClient = ({ initialData, slug }) => {
   const [businessData, setBusinessData] = useState(initialData);
   const [isMounted, setIsMounted] = useState(false);
+  const [mapContainerKey] = useState(() => `business-map-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
 
   useEffect(() => {
     setIsMounted(true);
@@ -614,7 +615,7 @@ const BusinessPageClient = ({ initialData, slug }) => {
                 <MapPreviewBox>
                    {isMounted && (
                     <MapContainer
-                      key={`business-map-${slug ?? "unknown"}-${isMounted}`}
+                      key={`${mapContainerKey}-${slug ?? "unknown"}`}
                       center={mapCoordinates}
                       zoom={14}
                       scrollWheelZoom={false}

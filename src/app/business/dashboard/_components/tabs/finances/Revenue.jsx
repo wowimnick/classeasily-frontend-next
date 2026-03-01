@@ -54,7 +54,12 @@ import {
 } from "recharts";
 import NumberFlow from "@number-flow/react";
 import dayjs from "dayjs";
+import { useAuth } from "@/lib/auth-client";
 import { revenueService, businessClassService } from "@/services/apiService";
+import {
+  isMockDashboardUser,
+  getMockRevenueAnalytics,
+} from "@/data/mockBusinessDashboardData";
 import { LordIcon } from "@/services/ReactUtils";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
@@ -573,6 +578,7 @@ const getChartTotal = (data) => {
 };
 
 const Revenue = forwardRef((props, ref) => {
+  const { user: currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
   const [filterParams, setFilterParams] = useState({
@@ -637,12 +643,21 @@ const Revenue = forwardRef((props, ref) => {
       abortControllerRef.current.abort("New request");
     abortControllerRef.current = new AbortController();
 
+    const apiParams = {
+      startDate: currentFilters.startDate.format("YYYY-MM-DD"),
+      endDate: currentFilters.endDate.format("YYYY-MM-DD"),
+      class_id: currentFilters.classId || undefined,
+    };
+
     try {
-      const apiParams = {
-        startDate: currentFilters.startDate.format("YYYY-MM-DD"),
-        endDate: currentFilters.endDate.format("YYYY-MM-DD"),
-        class_id: currentFilters.classId || undefined,
-      };
+      if (isMockDashboardUser(currentUser)) {
+        const mockData = getMockRevenueAnalytics(apiParams);
+        setAnalytics((prev) => ({ ...prev, ...mockData }));
+        setTimeout(() => setIsReadyForAnimation(true), 50);
+        setTimeout(() => setLoading(false), 150);
+        return;
+      }
+
       const result = await revenueService.getRevenueAnalytics(apiParams, {
         signal: abortControllerRef.current.signal,
       });
@@ -663,7 +678,7 @@ const Revenue = forwardRef((props, ref) => {
       if (!abortControllerRef.current?.signal.aborted)
         setTimeout(() => setLoading(false), 150);
     }
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     fetchBusinessExperiencesForFilter();

@@ -210,6 +210,7 @@ const CanadianDistribution = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
+  const [mapContainerKey] = useState(() => `canada-map-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
 
   // Load Leaflet on component mount
   useEffect(() => {
@@ -320,10 +321,11 @@ const CanadianDistribution = () => {
 
   // Initialize map
   useEffect(() => {
-    if (!leafletLoaded || !L || loading || error) return;
+    if (!leafletLoaded || !L || loading || error || !mapRef.current) return;
 
     if (mapInstanceRef.current) {
       mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
       markersRef.current = [];
     }
 
@@ -464,7 +466,7 @@ const CanadianDistribution = () => {
         <div className="stats-value">{formatCount(totalStats.count)}</div>
       </ControlsContainer>
 
-      <div ref={mapRef} style={{ height: "100%", width: "100%" }} />
+      <div key={mapContainerKey} ref={mapRef} style={{ height: "100%", width: "100%" }} />
     </MapWrapper>
   );
 };

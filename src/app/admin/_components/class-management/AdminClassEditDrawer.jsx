@@ -731,6 +731,7 @@ const AdminClassEditDrawer = ({
   const currentAsyncOperation = useRef(null);
   const isMountedRef = useRef(true);
   const initialClassDataRef = useRef(null);
+  const [mapContainerKey] = useState(() => `admin-class-edit-map-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
   // ADD: Cleanup function for async operations
   const cancelCurrentOperation = useCallback(() => {
     if (currentAsyncOperation.current) {
@@ -1761,9 +1762,10 @@ const AdminClassEditDrawer = ({
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ duration: 0.3, delay: 0.1 }}
+                              key={mapContainerKey}
                             >
                               <MapContainer
-                                key={`${selectedMapLocation.lat}-${selectedMapLocation.lon}-${hideExactLocation}`}
+                                key={`${mapContainerKey}-${selectedMapLocation.lat}-${selectedMapLocation.lon}-${hideExactLocation}`}
                                 center={[
                                   selectedMapLocation.lat,
                                   selectedMapLocation.lon,

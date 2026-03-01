@@ -564,7 +564,8 @@ const MapDisplay = ({
   const searchParams = useSearchParams();
   const [isMounted, setIsMounted] = useState(false);
   const [mapBounds, setMapBounds] = useState(null);
-  const [mapKey, setMapKey] = useState(null);
+  const [mapKey, setMapKey] = useState(() => `map-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
+  const prevShowMapRef = React.useRef(showMap);
 
   const handleViewClass = useCallback(
     (slug) => {
@@ -577,12 +578,19 @@ const MapDisplay = ({
   );
 
   useEffect(() => {
-    setMapKey(`map-instance-${Date.now()}`);
     setIsMounted(true);
     return () => {
       setIsMounted(false);
     };
   }, []);
+
+  // Regenerate map key when map becomes visible again to avoid "map container is in use"
+  useEffect(() => {
+    if (showMap && !prevShowMapRef.current) {
+      setMapKey(`map-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
+    }
+    prevShowMapRef.current = showMap;
+  }, [showMap]);
 
   const calculateMapCenter = useMemo(() => {
     const validMarkers = markers.filter(
@@ -684,6 +692,7 @@ const MapDisplay = ({
       {isMounted && mapKey && (
         <div key={mapKey} className="map-root-container">
           <MapContainer
+            key={mapKey}
             center={[calculateMapCenter.lat, calculateMapCenter.lng]}
             zoom={12}
             attributionControl={false}

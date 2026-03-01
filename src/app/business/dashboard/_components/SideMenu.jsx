@@ -840,9 +840,12 @@ const SideMenuComponent = memo(
 
     const { user } = useAuth();
     const permissions = user?.permissions ||[];
-    const { subscription } = useSubscription();
+    const { subscription, widgetSubscriptionRequired } = useSubscription();
     const hasWidgetPlan = Boolean(
-      subscription?.status && ["active", "trialing"].includes(subscription.status) && subscription?.planId
+      !widgetSubscriptionRequired ||
+        (subscription?.status &&
+          ["active", "trialing"].includes(subscription.status) &&
+          subscription?.planId)
     );
 
     const isBusinessClickable =

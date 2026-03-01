@@ -6,6 +6,7 @@ import { businessService } from "@/services/apiService";
 
 const SubscriptionContext = createContext({
   subscription: null,
+  widgetSubscriptionRequired: false,
   loading: true,
   error: null,
   refetch: () => {},
@@ -26,6 +27,7 @@ export function useSubscription() {
 export function SubscriptionProvider({ children }) {
   const { user, isAuthenticated } = useAuthUser();
   const [subscription, setSubscription] = useState(null);
+  const [widgetSubscriptionRequired, setWidgetSubscriptionRequired] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -34,6 +36,7 @@ export function SubscriptionProvider({ children }) {
   const refetch = useCallback(async () => {
     if (!canManageSubscription) {
       setSubscription(null);
+      setWidgetSubscriptionRequired(false);
       setLoading(false);
       setError(null);
       return;
@@ -42,10 +45,12 @@ export function SubscriptionProvider({ children }) {
     setError(null);
     const result = await businessService.getWidgetSubscription();
     setLoading(false);
-    if (result.success && result.data?.subscription) {
-      setSubscription(result.data.subscription);
+    if (result.success && result.data) {
+      setSubscription(result.data.subscription ?? null);
+      setWidgetSubscriptionRequired(Boolean(result.data.widget_subscription_required));
     } else {
       setSubscription(null);
+      setWidgetSubscriptionRequired(false);
       if (!result.success && result.error) {
         setError(result.error);
       }
@@ -85,6 +90,7 @@ export function SubscriptionProvider({ children }) {
 
   const value = {
     subscription,
+    widgetSubscriptionRequired,
     loading,
     error,
     refetch,

@@ -362,6 +362,7 @@ const LocationStep = ({ onSubmit, initialData = {}, onFormSubmitFailed }) => {
   const [mapCenter, setMapCenter] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(13);
   const [hasSearched, setHasSearched] = useState(false);
+  const [mapContainerKey] = useState(() => `register-loc-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
 
   useEffect(() => {
     form.setFieldsValue({
@@ -681,7 +682,7 @@ const LocationStep = ({ onSubmit, initialData = {}, onFormSubmitFailed }) => {
                     center={mapCenter}
                     zoom={zoomLevel}
                     scrollWheelZoom={false}
-                    key={mapCenter.join(",") + zoomLevel}
+                    key={`${mapContainerKey}-${mapCenter.join(",")}-${zoomLevel}`}
                   >
                     <TileLayer
                       url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"

@@ -320,6 +320,7 @@ const LocationContactStep = ({ onValidatedNext }) => {
   const [isLoadingBusinessContact, setIsLoadingBusinessContact] =
     useState(true);
   const isFormInitialized = useRef(false);
+  const [mapContainerKey] = useState(() => `loc-contact-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
 
   useEffect(() => {
     if (isLoaded && !isFormInitialized.current && state.locationContact) {
@@ -666,7 +667,7 @@ const LocationContactStep = ({ onValidatedNext }) => {
                 transition={{ duration: 0.3, delay: 0.1 }}
               >
                 <MapContainer
-                  key={`${selectedLocation.lat}-${selectedLocation.lon}-${hideExactLocation}`}
+                  key={`location-step-${mapContainerKey}-${selectedLocation.lat}-${selectedLocation.lon}-${hideExactLocation}`}
                   center={[selectedLocation.lat, selectedLocation.lon]}
                   zoom={MAP_ZOOM_LEVEL}
                   scrollWheelZoom={false}

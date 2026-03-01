@@ -35,7 +35,12 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
 import debounce from "lodash/debounce";
+import { useAuth } from "@/lib/auth-client";
 import { bookingService } from "@/services/apiService";
+import {
+  isMockDashboardUser,
+  getMockBookingsResponse,
+} from "@/data/mockBusinessDashboardData";
 import DesktopBookingHistory from "./DesktopBookingHistory";
 import MobileBookingHistory from "./MobileBookingHistory";
 import BookingDetailsDrawer from "./BookingDetailsDrawer";
@@ -389,6 +394,7 @@ const EmptyStateSubtext = styled.div`
 `;
 
 const BookingHistory = forwardRef((props, ref) => {
+  const { user: currentUser } = useAuth();
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingTable, setLoadingTable] = useState(true);
   const [isViewDrawerVisible, setIsViewDrawerVisible] = useState(false);
@@ -449,6 +455,28 @@ const BookingHistory = forwardRef((props, ref) => {
         const cleanParams = Object.fromEntries(
           Object.entries(params).filter(([_, value]) => value !== undefined)
         );
+
+        if (isMockDashboardUser(currentUser)) {
+          const mockData = getMockBookingsResponse({
+            ...cleanParams,
+            status: "completed,cancelled",
+          });
+          const mockResults = mockData.results || [];
+          setBookings(mockResults);
+          setTotalResults(mockData.count || 0);
+          const calculatedCompletedSpots = mockResults
+            .filter((b) => b.status === "completed")
+            .reduce((acc, curr) => acc + (curr.participants || 0), 0);
+          const calculatedCancelledSpots = mockResults
+            .filter((b) => b.status === "cancelled")
+            .reduce((acc, curr) => acc + (curr.participants || 0), 0);
+          setTotalCompletedSpots(calculatedCompletedSpots);
+          setTotalCancelledSpots(calculatedCancelledSpots);
+          setLoadingStats(false);
+          const timer = setTimeout(() => setIsReadyForAnimation(true), 50);
+          return () => clearTimeout(timer);
+        }
+
         const result = await bookingService.fetchBusinessBookings(cleanParams);
 
         if (result.success && result.data) {
@@ -488,6 +516,7 @@ const BookingHistory = forwardRef((props, ref) => {
       }
     }, 300),
     [
+      currentUser,
       tableParams.pagination.current,
       tableParams.pagination.pageSize,
       tableParams.sortField,

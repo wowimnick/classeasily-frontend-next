@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import styled, { createGlobalStyle } from "styled-components";
 import { m, AnimatePresence, LazyMotion, domAnimation } from "framer-motion";
-import { Plus, Minus, Check, X, ArrowRight } from "lucide-react";
+import { Plus, Minus, Check, X, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import dynamic from "next/dynamic";
 
 // Import components
@@ -94,7 +94,7 @@ const GlassCard = styled(m.div)`
 const WelcomeGradientStrip = styled.div`
   position: absolute;
   left: -50%;
-  width: 120%;
+  width: 150%;
   height: 150px;
   top: 50%;
   transform: translateY(-45%) rotate(-20deg);
@@ -102,7 +102,7 @@ const WelcomeGradientStrip = styled.div`
   overflow: hidden;
   border-radius: 4px;
   @media (max-width: 640px) {
-    display: none;
+    width: 200%;
   }
 `;
 const WelcomeGradientStripInner = styled.div`
@@ -125,33 +125,40 @@ const WelcomeGradientCanvas = styled.canvas`
 `;
 
 const HeroSection = styled.section`
-  min-height: 60vh;
-  padding-top: 20px;
-  padding-bottom: 20px;
+  min-height: 65vh;
   display: flex;
   align-items: center;
   position: relative;
-  overflow: hidden;
-  /* Prevent layout shift during font load */
-  contain: content;
+  overflow-x: clip;
 
   @media (max-width: 1024px) {
-    padding-top: 120px;
     min-height: auto;
-    text-align: center;
+    padding-top: 100px;
+    padding-bottom: 40px;
+    overflow: visible;
   }
 `;
 
 const HeroGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1.1fr;
+  grid-template-columns: 1fr 1fr;
   align-items: center;
-  gap: 4rem;
+  gap: 3rem;
   width: 100%;
 
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
-    gap: 3rem;
+    gap: 1.5rem;
+    text-align: center;
+  }
+`;
+
+const HeroImagePane = styled(m.div)`
+  width: calc(100% + 25vw);
+  margin-left: -15vw;
+
+  @media (max-width: 1024px) {
+    display: none;
   }
 `;
 
@@ -159,45 +166,29 @@ const HeroTextContainer = styled(m.div)`
   display: flex;
   flex-direction: column;
   justify-content: center;
+  padding-left: clamp(0px, 7vw, 5rem);
 
   @media (max-width: 1024px) {
+    padding-left: 0;
     align-items: center;
   }
 `;
 
-const HeroVisualContainer = styled(m.div)`
-  position: relative;
-  width: 100%;
-  aspect-ratio: 4/3.1;
-  border-radius: 24px;
-  box-shadow: rgb(0 0 0 / 1%) 0px 20px 20px 0px;
-  overflow: hidden;
-  /* Hardware acceleration for smoother reveal */
-  transform: translateZ(0);
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-`;
-
 const HeroTitle = styled.h1`
-  font-size: clamp(2.5rem, 4vw, 3.5rem);
-  font-weight: 700;
+  font-size: clamp(2.5rem, 4vw, 3rem);
+  font-weight: 600;
   margin-bottom: 16px;
   letter-spacing: -0.03em;
   line-height: 1.05;
-  color: #1d1d1f;
+  color: #000;
 `;
 
 const HeroSubtitle = styled.p`
   font-size: 1.125rem;
-  color: #6e6e73;
+  color: #000;
   max-width: 460px;
   margin-bottom: 32px;
-  line-height: 1.5;
+  line-height: 1.2;
   font-weight: 400;
 
   @media (max-width: 768px) {
@@ -240,63 +231,122 @@ const DashboardSection = styled.section`
   position: relative;
 `;
 
-const MockupGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
+const PhoneCarouselScene = styled.div`
+  position: relative;
   margin-top: 48px;
-  position: relative;
-
-  @media (max-width: 1024px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (max-width: 700px) {
-    grid-template-columns: 1fr;
-    gap: 48px;
-  }
-`;
-
-const MockupItem = styled(m.div)`
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-  cursor: default;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0 60px;
 `;
 
-const MockupImageWrapper = styled.div`
+const PhoneCarouselStage = styled.div`
   position: relative;
-  width: 100%;
-  aspect-ratio: 9/10;
-  border-radius: 16px;
-  overflow: hidden;
+  width: 260px;
+  height: 520px;
+  flex-shrink: 0;
 
-  img {
-    object-fit: cover;
-    object-position: top center;
-    transition: object-position 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
-    will-change: object-position;
+  @media (max-width: 600px) {
+    width: 220px;
+    height: 440px;
+  }
+`;
+
+const PhoneSlide = styled(m.div)`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  transform-origin: center top;
+  will-change: transform, opacity;
+`;
+
+const PhoneDescriptionArea = styled.div`
+  position: absolute;
+  bottom: -92px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  text-align: center;
+  pointer-events: none;
+
+  @media (max-width: 600px) {
+    width: 260px;
+  }
+`;
+
+const PhoneDescTitle = styled.h3`
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 6px;
+`;
+
+const PhoneDescText = styled.p`
+  font-size: 0.9rem;
+  color: #6e6e73;
+  line-height: 1.5;
+  margin: 0;
+`;
+
+const CarouselChevron = styled.button`
+  position: absolute;
+  top: 50%;
+  transform: translateY(-60%);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  transition: background 0.2s, box-shadow 0.2s;
+  color: #1d1d1f;
+
+  &:hover {
+    background: #ffffff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
 
-  @media (hover: hover) {
-    &:hover img {
-      object-position: bottom center;
+  &.left {
+    left: calc(50% - 130px - 24px - 44px);
+
+    @media (max-width: 700px) {
+      left: 0;
+    }
+  }
+
+  &.right {
+    right: calc(50% - 130px - 24px - 44px);
+
+    @media (max-width: 700px) {
+      right: 0;
     }
   }
 `;
 
-const MockupTitle = styled.h3`
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #1d1d1f;
-  margin: 0;
+const CarouselDots = styled.div`
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 72px;
 `;
 
-const MockupDesc = styled.p`
-  font-size: 0.95rem;
-  color: #6e6e73;
-  line-height: 1.5;
-  margin: 0;
+const CarouselDot = styled.button`
+  width: ${(p) => (p.$active ? "20px" : "8px")};
+  height: 8px;
+  border-radius: 4px;
+  background: ${(p) => (p.$active ? "#1d1d1f" : "#d1d1d6")};
+  border: none;
+  cursor: pointer;
+  transition: width 0.3s ease, background 0.3s ease;
+  padding: 0;
 `;
 
 const ValuePropSection = styled.section`
@@ -778,7 +828,7 @@ const BusinessWelcomePage = () => {
 
   // --- State Hooks ---
   const [activeItems, setActiveItems] = useState(new Set(["1"]));
-  const [hoveredMockup, setHoveredMockup] = useState(null);
+  const [activeCarouselIndex, setActiveCarouselIndex] = useState(0);
   const [activeTierIndex, setActiveTierIndex] = useState(0);
 
   // --- Data ---
@@ -975,27 +1025,25 @@ const BusinessWelcomePage = () => {
                     Become a Host <ArrowRight size={18} />
                   </StartButton>
                 </HeroTextContainer>
-
-                <HeroVisualContainer
-                  initial={{ opacity: 0, scale: 0.95 }}
+                <HeroImagePane
+                  initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
+                  transition={{ duration: 0.6, delay: 0.15 }}
                 >
-                  {/* OPTIMIZATION: sizes prop added to prevent full res load on mobile */}
-                  {/* NOTE: Convert this SVG to WebP for massive LCP improvement */}
                   <Image
                     src="/Frame 1597880366.webp"
                     alt="Host Dashboard Preview"
-                    fill
+                    width={900}
+                    height={1100}
                     priority
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    style={{ width: "100%", height: "auto", display: "block" }}
                   />
-                </HeroVisualContainer>
+                </HeroImagePane>
               </HeroGrid>
             </SectionContainer>
           </HeroSection>
 
-          {/* 3. Dashboard Mockups */}
+          {/* 3. Dashboard Mockups — Phone Carousel */}
           <DashboardSection>
             <SectionContainer>
               <SectionHeader $center>
@@ -1006,47 +1054,111 @@ const BusinessWelcomePage = () => {
                 </SectionSubtitle>
               </SectionHeader>
 
-              <MockupGrid onMouseLeave={() => setHoveredMockup(null)}>
-                {mockupItems.map((item, index) => {
-                  const isHovered = hoveredMockup === index;
-                  const isInactive = hoveredMockup !== null && !isHovered;
+              <PhoneCarouselScene>
+                {/* Left chevron */}
+                <CarouselChevron
+                  className="left"
+                  aria-label="Previous"
+                  onClick={() =>
+                    setActiveCarouselIndex(
+                      (prev) => (prev - 1 + mockupItems.length) % mockupItems.length
+                    )
+                  }
+                >
+                  <ChevronLeft size={20} />
+                </CarouselChevron>
 
-                  return (
-                    <MockupItem
-                      key={index}
-                      onMouseEnter={() => setHoveredMockup(index)}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      animate={{
-                        scale: isHovered ? 1.01 : isInactive ? 0.99 : 1,
-                        opacity: isInactive ? 0.3 : 1,
-                        y: isHovered ? -10 : 0,
-                        filter: isInactive ? "blur(0px)" : "blur(0px)",
-                        zIndex: isHovered ? 10 : 0,
-                      }}
-                      transition={{
-                        duration: 0.4,
-                        ease: [0.25, 0.1, 0.25, 1.0],
-                      }}
-                    >
-                      <MockupImageWrapper>
-                        {/* OPTIMIZATION: sizes prop added to avoid large image downloads on mobile */}
+                <PhoneCarouselStage>
+                  {mockupItems.map((item, index) => {
+                    const total = mockupItems.length;
+                    const rel = (index - activeCarouselIndex + total) % total;
+                    // rel 0 = center, 1 = right, 2 = left
+                    const isCenter = rel === 0;
+                    const xOffset = isCenter ? 0 : rel === 1 ? 290 : -290;
+                    const yOffset = isCenter ? 0 : 44;
+                    const scaleVal = isCenter ? 1 : 0.87;
+                    const opacityVal = isCenter ? 1 : 0.22;
+                    const zVal = isCenter ? 10 : 1;
+                    const shadowVal = isCenter
+                      ? "0 24px 60px rgba(0,0,0,0.22), 0 8px 20px rgba(0,0,0,0.12)"
+                      : "none";
+                    const borderColor = isCenter
+                      ? "#111111"
+                      : "rgba(100,100,100,0.3)";
+
+                    return (
+                      <PhoneSlide
+                        key={item.title}
+                        style={{ zIndex: zVal }}
+                        animate={{
+                          x: xOffset,
+                          y: yOffset,
+                          scale: scaleVal,
+                          opacity: opacityVal,
+                        }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 35,
+                          mass: 1,
+                        }}
+                      >
                         <Image
                           src={item.image}
                           alt={item.title}
                           fill
-                          sizes="(max-width: 768px) 100vw, 33vw"
+                          sizes="(max-width: 600px) 220px, 260px"
+                          style={{  objectPosition: "top center" }}
                         />
-                      </MockupImageWrapper>
-                      <div>
-                        <MockupTitle>{item.title}</MockupTitle>
-                        <MockupDesc>{item.description}</MockupDesc>
-                      </div>
-                    </MockupItem>
-                  );
-                })}
-              </MockupGrid>
+                      </PhoneSlide>
+                    );
+                  })}
+
+                  {/* Description fades with active item */}
+                  <PhoneDescriptionArea>
+                    <AnimatePresence mode="wait">
+                      <m.div
+                        key={activeCarouselIndex}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                      >
+                        <PhoneDescTitle>
+                          {mockupItems[activeCarouselIndex].title}
+                        </PhoneDescTitle>
+                        <PhoneDescText>
+                          {mockupItems[activeCarouselIndex].description}
+                        </PhoneDescText>
+                      </m.div>
+                    </AnimatePresence>
+                  </PhoneDescriptionArea>
+                </PhoneCarouselStage>
+
+                {/* Right chevron */}
+                <CarouselChevron
+                  className="right"
+                  aria-label="Next"
+                  onClick={() =>
+                    setActiveCarouselIndex(
+                      (prev) => (prev + 1) % mockupItems.length
+                    )
+                  }
+                >
+                  <ChevronRight size={20} />
+                </CarouselChevron>
+              </PhoneCarouselScene>
+
+              <CarouselDots>
+                {mockupItems.map((_, i) => (
+                  <CarouselDot
+                    key={i}
+                    $active={i === activeCarouselIndex}
+                    onClick={() => setActiveCarouselIndex(i)}
+                    aria-label={`Go to slide ${i + 1}`}
+                  />
+                ))}
+              </CarouselDots>
             </SectionContainer>
           </DashboardSection>
 

@@ -256,6 +256,7 @@ const LocationSettingsTab = ({ form, initialData }) => {
   const [hideExact, setHideExact] = useState(initialData?.hide ?? false);
   const [searchValue, setSearchValue] = useState(getAddress(initialData));
   const mapRef = useRef(null);
+  const [mapContainerKey] = useState(() => `loc-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
 
   useEffect(() => {
     setSelectedCoords(getCoords(initialData));
@@ -373,9 +374,9 @@ const LocationSettingsTab = ({ form, initialData }) => {
           <AnimatePresence>
             {selectedCoords && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                <StyledMapWrapper>
+                <StyledMapWrapper key={mapContainerKey}>
                   <MapContainer
-                    key={`${selectedCoords[0]}-${selectedCoords[1]}`}
+                    key={`${mapContainerKey}-${selectedCoords[0]}-${selectedCoords[1]}`}
                     center={selectedCoords}
                     zoom={MAP_ZOOM_LEVEL}
                     ref={mapRef}

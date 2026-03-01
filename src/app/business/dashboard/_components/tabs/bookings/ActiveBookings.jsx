@@ -31,7 +31,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
 import debounce from "lodash/debounce";
 import dayjs from "dayjs";
+import { useAuth } from "@/lib/auth-client";
 import { bookingService } from "@/services/apiService";
+import {
+  isMockDashboardUser,
+  getMockBookingsResponse,
+} from "@/data/mockBusinessDashboardData";
 import DesktopActiveBookings from "./DesktopActiveBookings";
 import MobileActiveBookings from "./MobileActiveBookings";
 import BookingDetailsDrawer from "./BookingDetailsDrawer";
@@ -374,6 +379,7 @@ const EmptyStateSubtext = styled.div`
 `;
 
 const ActiveBookings = ({ noWrapperPadding } = {}) => {
+  const { user: currentUser } = useAuth();
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingTable, setLoadingTable] = useState(true);
   const [isViewDrawerVisible, setIsViewDrawerVisible] = useState(false);
@@ -434,6 +440,21 @@ const ActiveBookings = ({ noWrapperPadding } = {}) => {
           Object.entries(params).filter(([_, value]) => value !== undefined)
         );
 
+        if (isMockDashboardUser(currentUser)) {
+          const mockData = getMockBookingsResponse({
+            ...cleanParams,
+            status: "confirmed",
+          });
+          setBookings(mockData.results || []);
+          setTotalResults(mockData.count || 0);
+          setTotalActiveParticipantSpots(
+            mockData.summary?.total_participant_spots_in_filter || 0
+          );
+          setLoadingStats(false);
+          const timer = setTimeout(() => setIsReadyForAnimation(true), 50);
+          return () => clearTimeout(timer);
+        }
+
         const result = await bookingService.fetchBusinessBookings(cleanParams);
 
         if (result.success && result.data) {
@@ -463,6 +484,7 @@ const ActiveBookings = ({ noWrapperPadding } = {}) => {
       }
     }, 300),
     [
+      currentUser,
       tableParams.pagination.current,
       tableParams.pagination.pageSize,
       tableParams.sortField,

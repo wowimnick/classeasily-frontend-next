@@ -76,6 +76,10 @@ import Link from "next/link";
 import { formatUTCToUserDisplay, formatNaiveDate } from "@/services/utils";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { businessService, scheduleService } from "@/services/apiService";
+import {
+  isMockDashboardUser,
+  getMockOverviewData,
+} from "@/data/mockBusinessDashboardData";
 import ScheduleEditDrawer from "../classes/manageclasses/ScheduleEditDrawer";
 import { LordIcon } from "@/services/ReactUtils";
 import { theme } from "@/components/theme";
@@ -1169,6 +1173,12 @@ const Overview = forwardRef((props, ref) => {
     setLoading(true);
     setError(null);
     try {
+      if (isMockDashboardUser(currentUser)) {
+        const mockData = getMockOverviewData();
+        setOverviewData(mockData);
+        setLoading(false);
+        return;
+      }
       const response = await businessService.fetchMyBusinessOverview();
 
       if (response.success && response.data) {
@@ -1181,7 +1191,7 @@ const Overview = forwardRef((props, ref) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentUser]);
 
   // Fix for: "onDataRefresh is not defined"
   // This callback wraps the fetch function to be passed down to children

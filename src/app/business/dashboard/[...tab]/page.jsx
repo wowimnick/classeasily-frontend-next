@@ -2,7 +2,9 @@
 
 "use client";
 
-import { useParams, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
+import { useSubscription } from "@/context/SubscriptionContext";
 
 // Import all tab components
 import Overview from "../_components/tabs/overview/Overview";
@@ -23,9 +25,26 @@ import SettingsPage from "../_components/tabs/settings/SettingsPage";
 export default function DashboardPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { subscription, widgetSubscriptionRequired, loading: subLoading } = useSubscription();
 
   // Calculate key
   const activeKey = params.tab ? params.tab.join("/") : "overview";
+
+  const hasWidgetPlan = Boolean(
+    !widgetSubscriptionRequired ||
+      (subscription?.status &&
+        ["active", "trialing"].includes(subscription.status) &&
+        subscription?.planId)
+  );
+
+  // When widget subscription is required and user has no plan, redirect away from widget tab (e.g. direct URL)
+  useEffect(() => {
+    if (subLoading || activeKey !== "widget") return;
+    if (widgetSubscriptionRequired && !hasWidgetPlan) {
+      router.replace("/business/dashboard");
+    }
+  }, [activeKey, widgetSubscriptionRequired, hasWidgetPlan, subLoading, router]);
 
   let componentToRender;
 
@@ -81,9 +100,18 @@ export default function DashboardPage() {
     case "discounts":
       componentToRender = <Discounts />;
       break;
-    case "widget":
-      componentToRender = <WidgetCustomizer />;
+    case "widget": {
+      const showWidget =
+        !subLoading && (!widgetSubscriptionRequired || hasWidgetPlan);
+      componentToRender = showWidget ? (
+        <WidgetCustomizer />
+      ) : subLoading ? (
+        <div style={{ padding: "40px 0", textAlign: "center", color: "#666" }}>
+          Loading…
+        </div>
+      ) : null;
       break;
+    }
     case "settings": {
       const settingsTab = searchParams.get("tab") || "general";
       componentToRender = <SettingsPage defaultTab={settingsTab} />;
