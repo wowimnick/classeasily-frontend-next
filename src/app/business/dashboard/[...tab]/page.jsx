@@ -32,19 +32,18 @@ export default function DashboardPage() {
   const activeKey = params.tab ? params.tab.join("/") : "overview";
 
   const hasWidgetPlan = Boolean(
-    !widgetSubscriptionRequired ||
-      (subscription?.status &&
-        ["active", "trialing"].includes(subscription.status) &&
-        subscription?.planId)
+    subscription?.status &&
+      ["active", "trialing"].includes(subscription.status) &&
+      subscription?.planId
   );
 
-  // When widget subscription is required and user has no plan, redirect away from widget tab (e.g. direct URL)
+  // When user has no widget plan, redirect away from widget tab (e.g. direct URL)
   useEffect(() => {
     if (subLoading || activeKey !== "widget") return;
-    if (widgetSubscriptionRequired && !hasWidgetPlan) {
+    if (!hasWidgetPlan) {
       router.replace("/business/dashboard");
     }
-  }, [activeKey, widgetSubscriptionRequired, hasWidgetPlan, subLoading, router]);
+  }, [activeKey, hasWidgetPlan, subLoading, router]);
 
   let componentToRender;
 
@@ -101,8 +100,7 @@ export default function DashboardPage() {
       componentToRender = <Discounts />;
       break;
     case "widget": {
-      const showWidget =
-        !subLoading && (!widgetSubscriptionRequired || hasWidgetPlan);
+      const showWidget = !subLoading && hasWidgetPlan;
       componentToRender = showWidget ? (
         <WidgetCustomizer />
       ) : subLoading ? (

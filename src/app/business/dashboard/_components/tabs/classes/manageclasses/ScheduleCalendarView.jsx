@@ -163,6 +163,14 @@ function formatTimeRange(timeStr, durationMins) {
   return `${fmt(h, m)} – ${fmt(eh, em)}`;
 }
 
+function formatTimeShort(timeStr) {
+  if (!timeStr) return "";
+  const [h, m] = timeStr.split(":").map(Number);
+  const p = h < 12 ? "AM" : "PM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m || 0).padStart(2, "0")} ${p}`;
+}
+
 const getErrorMessage = (error) => {
   if (error?.errorFields?.length) return error.errorFields[0]?.errors?.[0] || "Validation error";
   if (error?.response?.data) {
@@ -305,6 +313,10 @@ const GroupTag = styled.div`
 // ── Mini Calendar ─────────────────────────────────────────────────────────────
 const MiniCalWrapper = styled.div`
   padding: 10px 8px 14px;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  background: #fff;
+  margin: 8px;
 `;
 
 const MiniCalHeader = styled.div`
@@ -353,6 +365,10 @@ const MiniWeekRow = styled.div`
   border-radius: 7px;
   background: ${p => p.$active ? "#eef4ff" : "transparent"};
   margin: 1px 0;
+  ${p => p.$active ? `
+    & > button:first-child { border-radius: 7px 0 0 7px; }
+    & > button:last-child { border-radius: 0 7px 7px 0; }
+  ` : ''}
 `;
 
 /* Each cell is just a circle container — the row handles the band */
@@ -425,11 +441,34 @@ const PageTitle = styled.h1`
   margin: 0;
 `;
 
-const DateLabel = styled.span`
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
+const CalendarBadge = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%);
+  border: 1px solid #e5e7eb;
   @media (max-width: 640px) { display: none; }
+`;
+
+const CalendarBadgeMonth = styled.div`
+  font-size: 9px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+`;
+
+const CalendarBadgeDay = styled.div`
+  font-size: 15px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.1;
 `;
 
 const TopBarRight = styled.div`
@@ -439,11 +478,22 @@ const TopBarRight = styled.div`
   flex-wrap: wrap;
 `;
 
+const NavGroup = styled.div`
+  display: flex;
+  align-items: stretch;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+`;
+
 const NavBtn = styled.button`
   width: 30px;
   height: 30px;
-  border-radius: 7px;
-  border: 1px solid #e5e7eb;
+  border: none;
+  border-radius: 0;
+  border-right: 1px solid #e5e7eb;
   background: #fff;
   color: #374151;
   display: flex;
@@ -451,43 +501,54 @@ const NavBtn = styled.button`
   justify-content: center;
   cursor: pointer;
   transition: all 0.15s;
-  &:hover { border-color: #d1d5db; background: #f9fafb; }
+  &:hover { background: #f9fafb; }
+  &:last-of-type { border-right: none; }
+`;
+
+const StandaloneNavBtn = styled(NavBtn)`
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  border-right: 1px solid #e5e7eb;
 `;
 
 const TodayBtn = styled.button`
   height: 30px;
   padding: 0 12px;
-  border-radius: 7px;
-  border: 1px solid #e5e7eb;
+  border: none;
+  border-right: 1px solid #e5e7eb;
   background: #fff;
   font-size: 12px;
   font-weight: 500;
   color: #374151;
   cursor: pointer;
   transition: all 0.15s;
-  &:hover { border-color: #d1d5db; background: #f9fafb; }
+  &:hover { background: #f9fafb; }
 `;
 
-const ViewToggle = styled.div`
+const ViewDropdownWrap = styled.div`
+  height: 30px;
   display: flex;
-  background: #f3f4f6;
-  border-radius: 8px;
-  padding: 2px;
-  gap: 1px;
-`;
-
-const ViewToggleBtn = styled.button`
-  padding: 4px 12px;
-  border-radius: 6px;
-  border: none;
-  font-size: 12px;
-  font-weight: ${p => p.$active ? "600" : "400"};
-  color: ${p => p.$active ? "#111827" : "#6b7280"};
-  background: ${p => p.$active ? "#fff" : "transparent"};
-  box-shadow: ${p => p.$active ? "0 1px 3px rgba(0,0,0,0.1)" : "none"};
-  cursor: pointer;
-  transition: all 0.15s;
-  &:hover { color: #374151; background: ${p => p.$active ? "#fff" : "#e9ecef"}; }
+  align-items: center;
+  .ant-select {
+    height: 30px !important;
+  }
+  .ant-select .ant-select-selector {
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 24px 0 10px !important;
+    border-radius: 8px !important;
+    border: 1px solid #e5e7eb !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    align-items: center !important;
+    display: flex !important;
+  }
+  .ant-select-single .ant-select-selector .ant-select-selection-item {
+    line-height: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  .ant-select-arrow { font-size: 10px !important; }
 `;
 
 const AddBtn = styled.button`
@@ -568,23 +629,35 @@ const CalendarOuter = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  margin: 0 16px 16px;
+  background: #fff;
 `;
+
+const OFF_WHITE = "#fafbfc";
 
 const CalHeaderRow = styled.div`
   display: grid;
-  grid-template-columns: 56px repeat(7, 1fr);
+  grid-template-columns: 56px repeat(7, minmax(0, 1fr));
   border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
-  background: #fff;
+  background: ${OFF_WHITE};
   z-index: 5;
+  padding-right: 5px;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 `;
 
 const DayCalHeaderRow = styled.div`
   display: grid;
-  grid-template-columns: 56px 1fr;
+  grid-template-columns: 56px minmax(0, 1fr);
   border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
-  background: #fff;
+  background: ${OFF_WHITE};
+  padding-right: 5px;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 `;
 
 const TimezoneCell = styled.div`
@@ -595,12 +668,14 @@ const TimezoneCell = styled.div`
   font-size: 10px;
   color: #9ca3af;
   font-weight: 500;
+  background: ${OFF_WHITE};
 `;
 
 const DayHeaderCell = styled.div`
   padding: 8px 6px;
   text-align: center;
-  border-left: 1px solid #f3f4f6;
+  border-left: 1px solid #e8eaed;
+  background: ${OFF_WHITE};
 `;
 
 const DayNum = styled.div`
@@ -630,25 +705,26 @@ const CalScrollArea = styled.div`
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-gutter: stable;
   &::-webkit-scrollbar { width: 5px; }
   &::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
 `;
 
 const CalBodyGrid = styled.div`
   display: grid;
-  grid-template-columns: 56px repeat(7, 1fr);
+  grid-template-columns: 56px repeat(7, minmax(0, 1fr));
   min-height: ${TOTAL_HEIGHT}px;
   position: relative;
 `;
 
 const DayCalBodyGrid = styled.div`
   display: grid;
-  grid-template-columns: 56px 1fr;
+  grid-template-columns: 56px minmax(0, 1fr);
   min-height: ${TOTAL_HEIGHT}px;
 `;
 
 const TimeCol = styled.div`
-  background: #fff;
+  background: ${OFF_WHITE};
   position: sticky;
   left: 0;
   z-index: 3;
@@ -794,11 +870,15 @@ const MonthOuter = styled.div`
   flex-direction: column;
   overflow-y: auto;
   padding: 0 16px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  margin: 0 16px 16px;
+  background: #fff;
 `;
 
 const MonthGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   border-left: 1px solid #e5e7eb;
   border-top: 1px solid #e5e7eb;
 `;
@@ -813,15 +893,18 @@ const MonthDayHeader = styled.div`
   text-transform: uppercase;
   letter-spacing: 0.04em;
   background: #f9fafb;
+  min-width: 0;
 `;
 
 const MonthDayCell = styled.div`
   border-right: 1px solid #e5e7eb;
   border-bottom: 1px solid #e5e7eb;
   min-height: 90px;
+  min-width: 0;
   padding: 5px;
   background: ${p => p.$isCurrent ? "#fff" : "#fafafa"};
   cursor: pointer;
+  overflow: hidden;
   &:hover { background: ${p => p.$isCurrent ? "#f9fbff" : "#f3f4f6"}; }
 `;
 
@@ -845,12 +928,40 @@ const MonthPill = styled.div`
   background: ${p => p.$bg};
   border: 1px solid ${p => p.$accent};
   border-radius: 4px;
-  padding: 1px 4px;
+  padding: 2px 4px 2px 6px;
   margin-bottom: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 20px;
+`;
+
+const MonthPillContent = styled.span`
+  flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  cursor: pointer;
+`;
+
+const MonthPillTime = styled.span`
+  font-size: 9px;
+  font-weight: 500;
+  color: #6b7280;
+  flex-shrink: 0;
+`;
+
+const MonthPillCheck = styled.div`
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: ${p => p.$selected ? "#3b82f6" : "rgba(255,255,255,0.8)"};
+  border: 1.5px solid ${p => p.$selected ? "#3b82f6" : "#d1d5db"};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 `;
 
 // ── Schedule Form Panel ───────────────────────────────────────────────────────
@@ -1132,13 +1243,16 @@ function InfoTip({ text }) {
 }
 
 // ─── MINI CALENDAR ────────────────────────────────────────────────────────────
-function MiniCalendar({ selectedWeekStart, onDateClick }) {
+function MiniCalendar({ viewMode, currentDate, onDateClick }) {
   const [miniMonth, setMiniMonth] = useState(() => dayjs());
   const today = dayjs();
   const startOfMonth = miniMonth.startOf("month");
   const firstWeekday = startOfMonth.day();
   const gridStart = startOfMonth.subtract(firstWeekday === 0 ? 6 : firstWeekday - 1, "day");
   const cells = Array.from({ length: 42 }, (_, i) => gridStart.add(i, "day"));
+
+  const selectedWeekStart = getWeekStart(currentDate);
+  const selectedWeekEnd = selectedWeekStart.add(6, "day");
 
   // Group the 42 cells into 6 week rows
   const weeks = Array.from({ length: 6 }, (_, w) => cells.slice(w * 7, w * 7 + 7));
@@ -1161,18 +1275,22 @@ function MiniCalendar({ selectedWeekStart, onDateClick }) {
 
       {weeks.map((week, wi) => {
         const weekRowStart = getWeekStart(week[0]);
-        const isActiveWeek = weekRowStart.isSame(selectedWeekStart, "day");
+        const weekRowEnd = weekRowStart.add(6, "day");
+        const isActiveWeek = viewMode === "week" && !currentDate.isBefore(weekRowStart, "day") && !currentDate.isAfter(weekRowEnd, "day");
         return (
           <MiniWeekRow key={wi} $active={isActiveWeek}>
             {week.map((date, di) => {
               const isInactive = !date.isSame(miniMonth, "month");
               const isToday = date.isSame(today, "day");
-              const isSelected = date.isSame(selectedWeekStart, "day");
+              const isFirstOfWeek = viewMode === "week" && date.isSame(selectedWeekStart, "day");
+              const isLastOfWeek = viewMode === "week" && date.isSame(selectedWeekEnd, "day");
+              const isSingleDaySelected = viewMode === "day" && date.isSame(currentDate, "day");
+              const isSelected = isSingleDaySelected || isFirstOfWeek || isLastOfWeek;
               return (
                 <MiniDateCell key={di} onClick={() => onDateClick(date)}>
                   <MiniDateInner
-                    $filled={isSelected || (isToday && isActiveWeek)}
-                    $ring={isToday && !isActiveWeek}
+                    $filled={isSelected}
+                    $ring={isToday && !isSelected}
                     $bold={isSelected || isToday}
                     $inactive={isInactive && !isSelected}
                   >
@@ -1194,7 +1312,7 @@ function SidebarContent({
   allGroups, visibleGroups, onToggleGroup,
   myScheduleOpen, setMyScheduleOpen,
   groupsOpen, setGroupsOpen,
-  weekStart, onDateClick,
+  viewMode, currentDate, onDateClick,
   onClose,
 }) {
   const colorMap = useMemo(() => {
@@ -1228,7 +1346,7 @@ function SidebarContent({
           </SidebarHeaderArea>
 
           <SidebarSection>
-            <MiniCalendar selectedWeekStart={weekStart} onDateClick={onDateClick} />
+            <MiniCalendar viewMode={viewMode} currentDate={currentDate} onDateClick={onDateClick} />
           </SidebarSection>
         </>
       )}
@@ -2302,12 +2420,13 @@ function DayView({ day, schedules, getClassColor, onEventClick, onSlotClick, loa
 }
 
 // ─── MONTH VIEW ───────────────────────────────────────────────────────────────
-function MonthView({ currentMonth, schedulesByDay, getClassColor, onEventClick, onDayClick }) {
+function MonthView({ currentMonth, schedulesByDay, getClassColor, onEventClick, onDayClick, selectMode, selectedIds }) {
   const startOfMonth = currentMonth.startOf("month");
   const firstWeekday = startOfMonth.day();
   const gridStart = startOfMonth.subtract(firstWeekday === 0 ? 6 : firstWeekday - 1, "day");
   const cells = Array.from({ length: 42 }, (_, i) => gridStart.add(i, "day"));
   const today = dayjs();
+  const maxVis = 5;
 
   return (
     <MonthOuter>
@@ -2321,16 +2440,22 @@ function MonthView({ currentMonth, schedulesByDay, getClassColor, onEventClick, 
             const daySchedules = schedulesByDay[dateStr] || [];
             const isCurrent = date.isSame(currentMonth, "month");
             const isToday = date.isSame(today, "day");
-            const maxVis = 3;
             return (
               <MonthDayCell key={i} $isCurrent={isCurrent} onClick={() => onDayClick(date)}>
                 <MonthDayNum $isToday={isToday} $isCurrent={isCurrent}>{date.date()}</MonthDayNum>
-                {daySchedules.slice(0, maxVis).map((s, si) => {
+                {daySchedules.slice(0, maxVis).map((s) => {
                   const color = getClassColor(s.optionId);
+                  const isSelected = selectedIds?.has(s.id);
                   return (
-                    <MonthPill key={si} $bg={color.bg} $accent={color.accent} $text={color.text}
+                    <MonthPill key={s.id} $bg={color.bg} $accent={color.accent} $text={color.text}
                       onClick={(e) => { e.stopPropagation(); onEventClick(s); }}>
-                      {s.className || s.name || "Session"}
+                      {selectMode && (
+                        <MonthPillCheck $selected={isSelected}>
+                          {isSelected && <Check size={9} color="#fff" strokeWidth={3} />}
+                        </MonthPillCheck>
+                      )}
+                      <MonthPillContent>{s.className || s.name || "Session"}</MonthPillContent>
+                      <MonthPillTime>{formatTimeShort(s.time)}</MonthPillTime>
                     </MonthPill>
                   );
                 })}
@@ -2699,7 +2824,8 @@ export default function ScheduleCalendarView({ initialClassId }) {
     allGroups, visibleGroups, onToggleGroup: handleToggleGroup,
     myScheduleOpen, setMyScheduleOpen,
     groupsOpen, setGroupsOpen,
-    weekStart, onDateClick: (date) => {
+    viewMode, currentDate,
+    onDateClick: (date) => {
       setCurrentDate(date);
       if (viewMode === "month") setViewMode("week");
     },
@@ -2723,8 +2849,12 @@ export default function ScheduleCalendarView({ initialClassId }) {
         <TopBar>
           <TopBarRow>
             <TopBarLeft>
+            <CalendarBadge title={dateRangeLabel}>
+                <CalendarBadgeMonth>{currentDate.format("MMM")}</CalendarBadgeMonth>
+                <CalendarBadgeDay>{currentDate.date()}</CalendarBadgeDay>
+              </CalendarBadge>
               <PageTitle>Schedules</PageTitle>
-              <DateLabel>{dateRangeLabel}</DateLabel>
+
               {visibleEventCount > 0 && (
                 <span style={{ fontSize: 12, color: "#3b82f6", fontWeight: 500, display: "flex", alignItems: "center", gap: 3 }}>
                   <Calendar size={13} /> {visibleEventCount}
@@ -2740,22 +2870,31 @@ export default function ScheduleCalendarView({ initialClassId }) {
               </IconBtn>
 
               <Tooltip title="Refresh">
-                <NavBtn onClick={() => setRefreshKey(k => k + 1)} disabled={loading}>
+                <StandaloneNavBtn onClick={() => setRefreshKey(k => k + 1)} disabled={loading} style={{ marginRight: 6 }}>
                   <RefreshCw size={14} style={{ animation: loading ? "spin 1s linear infinite" : "none" }} />
-                </NavBtn>
+                </StandaloneNavBtn>
               </Tooltip>
 
-              <TodayBtn onClick={() => setCurrentDate(dayjs())}>Today</TodayBtn>
-              <NavBtn onClick={() => navigate(-1)}><ChevronLeft size={15} /></NavBtn>
-              <NavBtn onClick={() => navigate(1)}><ChevronRight size={15} /></NavBtn>
+              <NavGroup>
+                <NavBtn onClick={() => navigate(-1)}><ChevronLeft size={15} /></NavBtn>
+                <TodayBtn onClick={() => setCurrentDate(dayjs())}>Today</TodayBtn>
+                <NavBtn onClick={() => navigate(1)}><ChevronRight size={15} /></NavBtn>
+              </NavGroup>
 
-              <ViewToggle>
-                {["day", "week", "month"].map(v => (
-                  <ViewToggleBtn key={v} $active={viewMode === v} onClick={() => setViewMode(v)}>
-                    {v.charAt(0).toUpperCase() + v.slice(1)}
-                  </ViewToggleBtn>
-                ))}
-              </ViewToggle>
+              <ViewDropdownWrap>
+                <Select
+                  value={viewMode}
+                  onChange={setViewMode}
+                  options={[
+                    { value: "day", label: "Day" },
+                    { value: "week", label: "Week" },
+                    { value: "month", label: "Month" },
+                  ]}
+                  style={{ width: 90 }}
+                  size="small"
+                  suffixIcon={<ChevronDown size={12} />}
+                />
+              </ViewDropdownWrap>
 
               <Tooltip title={selectMode ? "Exit select mode" : "Select schedules for bulk actions"}>
                 <IconBtn
@@ -2858,6 +2997,8 @@ export default function ScheduleCalendarView({ initialClassId }) {
             getClassColor={getClassColor}
             onEventClick={handleEventClick}
             onDayClick={(date) => { setCurrentDate(date); setViewMode("day"); }}
+            selectMode={selectMode}
+            selectedIds={selectedIds}
           />
         )}
 

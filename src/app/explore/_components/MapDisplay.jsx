@@ -138,7 +138,7 @@ const MapWrapper = styled.div`
   position: relative;
   height: 100%;
   background: #fff;
-  border-radius: 30px;
+  border-radius: ${(props) => (props.$isMobile ? "0" : "30px")};
   overflow: hidden;
 
   .leaflet-container {
@@ -558,6 +558,7 @@ const MapDisplay = ({
   showMap,
   userLocation,
   onHideMap,
+  isMobile = false,
 }) => {
   const router = useRouter();
   const pathname = usePathname();
@@ -683,7 +684,7 @@ const MapDisplay = ({
   }, [calculateMapBounds]);
 
   return (
-    <MapWrapper>
+    <MapWrapper $isMobile={isMobile}>
       <LeafletMarkerStyles />
       <HideMapButton onClick={onHideMap}>
         <MapPin size={16} /> Hide Map

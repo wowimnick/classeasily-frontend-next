@@ -404,6 +404,8 @@ const TableDescription = styled(Paragraph)`
 
 const formatPayoutStatusLabel = (status) => {
   if (!status || typeof status !== "string") return "Unknown";
+  const s = status.toLowerCase();
+  if (s === "scheduled") return "ESCROW";
   return status
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
@@ -803,8 +805,7 @@ const getStatusIcon = (status) => {
       return <CheckCircle size={12} />;
     case "pending":
       return <Clock size={12} />;
-    case "scheduled":
-      return <Calendar size={12} />;
+
     case "in_transit":
       return <Clock size={12} />;
     case "failed":
@@ -812,7 +813,8 @@ const getStatusIcon = (status) => {
     case "cancelled":
       return <AlertCircle size={12} />;
     default:
-      return <Info size={12} />;
+      return null;
+
   }
 };
 

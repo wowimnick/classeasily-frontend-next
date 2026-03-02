@@ -193,8 +193,8 @@ function WidgetUpgradeModal({ open, onClose }) {
         <UpgradeModalBody>
           Subscribe to a widget plan to embed the booking widget on your website, customize its look, and start taking bookings.
         </UpgradeModalBody>
-        <UpgradeModalCta href="/booking-widget#pricing" onClick={onClose}>
-          View plans <ArrowRight size={14} />
+        <UpgradeModalCta href="/booking-widget" onClick={onClose}>
+          Get the Widget <ArrowRight size={14} />
         </UpgradeModalCta>
       </UpgradeModalInner>
     </>
@@ -840,12 +840,11 @@ const SideMenuComponent = memo(
 
     const { user } = useAuth();
     const permissions = user?.permissions ||[];
-    const { subscription, widgetSubscriptionRequired } = useSubscription();
+    const { subscription } = useSubscription();
     const hasWidgetPlan = Boolean(
-      !widgetSubscriptionRequired ||
-        (subscription?.status &&
-          ["active", "trialing"].includes(subscription.status) &&
-          subscription?.planId)
+      subscription?.status &&
+        ["active", "trialing"].includes(subscription.status) &&
+        subscription?.planId
     );
 
     const isBusinessClickable =

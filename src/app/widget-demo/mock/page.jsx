@@ -1,9 +1,15 @@
 "use client";
 
-import React, { Suspense, useEffect } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import styled from "styled-components";
+
+const LAYOUTS = [
+  { id: "inline", label: "Inline", description: "Widget embedded in the page" },
+  { id: "modal", label: "Modal", description: "Button opens booking in a modal" },
+  { id: "floating", label: "Floating button", description: "Fixed button opens booking" },
+];
 
 const PageWrap = styled.div`
   min-height: 100vh;
@@ -72,13 +78,36 @@ const BackLink = styled(Link)`
 `;
 
 const Banner = styled.div`
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   padding: 0.75rem 1rem;
   border-radius: 12px;
   border: 1px solid #fde68a;
   background: #fffbeb;
   font-size: 0.875rem;
   color: #92400e;
+`;
+
+const LayoutSwitcher = styled.div`
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+`;
+
+const LayoutTab = styled.button`
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid ${(p) => (p.$active ? "#111827" : "#e5e7eb")};
+  background: ${(p) => (p.$active ? "#111827" : "#fff")};
+  color: ${(p) => (p.$active ? "#fff" : "#374151")};
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover {
+    border-color: #111827;
+    background: ${(p) => (p.$active ? "#111827" : "#f9fafb")};
+  }
 `;
 
 const Grid = styled.div`
@@ -95,7 +124,7 @@ const ImagePlaceholder = styled.div`
   height: 280px;
   overflow: hidden;
   border-radius: 1rem;
-  background: #e5e7eb;
+  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
@@ -177,6 +206,20 @@ const CardPrice = styled.div`
   color: #6b7280;
 `;
 
+const WidgetMount = styled.div`
+  min-height: 60px;
+  display: ${(p) => (p.$hide ? "none" : "block")};
+`;
+
+const FloatingMount = styled.div`
+  display: ${(p) => (p.$hide ? "none" : "block")};
+  min-height: 0;
+  pointer-events: none;
+  & > * {
+    pointer-events: auto;
+  }
+`;
+
 const NoKeyWrap = styled.div`
   min-height: 100vh;
   display: flex;
@@ -215,13 +258,21 @@ const FallbackWrap = styled.div`
 `;
 
 /**
- * Mock "experience page" – simulates how the widget looks on a real site.
- * Uses same key/base params; loads widget script and mounts in a realistic layout.
+ * Mock experience page with switchable widget layouts (inline, modal, floating).
+ * All three widget mounts are in the DOM on load so the widget script mounts and
+ * preloads each; we show/hide by layout so switching is instant.
  */
 function MockPageContent() {
   const searchParams = useSearchParams();
-  const apiKey = searchParams.get("key");
+  const apiKey = searchParams.get("key") || "demo";
   const apiBase = searchParams.get("base") || "";
+  const layoutParam = searchParams.get("layout");
+  const initialLayout = LAYOUTS.some((l) => l.id === layoutParam) ? layoutParam : "inline";
+  const [layout, setLayout] = useState(initialLayout);
+
+  useEffect(() => {
+    if (layoutParam && LAYOUTS.some((l) => l.id === layoutParam)) setLayout(layoutParam);
+  }, [layoutParam]);
 
   useEffect(() => {
     if (!apiKey || typeof window === "undefined") return;
@@ -254,22 +305,16 @@ function MockPageContent() {
   const fullApiBase =
     apiBase || (typeof window !== "undefined" ? process.env.NEXT_PUBLIC_API_URL : "") || "";
 
-  if (!apiKey) {
-    return (
-      <NoKeyWrap>
-        <NoKeyCard>
-          <NoKeyTitle>Missing widget API key</NoKeyTitle>
-          <NoKeyHint>Use: /widget-demo/mock?key=YOUR_WIDGET_API_KEY</NoKeyHint>
-        </NoKeyCard>
-      </NoKeyWrap>
-    );
-  }
+  const widgetProps = {
+    "data-widget-api-key": apiKey,
+    ...(fullApiBase ? { "data-api-base": fullApiBase } : {}),
+  };
 
   return (
     <PageWrap>
       <Header>
         <HeaderInner>
-          <Logo>Your Business</Logo>
+          <Logo>Adventure Co.</Logo>
           <Nav>
             <span>Experiences</span>
             <span>About</span>
@@ -286,9 +331,23 @@ function MockPageContent() {
         </BackLink>
 
         <Banner>
-          <strong>Mock page.</strong> This simulates how your widget will look on a real experience
-          page. Content below is sample only.
+          <strong>Experience page demo.</strong> Switch layouts below to see how your booking widget
+          appears as inline, in a modal, or as a floating button. All three are preloaded.
         </Banner>
+
+        <LayoutSwitcher>
+          {LAYOUTS.map((opt) => (
+            <LayoutTab
+              key={opt.id}
+              type="button"
+              $active={layout === opt.id}
+              onClick={() => setLayout(opt.id)}
+              title={opt.description}
+            >
+              {opt.label}
+            </LayoutTab>
+          ))}
+        </LayoutSwitcher>
 
         <Grid>
           <ContentCol>
@@ -296,7 +355,8 @@ function MockPageContent() {
             <Title>Sunset Paddleboard Tour</Title>
             <Lead>
               Join us for a relaxing paddleboard session as the sun sets over the water. Perfect for
-              beginners and families. All equipment provided.
+              beginners and families. All equipment provided — just bring yourself and a sense of
+              adventure.
             </Lead>
             <Meta>
               <span>2.5 hours</span>
@@ -310,7 +370,16 @@ function MockPageContent() {
               <SectionText>
                 Your host will meet you at the dock and get you set up with boards and life jackets.
                 After a short safety briefing, you&apos;ll head out on the water. No experience
-                necessary — we&apos;ll show you the basics and keep the pace relaxed.
+                necessary — we&apos;ll show you the basics and keep the pace relaxed so you can enjoy
+                the views and the company.
+              </SectionText>
+            </Section>
+            <Section>
+              <SectionTitle>Good to know</SectionTitle>
+              <SectionText>
+                Cancellations up to 24 hours before the start time receive a full refund. We run in
+                most weather; if we need to reschedule for safety we&apos;ll get in touch the day
+                before.
               </SectionText>
             </Section>
           </ContentCol>
@@ -318,14 +387,19 @@ function MockPageContent() {
           <Sidebar>
             <Card>
               <CardPrice>From $45 / person</CardPrice>
-              <div
-                id="classeasily-booking-widget"
-                data-widget-api-key={apiKey}
-                {...(fullApiBase ? { "data-api-base": fullApiBase } : {})}
-              />
+              <WidgetMount $hide={layout !== "inline"}>
+                <div id="ce-widget-mount-inline" {...widgetProps} data-demo-view="inline" />
+              </WidgetMount>
+              <WidgetMount $hide={layout !== "modal"}>
+                <div id="ce-widget-mount-modal" {...widgetProps} data-demo-view="modal" />
+              </WidgetMount>
             </Card>
           </Sidebar>
         </Grid>
+
+        <FloatingMount $hide={layout !== "floating"}>
+          <div id="ce-widget-mount-floating" {...widgetProps} data-demo-view="floating" />
+        </FloatingMount>
       </Main>
     </PageWrap>
   );

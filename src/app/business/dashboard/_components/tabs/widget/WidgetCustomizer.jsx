@@ -1,14 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Modal, Input, Select, Button, ColorPicker, Switch, Tooltip, message as antMessage } from "antd";
-import { Copy, Loader2, Check, ArrowRight, RefreshCw, X } from "lucide-react";
+import { Copy, Loader2, Check, X, Plus, Trash2, Pencil } from "lucide-react";
 import { businessService } from "@/services/apiService";
 import message from "@/lib/message";
-import { useSubscription } from "@/context/SubscriptionContext";
-import { getPlanById, PLANS, isUpgrade } from "@/lib/subscriptionPlans";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 
 // ─── Theme constants ──────────────────────────────────────────────────────────
@@ -567,13 +564,52 @@ export default function WidgetCustomizer() {
   const [isWide, setIsWide]     = useState(
     typeof window !== "undefined" ? window.innerWidth >= 960 : true
   );
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [cancelling, setCancelling]           = useState(false);
+  const [newDomainInput, setNewDomainInput] = useState("");
+  const [editingDomainIndex, setEditingDomainIndex] = useState(-1);
+  const [editingDomainValue, setEditingDomainValue] = useState("");
   const searchParams = useSearchParams();
-  const {
-    subscription, loading: subLoading,
-    cancel, reactivate, refetch: refetchSubscription,
-  } = useSubscription();
+
+  const allowedDomainsArray = (form.allowed_widget_origins || "")
+    .split(/\r?\n/)
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+
+  const addDomain = () => {
+    const domain = newDomainInput.trim().toLowerCase().replace(/^https?:\/\//, "").split("/")[0];
+    if (!domain) return;
+    if (allowedDomainsArray.includes(domain)) {
+      antMessage.warning("Domain already in list.");
+      return;
+    }
+    setForm((f) => ({
+      ...f,
+      allowed_widget_origins: [f.allowed_widget_origins.trim(), domain].filter(Boolean).join("\n"),
+    }));
+    setNewDomainInput("");
+  };
+
+  const removeDomain = (index) => {
+    const next = allowedDomainsArray.filter((_, i) => i !== index);
+    setForm((f) => ({ ...f, allowed_widget_origins: next.join("\n") }));
+  };
+
+  const startEditDomain = (index) => {
+    setEditingDomainIndex(index);
+    setEditingDomainValue(allowedDomainsArray[index]);
+  };
+
+  const saveEditDomain = () => {
+    const domain = editingDomainValue.trim().toLowerCase().replace(/^https?:\/\//, "").split("/")[0];
+    if (!domain) {
+      setEditingDomainIndex(-1);
+      return;
+    }
+    const next = [...allowedDomainsArray];
+    next[editingDomainIndex] = domain;
+    setForm((f) => ({ ...f, allowed_widget_origins: next.join("\n") }));
+    setEditingDomainIndex(-1);
+    setEditingDomainValue("");
+  };
 
   useEffect(() => {
     const check = () => setIsWide(window.innerWidth >= 960);
@@ -655,6 +691,7 @@ export default function WidgetCustomizer() {
   const previewUrl    = apiKey
     ? `${origin}/widget-demo?key=${encodeURIComponent(apiKey)}${apiBase ? `&base=${encodeURIComponent(apiBase)}` : ""}`
     : "";
+  const mockDemoUrl   = `${origin}/widget-demo/mock?key=${encodeURIComponent(apiKey || "demo")}${apiBase ? `&base=${encodeURIComponent(apiBase)}` : ""}`;
 
   const embedSnippet = `<!-- Class Easily Booking Widget -->
 <link rel="stylesheet" href="${widgetScriptUrl.replace(/\.js$/, ".css")}" />
@@ -674,101 +711,28 @@ export default function WidgetCustomizer() {
 
   if (loading) {
     return (
-      <div style={{ padding: "40px 0", display: "flex", alignItems: "center", gap: 10 }}>
-        <Loader2 size={20} style={{ animation: "spin 1s linear infinite", color: "#9ca3af" }} />
-        <span style={{ color: "#9ca3af", fontSize: 14 }}>Loading widget settings…</span>
+      <div style={{
+        position: "fixed",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "column",
+        gap: 12,
+        background: "rgba(255,255,255,0.9)",
+        zIndex: 10,
+      }}>
+        <Loader2 size={24} style={{ animation: "spin 1s linear infinite", color: "#9ca3af" }} />
+        <span style={{ color: "#6b7280", fontSize: 14 }}>Loading widget settings…</span>
       </div>
     );
   }
 
-  const classes     = data?.classes || [];
-  const currentPlan = subscription?.planId ? getPlanById(subscription.planId) : null;
-  const nextBilling = subscription?.currentPeriodEnd
-    ? new Date(subscription.currentPeriodEnd).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
-    : null;
-
-  const handleCancelConfirm = async () => {
-    setCancelling(true);
-    const result = await cancel();
-    setCancelling(false);
-    setCancelModalOpen(false);
-    if (result.success) {
-      message.success("Subscription will cancel at the end of the billing period.");
-      refetchSubscription();
-    } else {
-      antMessage.error(result.error || "Failed to cancel.");
-    }
-  };
-
-  const handleReactivate = async () => {
-    const result = await reactivate();
-    if (result.success) { message.success("Subscription reactivated."); refetchSubscription(); }
-    else antMessage.error(result.error || "Failed to reactivate.");
-  };
+  const classes = data?.classes || [];
 
   // ─── Left column ─────────────────────────────────────────────────────────────
   const leftColumn = (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-
-      {/* Plan & Billing */}
-      <SettingsCard title="Plan & Billing" subtitle="Your widget subscription">
-        {subLoading ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Loader2 size={14} style={{ animation: "spin 1s linear infinite", color: "#9ca3af" }} />
-            <span style={{ fontSize: 13, color: "#9ca3af" }}>Loading…</span>
-          </div>
-        ) : !subscription?.planId ? (
-          <div>
-            <p style={{ fontSize: 13, color: "#374151", margin: "0 0 12px", lineHeight: 1.5 }}>
-              Choose a plan to enable the booking widget on your website.
-            </p>
-            <Link href="/booking-widget/checkout">
-              <Button type="primary" icon={<ArrowRight size={13} />} size="small"
-                style={{ background: SEL_COLOR, borderColor: SEL_COLOR }}>
-                Choose a plan
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>{currentPlan?.name ?? subscription.planId}</div>
-              <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-                ${currentPlan?.price ?? 0}/mo{currentPlan?.commission ? ` · ${currentPlan.commission}% per booking` : ""}
-                {nextBilling ? ` · Renews ${nextBilling}` : ""}
-              </div>
-              {subscription.cancelAtPeriodEnd && (
-                <div style={{ marginTop: 8, display: "inline-block", padding: "3px 10px", background: "#fef3c7", borderRadius: 20, fontSize: 11, color: "#92400e" }}>
-                  Cancels {nextBilling || "at period end"}
-                </div>
-              )}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end", flexShrink: 0 }}>
-              {subscription.cancelAtPeriodEnd ? (
-                <Button size="small" icon={<RefreshCw size={11} />} onClick={handleReactivate}
-                  style={{ background: SEL_COLOR, borderColor: SEL_COLOR, color: "white" }}>
-                  Reactivate
-                </Button>
-              ) : (
-                <>
-                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                    {PLANS.filter((p) => p.id !== subscription.planId).map((p) => (
-                      <Link key={p.id} href={`/booking-widget/checkout?plan=${p.id}`}>
-                        <Button size="small" style={{ fontSize: 11 }}>
-                          {isUpgrade(subscription.planId, p.id) ? "Upgrade" : "Downgrade"} to {p.name}
-                        </Button>
-                      </Link>
-                    ))}
-                  </div>
-                  <Button size="small" danger onClick={() => setCancelModalOpen(true)} style={{ fontSize: 11 }}>
-                    Cancel subscription
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-      </SettingsCard>
 
       {/* Display type */}
       <SettingsCard title="Display Type" subtitle="How the booking flow opens for visitors">
@@ -960,17 +924,63 @@ export default function WidgetCustomizer() {
 
       {/* Allowed Domains */}
       <SettingsCard title="Allowed Domains" subtitle="Restrict which websites can embed your widget">
-        <FieldLabel>Your website domains</FieldLabel>
-        <Input.TextArea
-          value={form.allowed_widget_origins}
-          onChange={(e) => set("allowed_widget_origins")(e.target.value)}
-          placeholder={"yoursite.com\nwww.yoursite.com\nshop.yoursite.com"}
-          rows={4}
-          style={{ fontFamily: "monospace", fontSize: 12 }}
-        />
-        <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 6, lineHeight: 1.4 }}>
-          One domain per line, without <code style={{ background: "#f3f4f6", padding: "1px 4px", borderRadius: 3 }}>https://</code>.
-          ClassEasily domains are always included.
+        <FieldLabel>Add a domain</FieldLabel>
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          <Input
+            value={newDomainInput}
+            onChange={(e) => setNewDomainInput(e.target.value)}
+            onPressEnter={addDomain}
+            placeholder="yoursite.com or www.yoursite.com"
+            style={{ flex: 1, fontFamily: "monospace" }}
+            size="middle"
+          />
+          <Button type="primary" icon={<Plus size={14} />} onClick={addDomain} style={{ background: SEL_COLOR, borderColor: SEL_COLOR }}>
+            Add
+          </Button>
+        </div>
+        {allowedDomainsArray.length > 0 ? (
+          <ul style={{ margin: 0, padding: 0, listStyle: "none", border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
+            {allowedDomainsArray.map((domain, index) => (
+              <li
+                key={`${domain}-${index}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "8px 12px",
+                  borderBottom: index < allowedDomainsArray.length - 1 ? "1px solid #f3f4f6" : "none",
+                  background: "#fff",
+                  gap: 8,
+                }}
+              >
+                {editingDomainIndex === index ? (
+                  <>
+                    <Input
+                      value={editingDomainValue}
+                      onChange={(e) => setEditingDomainValue(e.target.value)}
+                      onPressEnter={saveEditDomain}
+                      size="small"
+                      style={{ flex: 1, fontFamily: "monospace" }}
+                      autoFocus
+                    />
+                    <Button type="text" size="small" icon={<Check size={14} />} onClick={saveEditDomain} style={{ color: "#16a34a" }} />
+                    <Button type="text" size="small" icon={<X size={14} />} onClick={() => { setEditingDomainIndex(-1); setEditingDomainValue(""); }} style={{ color: "#6b7280" }} />
+                  </>
+                ) : (
+                  <>
+                    <span style={{ fontFamily: "monospace", fontSize: 13, color: "#111827", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{domain}</span>
+                    <Button type="text" size="small" icon={<Pencil size={12} />} onClick={() => startEditDomain(index)} style={{ color: "#6b7280", padding: "4px" }} title="Edit" />
+                    <Button type="text" size="small" danger icon={<Trash2 size={12} />} onClick={() => removeDomain(index)} style={{ padding: "4px" }} title="Remove" />
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div style={{ fontSize: 13, color: "#9ca3af", padding: "12px 0" }}>No domains added yet. Add your website domain so the widget can load.</div>
+        )}
+        <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 8, lineHeight: 1.4 }}>
+          Without <code style={{ background: "#f3f4f6", padding: "1px 4px", borderRadius: 3 }}>https://</code>. ClassEasily domains are always allowed.
         </div>
       </SettingsCard>
 
@@ -1008,6 +1018,13 @@ export default function WidgetCustomizer() {
             Open full preview
           </Button>
         )}
+        <Button
+          size="small"
+          onClick={() => window.open(mockDemoUrl, "_blank")}
+          style={{ marginTop: 6, width: "100%" }}
+        >
+          Open experience demo
+        </Button>
       </div>
 
       <div style={{ height: 1, background: "#e9ecef" }} />
@@ -1059,36 +1076,10 @@ export default function WidgetCustomizer() {
   );
 
   return (
-    <div style={{ padding: "24px 24px 56px" }}>
+    <div style={{ padding: "24px 24px 80px", position: "relative" }}>
       <DashboardBreadcrumb title="Booking Widget" />
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#111827" }}>Booking Widget</h1>
-        <Button
-          type="primary"
-          size="small"
-          onClick={handleSave}
-          loading={saving}
-          style={{ background: ACCENT, borderColor: ACCENT, fontWeight: 600 }}
-        >
-          {saving ? "Saving…" : "Save changes"}
-        </Button>
-      </div>
-
-      <Modal
-        title="Cancel subscription"
-        open={cancelModalOpen}
-        onCancel={() => setCancelModalOpen(false)}
-        onOk={handleCancelConfirm}
-        okText={cancelling ? "Cancelling…" : "Cancel at period end"}
-        okButtonProps={{ danger: true, loading: cancelling }}
-        cancelText="Keep subscription"
-      >
-        <p style={{ margin: 0 }}>
-          Your subscription will cancel at the end of the current billing period ({nextBilling || "see above"}).
-          You&apos;ll keep access until then.
-        </p>
-      </Modal>
+      <h1 style={{ margin: "0 0 20px", fontSize: 20, fontWeight: 700, color: "#111827" }}>Booking Widget</h1>
 
       {isWide ? (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 18, alignItems: "start" }}>
@@ -1105,6 +1096,28 @@ export default function WidgetCustomizer() {
           {leftColumn}
         </div>
       )}
+
+      {/* Sticky Save button — bottom-left with margin so it doesn't cover content */}
+      <div
+        style={{
+          position: "sticky",
+          bottom: 24,
+          left: 24,
+          marginTop: 24,
+          display: "inline-block",
+          zIndex: 10,
+        }}
+      >
+        <Button
+          type="primary"
+          size="middle"
+          onClick={handleSave}
+          loading={saving}
+          style={{ background: ACCENT, borderColor: ACCENT, fontWeight: 600, minWidth: 140 }}
+        >
+          {saving ? "Saving…" : "Save changes"}
+        </Button>
+      </div>
     </div>
   );
 }

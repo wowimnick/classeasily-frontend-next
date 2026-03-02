@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { getLocalYYYYMMDD } from "@/services/utils";
 import { scheduleService } from "@/services/apiService";
+import posthog from "posthog-js";
 
 /** Breakpoint (px) below which mobile reserve flow is shown */
 export const MOBILE_RESERVE_BREAKPOINT = 1024;
@@ -35,6 +36,7 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
   const [mobileParticipantsDraft, setMobileParticipantsDraft] = useState(DEFAULT_PARTICIPANTS);
   const [mobileReviewDrawerOpen, setMobileReviewDrawerOpen] = useState(false);
   const reopenReviewDrawerOnCloseEditRef = useRef(false);
+  const hasFiredDateSelectedRef = useRef(false);
 
   const mobileMinSelectableDate = useMemo(() => {
     const d = new Date();
@@ -165,6 +167,15 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
       });
       reopenReviewDrawerOnCloseEditRef.current = false;
       setMobileParticipants(participants);
+      // PostHog: Track date/slot selection in mobile reserve flow (MiniCalendar + time drawer; same event as CalendarStep)
+      if (!hasFiredDateSelectedRef.current) {
+        hasFiredDateSelectedRef.current = true;
+        posthog.capture("booking_date_selected", {
+          date: dateStr,
+          time: slot.time,
+          participants,
+        });
+      }
       setMobileTimeDrawerOpen(false);
       setTimeout(() => setMobileReviewDrawerOpen(true), DRAWER_TRANSITION_MS);
     },
@@ -173,8 +184,17 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
 
   const handleReserveClick = useCallback(() => {
     if (!mobileSelectedSlot || !optionToDisplayOnCard || !classData?.slug) return;
+    // PostHog: If slot was auto-selected (user never opened time drawer), fire date_selected when they tap Reserve
+    if (!hasFiredDateSelectedRef.current) {
+      hasFiredDateSelectedRef.current = true;
+      posthog.capture("booking_date_selected", {
+        date: mobileSelectedSlot.date,
+        time: mobileSelectedSlot.time,
+        participants: mobileParticipants,
+      });
+    }
     setMobileReviewDrawerOpen(true);
-  }, [mobileSelectedSlot, optionToDisplayOnCard, classData]);
+  }, [mobileSelectedSlot, optionToDisplayOnCard, classData, mobileParticipants]);
 
   const openEditDrawerAfterClose = useCallback((openDrawer) => {
     reopenReviewDrawerOnCloseEditRef.current = true;

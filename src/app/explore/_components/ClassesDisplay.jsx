@@ -165,21 +165,24 @@ const MobileMapToggle = styled.button`
   left: 50%;
   transform: translateX(-50%);
   padding: 10px 20px;
-  background: #333;
-  color: white;
-  border: none;
-  border-radius: 25px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.75);
+  color: #222;
+  border: 1px solid rgba(255, 255, 255, 0.125);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  backdrop-filter: blur(8px) saturate(180%);
+  -webkit-backdrop-filter: blur(8px) saturate(180%);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
   display: none;
   align-items: center;
   gap: 8px;
   z-index: 1001;
   &:hover {
-    background-color: #555;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
   }
   @media (max-width: 1048px) {
     display: inline-flex;
@@ -310,6 +313,11 @@ const ClassesDisplay = ({
     // Only run on mount: we have one saved position per path when returning from class page
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Scroll list back to top when collection selection changes
+  useEffect(() => {
+    gridWrapperRef.current?.scrollTo(0, 0);
+  }, [currentCollection]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -576,6 +584,7 @@ const ClassesDisplay = ({
             userLocation={ipLocation || userLocation}
             showMap={showMap}
             onHideMap={() => setIsMapVisible(false)}
+            isMobile={isMobile}
           />
         )}
       </MapContainer>

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
 import styled from "styled-components";
 import { Drawer } from "vaul";
 import { Star, CalendarDays, Clock, Users, ChevronRight, Shield } from "lucide-react";
@@ -378,6 +379,21 @@ export default function MobileReserveReviewDrawer({
   const router = useRouter();
   const [priceOpen, setPriceOpen] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
+  const hasFiredBookingStartedRef = useRef(false);
+
+  // PostHog: Track booking funnel entry for mobile reserve flow (same event as modal path)
+  useEffect(() => {
+    if (open && classData && reserveData?.selectedSlot && reserveData?.selectedOption && !hasFiredBookingStartedRef.current) {
+      hasFiredBookingStartedRef.current = true;
+      const hasMultipleOptions = Array.isArray(classData?.options) && classData.options.length > 1;
+      posthog.capture("booking_started", {
+        class_id: classData?.classId || classData?.id,
+        class_title: classData?.title,
+        business_name: classData?.business_name,
+        has_multiple_options: hasMultipleOptions,
+      });
+    }
+  }, [open, classData, reserveData?.selectedSlot, reserveData?.selectedOption]);
 
   const slot = reserveData?.selectedSlot;
   const option = reserveData?.selectedOption;

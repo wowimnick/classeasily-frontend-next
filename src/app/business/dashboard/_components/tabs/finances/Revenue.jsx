@@ -586,12 +586,11 @@ const Revenue = forwardRef((props, ref) => {
     classId: null,
     source: "all",
   });
-  const { subscription, widgetSubscriptionRequired } = useSubscription();
+  const { subscription } = useSubscription();
   const hasWidgetAnalytics = Boolean(
-    !widgetSubscriptionRequired ||
-      (subscription?.status &&
-        ["active", "trialing"].includes(subscription.status) &&
-        ["growth", "advanced"].includes(subscription?.planId))
+    subscription?.status &&
+      ["active", "trialing"].includes(subscription.status) &&
+      ["growth", "advanced"].includes(subscription?.planId)
   );
   const [analytics, setAnalytics] = useState({
     metrics: {
@@ -838,52 +837,41 @@ const Revenue = forwardRef((props, ref) => {
             </HeaderSubtitle>
           </div>
           <Controls>
-            <Segmented
-              value={filterParams.source}
-              onChange={handleSourceChange}
-              options={[
-                {
-                  label: (
-                    <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                      <LayoutGrid size={13} />
-                      All
-                    </span>
-                  ),
-                  value: "all",
-                },
-                {
-                  label: (
-                    <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                      <Globe size={13} />
-                      Marketplace
-                    </span>
-                  ),
-                  value: "marketplace",
-                },
-                {
-                  label: (
-                    <Tooltip
-                      title={
-                        !hasWidgetAnalytics
-                          ? "Upgrade to the Growth plan to view widget analytics"
-                          : ""
-                      }
-                    >
+            {hasWidgetAnalytics && (
+              <Segmented
+                value={filterParams.source}
+                onChange={handleSourceChange}
+                options={[
+                  {
+                    label: (
                       <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        {!hasWidgetAnalytics ? (
-                          <Lock size={11} style={{ opacity: 0.5 }} />
-                        ) : (
-                          <span style={{ fontSize: 12 }}>⚡</span>
-                        )}
+                        <LayoutGrid size={13} />
+                        All
+                      </span>
+                    ),
+                    value: "all",
+                  },
+                  {
+                    label: (
+                      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <Globe size={13} />
+                        Marketplace
+                      </span>
+                    ),
+                    value: "marketplace",
+                  },
+                  {
+                    label: (
+                      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <span style={{ fontSize: 12 }}>⚡</span>
                         Widget
                       </span>
-                    </Tooltip>
-                  ),
-                  value: "widget",
-                  disabled: !hasWidgetAnalytics,
-                },
-              ]}
-            />
+                    ),
+                    value: "widget",
+                  },
+                ]}
+              />
+            )}
             {isMobile ? (
               <MobileDateRangePicker
                 value={[filterParams.startDate, filterParams.endDate]}
@@ -957,16 +945,15 @@ const Revenue = forwardRef((props, ref) => {
                       />
                     </StatValue>
                     {stat.change !== undefined && stat.change !== null ? (
-                      <StatFooter>
+                      <StatFooter style={{ display: "flex", alignItems: "center", flexWrap: "nowrap", gap: 4 }}>
                         <PercentChange $isPositive={stat.change >= 0}>
                           {stat.change >= 0 ? (
                             <TrendingUp size={12} />
                           ) : (
                             <TrendingDown size={12} />
                           )}
-                          {Math.abs(stat.change).toFixed(1)}%
+                          {Math.abs(stat.change).toFixed(1)}%{stat.footer ? ` ${stat.footer}` : ""}
                         </PercentChange>
-                        {stat.footer}
                       </StatFooter>
                     ) : (
                       stat.footer && <StatFooter>{stat.footer}</StatFooter>

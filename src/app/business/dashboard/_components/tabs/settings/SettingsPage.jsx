@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import styled from "styled-components";
 import { Form, Button, Grid } from "antd";
-import { Settings, Save, Building, MapPin, SlidersHorizontal } from "lucide-react";
+import { Settings, Save, Building, MapPin, SlidersHorizontal, CreditCard } from "lucide-react";
 import dayjs from "dayjs";
 import "leaflet/dist/leaflet.css";
 
@@ -21,6 +21,7 @@ import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoade
 const GeneralSettingsTab = React.lazy(() => import("./GeneralSettingsTab"));
 const LocationSettingsTab = React.lazy(() => import("./LocationSettingsTab"));
 const PreferencesSettingsTab = React.lazy(() => import("./PreferencesSettingsTab"));
+const PlanBillingSettingsTab = React.lazy(() => import("./PlanBillingSettingsTab"));
 
 const { useBreakpoint } = Grid;
 
@@ -407,6 +408,11 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate }, re
       label: "Preferences",
       icon: <SlidersHorizontal />,
     },
+    {
+      key: "billing",
+      label: "Plan & Billing",
+      icon: <CreditCard />,
+    },
   ];
 
   if (loading) {
@@ -500,6 +506,11 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate }, re
                 isMobile={isMobile}
                 refetchBusinessData={fetchBusinessData}
               />
+            </Suspense>
+          )}
+          {currentTab === "billing" && (
+            <Suspense fallback={<TabLoader />}>
+              <PlanBillingSettingsTab />
             </Suspense>
           )}
         </ContentContainer>

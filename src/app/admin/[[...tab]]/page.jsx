@@ -63,6 +63,10 @@ const GlobalDiscountsManagement = dynamic(
   () => import("../_components/global-discounts/GlobalDiscountsManagement"),
   { ssr: false }
 );
+const WidgetSubscriptionsTab = dynamic(
+  () => import("../_components/widget-subscriptions/WidgetSubscriptionsTab"),
+  { ssr: false }
+);
 
 const PageContainer = styled.div`
   display: flex;
@@ -109,11 +113,12 @@ export default function AdminPage() {
       "users", "roles", "audit",
       "business-overview", "business-listings", "business-verification",
       "class-listings", "class-reviews", "collections",
-      "all-bookings", "payouts", "global-discounts", "blog", "support", "conversations",
+      "all-bookings", "payouts", "widget-subscriptions", "global-discounts", "blog", "support", "conversations",
     ];
     const permissionMap = {
       "all-bookings": "quickstart.view_booking",
       payouts: "quickstart.access_payout_admin",
+      "widget-subscriptions": "quickstart.view_businessinfo",
       "global-discounts": "quickstart.access_global_discount_admin",
       blog: "quickstart.access_blog_admin",
       support: "quickstart.access_support_admin",
@@ -172,6 +177,8 @@ export default function AdminPage() {
         return <AdminConversationsTab />;
       case "payouts":
         return <PayoutsList />;
+      case "widget-subscriptions":
+        return <WidgetSubscriptionsTab />;
       case "global-discounts":
         return <GlobalDiscountsManagement />;
       default:

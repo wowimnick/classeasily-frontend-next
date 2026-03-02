@@ -2669,6 +2669,20 @@ export const globalDiscountAdminService = {
   },
 };
 
+export const adminWidgetSubscriptionService = {
+  list: async () => {
+    try {
+      const response = await axiosInstance.get("/admin/widget-subscriptions/");
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to fetch widget subscriptions",
+      };
+    }
+  },
+};
+
 export const notificationService = {
   /**
    * Get all notifications with optional filtering
