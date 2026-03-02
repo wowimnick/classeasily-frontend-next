@@ -1754,17 +1754,22 @@ export const businessRoleService = {
 
 // --- Revenue Service ---
 export const revenueService = {
-  getRevenueAnalytics: async (params = {}) => {
+  getRevenueAnalytics: async (params = {}, options = {}) => {
     try {
-      // console.log('Revenue Analytics Request Params:', params);
       const queryParams = new URLSearchParams();
       if (params.startDate) queryParams.append("start_date", params.startDate);
       if (params.endDate) queryParams.append("end_date", params.endDate);
+      if (params.class_id) queryParams.append("class_id", params.class_id);
+      if (params.source && params.source !== "all") queryParams.append("source", params.source);
       const response = await axiosInstance.get(
         `${API_ENDPOINTS.REVENUE_ANALYTICS}?${queryParams.toString()}`,
+        { signal: options.signal },
       );
       return { success: true, data: response.data };
     } catch (error) {
+      if (error.name === "AbortError" || error.name === "CanceledError") {
+        return { success: false, error: "Fetch aborted", aborted: true };
+      }
       console.error(
         "Error fetching revenue analytics:",
         error.response?.data || error,
@@ -1826,20 +1831,21 @@ export const revenueService = {
 // --- Booking Analytics Service ---
 export const bookingAnalyticsService = {
   getBookingAnalytics: async (dateRange, options = {}) => {
-    // Added options for signal
     try {
       const params = new URLSearchParams();
       if (dateRange?.[0])
         params.append("start_date", dateRange[0].format("YYYY-MM-DD"));
       if (dateRange?.[1])
         params.append("end_date", dateRange[1].format("YYYY-MM-DD"));
+      if (options.classId) params.append("class_id", options.classId);
+      if (options.source && options.source !== "all") params.append("source", options.source);
       const response = await axiosInstance.get(
         `${API_ENDPOINTS.BUSINESS_BOOKINGS}analytics/?${params.toString()}`,
         { signal: options.signal },
       );
       return { success: true, data: response.data };
     } catch (error) {
-      if (error.name === "AbortError") {
+      if (error.name === "AbortError" || error.name === "CanceledError") {
         console.log("Booking analytics fetch aborted.");
         return { success: false, error: "Fetch aborted", aborted: true };
       }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { ConfigProvider } from "antd";
 import { theme } from "@/components/theme";
@@ -23,6 +23,43 @@ import {
   MainContainer,
   SectionHeader,
 } from "./GiftcardStyles";
+
+// Stripe gradient background (same pattern as BusinessWelcomePage)
+const CheckoutGradientStrip = styled.div`
+  position: absolute;
+  left: -50%;
+  width: 150%;
+  height: 150px;
+  top: 18%;
+  transform: translateY(-45%) rotate(-20deg);
+  z-index: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  pointer-events: none;
+  @media (max-width: 640px) {
+    width: 200%;
+  }
+`;
+
+const CheckoutGradientStripInner = styled.div`
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+`;
+
+const CheckoutGradientCanvas = styled.canvas`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  --gradient-color-1: #ffffff;
+  --gradient-color-2: #fc4056;
+  --gradient-color-3: #ffffff;
+  --gradient-color-4: #ffffff;
+`;
 
 // --- ASSETS ---
 import Card1 from "@/assets/card1.png";
@@ -147,11 +184,29 @@ export default function GiftcardCheckoutPage() {
 
   const toggleFaq = (index) => setOpenFaq(openFaq === index ? null : index);
 
+  useEffect(() => {
+    import("stripe-gradient")
+      .then(({ Gradient }) => {
+        const g = new Gradient();
+        g.initGradient("#giftcard-checkout-gradient-canvas");
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <ConfigProvider theme={theme}>
       <ExploreHeader showOptionsWrapper={false} />
 
       <PageWrapper>
+        <CheckoutGradientStrip>
+          <CheckoutGradientStripInner>
+            <CheckoutGradientCanvas
+              id="giftcard-checkout-gradient-canvas"
+              data-transition-in
+            />
+          </CheckoutGradientStripInner>
+        </CheckoutGradientStrip>
+
         <MainContainer>
           {step === "config" && (
             <GiftcardConfigStep

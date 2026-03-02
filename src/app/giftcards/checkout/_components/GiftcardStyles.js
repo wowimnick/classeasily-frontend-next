@@ -13,6 +13,7 @@ export const PageWrapper = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center; /* Ensures content is centered vertically if needed, but mostly for horizontal */
+  position: relative;
 
   @media (max-width: 768px) {
     padding-top: 80px;
@@ -25,6 +26,7 @@ export const MainContainer = styled.div`
   margin: 0 auto; /* Centers the container */
   padding: 40px 24px;
   position: relative;
+  z-index: 1;
 
   /* Flex fallback or Grid can be defined in specific steps, 
      but this ensures the container itself is always centered on screen */

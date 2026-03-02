@@ -15,6 +15,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Sparkles,
+  Sliders,
+  Zap,
+  ShieldCheck,
 } from "lucide-react";
 import { ConfigProvider } from "antd";
 import Image from "next/image";
@@ -68,8 +72,29 @@ function useIsMobile() {
   return isMobile;
 }
 
+// --- Animation Variants ---
+const fadeUp = {
+  hidden: { opacity: 0, y: 28 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.12 } },
+};
+
 // --- Global Styles ---
 const GlobalStyle = createGlobalStyle`
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.65);
+    --glass-border: 1px solid rgba(0, 0, 0, 0.06);
+    --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+    --accent: #ff385c;
+  }
   body {
     background-color: #ffffff;
     overflow-x: hidden;
@@ -95,6 +120,8 @@ const PageWrapper = styled.div`
     sans-serif;
   color: #222222;
   background: #ffffff;
+  position: relative;
+  overflow-x: hidden;
 
   @media (max-width: 768px) {
     padding-top: 70px;
@@ -107,6 +134,7 @@ const Container = styled.div`
   margin: 0 auto;
   padding: 0 24px;
   position: relative;
+  z-index: 1;
 
   @media (max-width: 768px) {
     padding: 0 16px;
@@ -116,9 +144,9 @@ const Container = styled.div`
 /* --- TYPOGRAPHY --- */
 const Headline = styled.h1`
   font-size: clamp(2.5rem, 6vw, 4.5rem);
-  font-weight: 800;
+  font-weight: 600;
   color: #222222;
-  line-height: 1.1;
+  line-height: 0.9;
   letter-spacing: -0.02em;
   text-align: center;
   margin-bottom: 16px;
@@ -143,10 +171,38 @@ const SubHeadline = styled.p`
 
 const SectionTitle = styled.h2`
   font-size: clamp(1.75rem, 4vw, 4rem);
-  font-weight: 700;
+  font-weight: 600;
   color: #222222;
   text-align: center;
   margin-bottom: 16px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+`;
+
+const EyebrowLabel = styled.p`
+  color: #ff385c;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+  text-align: center;
+`;
+
+const HeroBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 56, 92, 0.07);
+  color: #ff385c;
+  border: 1px solid rgba(255, 56, 92, 0.18);
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 22px;
 `;
 
 // Changed from styled.a to styled.button to fix "Link not crawlable" error
@@ -188,18 +244,24 @@ const BuyButton = styled(motion.button)`
   background: #ff385c;
   color: #ffffff;
   border: none;
-  height: 48px;
+  height: 50px;
   font-weight: 600;
-  padding: 12px 28px;
-  border-radius: 14px;
+  margin-bottom: 20px;
+  font-size: 15px;
+  padding: 0 36px;
+  border-radius: 999px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(255, 56, 92, 0.2);
+  gap: 8px;
+  box-shadow: 0 4px 20px rgba(255, 56, 92, 0.3);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
 
   &:hover {
     background: #d9324e;
+    box-shadow: 0 6px 24px rgba(255, 56, 92, 0.4);
+    transform: translateY(-1px);
   }
 `;
 
@@ -250,6 +312,8 @@ const HeroSection = styled.section`
   flex-direction: column;
   align-items: center;
   overflow: visible;
+  position: relative;
+  z-index: 1;
 
   @media (max-width: 768px) {
     padding: 10px 0 0 0;
@@ -308,12 +372,11 @@ const CanvasFallback = styled.div`
 
 /* --- VALUE PROP SECTION --- */
 const TextSection = styled.section`
-  padding: 60px 0;
-  padding-top: 0px;
+  padding: 60px 0 40px;
   text-align: center;
 
   @media (max-width: 768px) {
-    padding: 20px 0;
+    padding: 32px 0 24px;
   }
 `;
 
@@ -388,52 +451,109 @@ const ArrowButton = styled.button`
 
 /* --- FEATURES 3-COL --- */
 const FeatureSection = styled.section`
-  padding: 60px 0;
+  padding: 20px 0 80px 0;
 
   @media (max-width: 768px) {
-    padding: 30px 0;
+    padding: 20px 0 56px 0;
   }
+`;
+
+const FeatureSectionHeader = styled.div`
+  text-align: center;
+  margin-bottom: 52px;
+
+  @media (max-width: 768px) {
+    margin-bottom: 36px;
+  }
+`;
+
+const FeatureSectionTitle = styled.h2`
+  font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+  font-weight: 600;
+  color: #1a1a1a;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  margin-bottom: 10px;
+`;
+
+const FeatureSectionSubtitle = styled.p`
+  font-size: 1rem;
+  color: #6e6e73;
+  line-height: 1.5;
+  max-width: 500px;
+  margin: 0 auto;
 `;
 
 const FeatureGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 48px;
-  text-align: center;
+  gap: 24px;
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
-    gap: 32px;
-    padding: 0 16px;
+    gap: 16px;
   }
 `;
 
-const FeatureTitle = styled.h4`
-  font-size: 21px;
-  font-weight: 800;
-  margin-bottom: 8px;
-  color: #222222;
+const FeatureCard = styled(motion.article)`
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: var(--glass-border);
+  border-radius: 20px;
+  padding: 32px;
+  text-align: left;
+  box-shadow: var(--glass-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.09);
+  }
 
   @media (max-width: 768px) {
-    font-size: 1.25rem;
+    padding: 24px;
+  }
+`;
+
+const FeatureIconCircle = styled.div`
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255, 56, 92, 0.08);
+  color: #ff385c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+`;
+
+const FeatureTitle = styled.h4`
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
   }
 `;
 
 const FeatureText = styled.p`
-  font-size: 0.95rem;
-  color: #555;
-  line-height: 1.5;
+  font-size: 0.9rem;
+  color: #6e6e73;
+  line-height: 1.6;
 `;
 
 /* --- CORPORATE SECTION --- */
 const CorporateSection = styled.section`
-  background: #f7f7f7;
+  background: #f7f7f9;
   padding: 80px 0;
-  margin: 40px 0;
+  position: relative;
+  z-index: 1;
 
   @media (max-width: 768px) {
-    padding: 40px 0;
-    margin: 20px 0;
+    padding: 48px 0;
   }
 `;
 
@@ -482,17 +602,35 @@ const VisualColumn = styled.div`
 
 /* --- FAQ SECTION --- */
 const FAQSection = styled.section`
-  padding: 80px 0;
+  padding: 80px 0 100px;
   max-width: 800px;
   margin: 0 auto;
 
   @media (max-width: 768px) {
-    padding: 40px 0;
+    padding: 48px 0 64px;
+  }
+`;
+
+const FAQGlassCard = styled.div`
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 24px;
+  padding: 0 32px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+
+  @media (max-width: 768px) {
+    padding: 0 20px;
+    border-radius: 16px;
   }
 `;
 
 const FAQItem = styled.div`
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  &:last-child {
+    border-bottom: none;
+  }
 `;
 
 const FAQTrigger = styled.button`
@@ -507,30 +645,66 @@ const FAQTrigger = styled.button`
   text-align: left;
 
   span {
-    font-size: 1.125rem;
+    font-size: 1.05rem;
     font-weight: 500;
-    color: #222;
+    color: #1a1a1a;
     padding-right: 16px;
+  }
+
+  &:hover span {
+    color: #000;
   }
 
   @media (max-width: 768px) {
     padding: 18px 0;
     span {
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
   }
 `;
 
 const FAQContent = styled(motion.div)`
   overflow: hidden;
-  color: #555;
-  font-size: 1rem;
+  color: #6e6e73;
+  font-size: 0.95rem;
   line-height: 1.6;
-
-  @media (max-width: 768px) {
-    font-size: 0.95rem;
-  }
 `;
+
+// ─── Diagonal Section Divider (same pattern as BusinessWelcomePage) ──────────
+const DiagonalDivider = ({
+  fromBg = "#ffffff",
+  toBg = "#ffffff",
+  flip = false,
+}) => (
+  <div
+    style={{
+      lineHeight: 0,
+      background: toBg,
+      display: "block",
+      overflow: "hidden",
+      position: "relative",
+      zIndex: 1,
+    }}
+  >
+    <svg
+      viewBox="0 0 1440 44"
+      preserveAspectRatio="none"
+      width="100%"
+      height="44"
+      style={{ display: "block", transform: flip ? "scaleX(-1)" : "none" }}
+    >
+      <path d="M0,0 L1440,0 L0,44 Z" fill={fromBg} />
+      <line
+        x1="0"
+        y1="0"
+        x2="1440"
+        y2="44"
+        stroke="rgba(248,30,62,0.10)"
+        strokeWidth="1.5"
+      />
+    </svg>
+  </div>
+);
 
 // --- SHARED 3D RESOURCES ---
 const CARD_WIDTH = 3;
@@ -836,15 +1010,47 @@ function NitroCard3D({
           distanceFactor={5}
           zIndexRange={[100, 0]}
           transform
-          style={{ opacity: 1, pointerEvents: "auto" }}
+          style={{ opacity: 1, pointerEvents: "none" }}
         >
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
+            style={{
+              position: "relative",
+              display: "inline-block",
+              pointerEvents: "none",
+            }}
           >
+            {/* Invisible hit area shifted up so click area matches visible button */}
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label="Select Design"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isNavigating) onSelect(textureUrl);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  if (!isNavigating) onSelect(textureUrl);
+                }
+              }}
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: -28,
+                height: 76,
+                pointerEvents: "auto",
+                cursor: "pointer",
+                zIndex: 0,
+              }}
+            />
             <SelectButton
-              onClick={() => onSelect(textureUrl)}
+              as="span"
+              style={{ pointerEvents: "none", position: "relative", zIndex: 1 }}
               whileTap={{ scale: 0.95 }}
               disabled={isNavigating}
             >
@@ -929,8 +1135,18 @@ export default function GiftCardsPage() {
   const [canvasKey, setCanvasKey] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
 
+  // Defer Canvas mount until after layout so R3F's event system has a non-null container ref (avoids addEventListener on null)
   useEffect(() => {
-    setCanvasKey((prev) => prev + 1);
+    let cancelled = false;
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!cancelled) setCanvasKey((prev) => prev + 1);
+      });
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(id);
+    };
   }, []);
 
   // Prefetch the checkout page to minimize delay
@@ -1011,20 +1227,32 @@ export default function GiftCardsPage() {
         {/* HERO SECTION */}
         <HeroSection>
           <Container>
-            <Headline>
-              ClassEasily
-              <br />
-              gift cards
-            </Headline>
-            <SubHeadline>
-              So many fun experiences to discover. Give them the freedom to
-              explore.
-            </SubHeadline>
-            <div style={{ textAlign: "center" }}>
-              <BuyButton whileTap={{ scale: 0.95 }} onClick={scrollToSelection}>
-                Buy now
-              </BuyButton>
-            </div>
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={stagger}
+              style={{ textAlign: "center" }}
+            >
+
+              <motion.div variants={fadeUp}>
+                <Headline>
+                  ClassEasily
+                  <br />
+                  gift cards
+                </Headline>
+              </motion.div>
+              <motion.div variants={fadeUp}>
+                <SubHeadline>
+                  So many fun experiences to discover. Give them the freedom to
+                  explore.
+                </SubHeadline>
+              </motion.div>
+              <motion.div variants={fadeUp}>
+                <BuyButton whileTap={{ scale: 0.95 }} onClick={scrollToSelection}>
+                  Buy now
+                </BuyButton>
+              </motion.div>
+            </motion.div>
             <HeroVisual>
               <Suspense
                 fallback={
@@ -1049,38 +1277,54 @@ export default function GiftCardsPage() {
           </Container>
         </HeroSection>
 
+        <DiagonalDivider fromBg="#ffffff" toBg="#ffffff" />
+
         {/* VALUE PROP TEXT */}
         <TextSection>
           <Container>
-            <SectionTitle>You give. They go.</SectionTitle>
-            <p
-              style={{
-                maxWidth: 600,
-                margin: "0 auto",
-                lineHeight: "1.5",
-                color: "#222",
-                fontSize: "0.95rem",
-              }}
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={stagger}
             >
-              Give the gift of unforgettable experiences. Our gift cards unlock
-              a world of activities, from making something tasty to making neon
-              signs. Perfect for birthdays, holidays, or just because.
-            </p>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                marginTop: 20,
-              }}
-            >
-              <span style={{ fontSize: "0.9rem", color: "#222" }}>
-                Interested in corporate gifting?
-              </span>
-              <LinkButton onClick={handleUnsupported}>
-                Check out corporate options
-              </LinkButton>
-            </div>
+              <motion.div variants={fadeUp}>
+                <EyebrowLabel>Perfect for every occasion</EyebrowLabel>
+              </motion.div>
+              <motion.div variants={fadeUp}>
+                <SectionTitle>You give. They go.</SectionTitle>
+              </motion.div>
+              <motion.p
+                variants={fadeUp}
+                style={{
+                  maxWidth: 560,
+                  margin: "0 auto",
+                  lineHeight: "1.6",
+                  color: "#6e6e73",
+                  fontSize: "1rem",
+                }}
+              >
+                Give the gift of unforgettable experiences. Our gift cards unlock
+                a world of activities, from making something tasty to making neon
+                signs. Perfect for birthdays, holidays, or just because.
+              </motion.p>
+              <motion.div
+                variants={fadeUp}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  marginTop: 24,
+                }}
+              >
+                <span style={{ fontSize: "0.875rem", color: "#888" }}>
+                  Interested in corporate gifting?
+                </span>
+                <LinkButton onClick={handleUnsupported}>
+                  Check out corporate options
+                </LinkButton>
+              </motion.div>
+            </motion.div>
           </Container>
         </TextSection>
 
@@ -1156,93 +1400,151 @@ export default function GiftCardsPage() {
           </Container>
         </CarouselSection>
 
+
         {/* FEATURES */}
         <FeatureSection>
           <Container>
-            <FeatureGrid>
-              <article>
-                <FeatureTitle>You choose the amount</FeatureTitle>
-                <FeatureText>
-                  Pick a design, set the budget, write a note. Done. They handle
-                  the rest.
-                </FeatureText>
-              </article>
-              <article>
-                <FeatureTitle>Zero lag time</FeatureTitle>
-                <FeatureText>
-                  Send it via email instantly or schedule it for the exact right
-                  moment.
-                </FeatureText>
-              </article>
-              <article>
-                <FeatureTitle>Forever valid</FeatureTitle>
-                <FeatureText>
-                  Life gets busy. That's why our credits never expire.
-                </FeatureText>
-              </article>
-            </FeatureGrid>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.2 }}
+              variants={stagger}
+            >
+              <FeatureSectionHeader>
+                <motion.div variants={fadeUp}>
+                  <EyebrowLabel>Why gift cards</EyebrowLabel>
+                </motion.div>
+                <motion.div variants={fadeUp}>
+                  <FeatureSectionTitle>Everything you need,<br />nothing you don&apos;t</FeatureSectionTitle>
+                </motion.div>
+                <motion.div variants={fadeUp}>
+                  <FeatureSectionSubtitle>
+                    Simple, flexible, and lasting. Gift cards that actually get used.
+                  </FeatureSectionSubtitle>
+                </motion.div>
+              </FeatureSectionHeader>
+
+              <FeatureGrid>
+                <FeatureCard variants={fadeUp}>
+                  <FeatureIconCircle>
+                    <Sliders size={22} />
+                  </FeatureIconCircle>
+                  <FeatureTitle>You choose the amount</FeatureTitle>
+                  <FeatureText>
+                    Pick a design, set the budget, write a personal note. Done.
+                    They handle the rest.
+                  </FeatureText>
+                </FeatureCard>
+
+                <FeatureCard variants={fadeUp}>
+                  <FeatureIconCircle>
+                    <Zap size={22} />
+                  </FeatureIconCircle>
+                  <FeatureTitle>Zero lag time</FeatureTitle>
+                  <FeatureText>
+                    Send it via email instantly or schedule it for the exact
+                    right moment — birthdays, anniversaries, you name it.
+                  </FeatureText>
+                </FeatureCard>
+
+                <FeatureCard variants={fadeUp}>
+                  <FeatureIconCircle>
+                    <ShieldCheck size={22} />
+                  </FeatureIconCircle>
+                  <FeatureTitle>Forever valid</FeatureTitle>
+                  <FeatureText>
+                    Life gets busy. That&apos;s why our credits never expire —
+                    no fine print, no hidden fees.
+                  </FeatureText>
+                </FeatureCard>
+              </FeatureGrid>
+            </motion.div>
           </Container>
         </FeatureSection>
+
+        <DiagonalDivider fromBg="#ffffff" toBg="#f7f7f7" />
 
         {/* CORPORATE SECTION */}
         <CorporateSection>
           <TwoColumnContainer>
             <TextColumn>
-              <h2
-                style={{
-                  fontSize: isMobile ? "2rem" : "clamp(2rem, 4vw, 2.5rem)",
-                  fontWeight: 700,
-                  margin: "0 0 24px 0",
-                  lineHeight: 1.1,
-                  color: "#222",
-                }}
+              <motion.div
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+                variants={stagger}
               >
-                Team building, <br /> just got upgraded.
-              </h2>
-
-              <p
-                style={{
-                  fontSize: "1rem",
-                  color: "#222",
-                  marginBottom: 24,
-                  lineHeight: 1.5,
-                }}
-              >
-                Give something that creates genuine excitement, not just
-                clutter. Our gift cards unlock a world of experiences, perfect
-                for showing appreciation to teams and clients alike.
-              </p>
-
-              <div style={{ marginBottom: 24 }}>
-                <span style={{ fontSize: "0.9rem", color: "#222" }}>
-                  Planning a big order?
-                </span>
-                {/* FIXED: Changed span to StyledLink for crawlability */}
-                <StyledLink
-                  href="/corporate-gifting"
-                  style={{ marginLeft: 4 }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleUnsupported();
+                <motion.div variants={fadeUp}>
+                  <p
+                    style={{
+                      color: "#ff385c",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      fontSize: "0.7rem",
+                      letterSpacing: "0.08em",
+                      marginBottom: 12,
+                    }}
+                  >
+                    For Teams &amp; Companies
+                  </p>
+                </motion.div>
+                <motion.h2
+                  variants={fadeUp}
+                  style={{
+                    fontSize: isMobile ? "2rem" : "clamp(2rem, 4vw, 2.5rem)",
+                    fontWeight: 700,
+                    margin: "0 0 20px 0",
+                    lineHeight: 1.1,
+                    letterSpacing: "-0.025em",
+                    color: "#1a1a1a",
                   }}
                 >
-                  Talk to our sales team
-                </StyledLink>
-              </div>
+                  Team building, <br /> just got upgraded.
+                </motion.h2>
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "inherit",
-                }}
-              >
-                <DarkButton
-                  onClick={handleUnsupported}
-                  whileTap={{ scale: 0.95 }}
+                <motion.p
+                  variants={fadeUp}
+                  style={{
+                    fontSize: "1rem",
+                    color: "#6e6e73",
+                    marginBottom: 28,
+                    lineHeight: 1.6,
+                  }}
                 >
-                  Start a bulk order
-                </DarkButton>
-              </div>
+                  Give something that creates genuine excitement, not just
+                  clutter. Our gift cards unlock a world of experiences, perfect
+                  for showing appreciation to teams and clients alike.
+                </motion.p>
+
+                <motion.div variants={fadeUp} style={{ marginBottom: 28 }}>
+                  <span style={{ fontSize: "0.875rem", color: "#888" }}>
+                    Planning a big order?
+                  </span>
+                  {/* FIXED: Changed span to StyledLink for crawlability */}
+                  <StyledLink
+                    href="/corporate-gifting"
+                    style={{ marginLeft: 6 }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleUnsupported();
+                    }}
+                  >
+                    Talk to our sales team
+                  </StyledLink>
+                </motion.div>
+
+                <motion.div
+                  variants={fadeUp}
+                  style={{ display: "flex", justifyContent: "inherit" }}
+                >
+                  <DarkButton
+                    onClick={handleUnsupported}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Start a bulk order
+                  </DarkButton>
+                </motion.div>
+              </motion.div>
             </TextColumn>
 
             {/* RIGHT COLUMN: The 3D Canvas */}
@@ -1273,63 +1575,79 @@ export default function GiftCardsPage() {
           </TwoColumnContainer>
         </CorporateSection>
 
+        <DiagonalDivider fromBg="#f7f7f7" toBg="#ffffff" />
+
         {/* FAQ */}
         <Container>
           <FAQSection>
-            <h2
-              style={{
-                fontSize: "1.75rem",
-                fontWeight: 700,
-                marginBottom: 40,
-                color: "#222",
-                textAlign: isMobile ? "center" : "left",
-              }}
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.15 }}
+              variants={stagger}
             >
-              Frequently asked questions
-            </h2>
-            {FAQS.map((item, index) => (
-              <FAQItem
-                key={index}
-                itemScope
-                itemType="https://schema.org/Question"
-              >
-                <FAQTrigger onClick={() => toggleFaq(index)}>
-                  <span itemProp="name">{item.q}</span>
-                  {openFaq === index ? (
-                    <ChevronUp size={20} color="#222" />
-                  ) : (
-                    <ChevronDown size={20} color="#222" />
-                  )}
-                </FAQTrigger>
-                <AnimatePresence>
-                  {openFaq === index && (
-                    <FAQContent
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
+              <motion.div variants={fadeUp} style={{ textAlign: "center", marginBottom: 40 }}>
+                <EyebrowLabel>Got questions?</EyebrowLabel>
+                <h2
+                  style={{
+                    fontSize: "clamp(1.6rem, 3vw, 2.2rem)",
+                    fontWeight: 700,
+                    color: "#1a1a1a",
+                    letterSpacing: "-0.025em",
+                    lineHeight: 1.15,
+                  }}
+                >
+                  Frequently asked questions
+                </h2>
+              </motion.div>
+              <motion.div variants={fadeUp}>
+                <FAQGlassCard>
+                  {FAQS.map((item, index) => (
+                    <FAQItem
+                      key={index}
                       itemScope
-                      itemType="https://schema.org/Answer"
+                      itemType="https://schema.org/Question"
                     >
-                      <div style={{ paddingBottom: 24 }} itemProp="text">
-                        {item.a}
-                      </div>
-                    </FAQContent>
-                  )}
-                </AnimatePresence>
-              </FAQItem>
-            ))}
-            <div
-              style={{
-                marginTop: 32,
-                fontSize: "0.9rem",
-                color: "#222",
-                textAlign: isMobile ? "center" : "left",
-              }}
-            >
-              Have more burning questions? Visit the{" "}
-              {/* FIXED: Changed span to StyledLink for crawlability */}
-              <StyledLink href="/help-center">Help Center</StyledLink>.
-            </div>
+                      <FAQTrigger onClick={() => toggleFaq(index)}>
+                        <span itemProp="name">{item.q}</span>
+                        {openFaq === index ? (
+                          <ChevronUp size={20} color="#ff385c" />
+                        ) : (
+                          <ChevronDown size={20} color="#aaa" />
+                        )}
+                      </FAQTrigger>
+                      <AnimatePresence>
+                        {openFaq === index && (
+                          <FAQContent
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            itemScope
+                            itemType="https://schema.org/Answer"
+                          >
+                            <div style={{ paddingBottom: 24 }} itemProp="text">
+                              {item.a}
+                            </div>
+                          </FAQContent>
+                        )}
+                      </AnimatePresence>
+                    </FAQItem>
+                  ))}
+                </FAQGlassCard>
+              </motion.div>
+              <motion.div
+                variants={fadeUp}
+                style={{
+                  marginTop: 28,
+                  fontSize: "0.875rem",
+                  color: "#888",
+                  textAlign: "center",
+                }}
+              >
+                Have more burning questions? Visit the{" "}
+                <StyledLink href="/help-center">Help Center</StyledLink>.
+              </motion.div>
+            </motion.div>
           </FAQSection>
         </Container>
       </PageWrapper>

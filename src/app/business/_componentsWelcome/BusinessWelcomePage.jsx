@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useCallback, useMemo, memo, useEffect } from "react";
+import React, { useState, useRef, useCallback, useMemo, memo, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import styled, { createGlobalStyle } from "styled-components";
+import styled, { createGlobalStyle, keyframes } from "styled-components";
 import { m, AnimatePresence, LazyMotion, domAnimation } from "framer-motion";
 import { Plus, Minus, Check, X, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -78,6 +78,10 @@ const SectionContainer = styled.div`
   @media (max-width: 768px) {
     padding: 0 20px;
   }
+
+  @media (max-width: 480px) {
+    padding: 0 16px;
+  }
 `;
 
 // Change motion.div to m.div for LazyMotion
@@ -137,6 +141,11 @@ const HeroSection = styled.section`
     padding-bottom: 40px;
     overflow: visible;
   }
+
+  @media (max-width: 480px) {
+    padding-top: 80px;
+    padding-bottom: 28px;
+  }
 `;
 
 const HeroGrid = styled.div`
@@ -155,7 +164,7 @@ const HeroGrid = styled.div`
 
 const HeroImagePane = styled(m.div)`
   width: calc(100% + 25vw);
-  margin-left: -15vw;
+  margin-left: -18vw;
 
   @media (max-width: 1024px) {
     display: none;
@@ -181,6 +190,11 @@ const HeroTitle = styled.h1`
   letter-spacing: -0.03em;
   line-height: 1.05;
   color: #000;
+
+  @media (max-width: 480px) {
+    font-size: clamp(1.75rem, 8vw, 2.25rem);
+    margin-bottom: 12px;
+  }
 `;
 
 const HeroSubtitle = styled.p`
@@ -193,6 +207,12 @@ const HeroSubtitle = styled.p`
 
   @media (max-width: 768px) {
     font-size: 14px;
+    max-width: 100%;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+    margin-bottom: 24px;
   }
 `;
 
@@ -224,11 +244,25 @@ const StartButton = styled.button`
   &:active {
     transform: scale(0.98);
   }
+
+  @media (max-width: 480px) {
+    height: 44px;
+    padding: 0 24px;
+    font-size: 13px;
+  }
 `;
 
 const DashboardSection = styled.section`
   padding: 4rem 0 !important;
   position: relative;
+
+  @media (max-width: 768px) {
+    padding: 2.5rem 0 !important;
+  }
+
+  @media (max-width: 480px) {
+    padding: 1.75rem 0 !important;
+  }
 `;
 
 const PhoneCarouselScene = styled.div`
@@ -238,6 +272,16 @@ const PhoneCarouselScene = styled.div`
   align-items: center;
   justify-content: center;
   padding: 20px 0 60px;
+
+  @media (max-width: 600px) {
+    margin-top: 28px;
+    padding: 12px 0 48px;
+  }
+
+  @media (max-width: 480px) {
+    margin-top: 20px;
+    padding: 8px 0 40px;
+  }
 `;
 
 const PhoneCarouselStage = styled.div`
@@ -249,6 +293,11 @@ const PhoneCarouselStage = styled.div`
   @media (max-width: 600px) {
     width: 220px;
     height: 440px;
+  }
+
+  @media (max-width: 380px) {
+    width: 200px;
+    height: 400px;
   }
 `;
 
@@ -293,7 +342,7 @@ const PhoneDescText = styled.p`
 
 const CarouselChevron = styled.button`
   position: absolute;
-  top: 50%;
+  top: 42%;
   transform: translateY(-60%);
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -315,18 +364,28 @@ const CarouselChevron = styled.button`
   }
 
   &.left {
-    left: calc(50% - 130px - 24px - 44px);
+    left: calc(50% - 100px - 24px - 44px);
 
     @media (max-width: 700px) {
-      left: 0;
+      left: 4px;
+    }
+    @media (max-width: 480px) {
+      left: 2px;
+      width: 36px;
+      height: 36px;
     }
   }
 
   &.right {
-    right: calc(50% - 130px - 24px - 44px);
+    right: calc(50% - 100px - 24px - 44px);
 
     @media (max-width: 700px) {
-      right: 0;
+      right: 4px;
+    }
+    @media (max-width: 480px) {
+      right: 2px;
+      width: 36px;
+      height: 36px;
     }
   }
 `;
@@ -336,6 +395,10 @@ const CarouselDots = styled.div`
   gap: 8px;
   justify-content: center;
   margin-top: 72px;
+
+  @media (max-width: 480px) {
+    margin-top: 68px;
+  }
 `;
 
 const CarouselDot = styled.button`
@@ -354,6 +417,10 @@ const ValuePropSection = styled.section`
 
   @media (max-width: 768px) {
     padding: 60px 0;
+  }
+
+  @media (max-width: 480px) {
+    padding: 40px 0;
   }
 `;
 
@@ -378,6 +445,14 @@ const GridThree = styled.div`
     }
     -ms-overflow-style: none;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  @media (max-width: 480px) {
+    margin: 0 -16px 32px -16px;
+    padding-left: 16px;
+    padding-right: 16px;
+    gap: 12px;
   }
 `;
 
@@ -393,6 +468,12 @@ const ValueCard = styled(GlassCard)`
     max-width: 280px;
     scroll-snap-align: center;
   }
+
+  @media (max-width: 480px) {
+    min-width: 260px;
+    max-width: 260px;
+    padding: 24px;
+  }
 `;
 
 const IconCircle = styled.div`
@@ -407,7 +488,7 @@ const IconCircle = styled.div`
 
 const ValueTitle = styled.h3`
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: 600;
   margin-bottom: 12px;
   color: #1d1d1f;
 `;
@@ -421,6 +502,14 @@ const ValueDesc = styled.p`
 const SectionHeader = styled.div`
   margin-bottom: 48px;
   text-align: ${(props) => (props.$center ? "center" : "left")};
+
+  @media (max-width: 768px) {
+    margin-bottom: 32px;
+  }
+
+  @media (max-width: 480px) {
+    margin-bottom: 24px;
+  }
 `;
 
 const SectionEyebrow = styled.p`
@@ -434,11 +523,16 @@ const SectionEyebrow = styled.p`
 
 const SectionTitle = styled.h2`
   font-size: clamp(1.8rem, 3vw, 2.5rem);
-  font-weight: 700;
+  font-weight: 600;
   margin-bottom: 12px;
   color: #1d1d1f;
   letter-spacing: -0.02em;
   line-height: 1.1;
+
+  @media (max-width: 480px) {
+    font-size: clamp(1.4rem, 6vw, 1.75rem);
+    margin-bottom: 8px;
+  }
 `;
 
 const SectionSubtitle = styled.p`
@@ -459,6 +553,10 @@ const ComparisonTableWrapper = styled(GlassCard)`
   overflow: hidden;
   max-width: 900px;
   margin: 0 auto;
+
+  @media (max-width: 480px) {
+    border-radius: 16px;
+  }
 `;
 
 const ComparisonRow = styled.div`
@@ -480,6 +578,11 @@ const ComparisonRow = styled.div`
     padding: 24px 20px;
     background: ${(props) =>
       props.$isHeader ? "rgba(0,0,0,0.02)" : "transparent"};
+  }
+
+  @media (max-width: 480px) {
+    padding: 18px 16px;
+    gap: 6px;
   }
 `;
 
@@ -540,238 +643,1072 @@ const ComparisonValue = styled.div`
 `;
 
 const TestimonialsSection = styled.section`
-  padding: 60px 0;
+  padding: 80px 0;
+  background: #f7f7f9;
   position: relative;
-`;
 
-const ReviewGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  @media (max-width: 768px) {
+    padding: 56px 0;
+  }
 
-  @media (max-width: 900px) {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    gap: 16px;
-    padding-bottom: 24px;
-    margin: 0 -20px;
-    padding-left: 20px;
-    padding-right: 20px;
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  @media (max-width: 480px) {
+    padding: 40px 0;
   }
 `;
 
-const ReviewItem = styled(m.div)`
+const SocialProofGrid = styled.div`
+  display: grid;
+  grid-template-columns: 30% 38% 32%;
+  gap: 40px;
+  align-items: center;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+
+  @media (max-width: 700px) {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 24px;
+  }
+`;
+
+const SocialProofLeft = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  position: relative;
-  padding: 16px 20px;
-  border-radius: 16px;
-  transition: background 0.3s ease;
+  justify-content: center;
+  gap: 20px;
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.4);
+  @media (max-width: 1024px) {
+    order: 1;
   }
 
-  @media (max-width: 900px) {
-    min-width: 300px;
-    max-width: 300px;
-    scroll-snap-align: center;
-    background: #f9f9fa;
-    border: 1px solid rgba(0, 0, 0, 0.03);
+  @media (max-width: 700px) {
+    order: 1;
   }
 `;
 
-const AnimatedIconWrapper = styled.div`
-  width: 40px;
-  height: 40px;
-  margin-bottom: 4px;
-  opacity: 0.8;
-  transition: opacity 0.3s ease;
-
-  ${ReviewItem}:hover & {
-    opacity: 1;
-  }
-`;
-
-const ReviewText = styled.h4`
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 1.4;
-  color: #1d1d1f;
-  letter-spacing: -0.01em;
+const SocialProofHeadline = styled.h2`
+  font-size: clamp(2rem, 3.2vw, 2.75rem);
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
   margin: 0;
-`;
 
-const ReviewAuthor = styled.div`
-  margin-top: auto;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #6e6e73;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-
-  span {
-    font-weight: 400;
-    color: #9ca3af;
+  @media (max-width: 480px) {
+    font-size: clamp(1.5rem, 7vw, 1.85rem);
   }
 `;
 
-const TierSection = styled.section`
-  padding: 60px 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(245, 245, 247, 0.5) 100%
-  );
-`;
+const SocialProofSubtext = styled.p`
+  font-size: 1rem;
+  font-weight: 400;
+  color: #4a4a4a;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 280px;
 
-const CleanTierGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  width: 100%;
-  margin-top: 40px;
-  max-width: 900px;
-  margin-left: auto;
-  margin-right: auto;
+  @media (max-width: 700px) {
+    max-width: 100%;
+  }
 
-  @media (max-width: 900px) {
-    display: none;
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
   }
 `;
 
-const MobileTabContainer = styled.div`
-  display: none;
-  width: 100%;
-  margin-top: 24px;
-
-  @media (max-width: 900px) {
-    display: block;
-  }
-`;
-
-const TabList = styled.div`
-  display: flex;
-  background: #f2f2f5;
-  padding: 4px;
-  border-radius: 12px;
-  margin-bottom: 24px;
+const CenterImageCard = styled.div`
   position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+  width: 100%;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+
+  @media (max-width: 1024px) {
+    order: 3;
+    grid-column: span 2;
+    max-width: 380px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 700px) {
+    order: 2;
+    grid-column: span 1;
+    max-width: 100%;
+  }
+
+  @media (max-width: 480px) {
+    border-radius: 16px;
+  }
 `;
 
-const TabButton = styled.button`
-  flex: 1;
-  padding: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  background: transparent;
-  color: ${(props) => (props.$active ? "#1d1d1f" : "#86868b")};
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  position: relative;
-  z-index: 2;
-  transition: color 0.2s;
-`;
-
-const TabIndicator = styled(m.div)`
+const ImageOverlayGradient = styled.div`
   position: absolute;
-  top: 4px;
-  bottom: 4px;
+  bottom: 0;
   left: 0;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  right: 0;
+  height: 60%;
+  background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.82) 100%);
   z-index: 1;
 `;
 
-const MobileTabContent = styled(m.div)`
-  background: #fff;
-  border-radius: 20px;
-  padding: 24px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+const ImageOverlayContent = styled.div`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 28px;
+  z-index: 2;
+
+  @media (max-width: 480px) {
+    padding: 18px;
+  }
 `;
 
-const CleanTierColumn = styled.div`
+const ImageOverlayQuote = styled.p`
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0 0 12px 0;
+
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
+`;
+
+const ImageOverlayAuthor = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+`;
+
+const ImageAuthorName = styled.span`
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
+`;
+
+const ImageAuthorTitle = styled.span`
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.8rem;
+  font-weight: 400;
+`;
+
+const TestimonialStack = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 0 40px;
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  gap: 18px;
+  position: relative;
+  max-height: 560px;
+  overflow: hidden;
 
-  &:last-child {
-    border-right: none;
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 72px;
+    background: linear-gradient(to bottom, #f7f7f9 0%, transparent 100%);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 100px;
+    background: linear-gradient(to top, #f7f7f9 0%, transparent 100%);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  @media (max-width: 1024px) {
+    order: 2;
+    max-height: none;
+    overflow: visible;
+
+    &::before,
+    &::after {
+      display: none;
+    }
+  }
+
+  @media (max-width: 700px) {
+    order: 3;
   }
 `;
 
-const TierHeaderSimple = styled.div`
-  margin-bottom: 20px;
-`;
-
-const TierTitleDisplay = styled.h3`
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #1d1d1f;
-  margin-bottom: 4px;
-  letter-spacing: -0.02em;
-`;
-
-const TierPriceDisplay = styled.div`
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: ${(props) => props.$color || "#6e6e73"};
-  margin-bottom: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-`;
-
-const TierDescription = styled.p`
-  font-size: 0.85rem;
-  color: #6e6e73;
-  line-height: 1.4;
-  margin-bottom: 20px;
-  min-height: 38px;
-
-  @media (max-width: 900px) {
-    min-height: auto;
-  }
-`;
-
-const FeatureListClean = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
+const TestimonialCard = styled.div`
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   gap: 12px;
-`;
+  flex-shrink: 0;
 
-const FeatureItemClean = styled.li`
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 0.9rem;
-  color: #4b5563;
-  font-weight: 400;
-
-  svg {
-    margin-top: 2px;
-    flex-shrink: 0;
-    opacity: 0.8;
+  @media (max-width: 480px) {
+    padding: 16px;
+    border-radius: 12px;
+    gap: 10px;
   }
 `;
 
+const TestimonialCardText = styled.p`
+  font-size: 0.875rem;
+  color: #333333;
+  line-height: 1.55;
+  margin: 0;
+  font-weight: 400;
+`;
+
+const StarRow = styled.div`
+  display: flex;
+  gap: 1px;
+  color: #ff6b00;
+  font-size: 0.875rem;
+  letter-spacing: 1px;
+`;
+
+const TestimonialCardFooter = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const TestimonialAvatarGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+const TestimonialAvatar = styled.div`
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: ${(props) => props.$bg || "#e0e7ff"};
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #ffffff;
+`;
+
+const TestimonialAuthorInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`;
+
+const TestimonialAuthorName = styled.span`
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1a1a1a;
+`;
+
+const TestimonialAuthorTitle = styled.span`
+  font-size: 0.72rem;
+  color: #888888;
+  font-weight: 400;
+`;
+
+const CompanyBadge = styled.div`
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: ${(props) => props.$bg || "#1a73e8"};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 800;
+  flex-shrink: 0;
+`;
+
+const TierSection = styled.section`
+  padding: 36px 0 40px;
+  background: #f8fafc;
+  position: relative;
+
+  @media (max-width: 768px) {
+    padding: 28px 0 32px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 24px 0 28px;
+  }
+`;
+
+const GrowthHeader = styled.div`
+  margin-bottom: 20px;
+
+  @media (max-width: 480px) {
+    margin-bottom: 16px;
+  }
+`;
+
+const GrowthEyebrow = styled.p`
+  color: #1a1a1a;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 4px 0;
+`;
+
+const GrowthHeadline = styled.h2`
+  font-size: clamp(1.35rem, 2.2vw, 1.6rem);
+  font-weight: 600;
+  color: #1a1a1a;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin: 0 0 6px 0;
+
+  @media (max-width: 480px) {
+    font-size: clamp(1.2rem, 5.5vw, 1.4rem);
+  }
+`;
+
+const GrowthSubtext = styled.p`
+  font-size: 0.8rem;
+  color: #425466;
+  line-height: 1.45;
+  max-width: 520px;
+  margin: 0;
+
+  @media (max-width: 480px) {
+    max-width: 100%;
+    font-size: 0.75rem;
+  }
+`;
+
+const GrowthGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  align-items: stretch;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 10px;
+  }
+`;
+
+const GrowthCard = styled.div`
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: 480px) {
+    padding: 14px 16px;
+    border-radius: 10px;
+  }
+`;
+
+const GrowthCardEyebrow = styled.p`
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: ${(props) => props.$color || "#1a1a1a"};
+  margin: 0 0 4px 0;
+`;
+
+const GrowthCardTitle = styled.h3`
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin: 0 0 6px 0;
+`;
+
+const GrowthCommissionBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: ${(props) => props.$bg || "rgba(0, 0, 0, 0.06)"};
+  color: ${(props) => props.$color || "#1a1a1a"};
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+  width: fit-content;
+`;
+
+const GrowthCardDesc = styled.p`
+  font-size: 0.75rem;
+  color: #425466;
+  line-height: 1.4;
+  margin: 0 0 12px 0;
+`;
+
+const GrowthCardDivider = styled.hr`
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 0 0 10px 0;
+`;
+
+const GrowthFeatureList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0 0 14px 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const GrowthFeatureItem = styled.li`
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #425466;
+  line-height: 1.35;
+
+  svg {
+    margin-top: 0;
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+  }
+`;
+
+const GrowthCTAButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  width: fit-content;
+  transition: all 0.2s ease;
+  background: ${(props) => props.$bg || "#1a1a1a"};
+  color: #ffffff;
+  margin-top: auto;
+
+  &:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px ${(props) => props.$shadow || "rgba(0,0,0,0.2)"};
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+`;
+
+/* stripe-gradient strip for the Bento section */
+const BentoGradientStrip = styled.div`
+  position: absolute;
+  left: -50%;
+  width: 170%;
+  height: 150px;
+  top: 38%;
+  transform: translateY(-50%) rotate(25deg);
+  z-index: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  pointer-events: none;
+  @media (max-width: 640px) {
+    width: 200%;
+  }
+`;
+
+const BentoGradientCanvas = styled.canvas`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  --gradient-color-1: #ffffff;
+  --gradient-color-2: #8b5cf6;
+  --gradient-color-3: #fc4056;
+  --gradient-color-4: #ffffff;
+`;
+
+// ─── Bento Grid – "Built for your bottom line" ────────────────────────────
+
+const BentoSection = styled.section`
+  padding: 80px 0;
+  position: relative;
+  overflow-x: clip;
+
+  @media (max-width: 768px) {
+    padding: 60px 0;
+  }
+
+  @media (max-width: 480px) {
+    padding: 40px 0;
+  }
+`;
+
+const BentoCenterHeader = styled.div`
+  text-align: center;
+  margin-bottom: 56px;
+
+  @media (max-width: 768px) {
+    margin-bottom: 40px;
+  }
+
+  @media (max-width: 480px) {
+    margin-bottom: 28px;
+  }
+`;
+
+const ServicesBadge = styled.span`
+  display: inline-block;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: rgba(139, 92, 246, 0.09);
+  color: #8b5cf6;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 20px;
+`;
+
+const BentoTitle = styled.h2`
+  font-size: clamp(2rem, 3.5vw, 2.75rem);
+  font-weight: 600;
+  color: #1d1d1f;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  margin-bottom: 16px;
+
+  @media (max-width: 480px) {
+    font-size: clamp(1.4rem, 6vw, 1.75rem);
+    margin-bottom: 12px;
+  }
+`;
+
+const BentoSubtitle = styled.p`
+  font-size: 1.05rem;
+  color: #555;
+  line-height: 1.6;
+  max-width: 560px;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.85rem;
+    padding: 0 8px;
+  }
+`;
+
+const BentoGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 320px 320px;
+  gap: 20px;
+
+  @media (max-width: 1024px) {
+    grid-template-rows: 280px 300px;
+    gap: 16px;
+  }
+
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 12px;
+  }
+`;
+
+/* ── Card 1: Left Tall ── */
+const BentoTallCard = styled.div`
+  grid-column: 1;
+  grid-row: 1 / 3;
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+  background: url("/asian-girl-using-iphone.webp") no-repeat center center;
+  background-size: cover;
+
+  @media (max-width: 768px) {
+    height: 360px;
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  @media (max-width: 480px) {
+    height: 300px;
+    border-radius: 16px;
+  }
+`;
+
+const TallDecorCircle = styled.div`
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(34, 197, 94, 0.09) 0%,
+    transparent 70%
+  );
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 0;
+  pointer-events: none;
+`;
+
+const TallDecorRing = styled.div`
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+`;
+
+const ConfirmedBadge = styled.div`
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(12, 12, 12, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  z-index: 10;
+`;
+
+const ConfirmedDot = styled.div`
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #22c55e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+`;
+
+const ConfirmedText = styled.span`
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+`;
+
+const TallCardGradient = styled.div`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 54%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(4, 14, 10, 0.97) 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+`;
+
+const TallCardContent = styled.div`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 28px 28px 32px;
+  z-index: 2;
+
+  @media (max-width: 480px) {
+    padding: 18px 18px 22px;
+  }
+`;
+
+const TallCardHeadline = styled.h3`
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.25;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+
+  @media (max-width: 480px) {
+    font-size: 1.1rem;
+    margin-bottom: 6px;
+  }
+`;
+
+const TallCardBody = styled.p`
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.55;
+`;
+
+/* ── Cards 2 & 3: shared text ── */
+const MiniCardTitle = styled.h3`
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1d1d1f;
+  line-height: 1.25;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+`;
+
+const MiniCardBody = styled.p`
+  font-size: 0.8rem;
+  color: #666;
+  line-height: 1.5;
+`;
+
+/* ── Card 2: Escrow ── */
+const EscrowCard = styled.div`
+  grid-column: 2;
+  grid-row: 1;
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(150deg, #fff4ee 0%, #fff8f4 55%, #fef0f0 100%);
+  padding: 26px 26px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+
+  @media (max-width: 768px) {
+    grid-column: auto;
+    grid-row: auto;
+    min-height: 280px;
+  }
+
+  @media (max-width: 480px) {
+    min-height: 260px;
+    padding: 18px 18px 0;
+    border-radius: 16px;
+  }
+`;
+
+/* 3-step escrow lifecycle stepper */
+const EscrowStepRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  margin: 14px 0 16px;
+`;
+
+const EscrowStepItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+`;
+
+const EscrowStepBubble = styled.div`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: ${(p) => p.$bg || "rgba(255,255,255,0.7)"};
+  border: 1.5px solid ${(p) => p.$border || "rgba(0,0,0,0.06)"};
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+  position: relative;
+`;
+
+const EscrowStepCheck = styled.div`
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 1.5px solid #fff8f4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const EscrowStepLabel = styled.span`
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #555;
+  text-align: center;
+  line-height: 1.3;
+  white-space: nowrap;
+`;
+
+const EscrowConnector = styled.div`
+  flex: 0 0 auto;
+  width: 22px;
+  height: 1.5px;
+  background: linear-gradient(to right, rgba(239,68,68,0.25), rgba(239,68,68,0.12));
+  margin-top: 18px;
+  border-radius: 2px;
+`;
+
+/* Transaction rows */
+const EscrowTxList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: auto;
+`;
+
+const EscrowTx = styled.div`
+  background: #fff;
+  border-radius: 14px;
+  padding: 10px 13px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+const EscrowTxIcon = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: ${(p) => p.$bg || "#fee2e2"};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+`;
+
+const EscrowTxMeta = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const EscrowTxPrimary = styled.div`
+  font-size: 11px;
+  font-weight: 700;
+  color: #1d1d1f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const EscrowTxSub = styled.div`
+  font-size: 9.5px;
+  color: #aaa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const EscrowTxBadge = styled.div`
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  background: ${(p) => p.$bg || "#dcfce7"};
+  color: ${(p) => p.$color || "#166534"};
+  flex-shrink: 0;
+  white-space: nowrap;
+`;
+
+/* ── Card 3: Radar ── */
+const radarPulse = keyframes`
+  0%, 100% { opacity: 0.14; transform: translate(-50%, -50%) scale(1); }
+  50%       { opacity: 0.28; transform: translate(-50%, -50%) scale(1.04); }
+`;
+
+const RadarCard = styled.div`
+  grid-column: 2;
+  grid-row: 2;
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+  background: radial-gradient(ellipse at 60% 80%, rgba(134, 239, 172, 0.18) 0%, #f0fbf5 55%);
+  padding: 24px 24px 0;
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: 768px) {
+    grid-column: auto;
+    grid-row: auto;
+    min-height: 320px;
+  }
+
+  @media (max-width: 480px) {
+    min-height: 280px;
+    padding: 18px 18px 0;
+    border-radius: 16px;
+  }
+`;
+
+const RadarMap = styled.div`
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin: 12px -24px 0;
+`;
+
+const RadarRing = styled.div`
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid rgba(16, 120, 70, 0.13);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: ${radarPulse} 3s ease-in-out infinite;
+  animation-delay: ${(p) => p.$delay || "0s"};
+`;
+
+const RadarCenter = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 5;
+`;
+
+const RadarMe = styled.div`
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18), 0 4px 18px rgba(0, 0, 0, 0.13);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  line-height: 1;
+`;
+
+const RadarMeLabel = styled.span`
+  font-size: 10px;
+  font-weight: 700;
+  color: #166534;
+  background: rgba(255,255,255,0.85);
+  padding: 1px 7px;
+  border-radius: 999px;
+`;
+
+const RadarBadge = styled.div`
+  position: absolute;
+  background: #fff;
+  border-radius: 14px;
+  padding: 6px 10px 6px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.1);
+  z-index: 4;
+  white-space: nowrap;
+`;
+
+const BadgeAva = styled.div`
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: ${(p) => p.$bg || "#e5e7eb"};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+`;
+
+const BadgeMeta = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+`;
+
+const BadgeName = styled.span`
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #1d1d1f;
+  line-height: 1.2;
+`;
+
+const BadgeDist = styled.span`
+  font-size: 9.5px;
+  color: #22c55e;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+`;
+
+const RadarGreenDot = styled.div`
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25);
+  flex-shrink: 0;
+`;
+
+// ─── End Bento Styled Components ───────────────────────────────────────────
+
 const FAQSection = styled.section`
   padding: 80px 0;
+
+  @media (max-width: 768px) {
+    padding: 56px 0;
+  }
+
+  @media (max-width: 480px) {
+    padding: 40px 0;
+  }
 `;
 
 const FAQContainer = styled(GlassCard)`
@@ -782,6 +1719,11 @@ const FAQContainer = styled(GlassCard)`
 
   @media (max-width: 768px) {
     padding: 0 20px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 0 16px;
+    border-radius: 16px;
   }
 `;
 
@@ -813,6 +1755,11 @@ const FAQButton = styled.button`
   @media (max-width: 768px) {
     font-size: 1rem;
   }
+
+  @media (max-width: 480px) {
+    padding: 18px 0;
+    font-size: 0.95rem;
+  }
 `;
 
 const FAQAnswer = styled(m.div)`
@@ -822,6 +1769,22 @@ const FAQAnswer = styled(m.div)`
   line-height: 1.6;
 `;
 
+// ─── Diagonal Section Divider (same pattern as WidgetLandingClient) ──────────
+const DiagonalDivider = ({ fromBg = "#ffffff", toBg = "#ffffff", flip = false }) => (
+  <div style={{ lineHeight: 0, background: toBg, display: "block", overflow: "hidden", position: "relative", zIndex: 1 }}>
+    <svg
+      viewBox="0 0 1440 44"
+      preserveAspectRatio="none"
+      width="100%"
+      height="44"
+      style={{ display: "block", transform: flip ? "scaleX(-1)" : "none" }}
+    >
+      <path d="M0,0 L1440,0 L0,44 Z" fill={fromBg} />
+      <line x1="0" y1="0" x2="1440" y2="44" stroke="rgba(248,30,62,0.10)" strokeWidth="1.5" />
+    </svg>
+  </div>
+);
+
 // --- Main Component ---
 const BusinessWelcomePage = () => {
   const router = useRouter();
@@ -829,7 +1792,6 @@ const BusinessWelcomePage = () => {
   // --- State Hooks ---
   const [activeItems, setActiveItems] = useState(new Set(["1"]));
   const [activeCarouselIndex, setActiveCarouselIndex] = useState(0);
-  const [activeTierIndex, setActiveTierIndex] = useState(0);
 
   // --- Data ---
   const { mockupItems, comparisonData, growthPathData, faqData, testimonials } =
@@ -840,21 +1802,21 @@ const BusinessWelcomePage = () => {
             title: "Bookings",
             description:
               "Visualize trends, pinpoint popular experiences, and optimize your schedule.",
-            image: "/Desert Titanium.webp",
+            image: "/iPhone 14 Pro.png",
             delay: 0,
           },
           {
             title: "Insights",
             description:
               "Track every dollar. Visualize growth trends and instantly identify profitable time slots.",
-            image: "/Desert Titanium 3.webp",
+            image: "/iPhone 14 Pro (1).png",
             delay: 0.1,
           },
           {
             title: "Earnings",
             description:
               "Get paid with confidence. Track earnings in real-time and access clear payout history.",
-            image: "/Desert Titanium 2.webp",
+            image: "/iPhone 14 Pro (2).png",
             delay: 0.2,
           },
         ],
@@ -892,11 +1854,18 @@ const BusinessWelcomePage = () => {
         ],
         growthPathData: [
           {
-            title: "Marketplace Listing",
-            price: "We bring you guests",
+            eyebrow: "MARKETPLACE",
+            title: "Get discovered, hands-free",
+            commission: "15% commission per booking",
+            commissionColor: "#1a1a1a",
+            commissionBg: "rgba(0, 0, 0, 0.06)",
             description:
-              "List your experience on our platform. We handle marketing, SEO, and payment processing to bring you new customers.",
-            iconColor: "#f81e3e",
+              "List your experience and we market it for you. Our platform handles SEO, discovery, and secure payments to bring you new customers.",
+            iconColor: "#1a1a1a",
+            buttonLabel: "List on Marketplace",
+            buttonPath: "business/register",
+            buttonBg: "#1a1a1a",
+            buttonShadow: "rgba(0, 0, 0, 0.25)",
             features: [
               "Full marketplace exposure",
               "Search & Discovery boost",
@@ -906,11 +1875,18 @@ const BusinessWelcomePage = () => {
             ],
           },
           {
-            title: "Website Widget",
-            price: "You convert your traffic",
+            eyebrow: "WEBSITE WIDGET",
+            title: "Book directly on your site",
+            commission: "3% commission per booking",
+            commissionColor: "#1a1a1a",
+            commissionBg: "rgba(0, 0, 0, 0.06)",
             description:
               "Already have a website? Embed our booking widget to manage schedules and accept payments directly on your own domain.",
-            iconColor: "#0284c7",
+            iconColor: "#1a1a1a",
+            buttonLabel: "Get the Widget",
+            buttonPath: "/booking-widget",
+            buttonBg: "#1a1a1a",
+            buttonShadow: "rgba(0, 0, 0, 0.25)",
             features: [
               "Embeddable booking engine",
               "Real-time calendar sync",
@@ -948,23 +1924,25 @@ const BusinessWelcomePage = () => {
         ],
         testimonials: [
           {
-            text: "I used to spend hours on spreadsheets. Now I just focus on my pottery students. The platform handles the rest.",
+            text: "I used to drown in spreadsheets. Now I just focus on my pottery students — the platform handles everything else 🎉",
             author: "Linda M.",
             title: "Pottery Host",
-            iconSrc: "https://cdn.lordicon.com/jazzayho.json",
+            initials: "LM",
+            avatarBg: "#e25c5c",
+            badgeBg: "#f97316",
+            badgeLabel: "H",
           },
+
           {
-            text: "The exposure is incredible. My weekend cooking workshops are booked out weeks in advance.",
-            author: "Carlos G.",
-            title: "Culinary Host",
-            iconSrc: "https://cdn.lordicon.com/xmoniccu.json",
-          },
-          {
-            text: "Finally, a platform that doesn't charge me a monthly fee. I only pay when I actually earn.",
+            text: "Finally a platform that only charges when I earn. No monthly fees, no surprises — exactly how it should be 🤝",
             author: "Sophie T.",
             title: "Art Instructor",
-            iconSrc: "https://cdn.lordicon.com/rhmhivzj.json",
+            initials: "ST",
+            avatarBg: "#8b5cf6",
+            badgeBg: "#22c55e",
+            badgeLabel: "E",
           },
+
         ],
       }),
       [],
@@ -985,8 +1963,10 @@ const BusinessWelcomePage = () => {
 
   useEffect(() => {
     import("stripe-gradient").then(({ Gradient }) => {
-      const gradient = new Gradient();
-      gradient.initGradient("#welcome-gradient-canvas");
+      const g1 = new Gradient();
+      g1.initGradient("#welcome-gradient-canvas");
+      const g2 = new Gradient();
+      g2.initGradient("#bento-gradient-canvas");
     }).catch(() => {});
   }, []);
 
@@ -1043,6 +2023,7 @@ const BusinessWelcomePage = () => {
             </SectionContainer>
           </HeroSection>
 
+          <DiagonalDivider fromBg="#ffffff" toBg="#ffffff" />
           {/* 3. Dashboard Mockups — Phone Carousel */}
           <DashboardSection>
             <SectionContainer>
@@ -1108,7 +2089,7 @@ const BusinessWelcomePage = () => {
                           alt={item.title}
                           fill
                           sizes="(max-width: 600px) 220px, 260px"
-                          style={{  objectPosition: "top center" }}
+                          style={{ objectFit: "cover", objectPosition: "top center" }}
                         />
                       </PhoneSlide>
                     );
@@ -1162,234 +2143,305 @@ const BusinessWelcomePage = () => {
             </SectionContainer>
           </DashboardSection>
 
-          {/* 2. Value & Comparison */}
-          <ValuePropSection>
+          <DiagonalDivider fromBg="#ffffff" toBg="#ffffff" flip />
+          {/* 2. "Built for your bottom line" — Bento Grid */}
+          <BentoSection>
+            {/* Live stripe-gradient strip behind header */}
+            <BentoGradientStrip>
+              <WelcomeGradientStripInner>
+                <BentoGradientCanvas id="bento-gradient-canvas" data-transition-in />
+              </WelcomeGradientStripInner>
+            </BentoGradientStrip>
             <SectionContainer>
-              <SectionHeader $center>
-                <SectionTitle>Built for your bottom line</SectionTitle>
-                <SectionSubtitle $center>
-                  We only succeed when you do. Experience a fairer way to host.
-                </SectionSubtitle>
-              </SectionHeader>
+              {/* ── Header ── */}
+              <BentoCenterHeader>
+                <BentoTitle>
+                  Built to protect your time
+                  <br />
+                  and your earnings
+                </BentoTitle>
+                <BentoSubtitle>
+                  List your experience, take bookings on autopilot, and get
+                  paid with confidence — guest payments are held in escrow
+                  until every session is complete.
+                </BentoSubtitle>
+              </BentoCenterHeader>
 
-              <GridThree className="no-scrollbar">
-                <ValueCard>
-                  <IconCircle>
-                    <lord-icon
-                      src="https://cdn.lordicon.com/pmawqxvu.json"
-                      trigger="in"
-                      state="in-reveal"
-                      style={{ width: "44px", height: "44px" }}
-                    ></lord-icon>
-                  </IconCircle>
-                  <ValueTitle>0% Listing Fees</ValueTitle>
-                  <ValueDesc>
-                    We don't charge you to exist on our platform. List unlimited
-                    experiences with no upfront costs.
-                  </ValueDesc>
-                </ValueCard>
-                <ValueCard>
-                  <IconCircle>
-                    <lord-icon
-                      src="https://cdn.lordicon.com/rhmhivzj.json"
-                      trigger="in"
-                      state="in-reveal"
-                      style={{ width: "44px", height: "44px" }}
-                    ></lord-icon>
-                  </IconCircle>
-                  <ValueTitle>Next Day Payouts</ValueTitle>
-                  <ValueDesc>
-                    Cash flow matters. Get paid the very next day after your
-                    experience completes. No more waiting weeks for funds.
-                  </ValueDesc>
-                </ValueCard>
-                <ValueCard>
-                  <IconCircle>
-                    <lord-icon
-                      src="https://cdn.lordicon.com/mlwdofpz.json"
-                      trigger="hover"
-                      style={{ width: "44px", height: "44px" }}
-                    ></lord-icon>
-                  </IconCircle>
-                  <ValueTitle>Marketing Included</ValueTitle>
-                  <ValueDesc>
-                    We actively market your experiences to thousands of local
-                    guests looking for something fun to do.
-                  </ValueDesc>
-                </ValueCard>
-              </GridThree>
+              {/* ── Bento Grid ── */}
+              <BentoGrid>
 
-              <ComparisonTableWrapper>
-                <ComparisonHeader>
-                  <div>Feature</div>
-                  <div style={{ textAlign: "center" }}>Others</div>
-                  <div style={{ textAlign: "center", color: "#f81e3e" }}>
-                    ClassEasily
-                  </div>
-                </ComparisonHeader>
-                {comparisonData.map((row) => (
-                  <ComparisonRow key={row.feature}>
-                    <ComparisonFeature>{row.feature}</ComparisonFeature>
-                    <ComparisonValue $good={false} data-label="Others">
-                      {row.others}
-                    </ComparisonValue>
-                    <ComparisonValue
-                      $good={true}
-                      $highlight={row.highlight}
-                      data-label="ClassEasily"
-                    >
-                      {row.classEasily}
-                    </ComparisonValue>
-                  </ComparisonRow>
-                ))}
-              </ComparisonTableWrapper>
+                {/* ── Card 1: Left Tall — Peace of Mind ── */}
+                <BentoTallCard>
+                  {/* Decorative background elements */}
+                  <TallDecorCircle />
+                  <TallDecorRing style={{ width: 200, height: 200 }} />
+                  <TallDecorRing style={{ width: 330, height: 330 }} />
+
+                  {/* Floating "Booking Confirmed" badge */}
+                  <ConfirmedBadge>
+                    <ConfirmedDot>
+                      <Check size={10} color="#fff" strokeWidth={3} />
+                    </ConfirmedDot>
+                    <ConfirmedText>Booking Confirmed!</ConfirmedText>
+                  </ConfirmedBadge>
+
+                  {/* Bottom gradient + text */}
+                  <TallCardGradient />
+                  <TallCardContent>
+                    <TallCardHeadline>Your Guests Book With Confidence</TallCardHeadline>
+                    <TallCardBody>
+                      A frictionless checkout and secured payments means more
+                      completed bookings and fewer no-shows.
+                    </TallCardBody>
+                  </TallCardContent>
+                </BentoTallCard>
+
+                {/* ── Card 2: Escrow Payments ── */}
+                <EscrowCard>
+                  <MiniCardTitle>
+                    Secure Escrow
+                    Payments
+                  </MiniCardTitle>
+                  <MiniCardBody>
+                    Guest funds are locked the moment they book and released
+                    to you automatically once the experience is complete.
+                  </MiniCardBody>
+
+                  {/* 3-step escrow lifecycle */}
+                  <EscrowStepRow>
+                    <EscrowStepItem>
+                      <EscrowStepBubble $bg="rgba(254,243,199,0.9)" $border="rgba(251,191,36,0.2)">
+                        🎟
+                        <EscrowStepCheck>
+                          <Check size={7} color="#fff" strokeWidth={3.5} />
+                        </EscrowStepCheck>
+                      </EscrowStepBubble>
+                      <EscrowStepLabel>Guest<br/>Books</EscrowStepLabel>
+                    </EscrowStepItem>
+                    <EscrowConnector />
+                    <EscrowStepItem>
+                      <EscrowStepBubble $bg="rgba(254,226,226,0.9)" $border="rgba(239,68,68,0.2)">
+                        🔒
+                        <EscrowStepCheck>
+                          <Check size={7} color="#fff" strokeWidth={3.5} />
+                        </EscrowStepCheck>
+                      </EscrowStepBubble>
+                      <EscrowStepLabel>Funds<br/>Secured</EscrowStepLabel>
+                    </EscrowStepItem>
+                    <EscrowConnector />
+                    <EscrowStepItem>
+                      <EscrowStepBubble $bg="rgba(209,250,229,0.6)" $border="rgba(34,197,94,0.15)">
+                        ✅
+                      </EscrowStepBubble>
+                      <EscrowStepLabel>Session<br/>Complete</EscrowStepLabel>
+                    </EscrowStepItem>
+                    <EscrowConnector />
+                    <EscrowStepItem>
+                      <EscrowStepBubble $bg="rgba(219,234,254,0.6)" $border="rgba(59,130,246,0.15)">
+                        💸
+                      </EscrowStepBubble>
+                      <EscrowStepLabel>You Get<br/>Paid</EscrowStepLabel>
+                    </EscrowStepItem>
+                  </EscrowStepRow>
+
+                  {/* Live transaction rows */}
+                  <EscrowTxList>
+                    <EscrowTx>
+                      <EscrowTxIcon $bg="#fef9c3">🎨</EscrowTxIcon>
+                      <EscrowTxMeta>
+                        <EscrowTxPrimary>Pottery Workshop · Sarah O.</EscrowTxPrimary>
+                        <EscrowTxSub>$60.00 CAD · releases after session</EscrowTxSub>
+                      </EscrowTxMeta>
+                      <EscrowTxBadge $bg="#fef3c7" $color="#92400e">In Escrow</EscrowTxBadge>
+                    </EscrowTx>
+                    <EscrowTx>
+                      <EscrowTxIcon $bg="#dcfce7">🍳</EscrowTxIcon>
+                      <EscrowTxMeta>
+                        <EscrowTxPrimary>Cooking Class · 3 guests</EscrowTxPrimary>
+                        <EscrowTxSub>$120.00 CAD · released to you</EscrowTxSub>
+                      </EscrowTxMeta>
+                      <EscrowTxBadge $bg="#dcfce7" $color="#166534">Paid Out</EscrowTxBadge>
+                    </EscrowTx>
+                  </EscrowTxList>
+                </EscrowCard>
+
+                {/* ── Card 3: Nearby Radar ── */}
+                <RadarCard>
+                  <MiniCardTitle>
+                    Your next guest
+                    is already nearby
+                  </MiniCardTitle>
+                  <MiniCardBody>
+                    We surface your listing to local guests who are actively
+                    searching for experiences just like yours.
+                  </MiniCardBody>
+
+                  <RadarMap>
+                    {/* Concentric pulsing rings */}
+                    <RadarRing $delay="0s"   style={{ width: 68,  height: 68  }} />
+                    <RadarRing $delay="0.7s" style={{ width: 130, height: 130 }} />
+                    <RadarRing $delay="1.4s" style={{ width: 205, height: 205 }} />
+                    <RadarRing $delay="2.1s" style={{ width: 280, height: 280 }} />
+
+                    {/* Center — host "You" bubble */}
+                    <RadarCenter>
+                      <RadarMe>🧑🏽‍🍳</RadarMe>
+                      <RadarMeLabel>You</RadarMeLabel>
+                    </RadarCenter>
+
+                    {/* Guest badges with Memoji face emojis */}
+                    <RadarBadge style={{ top: "8%", left: "3%" }}>
+                      <BadgeAva $bg="#fef9c3">👩🏻‍🦰</BadgeAva>
+                      <BadgeMeta>
+                        <BadgeName>Sophie</BadgeName>
+                        <BadgeDist><RadarGreenDot />0.4 mi away</BadgeDist>
+                      </BadgeMeta>
+                    </RadarBadge>
+
+                    <RadarBadge style={{ top: "10%", right: "2%" }}>
+                      <BadgeAva $bg="#dcfce7">🧑🏿‍🦱</BadgeAva>
+                      <BadgeMeta>
+                        <BadgeName>Marcus</BadgeName>
+                        <BadgeDist><RadarGreenDot />1.2 mi away</BadgeDist>
+                      </BadgeMeta>
+                    </RadarBadge>
+
+                    <RadarBadge style={{ bottom: "20%", left: "2%" }}>
+                      <BadgeAva $bg="#ede9fe">👩🏽</BadgeAva>
+                      <BadgeMeta>
+                        <BadgeName>Amara</BadgeName>
+                        <BadgeDist><RadarGreenDot />2.1 mi away</BadgeDist>
+                      </BadgeMeta>
+                    </RadarBadge>
+
+                    <RadarBadge style={{ bottom: "22%", right: "2%" }}>
+                      <BadgeAva $bg="#ffedd5">🧔🏻</BadgeAva>
+                      <BadgeMeta>
+                        <BadgeName>James</BadgeName>
+                        <BadgeDist><RadarGreenDot />3.0 mi away</BadgeDist>
+                      </BadgeMeta>
+                    </RadarBadge>
+                  </RadarMap>
+                </RadarCard>
+
+              </BentoGrid>
             </SectionContainer>
-          </ValuePropSection>
+          </BentoSection>
 
+          <DiagonalDivider fromBg="#ffffff" toBg="#f7f7f9" />
           {/* 4. Testimonials */}
           <TestimonialsSection>
             <SectionContainer>
-              <SectionHeader $center>
-                <SectionTitle>What hosts are saying</SectionTitle>
-              </SectionHeader>
-              <ReviewGrid className="no-scrollbar">
-                {testimonials.map((t, i) => (
-                  <ReviewItem
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                  >
-                    <AnimatedIconWrapper>
-                      <lord-icon
-                        src={t.iconSrc}
-                        trigger="hover"
-                        style={{ width: "40px", height: "40px" }}
-                      ></lord-icon>
-                    </AnimatedIconWrapper>
-                    <ReviewText>{t.text}</ReviewText>
-                    <ReviewAuthor>
-                      {t.author} <span>— {t.title}</span>
-                    </ReviewAuthor>
-                  </ReviewItem>
-                ))}
-              </ReviewGrid>
+              <SocialProofGrid>
+                {/* Left: Marketing Copy */}
+                <SocialProofLeft>
+                  <SocialProofHeadline>
+                    Trusted by 
+                    many 
+                    passionate hosts
+                  </SocialProofHeadline>
+                  <SocialProofSubtext>
+                    Classeasily has helped hosts across every category — from yoga to ceramics — grow their bookings and spend less time on admin.
+                  </SocialProofSubtext>
+                </SocialProofLeft>
+
+                {/* Center: Tall Image Card */}
+                <CenterImageCard>
+                  <Image
+                    src="/63f746587912c47bc359769c_Cover (3).webp"
+                    alt="Host running a workshop"
+                    fill
+                    style={{ objectFit: "cover" }}
+                    sizes="(max-width: 700px) 100vw, (max-width: 1024px) 50vw, 38vw"
+                  />
+                  <ImageOverlayGradient />
+                  <ImageOverlayContent>
+                    <ImageOverlayQuote>
+                      "Classeasily made running my workshop feel completely effortless!"
+                    </ImageOverlayQuote>
+                    <ImageOverlayAuthor>
+                      <ImageAuthorName>Sarah B.</ImageAuthorName>
+                      <ImageAuthorTitle>&nbsp;· Ceramics Host &amp; Studio Owner</ImageAuthorTitle>
+                    </ImageOverlayAuthor>
+                  </ImageOverlayContent>
+                </CenterImageCard>
+
+                {/* Right: Testimonial Card Stack */}
+                <TestimonialStack>
+                  {testimonials.map((t, i) => (
+                    <TestimonialCard key={i}>
+                      <TestimonialCardText>{t.text}</TestimonialCardText>
+                      <StarRow>★★★★★</StarRow>
+                      <TestimonialCardFooter>
+                        <TestimonialAvatarGroup>
+                          <TestimonialAvatar $bg={t.avatarBg}>
+                            {t.initials}
+                          </TestimonialAvatar>
+                          <TestimonialAuthorInfo>
+                            <TestimonialAuthorName>{t.author}</TestimonialAuthorName>
+                            <TestimonialAuthorTitle>{t.title}</TestimonialAuthorTitle>
+                          </TestimonialAuthorInfo>
+                        </TestimonialAvatarGroup>
+                        <CompanyBadge $bg={t.badgeBg}>{t.badgeLabel}</CompanyBadge>
+                      </TestimonialCardFooter>
+                    </TestimonialCard>
+                  ))}
+                </TestimonialStack>
+              </SocialProofGrid>
             </SectionContainer>
           </TestimonialsSection>
 
+          <DiagonalDivider fromBg="#f7f7f9" toBg="#f8fafc" flip />
           {/* 5. Flexibility / How It Works */}
           <TierSection>
             <SectionContainer>
-              <SectionHeader $center>
-                <SectionTitle>Grow your way</SectionTitle>
-                <SectionSubtitle $center>
-                  List on our marketplace to reach new customers, or use our
-                  powerful widget to streamline bookings on your own website.
-                </SectionSubtitle>
-              </SectionHeader>
+              <GrowthHeader>
+                <GrowthHeadline>Grow your way</GrowthHeadline>
+                <GrowthSubtext>
+                  List on our marketplace to reach new customers, or embed our
+                  widget on your site to convert your own traffic — or do both
+                  from one account.
+                </GrowthSubtext>
+              </GrowthHeader>
 
-              {/* Desktop Grid Layout */}
-              <CleanTierGrid>
+              <GrowthGrid>
                 {growthPathData.map((tier, i) => (
-                  <CleanTierColumn key={i}>
-                    <TierHeaderSimple>
-                      <TierTitleDisplay>{tier.title}</TierTitleDisplay>
-                      <TierPriceDisplay $color={tier.iconColor}>
-                        {tier.price}
-                      </TierPriceDisplay>
-                      <TierDescription>{tier.description}</TierDescription>
-                    </TierHeaderSimple>
-                    <FeatureListClean>
+                  <GrowthCard key={i}>
+                    <GrowthCardEyebrow $color={tier.iconColor}>
+                      {tier.eyebrow}
+                    </GrowthCardEyebrow>
+                    <GrowthCardTitle>{tier.title}</GrowthCardTitle>
+                    <GrowthCommissionBadge
+                      $color={tier.commissionColor}
+                      $bg={tier.commissionBg}
+                    >
+                      {tier.commission}
+                    </GrowthCommissionBadge>
+                    <GrowthCardDesc>{tier.description}</GrowthCardDesc>
+                    <GrowthCardDivider />
+                    <GrowthFeatureList>
                       {tier.features.map((feat, idx) => (
-                        <FeatureItemClean key={idx}>
-                          <Check size={16} color={tier.iconColor} />
+                        <GrowthFeatureItem key={idx}>
+                          <Check size={12} color={tier.iconColor} />
                           {feat}
-                        </FeatureItemClean>
+                        </GrowthFeatureItem>
                       ))}
-                    </FeatureListClean>
-                  </CleanTierColumn>
+                    </GrowthFeatureList>
+                    <GrowthCTAButton
+                      $bg={tier.buttonBg}
+                      $shadow={tier.buttonShadow}
+                      onClick={() => router.push(tier.buttonPath)}
+                    >
+                      {tier.buttonLabel}
+                      <ArrowRight size={12} />
+                    </GrowthCTAButton>
+                  </GrowthCard>
                 ))}
-              </CleanTierGrid>
-
-              {/* Mobile Tabbed Layout */}
-              <MobileTabContainer>
-                <TabList>
-                  {growthPathData.map((tier, i) => (
-                    <React.Fragment key={i}>
-                      {activeTierIndex === i && (
-                        <TabIndicator
-                          layoutId="tabIndicator"
-                          style={{
-                            width: `${100 / growthPathData.length}%`,
-                            left: `${(i * 100) / growthPathData.length}%`,
-                          }}
-                          transition={{
-                            type: "spring",
-                            bounce: 0.2,
-                            duration: 0.6,
-                          }}
-                        />
-                      )}
-                      <TabButton
-                        $active={activeTierIndex === i}
-                        onClick={() => setActiveTierIndex(i)}
-                      >
-                        {tier.title}
-                      </TabButton>
-                    </React.Fragment>
-                  ))}
-                </TabList>
-
-                <AnimatePresence mode="wait">
-                  <MobileTabContent
-                    key={activeTierIndex}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <TierHeaderSimple>
-                      <TierPriceDisplay
-                        $color={growthPathData[activeTierIndex].iconColor}
-                        style={{
-                          marginBottom: 4,
-                          fontSize: "0.8rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                        }}
-                      >
-                        {growthPathData[activeTierIndex].price}
-                      </TierPriceDisplay>
-                      <TierTitleDisplay style={{ fontSize: "1.6rem" }}>
-                        {growthPathData[activeTierIndex].title}
-                      </TierTitleDisplay>
-                      <TierDescription style={{ marginBottom: 24 }}>
-                        {growthPathData[activeTierIndex].description}
-                      </TierDescription>
-                    </TierHeaderSimple>
-                    <FeatureListClean>
-                      {growthPathData[activeTierIndex].features.map(
-                        (feat, idx) => (
-                          <FeatureItemClean
-                            key={idx}
-                            style={{ fontSize: "1rem", gap: 12 }}
-                          >
-                            <Check
-                              size={20}
-                              color={growthPathData[activeTierIndex].iconColor}
-                            />
-                            {feat}
-                          </FeatureItemClean>
-                        ),
-                      )}
-                    </FeatureListClean>
-                  </MobileTabContent>
-                </AnimatePresence>
-              </MobileTabContainer>
+              </GrowthGrid>
             </SectionContainer>
           </TierSection>
 
+          <DiagonalDivider fromBg="#f8fafc" toBg="#ffffff" />
           {/* 6. FAQ Section */}
           <FAQSection>
             <SectionContainer>

@@ -19,6 +19,9 @@ import {
   BarChart2,
   PieChart as PieIcon,
   Info,
+  Lock,
+  Globe,
+  LayoutGrid,
 } from "lucide-react";
 import {
   DatePicker,
@@ -32,8 +35,10 @@ import {
   Divider,
   Grid,
   Tooltip as AntTooltip,
+  Segmented,
 } from "antd";
 import message from "@/lib/message";
+import { useSubscription } from "@/context/SubscriptionContext";
 import {
   Bar,
   XAxis,
@@ -687,7 +692,15 @@ const BookingTrends = () => {
     startDate: dayjs().subtract(29, "days"),
     endDate: dayjs(),
     classId: null,
+    source: "all",
   });
+  const { subscription, widgetSubscriptionRequired } = useSubscription();
+  const hasWidgetAnalytics = Boolean(
+    !widgetSubscriptionRequired ||
+      (subscription?.status &&
+        ["active", "trialing"].includes(subscription.status) &&
+        ["growth", "advanced"].includes(subscription?.planId))
+  );
   const [analytics, setAnalytics] = useState({
     summary: {},
     trends: [],
@@ -732,6 +745,7 @@ const BookingTrends = () => {
         {
           signal: abortControllerRef.current.signal,
           classId: currentFilters.classId || undefined,
+          source: currentFilters.source || "all",
         },
       );
       if (!abortControllerRef.current.signal.aborted) {
@@ -770,6 +784,14 @@ const BookingTrends = () => {
       ...p,
       classId: value === undefined ? null : value,
     }));
+  };
+
+  const handleSourceChange = (value) => {
+    if (value === "widget" && !hasWidgetAnalytics) {
+      message.info("Upgrade to the Growth plan to view widget-specific analytics.");
+      return;
+    }
+    setFilterParams((p) => ({ ...p, source: value }));
   };
 
   // --- Insight Helpers ---
@@ -876,10 +898,60 @@ const BookingTrends = () => {
           <div>
             <PageTitle>Booking Trends & Insights</PageTitle>
             <HeaderSubtitle>
-              Analyze booking patterns and guest engagement.
+              {filterParams.source === "widget"
+                ? "Widget bookings only — from your embedded booking widget."
+                : filterParams.source === "marketplace"
+                ? "Marketplace bookings only — from Classeasily discovery."
+                : "Analyze booking patterns and guest engagement across all sources."}
             </HeaderSubtitle>
           </div>
           <Controls>
+            <Segmented
+              value={filterParams.source}
+              onChange={handleSourceChange}
+              options={[
+                {
+                  label: (
+                    <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <LayoutGrid size={13} />
+                      All
+                    </span>
+                  ),
+                  value: "all",
+                },
+                {
+                  label: (
+                    <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <Globe size={13} />
+                      Marketplace
+                    </span>
+                  ),
+                  value: "marketplace",
+                },
+                {
+                  label: (
+                    <AntTooltip
+                      title={
+                        !hasWidgetAnalytics
+                          ? "Upgrade to the Growth plan to view widget analytics"
+                          : ""
+                      }
+                    >
+                      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        {!hasWidgetAnalytics ? (
+                          <Lock size={11} style={{ opacity: 0.5 }} />
+                        ) : (
+                          <span style={{ fontSize: 12 }}>⚡</span>
+                        )}
+                        Widget
+                      </span>
+                    </AntTooltip>
+                  ),
+                  value: "widget",
+                  disabled: !hasWidgetAnalytics,
+                },
+              ]}
+            />
             {isMobile ? (
               <MobileDateRangePicker
                 value={[filterParams.startDate, filterParams.endDate]}

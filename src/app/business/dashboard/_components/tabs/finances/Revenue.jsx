@@ -20,6 +20,9 @@ import {
   DollarSign,
   TrendingDown,
   Info,
+  Lock,
+  Globe,
+  LayoutGrid,
 } from "lucide-react";
 import {
   DatePicker,
@@ -28,6 +31,7 @@ import {
   Tooltip,
   Button,
   Select,
+  Segmented,
   Skeleton,
   Row,
   Col,
@@ -35,6 +39,7 @@ import {
   Grid,
 } from "antd";
 import message from "@/lib/message";
+import { useSubscription } from "@/context/SubscriptionContext";
 import {
   ResponsiveContainer,
   Area,
@@ -54,12 +59,7 @@ import {
 } from "recharts";
 import NumberFlow from "@number-flow/react";
 import dayjs from "dayjs";
-import { useAuth } from "@/lib/auth-client";
 import { revenueService, businessClassService } from "@/services/apiService";
-import {
-  isMockDashboardUser,
-  getMockRevenueAnalytics,
-} from "@/data/mockBusinessDashboardData";
 import { LordIcon } from "@/services/ReactUtils";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
@@ -578,14 +578,21 @@ const getChartTotal = (data) => {
 };
 
 const Revenue = forwardRef((props, ref) => {
-  const { user: currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
   const [filterParams, setFilterParams] = useState({
     startDate: dayjs().subtract(29, "days"),
     endDate: dayjs(),
     classId: null,
+    source: "all",
   });
+  const { subscription, widgetSubscriptionRequired } = useSubscription();
+  const hasWidgetAnalytics = Boolean(
+    !widgetSubscriptionRequired ||
+      (subscription?.status &&
+        ["active", "trialing"].includes(subscription.status) &&
+        ["growth", "advanced"].includes(subscription?.planId))
+  );
   const [analytics, setAnalytics] = useState({
     metrics: {
       total_gross_revenue: 0,
@@ -643,21 +650,13 @@ const Revenue = forwardRef((props, ref) => {
       abortControllerRef.current.abort("New request");
     abortControllerRef.current = new AbortController();
 
-    const apiParams = {
-      startDate: currentFilters.startDate.format("YYYY-MM-DD"),
-      endDate: currentFilters.endDate.format("YYYY-MM-DD"),
-      class_id: currentFilters.classId || undefined,
-    };
-
     try {
-      if (isMockDashboardUser(currentUser)) {
-        const mockData = getMockRevenueAnalytics(apiParams);
-        setAnalytics((prev) => ({ ...prev, ...mockData }));
-        setTimeout(() => setIsReadyForAnimation(true), 50);
-        setTimeout(() => setLoading(false), 150);
-        return;
-      }
-
+      const apiParams = {
+        startDate: currentFilters.startDate.format("YYYY-MM-DD"),
+        endDate: currentFilters.endDate.format("YYYY-MM-DD"),
+        class_id: currentFilters.classId || undefined,
+        source: currentFilters.source || "all",
+      };
       const result = await revenueService.getRevenueAnalytics(apiParams, {
         signal: abortControllerRef.current.signal,
       });
@@ -678,7 +677,7 @@ const Revenue = forwardRef((props, ref) => {
       if (!abortControllerRef.current?.signal.aborted)
         setTimeout(() => setLoading(false), 150);
     }
-  }, [currentUser]);
+  }, []);
 
   useEffect(() => {
     fetchBusinessExperiencesForFilter();
@@ -707,6 +706,14 @@ const Revenue = forwardRef((props, ref) => {
 
   const handleClassFilterChange = (value) => {
     setFilterParams((prev) => ({ ...prev, classId: value }));
+  };
+
+  const handleSourceChange = (value) => {
+    if (value === "widget" && !hasWidgetAnalytics) {
+      message.info("Upgrade to the Growth plan to view widget-specific analytics.");
+      return;
+    }
+    setFilterParams((prev) => ({ ...prev, source: value }));
   };
 
   const handleExport = async () => {
@@ -823,10 +830,60 @@ const Revenue = forwardRef((props, ref) => {
           <div>
             <PageTitle>Revenue Analytics</PageTitle>
             <HeaderSubtitle>
-              Track revenue performance and growth insights.
+              {filterParams.source === "widget"
+                ? "Widget bookings only — revenue from your embedded booking widget."
+                : filterParams.source === "marketplace"
+                ? "Marketplace bookings only — revenue from Classeasily discovery."
+                : "Track revenue performance and growth insights across all sources."}
             </HeaderSubtitle>
           </div>
           <Controls>
+            <Segmented
+              value={filterParams.source}
+              onChange={handleSourceChange}
+              options={[
+                {
+                  label: (
+                    <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <LayoutGrid size={13} />
+                      All
+                    </span>
+                  ),
+                  value: "all",
+                },
+                {
+                  label: (
+                    <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                      <Globe size={13} />
+                      Marketplace
+                    </span>
+                  ),
+                  value: "marketplace",
+                },
+                {
+                  label: (
+                    <Tooltip
+                      title={
+                        !hasWidgetAnalytics
+                          ? "Upgrade to the Growth plan to view widget analytics"
+                          : ""
+                      }
+                    >
+                      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        {!hasWidgetAnalytics ? (
+                          <Lock size={11} style={{ opacity: 0.5 }} />
+                        ) : (
+                          <span style={{ fontSize: 12 }}>⚡</span>
+                        )}
+                        Widget
+                      </span>
+                    </Tooltip>
+                  ),
+                  value: "widget",
+                  disabled: !hasWidgetAnalytics,
+                },
+              ]}
+            />
             {isMobile ? (
               <MobileDateRangePicker
                 value={[filterParams.startDate, filterParams.endDate]}
