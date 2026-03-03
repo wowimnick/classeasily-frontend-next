@@ -1255,7 +1255,8 @@ function WidgetCheckoutContent() {
         );
       return (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "20px 0" }}>
-          <Loader2 size={28} style={{ animation: `${spin} 1s linear infinite`, color: "#6b7280" }} />
+          <style>{`@keyframes ce-activating-spin { to { transform: rotate(360deg); } }`}</style>
+          <Loader2 size={28} style={{ animation: "ce-activating-spin 1s linear infinite", color: "#6b7280" }} />
           <p style={{ margin: 0, fontSize: 14, color: "#6b7280", fontWeight: 500 }}>Activating your subscription…</p>
           <p style={{ margin: 0, fontSize: 12, color: "#9ca3af" }}>Please wait a moment.</p>
         </div>
