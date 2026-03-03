@@ -991,6 +991,9 @@ const Hero = () => {
                 <a href="#pricing">
                   <Button variant="secondary">See pricing</Button>
                 </a>
+                <Link href="/widget-demo/mock?key=demo">
+                  <Button variant="secondary">Try demo</Button>
+                </Link>
               </ButtonGroup>
             </motion.div>
           </HeroTextBlock>
@@ -2017,12 +2020,12 @@ const PLAN_FEATURES_BASIC = [
   { label: 'One dashboard & payout' },
   { label: 'Brand colors & fonts' },
   { label: 'Modal, inline, or floating embed' },
+  { label: 'Domain whitelist', tooltip: 'Restrict your widget so it only loads on your own site. Prevents unauthorized embedding on third-party pages.' },
 ];
 
 const PLAN_FEATURES_GROWTH = [
   { label: 'Everything in Basic' },
   { label: 'Personalized booking emails', tooltip: 'Confirmation and reminder emails sent under your brand — your logo, colors, and custom message. Not generic Classeasily emails.' },
-  { label: 'Domain whitelist', tooltip: 'Restrict your widget so it only loads on your own site. Prevents unauthorized embedding on third-party pages.' },
   { label: 'Pin widget to a specific class', tooltip: 'Embed a booking button for one class or location — great for landing pages, ads, and campaigns.' },
   { label: 'Widget revenue & booking analytics', tooltip: 'Track widget-specific conversion rates, revenue by class, and booking trends. Separate from your Marketplace stats.' },
   { label: 'Automated pre-class reminders', tooltip: 'Email (and optional SMS) reminders sent automatically before each session to cut no-shows.' },
@@ -2033,7 +2036,7 @@ const PLAN_FEATURES_GROWTH = [
 
 const PLAN_FEATURES_ADVANCED = [
   { label: 'Everything in Growth' },
-  { label: 'Multiple domain whitelists', tooltip: 'Run your widget across multiple websites, microsites, or partner pages — each separately whitelisted.' },
+  { label: 'Lower commission (2%)', tooltip: 'Best for high-volume studios. Pay a higher subscription to keep more of every booking.' },
   { label: 'White-label widget', tooltip: 'Remove all Classeasily branding entirely. Customers only see your brand when they book.' },
   { label: 'API access', tooltip: 'Connect booking data directly to your CRM, scheduling tools, or custom apps via the Classeasily REST API.' },
   { label: 'Dedicated account manager' },

@@ -22,6 +22,8 @@ import {
   Button,
   Grid,
   Steps,
+  Checkbox,
+  Tooltip,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -52,6 +54,7 @@ import {
   businessClassService,
   scheduleService,
 } from "@/services/apiService";
+import { useSubscription } from "@/context/SubscriptionContext";
 import debounce from "lodash/debounce";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
@@ -568,6 +571,7 @@ const defaultInitialState = {
     usage_limit: null,
     usage_limit_per_user: 1,
     min_purchase_amount: null,
+    apply_to_widget: false,
   },
 };
 
@@ -624,6 +628,7 @@ const DiscountProvider = ({ children, editingDiscount }) => {
           usage_limit: editingDiscount.usage_limit || null,
           usage_limit_per_user: editingDiscount.usage_limit_per_user ?? 1,
           min_purchase_amount: editingDiscount.min_purchase_amount || null,
+          apply_to_widget: editingDiscount.apply_to_widget ?? false,
         },
       };
       dispatch({ type: actionTypes.SET_INITIAL_STATE, payload: initialState });
@@ -1033,6 +1038,30 @@ const ApplicabilityStep = ({ businessId, form }) => {
   );
 };
 
+const ApplyToWidgetCheckbox = () => {
+  const { subscription } = useSubscription();
+  const planId = subscription?.planId || "";
+  const canApplyToWidget = ["growth", "advanced"].includes(planId.toLowerCase());
+  const checkbox = (
+    <Form.Item name="apply_to_widget" valuePropName="checked">
+      <Checkbox disabled={!canApplyToWidget}>
+        Apply to both widget & marketplace
+      </Checkbox>
+    </Form.Item>
+  );
+  if (canApplyToWidget) return <FormGroup>{checkbox}</FormGroup>;
+  return (
+    <FormGroup>
+      <FormLabel>
+        <Layers size={16} /> Widget & marketplace
+      </FormLabel>
+      <Tooltip title="Upgrade to Growth or Advanced to use this discount on your widget.">
+        <span style={{ display: "inline-block" }}>{checkbox}</span>
+      </Tooltip>
+    </FormGroup>
+  );
+};
+
 const RulesStep = ({ isMobile }) => (
   <FormSection
     initial={{ opacity: 0, y: 20 }}
@@ -1125,6 +1154,7 @@ const RulesStep = ({ isMobile }) => (
           size="middle"
         />
       </Form.Item>
+      <ApplyToWidgetCheckbox />
     </FormGroup>
   </FormSection>
 );
@@ -1283,6 +1313,7 @@ const DiscountEditTabs = ({ onFinalSubmit, businessId }) => {
     usage_limit: "4",
     usage_limit_per_user: "4",
     min_purchase_amount: "4",
+    apply_to_widget: "4",
   };
 
   const handleSave = async (values) => {
@@ -1305,6 +1336,7 @@ const DiscountEditTabs = ({ onFinalSubmit, businessId }) => {
           usage_limit: values.usage_limit,
           usage_limit_per_user: values.usage_limit_per_user,
           min_purchase_amount: values.min_purchase_amount,
+          apply_to_widget: values.apply_to_widget || false,
         },
       };
       await onFinalSubmit(fullState);
@@ -1418,6 +1450,11 @@ const DiscountFlowWrapper = ({
   onClose,
   businessId,
 }) => {
+  const { subscription } = useSubscription();
+  const canApplyToWidget = ["growth", "advanced"].includes(
+    (subscription?.planId || "").toLowerCase()
+  );
+
   const handleFinalSubmit = async (state) => {
     const { basicInfo, typeAndValue, applicability, rules } = state;
 
@@ -1447,6 +1484,7 @@ const DiscountFlowWrapper = ({
       usage_limit: rules.usage_limit || null,
       usage_limit_per_user: rules.usage_limit_per_user || 1,
       min_purchase_amount: rules.min_purchase_amount || null,
+      apply_to_widget: canApplyToWidget && (rules.apply_to_widget || false),
     };
 
     try {

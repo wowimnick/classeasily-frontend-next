@@ -43,6 +43,20 @@ export const API_ENDPOINTS = {
   MY_BUSINESS_WIDGET_SUBSCRIPTION_CANCEL: "/my-business/widget-subscription/cancel/",
   MY_BUSINESS_WIDGET_SUBSCRIPTION_REACTIVATE:
     "/my-business/widget-subscription/reactivate/",
+  MY_BUSINESS_WIDGET_SUBSCRIPTION_INVOICES:
+    "/my-business/widget-subscription/invoices/",
+
+  MY_BUSINESS_ADDONS: "/my-business/addons/",
+  MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_CHECKOUT:
+    "/my-business/addons/marketplace-email/checkout/",
+  MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_PAYMENT_INTENT:
+    "/my-business/addons/marketplace-email/payment-intent/",
+  MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_INSTANT_SUBSCRIBE:
+    "/my-business/addons/marketplace-email/instant-subscribe/",
+  MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_CANCEL:
+    "/my-business/addons/marketplace-email/cancel/",
+  MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_REACTIVATE:
+    "/my-business/addons/marketplace-email/reactivate/",
 
   // Student Self-Service
   STUDENT_BOOKINGS: "/my-bookings/",
@@ -754,6 +768,126 @@ export const businessService = {
         "Error reactivating widget subscription:",
         error.response?.data || error,
       );
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to reactivate.";
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  getWidgetSubscriptionInvoices: async () => {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION_INVOICES,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Error fetching widget subscription invoices:",
+        error.response?.data || error,
+      );
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to load invoices.";
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  getAddons: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_ADDONS);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error fetching addons:", error.response?.data || error);
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to load addons.";
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  createMarketplaceEmailAddonCheckout: async ({ success_url, cancel_url } = {}) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_CHECKOUT,
+        { success_url, cancel_url },
+      );
+      return { success: true, url: response.data?.url };
+    } catch (error) {
+      console.error(
+        "Error creating marketplace email addon checkout:",
+        error.response?.data || error,
+      );
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to start checkout.";
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  createMarketplaceEmailAddonPaymentIntent: async () => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_PAYMENT_INTENT,
+      );
+      return {
+        success: true,
+        client_secret: response.data?.client_secret,
+        subscription_id: response.data?.subscription_id,
+      };
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to start payment.";
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  /** Subscribe to marketplace email addon using saved card (no redirect). Fails if no saved payment method. */
+  subscribeMarketplaceEmailAddonInstant: async () => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_INSTANT_SUBSCRIBE,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      const errData = error.response?.data;
+      const errorMessage = errData?.error || error.response?.data?.detail || "Failed to subscribe.";
+      return {
+        success: false,
+        error: errorMessage,
+        can_instant: errData?.can_instant,
+      };
+    }
+  },
+
+  cancelMarketplaceEmailAddon: async () => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_CANCEL,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to cancel.";
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  reactivateMarketplaceEmailAddon: async () => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_REACTIVATE,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
       const errorMessage =
         error.response?.data?.error ||
         error.response?.data?.detail ||

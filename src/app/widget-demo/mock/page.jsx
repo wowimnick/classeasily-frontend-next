@@ -3,7 +3,11 @@
 import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import styled from "styled-components";
+import styled, { createGlobalStyle } from "styled-components";
+
+const GlobalStyles = createGlobalStyle`
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
+`;
 
 const LAYOUTS = [
   { id: "inline", label: "Inline", description: "Widget embedded in the page" },
@@ -11,199 +15,451 @@ const LAYOUTS = [
   { id: "floating", label: "Floating button", description: "Fixed button opens booking" },
 ];
 
+/* ── Tokens ── */
+const C = {
+  sand:    "#f5f0e8",
+  cream:   "#fdfaf5",
+  stone:   "#e8e0d0",
+  bark:    "#c4a882",
+  amber:   "#b07d3e",
+  earth:   "#7a5c35",
+  ink:     "#1e1a14",
+  charcoal:"#3d352a",
+  mist:    "#8a7f72",
+  fog:     "#b5ad9e",
+  white:   "#ffffff",
+  accent:  "#d4763b",
+};
+
+/* ── Layout ── */
 const PageWrap = styled.div`
   min-height: 100vh;
-  background: #fafafa;
-  font-family: system-ui, -apple-system, sans-serif;
+  background: ${C.cream};
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: ${C.ink};
 `;
 
+/* ── Header ── */
 const Header = styled.header`
   position: sticky;
   top: 0;
   z-index: 40;
-  border-bottom: 1px solid #e5e7eb;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  background: ${C.cream};
+  border-bottom: 1px solid ${C.stone};
 `;
 
 const HeaderInner = styled.div`
-  max-width: 72rem;
+  max-width: 75rem;
   margin: 0 auto;
-  height: 3.5rem;
+  height: 4rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1rem;
-  @media (min-width: 640px) {
-    padding: 0 1.5rem;
-  }
+  padding: 0 1.5rem;
+  @media (min-width: 640px) { padding: 0 2rem; }
 `;
 
 const Logo = styled.span`
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1f2937;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: ${C.ink};
+`;
+
+const LogoAccent = styled.span`
+  color: ${C.accent};
 `;
 
 const Nav = styled.nav`
   display: flex;
-  gap: 1.5rem;
-  font-size: 0.875rem;
-  color: #4b5563;
-  & > span:hover {
-    color: #111827;
+  gap: 2rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: ${C.mist};
+  & > span {
+    cursor: pointer;
+    transition: color 0.15s;
+    &:hover { color: ${C.ink}; }
   }
 `;
 
-const Main = styled.main`
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-  @media (min-width: 640px) {
-    padding: 2.5rem 1.5rem;
+const HeaderCTA = styled.button`
+  display: none;
+  @media (min-width: 640px) { display: block; }
+  padding: 0.5rem 1.25rem;
+  border-radius: 2rem;
+  border: 1.5px solid ${C.ink};
+  background: transparent;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: ${C.ink};
+  cursor: pointer;
+  transition: all 0.18s;
+  &:hover {
+    background: ${C.ink};
+    color: ${C.white};
   }
+`;
+
+/* ── Main ── */
+const Main = styled.main`
+  max-width: 75rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  @media (min-width: 640px) { padding: 2.5rem 2rem 5rem; }
 `;
 
 const BackLink = styled(Link)`
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  font-size: 0.875rem;
-  color: #6b7280;
+  gap: 0.375rem;
+  margin-bottom: 2rem;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  color: ${C.mist};
   text-decoration: none;
-  &:hover {
-    color: #374151;
-  }
+  transition: color 0.15s;
+  &:hover { color: ${C.charcoal}; }
 `;
 
 const Banner = styled.div`
-  margin-bottom: 1.5rem;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
-  border: 1px solid #fde68a;
-  background: #fffbeb;
-  font-size: 0.875rem;
-  color: #92400e;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  padding: 0.875rem 1.125rem;
+  border-radius: 10px;
+  border: 1px solid ${C.bark}44;
+  background: ${C.sand};
+  font-size: 0.8125rem;
+  color: ${C.earth};
+  line-height: 1.5;
 `;
 
-const LayoutSwitcher = styled.div`
-  margin-bottom: 1.5rem;
+const BannerDot = styled.span`
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: ${C.accent};
+  margin-top: 5px;
+`;
+
+/* ── Layout Switcher ── */
+const SwitcherRow = styled.div`
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
+  margin-bottom: 0.75rem;
+`;
+
+const SwitcherLabel = styled.span`
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: ${C.fog};
+  margin-right: 0.25rem;
 `;
 
 const LayoutTab = styled.button`
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  border: 1px solid ${(p) => (p.$active ? "#111827" : "#e5e7eb")};
-  background: ${(p) => (p.$active ? "#111827" : "#fff")};
-  color: ${(p) => (p.$active ? "#fff" : "#374151")};
-  font-size: 0.875rem;
+  padding: 0.4rem 0.875rem;
+  border-radius: 6px;
+  border: 1px solid ${(p) => (p.$active ? C.ink : C.stone)};
+  background: ${(p) => (p.$active ? C.ink : "transparent")};
+  color: ${(p) => (p.$active ? C.white : C.charcoal)};
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
   &:hover {
-    border-color: #111827;
-    background: ${(p) => (p.$active ? "#111827" : "#f9fafb")};
+    border-color: ${C.ink};
+    background: ${(p) => (p.$active ? C.ink : C.sand)};
   }
 `;
 
+const Divider = styled.hr`
+  border: none;
+  border-top: 1px solid ${C.stone};
+  margin: ${(p) => p.$my || "1.5rem"} 0;
+`;
+
+/* ── Content Grid ── */
 const Grid = styled.div`
   display: grid;
-  gap: 2rem;
-  @media (min-width: 992px) {
-    grid-template-columns: 1fr 380px;
+  gap: 2.5rem;
+  @media (min-width: 1020px) {
+    grid-template-columns: ${(p) => (p.$inlineFullWidth ? "1fr" : "1fr 360px")};
+    gap: 3.5rem;
   }
 `;
 
 const ContentCol = styled.div``;
 
-const ImagePlaceholder = styled.div`
-  height: 280px;
+/* ── Hero Image ── */
+const HeroImage = styled.div`
+  position: relative;
+  height: 320px;
+  border-radius: 1.25rem;
   overflow: hidden;
-  border-radius: 1rem;
-  background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(160deg, #c8b89a 0%, #9e8060 40%, #6b5040 100%);
+  @media (min-width: 640px) { height: 400px; }
+`;
+
+const HeroOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(20,14,8,0.5) 0%, transparent 55%);
+`;
+
+const HeroTags = styled.div`
+  position: absolute;
+  top: 1.25rem;
+  left: 1.25rem;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #6b7280;
-  font-size: 0.875rem;
+  gap: 0.5rem;
+`;
+
+const Tag = styled.span`
+  padding: 0.3rem 0.75rem;
+  border-radius: 2rem;
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.25);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: ${C.white};
+`;
+
+const HeroImageLabel = styled.div`
+  position: absolute;
+  bottom: 1.25rem;
+  left: 1.25rem;
+  right: 1.25rem;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-style: italic;
+  color: rgba(255,255,255,0.82);
+`;
+
+/* ── Title & Meta ── */
+const Category = styled.p`
+  margin-top: 1.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: ${C.accent};
 `;
 
 const Title = styled.h1`
-  margin-top: 1.5rem;
-  font-size: 1.5rem;
+  margin-top: 0.375rem;
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
   font-weight: 700;
   letter-spacing: -0.025em;
-  color: #111827;
-  @media (min-width: 640px) {
-    font-size: 1.875rem;
-  }
+  line-height: 1.15;
+  color: ${C.ink};
+  @media (min-width: 640px) { font-size: 2.375rem; }
+`;
+
+const RatingRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.875rem;
+`;
+
+const Stars = styled.span`
+  display: flex;
+  gap: 2px;
+  color: ${C.amber};
+  font-size: 0.875rem;
+`;
+
+const RatingText = styled.span`
+  font-size: 0.875rem;
+  color: ${C.mist};
 `;
 
 const Lead = styled.p`
-  margin-top: 0.5rem;
-  color: #4b5563;
+  margin-top: 1rem;
+  color: ${C.charcoal};
   font-size: 1rem;
-  line-height: 1.5;
+  line-height: 1.7;
+  font-weight: 300;
 `;
 
-const Meta = styled.div`
+const MetaGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
   margin-top: 1.5rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  font-size: 0.875rem;
-  color: #6b7280;
 `;
 
+const MetaItem = styled.div`
+  padding: 0.875rem;
+  border-radius: 10px;
+  border: 1px solid ${C.stone};
+  background: ${C.sand};
+`;
+
+const MetaLabel = styled.p`
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: ${C.fog};
+  margin-bottom: 0.25rem;
+`;
+
+const MetaValue = styled.p`
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: ${C.ink};
+`;
+
+/* ── Sections ── */
 const Section = styled.div`
   margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid #e5e7eb;
 `;
 
 const SectionTitle = styled.h2`
-  font-size: 1.125rem;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.25rem;
   font-weight: 600;
-  color: #111827;
+  color: ${C.ink};
+  margin-bottom: 0.75rem;
 `;
 
 const SectionText = styled.p`
-  margin-top: 0.5rem;
-  color: #4b5563;
-  font-size: 1rem;
-  line-height: 1.6;
+  color: ${C.charcoal};
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  font-weight: 300;
 `;
 
+const IncludesList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+  @media (min-width: 400px) { grid-template-columns: 1fr 1fr; }
+`;
+
+const IncludesItem = styled.li`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: ${C.charcoal};
+  &::before {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: ${C.bark};
+    flex-shrink: 0;
+  }
+`;
+
+const HostRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.875rem;
+  padding: 1rem 1.125rem;
+  border-radius: 10px;
+  border: 1px solid ${C.stone};
+  background: ${C.sand};
+`;
+
+const HostAvatar = styled.div`
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, ${C.bark} 0%, ${C.amber} 100%);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.125rem;
+  color: ${C.white};
+`;
+
+const HostInfo = styled.div``;
+
+const HostName = styled.p`
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: ${C.ink};
+`;
+
+const HostSub = styled.p`
+  font-size: 0.8125rem;
+  color: ${C.mist};
+  margin-top: 1px;
+`;
+
+const VerifiedBadge = styled.span`
+  margin-left: auto;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: ${C.earth};
+  background: ${C.stone};
+  padding: 0.25rem 0.625rem;
+  border-radius: 2rem;
+`;
+
+/* ── Sidebar / Booking card ── */
 const Sidebar = styled.div`
-  @media (min-width: 992px) {
-    position: sticky;
-    top: 6rem;
+  width: ${(p) => (p.$fullWidth ? "100%" : "auto")};
+  @media (min-width: 1020px) {
+    position: ${(p) => (p.$fullWidth ? "static" : "sticky")};
+    top: 5.5rem;
     align-self: start;
   }
 `;
 
-const Card = styled.div`
-  overflow: hidden;
+const BookingCard = styled.div`
   border-radius: 1rem;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+  border: 1px solid ${C.stone};
+  background: ${C.white};
+  box-shadow: 0 4px 24px rgba(30,20,10,0.07), 0 1px 2px rgba(30,20,10,0.04);
+  overflow: hidden;
 `;
 
-const CardPrice = styled.div`
-  margin-bottom: 1rem;
+const BookingCardTop = styled.div`
+  padding: 1.375rem 1.375rem 0;
+`;
+
+const PriceRow = styled.div`
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.375rem;
+`;
+
+const Price = styled.span`
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: ${C.ink};
+`;
+
+const PriceSub = styled.span`
   font-size: 0.875rem;
-  font-weight: 500;
-  color: #6b7280;
+  color: ${C.mist};
 `;
 
 const WidgetMount = styled.div`
@@ -215,9 +471,7 @@ const FloatingMount = styled.div`
   display: ${(p) => (p.$hide ? "none" : "block")};
   min-height: 0;
   pointer-events: none;
-  & > * {
-    pointer-events: auto;
-  }
+  & > * { pointer-events: auto; }
 `;
 
 const NoKeyWrap = styled.div`
@@ -226,26 +480,16 @@ const NoKeyWrap = styled.div`
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: ${C.cream};
 `;
 
 const NoKeyCard = styled.div`
   border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
+  border: 1px solid ${C.stone};
+  background: ${C.white};
   padding: 2rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-`;
-
-const NoKeyTitle = styled.p`
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #1f2937;
-`;
-
-const NoKeyHint = styled.p`
-  font-size: 0.875rem;
-  color: #6b7280;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 `;
 
 const FallbackWrap = styled.div`
@@ -253,15 +497,13 @@ const FallbackWrap = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: system-ui, -apple-system, sans-serif;
-  color: #6b7280;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: ${C.mist};
+  background: ${C.cream};
 `;
 
-/**
- * Mock experience page with switchable widget layouts (inline, modal, floating).
- * All three widget mounts are in the DOM on load so the widget script mounts and
- * preloads each; we show/hide by layout so switching is instant.
- */
+/* ─────────────────────────────────────────── */
+
 function MockPageContent() {
   const searchParams = useSearchParams();
   const apiKey = searchParams.get("key") || "demo";
@@ -269,6 +511,7 @@ function MockPageContent() {
   const layoutParam = searchParams.get("layout");
   const initialLayout = LAYOUTS.some((l) => l.id === layoutParam) ? layoutParam : "inline";
   const [layout, setLayout] = useState(initialLayout);
+  const [inlineWidthMode, setInlineWidthMode] = useState("sidebar");
 
   useEffect(() => {
     if (layoutParam && LAYOUTS.some((l) => l.id === layoutParam)) setLayout(layoutParam);
@@ -311,97 +554,205 @@ function MockPageContent() {
   };
 
   return (
-    <PageWrap>
-      <Header>
-        <HeaderInner>
-          <Logo>Adventure Co.</Logo>
-          <Nav>
-            <span>Experiences</span>
-            <span>About</span>
-            <span>Contact</span>
-          </Nav>
-        </HeaderInner>
-      </Header>
+    <>
+      <GlobalStyles />
+      <PageWrap>
+        <Header>
+          <HeaderInner>
+            <Logo>Solara<LogoAccent>.</LogoAccent></Logo>
+            <Nav>
+              <span>Experiences</span>
+              <span>Locations</span>
+              <span>About</span>
+            </Nav>
+            <div />
+          </HeaderInner>
+        </Header>
 
-      <Main>
-        <BackLink
-          href={`/widget-demo?key=${encodeURIComponent(apiKey)}${fullApiBase ? `&base=${encodeURIComponent(fullApiBase)}` : ""}`}
-        >
-          ← Back to simple preview
-        </BackLink>
+        <Main>
+          <BackLink
+            href={`/widget-demo?key=${encodeURIComponent(apiKey)}${fullApiBase ? `&base=${encodeURIComponent(fullApiBase)}` : ""}`}
+          >
+            ← All experiences
+          </BackLink>
 
-        <Banner>
-          <strong>Experience page demo.</strong> Switch layouts below to see how your booking widget
-          appears as inline, in a modal, or as a floating button. All three are preloaded.
-        </Banner>
+          <Banner>
+            <BannerDot />
+            <span>
+              <strong>Widget layout preview.</strong> Toggle the layouts below to preview your booking
+              widget as inline, modal, or floating. All three are preloaded for instant switching.
+            </span>
+          </Banner>
 
-        <LayoutSwitcher>
-          {LAYOUTS.map((opt) => (
-            <LayoutTab
-              key={opt.id}
-              type="button"
-              $active={layout === opt.id}
-              onClick={() => setLayout(opt.id)}
-              title={opt.description}
-            >
-              {opt.label}
-            </LayoutTab>
-          ))}
-        </LayoutSwitcher>
+          <SwitcherRow>
+            <SwitcherLabel>Widget layout:</SwitcherLabel>
+            {LAYOUTS.map((opt) => (
+              <LayoutTab
+                key={opt.id}
+                type="button"
+                $active={layout === opt.id}
+                onClick={() => setLayout(opt.id)}
+                title={opt.description}
+              >
+                {opt.label}
+              </LayoutTab>
+            ))}
+          </SwitcherRow>
 
-        <Grid>
-          <ContentCol>
-            <ImagePlaceholder>Experience image</ImagePlaceholder>
-            <Title>Sunset Paddleboard Tour</Title>
-            <Lead>
-              Join us for a relaxing paddleboard session as the sun sets over the water. Perfect for
-              beginners and families. All equipment provided — just bring yourself and a sense of
-              adventure.
-            </Lead>
-            <Meta>
-              <span>2.5 hours</span>
-              <span>•</span>
-              <span>From $45 per person</span>
-              <span>•</span>
-              <span>Max 8 guests</span>
-            </Meta>
-            <Section>
-              <SectionTitle>What to expect</SectionTitle>
-              <SectionText>
-                Your host will meet you at the dock and get you set up with boards and life jackets.
-                After a short safety briefing, you&apos;ll head out on the water. No experience
-                necessary — we&apos;ll show you the basics and keep the pace relaxed so you can enjoy
-                the views and the company.
-              </SectionText>
-            </Section>
-            <Section>
-              <SectionTitle>Good to know</SectionTitle>
-              <SectionText>
-                Cancellations up to 24 hours before the start time receive a full refund. We run in
-                most weather; if we need to reschedule for safety we&apos;ll get in touch the day
-                before.
-              </SectionText>
-            </Section>
-          </ContentCol>
+          {layout === "inline" && (
+            <SwitcherRow>
+              <SwitcherLabel>Inline width:</SwitcherLabel>
+              <LayoutTab
+                type="button"
+                $active={inlineWidthMode === "sidebar"}
+                onClick={() => setInlineWidthMode("sidebar")}
+              >
+                Sidebar
+              </LayoutTab>
+              <LayoutTab
+                type="button"
+                $active={inlineWidthMode === "full"}
+                onClick={() => setInlineWidthMode("full")}
+              >
+                Full width
+              </LayoutTab>
+            </SwitcherRow>
+          )}
 
-          <Sidebar>
-            <Card>
-              <CardPrice>From $45 / person</CardPrice>
-              <WidgetMount $hide={layout !== "inline"}>
-                <div id="ce-widget-mount-inline" {...widgetProps} data-demo-view="inline" />
-              </WidgetMount>
-              <WidgetMount $hide={layout !== "modal"}>
-                <div id="ce-widget-mount-modal" {...widgetProps} data-demo-view="modal" />
-              </WidgetMount>
-            </Card>
-          </Sidebar>
-        </Grid>
+          <Divider $my="1.75rem" />
 
-        <FloatingMount $hide={layout !== "floating"}>
-          <div id="ce-widget-mount-floating" {...widgetProps} data-demo-view="floating" />
-        </FloatingMount>
-      </Main>
-    </PageWrap>
+          <Grid $inlineFullWidth={layout === "inline" && inlineWidthMode === "full"}>
+            <ContentCol>
+              {/* Hero */}
+              <HeroImage>
+                <HeroOverlay />
+              </HeroImage>
+
+              {/* Title */}
+              <Category>Sample Experience</Category>
+              <Title>Example Experience</Title>
+
+              <RatingRow>
+                <Stars>★★★★★</Stars>
+                <RatingText>4.9 · 214 reviews</RatingText>
+              </RatingRow>
+
+              <Lead>
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod lacinia
+                facilisis. Phasellus volutpat nisl eu augue tincidunt, vitae dignissim nulla
+                venenatis. Proin fringilla felis at neque interdum, non scelerisque libero auctor.
+              </Lead>
+
+              <Divider $my="1.5rem" />
+
+              {/* Meta grid */}
+              <MetaGrid>
+                <MetaItem>
+                  <MetaLabel>Duration</MetaLabel>
+                  <MetaValue>2.5 hours</MetaValue>
+                </MetaItem>
+                <MetaItem>
+                  <MetaLabel>From</MetaLabel>
+                  <MetaValue>$45 / person</MetaValue>
+                </MetaItem>
+                <MetaItem>
+                  <MetaLabel>Group size</MetaLabel>
+                  <MetaValue>Max 8 guests</MetaValue>
+                </MetaItem>
+              </MetaGrid>
+
+              <Divider $my="2rem" />
+
+              {/* What to expect */}
+              <Section>
+                <SectionTitle>What to expect</SectionTitle>
+                <SectionText>
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+                  incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute
+                  irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
+                  pariatur.
+                </SectionText>
+              </Section>
+
+              <Divider $my="2rem" />
+
+              {/* What's included */}
+              <Section style={{ marginTop: 0 }}>
+                <SectionTitle>What&apos;s included</SectionTitle>
+                <IncludesList>
+                  {[
+                    "All equipment",
+                    "Safety briefing",
+                    "Life jackets",
+                    "Dry bags",
+                    "Guided instruction",
+                    "Post-tour refreshments",
+                  ].map((item) => (
+                    <IncludesItem key={item}>{item}</IncludesItem>
+                  ))}
+                </IncludesList>
+              </Section>
+
+              <Divider $my="2rem" />
+
+              {/* Cancellation */}
+              <Section style={{ marginTop: 0 }}>
+                <SectionTitle>Cancellation policy</SectionTitle>
+                <SectionText>
+                  Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+                  mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit
+                  voluptatem accusantium doloremque laudantium totam rem aperiam.
+                </SectionText>
+              </Section>
+
+              <Divider $my="2rem" />
+
+              {/* Host */}
+              <Section style={{ marginTop: 0 }}>
+                <SectionTitle>Your host</SectionTitle>
+                <HostRow>
+                  <HostAvatar>M</HostAvatar>
+                  <HostInfo>
+                    <HostName>Marco Delgado</HostName>
+                    <HostSub>Certified guide · 7 years experience</HostSub>
+                  </HostInfo>
+                  <VerifiedBadge>✓ Verified</VerifiedBadge>
+                </HostRow>
+              </Section>
+            </ContentCol>
+
+            {/* Sidebar */}
+            <Sidebar $fullWidth={layout === "inline" && inlineWidthMode === "full"}>
+              <BookingCard>
+                <BookingCardTop>
+                  <PriceRow>
+                    <Price>$45</Price>
+                    <PriceSub>per person</PriceSub>
+                  </PriceRow>
+                  <RatingRow style={{ marginTop: "0.5rem", marginBottom: "1rem" }}>
+                    <Stars style={{ fontSize: "0.75rem" }}>★★★★★</Stars>
+                    <RatingText style={{ fontSize: "0.8125rem" }}>4.9 · 214 reviews</RatingText>
+                  </RatingRow>
+                  <Divider $my="0" style={{ marginBottom: "1.25rem" }} />
+                </BookingCardTop>
+
+                <WidgetMount $hide={layout !== "inline"}>
+                  <div id="ce-widget-mount-inline" {...widgetProps} data-demo-view="inline" />
+                </WidgetMount>
+                <WidgetMount $hide={layout !== "modal"} style={{ marginLeft: "1rem" }}>
+                  <div id="ce-widget-mount-modal" {...widgetProps} data-demo-view="modal" />
+                </WidgetMount>
+              </BookingCard>
+            </Sidebar>
+          </Grid>
+
+          <FloatingMount $hide={layout !== "floating"}>
+            <div id="ce-widget-mount-floating" {...widgetProps} data-demo-view="floating" />
+          </FloatingMount>
+        </Main>
+      </PageWrap>
+    </>
   );
 }
 

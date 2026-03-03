@@ -112,7 +112,10 @@ export default function DashboardPage() {
     }
     case "settings": {
       const settingsTab = searchParams.get("tab") || "general";
-      componentToRender = <SettingsPage defaultTab={settingsTab} />;
+      const addonReturn = searchParams.get("addon") === "1";
+      componentToRender = (
+        <SettingsPage defaultTab={settingsTab} addonReturn={addonReturn} />
+      );
       break;
     }
     default:

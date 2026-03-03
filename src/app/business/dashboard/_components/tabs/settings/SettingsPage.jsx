@@ -10,7 +10,8 @@ import React, {
 } from "react";
 import styled from "styled-components";
 import { Form, Button, Grid } from "antd";
-import { Settings, Save, Building, MapPin, SlidersHorizontal, CreditCard } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Settings, Save, Building, MapPin, SlidersHorizontal, CreditCard, Mail } from "lucide-react";
 import dayjs from "dayjs";
 import "leaflet/dist/leaflet.css";
 
@@ -22,6 +23,7 @@ const GeneralSettingsTab = React.lazy(() => import("./GeneralSettingsTab"));
 const LocationSettingsTab = React.lazy(() => import("./LocationSettingsTab"));
 const PreferencesSettingsTab = React.lazy(() => import("./PreferencesSettingsTab"));
 const PlanBillingSettingsTab = React.lazy(() => import("./PlanBillingSettingsTab"));
+const EmailBrandingSettingsTab = React.lazy(() => import("./EmailBrandingSettingsTab"));
 
 const { useBreakpoint } = Grid;
 
@@ -171,7 +173,8 @@ const TabLoader = () => (
 
 /* ─── Settings Page Component ────────────────────────────────────── */
 
-const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate }, ref) => {
+const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addonReturn = false }, ref) => {
+  const router = useRouter();
   const [generalForm] = Form.useForm();
   const [locationForm] = Form.useForm();
   const [preferencesForm] = Form.useForm();
@@ -182,12 +185,23 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate }, re
   const [logoFile, setLogoFile] = useState(null);
   const [initialBusinessData, setInitialBusinessData] = useState(null);
   const [stripeAccountStatus, setStripeAccountStatus] = useState("unlinked");
+  const [addons, setAddons] = useState(null);
+  const [addonsLoading, setAddonsLoading] = useState(true);
   const screens = useBreakpoint();
   const isMobile = !screens.md;
 
+  const hasEmailAddon = addons?.marketplace_email_branding?.active === true;
+
+  const refetchAddons = useCallback(async () => {
+    const result = await businessService.getAddons();
+    if (result.success && result.data) setAddons(result.data);
+    return result;
+  }, []);
+
+  const saveChangesRef = React.useRef(null);
   useImperativeHandle(ref, () => ({
-    saveChanges: handleSaveAllChanges,
-  }));
+    saveChanges: () => (saveChangesRef.current ? saveChangesRef.current() : Promise.resolve(false)),
+  }), []);
 
   const fetchBusinessData = useCallback(async () => {
     setLoading(true);
@@ -264,8 +278,37 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate }, re
   }, [fetchBusinessData]);
 
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const result = await businessService.getAddons();
+      if (!cancelled && result.success && result.data) setAddons(result.data);
+      if (!cancelled) setAddonsLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
     setCurrentTab(defaultTab);
   }, [defaultTab]);
+
+  useEffect(() => {
+    if (!addonsLoading && currentTab === "email" && !hasEmailAddon) {
+      setCurrentTab("billing");
+    }
+  }, [addonsLoading, currentTab, hasEmailAddon]);
+
+  const addonReturnHandled = React.useRef(false);
+  useEffect(() => {
+    if (!addonReturn || addonReturnHandled.current) return;
+    addonReturnHandled.current = true;
+    refetchAddons().then((result) => {
+      if (result?.success && result?.data?.marketplace_email_branding?.active) {
+        setAddons(result.data);
+        setCurrentTab("email");
+        router.replace("/business/dashboard/settings?tab=email", { scroll: false });
+      }
+    });
+  }, [addonReturn, refetchAddons, router]);
 
   useEffect(() => {
     const sectionId = sessionStorage.getItem("scrollToSection");
@@ -382,6 +425,7 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate }, re
       return false;
     }
   };
+  saveChangesRef.current = handleSaveAllChanges;
 
   const handleSave = async () => {
     setSaving(true);
@@ -393,26 +437,11 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate }, re
   };
 
   const tabs = [
-    {
-      key: "general",
-      label: "General",
-      icon: <Building />,
-    },
-    {
-      key: "location",
-      label: "Location",
-      icon: <MapPin />,
-    },
-    {
-      key: "preferences",
-      label: "Preferences",
-      icon: <SlidersHorizontal />,
-    },
-    {
-      key: "billing",
-      label: "Plan & Billing",
-      icon: <CreditCard />,
-    },
+    { key: "general", label: "General", icon: <Building /> },
+    { key: "location", label: "Location", icon: <MapPin /> },
+    { key: "preferences", label: "Preferences", icon: <SlidersHorizontal /> },
+    ...(hasEmailAddon ? [{ key: "email", label: "Email", icon: <Mail /> }] : []),
+    { key: "billing", label: "Plan & Billing", icon: <CreditCard /> },
   ];
 
   if (loading) {
@@ -469,51 +498,61 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate }, re
       </TabNav>
 
       <ContentArea>
-        <ContentContainer>
-          {currentTab === "general" && (
-            <Suspense fallback={<TabLoader />}>
-              <GeneralSettingsTab
-                form={generalForm}
-                logoUrl={logoUrl}
-                setLogoUrl={setLogoUrl}
-                setLogoFile={setLogoFile}
-                isMobile={isMobile}
-              />
-            </Suspense>
-          )}
-          {currentTab === "location" && (
-            <Suspense fallback={<TabLoader />}>
-              <LocationSettingsTab
-                form={locationForm}
-                initialData={{
-                  address: initialBusinessData?.businessAddress,
-                  businessUnit: initialBusinessData?.businessUnit,
-                  city: initialBusinessData?.businessCity,
-                  state: initialBusinessData?.businessState,
-                  zipCode: initialBusinessData?.businessZipCode,
-                  lat: initialBusinessData?.latitude,
-                  lon: initialBusinessData?.longitude,
-                  hide: initialBusinessData?.showExactLocation === false,
-                }}
-              />
-            </Suspense>
-          )}
-          {currentTab === "preferences" && (
-            <Suspense fallback={<TabLoader />}>
-              <PreferencesSettingsTab
-                form={preferencesForm}
-                stripeStatus={stripeAccountStatus}
-                isMobile={isMobile}
-                refetchBusinessData={fetchBusinessData}
-              />
-            </Suspense>
-          )}
-          {currentTab === "billing" && (
-            <Suspense fallback={<TabLoader />}>
-              <PlanBillingSettingsTab />
-            </Suspense>
-          )}
-        </ContentContainer>
+        {currentTab === "billing" ? (
+          <Suspense fallback={<TabLoader />}>
+            <PlanBillingSettingsTab
+              addons={addons}
+              addonsLoading={addonsLoading}
+              refetchAddons={refetchAddons}
+            />
+          </Suspense>
+        ) : (
+          <ContentContainer>
+            {currentTab === "general" && (
+              <Suspense fallback={<TabLoader />}>
+                <GeneralSettingsTab
+                  form={generalForm}
+                  logoUrl={logoUrl}
+                  setLogoUrl={setLogoUrl}
+                  setLogoFile={setLogoFile}
+                  isMobile={isMobile}
+                />
+              </Suspense>
+            )}
+            {currentTab === "location" && (
+              <Suspense fallback={<TabLoader />}>
+                <LocationSettingsTab
+                  form={locationForm}
+                  initialData={{
+                    address: initialBusinessData?.businessAddress,
+                    businessUnit: initialBusinessData?.businessUnit,
+                    city: initialBusinessData?.businessCity,
+                    state: initialBusinessData?.businessState,
+                    zipCode: initialBusinessData?.businessZipCode,
+                    lat: initialBusinessData?.latitude,
+                    lon: initialBusinessData?.longitude,
+                    hide: initialBusinessData?.showExactLocation === false,
+                  }}
+                />
+              </Suspense>
+            )}
+            {currentTab === "preferences" && (
+              <Suspense fallback={<TabLoader />}>
+                <PreferencesSettingsTab
+                  form={preferencesForm}
+                  stripeStatus={stripeAccountStatus}
+                  isMobile={isMobile}
+                  refetchBusinessData={fetchBusinessData}
+                />
+              </Suspense>
+            )}
+            {currentTab === "email" && (
+              <Suspense fallback={<TabLoader />}>
+                <EmailBrandingSettingsTab />
+              </Suspense>
+            )}
+          </ContentContainer>
+        )}
       </ContentArea>
     </PageWrapper>
   );

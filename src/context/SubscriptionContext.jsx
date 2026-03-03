@@ -7,6 +7,7 @@ import { businessService } from "@/services/apiService";
 const SubscriptionContext = createContext({
   subscription: null,
   widgetSubscriptionRequired: false,
+  hasStripeSubscription: false,
   loading: true,
   error: null,
   refetch: () => {},
@@ -28,6 +29,7 @@ export function SubscriptionProvider({ children }) {
   const { user, isAuthenticated } = useAuthUser();
   const [subscription, setSubscription] = useState(null);
   const [widgetSubscriptionRequired, setWidgetSubscriptionRequired] = useState(false);
+  const [hasStripeSubscription, setHasStripeSubscription] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -37,6 +39,7 @@ export function SubscriptionProvider({ children }) {
     if (!canManageSubscription) {
       setSubscription(null);
       setWidgetSubscriptionRequired(false);
+      setHasStripeSubscription(false);
       setLoading(false);
       setError(null);
       return;
@@ -48,9 +51,11 @@ export function SubscriptionProvider({ children }) {
     if (result.success && result.data) {
       setSubscription(result.data.subscription ?? null);
       setWidgetSubscriptionRequired(Boolean(result.data.widget_subscription_required));
+      setHasStripeSubscription(Boolean(result.data.has_stripe_subscription));
     } else {
       setSubscription(null);
       setWidgetSubscriptionRequired(false);
+      setHasStripeSubscription(false);
       if (!result.success && result.error) {
         setError(result.error);
       }
@@ -64,7 +69,8 @@ export function SubscriptionProvider({ children }) {
   const subscribe = useCallback(
     async (planId) => {
       const result = await businessService.subscribeWidgetPlan(planId);
-      if (result.success && result.data?.subscription) {
+      // Only update subscription when no payment is required (switch complete). If requires_payment, caller will show modal and refetch after payment.
+      if (result.success && result.data?.subscription && !result.data?.requires_payment) {
         setSubscription(result.data.subscription);
       }
       return result;
@@ -91,6 +97,7 @@ export function SubscriptionProvider({ children }) {
   const value = {
     subscription,
     widgetSubscriptionRequired,
+    hasStripeSubscription,
     loading,
     error,
     refetch,

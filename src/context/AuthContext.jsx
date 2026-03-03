@@ -72,13 +72,19 @@ export const AuthProvider = ({ children }) => {
         setOnSuccessCallback(null);
       }
 
-      // Handle redirect logic
+      // Handle redirect logic: if they came from widget checkout, send them back there
       if (user.has_business) {
-        console.log(
-          "[AuthContext] User has business, redirecting to business dashboard"
-        );
-        clearRedirectPath();
-        router.push("/business/dashboard/overview");
+        if (redirectPath && redirectPath.startsWith("/booking-widget/checkout")) {
+          console.log("[AuthContext] User has business, redirecting to checkout:", redirectPath);
+          clearRedirectPath();
+          router.push(redirectPath);
+        } else {
+          console.log(
+            "[AuthContext] User has business, redirecting to business dashboard"
+          );
+          clearRedirectPath();
+          router.push("/business/dashboard/overview");
+        }
       } else if (redirectPath && redirectPath !== "/") {
         // If they came from /business (e.g. Become a host), send to registration flow
         const targetPath =

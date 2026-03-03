@@ -1159,8 +1159,8 @@ function WidgetCheckoutContent() {
     const path = `/booking-widget/checkout${planId ? `?plan=${planId}` : ""}`;
     saveRedirectPath(path, "quickstart.access_business_dashboard");
     openLoginModal();
-    router.push("/");
-  }, [planId, openLoginModal, router]);
+    // Stay on checkout page so after login we restore here via AuthContext redirect
+  }, [planId, openLoginModal]);
 
   const pageLoading = authLoading || (isAuthenticated && hasBusiness && subLoading && !subscription);
 
