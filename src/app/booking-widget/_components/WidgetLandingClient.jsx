@@ -953,10 +953,19 @@ const Hero = () => {
   }, [runTransition]);
 
   useEffect(() => {
-    import('stripe-gradient').then(({ Gradient }) => {
-      const gradient = new Gradient();
-      gradient.initGradient('#hero-gradient-canvas');
-    }).catch(() => {});
+    const id = 'hero-gradient-canvas';
+    const run = () => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      import('stripe-gradient').then(({ Gradient }) => {
+        const canvas = document.getElementById(id);
+        if (!canvas || !canvas.getContext) return;
+        const gradient = new Gradient();
+        gradient.initGradient(`#${id}`);
+      }).catch(() => {});
+    };
+    const t = setTimeout(run, 0);
+    return () => clearTimeout(t);
   }, []);
 
   return (
@@ -984,11 +993,15 @@ const Hero = () => {
                     <Button variant="primary">Manage plan <ArrowRight size={16} /></Button>
                   </Link>
                 ) : (
-                  <Link href="/booking-widget/checkout">
-                    <Button variant="primary">Get started <ArrowRight size={16} /></Button>
-                  </Link>
+                  <Button
+                    variant="primary"
+                    type="button"
+                    onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                  >
+                    See pricing <ArrowRight size={16} />
+                  </Button>
                 )}
-                <a href="#pricing">
+                <a href="#pricing" onClick={(e) => { e.preventDefault(); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }}>
                   <Button variant="secondary">See pricing</Button>
                 </a>
                 <Link href="/widget-demo/mock?key=demo">

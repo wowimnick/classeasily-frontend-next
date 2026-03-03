@@ -886,7 +886,12 @@ function StripePayForm({ plan, onSuccess }) {
       : "/business/dashboard/widget?subscribed=1";
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
-      confirmParams: { return_url: returnUrl },
+      confirmParams: {
+        return_url: returnUrl,
+        payment_method_data: {
+          billing_details: { address: { country: "CA" } },
+        },
+      },
       redirect: "if_required",
     });
     if (error) { setErr(error.message || "Payment failed."); setSubmitting(false); return; }
