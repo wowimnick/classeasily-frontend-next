@@ -889,7 +889,9 @@ function StripePayForm({ plan, onSuccess }) {
       confirmParams: {
         return_url: returnUrl,
         payment_method_data: {
-          billing_details: { address: { country: "CA" } },
+          billing_details: {
+            address: { country: "CA", postal_code: "K1A 0B1" },
+          },
         },
       },
       redirect: "if_required",
