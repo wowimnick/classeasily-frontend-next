@@ -868,7 +868,7 @@ function SuccessModal({ open, plan, onClose }) {
 }
 
 // ─── Stripe pay form ─────────────────────────────────────────────────────────
-function StripePayForm({ plan, onSuccess }) {
+function StripePayForm({ plan, onPaymentConfirmed }) {
   const stripe = useStripe();
   const elements = useElements();
   const [ready, setReady] = useState(false);
@@ -899,11 +899,12 @@ function StripePayForm({ plan, onSuccess }) {
     if (error) { setErr(error.message || "Payment failed."); setSubmitting(false); return; }
     if (paymentIntent?.status === "succeeded") {
       clearStoredIntent();
-      onSuccess?.();
+      setSubmitting(false);
+      onPaymentConfirmed?.();
     } else {
       setSubmitting(false);
     }
-  }, [stripe, elements, onSuccess]);
+  }, [stripe, elements, onPaymentConfirmed]);
 
   return (
     <>
@@ -1036,6 +1037,27 @@ function WidgetCheckoutContent() {
   const [intentErr, setIntentErr] = useState(null);
   const [paymentDone, setPaymentDone] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [awaitingActivation, setAwaitingActivation] = useState(false);
+  const [activationTimeout, setActivationTimeout] = useState(false);
+
+  // After Stripe confirms payment, poll until backend has subscription active (never show success falsely)
+  useEffect(() => {
+    if (!awaitingActivation) return;
+    refetch();
+    const timeoutId = setTimeout(() => setActivationTimeout(true), 25000);
+    const intervalId = setInterval(() => refetch(), 2000);
+    return () => { clearTimeout(timeoutId); clearInterval(intervalId); };
+  }, [awaitingActivation, refetch]);
+
+  useEffect(() => {
+    if (!awaitingActivation || !subscription) return;
+    if (["active", "trialing"].includes(subscription.status)) {
+      setPaymentDone(true);
+      setShowSuccessModal(true);
+      setAwaitingActivation(false);
+      setActivationTimeout(false);
+    }
+  }, [awaitingActivation, subscription?.status]);
 
   // Stripe appearance: Proxima Soft, mobile 16px / desktop 14px (match ReviewAndPaymentStep)
   const [stripeFontSize, setStripeFontSize] = useState("16px");
@@ -1215,6 +1237,31 @@ function WidgetCheckoutContent() {
       </div>
     );
 
+    if (awaitingActivation) {
+      if (activationTimeout)
+        return (
+          <div>
+            <p style={{ margin: "0 0 14px", fontSize: 14, color: "#374151", fontWeight: 500 }}>
+              Your payment has been received. Your plan is being activated; please refresh this page shortly. If your subscription does not appear, please contact support.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              style={{ marginTop: 12, padding: "10px 18px", borderRadius: 10, fontSize: 14, fontWeight: 700, background: "#1a1a2e", color: "white", border: "none", cursor: "pointer" }}
+            >
+              Refresh
+            </button>
+          </div>
+        );
+      return (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "20px 0" }}>
+          <Loader2 size={28} style={{ animation: `${spin} 1s linear infinite`, color: "#6b7280" }} />
+          <p style={{ margin: 0, fontSize: 14, color: "#6b7280", fontWeight: 500 }}>Activating your subscription…</p>
+          <p style={{ margin: 0, fontSize: 12, color: "#9ca3af" }}>Please wait a moment.</p>
+        </div>
+      );
+    }
+
     if (pageLoading || intentLoading || (!clientSecret && !intentErr)) return (
       <div>
         <SkeletonBar />
@@ -1246,7 +1293,7 @@ function WidgetCheckoutContent() {
             fonts: stripeFonts,
           }}
         >
-          <StripePayForm plan={plan} onSuccess={() => { setPaymentDone(true); setShowSuccessModal(true); }} />
+          <StripePayForm plan={plan} onPaymentConfirmed={() => setAwaitingActivation(true)} />
         </Elements>
       );
 
