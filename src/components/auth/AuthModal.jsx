@@ -446,11 +446,18 @@ const AuthModal = ({
       localStorage.removeItem("prefillEmailForRegistration");
     }
 
+    const accessToken = tokenResponse?.access_token;
+    if (!accessToken) {
+      console.error("[Google Auth] No access_token in response:", tokenResponse);
+      setError("Google sign-in did not return a token. Try again or use email.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
-      await signInWithGoogle(tokenResponse.access_token, router);
+      await signInWithGoogle(accessToken, router);
 
       message.success("Welcome!");
 

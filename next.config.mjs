@@ -131,8 +131,9 @@ const nextConfig = {
             value: "max-age=63072000; includeSubDomains; preload",
           },
           {
+            // same-origin-allow-popups required for Google OAuth popup to communicate back to opener
             key: "Cross-Origin-Opener-Policy",
-            value: "same-origin",
+            value: "same-origin-allow-popups",
           },
           {
             key: "X-XSS-Protection",

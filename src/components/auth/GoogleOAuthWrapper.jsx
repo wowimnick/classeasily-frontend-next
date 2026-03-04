@@ -92,8 +92,14 @@ function GoogleLoginButtonInner({
   useGoogleLogin,
 }) {
   const googleLogin = useGoogleLogin({
+    flow: "implicit",
+    scope: "email profile openid",
     onSuccess,
     onError,
+    onNonOAuthError: (err) => {
+      console.error("[Google OAuth] Non-OAuth error:", err);
+      if (typeof onError === "function") onError(err);
+    },
   });
 
   return (
