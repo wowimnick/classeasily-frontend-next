@@ -339,8 +339,19 @@ const Badge = styled.span`
 `;
 
 const ActionGroup = styled.div`
-  display: flex; flex-direction: column;
-  gap: 7px; align-items: flex-end; flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
 `;
 
 // ─── add-ons ──────────────────────────────────────────────────────────────────
@@ -599,6 +610,8 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   const [addonCancelModalOpen, setAddonCancelModalOpen] = useState(false);
   const [addonCancelling, setAddonCancelling] = useState(false);
   const [activeTab, setActiveTab] = useState("View all");
+  const [invoiceSearchQuery, setInvoiceSearchQuery] = useState("");
+  const [invoiceSortOrder, setInvoiceSortOrder] = useState("recent"); // "recent" | "oldest"
   const [invoices, setInvoices] = useState([]);
   const [invoicesLoading, setInvoicesLoading] = useState(true);
   const [switchPlanLoading, setSwitchPlanLoading] = useState(null);
@@ -678,6 +691,21 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     });
     return () => { cancelled = true; };
   }, []);
+
+  const displayedInvoices = useMemo(() => {
+    let list = [...invoices];
+    if (activeTab === "Active") list = list.filter((inv) => inv.status === "paid");
+    else if (activeTab === "Archived") list = list.filter((inv) => (inv.status && !["paid", "open", "draft"].includes(inv.status)) || false);
+    const q = (invoiceSearchQuery || "").trim().toLowerCase();
+    if (q) list = list.filter((inv) => (inv.number && String(inv.number).toLowerCase().includes(q)) || (inv.id && String(inv.id).toLowerCase().includes(q)));
+    const asc = invoiceSortOrder === "oldest";
+    list.sort((a, b) => {
+      const da = a.created || "";
+      const db = b.created || "";
+      return asc ? (da < db ? -1 : da > db ? 1 : 0) : (db < da ? -1 : db > da ? 1 : 0);
+    });
+    return list;
+  }, [invoices, activeTab, invoiceSearchQuery, invoiceSortOrder]);
 
   const handleSwitchPlan = async (planId) => {
     if (subscription?.planId === planId) return;
@@ -989,11 +1017,16 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
           <div style={{ display: "flex", gap: 10 }}>
             <SearchBox>
               <Search size={13} color={T.faint} />
-              <input placeholder="Search" />
+              <input
+                placeholder="Search"
+                value={invoiceSearchQuery}
+                onChange={(e) => setInvoiceSearchQuery(e.target.value)}
+                aria-label="Search invoices"
+              />
             </SearchBox>
-            <SortBtn>
+            <SortBtn type="button" onClick={() => setInvoiceSortOrder((o) => (o === "recent" ? "oldest" : "recent"))}>
               <SlidersHorizontal size={13} color={T.sub} />
-              Most recent
+              {invoiceSortOrder === "recent" ? "Most recent" : "Oldest first"}
             </SortBtn>
           </div>
         </ControlsRow>
@@ -1007,8 +1040,12 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                 ? "No invoices yet. Invoices appear here after your first payment."
                 : "Invoices appear after you subscribe through Stripe (e.g. booking widget checkout). Plan changes above update your access only until then."}
             </div>
+          ) : displayedInvoices.length === 0 ? (
+            <div style={{ padding: 24, textAlign: "center", fontSize: 13, color: T.sub }}>
+              No invoices match your filters. Try a different tab or search.
+            </div>
           ) : (
-            invoices.map((inv) => {
+            displayedInvoices.map((inv) => {
               const dateStr = inv.created
                 ? new Date(inv.created).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
                 : "—";

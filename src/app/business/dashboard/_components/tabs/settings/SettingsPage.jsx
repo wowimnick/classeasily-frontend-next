@@ -37,16 +37,12 @@ const PageWrapper = styled.div`
 `;
 
 const PageHeader = styled.div`
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
   padding: 18px 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  background: #ffffff;
 
   @media (max-width: 768px) {
     padding: 12px 16px;
@@ -102,12 +98,16 @@ const SaveBtn = styled(Button)`
 
 /* ─── Tab Navigation ─────────────────────────────────────────────── */
 
-const TabNav = styled.div`
+const StickyHeaderTabs = styled.div`
   position: sticky;
-  top: 73px;
-  z-index: 19;
+  top: 0;
+  z-index: 20;
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+`;
+
+const TabNav = styled.div`
   padding: 0 32px;
   display: flex;
   gap: 0;
@@ -116,7 +116,6 @@ const TabNav = styled.div`
   &::-webkit-scrollbar { display: none; }
 
   @media (max-width: 768px) {
-    top: 57px;
     padding: 0 16px;
   }
 `;
@@ -463,39 +462,43 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
 
   return (
     <PageWrapper>
-      <PageHeader>
-        <HeaderLeft>
+      <StickyHeaderTabs>
+        <PageHeader>
+          <HeaderLeft>
 
-          <HeaderTextBlock>
-            <HeaderTitle>Business Settings</HeaderTitle>
-            <HeaderSubtitle>
-              Manage your business profile, location, and preferences
-            </HeaderSubtitle>
-          </HeaderTextBlock>
-        </HeaderLeft>
-        <SaveBtn
-          type="primary"
-          icon={<Save size={15} />}
-          onClick={handleSave}
-          loading={saving}
-          key={`save-${saving}`}
-        >
-          {saving ? "Saving…" : "Save Changes"}
-        </SaveBtn>
-      </PageHeader>
+            <HeaderTextBlock>
+              <HeaderTitle>Business Settings</HeaderTitle>
+              <HeaderSubtitle>
+                Manage your business profile, location, and preferences
+              </HeaderSubtitle>
+            </HeaderTextBlock>
+          </HeaderLeft>
+          {currentTab !== "billing" && (
+            <SaveBtn
+              type="primary"
+              icon={<Save size={15} />}
+              onClick={handleSave}
+              loading={saving}
+              key={`save-${saving}`}
+            >
+              {saving ? "Saving…" : "Save Changes"}
+            </SaveBtn>
+          )}
+        </PageHeader>
 
-      <TabNav>
-        {tabs.map((tab) => (
-          <TabButton
-            key={tab.key}
-            $active={currentTab === tab.key}
-            onClick={() => setCurrentTab(tab.key)}
-          >
-            {tab.icon}
-            {tab.label}
-          </TabButton>
-        ))}
-      </TabNav>
+        <TabNav>
+          {tabs.map((tab) => (
+            <TabButton
+              key={tab.key}
+              $active={currentTab === tab.key}
+              onClick={() => setCurrentTab(tab.key)}
+            >
+              {tab.icon}
+              {tab.label}
+            </TabButton>
+          ))}
+        </TabNav>
+      </StickyHeaderTabs>
 
       <ContentArea>
         {currentTab === "billing" ? (
