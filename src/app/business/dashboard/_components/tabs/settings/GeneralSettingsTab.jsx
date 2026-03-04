@@ -200,7 +200,7 @@ const StyledTagsSelect = styled(Select)`
 
 /* ─── Component ──────────────────────────────────────────────────── */
 
-const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }) => {
+const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile, onFieldBlur, onLogoRemove }) => {
   const handleLogoChange = async (file) => {
     const fileExtension = file.name.toLowerCase().split(".").pop();
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
@@ -284,7 +284,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }
             </LogoPreviewBox>
             <LogoTextBlock>
               <LogoLabel>Business logo</LogoLabel>
-              <LogoDesc>Min 200×100 px, max 10 MB (JPG, PNG, WEBP, HEIC)</LogoDesc>
+              <LogoDesc>Min 200×100 px, max 10 MB (JPG, PNG, WEBP, HEIC). Upload an image — it will be hosted on our servers and used across your profile and emails.</LogoDesc>
               <LogoActions>
                 <Upload
                   name="logo"
@@ -301,7 +301,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }
                     size="small"
                     type="text"
                     danger
-                    onClick={() => { setLogoUrl(""); setLogoFile(null); }}
+                    onClick={() => { setLogoUrl(""); setLogoFile(null); onLogoRemove?.(); }}
                   >
                     Remove
                   </Button>
@@ -316,7 +316,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }
               <Building />,
               "Official name displayed to customers",
               <Form.Item name="businessName" rules={[{ required: true, message: "Business name is required" }]}>
-                <Input placeholder="e.g., Elite Dance Academy" />
+                <Input placeholder="e.g., Elite Dance Academy" onBlur={() => onFieldBlur?.("businessName")} />
               </Form.Item>
             )}
 
@@ -326,7 +326,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }
                 <Type />,
                 "Best describes your organization",
                 <Form.Item name="businessType" rules={[{ required: true, message: "Required" }]}>
-                  <StyledSelect placeholder="Select type">
+                  <StyledSelect placeholder="Select type" onBlur={() => onFieldBlur?.("businessType")}>
                     <Option value="individual">Individual Host</Option>
                     <Option value="tour-operator">Tour Operator</Option>
                     <Option value="experience-group">Experience Group</Option>
@@ -341,7 +341,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }
                 <Mail />,
                 "Primary email for customer contact",
                 <Form.Item name="studentContactEmail" rules={[{ required: true, message: "Email required" }, { type: "email", message: "Invalid email" }]}>
-                  <Input placeholder="contact@yourbusiness.com" />
+                  <Input placeholder="contact@yourbusiness.com" onBlur={() => onFieldBlur?.("studentContactEmail")} />
                 </Form.Item>
               )}
             </FieldGrid>
@@ -365,7 +365,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }
                 <Phone />,
                 "Primary phone for customer contact",
                 <Form.Item name="studentContactPhone" rules={[{ required: true, message: "Phone required" }, { validator: validatePhoneNumber("CA") }]}>
-                  <Input placeholder="(555) 123-4567" />
+                  <Input placeholder="(555) 123-4567" onBlur={() => onFieldBlur?.("studentContactPhone")} />
                 </Form.Item>
               )}
 
@@ -374,7 +374,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }
                 <Globe />,
                 "Link to your official website",
                 <Form.Item name="website" rules={[{ validator: validateUrl }]} normalize={normalizeUrl}>
-                  <Input placeholder="www.yourbusiness.com" />
+                  <Input placeholder="www.yourbusiness.com" onBlur={() => onFieldBlur?.("website")} />
                 </Form.Item>
               )}
             </FieldGrid>
@@ -384,7 +384,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }
               <Info />,
               "50–750 characters. Highlight your key offerings.",
               <Form.Item name="businessDescription" rules={[{ required: true, message: "Description required" }, { min: 50, message: "Min 50 characters" }, { max: 750, message: "Max 750 characters" }]}>
-                <TextArea rows={4} placeholder="Tell customers about your business…" maxLength={750} showCount />
+                <TextArea rows={4} placeholder="Tell customers about your business…" maxLength={750} showCount onBlur={() => onFieldBlur?.("businessDescription")} />
               </Form.Item>
             )}
 
@@ -394,7 +394,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }
                 <Users />,
                 "How customers should primarily reach you",
                 <Form.Item name="preferredContact" rules={[{ required: true, message: "Required" }]}>
-                  <StyledSelect placeholder="Select method">
+                  <StyledSelect placeholder="Select method" onBlur={() => onFieldBlur?.("preferredContact")}>
                     <Option value="email">Email</Option>
                     <Option value="phone">Phone</Option>
                     <Option value="text">Text</Option>
@@ -408,7 +408,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }
                 <CalendarOutlined style={{ fontSize: 13, color: "#9ca3af" }} />,
                 "The year your business was established",
                 <Form.Item name="founding_year" rules={[{ type: "integer" }, { validator: (_, v) => v && (v < 1800 || v > new Date().getFullYear()) ? Promise.reject(new Error(`Year must be 1800–${new Date().getFullYear()}`)) : Promise.resolve() }]}>
-                  <InputNumber placeholder="e.g., 2010" style={{ width: "100%" }} />
+                  <InputNumber placeholder="e.g., 2010" style={{ width: "100%" }} onBlur={() => onFieldBlur?.("founding_year")} />
                 </Form.Item>
               )}
             </FieldGrid>
@@ -432,7 +432,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }
                 <ExternalLink />,
                 "facebook.com/yourpage",
                 <Form.Item name="social_facebook" rules={[{ validator: validateSocialUrl("facebook") }]} normalize={normalizeUrl}>
-                  <Input placeholder="facebook.com/yourbusiness" />
+                  <Input placeholder="facebook.com/yourbusiness" onBlur={() => onFieldBlur?.("social_facebook")} />
                 </Form.Item>
               )}
               {field(
@@ -440,7 +440,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }
                 <ExternalLink />,
                 "instagram.com/yourprofile",
                 <Form.Item name="social_instagram" rules={[{ validator: validateSocialUrl("instagram") }]} normalize={normalizeUrl}>
-                  <Input placeholder="instagram.com/yourbusiness" />
+                  <Input placeholder="instagram.com/yourbusiness" onBlur={() => onFieldBlur?.("social_instagram")} />
                 </Form.Item>
               )}
             </FieldGrid>
@@ -451,7 +451,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }
                 <ExternalLink />,
                 "x.com/yourhandle",
                 <Form.Item name="social_twitter" rules={[{ validator: validateSocialUrl("twitter") }]} normalize={normalizeUrl}>
-                  <Input placeholder="x.com/yourbusiness" />
+                  <Input placeholder="x.com/yourbusiness" onBlur={() => onFieldBlur?.("social_twitter")} />
                 </Form.Item>
               )}
               {field(
@@ -459,7 +459,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }
                 <ExternalLink />,
                 "linkedin.com/company/yourcompany",
                 <Form.Item name="social_linkedin" rules={[{ validator: validateSocialUrl("linkedin") }]} normalize={normalizeUrl}>
-                  <Input placeholder="linkedin.com/company/yourbusiness" />
+                  <Input placeholder="linkedin.com/company/yourbusiness" onBlur={() => onFieldBlur?.("social_linkedin")} />
                 </Form.Item>
               )}
             </FieldGrid>
@@ -474,6 +474,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile }
                   style={{ width: "100%" }}
                   placeholder="e.g., Yoga, Beginner Friendly, Art"
                   tokenSeparators={[","]}
+                  onBlur={() => onFieldBlur?.("tags_keywords")}
                 />
               </Form.Item>
             )}

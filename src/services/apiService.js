@@ -186,7 +186,11 @@ export const uploadService = {
         throw new Error(errorMessage);
       }
 
-      return { success: true, s3_key: presignedData.s3_key }; // Use s3_key from the response
+      return {
+        success: true,
+        s3_key: presignedData.s3_key,
+        public_url: presignedData.public_url || null,
+      };
     } catch (error) {
       console.error("Error uploading to S3:", error);
       return {

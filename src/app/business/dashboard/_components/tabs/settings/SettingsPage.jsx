@@ -11,7 +11,7 @@ import React, {
 import styled from "styled-components";
 import { Form, Button, Grid } from "antd";
 import { useRouter } from "next/navigation";
-import { Settings, Save, Building, MapPin, SlidersHorizontal, CreditCard, Mail } from "lucide-react";
+import { Building, MapPin, SlidersHorizontal, CreditCard, Mail } from "lucide-react";
 import dayjs from "dayjs";
 import "leaflet/dist/leaflet.css";
 
@@ -85,15 +85,11 @@ const HeaderSubtitle = styled.p`
   margin-top: 2px;
 `;
 
-const SaveBtn = styled(Button)`
-  height: 36px;
-  font-weight: 600;
-  font-size: 14px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 18px;
+const TabLabelGradient = styled.span`
+  background: linear-gradient(135deg, #0d9488 0%, #0891b2 50%, #0284c7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 `;
 
 /* ─── Tab Navigation ─────────────────────────────────────────────── */
@@ -110,6 +106,7 @@ const StickyHeaderTabs = styled.div`
 const TabNav = styled.div`
   padding: 0 32px;
   display: flex;
+  align-items: center;
   gap: 0;
   overflow-x: auto;
   scrollbar-width: none;
@@ -118,6 +115,14 @@ const TabNav = styled.div`
   @media (max-width: 768px) {
     padding: 0 16px;
   }
+`;
+
+const TabSeparator = styled.div`
+  width: 1px;
+  height: 20px;
+  background: #e5e7eb;
+  margin-left: 16px;
+  flex-shrink: 0;
 `;
 
 const TabButton = styled.button`
@@ -129,13 +134,16 @@ const TabButton = styled.button`
   font-size: 14px;
   font-weight: ${p => p.$active ? '600' : '500'};
   color: ${p => p.$active ? '#111827' : '#6b7280'};
-  border-bottom: 2.5px solid ${p => p.$active ? '#111827' : 'transparent'};
-  margin-bottom: -1px;
+  border-bottom: 1px solid ${p => p.$active ? '#111827' : 'transparent'};
   display: flex;
   align-items: center;
   gap: 7px;
   white-space: nowrap;
   transition: color 0.15s, border-color 0.15s;
+
+  &:last-child {
+    margin-right: 0;
+  }
 
   &:hover {
     color: #111827;
@@ -151,17 +159,55 @@ const TabButton = styled.button`
 /* ─── Content Area ───────────────────────────────────────────────── */
 
 const ContentArea = styled.div`
-  padding: 28px 32px;
+  padding: ${(p) => (p.$noPadding ? "0" : "28px 32px")};
 
   @media (max-width: 768px) {
-    padding: 16px;
+    padding: ${(p) => (p.$noPadding ? "0" : "16px")};
   }
 `;
 
 const ContentContainer = styled.div`
   width: 100%;
+`;
+
+const FormTabsWrap = styled.div`
+  width: 100%;
   max-width: 780px;
   margin: 0 auto;
+`;
+
+const AutoSaveIndicatorWrap = styled.div`
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border: 1px solid #e5e7eb;
+  font-size: 13px;
+  color: #6b7280;
+
+  @media (max-width: 768px) {
+    bottom: 16px;
+    right: 16px;
+  }
+`;
+
+const SaveSpinner = styled.div`
+  width: 14px;
+  height: 14px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: saveSpin 0.7s linear infinite;
+  @keyframes saveSpin {
+    to { transform: rotate(360deg); }
+  }
 `;
 
 const TabLoader = () => (
@@ -180,6 +226,8 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
   const [currentTab, setCurrentTab] = useState(defaultTab);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("idle"); // 'idle' | 'saving' | 'saved'
+  const savedTimerRef = React.useRef(null);
   const [logoUrl, setLogoUrl] = useState("");
   const [logoFile, setLogoFile] = useState(null);
   const [initialBusinessData, setInitialBusinessData] = useState(null);
@@ -201,6 +249,115 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
   useImperativeHandle(ref, () => ({
     saveChanges: () => (saveChangesRef.current ? saveChangesRef.current() : Promise.resolve(false)),
   }), []);
+
+  const lastSavePayloadRef = React.useRef(null);
+  const lastSaveTimeRef = React.useRef(0);
+  const SAVE_DEBOUNCE_MS = 400;
+
+  const savePayload = useCallback(async (payload) => {
+    if (!payload || Object.keys(payload).length === 0) return;
+    const payloadKey = JSON.stringify(payload);
+    const now = Date.now();
+    if (lastSavePayloadRef.current === payloadKey && now - lastSaveTimeRef.current < SAVE_DEBOUNCE_MS) {
+      return;
+    }
+    lastSavePayloadRef.current = payloadKey;
+    lastSaveTimeRef.current = now;
+    if (savedTimerRef.current) {
+      clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = null;
+    }
+    setSaveStatus("saving");
+    try {
+      const res = await businessService.updateMyBusinessProfile(payload);
+      if (res.success) {
+        setSaveStatus("saved");
+        savedTimerRef.current = setTimeout(() => {
+          setSaveStatus("idle");
+          savedTimerRef.current = null;
+        }, 5000);
+      } else {
+        setSaveStatus("idle");
+        message.error(res.error?.detail || res.error || "Failed to save");
+      }
+    } catch {
+      setSaveStatus("idle");
+      message.error("Failed to save");
+    }
+  }, []);
+
+  const buildGeneralPayload = useCallback((form, fieldName) => {
+    const v = form.getFieldValue;
+    if (["social_facebook", "social_instagram", "social_twitter", "social_linkedin"].includes(fieldName)) {
+      return {
+        social_media_links: {
+          facebook: v("social_facebook") ?? "",
+          instagram: v("social_instagram") ?? "",
+          twitter: v("social_twitter") ?? "",
+          linkedin: v("social_linkedin") ?? "",
+        },
+      };
+    }
+    const value = v(fieldName);
+    if (value === undefined) return null;
+    const payload = {};
+    const apiKey = fieldName;
+    if (fieldName === "founding_year" && (value === null || value === undefined || value === "")) {
+      payload[apiKey] = null;
+    } else {
+      payload[apiKey] = value;
+    }
+    return Object.keys(payload).length ? payload : null;
+  }, []);
+
+  const buildLocationPayload = useCallback((form, fieldName) => {
+    const v = form.getFieldValue;
+    if (fieldName === "businessUnit") {
+      return { businessUnit: v("businessUnit") ?? "" };
+    }
+    if (fieldName === "location" || fieldName === "city" || fieldName === "state" || fieldName === "zipCode" || fieldName === "latitude" || fieldName === "longitude") {
+      return {
+        businessAddress: v("location"),
+        businessUnit: v("businessUnit") ?? "",
+        businessCity: v("city") ?? "",
+        businessState: v("state") ?? "",
+        businessZipCode: v("zipCode") ?? "",
+        latitude: v("latitude") != null ? Number(v("latitude")) : null,
+        longitude: v("longitude") != null ? Number(v("longitude")) : null,
+      };
+    }
+    if (fieldName === "showExactLocation") {
+      return { showExactLocation: !v("saltLocation") };
+    }
+    return null;
+  }, []);
+
+  const buildPreferencesPayload = useCallback((form, fieldName, directValue) => {
+    const v = form.getFieldValue;
+    if (directValue !== undefined && ["newBookingNotification", "cancellationNotification", "reminderNotification", "scheduleExpiryNotification", "smsNotifications"].includes(fieldName)) {
+      return { [fieldName]: Boolean(directValue) };
+    }
+    if (fieldName === "business_timezone") {
+      const val = directValue !== undefined ? directValue : v("business_timezone");
+      return val != null ? { business_timezone: val } : null;
+    }
+    if (fieldName === "contact_privacy") {
+      const val = directValue !== undefined ? directValue : v("contact_privacy");
+      return val != null ? { contact_privacy: val } : null;
+    }
+    if (fieldName === "businessHours") {
+      const hours = directValue !== undefined ? directValue : v("businessHours");
+      if (!hours || !Array.isArray(hours)) return null;
+      const formatted = hours.map((day) => ({
+        day: day.day,
+        isOpen: day.isOpen,
+        open: day.isOpen && day.time?.[0] ? day.time[0].format("HH:mm") : null,
+        close: day.isOpen && day.time?.[1] ? day.time[1].format("HH:mm") : null,
+      }));
+      return { businessHours: formatted };
+    }
+    return null;
+  }, []);
 
   const fetchBusinessData = useCallback(async () => {
     setLoading(true);
@@ -426,22 +583,62 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
   };
   saveChangesRef.current = handleSaveAllChanges;
 
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await handleSaveAllChanges();
-    } finally {
-      setSaving(false);
-    }
-  };
+  const onLogoRemove = useCallback(() => {
+    savePayload({ businessImage: "" });
+  }, [savePayload]);
 
-  const tabs = [
+  const onGeneralFieldBlur = useCallback((fieldName) => {
+    const payload = buildGeneralPayload(generalForm, fieldName);
+    if (payload) savePayload(payload);
+  }, [buildGeneralPayload, generalForm, savePayload]);
+
+  const onLocationFieldBlur = useCallback((fieldName) => {
+    const payload = buildLocationPayload(locationForm, fieldName);
+    if (payload) savePayload(payload);
+  }, [buildLocationPayload, locationForm, savePayload]);
+
+  const onLocationVisibilityChange = useCallback((showExact) => {
+    savePayload({ showExactLocation: showExact });
+  }, [savePayload]);
+
+  const onPreferencesFieldChange = useCallback((fieldName, value) => {
+    const payload = buildPreferencesPayload(preferencesForm, fieldName, value);
+    if (payload) savePayload(payload);
+  }, [buildPreferencesPayload, preferencesForm, savePayload]);
+
+  const onPreferencesFieldBlur = useCallback((fieldName) => {
+    const payload = buildPreferencesPayload(preferencesForm, fieldName);
+    if (payload) savePayload(payload);
+  }, [buildPreferencesPayload, preferencesForm, savePayload]);
+
+  useEffect(() => {
+    if (!logoFile) return;
+    let cancelled = false;
+    (async () => {
+      const result = await uploadService.uploadFile(logoFile, "business_image");
+      if (cancelled) return;
+      if (result.success && result.s3_key) {
+        await savePayload({ businessImage: result.s3_key });
+        const url = result.public_url || (typeof window !== "undefined" && process.env.NEXT_PUBLIC_CDN_URL
+          ? `${process.env.NEXT_PUBLIC_CDN_URL.replace(/\/$/, "")}/${result.s3_key}`
+          : null);
+        if (url) setLogoUrl(url);
+      } else {
+        message.error(result.error || "Logo upload failed");
+      }
+      setLogoFile(null);
+    })();
+    return () => { cancelled = true; };
+  }, [logoFile, savePayload]);
+
+  const mainTabs = [
     { key: "general", label: "General", icon: <Building /> },
     { key: "location", label: "Location", icon: <MapPin /> },
     { key: "preferences", label: "Preferences", icon: <SlidersHorizontal /> },
-    ...(hasEmailAddon ? [{ key: "email", label: "Email", icon: <Mail /> }] : []),
     { key: "billing", label: "Plan & Billing", icon: <CreditCard /> },
   ];
+  const emailTab = hasEmailAddon ? [{ key: "email", label: "Email Branding", icon: <Mail />, $gradient: true }] : [];
+  const showAutoSaveIndicator = ["general", "location", "preferences"].includes(currentTab);
 
   if (loading) {
     return (
@@ -465,7 +662,6 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
       <StickyHeaderTabs>
         <PageHeader>
           <HeaderLeft>
-
             <HeaderTextBlock>
               <HeaderTitle>Business Settings</HeaderTitle>
               <HeaderSubtitle>
@@ -473,21 +669,10 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
               </HeaderSubtitle>
             </HeaderTextBlock>
           </HeaderLeft>
-          {currentTab !== "billing" && (
-            <SaveBtn
-              type="primary"
-              icon={<Save size={15} />}
-              onClick={handleSave}
-              loading={saving}
-              key={`save-${saving}`}
-            >
-              {saving ? "Saving…" : "Save Changes"}
-            </SaveBtn>
-          )}
         </PageHeader>
 
         <TabNav>
-          {tabs.map((tab) => (
+          {mainTabs.map((tab) => (
             <TabButton
               key={tab.key}
               $active={currentTab === tab.key}
@@ -497,10 +682,25 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
               {tab.label}
             </TabButton>
           ))}
+          {emailTab.length > 0 && (
+            <>
+              <TabSeparator />
+              {emailTab.map((tab) => (
+                <TabButton
+                  key={tab.key}
+                  $active={currentTab === tab.key}
+                  onClick={() => setCurrentTab(tab.key)}
+                >
+                  {tab.icon}
+                  <TabLabelGradient>{tab.label}</TabLabelGradient>
+                </TabButton>
+              ))}
+            </>
+          )}
         </TabNav>
       </StickyHeaderTabs>
 
-      <ContentArea>
+      <ContentArea $noPadding={currentTab === "email"}>
         {currentTab === "billing" ? (
           <Suspense fallback={<TabLoader />}>
             <PlanBillingSettingsTab
@@ -509,52 +709,68 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
               refetchAddons={refetchAddons}
             />
           </Suspense>
+        ) : currentTab === "email" ? (
+          <Suspense fallback={<TabLoader />}>
+            <EmailBrandingSettingsTab />
+          </Suspense>
         ) : (
-          <ContentContainer>
-            {currentTab === "general" && (
-              <Suspense fallback={<TabLoader />}>
-                <GeneralSettingsTab
-                  form={generalForm}
-                  logoUrl={logoUrl}
-                  setLogoUrl={setLogoUrl}
-                  setLogoFile={setLogoFile}
-                  isMobile={isMobile}
-                />
-              </Suspense>
+          <>
+            <FormTabsWrap>
+              <ContentContainer>
+                {currentTab === "general" && (
+                  <Suspense fallback={<TabLoader />}>
+                    <GeneralSettingsTab
+                      form={generalForm}
+                      logoUrl={logoUrl}
+                      setLogoUrl={setLogoUrl}
+                      setLogoFile={setLogoFile}
+                      isMobile={isMobile}
+                      onFieldBlur={onGeneralFieldBlur}
+                      onLogoRemove={onLogoRemove}
+                    />
+                  </Suspense>
+                )}
+                {currentTab === "location" && (
+                  <Suspense fallback={<TabLoader />}>
+                    <LocationSettingsTab
+                      form={locationForm}
+                      initialData={{
+                        address: initialBusinessData?.businessAddress,
+                        businessUnit: initialBusinessData?.businessUnit,
+                        city: initialBusinessData?.businessCity,
+                        state: initialBusinessData?.businessState,
+                        zipCode: initialBusinessData?.businessZipCode,
+                        lat: initialBusinessData?.latitude,
+                        lon: initialBusinessData?.longitude,
+                        hide: initialBusinessData?.showExactLocation === false,
+                      }}
+                      onFieldBlur={onLocationFieldBlur}
+                      onVisibilityChange={onLocationVisibilityChange}
+                    />
+                  </Suspense>
+                )}
+                {currentTab === "preferences" && (
+                  <Suspense fallback={<TabLoader />}>
+                    <PreferencesSettingsTab
+                      form={preferencesForm}
+                      stripeStatus={stripeAccountStatus}
+                      isMobile={isMobile}
+                      refetchBusinessData={fetchBusinessData}
+                      onFieldBlur={onPreferencesFieldBlur}
+                      onFieldChange={onPreferencesFieldChange}
+                    />
+                  </Suspense>
+                )}
+              </ContentContainer>
+            </FormTabsWrap>
+            {showAutoSaveIndicator && (saveStatus === "saving" || saveStatus === "saved") && (
+              <AutoSaveIndicatorWrap>
+                {saveStatus === "saving" && <SaveSpinner />}
+                {saveStatus === "saving" && <span>Saving…</span>}
+                {saveStatus === "saved" && <span>Saved</span>}
+              </AutoSaveIndicatorWrap>
             )}
-            {currentTab === "location" && (
-              <Suspense fallback={<TabLoader />}>
-                <LocationSettingsTab
-                  form={locationForm}
-                  initialData={{
-                    address: initialBusinessData?.businessAddress,
-                    businessUnit: initialBusinessData?.businessUnit,
-                    city: initialBusinessData?.businessCity,
-                    state: initialBusinessData?.businessState,
-                    zipCode: initialBusinessData?.businessZipCode,
-                    lat: initialBusinessData?.latitude,
-                    lon: initialBusinessData?.longitude,
-                    hide: initialBusinessData?.showExactLocation === false,
-                  }}
-                />
-              </Suspense>
-            )}
-            {currentTab === "preferences" && (
-              <Suspense fallback={<TabLoader />}>
-                <PreferencesSettingsTab
-                  form={preferencesForm}
-                  stripeStatus={stripeAccountStatus}
-                  isMobile={isMobile}
-                  refetchBusinessData={fetchBusinessData}
-                />
-              </Suspense>
-            )}
-            {currentTab === "email" && (
-              <Suspense fallback={<TabLoader />}>
-                <EmailBrandingSettingsTab />
-              </Suspense>
-            )}
-          </ContentContainer>
+          </>
         )}
       </ContentArea>
     </PageWrapper>

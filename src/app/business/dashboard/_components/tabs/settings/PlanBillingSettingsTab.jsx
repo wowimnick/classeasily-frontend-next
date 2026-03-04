@@ -67,6 +67,11 @@ const Card = styled.div`
   border-radius: 12px;
   padding: ${({ $pad }) => $pad ?? "20px"};
   animation: ${fadeUp} 0.2s ease;
+
+  @media (max-width: 640px) {
+    border-radius: 10px;
+    padding: ${({ $pad, $mobilePad }) => $mobilePad ?? ($pad === "0" ? "0" : "16px")};
+  }
 `;
 
 const SectionTitle = styled.h3`
@@ -107,12 +112,24 @@ const PageOuter = styled.div`
   gap: 20px;
   padding: 0 4px;
 
-  @media (max-width: 768px) {
-    padding: 0 2px;
+  @media (max-width: 640px) {
+    padding: 0;
+    gap: 14px;
   }
 `;
 
 // ─── plan grid ────────────────────────────────────────────────────────────────
+const PlansGridWrapper = styled.div`
+  @media (max-width: 599px) {
+    margin: 0 -4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+    padding: 0 4px 4px;
+  }
+`;
+
 const PlansGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr;
@@ -122,6 +139,11 @@ const PlansGrid = styled.div`
   padding: 5px;
   gap: 4px;
 
+  @media (max-width: 599px) {
+    grid-template-columns: repeat(3, 260px);
+    width: max-content;
+    min-width: 100%;
+  }
   @media (min-width: 600px) {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -207,7 +229,27 @@ const PlanBtn = styled.button`
   &:hover { ${({ $active }) => $active && `opacity: 0.85;`} }
 `;
 
-// Plan gradients (match booking-widget landing)
+const PageHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  @media (max-width: 640px) {
+    margin-bottom: 2px;
+  }
+`;
+
+const InvoicesSectionHeader = styled.div`
+  font-size: 16px;
+  font-weight: 600;
+  color: ${T.text};
+  margin-bottom: 14px;
+
+  @media (max-width: 640px) {
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+`;
 const PLAN_GRADIENTS = {
   basic: "linear-gradient(135deg, #93c5fd, #60a5fa)",
   growth: "linear-gradient(135deg, #a7f3d0, #34d399)",
@@ -221,6 +263,12 @@ const TabsWrap = styled.div`
   border-radius: 8px;
   padding: 3px;
   gap: 2px;
+
+  @media (max-width: 600px) {
+    display: flex;
+    width: 100%;
+    & > * { flex: 1; text-align: center; }
+  }
 `;
 
 const Tab = styled.button`
@@ -241,6 +289,21 @@ const ControlsRow = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+`;
+
+const InvoiceSearchGroup = styled.div`
+  display: flex;
+  gap: 10px;
+
+  @media (max-width: 600px) {
+    & > * { flex: 1; }
+  }
 `;
 
 const SearchBox = styled.div`
@@ -256,6 +319,11 @@ const SearchBox = styled.div`
     border: none; outline: none;
     font-size: 13px; color: ${T.text}; background: transparent; width: 100%;
     &::placeholder { color: ${T.faint}; }
+  }
+
+  @media (max-width: 600px) {
+    min-width: 0;
+    flex: 1;
   }
 `;
 
@@ -282,6 +350,13 @@ const InvoiceRow = styled.div`
     grid-template-columns: 18px 1fr 110px 90px 26px;
     padding: 12px 20px;
   }
+
+  @media (max-width: 639px) {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 13px 16px;
+  }
 `;
 
 const Checkbox = styled.div`
@@ -300,10 +375,63 @@ const InvoiceCheckboxCell = styled.div`
 
 const InvoiceId = styled.span`
   font-size: 13.5px; font-weight: 500; color: ${T.text};
+
+  @media (max-width: 639px) {
+    display: none;
+  }
 `;
 
 const InvoiceCell = styled.span`
   font-size: 13px; color: ${T.sub};
+
+  @media (max-width: 639px) {
+    display: none;
+  }
+`;
+
+const MobileInvoiceInfo = styled.div`
+  display: none;
+  @media (max-width: 639px) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    gap: 2px;
+  }
+`;
+
+const MobileInvoiceId = styled.span`
+  font-size: 13px;
+  font-weight: 500;
+  color: ${T.text};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const MobileInvoiceMeta = styled.span`
+  font-size: 11.5px;
+  color: ${T.sub};
+`;
+
+const MobileDownloadBtn = styled.a`
+  display: none;
+  @media (max-width: 639px) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid ${T.border};
+    color: ${T.sub};
+    cursor: pointer;
+    margin-left: 10px;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+    &:hover { background: ${T.bg}; color: ${T.text}; }
+    &[data-disabled="true"] { opacity: 0.4; pointer-events: none; }
+  }
 `;
 
 const DownloadBtn = styled.button`
@@ -312,6 +440,10 @@ const DownloadBtn = styled.button`
   color: ${T.faint}; padding: 3px; border-radius: 4px;
   transition: color 0.15s, background 0.15s;
   &:hover { color: ${T.text}; background: ${T.bg}; }
+
+  @media (max-width: 639px) {
+    display: none;
+  }
 `;
 
 // ─── subscription status ──────────────────────────────────────────────────────
@@ -321,6 +453,11 @@ const StatusRow = styled.div`
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    gap: 0;
+  }
 `;
 
 const PlanLabel = styled.div`
@@ -348,9 +485,18 @@ const ActionGroup = styled.div`
   flex-shrink: 0;
 
   @media (max-width: 600px) {
-    flex-direction: column;
+    flex-direction: row;
     flex-wrap: wrap;
-    align-items: flex-end;
+    align-items: stretch;
+    justify-content: flex-start;
+    width: 100%;
+    gap: 7px;
+    padding-top: 12px;
+    border-top: 1px solid ${T.border};
+    & > * {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
   }
 `;
 
@@ -373,6 +519,13 @@ const AddonRow = styled.div`
   transition: background 0.12s;
   &:not(:last-child) { border-bottom: 1px solid ${T.border}; }
   &:hover { background: ${T.bg}; }
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 14px;
+  }
 `;
 
 const AddonLeft = styled.div`
@@ -395,6 +548,13 @@ const AddonDesc = styled.div`
 
 const AddonRight = styled.div`
   display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+
+  @media (max-width: 600px) {
+    width: 100%;
+    justify-content: flex-start;
+    padding-top: 10px;
+    border-top: 1px solid ${T.border};
+  }
 `;
 
 const ActivePill = styled.span`
@@ -822,47 +982,47 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
       <GlobalStyle />
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <PageHeader>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-
           <div>
             <div style={{ fontSize: 18, fontWeight: 600, color: T.text, lineHeight: 1.2 }}>Plans &amp; billing</div>
             <div style={{ fontSize: 13, color: T.sub, marginTop: 3 }}>Manage your plan and billing history here.</div>
           </div>
         </div>
-
-      </div>
+      </PageHeader>
 
       {/* Pricing Plans Grid */}
-      <PlansGrid>
-        {planDisplay.map((plan) => (
-          <PlanCol key={plan.id} $current={plan.isCurrent}>
-            <PlanHeader>
-              <PlanNameRow>
-                <PlanDot $grad={plan.grad} />
-                <PlanName>{plan.name}</PlanName>
-              </PlanNameRow>
-              <PlanPrice>{plan.price}</PlanPrice>
-            </PlanHeader>
-            <FeatureList>
-              {plan.features.map((f) => (
-                <FeatureItem key={f}>
-                  <Check size={12} color={T.text} strokeWidth={2.5} />
-                  {f}
-                </FeatureItem>
-              ))}
-            </FeatureList>
-            <PlanBtn
-              $active={plan.btnActive}
-              onClick={() => plan.btnActive && handleSwitchPlan(plan.id)}
-              disabled={!plan.btnActive || switchPlanLoading !== null}
-              type="button"
-            >
-              {switchPlanLoading === plan.id ? "Switching…" : plan.btnText}
-            </PlanBtn>
-          </PlanCol>
-        ))}
-      </PlansGrid>
+      <PlansGridWrapper>
+        <PlansGrid>
+          {planDisplay.map((plan) => (
+            <PlanCol key={plan.id} $current={plan.isCurrent}>
+              <PlanHeader>
+                <PlanNameRow>
+                  <PlanDot $grad={plan.grad} />
+                  <PlanName>{plan.name}</PlanName>
+                </PlanNameRow>
+                <PlanPrice>{plan.price}</PlanPrice>
+              </PlanHeader>
+              <FeatureList>
+                {plan.features.map((f) => (
+                  <FeatureItem key={f}>
+                    <Check size={12} color={T.text} strokeWidth={2.5} />
+                    {f}
+                  </FeatureItem>
+                ))}
+              </FeatureList>
+              <PlanBtn
+                $active={plan.btnActive}
+                onClick={() => plan.btnActive && handleSwitchPlan(plan.id)}
+                disabled={!plan.btnActive || switchPlanLoading !== null}
+                type="button"
+              >
+                {switchPlanLoading === plan.id ? "Switching…" : plan.btnText}
+              </PlanBtn>
+            </PlanCol>
+          ))}
+        </PlansGrid>
+      </PlansGridWrapper>
 
       {/* Active subscription */}
       <Card>
@@ -1006,7 +1166,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
 
       {/* Previous invoices */}
       <div>
-        <div style={{ fontSize: 16, fontWeight: 600, color: T.text, marginBottom: 14 }}>Previous invoices</div>
+        <InvoicesSectionHeader>Previous invoices</InvoicesSectionHeader>
 
         <ControlsRow>
           <TabsWrap>
@@ -1014,7 +1174,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
               <Tab key={t} $active={activeTab === t} onClick={() => setActiveTab(t)}>{t}</Tab>
             ))}
           </TabsWrap>
-          <div style={{ display: "flex", gap: 10 }}>
+          <InvoiceSearchGroup>
             <SearchBox>
               <Search size={13} color={T.faint} />
               <input
@@ -1028,7 +1188,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
               <SlidersHorizontal size={13} color={T.sub} />
               {invoiceSortOrder === "recent" ? "Most recent" : "Oldest first"}
             </SortBtn>
-          </div>
+          </InvoiceSearchGroup>
         </ControlsRow>
 
         <Card $pad="0" style={{ marginTop: 12, overflow: "hidden" }}>
@@ -1058,6 +1218,11 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                   <InvoiceId>{inv.number || inv.id}</InvoiceId>
                   <InvoiceCell>{dateStr}</InvoiceCell>
                   <InvoiceCell>{amountStr}</InvoiceCell>
+                  {/* Mobile combined cell */}
+                  <MobileInvoiceInfo>
+                    <MobileInvoiceId>{inv.number || inv.id}</MobileInvoiceId>
+                    <MobileInvoiceMeta>{dateStr}{amountStr !== "—" ? ` · ${amountStr}` : ""}</MobileInvoiceMeta>
+                  </MobileInvoiceInfo>
                   <DownloadBtn
                     as={inv.invoice_pdf ? "a" : "span"}
                     href={inv.invoice_pdf || undefined}
@@ -1068,6 +1233,15 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                   >
                     <Download size={14} />
                   </DownloadBtn>
+                  <MobileDownloadBtn
+                    href={inv.invoice_pdf || undefined}
+                    target={inv.invoice_pdf ? "_blank" : undefined}
+                    rel={inv.invoice_pdf ? "noopener noreferrer" : undefined}
+                    data-disabled={!inv.invoice_pdf ? "true" : undefined}
+                    aria-label="Download invoice"
+                  >
+                    <Download size={14} />
+                  </MobileDownloadBtn>
                 </InvoiceRow>
               );
             })

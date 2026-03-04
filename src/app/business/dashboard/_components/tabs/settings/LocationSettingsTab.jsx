@@ -234,7 +234,7 @@ const VisibilityOption = styled.button`
 
 /* ─── Component ──────────────────────────────────────────────────── */
 
-const LocationSettingsTab = ({ form, initialData }) => {
+const LocationSettingsTab = ({ form, initialData, onFieldBlur, onVisibilityChange }) => {
   const getCoords = (data) => {
     if (!data) return null;
     const rawLat = data.lat ?? data.latitude;
@@ -293,11 +293,13 @@ const LocationSettingsTab = ({ form, initialData }) => {
     setSearchValue(displayName);
     setSearchResults([]);
     form.setFieldsValue({ location: displayName, latitude: rLat, longitude: rLon, city: city || "", state: state || "", zipCode: zipCode || "" });
+    setTimeout(() => onFieldBlur?.("location"), 0);
   };
 
   const handleVisibility = (hide) => {
     setHideExact(hide);
     form.setFieldValue("saltLocation", hide);
+    onVisibilityChange?.(!hide);
   };
 
   return (
@@ -329,7 +331,7 @@ const LocationSettingsTab = ({ form, initialData }) => {
                     placeholder="Search for your address"
                     value={searchValue}
                     onChange={handleSearchChange}
-                    onBlur={() => setTimeout(() => setSearchResults([]), 200)}
+                    onBlur={() => { setTimeout(() => setSearchResults([]), 200); onFieldBlur?.("location"); }}
                     suffix={
                       isSearching
                         ? <SpinBox><GlobalSpinner /></SpinBox>
@@ -357,7 +359,7 @@ const LocationSettingsTab = ({ form, initialData }) => {
               <FieldLabel><Building />Unit / Suite (optional)</FieldLabel>
               <FieldHint>Floor, unit, or suite number</FieldHint>
               <Form.Item name="businessUnit">
-                <Input placeholder="e.g., Unit 201" />
+                <Input placeholder="e.g., Unit 201" onBlur={() => onFieldBlur?.("businessUnit")} />
               </Form.Item>
             </FieldGroup>
           </FieldRow>

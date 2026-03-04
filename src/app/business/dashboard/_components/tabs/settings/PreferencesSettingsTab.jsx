@@ -429,11 +429,24 @@ function TimePairCell({ value = [null, null], onChange, disabled }) {
 
 /* ─── Main component ─────────────────────────────────────────────── */
 
-function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBusinessData }) {
+function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBusinessData, onFieldBlur, onFieldChange }) {
   const [connectLoading, setConnectLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const businessHours = Form.useWatch("businessHours", form);
   const contactPrivacy = Form.useWatch("contact_privacy", form);
+  const businessHoursSavedRef = React.useRef(false);
+
+  useEffect(() => {
+    if (!businessHours || !Array.isArray(businessHours)) return;
+    if (!businessHoursSavedRef.current) {
+      businessHoursSavedRef.current = true;
+      return;
+    }
+    const t = setTimeout(() => {
+      onFieldChange?.("businessHours", businessHours);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [businessHours, onFieldChange]);
 
   const pathname = usePathname();
   const router = useRouter();
@@ -511,7 +524,6 @@ function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBu
             <SectionTitle>Business hours</SectionTitle>
             <SectionSubtitle>Set your weekly schedule and operating timezone</SectionSubtitle>
           </SectionTitleBlock>
-          <SectionChevron><ChevronUp size={16} /></SectionChevron>
         </SectionHeader>
 
         {/* Timezone row */}
@@ -529,6 +541,7 @@ function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBu
                 options={timezones}
                 style={{ width: "100%" }}
                 size="middle"
+                onChange={(val) => onFieldChange?.("business_timezone", val)}
               />
             </Form.Item>
           </SettingControl>
@@ -599,14 +612,20 @@ function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBu
                 <PrivacyOption
                   type="button"
                   $active={contactPrivacy === "on_booking"}
-                  onClick={() => form.setFieldValue("contact_privacy", "on_booking")}
+                  onClick={() => {
+                    form.setFieldValue("contact_privacy", "on_booking");
+                    onFieldChange?.("contact_privacy", "on_booking");
+                  }}
                 >
                   After Booking
                 </PrivacyOption>
                 <PrivacyOption
                   type="button"
                   $active={contactPrivacy === "public"}
-                  onClick={() => form.setFieldValue("contact_privacy", "public")}
+                  onClick={() => {
+                    form.setFieldValue("contact_privacy", "public");
+                    onFieldChange?.("contact_privacy", "public");
+                  }}
                 >
                   Public
                 </PrivacyOption>
@@ -640,7 +659,7 @@ function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBu
             </SettingInfo>
             <SettingControl>
               <Form.Item name={name} valuePropName="checked" noStyle>
-                <Switch size="small" />
+                <Switch size="small" onChange={(checked) => onFieldChange?.(name, checked)} />
               </Form.Item>
             </SettingControl>
           </SettingRow>
