@@ -86,6 +86,9 @@ const HeaderSubtitle = styled.p`
 `;
 
 const TabLabelGradient = styled.span`
+  display: inline-block;
+  line-height: inherit;
+  vertical-align: middle;
   background: linear-gradient(135deg, #0d9488 0%, #0891b2 50%, #0284c7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -121,7 +124,7 @@ const TabSeparator = styled.div`
   width: 1px;
   height: 20px;
   background: #e5e7eb;
-  margin-left: 16px;
+  margin: 0 8px;
   flex-shrink: 0;
 `;
 
@@ -130,7 +133,7 @@ const TabButton = styled.button`
   border: none;
   cursor: pointer;
   padding: 14px 4px;
-  margin-right: 24px;
+  margin-right: ${(p) => (p.$compactRight ? "8px" : "24px")};
   font-size: 14px;
   font-weight: ${p => p.$active ? '600' : '500'};
   color: ${p => p.$active ? '#111827' : '#6b7280'};
@@ -588,13 +591,23 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
   }, [savePayload]);
 
   const onGeneralFieldBlur = useCallback((fieldName) => {
-    const payload = buildGeneralPayload(generalForm, fieldName);
-    if (payload) savePayload(payload);
+    const fieldsToValidate = ["social_facebook", "social_instagram", "social_twitter", "social_linkedin"].includes(fieldName)
+      ? ["social_facebook", "social_instagram", "social_twitter", "social_linkedin"]
+      : [fieldName];
+    generalForm.validateFields(fieldsToValidate).then(() => {
+      const payload = buildGeneralPayload(generalForm, fieldName);
+      if (payload) savePayload(payload);
+    }).catch(() => { /* validation failed, form shows error; don't save */ });
   }, [buildGeneralPayload, generalForm, savePayload]);
 
   const onLocationFieldBlur = useCallback((fieldName) => {
-    const payload = buildLocationPayload(locationForm, fieldName);
-    if (payload) savePayload(payload);
+    const fieldsToValidate = fieldName === "location" || fieldName === "businessUnit"
+      ? [fieldName]
+      : ["location", "businessUnit", "city", "state", "zipCode", "latitude", "longitude"];
+    locationForm.validateFields(fieldsToValidate).then(() => {
+      const payload = buildLocationPayload(locationForm, fieldName);
+      if (payload) savePayload(payload);
+    }).catch(() => {});
   }, [buildLocationPayload, locationForm, savePayload]);
 
   const onLocationVisibilityChange = useCallback((showExact) => {
@@ -602,13 +615,19 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
   }, [savePayload]);
 
   const onPreferencesFieldChange = useCallback((fieldName, value) => {
-    const payload = buildPreferencesPayload(preferencesForm, fieldName, value);
-    if (payload) savePayload(payload);
+    const fieldsToValidate = fieldName === "businessHours" ? ["businessHours"] : [fieldName];
+    preferencesForm.validateFields(fieldsToValidate).then(() => {
+      const payload = buildPreferencesPayload(preferencesForm, fieldName, value);
+      if (payload) savePayload(payload);
+    }).catch(() => {});
   }, [buildPreferencesPayload, preferencesForm, savePayload]);
 
   const onPreferencesFieldBlur = useCallback((fieldName) => {
-    const payload = buildPreferencesPayload(preferencesForm, fieldName);
-    if (payload) savePayload(payload);
+    const fieldsToValidate = fieldName === "businessHours" ? ["businessHours"] : [fieldName];
+    preferencesForm.validateFields(fieldsToValidate).then(() => {
+      const payload = buildPreferencesPayload(preferencesForm, fieldName);
+      if (payload) savePayload(payload);
+    }).catch(() => {});
   }, [buildPreferencesPayload, preferencesForm, savePayload]);
 
   useEffect(() => {
@@ -672,10 +691,11 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
         </PageHeader>
 
         <TabNav>
-          {mainTabs.map((tab) => (
+          {mainTabs.map((tab, index) => (
             <TabButton
               key={tab.key}
               $active={currentTab === tab.key}
+              $compactRight={emailTab.length > 0 && index === mainTabs.length - 1}
               onClick={() => setCurrentTab(tab.key)}
             >
               {tab.icon}
