@@ -76,14 +76,14 @@ const RightSection = styled.div`
   }
 `;
 
+const UserProfileContainer = styled.div`
+  position: relative;
+`;
+
 const UserProfileContainerMobileHidden = styled(UserProfileContainer)`
   @media (max-width: 768px) {
     display: none;
   }
-`;
-
-const UserProfileContainer = styled.div`
-  position: relative;
 `;
 
 const UserProfileButton = styled.div`

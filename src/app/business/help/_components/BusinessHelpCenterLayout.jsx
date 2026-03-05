@@ -317,6 +317,7 @@ const getIconSrc = (categorySlug) => {
     "team-and-community": "https://cdn.lordicon.com/cniwvohj.json",
     "bookings-and-students": "https://cdn.lordicon.com/meaqueth.json",
     "marketing-and-promotions": "https://cdn.lordicon.com/abgykmtd.json",
+    "widget-installation": "https://cdn.lordicon.com/abgykmtd.json",
   };
   return iconMap[categorySlug] || "https://cdn.lordicon.com/nocovwne.json";
 };
