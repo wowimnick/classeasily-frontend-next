@@ -59,7 +59,7 @@ const MainContent = styled.main`
   overflow-x: hidden;
 
   @media (max-width: 768px) {
-    padding: 4px;
+    padding: ${(props) => (props.$isSettings ? "0" : "4px")};
   }
 `;
 
@@ -97,7 +97,7 @@ function DashboardLayoutInner({ children }) {
               activeKey={menuActiveKey}
             />
           </SideMenuWrapper>
-          <MainContent>
+          <MainContent $isSettings={pathname?.includes("/business/dashboard/settings")}>
             <SubscriptionProvider>
               <DashboardContext.Provider
                 value={{

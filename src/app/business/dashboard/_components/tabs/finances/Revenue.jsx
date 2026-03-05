@@ -119,10 +119,21 @@ const Controls = styled.div`
   display: flex;
   gap: 16px;
   align-items: center;
+  flex-wrap: wrap;
   @media (max-width: 992px) {
     width: 100%;
     flex-direction: column;
     align-items: stretch;
+  }
+`;
+
+const SourceSegmentedWrapper = styled.div`
+  width: fit-content;
+  .ant-segmented {
+    font-size: 12px;
+  }
+  .ant-segmented-item-label {
+    font-size: 12px;
   }
 `;
 
@@ -838,10 +849,12 @@ const Revenue = forwardRef((props, ref) => {
           </div>
           <Controls>
             {hasWidgetAnalytics && (
-              <Segmented
-                value={filterParams.source}
-                onChange={handleSourceChange}
-                options={[
+              <SourceSegmentedWrapper>
+                <Segmented
+                  value={filterParams.source}
+                  onChange={handleSourceChange}
+                  size="small"
+                  options={[
                   {
                     label: (
                       <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -870,7 +883,8 @@ const Revenue = forwardRef((props, ref) => {
                     value: "widget",
                   },
                 ]}
-              />
+                />
+              </SourceSegmentedWrapper>
             )}
             {isMobile ? (
               <MobileDateRangePicker

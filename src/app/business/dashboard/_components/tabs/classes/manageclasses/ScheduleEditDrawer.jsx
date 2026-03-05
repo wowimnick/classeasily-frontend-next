@@ -76,22 +76,21 @@ const getErrorMessage = (error) => {
     const msg = first?.errors?.[0];
     if (typeof msg === "string") return msg;
   }
-  if (error?.response?.data) {
-    const data = error.response.data;
+  // API response (error.response.data) or scheduleService return shape { error: data }
+  const data = error?.response?.data ?? (typeof error === "object" && error !== null ? error : null);
+  if (data && typeof data === "object") {
     if (typeof data.detail === "string") return data.detail;
     if (typeof data.message === "string") return data.message;
     if (typeof data.error === "string") return data.error;
-    if (typeof data === "object" && data !== null) {
-      const messages = Object.entries(data).map(([key, value]) => {
-        const formattedKey = key
-          .replace(/_/g, " ")
-          .replace(/\b\w/g, (l) => l.toUpperCase());
-        return `${formattedKey}: ${
-          Array.isArray(value) ? value.join(", ") : value
-        }`;
-      });
-      if (messages.length > 0) return messages.join("; ");
-    }
+    const messages = Object.entries(data).map(([key, value]) => {
+      const formattedKey = key
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase());
+      return `${formattedKey}: ${
+        Array.isArray(value) ? value.join(", ") : String(value ?? "")
+      }`;
+    });
+    if (messages.length > 0) return messages.join("; ");
   }
   if (typeof error?.message === "string") return error.message;
   return "An unexpected error occurred.";
@@ -1446,7 +1445,12 @@ const ScheduleEditDrawer = ({
           message.info("No changes to save.");
           return;
         }
-        await scheduleService.updateSchedule(editingSchedule.id, scheduleData);
+        const result = await scheduleService.updateSchedule(editingSchedule.id, scheduleData);
+        if (!result.success) {
+          const errMsg = getErrorMessage(result.error);
+          message.error(errMsg, 5);
+          return;
+        }
         message.success("Schedule updated.");
       } else {
         const scheduleData = {
@@ -1459,12 +1463,17 @@ const ScheduleEditDrawer = ({
           minParticipants: minPart,
           date: dateStr,
         };
-        await scheduleService.createSchedule(scheduleData);
+        const result = await scheduleService.createSchedule(scheduleData);
+        if (!result.success) {
+          const errMsg = getErrorMessage(result.error);
+          message.error(errMsg, 5);
+          return;
+        }
         message.success("Schedule created.");
       }
       handleFormSuccess();
     } catch (errorInfo) {
-      message.error(getErrorMessage(errorInfo));
+      message.error(getErrorMessage(errorInfo), 5);
     } finally {
       setIsLoading(false);
     }

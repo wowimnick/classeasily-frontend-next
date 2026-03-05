@@ -76,6 +76,12 @@ const RightSection = styled.div`
   }
 `;
 
+const UserProfileContainerMobileHidden = styled(UserProfileContainer)`
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
 const UserProfileContainer = styled.div`
   position: relative;
 `;
@@ -220,7 +226,7 @@ const BusinessHeader = () => {
           {currentUser && <NotificationsButton />}
 
           {currentUser && (
-            <UserProfileContainer ref={userProfileRef}>
+            <UserProfileContainerMobileHidden ref={userProfileRef}>
               <UserProfileButton
                 onClick={() => setUserMenuVisible(!userMenuVisible)}
                 $isActive={userMenuVisible}
@@ -242,7 +248,7 @@ const BusinessHeader = () => {
                   triggerRef={userProfileRef}
                 />
               </Suspense>
-            </UserProfileContainer>
+            </UserProfileContainerMobileHidden>
           )}
         </RightSection>
       </HeaderWrapper>

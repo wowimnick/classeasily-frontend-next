@@ -912,8 +912,9 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
     <Drawer.Root
       open={visible}
       onOpenChange={open => !open && onClose()}
-      snapPoints={[0.5, 1]}
+      snapPoints={[1]}
       activeSnapPoint={1}
+      dismissible
     >
       <Drawer.Portal>
         <Overlay />

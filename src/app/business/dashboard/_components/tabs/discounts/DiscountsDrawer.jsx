@@ -1521,7 +1521,7 @@ const DiscountFlowWrapper = ({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: "hidden" }}>
       <DrawerHeader>
         <DrawerTitle>
           {editingDiscount ? "Edit Discount" : "Create New Discount"}
