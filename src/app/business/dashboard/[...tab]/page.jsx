@@ -5,6 +5,7 @@
 import { useEffect } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { PLAN_IDS as WIDGET_TAB_PLAN_IDS } from "@/lib/subscriptionPlans";
 
 // Import all tab components
 import Overview from "../_components/tabs/overview/Overview";
@@ -34,7 +35,8 @@ export default function DashboardPage() {
   const hasWidgetPlan = Boolean(
     subscription?.status &&
       ["active", "trialing"].includes(subscription.status) &&
-      subscription?.planId
+      subscription?.planId &&
+      WIDGET_TAB_PLAN_IDS.includes((subscription.planId || "").toLowerCase())
   );
 
   // When user has no widget plan, redirect away from widget tab (e.g. direct URL)

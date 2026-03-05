@@ -29,6 +29,7 @@ import { Drawer } from "vaul";
 import { businessService } from "@/services/apiService";
 import { useAuth } from "@/lib/auth-client";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { PLAN_IDS as WIDGET_TAB_PLAN_IDS } from "@/lib/subscriptionPlans";
 
 const { Title, Text } = Typography;
 import { theme as augmentedTheme } from "@/components/theme";
@@ -844,7 +845,8 @@ const SideMenuComponent = memo(
     const hasWidgetPlan = Boolean(
       subscription?.status &&
         ["active", "trialing"].includes(subscription.status) &&
-        subscription?.planId
+        subscription?.planId &&
+        WIDGET_TAB_PLAN_IDS.includes((subscription.planId || "").toLowerCase())
     );
 
     const isBusinessClickable =
