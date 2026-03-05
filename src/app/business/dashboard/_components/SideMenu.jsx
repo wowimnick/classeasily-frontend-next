@@ -841,13 +841,14 @@ const SideMenuComponent = memo(
 
     const { user } = useAuth();
     const permissions = user?.permissions ||[];
-    const { subscription } = useSubscription();
-    const hasWidgetPlan = Boolean(
+    const { subscription, widgetSubscriptionRequired } = useSubscription();
+    const planId = (subscription?.planId ?? subscription?.plan_id ?? "").toString().toLowerCase();
+    const hasActiveSubscription =
       subscription?.status &&
-        ["active", "trialing"].includes(subscription.status) &&
-        subscription?.planId &&
-        WIDGET_TAB_PLAN_IDS.includes((subscription.planId || "").toLowerCase())
-    );
+      ["active", "trialing"].includes(subscription.status) &&
+      planId &&
+      WIDGET_TAB_PLAN_IDS.includes(planId);
+    const hasWidgetPlan = !widgetSubscriptionRequired || Boolean(hasActiveSubscription);
 
     const isBusinessClickable =
       !loadingBusiness && !businessError && businessData && !businessData._isPlaceholder;

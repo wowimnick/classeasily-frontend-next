@@ -25,7 +25,7 @@ const PREVIEW_OPTIONS = [
   { value: "booking_reminder",              label: "Booking reminder",        icon: "⏰" },
   { value: "booking_cancelled_by_host",     label: "Cancelled by host",       icon: "📣" },
   { value: "booking_rescheduled",           label: "Rescheduled",             icon: "🗓️" },
-  { value: "booking_cancellation_confirmed",label: "Guest cancellation",      icon: "✓"  },
+  { value: "booking_cancellation_confirmed",label: "Guest cancellation",      icon: "🗓️" },
 ];
 
 const LOGO_SIZE_PRESETS = [
@@ -185,7 +185,7 @@ function buildEmailPreviewHtml(branding, previewType) {
       break;
     case "booking_cancellation_confirmed":
       content = `<div style="text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-        <div style="font-size:48px;margin-bottom:24px;line-height:1;">✓</div>
+        <div style="font-size:48px;margin-bottom:24px;line-height:1;">🗓️</div>
         <h1 style="margin-bottom:8px;font-size:28px;color:#1D1D1F;">Your schedule is clear.</h1>
         <p style="font-size:18px;color:#1D1D1F;margin-bottom:32px;">Hi Alex,<br>We've processed your cancellation for <strong>Morning Yoga Flow</strong>.</p>
         <div style="background:#F9FAFB;border:${cardBorderWidth}px solid #E5E7EB;border-radius:${cardBorderRadius}px;padding:24px;text-align:left;margin-bottom:32px;max-width:480px;margin-left:auto;margin-right:auto;">
@@ -272,6 +272,48 @@ const PanelSub = styled.p`
   color: #667085;
   margin: 0;
   line-height: 1.55;
+`;
+
+const ModeToggleWrap = styled.div`
+  padding: 28px 20px;
+  border-bottom: 1px solid #F2F4F7;
+`;
+
+const ModeToggleLabel = styled.div`
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #98A2B3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+`;
+
+const ModeToggleGroup = styled.div`
+  display: flex;
+  gap: 0;
+  border-radius: 10px;
+  border: 1.5px solid #E4E7EC;
+  background: #F9FAFB;
+  padding: 3px;
+`;
+
+const ModeToggleBtn = styled.button`
+  flex: 1;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: ${(p) => p.$active ? "#101828" : "#667085"};
+  background: ${(p) => p.$active ? "#fff" : "transparent"};
+  box-shadow: ${(p) => p.$active ? "0 1px 3px rgba(0,0,0,0.06)" : "none"};
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+
+  &:hover {
+    color: #101828;
+  }
 `;
 
 const FieldsWrap = styled.div`
@@ -860,10 +902,42 @@ const SkeletonPulse = styled.div`
 
 const DEBOUNCE_MS = 350;
 
+const EMAIL_MODE_MARKETPLACE = "marketplace";
+const EMAIL_MODE_WIDGET = "widget";
+
+function applyBrandingToForm(data, setters) {
+  const d = { ...DEFAULT_BRANDING, ...(data || {}) };
+  setters.setBranding(d);
+  setters.setDraftFooterText(d.footer_text ?? "");
+  setters.setDraftConfirmMsg(d.confirmation_message ?? "");
+  setters.setDraftPrimaryColor(d.primary_color ?? "");
+  setters.setColorInputValue(normalizeHex(d.primary_color) || "#f81e3e");
+  setters.setDraftLogoSize(logoSizeToPreset(d.logo_max_width, d.logo_max_height));
+  setters.setDraftCardStyle(cardStyleToPreset(d.card_border_width, d.card_border_radius));
+}
+
+function formToBrandingPayload(branding, draftFooterText, draftConfirmMessage, draftPrimaryColor, draftLogoSize, draftCardStyle) {
+  const logoPreset = LOGO_SIZE_PRESETS.find((p) => p.value === draftLogoSize) || LOGO_SIZE_PRESETS[1];
+  const cardPreset = CARD_STYLE_PRESETS.find((p) => p.value === draftCardStyle) || CARD_STYLE_PRESETS[0];
+  return {
+    logo_url: (branding.logo_url || "").trim() || undefined,
+    primary_color: (draftPrimaryColor || branding.primary_color || "").trim() || undefined,
+    footer_text: (draftFooterText || "").trim() || undefined,
+    confirmation_message: (draftConfirmMessage || "").trim() || undefined,
+    card_border_width: cardPreset.border,
+    card_border_radius: cardPreset.radius,
+    logo_max_width: logoPreset.width,
+    logo_max_height: logoPreset.height,
+  };
+}
+
 export default function EmailBrandingSettingsTab() {
   const [loading, setLoading]                     = useState(true);
   const [saving, setSaving]                       = useState(false);
   const [logoUploading, setLogoUploading]         = useState(false);
+  const [emailMode, setEmailMode]                 = useState(EMAIL_MODE_MARKETPLACE);
+  const [brandingByMode, setBrandingByMode]       = useState({ [EMAIL_MODE_MARKETPLACE]: { ...DEFAULT_BRANDING }, [EMAIL_MODE_WIDGET]: { ...DEFAULT_BRANDING } });
+  const [canUseWidgetBranding, setCanUseWidgetBranding] = useState(false);
   const [branding, setBranding]                   = useState({ ...DEFAULT_BRANDING });
   const [draftFooterText, setDraftFooterText]     = useState("");
   const [draftConfirmMessage, setDraftConfirmMsg] = useState("");
@@ -897,20 +971,37 @@ export default function EmailBrandingSettingsTab() {
     businessService.getWidgetConfig()
       .then((res) => {
         if (res.success && res.data) {
-          const data = { ...DEFAULT_BRANDING, ...(res.data.marketplace_email_branding || {}) };
-          setBranding(data);
-          setDraftFooterText(data.footer_text ?? "");
-          setDraftConfirmMsg(data.confirmation_message ?? "");
-          setDraftPrimaryColor(data.primary_color ?? "");
-          setColorInputValue(normalizeHex(data.primary_color) || "#f81e3e");
-          setDraftLogoSize(logoSizeToPreset(data.logo_max_width, data.logo_max_height));
-          setDraftCardStyle(cardStyleToPreset(data.card_border_width, data.card_border_radius));
+          const d = res.data;
+          const marketplace = { ...DEFAULT_BRANDING, ...(d.marketplace_email_branding || {}) };
+          const widget = { ...DEFAULT_BRANDING, ...(d.widget_email_branding || {}) };
+          setBrandingByMode({ [EMAIL_MODE_MARKETPLACE]: marketplace, [EMAIL_MODE_WIDGET]: widget });
+          const planId = (d.widget_subscription?.planId || "").toLowerCase();
+          setCanUseWidgetBranding(planId === "growth" || planId === "advanced");
+          applyBrandingToForm(marketplace, {
+            setBranding, setDraftFooterText, setDraftConfirmMsg, setDraftPrimaryColor,
+            setColorInputValue, setDraftLogoSize, setDraftCardStyle,
+          });
           hasLoadedRef.current = true;
         }
       })
       .catch(() => message.error("Failed to load email branding settings"))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleModeChange = (mode) => {
+    if (mode === emailMode) return;
+    const payload = formToBrandingPayload(branding, draftFooterText, draftConfirmMessage, draftPrimaryColor, draftLogoSize, draftCardStyle);
+    const currentFull = { ...branding, ...payload };
+    setBrandingByMode((prev) => ({ ...prev, [emailMode]: currentFull }));
+    setEmailMode(mode);
+    const nextData = mode === EMAIL_MODE_MARKETPLACE
+      ? brandingByMode[EMAIL_MODE_MARKETPLACE]
+      : brandingByMode[EMAIL_MODE_WIDGET];
+    applyBrandingToForm(nextData, {
+      setBranding, setDraftFooterText, setDraftConfirmMsg, setDraftPrimaryColor,
+      setColorInputValue, setDraftLogoSize, setDraftCardStyle,
+    });
+  };
 
   useEffect(() => {
     if (!hasLoadedRef.current) return;
@@ -938,23 +1029,14 @@ export default function EmailBrandingSettingsTab() {
 
   const handleSave = () => {
     setSaving(true);
-    const logoPreset = LOGO_SIZE_PRESETS.find((p) => p.value === draftLogoSize) || LOGO_SIZE_PRESETS[1];
-    const cardPreset = CARD_STYLE_PRESETS.find((p) => p.value === draftCardStyle) || CARD_STYLE_PRESETS[0];
-    businessService.updateWidgetConfig({
-      marketplace_email_branding: {
-        logo_url:             (branding.logo_url || "").trim() || undefined,
-        primary_color:        (draftPrimaryColor || branding.primary_color || "").trim() || undefined,
-        footer_text:          (draftFooterText || "").trim() || undefined,
-        confirmation_message: (draftConfirmMessage || "").trim() || undefined,
-        card_border_width:    cardPreset.border,
-        card_border_radius:   cardPreset.radius,
-        logo_max_width:       logoPreset.width,
-        logo_max_height:      logoPreset.height,
-      },
-    })
+    const payload = formToBrandingPayload(branding, draftFooterText, draftConfirmMessage, draftPrimaryColor, draftLogoSize, draftCardStyle);
+    const key = emailMode === EMAIL_MODE_MARKETPLACE ? "marketplace_email_branding" : "widget_email_branding";
+    businessService.updateWidgetConfig({ [key]: payload })
       .then((res) => {
-        if (res.success) message.success("Email branding saved.");
-        else message.error(res.error || "Failed to save.");
+        if (res.success) {
+          setBrandingByMode((prev) => ({ ...prev, [emailMode]: { ...branding, ...payload } }));
+          message.success("Email branding saved.");
+        } else message.error(res.error || "Failed to save.");
       })
       .catch(() => message.error("Failed to save."))
       .finally(() => setSaving(false));
@@ -1035,8 +1117,27 @@ export default function EmailBrandingSettingsTab() {
       <LeftPanel>
         <PanelHeader>
           <PanelTitle>Email branding</PanelTitle>
-          <PanelSub>Customize emails sent through the ClassEasily marketplace — confirmations, reminders, and updates.</PanelSub>
+          <PanelSub>
+            {emailMode === EMAIL_MODE_MARKETPLACE
+              ? "Customize emails sent through the ClassEasily marketplace — confirmations, reminders, and updates."
+              : "Customize emails sent for widget bookings — confirmations, reminders, and updates."}
+          </PanelSub>
         </PanelHeader>
+
+        <ModeToggleWrap>
+          <ModeToggleLabel>Email type</ModeToggleLabel>
+          <ModeToggleGroup>
+            <ModeToggleBtn type="button" $active={emailMode === EMAIL_MODE_MARKETPLACE} onClick={() => handleModeChange(EMAIL_MODE_MARKETPLACE)}>
+              Marketplace bookings
+            </ModeToggleBtn>
+            <ModeToggleBtn type="button" $active={emailMode === EMAIL_MODE_WIDGET} onClick={() => handleModeChange(EMAIL_MODE_WIDGET)} disabled={!canUseWidgetBranding}>
+              Widget booking
+            </ModeToggleBtn>
+          </ModeToggleGroup>
+          {!canUseWidgetBranding && (
+            <FieldHint style={{ marginTop: 8 }}>Widget booking emails require a Growth or Advanced widget plan.</FieldHint>
+          )}
+        </ModeToggleWrap>
 
         <FieldsWrap>
 

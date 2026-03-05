@@ -248,7 +248,7 @@ const LocationSettingsTab = ({ form, initialData, onFieldBlur, onVisibilityChang
     return null;
   };
 
-  const getAddress = (data) => data?.businessAddress || data?.location || data?.address || "";
+  const getAddress = (data) => data?.businessAddress || data?.address || data?.location || "";
 
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -259,8 +259,9 @@ const LocationSettingsTab = ({ form, initialData, onFieldBlur, onVisibilityChang
   const [mapContainerKey] = useState(() => `loc-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
 
   useEffect(() => {
+    if (initialData == null) return;
     setSelectedCoords(getCoords(initialData));
-    setHideExact(initialData?.hide ?? false);
+    setHideExact(initialData.hide ?? false);
     setSearchValue(getAddress(initialData));
   }, [initialData]);
 
@@ -278,9 +279,11 @@ const LocationSettingsTab = ({ form, initialData, onFieldBlur, onVisibilityChang
   );
 
   const handleSearchChange = (e) => {
-    setSearchValue(e.target.value);
+    const v = e.target.value;
+    setSearchValue(v);
+    form.setFieldValue("location", v);
     setIsSearching(true);
-    debouncedSearch(e.target.value);
+    debouncedSearch(v);
   };
 
   const handleLocationSelect = (result) => {

@@ -68,16 +68,6 @@
   max-width: 50ch;
 }
 
-/* Button override to match Ant Design but with static class */
-.ctaButton {
-  padding: 1rem 2.5rem !important;
-  height: auto !important;
-  line-height: 1.5 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-}
-
 /* 2D Fallback for when 3D is loading/disabled */
 .fallbackContainer {
   position: relative;

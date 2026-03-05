@@ -60,10 +60,12 @@ const T = {
   amberBg: "#FEF3C7",
 };
 
-// ─── shared primitives ────────────────────────────────────────────────────────
+// ─── shared primitives (glassy) ───────────────────────────────────────────────
 const Card = styled.div`
-  background: ${T.white};
-  border: 1px solid ${T.border};
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(229, 231, 235, 0.8);
   border-radius: 12px;
   padding: ${({ $pad }) => $pad ?? "20px"};
   animation: ${fadeUp} 0.2s ease;
@@ -111,10 +113,82 @@ const PageOuter = styled.div`
   flex-direction: column;
   gap: 20px;
   padding: 0 4px;
+  overflow: visible;
 
   @media (max-width: 640px) {
     padding: 0;
     gap: 14px;
+  }
+`;
+
+// ─── gradient strip: full viewport width, no clip ─────────────────────────────
+const ContentTopWrap = styled.div`
+  position: relative;
+  width: 100vw;
+  max-width: 100vw;
+  left: 50%;
+  margin-left: -50vw;
+  margin-top: 32px;
+  min-height: 140px;
+  overflow: visible;
+  @media (max-width: 640px) {
+    margin-top: 24px;
+    min-height: 100px;
+  }
+`;
+
+const BillingGradientStrip = styled.div`
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 280px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-12deg);
+  z-index: 0;
+  overflow: visible;
+  border-radius: 4px;
+  pointer-events: none;
+
+  @media (max-width: 900px) {
+    height: 200px;
+    width: 110%;
+    left: -5%;
+    }
+  @media (max-width: 640px) {
+    display: none;
+  }
+`;
+
+const BillingGradientStripInner = styled.div`
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+`;
+
+const BillingGradientCanvas = styled.canvas`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  --gradient-color-1: #f9fafb;
+  --gradient-color-2: #fc4056;
+  --gradient-color-3: #f9fafc;
+  --gradient-color-4: #fc4056;
+`;
+
+const ContentLayer = styled.div`
+  position: relative;
+  z-index: 1;
+  margin-top: -160px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  @media (max-width: 640px) {
+    margin-top: -120px;
   }
 `;
 
@@ -133,8 +207,10 @@ const PlansGridWrapper = styled.div`
 const PlansGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr;
-  background: ${T.bg};
-  border: 1px solid ${T.border};
+  background: rgba(249, 250, 251, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(229, 231, 235, 0.75);
   border-radius: 12px;
   padding: 5px;
   gap: 4px;
@@ -157,10 +233,12 @@ const PlanCol = styled.div`
   border-radius: 9px;
   display: flex;
   flex-direction: column;
-  background: ${({ $current }) => $current ? T.white : "transparent"};
-  box-shadow: ${({ $current }) => $current ? "0 1px 4px rgba(0,0,0,0.07)" : "none"};
-  border: ${({ $current }) => $current ? `1px solid ${T.border}` : "1px solid transparent"};
-  transition: background 0.15s;
+  background: ${({ $current }) => $current ? "rgba(255, 255, 255, 0.78)" : "rgba(255, 255, 255, 0.35)"};
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: ${({ $current }) => $current ? "0 1px 4px rgba(0,0,0,0.06)" : "none"};
+  border: ${({ $current }) => $current ? `1px solid rgba(229, 231, 235, 0.9)` : "1px solid transparent"};
+  transition: background 0.15s, border-color 0.15s;
 `;
 
 const PlanHeader = styled.div`
@@ -640,7 +718,14 @@ function AddonPaymentForm({ clientSecret, onSuccess }) {
     if (error) { setErr(error.message || "Something went wrong."); setSubmitting(false); return; }
     const { error: confirmError } = await stripe.confirmPayment({
       elements,
-      confirmParams: { return_url: typeof window !== "undefined" ? window.location.href : "" },
+      confirmParams: {
+        return_url: typeof window !== "undefined" ? window.location.href : "",
+        payment_method_data: {
+          billing_details: {
+            address: { country: "CA", postal_code: "K1A 0B1" },
+          },
+        },
+      },
       redirect: "if_required",
     });
     if (confirmError) { setErr(confirmError.message || "Payment failed."); setSubmitting(false); return; }
@@ -700,12 +785,20 @@ function AddonPaymentForm({ clientSecret, onSuccess }) {
   );
 }
 
-function PlanSwitchPaymentForm({ clientSecret, onSuccess, planName }) {
+function PlanSwitchPaymentForm({ clientSecret, onSuccess, onLoadError, planName }) {
   const stripe = useStripe();
   const elements = useElements();
   const [ready, setReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState(null);
+
+  const handleLoadError = useCallback(
+    (event) => {
+      const msg = event?.error?.message || "";
+      if (typeof onLoadError === "function") onLoadError(msg);
+    },
+    [onLoadError]
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -720,7 +813,14 @@ function PlanSwitchPaymentForm({ clientSecret, onSuccess, planName }) {
     }
     const { error: confirmError } = await stripe.confirmPayment({
       elements,
-      confirmParams: { return_url: typeof window !== "undefined" ? window.location.href : "" },
+      confirmParams: {
+        return_url: typeof window !== "undefined" ? window.location.href : "",
+        payment_method_data: {
+          billing_details: {
+            address: { country: "CA", postal_code: "K1A 0B1" },
+          },
+        },
+      },
       redirect: "if_required",
     });
     if (confirmError) {
@@ -735,7 +835,11 @@ function PlanSwitchPaymentForm({ clientSecret, onSuccess, planName }) {
   return (
     <form onSubmit={handleSubmit}>
       <div style={{ marginBottom: 16, minHeight: ready ? undefined : 120 }}>
-        <PaymentElement options={paymentElementOptions} onReady={() => setReady(true)} />
+        <PaymentElement
+          options={paymentElementOptions}
+          onReady={() => setReady(true)}
+          onLoadError={handleLoadError}
+        />
       </div>
       {err && (
         <div style={{ marginBottom: 12, padding: "8px 12px", background: "#fef2f2", borderRadius: 8, fontSize: 13, color: "#b91c1c" }}>
@@ -880,14 +984,11 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
       }
       const planName = getPlanById(planId)?.name ?? planId;
       if (result.data?.stripe_updated) {
-        message.success(
-          `You're now on the ${planName} plan. A prorated charge was applied to your payment method.`,
-          5
-        );
+        message.success(`You're now on the ${planName} plan. Any proration will appear on your invoice or payment method.`, 5);
       } else {
         message.success(`Switched to ${planName} plan.`, 4);
       }
-      refetchSubscription();
+      await refetchSubscription();
     } else {
       antMessage.error(result.error || "Failed to switch plan.");
     }
@@ -900,6 +1001,14 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     message.success(`Switched to ${planName} plan.`);
     refetchSubscription();
   }, [switchPaymentTargetPlanId, refetchSubscription]);
+
+  const handleSwitchPaymentLoadError = useCallback(() => {
+    setSwitchPaymentSecret(null);
+    setSwitchPaymentTargetPlanId(null);
+    antMessage.error(
+      "This payment link can't be used anymore (already used or expired). Please try switching plan again."
+    );
+  }, []);
 
   const handleCancelConfirm = async () => {
     setCancelling(true);
@@ -948,6 +1057,22 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     return () => { cancelled = true; };
   }, [subscribeModalOpen, createAddonPaymentIntent]);
 
+  useEffect(() => {
+    const id = "billing-gradient-canvas";
+    const run = () => {
+      import("stripe-gradient")
+        .then(({ Gradient }) => {
+          const canvas = document.getElementById(id);
+          if (!canvas || !canvas.getContext) return;
+          const gradient = new Gradient();
+          gradient.initGradient(`#${id}`);
+        })
+        .catch(() => {});
+    };
+    const t = setTimeout(run, 0);
+    return () => clearTimeout(t);
+  }, []);
+
   const handleAddonPaymentSuccess = useCallback(() => {
     setSubscribeModalOpen(false); setAddonClientSecret(null);
     message.success("Marketplace email branding add-on is now active.");
@@ -981,6 +1106,15 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     <PageOuter>
       <GlobalStyle />
 
+      <ContentTopWrap>
+        <BillingGradientStrip>
+          <BillingGradientStripInner>
+            <BillingGradientCanvas id="billing-gradient-canvas" data-transition-in />
+          </BillingGradientStripInner>
+        </BillingGradientStrip>
+      </ContentTopWrap>
+
+      <ContentLayer>
       {/* Header */}
       <PageHeader>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -1312,11 +1446,13 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
             <PlanSwitchPaymentForm
               clientSecret={switchPaymentSecret}
               onSuccess={handleSwitchPaymentSuccess}
+              onLoadError={handleSwitchPaymentLoadError}
               planName={getPlanById(switchPaymentTargetPlanId)?.name}
             />
           </Elements>
         )}
       </Modal>
+      </ContentLayer>
     </PageOuter>
   );
 }

@@ -1,139 +1,237 @@
 /* Testimonials.module.css */
+
 .section {
-  background: linear-gradient(to bottom, #ffffff 50%, #fff6f6 100%);
-  padding: 5rem 0;
+  padding: 6rem 0;
   overflow: hidden;
+  font-family: 'DM Sans', 'Outfit', system-ui, sans-serif;
 }
 
 .container {
-  max-width: 1100px;
+  max-width: 1260px;
   margin: 0 auto;
   padding: 0 2rem;
 }
 
-.headerRow {
-  display: flex;
-  justify-content: space-between;
+/* ─── THREE-COLUMN GRID ─── */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1fr;
+  gap: 2.5rem;
   align-items: center;
-  margin-bottom: 2.5rem;
 }
 
-.title {
-  font-size: clamp(1.8rem, 4vw, 2.2rem);
+@media (max-width: 1023px) {
+  .grid {
+    grid-template-columns: 1fr 1.2fr;
+    gap: 2rem;
+  }
+  .rightCol {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .centerCol {
+    display: none;
+  }
+}
+
+/* ─── LEFT COLUMN ─── */
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  color: #1e1e1e;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #c81e1e;
+}
+
+.eyebrowDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c81e1e;
+  display: inline-block;
+}
+
+.headline {
+  font-size: clamp(2.4rem, 4vw, 3.2rem);
+  font-weight: 600;
+  color: #111;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
   margin: 0;
 }
 
-.controls {
+.headlineAccent {
+  color: #c81e1e;
+}
+
+.subtext {
+  font-size: 1rem;
+  color: #555;
+  line-height: 1.65;
+  margin: 0;
+  max-width: 320px;
+}
+
+.statRow {
   display: flex;
-  gap: 1rem;
-  align-items: center;
+  gap: 2rem;
+  padding-top: 0.5rem;
 }
 
-.btnGroup {
+.stat {
   display: flex;
-  gap: 0.8rem;
+  flex-direction: column;
+  gap: 0.2rem;
 }
 
-.controlBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid #e92e31;
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #e92e31;
+.statNum {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: -0.03em;
+  line-height: 1;
 }
 
-.controlBtn:hover {
-  background-color: #fff0f0;
+.statLabel {
+  font-size: 0.78rem;
+  color: #888;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.controlBtn.active {
-  background-color: #e92e31;
-  color: white;
-}
-
-/* THE TRACK: Native Scroll Snap */
-.trackContainer {
+/* ─── CENTER COLUMN (Image Card) ─── */
+.centerCol {
   position: relative;
-  /* Mask gradient for fade effect on edges */
+  height: 560px;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.18);
+}
+
+.centerImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.imageOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 35%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+}
+
+.imageContent {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 2rem;
+}
+
+.imageQuote {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.45;
+  margin: 0 0 1rem;
+}
+
+.imageAuthor {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.imageAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.imageAuthorText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.imageAuthorName {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.imageAuthorTitle {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ─── RIGHT COLUMN (Stacked Cards) ─── */
+.rightCol {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  /* Vertical fade mask */
   mask-image: linear-gradient(
-    to right,
+    to bottom,
     transparent 0%,
-    black 5%,
-    black 95%,
+    black 14%,
+    black 82%,
     transparent 100%
   );
   -webkit-mask-image: linear-gradient(
-    to right,
+    to bottom,
     transparent 0%,
-    black 5%,
-    black 95%,
+    black 14%,
+    black 82%,
     transparent 100%
   );
+  max-height: 580px;
+  overflow: hidden;
 }
 
-.track {
-  display: flex;
-  gap: 1.5rem;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding-bottom: 2rem; /* Space for shadow */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
-  scroll-behavior: smooth;
-}
-
-.track::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
-}
-
+/* ─── SMALL CARDS ─── */
 .card {
-  scroll-snap-align: start;
-  flex: 0 0 400px;
-  background-color: #ffffff;
-  border-radius: 1rem;
-  padding: 1.8rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f0f0f0;
+  background: #fff;
+  border-radius: 18px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
-  scrollbar-width: none;
-  gap: 1.2rem;
+  gap: 0.9rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  flex-shrink: 0;
 }
 
-@media (max-width: 900px) {
-  .card {
-    flex: 0 0 350px;
-  }
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 36px rgba(200, 30, 30, 0.1);
 }
 
-@media (max-width: 600px) {
-  .container {
-    padding: 0 1rem;
-  }
-  .headerRow {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1.5rem;
-  }
-  .trackContainer {
-    mask-image: none;
-    -webkit-mask-image: none;
-  }
-  .card {
-    flex: 0 0 85vw;
-    padding: 1.4rem;
-  }
-}
-
-/* Card Internals */
 .cardHeader {
   display: flex;
   justify-content: space-between;
@@ -142,16 +240,19 @@
 
 .stars {
   display: flex;
-  gap: 0.2rem;
+  gap: 0.15rem;
   color: #00b67a;
 }
+
 .date {
-  font-size: 0.85rem;
-  color: #666666;
+  font-size: 0.78rem;
+  color: #aaa;
+  font-weight: 500;
 }
+
 .quote {
-  font-size: 0.95rem;
-  color: #555555;
+  font-size: 0.875rem;
+  color: #444;
   line-height: 1.6;
   margin: 0;
 }
@@ -161,31 +262,129 @@
   justify-content: space-between;
   align-items: center;
   margin-top: auto;
-  padding-top: 0.5rem;
+  padding-top: 0.25rem;
 }
 
 .userInfo {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.65rem;
 }
+
 .avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   object-fit: cover;
   background: #eee;
+  flex-shrink: 0;
 }
+
 .userDetails {
   display: flex;
   flex-direction: column;
+  gap: 0.1rem;
 }
+
 .userName {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #1e1e1e;
-}
-.userTitle {
   font-size: 0.85rem;
-  color: #666666;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.2;
+}
+
+.userTitle {
+  font-size: 0.75rem;
+  color: #888;
+  line-height: 1.2;
+}
+
+.trustpilot {
+  opacity: 0.7;
+}
+
+/* ─── CAROUSEL (mobile / below the grid) ─── */
+.carouselSection {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .carouselSection {
+    display: block;
+    margin-top: 2.5rem;
+  }
+
+  .headerRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .carouselTitle {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e1e1e;
+    margin: 0;
+  }
+
+  .controls {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .btnGroup {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .controlBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid #c81e1e;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #c81e1e;
+  }
+
+  .controlBtn:hover {
+    background-color: #fff0f0;
+  }
+
+  .controlBtn.active {
+    background-color: #c81e1e;
+    color: white;
+  }
+
+  .trackContainer {
+    position: relative;
+    mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+  }
+
+  .track {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 1rem;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-behavior: smooth;
+  }
+
+  .track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .card {
+    scroll-snap-align: start;
+    flex: 0 0 82vw;
+  }
 }

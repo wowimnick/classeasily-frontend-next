@@ -432,21 +432,39 @@ function TimePairCell({ value = [null, null], onChange, disabled }) {
 function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBusinessData, onFieldBlur, onFieldChange }) {
   const [connectLoading, setConnectLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  // useWatch for rendering the day rows — we need the array length/day names
   const businessHours = Form.useWatch("businessHours", form);
   const contactPrivacy = Form.useWatch("contact_privacy", form);
-  const businessHoursSavedRef = React.useRef(false);
+
+  // Stable ref to onFieldChange so the effect below doesn't re-run on every render
+  const onFieldChangeRef = React.useRef(onFieldChange);
+  useEffect(() => { onFieldChangeRef.current = onFieldChange; }, [onFieldChange]);
+
+  // Track whether the initial form population has settled before treating
+  // businessHours changes as user-driven edits worth auto-saving.
+  const initializedRef = React.useRef(false);
+  const pendingTimerRef = React.useRef(null);
 
   useEffect(() => {
-    if (!businessHours || !Array.isArray(businessHours)) return;
-    if (!businessHoursSavedRef.current) {
-      businessHoursSavedRef.current = true;
+    if (!businessHours || !Array.isArray(businessHours) || businessHours.length === 0) return;
+
+    // First non-empty value after mount is the initial data load — skip it.
+    if (!initializedRef.current) {
+      initializedRef.current = true;
       return;
     }
-    const t = setTimeout(() => {
-      onFieldChange?.("businessHours", businessHours);
-    }, 400);
-    return () => clearTimeout(t);
-  }, [businessHours, onFieldChange]);
+
+    // Debounce: cancel any in-flight timer so rapid toggles only fire once settled.
+    if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
+    pendingTimerRef.current = setTimeout(() => {
+      onFieldChangeRef.current?.("businessHours", businessHours);
+    }, 500);
+
+    return () => {
+      if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessHours]); // intentionally omit onFieldChange — using ref instead
 
   const pathname = usePathname();
   const router = useRouter();
@@ -567,6 +585,7 @@ function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBu
         >
           <DayGrid>
             {(businessHours || []).map((day, index) => (
+              // key must be stable (day name), NOT index, so React doesn't confuse rows on re-order
               <DayRow key={day.day}>
                 <DayToggleCol>
                   <Form.Item name={["businessHours", index, "isOpen"]} valuePropName="checked" noStyle>
@@ -575,16 +594,30 @@ function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBu
                   <DayName>{day.day}</DayName>
                 </DayToggleCol>
 
-                {day.isOpen ? (
-                  <Form.Item name={["businessHours", index, "time"]} noStyle>
-                    <TimePairCell />
-                  </Form.Item>
-                ) : (
-                  <ClosedBar>
-                    <Moon size={15} />
-                    Closed
-                  </ClosedBar>
-                )}
+                {/*
+                  CRITICAL: read isOpen from live form state, NOT from the watched `businessHours`
+                  snapshot which may lag by a render cycle. Using Form.Item shouldUpdate ensures
+                  this inner block re-renders synchronously when the Switch fires, preventing the
+                  stale-state mismatch that caused ClosedBar / TimePairCell to show incorrectly
+                  after rapid toggles.
+                */}
+                <Form.Item noStyle shouldUpdate={(prev, curr) =>
+                  prev.businessHours?.[index]?.isOpen !== curr.businessHours?.[index]?.isOpen
+                }>
+                  {({ getFieldValue }) => {
+                    const isOpen = getFieldValue(["businessHours", index, "isOpen"]);
+                    return isOpen ? (
+                      <Form.Item name={["businessHours", index, "time"]} noStyle>
+                        <TimePairCell />
+                      </Form.Item>
+                    ) : (
+                      <ClosedBar>
+                        <Moon size={15} />
+                        Closed
+                      </ClosedBar>
+                    );
+                  }}
+                </Form.Item>
               </DayRow>
             ))}
           </DayGrid>

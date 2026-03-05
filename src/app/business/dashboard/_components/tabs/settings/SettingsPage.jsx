@@ -4,13 +4,14 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   Suspense,
   forwardRef,
   useImperativeHandle,
 } from "react";
 import styled from "styled-components";
 import { Form, Button, Grid } from "antd";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Building, MapPin, SlidersHorizontal, CreditCard, Mail } from "lucide-react";
 import dayjs from "dayjs";
 import "leaflet/dist/leaflet.css";
@@ -221,13 +222,38 @@ const TabLoader = () => (
 
 /* ─── Settings Page Component ────────────────────────────────────── */
 
+const VALID_SETTINGS_TABS = ["general", "location", "preferences", "billing", "email"];
+
 const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addonReturn = false }, ref) => {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [generalForm] = Form.useForm();
   const [locationForm] = Form.useForm();
   const [preferencesForm] = Form.useForm();
-  const [currentTab, setCurrentTab] = useState(defaultTab);
+  const tabFromUrl = searchParams.get("tab");
+  const initialTab = VALID_SETTINGS_TABS.includes(tabFromUrl) ? tabFromUrl : defaultTab;
+  const [currentTab, setCurrentTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
+
+  const setTabWithUrl = useCallback(
+    (key) => {
+      setCurrentTab(key);
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      params.set("tab", key);
+      const query = params.toString();
+      router.replace(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get("tab");
+    if (VALID_SETTINGS_TABS.includes(tabFromUrl) && tabFromUrl !== currentTab) {
+      setCurrentTab(tabFromUrl);
+    }
+  }, [searchParams, currentTab]);
+
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle"); // 'idle' | 'saving' | 'saved'
   const savedTimerRef = React.useRef(null);
@@ -241,6 +267,32 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
   const isMobile = !screens.md;
 
   const hasEmailAddon = addons?.marketplace_email_branding?.active === true;
+
+  const locationInitialData = useMemo(
+    () =>
+      initialBusinessData
+        ? {
+            address: initialBusinessData.businessAddress,
+            businessUnit: initialBusinessData.businessUnit,
+            businessCity: initialBusinessData.businessCity,
+            businessState: initialBusinessData.businessState,
+            businessZipCode: initialBusinessData.businessZipCode,
+            latitude: initialBusinessData.latitude,
+            longitude: initialBusinessData.longitude,
+            hide: initialBusinessData.showExactLocation === false,
+          }
+        : null,
+    [
+      initialBusinessData?.businessAddress,
+      initialBusinessData?.businessUnit,
+      initialBusinessData?.businessCity,
+      initialBusinessData?.businessState,
+      initialBusinessData?.businessZipCode,
+      initialBusinessData?.latitude,
+      initialBusinessData?.longitude,
+      initialBusinessData?.showExactLocation,
+    ]
+  );
 
   const refetchAddons = useCallback(async () => {
     const result = await businessService.getAddons();
@@ -258,11 +310,11 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
   const SAVE_DEBOUNCE_MS = 400;
 
   const savePayload = useCallback(async (payload) => {
-    if (!payload || Object.keys(payload).length === 0) return;
+    if (!payload || Object.keys(payload).length === 0) return false;
     const payloadKey = JSON.stringify(payload);
     const now = Date.now();
     if (lastSavePayloadRef.current === payloadKey && now - lastSaveTimeRef.current < SAVE_DEBOUNCE_MS) {
-      return;
+      return true;
     }
     lastSavePayloadRef.current = payloadKey;
     lastSaveTimeRef.current = now;
@@ -279,34 +331,39 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
           setSaveStatus("idle");
           savedTimerRef.current = null;
         }, 5000);
+        return true;
       } else {
         setSaveStatus("idle");
         message.error(res.error?.detail || res.error || "Failed to save");
+        return false;
       }
     } catch {
       setSaveStatus("idle");
       message.error("Failed to save");
+      return false;
     }
   }, []);
 
-  const buildGeneralPayload = useCallback((form, fieldName) => {
+  const buildGeneralPayload = useCallback((form, fieldName, valueOverride) => {
     const v = form.getFieldValue;
+    const value = valueOverride !== undefined ? valueOverride : v(fieldName);
     if (["social_facebook", "social_instagram", "social_twitter", "social_linkedin"].includes(fieldName)) {
       return {
         social_media_links: {
-          facebook: v("social_facebook") ?? "",
-          instagram: v("social_instagram") ?? "",
-          twitter: v("social_twitter") ?? "",
-          linkedin: v("social_linkedin") ?? "",
+          facebook: fieldName === "social_facebook" ? (value ?? "") : (v("social_facebook") ?? ""),
+          instagram: fieldName === "social_instagram" ? (value ?? "") : (v("social_instagram") ?? ""),
+          twitter: fieldName === "social_twitter" ? (value ?? "") : (v("social_twitter") ?? ""),
+          linkedin: fieldName === "social_linkedin" ? (value ?? "") : (v("social_linkedin") ?? ""),
         },
       };
     }
-    const value = v(fieldName);
-    if (value === undefined) return null;
+    if (value === undefined && valueOverride === undefined) return null;
     const payload = {};
     const apiKey = fieldName;
     if (fieldName === "founding_year" && (value === null || value === undefined || value === "")) {
       payload[apiKey] = null;
+    } else if (fieldName === "tags_keywords") {
+      payload[apiKey] = Array.isArray(value) ? value : (v("tags_keywords") || []);
     } else {
       payload[apiKey] = value;
     }
@@ -600,6 +657,17 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
     }).catch(() => { /* validation failed, form shows error; don't save */ });
   }, [buildGeneralPayload, generalForm, savePayload]);
 
+  const onGeneralFieldChange = useCallback((fieldName, value) => {
+    const fieldsToValidate = ["social_facebook", "social_instagram", "social_twitter", "social_linkedin"].includes(fieldName)
+      ? ["social_facebook", "social_instagram", "social_twitter", "social_linkedin"]
+      : [fieldName];
+    generalForm.setFieldsValue({ [fieldName]: value });
+    generalForm.validateFields(fieldsToValidate).then(() => {
+      const payload = buildGeneralPayload(generalForm, fieldName, value);
+      if (payload) savePayload(payload);
+    }).catch(() => { /* validation failed */ });
+  }, [buildGeneralPayload, generalForm, savePayload]);
+
   const onLocationFieldBlur = useCallback((fieldName) => {
     const fieldsToValidate = fieldName === "location" || fieldName === "businessUnit"
       ? [fieldName]
@@ -610,9 +678,13 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
     }).catch(() => {});
   }, [buildLocationPayload, locationForm, savePayload]);
 
-  const onLocationVisibilityChange = useCallback((showExact) => {
-    savePayload({ showExactLocation: showExact });
-  }, [savePayload]);
+  const onLocationVisibilityChange = useCallback(
+    async (showExact) => {
+      const ok = await savePayload({ showExactLocation: showExact });
+      if (ok) fetchBusinessData();
+    },
+    [savePayload, fetchBusinessData]
+  );
 
   const onPreferencesFieldChange = useCallback((fieldName, value) => {
     const fieldsToValidate = fieldName === "businessHours" ? ["businessHours"] : [fieldName];
@@ -637,11 +709,14 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
       const result = await uploadService.uploadFile(logoFile, "business_image");
       if (cancelled) return;
       if (result.success && result.s3_key) {
-        await savePayload({ businessImage: result.s3_key });
-        const url = result.public_url || (typeof window !== "undefined" && process.env.NEXT_PUBLIC_CDN_URL
-          ? `${process.env.NEXT_PUBLIC_CDN_URL.replace(/\/$/, "")}/${result.s3_key}`
-          : null);
-        if (url) setLogoUrl(url);
+        const saved = await savePayload({ businessImage: result.s3_key });
+        if (cancelled) return;
+        if (saved) {
+          const url = result.public_url || (typeof window !== "undefined" && process.env.NEXT_PUBLIC_CDN_URL
+            ? `${process.env.NEXT_PUBLIC_CDN_URL.replace(/\/$/, "")}/${result.s3_key}`
+            : null);
+          if (url) setLogoUrl(url);
+        }
       } else {
         message.error(result.error || "Logo upload failed");
       }
@@ -696,7 +771,7 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
               key={tab.key}
               $active={currentTab === tab.key}
               $compactRight={emailTab.length > 0 && index === mainTabs.length - 1}
-              onClick={() => setCurrentTab(tab.key)}
+              onClick={() => setTabWithUrl(tab.key)}
             >
               {tab.icon}
               {tab.label}
@@ -709,7 +784,7 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
                 <TabButton
                   key={tab.key}
                   $active={currentTab === tab.key}
-                  onClick={() => setCurrentTab(tab.key)}
+                  onClick={() => setTabWithUrl(tab.key)}
                 >
                   {tab.icon}
                   <TabLabelGradient>{tab.label}</TabLabelGradient>
@@ -746,6 +821,7 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
                       setLogoFile={setLogoFile}
                       isMobile={isMobile}
                       onFieldBlur={onGeneralFieldBlur}
+                      onFieldChange={onGeneralFieldChange}
                       onLogoRemove={onLogoRemove}
                     />
                   </Suspense>
@@ -754,16 +830,7 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
                   <Suspense fallback={<TabLoader />}>
                     <LocationSettingsTab
                       form={locationForm}
-                      initialData={{
-                        address: initialBusinessData?.businessAddress,
-                        businessUnit: initialBusinessData?.businessUnit,
-                        city: initialBusinessData?.businessCity,
-                        state: initialBusinessData?.businessState,
-                        zipCode: initialBusinessData?.businessZipCode,
-                        lat: initialBusinessData?.latitude,
-                        lon: initialBusinessData?.longitude,
-                        hide: initialBusinessData?.showExactLocation === false,
-                      }}
+                      initialData={locationInitialData}
                       onFieldBlur={onLocationFieldBlur}
                       onVisibilityChange={onLocationVisibilityChange}
                     />

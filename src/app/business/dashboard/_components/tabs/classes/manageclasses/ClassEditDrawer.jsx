@@ -138,6 +138,7 @@ const StyledDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
   z-index: 1049;
 `;
 
@@ -3453,6 +3454,7 @@ const ClassEditDrawer = ({
                               })}
                             </AnimatePresence>
 
+                            {/* Multiple tiers hidden for now
                             <FooterActions>
                               {hasSingleOption ? (
                                 <AddOptionLink
@@ -3475,6 +3477,7 @@ const ClassEditDrawer = ({
                                 </Button>
                               )}
                             </FooterActions>
+                            */}
                           </>
                           );
                         }}
@@ -3534,7 +3537,6 @@ const ClassEditDrawer = ({
                 </StyledDrawerContent>
               ) : (
                 <DesktopDrawerContent>
-                  <DrawerHandle />
                   {renderDrawerContent()}
                 </DesktopDrawerContent>
               )}

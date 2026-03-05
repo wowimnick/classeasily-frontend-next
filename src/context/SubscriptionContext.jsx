@@ -69,8 +69,9 @@ export function SubscriptionProvider({ children }) {
   const subscribe = useCallback(
     async (planId) => {
       const result = await businessService.subscribeWidgetPlan(planId);
-      // Only update subscription when no payment is required (switch complete). If requires_payment, caller will show modal and refetch after payment.
-      if (result.success && result.data?.subscription && !result.data?.requires_payment) {
+      // Update subscription when switch completed without payment (downgrade/sync) so UI updates immediately.
+      // If requires_payment, caller shows modal and refetches after payment success.
+      if (result.success && result.data?.subscription != null && !result.data?.requires_payment) {
         setSubscription(result.data.subscription);
       }
       return result;

@@ -833,12 +833,13 @@ const StyledMenu = styled(Menu)`
   }
 
   .ant-dropdown-menu-item-danger {
-    color: #ef4444 !important;
+    color: #b91c1c !important;
     &:hover {
-      background: #fef2f2;
+      background: #fef2f2 !important;
+      color: #b91c1c !important;
     }
     .lucide {
-      color: #ef4444;
+      color: #b91c1c;
     }
   }
 `;
@@ -1810,7 +1811,6 @@ function ClassManagementContent(props) {
             <VaulDrawer.Portal>
               <StyledScheduleDrawerOverlay />
               <DesktopDrawerContent>
-                <ScheduleDrawerHandle />
                 <DrawerHeader>
                   <Title level={4} style={{ margin: 0 }}>
                     Create New Experience

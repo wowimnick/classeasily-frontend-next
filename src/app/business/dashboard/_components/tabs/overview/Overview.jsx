@@ -138,16 +138,89 @@ const getErrorMessage = (error) => {
 /* --- Styled Components --- */
 
 const DashboardWrapper = styled.div`
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0;
+  padding: 12px;
+  min-height: 100%;
+  @media (max-width: 768px) {
+    padding: 0px;
+  }
+`;
+
+/* ─── Gradient strip: background layer, no flow ───────────────────────────── */
+const OverviewTopWrap = styled.div`
+  position: absolute;
+  top: 0;
+  left: 50%;
+  margin-left: -50vw;
+  width: 100vw;
+  height: 320px;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  @media (max-width: 640px) {
+    height: 200px;
+  }
+`;
+
+const OverviewGradientStrip = styled.div`
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 280px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-12deg);
+  overflow: visible;
+  border-radius: 4px;
+  pointer-events: none;
+  @media (max-width: 900px) {
+    height: 200px;
+    width: 110%;
+    left: -5%;
+  }
+  @media (max-width: 640px) {
+    height: 160px;
+  }
+`;
+
+const OverviewGradientStripInner = styled.div`
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+`;
+
+const OverviewGradientCanvas = styled.canvas`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  --gradient-color-1: #f9fafb;
+  --gradient-color-2: #fc4056;
+  --gradient-color-3: #f9fafc;
+  --gradient-color-4: #fc4056;
+`;
+
+const OverviewContentLayer = styled.div`
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 16px;
+  border: 1px solid rgba(229, 231, 235, 0.8);
   padding: 24px;
-  background-color: #ffffff;
   @media (max-width: 768px) {
     padding: 16px;
   }
 `;
-
 
 const StatsGrid = styled.div`
   display: grid;
@@ -1203,6 +1276,22 @@ const Overview = forwardRef((props, ref) => {
     setUserTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
   }, []);
 
+  useEffect(() => {
+    const id = "overview-gradient-canvas";
+    const run = () => {
+      import("stripe-gradient")
+        .then(({ Gradient }) => {
+          const canvas = document.getElementById(id);
+          if (!canvas || !canvas.getContext) return;
+          const gradient = new Gradient();
+          gradient.initGradient(`#${id}`);
+        })
+        .catch(() => {});
+    };
+    const t = setTimeout(run, 0);
+    return () => clearTimeout(t);
+  }, []);
+
   const [scheduleForm] = Form.useForm();
   const [editingScheduleId, setEditingScheduleId] = useState(null);
   const [scheduleEditDrawer, setScheduleEditDrawer] = useState({
@@ -1388,6 +1477,15 @@ const Overview = forwardRef((props, ref) => {
 
   return (
     <DashboardWrapper>
+        <OverviewTopWrap>
+          <OverviewGradientStrip>
+            <OverviewGradientStripInner>
+              <OverviewGradientCanvas id="overview-gradient-canvas" data-transition-in />
+            </OverviewGradientStripInner>
+          </OverviewGradientStrip>
+        </OverviewTopWrap>
+
+        <OverviewContentLayer>
         {/* ── Breadcrumb ── */}
         <DashboardBreadcrumb title="Dashboard Overview" />
 
@@ -2038,6 +2136,8 @@ const Overview = forwardRef((props, ref) => {
             </ContentListCard>
           </Col>
         </GridSection>
+
+        </OverviewContentLayer>
 
         <ScheduleEditDrawer
           open={scheduleEditDrawer.visible}

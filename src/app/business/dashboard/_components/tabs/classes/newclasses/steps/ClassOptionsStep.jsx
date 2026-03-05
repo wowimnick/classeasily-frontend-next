@@ -1440,6 +1440,7 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                 })}
               </AnimatePresence>
 
+              {/* Multiple tiers hidden for now
               <FooterActions>
                 {hasSingleOption ? (
                   <AddOptionLink
@@ -1461,6 +1462,7 @@ const ClassOptionsStep = ({ onValidatedNext }) => {
                   </Button>
                 )}
               </FooterActions>
+              */}
             </>
           )}
         </Form.List>

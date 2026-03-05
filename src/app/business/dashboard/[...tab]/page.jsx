@@ -22,6 +22,7 @@ import WidgetCustomizer from "../_components/tabs/widget/WidgetCustomizer";
 import Guests from "../_components/tabs/students/Guests";
 import BusinessMessages from "../_components/tabs/messages/BusinessMessages";
 import SettingsPage from "../_components/tabs/settings/SettingsPage";
+import TabGlassWrapper from "../_components/TabGlassWrapper";
 
 export default function DashboardPage() {
   const params = useParams();
@@ -32,12 +33,13 @@ export default function DashboardPage() {
   // Calculate key
   const activeKey = params.tab ? params.tab.join("/") : "overview";
 
-  const hasWidgetPlan = Boolean(
+  const planId = (subscription?.planId ?? subscription?.plan_id ?? "").toString().toLowerCase();
+  const hasActiveSubscription =
     subscription?.status &&
-      ["active", "trialing"].includes(subscription.status) &&
-      subscription?.planId &&
-      WIDGET_TAB_PLAN_IDS.includes((subscription.planId || "").toLowerCase())
-  );
+    ["active", "trialing"].includes(subscription.status) &&
+    planId &&
+    WIDGET_TAB_PLAN_IDS.includes(planId);
+  const hasWidgetPlan = !widgetSubscriptionRequired || Boolean(hasActiveSubscription);
 
   // When user has no widget plan, redirect away from widget tab (e.g. direct URL)
   useEffect(() => {
@@ -57,15 +59,21 @@ export default function DashboardPage() {
     case "bookings/active":
     case "bookings/history":
       componentToRender = (
-        <BookingsCombined
-          defaultActiveKey={
-            activeKey === "bookings/history" ? "history" : "active"
-          }
-        />
+        <TabGlassWrapper>
+          <BookingsCombined
+            defaultActiveKey={
+              activeKey === "bookings/history" ? "history" : "active"
+            }
+          />
+        </TabGlassWrapper>
       );
       break;
     case "listings":
-      componentToRender = <ClassManagement />;
+      componentToRender = (
+        <TabGlassWrapper>
+          <ClassManagement />
+        </TabGlassWrapper>
+      );
       break;
     case "schedules": {
       const classIdParam = searchParams.get("classId");
@@ -78,33 +86,67 @@ export default function DashboardPage() {
       break;
     }
     case "reviews":
-      componentToRender = <BusinessReviews />;
+      componentToRender = (
+        <TabGlassWrapper>
+          <BusinessReviews />
+        </TabGlassWrapper>
+      );
       break;
     case "guests":
-      componentToRender = <Guests />;
+      componentToRender = (
+        <TabGlassWrapper>
+          <Guests />
+        </TabGlassWrapper>
+      );
       break;
     case "staff":
-      componentToRender = <Staff />;
+      componentToRender = (
+        <TabGlassWrapper>
+          <Staff />
+        </TabGlassWrapper>
+      );
       break;
     case "messages":
-      componentToRender = <BusinessMessages />;
+      componentToRender = (
+        <TabGlassWrapper>
+          <BusinessMessages />
+        </TabGlassWrapper>
+      );
       break;
     case "revenue":
-      componentToRender = <Revenue />;
+      componentToRender = (
+        <TabGlassWrapper>
+          <Revenue />
+        </TabGlassWrapper>
+      );
       break;
     case "payouts":
-      componentToRender = <Payouts />;
+      componentToRender = (
+        <TabGlassWrapper>
+          <Payouts />
+        </TabGlassWrapper>
+      );
       break;
     case "trends":
-      componentToRender = <BookingTrends />;
+      componentToRender = (
+        <TabGlassWrapper>
+          <BookingTrends />
+        </TabGlassWrapper>
+      );
       break;
     case "discounts":
-      componentToRender = <Discounts />;
+      componentToRender = (
+        <TabGlassWrapper>
+          <Discounts />
+        </TabGlassWrapper>
+      );
       break;
     case "widget": {
       const showWidget = !subLoading && hasWidgetPlan;
       componentToRender = showWidget ? (
-        <WidgetCustomizer />
+        <TabGlassWrapper>
+          <WidgetCustomizer />
+        </TabGlassWrapper>
       ) : subLoading ? (
         <div style={{ padding: "40px 0", textAlign: "center", color: "#666" }}>
           Loading…

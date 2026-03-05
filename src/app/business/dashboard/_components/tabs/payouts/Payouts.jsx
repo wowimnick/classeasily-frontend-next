@@ -1702,7 +1702,6 @@ const Payouts = () => {
               </StyledDrawerContent>
             ) : (
               <DesktopDrawerContent>
-                <DrawerHandle />
                 <DesktopDrawerHeader>
                   <DesktopDrawerTitle>
                     <Box size={15} style={{ color: "#d1d5db" }} />

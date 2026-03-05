@@ -670,9 +670,6 @@ export default function WidgetCustomizer() {
       .finally(() => setLoading(false));
   }, []);
 
-  const widgetPlanId = (data?.widget_subscription?.planId || "").toLowerCase();
-  const canUseEmailBranding = widgetPlanId === "growth" || widgetPlanId === "advanced";
-
   const handleSave = () => {
     setSaving(true);
     const hex = (v) => (normalizeHex(v) || v);
@@ -686,23 +683,11 @@ export default function WidgetCustomizer() {
       specificClassId: form.specificClassId || undefined,
       allowed_widget_origins: form.allowed_widget_origins,
     };
-    if (canUseEmailBranding && form.emailBranding) {
-      payload.widget_email_branding = {
-        logo_url: (form.emailBranding.logo_url || "").trim() || undefined,
-        primary_color: (form.emailBranding.primary_color || "").trim() || undefined,
-        footer_text: (form.emailBranding.footer_text || "").trim() || undefined,
-        confirmation_message: (form.emailBranding.confirmation_message || "").trim() || undefined,
-      };
-    }
     businessService.updateWidgetConfig(payload)
       .then((res) => {
         if (res.success) {
           message.success("Widget settings saved.");
-          setData((d) => (d ? {
-          ...d,
-          config: { ...d.config, ...payload },
-          widget_email_branding: payload.widget_email_branding ?? d.widget_email_branding,
-        } : null));
+          setData((d) => (d ? { ...d, config: { ...d.config, ...payload } } : null));
         } else {
           antMessage.error(res.error || "Failed to save");
         }
@@ -1010,66 +995,6 @@ export default function WidgetCustomizer() {
           Without <code style={{ background: "#f3f4f6", padding: "1px 4px", borderRadius: 3 }}>https://</code>. ClassEasily domains are always allowed.
         </div>
       </SettingsCard>
-
-      {/* Email branding (Growth/Advanced only) */}
-      {canUseEmailBranding && (
-        <SettingsCard
-          title="Email branding"
-          subtitle="Personalize confirmation and reminder emails sent to guests who book via your widget (logo, colors, footer)."
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div>
-              <FieldLabel>Logo URL</FieldLabel>
-              <Input
-                value={form.emailBranding?.logo_url ?? ""}
-                onChange={(e) => setForm((f) => ({
-                  ...f,
-                  emailBranding: { ...(f.emailBranding || {}), logo_url: e.target.value },
-                }))}
-                placeholder="https://yoursite.com/logo.png"
-                size="middle"
-              />
-            </div>
-            <div>
-              <ColorRow
-                label="Primary color (emails)"
-                value={form.emailBranding?.primary_color ?? ""}
-                onChange={(v) => setForm((f) => ({
-                  ...f,
-                  emailBranding: { ...(f.emailBranding || {}), primary_color: v },
-                }))}
-                tooltip="Accent color used in the email (e.g. buttons, headings)."
-              />
-            </div>
-            <div>
-              <FieldLabel>Footer text</FieldLabel>
-              <Input.TextArea
-                value={form.emailBranding?.footer_text ?? ""}
-                onChange={(e) => setForm((f) => ({
-                  ...f,
-                  emailBranding: { ...(f.emailBranding || {}), footer_text: e.target.value },
-                }))}
-                placeholder="Optional custom footer (e.g. © 2025 Your Studio)."
-                rows={2}
-                size="middle"
-              />
-            </div>
-            <div>
-              <FieldLabel>Custom confirmation / reminder message</FieldLabel>
-              <Input.TextArea
-                value={form.emailBranding?.confirmation_message ?? ""}
-                onChange={(e) => setForm((f) => ({
-                  ...f,
-                  emailBranding: { ...(f.emailBranding || {}), confirmation_message: e.target.value },
-                }))}
-                placeholder="Optional short message added to confirmation and reminder emails."
-                rows={3}
-                size="middle"
-              />
-            </div>
-          </div>
-        </SettingsCard>
-      )}
 
     </div>
   );

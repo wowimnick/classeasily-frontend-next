@@ -200,7 +200,7 @@ const StyledTagsSelect = styled(Select)`
 
 /* ─── Component ──────────────────────────────────────────────────── */
 
-const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile, onFieldBlur, onLogoRemove }) => {
+const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile, onFieldBlur, onFieldChange, onLogoRemove }) => {
   const handleLogoChange = async (file) => {
     const fileExtension = file.name.toLowerCase().split(".").pop();
     const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
@@ -326,7 +326,11 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile, 
                 <Type />,
                 "Best describes your organization",
                 <Form.Item name="businessType" rules={[{ required: true, message: "Required" }]}>
-                  <StyledSelect placeholder="Select type" onBlur={() => onFieldBlur?.("businessType")}>
+                  <StyledSelect
+                    placeholder="Select type"
+                    onBlur={() => onFieldBlur?.("businessType")}
+                    onChange={(val) => onFieldChange?.("businessType", val)}
+                  >
                     <Option value="individual">Individual Host</Option>
                     <Option value="tour-operator">Tour Operator</Option>
                     <Option value="experience-group">Experience Group</Option>
@@ -394,7 +398,11 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile, 
                 <Users />,
                 "How customers should primarily reach you",
                 <Form.Item name="preferredContact" rules={[{ required: true, message: "Required" }]}>
-                  <StyledSelect placeholder="Select method" onBlur={() => onFieldBlur?.("preferredContact")}>
+                  <StyledSelect
+                    placeholder="Select method"
+                    onBlur={() => onFieldBlur?.("preferredContact")}
+                    onChange={(val) => onFieldChange?.("preferredContact", val)}
+                  >
                     <Option value="email">Email</Option>
                     <Option value="phone">Phone</Option>
                     <Option value="text">Text</Option>
@@ -475,6 +483,7 @@ const GeneralSettingsTab = ({ form, logoUrl, setLogoUrl, setLogoFile, isMobile, 
                   placeholder="e.g., Yoga, Beginner Friendly, Art"
                   tokenSeparators={[","]}
                   onBlur={() => onFieldBlur?.("tags_keywords")}
+                  onChange={(val) => onFieldChange?.("tags_keywords", val)}
                 />
               </Form.Item>
             )}

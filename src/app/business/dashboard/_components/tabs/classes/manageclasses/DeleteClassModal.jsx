@@ -97,6 +97,8 @@ const StyledModal = styled(Modal)`
     display: flex;
     gap: 12px;
     justify-content: flex-end;
+    padding: 16px 24px;
+    border-top: 1px solid #f0f0f0;
 
     @media (max-width: 480px) {
       padding: 16px;

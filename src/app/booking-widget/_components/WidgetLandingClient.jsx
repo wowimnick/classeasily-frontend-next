@@ -1940,8 +1940,6 @@ const CurrentPlanBadge = styled.span`
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: #0d9488;
-  background: rgba(13, 148, 136, 0.1);
-  padding: 4px 10px;
   border-radius: 999px;
   margin-bottom: 12px;
 `;

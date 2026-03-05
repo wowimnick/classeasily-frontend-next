@@ -452,56 +452,63 @@ const BusinessSettingsContent = forwardRef(
     }, [currentTab]);
 
     const handleSaveAllChanges = async () => {
-      try {
-        const [generalValues, locationValues, preferencesValues] =
-          await Promise.all([
-            generalForm.validateFields(),
-            locationForm.validateFields(),
-            preferencesForm.validateFields(),
-          ]);
+      // Validate all three forms independently so we can give precise error feedback
+      // per tab rather than a single opaque "validation failed" message.
+      let generalValues, locationValues, preferencesValues;
 
+      const validationErrors = [];
+
+      try {
+        generalValues = await generalForm.validateFields();
+      } catch (err) {
+        validationErrors.push("General");
+      }
+      try {
+        locationValues = await locationForm.validateFields();
+      } catch (err) {
+        validationErrors.push("Location");
+      }
+      try {
+        preferencesValues = await preferencesForm.validateFields();
+      } catch (err) {
+        validationErrors.push("Preferences");
+      }
+
+      if (validationErrors.length > 0) {
+        message.error(`Please fix errors in: ${validationErrors.join(", ")} tab${validationErrors.length > 1 ? "s" : ""}.`);
+        // Switch to the first failing tab so the user can see the errors
+        const tabKey = validationErrors[0].toLowerCase();
+        setCurrentTab(tabKey);
+        onTabChangeExternal(tabKey);
+        return false;
+      }
+
+      try {
         let businessImageS3Key = null;
         if (logoFile) {
-          const uploadResult = await uploadService.uploadFile(
-            logoFile,
-            "business_image"
-          );
+          const uploadResult = await uploadService.uploadFile(logoFile, "business_image");
           if (uploadResult.success) {
             businessImageS3Key = uploadResult.s3_key;
           } else {
             message.error(`Logo upload failed: ${uploadResult.error}`);
-            return;
+            return false;
           }
         }
 
         const masterFormData = new FormData();
 
+        // ── General ──
         masterFormData.append("businessName", generalValues.businessName);
         masterFormData.append("businessType", generalValues.businessType);
-        masterFormData.append(
-          "businessDescription",
-          generalValues.businessDescription
-        );
-        masterFormData.append(
-          "studentContactEmail",
-          generalValues.studentContactEmail
-        );
-        masterFormData.append(
-          "studentContactPhone",
-          generalValues.studentContactPhone
-        );
+        masterFormData.append("businessDescription", generalValues.businessDescription);
+        masterFormData.append("studentContactEmail", generalValues.studentContactEmail);
+        masterFormData.append("studentContactPhone", generalValues.studentContactPhone);
         if (generalValues.website)
           masterFormData.append("website", generalValues.website);
         if (generalValues.preferredContact)
-          masterFormData.append(
-            "preferredContact",
-            generalValues.preferredContact
-          );
+          masterFormData.append("preferredContact", generalValues.preferredContact);
         if (generalValues.founding_year != null)
-          masterFormData.append(
-            "founding_year",
-            generalValues.founding_year.toString()
-          );
+          masterFormData.append("founding_year", generalValues.founding_year.toString());
 
         const socialMediaLinks = {
           facebook: generalValues.social_facebook || "",
@@ -509,99 +516,56 @@ const BusinessSettingsContent = forwardRef(
           twitter: generalValues.social_twitter || "",
           linkedin: generalValues.social_linkedin || "",
         };
-        masterFormData.append(
-          "social_media_links",
-          JSON.stringify(socialMediaLinks)
-        );
-        masterFormData.append(
-          "tags_keywords",
-          JSON.stringify(generalValues.tags_keywords || [])
-        );
+        masterFormData.append("social_media_links", JSON.stringify(socialMediaLinks));
+        masterFormData.append("tags_keywords", JSON.stringify(generalValues.tags_keywords || []));
 
         if (businessImageS3Key) {
           masterFormData.append("businessImage", businessImageS3Key);
-        } else if (
-          logoUrl === "" &&
-          initialBusinessData?.business_image_medium_url
-        ) {
+        } else if (logoUrl === "" && initialBusinessData?.business_image_medium_url) {
           masterFormData.append("businessImage", "");
         }
 
-        masterFormData.append("businessAddress", locationValues.location);
-        if (locationValues.businessUnit)
-          masterFormData.append("businessUnit", locationValues.businessUnit);
-        if (locationValues.city)
-          masterFormData.append("businessCity", locationValues.city);
-        if (locationValues.state)
-          masterFormData.append("businessState", locationValues.state);
-        if (locationValues.zipCode)
-          masterFormData.append("businessZipCode", locationValues.zipCode);
+        // ── Location ──
+        masterFormData.append("businessAddress", locationValues.location || "");
+        // Always send businessUnit — empty string clears it
+        masterFormData.append("businessUnit", locationValues.businessUnit || "");
+        if (locationValues.city)   masterFormData.append("businessCity",    locationValues.city);
+        if (locationValues.state)  masterFormData.append("businessState",   locationValues.state);
+        if (locationValues.zipCode) masterFormData.append("businessZipCode", locationValues.zipCode);
 
-        if (locationValues.latitude && locationValues.longitude) {
-          masterFormData.append("latitude", locationValues.latitude.toString());
-          masterFormData.append(
-            "longitude",
-            locationValues.longitude.toString()
-          );
+        // Guard against 0,0 being treated as falsy — use explicit null check
+        const lat = locationValues.latitude;
+        const lon = locationValues.longitude;
+        if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
+          masterFormData.append("latitude",  lat.toString());
+          masterFormData.append("longitude", lon.toString());
         }
-        masterFormData.append(
-          "showExactLocation",
-          String(!locationValues.saltLocation)
-        );
+        masterFormData.append("showExactLocation", String(!locationValues.saltLocation));
 
-        if (
-          preferencesValues.businessHours &&
-          preferencesValues.businessHours.length > 0
-        ) {
-          const formattedHours = preferencesValues.businessHours.map((day) => ({
-            day: day.day,
-            isOpen: day.isOpen,
-            open:
-              day.isOpen && day.time && day.time[0]
-                ? day.time[0].format("HH:mm")
-                : null,
-            close:
-              day.isOpen && day.time && day.time[1]
-                ? day.time[1].format("HH:mm")
-                : null,
-          }));
-          masterFormData.append(
-            "businessHours",
-            JSON.stringify(formattedHours)
-          );
+        // ── Preferences / Business Hours ──
+        if (preferencesValues.businessHours && preferencesValues.businessHours.length > 0) {
+          const formattedHours = preferencesValues.businessHours.map((day) => {
+            // Defensive: treat missing/invalid time values gracefully
+            const hasTime = day.isOpen && Array.isArray(day.time) && day.time[0] && day.time[1];
+            return {
+              day: day.day,
+              isOpen: Boolean(day.isOpen),
+              open:  hasTime ? day.time[0].format("HH:mm") : null,
+              close: hasTime ? day.time[1].format("HH:mm") : null,
+            };
+          });
+          masterFormData.append("businessHours", JSON.stringify(formattedHours));
         }
-        masterFormData.append(
-          "business_timezone",
-          preferencesValues.business_timezone
-        );
-        masterFormData.append(
-          "contact_privacy",
-          preferencesValues.contact_privacy
-        );
-        masterFormData.append(
-          "newBookingNotification",
-          String(preferencesValues.newBookingNotification)
-        );
-        masterFormData.append(
-          "cancellationNotification",
-          String(preferencesValues.cancellationNotification)
-        );
-        masterFormData.append(
-          "reminderNotification",
-          String(preferencesValues.reminderNotification)
-        );
-        masterFormData.append(
-          "scheduleExpiryNotification",
-          String(preferencesValues.scheduleExpiryNotification)
-        );
-        masterFormData.append(
-          "smsNotifications",
-          String(preferencesValues.smsNotifications)
-        );
 
-        const response = await businessService.updateMyBusinessProfile(
-          masterFormData
-        );
+        masterFormData.append("business_timezone",          preferencesValues.business_timezone);
+        masterFormData.append("contact_privacy",            preferencesValues.contact_privacy);
+        masterFormData.append("newBookingNotification",     String(preferencesValues.newBookingNotification ?? true));
+        masterFormData.append("cancellationNotification",   String(preferencesValues.cancellationNotification ?? true));
+        masterFormData.append("reminderNotification",       String(preferencesValues.reminderNotification ?? true));
+        masterFormData.append("scheduleExpiryNotification", String(preferencesValues.scheduleExpiryNotification ?? true));
+        masterFormData.append("smsNotifications",           String(preferencesValues.smsNotifications ?? false));
+
+        const response = await businessService.updateMyBusinessProfile(masterFormData);
 
         if (response.success) {
           message.success("All settings updated successfully");
@@ -610,15 +574,13 @@ const BusinessSettingsContent = forwardRef(
           return true;
         } else {
           message.error(
-            response.error?.detail ||
-              response.error ||
-              "Failed to save changes."
+            response.error?.detail || response.error || "Failed to save changes."
           );
           return false;
         }
-      } catch (errorInfo) {
-        message.error("Please correct the highlighted errors before saving.");
-        console.log("Validation Failed:", errorInfo);
+      } catch (err) {
+        console.error("Save error:", err);
+        message.error("An unexpected error occurred while saving. Please try again.");
         return false;
       }
     };
@@ -825,7 +787,6 @@ const BusinessSettings = forwardRef((props, ref) => {
               </StyledDrawerContent>
             ) : (
               <DesktopDrawerContent>
-                <DrawerHandle />
                 <DrawerHeader>
                   <DrawerTitle level={4}>Business Settings</DrawerTitle>
                   <CloseButton
