@@ -45,6 +45,12 @@ export const API_ENDPOINTS = {
     "/my-business/widget-subscription/reactivate/",
   MY_BUSINESS_WIDGET_SUBSCRIPTION_INVOICES:
     "/my-business/widget-subscription/invoices/",
+  MY_BUSINESS_WIDGET_SUBSCRIPTION_SETUP_INTENT:
+    "/my-business/widget-subscription/setup-intent/",
+  MY_BUSINESS_WIDGET_SUBSCRIPTION_SET_DEFAULT_PAYMENT_METHOD:
+    "/my-business/widget-subscription/set-default-payment-method/",
+  MY_BUSINESS_WIDGET_SUBSCRIPTION_DEFAULT_PAYMENT_METHOD:
+    "/my-business/widget-subscription/default-payment-method/",
 
   MY_BUSINESS_ADDONS: "/my-business/addons/",
   MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_CHECKOUT:
@@ -795,6 +801,63 @@ export const businessService = {
         error.response?.data?.error ||
         error.response?.data?.detail ||
         "Failed to load invoices.";
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  /** Create SetupIntent for updating saved payment method (no charge). Returns client_secret. */
+  createUpdatePaymentMethodSetupIntent: async () => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION_SETUP_INTENT,
+      );
+      return { success: true, client_secret: response.data?.client_secret };
+    } catch (error) {
+      console.error(
+        "Error creating update payment method setup intent:",
+        error.response?.data || error,
+      );
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to prepare payment form.";
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  /** Set default payment method after confirmSetup (payment_method id from Stripe). */
+  setDefaultPaymentMethod: async ({ payment_method }) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION_SET_DEFAULT_PAYMENT_METHOD,
+        { payment_method },
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to update payment method.";
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  /** Get masked default payment method (brand, last4) for UI, or null. */
+  getDefaultPaymentMethod: async () => {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION_DEFAULT_PAYMENT_METHOD,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Error fetching default payment method:",
+        error.response?.data || error,
+      );
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to load payment method.";
       return { success: false, error: errorMessage };
     }
   },

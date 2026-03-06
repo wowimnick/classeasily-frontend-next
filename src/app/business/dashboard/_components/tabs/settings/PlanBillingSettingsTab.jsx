@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { Button, Modal, message as antMessage } from "antd";
 import {
-  ArrowRight, Loader2, RefreshCw, Mail, Lock,
+  ArrowRight, ArrowUp, ArrowDown, Loader2, RefreshCw, Mail, Lock,
   CreditCard, ChevronDown, Check, Download,
   Search, SlidersHorizontal, Package,
 } from "lucide-react";
@@ -578,6 +578,142 @@ const ActionGroup = styled.div`
   }
 `;
 
+// ─── redesigned plan & billing card ──────────────────────────────────────────
+const PlanBillingCard = styled.div`
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(229, 231, 235, 0.8);
+  border-radius: 12px;
+  overflow: hidden;
+  animation: ${fadeUp} 0.2s ease;
+`;
+
+const PlanBillingHeader = styled.div`
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid ${T.border};
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+`;
+
+const PlanBillingHeaderNote = styled(SectionSub)`
+  margin-left: auto;
+  font-size: 12px;
+
+  @media (max-width: 640px) {
+    margin-left: 0;
+    margin-top: 2px;
+  }
+`;
+
+const SectionDivider = styled.div`
+  height: 1px;
+  background: ${T.border};
+  margin: 8px 0;
+`;
+
+const PlanBillingBody = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  divide-x: 1px solid ${T.border};
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const PlanBillingSection = styled.div`
+  padding: 18px 20px;
+  border-right: ${({ $noBorder }) => $noBorder ? "none" : `1px solid ${T.border}`};
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: 640px) {
+    border-right: none;
+    border-bottom: ${({ $noBorder }) => $noBorder ? "none" : `1px solid ${T.border}`};
+  }
+`;
+
+const PlanBillingSectionLabel = styled.div`
+  font-size: 11px;
+  font-weight: 600;
+  color: ${T.faint};
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+`;
+
+const PlanBillingPlanName = styled.div`
+  font-size: 17px;
+  font-weight: 700;
+  color: ${T.text};
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const PlanBillingPlanPrice = styled.div`
+  font-size: 13px;
+  color: ${T.sub};
+  margin-top: 2px;
+`;
+
+const PlanBillingActions = styled.div`
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+`;
+
+const PaymentMethodDisplay = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+`;
+
+const CardIconWrap = styled.div`
+  width: 36px;
+  height: 24px;
+  background: ${T.bg};
+  border: 1px solid ${T.border};
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+`;
+
+const CardDetails = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+`;
+
+const CardNumber = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${T.text};
+  letter-spacing: 0.03em;
+`;
+
+const CardBrand = styled.div`
+  font-size: 11.5px;
+  color: ${T.sub};
+  text-transform: capitalize;
+`;
+
+const PaymentMethodAction = styled.div`
+  margin-top: 14px;
+`;
+
 // ─── add-ons ──────────────────────────────────────────────────────────────────
 const AddonsGrid = styled.div`
   display: flex;
@@ -861,6 +997,67 @@ function PlanSwitchPaymentForm({ clientSecret, onSuccess, onLoadError, planName 
   );
 }
 
+function UpdatePaymentMethodForm({ clientSecret, onSuccess }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [ready, setReady] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [err, setErr] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setErr(null);
+    setSubmitting(true);
+    const { error } = await elements.submit();
+    if (error) {
+      setErr(error.message || "Something went wrong.");
+      setSubmitting(false);
+      return;
+    }
+    const { error: confirmError, setupIntent } = await stripe.confirmSetup({
+      elements,
+      confirmParams: {
+        return_url: typeof window !== "undefined" ? window.location.href : "",
+      },
+      redirect: "if_required",
+    });
+    if (confirmError) {
+      setErr(confirmError.message || "Setup failed.");
+      setSubmitting(false);
+      return;
+    }
+    const pm = setupIntent?.payment_method;
+    const pmId = typeof pm === "string" ? pm : (pm?.id ?? null);
+    setSubmitting(false);
+    if (pmId) onSuccess?.(pmId);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div style={{ marginBottom: 16, minHeight: ready ? undefined : 120 }}>
+        <PaymentElement options={paymentElementOptions} onReady={() => setReady(true)} />
+      </div>
+      {err && (
+        <div style={{ marginBottom: 12, padding: "8px 12px", background: "#fef2f2", borderRadius: 8, fontSize: 13, color: "#b91c1c" }}>
+          {err}
+        </div>
+      )}
+      <Button
+        type="primary"
+        htmlType="submit"
+        disabled={!stripe || !elements || !ready || submitting}
+        loading={submitting}
+        block
+        style={{ background: SEL_COLOR, borderColor: SEL_COLOR }}
+        icon={<Lock size={14} />}
+      >
+        {submitting ? "Saving…" : "Update payment method"}
+      </Button>
+    </form>
+  );
+}
+
 // ─── main component ───────────────────────────────────────────────────────────
 export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchAddons } = {}) {
   const { subscription, loading: subLoading, cancel, reactivate, refetch: refetchSubscription, subscribe, hasStripeSubscription } = useSubscription();
@@ -881,6 +1078,12 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   const [switchPlanLoading, setSwitchPlanLoading] = useState(null);
   const [switchPaymentSecret, setSwitchPaymentSecret] = useState(null);
   const [switchPaymentTargetPlanId, setSwitchPaymentTargetPlanId] = useState(null);
+  const [updatePaymentModalOpen, setUpdatePaymentModalOpen] = useState(false);
+  const [updatePaymentClientSecret, setUpdatePaymentClientSecret] = useState(null);
+  const [updatePaymentIntentLoading, setUpdatePaymentIntentLoading] = useState(false);
+  const [updatePaymentIntentError, setUpdatePaymentIntentError] = useState(null);
+  const [defaultPaymentMethod, setDefaultPaymentMethod] = useState(null);
+  const [defaultPaymentMethodLoading, setDefaultPaymentMethodLoading] = useState(false);
 
   const [stripeFontSize, setStripeFontSize] = useState("14px");
   useEffect(() => {
@@ -1057,6 +1260,51 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     return () => { cancelled = true; };
   }, [subscribeModalOpen, createAddonPaymentIntent]);
 
+  const showPaymentMethodSection = hasStripeSubscription || canInstantSubscribeAddon;
+  useEffect(() => {
+    if (!showPaymentMethodSection) return;
+    let cancelled = false;
+    setDefaultPaymentMethodLoading(true);
+    businessService.getDefaultPaymentMethod().then((res) => {
+      if (cancelled) return;
+      setDefaultPaymentMethodLoading(false);
+      if (res.success && res.data) setDefaultPaymentMethod(res.data.payment_method ?? null);
+      else setDefaultPaymentMethod(null);
+    }).catch(() => {
+      if (!cancelled) { setDefaultPaymentMethodLoading(false); setDefaultPaymentMethod(null); }
+    });
+    return () => { cancelled = true; };
+  }, [showPaymentMethodSection]);
+
+  useEffect(() => {
+    if (!updatePaymentModalOpen) { setUpdatePaymentClientSecret(null); setUpdatePaymentIntentError(null); return; }
+    let cancelled = false;
+    setUpdatePaymentIntentLoading(true); setUpdatePaymentIntentError(null);
+    businessService.createUpdatePaymentMethodSetupIntent().then((res) => {
+      if (cancelled) return;
+      setUpdatePaymentIntentLoading(false);
+      if (res.success && res.client_secret) setUpdatePaymentClientSecret(res.client_secret);
+      else setUpdatePaymentIntentError(res.error || "Could not load payment form.");
+    }).catch(() => {
+      if (!cancelled) { setUpdatePaymentIntentLoading(false); setUpdatePaymentIntentError("Could not load payment form."); }
+    });
+    return () => { cancelled = true; };
+  }, [updatePaymentModalOpen]);
+
+  const handleUpdatePaymentMethodSuccess = useCallback(async (paymentMethodId) => {
+    const result = await businessService.setDefaultPaymentMethod({ payment_method: paymentMethodId });
+    if (result.success) {
+      setUpdatePaymentModalOpen(false);
+      setUpdatePaymentClientSecret(null);
+      message.success("Payment method updated. It will be used for future charges and renewals.");
+      const pmRes = await businessService.getDefaultPaymentMethod();
+      if (pmRes.success && pmRes.data) setDefaultPaymentMethod(pmRes.data.payment_method ?? null);
+      refetchAddons?.();
+    } else {
+      antMessage.error(result.error || "Failed to update payment method.");
+    }
+  }, [refetchAddons]);
+
   useEffect(() => {
     const id = "billing-gradient-canvas";
     const run = () => {
@@ -1158,18 +1406,22 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
         </PlansGrid>
       </PlansGridWrapper>
 
-      {/* Active subscription */}
-      <Card>
-        <SectionTitle>Widget plan &amp; billing</SectionTitle>
-        <SectionSub style={{ marginBottom: 16 }}>
-          Manage your booking widget subscription. Changes take effect at the end of the billing period.
-        </SectionSub>
+      <SectionDivider />
+
+      {/* Active subscription + Payment method — redesigned */}
+      <PlanBillingCard>
+        <PlanBillingHeader>
+          <SectionTitle style={{ margin: 0 }}>Widget plan &amp; billing</SectionTitle>
+          <PlanBillingHeaderNote>
+            Upgrades take effect immediately. Downgrades and cancellations take effect at the end of the billing period.
+          </PlanBillingHeaderNote>
+        </PlanBillingHeader>
 
         {subLoading ? (
-          <LoadingRow><SpinIcon size={16} /><span>Loading…</span></LoadingRow>
+          <LoadingRow style={{ padding: "20px 20px" }}><SpinIcon size={16} /><span>Loading…</span></LoadingRow>
         ) : !subscription?.planId ? (
           <div style={{
-            background: T.bg, border: `1px dashed ${T.border}`,
+            margin: 20, background: T.bg, border: `1px dashed ${T.border}`,
             borderRadius: 10, padding: 24, textAlign: "center",
           }}>
             <p style={{ fontSize: 13, color: "#374151", margin: "0 0 14px", lineHeight: 1.5 }}>
@@ -1183,27 +1435,30 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
             </Link>
           </div>
         ) : (
-          <StatusRow>
-            <div>
-              <PlanLabel>{currentPlan?.name ?? subscription.planId}</PlanLabel>
-              <PlanMeta>
+          <PlanBillingBody>
+            {/* Left: Current plan */}
+            <PlanBillingSection>
+              <PlanBillingSectionLabel>Current plan</PlanBillingSectionLabel>
+              <PlanBillingPlanName>
+                <PlanDot $grad={PLAN_GRADIENTS[subscription.planId] || "linear-gradient(135deg, #a5b4fc, #818cf8)"} />
+                {currentPlan?.name ?? subscription.planId}
+                {subscription.cancelAtPeriodEnd && (
+                  <Badge style={{ marginTop: 0, marginLeft: 4 }}>Cancels {nextBilling || "at period end"}</Badge>
+                )}
+              </PlanBillingPlanName>
+              <PlanBillingPlanPrice>
                 ${currentPlan?.price ?? 0}/mo
                 {currentPlan?.commission ? ` · ${currentPlan.commission}% per booking` : ""}
-                {nextBilling ? ` · Renews ${nextBilling}` : ""}
-              </PlanMeta>
-              {subscription.cancelAtPeriodEnd && (
-                <Badge>Cancels {nextBilling || "at period end"}</Badge>
-              )}
-            </div>
-            <ActionGroup>
-              {subscription.cancelAtPeriodEnd ? (
-                <Button size="small" icon={<RefreshCw size={12} />} onClick={handleReactivate}
-                  style={{ background: SEL_COLOR, borderColor: SEL_COLOR, color: "white" }}>
-                  Reactivate
-                </Button>
-              ) : (
-                <>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                {nextBilling && !subscription.cancelAtPeriodEnd ? ` · Renews ${nextBilling}` : ""}
+              </PlanBillingPlanPrice>
+              <PlanBillingActions>
+                {subscription.cancelAtPeriodEnd ? (
+                  <Button size="small" icon={<RefreshCw size={12} />} onClick={handleReactivate}
+                    style={{ background: SEL_COLOR, borderColor: SEL_COLOR, color: "white", fontSize: 12 }}>
+                    Reactivate
+                  </Button>
+                ) : (
+                  <>
                     {PLANS.filter((p) => p.id !== subscription.planId).map((p) => (
                       <Button
                         key={p.id}
@@ -1213,19 +1468,65 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                         disabled={switchPlanLoading !== null}
                         onClick={() => handleSwitchPlan(p.id)}
                       >
-                        {isUpgrade(subscription.planId, p.id) ? "Upgrade" : "Downgrade"} to {p.name}
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        {isUpgrade(subscription.planId, p.id) ? (
+                          <><ArrowUp size={12} /> Upgrade</>
+                        ) : (
+                          <><ArrowDown size={12} /> Downgrade</>
+                        )}{" "}
+                        to {p.name}
+                      </span>
                       </Button>
                     ))}
-                  </div>
-                  <Button size="small" danger onClick={() => setCancelModalOpen(true)} style={{ fontSize: 12 }}>
-                    Cancel subscription
-                  </Button>
+                    <Button size="small" danger onClick={() => setCancelModalOpen(true)} style={{ fontSize: 12 }}>
+                      Cancel
+                    </Button>
+                  </>
+                )}
+              </PlanBillingActions>
+            </PlanBillingSection>
+
+            {/* Right: Payment method */}
+            <PlanBillingSection $noBorder>
+              <PlanBillingSectionLabel>Payment method</PlanBillingSectionLabel>
+              {defaultPaymentMethodLoading ? (
+                <LoadingRow style={{ padding: 0 }}><SpinIcon size={14} /><span>Loading…</span></LoadingRow>
+              ) : showPaymentMethodSection ? (
+                <>
+                  <PaymentMethodDisplay>
+                    <CardIconWrap>
+                      <CreditCard size={14} color={T.sub} />
+                    </CardIconWrap>
+                    <CardDetails>
+                      <CardNumber>
+                        {defaultPaymentMethod?.last4 ? `•••• •••• •••• ${defaultPaymentMethod.last4}` : "•••• •••• •••• ––––"}
+                      </CardNumber>
+                      {defaultPaymentMethod?.brand && (
+                        <CardBrand>{defaultPaymentMethod.brand}</CardBrand>
+                      )}
+                    </CardDetails>
+                  </PaymentMethodDisplay>
+                  <PaymentMethodAction>
+                    <Button
+                      size="small"
+                      onClick={() => setUpdatePaymentModalOpen(true)}
+                      style={{ fontSize: 12 }}
+                    >
+                      Update payment method
+                    </Button>
+                  </PaymentMethodAction>
                 </>
+              ) : (
+                <PlanBillingPlanPrice style={{ marginTop: 4 }}>
+                  No payment method on file yet.
+                </PlanBillingPlanPrice>
               )}
-            </ActionGroup>
-          </StatusRow>
+            </PlanBillingSection>
+          </PlanBillingBody>
         )}
-      </Card>
+      </PlanBillingCard>
+
+      <SectionDivider />
 
       {/* Add-ons */}
       <Card>
@@ -1297,6 +1598,8 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
           </AddonsGrid>
         )}
       </Card>
+
+      <SectionDivider />
 
       {/* Previous invoices */}
       <div>
@@ -1425,6 +1728,38 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
           Marketplace email branding will cancel at the end of the current billing period ({addonNextBilling || "see above"}).
           You&apos;ll keep access until then.
         </p>
+      </Modal>
+
+      <Modal
+        title="Update payment method"
+        open={updatePaymentModalOpen}
+        onCancel={() => !updatePaymentIntentLoading && setUpdatePaymentModalOpen(false)}
+        footer={null}
+        destroyOnClose
+        width={440}
+      >
+        <p style={{ margin: "0 0 16px", fontSize: 13, color: T.sub }}>
+          Enter a new card below. It will be used for plan renewals and add-ons. No charge is made when updating.
+        </p>
+        {updatePaymentIntentLoading && (
+          <LoadingRow><SpinIcon size={16} /><span>Preparing form…</span></LoadingRow>
+        )}
+        {updatePaymentIntentError && !updatePaymentIntentLoading && (
+          <div style={{ padding: "12px", background: "#fef2f2", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#b91c1c" }}>
+            {updatePaymentIntentError}
+          </div>
+        )}
+        {updatePaymentClientSecret && stripePromise && (
+          <Elements
+            stripe={stripePromise}
+            options={{ clientSecret: updatePaymentClientSecret, appearance: stripeAppearance, fonts: stripeFonts }}
+          >
+            <UpdatePaymentMethodForm
+              clientSecret={updatePaymentClientSecret}
+              onSuccess={handleUpdatePaymentMethodSuccess}
+            />
+          </Elements>
+        )}
       </Modal>
 
       <Modal
