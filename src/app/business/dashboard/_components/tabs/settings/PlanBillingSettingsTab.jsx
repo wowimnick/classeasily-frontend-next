@@ -1203,6 +1203,8 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     setSwitchPaymentTargetPlanId(null);
     message.success(`Switched to ${planName} plan.`);
     refetchSubscription();
+    // Refetch again after a short delay so we pick up webhook updates (plan_id, cancelAtPeriodEnd) and UI stays in sync
+    setTimeout(() => refetchSubscription(), 2500);
   }, [switchPaymentTargetPlanId, refetchSubscription]);
 
   const handleSwitchPaymentLoadError = useCallback(() => {

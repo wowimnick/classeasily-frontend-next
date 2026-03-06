@@ -3061,6 +3061,7 @@ const ReviewAndPaymentStep = ({
               form={form}
               layout="vertical"
               requiredMark={false}
+              preserve
               onValuesChange={handleFormValuesChange}
               style={{ padding: "0 12px" }}
             >
@@ -3077,7 +3078,19 @@ const ReviewAndPaymentStep = ({
                       <CheckoutFieldRow>
                         <Form.Item
                           name="booker_name"
-                          rules={[{ required: true, message: "Please enter your full name" }, { whitespace: true, message: "Please enter your full name" }]}
+                          rules={[
+                            { required: true, message: "Please enter your full name" },
+                            { whitespace: true, message: "Please enter your full name" },
+                            {
+                              validator: (_, value) => {
+                                const v = (value && String(value).trim()) || "";
+                                if (v.toLowerCase() === "guest") {
+                                  return Promise.reject(new Error("Please enter your real full name"));
+                                }
+                                return Promise.resolve();
+                              },
+                            },
+                          ]}
                           style={{ marginBottom: 0 }}
                           label={<FieldLabel>Full name</FieldLabel>}
                         >
@@ -3091,12 +3104,47 @@ const ReviewAndPaymentStep = ({
                       </CheckoutFieldRow>
                       <CheckoutContactRow>
                         <CheckoutFieldRow>
-                          <Form.Item name="email" rules={[{ required: true, message: "Please enter your email" }, { type: "email", message: "Please enter a valid email address" }]} label={<FieldLabel>Email</FieldLabel>} style={{ marginBottom: 0 }}>
+                          <Form.Item
+                            name="email"
+                            rules={[
+                              { required: true, message: "Please enter your email" },
+                              { type: "email", message: "Please enter a valid email address" },
+                              {
+                                validator: (_, value) => {
+                                  const v = (value && String(value).trim()) || "";
+                                  if (v && /pending@example/i.test(v)) {
+                                    return Promise.reject(new Error("Please enter your real email address"));
+                                  }
+                                  return Promise.resolve();
+                                },
+                              },
+                            ]}
+                            label={<FieldLabel>Email</FieldLabel>}
+                            style={{ marginBottom: 0 }}
+                          >
                             <Input placeholder="e.g. jane@example.com" />
                           </Form.Item>
                         </CheckoutFieldRow>
                         <CheckoutFieldRow>
-                          <Form.Item name="phone" rules={[{ required: true, message: "Please enter your phone number" }, { whitespace: true, message: "Please enter your phone number" }]} label={<FieldLabel>Phone</FieldLabel>} style={{ marginBottom: 0 }}>
+                          <Form.Item
+                            name="phone"
+                            rules={[
+                              { required: true, message: "Please enter your phone number" },
+                              { whitespace: true, message: "Please enter your phone number" },
+                              {
+                                validator: (_, value) => {
+                                  const v = (value && String(value).replace(/\s/g, "")) || "";
+                                  const digits = v.replace(/\D/g, "");
+                                  if (digits === "5555555555" || /555-555-5555/.test(v)) {
+                                    return Promise.reject(new Error("Please enter your real phone number"));
+                                  }
+                                  return Promise.resolve();
+                                },
+                              },
+                            ]}
+                            label={<FieldLabel>Phone</FieldLabel>}
+                            style={{ marginBottom: 0 }}
+                          >
                             <Input placeholder="e.g. (555) 123-4567" />
                           </Form.Item>
                         </CheckoutFieldRow>
