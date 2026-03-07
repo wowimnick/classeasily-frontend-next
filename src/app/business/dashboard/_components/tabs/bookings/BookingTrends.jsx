@@ -718,16 +718,18 @@ const BookingTrends = () => {
         {},
       );
       if (result.success && result.data?.class_insights?.popular_classes) {
-        const uniqueClasses = result.data.class_insights.popular_classes.map(
-          (c) => ({ value: c.class_id, label: c.class_name }),
-        );
+        const uniqueClasses = result.data.class_insights.popular_classes
+          .filter((c) => c.class_id != null && c.class_name != null)
+          .map((c) => ({ value: c.class_id, label: c.class_name }));
         setBusinessClasses([
-          { value: undefined, label: "All Experiences" },
+          { value: null, label: "All Experiences" },
           ...uniqueClasses,
         ]);
+      } else {
+        setBusinessClasses([{ value: null, label: "All Experiences" }]);
       }
     } catch (error) {
-      // Handle error silently
+      setBusinessClasses([{ value: null, label: "All Experiences" }]);
     }
   }, []);
 
@@ -781,7 +783,7 @@ const BookingTrends = () => {
   const handleClassFilterChange = (value) => {
     setFilterParams((p) => ({
       ...p,
-      classId: value === undefined ? null : value,
+      classId: value == null ? null : value,
     }));
   };
 
@@ -954,11 +956,13 @@ const BookingTrends = () => {
             )}
             <ClassFilterSelect
               placeholder="Filter by Experience"
-              value={filterParams.classId}
+              value={filterParams.classId ?? null}
               onChange={handleClassFilterChange}
               options={businessClasses}
               allowClear
               showSearch
+              optionFilterProp="label"
+              getPopupContainer={() => document.body}
             />
           </Controls>
         </DashboardHeader>
