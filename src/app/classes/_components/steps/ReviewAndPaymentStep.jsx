@@ -1975,8 +1975,13 @@ const ReviewAndPaymentStep = ({
         };
         const response = await paymentService.createPaymentIntent(payload);
         if (response?.clientSecret) {
-          setClientSecret(response.clientSecret);
           const paymentIntentId = response.clientSecret.split("_secret_")[0];
+          console.info(
+            "[Booking] createPaymentIntent SUCCESS (useEffect)",
+            new Date().toISOString(),
+            { payment_intent_id: paymentIntentId, guest_email: payload.guest_email, guest_full_name: payload.guest_full_name, guest_phone: payload.guest_phone }
+          );
+          setClientSecret(response.clientSecret);
           onUpdateBookingData?.({
             paymentIntentId,
             clientSecret: response.clientSecret,
@@ -2230,7 +2235,7 @@ const ReviewAndPaymentStep = ({
           { length: participantsCount },
           () => ({ name: bookerName }),
         );
-        await paymentService.updatePaymentIntent({
+        const updatePayload = {
           payment_intent_id: paymentIntentId,
           guest_email: values.email,
           guest_full_name: bookerName,
@@ -2238,8 +2243,24 @@ const ReviewAndPaymentStep = ({
           participant_details: participantDetailsPayload,
           notes: values.notes || "",
           applied_discount_id: appliedDiscount?.id || null,
-        });
+        };
+        console.info(
+          "[Booking] update_intent CALL_START",
+          new Date().toISOString(),
+          { payment_intent_id: paymentIntentId, guest_email: updatePayload.guest_email, guest_full_name: updatePayload.guest_full_name, guest_phone: updatePayload.guest_phone }
+        );
+        await paymentService.updatePaymentIntent(updatePayload);
+        console.info(
+          "[Booking] update_intent CALL_SUCCESS",
+          new Date().toISOString(),
+          paymentIntentId
+        );
       } catch (err) {
+        console.error(
+          "[Booking] update_intent CALL_FAILED",
+          new Date().toISOString(),
+          err?.message || err
+        );
         message.error(
           err?.message || "We couldn't save your details. Please try again."
         );
@@ -2249,9 +2270,15 @@ const ReviewAndPaymentStep = ({
       }
     }
 
-    setShowMobileSummary(false);
-    setCheckoutStep("payment");
-    if (typeof window !== "undefined" && window.innerWidth < 969) {
+        if (!clientSecret) {
+          console.warn(
+            "[Booking] update_intent SKIPPED (no clientSecret yet) — switching to payment step without updating metadata. Payment intent may have placeholder data.",
+            new Date().toISOString()
+          );
+        }
+        setShowMobileSummary(false);
+        setCheckoutStep("payment");
+        if (typeof window !== "undefined" && window.innerWidth < 969) {
       setTimeout(() => {
         paymentStepRef.current?.scrollIntoView({
           behavior: "smooth",
@@ -2318,6 +2345,12 @@ const ReviewAndPaymentStep = ({
           return;
         }
 
+        const paymentIntentIdAtConfirm = clientSecret?.split("_secret_")[0];
+        console.info(
+          "[Booking] confirmPayment CALL_START",
+          new Date().toISOString(),
+          { payment_intent_id: paymentIntentIdAtConfirm, guest_email: values.email, guest_full_name: values?.booker_name, guest_phone: values.phone }
+        );
         const { error: confirmError, paymentIntent } =
           await stripe.confirmPayment({
             elements,
