@@ -680,7 +680,8 @@ export default function WidgetCustomizer() {
       textPrimary: hex(form.textPrimary), textSecondary: hex(form.textSecondary), textOnPrimary: hex(form.textOnPrimary),
       border: hex(form.border), fontFamily: (form.fontFamily && form.fontFamily.trim()) || undefined,
       borderRadiusPreset: form.borderRadiusPreset, buttonSize: form.buttonSize,
-      specificClassId: form.specificClassId || undefined,
+      // Always send specificClassId so backend can clear it when "Profile page with all classes" is selected (partial merge would otherwise leave old value)
+      specificClassId: (form.specificClassId && String(form.specificClassId).trim()) || null,
       allowed_widget_origins: form.allowed_widget_origins,
     };
     businessService.updateWidgetConfig(payload)

@@ -3021,43 +3021,6 @@ export default function ScheduleCalendarView({ initialClassId }) {
 
   const closeForm = () => setFormState(s => ({ ...s, open: false }));
 
-  const handleGroupEditSubmit = useCallback(async (values) => {
-    if (selectedGroup === "all") return;
-    const optionIds = [...new Set(
-      allSchedules.filter((s) => s.name === selectedGroup).map((s) => s.optionId)
-    )];
-    if (!optionIds.length) {
-      message.warning("No schedules found for this group.");
-      return;
-    }
-    setGroupEditLoading(true);
-    try {
-      const updates = {
-        price: Math.max(0, parseFloat(values.price) || 0).toFixed(2),
-        duration: values.duration ?? 60,
-        maxParticipants: values.maxParticipants ?? 10,
-        minParticipants: values.minParticipants ?? 1,
-      };
-      await Promise.all(
-        optionIds.map((optionId) =>
-          scheduleService.groupUpdate({
-            option_id: optionId,
-            name: selectedGroup,
-            updates,
-          })
-        )
-      );
-      message.success(`Group "${selectedGroup}" updated.`);
-      setGroupEditModalOpen(false);
-      groupEditForm.resetFields();
-      handleSuccess();
-    } catch (e) {
-      message.error(getErrorMessage(e));
-    } finally {
-      setGroupEditLoading(false);
-    }
-  }, [selectedGroup, allSchedules, groupEditForm, handleSuccess]);
-
   const sidebarProps = {
     classes, visibleClassIds,
     onToggleClass: (id) => setVisibleClassIds(prev => {
@@ -3321,91 +3284,71 @@ export default function ScheduleCalendarView({ initialClassId }) {
         {...sidebarProps}
       />
 
-      {/* Group bulk-edit: modal on desktop, drawer on mobile */}
-      {!isMobile && (
-        <Modal
-          title={`Edit group: ${selectedGroup !== "all" ? selectedGroup : ""}`}
-          open={groupEditModalOpen}
-          onCancel={() => { setGroupEditModalOpen(false); groupEditForm.resetFields(); }}
-          onOk={() => groupEditForm.submit()}
-          confirmLoading={groupEditLoading}
-          okText="Update group"
-          width={400}
-          destroyOnClose
+      {/* Group bulk-edit modal */}
+      <Modal
+        title={`Edit group: ${selectedGroup !== "all" ? selectedGroup : ""}`}
+        open={groupEditModalOpen}
+        onCancel={() => { setGroupEditModalOpen(false); groupEditForm.resetFields(); }}
+        onOk={() => groupEditForm.submit()}
+        confirmLoading={groupEditLoading}
+        okText="Update group"
+        width={400}
+        destroyOnClose
+      >
+        <Form
+          form={groupEditForm}
+          layout="vertical"
+          onFinish={async (values) => {
+            if (selectedGroup === "all") return;
+            const optionIds = [...new Set(
+              allSchedules.filter((s) => s.name === selectedGroup).map((s) => s.optionId)
+            )];
+            if (!optionIds.length) {
+              message.warning("No schedules found for this group.");
+              return;
+            }
+            setGroupEditLoading(true);
+            try {
+              const updates = {
+                price: Math.max(0, parseFloat(values.price) || 0).toFixed(2),
+                duration: values.duration ?? 60,
+                maxParticipants: values.maxParticipants ?? 10,
+                minParticipants: values.minParticipants ?? 1,
+              };
+              await Promise.all(
+                optionIds.map((optionId) =>
+                  scheduleService.groupUpdate({
+                    option_id: optionId,
+                    name: selectedGroup,
+                    updates,
+                  })
+                )
+              );
+              message.success(`Group "${selectedGroup}" updated.`);
+              setGroupEditModalOpen(false);
+              groupEditForm.resetFields();
+              handleSuccess();
+            } catch (e) {
+              message.error(getErrorMessage(e));
+            } finally {
+              setGroupEditLoading(false);
+            }
+          }}
         >
-          <p style={{ marginBottom: 16, fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
-            Update price, duration, and capacity for all sessions in this group. Changes apply to every session in the group.
-          </p>
-          <Form
-            form={groupEditForm}
-            layout="vertical"
-            onFinish={handleGroupEditSubmit}
-          >
-            <Form.Item label="Price" name="price" rules={[{ required: true }]} help="Price per guest for each session in this group.">
-              <Input type="number" step="0.01" prefix="$" />
-            </Form.Item>
-            <Form.Item label="Duration (min)" name="duration" rules={[{ required: true }]} help="Session length in minutes (e.g. 60 for 1 hour).">
-              <InputNumber min={15} step={15} style={{ width: "100%" }} />
-            </Form.Item>
-            <Form.Item label="Max participants" name="maxParticipants" rules={[{ required: true }]} help="Maximum number of guests per session.">
-              <InputNumber min={1} style={{ width: "100%" }} />
-            </Form.Item>
-            <Form.Item label="Min participants" name="minParticipants" rules={[{ required: true }]} help="Minimum guests required for the session to run.">
-              <InputNumber min={1} style={{ width: "100%" }} />
-            </Form.Item>
-          </Form>
-        </Modal>
-      )}
-
-      {isMobile && (
-        <VaulDrawer.Root open={groupEditModalOpen} onOpenChange={(o) => { if (!o) { setGroupEditModalOpen(false); groupEditForm.resetFields(); } }} dismissible>
-          <VaulDrawer.Portal>
-            <VaulOverlay />
-            <VaulContent>
-              <VaulHandle />
-              <VaulHeader>
-                <span style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>
-                  Edit group: {selectedGroup !== "all" ? selectedGroup : ""}
-                </span>
-                <button type="button" onClick={() => { setGroupEditModalOpen(false); groupEditForm.resetFields(); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}>
-                  <X size={20} />
-                </button>
-              </VaulHeader>
-              <VaulBody>
-                <p style={{ margin: "0 0 12px", fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>
-                  Update price, duration, and capacity for all sessions in this group. Changes apply to every session in the group.
-                </p>
-                <Form
-                  form={groupEditForm}
-                  layout="vertical"
-                  onFinish={handleGroupEditSubmit}
-                >
-                  <Form.Item label="Price" name="price" rules={[{ required: true }]} help="Price per guest for each session in this group.">
-                    <Input type="number" step="0.01" prefix="$" />
-                  </Form.Item>
-                  <Form.Item label="Duration (min)" name="duration" rules={[{ required: true }]} help="Session length in minutes (e.g. 60 for 1 hour).">
-                    <InputNumber min={15} step={15} style={{ width: "100%" }} />
-                  </Form.Item>
-                  <Form.Item label="Max participants" name="maxParticipants" rules={[{ required: true }]} help="Maximum number of guests per session.">
-                    <InputNumber min={1} style={{ width: "100%" }} />
-                  </Form.Item>
-                  <Form.Item label="Min participants" name="minParticipants" rules={[{ required: true }]} help="Minimum guests required for the session to run.">
-                    <InputNumber min={1} style={{ width: "100%" }} />
-                  </Form.Item>
-                </Form>
-                <div style={{ display: "flex", gap: 8, paddingTop: 8, flexWrap: "wrap" }}>
-                  <Button onClick={() => { setGroupEditModalOpen(false); groupEditForm.resetFields(); }} style={{ flex: 1 }}>
-                    Cancel
-                  </Button>
-                  <SaveBtn onClick={() => groupEditForm.submit()} disabled={groupEditLoading} style={{ flex: 1, justifyContent: "center" }}>
-                    {groupEditLoading ? "Updating…" : "Update group"}
-                  </SaveBtn>
-                </div>
-              </VaulBody>
-            </VaulContent>
-          </VaulDrawer.Portal>
-        </VaulDrawer.Root>
-      )}
+          <Form.Item label="Price" name="price" rules={[{ required: true }]}>
+            <Input type="number" step="0.01" prefix="$" />
+          </Form.Item>
+          <Form.Item label="Duration (min)" name="duration" rules={[{ required: true }]}>
+            <InputNumber min={15} step={15} style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item label="Max participants" name="maxParticipants" rules={[{ required: true }]}>
+            <InputNumber min={1} style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item label="Min participants" name="minParticipants" rules={[{ required: true }]}>
+            <InputNumber min={1} style={{ width: "100%" }} />
+          </Form.Item>
+        </Form>
+      </Modal>
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
