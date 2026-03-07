@@ -1358,8 +1358,10 @@ const ExpressCheckoutButton = ({
           { length: participantsCount },
           () => ({ name: bookerName }),
         );
-        
-        if (clientSecret && paymentService?.updatePaymentIntent) {
+
+        // Only call update_intent when we have real guest data; otherwise leave metadata
+        // as set by "Next" (avoids overwriting good metadata with empty from stale form).
+        if (clientSecret && paymentService?.updatePaymentIntent && email) {
           try {
             const paymentIntentId = clientSecret.split("_secret_")[0];
             await paymentService.updatePaymentIntent({
