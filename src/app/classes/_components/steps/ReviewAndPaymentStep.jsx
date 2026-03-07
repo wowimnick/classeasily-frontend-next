@@ -1555,7 +1555,7 @@ const PaymentFormContent = ({
           </StripeSkeletonWrapper>
         </div>
       )}
-      <div style={{ visibility: stripeUINotReady ? "hidden" : "visible" }}>
+      <div style={{ visibility: stripeUINotReady ? "hidden" : "visible", paddingTop: hasExpressPay ? 16 : 0 }}>
         <ExpressCheckoutButton
           finalTotal={finalTotal}
           clientSecret={clientSecret}
@@ -1654,6 +1654,7 @@ const ReviewAndPaymentStep = ({
   // --- SLOT AVAILABILITY (poll every minute; no spot holding) ---
   const [slotUnavailable, setSlotUnavailable] = useState(false);
   const [creatingIntent, setCreatingIntent] = useState(false);
+  const [updatingIntentForPayment, setUpdatingIntentForPayment] = useState(false);
 
   const debounceTimerRef = useRef(null);
   const intentDepsRef = useRef({
@@ -2208,40 +2209,55 @@ const ReviewAndPaymentStep = ({
 
   const handleGoToPayment = async () => {
     try {
-        await form.validateFields(['booker_name', 'email', 'phone']);
-        setShowMobileSummary(false);
-        setCheckoutStep("payment");
-        if (typeof window !== "undefined" && window.innerWidth < 969) {
-          setTimeout(() => {
-            paymentStepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }, 100);
-        }
-        // Update intent with the now valid data so metadata is ready for Payment Request Button
-        if (clientSecret) {
-             const paymentIntentId = clientSecret.split("_secret_")[0];
-             // Fire and forget update
-             const values = form.getFieldsValue();
-             const bookerName = values.booker_name || "Guest";
-             const participantDetailsPayload = Array.from(
-                { length: participantsCount },
-                () => ({ name: bookerName }),
-             );
-             paymentService.updatePaymentIntent({
-                 payment_intent_id: paymentIntentId,
-                 guest_email: values.email,
-                 guest_full_name: bookerName,
-                 guest_phone: values.phone,
-                 participant_details: participantDetailsPayload,
-                 notes: values.notes || "",
-                 applied_discount_id: appliedDiscount?.id || null,
-             }).catch(() => {});
-        }
+      await form.validateFields(["booker_name", "email", "phone"]);
     } catch (e) {
-        // Validation failed
-        const errorField = e.errorFields?.[0]?.name?.[0];
-        if (errorField) {
-            form.scrollToField(errorField);
-        }
+      const errorField = e.errorFields?.[0]?.name?.[0];
+      if (errorField) {
+        form.scrollToField(errorField);
+      }
+      return;
+    }
+
+    // Update Stripe metadata with guest details first; only then show payment step
+    // so the webhook never sees placeholder data if the user pays quickly (e.g. Apple Pay).
+    if (clientSecret && paymentService?.updatePaymentIntent) {
+      setUpdatingIntentForPayment(true);
+      try {
+        const paymentIntentId = clientSecret.split("_secret_")[0];
+        const values = form.getFieldsValue();
+        const bookerName = values.booker_name || "Guest";
+        const participantDetailsPayload = Array.from(
+          { length: participantsCount },
+          () => ({ name: bookerName }),
+        );
+        await paymentService.updatePaymentIntent({
+          payment_intent_id: paymentIntentId,
+          guest_email: values.email,
+          guest_full_name: bookerName,
+          guest_phone: values.phone,
+          participant_details: participantDetailsPayload,
+          notes: values.notes || "",
+          applied_discount_id: appliedDiscount?.id || null,
+        });
+      } catch (err) {
+        message.error(
+          err?.message || "We couldn't save your details. Please try again."
+        );
+        return;
+      } finally {
+        setUpdatingIntentForPayment(false);
+      }
+    }
+
+    setShowMobileSummary(false);
+    setCheckoutStep("payment");
+    if (typeof window !== "undefined" && window.innerWidth < 969) {
+      setTimeout(() => {
+        paymentStepRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
     }
   };
 
@@ -3173,8 +3189,13 @@ const ReviewAndPaymentStep = ({
                         />
                       )}
                       <NextButtonContainer>
-                        <NextButton type="primary" onClick={handleGoToPayment} disabled={slotUnavailable}>
-                          Next
+                        <NextButton
+                          type="primary"
+                          onClick={handleGoToPayment}
+                          disabled={slotUnavailable || updatingIntentForPayment}
+                          loading={updatingIntentForPayment}
+                        >
+                          {updatingIntentForPayment ? "Just a moment…" : "Next"}
                         </NextButton>
                       </NextButtonContainer>
                     </MeasuredCollapseSection>
