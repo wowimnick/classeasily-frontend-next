@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button, Modal, message as antMessage } from "antd";
 import {
   ArrowRight, ArrowUp, ArrowDown, Loader2, RefreshCw, Mail, Lock,
-  CreditCard, ChevronDown, Check, Download,
+  CreditCard, ChevronDown, ChevronUp, Check, Download,
   Search, SlidersHorizontal, Package,
 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
@@ -425,7 +425,7 @@ const InvoiceRow = styled.div`
   &:last-child { border-bottom: none; }
 
   @media (min-width: 640px) {
-    grid-template-columns: 18px 1fr 110px 90px 26px;
+    grid-template-columns: 18px 1fr 110px 90px 100px 28px 26px;
     padding: 12px 20px;
   }
 
@@ -435,6 +435,32 @@ const InvoiceRow = styled.div`
     gap: 0;
     padding: 13px 16px;
   }
+`;
+
+const InvoiceBreakdownRow = styled.div`
+  padding: 12px 20px 14px;
+  background: ${T.bg};
+  border-bottom: 1px solid ${T.border};
+  font-size: 13px;
+  color: ${T.sub};
+  @media (max-width: 639px) { padding: 12px 16px 14px; }
+`;
+
+const InvoiceExpandBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: ${T.sub};
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+  &:hover:not(:disabled) { background: ${T.border}; color: ${T.text}; }
+  &:disabled { opacity: 0.5; cursor: default; }
 `;
 
 const Checkbox = styled.div`
@@ -660,7 +686,7 @@ const PlanBillingPlanName = styled.div`
 `;
 
 const PlanBillingPlanPrice = styled.div`
-  font-size: 13px;
+  font-size: 11px;
   color: ${T.sub};
   margin-top: 2px;
 `;
@@ -1019,6 +1045,11 @@ function UpdatePaymentMethodForm({ clientSecret, onSuccess }) {
       elements,
       confirmParams: {
         return_url: typeof window !== "undefined" ? window.location.href : "",
+        payment_method_data: {
+          billing_details: {
+            address: { country: "CA", postal_code: "K1A 0B1" },
+          },
+        },
       },
       redirect: "if_required",
     });
@@ -1075,6 +1106,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   const [invoiceSortOrder, setInvoiceSortOrder] = useState("recent"); // "recent" | "oldest"
   const [invoices, setInvoices] = useState([]);
   const [invoicesLoading, setInvoicesLoading] = useState(true);
+  const [expandedInvoiceId, setExpandedInvoiceId] = useState(null);
   const [switchPlanLoading, setSwitchPlanLoading] = useState(null);
   const [switchPaymentSecret, setSwitchPaymentSecret] = useState(null);
   const [switchPaymentTargetPlanId, setSwitchPaymentTargetPlanId] = useState(null);
@@ -1651,37 +1683,67 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
               const amountStr = inv.currency && inv.amount_paid != null
                 ? `${inv.currency} $${Number(inv.amount_paid).toFixed(2)}`
                 : "—";
+              const cardStr = inv.payment_method
+                ? `${inv.payment_method.brand} •••• ${inv.payment_method.last4}`
+                : "—";
+              const hasLines = Array.isArray(inv.lines) && inv.lines.length > 0;
+              const isExpanded = expandedInvoiceId === inv.id;
               return (
-                <InvoiceRow key={inv.id}>
-                  <InvoiceCheckboxCell aria-hidden><Checkbox /></InvoiceCheckboxCell>
-                  <InvoiceId>{inv.number || inv.id}</InvoiceId>
-                  <InvoiceCell>{dateStr}</InvoiceCell>
-                  <InvoiceCell>{amountStr}</InvoiceCell>
-                  {/* Mobile combined cell */}
-                  <MobileInvoiceInfo>
-                    <MobileInvoiceId>{inv.number || inv.id}</MobileInvoiceId>
-                    <MobileInvoiceMeta>{dateStr}{amountStr !== "—" ? ` · ${amountStr}` : ""}</MobileInvoiceMeta>
-                  </MobileInvoiceInfo>
-                  <DownloadBtn
-                    as={inv.invoice_pdf ? "a" : "span"}
-                    href={inv.invoice_pdf || undefined}
-                    target={inv.invoice_pdf ? "_blank" : undefined}
-                    rel={inv.invoice_pdf ? "noopener noreferrer" : undefined}
-                    aria-label="Download invoice"
-                    style={{ display: "inline-flex", cursor: inv.invoice_pdf ? "pointer" : "default", opacity: inv.invoice_pdf ? 1 : 0.5 }}
-                  >
-                    <Download size={14} />
-                  </DownloadBtn>
-                  <MobileDownloadBtn
-                    href={inv.invoice_pdf || undefined}
-                    target={inv.invoice_pdf ? "_blank" : undefined}
-                    rel={inv.invoice_pdf ? "noopener noreferrer" : undefined}
-                    data-disabled={!inv.invoice_pdf ? "true" : undefined}
-                    aria-label="Download invoice"
-                  >
-                    <Download size={14} />
-                  </MobileDownloadBtn>
-                </InvoiceRow>
+                <React.Fragment key={inv.id}>
+                  <InvoiceRow>
+                    <InvoiceCheckboxCell aria-hidden><Checkbox /></InvoiceCheckboxCell>
+                    <InvoiceId>{inv.number || inv.id}</InvoiceId>
+                    <InvoiceCell>{dateStr}</InvoiceCell>
+                    <InvoiceCell>{amountStr}</InvoiceCell>
+                    <InvoiceCell style={{ fontSize: 12 }}>{cardStr}</InvoiceCell>
+                    <InvoiceExpandBtn
+                      type="button"
+                      onClick={() => setExpandedInvoiceId(isExpanded ? null : inv.id)}
+                      aria-expanded={isExpanded}
+                      aria-label={isExpanded ? "Hide breakdown" : "Show charge breakdown"}
+                      title={hasLines ? (isExpanded ? "Hide breakdown" : "Show charge breakdown") : "No line items"}
+                      disabled={!hasLines}
+                    >
+                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </InvoiceExpandBtn>
+                    {/* Mobile combined cell */}
+                    <MobileInvoiceInfo>
+                      <MobileInvoiceId>{inv.number || inv.id}</MobileInvoiceId>
+                      <MobileInvoiceMeta>{dateStr}{amountStr !== "—" ? ` · ${amountStr}` : ""}{cardStr !== "—" ? ` · ${cardStr}` : ""}</MobileInvoiceMeta>
+                    </MobileInvoiceInfo>
+                    <DownloadBtn
+                      as={inv.invoice_pdf ? "a" : "span"}
+                      href={inv.invoice_pdf || undefined}
+                      target={inv.invoice_pdf ? "_blank" : undefined}
+                      rel={inv.invoice_pdf ? "noopener noreferrer" : undefined}
+                      aria-label="Download invoice"
+                      style={{ display: "inline-flex", cursor: inv.invoice_pdf ? "pointer" : "default", opacity: inv.invoice_pdf ? 1 : 0.5 }}
+                    >
+                      <Download size={14} />
+                    </DownloadBtn>
+                    <MobileDownloadBtn
+                      href={inv.invoice_pdf || undefined}
+                      target={inv.invoice_pdf ? "_blank" : undefined}
+                      rel={inv.invoice_pdf ? "noopener noreferrer" : undefined}
+                      data-disabled={!inv.invoice_pdf ? "true" : undefined}
+                      aria-label="Download invoice"
+                    >
+                      <Download size={14} />
+                    </MobileDownloadBtn>
+                  </InvoiceRow>
+                  {isExpanded && hasLines && (
+                    <InvoiceBreakdownRow>
+                      <div style={{ fontWeight: 600, color: "inherit", marginBottom: 8 }}>Charge breakdown</div>
+                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {inv.lines.map((line, i) => (
+                          <li key={i} style={{ marginBottom: 4 }}>
+                            {line.description} — {line.currency} ${Number(line.amount).toFixed(2)}
+                          </li>
+                        ))}
+                      </ul>
+                    </InvoiceBreakdownRow>
+                  )}
+                </React.Fragment>
               );
             })
           )}

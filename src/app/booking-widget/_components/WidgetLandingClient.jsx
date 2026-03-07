@@ -2040,7 +2040,6 @@ const PLAN_FEATURES_GROWTH = [
   { label: 'Pin widget to a specific class', tooltip: 'Embed a booking button for one class or location — great for landing pages, ads, and campaigns.' },
   { label: 'Widget revenue & booking analytics', tooltip: 'Track widget-specific conversion rates, revenue by class, and booking trends. Separate from your Marketplace stats.' },
   { label: 'Automated pre-class reminders', tooltip: 'Email (and optional SMS) reminders sent automatically before each session to cut no-shows.' },
-  { label: 'Post-class review requests', tooltip: 'Automatically prompt customers for a review after each class to build your public reputation.' },
   { label: 'Promo codes & discounts' },
   { label: 'Priority support' },
 ];
@@ -2049,10 +2048,8 @@ const PLAN_FEATURES_ADVANCED = [
   { label: 'Everything in Growth' },
   { label: 'Lower commission (2%)', tooltip: 'Best for high-volume studios. Pay a higher subscription to keep more of every booking.' },
   { label: 'White-label widget', tooltip: 'Remove all Classeasily branding entirely. Customers only see your brand when they book.' },
-  { label: 'API access', tooltip: 'Connect booking data directly to your CRM, scheduling tools, or custom apps via the Classeasily REST API.' },
   { label: 'Dedicated account manager' },
   { label: 'Personal onboarding call' },
-  { label: 'SLA-backed support' },
 ];
 
 const tooltipVariants = {

@@ -113,8 +113,30 @@ const formatDuration = (minutes) => {
   return `${mins} min`;
 };
 
+function flattenErrorValue(value) {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean).join(", ");
+  if (value && typeof value === "object") {
+    const list = Object.values(value).flat();
+    return list.map((v) => (Array.isArray(v) ? v.join(", ") : String(v))).filter(Boolean).join("; ");
+  }
+  return String(value ?? "");
+}
+
 const getErrorMessage = (error) => {
-  if (error?.message) return error.message;
+  if (error?.errorFields?.length) return error.errorFields[0]?.errors?.[0] || "Validation error";
+  const data = error?.response?.data ?? (typeof error === "object" && error !== null ? error : null);
+  if (data && typeof data === "object") {
+    if (typeof data.detail === "string") return data.detail;
+    if (typeof data.message === "string") return data.message;
+    if (typeof data.error === "string") return data.error;
+    const parts = Object.entries(data).map(([key, value]) => {
+      const label = key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+      const text = flattenErrorValue(value);
+      return label && text ? `${label}: ${text}` : text;
+    });
+    if (parts.filter(Boolean).length) return parts.filter(Boolean).join("; ");
+  }
+  if (typeof error?.message === "string") return error.message;
   return "An unexpected error occurred.";
 };
 
@@ -984,7 +1006,7 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
           if (!newDays.includes(p.day)) toDelete.push(p.id);
         });
 
-        await Promise.all([
+        const updateResults = await Promise.all([
           ...toUpdate.map((id) =>
             scheduleService.updateSchedule(id, commonPayload)
           ),
@@ -997,10 +1019,15 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
           ),
           ...toDelete.map((id) => scheduleService.deleteSchedule(id)),
         ]);
+        const failed = updateResults.find((r) => r && r.success === false);
+        if (failed) {
+          message.error(getErrorMessage(failed.error), 5);
+          return;
+        }
         message.success("Series updated");
       } else {
         // Create Logic
-        await Promise.all(
+        const createResults = await Promise.all(
           values.selectedDays.map((day) =>
             scheduleService.createSchedule({
               ...commonPayload,
@@ -1009,6 +1036,11 @@ const CourseScheduleDrawer = ({ open, onClose, classData }) => {
             })
           )
         );
+        const failed = createResults.find((r) => r && r.success === false);
+        if (failed) {
+          message.error(getErrorMessage(failed.error), 5);
+          return;
+        }
         message.success("Series created");
       }
 

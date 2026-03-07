@@ -69,6 +69,15 @@ const { Title } = Typography;
 
 // --- UTILS ---
 
+function flattenErrorValue(value) {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean).join(", ");
+  if (value && typeof value === "object") {
+    const list = Object.values(value).flat();
+    return list.map((v) => (Array.isArray(v) ? v.join(", ") : String(v))).filter(Boolean).join("; ");
+  }
+  return String(value ?? "");
+}
+
 const getErrorMessage = (error) => {
   // Ant Design validateFields rejection
   if (error?.errorFields?.length) {
@@ -86,9 +95,7 @@ const getErrorMessage = (error) => {
       const formattedKey = key
         .replace(/_/g, " ")
         .replace(/\b\w/g, (l) => l.toUpperCase());
-      return `${formattedKey}: ${
-        Array.isArray(value) ? value.join(", ") : String(value ?? "")
-      }`;
+      return `${formattedKey}: ${flattenErrorValue(value)}`;
     });
     if (messages.length > 0) return messages.join("; ");
   }

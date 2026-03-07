@@ -19,6 +19,8 @@ import {
   Tooltip,
   Popconfirm,
   Tag,
+  Modal,
+  Button,
 } from "antd";
 import { Drawer as VaulDrawer } from "vaul";
 import dayjs from "dayjs";
@@ -171,12 +173,28 @@ function formatTimeShort(timeStr) {
   return `${h12}:${String(m || 0).padStart(2, "0")} ${p}`;
 }
 
+function flattenErrorValue(value) {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean).join(", ");
+  if (value && typeof value === "object") {
+    const list = Object.values(value).flat();
+    return list.map((v) => (Array.isArray(v) ? v.join(", ") : String(v))).filter(Boolean).join("; ");
+  }
+  return String(value ?? "");
+}
+
 const getErrorMessage = (error) => {
   if (error?.errorFields?.length) return error.errorFields[0]?.errors?.[0] || "Validation error";
-  if (error?.response?.data) {
-    const d = error.response.data;
-    if (typeof d.detail === "string") return d.detail;
-    if (typeof d.message === "string") return d.message;
+  const data = error?.response?.data ?? (typeof error === "object" && error !== null ? error : null);
+  if (data && typeof data === "object") {
+    if (typeof data.detail === "string") return data.detail;
+    if (typeof data.message === "string") return data.message;
+    if (typeof data.error === "string") return data.error;
+    const parts = Object.entries(data).map(([key, value]) => {
+      const label = key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+      const text = flattenErrorValue(value);
+      return label && text ? `${label}: ${text}` : text;
+    });
+    if (parts.filter(Boolean).length) return parts.filter(Boolean).join("; ");
   }
   return error?.message || "An unexpected error occurred.";
 };
@@ -964,6 +982,120 @@ const MonthPillCheck = styled.div`
   flex-shrink: 0;
 `;
 
+// ── Mobile Week (list) & Month (compact grid) ───────────────────────────────────
+const WeekListOuter = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  margin: 0 12px 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  background: #fff;
+  padding-bottom: 12px;
+`;
+
+const WeekListDay = styled.div`
+  border-bottom: 1px solid #f3f4f6;
+  &:last-child { border-bottom: none; }
+`;
+
+const WeekListDayHeader = styled.div`
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const WeekListDayNum = styled.span`
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: ${p => p.$isToday ? "#3b82f6" : "#e5e7eb"};
+  color: ${p => p.$isToday ? "#fff" : "#374151"};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+`;
+
+const WeekListEvent = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin: 0 8px 6px;
+  border-radius: 8px;
+  background: ${p => p.$bg};
+  border: 1px solid ${p => p.$accent};
+  cursor: pointer;
+  min-height: 44px;
+  box-sizing: border-box;
+`;
+
+const WeekListEventTime = styled.span`
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  flex-shrink: 0;
+  min-width: 52px;
+`;
+
+const WeekListEventTitle = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${p => p.$text};
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const MonthOuterMobile = styled(MonthOuter)`
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+`;
+
+const MonthGridMobile = styled.div`
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-width: 280px;
+  border-left: 1px solid #e5e7eb;
+  border-top: 1px solid #e5e7eb;
+`;
+
+const MonthDayHeaderMobile = styled(MonthDayHeader)`
+  padding: 4px 2px;
+  font-size: 9px;
+  min-width: 0;
+`;
+
+const MonthDayCellMobile = styled(MonthDayCell)`
+  min-height: 56px;
+  padding: 3px;
+  min-width: 0;
+`;
+
+const MonthDayNumMobile = styled(MonthDayNum)`
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  margin-bottom: 2px;
+`;
+
+const MonthPillMobile = styled(MonthPill)`
+  font-size: 9px;
+  padding: 1px 3px 1px 4px;
+  min-height: 16px;
+  margin-bottom: 1px;
+`;
+
 // ── Schedule Form Panel ───────────────────────────────────────────────────────
 const PanelOverlay = styled(motion.div)`
   position: fixed;
@@ -1560,7 +1692,7 @@ function ScheduleFormPanel({ open, onClose, schedule, prefill, classes, onSucces
         name: values.name,
         start_date: values.date_range[0].format("YYYY-MM-DD"),
         end_date: values.date_range[1].format("YYYY-MM-DD"),
-        days_of_week: selectedDays,
+        days_of_week: selectedDays.map((key) => DAYS_SHORT[DAY_KEYS.indexOf(key)]).filter(Boolean),
         times: times.map(t => t.format("HH:mm")),
         duration,
         price: Math.max(0, parseFloat(priceRaw) || 0).toFixed(2),
@@ -1880,7 +2012,7 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose 
           name: values.name,
           start_date: values.date_range[0].format("YYYY-MM-DD"),
           end_date: values.date_range[1].format("YYYY-MM-DD"),
-          days_of_week: selectedDays,
+          days_of_week: selectedDays.map((key) => DAYS_SHORT[DAY_KEYS.indexOf(key)]).filter(Boolean),
           times: times.map(t => t.format("HH:mm")),
           duration,
           price: Math.max(0, parseFloat(values.price) || 0).toFixed(2),
@@ -2217,14 +2349,14 @@ function getLocalTzAbbr() {
 const LOCAL_TZ = getLocalTzAbbr();
 
 // ─── WEEK VIEW ────────────────────────────────────────────────────────────────
-function WeekView({ weekDays, schedulesByDay, getClassColor, onEventClick, onSlotClick, loading, selectMode, selectedIds, onToggleSelect }) {
+function WeekView({ weekDays, schedulesByDay, getClassColor, onEventClick, onSlotClick, loading, selectMode, selectedIds, onToggleSelect, isMobile }) {
   const scrollRef = useRef(null);
   const [hoveredCell, setHoveredCell] = useState(null);
   const today = dayjs();
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = (8 - START_HOUR) * HOUR_HEIGHT;
-  }, []);
+    if (!isMobile && scrollRef.current) scrollRef.current.scrollTop = (8 - START_HOUR) * HOUR_HEIGHT;
+  }, [isMobile]);
 
   const currentTimeTop = useMemo(() => {
     const now = dayjs();
@@ -2232,6 +2364,68 @@ function WeekView({ weekDays, schedulesByDay, getClassColor, onEventClick, onSlo
     if (h < START_HOUR || h >= END_HOUR) return null;
     return (h - START_HOUR + m / 60) * HOUR_HEIGHT;
   }, []);
+
+  // Mobile: simplified vertical list (one section per day, no grid)
+  if (isMobile) {
+    return (
+      <WeekListOuter>
+        {loading && <LoadingOverlay><SpinnerEl $size={36} /></LoadingOverlay>}
+        {weekDays.map((day, i) => {
+          const dayStr = day.format("YYYY-MM-DD");
+          const daySchedules = (schedulesByDay[dayStr] || []).sort((a, b) => a.time.localeCompare(b.time));
+          const isToday = day.isSame(today, "day");
+          return (
+            <WeekListDay key={i}>
+              <WeekListDayHeader>
+                <WeekListDayNum $isToday={isToday}>{day.date()}</WeekListDayNum>
+                <span>{DAYS_SHORT[i]}, {day.format("MMM D")}</span>
+              </WeekListDayHeader>
+              {daySchedules.map((s) => {
+                const color = getClassColor(s.optionId);
+                const isSelected = selectedIds.has(s.id);
+                return (
+                  <WeekListEvent
+                    key={s.id}
+                    $bg={color.bg}
+                    $accent={color.accent}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (selectMode) onToggleSelect(s.id);
+                      else onEventClick(s);
+                    }}
+                  >
+                    {selectMode && (
+                      <div style={{
+                        width: 18, height: 18, borderRadius: 4,
+                        background: isSelected ? "#3b82f6" : "rgba(255,255,255,0.9)",
+                        border: `1.5px solid ${isSelected ? "#3b82f6" : "#d1d5db"}`,
+                        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                      }}>
+                        {isSelected && <Check size={10} color="#fff" />}
+                      </div>
+                    )}
+                    <WeekListEventTime>{formatTimeShort(s.time)}</WeekListEventTime>
+                    <WeekListEventTitle $text={color.text}>{s.className || s.name || "Session"}</WeekListEventTitle>
+                  </WeekListEvent>
+                );
+              })}
+              {!selectMode && (
+                <WeekListEvent
+                  $bg="rgba(59,130,246,0.06)"
+                  $accent="rgba(59,130,246,0.3)"
+                  onClick={() => onSlotClick(day, "09:00")}
+                  style={{ justifyContent: "center" }}
+                >
+                  <Plus size={16} color="#3b82f6" />
+                  <span style={{ fontSize: 12, color: "#3b82f6", fontWeight: 600 }}>Add session</span>
+                </WeekListEvent>
+              )}
+            </WeekListDay>
+          );
+        })}
+      </WeekListOuter>
+    );
+  }
 
   return (
     <CalendarOuter>
@@ -2420,34 +2614,41 @@ function DayView({ day, schedules, getClassColor, onEventClick, onSlotClick, loa
 }
 
 // ─── MONTH VIEW ───────────────────────────────────────────────────────────────
-function MonthView({ currentMonth, schedulesByDay, getClassColor, onEventClick, onDayClick, selectMode, selectedIds }) {
+function MonthView({ currentMonth, schedulesByDay, getClassColor, onEventClick, onDayClick, selectMode, selectedIds, isMobile }) {
   const startOfMonth = currentMonth.startOf("month");
   const firstWeekday = startOfMonth.day();
   const gridStart = startOfMonth.subtract(firstWeekday === 0 ? 6 : firstWeekday - 1, "day");
   const cells = Array.from({ length: 42 }, (_, i) => gridStart.add(i, "day"));
   const today = dayjs();
-  const maxVis = 5;
+  const maxVis = isMobile ? 2 : 5;
+
+  const DayHeader = isMobile ? MonthDayHeaderMobile : MonthDayHeader;
+  const DayCell = isMobile ? MonthDayCellMobile : MonthDayCell;
+  const DayNumEl = isMobile ? MonthDayNumMobile : MonthDayNum;
+  const PillEl = isMobile ? MonthPillMobile : MonthPill;
+  const GridEl = isMobile ? MonthGridMobile : MonthGrid;
+  const OuterEl = isMobile ? MonthOuterMobile : MonthOuter;
 
   return (
-    <MonthOuter>
-      <div style={{ paddingTop: 14 }}>
-        <MonthGrid>
-          {DAYS_SHORT.map(d => <MonthDayHeader key={d}>{d}</MonthDayHeader>)}
-        </MonthGrid>
-        <MonthGrid>
+    <OuterEl>
+      <div style={{ paddingTop: isMobile ? 10 : 14 }}>
+        <GridEl>
+          {DAYS_SHORT.map(d => <DayHeader key={d}>{d}</DayHeader>)}
+        </GridEl>
+        <GridEl>
           {cells.map((date, i) => {
             const dateStr = date.format("YYYY-MM-DD");
             const daySchedules = schedulesByDay[dateStr] || [];
             const isCurrent = date.isSame(currentMonth, "month");
             const isToday = date.isSame(today, "day");
             return (
-              <MonthDayCell key={i} $isCurrent={isCurrent} onClick={() => onDayClick(date)}>
-                <MonthDayNum $isToday={isToday} $isCurrent={isCurrent}>{date.date()}</MonthDayNum>
+              <DayCell key={i} $isCurrent={isCurrent} onClick={() => onDayClick(date)}>
+                <DayNumEl $isToday={isToday} $isCurrent={isCurrent}>{date.date()}</DayNumEl>
                 {daySchedules.slice(0, maxVis).map((s) => {
                   const color = getClassColor(s.optionId);
                   const isSelected = selectedIds?.has(s.id);
                   return (
-                    <MonthPill key={s.id} $bg={color.bg} $accent={color.accent} $text={color.text}
+                    <PillEl key={s.id} $bg={color.bg} $accent={color.accent} $text={color.text}
                       onClick={(e) => { e.stopPropagation(); onEventClick(s); }}>
                       {selectMode && (
                         <MonthPillCheck $selected={isSelected}>
@@ -2455,21 +2656,21 @@ function MonthView({ currentMonth, schedulesByDay, getClassColor, onEventClick, 
                         </MonthPillCheck>
                       )}
                       <MonthPillContent>{s.className || s.name || "Session"}</MonthPillContent>
-                      <MonthPillTime>{formatTimeShort(s.time)}</MonthPillTime>
-                    </MonthPill>
+                      {!isMobile && <MonthPillTime>{formatTimeShort(s.time)}</MonthPillTime>}
+                    </PillEl>
                   );
                 })}
                 {daySchedules.length > maxVis && (
-                  <div style={{ fontSize: 10, color: "#6b7280", padding: "1px 2px" }}>
-                    +{daySchedules.length - maxVis} more
+                  <div style={{ fontSize: isMobile ? 8 : 10, color: "#6b7280", padding: "1px 2px" }}>
+                    +{daySchedules.length - maxVis}
                   </div>
                 )}
-              </MonthDayCell>
+              </DayCell>
             );
           })}
-        </MonthGrid>
+        </GridEl>
       </div>
-    </MonthOuter>
+    </OuterEl>
   );
 }
 
@@ -2621,6 +2822,12 @@ export default function ScheduleCalendarView({ initialClassId }) {
 
   // Form panel state
   const [formState, setFormState] = useState({ open: false, schedule: null, prefill: null, isBulk: false });
+
+  // Group bulk-edit (dropdown + modal)
+  const [selectedGroup, setSelectedGroup] = useState("all");
+  const [groupEditModalOpen, setGroupEditModalOpen] = useState(false);
+  const [groupEditLoading, setGroupEditLoading] = useState(false);
+  const [groupEditForm] = Form.useForm();
 
   // Mobile
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -2896,6 +3103,44 @@ export default function ScheduleCalendarView({ initialClassId }) {
                 />
               </ViewDropdownWrap>
 
+              {allGroups.length > 0 && (
+                <>
+                  <Select
+                    value={selectedGroup}
+                    onChange={setSelectedGroup}
+                    options={[
+                      { label: "All groups", value: "all" },
+                      ...allGroups.map((g) => ({ label: g, value: g })),
+                    ]}
+                    style={{ width: 140 }}
+                    size="small"
+                    suffixIcon={<ChevronDown size={12} />}
+                  />
+                  {selectedGroup !== "all" && (
+                    <Tooltip title="Bulk edit all sessions in this group">
+                      <Button
+                        size="small"
+                        icon={<Edit3 size={14} />}
+                        onClick={() => {
+                          const sample = allSchedules.find((s) => s.name === selectedGroup);
+                          if (sample) {
+                            groupEditForm.setFieldsValue({
+                              price: parseFloat(sample.price ?? 0),
+                              duration: sample.duration ?? 60,
+                              maxParticipants: sample.maxParticipants ?? 10,
+                              minParticipants: sample.minParticipants ?? 1,
+                            });
+                            setGroupEditModalOpen(true);
+                          }
+                        }}
+                      >
+                        Edit group
+                      </Button>
+                    </Tooltip>
+                  )}
+                </>
+              )}
+
               <Tooltip title={selectMode ? "Exit select mode" : "Select schedules for bulk actions"}>
                 <IconBtn
                   $active={selectMode}
@@ -2922,10 +3167,10 @@ export default function ScheduleCalendarView({ initialClassId }) {
         <AnimatePresence>
           {selectMode && (
             <BulkBar
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.18 }}
+              initial={{ height: 0, opacity: 0, overflow: "hidden" }}
+              animate={{ height: "auto", opacity: 1, overflow: "visible" }}
+              exit={{ height: 0, opacity: 0, overflow: "hidden" }}
+              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
             >
               <BulkCount>
                 {selectedIds.size === 0 ? "Click events to select" : `${selectedIds.size} selected`}
@@ -2975,6 +3220,7 @@ export default function ScheduleCalendarView({ initialClassId }) {
             selectMode={selectMode}
             selectedIds={selectedIds}
             onToggleSelect={handleToggleSelect}
+            isMobile={isMobile}
           />
         )}
         {viewMode === "day" && (
@@ -2999,6 +3245,7 @@ export default function ScheduleCalendarView({ initialClassId }) {
             onDayClick={(date) => { setCurrentDate(date); setViewMode("day"); }}
             selectMode={selectMode}
             selectedIds={selectedIds}
+            isMobile={isMobile}
           />
         )}
 
@@ -3036,6 +3283,72 @@ export default function ScheduleCalendarView({ initialClassId }) {
         onClose={() => setMobileFiltersOpen(false)}
         {...sidebarProps}
       />
+
+      {/* Group bulk-edit modal */}
+      <Modal
+        title={`Edit group: ${selectedGroup !== "all" ? selectedGroup : ""}`}
+        open={groupEditModalOpen}
+        onCancel={() => { setGroupEditModalOpen(false); groupEditForm.resetFields(); }}
+        onOk={() => groupEditForm.submit()}
+        confirmLoading={groupEditLoading}
+        okText="Update group"
+        width={400}
+        destroyOnClose
+      >
+        <Form
+          form={groupEditForm}
+          layout="vertical"
+          onFinish={async (values) => {
+            if (selectedGroup === "all") return;
+            const optionIds = [...new Set(
+              allSchedules.filter((s) => s.name === selectedGroup).map((s) => s.optionId)
+            )];
+            if (!optionIds.length) {
+              message.warning("No schedules found for this group.");
+              return;
+            }
+            setGroupEditLoading(true);
+            try {
+              const updates = {
+                price: Math.max(0, parseFloat(values.price) || 0).toFixed(2),
+                duration: values.duration ?? 60,
+                maxParticipants: values.maxParticipants ?? 10,
+                minParticipants: values.minParticipants ?? 1,
+              };
+              await Promise.all(
+                optionIds.map((optionId) =>
+                  scheduleService.groupUpdate({
+                    option_id: optionId,
+                    name: selectedGroup,
+                    updates,
+                  })
+                )
+              );
+              message.success(`Group "${selectedGroup}" updated.`);
+              setGroupEditModalOpen(false);
+              groupEditForm.resetFields();
+              handleSuccess();
+            } catch (e) {
+              message.error(getErrorMessage(e));
+            } finally {
+              setGroupEditLoading(false);
+            }
+          }}
+        >
+          <Form.Item label="Price" name="price" rules={[{ required: true }]}>
+            <Input type="number" step="0.01" prefix="$" />
+          </Form.Item>
+          <Form.Item label="Duration (min)" name="duration" rules={[{ required: true }]}>
+            <InputNumber min={15} step={15} style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item label="Max participants" name="maxParticipants" rules={[{ required: true }]}>
+            <InputNumber min={1} style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item label="Min participants" name="minParticipants" rules={[{ required: true }]}>
+            <InputNumber min={1} style={{ width: "100%" }} />
+          </Form.Item>
+        </Form>
+      </Modal>
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }

@@ -1,5 +1,34 @@
 import axiosInstance from "@/lib/axiosInstance";
 import { getMetaPixelParams } from "@/lib/metaPixel";
+import { message } from "antd";
+
+/** Flatten one level of value (array, or list-style object { 0: [...], 1: [...] }) to a string. */
+function flattenValue(value) {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean).join(", ");
+  if (value && typeof value === "object") {
+    const list = Object.values(value).flat();
+    return list.map((v) => (Array.isArray(v) ? v.join(", ") : String(v))).filter(Boolean).join("; ");
+  }
+  return String(value ?? "");
+}
+
+/** Flatten API error (detail, message, or field errors e.g. { date: ['...'] }, days_of_week: { 0: [...] }) to a single string for toasts. */
+function flattenApiError(data) {
+  if (data == null) return "An unexpected error occurred.";
+  if (typeof data === "string") return data;
+  if (typeof data === "object") {
+    if (typeof data.detail === "string") return data.detail;
+    if (typeof data.message === "string") return data.message;
+    if (typeof data.error === "string") return data.error;
+    const parts = Object.entries(data).map(([key, value]) => {
+      const label = key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+      const text = flattenValue(value);
+      return label && text ? `${label}: ${text}` : text;
+    });
+    return parts.filter(Boolean).join("; ") || "An unexpected error occurred.";
+  }
+  return String(data);
+}
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -2829,13 +2858,13 @@ export const scheduleService = {
       );
       return { success: true, data: response.data };
     } catch (error) {
-      console.error(
-        "Error creating schedule:",
-        error.response?.data || error.message,
-      );
+      const data = error.response?.data || error.message;
+      console.error("Error creating schedule:", data);
+      const msg = flattenApiError(error.response?.data || data);
+      message.error(msg, 5);
       return {
         success: false,
-        error: error.response?.data || "Failed to create schedule",
+        error: error.response?.data ?? "Failed to create schedule",
       };
     }
   },
@@ -2862,11 +2891,9 @@ export const scheduleService = {
       );
       return response.data;
     } catch (error) {
-      console.error(
-        "Error bulk creating schedules:",
-        error.response?.data || error.message,
-      );
-      // Let the component handle the error message display
+      const data = error.response?.data || error.message;
+      console.error("Error bulk creating schedules:", data);
+      message.error(flattenApiError(error.response?.data ?? data), 5);
       throw error;
     }
   },
@@ -2878,7 +2905,10 @@ export const scheduleService = {
       );
       return { success: true, data: response.data };
     } catch (error) {
-      console.error("Error updating schedule:", error.response?.data || error);
+      const data = error.response?.data || error;
+      console.error("Error updating schedule:", data);
+      const msg = flattenApiError(error.response?.data ?? data);
+      message.error(msg, 5);
       return {
         success: false,
         error: error.response?.data || "Failed to update schedule",

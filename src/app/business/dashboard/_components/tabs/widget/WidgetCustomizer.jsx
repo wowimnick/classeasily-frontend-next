@@ -919,16 +919,30 @@ export default function WidgetCustomizer() {
       {/* Content */}
       <SettingsCard title="Content" subtitle="Control which classes are shown">
         <FieldLabel>Starting page</FieldLabel>
-        <Select
-          value={form.specificClassId || ""}
-          onChange={(v) => set("specificClassId")(v)}
-          style={{ width: "100%" }}
-          size="middle"
-          options={[
-            { value: "", label: "Profile page with all classes" },
-            ...classes.map((c) => ({ value: String(c.classId), label: c.title })),
-          ]}
-        />
+        {(() => {
+          const planId = (data?.widget_subscription?.planId || "").toLowerCase();
+          const canPinToClass = ["growth", "advanced"].includes(planId);
+          const select = (
+            <Select
+              value={form.specificClassId || ""}
+              onChange={(v) => set("specificClassId")(v)}
+              style={{ width: "100%" }}
+              size="middle"
+              disabled={!canPinToClass}
+              options={[
+                { value: "", label: "Profile page with all classes" },
+                ...classes.map((c) => ({ value: String(c.classId), label: c.title })),
+              ]}
+            />
+          );
+          return canPinToClass ? (
+            select
+          ) : (
+            <Tooltip title="Upgrade to Growth or Advanced to pin the widget to a specific class.">
+              <span style={{ display: "inline-block", width: "100%" }}>{select}</span>
+            </Tooltip>
+          );
+        })()}
         <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 6, lineHeight: 1.4 }}>
           Selecting a class skips the class-selection step for your customers.
         </div>
