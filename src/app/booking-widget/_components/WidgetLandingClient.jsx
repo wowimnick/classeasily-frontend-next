@@ -1001,9 +1001,6 @@ const Hero = () => {
                     See pricing <ArrowRight size={16} />
                   </Button>
                 )}
-                <a href="#pricing" onClick={(e) => { e.preventDefault(); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }}>
-                  <Button variant="secondary">See pricing</Button>
-                </a>
                 <Link href="/widget-demo/mock?key=demo">
                   <Button variant="secondary">Try demo</Button>
                 </Link>
