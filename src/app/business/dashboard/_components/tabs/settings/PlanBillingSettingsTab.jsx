@@ -1177,22 +1177,27 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     });
   }, [subscription?.planId]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const fetchInvoices = useCallback(() => {
     setInvoicesLoading(true);
     businessService.getWidgetSubscriptionInvoices().then((res) => {
-      if (cancelled) return;
       setInvoicesLoading(false);
-      if (res.success && Array.isArray(res.data?.invoices)) setInvoices(res.data.invoices);
-      else setInvoices([]);
+      if (res.success && Array.isArray(res.data?.invoices)) {
+        // Only show invoices with a charge (hide $0 / credit-only)
+        const withCharge = res.data.invoices.filter((inv) => (inv.amount_paid ?? 0) > 0);
+        setInvoices(withCharge);
+      } else setInvoices([]);
     }).catch(() => {
-      if (!cancelled) { setInvoicesLoading(false); setInvoices([]); }
+      setInvoicesLoading(false);
+      setInvoices([]);
     });
-    return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
+
   const displayedInvoices = useMemo(() => {
-    let list = [...invoices];
+    let list = invoices.filter((inv) => (inv.amount_paid ?? 0) > 0);
     if (activeTab === "Active") list = list.filter((inv) => inv.status === "paid");
     else if (activeTab === "Archived") list = list.filter((inv) => (inv.status && !["paid", "open", "draft"].includes(inv.status)) || false);
     const q = (invoiceSearchQuery || "").trim().toLowerCase();
@@ -1217,13 +1222,15 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
         setSwitchPaymentTargetPlanId(result.data.target_plan_id ?? planId);
         return;
       }
+      // Context already updated subscription from response; show toast immediately, then refetch in background.
       const planName = getPlanById(planId)?.name ?? planId;
       if (result.data?.stripe_updated) {
         message.success(`You're now on the ${planName} plan. Any proration will appear on your invoice or payment method.`, 5);
       } else {
         message.success(`Switched to ${planName} plan.`, 4);
       }
-      await refetchSubscription();
+      refetchSubscription();
+      fetchInvoices();
     } else {
       antMessage.error(result.error || "Failed to switch plan.");
     }
@@ -1235,9 +1242,11 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     setSwitchPaymentTargetPlanId(null);
     message.success(`Switched to ${planName} plan.`);
     refetchSubscription();
-    // Refetch again after a short delay so we pick up webhook updates (plan_id, cancelAtPeriodEnd) and UI stays in sync
-    setTimeout(() => refetchSubscription(), 2500);
-  }, [switchPaymentTargetPlanId, refetchSubscription]);
+    fetchInvoices();
+    // Refetch again so we pick up webhook updates (plan_id, cancelAtPeriodEnd) and UI stays in sync
+    setTimeout(() => { refetchSubscription(); fetchInvoices(); }, 1000);
+    setTimeout(() => { refetchSubscription(); fetchInvoices(); }, 2500);
+  }, [switchPaymentTargetPlanId, refetchSubscription, fetchInvoices]);
 
   const handleSwitchPaymentLoadError = useCallback(() => {
     setSwitchPaymentSecret(null);
@@ -1334,10 +1343,11 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
       const pmRes = await businessService.getDefaultPaymentMethod();
       if (pmRes.success && pmRes.data) setDefaultPaymentMethod(pmRes.data.payment_method ?? null);
       refetchAddons?.();
+      fetchInvoices();
     } else {
       antMessage.error(result.error || "Failed to update payment method.");
     }
-  }, [refetchAddons]);
+  }, [refetchAddons, fetchInvoices]);
 
   useEffect(() => {
     const id = "billing-gradient-canvas";
@@ -1355,18 +1365,23 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     return () => clearTimeout(t);
   }, []);
 
-  const handleAddonPaymentSuccess = useCallback(() => {
-    setSubscribeModalOpen(false); setAddonClientSecret(null);
+  const handleAddonPaymentSuccess = useCallback(async () => {
+    setSubscribeModalOpen(false);
+    setAddonClientSecret(null);
+    await refetchAddons?.();
+    fetchInvoices();
     message.success("Marketplace email branding add-on is now active.");
-    refetchAddons?.();
-  }, [refetchAddons]);
+  }, [refetchAddons, fetchInvoices]);
 
   const handleInstantSubscribeAddon = async () => {
     setAddonSubscribing(true);
     const result = await businessService.subscribeMarketplaceEmailAddonInstant();
     setAddonSubscribing(false);
-    if (result.success) { message.success("Marketplace email branding add-on is now active."); refetchAddons?.(); }
-    else antMessage.error(result.error || "Failed to subscribe.");
+    if (result.success) {
+      await refetchAddons?.();
+      fetchInvoices();
+      message.success("Marketplace email branding add-on is now active.");
+    } else antMessage.error(result.error || "Failed to subscribe.");
   };
 
   const handleAddonCancelConfirm = async () => {
