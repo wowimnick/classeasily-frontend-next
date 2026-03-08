@@ -821,7 +821,7 @@ export default function BannerSearchClient({ mode }) {
                 <strong>First class? Get a gift card for your next one</strong>
                 <span className="sep">|</span>
                 <span className="desc">
-                  We&apos;ll email you $10–$20 after your first booking to use on your next. No code needed.
+                  Get $10–$20 after your first booking to use on your next booking. 
                 </span>
               </TextContent>
             </LeftContent>
