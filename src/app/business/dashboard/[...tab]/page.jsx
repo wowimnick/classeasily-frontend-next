@@ -5,7 +5,6 @@
 import { useEffect } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useSubscription } from "@/context/SubscriptionContext";
-import { PLAN_IDS as WIDGET_TAB_PLAN_IDS } from "@/lib/subscriptionPlans";
 
 // Import all tab components
 import Overview from "../_components/tabs/overview/Overview";
@@ -28,26 +27,18 @@ export default function DashboardPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { subscription, widgetSubscriptionRequired, loading: subLoading } = useSubscription();
+  const { hasWidgetAccess, loading: subLoading } = useSubscription();
 
   // Calculate key
   const activeKey = params.tab ? params.tab.join("/") : "overview";
 
-  const planId = (subscription?.planId ?? subscription?.plan_id ?? "").toString().toLowerCase();
-  const hasActiveSubscription =
-    subscription?.status &&
-    ["active", "trialing"].includes(subscription.status) &&
-    planId &&
-    WIDGET_TAB_PLAN_IDS.includes(planId);
-  const hasWidgetPlan = !widgetSubscriptionRequired || Boolean(hasActiveSubscription);
-
-  // When user has no widget plan, redirect away from widget tab (e.g. direct URL)
+  // When user has no widget access, redirect away from widget tab (e.g. direct URL /business/dashboard/widget)
   useEffect(() => {
     if (subLoading || activeKey !== "widget") return;
-    if (!hasWidgetPlan) {
+    if (!hasWidgetAccess) {
       router.replace("/business/dashboard");
     }
-  }, [activeKey, hasWidgetPlan, subLoading, router]);
+  }, [activeKey, hasWidgetAccess, subLoading, router]);
 
   let componentToRender;
 
@@ -142,7 +133,7 @@ export default function DashboardPage() {
       );
       break;
     case "widget": {
-      const showWidget = !subLoading && hasWidgetPlan;
+      const showWidget = !subLoading && hasWidgetAccess;
       componentToRender = showWidget ? (
         <TabGlassWrapper>
           <WidgetCustomizer />

@@ -7,6 +7,7 @@ import { businessService } from "@/services/apiService";
 const SubscriptionContext = createContext({
   subscription: null,
   widgetSubscriptionRequired: false,
+  hasWidgetAccess: false,
   hasStripeSubscription: false,
   loading: true,
   error: null,
@@ -29,6 +30,7 @@ export function SubscriptionProvider({ children }) {
   const { user, isAuthenticated } = useAuthUser();
   const [subscription, setSubscription] = useState(null);
   const [widgetSubscriptionRequired, setWidgetSubscriptionRequired] = useState(false);
+  const [hasWidgetAccess, setHasWidgetAccess] = useState(false);
   const [hasStripeSubscription, setHasStripeSubscription] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,6 +41,7 @@ export function SubscriptionProvider({ children }) {
     if (!canManageSubscription) {
       setSubscription(null);
       setWidgetSubscriptionRequired(false);
+      setHasWidgetAccess(false);
       setHasStripeSubscription(false);
       setLoading(false);
       setError(null);
@@ -51,10 +54,12 @@ export function SubscriptionProvider({ children }) {
     if (result.success && result.data) {
       setSubscription(result.data.subscription ?? null);
       setWidgetSubscriptionRequired(Boolean(result.data.widget_subscription_required));
+      setHasWidgetAccess(Boolean(result.data.has_widget_access));
       setHasStripeSubscription(Boolean(result.data.has_stripe_subscription));
     } else {
       setSubscription(null);
       setWidgetSubscriptionRequired(false);
+      setHasWidgetAccess(false);
       setHasStripeSubscription(false);
       if (!result.success && result.error) {
         setError(result.error);
@@ -73,31 +78,35 @@ export function SubscriptionProvider({ children }) {
       // If requires_payment, caller shows modal and refetches after payment success.
       if (result.success && result.data?.subscription != null && !result.data?.requires_payment) {
         setSubscription(result.data.subscription);
+        refetch();
       }
       return result;
     },
-    [],
+    [refetch],
   );
 
   const cancel = useCallback(async () => {
     const result = await businessService.cancelWidgetSubscription();
     if (result.success && result.data?.subscription) {
       setSubscription(result.data.subscription);
+      refetch();
     }
     return result;
-  }, []);
+  }, [refetch]);
 
   const reactivate = useCallback(async () => {
     const result = await businessService.reactivateWidgetSubscription();
     if (result.success && result.data?.subscription) {
       setSubscription(result.data.subscription);
+      refetch();
     }
     return result;
-  }, []);
+  }, [refetch]);
 
   const value = {
     subscription,
     widgetSubscriptionRequired,
+    hasWidgetAccess,
     hasStripeSubscription,
     loading,
     error,

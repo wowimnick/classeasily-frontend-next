@@ -29,7 +29,6 @@ import { Drawer } from "vaul";
 import { businessService } from "@/services/apiService";
 import { useAuth } from "@/lib/auth-client";
 import { useSubscription } from "@/context/SubscriptionContext";
-import { PLAN_IDS as WIDGET_TAB_PLAN_IDS } from "@/lib/subscriptionPlans";
 
 const { Title, Text } = Typography;
 import { theme as augmentedTheme } from "@/components/theme";
@@ -841,14 +840,7 @@ const SideMenuComponent = memo(
 
     const { user } = useAuth();
     const permissions = user?.permissions ||[];
-    const { subscription, widgetSubscriptionRequired } = useSubscription();
-    const planId = (subscription?.planId ?? subscription?.plan_id ?? "").toString().toLowerCase();
-    const hasActiveSubscription =
-      subscription?.status &&
-      ["active", "trialing"].includes(subscription.status) &&
-      planId &&
-      WIDGET_TAB_PLAN_IDS.includes(planId);
-    const hasWidgetPlan = !widgetSubscriptionRequired || Boolean(hasActiveSubscription);
+    const { hasWidgetAccess } = useSubscription();
 
     const isBusinessClickable =
       !loadingBusiness && !businessError && businessData && !businessData._isPlaceholder;
@@ -961,7 +953,7 @@ const SideMenuComponent = memo(
     }, [fetchBusinessProfile, router]);
 
     const handleMenuClick = (e) => {
-      if (e.key === "widget" && !hasWidgetPlan) {
+      if (e.key === "widget" && !hasWidgetAccess) {
         e.domEvent?.preventDefault?.();
         setShakeWidget(true);
         setTimeout(() => {
@@ -1044,7 +1036,7 @@ const SideMenuComponent = memo(
         return r ? <span ref={r}>{label}</span> : label;
       };
 
-      const widgetLabel = hasWidgetPlan
+      const widgetLabel = hasWidgetAccess
         ? attachRefToLabel("Booking Widget", "widget")
         : (
             <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingRight: 2 }}>
@@ -1101,7 +1093,7 @@ const SideMenuComponent = memo(
           return { type: "group", label: group.label, children: visibleItems };
         })
         .filter(Boolean);
-    },[handleMenuItemHover, permissions, hasWidgetPlan, shakeWidget]);
+    },[handleMenuItemHover, permissions, hasWidgetAccess, shakeWidget]);
 
     /* ── Render helpers ── */
 
