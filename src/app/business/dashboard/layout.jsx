@@ -89,16 +89,16 @@ function DashboardLayoutInner({ children }) {
         <HeaderWrapper>
           <BusinessHeader />
         </HeaderWrapper>
-        <DashboardContainer>
-          <SideMenuWrapper>
-            <SideMenu
-              ref={sideMenuRef}
-              onMenuSelect={handleMenuSelect}
-              activeKey={menuActiveKey}
-            />
-          </SideMenuWrapper>
-          <MainContent $isSettings={pathname?.includes("/business/dashboard/settings")}>
-            <SubscriptionProvider>
+        <SubscriptionProvider>
+          <DashboardContainer>
+            <SideMenuWrapper>
+              <SideMenu
+                ref={sideMenuRef}
+                onMenuSelect={handleMenuSelect}
+                activeKey={menuActiveKey}
+              />
+            </SideMenuWrapper>
+            <MainContent $isSettings={pathname?.includes("/business/dashboard/settings")}>
               <DashboardContext.Provider
                 value={{
                   openSettingsDrawer: (tab = "general", sectionId = null) => {
@@ -110,10 +110,10 @@ function DashboardLayoutInner({ children }) {
               >
                 {children}
               </DashboardContext.Provider>
-            </SubscriptionProvider>
-          </MainContent>
-        </DashboardContainer>
-        <SetupGuideWrapper sideMenuRef={sideMenuRef} />
+            </MainContent>
+          </DashboardContainer>
+          <SetupGuideWrapper sideMenuRef={sideMenuRef} />
+        </SubscriptionProvider>
       </PageLayout>
       </ConfigProvider>
     </ThemeProvider>
