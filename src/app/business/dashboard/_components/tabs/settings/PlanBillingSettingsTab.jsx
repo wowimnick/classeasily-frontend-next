@@ -1177,19 +1177,17 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     });
   }, [subscription?.planId]);
 
-  const fetchInvoices = useCallback(() => {
+  const fetchInvoices = useCallback(async () => {
     setInvoicesLoading(true);
-    businessService.getWidgetSubscriptionInvoices().then((res) => {
-      setInvoicesLoading(false);
-      if (res.success && Array.isArray(res.data?.invoices)) {
-        // Only show invoices with a charge (hide $0 / credit-only)
-        const withCharge = res.data.invoices.filter((inv) => (inv.amount_paid ?? 0) > 0);
-        setInvoices(withCharge);
-      } else setInvoices([]);
-    }).catch(() => {
-      setInvoicesLoading(false);
+    try {
+      const res = await businessService.getWidgetSubscriptionInvoices();
+      if (res.success && Array.isArray(res.data?.invoices)) setInvoices(res.data.invoices);
+      else setInvoices([]);
+    } catch {
       setInvoices([]);
-    });
+    } finally {
+      setInvoicesLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -1197,7 +1195,8 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   }, [fetchInvoices]);
 
   const displayedInvoices = useMemo(() => {
-    let list = invoices.filter((inv) => (inv.amount_paid ?? 0) > 0);
+    let list = [...invoices];
+    list = list.filter((inv) => Number(inv?.amount_paid || 0) > 0);
     if (activeTab === "Active") list = list.filter((inv) => inv.status === "paid");
     else if (activeTab === "Archived") list = list.filter((inv) => (inv.status && !["paid", "open", "draft"].includes(inv.status)) || false);
     const q = (invoiceSearchQuery || "").trim().toLowerCase();
@@ -1211,6 +1210,20 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     return list;
   }, [invoices, activeTab, invoiceSearchQuery, invoiceSortOrder]);
 
+  const refreshBillingViews = useCallback(async () => {
+    await Promise.allSettled([
+      refetchSubscription(),
+      Promise.resolve(refetchAddons?.()),
+      fetchInvoices(),
+    ]);
+  }, [refetchSubscription, refetchAddons, fetchInvoices]);
+
+  const refreshBillingViewsWithRetries = useCallback(async () => {
+    await refreshBillingViews();
+    setTimeout(() => { refreshBillingViews(); }, 1200);
+    setTimeout(() => { refreshBillingViews(); }, 3000);
+  }, [refreshBillingViews]);
+
   const handleSwitchPlan = async (planId) => {
     if (subscription?.planId === planId) return;
     setSwitchPlanLoading(planId);
@@ -1222,31 +1235,25 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
         setSwitchPaymentTargetPlanId(result.data.target_plan_id ?? planId);
         return;
       }
-      // Context already updated subscription from response; show toast immediately, then refetch in background.
+      await refreshBillingViews();
       const planName = getPlanById(planId)?.name ?? planId;
       if (result.data?.stripe_updated) {
         message.success(`You're now on the ${planName} plan. Any proration will appear on your invoice or payment method.`, 5);
       } else {
         message.success(`Switched to ${planName} plan.`, 4);
       }
-      refetchSubscription();
-      fetchInvoices();
     } else {
       antMessage.error(result.error || "Failed to switch plan.");
     }
   };
 
-  const handleSwitchPaymentSuccess = useCallback(() => {
+  const handleSwitchPaymentSuccess = useCallback(async () => {
     const planName = getPlanById(switchPaymentTargetPlanId)?.name ?? switchPaymentTargetPlanId;
     setSwitchPaymentSecret(null);
     setSwitchPaymentTargetPlanId(null);
+    await refreshBillingViewsWithRetries();
     message.success(`Switched to ${planName} plan.`);
-    refetchSubscription();
-    fetchInvoices();
-    // Refetch again so we pick up webhook updates (plan_id, cancelAtPeriodEnd) and UI stays in sync
-    setTimeout(() => { refetchSubscription(); fetchInvoices(); }, 1000);
-    setTimeout(() => { refetchSubscription(); fetchInvoices(); }, 2500);
-  }, [switchPaymentTargetPlanId, refetchSubscription, fetchInvoices]);
+  }, [switchPaymentTargetPlanId, refreshBillingViewsWithRetries]);
 
   const handleSwitchPaymentLoadError = useCallback(() => {
     setSwitchPaymentSecret(null);
@@ -1260,13 +1267,13 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     setCancelling(true);
     const result = await cancel();
     setCancelling(false); setCancelModalOpen(false);
-    if (result.success) { message.success("Subscription will cancel at the end of the billing period."); refetchSubscription(); }
+    if (result.success) { await refreshBillingViews(); message.success("Subscription will cancel at the end of the billing period."); }
     else antMessage.error(result.error || "Failed to cancel.");
   };
 
   const handleReactivate = async () => {
     const result = await reactivate();
-    if (result.success) { message.success("Subscription reactivated."); refetchSubscription(); }
+    if (result.success) { await refreshBillingViews(); message.success("Subscription reactivated."); }
     else antMessage.error(result.error || "Failed to reactivate.");
   };
 
@@ -1343,11 +1350,10 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
       const pmRes = await businessService.getDefaultPaymentMethod();
       if (pmRes.success && pmRes.data) setDefaultPaymentMethod(pmRes.data.payment_method ?? null);
       refetchAddons?.();
-      fetchInvoices();
     } else {
       antMessage.error(result.error || "Failed to update payment method.");
     }
-  }, [refetchAddons, fetchInvoices]);
+  }, [refetchAddons]);
 
   useEffect(() => {
     const id = "billing-gradient-canvas";
@@ -1366,35 +1372,30 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   }, []);
 
   const handleAddonPaymentSuccess = useCallback(async () => {
-    setSubscribeModalOpen(false);
-    setAddonClientSecret(null);
-    await refetchAddons?.();
-    fetchInvoices();
+    setSubscribeModalOpen(false); setAddonClientSecret(null);
+    await refreshBillingViewsWithRetries();
     message.success("Marketplace email branding add-on is now active.");
-  }, [refetchAddons, fetchInvoices]);
+  }, [refreshBillingViewsWithRetries]);
 
   const handleInstantSubscribeAddon = async () => {
     setAddonSubscribing(true);
     const result = await businessService.subscribeMarketplaceEmailAddonInstant();
     setAddonSubscribing(false);
-    if (result.success) {
-      await refetchAddons?.();
-      fetchInvoices();
-      message.success("Marketplace email branding add-on is now active.");
-    } else antMessage.error(result.error || "Failed to subscribe.");
+    if (result.success) { await refreshBillingViewsWithRetries(); message.success("Marketplace email branding add-on is now active."); }
+    else antMessage.error(result.error || "Failed to subscribe.");
   };
 
   const handleAddonCancelConfirm = async () => {
     setAddonCancelling(true);
     const result = await businessService.cancelMarketplaceEmailAddon();
     setAddonCancelling(false); setAddonCancelModalOpen(false);
-    if (result.success) { message.success("Add-on will cancel at the end of the billing period."); refetchAddons?.(); }
+    if (result.success) { await refreshBillingViews(); message.success("Add-on will cancel at the end of the billing period."); }
     else antMessage.error(result.error || "Failed to cancel.");
   };
 
   const handleAddonReactivate = async () => {
     const result = await businessService.reactivateMarketplaceEmailAddon();
-    if (result.success) { message.success("Add-on reactivated."); refetchAddons?.(); }
+    if (result.success) { await refreshBillingViews(); message.success("Add-on reactivated."); }
     else antMessage.error(result.error || "Failed to reactivate.");
   };
 
