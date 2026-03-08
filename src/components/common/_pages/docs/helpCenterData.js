@@ -44,7 +44,7 @@ export const helpCenterData = [
           { type: "h3", text: "1. Connect Stripe for Payouts" },
           {
             type: "p",
-            text: "This is the most critical step. You cannot receive money until you connect a Stripe account. Navigate to <strong>Settings</strong> &rarr; <strong>Business Settings</strong> &rarr; <strong>Preferences</strong> tab, then scroll to <strong>Payout Setup</strong> to link your bank account securely. This automatically enables credit card, <strong>Apple Pay</strong>, and <strong>Google Pay</strong> processing for your Guests.",
+            text: "This is the most critical step. You cannot receive money until you connect a Stripe account. Navigate to <strong>Settings</strong> → <strong>Business Settings</strong> → <strong>Preferences</strong> tab, then scroll to <strong>Payout Setup</strong> to link your bank account securely. This automatically enables credit card, <strong>Apple Pay</strong>, and <strong>Google Pay</strong> processing for your Guests.",
           },
           { type: "h3", text: "2. Complete Your Business Profile" },
           {
@@ -87,7 +87,7 @@ export const helpCenterData = [
           { type: "h3", text: "Where to Connect Your Payout Account" },
           {
             type: "p",
-            text: "Go to <strong>Settings</strong> &rarr; <strong>Business Settings</strong> &rarr; <strong>Preferences</strong> tab. Scroll to the <strong>Payout Setup</strong> section. If your account is not yet connected, you will see a <strong>Setup Payouts</strong> button. You can also reach this section from the <strong>Payouts</strong> tab (under Financials): when payouts are not enabled, a button there will take you directly to Payout Setup.",
+            text: "Go to <strong>Settings</strong> → <strong>Business Settings</strong> → <strong>Preferences</strong> tab. Scroll to the <strong>Payout Setup</strong> section. If your account is not yet connected, you will see a <strong>Setup Payouts</strong> button. You can also reach this section from the <strong>Payouts</strong> tab (under Financials): when payouts are not enabled, a button there will take you directly to Payout Setup.",
           },
           {
             type: "p",
@@ -173,7 +173,7 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Go to <strong>Settings</strong> &rarr; <strong>Business Settings</strong> to manage your profile, location, and preferences. The page has three tabs:",
+            text: "Go to <strong>Settings</strong> → <strong>Business Settings</strong> to manage your profile, location, and preferences. The page has three tabs:",
           },
           {
             type: "ul",
@@ -195,7 +195,7 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Email branding lets you customize how confirmation, reminder, and update emails look when they are sent to your Guests. It is available as an <strong>add-on</strong> that you subscribe to from <strong>Settings</strong> &rarr; <strong>Business Settings</strong> &rarr; <strong>Plan & Billing</strong> (under Add-ons: Marketplace email branding). Once the add-on is active, the <strong>Email Branding</strong> tab appears in Business Settings.",
+            text: "Email branding lets you customize how confirmation, reminder, and update emails look when they are sent to your Guests. It is available as an <strong>add-on</strong> that you subscribe to from <strong>Settings</strong> → <strong>Business Settings</strong> → <strong>Plan & Billing</strong> (under Add-ons: Marketplace email branding). Once the add-on is active, the <strong>Email Branding</strong> tab appears in Business Settings.",
           },
           { type: "h3", text: "What you can customize" },
           {
@@ -234,7 +234,7 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "From <strong>Settings</strong> &rarr; <strong>Business Settings</strong> &rarr; <strong>Plan & Billing</strong> you manage your <strong>widget subscription</strong> (Basic, Growth, or Advanced) and <strong>add-ons</strong> (e.g. Marketplace email branding). Your widget plan and add-ons determine which features you have access to.",
+            text: "From <strong>Settings</strong> → <strong>Business Settings</strong> → <strong>Plan & Billing</strong> you manage your <strong>widget subscription</strong> (Basic, Growth, or Advanced) and <strong>add-ons</strong> (e.g. Marketplace email branding). Your widget plan and add-ons determine which features you have access to.",
           },
           { type: "h3", text: "Widget plan & billing" },
           {
@@ -481,7 +481,7 @@ export const helpCenterData = [
           {
             type: "ul",
             items: [
-              "<strong>Payouts Status:</strong> Whether your account is connected and eligible to receive payouts (e.g. Active, Pending, Incomplete). If not connected, a button will take you to Settings &rarr; Preferences &rarr; Payout Setup.",
+              "<strong>Payouts Status:</strong> Whether your account is connected and eligible to receive payouts (e.g. Active, Pending, Incomplete). If not connected, a button will take you to Settings → Preferences → Payout Setup.",
               "<strong>Pending Balance:</strong> Money from completed sessions that has been released to your balance but not yet sent to your bank.",
               "<strong>Payout Schedule:</strong> When the next transfer to your bank is expected.",
               "<strong>Last Payout:</strong> Your most recent successful payout amount.",
@@ -514,7 +514,7 @@ export const helpCenterData = [
           { type: "h3", text: "Daily Bank Transfers" },
           {
             type: "p",
-            text: "Once funds are released to your balance (post-completion), Stripe automatically transfers them to your bank account on a rolling daily basis. You can see the <strong>Est. Arrival</strong> date for each payout in the Payouts tab. If a payout is delayed, check your <strong>Payouts Status</strong> in Settings &rarr; Preferences &rarr; Payout Setup and resolve any Stripe requirements.",
+            text: "Once funds are released to your balance (post-completion), Stripe automatically transfers them to your bank account on a rolling daily basis. You can see the <strong>Est. Arrival</strong> date for each payout in the Payouts tab. If a payout is delayed, check your <strong>Payouts Status</strong> in Settings → Preferences → Payout Setup and resolve any Stripe requirements.",
           },
         ],
       },
@@ -778,7 +778,7 @@ export const helpCenterData = [
           },
           {
             type: "blockquote",
-            text: "Don't forget to add your website domain in <strong>Widget</strong> &rarr; <strong>Allowed Domains</strong> before testing. If the widget doesn't appear, clear your site cache and try again.",
+            text: "Don't forget to add your website domain in <strong>Widget</strong> → <strong>Allowed Domains</strong> before testing. If the widget doesn't appear, clear your site cache and try again.",
           },
         ],
       },
