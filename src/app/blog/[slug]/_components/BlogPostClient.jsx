@@ -1,12 +1,11 @@
 "use client";
-import { useMemo } from "react";
 import styled from "styled-components";
 import PostHeader from "./PostHeader";
 import ArticleBody from "./ArticleBody";
 import BlogSidebar from "./BlogSidebar";
 
 const PostWrapper = styled.div`
-  background: #fff;
+  background: #ffffff;
 `;
 
 const PostMainContent = styled.main`
@@ -30,18 +29,6 @@ const ArticleContent = styled.article`
 `;
 
 export default function BlogPostClient({ post, sidebarData }) {
-  const processedTags = useMemo(() => {
-    if (!post?.tags) return [];
-    if (Array.isArray(post.tags)) return post.tags;
-    if (typeof post.tags === "string" && post.tags.length > 0) {
-      return post.tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean);
-    }
-    return [];
-  }, [post]);
-
   return (
     <PostWrapper>
       <PostMainContent>
@@ -51,9 +38,7 @@ export default function BlogPostClient({ post, sidebarData }) {
         </ArticleContent>
         <BlogSidebar
           recentPosts={sidebarData.recentPosts}
-          allCategories={sidebarData.categories}
           currentPostSlug={post.slug}
-          tags={processedTags}
         />
       </PostMainContent>
     </PostWrapper>

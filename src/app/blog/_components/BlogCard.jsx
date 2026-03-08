@@ -3,114 +3,76 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import styled from "styled-components";
-import { motion } from "framer-motion";
 
-// --- Styled Components ---
-const CardWrapper = styled(motion.article)`
-  background: #fff;
-  border-radius: 1rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
-  overflow: hidden;
+const CardWrapper = styled.article`
   display: flex;
   flex-direction: column;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  }
 `;
 
 const CardImageLink = styled(Link)`
   display: block;
-  overflow: hidden;
   position: relative;
   width: 100%;
-  height: 200px;
+  aspect-ratio: 3 / 2;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #e5e7eb;
 
   img {
     transition: transform 0.3s ease;
   }
   &:hover img {
-    transform: scale(1.05);
+    transform: scale(1.03);
   }
 `;
 
 const CardContent = styled.div`
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-`;
-
-const PostCategory = styled(Link)`
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #d32f2f;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 0.75rem;
-  text-decoration: none;
-  &:hover {
-    text-decoration: underline;
-  }
+  margin-top: 16px;
 `;
 
 const CardTitleLink = styled(Link)`
   text-decoration: none;
-  color: #1a1a1a;
+  color: #111827;
+
   h3 {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 700;
     line-height: 1.3;
-    margin: 0 0 0.75rem;
-    transition: color 0.3s ease;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   &:hover h3 {
-    color: #e63946;
+    color: #4b5563;
   }
 `;
 
 const CardExcerpt = styled.p`
-  font-size: 0.95rem;
-  color: #666;
-  line-height: 1.6;
-  margin: 0 0 1rem;
-  flex-grow: 1;
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.5;
+  margin: 8px 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 `;
 
-const PostMeta = styled.div`
+const MetaFooter = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-top: auto;
-  padding-top: 1rem;
-  border-top: 1px solid #e0e0e0;
+  margin-top: 20px;
+  font-size: 13px;
+  color: #6b7280;
 `;
 
-const AuthorAvatar = styled.img`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-`;
-
-const AuthorInfo = styled.div`
-  font-size: 0.875rem;
-  line-height: 1.4;
-`;
-
-const AuthorName = styled.span`
-  font-weight: 600;
-  color: #1a1a1a;
-  display: block;
-`;
-
-const MetaDetails = styled.span`
-  color: #595959;
+const ReadTime = styled.span`
+  font-weight: 400;
 `;
 
 const BlogCard = ({ post, index = 0 }) => {
-  // Load first 6 images with priority (above the fold)
   const shouldPrioritize = index < 6;
 
   return (
@@ -127,31 +89,15 @@ const BlogCard = ({ post, index = 0 }) => {
         />
       </CardImageLink>
       <CardContent>
-        {post.category && (
-          <PostCategory href={`/blog/category/${post.category.slug}`}>
-            {post.category.name}
-          </PostCategory>
-        )}
         <CardTitleLink href={`/blog/${post.slug}`}>
           <h3 id={`post-title-${post.slug}`}>{post.title}</h3>
         </CardTitleLink>
         <CardExcerpt>{post.excerpt}</CardExcerpt>
-        {post.author && (
-          <PostMeta>
-            <AuthorAvatar src={post.author.avatarUrl} alt={post.author.name} />
-            <AuthorInfo>
-              <AuthorName>{post.author.name}</AuthorName>
-              <MetaDetails>
-                {new Date(post.publishedDate).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}{" "}
-                · {post.readTime != null ? `${post.readTime} min read` : "Read"}
-              </MetaDetails>
-            </AuthorInfo>
-          </PostMeta>
-        )}
+        <MetaFooter>
+          <ReadTime>
+            {post.readTime != null ? `${post.readTime} min read` : "Read"}
+          </ReadTime>
+        </MetaFooter>
       </CardContent>
     </CardWrapper>
   );

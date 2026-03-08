@@ -364,7 +364,7 @@ const BannerWrapper = styled.div`
   align-items: center;
   justify-content: center;
   z-index: 90;
-  padding: 0 24px;
+  padding: 12px 20px;
   min-height: 52px;
   box-shadow:
     inset 0 -1px 0 0 rgba(255, 255, 255, 0.1),
@@ -377,16 +377,16 @@ const BannerWrapper = styled.div`
 const BannerContainer = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
   max-width: 1200px;
-  gap: 20px;
 `;
 const LeftContent = styled.div`
   display: flex;
   align-items: center;
-  gap: 14px;
-  flex: 1;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
   font-family: "ProximaSoft", sans-serif;
 `;
 const NewBadge = styled.span`
@@ -397,15 +397,20 @@ const NewBadge = styled.span`
   padding: 2px 6px;
   border-radius: 4px;
   letter-spacing: 0.5px;
-  margin-right: 4px;
+  flex-shrink: 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   text-transform: uppercase;
 `;
 const TextContent = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  font-size: clamp(12px, 1.35vw + 11px, 14px);
+  line-height: 1.35;
+  justify-content: center;
+  text-align: center;
+
   strong {
     font-weight: 700;
     letter-spacing: -0.2px;
@@ -413,37 +418,20 @@ const TextContent = styled.div`
   span.sep {
     opacity: 0.4;
     font-weight: 300;
+    flex-shrink: 0;
   }
   span.desc {
     opacity: 0.9;
     font-weight: 400;
   }
-`;
-const ActionGroup = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-shrink: 0;
-`;
-const PillButton = styled(Link)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 100px;
-  padding: 5px 16px;
-  font-family: "ProximaSoft", sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  color: #ffffff;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-  &:hover {
-    background: #ffffff;
-    color: #850d19;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+
+  /* When wrapped to 2 rows, reduce text size */
+  @media (max-width: 1100px) {
+    font-size: 12px;
+    gap: 4px 6px;
+  }
+  @media (max-width: 950px) {
+    font-size: 11px;
   }
 `;
 const SecondaryLink = styled(Link)`
@@ -826,20 +814,17 @@ export default function BannerSearchClient({ mode }) {
                 trigger="in"
                 state="in-reveal"
                 colors="primary:#f4dc9c,secondary:#ebe6ef,tertiary:#ffc738,quaternary:#f9c9c0,quinary:#629110"
-                style={{ width: "22px", height: "22px" }}
+                style={{ width: "20px", height: "20px", flexShrink: 0 }}
               />
               <TextContent>
                 <NewBadge>New</NewBadge>
-                <strong>Introducing Gift Cards</strong>
+                <strong>First class? Get a gift card for your next one</strong>
                 <span className="sep">|</span>
                 <span className="desc">
-                  Give the gift of experiences. Perfect for any occasion. 🎁
+                  We&apos;ll email you $10–$20 after your first booking to use on your next. No code needed.
                 </span>
               </TextContent>
             </LeftContent>
-            <ActionGroup>
-              <PillButton href="/giftcards">Shop Gift Cards</PillButton>
-            </ActionGroup>
           </BannerContainer>
         </BannerWrapper>
       </div>

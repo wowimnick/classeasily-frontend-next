@@ -41,7 +41,7 @@
 .titleMobile {
   display: none;
   font-size: clamp(2rem, 5vw, 2.5rem);
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.1;
   color: #111;
   text-align: center;
@@ -52,7 +52,7 @@
 
 .titleDesktop {
   font-size: clamp(2.2rem, 5vw, 3.2rem);
-  font-weight: 700;
+  font-weight: 600;
   margin-bottom: 1.2rem;
   line-height: 1.1;
   color: #1a1a1a;

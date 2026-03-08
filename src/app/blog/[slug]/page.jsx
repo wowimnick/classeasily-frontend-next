@@ -9,7 +9,6 @@ import {
   fetchBlogPosts,
   fetchBlogPostBySlug,
   fetchRecentBlogPosts,
-  fetchBlogCategories,
   generateBlogPostStructuredData,
   generateBlogBreadcrumbStructuredData,
 } from "@/lib/server-data-fetchers";
@@ -40,10 +39,6 @@ export async function generateMetadata({ params }) {
     return {
       title: `${post.title} | ClassEasily Blog`,
       description: post.excerpt || post.title,
-      keywords: Array.isArray(post.tags) ? post.tags.join(", ") : post.tags,
-      authors: post.author
-        ? [{ name: post.author.name }]
-        : [{ name: "ClassEasily" }],
       openGraph: {
         title: post.title,
         description: post.excerpt,
@@ -52,9 +47,6 @@ export async function generateMetadata({ params }) {
         siteName: "ClassEasily",
         publishedTime: post.publishedDate,
         modifiedTime: post.updatedDate || post.publishedDate,
-        authors: post.author ? [post.author.name] : ["ClassEasily"],
-        section: post.category?.name,
-        tags: Array.isArray(post.tags) ? post.tags : [],
         images: [
           {
             url: post.imageUrl,
@@ -98,10 +90,9 @@ export default async function BlogPostPage({ params }) {
   const { slug } = await params;
 
   // Fetch all data at build time (static generation) using helper functions
-  const [postResult, recentPostsResult, categoriesResult] = await Promise.all([
+  const [postResult, recentPostsResult] = await Promise.all([
     fetchBlogPostBySlug(slug),
     fetchRecentBlogPosts(4),
-    fetchBlogCategories(),
   ]);
 
   // Handle 404
@@ -112,7 +103,6 @@ export default async function BlogPostPage({ params }) {
   const post = postResult.data;
   const sidebarData = {
     recentPosts: recentPostsResult.posts || [],
-    categories: categoriesResult.categories || [],
   };
 
   const postStructuredData = generateBlogPostStructuredData(post);
