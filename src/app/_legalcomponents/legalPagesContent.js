@@ -117,7 +117,11 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "You are responsible for setting your cancellation policy, which must be clearly stated in your Listing. You must adhere to your stated policy.",
+          text: "You are responsible for setting your cancellation policy, which must be clearly stated in your Listing. You must adhere to your stated policy. Your chosen cancellation policy is binding; Classeasily will process refunds to Guests in accordance with that policy.",
+        },
+        {
+          type: "p",
+          text: "To receive payouts, you must complete Stripe Connect (or equivalent) setup through the Platform. Failure to do so may result in delayed or unavailable payouts until your payout account is linked and valid.",
         },
         { type: "h3", text: "5.3. Conduct and Responsibility" },
         {
@@ -127,6 +131,11 @@ export const termsContent = {
         {
           type: "p",
           text: "You are responsible for your own acts and omissions and are also responsible for the acts and omissions of any individuals who assist with or participate in your Experience.",
+        },
+        { type: "h3", text: "5.4. Host Subscriptions" },
+        {
+          type: "p",
+          text: "Classeasily may offer subscription plans (e.g. for the booking widget or premium features). Subscription fees are billed on a recurring basis. If payment fails (e.g. card declined), subscription features may be suspended or restricted until payment is updated. You are responsible for keeping your payment method valid. Classeasily may send payment-failure reminders but is not liable for missed payments or resulting service limits.",
         },
       ],
     },
@@ -142,6 +151,10 @@ export const termsContent = {
         {
           type: "p",
           text: "Upon receipt of a booking confirmation from Classeasily, a legally binding agreement is formed between you and the Host, subject to any additional terms and conditions of the Host that apply, including the applicable cancellation policy and any rules specified in the Listing.",
+        },
+        {
+          type: "p",
+          text: "Completion of payment does not guarantee a spot until the booking is confirmed. If the session is no longer available (e.g. the session is full), Classeasily will refund you in accordance with our refund policy. A selected spot may be held for a limited time (e.g. 15 minutes); you must complete payment within that time to confirm the booking. If the session fills or the hold expires, the spot may no longer be available.",
         },
         { type: "h3", text: "6.2. Attending Experiences" },
         {
@@ -174,7 +187,7 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "Hosts will receive payouts according to the schedule and method agreed upon (e.g., after Experience completion minus applicable Service Fees). Payout details and schedules are available in the Host dashboard or relevant documentation.",
+          text: "Hosts will receive payouts according to the schedule and method agreed upon (e.g., after Experience completion minus applicable Service Fees). Payout details and schedules are available in the Host dashboard or relevant documentation. Hosts must complete Stripe Connect (or equivalent) setup to receive payouts; failure to do so may result in delayed or unavailable payouts until the account is linked and valid. Payouts may be delayed or fail due to Stripe, account setup (e.g. incomplete Connect onboarding), or other technical reasons; Hosts must ensure their payout account is valid and that they resolve any Stripe or account issues. Classeasily will retry or notify where feasible but is not liable for third-party processing delays or failures.",
         },
         {
           type: "p",
@@ -183,7 +196,12 @@ export const termsContent = {
         { type: "h3", text: "7.2.1. Gift Cards" },
         {
           type: "p",
-          text: "You may purchase Gift Cards on the Platform. Gift Cards are subject to any terms and conditions displayed at the time of purchase. Gift Card balances may be applied toward eligible Bookings and purchases as permitted on the Platform. Unless otherwise stated, Gift Cards are non-refundable for cash and may be subject to expiry or other limitations. Use of a Gift Card is subject to these Terms.",
+          text: "You may purchase Gift Cards on the Platform. Gift Cards are subject to any terms and conditions displayed at the time of purchase. Gift Card balances may be applied toward eligible Bookings and purchases as permitted on the Platform. Unless otherwise stated, Gift Cards are non-refundable for cash and may be subject to expiry or other limitations. If a gift card cannot be fully applied for technical or balance reasons, the remaining balance may remain on the card and the rest of the payment will have been charged to your payment method; Classeasily may contact you in such cases. Use of a Gift Card is subject to these Terms.",
+        },
+        { type: "h3", text: "7.2.2. Promotional Gift Cards" },
+        {
+          type: "p",
+          text: "Classeasily may offer promotional gift cards (e.g. first-purchase rewards) from time to time. Eligibility, amounts, and conditions (such as minimum spend or one per customer per email) will be as stated in the offer. Promotional gift cards are typically for use on a future booking only. Delivery is by email on a best-effort basis. Classeasily may change, suspend, or end any promotion at any time without notice.",
         },
         { type: "h3", text: "7.3. Cancellations and Refunds" },
         {
@@ -192,7 +210,11 @@ export const termsContent = {
         },
         {
           type: "p",
-          text: "Guests can cancel a confirmed Booking subject to the Listing’s cancellation policy set by the Host. Classeasily Payments will refund the amount due to the Guest in accordance with such cancellation policy. Applicable Booking Fees may be non-refundable.",
+          text: "Guests can cancel a confirmed Booking subject to the Listing’s cancellation policy set by the Host. Classeasily Payments will refund the amount due to the Guest in accordance with such cancellation policy. Refunds are processed via the payment processor and may be delayed or require manual handling in exceptional cases. If you do not receive an expected refund within 10 business days, please contact support@classeasily.com. Applicable Booking Fees may be non-refundable.",
+        },
+        {
+          type: "p",
+          text: "If a booking cannot be fulfilled after payment (e.g. the session is no longer available, a system error), Classeasily will attempt to refund the payment. Refunds are subject to the payment processor (Stripe) and may take several business days. If a refund attempt fails, please contact support and Classeasily will work to resolve the matter (e.g. manual refund or alternative resolution).",
         },
         {
           type: "p",
@@ -321,6 +343,14 @@ export const termsContent = {
         {
           type: "p",
           text: "CLASSEASILY DOES NOT CONDUCT BACKGROUND CHECKS ON ALL USERS BUT RESERVES THE RIGHT TO DO SO. WE ARE NOT RESPONSIBLE FOR THE CONDUCT, WHETHER ONLINE OR OFFLINE, OF ANY USER OF THE PLATFORM.",
+        },
+        {
+          type: "p",
+          text: "Booking confirmations and reminders (email or SMS) are sent in good faith but delivery is not guaranteed. You are responsible for noting your booking details and cancellation deadlines.",
+        },
+        {
+          type: "p",
+          text: "Classeasily is not liable for failures or delays of third-party payment processors (including Stripe), for failed or delayed refunds or payouts due to such failures, or for technical errors that result in a booking not being completed or a refund not being automatically processed, except where required by law. Our obligation in such cases is to use reasonable efforts to resolve the matter (e.g. manual refund or payout).",
         },
       ],
     },
@@ -828,7 +858,7 @@ export const feeContent = {
         { type: "h3", text: "Payouts" },
         {
           type: "p",
-          text: "Payouts to Hosts are typically processed via Stripe Connect approximately 24–48 hours after an experience or session has been successfully completed, according to the schedule outlined in your Host dashboard and subject to Stripe's processing times. Payout details can be managed in your Host account settings.",
+          text: "Payouts to Hosts are typically processed via Stripe Connect approximately 24–48 hours after an experience or session has been successfully completed, according to the schedule outlined in your Host dashboard and subject to Stripe's processing times. Payout details can be managed in your Host account settings. A minimum payout amount may apply; smaller balances are carried forward and paid when the total meets the minimum at the next payout run. Payouts may be delayed or fail due to Stripe, account setup (e.g. incomplete Connect onboarding), or other technical reasons. Hosts must ensure their payout account is valid and that they resolve any Stripe or account issues.",
         },
         { type: "h3", text: "Taxes (Host Responsibility)" },
         {
