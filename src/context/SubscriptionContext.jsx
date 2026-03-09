@@ -6,6 +6,7 @@ import { businessService } from "@/services/apiService";
 
 const SubscriptionContext = createContext({
   subscription: null,
+  scheduledDowngrade: null,
   widgetSubscriptionRequired: false,
   hasWidgetAccess: false,
   hasStripeSubscription: false,
@@ -29,6 +30,7 @@ export function useSubscription() {
 export function SubscriptionProvider({ children }) {
   const { user, isAuthenticated } = useAuthUser();
   const [subscription, setSubscription] = useState(null);
+  const [scheduledDowngrade, setScheduledDowngrade] = useState(null);
   const [widgetSubscriptionRequired, setWidgetSubscriptionRequired] = useState(false);
   const [hasWidgetAccess, setHasWidgetAccess] = useState(false);
   const [hasStripeSubscription, setHasStripeSubscription] = useState(false);
@@ -40,6 +42,7 @@ export function SubscriptionProvider({ children }) {
   const refetch = useCallback(async () => {
     if (!canManageSubscription) {
       setSubscription(null);
+      setScheduledDowngrade(null);
       setWidgetSubscriptionRequired(false);
       setHasWidgetAccess(false);
       setHasStripeSubscription(false);
@@ -53,11 +56,13 @@ export function SubscriptionProvider({ children }) {
     setLoading(false);
     if (result.success && result.data) {
       setSubscription(result.data.subscription ?? null);
+      setScheduledDowngrade(result.data.scheduled_downgrade ?? null);
       setWidgetSubscriptionRequired(Boolean(result.data.widget_subscription_required));
       setHasWidgetAccess(Boolean(result.data.has_widget_access));
       setHasStripeSubscription(Boolean(result.data.has_stripe_subscription));
     } else {
       setSubscription(null);
+      setScheduledDowngrade(null);
       setWidgetSubscriptionRequired(false);
       setHasWidgetAccess(false);
       setHasStripeSubscription(false);
@@ -74,8 +79,6 @@ export function SubscriptionProvider({ children }) {
   const subscribe = useCallback(
     async (planId) => {
       const result = await businessService.subscribeWidgetPlan(planId);
-      // Update subscription when switch completed without payment (downgrade/sync) so UI updates immediately.
-      // If requires_payment, caller shows modal and refetches after payment success.
       if (result.success && result.data?.subscription != null && !result.data?.requires_payment) {
         setSubscription(result.data.subscription);
         refetch();
@@ -105,6 +108,7 @@ export function SubscriptionProvider({ children }) {
 
   const value = {
     subscription,
+    scheduledDowngrade,
     widgetSubscriptionRequired,
     hasWidgetAccess,
     hasStripeSubscription,

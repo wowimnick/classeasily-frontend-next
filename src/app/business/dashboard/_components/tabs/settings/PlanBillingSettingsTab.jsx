@@ -1091,7 +1091,7 @@ function UpdatePaymentMethodForm({ clientSecret, onSuccess }) {
 
 // ─── main component ───────────────────────────────────────────────────────────
 export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchAddons } = {}) {
-  const { subscription, loading: subLoading, cancel, reactivate, refetch: refetchSubscription, subscribe, hasStripeSubscription } = useSubscription();
+  const { subscription, scheduledDowngrade, loading: subLoading, cancel, reactivate, refetch: refetchSubscription, subscribe, hasStripeSubscription } = useSubscription();
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [subscribeModalOpen, setSubscribeModalOpen] = useState(false);
@@ -1237,7 +1237,9 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
       }
       await refreshBillingViews();
       const planName = getPlanById(planId)?.name ?? planId;
-      if (result.data?.stripe_updated) {
+      if (result.data?.downgrade_scheduled_at_period_end && result.data?.scheduled_plan_id) {
+        message.success(`Downgrade to ${planName} scheduled for the end of your billing period. You'll keep your current plan until then.`, 6);
+      } else if (result.data?.stripe_updated) {
         message.success(`You're now on the ${planName} plan. Any proration will appear on your invoice or payment method.`, 5);
       } else {
         message.success(`Switched to ${planName} plan.`, 4);
@@ -1494,6 +1496,14 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                 {currentPlan?.name ?? subscription.planId}
                 {subscription.cancelAtPeriodEnd && (
                   <Badge style={{ marginTop: 0, marginLeft: 4 }}>Cancels {nextBilling || "at period end"}</Badge>
+                )}
+                {scheduledDowngrade?.planId && !subscription.cancelAtPeriodEnd && (
+                  <Badge style={{ marginTop: 0, marginLeft: 4, background: T.bg, color: T.sub }}>
+                    Switching to {getPlanById(scheduledDowngrade.planId)?.name ?? scheduledDowngrade.planId}
+                    {scheduledDowngrade.effectiveDate
+                      ? ` ${new Date(scheduledDowngrade.effectiveDate).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`
+                      : " at period end"}
+                  </Badge>
                 )}
               </PlanBillingPlanName>
               <PlanBillingPlanPrice>
