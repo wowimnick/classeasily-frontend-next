@@ -2348,10 +2348,19 @@ const ReviewAndPaymentStep = ({
         }
 
         const paymentIntentIdAtConfirm = clientSecret?.split("_secret_")[0];
+        // Use bookingData fallback when guest fields are unmounted on payment step (Ant Design drops unmounted fields from getFieldsValue)
+        const billingName =
+          (values?.booker_name && String(values.booker_name).trim()) ||
+          bookingData?.booker_name ||
+          bookingData?.participant_details?.[0]?.name ||
+          (isUserLoggedIn ? bookingData?.userName : "") ||
+          "Guest";
+        const billingEmail = values?.email?.trim() || bookingData?.email || "";
+        const billingPhone = values?.phone?.trim() || bookingData?.phone || "";
         console.info(
           "[Booking] confirmPayment CALL_START",
           new Date().toISOString(),
-          { payment_intent_id: paymentIntentIdAtConfirm, guest_email: values.email, guest_full_name: values?.booker_name, guest_phone: values.phone }
+          { payment_intent_id: paymentIntentIdAtConfirm, guest_email: billingEmail, guest_full_name: billingName, guest_phone: billingPhone }
         );
         const { error: confirmError, paymentIntent } =
           await stripe.confirmPayment({
@@ -2361,9 +2370,9 @@ const ReviewAndPaymentStep = ({
               return_url: `${window.location.origin}/booking/status`,
               payment_method_data: {
                 billing_details: {
-                  name: getGuestFullName(values),
-                  email: values.email,
-                  phone: values.phone,
+                  name: billingName,
+                  email: billingEmail,
+                  phone: billingPhone,
                   address: { country: "CA" },
                 },
               },
@@ -2377,7 +2386,7 @@ const ReviewAndPaymentStep = ({
           return;
         }
         if (paymentIntent && paymentIntent.status === "succeeded") {
-          const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "Guest";
+          const bookerName = billingName;
           const participantDetails = Array.from(
             { length: participantsCount },
             () => ({ name: bookerName }),

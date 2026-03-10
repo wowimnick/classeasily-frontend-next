@@ -688,6 +688,11 @@ export const businessService = {
     }
   },
 
+  /**
+   * GET widget subscription. Response: { subscription, widget_subscription_required,
+   * has_stripe_subscription, has_widget_access, scheduled_downgrade? }.
+   * subscription: { planId, status, currentPeriodEnd, cancelAtPeriodEnd } or null.
+   */
   getWidgetSubscription: async () => {
     try {
       const response = await axiosInstance.get(
@@ -707,6 +712,11 @@ export const businessService = {
     }
   },
 
+  /**
+   * POST to set/change widget plan. Response: { subscription, requires_payment?, client_secret?,
+   * stripe_updated?, downgrade_scheduled_at_period_end?, scheduled_plan_id?, target_plan_id? }.
+   * If requires_payment and client_secret, frontend must collect payment then refetch.
+   */
   subscribeWidgetPlan: async (planId) => {
     try {
       const response = await axiosInstance.post(
