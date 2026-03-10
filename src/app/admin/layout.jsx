@@ -12,9 +12,20 @@ export default function AdminLayout({ children }) {
   return (
     <ClientOnlyWrapper>
       <PermissionProtectedRoute requiredPermission="quickstart.access_admin_dashboard">
-        <Suspense fallback={<GlobalLoaderWithInlineStyles />}>
-          {children}
-        </Suspense>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            minHeight: "100vh",
+            height: "100vh",
+            overflow: "hidden",
+            backgroundColor: "#ffffff",
+          }}
+        >
+          <Suspense fallback={<GlobalLoaderWithInlineStyles />}>
+            {children}
+          </Suspense>
+        </div>
       </PermissionProtectedRoute>
     </ClientOnlyWrapper>
   );

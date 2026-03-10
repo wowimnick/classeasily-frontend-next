@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-client";
 import styled from "styled-components";
@@ -13,8 +13,8 @@ import AdminConversationsTab from "../_components/conversations/AdminConversatio
 import PayoutsList from "../_components/payouts-management/PayoutsList";
 import BusinessHeader from "@/app/business/dashboard/_components/BusinessHeader";
 import ImpersonationBanner from "@/components/header/ImpersonationBanner";
+import TabGlassWrapper from "@/app/business/dashboard/_components/TabGlassWrapper";
 
-// Dynamically import tab components
 const UserManagement = dynamic(
   () => import("../_components/usermanagement/UserManagement"),
   { ssr: false }
@@ -67,23 +67,59 @@ const WidgetSubscriptionsTab = dynamic(
   () => import("../_components/widget-subscriptions/WidgetSubscriptionsTab"),
   { ssr: false }
 );
+const PlatformOverview = dynamic(
+  () => import("../_components/overview/PlatformOverview"),
+  { ssr: false }
+);
+const PaymentManagement = dynamic(
+  () => import("../_components/payment-management/PaymentManagement"),
+  { ssr: false }
+);
+const NotificationCampaigns = dynamic(
+  () => import("../_components/notification-management/NotificationCampaigns"),
+  { ssr: false }
+);
+const MetricsDashboard = dynamic(
+  () => import("../_components/metrics/MetricsDashboard"),
+  { ssr: false }
+);
 
-const PageContainer = styled.div`
+const PageLayout = styled.div`
   display: flex;
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  background: #f8fafc;
+  background-color: #ffffff;
 `;
 
-const PageWrapper = styled.div`
+const HeaderWrapper = styled.div`
+  flex-shrink: 0;
+  z-index: 10;
+`;
+
+const DashboardContainer = styled.div`
   display: flex;
   flex: 1;
   overflow: hidden;
-  min-height: 0;
 `;
 
-const ContentArea = styled.div`
+const SideMenuWrapper = styled.div`
+  height: 100%;
+  overflow-y: auto;
+  flex-shrink: 0;
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+`;
+
+const MainContent = styled.main`
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
@@ -97,32 +133,44 @@ export default function AdminPage() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Derive activeKey from pathname so tab content updates when URL changes (useParams can be stale on client nav)
-  const activeKey = pathname?.replace(/^\/admin\/?/, "").split("/")[0] || params.tab?.[0] || "users";
+  const activeKey =
+    pathname?.replace(/^\/admin\/?/, "").split("/")[0] ||
+    params.tab?.[0] ||
+    "overview";
 
   useEffect(() => {
     const hasTab = params.tab?.length > 0;
     if (permissions.length > 0 && !hasTab) {
-      router.replace("/admin/users");
+      router.replace("/admin/overview");
     }
   }, [params.tab, permissions.length, router]);
 
   useEffect(() => {
     if (permissions.length === 0) return;
     const allowedKeys = [
-      "users", "roles", "audit",
-      "business-overview", "business-listings", "business-verification",
-      "class-listings", "class-reviews", "collections",
-      "all-bookings", "payouts", "widget-subscriptions", "global-discounts", "blog", "support", "conversations",
+      "overview",
+      "users",
+      "roles",
+      "audit",
+      "business-overview",
+      "business-listings",
+      "business-verification",
+      "class-listings",
+      "class-reviews",
+      "collections",
+      "all-bookings",
+      "payments",
+      "payouts",
+      "campaigns",
+      "widget-subscriptions",
+      "global-discounts",
+      "blog",
+      "support",
+      "conversations",
+      "metrics",
     ];
     const permissionMap = {
-      "all-bookings": "quickstart.view_booking",
-      payouts: "quickstart.access_payout_admin",
-      "widget-subscriptions": "quickstart.view_businessinfo",
-      "global-discounts": "quickstart.access_global_discount_admin",
-      blog: "quickstart.access_blog_admin",
-      support: "quickstart.access_support_admin",
-      conversations: "quickstart.access_support_admin",
+      overview: "quickstart.access_admin_dashboard",
       users: "quickstart.view_customuser",
       roles: "quickstart.view_role",
       audit: "quickstart.view_auditlog",
@@ -132,11 +180,23 @@ export default function AdminPage() {
       "class-listings": "quickstart.view_classesmain",
       "class-reviews": "quickstart.view_reviews",
       "collections": "quickstart.view_classcollection",
+      "all-bookings": "quickstart.view_booking",
+      payments: "quickstart.access_payment_admin",
+      payouts: "quickstart.access_payout_admin",
+      campaigns: "quickstart.access_notification_admin",
+      "widget-subscriptions": "quickstart.view_businessinfo",
+      "global-discounts": "quickstart.access_global_discount_admin",
+      blog: "quickstart.access_blog_admin",
+      support: "quickstart.access_support_admin",
+      conversations: "quickstart.access_support_admin",
+      metrics: "quickstart.view_system_metrics",
     };
-    const isCurrentTabVisible = allowedKeys.includes(activeKey) &&
-      (!permissionMap[activeKey] || permissions.includes(permissionMap[activeKey]));
+    const isCurrentTabVisible =
+      allowedKeys.includes(activeKey) &&
+      (!permissionMap[activeKey] ||
+        permissions.includes(permissionMap[activeKey]));
     if (!isCurrentTabVisible) {
-      router.replace("/admin/users");
+      router.replace("/admin/overview");
     }
   }, [activeKey, permissions, router]);
 
@@ -148,57 +208,91 @@ export default function AdminPage() {
   );
 
   const renderContent = () => {
+    let content;
     switch (activeKey) {
+      case "overview":
+        content = <PlatformOverview />;
+        break;
       case "users":
-        return <UserManagement />;
+        content = <UserManagement />;
+        break;
       case "roles":
-        return <RolesManagement />;
+        content = <RolesManagement />;
+        break;
       case "audit":
-        return <UserAuditLog />;
+        content = <UserAuditLog />;
+        break;
       case "all-bookings":
-        return <BookingsList />;
+        content = <BookingsList />;
+        break;
       case "business-listings":
-        return <BusinessListings />;
+        content = <BusinessListings />;
+        break;
       case "business-overview":
-        return <BusinessManagement />;
+        content = <BusinessManagement />;
+        break;
       case "business-verification":
-        return <UserAccessControl />;
+        content = <UserAccessControl />;
+        break;
       case "class-listings":
-        return <ClassListings />;
+        content = <ClassListings />;
+        break;
       case "collections":
-        return <ClassCategories />;
+        content = <ClassCategories />;
+        break;
       case "class-reviews":
-        return <ClassReviews />;
+        content = <ClassReviews />;
+        break;
       case "blog":
-        return <BlogManagement />;
+        content = <BlogManagement />;
+        break;
       case "support":
-        return <SupportTicketTab />;
+        content = <SupportTicketTab />;
+        break;
       case "conversations":
-        return <AdminConversationsTab />;
+        content = <AdminConversationsTab />;
+        break;
       case "payouts":
-        return <PayoutsList />;
+        content = <PayoutsList />;
+        break;
+      case "payments":
+        content = <PaymentManagement />;
+        break;
       case "widget-subscriptions":
-        return <WidgetSubscriptionsTab />;
+        content = <WidgetSubscriptionsTab />;
+        break;
       case "global-discounts":
-        return <GlobalDiscountsManagement />;
+        content = <GlobalDiscountsManagement />;
+        break;
+      case "campaigns":
+        content = <NotificationCampaigns />;
+        break;
+      case "metrics":
+        content = <MetricsDashboard />;
+        break;
       default:
-        return <div>Loading or Access Denied...</div>;
+        content = <div>Loading or Access Denied...</div>;
     }
+    return <TabGlassWrapper>{content}</TabGlassWrapper>;
   };
 
   return (
     <ConfigProvider theme={appTheme}>
       <ImpersonationBanner />
-      <PageContainer>
-        <BusinessHeader />
-        <PageWrapper>
-          <PlatformSidebar
-            onMenuSelect={handleMenuSelect}
-            activeKey={activeKey}
-          />
-          <ContentArea>{renderContent()}</ContentArea>
-        </PageWrapper>
-      </PageContainer>
+      <PageLayout>
+        <HeaderWrapper>
+          <BusinessHeader />
+        </HeaderWrapper>
+        <DashboardContainer>
+          <SideMenuWrapper>
+            <PlatformSidebar
+              onMenuSelect={handleMenuSelect}
+              activeKey={activeKey}
+            />
+          </SideMenuWrapper>
+          <MainContent>{renderContent()}</MainContent>
+        </DashboardContainer>
+      </PageLayout>
     </ConfigProvider>
   );
 }

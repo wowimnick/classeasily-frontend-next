@@ -2892,6 +2892,24 @@ export const notificationService = {
       };
     }
   },
+
+  /**
+   * Get send progress for a campaign (for polling during send)
+   * @param {string} notificationId - Notification/Campaign ID
+   */
+  getSendProgress: async (notificationId) => {
+    try {
+      const response = await axiosInstance.get(
+        `/admin/notifications/${notificationId}/send-progress/`
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || "Failed to fetch send progress",
+      };
+    }
+  },
 };
 
 export const userSegmentService = {
