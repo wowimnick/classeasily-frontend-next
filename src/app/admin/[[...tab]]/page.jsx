@@ -117,6 +117,9 @@ const MainContent = styled.main`
   overflow-y: auto;
   overflow-x: hidden;
   min-width: 0;
+  @media (max-width: 767px) {
+    padding-bottom: 64px;
+  }
 `;
 
 export default function AdminPage() {

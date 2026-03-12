@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import styled from "styled-components";
 import { Drawer } from "vaul";
 import NumberFlow from "@number-flow/react";
@@ -23,7 +24,6 @@ import {
   Checkbox,
   Typography,
   Dropdown,
-  Skeleton,
   Popconfirm,
 } from "antd";
 import message from "@/lib/message";
@@ -78,17 +78,19 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { AdminCardSkeleton, AdminTableSkeleton, AdminDrawerContentSkeleton } from "../shared/AdminSkeletons";
+
 const CanadianDistribution = dynamic(() => import("./CanadianDistribution"), {
   ssr: false,
-  loading: () => <GlobalLoaderWithInlineStyles />,
+  loading: () => (
+    <div style={{ height: "100%", minHeight: 320, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <AdminCardSkeleton />
+    </div>
+  ),
 });
 
 import { businessManagementService, verificationService } from "@/services/adminDash"; // Adjust path
 import { theme as appTheme } from "@/components/theme"; // Adjust path
-import {
-  GlobalLoaderWithInlineStyles,
-  GlobalLoaderWithoutInlineStyles,
-} from "@/components/common/GlobalLoader";
 import { businessClassService } from "@/services/apiService";
 import AdminMetricCards from "../shared/AdminMetricCards";
 
@@ -433,7 +435,7 @@ const VerifDrawerHeader = styled.div`
 const VerifDrawerBody = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 20px 24px;
+  padding: 0;
   background: ${colors.lightBg};
 `;
 
@@ -622,11 +624,11 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 // --- DRAWER COMPONENT ---
-const DetailDrawerContent = ({ business, onAction, actionLoading }) => {
+const DetailDrawerContent = ({ business, onAction, actionLoading, onViewOwnerProfile }) => {
   if (!business)
     return (
-      <div style={{ padding: 40, textAlign: "center" }}>
-        <GlobalLoaderWithInlineStyles />
+      <div style={{ padding: 24 }}>
+        <AdminDrawerContentSkeleton />
       </div>
     );
 
@@ -656,29 +658,7 @@ const DetailDrawerContent = ({ business, onAction, actionLoading }) => {
 
   return (
     <div>
-        <div
-          style={{
-            background: "white",
-            padding: 24,
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-            borderBottom: `1px solid ${colors.border}`,
-          }}
-        >
-          <BusinessAvatar src={business_image_medium_url}>
-            {businessName?.[0]}
-          </BusinessAvatar>
-          <div>
-            <Title level={4} style={{ margin: 0 }}>
-              {businessName}
-            </Title>
-            <Text type="secondary">
-              {[businessCity, businessState].filter(Boolean).join(", ")}
-            </Text>
-          </div>
-        </div>
-        <div style={{ padding: "0" }}>
+        <div style={{ padding: "0 24px 24px" }}>
           <InfoGroup>
             <InfoGroupTitle>
               <Shield />
@@ -760,6 +740,17 @@ const DetailDrawerContent = ({ business, onAction, actionLoading }) => {
                 <InfoValue copyable={{ text: owner_email }}>
                   {owner_email || "N/A"}
                 </InfoValue>
+                {owner_email && onViewOwnerProfile && (
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<ExternalLink size={14} />}
+                    onClick={() => onViewOwnerProfile(owner_email)}
+                    style={{ paddingLeft: 0, marginTop: 4 }}
+                  >
+                    View owner profile
+                  </Button>
+                )}
               </InfoContent>
             </InfoItem>
             <InfoItem>
@@ -931,6 +922,7 @@ const DetailDrawerModal = ({
   business,
   onAction,
   actionLoading,
+  onViewOwnerProfile,
 }) => {
   const isMobile = !useBreakpoint().md;
 
@@ -959,6 +951,7 @@ const DetailDrawerModal = ({
               business={business}
               onAction={onAction}
               actionLoading={actionLoading}
+              onViewOwnerProfile={onViewOwnerProfile}
             />
           </DrawerBody>
         </DrawerShell>
@@ -969,12 +962,19 @@ const DetailDrawerModal = ({
 
 // --- MAIN COMPONENT ---
 const BusinessManagement = () => {
+  const router = useRouter();
   const [businesses, setBusinesses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [growthTrendLoading, setGrowthTrendLoading] = useState(true);
+
+  const handleViewOwnerProfile = useCallback((ownerEmail) => {
+    if (!ownerEmail) return;
+    setDetailDrawerOpen(false);
+    router.push(`/admin/users?openUserByEmail=${encodeURIComponent(ownerEmail)}`);
+  }, [router]);
   const [mapLoading, setMapLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [categoriesList, setCategoriesList] = useState([]);
@@ -1009,6 +1009,7 @@ const BusinessManagement = () => {
   const [mapDataType, setMapDataType] = useState("count");
   const [sortedInfo, setSortedInfo] = useState({});
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [selectedRows, setSelectedRows] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -1186,6 +1187,68 @@ const BusinessManagement = () => {
     }
   };
 
+  const handleBulkFeature = async () => {
+    if (selectedRowKeys.length === 0) return;
+    setActionLoading(true);
+    try {
+      const results = await Promise.allSettled(
+        selectedRowKeys.map((id) => businessManagementService.toggleFeatureStatus(id, true))
+      );
+      const ok = results.filter((r) => r.status === "fulfilled" && r.value?.success).length;
+      message.success(`${ok} business(es) featured.`);
+      setSelectedRowKeys([]);
+      setSelectedRows([]);
+      refreshAllData();
+    } catch {
+      message.error("Some actions failed.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleBulkToggleActive = async () => {
+    if (selectedRows.length === 0) return;
+    setActionLoading(true);
+    try {
+      const results = await Promise.allSettled(
+        selectedRows.map((b) =>
+          businessManagementService.updateBusiness(b.businessId, { isActive: !b.isActive })
+        )
+      );
+      const ok = results.filter((r) => r.status === "fulfilled" && r.value?.success).length;
+      message.success(`${ok} business(es) updated.`);
+      setSelectedRowKeys([]);
+      setSelectedRows([]);
+      refreshAllData();
+    } catch {
+      message.error("Some actions failed.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleBulkNotify = () => {
+    message.info("Bulk notify: use the notification campaigns or email tools for now.");
+  };
+
+  const handleBulkExport = async () => {
+    try {
+      const params = {
+        ...(filters.search && { search: filters.search }),
+        ...(filters.category !== "all" && { category: filters.category }),
+        ...(filters.status !== "all" && { status: filters.status }),
+        ...(filters.featured && { featured: true }),
+      };
+      const res = await businessManagementService.exportBusinessesData(params);
+      if (res.success) message.success("Export started.");
+      else message.error(res.error || "Export failed.");
+      setSelectedRowKeys([]);
+      setSelectedRows([]);
+    } catch {
+      message.error("Export failed.");
+    }
+  };
+
   const openVerifDrawer = async (ownerEmail) => {
     setVerifDrawerOpen(true);
     setVerifRequest(null);
@@ -1250,7 +1313,7 @@ const BusinessManagement = () => {
     if (verifLoading) {
       return (
         <VerifDrawerBody>
-          <Skeleton active paragraph={{ rows: 6 }} />
+          <AdminDrawerContentSkeleton />
         </VerifDrawerBody>
       );
     }
@@ -1666,7 +1729,7 @@ const BusinessManagement = () => {
             </div>
             <div style={{ height: 240, marginTop: 12 }}>
               {growthTrendLoading ? (
-                <Skeleton active paragraph={{ rows: 4 }} title={false} />
+                <AdminCardSkeleton />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart
@@ -1703,7 +1766,7 @@ const BusinessManagement = () => {
             </div>
             <div style={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 8 }}>
               {metricsLoading ? (
-                <Skeleton active paragraph={{ rows: 4 }} title={false} />
+                <AdminCardSkeleton />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -1742,7 +1805,7 @@ const BusinessManagement = () => {
           <ContentSection>
             <div style={{ height: isMobile ? 320 : 440 }}>
               {mapLoading ? (
-                <Skeleton active paragraph={{ rows: 6 }} title={false} style={{ padding: 24 }} />
+                <div style={{ padding: 24, height: "100%" }}><AdminCardSkeleton /></div>
               ) : (
                 <CanadianDistribution
                   data={geographicalData}
@@ -1837,17 +1900,17 @@ const BusinessManagement = () => {
           {selectedRowKeys.length > 0 && (
             <BulkActionsBar>
               <strong>{selectedRowKeys.length} selected</strong>
-              <Button size="small" icon={<Award size={13} />}>Feature</Button>
-              <Button size="small" icon={<ToggleRight size={13} />}>Toggle Active</Button>
-              <Button size="small" icon={<Mail size={13} />}>Notify</Button>
-              <Button size="small" icon={<FileText size={13} />}>Export</Button>
-              <Button size="small" type="text" onClick={() => setSelectedRowKeys([])}>Clear</Button>
+              <Button size="small" icon={<Award size={13} />} onClick={handleBulkFeature}>Feature</Button>
+              <Button size="small" icon={<ToggleRight size={13} />} onClick={handleBulkToggleActive}>Toggle Active</Button>
+              <Button size="small" icon={<Mail size={13} />} onClick={handleBulkNotify}>Notify</Button>
+              <Button size="small" icon={<FileText size={13} />} onClick={handleBulkExport}>Export</Button>
+              <Button size="small" type="text" onClick={() => { setSelectedRowKeys([]); setSelectedRows([]); }}>Clear</Button>
             </BulkActionsBar>
           )}
           {isMobile ? (
             <div style={{ padding: 16 }}>
               {loading ? (
-                <Skeleton active />
+                <AdminTableSkeleton rows={5} />
               ) : businesses.length > 0 ? (
                 businesses.map((b) => (
                   <MobileBusinessItem
@@ -1860,6 +1923,8 @@ const BusinessManagement = () => {
                 <Empty />
               )}
             </div>
+          ) : loading ? (
+            <AdminTableSkeleton rows={8} />
           ) : (
             <StyledTable
               columns={columns}
@@ -1867,9 +1932,11 @@ const BusinessManagement = () => {
               rowKey="businessId"
               rowSelection={{
                 selectedRowKeys,
-                onChange: (keys) => setSelectedRowKeys(keys),
+                onChange: (keys, rows) => {
+                  setSelectedRowKeys(keys);
+                  setSelectedRows(rows || []);
+                },
               }}
-              loading={{ spinning: loading, indicator: <GlobalLoaderWithInlineStyles /> }}
               pagination={{ ...pagination, size: "small", showSizeChanger: true, pageSizeOptions: ["10", "20", "50"] }}
               onChange={handleTableChange}
               scroll={{ x: 1200 }}
@@ -1884,6 +1951,7 @@ const BusinessManagement = () => {
           business={detailsLoading ? null : selectedBusiness}
           onAction={handleAction}
           actionLoading={actionLoading}
+          onViewOwnerProfile={handleViewOwnerProfile}
         />
 
         {/* VERIFICATION REVIEW DRAWER */}

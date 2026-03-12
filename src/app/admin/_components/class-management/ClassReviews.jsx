@@ -422,24 +422,18 @@ const ReviewDetailDrawerContent = ({ review, onModerateClick }) => {
 const DetailDrawerModal = ({ open, onClose, review, isMobile, onModerateClick }) => {
   const renderContent = () => (
     <>
-      <DrawerTopBar>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 15, color: colors.textPrimary }}>
-          <MessageSquare size={16} color={colors.primary} />
-          Review Details
-        </div>
-        <Button type="text" icon={<X size={18} />} onClick={onClose} />
-      </DrawerTopBar>
+      {review && (
+        <DrawerTopBar style={{ flexWrap: "wrap", gap: 12 }}>
+          <Avatar size={44} src={review.user?.avatar_thumb_url} icon={<UserIcon size={18} />} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600, fontSize: 15, color: colors.textPrimary }}>{review.user?.name || "Anonymous"}</div>
+            <div style={{ fontSize: 12, color: colors.textSecondary }}>{review.user?.email}</div>
+            <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Review for: <strong>{review.className}</strong></div>
+          </div>
+          <Button type="text" icon={<X size={18} />} onClick={onClose} aria-label="Close" />
+        </DrawerTopBar>
+      )}
       <DrawerScrollBody>
-        {review && (
-          <DrawerHeaderSection>
-            <Avatar size={52} src={review.user?.avatar_thumb_url} icon={<UserIcon size={20} />} />
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 15, color: colors.textPrimary }}>{review.user?.name || "Anonymous"}</div>
-              <div style={{ fontSize: 12, color: colors.textSecondary }}>{review.user?.email}</div>
-              <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Review for: <strong>{review.className}</strong></div>
-            </div>
-          </DrawerHeaderSection>
-        )}
         <DrawerContent>
           <ReviewDetailDrawerContent review={review} onModerateClick={onModerateClick} />
         </DrawerContent>
@@ -455,6 +449,7 @@ const DetailDrawerModal = ({ open, onClose, review, isMobile, onModerateClick })
       titleIcon={<MessageSquare size={16} color={colors.primary} />}
       isMobile={isMobile}
       width="720px"
+      hideHeader={!!review}
     >
       {renderContent()}
     </AdminResponsiveDrawer>

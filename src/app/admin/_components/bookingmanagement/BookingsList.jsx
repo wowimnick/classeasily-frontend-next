@@ -23,7 +23,6 @@ import {
   Form,
   Divider,
   Typography,
-  Skeleton,
   List,
   Tooltip,
   Tag,
@@ -66,13 +65,10 @@ import {
 } from "lucide-react";
 import { adminBookingService, paymentService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
-import {
-  GlobalLoaderWithInlineStyles,
-  GlobalLoaderWithoutInlineStyles,
-} from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+import { AdminTableSkeleton, AdminDrawerContentSkeleton } from "../shared/AdminSkeletons";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -351,6 +347,45 @@ const DrawerFooter = styled.div`
   background: white;
 `;
 
+const DrawerTwoCol = styled.div`
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+const DrawerLeftCol = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+`;
+const DrawerRightCol = styled.div`
+  width: 280px;
+  flex-shrink: 0;
+  background: white;
+  border-left: 1px solid ${colors.border};
+  padding: 20px;
+  overflow-y: auto;
+  @media (max-width: 768px) {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid ${colors.border};
+    padding: 16px;
+  }
+`;
+const BookerViewCard = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid ${colors.border};
+  margin-bottom: 16px;
+`;
+
 const DrawerHeader = styled.div`
   background-color: white;
   padding: 24px;
@@ -558,6 +593,7 @@ const getPaymentStatusTag = (status) => {
 const DetailDrawerContent = ({
   booking,
   isLoading,
+  isMobile,
   onOpenCancelModal,
   onOpenRefundModal,
   isActionLoading,
@@ -570,43 +606,29 @@ const DetailDrawerContent = ({
 
   const { payment } = booking;
 
-  return (
-    <>
-      <DrawerHeader>
-        <StudentAvatar src={booking.user_details?.avatar_medium_url}>
-          {(booking.user_name || "?")[0]}
-        </StudentAvatar>
-        <div>
-          <AntTitle level={4} style={{ margin: 0 }}>
-            {booking.user_name || "Booker name unavailable"}
-          </AntTitle>
-          <Text type="secondary">
-            {booking.user_email || "—"}
-          </Text>
-          {booking.user_phone_number && (
-            <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
-              {booking.user_phone_number}
-            </Text>
-          )}
-        </div>
-      </DrawerHeader>
+  const bookerCard = (
+    <BookerViewCard>
+      <StudentAvatar src={booking.user_details?.avatar_medium_url}>
+        {(booking.user_name || "?")[0]}
+      </StudentAvatar>
+      <div style={{ minWidth: 0 }}>
+        <AntTitle level={5} style={{ margin: 0, fontSize: 15 }}>
+          {booking.user_name || "Booker name unavailable"}
+        </AntTitle>
+        <Text type="secondary" style={{ fontSize: 13 }}>{booking.user_email || "—"}</Text>
+        {booking.user_phone_number && (
+          <Text type="secondary" style={{ display: "block", fontSize: 12 }}>{booking.user_phone_number}</Text>
+        )}
+      </div>
+    </BookerViewCard>
+  );
 
-      {isLoading ? (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              minHeight: "350px",
-              flexDirection: "column",
-              gap: "16px",
-            }}
-          >
-            <GlobalLoaderWithoutInlineStyles />
-            <Text type="secondary">Loading booking details...</Text>
-          </div>
-        ) : (
-          <div style={{ overflowY: "auto" }}>
+  if (isLoading) {
+    return <AdminDrawerContentSkeleton />;
+  }
+
+  const mainContent = (
+    <>
             <InfoGroup>
               <InfoGroupTitle>
                 <Hash />
@@ -905,9 +927,43 @@ const DetailDrawerContent = ({
                 </InfoValue>
               </InfoGroup>
             )}
-          </div>
-        )}
     </>
+  );
+
+  if (isMobile) {
+    return (
+      <DrawerLeftCol>
+        {bookerCard}
+        {mainContent}
+      </DrawerLeftCol>
+    );
+  }
+  return (
+    <DrawerTwoCol>
+      <DrawerLeftCol>{mainContent}</DrawerLeftCol>
+      <DrawerRightCol>
+        {bookerCard}
+        {payment && (
+          <InfoGroup>
+            <InfoGroupTitle><CreditCard size={14} /> Payment</InfoGroupTitle>
+            <InfoGrid>
+              <InfoItem>
+                <InfoContent>
+                  <InfoLabel>Amount</InfoLabel>
+                  <InfoValue>{formatCurrency(payment.amount)}</InfoValue>
+                </InfoContent>
+              </InfoItem>
+              <InfoItem>
+                <InfoContent>
+                  <InfoLabel>Status</InfoLabel>
+                  <InfoValue>{getPaymentStatusTag(booking.payment_status)}</InfoValue>
+                </InfoContent>
+              </InfoItem>
+            </InfoGrid>
+          </InfoGroup>
+        )}
+      </DrawerRightCol>
+    </DrawerTwoCol>
   );
 };
 
@@ -918,22 +974,11 @@ const DetailDrawerModal = ({ open, onClose, booking, isLoading, isMobile, onOpen
 
   const renderDrawerContent = () => (
     <>
-      <DrawerHeaderSection>
-        <Space align="center" size={12}>
-          <Hash size={20} style={{ color: colors.primary }} />
-          <span style={{ fontWeight: 700, fontSize: "18px", color: "#222" }}>
-            Booking: {booking?.user_facing_reference || `#${booking?.id}`}
-          </span>
-        </Space>
-        <DrawerCloseButton onClick={onClose}>
-          <X size={20} />
-        </DrawerCloseButton>
-      </DrawerHeaderSection>
-
       <DrawerScrollContent>
         <DetailDrawerContent
           booking={booking}
           isLoading={isLoading}
+          isMobile={isMobile}
           onOpenCancelModal={onOpenCancelModal}
           onOpenRefundModal={onOpenRefundModal}
           isActionLoading={isActionLoading}
@@ -1602,8 +1647,6 @@ const BookingsList = () => {
     },
   ];
 
-  const StatSkeleton = () => <Skeleton active paragraph={{ rows: 2 }} />;
-
   return (
     <ConfigProvider theme={appTheme}>
       <DashboardWrapper>
@@ -1734,7 +1777,7 @@ const BookingsList = () => {
           {isMobile ? (
             <div style={{ padding: "8px" }}>
               {loading ? (
-                <Skeleton active paragraph={{ rows: 5 }} />
+                <AdminTableSkeleton rows={5} />
               ) : bookings.length > 0 ? (
                 <>
                   {bookings.map((booking) => (
@@ -1767,15 +1810,13 @@ const BookingsList = () => {
                 <Empty description="No bookings found with current filters." />
               )}
             </div>
+          ) : loading ? (
+            <AdminTableSkeleton rows={8} />
           ) : (
             <StyledTable
               columns={columns}
               dataSource={bookings}
               rowKey="id"
-              loading={{
-                spinning: loading,
-                indicator: <GlobalLoaderWithInlineStyles />,
-              }}
               pagination={{
                 ...pagination,
                 showSizeChanger: false,

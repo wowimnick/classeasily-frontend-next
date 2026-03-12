@@ -133,17 +133,13 @@ const ConversationContainer = styled.div`
 
 const ChatMessages = styled.div`
   flex: 1;
-  padding: 20px 24px;
+  padding: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 14px;
   background: ${colors.lightBg};
   min-height: 0;
-
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
 `;
 
 const MessageWrapper = styled.div`
@@ -212,11 +208,7 @@ const ReplyFormWrapper = styled.div`
 const TabScrollArea = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 20px 24px;
-
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
+  padding: 0;
 `;
 
 const InfoCard = styled.div`
@@ -773,6 +765,7 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
         titleIcon={<MessageSquare size={16} color={colors.primary} />}
         isMobile={isMobile}
         width="860px"
+        hideHeader={!!ticket}
       >
         {mainContent}
       </AdminResponsiveDrawer>

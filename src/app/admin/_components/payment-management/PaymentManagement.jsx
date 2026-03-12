@@ -12,7 +12,6 @@ import {
   DatePicker,
   Tag,
   Typography,
-  Skeleton,
   InputNumber,
   Modal,
   Space,
@@ -21,6 +20,7 @@ import {
   Grid,
   Empty,
 } from "antd";
+import { AdminTableSkeleton, AdminDrawerContentSkeleton } from "../shared/AdminSkeletons";
 import {
   DollarSign,
   RefreshCw,
@@ -215,6 +215,27 @@ const InfoCardTitle = styled.div`
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 12px;
+`;
+
+const FeeBreakdownBar = styled.div`
+  display: flex;
+  height: 28px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: ${colors.border};
+`;
+const FeeSegment = styled.div`
+  height: 100%;
+  min-width: 2px;
+  background: ${(p) => p.$color || colors.textSecondary};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.3);
 `;
 
 const FeeRow = styled.div`
@@ -470,7 +491,7 @@ export default function PaymentManagement() {
       return (
         <DrawerBody>
           <DrawerBodyInner>
-            <Skeleton active paragraph={{ rows: 8 }} />
+            <AdminDrawerContentSkeleton />
           </DrawerBodyInner>
         </DrawerBody>
       );
@@ -515,6 +536,19 @@ export default function PaymentManagement() {
 
             <InfoCard>
               <InfoCardTitle>Fee Breakdown</InfoCardTitle>
+              {gross > 0 && (
+                <FeeBreakdownBar>
+                  <FeeSegment $color={colors.success} style={{ width: `${(net / gross) * 100}%` }} title={`Net: ${formatCurrency(net)}`}>
+                    {((net / gross) * 100).toFixed(0)}%
+                  </FeeSegment>
+                  <FeeSegment $color={colors.warning} style={{ width: `${(platformFee / gross) * 100}%` }} title={`Platform: ${formatCurrency(platformFee)}`}>
+                    {((platformFee / gross) * 100).toFixed(0)}%
+                  </FeeSegment>
+                  <FeeSegment $color={colors.error} style={{ width: `${(stripeFee / gross) * 100}%` }} title={`Stripe: ${formatCurrency(stripeFee)}`}>
+                    {((stripeFee / gross) * 100).toFixed(0)}%
+                  </FeeSegment>
+                </FeeBreakdownBar>
+              )}
               <FeeRow>
                 <span style={{ color: colors.textSecondary }}>Gross Amount</span>
                 <span style={{ fontWeight: 600 }}>{formatCurrency(gross)}</span>
@@ -672,11 +706,13 @@ export default function PaymentManagement() {
               />
               <Button type="primary" onClick={fetchPayments} style={{ borderRadius: 8 }}>Apply</Button>
             </FilterRow>
+            {loading ? (
+              <AdminTableSkeleton rows={8} />
+            ) : (
             <StyledTable
               rowKey="id"
               columns={columns}
               dataSource={payments}
-              loading={loading}
               pagination={{
                 current: page,
                 pageSize,
@@ -688,6 +724,7 @@ export default function PaymentManagement() {
               scroll={{ x: 900 }}
               locale={{ emptyText: <Empty description="No payments found." /> }}
             />
+            )}
           </TableSection>
         </ContentLayer>
 

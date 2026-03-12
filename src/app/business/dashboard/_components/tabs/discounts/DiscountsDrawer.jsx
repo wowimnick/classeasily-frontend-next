@@ -208,19 +208,10 @@ const ScrollContainer = styled.div`
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
-  padding: 2rem;
+  padding: 0;
 
   // Improve mobile touch scrolling
   -webkit-overflow-scrolling: touch;
-
-  @media (max-width: 768px) {
-    padding: 1.5rem 1rem;
-  }
-
-  @media (max-width: 480px) {
-    padding: 1rem;
-    padding-bottom: 2rem; // Extra padding so content isn't hidden behind scrollbars
-  }
 `;
 
 const FormContainer = styled(motion.div)`

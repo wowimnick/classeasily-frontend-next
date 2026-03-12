@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import ReactDOM from "react-dom";
 import styled, { ThemeProvider } from "styled-components";
+import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 
 import {
   Table,
@@ -733,39 +734,42 @@ const DetailDrawerModal = ({
   userActivity,
   isLoading,
   onProcessRequest,
+  onOpenProcessModal,
 }) => {
   const isMobile = !useBreakpoint().md;
+  const isPending = request?.status === "pending";
 
-  if (!isVisible) return null;
+  const footer = isPending && onOpenProcessModal ? (
+    <Space>
+      <Button type="primary" icon={<CheckCircle size={16} />} onClick={() => onOpenProcessModal("approve")} style={{ background: colors.success, borderColor: colors.success }}>
+        Approve
+      </Button>
+      <Button danger icon={<XCircle size={16} />} onClick={() => onOpenProcessModal("reject")}>
+        Reject
+      </Button>
+    </Space>
+  ) : null;
 
-  const drawerComponent = (
-    <DrawerOverlay onClick={onClose}>
-      <DrawerContainer onClick={(e) => e.stopPropagation()}>
-        <DragHandle />
-        <DrawerHeaderSection>
-          <Space align="center">
-            <Shield size={20} style={{ color: colors.primary }} />
-            <span style={{ fontWeight: 600, fontSize: "16px", color: "#222" }}>
-              Verification Details
-            </span>
-          </Space>
-          <DrawerCloseButton onClick={onClose}>
-            <X size={20} />
-          </DrawerCloseButton>
-        </DrawerHeaderSection>
-        <DrawerContent>
-          <DetailDrawerContent
-            request={request}
-            userActivity={userActivity}
-            isLoading={isLoading}
-            onProcessRequest={onProcessRequest}
-          />
-        </DrawerContent>
-      </DrawerContainer>
-    </DrawerOverlay>
+  return (
+    <AdminResponsiveDrawer
+      open={isVisible}
+      onClose={onClose}
+      title="Verification Details"
+      titleIcon={<Shield size={18} style={{ color: colors.primary }} />}
+      isMobile={isMobile}
+      width="720px"
+      footer={footer}
+    >
+      <DrawerContent style={{ padding: 24 }}>
+        <DetailDrawerContent
+          request={request}
+          userActivity={userActivity}
+          isLoading={isLoading}
+          onProcessRequest={onProcessRequest}
+        />
+      </DrawerContent>
+    </AdminResponsiveDrawer>
   );
-
-  return ReactDOM.createPortal(drawerComponent, document.body);
 };
 
 const UserAccessControl = () => {
@@ -1195,6 +1199,11 @@ const UserAccessControl = () => {
           userActivity={userActivity}
           isLoading={detailLoading}
           onProcessRequest={handleProcessRequestFromDrawer}
+          onOpenProcessModal={(decision) => {
+            decisionForm.setFieldsValue({ decision: decision === "approve" ? "approved" : "rejected" });
+            setIsDetailsDrawerVisible(false);
+            setTimeout(() => setIsVerifyModalVisible(true), 300);
+          }}
         />
 
         <Modal

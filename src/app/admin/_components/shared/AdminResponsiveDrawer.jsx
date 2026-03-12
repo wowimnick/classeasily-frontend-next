@@ -86,7 +86,7 @@ const CloseButton = styled(Button)`
 const DrawerBody = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 20px 24px;
+  padding: 0;
   background: #f8fafc;
 `;
 
@@ -109,7 +109,19 @@ const AdminResponsiveDrawer = ({
   footer = null,
   children,
   width,
+  hideHeader = false,
 }) => {
+  const renderHeader = () =>
+    !hideHeader && (
+      <DrawerHeader>
+        <HeaderTitle>
+          {titleIcon}
+          <span>{title}</span>
+        </HeaderTitle>
+        <CloseButton icon={<X size={18} />} onClick={onClose} />
+      </DrawerHeader>
+    );
+
   return (
     <Drawer.Root
       open={open}
@@ -124,26 +136,14 @@ const AdminResponsiveDrawer = ({
         {isMobile ? (
           <MobileDrawerContent>
             <DrawerHandle />
-            <DrawerHeader>
-              <HeaderTitle>
-                {titleIcon}
-                <span>{title}</span>
-              </HeaderTitle>
-              <CloseButton icon={<X size={18} />} onClick={onClose} />
-            </DrawerHeader>
+            {renderHeader()}
             <DrawerBody>{children}</DrawerBody>
             {footer ? <DrawerFooter>{footer}</DrawerFooter> : null}
           </MobileDrawerContent>
         ) : (
           <DesktopDrawerContent style={width ? { width } : undefined}>
             <DesktopDrawerInner>
-              <DrawerHeader>
-                <HeaderTitle>
-                  {titleIcon}
-                  <span>{title}</span>
-                </HeaderTitle>
-                <CloseButton icon={<X size={18} />} onClick={onClose} />
-              </DrawerHeader>
+              {renderHeader()}
               <DrawerBody>{children}</DrawerBody>
               {footer ? <DrawerFooter>{footer}</DrawerFooter> : null}
             </DesktopDrawerInner>

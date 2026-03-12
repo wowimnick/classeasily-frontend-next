@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import styled, { keyframes } from "styled-components";
 
 import {
@@ -81,6 +81,7 @@ import { useAuthStore } from "@/lib/auth-client";
 import { Drawer } from "vaul";
 import ShadowUserModal from "./ShadowUserModal";
 import AdminMetricCards from "../shared/AdminMetricCards";
+import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 
 const { RangePicker } = DatePicker;
 const { TabPane } = Tabs;
@@ -352,7 +353,7 @@ const RoleDrawerUserInfo = styled.div`
 `;
 
 const RoleDrawerBody = styled.div`
-  padding: 20px 24px;
+  padding: 0;
   overflow-y: auto;
   flex: 1;
 `;
@@ -420,6 +421,20 @@ const HeaderSection = styled.div`
   }
 `;
 
+const MergedUserDrawerHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid ${colors.border};
+  background: white;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  @media (max-width: 768px) {
+    padding: 14px 16px;
+  }
+`;
+
 const UserAvatar = styled(Avatar)`
   width: 60px;
   height: 60px;
@@ -459,7 +474,7 @@ const UserEmailText = styled(Text)`
 `;
 
 const ContentBody = styled.div`
-  padding: 24px;
+  padding: 0;
   flex: 1;
   overflow-y: auto;
   animation: ${fadeIn} 0.5s 0.1s ease-out both;
@@ -858,6 +873,7 @@ const PIE_COLORS = Object.values(colors).filter(
 // --- MAIN COMPONENT ---
 const UserManagementDashboard = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -911,6 +927,7 @@ const UserManagementDashboard = () => {
   });
   const [chartPeriod, setChartPeriod] = useState("30d");
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [selectedRows, setSelectedRows] = useState([]);
   const [form] = Form.useForm();
   const [roles, setRoles] = useState([]);
   const screens = useBreakpoint();
@@ -1114,6 +1131,33 @@ const UserManagementDashboard = () => {
     }
   };
 
+  // Open user drawer when navigated from business "View owner profile"
+  useEffect(() => {
+    const openUserByEmail = searchParams.get("openUserByEmail");
+    if (!openUserByEmail) return;
+
+    const openByEmail = async () => {
+      try {
+        const res = await userAdminService.getUsers({
+          search: openUserByEmail,
+          page: 1,
+          page_size: 5,
+        });
+        router.replace("/admin/users", { scroll: false });
+        if (res.success && res.data?.results?.length > 0) {
+          const first = res.data.results[0];
+          await showUserDetails(first);
+        } else {
+          message.warning("No user found with that email. Try searching in the table.");
+        }
+      } catch {
+        router.replace("/admin/users", { scroll: false });
+        message.error("Could not look up owner profile.");
+      }
+    };
+    openByEmail();
+  }, [searchParams]);
+
   const handleBookingTableChange = (pagination) => {
     if (selectedUser)
       fetchUserBookings(
@@ -1253,6 +1297,84 @@ const UserManagementDashboard = () => {
       "User deleted",
       "Error deleting user."
     );
+
+  const handleBulkEmail = () => {
+    const emails = selectedRows.map((r) => r.email).filter(Boolean);
+    if (emails.length === 0) {
+      message.warning("No email addresses in selected users.");
+      return;
+    }
+    window.location.href = `mailto:${emails.join(",")}`;
+  };
+
+  const handleBulkDeactivate = () => {
+    if (selectedRowKeys.length === 0) return;
+    setLoading(true);
+    Promise.all(selectedRowKeys.map((id) => userAdminService.lockAccount(id)))
+      .then(() => {
+        message.success(`${selectedRowKeys.length} account(s) deactivated.`);
+        setSelectedRowKeys([]);
+        setSelectedRows([]);
+        fetchUsers(pagination.current, pagination.pageSize);
+      })
+      .catch(() => message.error("Some accounts could not be deactivated."))
+      .finally(() => setLoading(false));
+  };
+
+  const [bulkRoleModalOpen, setBulkRoleModalOpen] = useState(false);
+  const [bulkRoleLoading, setBulkRoleLoading] = useState(false);
+  const [bulkRoleForm] = Form.useForm();
+  const handleBulkAssignRole = () => setBulkRoleModalOpen(true);
+  const handleBulkAssignRoleSubmit = async () => {
+    const { role } = await bulkRoleForm.validateFields();
+    setBulkRoleLoading(true);
+    try {
+      const results = await Promise.allSettled(
+        selectedRowKeys.map((id) => userAdminService.updateUser(id, { role_id: role }))
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed === 0) {
+        message.success(`Role updated for ${selectedRowKeys.length} user(s).`);
+      } else {
+        message.warning(`Updated ${results.length - failed}; ${failed} failed.`);
+      }
+      setBulkRoleModalOpen(false);
+      bulkRoleForm.resetFields();
+      setSelectedRowKeys([]);
+      setSelectedRows([]);
+      fetchUsers(pagination.current, pagination.pageSize);
+    } catch {
+      message.error("Could not update roles.");
+    } finally {
+      setBulkRoleLoading(false);
+    }
+  };
+
+  const handleBulkExportCSV = () => {
+    if (selectedRows.length === 0) {
+      message.warning("No users selected.");
+      return;
+    }
+    const headers = ["User ID", "Email", "First Name", "Last Name", "Role", "Status", "Created"];
+    const rows = selectedRows.map((r) => [
+      r.userId ?? "",
+      r.email ?? "",
+      (typeof r.first_name === "string" ? r.first_name : "") ?? "",
+      (typeof r.last_name === "string" ? r.last_name : "") ?? "",
+      r.roleName ?? r.role_name ?? "",
+      r.status ?? "",
+      r.createdAt ?? "",
+    ]);
+    const csvContent = [headers.join(","), ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `users_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    message.success("CSV downloaded.");
+  };
 
   const handlePieClick = useCallback(
     (data) => {
@@ -1620,45 +1742,7 @@ const UserManagementDashboard = () => {
     }
 
     return (
-      <>
-        <HeaderSection>
-          <UserAvatar src={selectedUser.avatar_medium_url} size={60}>
-            {(selectedUser.first_name?.[0] || "U").toUpperCase()}
-          </UserAvatar>
-          <UserInfo>
-            <UserName>
-              {selectedUser.first_name} {selectedUser.last_name}
-            </UserName>
-            <UserEmailText>{selectedUser.email}</UserEmailText>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <UserRoleTag
-                color={
-                  selectedUser.role_color ||
-                  getColorForRole(selectedUser.role_name)
-                }
-              >
-                {selectedUser.role_name || "N/A"}
-              </UserRoleTag>
-              {selectedUser.status === "active" ? (
-                <StatusTag
-                  style={{ backgroundColor: "#d1fae5", color: "#047857" }}
-                  icon={<CheckCircle size={12} />}
-                >
-                  ACTIVE
-                </StatusTag>
-              ) : (
-                <StatusTag
-                  style={{ backgroundColor: "#fee2e2", color: "#b91c1c" }}
-                  icon={<AlertTriangle size={12} />}
-                >
-                  {selectedUser.status?.toUpperCase()}
-                </StatusTag>
-              )}
-            </div>
-          </UserInfo>
-        </HeaderSection>
-
-        <ContentBody>
+      <ContentBody>
           <Tabs defaultActiveKey="1">
             <TabPane tab="Profile" key="1">
               <InfoGroup>
@@ -1921,7 +2005,6 @@ const UserManagementDashboard = () => {
             </TabPane>
           </Tabs>
         </ContentBody>
-      </>
     );
   };
 
@@ -2193,11 +2276,18 @@ const UserManagementDashboard = () => {
           {selectedRowKeys.length > 0 && (
             <BulkActionsBar>
               <strong>{selectedRowKeys.length} selected</strong>
-              <Button size="small" icon={<Mail size={13} />}>Email</Button>
-              <Button size="small" icon={<Lock size={13} />} danger>Deactivate</Button>
-              <Button size="small" icon={<Edit size={13} />}>Assign Role</Button>
-              <Button size="small" icon={<FileText size={13} />}>Export CSV</Button>
-              <Button size="small" type="text" onClick={() => setSelectedRowKeys([])}>Clear</Button>
+              <Button size="small" icon={<Mail size={13} />} onClick={handleBulkEmail}>Email</Button>
+              <Popconfirm
+                title={`Deactivate ${selectedRowKeys.length} account(s)? They will not be able to log in.`}
+                onConfirm={handleBulkDeactivate}
+                okText="Deactivate"
+                okButtonProps={{ danger: true }}
+              >
+                <Button size="small" icon={<Lock size={13} />} danger>Deactivate</Button>
+              </Popconfirm>
+              <Button size="small" icon={<Edit size={13} />} onClick={handleBulkAssignRole}>Assign Role</Button>
+              <Button size="small" icon={<FileText size={13} />} onClick={handleBulkExportCSV}>Export CSV</Button>
+              <Button size="small" type="text" onClick={() => { setSelectedRowKeys([]); setSelectedRows([]); }}>Clear</Button>
             </BulkActionsBar>
           )}
 
@@ -2221,7 +2311,10 @@ const UserManagementDashboard = () => {
               loading={false}
               rowSelection={{
                 selectedRowKeys,
-                onChange: (keys) => setSelectedRowKeys(keys),
+                onChange: (keys, rows) => {
+                  setSelectedRowKeys(keys);
+                  setSelectedRows(rows || []);
+                },
                 getCheckboxProps: (record) => ({
                   disabled: React.isValidElement(record.first_name),
                 }),
@@ -2351,57 +2444,85 @@ const UserManagementDashboard = () => {
           </Drawer.Portal>
         </Drawer.Root>
 
-        {/* VAUL DRAWER - MOBILE & DESKTOP IMPLEMENTATION */}
-        {isMobile ? (
-          <Drawer.Root
-            open={isDetailsDrawerOpen}
-            onOpenChange={setIsDetailsDrawerOpen}
-          >
-            <Drawer.Portal>
-              <StyledDrawerOverlay />
-              <StyledDrawerContent>
-                <DrawerHandle />
-                <DrawerHeader>
-                  <DrawerHeaderTitle>
-                    <FileText size={20} /> User Details
-                  </DrawerHeaderTitle>
-                  <CloseButton
-                    onClick={() => setIsDetailsDrawerOpen(false)}
-                    icon={<X size={20} />}
-                  />
-                </DrawerHeader>
-                {renderUserDetailsContent()}
-              </StyledDrawerContent>
-            </Drawer.Portal>
-          </Drawer.Root>
-        ) : (
-          <Drawer.Root
-            open={isDetailsDrawerOpen}
-            onOpenChange={setIsDetailsDrawerOpen}
-            direction="right"
-            dismissible
-          >
-            <Drawer.Portal>
-              <StyledDrawerOverlay />
-              <DesktopDrawerContent
-                style={{ "--initial-transform": "calc(100% + 8px)" }}
-              >
-                <DesktopDrawerInner>
-                  <DrawerHeader>
-                    <DrawerHeaderTitle>
-                      <FileText size={20} /> User Details
-                    </DrawerHeaderTitle>
-                    <CloseButton
-                      onClick={() => setIsDetailsDrawerOpen(false)}
-                      icon={<X size={20} />}
-                    />
-                  </DrawerHeader>
-                  {renderUserDetailsContent()}
-                </DesktopDrawerInner>
-              </DesktopDrawerContent>
-            </Drawer.Portal>
-          </Drawer.Root>
-        )}
+        <Modal
+          title={`Assign role to ${selectedRowKeys.length} user(s)`}
+          open={bulkRoleModalOpen}
+          onCancel={() => { setBulkRoleModalOpen(false); bulkRoleForm.resetFields(); }}
+          footer={[
+            <Button key="cancel" onClick={() => { setBulkRoleModalOpen(false); bulkRoleForm.resetFields(); }}>Cancel</Button>,
+            <Button key="submit" type="primary" loading={bulkRoleLoading} onClick={() => handleBulkAssignRoleSubmit()} icon={<Shield size={14} />}>Apply to selected</Button>,
+          ]}
+          destroyOnClose
+        >
+          <Form form={bulkRoleForm} layout="vertical">
+            <Form.Item name="role" label="New role" rules={[{ required: true, message: "Select a role." }]}>
+              <Select placeholder="Select role" loading={!roles.length}>
+                {roles.map((r) => (
+                  <Option key={r.id} value={r.id}>{r.name}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Form>
+        </Modal>
+
+        {/* User Details Drawer - single merged header, Vaul on mobile via AdminResponsiveDrawer */}
+        <AdminResponsiveDrawer
+          open={isDetailsDrawerOpen}
+          onClose={() => setIsDetailsDrawerOpen(false)}
+          title="User Details"
+          titleIcon={<FileText size={18} />}
+          isMobile={isMobile}
+          width="860px"
+          hideHeader={!!selectedUser && !detailLoading}
+        >
+          {detailLoading || !selectedUser ? (
+            renderUserDetailsContent()
+          ) : (
+            <>
+              <MergedUserDrawerHeader>
+                <UserAvatar src={selectedUser.avatar_medium_url} size={56}>
+                  {(selectedUser.first_name?.[0] || "U").toUpperCase()}
+                </UserAvatar>
+                <UserInfo style={{ flex: 1, minWidth: 0 }}>
+                  <UserName style={{ marginBottom: 2 }}>
+                    {selectedUser.first_name} {selectedUser.last_name}
+                  </UserName>
+                  <UserEmailText style={{ fontSize: 13, marginBottom: 8 }}>{selectedUser.email}</UserEmailText>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <UserRoleTag color={selectedUser.role_color || getColorForRole(selectedUser.role_name)}>
+                      {selectedUser.role_name || "N/A"}
+                    </UserRoleTag>
+                    {selectedUser.status === "active" ? (
+                      <StatusTag style={{ backgroundColor: "#d1fae5", color: "#047857" }} icon={<CheckCircle size={12} />}>
+                        ACTIVE
+                      </StatusTag>
+                    ) : (
+                      <StatusTag style={{ backgroundColor: "#fee2e2", color: "#b91c1c" }} icon={<AlertTriangle size={12} />}>
+                        {selectedUser.status?.toUpperCase()}
+                      </StatusTag>
+                    )}
+                  </div>
+                </UserInfo>
+                <Space size="small" wrap>
+                  <Button size="small" icon={<LogIn size={14} />} onClick={() => handleImpersonateUser(selectedUser.userId)}>
+                    Impersonate
+                  </Button>
+                  {selectedUser.status === "active" ? (
+                    <Button size="small" danger icon={<Lock size={14} />} onClick={() => handleLockAccount(selectedUser.userId)}>
+                      Lock
+                    </Button>
+                  ) : (
+                    <Button size="small" icon={<Unlock size={14} />} onClick={() => handleUnlockAccount(selectedUser.userId)}>
+                      Unlock
+                    </Button>
+                  )}
+                  <CloseButton icon={<X size={20} />} onClick={() => setIsDetailsDrawerOpen(false)} />
+                </Space>
+              </MergedUserDrawerHeader>
+              {renderUserDetailsContent()}
+            </>
+          )}
+        </AdminResponsiveDrawer>
       </DashboardWrapper>
       <ShadowUserModal
         open={isShadowModalVisible}

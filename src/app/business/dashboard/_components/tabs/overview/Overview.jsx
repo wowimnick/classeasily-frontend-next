@@ -1197,6 +1197,7 @@ const AnimatedNumberFlow = ({
   prefix = "",
   suffix = "",
   loading,
+  isReadyForAnimation: ready = true,
   numberFormatOptions = {},
 }) => {
   const [displayValue, setDisplayValue] = useState(0);
@@ -1205,11 +1206,12 @@ const AnimatedNumberFlow = ({
     [value],
   );
   useEffect(() => {
-    if (!loading) {
+    if (!loading && ready) {
       const timer = setTimeout(() => setDisplayValue(targetValue), 50);
       return () => clearTimeout(timer);
     }
-  }, [loading, targetValue]);
+    if (loading || !ready) setDisplayValue(0);
+  }, [loading, ready, targetValue]);
   return (
     <>
       {prefix}
@@ -1237,6 +1239,7 @@ const Overview = forwardRef((props, ref) => {
   const [overviewData, setOverviewData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
 
   const fetchOverviewData = useCallback(async () => {
     setLoading(true);
@@ -1266,6 +1269,14 @@ const Overview = forwardRef((props, ref) => {
   useEffect(() => {
     fetchOverviewData();
   }, [fetchOverviewData]);
+
+  useEffect(() => {
+    if (!loading) {
+      const t = setTimeout(() => setIsReadyForAnimation(true), 50);
+      return () => clearTimeout(t);
+    }
+    setIsReadyForAnimation(false);
+  }, [loading]);
 
   const screens = useBreakpoint();
   const isMobile = !screens.md;
@@ -1580,6 +1591,7 @@ const Overview = forwardRef((props, ref) => {
                         prefix={displayInfo?.prefix || ""}
                         suffix={displayInfo?.suffix || ""}
                         loading={loading}
+                        isReadyForAnimation={isReadyForAnimation}
                         numberFormatOptions={
                           isRating
                             ? { maximumFractionDigits: 1 }
@@ -1653,6 +1665,7 @@ const Overview = forwardRef((props, ref) => {
                     <AnimatedNumberFlow
                       value={stat.value}
                       loading={loading}
+                      isReadyForAnimation={isReadyForAnimation}
                       numberFormatOptions={{ maximumFractionDigits: 0 }}
                     />
                   </MetricValue>

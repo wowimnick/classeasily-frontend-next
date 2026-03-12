@@ -20,7 +20,6 @@ import {
   Tooltip,
   Tag,
   Typography,
-  Skeleton,
   Popconfirm,
   message,
   Space,
@@ -47,13 +46,10 @@ import {
 } from "lucide-react";
 import { adminPayoutService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
-import {
-  GlobalLoaderWithInlineStyles,
-  GlobalLoaderWithoutInlineStyles,
-} from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+import { AdminTableSkeleton, AdminDrawerContentSkeleton } from "../shared/AdminSkeletons";
 
 dayjs.extend(utc);
 const { Option } = Select;
@@ -507,39 +503,33 @@ const DetailDrawerModal = ({ open, onClose, payout, isLoading, isMobile, onRetry
   if (!shouldRender) return null;
 
   const renderDrawerContent = () => (
-    <>
-      <DrawerHeader>
-        <DrawerHeaderTitle>
-          <Hash size={20} />
-          <span>Payout: {payout?.id || "Details"}</span>
-        </DrawerHeaderTitle>
-        <CloseButton icon={<X size={20} />} onClick={onClose} />
-      </DrawerHeader>
-      <DrawerContentContainer>
-        <DrawerContent>
-          {isLoading ? (
-            <LoaderWrapper>
-              <GlobalLoaderWithoutInlineStyles />
-            </LoaderWrapper>
-          ) : (
-            <PayoutDetailContent
-              payout={payout}
-              isMobile={isMobile}
-              onRetry={onRetry}
-            />
-          )}
-        </DrawerContent>
-      </DrawerContentContainer>
-    </>
+    <DrawerContentContainer>
+      <DrawerContent>
+        {isLoading ? (
+          <AdminDrawerContentSkeleton />
+        ) : (
+          <PayoutDetailContent
+            payout={payout}
+            isMobile={isMobile}
+            onRetry={onRetry}
+          />
+        )}
+      </DrawerContent>
+    </DrawerContentContainer>
   );
+
+  const hasPayout = payout && !isLoading;
+  const drawerTitle = hasPayout
+    ? `${formatCurrency(payout.amount)} · ${payout.business_name || "Payout"}`
+    : `Payout${payout?.id ? ` #${payout.id}` : ""}`;
 
   return (
     <ConfigProvider theme={appTheme}>
       <AdminResponsiveDrawer
         open={open}
         onClose={onClose}
-        title={`Payout: ${payout?.id || "Details"}`}
-        titleIcon={<Hash size={20} />}
+        title={drawerTitle}
+        titleIcon={<DollarSign size={18} />}
         isMobile={isMobile}
         width="680px"
       >
@@ -1016,7 +1006,7 @@ const PayoutsList = () => {
           {isMobile ? (
             <div style={{ padding: "8px" }}>
               {loading ? (
-                <Skeleton active paragraph={{ rows: 5 }} />
+                <AdminTableSkeleton rows={5} />
               ) : payouts.length > 0 ? (
                 payouts.map((payout) => (
                   <MobilePayoutItem
@@ -1029,15 +1019,13 @@ const PayoutsList = () => {
                 <Empty description="No payouts found with current filters." />
               )}
             </div>
+          ) : loading ? (
+            <AdminTableSkeleton rows={8} />
           ) : (
             <StyledTable
               columns={columns}
               dataSource={payouts}
               rowKey="id"
-              loading={{
-                spinning: loading,
-                indicator: <GlobalLoaderWithInlineStyles />,
-              }}
               pagination={{
                 ...pagination,
                 showSizeChanger: true,

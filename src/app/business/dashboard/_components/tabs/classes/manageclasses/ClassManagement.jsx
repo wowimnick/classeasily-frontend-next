@@ -38,7 +38,6 @@ import {
   Tag as TagIcon,
   ArrowRight,
   DollarSign,
-  Edit,
   Trash2,
   EyeIcon,
   EyeOffIcon,
@@ -1497,7 +1496,7 @@ function ClassManagementContent(props) {
           <StyledMenu onClick={({ domEvent }) => domEvent.stopPropagation()}>
             <Menu.Item
               key="edit"
-              icon={<Edit size={16} />}
+              icon={<Edit3 size={16} />}
               onClick={() => handleEditClass(record)}
             >
               Edit Experience Details
@@ -1594,7 +1593,7 @@ function ClassManagementContent(props) {
       <StyledMenu>
         <Menu.Item
           key="edit"
-          icon={<Edit size={16} />}
+          icon={<Edit3 size={16} />}
           onClick={() => handleEditClass(classItem)}
         >
           Edit Experience Details

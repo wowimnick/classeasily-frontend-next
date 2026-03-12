@@ -37,7 +37,6 @@ import {
   BarChart2,
   Info as InfoIcon,
   GripVertical,
-  X,
   Sparkles,
   Layers,
   Bot,
@@ -48,7 +47,7 @@ import { theme as appTheme } from "@/components/theme";
 import { uploadService } from "@/services/apiService";
 import AdminMetricCards from "../shared/AdminMetricCards";
 
-import { Drawer } from "vaul";
+import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 import {
   DndContext,
   closestCenter,
@@ -228,135 +227,11 @@ const ModalTitleWrapper = styled.div`
   color: ${colors.textPrimary};
 `;
 
-// --- NEW REDESIGNED DRAWER STYLES (Only these are changed) ---
-const StyledDrawerOverlay = styled(Drawer.Overlay)`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(4px);
-  z-index: 1049;
-  animation: fadeIn 0.2s ease-out;
-`;
-
-const StyledDrawerContent = styled(Drawer.Content)`
-  background: white;
-  display: flex;
-  flex-direction: column;
-  border-radius: 28px 28px 0 0;
-  height: 92%;
-  max-height: 96vh;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1050;
-  outline: none;
-  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.12);
-
-  &:after {
-    content: "";
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40px;
-    height: 4px;
-    background: #e2e8f0;
-    border-radius: 2px;
-  }
-`;
-
-const DesktopDrawerContent = styled(Drawer.Content)`
-  right: 20px;
-  top: 20px;
-  bottom: 20px;
-  position: fixed;
-  z-index: 1050;
-  outline: none;
-  width: 650px; /* Wider width */
-  display: flex;
-  max-width: calc(100vw - 40px);
-`;
-
-const DesktopDrawerInner = styled.div`
-  background: white;
-  height: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  border-radius: 24px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  border: 1px solid ${colors.border};
-  overflow: hidden;
-`;
-
-const DrawerHeader = styled.div`
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid ${colors.border};
-  padding: 24px 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  z-index: 10;
-`;
-
-const DrawerHeaderTitle = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: ${colors.textPrimary};
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-`;
-
-const CloseButton = styled.button`
-  padding: 8px;
-  border-radius: 50%;
-  border: 1px solid ${colors.border};
-  background: white;
-  color: ${colors.textSecondary};
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    background: ${colors.lightBg};
-    color: ${colors.textPrimary};
-    transform: scale(1.05);
-  }
-  &:active {
-    transform: scale(0.95);
-  }
-`;
-
+// --- Edit Collection drawer form container (header/footer from AdminResponsiveDrawer) ---
 const DrawerFormContainer = styled.div`
   padding: 32px;
   overflow-y: auto;
   flex: 1;
-`;
-
-const DrawerFooter = styled.div`
-  padding: 24px 32px;
-  border-top: 1px solid ${colors.border};
-  display: flex;
-  justify-content: flex-end;
-  gap: 16px;
-  flex-shrink: 0;
-  background: #fcfcfc;
-`;
-
-const DrawerHandle = styled(Drawer.Handle)`
-  width: 36px;
-  height: 4px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 2px;
-  margin: 12px auto 8px;
-  flex-shrink: 0;
 `;
 
 // --- DND & UTILITIES ---
@@ -448,17 +323,7 @@ const UniversalEditDrawer = ({
   if (!shouldRender) return null;
 
   const renderDrawerContent = () => (
-    <>
-      <DrawerHeader>
-        <DrawerHeaderTitle>
-          {data ? "Edit Collection" : "Add New Collection"}
-        </DrawerHeaderTitle>
-        <CloseButton onClick={onClose} aria-label="Close">
-          <X size={20} />
-        </CloseButton>
-      </DrawerHeader>
-
-      <DrawerFormContainer>
+    <DrawerFormContainer>
         <Form
           form={form}
           layout="vertical"
@@ -708,55 +573,43 @@ const UniversalEditDrawer = ({
               </Form.Item>
             </div>
         </Form>
-      </DrawerFormContainer>
+    </DrawerFormContainer>
+  );
 
-      <DrawerFooter>
-        <Button
-          onClick={onClose}
-          disabled={isLoading}
-          size="middle"
-          style={{ borderRadius: 10 }}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="primary"
-          htmlType="submit"
-          form="universal-edit-form"
-          loading={isLoading}
-          key={`btn-${isLoading}`}
-          size="middle"
-          style={{ borderRadius: 10, padding: "0 32px" }}
-        >
-          {data ? "Save Changes" : "Create Collection"}
-        </Button>
-      </DrawerFooter>
+  const drawerFooter = (
+    <>
+      <Button
+        onClick={onClose}
+        disabled={isLoading}
+        size="middle"
+        style={{ borderRadius: 10 }}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="primary"
+        htmlType="submit"
+        form="universal-edit-form"
+        loading={isLoading}
+        key={`btn-${isLoading}`}
+        size="middle"
+        style={{ borderRadius: 10, padding: "0 32px" }}
+      >
+        {data ? "Save Changes" : "Create Collection"}
+      </Button>
     </>
   );
 
   return (
-    <Drawer.Root
+    <AdminResponsiveDrawer
       open={isVisible}
-      onOpenChange={(open) => !open && onClose()}
-      direction={isMobile ? "bottom" : "right"}
-      dismissible
-      handleOnly={!isMobile}
+      onClose={onClose}
+      title={data ? "Edit Collection" : "Add New Collection"}
+      isMobile={isMobile}
+      footer={drawerFooter}
     >
-      <Drawer.Portal>
-        <StyledDrawerOverlay />
-        {isMobile ? (
-          <StyledDrawerContent>
-            <DrawerHandle />
-            {renderDrawerContent()}
-          </StyledDrawerContent>
-        ) : (
-          <DesktopDrawerContent>
-            <DrawerHandle />
-            <DesktopDrawerInner>{renderDrawerContent()}</DesktopDrawerInner>
-          </DesktopDrawerContent>
-        )}
-      </Drawer.Portal>
-    </Drawer.Root>
+      {renderDrawerContent()}
+    </AdminResponsiveDrawer>
   );
 };
 

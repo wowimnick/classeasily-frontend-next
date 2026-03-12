@@ -54,7 +54,7 @@ import {
   useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
+import { AdminFormSkeleton } from "../shared/AdminSkeletons";
 import { theme as appTheme } from "@/components/theme";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 
@@ -67,11 +67,8 @@ const { useBreakpoint } = Grid;
 const DrawerContentWrapper = styled.div`
   flex: 1 1 auto;
   overflow-y: auto;
-  padding: 24px;
+  padding: 0;
   background-color: white;
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
 `;
 
 const FormSection = styled.div`
@@ -1288,7 +1285,7 @@ const AdminClassEditDrawer = ({
             <DrawerContentWrapper>
               {shouldShowLoader ? (
                 <LoaderWrapper>
-                  <GlobalLoaderWithoutInlineStyles />
+                  <AdminFormSkeleton />
                 </LoaderWrapper>
               ) : (
                 <>

@@ -447,7 +447,7 @@ export default function NotificationCampaigns() {
                 <X size={20} />
               </button>
             </Drawer.Close>
-            <div style={{ padding: 20, overflowY: "auto" }}>
+            <div style={{ padding: 0, overflowY: "auto" }}>
               <Form form={form} layout="vertical">
                 <Form.Item name="title" label="Campaign name" rules={[{ required: true }]}>
                   <Input placeholder="e.g. Weekly digest" />

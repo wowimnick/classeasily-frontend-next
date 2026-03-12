@@ -124,10 +124,10 @@ const MobileDetailsBody = styled.div`
 
 // LEFT column – white, scrollable
 const LeftCol = styled.div`
-  flex: 1; background: ${C.white}; overflow-y: auto; padding: 28px 28px 24px;
+  flex: 1; background: ${C.white}; overflow-y: auto; padding: 0;
   display: flex; flex-direction: column; gap: 28px;
   animation: ${fadeIn} 0.3s ease-out;
-  @media (max-width: 768px) { padding: 20px 16px; gap: 20px; }
+  @media (max-width: 768px) { gap: 20px; }
 `;
 
 // RIGHT column – cool gray, fixed-width, scrollable (z-index so content stays below footer)
@@ -139,7 +139,7 @@ const RightCol = styled.div`
 `;
 
 const RightColInner = styled.div`
-  padding: 24px; display: flex; flex-direction: column; gap: 20px; flex: 1;
+  padding: 0; display: flex; flex-direction: column; gap: 20px; flex: 1;
 `;
 
 // RIGHT column header (title + close)

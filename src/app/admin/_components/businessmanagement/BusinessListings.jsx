@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import styled from "styled-components";
 import dayjs from "dayjs";
-import { Table, Card, Input, Select, Button, ConfigProvider, Checkbox, Avatar, Tag, Space, Tooltip, Dropdown, Menu, Divider, Modal, Grid, Empty, Badge, Alert, Tabs, Popconfirm, Typography, Statistic, Skeleton, List,  } from 'antd';
+import { Table, Card, Input, Select, Button, ConfigProvider, Checkbox, Avatar, Tag, Space, Tooltip, Dropdown, Menu, Divider, Modal, Grid, Empty, Badge, Alert, Tabs, Popconfirm, Typography, Statistic, List,  } from 'antd';
 import message from '@/lib/message';
 import {
   Search,
@@ -43,15 +44,13 @@ import {
   Upload,
   FileUp,
   Building2,
+  ExternalLink,
 } from "lucide-react";
 import { businessManagementService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
-import {
-  GlobalLoaderWithInlineStyles,
-  GlobalLoaderWithoutInlineStyles,
-} from "@/components/common/GlobalLoader";
 import { RefreshCw } from "lucide-react";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+import { AdminTableSkeleton, AdminDrawerContentSkeleton } from "../shared/AdminSkeletons";
 
 const { Option } = Select;
 const { useBreakpoint } = Grid;
@@ -347,6 +346,64 @@ const InfoValue = styled(Paragraph)`
     margin-bottom: 0 !important;
   }
 `;
+
+const DrawerTwoCol = styled.div`
+  display: flex;
+  gap: 24px;
+  min-height: 0;
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+const DrawerLeftCol = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+`;
+const DrawerRightCol = styled.div`
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  @media (max-width: 768px) {
+    width: 100%;
+    order: -1;
+  }
+`;
+const SidebarCard = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid ${colors.border};
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+`;
+const SectionTitle = styled.div`
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: ${colors.textSecondary};
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+const StatusPill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: ${(p) => p.$bg || colors.lightBg};
+  color: ${(p) => p.$color || colors.textPrimary};
+`;
+
 const HoursInfo = styled.div`
   font-size: 0.95rem;
   color: #4a5568;
@@ -470,6 +527,7 @@ const BusinessDetailDrawerContent = ({
   business,
   isActionLoading,
   onAction,
+  onViewOwnerProfile,
 }) => {
   if (!business) {
     return (
@@ -502,25 +560,13 @@ const BusinessDetailDrawerContent = ({
 
   const location = [businessCity, businessState].filter(Boolean).join(", ");
   const formattedHours = formatBusinessHours(businessHours);
+  const isVerified = verificationStatus === "verified";
 
   return (
-    <>
-      <DrawerHeader>
-        <BusinessAvatar src={business.business_image_medium_url}>
-          {businessName?.[0]}
-        </BusinessAvatar>
-        <div>
-          <Title level={4} style={{ margin: 0 }}>
-            {businessName}
-          </Title>
-          <Text type="secondary">{location}</Text>
-        </div>
-      </DrawerHeader>
-      <>
+    <DrawerTwoCol>
+      <DrawerLeftCol>
         <InfoGroup>
-          <InfoGroupTitle>
-            <ShieldAlert /> Admin Actions
-          </InfoGroupTitle>
+          <SectionTitle><ShieldAlert size={12} /> Admin Actions</SectionTitle>
           <Space wrap>
             <Popconfirm
               title={`Permanently delete ${businessName}?`}
@@ -560,23 +606,10 @@ const BusinessDetailDrawerContent = ({
         </InfoGroup>
 
         <InfoGroup>
-          <InfoGroupTitle>
-            <Hash /> Business Summary
-          </InfoGroupTitle>
+          <SectionTitle><Hash size={12} /> Business Summary</SectionTitle>
           <InfoGrid>
             <InfoItem>
-              <InfoIcon>
-                <UserCheck />
-              </InfoIcon>
-              <InfoContent>
-                <InfoLabel>Owner Account</InfoLabel>
-                <InfoValue copyable>{owner_email || "N/A"}</InfoValue>
-              </InfoContent>
-            </InfoItem>
-            <InfoItem>
-              <InfoIcon>
-                <Building />
-              </InfoIcon>
+              <InfoIcon><Building /></InfoIcon>
               <InfoContent>
                 <InfoLabel>Business Type</InfoLabel>
                 <InfoValue>
@@ -586,49 +619,18 @@ const BusinessDetailDrawerContent = ({
                 </InfoValue>
               </InfoContent>
             </InfoItem>
-            <InfoItem>
-              <InfoIcon>
-                <Star />
-              </InfoIcon>
-              <InfoContent>
-                <InfoLabel>Rating</InfoLabel>
-                <InfoValue>
-                  {parseFloat(average_rating || 0).toFixed(1)} (
-                  {review_count || 0} Reviews)
-                </InfoValue>
-              </InfoContent>
-            </InfoItem>
-            <InfoItem>
-              <InfoIcon>
-                <Calendar />
-              </InfoIcon>
-              <InfoContent>
-                <InfoLabel>Member Since</InfoLabel>
-                <InfoValue>{formatDate(createdAt)}</InfoValue>
-              </InfoContent>
-            </InfoItem>
-            <InfoItem>
-              <InfoIcon>
-                <CheckCircle />
-              </InfoIcon>
-              <InfoContent>
-                <InfoLabel>Verification Status</InfoLabel>
-                <InfoValue>
-                  <Tag
-                    color={
-                      verificationStatus === "verified" ? "success" : "warning"
-                    }
-                  >
-                    {verificationStatus?.toUpperCase()}
-                  </Tag>
-                </InfoValue>
-              </InfoContent>
-            </InfoItem>
+            {location && (
+              <InfoItem>
+                <InfoIcon><MapPin size={16} /></InfoIcon>
+                <InfoContent>
+                  <InfoLabel>Location</InfoLabel>
+                  <InfoValue>{location}</InfoValue>
+                </InfoContent>
+              </InfoItem>
+            )}
             {businessDescription && (
               <InfoItem style={{ gridColumn: "1 / -1" }}>
-                <InfoIcon>
-                  <InfoIcon />
-                </InfoIcon>
+                <InfoIcon><BookOpen size={16} /></InfoIcon>
                 <InfoContent>
                   <InfoLabel>About {businessName}</InfoLabel>
                   <InfoValue>{businessDescription}</InfoValue>
@@ -640,9 +642,7 @@ const BusinessDetailDrawerContent = ({
 
         {formattedHours.length > 0 && (
           <InfoGroup>
-            <InfoGroupTitle>
-              <Clock /> Hours of Operation
-            </InfoGroupTitle>
+            <SectionTitle><Clock size={12} /> Hours of Operation</SectionTitle>
             <HoursInfo>
               {formattedHours.map((line, index) => (
                 <HoursLine key={index}>
@@ -655,15 +655,11 @@ const BusinessDetailDrawerContent = ({
         )}
 
         <InfoGroup>
-          <InfoGroupTitle>
-            <Phone /> Contact Information
-          </InfoGroupTitle>
+          <SectionTitle><Phone size={12} /> Contact</SectionTitle>
           <InfoGrid>
             {studentContactPhone && (
               <InfoItem>
-                <InfoIcon>
-                  <Phone />
-                </InfoIcon>
+                <InfoIcon><Phone size={16} /></InfoIcon>
                 <InfoContent>
                   <InfoLabel>Phone</InfoLabel>
                   <InfoValue>{studentContactPhone}</InfoValue>
@@ -672,9 +668,7 @@ const BusinessDetailDrawerContent = ({
             )}
             {studentContactEmail && (
               <InfoItem>
-                <InfoIcon>
-                  <Mail />
-                </InfoIcon>
+                <InfoIcon><Mail size={16} /></InfoIcon>
                 <InfoContent>
                   <InfoLabel>Email</InfoLabel>
                   <InfoValue as="a" href={`mailto:${studentContactEmail}`}>
@@ -685,9 +679,7 @@ const BusinessDetailDrawerContent = ({
             )}
             {website && (
               <InfoItem>
-                <InfoIcon>
-                  <Globe />
-                </InfoIcon>
+                <InfoIcon><Globe size={16} /></InfoIcon>
                 <InfoContent>
                   <InfoLabel>Website</InfoLabel>
                   <InfoValue
@@ -707,9 +699,7 @@ const BusinessDetailDrawerContent = ({
         {social_media_links &&
           Object.values(social_media_links).some((v) => v) && (
             <InfoGroup>
-              <InfoGroupTitle>
-                <Globe /> Social Media
-              </InfoGroupTitle>
+              <SectionTitle><Globe size={12} /> Social Media</SectionTitle>
               <Space wrap>
                 {Object.entries(social_media_links).map(
                   ([platform, url]) =>
@@ -729,12 +719,47 @@ const BusinessDetailDrawerContent = ({
               </Space>
             </InfoGroup>
           )}
-      </>
-    </>
+      </DrawerLeftCol>
+
+      <DrawerRightCol>
+        <SidebarCard>
+          <SectionTitle><UserCheck size={12} /> Owner</SectionTitle>
+          <InfoValue copyable>{owner_email || "N/A"}</InfoValue>
+          {owner_email && onViewOwnerProfile && (
+            <Button
+              type="link"
+              size="small"
+              icon={<ExternalLink size={14} />}
+              onClick={() => onViewOwnerProfile(owner_email)}
+              style={{ paddingLeft: 0, marginTop: 6 }}
+            >
+              View owner profile
+            </Button>
+          )}
+        </SidebarCard>
+        <SidebarCard>
+          <SectionTitle><Star size={12} /> Rating</SectionTitle>
+          <div style={{ fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>
+            {parseFloat(average_rating || 0).toFixed(1)}
+          </div>
+          <div style={{ fontSize: 12, color: colors.textSecondary }}>{review_count || 0} reviews</div>
+        </SidebarCard>
+        <SidebarCard>
+          <SectionTitle><CheckCircle size={12} /> Status</SectionTitle>
+          <StatusPill
+            $bg={isVerified ? "#d1fae5" : "#fef3c7"}
+            $color={isVerified ? "#059669" : "#b45309"}
+          >
+            {verificationStatus?.toUpperCase() || "N/A"}
+          </StatusPill>
+          <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 8 }}>Member since {formatDate(createdAt)}</div>
+        </SidebarCard>
+      </DrawerRightCol>
+    </DrawerTwoCol>
   );
 };
 
-const DetailDrawerModal = ({ open, onClose, business, isLoading, isMobile, onAction, isActionLoading }) => {
+const DetailDrawerModal = ({ open, onClose, business, isLoading, isMobile, onAction, isActionLoading, onViewOwnerProfile }) => {
   return (
     <AdminResponsiveDrawer
       open={open}
@@ -746,15 +771,13 @@ const DetailDrawerModal = ({ open, onClose, business, isLoading, isMobile, onAct
     >
       <DrawerContent style={{ padding: isMobile ? 0 : 24 }}>
         {isLoading ? (
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 350, flexDirection: "column", gap: 16 }}>
-            <GlobalLoaderWithoutInlineStyles />
-            <Text type="secondary">Loading details...</Text>
-          </div>
+          <AdminDrawerContentSkeleton />
         ) : (
           <BusinessDetailDrawerContent
             business={business}
             isActionLoading={isActionLoading}
             onAction={onAction}
+            onViewOwnerProfile={onViewOwnerProfile}
           />
         )}
       </DrawerContent>
@@ -776,12 +799,19 @@ const ImportLogPre = styled.pre`
 `;
 
 const BusinessListings = () => {
+  const router = useRouter();
   const [businesses, setBusinesses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
+
+  const handleViewOwnerProfile = useCallback((ownerEmail) => {
+    if (!ownerEmail) return;
+    setDetailDrawerOpen(false);
+    router.push(`/admin/users?openUserByEmail=${encodeURIComponent(ownerEmail)}`);
+  }, [router]);
 
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importBusinesses, setImportBusinesses] = useState([]);
@@ -1283,7 +1313,7 @@ const BusinessListings = () => {
           {isMobile ? (
             <div style={{ padding: "8px" }}>
               {loading ? (
-                <Skeleton active paragraph={{ rows: 5 }} />
+                <AdminTableSkeleton rows={5} />
               ) : businesses.length > 0 ? (
                 <>
                   {businesses.map(renderMobileCard)}
@@ -1310,15 +1340,13 @@ const BusinessListings = () => {
                 <Empty description="No businesses found." />
               )}
             </div>
+          ) : loading ? (
+            <AdminTableSkeleton rows={8} />
           ) : (
             <StyledTable
               columns={columns}
               dataSource={businesses}
               rowKey="businessId"
-              loading={{
-                spinning: loading,
-                indicator: <GlobalLoaderWithInlineStyles />,
-              }}
               pagination={{
                 ...pagination,
                 showSizeChanger: true,
@@ -1344,6 +1372,7 @@ const BusinessListings = () => {
             handleToggleActive,
             handleFeatureBusiness,
           }}
+          onViewOwnerProfile={handleViewOwnerProfile}
         />
 
         <Modal

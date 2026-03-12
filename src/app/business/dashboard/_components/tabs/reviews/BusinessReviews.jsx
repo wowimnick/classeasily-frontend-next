@@ -132,7 +132,7 @@ const DrawerTitle = styled.h2`
 const DrawerBody = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 0;
   &::-webkit-scrollbar {
     display: none;
   }

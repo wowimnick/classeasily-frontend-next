@@ -6,13 +6,12 @@ import React, {
   memo,
   useMemo,
   useCallback,
-  useRef,
 } from "react";
 import Link from "next/link";
 import styled, { ThemeProvider } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu } from "antd";
-import { X, LayoutGrid, SidebarOpen, Eye, AlertCircle } from "lucide-react";
+import { X, LayoutGrid, SidebarOpen, Eye, AlertCircle, Users, Building2, BookOpen, MessageSquare } from "lucide-react";
 import { LordIcon } from "@/services/ReactUtils";
 import { theme as appTheme } from "@/components/theme";
 import { useAuth } from "@/lib/auth-client";
@@ -26,7 +25,7 @@ const SidebarWrapper = styled.div`
   flex-direction: column;
   font-family: ${(p) => p.theme?.token?.fontFamily || "inherit"};
 
-  @media (max-width: 1024px) {
+  @media (max-width: 767px) {
     .desktop-sidemenu {
       display: none;
     }
@@ -35,13 +34,14 @@ const SidebarWrapper = styled.div`
 
 /* ─── Desktop sidebar ───────────────────────────────────────────── */
 const DesktopSideMenu = styled(motion.div)`
-  width: 260px;
+  width: ${(p) => (p.$collapsed ? "72px" : "260px")};
   border-right: 1px solid #ebebeb;
   height: 100%;
   display: flex;
   flex-direction: column;
   z-index: 1000;
   overflow: hidden;
+  transition: width 0.2s ease;
 `;
 
 /* ─── Profile card area ─────────────────────────────────────────── */
@@ -302,6 +302,49 @@ const MobileSidebarContainer = styled(motion.div)`
 
   @media (min-width: 1025px) {
     display: none;
+  }
+`;
+
+/* ─── Bottom nav (mobile only) ───────────────────────────────────── */
+const BottomNavBar = styled.nav`
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 1000;
+  padding: 0 8px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+
+  @media (min-width: 768px) {
+    display: none;
+  }
+`;
+
+const BottomNavItem = styled(Link)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  color: ${(p) => (p.$active ? (p.theme?.token?.colorPrimary || "#ff385c") : "#6b7280")};
+  font-size: 10px;
+  font-weight: ${(p) => (p.$active ? "600" : "500")};
+  text-decoration: none;
+  min-width: 56px;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #111827;
+    text-decoration: none;
   }
 `;
 
@@ -627,16 +670,23 @@ menuGroupsConfig.forEach((g) => {
   });
 });
 
+const BOTTOM_NAV_ITEMS = [
+  { key: "overview", label: "Dashboard", icon: LayoutGrid },
+  { key: "users", label: "Users", icon: Users },
+  { key: "business-overview", label: "Business", icon: Building2 },
+  { key: "all-bookings", label: "Bookings", icon: BookOpen },
+  { key: "support", label: "Support", icon: MessageSquare },
+];
+
 const PlatformSidebar = memo(({ onMenuSelect, activeKey }) => {
   const { user } = useAuth();
   const permissions = user?.permissions || [];
-  const [drawerVisible, setDrawerVisible] = useState(false);
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" ? window.innerWidth <= 1024 : false
-  );
+  const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1024);
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+  const isSmallMobile = width < 768;
+  const isMobile = !isDesktop;
   const [openKeys, setOpenKeys] = useState([]);
-  const [transformOrigin, setTransformOrigin] = useState("bottom left");
-  const mobileButtonRef = useRef(null);
 
   const hasPermission = useCallback(
     (key) => {
@@ -681,7 +731,7 @@ const PlatformSidebar = memo(({ onMenuSelect, activeKey }) => {
   }, [hasPermission]);
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 1024);
+    const handleResize = () => setWidth(window.innerWidth);
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -702,30 +752,11 @@ const PlatformSidebar = memo(({ onMenuSelect, activeKey }) => {
     }
   }, [activeKey]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (drawerVisible && mobileButtonRef.current && isMobile) {
-      const buttonRect = mobileButtonRef.current.getBoundingClientRect();
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const mL = 10,
-        mT = 24;
-      const mW = Math.min(300, vw - 48);
-      const mH = Math.min(vh - 150, vh - 48);
-      const bX = buttonRect.left + buttonRect.width / 2;
-      const bY = buttonRect.top + buttonRect.height / 2;
-      const oX = Math.max(0, Math.min(100, ((bX - mL) / mW) * 100));
-      const oY = Math.max(0, Math.min(100, ((bY - mT) / mH) * 100));
-      setTransformOrigin(`${oX}% ${oY}%`);
-    }
-  }, [drawerVisible, isMobile]);
-
   const handleMenuClick = useCallback(
     (e) => {
       onMenuSelect(e.key);
-      if (isMobile) setDrawerVisible(false);
     },
-    [onMenuSelect, isMobile]
+    [onMenuSelect]
   );
 
   const handleOpenChange = useCallback((keys) => {
@@ -742,22 +773,25 @@ const PlatformSidebar = memo(({ onMenuSelect, activeKey }) => {
     });
   }, []);
 
-  const renderProfileCard = () => (
+  const renderProfileCard = (collapsed) => (
     <AdminProfileCard>
       <AdminLogoIcon>
         <LayoutGrid size={18} strokeWidth={2.5} />
       </AdminLogoIcon>
-      <AdminTextBlock>
-        <AdminNameText>Platform Admin</AdminNameText>
-        <AdminSubtitleText>Platform Management</AdminSubtitleText>
-      </AdminTextBlock>
+      {!collapsed && (
+        <AdminTextBlock>
+          <AdminNameText>Platform Admin</AdminNameText>
+          <AdminSubtitleText>Platform Management</AdminSubtitleText>
+        </AdminTextBlock>
+      )}
     </AdminProfileCard>
   );
 
-  const renderMenu = (containerClass = "") => (
+  const renderMenu = (containerClass = "", inlineCollapsed = false) => (
     <MenuContainer className={containerClass}>
       <StyledAntMenu
         mode="inline"
+        inlineCollapsed={inlineCollapsed}
         selectedKeys={[activeKey]}
         openKeys={openKeys}
         onOpenChange={handleOpenChange}
@@ -780,96 +814,35 @@ const PlatformSidebar = memo(({ onMenuSelect, activeKey }) => {
     </>
   );
 
-  const renderMobileFooter = () => (
-    <>
-      <MobileFooterBtn href="/" onClick={() => setDrawerVisible(false)}>
-        <Eye size={14} /> Preview
-      </MobileFooterBtn>
-      <MobileFooterBtn href="/business/help/" onClick={() => setDrawerVisible(false)}>
-        <AlertCircle size={14} /> Help
-      </MobileFooterBtn>
-    </>
-  );
-
   return (
     <ThemeProvider theme={appTheme}>
       <SidebarWrapper>
-        <DesktopSideMenu className="desktop-sidemenu" initial={false}>
-          <ProfileCardArea>{renderProfileCard()}</ProfileCardArea>
-          {renderMenu()}
-          <FooterActionsContainer>{renderFooterActions()}</FooterActionsContainer>
-        </DesktopSideMenu>
-
-        {isMobile && (
-          <>
-            <AnimatePresence>
-              {!drawerVisible && (
-                <MobileExpandableButton
-                  ref={mobileButtonRef}
-                  variants={expandableButtonVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="hidden"
-                >
-                  <ExpandableButtonContent
-                    initial={{ width: 52 }}
-                    whileHover={{ width: 120 }}
-                    onClick={() => setDrawerVisible(true)}
-                    transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                  >
-                    <ButtonIcon>
-                      <SidebarOpen size={22} />
-                    </ButtonIcon>
-                    <ButtonText
-                      initial={{ opacity: 0, x: -8 }}
-                      whileHover={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.15, delay: 0.05 }}
-                    >
-                      Menu
-                    </ButtonText>
-                  </ExpandableButtonContent>
-                </MobileExpandableButton>
-              )}
-            </AnimatePresence>
-
-            <AnimatePresence>
-              {drawerVisible && (
-                <>
-                  <MobileSidebarOverlay
-                    variants={overlayVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="hidden"
-                    onClick={() => setDrawerVisible(false)}
-                  />
-                  <MobileSidebarContainer
-                    variants={sidebarVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="hidden"
-                    style={{ transformOrigin }}
-                  >
-                    <MobileHeaderContainer>
-                      {renderProfileCard()}
-                      <MobileCloseButton
-                        whileHover={{ scale: 1.1, rotate: 90 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setDrawerVisible(false)}
-                        aria-label="Close Menu"
-                      >
-                        <X size={18} />
-                      </MobileCloseButton>
-                    </MobileHeaderContainer>
-                    <MobileMenuContainer>{renderMenu()}</MobileMenuContainer>
-                    <MobileFooterContainer>
-                      {renderMobileFooter()}
-                    </MobileFooterContainer>
-                  </MobileSidebarContainer>
-                </>
-              )}
-            </AnimatePresence>
-          </>
+        {!isSmallMobile && (
+          <DesktopSideMenu className="desktop-sidemenu" initial={false} $collapsed={isTablet}>
+            <ProfileCardArea>{renderProfileCard(isTablet)}</ProfileCardArea>
+            {renderMenu("", isTablet)}
+            {!isTablet && <FooterActionsContainer>{renderFooterActions()}</FooterActionsContainer>}
+          </DesktopSideMenu>
         )}
+
+        {isSmallMobile && (
+          <BottomNavBar>
+            {BOTTOM_NAV_ITEMS.filter((item) => hasPermission(item.key)).map((item) => {
+              const Icon = item.icon;
+              return (
+                <BottomNavItem
+                  key={item.key}
+                  href={`/admin/${item.key}`}
+                  $active={activeKey === item.key}
+                >
+                  <Icon size={20} strokeWidth={2} />
+                  {item.label}
+                </BottomNavItem>
+              );
+            })}
+          </BottomNavBar>
+        )}
+
       </SidebarWrapper>
     </ThemeProvider>
   );

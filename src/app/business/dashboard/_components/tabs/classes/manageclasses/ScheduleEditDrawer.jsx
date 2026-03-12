@@ -490,7 +490,7 @@ const DayViewFooter = styled.div`
 const DayViewBody = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 20px 24px;
+  padding: 0;
   background: #fff;
 `;
 

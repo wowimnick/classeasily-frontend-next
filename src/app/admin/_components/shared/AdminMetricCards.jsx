@@ -3,7 +3,8 @@
 import React from "react";
 import styled from "styled-components";
 import NumberFlow from "@number-flow/react";
-import { Card, Skeleton } from "antd";
+import { Card } from "antd";
+import { AdminCardSkeleton } from "./AdminSkeletons";
 import { TrendingDown, TrendingUp } from "lucide-react";
 
 export const adminColors = {
@@ -29,11 +30,11 @@ const hexToRgba = (hex, alpha = 1) => {
 
 const StatsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 20px;
 
   @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 12px;
   }
 `;
@@ -55,7 +56,7 @@ const StatCard = styled(Card)`
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 8px;
+    gap: 0;
     min-height: 120px;
 
     @media (max-width: 768px) {
@@ -175,7 +176,7 @@ const AdminMetricCards = ({
         return (
           <StatCard key={key}>
             {loading ? (
-              <Skeleton active paragraph={{ rows: 2 }} title={false} />
+              <AdminCardSkeleton />
             ) : (
               <>
                 <div>

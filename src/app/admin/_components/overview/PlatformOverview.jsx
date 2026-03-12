@@ -19,7 +19,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
-import { Card, Spin, Typography, Radio } from "antd";
+import { Card, Typography, Radio } from "antd";
 import {
   AreaChart,
   Area,
@@ -35,6 +35,7 @@ import {
 } from "recharts";
 import NumberFlow from "@number-flow/react";
 import AdminMetricCards from "../shared/AdminMetricCards";
+import { AdminOverviewSkeleton } from "../shared/AdminSkeletons";
 import {
   userAdminService,
   businessManagementService,
@@ -233,6 +234,16 @@ const QuickActionCard = styled(Card)`
 `;
 
 /* ── Charts ── */
+const ChartAndFeedGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 12px;
+  align-items: start;
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
 const ChartsGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr;
@@ -408,12 +419,14 @@ export default function PlatformOverview() {
   });
   const [chartData, setChartData] = useState([]);
   const [auditItems, setAuditItems] = useState([]);
+  const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function fetchAll() {
       setLoading(true);
+      setIsReadyForAnimation(false);
       try {
         const [
           userMetricsRes,
@@ -465,7 +478,7 @@ export default function PlatformOverview() {
           totalBusinesses: totalBiz,
           totalBookings: bookingData.total_bookings ?? bookingData.total ?? 0,
           platformRevenue: totalRev,
-          newUsers30d: userData.new_users_30d ?? userData.new_registrations ?? 0,
+          newUsers30d: userData.new_users_30d ?? userData.new_registrations ?? userData.new_users_in_period ?? 0,
           newBusinesses30d: bizData.new_businesses_30d ?? bizData.new_in_period ?? 0,
           openTickets: supportData.open ?? supportData.open_count ?? 0,
           pendingVerifications:
@@ -476,8 +489,8 @@ export default function PlatformOverview() {
               : Array.isArray(payoutsData.results)
                 ? payoutsData.results.length
                 : 0,
-          activeUsers30d: userData.active_users_30d ?? userData.active_30d ?? 0,
-          activeBusinesses30d: bizData.active_businesses_30d ?? bizData.active_30d ?? 0,
+          activeUsers30d: userData.active_users_30d ?? userData.active_30d ?? userData.active_users_in_period ?? 0,
+          activeBusinesses30d: bizData.active_businesses_30d ?? bizData.active_30d ?? bizData.active_businesses_in_period ?? 0,
           bookingsThisMonth: bookingData.bookings_this_month ?? bookingData.monthly ?? 0,
           avgRevenuePerBusiness: avgRevPerBiz,
           userGrowth: userData.growth_percent ?? userData.mom_growth ?? null,
@@ -486,38 +499,38 @@ export default function PlatformOverview() {
           revenueGrowth: paymentData.growth_percent ?? paymentData.mom_growth ?? null,
         });
 
-        const trend =
-          bookingData.registration_trend ??
-          bookingData.trend ??
-          bizData.growth_trend ??
-          [];
-        const revTrend = paymentData.revenue_trend ?? paymentData.trend ?? [];
-        const combined = trend.length
-          ? trend.map((d, i) => ({
-              name: d.date
-                ? dayjs(d.date).format("MMM D")
-                : d.period ?? d.name ?? `P${i + 1}`,
-              bookings: d.count ?? d.bookings ?? d.total ?? 0,
-              revenue: revTrend[i]?.amount ?? revTrend[i]?.revenue ?? 0,
-            }))
-          : revTrend.length
-            ? revTrend.map((d, i) => ({
-                name: d.date ? dayjs(d.date).format("MMM D") : `P${i + 1}`,
-                bookings: 0,
-                revenue: d.amount ?? d.revenue ?? 0,
-              }))
-            : [];
-        setChartData(combined);
+        // Chart data is loaded separately by chart period (see useEffect below)
+        setChartData([]);
       } catch (e) {
         if (!cancelled) console.error("Platform overview fetch error:", e);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setTimeout(() => setIsReadyForAnimation(true), 50);
+        }
       }
     }
 
     fetchAll();
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timeframeMap = { "30d": "month", "90d": "quarter", "1y": "year" };
+    const timeframe = timeframeMap[chartPeriod] || "month";
+
+    businessManagementService.getGrowthTrends(timeframe).then((res) => {
+      if (cancelled || !res.success || !Array.isArray(res.data)) return;
+      const combined = (res.data || []).map((d) => ({
+        name: d.month ?? (d.period_start ? dayjs(d.period_start).format("MMM YY") : ""),
+        businesses: d.businesses ?? 0,
+        revenue: d.revenue ?? 0,
+      }));
+      setChartData(combined);
+    });
+    return () => { cancelled = true; };
+  }, [chartPeriod]);
 
   const quickActions = [
     {
@@ -620,10 +633,8 @@ export default function PlatformOverview() {
   if (loading) {
     return (
       <DashboardWrapper>
-        <ContentLayer style={{ minHeight: 400 }}>
-          <div style={{ display: "flex", justifyContent: "center", padding: 48 }}>
-            <Spin size="large" />
-          </div>
+        <ContentLayer>
+          <AdminOverviewSkeleton />
         </ContentLayer>
       </DashboardWrapper>
     );
@@ -685,13 +696,13 @@ export default function PlatformOverview() {
 
         <Divider />
 
-        {/* Chart + Activity Feed side by side */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 12, alignItems: "start" }}>
+        {/* Chart + Activity Feed side by side; stack on mobile */}
+        <ChartAndFeedGrid>
           <div>
             <SectionRow>
               <div>
                 <SectionLabel style={{ marginBottom: 0 }}>Trends</SectionLabel>
-                <SectionTitle>Bookings &amp; Revenue</SectionTitle>
+                <SectionTitle>Businesses &amp; Revenue</SectionTitle>
               </div>
               <Radio.Group
                 size="small"
@@ -750,8 +761,8 @@ export default function PlatformOverview() {
                       <Area
                         yAxisId="left"
                         type="monotone"
-                        dataKey="bookings"
-                        name="Bookings"
+                        dataKey="businesses"
+                        name="Businesses"
                         stroke={colors.primary}
                         strokeWidth={2}
                         fill="url(#gradBookings)"
@@ -818,7 +829,7 @@ export default function PlatformOverview() {
               </FeedList>
             </ActivityFeedCard>
           </div>
-        </div>
+        </ChartAndFeedGrid>
 
       </ContentLayer>
     </DashboardWrapper>

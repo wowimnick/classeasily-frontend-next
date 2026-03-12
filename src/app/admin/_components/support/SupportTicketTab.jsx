@@ -21,6 +21,8 @@ import {
   Tooltip,
   Tag,
   Radio,
+  Modal,
+  Form,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -339,6 +341,7 @@ const SupportTicketTab = () => {
     sla_breached: false,
   });
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [selectedRows, setSelectedRows] = useState([]);
   const [chartPeriod, setChartPeriod] = useState("30d");
   const [pagination, setPagination] = useState({
     current: 1,
@@ -455,6 +458,91 @@ const SupportTicketTab = () => {
       )
     );
     fetchStatistics();
+  };
+
+  const [bulkAssignModalOpen, setBulkAssignModalOpen] = useState(false);
+  const [assignableAgents, setAssignableAgents] = useState([]);
+  const [bulkAssignLoading, setBulkAssignLoading] = useState(false);
+  const [bulkAssignForm] = Form.useForm();
+
+  useEffect(() => {
+    if (bulkAssignModalOpen) {
+      supportTicketService.getAssignableAgents().then((r) => {
+        if (r.success && r.data) setAssignableAgents(Array.isArray(r.data) ? r.data : r.data.results || []);
+      });
+    }
+  }, [bulkAssignModalOpen]);
+
+  const handleBulkAssignSubmit = async () => {
+    const { agent_id } = await bulkAssignForm.validateFields();
+    setBulkAssignLoading(true);
+    try {
+      const results = await Promise.allSettled(
+        selectedRowKeys.map((id) => supportTicketService.assignTicket(id, { agent_id }))
+      );
+      const ok = results.filter((r) => r.status === "fulfilled" && r.value?.success).length;
+      message.success(`${ok} ticket(s) assigned.`);
+      setBulkAssignModalOpen(false);
+      bulkAssignForm.resetFields();
+      setSelectedRowKeys([]);
+      setSelectedRows([]);
+      fetchTickets(pagination.current, pagination.pageSize);
+      fetchStatistics();
+    } catch {
+      message.error("Assignment failed.");
+    } finally {
+      setBulkAssignLoading(false);
+    }
+  };
+
+  const handleBulkChangePriority = () => {
+    message.info("Change priority per ticket in the ticket detail drawer.");
+  };
+
+  const handleBulkCloseTickets = async () => {
+    if (selectedRowKeys.length === 0) return;
+    setBulkAssignLoading(true);
+    try {
+      const results = await Promise.allSettled(
+        selectedRowKeys.map((id) => supportTicketService.resolveTicket(id, { resolution: "Closed in bulk" }))
+      );
+      const ok = results.filter((r) => r.status === "fulfilled" && r.value?.success).length;
+      message.success(`${ok} ticket(s) closed.`);
+      setSelectedRowKeys([]);
+      setSelectedRows([]);
+      fetchTickets(pagination.current, pagination.pageSize);
+      fetchStatistics();
+    } catch {
+      message.error("Some tickets could not be closed.");
+    } finally {
+      setBulkAssignLoading(false);
+    }
+  };
+
+  const handleBulkExport = () => {
+    if (selectedRows.length === 0) {
+      message.warning("No tickets selected.");
+      return;
+    }
+    const headers = ["ID", "Subject", "Status", "Priority", "Category", "Requester", "Created"];
+    const rows = selectedRows.map((t) => [
+      t.ticket_id ?? "",
+      t.subject ?? "",
+      t.status ?? "",
+      t.priority ?? "",
+      t.category ?? "",
+      t.requester_email ?? t.requester ?? "",
+      t.created_at ?? "",
+    ]);
+    const csvContent = [headers.join(","), ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tickets_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    message.success("CSV downloaded.");
   };
 
   const slaBreach = statistics?.sla_breached_tickets ?? 0;
@@ -881,11 +969,11 @@ const SupportTicketTab = () => {
           {selectedRowKeys.length > 0 && (
             <BulkActionsBar>
               <strong>{selectedRowKeys.length} selected</strong>
-              <Button size="small" icon={<UserCheck size={13} />}>Assign Agent</Button>
-              <Button size="small" icon={<Edit size={13} />}>Change Priority</Button>
-              <Button size="small" icon={<CheckCircle2 size={13} />}>Close Tickets</Button>
-              <Button size="small" icon={<FileText size={13} />}>Export</Button>
-              <Button size="small" type="text" onClick={() => setSelectedRowKeys([])}>Clear</Button>
+              <Button size="small" icon={<UserCheck size={13} />} onClick={() => setBulkAssignModalOpen(true)}>Assign Agent</Button>
+              <Button size="small" icon={<Edit size={13} />} onClick={handleBulkChangePriority}>Change Priority</Button>
+              <Button size="small" icon={<CheckCircle2 size={13} />} onClick={handleBulkCloseTickets}>Close Tickets</Button>
+              <Button size="small" icon={<FileText size={13} />} onClick={handleBulkExport}>Export</Button>
+              <Button size="small" type="text" onClick={() => { setSelectedRowKeys([]); setSelectedRows([]); }}>Clear</Button>
             </BulkActionsBar>
           )}
 
@@ -906,7 +994,10 @@ const SupportTicketTab = () => {
               rowKey="ticket_id"
               rowSelection={{
                 selectedRowKeys,
-                onChange: (keys) => setSelectedRowKeys(keys),
+                onChange: (keys, rows) => {
+                  setSelectedRowKeys(keys);
+                  setSelectedRows(rows || []);
+                },
               }}
               loading={{
                 spinning: loading,
@@ -930,6 +1021,29 @@ const SupportTicketTab = () => {
           )}
         </TableSection>
       </ContentLayer>
+
+        <Modal
+          title={`Assign agent to ${selectedRowKeys.length} ticket(s)`}
+          open={bulkAssignModalOpen}
+          onCancel={() => { setBulkAssignModalOpen(false); bulkAssignForm.resetFields(); }}
+          footer={[
+            <Button key="cancel" onClick={() => { setBulkAssignModalOpen(false); bulkAssignForm.resetFields(); }}>Cancel</Button>,
+            <Button key="submit" type="primary" loading={bulkAssignLoading} onClick={() => handleBulkAssignSubmit()}>Assign</Button>,
+          ]}
+          destroyOnClose
+        >
+          <Form form={bulkAssignForm} layout="vertical">
+            <Form.Item name="agent_id" label="Agent" rules={[{ required: true, message: "Select an agent." }]}>
+              <Select placeholder="Select agent" loading={assignableAgents.length === 0} showSearch optionFilterProp="label">
+                {assignableAgents.map((agent) => (
+                  <Option key={agent.id} value={agent.id} label={agent.email || agent.name || agent.id}>
+                    {agent.name || agent.email || `Agent ${agent.id}`}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Form>
+        </Modal>
 
         <TicketDetailDrawer
           ticketId={selectedTicketId}
