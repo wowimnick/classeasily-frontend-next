@@ -309,7 +309,7 @@ export default function PaymentManagement() {
         const d = res.data;
         setStats({
           totalRevenue: d.total_revenue ?? d.revenue ?? 0,
-          pendingCount: d.pending_count ?? d.pending ?? 0,
+          pendingCount: d.pending_count ?? d.pending_payments ?? d.pending ?? 0,
           totalRefunded: d.total_refunded ?? d.refunded_amount ?? 0,
           successfulCount: d.successful_transactions ?? d.successful_count ?? 0,
           platformRevenue: d.platform_revenue ?? d.platform_fees ?? 0,
