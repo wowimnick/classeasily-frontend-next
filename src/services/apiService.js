@@ -2481,11 +2481,14 @@ export const bookingService = {
       };
     }
   },
-  fetchAvailableRescheduleSlots: async (bookingId) => {
+  fetchAvailableRescheduleSlots: async (bookingId, options = {}) => {
     if (!bookingId) return { success: false, error: "Booking ID is required." };
+    const { scope = "option" } = options; // "option" = same class only, "business" = any class in business
     try {
+      const params = scope === "business" ? { scope: "business" } : {};
       const response = await axiosInstance.get(
         `${API_ENDPOINTS.BUSINESS_BOOKINGS}${bookingId}/available-slots/`,
+        { params },
       );
       return { success: true, data: response.data };
     } catch (error) {

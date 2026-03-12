@@ -157,6 +157,22 @@ const DateGroup = styled.div`
     align-items: center;
     gap: 4px;
   }
+  .class-label {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 2px;
+  }
+`;
+
+const SlotSectionHeader = styled.div`
+  padding: 8px 16px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #f9fafb;
+  border-bottom: 1px solid #f0f0f0;
 `;
 
 const MetaGroup = styled.div`
@@ -248,6 +264,7 @@ const RescheduleContent = ({ booking, onSuccess, onCancel, isInDrawer }) => {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(true);
   const [selectedSlotId, setSelectedSlotId] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState(null);
   const [policyCheck, setPolicyCheck] = useState(null);
   const [checkingPolicy, setCheckingPolicy] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -262,8 +279,9 @@ const RescheduleContent = ({ booking, onSuccess, onCancel, isInDrawer }) => {
     try {
       const result = await bookingService.fetchAvailableRescheduleSlots(
         booking.id,
+        { scope: "business" },
       );
-      if (result.success) setAvailableSlots(result.data);
+      if (result.success) setAvailableSlots(result.data || []);
       else message.error(result.error || "Failed to fetch slots.");
     } catch {
       message.error("Error fetching slots.");
@@ -272,25 +290,31 @@ const RescheduleContent = ({ booking, onSuccess, onCancel, isInDrawer }) => {
     }
   };
 
-  const handleSlotSelect = async (instanceId, isValid) => {
-    if (!isValid || instanceId === selectedSlotId) return;
-    setSelectedSlotId(instanceId);
+  const sameOptionSlots = availableSlots.filter((s) => s.is_same_option !== false);
+  const otherClassSlots = availableSlots.filter((s) => s.is_same_option === false);
+
+  const handleSlotSelect = async (slot, isValid) => {
+    if (!isValid || slot.id === selectedSlotId) return;
+    setSelectedSlotId(slot.id);
+    setSelectedSlot(slot);
     setCheckingPolicy(true);
     setPolicyCheck(null);
     try {
       const result = await bookingService.rescheduleBooking(
         booking.id,
-        instanceId,
+        slot.id,
         true,
       ); // dry_run
       if (result.success) setPolicyCheck(result.data);
       else {
         message.error(result.error || "Slot verification failed.");
         setSelectedSlotId(null);
+        setSelectedSlot(null);
       }
     } catch {
       message.error("Error checking slot.");
       setSelectedSlotId(null);
+      setSelectedSlot(null);
     } finally {
       setCheckingPolicy(false);
     }
@@ -324,9 +348,32 @@ const RescheduleContent = ({ booking, onSuccess, onCancel, isInDrawer }) => {
     const diff = parseFloat(policyCheck.price_difference);
     const hasDiff = diff !== 0;
     const isMore = diff > 0;
+    const isDifferentClass =
+      selectedSlot && selectedSlot.is_same_option === false;
 
     return (
       <>
+        {/* Different class warning */}
+        {isDifferentClass && (
+          <CompactAlert
+            message="Different class"
+            description={
+              <span>
+                This slot is for{" "}
+                <b>
+                  {selectedSlot.class_title || "Another class"}
+                  {selectedSlot.option_title ? ` – ${selectedSlot.option_title}` : ""}
+                </b>
+                . The customer will be moved to this class/schedule.
+              </span>
+            }
+            type="warning"
+            showIcon
+            icon={<AlertTriangle size={16} />}
+            style={{ marginBottom: 8 }}
+          />
+        )}
+
         {/* Policy Warning */}
         <CompactAlert
           message={
@@ -438,40 +485,90 @@ const RescheduleContent = ({ booking, onSuccess, onCancel, isInDrawer }) => {
           />
         ) : (
           <div>
-            {availableSlots.map((item) => (
-              <CompactItem
-                key={item.id}
-                $selected={selectedSlotId === item.id}
-                $disabled={!item.is_valid}
-                onClick={() => handleSlotSelect(item.id, item.is_valid)}
-              >
-                <Radio
-                  checked={selectedSlotId === item.id}
-                  disabled={!item.is_valid}
-                  style={{ marginRight: 0 }}
-                />
-                <ItemContent>
-                  <DateGroup>
-                    <div className="date">
-                      {moment(item.date).format("ddd, MMM D")}
-                    </div>
-                    <div className="time">
-                      <Clock size={10} />{" "}
-                      {moment(item.time, "HH:mm:ss").format("h:mm A")}
-                    </div>
-                  </DateGroup>
-                  <MetaGroup $hasSpots={item.available_spots > 0}>
-                    <div className="price">
-                      ${parseFloat(item.price).toFixed(2)}
-                    </div>
-                    <div className="spots">
-                      {!item.is_valid && <AlertTriangle size={10} />}
-                      {item.available_spots} spots
-                    </div>
-                  </MetaGroup>
-                </ItemContent>
-              </CompactItem>
-            ))}
+            {sameOptionSlots.length > 0 && (
+              <>
+                <SlotSectionHeader>Same class – other times</SlotSectionHeader>
+                {sameOptionSlots.map((item) => (
+                  <CompactItem
+                    key={item.id}
+                    $selected={selectedSlotId === item.id}
+                    $disabled={!item.is_valid}
+                    onClick={() => handleSlotSelect(item, item.is_valid)}
+                  >
+                    <Radio
+                      checked={selectedSlotId === item.id}
+                      disabled={!item.is_valid}
+                      style={{ marginRight: 0 }}
+                    />
+                    <ItemContent>
+                      <DateGroup>
+                        <div className="date">
+                          {moment(item.date).format("ddd, MMM D")}
+                        </div>
+                        <div className="time">
+                          <Clock size={10} />{" "}
+                          {moment(item.time, "HH:mm:ss").format("h:mm A")}
+                        </div>
+                      </DateGroup>
+                      <MetaGroup $hasSpots={item.available_spots > 0}>
+                        <div className="price">
+                          ${parseFloat(item.price).toFixed(2)}
+                        </div>
+                        <div className="spots">
+                          {!item.is_valid && <AlertTriangle size={10} />}
+                          {item.available_spots} spots
+                        </div>
+                      </MetaGroup>
+                    </ItemContent>
+                  </CompactItem>
+                ))}
+              </>
+            )}
+            {otherClassSlots.length > 0 && (
+              <>
+                <SlotSectionHeader>Other classes</SlotSectionHeader>
+                {otherClassSlots.map((item) => (
+                  <CompactItem
+                    key={item.id}
+                    $selected={selectedSlotId === item.id}
+                    $disabled={!item.is_valid}
+                    onClick={() => handleSlotSelect(item, item.is_valid)}
+                  >
+                    <Radio
+                      checked={selectedSlotId === item.id}
+                      disabled={!item.is_valid}
+                      style={{ marginRight: 0 }}
+                    />
+                    <ItemContent>
+                      <DateGroup>
+                        <div className="date">
+                          {moment(item.date).format("ddd, MMM D")}
+                        </div>
+                        <div className="time">
+                          <Clock size={10} />{" "}
+                          {moment(item.time, "HH:mm:ss").format("h:mm A")}
+                        </div>
+                        {(item.class_title || item.option_title) && (
+                          <div className="class-label">
+                            {item.class_title}
+                            {item.option_title ? ` – ${item.option_title}` : ""}
+                          </div>
+                        )}
+                      </DateGroup>
+                      <MetaGroup $hasSpots={item.available_spots > 0}>
+                        <div className="price">
+                          ${parseFloat(item.price).toFixed(2)}
+                        </div>
+                        <div className="spots">
+                          {!item.is_valid && <AlertTriangle size={10} />}
+                          {item.available_spots} spots
+                        </div>
+                      </MetaGroup>
+                    </ItemContent>
+                  </CompactItem>
+                ))}
+              </>
+            )}
           </div>
         )}
       </ScrollableList>
