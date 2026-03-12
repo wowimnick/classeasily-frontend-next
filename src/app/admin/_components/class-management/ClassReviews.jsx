@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { createPortal } from "react-dom";
 import styled from "styled-components";
-import { motion, AnimatePresence } from "framer-motion";
-import NumberFlow from "@number-flow/react";
 import dayjs from "dayjs";
 import {
   Table,
@@ -30,6 +27,7 @@ import {
   Skeleton,
   Divider,
   Pagination,
+  DatePicker,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -53,6 +51,8 @@ import {
   TrendingUp,
   TrendingDown,
   Percent,
+  RefreshCw,
+  AlertTriangle,
 } from "lucide-react";
 import { classManagementService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
@@ -60,9 +60,10 @@ import {
   GlobalLoaderWithInlineStyles,
   GlobalLoaderWithoutInlineStyles,
 } from "@/components/common/GlobalLoader";
-import { LordIcon } from "@/services/ReactUtils";
-
+import AdminMetricCards from "../shared/AdminMetricCards";
+import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 const { useBreakpoint } = Grid;
 const { Text, Title, Paragraph } = Typography;
 
@@ -93,11 +94,16 @@ const DashboardWrapper = styled.div`
   flex-direction: column;
   padding: 24px;
   background-color: #fff;
-  min-height: 100vh;
   @media (max-width: 768px) {
     padding: 16px;
     gap: 0;
   }
+`;
+
+const ContentLayer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 `;
 
 const DashboardHeader = styled.div`
@@ -112,130 +118,26 @@ const DashboardHeader = styled.div`
 `;
 
 const PageTitle = styled.h1`
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
-  color: #222222;
+  color: ${colors.textPrimary};
   margin: 0;
   @media (max-width: 768px) {
-    font-size: 20px;
-  }
-`;
-
-const HeaderSubtitle = styled(Paragraph)`
-  &&& {
-    font-size: 15px;
-    color: ${colors.textSecondary};
-    margin-top: 4px !important;
-    margin-bottom: 0 !important;
+    font-size: 18px;
   }
 `;
 
 const ActionButtonsContainer = styled.div`
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
   @media (max-width: 768px) {
     width: 100%;
   }
 `;
 
-const RefreshButton = styled(Button)`
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 16px;
-  border: 1px solid ${colors.border};
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-  &:hover {
-    color: ${colors.primary};
-    border-color: ${colors.primary};
-    box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
-    transform: translateY(-1px);
-  }
-  @media (max-width: 768px) {
-    flex: 1;
-  }
-`;
-
-// --- STATS CARDS ---
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
-  }
-`;
-const StatCard = styled(Card)`
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid ${colors.border};
-  transition: all 0.2s ease;
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-  .ant-card-body {
-    padding: 20px !important;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-    @media (max-width: 768px) {
-      padding: 16px !important;
-    }
-  }
-`;
-const StatCardHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-`;
-const IconContainer = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${(props) => props.background || "#f1f5f9"};
-  color: ${(props) => props.color || colors.textSecondary};
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-`;
-const StatValue = styled.div`
-  font-size: 22px;
-  font-weight: 700;
-  color: ${colors.textPrimary};
-  margin-bottom: 4px;
-  display: flex;
-  align-items: baseline;
-  @media (max-width: 768px) {
-    font-size: 17px;
-  }
-`;
-const StatLabel = styled.div`
-  font-size: 13px;
-  color: ${colors.textSecondary};
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  @media (max-width: 768px) {
-    font-size: 12px;
-  }
-`;
-
 // --- TABLE SECTION ---
-const TableSection = styled(motion.div)`
+const TableSection = styled.div`
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -305,14 +207,16 @@ const StyledTable = styled(Table)`
     background: #fafbfc;
     border-bottom: 1px solid ${colors.border};
     font-weight: 600;
-    color: ${colors.textPrimary};
-    font-size: 13px;
-    padding: 16px 24px;
+    color: ${colors.textSecondary};
+    font-size: 11px;
+    padding: 10px 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
   .ant-table-tbody > tr > td {
-    padding: 16px 24px;
+    padding: 10px 14px;
     border-bottom: 1px solid ${colors.border};
-    font-size: 14px;
+    font-size: 13px;
   }
   .ant-table-tbody > tr:hover > td {
     background: #fafcff;
@@ -322,73 +226,35 @@ const StyledTable = styled(Table)`
   }
 `;
 
-// --- DRAWER COMPONENTS ---
-const DrawerOverlay = styled(motion.div)`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+const DrawerTopBar = styled.div`
+  padding: 16px 20px;
+  border-bottom: 1px solid ${colors.border};
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 1050;
-  @media (max-width: 768px) {
-    padding: 0;
-    align-items: flex-end;
-  }
-`;
-const DrawerContainer = styled(motion.div)`
-  width: 100%;
-  max-width: 720px;
-  background: white;
-  border-radius: 24px;
-  overflow: hidden;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  @media (max-width: 768px) {
-    height: auto;
-    max-height: 85vh;
-    border-radius: 24px 24px 0 0;
-  }
-`;
-const DrawerCloseButton = styled(motion.button)`
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: #f0f0f0;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  color: #717171;
-  &:hover {
-    background: #e0e0e0;
-  }
-`;
-const DrawerHeaderSection = styled.header`
-  padding: 20px 24px;
-  border-bottom: 1px solid #f0f0f0;
+  justify-content: space-between;
   flex-shrink: 0;
+  background: white;
 `;
-const DrawerContent = styled.div`
+
+const DrawerScrollBody = styled.div`
   flex: 1;
   overflow-y: auto;
-  background-color: ${colors.lightBg};
-  padding: 24px;
-  @media (max-width: 768px) {
-    padding: 0;
-  }
+  background: ${colors.lightBg};
 `;
+
+const DrawerHeaderSection = styled.div`
+  background: white;
+  padding: 20px 24px;
+  border-bottom: 1px solid ${colors.border};
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+
+const DrawerContent = styled.div`
+  padding: 20px 24px;
+`;
+
 const DrawerHeader = styled.div`
   background-color: white;
   padding: 24px;
@@ -470,20 +336,6 @@ const ReviewDetailDrawerContent = ({ review, onModerateClick }) => {
   if (!review) return null;
   return (
     <>
-      <DrawerHeader>
-        <Avatar
-          size={60}
-          src={review.user?.avatar_thumb_url}
-          icon={<UserIcon size={24} />}
-        />
-        <div>
-          <Title level={4} style={{ margin: 0 }}>
-            {review.user?.name || "Anonymous"}
-          </Title>
-          <Text type="secondary">Review for: {review.className}</Text>
-        </div>
-      </DrawerHeader>
-      <>
         <InfoGroup>
           <InfoGroupTitle>
             <Star /> Rating & Status
@@ -563,73 +415,50 @@ const ReviewDetailDrawerContent = ({ review, onModerateClick }) => {
           </Button>
         </div>
       </>
-    </>
+    
   );
 };
 
-const DetailDrawerModal = ({
-  isVisible,
-  onClose,
-  review,
-  isMobile,
-  onModerateClick,
-}) => {
-  const modalVariants = isMobile
-    ? {
-        hidden: { y: "100%" },
-        visible: {
-          y: 0,
-          transition: { type: "spring", damping: 30, stiffness: 300 },
-        },
-        exit: { y: "100%", transition: { duration: 0.2 } },
-      }
-    : {
-        hidden: { scale: 0.95, opacity: 0 },
-        visible: { scale: 1, opacity: 1 },
-        exit: { scale: 0.95, opacity: 0 },
-      };
-
-  const drawerComponent = (
-    <AnimatePresence>
-      {isVisible && (
-        <DrawerOverlay
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        >
-          <DrawerContainer
-            variants={modalVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <DrawerHeaderSection>
-              <Space align="center" size={12}>
-                <MessageSquare size={20} style={{ color: colors.primary }} />
-                <span
-                  style={{ fontWeight: 700, fontSize: "18px", color: "#222" }}
-                >
-                  Review Details
-                </span>
-              </Space>
-              <DrawerCloseButton whileTap={{ scale: 0.9 }} onClick={onClose}>
-                <X size={20} />
-              </DrawerCloseButton>
-            </DrawerHeaderSection>
-            <DrawerContent>
-              <ReviewDetailDrawerContent
-                review={review}
-                onModerateClick={onModerateClick}
-              />
-            </DrawerContent>
-          </DrawerContainer>
-        </DrawerOverlay>
-      )}
-    </AnimatePresence>
+const DetailDrawerModal = ({ open, onClose, review, isMobile, onModerateClick }) => {
+  const renderContent = () => (
+    <>
+      <DrawerTopBar>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 15, color: colors.textPrimary }}>
+          <MessageSquare size={16} color={colors.primary} />
+          Review Details
+        </div>
+        <Button type="text" icon={<X size={18} />} onClick={onClose} />
+      </DrawerTopBar>
+      <DrawerScrollBody>
+        {review && (
+          <DrawerHeaderSection>
+            <Avatar size={52} src={review.user?.avatar_thumb_url} icon={<UserIcon size={20} />} />
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 15, color: colors.textPrimary }}>{review.user?.name || "Anonymous"}</div>
+              <div style={{ fontSize: 12, color: colors.textSecondary }}>{review.user?.email}</div>
+              <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Review for: <strong>{review.className}</strong></div>
+            </div>
+          </DrawerHeaderSection>
+        )}
+        <DrawerContent>
+          <ReviewDetailDrawerContent review={review} onModerateClick={onModerateClick} />
+        </DrawerContent>
+      </DrawerScrollBody>
+    </>
   );
-  return createPortal(drawerComponent, document.body);
+
+  return (
+    <AdminResponsiveDrawer
+      open={open}
+      onClose={onClose}
+      title="Review Details"
+      titleIcon={<MessageSquare size={16} color={colors.primary} />}
+      isMobile={isMobile}
+      width="720px"
+    >
+      {renderContent()}
+    </AdminResponsiveDrawer>
+  );
 };
 
 const ClassReviews = () => {
@@ -637,7 +466,7 @@ const ClassReviews = () => {
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
   const [selectedReview, setSelectedReview] = useState(null);
-  const [isDetailDrawerVisible, setIsDetailDrawerVisible] = useState(false);
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [isModActionModalVisible, setIsModActionModalVisible] = useState(false);
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
   const [modActionForm] = Form.useForm();
@@ -776,7 +605,7 @@ const ClassReviews = () => {
 
   const showReviewDetails = (review) => {
     setSelectedReview(review);
-    setIsDetailDrawerVisible(true);
+    setDetailDrawerOpen(true);
   };
 
   const showModActionModal = (review) => {
@@ -952,108 +781,49 @@ const ClassReviews = () => {
     },
   ];
 
-  const StatSkeleton = () => <Skeleton active paragraph={{ rows: 2 }} />;
-
   return (
     <ConfigProvider theme={appTheme}>
       <DashboardWrapper>
+        <ContentLayer>
         <DashboardHeader>
           <div>
             <PageTitle>Review Moderation</PageTitle>
-            <HeaderSubtitle>
-              Monitor and manage user reviews to ensure platform quality.
-            </HeaderSubtitle>
+            <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>Monitor and moderate user reviews across the platform.</div>
           </div>
           <ActionButtonsContainer>
-            <RefreshButton
-              icon={
-                <LordIcon
-                  src="https://cdn.lordicon.com/valwmkhs.json"
-                  colors="primary:#666,secondary:#666"
-                  size="20px"
-                  trigger="hover"
-                />
-              }
+            <Button
+              icon={<RefreshCw size={15} />}
               onClick={refreshData}
               loading={statsLoading || loading}
+              style={{ borderRadius: 8 }}
             >
               {!isMobile && "Refresh"}
-            </RefreshButton>
+            </Button>
           </ActionButtonsContainer>
         </DashboardHeader>
 
-        <Divider />
+        <AdminMetricCards
+          cards={statCardsData.map((card) => {
+            if (card.title === "Avg. Rating") {
+              return {
+                ...card,
+                value: Number.parseFloat(card.value) || 0,
+                numberFormatOptions: {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                },
+              };
+            }
+            if (card.title === "Avg. Mod Time") {
+              return { ...card, value: card.value || "N/A" };
+            }
+            return { ...card, value: Number.parseInt(card.value, 10) || 0 };
+          })}
+          loading={statsLoading}
+          isReadyForAnimation={isReadyForAnimation}
+        />
 
-        <div style={{ marginBottom: "20px" }}>
-          <Text
-            style={{
-              fontSize: isMobile ? "16px" : "17px",
-              fontWeight: 600,
-              color: colors.textPrimary,
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              marginBottom: "16px",
-            }}
-          >
-            <Shield size={20} color={colors.primary} /> Moderation Overview
-          </Text>
-        </div>
-
-        <StatsGrid>
-          {statCardsData.map((stat, index) => (
-            <StatCard key={index}>
-              {statsLoading ? (
-                <StatSkeleton />
-              ) : (
-                <>
-                  <div>
-                    <StatCardHeader>
-                      <IconContainer
-                        background={hexToRgba(stat.color, 0.1)}
-                        color={stat.color}
-                      >
-                        <stat.icon size={18} />
-                      </IconContainer>
-                    </StatCardHeader>
-                    <StatLabel>{stat.title}</StatLabel>
-                  </div>
-                  <StatValue>
-                    {stat.title === "Avg. Rating" ? (
-                      <NumberFlow
-                        value={
-                          isReadyForAnimation ? parseFloat(stat.value) || 0 : 0
-                        }
-                        duration={800}
-                        numberFormatOptions={{
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        }}
-                      />
-                    ) : stat.title === "Avg. Mod Time" ? (
-                      stat.value || "N/A"
-                    ) : (
-                      <NumberFlow
-                        value={
-                          isReadyForAnimation ? parseInt(stat.value) || 0 : 0
-                        }
-                        duration={800}
-                      />
-                    )}
-                  </StatValue>
-                </>
-              )}
-            </StatCard>
-          ))}
-        </StatsGrid>
-
-        <Divider />
-
-        <TableSection
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
+        <TableSection>
           <TableHeader>
             <TableTitle>
               <BookOpen /> All Reviews
@@ -1065,14 +835,15 @@ const ClassReviews = () => {
           <FilterBar>
             <SearchFilterContainer>
               <Input
+                prefix={<Search size={14} />}
                 placeholder="Search user, class, content..."
                 allowClear
                 onChange={(e) => handleFilterChange({ search: e.target.value })}
-                style={{ width: isMobile ? "100%" : 300 }}
+                style={{ width: isMobile ? "100%" : 240 }}
               />
               <Select
                 value={filterParams.status}
-                style={{ width: isMobile ? "100%" : 150 }}
+                style={{ width: isMobile ? "100%" : 140 }}
                 onChange={(val) => handleFilterChange({ status: val })}
               >
                 <Option value="all">All Statuses</Option>
@@ -1082,7 +853,7 @@ const ClassReviews = () => {
               </Select>
               <Select
                 value={filterParams.rating}
-                style={{ width: isMobile ? "100%" : 150 }}
+                style={{ width: isMobile ? "100%" : 130 }}
                 onChange={(val) => handleFilterChange({ rating: val })}
               >
                 <Option value={0}>All Ratings</Option>
@@ -1092,14 +863,14 @@ const ClassReviews = () => {
                   </Option>
                 ))}
               </Select>
-              <Checkbox
-                checked={filterParams.reported}
-                onChange={(e) =>
-                  handleFilterChange({ reported: e.target.checked })
-                }
+              <Button
+                type={filterParams.reported ? "primary" : "default"}
+                icon={<AlertTriangle size={14} />}
+                onClick={() => handleFilterChange({ reported: !filterParams.reported })}
+                style={{ borderRadius: 8 }}
               >
-                Reported Only
-              </Checkbox>
+                Reported
+              </Button>
             </SearchFilterContainer>
           </FilterBar>
 
@@ -1143,12 +914,12 @@ const ClassReviews = () => {
         </TableSection>
 
         <DetailDrawerModal
-          isVisible={isDetailDrawerVisible}
-          onClose={() => setIsDetailDrawerVisible(false)}
+          open={detailDrawerOpen}
+          onClose={() => setDetailDrawerOpen(false)}
           review={selectedReview}
           isMobile={isMobile}
           onModerateClick={() => {
-            setIsDetailDrawerVisible(false);
+            setDetailDrawerOpen(false);
             showModActionModal(selectedReview);
           }}
         />
@@ -1207,6 +978,7 @@ const ClassReviews = () => {
             </div>
           )}
         </StyledModal>
+        </ContentLayer>
       </DashboardWrapper>
     </ConfigProvider>
   );

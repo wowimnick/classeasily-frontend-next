@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import styled, { keyframes } from "styled-components";
-import { motion } from "framer-motion";
+
 import {
   Table,
   Card,
@@ -26,7 +26,8 @@ import {
   Divider,
   DatePicker,
   Typography,
-  Skeleton, // Imported Skeleton from Ant Design
+  Skeleton,
+  Radio,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -55,10 +56,12 @@ import {
   CheckCircle,
   AlertTriangle,
   Send,
+  BookOpen,
+  Search,
 } from "lucide-react";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -69,6 +72,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { RefreshCw } from "lucide-react";
 import { userAdminService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
 import dayjs from "dayjs";
@@ -76,6 +80,7 @@ import NumberFlow from "@number-flow/react";
 import { useAuthStore } from "@/lib/auth-client";
 import { Drawer } from "vaul";
 import ShadowUserModal from "./ShadowUserModal";
+import AdminMetricCards from "../shared/AdminMetricCards";
 
 const { RangePicker } = DatePicker;
 const { TabPane } = Tabs;
@@ -110,12 +115,21 @@ const hexToRgba = (hex, alpha = 1) => {
 const DashboardWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 24px;
-  background-color: #fff;
-  min-height: 100vh;
+  padding: 12px;
   @media (max-width: 768px) {
-    padding: 16px;
+    padding: 8px;
     gap: 0;
+  }
+`;
+
+const ContentLayer = styled.div`
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid ${colors.border};
+  padding: 20px 24px;
+  @media (max-width: 768px) {
+    padding: 14px 16px;
+    border-radius: 12px;
   }
 `;
 
@@ -270,6 +284,103 @@ const DrawerHeader = styled.div`
   flex-shrink: 0;
   @media (max-width: 480px) {
     padding: 16px;
+  }
+`;
+
+// --- ROLE CHANGE DRAWER COMPONENTS ---
+const RoleDrawerOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1060;
+`;
+
+const RoleMobileShell = styled(Drawer.Content)`
+  background: white;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1061;
+  outline: none;
+  max-height: 85vh;
+`;
+
+const RoleDesktopShell = styled(Drawer.Content)`
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  position: fixed;
+  z-index: 1061;
+  outline: none;
+  width: 480px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: -4px 0 32px rgba(0, 0, 0, 0.14), 0 4px 24px rgba(0, 0, 0, 0.10);
+  background: white;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+`;
+
+const RoleDrawerInner = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+`;
+
+const RoleDrawerHeader = styled.div`
+  padding: 20px 24px;
+  border-bottom: 1px solid ${colors.border};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+`;
+
+const RoleDrawerUserInfo = styled.div`
+  padding: 16px 24px;
+  background: ${colors.lightBg};
+  border-bottom: 1px solid ${colors.border};
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const RoleDrawerBody = styled.div`
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+`;
+
+const RoleDrawerFooter = styled.div`
+  padding: 16px 24px;
+  border-top: 1px solid ${colors.border};
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+`;
+
+const RoleWarningBanner = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: ${hexToRgba(colors.warning, 0.08)};
+  border: 1px solid ${hexToRgba(colors.warning, 0.25)};
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: ${colors.textSecondary};
+  svg {
+    color: ${colors.warning};
+    flex-shrink: 0;
+    margin-top: 1px;
   }
 `;
 
@@ -540,113 +651,39 @@ const generateSkeletonData = (count = 10) => {
   }));
 };
 
-// --- STATS CARDS ---
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-`;
-
-const StatCard = styled(Card)`
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid ${colors.border};
-  margin-bottom: 0;
-  min-height: 140px;
-  transition: all 0.2s ease;
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-  .ant-card-body {
-    padding: 20px !important;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-    @media (max-width: 768px) {
-      padding: 16px !important;
-    }
-  }
-`;
-
-const StatCardHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-`;
-
-const IconContainer = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${(props) => props.background || "#f1f5f9"};
-  color: ${(props) => props.color || colors.textSecondary};
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-`;
-
-const StatValue = styled.div`
-  font-size: 22px;
-  font-weight: 700;
-  color: ${colors.textPrimary};
-  margin-bottom: 4px;
-  display: flex;
-  align-items: baseline;
-`;
-
-const StatLabel = styled.div`
-  font-size: 13px;
-  color: ${colors.textSecondary};
-  display: flex;
-  align-items: center;
-  gap: 6px;
-`;
-
 const ChartCard = styled(Card)`
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   border: 1px solid ${colors.border};
-  min-height: 400px;
   .ant-card-body {
-    padding: 20px !important;
-    height: 100%;
-  }
-  @media (max-width: 768px) {
-    min-height: 350px;
+    padding: 16px 20px !important;
   }
 `;
 const GridRow = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 0;
 `;
 const ChartContainer = styled.div`
-  height: 300px;
+  height: 240px;
   width: 100%;
-  margin-top: 16px;
+  margin-top: 12px;
   position: relative;
   @media (max-width: 768px) {
-    height: 250px;
+    height: 200px;
   }
+`;
+const ChartHeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
 `;
 const CardTitle = styled(Title).attrs({ level: 5 })`
   &.ant-typography {
     font-weight: 600;
-    font-size: 17px;
+    font-size: 14px;
     color: ${colors.textPrimary};
     margin-bottom: 0 !important;
     display: flex;
@@ -655,14 +692,14 @@ const CardTitle = styled(Title).attrs({ level: 5 })`
   }
 `;
 const HelpText = styled(Text)`
-  font-size: 13px;
-  color: ${colors.textSecondary};
-  margin: 4px 0 16px 0;
+  font-size: 12px;
+  color: ${colors.textTertiary};
+  margin: 2px 0 0 0;
   display: block;
 `;
 
 // --- TABLE SECTION ---
-const TableSection = styled(motion.div)`
+const TableSection = styled.div`
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -709,16 +746,39 @@ const SearchFilterContainer = styled.div`
 `;
 const StyledTable = styled(Table)`
   .ant-table-thead > tr > th {
-    background: #fafbfc;
+    background: #f8fafc !important;
+    color: ${colors.textSecondary};
+    font-weight: 600;
+    font-size: 11px;
+    padding: 10px 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid ${colors.border};
+    &::before { display: none; }
+  }
+  .ant-table-tbody > tr > td {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: ${colors.textPrimary};
+    border-bottom: 1px solid ${colors.border};
   }
   .ant-table-tbody > tr:hover > td {
-    background: #fafcff;
+    background: #f8fafc;
   }
-
-  /* Loading override to keep table height */
   .ant-table-tbody > tr.ant-table-placeholder:hover > td {
     background: white;
   }
+`;
+
+const BulkActionsBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: ${hexToRgba(colors.primary, 0.04)};
+  border-bottom: 1px solid ${colors.border};
+  font-size: 13px;
+  color: ${colors.textPrimary};
 `;
 
 const UserRoleTag = styled(Tag)`
@@ -844,7 +904,13 @@ const UserManagementDashboard = () => {
     role_distribution: [],
     registration_trend: [],
     business_accounts: 0,
+    churned_users: 0,
+    users_with_bookings: 0,
+    user_growth_percent: null,
+    active_growth_percent: null,
   });
+  const [chartPeriod, setChartPeriod] = useState("30d");
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [form] = Form.useForm();
   const [roles, setRoles] = useState([]);
   const screens = useBreakpoint();
@@ -1497,20 +1563,44 @@ const UserManagementDashboard = () => {
       value: metrics.total_users,
       icon: Users,
       color: colors.info,
+      growth: metrics.user_growth_percent ?? null,
+      footer: "All registered accounts",
     },
     {
       key: "active_users",
-      title: `Active Users (${daysInPeriod}d)`,
+      title: "Active (30d)",
       value: metrics.active_users_in_period,
       icon: Activity,
       color: colors.success,
+      growth: metrics.active_growth_percent ?? null,
+      footer: `${daysInPeriod}d active users`,
     },
     {
       key: "new_users",
-      title: `New Users (${daysInPeriod}d)`,
+      title: `New Signups (${daysInPeriod}d)`,
       value: metrics.new_users_in_period,
       icon: UserPlus,
       color: colors.warning,
+      growth: null,
+      footer: "vs previous period",
+    },
+    {
+      key: "with_bookings",
+      title: "Users w/ Bookings",
+      value: metrics.users_with_bookings || 0,
+      icon: BookOpen,
+      color: colors.purple,
+      growth: null,
+      footer: `${metrics.total_users > 0 ? Math.round((metrics.users_with_bookings / metrics.total_users) * 100) : 0}% conversion`,
+    },
+    {
+      key: "churned",
+      title: "Churned (90d+)",
+      value: metrics.churned_users || 0,
+      icon: AlertTriangle,
+      color: colors.error,
+      growth: null,
+      footer: "Inactive 90+ days",
     },
     {
       key: "business_accounts",
@@ -1518,6 +1608,8 @@ const UserManagementDashboard = () => {
       value: metrics.business_accounts || 0,
       icon: Shield,
       color: colors.primary,
+      growth: null,
+      footer: "Owner-type users",
     },
   ];
 
@@ -1836,7 +1928,8 @@ const UserManagementDashboard = () => {
   return (
     <ConfigProvider theme={appTheme}>
       <DashboardWrapper>
-        <DashboardHeader>
+      <ContentLayer>
+        <DashboardHeader style={{ marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${colors.border}` }}>
           <div>
             <PageTitle>User Management</PageTitle>
             <HeaderSubtitle>
@@ -1844,119 +1937,69 @@ const UserManagementDashboard = () => {
             </HeaderSubtitle>
           </div>
           <ActionButtonsContainer>
-            <RangePicker value={dateRange} onChange={setDateRange} />
+            <Button
+              icon={<RefreshCw size={14} />}
+              onClick={() => fetchMetrics(dateRange)}
+              loading={metricsLoading}
+            >
+              Refresh
+            </Button>
             <Button
               type="primary"
-              icon={<UserPlus size={16} />}
+              icon={<UserPlus size={14} />}
               onClick={() => setIsShadowModalVisible(true)}
-              style={{
-                backgroundColor: colors.purple,
-                borderColor: colors.purple,
-              }}
+              style={{ backgroundColor: colors.purple, borderColor: colors.purple }}
             >
               Concierge Onboard
             </Button>
           </ActionButtonsContainer>
         </DashboardHeader>
 
-        <Divider />
-        <div style={{ marginBottom: "20px" }}>
-          <Text
-            style={{
-              fontSize: isMobile ? "16px" : "17px",
-              fontWeight: 600,
-              color: colors.textPrimary,
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              marginBottom: "16px",
-            }}
-          >
-            <BarChart2 size={20} color={colors.primary} /> Period Overview
-          </Text>
+        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", color: colors.textTertiary, textTransform: "uppercase", marginBottom: 10 }}>
+          User metrics
+        </div>
+        <div style={{ marginBottom: 20 }}>
+          <AdminMetricCards
+            cards={statsData}
+            loading={metricsLoading}
+            isReadyForAnimation={isReadyForAnimation}
+          />
         </div>
 
-        <StatsGrid>
-          {statsData.map((stat) => (
-            <StatCard key={stat.key}>
-              {metricsLoading ? (
-                <Skeleton active paragraph={{ rows: 2 }} />
-              ) : (
-                <>
-                  <div>
-                    <StatCardHeader>
-                      <IconContainer
-                        background={hexToRgba(stat.color, 0.1)}
-                        color={stat.color}
-                      >
-                        <stat.icon size={18} />
-                      </IconContainer>
-                    </StatCardHeader>
-                    <StatLabel>{stat.title}</StatLabel>
-                  </div>
-                  <StatValue>
-                    <NumberFlow
-                      value={isReadyForAnimation ? stat.value : 0}
-                      duration={800}
-                    />
-                  </StatValue>
-                </>
-              )}
-            </StatCard>
-          ))}
-        </StatsGrid>
+        <Divider style={{ margin: "16px 0" }} />
 
-        <Divider />
-
-        <GridRow>
+        <GridRow style={{ marginBottom: 20 }}>
           <ChartCard>
-            <CardTitle>
-              <BarChart2 size={20} color={colors.primary} /> User Registrations
-              Trend
-            </CardTitle>
-            <HelpText>
-              Daily count of new user registrations over the selected period.
-            </HelpText>
+            <ChartHeaderRow>
+              <div>
+                <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", color: colors.textTertiary, textTransform: "uppercase" }}>Trend</div>
+                <CardTitle>User Registrations</CardTitle>
+              </div>
+              <Radio.Group
+                size="small"
+                value={chartPeriod}
+                onChange={(e) => setChartPeriod(e.target.value)}
+                optionType="button"
+                buttonStyle="solid"
+                options={[{ label: "7d", value: "7d" }, { label: "30d", value: "30d" }, { label: "90d", value: "90d" }]}
+              />
+            </ChartHeaderRow>
+            <HelpText>Daily new user registrations</HelpText>
             <ChartContainer>
               {metricsLoading ? (
-                <div
-                  style={{
-                    padding: 20,
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "flex-end",
-                    gap: 10,
-                  }}
-                >
-                  <div
-                    style={{
-                      height: "40%",
-                      width: "100%",
-                      background: "#f8fafc",
-                    }}
-                  />
-                  <div
-                    style={{
-                      height: "70%",
-                      width: "100%",
-                      background: "#f8fafc",
-                    }}
-                  />
-                  <div
-                    style={{
-                      height: "30%",
-                      width: "100%",
-                      background: "#f8fafc",
-                    }}
-                  />
-                </div>
+                <Skeleton active paragraph={{ rows: 4 }} title={false} />
               ) : metrics.registration_trend?.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
+                  <AreaChart
                     data={metrics.registration_trend}
-                    margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+                    margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
                   >
+                    <defs>
+                      <linearGradient id="gradReg" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={colors.primary} stopOpacity={0.15} />
+                        <stop offset="95%" stopColor={colors.primary} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid
                       strokeDasharray="3 3"
                       stroke={colors.border}
@@ -1964,31 +2007,32 @@ const UserManagementDashboard = () => {
                     />
                     <XAxis
                       dataKey="day"
-                      stroke={colors.textTertiary}
-                      tick={{ fontSize: 11 }}
+                      tick={{ fontSize: 10, fill: colors.textTertiary }}
                       tickFormatter={(tick) => dayjs(tick).format("MMM D")}
+                      axisLine={false}
+                      tickLine={false}
                     />
                     <YAxis
-                      stroke={colors.textTertiary}
-                      tick={{ fontSize: 11 }}
+                      tick={{ fontSize: 10, fill: colors.textTertiary }}
+                      axisLine={false}
+                      tickLine={false}
                       allowDecimals={false}
+                      width={28}
                     />
                     <RechartsTooltip
                       content={renderLineChartTooltip}
-                      cursor={{
-                        stroke: colors.primary,
-                        strokeDasharray: "3 3",
-                      }}
+                      cursor={{ stroke: colors.primary, strokeDasharray: "3 3" }}
                     />
-                    <Line
+                    <Area
                       type="monotone"
                       dataKey="registrations"
                       stroke={colors.primary}
                       strokeWidth={2}
+                      fill="url(#gradReg)"
                       dot={false}
-                      activeDot={{ r: 6 }}
+                      activeDot={{ r: 4, strokeWidth: 0 }}
                     />
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               ) : (
                 <Empty description="No registration data available" />
@@ -1996,13 +2040,13 @@ const UserManagementDashboard = () => {
             </ChartContainer>
           </ChartCard>
           <ChartCard>
-            <CardTitle>
-              <PieChartIcon size={20} color={colors.primary} /> User Role
-              Distribution
-            </CardTitle>
-            <HelpText>
-              The breakdown of all users by their assigned role.
-            </HelpText>
+            <ChartHeaderRow>
+              <div>
+                <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", color: colors.textTertiary, textTransform: "uppercase" }}>Breakdown</div>
+                <CardTitle>Role Distribution</CardTitle>
+              </div>
+            </ChartHeaderRow>
+            <HelpText>Click a slice to filter the table by role</HelpText>
             <ChartContainer>
               {metricsLoading ? (
                 <div
@@ -2063,35 +2107,46 @@ const UserManagementDashboard = () => {
           </ChartCard>
         </GridRow>
 
-        <Divider />
+        <Divider style={{ margin: "16px 0" }} />
 
         <TableSection
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
           <TableHeader>
-            <TableTitle>
-              <Users /> All Platform Users
-            </TableTitle>
-            <TableDescription>
-              Search, filter, and manage all users on the platform.
-            </TableDescription>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <TableTitle>
+                  <Users /> All Platform Users
+                </TableTitle>
+                <TableDescription>
+                  Search, filter, and manage all users on the platform.
+                </TableDescription>
+              </div>
+              <Button
+                icon={<RefreshCw size={14} />}
+                onClick={() => fetchUsers(pagination.current, pagination.pageSize)}
+                loading={loading}
+              >
+                Refresh
+              </Button>
+            </div>
           </TableHeader>
           <FilterBar>
             <SearchFilterContainer>
               <Input
+                prefix={<Search size={14} style={{ color: colors.textTertiary }} />}
                 placeholder="Search by name or email"
                 allowClear
                 value={searchText}
                 onChange={(e) => handleFilterChange({ search: e.target.value })}
-                style={{ width: isMobile ? "100%" : 280 }}
+                style={{ width: isMobile ? "100%" : 260, borderRadius: 8 }}
               />
               <Select
                 value={roleFilter}
-                style={{ width: isMobile ? "100%" : 180 }}
+                style={{ width: isMobile ? "100%" : 160 }}
                 onChange={(value) => handleFilterChange({ role: value })}
                 loading={!roles.length}
+                placeholder="All Roles"
               >
                 <Option value="all">All Roles</Option>
                 {roles.map((role) => (
@@ -2102,16 +2157,49 @@ const UserManagementDashboard = () => {
               </Select>
               <Select
                 value={statusFilter}
-                style={{ width: isMobile ? "100%" : 150 }}
+                style={{ width: isMobile ? "100%" : 140 }}
                 onChange={(value) => handleFilterChange({ status: value })}
+                placeholder="All Statuses"
               >
                 <Option value="all">All Statuses</Option>
                 <Option value="active">Active</Option>
                 <Option value="inactive">Inactive</Option>
                 <Option value="pending">Pending</Option>
               </Select>
+              <Select
+                placeholder="Booking Activity"
+                style={{ width: isMobile ? "100%" : 160 }}
+                allowClear
+                onChange={(value) => handleFilterChange({ booking_count: value })}
+              >
+                <Option value="none">No Bookings</Option>
+                <Option value="1_5">1–5 Bookings</Option>
+                <Option value="5_plus">5+ Bookings</Option>
+                <Option value="10_plus">10+ Bookings (Power)</Option>
+              </Select>
+              <Select
+                placeholder="Last Active"
+                style={{ width: isMobile ? "100%" : 150 }}
+                allowClear
+                onChange={(value) => handleFilterChange({ last_active: value })}
+              >
+                <Option value="7d">Active last 7d</Option>
+                <Option value="30d">Active last 30d</Option>
+                <Option value="90d_inactive">Inactive 90d+</Option>
+                <Option value="never">Never Logged In</Option>
+              </Select>
             </SearchFilterContainer>
           </FilterBar>
+          {selectedRowKeys.length > 0 && (
+            <BulkActionsBar>
+              <strong>{selectedRowKeys.length} selected</strong>
+              <Button size="small" icon={<Mail size={13} />}>Email</Button>
+              <Button size="small" icon={<Lock size={13} />} danger>Deactivate</Button>
+              <Button size="small" icon={<Edit size={13} />}>Assign Role</Button>
+              <Button size="small" icon={<FileText size={13} />}>Export CSV</Button>
+              <Button size="small" type="text" onClick={() => setSelectedRowKeys([])}>Clear</Button>
+            </BulkActionsBar>
+          )}
 
           {isMobile ? (
             <MobileCardList>
@@ -2129,8 +2217,15 @@ const UserManagementDashboard = () => {
               dataSource={
                 loading ? generateSkeletonData(pagination.pageSize) : users
               }
-              rowKey={loading ? "userId" : "userId"}
+              rowKey="userId"
               loading={false}
+              rowSelection={{
+                selectedRowKeys,
+                onChange: (keys) => setSelectedRowKeys(keys),
+                getCheckboxProps: (record) => ({
+                  disabled: React.isValidElement(record.first_name),
+                }),
+              }}
               pagination={
                 loading
                   ? false
@@ -2138,6 +2233,7 @@ const UserManagementDashboard = () => {
                       ...pagination,
                       showSizeChanger: true,
                       pageSizeOptions: ["10", "20", "50"],
+                      size: "small",
                     }
               }
               onChange={handleTableChange}
@@ -2151,37 +2247,109 @@ const UserManagementDashboard = () => {
           )}
         </TableSection>
 
-        <Modal
-          key={loading ? "loading" : "idle"}
-          title="Edit User Role"
+      </ContentLayer>
+
+        {/* ROLE CHANGE VAUL DRAWER */}
+        <Drawer.Root
           open={isEditModalVisible}
-          onCancel={() => setIsEditModalVisible(false)}
-          onOk={handleEditSubmit}
-          confirmLoading={loading}
-          destroyOnClose
-          afterClose={() => form.resetFields()}
-          width={isMobile ? "95%" : 520}
+          onOpenChange={(open) => {
+            if (!open) { setIsEditModalVisible(false); form.resetFields(); }
+          }}
+          direction={isMobile ? undefined : "right"}
+          dismissible
         >
-          <Form form={form} layout="vertical">
-            <Form.Item
-              name="role"
-              label="User Role"
-              rules={[{ required: true, message: "Please select a role." }]}
-            >
-              <Select placeholder="Select a new role" loading={!roles.length}>
-                {roles.map((r) => (
-                  <Option key={r.id} value={r.id}>
-                    {r.name}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-            <HelpText>
-              Changing a user's role will alter their permissions and access
-              across the platform.
-            </HelpText>
-          </Form>
-        </Modal>
+          <Drawer.Portal>
+            <RoleDrawerOverlay />
+            {isMobile ? (
+              <RoleMobileShell>
+                <DrawerHandle />
+                <RoleDrawerInner>
+                  <RoleDrawerHeader>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 16, color: colors.textPrimary }}>
+                      <Shield size={18} color={colors.primary} />
+                      Change User Role
+                    </div>
+                    <Button type="text" icon={<X size={18} />} onClick={() => { setIsEditModalVisible(false); form.resetFields(); }} />
+                  </RoleDrawerHeader>
+                  {selectedUser && (
+                    <RoleDrawerUserInfo>
+                      <Avatar size={40} src={selectedUser.avatarUrl} icon={<User size={18} />} />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 14, color: colors.textPrimary }}>{selectedUser.name}</div>
+                        <div style={{ fontSize: 12, color: colors.textSecondary }}>{selectedUser.email}</div>
+                      </div>
+                      {selectedUser.roleName && <Tag style={{ marginLeft: "auto", flexShrink: 0 }}>{selectedUser.roleName}</Tag>}
+                    </RoleDrawerUserInfo>
+                  )}
+                  <RoleDrawerBody>
+                    <RoleWarningBanner>
+                      <AlertTriangle size={16} />
+                      <span>Changing a user&apos;s role will immediately alter their permissions and platform access.</span>
+                    </RoleWarningBanner>
+                    <Form form={form} layout="vertical">
+                      <Form.Item name="role" label="New Role" rules={[{ required: true, message: "Please select a role." }]}>
+                        <Select placeholder="Select a role" size="large" loading={!roles.length}>
+                          {roles.map((r) => (
+                            <Option key={r.id} value={r.id}>{r.name}</Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Form>
+                  </RoleDrawerBody>
+                  <RoleDrawerFooter>
+                    <Button onClick={() => { setIsEditModalVisible(false); form.resetFields(); }}>Cancel</Button>
+                    <Button type="primary" loading={loading} onClick={handleEditSubmit} icon={<Shield size={15} />}>
+                      Apply Role Change
+                    </Button>
+                  </RoleDrawerFooter>
+                </RoleDrawerInner>
+              </RoleMobileShell>
+            ) : (
+              <RoleDesktopShell style={{ "--initial-transform": "calc(100% + 8px)" }}>
+                <RoleDrawerInner>
+                  <RoleDrawerHeader>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 16, color: colors.textPrimary }}>
+                      <Shield size={18} color={colors.primary} />
+                      Change User Role
+                    </div>
+                    <Button type="text" icon={<X size={18} />} onClick={() => { setIsEditModalVisible(false); form.resetFields(); }} />
+                  </RoleDrawerHeader>
+                  {selectedUser && (
+                    <RoleDrawerUserInfo>
+                      <Avatar size={44} src={selectedUser.avatarUrl} icon={<User size={20} />} />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 14, color: colors.textPrimary }}>{selectedUser.name}</div>
+                        <div style={{ fontSize: 12, color: colors.textSecondary }}>{selectedUser.email}</div>
+                      </div>
+                      {selectedUser.roleName && <Tag style={{ marginLeft: "auto", flexShrink: 0 }}>{selectedUser.roleName}</Tag>}
+                    </RoleDrawerUserInfo>
+                  )}
+                  <RoleDrawerBody>
+                    <RoleWarningBanner>
+                      <AlertTriangle size={16} />
+                      <span>Changing this user&apos;s role will immediately alter their permissions and platform access.</span>
+                    </RoleWarningBanner>
+                    <Form form={form} layout="vertical">
+                      <Form.Item name="role" label="New Role" rules={[{ required: true, message: "Please select a role." }]}>
+                        <Select placeholder="Select a role" size="large" loading={!roles.length}>
+                          {roles.map((r) => (
+                            <Option key={r.id} value={r.id}>{r.name}</Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Form>
+                  </RoleDrawerBody>
+                  <RoleDrawerFooter>
+                    <Button onClick={() => { setIsEditModalVisible(false); form.resetFields(); }}>Cancel</Button>
+                    <Button type="primary" loading={loading} onClick={handleEditSubmit} icon={<Shield size={15} />}>
+                      Apply Role Change
+                    </Button>
+                  </RoleDrawerFooter>
+                </RoleDrawerInner>
+              </RoleDesktopShell>
+            )}
+          </Drawer.Portal>
+        </Drawer.Root>
 
         {/* VAUL DRAWER - MOBILE & DESKTOP IMPLEMENTATION */}
         {isMobile ? (

@@ -67,7 +67,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { LordIcon } from "@/services/ReactUtils";
-import { motion } from "framer-motion";
+
 import { Drawer } from "vaul";
 
 const { Option } = Select;
@@ -274,7 +274,7 @@ const DrawerFooter = styled.div`
 `;
 
 // --- TABLE SECTION ---
-const TableSection = styled(motion.div)`
+const TableSection = styled.div`
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -1171,8 +1171,6 @@ const RolesManagement = () => {
         <Divider />
 
         <TableSection
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
           <TableHeader>

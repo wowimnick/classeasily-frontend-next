@@ -46,7 +46,8 @@ import {
 import { classManagementService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
 import { uploadService } from "@/services/apiService";
-import { motion } from "framer-motion";
+import AdminMetricCards from "../shared/AdminMetricCards";
+
 import { Drawer } from "vaul";
 import {
   DndContext,
@@ -137,66 +138,6 @@ const HeaderSubtitle = styled(Text)`
   }
 `;
 
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-  }
-`;
-
-const StatCard = styled(Card)`
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid ${colors.border};
-  transition: all 0.2s ease;
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-  .ant-card-body {
-    padding: 20px !important;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-  }
-`;
-
-const StatHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 10px;
-`;
-
-const IconContainer = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${(props) => props.background};
-  color: ${(props) => props.color};
-`;
-
-const StatValue = styled.div`
-  font-size: 24px;
-  font-weight: 700;
-  color: ${colors.textPrimary};
-`;
-
-const StatLabel = styled.div`
-  font-size: 13px;
-  color: ${colors.textSecondary};
-  display: block;
-  margin-top: 4px;
-`;
-
 const ChartCard = styled(Card)`
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -213,7 +154,7 @@ const ChartHeader = styled.div`
   margin-bottom: 4px;
 `;
 
-const TableSection = styled(motion.div)`
+const TableSection = styled.div`
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -672,11 +613,7 @@ const UniversalEditDrawer = ({
               </Form.Item>
 
               {typeValue === "automated" && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  style={{ overflow: "hidden" }}
-                >
+                <div style={{ overflow: "hidden" }}>
                   <div
                     style={{
                       background: hexToRgba(colors.purple, 0.04),
@@ -746,7 +683,7 @@ const UniversalEditDrawer = ({
                       />
                     </Form.Item>
                   </div>
-                </motion.div>
+                </div>
               )}
 
               <Form.Item
@@ -1223,39 +1160,11 @@ const ClassCategories = () => {
             </HelpText>
           </div>
 
-          <StatsGrid>
-            {statCardsData.map((stat) => (
-              <StatCard key={stat.title}>
-                {statsLoading ? (
-                  <Skeleton active paragraph={{ rows: 2 }} />
-                ) : (
-                  <>
-                    <StatHeader>
-                      <IconContainer
-                        color={stat.color}
-                        background={hexToRgba(stat.color, 0.1)}
-                      >
-                        <stat.icon size={18} />
-                      </IconContainer>
-                    </StatHeader>
-                    <div>
-                      <StatValue>{stat.value ?? "N/A"}</StatValue>
-                      <StatLabel>{stat.title}</StatLabel>
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          color: colors.textSecondary,
-                          marginTop: 4,
-                        }}
-                      >
-                        {stat.footer}
-                      </Text>
-                    </div>
-                  </>
-                )}
-              </StatCard>
-            ))}
-          </StatsGrid>
+          <AdminMetricCards
+            cards={statCardsData}
+            loading={statsLoading}
+            isReadyForAnimation
+          />
 
           <Divider />
 

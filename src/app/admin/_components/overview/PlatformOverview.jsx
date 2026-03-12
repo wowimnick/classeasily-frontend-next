@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import styled from "styled-components";
 import {
@@ -12,20 +12,29 @@ import {
   MessageSquare,
   Wallet,
   ArrowRight,
+  UserPlus,
+  Activity,
+  BarChart2,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
-import { Card, Spin, Typography, Timeline } from "antd";
+import { Card, Spin, Typography, Radio } from "antd";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
   Legend,
+  defs,
+  linearGradient,
+  stop,
 } from "recharts";
 import NumberFlow from "@number-flow/react";
-import DashboardBreadcrumb from "@/app/business/dashboard/_components/DashboardBreadcrumb";
+import AdminMetricCards from "../shared/AdminMetricCards";
 import {
   userAdminService,
   businessManagementService,
@@ -37,6 +46,10 @@ import {
   adminPayoutService,
 } from "@/services/adminDash";
 import { useAuth } from "@/lib/auth-client";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
 
 const { Text } = Typography;
 
@@ -46,9 +59,10 @@ const colors = {
   warning: "#f59e0b",
   error: "#ef4444",
   info: "#3b82f6",
+  purple: "#8b5cf6",
   lightBg: "#f8fafc",
   border: "#f1f5f9",
-  textPrimary: "#1f2937",
+  textPrimary: "#111827",
   textSecondary: "#64748b",
   textTertiary: "#94a3b8",
 };
@@ -60,6 +74,23 @@ const hexToRgba = (hex, alpha = 1) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+function formatCurrency(value) {
+  if (value == null || isNaN(value)) return "—";
+  return new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency: "CAD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatCompact(value) {
+  if (value == null || isNaN(value)) return "—";
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
+  return formatCurrency(value);
+}
+
 const DashboardWrapper = styled.div`
   position: relative;
   display: flex;
@@ -68,106 +99,70 @@ const DashboardWrapper = styled.div`
   padding: 12px;
   min-height: 100%;
   @media (max-width: 768px) {
-    padding: 0;
+    padding: 8px;
   }
 `;
 
-const OverviewTopWrap = styled.div`
-  position: absolute;
-  top: 0;
-  left: 50%;
-  margin-left: -50vw;
-  width: 100vw;
-  height: 320px;
-  z-index: 0;
-  overflow: hidden;
-  pointer-events: none;
-  @media (max-width: 640px) {
-    height: 200px;
-  }
-`;
-
-const OverviewGradientStrip = styled.div`
-  position: absolute;
-  left: 0;
-  width: 100%;
-  height: 280px;
-  top: 50%;
-  transform: translateY(-50%) rotate(-12deg);
-  overflow: visible;
-  border-radius: 4px;
-  pointer-events: none;
-`;
-
-const OverviewGradientStripInner = styled.div`
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-`;
-
-const OverviewGradientCanvas = styled.canvas`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  --gradient-color-1: #f9fafb;
-  --gradient-color-2: #fc4056;
-  --gradient-color-3: #f9fafc;
-  --gradient-color-4: #fc4056;
-`;
-
-const OverviewContentLayer = styled.div`
+const ContentLayer = styled.div`
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 0;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-radius: 16px;
-  border: 1px solid rgba(229, 231, 235, 0.8);
-  padding: 24px;
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-`;
-
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 14px;
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-`;
-
-const StatCardBase = styled(Card)`
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid ${colors.border};
-  margin-bottom: 0;
-  height: 100%;
-  min-height: 130px;
   background: #ffffff;
-  .ant-card-body {
-    padding: 18px 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-  }
+  border-radius: 16px;
+  border: 1px solid ${colors.border};
+  padding: 20px 24px;
   @media (max-width: 768px) {
-    min-height: 110px;
-    .ant-card-body {
-      padding: 14px 16px;
-    }
+    padding: 14px 16px;
+    border-radius: 12px;
   }
+`;
+
+const PageHeader = styled.div`
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid ${colors.border};
+`;
+
+const PageTitle = styled.h1`
+  font-size: 20px;
+  font-weight: 700;
+  color: ${colors.textPrimary};
+  margin: 0 0 2px;
+`;
+
+const PageSubtitle = styled.div`
+  font-size: 13px;
+  color: ${colors.textSecondary};
+`;
+
+const SectionLabel = styled.div`
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  color: ${colors.textTertiary};
+  text-transform: uppercase;
+  margin-bottom: 10px;
+`;
+
+const SectionRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+`;
+
+const SectionTitle = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${colors.textPrimary};
+`;
+
+const Divider = styled.hr`
+  border: none;
+  border-top: 1px solid ${colors.border};
+  margin: 20px 0;
 `;
 
 const IconContainer = styled.div`
@@ -181,106 +176,216 @@ const IconContainer = styled.div`
   color: ${(p) => p.$color || colors.info};
   flex-shrink: 0;
   svg {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
   }
+`;
+
+const MetricLabel = styled.div`
+  font-size: 11px;
+  color: ${colors.textTertiary};
+  font-weight: 500;
+  margin-bottom: 3px;
 `;
 
 const MetricValue = styled.div`
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
-  color: #111827;
-  line-height: 1.2;
+  color: ${colors.textPrimary};
+  line-height: 1.15;
   @media (max-width: 768px) {
-    font-size: 17px;
+    font-size: 18px;
   }
 `;
 
-const StatLabel = styled.div`
-  font-size: 12px;
-  color: #9ca3af;
-  font-weight: 500;
-  margin-top: 4px;
+const FooterNote = styled.div`
+  font-size: 11px;
+  color: ${colors.textTertiary};
 `;
 
-const SectionTitle = styled.div`
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  color: #b0b7c3;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-`;
-
-const SectionHeading = styled.div`
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 16px;
+/* ── Quick action cards ── */
+const QuickActionGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 `;
 
 const QuickActionCard = styled(Card)`
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   border: 1px solid ${colors.border};
   cursor: pointer;
   transition: box-shadow 0.15s ease, transform 0.15s ease;
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
   .ant-card-body {
-    padding: 16px;
+    padding: 14px 16px;
   }
 `;
 
-const QuickActionGrid = styled.div`
+/* ── Charts ── */
+const ChartsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 14px;
-  margin-bottom: 24px;
+  grid-template-columns: 1fr;
+  gap: 12px;
 `;
 
-const ChartCard = styled(StatCardBase)`
-  min-height: 340px;
+const ChartCard = styled(Card)`
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid ${colors.border};
+  .ant-card-body {
+    padding: 16px 20px;
+  }
 `;
 
 const ChartContainer = styled.div`
-  height: 280px;
+  height: 240px;
   width: 100%;
-  margin-top: 12px;
+  margin-top: 14px;
 `;
 
-const ActivityCard = styled(StatCardBase)`
-  min-height: 340px;
+const CustomTooltipBox = styled.div`
+  background: #ffffff;
+  border: 1px solid ${colors.border};
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  font-size: 12px;
 `;
 
-const ScrollableList = styled.div`
-  max-height: 280px;
+/* ── Activity feed ── */
+const ActivityFeedCard = styled(Card)`
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid ${colors.border};
+  .ant-card-body {
+    padding: 16px 20px;
+  }
+`;
+
+const FeedList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 260px;
   overflow-y: auto;
-  padding-right: 8px;
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${colors.border};
+    border-radius: 4px;
+  }
 `;
 
-const DividerLine = styled.hr`
-  border: none;
-  border-top: 1px solid ${colors.border};
-  margin: 24px 0;
+const FeedItem = styled.div`
+  display: flex;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid ${colors.border};
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  &:first-child {
+    padding-top: 0;
+  }
 `;
 
-function formatCurrency(value) {
-  if (value == null || isNaN(value)) return "—";
-  return new Intl.NumberFormat("en-CA", {
-    style: "currency",
-    currency: "CAD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
+const FeedDot = styled.div`
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: ${(p) => p.$bg || hexToRgba(colors.info, 0.1)};
+  color: ${(p) => p.$color || colors.info};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  svg {
+    width: 13px;
+    height: 13px;
+  }
+`;
+
+const FeedContent = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const FeedAction = styled.div`
+  font-size: 12px;
+  font-weight: 600;
+  color: ${colors.textPrimary};
+  line-height: 1.3;
+`;
+
+const FeedMeta = styled.div`
+  font-size: 11px;
+  color: ${colors.textTertiary};
+  margin-top: 1px;
+`;
+
+function getAuditIcon(action) {
+  if (!action) return { icon: Activity, color: colors.info };
+  const a = action.toLowerCase();
+  if (a.includes("user") || a.includes("register") || a.includes("signup"))
+    return { icon: UserPlus, color: colors.info };
+  if (a.includes("business") || a.includes("verif"))
+    return { icon: Building2, color: colors.primary };
+  if (a.includes("booking") || a.includes("class"))
+    return { icon: BookOpen, color: colors.success };
+  if (a.includes("payment") || a.includes("revenue") || a.includes("payout"))
+    return { icon: DollarSign, color: colors.success };
+  if (a.includes("ticket") || a.includes("support"))
+    return { icon: MessageSquare, color: colors.warning };
+  return { icon: Activity, color: colors.info };
 }
+
+function CustomTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <CustomTooltipBox>
+      <div style={{ fontWeight: 600, color: colors.textPrimary, marginBottom: 6, fontSize: 12 }}>
+        {label}
+      </div>
+      {payload.map((entry) => (
+        <div key={entry.dataKey} style={{ color: entry.color, marginBottom: 2, fontSize: 12 }}>
+          {entry.name}:{" "}
+          <strong>
+            {entry.dataKey === "revenue" ? formatCompact(entry.value) : entry.value}
+          </strong>
+        </div>
+      ))}
+    </CustomTooltipBox>
+  );
+}
+
+const PERIOD_OPTIONS = [
+  { label: "30d", value: "30d" },
+  { label: "90d", value: "90d" },
+  { label: "1y", value: "1y" },
+];
 
 export default function PlatformOverview() {
   const router = useRouter();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [chartPeriod, setChartPeriod] = useState("30d");
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalBusinesses: 0,
@@ -291,29 +396,18 @@ export default function PlatformOverview() {
     openTickets: 0,
     pendingVerifications: 0,
     pendingPayoutsCount: 0,
+    activeUsers30d: 0,
+    activeBusinesses30d: 0,
+    bookingsThisMonth: 0,
+    avgRevenuePerBusiness: 0,
+    // MoM growth
+    userGrowth: null,
+    businessGrowth: null,
+    bookingGrowth: null,
+    revenueGrowth: null,
   });
   const [chartData, setChartData] = useState([]);
   const [auditItems, setAuditItems] = useState([]);
-  const canvasId = "platform-overview-gradient-canvas";
-  const canvasInitialized = useRef(false);
-
-  useEffect(() => {
-    const id = canvasId;
-    if (canvasInitialized.current) return;
-    const run = () => {
-      import("stripe-gradient")
-        .then(({ Gradient }) => {
-          const canvas = document.getElementById(id);
-          if (!canvas || !canvas.getContext) return;
-          canvasInitialized.current = true;
-          const gradient = new Gradient();
-          gradient.initGradient(`#${id}`);
-        })
-        .catch(() => {});
-    };
-    const t = setTimeout(run, 100);
-    return () => clearTimeout(t);
-  }, [canvasId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -335,7 +429,7 @@ export default function PlatformOverview() {
           businessManagementService.getPlatformMetrics(),
           adminBookingService.getBookingAnalytics({}),
           paymentService.getPaymentStats(),
-          auditService.getAuditLogs({ page_size: 10, page: 1 }),
+          auditService.getAuditLogs({ page_size: 12, page: 1 }),
           verificationService.getVerificationStats(),
           supportTicketService.getTicketStats(),
           adminPayoutService.getPayouts({ status: "pending", page_size: 1 }),
@@ -353,18 +447,24 @@ export default function PlatformOverview() {
         const payoutsData = payoutsRes.success ? payoutsRes.data : {};
 
         const results = auditData.results || [];
-        setAuditItems(Array.isArray(results) ? results.slice(0, 10) : []);
+        setAuditItems(Array.isArray(results) ? results.slice(0, 12) : []);
+
+        const totalRev =
+          paymentData.total_revenue ??
+          paymentData.revenue ??
+          bizData.total_revenue ??
+          bizData.gross_sales ??
+          0;
+        const totalBiz =
+          bizData.total_businesses ?? bizData.total ?? 0;
+        const avgRevPerBiz =
+          totalBiz > 0 ? Math.round(totalRev / totalBiz) : 0;
 
         setStats({
           totalUsers: userData.total_users ?? userData.total ?? 0,
-          totalBusinesses: bizData.total_businesses ?? bizData.total ?? 0,
+          totalBusinesses: totalBiz,
           totalBookings: bookingData.total_bookings ?? bookingData.total ?? 0,
-          platformRevenue:
-            paymentData.total_revenue ??
-            paymentData.revenue ??
-            bizData.total_revenue ??
-            bizData.gross_sales ??
-            0,
+          platformRevenue: totalRev,
           newUsers30d: userData.new_users_30d ?? userData.new_registrations ?? 0,
           newBusinesses30d: bizData.new_businesses_30d ?? bizData.new_in_period ?? 0,
           openTickets: supportData.open ?? supportData.open_count ?? 0,
@@ -376,6 +476,14 @@ export default function PlatformOverview() {
               : Array.isArray(payoutsData.results)
                 ? payoutsData.results.length
                 : 0,
+          activeUsers30d: userData.active_users_30d ?? userData.active_30d ?? 0,
+          activeBusinesses30d: bizData.active_businesses_30d ?? bizData.active_30d ?? 0,
+          bookingsThisMonth: bookingData.bookings_this_month ?? bookingData.monthly ?? 0,
+          avgRevenuePerBusiness: avgRevPerBiz,
+          userGrowth: userData.growth_percent ?? userData.mom_growth ?? null,
+          businessGrowth: bizData.growth_percent ?? bizData.mom_growth ?? null,
+          bookingGrowth: bookingData.growth_percent ?? bookingData.mom_growth ?? null,
+          revenueGrowth: paymentData.growth_percent ?? paymentData.mom_growth ?? null,
         });
 
         const trend =
@@ -383,18 +491,18 @@ export default function PlatformOverview() {
           bookingData.trend ??
           bizData.growth_trend ??
           [];
-        const growth =
-          bizData.growth_trend ?? bizData.growth ?? [];
         const revTrend = paymentData.revenue_trend ?? paymentData.trend ?? [];
         const combined = trend.length
           ? trend.map((d, i) => ({
-              name: d.date ?? d.period ?? d.name ?? `Period ${i + 1}`,
+              name: d.date
+                ? dayjs(d.date).format("MMM D")
+                : d.period ?? d.name ?? `P${i + 1}`,
               bookings: d.count ?? d.bookings ?? d.total ?? 0,
-              revenue: (revTrend[i]?.amount ?? revTrend[i]?.revenue ?? growth[i]?.revenue) ?? 0,
+              revenue: revTrend[i]?.amount ?? revTrend[i]?.revenue ?? 0,
             }))
           : revTrend.length
             ? revTrend.map((d, i) => ({
-                name: d.date ?? d.period ?? `Period ${i + 1}`,
+                name: d.date ? dayjs(d.date).format("MMM D") : `P${i + 1}`,
                 bookings: 0,
                 revenue: d.amount ?? d.revenue ?? 0,
               }))
@@ -408,9 +516,7 @@ export default function PlatformOverview() {
     }
 
     fetchAll();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   const quickActions = [
@@ -419,7 +525,8 @@ export default function PlatformOverview() {
       value: stats.pendingVerifications,
       path: "/admin/business-verification",
       icon: ShieldCheck,
-      color: colors.warning,
+      color: stats.pendingVerifications > 0 ? colors.error : colors.warning,
+      note: stats.pendingVerifications > 0 ? "Requires attention" : "Up to date",
     },
     {
       label: "Open Support Tickets",
@@ -427,6 +534,7 @@ export default function PlatformOverview() {
       path: "/admin/support",
       icon: MessageSquare,
       color: colors.info,
+      note: "Awaiting response",
     },
     {
       label: "Pending Payouts",
@@ -434,18 +542,89 @@ export default function PlatformOverview() {
       path: "/admin/payouts",
       icon: Wallet,
       color: colors.success,
+      note: "Ready to process",
+    },
+  ];
+
+  const kpiCards = [
+    {
+      label: "Platform GMV",
+      value: formatCompact(stats.platformRevenue),
+      isText: true,
+      icon: DollarSign,
+      color: colors.success,
+      growth: stats.revenueGrowth,
+      footer: "All-time gross revenue",
+    },
+    {
+      label: "Total Users",
+      value: stats.totalUsers,
+      icon: Users,
+      color: colors.info,
+      growth: stats.userGrowth,
+      footer: `${stats.activeUsers30d.toLocaleString()} active last 30d`,
+    },
+    {
+      label: "Total Businesses",
+      value: stats.totalBusinesses,
+      icon: Building2,
+      color: colors.primary,
+      growth: stats.businessGrowth,
+      footer: `${stats.activeBusinesses30d.toLocaleString()} active last 30d`,
+    },
+    {
+      label: "Bookings (All-time)",
+      value: stats.totalBookings,
+      icon: BookOpen,
+      color: colors.purple,
+      growth: stats.bookingGrowth,
+      footer: `${stats.bookingsThisMonth.toLocaleString()} this month`,
+    },
+    {
+      label: "New Users (30d)",
+      value: stats.newUsers30d,
+      icon: UserPlus,
+      color: colors.info,
+      growth: null,
+      footer: "vs previous 30 days",
+    },
+    {
+      label: "New Businesses (30d)",
+      value: stats.newBusinesses30d,
+      icon: Building2,
+      color: colors.primary,
+      growth: null,
+      footer: "Net new registrations",
+    },
+    {
+      label: "Avg Rev / Business",
+      value: 0,
+      isText: true,
+      computedValue: formatCompact(stats.avgRevenuePerBusiness),
+      icon: BarChart2,
+      color: colors.warning,
+      growth: null,
+      footer: "Platform average",
+    },
+    {
+      label: "Pending Verifications",
+      value: stats.pendingVerifications,
+      icon: ShieldCheck,
+      color: stats.pendingVerifications > 0 ? colors.error : colors.success,
+      growth: null,
+      footer: stats.pendingVerifications > 0 ? "Action required" : "All reviewed",
+      urgent: stats.pendingVerifications > 0,
     },
   ];
 
   if (loading) {
     return (
       <DashboardWrapper>
-        <OverviewContentLayer style={{ minHeight: 400 }}>
-          <DashboardBreadcrumb title="Platform Overview" />
+        <ContentLayer style={{ minHeight: 400 }}>
           <div style={{ display: "flex", justifyContent: "center", padding: 48 }}>
             <Spin size="large" />
           </div>
-        </OverviewContentLayer>
+        </ContentLayer>
       </DashboardWrapper>
     );
   }
@@ -454,200 +633,194 @@ export default function PlatformOverview() {
 
   return (
     <DashboardWrapper>
-      <OverviewTopWrap>
-        <OverviewGradientStrip>
-          <OverviewGradientStripInner>
-            <OverviewGradientCanvas id={canvasId} data-transition-in />
-          </OverviewGradientStripInner>
-        </OverviewGradientStrip>
-      </OverviewTopWrap>
+      <ContentLayer>
+        <PageHeader>
+          <PageTitle>Welcome back, {userName}</PageTitle>
+          <PageSubtitle>
+            {dayjs().format("dddd, MMMM D")} · Platform overview
+          </PageSubtitle>
+        </PageHeader>
 
-      <OverviewContentLayer>
-        <DashboardBreadcrumb title="Platform Overview" />
-        <div style={{ marginBottom: 8 }}>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: "#111827", margin: "0 0 4px" }}>
-            Welcome back, {userName}
-          </h1>
-          <Text style={{ fontSize: 14, color: colors.textSecondary }}>
-            Here’s what’s happening across the platform.
-          </Text>
+        {/* KPI Metric Cards */}
+        <SectionLabel>Key metrics</SectionLabel>
+        <div style={{ marginBottom: 20 }}>
+          <AdminMetricCards
+            cards={kpiCards.map((card) => ({
+              ...card,
+              title: card.label,
+              value: card.computedValue ?? card.value,
+            }))}
+            isReadyForAnimation={isReadyForAnimation}
+          />
         </div>
 
-        <SectionTitle>Key metrics</SectionTitle>
-        <StatsGrid style={{ marginBottom: 24 }}>
-          <StatCardBase>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div>
-                <StatLabel>Total Users</StatLabel>
-                <MetricValue>
-                  <NumberFlow value={stats.totalUsers} />
-                </MetricValue>
-              </div>
-              <IconContainer $bg={hexToRgba(colors.info, 0.1)} $color={colors.info}>
-                <Users />
-              </IconContainer>
-            </div>
-          </StatCardBase>
-          <StatCardBase>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div>
-                <StatLabel>Total Businesses</StatLabel>
-                <MetricValue>
-                  <NumberFlow value={stats.totalBusinesses} />
-                </MetricValue>
-              </div>
-              <IconContainer $bg={hexToRgba(colors.primary, 0.1)} $color={colors.primary}>
-                <Building2 />
-              </IconContainer>
-            </div>
-          </StatCardBase>
-          <StatCardBase>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div>
-                <StatLabel>Total Bookings</StatLabel>
-                <MetricValue>
-                  <NumberFlow value={stats.totalBookings} />
-                </MetricValue>
-              </div>
-              <IconContainer $bg={hexToRgba(colors.success, 0.1)} $color={colors.success}>
-                <BookOpen />
-              </IconContainer>
-            </div>
-          </StatCardBase>
-          <StatCardBase>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div>
-                <StatLabel>Platform Revenue</StatLabel>
-                <MetricValue>{formatCurrency(stats.platformRevenue)}</MetricValue>
-              </div>
-              <IconContainer $bg={hexToRgba(colors.success, 0.1)} $color={colors.success}>
-                <DollarSign />
-              </IconContainer>
-            </div>
-          </StatCardBase>
-        </StatsGrid>
+        <Divider />
 
-        <SectionTitle>Quick actions</SectionTitle>
-        <QuickActionGrid>
+        {/* Quick actions */}
+        <SectionLabel>Needs attention</SectionLabel>
+        <QuickActionGrid style={{ marginBottom: 20 }}>
           {quickActions.map((action) => {
             const Icon = action.icon;
             return (
-              <QuickActionCard
-                key={action.path}
-                onClick={() => router.push(action.path)}
-              >
+              <QuickActionCard key={action.path} onClick={() => router.push(action.path)}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <IconContainer $bg={hexToRgba(action.color, 0.1)} $color={action.color}>
                       <Icon />
                     </IconContainer>
                     <div>
-                      <StatLabel>{action.label}</StatLabel>
-                      <MetricValue>
+                      <MetricLabel>{action.label}</MetricLabel>
+                      <MetricValue style={{ fontSize: 18 }}>
                         <NumberFlow value={action.value} />
                       </MetricValue>
+                      <FooterNote>{action.note}</FooterNote>
                     </div>
                   </div>
-                  <ArrowRight size={18} style={{ color: colors.textTertiary }} />
+                  <ArrowRight size={16} style={{ color: colors.textTertiary }} />
                 </div>
               </QuickActionCard>
             );
           })}
         </QuickActionGrid>
 
-        <DividerLine />
+        <Divider />
 
-        <SectionTitle>Secondary metrics</SectionTitle>
-        <StatsGrid style={{ marginBottom: 24 }}>
-          <StatCardBase>
-            <StatLabel>New Users (30d)</StatLabel>
-            <MetricValue><NumberFlow value={stats.newUsers30d} /></MetricValue>
-          </StatCardBase>
-          <StatCardBase>
-            <StatLabel>New Businesses (30d)</StatLabel>
-            <MetricValue><NumberFlow value={stats.newBusinesses30d} /></MetricValue>
-          </StatCardBase>
-        </StatsGrid>
-
-        {chartData.length > 0 && (
-          <>
-            <SectionTitle>Trends</SectionTitle>
-            <SectionHeading>Bookings & Revenue</SectionHeading>
-            <ChartCard style={{ marginBottom: 24 }}>
+        {/* Chart + Activity Feed side by side */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 12, alignItems: "start" }}>
+          <div>
+            <SectionRow>
+              <div>
+                <SectionLabel style={{ marginBottom: 0 }}>Trends</SectionLabel>
+                <SectionTitle>Bookings &amp; Revenue</SectionTitle>
+              </div>
+              <Radio.Group
+                size="small"
+                value={chartPeriod}
+                onChange={(e) => setChartPeriod(e.target.value)}
+                optionType="button"
+                buttonStyle="solid"
+                options={PERIOD_OPTIONS}
+                style={{ fontSize: 11 }}
+              />
+            </SectionRow>
+            <ChartCard>
               <ChartContainer>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke={colors.textTertiary} />
-                    <YAxis yAxisId="left" tick={{ fontSize: 11 }} stroke={colors.textTertiary} />
-                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} stroke={colors.textTertiary} />
-                    <RechartsTooltip
-                      formatter={(value, name) =>
-                        name === "revenue" ? formatCurrency(value) : value
-                      }
-                      labelStyle={{ color: colors.textPrimary }}
-                    />
-                    <Legend />
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="bookings"
-                      name="Bookings"
-                      stroke={colors.primary}
-                      strokeWidth={2}
-                      dot={{ fill: colors.primary, strokeWidth: 2 }}
-                    />
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="revenue"
-                      name="Revenue"
-                      stroke={colors.success}
-                      strokeWidth={2}
-                      dot={{ fill: colors.success, strokeWidth: 2 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                {chartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="gradBookings" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={colors.primary} stopOpacity={0.15} />
+                          <stop offset="95%" stopColor={colors.primary} stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={colors.success} stopOpacity={0.15} />
+                          <stop offset="95%" stopColor={colors.success} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke={colors.border} vertical={false} />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 10, fill: colors.textTertiary }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        yAxisId="left"
+                        tick={{ fontSize: 10, fill: colors.textTertiary }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={32}
+                      />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        tick={{ fontSize: 10, fill: colors.textTertiary }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
+                        width={40}
+                      />
+                      <RechartsTooltip content={<CustomTooltip />} />
+                      <Legend
+                        wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                        iconType="circle"
+                        iconSize={7}
+                      />
+                      <Area
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="bookings"
+                        name="Bookings"
+                        stroke={colors.primary}
+                        strokeWidth={2}
+                        fill="url(#gradBookings)"
+                        dot={false}
+                        activeDot={{ r: 4, strokeWidth: 0 }}
+                      />
+                      <Area
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="revenue"
+                        name="Revenue"
+                        stroke={colors.success}
+                        strokeWidth={2}
+                        fill="url(#gradRevenue)"
+                        dot={false}
+                        activeDot={{ r: 4, strokeWidth: 0 }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: colors.textTertiary, fontSize: 13 }}>
+                    No trend data available
+                  </div>
+                )}
               </ChartContainer>
             </ChartCard>
-          </>
-        )}
+          </div>
 
-        <SectionTitle>Recent activity</SectionTitle>
-        <SectionHeading>Audit log</SectionHeading>
-        <ActivityCard>
-          <ScrollableList>
-            {auditItems.length === 0 ? (
-              <Text type="secondary">No recent activity</Text>
-            ) : (
-              <Timeline
-                items={auditItems.map((item) => ({
-                  color: colors.primary,
-                  children: (
-                    <div key={item.id || item.timestamp}>
-                      <Text strong style={{ fontSize: 13 }}>
-                        {item.action ?? item.description ?? "Action"}
-                      </Text>
-                      {item.user_email && (
-                        <div style={{ fontSize: 12, color: colors.textSecondary }}>
-                          {item.user_email}
-                        </div>
-                      )}
-                      <div style={{ fontSize: 11, color: colors.textTertiary, marginTop: 2 }}>
-                        {item.timestamp
-                          ? new Date(item.timestamp).toLocaleString()
-                          : item.created_at
-                            ? new Date(item.created_at).toLocaleString()
-                            : ""}
-                      </div>
-                    </div>
-                  ),
-                }))}
-              />
-            )}
-          </ScrollableList>
-        </ActivityCard>
-      </OverviewContentLayer>
+          {/* Activity Feed */}
+          <div>
+            <SectionRow>
+              <div>
+                <SectionLabel style={{ marginBottom: 0 }}>Recent</SectionLabel>
+                <SectionTitle>Activity Feed</SectionTitle>
+              </div>
+            </SectionRow>
+            <ActivityFeedCard>
+              <FeedList>
+                {auditItems.length === 0 ? (
+                  <div style={{ padding: "20px 0", textAlign: "center", color: colors.textTertiary, fontSize: 12 }}>
+                    No recent activity
+                  </div>
+                ) : (
+                  auditItems.map((item, i) => {
+                    const actionStr = item.action ?? item.description ?? "Action";
+                    const { icon: FeedIcon, color: feedColor } = getAuditIcon(actionStr);
+                    const ts = item.timestamp ?? item.created_at;
+                    return (
+                      <FeedItem key={item.id ?? i}>
+                        <FeedDot $bg={hexToRgba(feedColor, 0.1)} $color={feedColor}>
+                          <FeedIcon />
+                        </FeedDot>
+                        <FeedContent>
+                          <FeedAction>{actionStr}</FeedAction>
+                          <FeedMeta>
+                            {item.user_email && <span>{item.user_email} · </span>}
+                            {ts ? dayjs(ts).fromNow() : ""}
+                          </FeedMeta>
+                        </FeedContent>
+                      </FeedItem>
+                    );
+                  })
+                )}
+              </FeedList>
+            </ActivityFeedCard>
+          </div>
+        </div>
+
+      </ContentLayer>
     </DashboardWrapper>
   );
 }

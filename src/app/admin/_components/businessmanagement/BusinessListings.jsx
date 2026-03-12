@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import ReactDOM from "react-dom";
 import styled from "styled-components";
-import { motion, AnimatePresence } from "framer-motion";
 import dayjs from "dayjs";
 import { Table, Card, Input, Select, Button, ConfigProvider, Checkbox, Avatar, Tag, Space, Tooltip, Dropdown, Menu, Divider, Modal, Grid, Empty, Badge, Alert, Tabs, Popconfirm, Typography, Statistic, Skeleton, List,  } from 'antd';
 import message from '@/lib/message';
@@ -21,7 +19,6 @@ import {
   AlertCircle,
   Trash2,
   Check,
-  X,
   ToggleLeft,
   ToggleRight,
   Link as LinkIcon,
@@ -53,7 +50,8 @@ import {
   GlobalLoaderWithInlineStyles,
   GlobalLoaderWithoutInlineStyles,
 } from "@/components/common/GlobalLoader";
-import { LordIcon } from "@/services/ReactUtils";
+import { RefreshCw } from "lucide-react";
+import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 
 const { Option } = Select;
 const { useBreakpoint } = Grid;
@@ -77,12 +75,21 @@ const colors = {
 const DashboardWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 24px;
-  background-color: #fff;
-  min-height: 100vh;
+  padding: 12px;
   @media (max-width: 768px) {
-    padding: 16px;
+    padding: 8px;
     gap: 0;
+  }
+`;
+
+const ContentLayer = styled.div`
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid ${colors.border};
+  padding: 20px 24px;
+  @media (max-width: 768px) {
+    padding: 14px 16px;
+    border-radius: 12px;
   }
 `;
 
@@ -147,7 +154,7 @@ const RefreshButton = styled(Button)`
 `;
 
 // --- TABLE SECTION ---
-const TableSection = styled(motion.div)`
+const TableSection = styled.div`
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -220,97 +227,34 @@ const SearchFilterContainer = styled.div`
 
 const StyledTable = styled(Table)`
   .ant-table-thead > tr > th {
-    background: #fafbfc;
-    border-bottom: 1px solid ${colors.border};
+    background: #f8fafc !important;
+    color: ${colors.textSecondary};
     font-weight: 600;
-    color: ${colors.textPrimary};
-    font-size: 13px;
-    padding: 16px 24px;
+    font-size: 11px;
+    padding: 10px 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid ${colors.border};
+    &::before { display: none; }
   }
   .ant-table-tbody > tr > td {
-    padding: 16px 24px;
+    padding: 10px 14px;
     border-bottom: 1px solid ${colors.border};
-    font-size: 14px;
+    font-size: 13px;
+    color: ${colors.textPrimary};
   }
   .ant-table-tbody > tr:hover > td {
-    background: #fafcff;
+    background: #f8fafc;
   }
   .ant-empty {
     padding: 40px 20px;
   }
 `;
 
-// --- DRAWER COMPONENTS ---
-const DrawerOverlay = styled(motion.div)`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 1050;
-  @media (max-width: 768px) {
-    padding: 0;
-    align-items: flex-end;
-  }
-`;
-
-const DrawerContainer = styled(motion.div)`
-  width: 100%;
-  max-width: 800px;
-  background: white;
-  border-radius: 24px;
-  overflow: hidden;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  @media (max-width: 768px) {
-    height: auto;
-    max-height: 85vh;
-    border-radius: 24px 24px 0 0;
-  }
-`;
-
-const DrawerCloseButton = styled(motion.button)`
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: #f0f0f0;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  color: #717171;
-  &:hover {
-    background: #e0e0e0;
-  }
-`;
-
-const DrawerHeaderSection = styled.header`
-  padding: 20px 24px;
-  border-bottom: 1px solid #f0f0f0;
-  flex-shrink: 0;
-`;
-
 const DrawerContent = styled.div`
   flex: 1;
   overflow-y: auto;
   background-color: ${colors.lightBg};
-  padding: 24px;
-
-  @media (max-width: 768px) {
-    padding: 0;
-  }
 `;
 
 const DrawerHeader = styled.div`
@@ -790,101 +734,32 @@ const BusinessDetailDrawerContent = ({
   );
 };
 
-const DetailDrawerModal = ({
-  isVisible,
-  onClose,
-  business,
-  isLoading,
-  isMobile,
-  onAction,
-  isActionLoading,
-}) => {
-  const modalVariants = isMobile
-    ? {
-        hidden: { y: "100%", opacity: 0 },
-        visible: {
-          y: 0,
-          opacity: 1,
-          transition: { type: "spring", damping: 30, stiffness: 300 },
-        },
-        exit: {
-          y: "100%",
-          opacity: 0,
-          transition: { duration: 0.2, ease: "easeIn" },
-        },
-      }
-    : {
-        hidden: { scale: 0.95, opacity: 0 },
-        visible: {
-          scale: 1,
-          opacity: 1,
-          transition: { duration: 0.2, ease: "easeOut" },
-        },
-        exit: {
-          scale: 0.95,
-          opacity: 0,
-          transition: { duration: 0.2, ease: "easeIn" },
-        },
-      };
-
-  const drawerComponent = (
-    <AnimatePresence>
-      {isVisible && (
-        <DrawerOverlay
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        >
-          <DrawerContainer
-            variants={modalVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <DrawerHeaderSection>
-              <Space align="center" size={12}>
-                <Building size={20} style={{ color: colors.primary }} />
-                <span
-                  style={{ fontWeight: 700, fontSize: "18px", color: "#222" }}
-                >
-                  Business: {business?.businessName}
-                </span>
-              </Space>
-              <DrawerCloseButton whileTap={{ scale: 0.9 }} onClick={onClose}>
-                <X size={20} />
-              </DrawerCloseButton>
-            </DrawerHeaderSection>
-            <DrawerContent>
-              {isLoading ? (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    minHeight: "350px",
-                    flexDirection: "column",
-                    gap: "16px",
-                  }}
-                >
-                  <GlobalLoaderWithoutInlineStyles />
-                  <Text type="secondary">Loading details...</Text>
-                </div>
-              ) : (
-                <BusinessDetailDrawerContent
-                  business={business}
-                  isActionLoading={isActionLoading}
-                  onAction={onAction}
-                />
-              )}
-            </DrawerContent>
-          </DrawerContainer>
-        </DrawerOverlay>
-      )}
-    </AnimatePresence>
+const DetailDrawerModal = ({ open, onClose, business, isLoading, isMobile, onAction, isActionLoading }) => {
+  return (
+    <AdminResponsiveDrawer
+      open={open}
+      onClose={onClose}
+      title={business?.businessName || "Business Details"}
+      titleIcon={<Building size={18} style={{ color: colors.primary }} />}
+      isMobile={isMobile}
+      width="860px"
+    >
+      <DrawerContent style={{ padding: isMobile ? 0 : 24 }}>
+        {isLoading ? (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 350, flexDirection: "column", gap: 16 }}>
+            <GlobalLoaderWithoutInlineStyles />
+            <Text type="secondary">Loading details...</Text>
+          </div>
+        ) : (
+          <BusinessDetailDrawerContent
+            business={business}
+            isActionLoading={isActionLoading}
+            onAction={onAction}
+          />
+        )}
+      </DrawerContent>
+    </AdminResponsiveDrawer>
   );
-  return ReactDOM.createPortal(drawerComponent, document.body);
 };
 
 const ImportLogPre = styled.pre`
@@ -905,7 +780,7 @@ const BusinessListings = () => {
   const [loading, setLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
-  const [isDetailDrawerVisible, setIsDetailDrawerVisible] = useState(false);
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -1025,7 +900,7 @@ const BusinessListings = () => {
         message.success(successMessage);
         fetchBusinesses(filterParams, pagination, sortedInfo); // Refresh list
         if (
-          isDetailDrawerVisible &&
+          detailDrawerOpen &&
           selectedBusiness &&
           response.data?.businessId === selectedBusiness.businessId
         ) {
@@ -1063,12 +938,12 @@ const BusinessListings = () => {
       `Business deleted`,
       "Failed to delete business"
     );
-    setIsDetailDrawerVisible(false);
+    setDetailDrawerOpen(false);
   };
 
   const showBusinessDetails = async (business) => {
-    if (isDetailDrawerVisible) return;
-    setIsDetailDrawerVisible(true);
+    if (detailDrawerOpen) return;
+    setDetailDrawerOpen(true);
     setDetailsLoading(true);
     setSelectedBusiness(business);
     try {
@@ -1316,29 +1191,23 @@ const BusinessListings = () => {
   return (
     <ConfigProvider theme={appTheme}>
       <DashboardWrapper>
-        <DashboardHeader>
+      <ContentLayer>
+        <DashboardHeader style={{ marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${colors.border}` }}>
           <div>
-            <PageTitle>Business Management</PageTitle>
+            <PageTitle>Business Listings</PageTitle>
             <HeaderSubtitle>
               Monitor, manage, and feature business listings on the platform.
             </HeaderSubtitle>
           </div>
           <ActionButtonsContainer>
             <RefreshButton
-              icon={<Upload size={18} />}
+              icon={<Upload size={16} />}
               onClick={() => setImportModalOpen(true)}
             >
-              {!isMobile && "Import Google Reviews"}
+              {!isMobile && "Import Reviews"}
             </RefreshButton>
             <RefreshButton
-              icon={
-                <LordIcon
-                  src="https://cdn.lordicon.com/valwmkhs.json"
-                  colors="primary:#666,secondary:#666"
-                  size="20px"
-                  trigger="hover"
-                />
-              }
+              icon={<RefreshCw size={16} />}
               onClick={refreshData}
               loading={loading}
             >
@@ -1346,8 +1215,6 @@ const BusinessListings = () => {
             </RefreshButton>
           </ActionButtonsContainer>
         </DashboardHeader>
-
-        <Divider />
 
         <TableSection
           initial={{ opacity: 0, y: 20 }}
@@ -1367,14 +1234,15 @@ const BusinessListings = () => {
             <SearchFilterContainer>
               <Input
                 ref={searchInputRef}
+                prefix={<Search size={14} style={{ color: colors.textTertiary }} />}
                 placeholder="Search name, email, city..."
                 allowClear
                 onChange={(e) => handleFilterChange({ search: e.target.value })}
-                style={{ width: isMobile ? "100%" : 280 }}
+                style={{ width: isMobile ? "100%" : 260, borderRadius: 8 }}
               />
               <Select
                 value={filterParams.status}
-                style={{ width: isMobile ? "100%" : 180 }}
+                style={{ width: isMobile ? "100%" : 160 }}
                 onChange={(val) => handleFilterChange({ status: val })}
               >
                 <Option value="all">All Statuses</Option>
@@ -1383,10 +1251,28 @@ const BusinessListings = () => {
                 <Option value="inactive">Inactive</Option>
                 <Option value="pending">Pending</Option>
               </Select>
+              <Select
+                placeholder="Province"
+                allowClear
+                style={{ width: isMobile ? "100%" : 130 }}
+                onChange={(val) => handleFilterChange({ province: val })}
+              >
+                {["AB","BC","MB","NB","NL","NS","ON","PE","QC","SK"].map(p => (
+                  <Option key={p} value={p}>{p}</Option>
+                ))}
+              </Select>
+              <Select
+                placeholder="Verification"
+                allowClear
+                style={{ width: isMobile ? "100%" : 150 }}
+                onChange={(val) => handleFilterChange({ verification_status: val })}
+              >
+                <Option value="verified">Verified</Option>
+                <Option value="pending">Pending</Option>
+                <Option value="rejected">Rejected</Option>
+              </Select>
               <Checkbox
-                onChange={(e) =>
-                  handleFilterChange({ featured: e.target.checked })
-                }
+                onChange={(e) => handleFilterChange({ featured: e.target.checked })}
                 checked={filterParams.featured}
               >
                 Featured Only
@@ -1447,8 +1333,8 @@ const BusinessListings = () => {
         </TableSection>
 
         <DetailDrawerModal
-          isVisible={isDetailDrawerVisible}
-          onClose={() => setIsDetailDrawerVisible(false)}
+          open={detailDrawerOpen}
+          onClose={() => setDetailDrawerOpen(false)}
           business={selectedBusiness}
           isLoading={detailsLoading}
           isMobile={isMobile}
@@ -1567,6 +1453,7 @@ const BusinessListings = () => {
             </div>
           )}
         </Modal>
+      </ContentLayer>
       </DashboardWrapper>
     </ConfigProvider>
   );

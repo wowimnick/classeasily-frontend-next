@@ -2,9 +2,8 @@
 
 import dynamic from "next/dynamic";
 import React, { useState, useEffect, useCallback } from "react";
-import ReactDOM from "react-dom";
-import styled, { ThemeProvider } from "styled-components";
-import { motion, AnimatePresence } from "framer-motion";
+import styled from "styled-components";
+import { Drawer } from "vaul";
 import NumberFlow from "@number-flow/react";
 import {
   Table,
@@ -32,8 +31,6 @@ import {
   Briefcase,
   MapPin,
   Star,
-  TrendingUp,
-  TrendingDown,
   BarChart2,
   DollarSign,
   Calendar,
@@ -64,10 +61,13 @@ import {
   ToggleLeft,
   ToggleRight,
   Percent,
+  FileText,
+  AlertTriangle,
+  ExternalLink,
 } from "lucide-react";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -83,13 +83,14 @@ const CanadianDistribution = dynamic(() => import("./CanadianDistribution"), {
   loading: () => <GlobalLoaderWithInlineStyles />,
 });
 
-import { businessManagementService } from "@/services/adminDash"; // Adjust path
+import { businessManagementService, verificationService } from "@/services/adminDash"; // Adjust path
 import { theme as appTheme } from "@/components/theme"; // Adjust path
 import {
   GlobalLoaderWithInlineStyles,
   GlobalLoaderWithoutInlineStyles,
 } from "@/components/common/GlobalLoader";
 import { businessClassService } from "@/services/apiService";
+import AdminMetricCards from "../shared/AdminMetricCards";
 
 const { Option } = Select;
 const { useBreakpoint } = Grid;
@@ -102,9 +103,10 @@ const colors = {
   warning: "#f59e0b",
   error: "#ef4444",
   info: "#3b82f6",
+  purple: "#8b5cf6",
   lightBg: "#f8fafc",
   border: "#f1f5f9",
-  textPrimary: "#334155",
+  textPrimary: "#111827",
   textSecondary: "#64748b",
   textTertiary: "#94a3b8",
 };
@@ -131,12 +133,21 @@ const hexToRgba = (hex, alpha = 1) => {
 const DashboardWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 24px;
-  background-color: #fff;
-  min-height: 100vh;
+  padding: 12px;
   @media (max-width: 768px) {
     padding: 8px;
     gap: 0;
+  }
+`;
+
+const ContentLayer = styled.div`
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid ${colors.border};
+  padding: 20px 24px;
+  @media (max-width: 768px) {
+    padding: 14px 16px;
+    border-radius: 12px;
   }
 `;
 
@@ -178,101 +189,8 @@ const ActionButtonsContainer = styled.div`
   align-items: center;
 `;
 
-// --- STATS CARDS ---
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
-  }
-`;
-
-const StatCard = styled(Card)`
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid ${colors.border};
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-
-  .ant-card-body {
-    padding: 12px !important;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-
-    @media (max-width: 768px) {
-      padding: 16px !important;
-    }
-  }
-`;
-
-const StatCardHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-`;
-
-const IconContainer = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${(props) => props.background || "#f1f5f9"};
-  color: ${(props) => props.color || colors.textSecondary};
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-`;
-
-const StatValue = styled.div`
-  font-size: 22px;
-  font-weight: 700;
-  color: ${colors.textPrimary};
-  margin-bottom: 4px;
-  display: flex;
-  align-items: baseline;
-`;
-
-const StatLabel = styled.div`
-  font-size: 13px;
-  color: ${colors.textSecondary};
-  display: flex;
-  align-items: center;
-  gap: 6px;
-`;
-
-const StatFooter = styled.div`
-  font-size: 12px;
-  color: ${colors.textSecondary};
-  display: flex;
-  align-items: center;
-  gap: 4px;
-`;
-
-const PercentChange = styled.span`
-  color: ${(props) => (props.isPositive ? colors.success : colors.error)};
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 12px;
-  font-weight: 500;
-`;
-
 // --- CONTENT SECTION WRAPPER ---
-const ContentSection = styled(motion.div)`
+const ContentSection = styled.div`
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -325,15 +243,51 @@ const SearchFilterContainer = styled.div`
 
 const StyledTable = styled(Table)`
   .ant-table-thead > tr > th {
-    background: #fafbfc;
+    background: #f8fafc !important;
+    color: ${colors.textSecondary};
+    font-weight: 600;
+    font-size: 11px;
+    padding: 10px 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid ${colors.border};
+    &::before { display: none; }
+  }
+  .ant-table-tbody > tr > td {
+    padding: 10px 14px;
+    font-size: 13px;
+    border-bottom: 1px solid ${colors.border};
+  }
+  .ant-table-tbody > tr:hover > td {
+    background: #f8fafc;
   }
 `;
 
 const ChartGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+  margin-bottom: 0;
+`;
+
+const ChartCard = styled(Card)`
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid ${colors.border};
+  .ant-card-body {
+    padding: 16px 20px !important;
+  }
+`;
+
+const BulkActionsBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  background: ${hexToRgba(colors.primary, 0.04)};
+  border-bottom: 1px solid ${colors.border};
+  font-size: 13px;
+  color: ${colors.textPrimary};
 `;
 
 // --- MOBILE COMPONENTS ---
@@ -359,78 +313,151 @@ const MobileCardLabel = styled(Text)`
   font-weight: 500;
 `;
 
-// --- DETAIL DRAWER --- (Copied from BookingsList)
-const DrawerOverlay = styled(motion.div)`
+// --- VAUL DRAWER STYLES ---
+const VaulOverlay = styled(Drawer.Overlay)`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 1050;
-  @media (max-width: 768px) {
-    padding: 0;
-    align-items: flex-end;
-  }
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1049;
 `;
-const DrawerContainer = styled(motion.div)`
-  width: 100%;
-  max-width: 800px;
+
+const VaulMobileContent = styled(Drawer.Content)`
   background: white;
-  border-radius: 24px;
-  overflow: hidden;
-  position: relative;
   display: flex;
   flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  height: 90%;
   max-height: 90vh;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  @media (max-width: 768px) {
-    max-height: 85vh;
-    border-radius: 24px 24px 0 0;
-  }
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  outline: none;
 `;
-const DragHandle = styled(motion.div)`
-  display: none;
-  width: 40px;
-  height: 5px;
-  background: #d1d1d1;
-  border-radius: 2.5px;
-  margin: 12px auto 0;
-  cursor: grab;
-  @media (max-width: 768px) {
-    display: block;
-  }
-`;
-const DrawerCloseButton = styled(motion.button)`
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: #f0f0f0;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
+
+const VaulDesktopContent = styled(Drawer.Content)`
+  right: 8px;
+  top: 8px;
+  bottom: 8px;
+  position: fixed;
+  z-index: 1050;
+  outline: none;
+  width: 860px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  &:hover {
-    background: #e0e0e0;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: -4px 0 32px rgba(0,0,0,0.14), 0 4px 24px rgba(0,0,0,0.10);
+  background: white;
+  @media (max-width: 900px) {
+    width: 95vw;
   }
 `;
-const DrawerHeaderSection = styled.header`
-  padding: 20px 24px;
-  border-bottom: 1px solid #f0f0f0;
+
+const DrawerHandle = styled.div`
+  width: 36px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 2px;
+  margin: 12px auto 8px;
   flex-shrink: 0;
 `;
-const DrawerContent = styled.div`
+
+const DrawerHeaderBar = styled.div`
+  padding: 16px 24px;
+  border-bottom: 1px solid ${colors.border};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  background: white;
+`;
+
+const DrawerBody = styled.div`
   flex: 1;
   overflow-y: auto;
-  background-color: ${colors.lightBg};
+  background: ${colors.lightBg};
+`;
+
+// --- VERIFICATION REVIEW DRAWER ---
+const VerifOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1060;
+`;
+
+const VerifMobileShell = styled(Drawer.Content)`
+  background: white;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px 24px 0 0;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 1061;
+  outline: none;
+  max-height: 90vh;
+`;
+
+const VerifDesktopShell = styled(Drawer.Content)`
+  right: 8px; top: 8px; bottom: 8px;
+  position: fixed;
+  z-index: 1061;
+  outline: none;
+  width: 560px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: -4px 0 32px rgba(0,0,0,0.14), 0 4px 24px rgba(0,0,0,0.10);
+  background: white;
+  display: flex;
+  flex-direction: column;
+`;
+
+const VerifDrawerInner = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+`;
+
+const VerifDrawerHeader = styled.div`
+  padding: 18px 24px;
+  border-bottom: 1px solid ${colors.border};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+`;
+
+const VerifDrawerBody = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  background: ${colors.lightBg};
+`;
+
+const VerifStatusBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: ${(p) => p.$color || colors.info}18;
+  color: ${(p) => p.$color || colors.info};
+  border: 1px solid ${(p) => p.$color || colors.info}30;
+`;
+
+const VerifDrawerFooter = styled.div`
+  padding: 16px 24px;
+  border-top: 1px solid ${colors.border};
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  background: white;
 `;
 const BusinessAvatar = styled(Avatar)`
   width: 60px;
@@ -628,12 +655,7 @@ const DetailDrawerContent = ({ business, onAction, actionLoading }) => {
   const formattedHours = formatBusinessHours(businessHours || []);
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
+    <div>
         <div
           style={{
             background: "white",
@@ -800,11 +822,24 @@ const DetailDrawerContent = ({ business, onAction, actionLoading }) => {
               <InfoContent>
                 <InfoLabel>Verification</InfoLabel>
                 <InfoValue>
-                  {verificationStatus === "verified" ? (
-                    <Tag color="success">Verified</Tag>
-                  ) : (
-                    <Tag>Not Verified</Tag>
-                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    {verificationStatus === "verified" ? (
+                      <Tag color="success" icon={<CheckCircle size={12} />}>Verified</Tag>
+                    ) : (
+                      <Tag icon={<AlertTriangle size={12} />}>Not Verified</Tag>
+                    )}
+                    {owner_email && verificationStatus !== "verified" && (
+                      <Button
+                        size="small"
+                        type="link"
+                        icon={<ExternalLink size={13} />}
+                        onClick={() => openVerifDrawer(owner_email)}
+                        style={{ padding: "0 4px", height: "auto", fontSize: 12 }}
+                      >
+                        Review Request
+                      </Button>
+                    )}
+                  </div>
                 </InfoValue>
               </InfoContent>
             </InfoItem>
@@ -886,82 +921,49 @@ const DetailDrawerContent = ({ business, onAction, actionLoading }) => {
               </>
             )}
         </InfoGroup>
-      </motion.div>
-    </AnimatePresence>
+    </div>
   );
 };
 
 const DetailDrawerModal = ({
-  isVisible,
+  open,
   onClose,
   business,
   onAction,
   actionLoading,
 }) => {
   const isMobile = !useBreakpoint().md;
-  const handleDragEnd = (event, info) => {
-    if (info.offset.y > 100) onClose();
-  };
 
-  const variants = isMobile
-    ? {
-        hidden: { y: "100%" },
-        visible: {
-          y: 0,
-          transition: { type: "spring", damping: 30, stiffness: 300 },
-        },
-        exit: { y: "100%", transition: { duration: 0.2 } },
-      }
-    : {
-        hidden: { scale: 0.95, opacity: 0 },
-        visible: { scale: 1, opacity: 1 },
-        exit: { scale: 0.95, opacity: 0 },
-      };
+  const DrawerShell = isMobile ? VaulMobileContent : VaulDesktopContent;
 
-  return ReactDOM.createPortal(
-    <AnimatePresence>
-      {isVisible && (
-        <DrawerOverlay
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        >
-          <DrawerContainer
-            variants={variants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            onClick={(e) => e.stopPropagation()}
-            drag={isMobile ? "y" : false}
-            dragConstraints={{ top: 0, bottom: 500 }}
-            onDragEnd={handleDragEnd}
-            dragSnapToOrigin
-          >
-            <DragHandle />
-            <DrawerHeaderSection>
-              <Space align="center">
-                <Briefcase size={20} style={{ color: colors.primary }} />
-                <span style={{ fontWeight: 600, fontSize: "16px" }}>
-                  Business Details
-                </span>
-              </Space>
-              <DrawerCloseButton whileTap={{ scale: 0.9 }} onClick={onClose}>
-                <X size={20} />
-              </DrawerCloseButton>
-            </DrawerHeaderSection>
-            <DrawerContent>
-              <DetailDrawerContent
-                business={business}
-                onAction={onAction}
-                actionLoading={actionLoading}
-              />
-            </DrawerContent>
-          </DrawerContainer>
-        </DrawerOverlay>
-      )}
-    </AnimatePresence>,
-    document.body
+  return (
+    <Drawer.Root
+      open={open}
+      onOpenChange={(open) => { if (!open) onClose(); }}
+      direction={isMobile ? "bottom" : "right"}
+      dismissible
+    >
+      <Drawer.Portal>
+        <VaulOverlay />
+        <DrawerShell style={isMobile ? undefined : { "--initial-transform": "calc(100% + 8px)" }}>
+          {isMobile && <DrawerHandle />}
+          <DrawerHeaderBar>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 600, fontSize: 15, color: colors.textPrimary }}>
+              <Briefcase size={18} style={{ color: colors.primary }} />
+              Business Details
+            </div>
+            <Button type="text" icon={<X size={18} />} onClick={onClose} style={{ border: "none" }} />
+          </DrawerHeaderBar>
+          <DrawerBody>
+            <DetailDrawerContent
+              business={business}
+              onAction={onAction}
+              actionLoading={actionLoading}
+            />
+          </DrawerBody>
+        </DrawerShell>
+      </Drawer.Portal>
+    </Drawer.Root>
   );
 };
 
@@ -995,10 +997,18 @@ const BusinessManagement = () => {
   });
   const [timeframe, setTimeframe] = useState("month");
   const [selectedBusiness, setSelectedBusiness] = useState(null);
-  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
+  const [verifDrawerOpen, setVerifDrawerOpen] = useState(false);
+  const [verifRequest, setVerifRequest] = useState(null);
+  const [verifLoading, setVerifLoading] = useState(false);
+  const [verifActionLoading, setVerifActionLoading] = useState(false);
+  const [verifDecision, setVerifDecision] = useState(null);
+  const [verifNotes, setVerifNotes] = useState("");
+  const [verifForm] = Form.useForm();
   const [geographicalData, setGeographicalData] = useState([]);
   const [mapDataType, setMapDataType] = useState("count");
   const [sortedInfo, setSortedInfo] = useState({});
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -1163,7 +1173,7 @@ const BusinessManagement = () => {
       if (response.success) {
         message.success(successMessage);
         if (actionType === "delete") {
-          setIsDetailModalVisible(false);
+          setDetailDrawerOpen(false);
         }
         refreshAllData(); // Refresh all data to ensure consistency
       } else {
@@ -1176,8 +1186,51 @@ const BusinessManagement = () => {
     }
   };
 
+  const openVerifDrawer = async (ownerEmail) => {
+    setVerifDrawerOpen(true);
+    setVerifRequest(null);
+    setVerifDecision(null);
+    setVerifNotes("");
+    setVerifLoading(true);
+    try {
+      const r = await verificationService.getVerificationRequests({ search: ownerEmail, status: "pending" });
+      if (r.success && r.data?.results?.length > 0) {
+        setVerifRequest(r.data.results[0]);
+      } else if (r.success) {
+        setVerifRequest({ notFound: true });
+      }
+    } catch {
+      message.error("Failed to load verification request");
+    } finally {
+      setVerifLoading(false);
+    }
+  };
+
+  const handleProcessVerif = async (action) => {
+    if (!verifRequest?.id) return;
+    setVerifActionLoading(true);
+    try {
+      const r = await verificationService.processVerification(verifRequest.id, {
+        action,
+        notes: verifNotes,
+        rejection_reason: action === "reject" ? verifNotes : undefined,
+      });
+      if (r.success) {
+        message.success(`Verification ${action === "approve" ? "approved" : "rejected"} successfully.`);
+        setVerifDrawerOpen(false);
+        refreshAllData();
+      } else {
+        message.error(r.error?.detail || "Failed to process verification");
+      }
+    } catch {
+      message.error("An error occurred");
+    } finally {
+      setVerifActionLoading(false);
+    }
+  };
+
   const showBusinessDetails = async (business) => {
-    setIsDetailModalVisible(true);
+    setDetailDrawerOpen(true);
     setDetailsLoading(true);
     setSelectedBusiness(null);
     try {
@@ -1191,6 +1244,117 @@ const BusinessManagement = () => {
     } finally {
       setDetailsLoading(false);
     }
+  };
+
+  const renderVerifDrawerBody = () => {
+    if (verifLoading) {
+      return (
+        <VerifDrawerBody>
+          <Skeleton active paragraph={{ rows: 6 }} />
+        </VerifDrawerBody>
+      );
+    }
+    if (!verifRequest || verifRequest.notFound) {
+      return (
+        <VerifDrawerBody>
+          <div style={{ textAlign: "center", padding: "40px 0", color: colors.textSecondary }}>
+            <Shield size={40} style={{ opacity: 0.3, marginBottom: 12 }} />
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>No Pending Verification Request</div>
+            <div style={{ fontSize: 13 }}>This business does not have an active verification request.</div>
+          </div>
+        </VerifDrawerBody>
+      );
+    }
+    const req = verifRequest;
+    const statusColor = req.status === "verified" ? colors.success : req.status === "rejected" ? colors.error : colors.warning;
+    return (
+      <>
+        <VerifDrawerBody>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+            <Avatar size={48} src={req.user?.avatar_thumb_url} icon={<UserCheck size={20} />} />
+            <div>
+              <div style={{ fontWeight: 600, color: colors.textPrimary }}>{req.user?.name || "—"}</div>
+              <div style={{ fontSize: 12, color: colors.textSecondary }}>{req.user?.email || "—"}</div>
+            </div>
+            <VerifStatusBadge $color={statusColor} style={{ marginLeft: "auto" }}>
+              {req.status?.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "Pending"}
+            </VerifStatusBadge>
+          </div>
+
+          {req.business_name && (
+            <div style={{ background: "white", borderRadius: 12, padding: 16, border: `1px solid ${colors.border}`, marginBottom: 16 }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: colors.textSecondary, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Business Details</div>
+              <div style={{ fontWeight: 600, fontSize: 15, color: colors.textPrimary }}>{req.business_name}</div>
+              {req.business_description && <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>{req.business_description}</div>}
+              {req.business_address && <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 6 }}>{[req.business_address, req.business_city, req.business_state].filter(Boolean).join(", ")}</div>}
+            </div>
+          )}
+
+          {req.documents?.length > 0 && (
+            <div style={{ background: "white", borderRadius: 12, padding: 16, border: `1px solid ${colors.border}`, marginBottom: 16 }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: colors.textSecondary, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Submitted Documents</div>
+              {req.documents.map((doc, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: i < req.documents.length - 1 ? `1px solid ${colors.border}` : "none" }}>
+                  <FileText size={16} color={colors.info} />
+                  <span style={{ fontSize: 13, flex: 1, color: colors.textPrimary }}>{doc.document_type_display || doc.document_type}</span>
+                  <Button type="link" size="small" href={doc.file_url} target="_blank" icon={<ExternalLink size={12} />} style={{ padding: 0 }}>View</Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {req.status === "pending" && (
+            <div style={{ background: "white", borderRadius: 12, padding: 16, border: `1px solid ${colors.border}`, marginBottom: 16 }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: colors.textSecondary, marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Decision</div>
+              <Radio.Group
+                value={verifDecision}
+                onChange={(e) => setVerifDecision(e.target.value)}
+                style={{ display: "flex", gap: 12, marginBottom: 14 }}
+              >
+                <Radio.Button value="approve" style={{ flex: 1, textAlign: "center", borderColor: verifDecision === "approve" ? colors.success : undefined, color: verifDecision === "approve" ? colors.success : undefined }}>
+                  Approve
+                </Radio.Button>
+                <Radio.Button value="reject" style={{ flex: 1, textAlign: "center", borderColor: verifDecision === "reject" ? colors.error : undefined, color: verifDecision === "reject" ? colors.error : undefined }}>
+                  Reject
+                </Radio.Button>
+              </Radio.Group>
+              {verifDecision && (
+                <Input.TextArea
+                  rows={3}
+                  placeholder={verifDecision === "approve" ? "Optional notes..." : "Reason for rejection (required)..."}
+                  value={verifNotes}
+                  onChange={(e) => setVerifNotes(e.target.value)}
+                  style={{ borderRadius: 8 }}
+                />
+              )}
+            </div>
+          )}
+
+          {req.status !== "pending" && (req.notes || req.rejection_reason) && (
+            <div style={{ background: "white", borderRadius: 12, padding: 16, border: `1px solid ${colors.border}` }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: colors.textSecondary, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>Notes</div>
+              <div style={{ fontSize: 13, color: colors.textPrimary }}>{req.notes || req.rejection_reason}</div>
+            </div>
+          )}
+        </VerifDrawerBody>
+
+        {req.status === "pending" && verifDecision && (
+          <VerifDrawerFooter>
+            <Button onClick={() => setVerifDecision(null)}>Cancel</Button>
+            <Button
+              type="primary"
+              danger={verifDecision === "reject"}
+              loading={verifActionLoading}
+              disabled={verifDecision === "reject" && !verifNotes.trim()}
+              onClick={() => handleProcessVerif(verifDecision)}
+              icon={verifDecision === "approve" ? <CheckCircle size={15} /> : <X size={15} />}
+            >
+              {verifDecision === "approve" ? "Approve Verification" : "Reject Verification"}
+            </Button>
+          </VerifDrawerFooter>
+        )}
+      </>
+    );
   };
 
   const columns = [
@@ -1373,55 +1537,83 @@ const BusinessManagement = () => {
     </MobileCard>
   );
 
+  const totalRevenue = metrics.total_revenue ?? metrics.gross_sales ?? 0;
+  const totalBiz = metrics.total_businesses ?? 0;
+  const activeBiz = metrics.active_businesses ?? 0;
+  const avgRevPerBiz = totalBiz > 0 ? Math.round(totalRevenue / totalBiz) : 0;
+
   const statCardsData = [
     {
       title: "Total Businesses",
       icon: Briefcase,
-      value: metrics.total_businesses,
-      growth: metrics.total_business_growth,
+      value: totalBiz,
+      growth: metrics.total_business_growth ?? null,
       color: colors.info,
-      footer: "vs last period",
+      footer: "All registered",
     },
     {
-      title: "Active Businesses",
+      title: "Active (30d)",
       icon: Activity,
-      value: metrics.active_businesses,
-      footer: `${
-        metrics.total_businesses > 0
-          ? (
-              (metrics.active_businesses / metrics.total_businesses) *
-              100
-            ).toFixed(0)
-          : 0
-      }% of total`,
+      value: activeBiz,
+      footer: `${totalBiz > 0 ? ((activeBiz / totalBiz) * 100).toFixed(0) : 0}% of total`,
       color: colors.success,
     },
     {
-      title: "Gross Sales (GMV)",
+      title: "Pending Verifications",
+      icon: Shield,
+      value: metrics.pending_verifications ?? 0,
+      footer: (metrics.pending_verifications ?? 0) > 0 ? "Action required" : "All reviewed",
+      color: (metrics.pending_verifications ?? 0) > 0 ? colors.error : colors.success,
+      urgent: (metrics.pending_verifications ?? 0) > 0,
+    },
+    {
+      title: "Platform GMV",
       icon: DollarSign,
-      value: metrics.total_revenue,
+      value: totalRevenue,
       isCurrency: true,
       footer: "All-time bookings value",
-      color: "#8b5cf6",
+      color: colors.purple,
+    },
+    {
+      title: "Avg Rev / Business",
+      icon: BarChart2,
+      value: avgRevPerBiz,
+      isCurrency: true,
+      footer: "Platform average",
+      color: colors.warning,
+    },
+    {
+      title: "Avg Classes / Business",
+      icon: Activity,
+      value: metrics.avg_classes_per_business ?? 0,
+      footer: "Active businesses",
+      color: colors.info,
     },
     {
       title: "Featured",
       icon: Award,
-      value: metrics.featured_businesses,
+      value: metrics.featured_businesses ?? 0,
       footer: "Highlighted businesses",
       color: colors.warning,
+    },
+    {
+      title: "Widget Subscribers",
+      icon: Zap,
+      value: metrics.widget_subscribers ?? 0,
+      footer: "Paid embed plans",
+      color: colors.purple,
     },
   ];
 
   return (
     <ConfigProvider theme={appTheme}>
       <DashboardWrapper>
-        <DashboardHeader>
+      <ContentLayer>
+        <DashboardHeader style={{ marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${colors.border}` }}>
           <div>
             <PageTitle>Business Management</PageTitle>
             <HeaderSubtitle>
-              Monitor key metrics, manage listings, and analyze platform
-              performance.
+              Monitor key metrics, manage listings, and analyze platform performance.
             </HeaderSubtitle>
           </div>
           <ActionButtonsContainer>
@@ -1429,185 +1621,89 @@ const BusinessManagement = () => {
               icon={<RefreshCw size={14} />}
               onClick={refreshAllData}
               loading={loading || metricsLoading}
-              key={loading || metricsLoading ? "loading" : "idle"}
             >
               Refresh
             </Button>
           </ActionButtonsContainer>
         </DashboardHeader>
 
-        <Divider />
-
-        <div style={{ marginBottom: "20px" }}>
-          <Text
-            style={{
-              fontSize: "17px",
-              fontWeight: 600,
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              marginBottom: "16px",
-            }}
-          >
-            <BarChart2 size={20} color={colors.primary} /> Platform Metrics
-          </Text>
-          <StatsGrid>
-            {statCardsData.map((stat) => (
-              <StatCard key={stat.title}>
-                {metricsLoading ? (
-                  <Skeleton active paragraph={{ rows: 2 }} />
-                ) : (
-                  <>
-                    <div>
-                      <StatCardHeader>
-                        <IconContainer
-                          background={hexToRgba(stat.color, 0.1)}
-                          color={stat.color}
-                        >
-                          <stat.icon size={18} />
-                        </IconContainer>
-                      </StatCardHeader>
-                      <StatLabel>{stat.title}</StatLabel>
-                    </div>
-                    <StatValue>
-                      <NumberFlow
-                        value={isReadyForAnimation ? stat.value : 0}
-                        duration={800}
-                        {...(stat.isCurrency && {
-                          numberFormatOptions: {
-                            style: "currency",
-                            currency: "USD",
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 0,
-                          },
-                        })}
-                      />
-                    </StatValue>
-                    <StatFooter>
-                      {stat.growth !== undefined && (
-                        <PercentChange isPositive={stat.growth >= 0}>
-                          {stat.growth >= 0 ? (
-                            <TrendingUp size={12} />
-                          ) : (
-                            <TrendingDown size={12} />
-                          )}
-                          {`${stat.growth.toFixed(1)}%`}
-                        </PercentChange>
-                      )}
-                      {stat.footer}
-                    </StatFooter>
-                  </>
-                )}
-              </StatCard>
-            ))}
-          </StatsGrid>
+        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", color: colors.textTertiary, textTransform: "uppercase", marginBottom: 10 }}>
+          Business metrics
+        </div>
+        <div style={{ marginBottom: 20 }}>
+          <AdminMetricCards
+            cards={statCardsData.map((card) => ({
+              ...card,
+              minimumFractionDigits: card.isCurrency ? 0 : undefined,
+              maximumFractionDigits: card.isCurrency ? 0 : undefined,
+            }))}
+            loading={metricsLoading}
+            isReadyForAnimation={isReadyForAnimation}
+          />
         </div>
 
-        <ChartGrid>
-          <ContentSection>
-            <ContentHeader>
-              <ContentTitle>
-                <TrendingUp /> Business Growth
-              </ContentTitle>
-              <ContentDescription>
-                Track new registrations and gross sales over time.
-              </ContentDescription>
-            </ContentHeader>
-            <div style={{ padding: 24 }}>
+        <Divider style={{ margin: "16px 0" }} />
+
+        <ChartGrid style={{ marginBottom: 20 }}>
+          <ChartCard>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+              <div>
+                <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", color: colors.textTertiary, textTransform: "uppercase" }}>Trend</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>Business Growth</div>
+              </div>
               <Radio.Group
                 value={timeframe}
                 onChange={(e) => setTimeframe(e.target.value)}
                 size="small"
-                style={{ marginBottom: 16 }}
-              >
-                <Radio.Button value="week">Week</Radio.Button>
-                <Radio.Button value="month">Month</Radio.Button>
-                <Radio.Button value="year">Year</Radio.Button>
-              </Radio.Group>
-              <div style={{ height: 280 }}>
-                {growthTrendLoading ? (
-                  <GlobalLoaderWithInlineStyles />
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={metrics.growth_trend}
-                      margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke={colors.border}
-                        vertical={false}
-                      />
-                      <XAxis
-                        dataKey="month"
-                        stroke={colors.textTertiary}
-                        tick={{ fontSize: 11 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        yAxisId="left"
-                        stroke={colors.textTertiary}
-                        tick={{ fontSize: 11 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        yAxisId="right"
-                        orientation="right"
-                        stroke={colors.textTertiary}
-                        tick={{ fontSize: 11 }}
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={formatCurrency}
-                      />
-                      <RechartsTooltip content={<CustomTooltip />} />
-                      <Legend wrapperStyle={{ fontSize: 12 }} iconSize={10} />
-                      <Line
-                        yAxisId="left"
-                        type="monotone"
-                        dataKey="businesses"
-                        name="Businesses"
-                        stroke={colors.info}
-                        strokeWidth={2}
-                        dot={false}
-                        activeDot={{ r: 5 }}
-                      />
-                      <Line
-                        yAxisId="right"
-                        type="monotone"
-                        dataKey="revenue"
-                        name="Revenue"
-                        stroke={colors.success}
-                        strokeWidth={2}
-                        dot={false}
-                        activeDot={{ r: 5 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
+                optionType="button"
+                buttonStyle="solid"
+                options={[
+                  { label: "Week", value: "week" },
+                  { label: "Month", value: "month" },
+                  { label: "Year", value: "year" },
+                ]}
+              />
             </div>
-          </ContentSection>
-          <ContentSection>
-            <ContentHeader>
-              <ContentTitle>
-                <Users /> Category Distribution
-              </ContentTitle>
-              <ContentDescription>
-                Business distribution across collections.
-              </ContentDescription>
-            </ContentHeader>
-            <div
-              style={{
-                height: 350,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+            <div style={{ height: 240, marginTop: 12 }}>
+              {growthTrendLoading ? (
+                <Skeleton active paragraph={{ rows: 4 }} title={false} />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={metrics.growth_trend}
+                    margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="gradBiz" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={colors.info} stopOpacity={0.15} />
+                        <stop offset="95%" stopColor={colors.info} stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradRev" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={colors.success} stopOpacity={0.15} />
+                        <stop offset="95%" stopColor={colors.success} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={colors.border} vertical={false} />
+                    <XAxis dataKey="month" tick={{ fontSize: 10, fill: colors.textTertiary }} axisLine={false} tickLine={false} />
+                    <YAxis yAxisId="left" tick={{ fontSize: 10, fill: colors.textTertiary }} axisLine={false} tickLine={false} width={28} />
+                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: colors.textTertiary }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} width={40} />
+                    <RechartsTooltip content={<CustomTooltip />} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} iconSize={7} iconType="circle" />
+                    <Area yAxisId="left" type="monotone" dataKey="businesses" name="Businesses" stroke={colors.info} strokeWidth={2} fill="url(#gradBiz)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                    <Area yAxisId="right" type="monotone" dataKey="revenue" name="Revenue" stroke={colors.success} strokeWidth={2} fill="url(#gradRev)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </ChartCard>
+          <ChartCard>
+            <div>
+              <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", color: colors.textTertiary, textTransform: "uppercase" }}>Breakdown</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>Category Distribution</div>
+            </div>
+            <div style={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 8 }}>
               {metricsLoading ? (
-                <GlobalLoaderWithInlineStyles />
+                <Skeleton active paragraph={{ rows: 4 }} title={false} />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -1617,96 +1713,137 @@ const BusinessManagement = () => {
                       dataKey="value"
                       cx="50%"
                       cy="50%"
-                      innerRadius={70}
-                      outerRadius={100}
+                      innerRadius={60}
+                      outerRadius={90}
                       paddingAngle={2}
                     >
-                      {metrics.category_distribution.map((entry) => (
+                      {(metrics.category_distribution || []).map((entry) => (
                         <Cell key={entry.name} fill={entry.color} />
                       ))}
                     </Pie>
-                    <RechartsTooltip formatter={(v) => [`${v} businesses`]} />
-                    <Legend iconSize={10} wrapperStyle={{ fontSize: "12px" }} />
+                    <RechartsTooltip formatter={(v) => [`${v} businesses`]} contentStyle={{ borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 12 }} />
+                    <Legend iconSize={8} wrapperStyle={{ fontSize: "11px" }} iconType="circle" />
                   </PieChart>
                 </ResponsiveContainer>
               )}
             </div>
-          </ContentSection>
+          </ChartCard>
         </ChartGrid>
 
-        <ContentSection style={{ marginBottom: 24 }}>
-          <ContentHeader>
-            <ContentTitle>
-              <MapPin /> Geographical Distribution
-            </ContentTitle>
-            <ContentDescription>
-              Visualize business presence and revenue across Canada.
-            </ContentDescription>
-          </ContentHeader>
-          <div style={{ height: isMobile ? 350 : 500 }}>
-            {mapLoading ? (
-              <GlobalLoaderWithInlineStyles />
-            ) : (
-              <CanadianDistribution
-                data={geographicalData}
-                dataType={mapDataType}
-                onDataTypeChange={setMapDataType}
-              />
-            )}
+        <Divider style={{ margin: "16px 0" }} />
+
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", color: colors.textTertiary, textTransform: "uppercase" }}>Map</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>Geographical Distribution</div>
+            </div>
           </div>
-        </ContentSection>
+          <ContentSection>
+            <div style={{ height: isMobile ? 320 : 440 }}>
+              {mapLoading ? (
+                <Skeleton active paragraph={{ rows: 6 }} title={false} style={{ padding: 24 }} />
+              ) : (
+                <CanadianDistribution
+                  data={geographicalData}
+                  dataType={mapDataType}
+                  onDataTypeChange={setMapDataType}
+                />
+              )}
+            </div>
+          </ContentSection>
+        </div>
+
+        <Divider style={{ margin: "16px 0" }} />
 
         <ContentSection>
           <ContentHeader>
-            <ContentTitle>
-              <Briefcase /> All Business Listings
-            </ContentTitle>
-            <ContentDescription>
-              Search, filter, and manage all registered businesses.
-            </ContentDescription>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <ContentTitle><Briefcase /> All Business Listings</ContentTitle>
+                <ContentDescription>Search, filter, and manage all registered businesses.</ContentDescription>
+              </div>
+            </div>
           </ContentHeader>
           <FilterBar>
             <SearchFilterContainer>
               <Input
+                prefix={<Search size={14} style={{ color: colors.textTertiary }} />}
                 placeholder="Search by name or location"
                 allowClear
                 value={filters.search}
                 onChange={(e) => handleFilterChange("search", e.target.value)}
-                style={{ width: 280 }}
+                style={{ width: isMobile ? "100%" : 240, borderRadius: 8 }}
               />
               <Select
                 value={filters.category}
-                style={{ width: 180 }}
+                style={{ width: isMobile ? "100%" : 160 }}
                 onChange={(v) => handleFilterChange("category", v)}
                 loading={categoriesLoading}
                 disabled={categoriesLoading}
               >
                 <Option value="all">All Categories</Option>
                 {categoriesList.map((cat) => (
-                  <Option key={cat.key} value={cat.key}>
-                    {cat.name}
-                  </Option>
+                  <Option key={cat.key} value={cat.key}>{cat.name}</Option>
                 ))}
               </Select>
               <Select
                 value={filters.status}
-                style={{ width: 150 }}
+                style={{ width: isMobile ? "100%" : 140 }}
                 onChange={(v) => handleFilterChange("status", v)}
               >
                 <Option value="all">All Statuses</Option>
                 <Option value="active">Active</Option>
                 <Option value="inactive">Inactive</Option>
               </Select>
+              <Select
+                placeholder="Province"
+                allowClear
+                style={{ width: isMobile ? "100%" : 140 }}
+                onChange={(v) => handleFilterChange("province", v)}
+              >
+                {["AB","BC","MB","NB","NL","NS","ON","PE","QC","SK"].map(p => (
+                  <Option key={p} value={p}>{p}</Option>
+                ))}
+              </Select>
+              <Select
+                placeholder="Revenue Tier"
+                allowClear
+                style={{ width: isMobile ? "100%" : 160 }}
+                onChange={(v) => handleFilterChange("revenue_tier", v)}
+              >
+                <Option value="under_1k">&lt; $1,000</Option>
+                <Option value="1k_10k">$1k – $10k</Option>
+                <Option value="10k_plus">$10k+</Option>
+              </Select>
+              <Select
+                placeholder="Verification"
+                allowClear
+                style={{ width: isMobile ? "100%" : 150 }}
+                onChange={(v) => handleFilterChange("verification_status", v)}
+              >
+                <Option value="verified">Verified</Option>
+                <Option value="pending">Pending</Option>
+                <Option value="rejected">Rejected</Option>
+              </Select>
               <Checkbox
-                onChange={(e) =>
-                  handleFilterChange("featured", e.target.checked)
-                }
+                onChange={(e) => handleFilterChange("featured", e.target.checked)}
                 checked={filters.featured}
               >
                 Featured Only
               </Checkbox>
             </SearchFilterContainer>
           </FilterBar>
+          {selectedRowKeys.length > 0 && (
+            <BulkActionsBar>
+              <strong>{selectedRowKeys.length} selected</strong>
+              <Button size="small" icon={<Award size={13} />}>Feature</Button>
+              <Button size="small" icon={<ToggleRight size={13} />}>Toggle Active</Button>
+              <Button size="small" icon={<Mail size={13} />}>Notify</Button>
+              <Button size="small" icon={<FileText size={13} />}>Export</Button>
+              <Button size="small" type="text" onClick={() => setSelectedRowKeys([])}>Clear</Button>
+            </BulkActionsBar>
+          )}
           {isMobile ? (
             <div style={{ padding: 16 }}>
               {loading ? (
@@ -1728,24 +1865,66 @@ const BusinessManagement = () => {
               columns={columns}
               dataSource={businesses}
               rowKey="businessId"
-              loading={{
-                spinning: loading,
-                indicator: <GlobalLoaderWithInlineStyles />,
+              rowSelection={{
+                selectedRowKeys,
+                onChange: (keys) => setSelectedRowKeys(keys),
               }}
-              pagination={pagination}
+              loading={{ spinning: loading, indicator: <GlobalLoaderWithInlineStyles /> }}
+              pagination={{ ...pagination, size: "small", showSizeChanger: true, pageSizeOptions: ["10", "20", "50"] }}
               onChange={handleTableChange}
               scroll={{ x: 1200 }}
             />
           )}
         </ContentSection>
+      </ContentLayer>
 
         <DetailDrawerModal
-          isVisible={isDetailModalVisible}
-          onClose={() => setIsDetailModalVisible(false)}
+          open={detailDrawerOpen}
+          onClose={() => setDetailDrawerOpen(false)}
           business={detailsLoading ? null : selectedBusiness}
           onAction={handleAction}
           actionLoading={actionLoading}
         />
+
+        {/* VERIFICATION REVIEW DRAWER */}
+        <Drawer.Root
+          open={verifDrawerOpen}
+          onOpenChange={(open) => { if (!open) setVerifDrawerOpen(false); }}
+          direction={isMobile ? undefined : "right"}
+          dismissible
+        >
+          <Drawer.Portal>
+            <VerifOverlay />
+            {isMobile ? (
+              <VerifMobileShell>
+                <DrawerHandle />
+                <VerifDrawerInner>
+                  <VerifDrawerHeader>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 16, color: colors.textPrimary }}>
+                      <Shield size={18} color={colors.primary} />
+                      Review Verification
+                    </div>
+                    <Button type="text" icon={<X size={18} />} onClick={() => setVerifDrawerOpen(false)} />
+                  </VerifDrawerHeader>
+                  {renderVerifDrawerBody()}
+                </VerifDrawerInner>
+              </VerifMobileShell>
+            ) : (
+              <VerifDesktopShell style={{ "--initial-transform": "calc(100% + 8px)" }}>
+                <VerifDrawerInner>
+                  <VerifDrawerHeader>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 16, color: colors.textPrimary }}>
+                      <Shield size={18} color={colors.primary} />
+                      Review Verification
+                    </div>
+                    <Button type="text" icon={<X size={18} />} onClick={() => setVerifDrawerOpen(false)} />
+                  </VerifDrawerHeader>
+                  {renderVerifDrawerBody()}
+                </VerifDrawerInner>
+              </VerifDesktopShell>
+            )}
+          </Drawer.Portal>
+        </Drawer.Root>
       </DashboardWrapper>
     </ConfigProvider>
   );

@@ -2,12 +2,11 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import styled from "styled-components";
-import { motion, AnimatePresence } from "framer-motion";
+
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import NumberFlow from "@number-flow/react";
-import { Drawer } from "vaul";
 import {
   Table,
   Card,
@@ -72,6 +71,8 @@ import {
   GlobalLoaderWithoutInlineStyles,
 } from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
+import AdminMetricCards from "../shared/AdminMetricCards";
+import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -197,118 +198,9 @@ const ExportButton = styled(Button)`
   }
 `;
 
-// --- STATS CARDS (COPIED FROM PAYOUTS) ---
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
-  }
-`;
-
-const StatCard = styled(Card)`
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid ${colors.border};
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-
-  .ant-card-body {
-    padding: 12px !important;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-
-    @media (max-width: 768px) {
-      padding: 16px !important;
-    }
-  }
-`;
-
-const StatCardHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-`;
-
-const IconContainer = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${(props) => props.background || "#f1f5f9"};
-  color: ${(props) => props.color || colors.textSecondary};
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  @media (max-width: 768px) {
-    width: 32px;
-    height: 32px;
-    svg {
-      width: 16px;
-      height: 16px;
-    }
-  }
-`;
-
-const StatValue = styled.div`
-  font-size: 22px;
-  font-weight: 700;
-  color: ${colors.textPrimary};
-  margin-bottom: 4px;
-  display: flex;
-  align-items: baseline;
-
-  @media (max-width: 768px) {
-    font-size: 17px;
-  }
-`;
-
-const StatLabel = styled.div`
-  font-size: 13px;
-  color: ${colors.textSecondary};
-  display: flex;
-  align-items: center;
-  gap: 6px;
-
-  @media (max-width: 768px) {
-    font-size: 12px;
-  }
-`;
-
-const StatFooter = styled.div`
-  font-size: 12px;
-  color: ${colors.textSecondary};
-  display: flex;
-  align-items: center;
-  gap: 4px;
-`;
-
-const PercentChange = styled.span`
-  color: ${(props) => (props.isPositive ? colors.success : colors.error)};
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 12px;
-  font-weight: 500;
-`;
-
+// --- STATS CARDS ---
 // --- TABLE SECTION ---
-const TableSection = styled(motion.div)`
+const TableSection = styled.div`
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -390,15 +282,17 @@ const StyledTable = styled(Table)`
     background: #fafbfc;
     border-bottom: 1px solid ${colors.border};
     font-weight: 600;
-    color: ${colors.textPrimary};
-    font-size: 13px;
-    padding: 16px 24px;
+    color: ${colors.textSecondary};
+    font-size: 11px;
+    padding: 10px 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .ant-table-tbody > tr > td {
-    padding: 16px 24px;
+    padding: 10px 14px;
     border-bottom: 1px solid ${colors.border};
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .ant-table-tbody > tr:hover > td {
@@ -408,60 +302,6 @@ const StyledTable = styled(Table)`
   .ant-empty {
     padding: 40px 20px;
   }
-`;
-
-// --- IOS STYLE DRAWER (FROM CANCELLATION MODAL) ---
-// --- VAUL DRAWER STYLES ---
-const StyledDrawerOverlay = styled(Drawer.Overlay)`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 1049;
-`;
-
-const MobileDrawerContent = styled(Drawer.Content)`
-  background: white;
-  display: flex;
-  flex-direction: column;
-  border-radius: 24px 24px 0 0;
-  height: 85vh;
-  max-height: 85vh;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1050;
-  outline: none;
-`;
-
-const DragHandle = styled.div`
-  width: 40px;
-  height: 5px;
-  background: #d1d1d1;
-  border-radius: 2.5px;
-  margin: 12px auto 8px;
-  flex-shrink: 0;
-`;
-
-const DesktopDrawerContent = styled(Drawer.Content)`
-  right: 8px;
-  top: 8px;
-  bottom: 8px;
-  position: fixed;
-  z-index: 1050;
-  outline: none;
-  width: 720px;
-  display: flex;
-`;
-
-const DesktopDrawerInner = styled.div`
-  background: white;
-  height: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 `;
 
 const DrawerHeaderSection = styled.div`
@@ -751,14 +591,8 @@ const DetailDrawerContent = ({
         </div>
       </DrawerHeader>
 
-      <AnimatePresence mode="wait">
-        {isLoading ? (
-          <motion.div
-            key="loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+      {isLoading ? (
+          <div
             style={{
               display: "flex",
               justifyContent: "center",
@@ -770,16 +604,9 @@ const DetailDrawerContent = ({
           >
             <GlobalLoaderWithoutInlineStyles />
             <Text type="secondary">Loading booking details...</Text>
-          </motion.div>
+          </div>
         ) : (
-          <motion.div
-            key="content"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            style={{ overflowY: "auto" }}
-          >
+          <div style={{ overflowY: "auto" }}>
             <InfoGroup>
               <InfoGroupTitle>
                 <Hash />
@@ -1078,23 +905,13 @@ const DetailDrawerContent = ({
                 </InfoValue>
               </InfoGroup>
             )}
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
     </>
   );
 };
 
-const DetailDrawerModal = ({
-  isVisible,
-  onClose,
-  booking,
-  isLoading,
-  isMobile,
-  onOpenCancelModal,
-  onOpenRefundModal,
-  isActionLoading,
-}) => {
+const DetailDrawerModal = ({ open, onClose, booking, isLoading, isMobile, onOpenCancelModal, onOpenRefundModal, isActionLoading }) => {
   if (!booking) return null;
 
   const { payment } = booking;
@@ -1153,26 +970,16 @@ const DetailDrawerModal = ({
   );
 
   return (
-    <Drawer.Root
-      open={isVisible}
-      onOpenChange={(open) => !open && onClose()}
-      direction={isMobile ? "bottom" : "right"}
-      dismissible
+    <AdminResponsiveDrawer
+      open={open}
+      onClose={onClose}
+      title={`Booking: ${booking?.user_facing_reference || `#${booking?.id || ""}`}`}
+      titleIcon={<Hash size={20} style={{ color: colors.primary }} />}
+      isMobile={isMobile}
+      width="860px"
     >
-      <Drawer.Portal>
-        <StyledDrawerOverlay />
-        {isMobile ? (
-          <MobileDrawerContent>
-            <DragHandle />
-            {renderDrawerContent()}
-          </MobileDrawerContent>
-        ) : (
-          <DesktopDrawerContent>
-            <DesktopDrawerInner>{renderDrawerContent()}</DesktopDrawerInner>
-          </DesktopDrawerContent>
-        )}
-      </Drawer.Portal>
-    </Drawer.Root>
+      {renderDrawerContent()}
+    </AdminResponsiveDrawer>
   );
 };
 
@@ -1299,7 +1106,7 @@ const BookingsList = () => {
   const [statsLoading, setStatsLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
-  const [isDetailDrawerVisible, setIsDetailDrawerVisible] = useState(false);
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [isRefundModalVisible, setIsRefundModalVisible] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
@@ -1356,7 +1163,7 @@ const BookingsList = () => {
 
   // Block scrolling when drawer is open on mobile
   useEffect(() => {
-    if (isDetailDrawerVisible && isMobile) {
+    if (detailDrawerOpen && isMobile) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
@@ -1364,7 +1171,7 @@ const BookingsList = () => {
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isDetailDrawerVisible, isMobile]);
+  }, [detailDrawerOpen, isMobile]);
 
   const handleFilterChange = (updates) => {
     setFilterParams((prev) => ({ ...prev, ...updates }));
@@ -1477,9 +1284,9 @@ const BookingsList = () => {
   };
 
   const showBookingDetails = async (booking) => {
-    if (isDetailDrawerVisible) return;
+    if (detailDrawerOpen) return;
 
-    setIsDetailDrawerVisible(true);
+    setDetailDrawerOpen(true);
     setDetailsLoading(true);
     setSelectedBooking(booking);
 
@@ -1489,11 +1296,11 @@ const BookingsList = () => {
         setSelectedBooking(response.data);
       } else {
         message.error(response.error || "Failed to load booking details");
-        setIsDetailDrawerVisible(false);
+        setDetailDrawerOpen(false);
       }
     } catch (e) {
       message.error("Error fetching details");
-      setIsDetailDrawerVisible(false);
+      setDetailDrawerOpen(false);
     } finally {
       setDetailsLoading(false);
     }
@@ -1606,6 +1413,11 @@ const BookingsList = () => {
     }
   }, []);
 
+  const totalRevenue = dashboardStats.total_confirmed_revenue ?? dashboardStats.confirmed_bookings * Number(dashboardStats.average_booking_value);
+  const platformFees = dashboardStats.total_platform_fees ?? totalRevenue * 0.08;
+  const stripeFees = dashboardStats.total_stripe_fees ?? totalRevenue * 0.029;
+  const netRevenue = totalRevenue - platformFees - stripeFees;
+
   const statCardsData = [
     {
       title: "Total Bookings",
@@ -1614,42 +1426,64 @@ const BookingsList = () => {
       growth: dashboardStats.booking_growth,
       footer: "vs last period",
       color: colors.info,
+      isCurrency: false,
     },
     {
-      title: "Confirmed Bookings",
+      title: "Confirmed",
       icon: CheckCircle,
       value: dashboardStats.confirmed_bookings,
-      footer: `${
-        dashboardStats.total_bookings > 0
-          ? (
-              (dashboardStats.confirmed_bookings /
-                dashboardStats.total_bookings) *
-              100
-            ).toFixed(0)
-          : "0"
-      }% of total`,
+      footer: `${dashboardStats.total_bookings > 0 ? ((dashboardStats.confirmed_bookings / dashboardStats.total_bookings) * 100).toFixed(0) : "0"}% of total`,
       color: colors.success,
+      isCurrency: false,
     },
     {
-      title: "Avg. Booking Value",
-      icon: DollarSign,
-      value: Number(dashboardStats.average_booking_value).toFixed(2),
-      footer: "Per successful booking",
-      color: "#8b5cf6",
+      title: "Cancelled",
+      icon: XCircle,
+      value: dashboardStats.cancelled_bookings ?? 0,
+      footer: `${dashboardStats.cancellation_rate?.toFixed(1) ?? "0"}% cancellation rate`,
+      color: colors.error,
+      isCurrency: false,
     },
     {
-      title: "Total Participants",
-      icon: Users,
-      value: dashboardStats.total_participants,
-      footer: "In confirmed bookings",
-      color: colors.primary,
-    },
-    {
-      title: "Cancellation Rate",
-      icon: Percent,
-      value: `${dashboardStats.cancellation_rate.toFixed(1)}%`,
-      footer: "Of all bookings",
+      title: "Pending",
+      icon: Clock,
+      value: dashboardStats.total_bookings - (dashboardStats.confirmed_bookings ?? 0) - (dashboardStats.cancelled_bookings ?? 0),
+      footer: "Awaiting confirmation",
       color: colors.warning,
+      isCurrency: false,
+    },
+    {
+      title: "Gross Revenue",
+      icon: DollarSign,
+      value: totalRevenue,
+      growth: dashboardStats.booking_growth,
+      footer: "Total GMV",
+      color: "#8b5cf6",
+      isCurrency: true,
+    },
+    {
+      title: "Net Revenue",
+      icon: TrendingUp,
+      value: netRevenue,
+      footer: "After all fees",
+      color: colors.success,
+      isCurrency: true,
+    },
+    {
+      title: "Platform Fees",
+      icon: Percent,
+      value: platformFees,
+      footer: "Collected by platform",
+      color: colors.info,
+      isCurrency: true,
+    },
+    {
+      title: "Stripe Fees",
+      icon: CreditCard,
+      value: stripeFees,
+      footer: "Payment processing",
+      color: colors.textSecondary,
+      isCurrency: true,
     },
   ];
 
@@ -1840,78 +1674,19 @@ const BookingsList = () => {
           </Text>
         </div>
 
-        <StatsGrid>
-          {statCardsData.map((stat) => (
-            <StatCard key={stat.title}>
-              {statsLoading ? (
-                <StatSkeleton />
-              ) : (
-                <>
-                  <div>
-                    <StatCardHeader>
-                      <IconContainer
-                        background={hexToRgba(stat.color, 0.1)}
-                        color={stat.color}
-                      >
-                        <stat.icon size={18} />
-                      </IconContainer>
-                    </StatCardHeader>
-                    <StatLabel>{stat.title}</StatLabel>
-                  </div>
-                  <StatValue>
-                    {stat.title === "Avg. Booking Value" ? (
-                      <NumberFlow
-                        value={
-                          isReadyForAnimation ? parseFloat(stat.value) || 0 : 0
-                        }
-                        duration={800}
-                        prefix="$"
-                        numberFormatOptions={{
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        }}
-                      />
-                    ) : stat.title.includes("Rate") ||
-                      stat.title.includes("%") ? (
-                      stat.value
-                    ) : (
-                      <NumberFlow
-                        value={
-                          isReadyForAnimation ? parseFloat(stat.value) || 0 : 0
-                        }
-                        duration={800}
-                      />
-                    )}
-                  </StatValue>
-                  {stat.growth !== undefined && (
-                    <StatFooter>
-                      <PercentChange isPositive={stat.growth >= 0}>
-                        {stat.growth >= 0 ? (
-                          <TrendingUp size={12} />
-                        ) : (
-                          <TrendingDown size={12} />
-                        )}
-                        {`${stat.growth.toFixed(1)}%`}
-                      </PercentChange>
-                      {stat.footer}
-                    </StatFooter>
-                  )}
-                  {stat.footer && stat.growth === undefined && (
-                    <StatFooter>{stat.footer}</StatFooter>
-                  )}
-                </>
-              )}
-            </StatCard>
-          ))}
-        </StatsGrid>
+        <AdminMetricCards
+          cards={statCardsData.map((card) => ({
+            ...card,
+            minimumFractionDigits: card.isCurrency ? 0 : undefined,
+            maximumFractionDigits: card.isCurrency ? 0 : undefined,
+          }))}
+          loading={statsLoading}
+          isReadyForAnimation={isReadyForAnimation}
+        />
 
         <Divider />
 
-        <TableSection
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
+        <TableSection>
           <TableHeader>
             <TableTitle>
               <Users />
@@ -2020,8 +1795,8 @@ const BookingsList = () => {
         </TableSection>
 
         <DetailDrawerModal
-          isVisible={isDetailDrawerVisible}
-          onClose={() => setIsDetailDrawerVisible(false)}
+          open={detailDrawerOpen}
+          onClose={() => setDetailDrawerOpen(false)}
           booking={selectedBooking}
           isLoading={detailsLoading}
           isMobile={isMobile}

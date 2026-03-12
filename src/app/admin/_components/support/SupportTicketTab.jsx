@@ -3,8 +3,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import styled from "styled-components";
-import { motion, AnimatePresence } from "framer-motion";
-import NumberFlow from "@number-flow/react";
 import {
   Table,
   Card,
@@ -22,6 +20,7 @@ import {
   Skeleton,
   Tooltip,
   Tag,
+  Radio,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -32,16 +31,35 @@ import {
   BarChart2,
   Clock,
   Mail,
-  RefreshCcw,
+  RefreshCw,
   Hash,
   User,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  CheckCircle2,
+  Shield,
+  UserCheck,
+  Edit,
+  FileText,
 } from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+import dayjs from "dayjs";
 import { supportTicketService } from "@/services/adminDash";
 import { theme as antdComponentTheme } from "@/components/theme";
 import TicketDetailDrawer from "./TicketDetailDrawer";
 import axios from "axios";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
-import { LordIcon } from "@/services/ReactUtils";
+import AdminMetricCards from "../shared/AdminMetricCards";
 
 const { Option } = Select;
 const { useBreakpoint } = Grid;
@@ -58,8 +76,9 @@ const colors = {
   purple: "#8b5cf6",
   lightBg: "#f8fafc",
   border: "#f1f5f9",
-  textPrimary: "#334155",
+  textPrimary: "#111827",
   textSecondary: "#64748b",
+  textTertiary: "#94a3b8",
 };
 
 const hexToRgba = (hex, alpha = 1) => {
@@ -73,12 +92,21 @@ const hexToRgba = (hex, alpha = 1) => {
 const DashboardWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 24px;
-  background-color: #fff;
-  min-height: 100vh;
+  padding: 12px;
   @media (max-width: 768px) {
-    padding: 16px;
+    padding: 8px;
     gap: 0;
+  }
+`;
+
+const ContentLayer = styled.div`
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid ${colors.border};
+  padding: 20px 24px;
+  @media (max-width: 768px) {
+    padding: 14px 16px;
+    border-radius: 12px;
   }
 `;
 
@@ -136,102 +164,28 @@ const RefreshButton = styled(Button)`
   }
 `;
 
-// --- STATS CARDS ---
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-`;
-
-const StatCard = styled(Card)`
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+const ChartCard = styled(Card)`
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   border: 1px solid ${colors.border};
-  transition: all 0.2s ease;
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
   .ant-card-body {
-    padding: 12px !important;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-    @media (max-width: 768px) {
-      padding: 16px !important;
-    }
+    padding: 16px 20px !important;
   }
 `;
 
-const StatCardHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-`;
-
-const IconContainer = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+const BulkActionsBar = styled.div`
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: ${(props) => props.background || "#f1f5f9"};
-  color: ${(props) => props.color || colors.textSecondary};
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-  @media (max-width: 768px) {
-    width: 32px;
-    height: 32px;
-    svg {
-      width: 16px;
-      height: 16px;
-    }
-  }
-`;
-
-const StatValue = styled.div`
-  font-size: 22px;
-  font-weight: 700;
-  color: ${colors.textPrimary};
-  margin-bottom: 4px;
-  display: flex;
-  align-items: baseline;
-  @media (max-width: 768px) {
-    font-size: 17px;
-  }
-`;
-
-const StatLabel = styled.div`
+  gap: 8px;
+  padding: 10px 24px;
+  background: ${hexToRgba(colors.primary, 0.04)};
+  border-bottom: 1px solid ${colors.border};
   font-size: 13px;
-  color: ${colors.textSecondary};
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  @media (max-width: 768px) {
-    font-size: 12px;
-  }
-`;
-
-const StatFooter = styled.div`
-  font-size: 12px;
-  color: ${colors.textSecondary};
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  color: ${colors.textPrimary};
 `;
 
 // --- TABLE SECTION ---
-const TableSection = styled(motion.div)`
+const TableSection = styled.div`
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -293,20 +247,24 @@ const SearchFilterContainer = styled.div`
 
 const StyledTable = styled(Table)`
   .ant-table-thead > tr > th {
-    background: #fafbfc;
-    border-bottom: 1px solid ${colors.border};
+    background: #f8fafc !important;
+    color: ${colors.textSecondary};
     font-weight: 600;
-    color: ${colors.textPrimary};
-    font-size: 13px;
-    padding: 16px 24px;
+    font-size: 11px;
+    padding: 10px 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid ${colors.border};
+    &::before { display: none; }
   }
   .ant-table-tbody > tr > td {
-    padding: 16px 24px;
+    padding: 10px 14px;
     border-bottom: 1px solid ${colors.border};
-    font-size: 14px;
+    font-size: 13px;
+    color: ${colors.textPrimary};
   }
   .ant-table-tbody > tr:hover > td {
-    background: #fafcff;
+    background: #f8fafc;
   }
 `;
 
@@ -378,7 +336,10 @@ const SupportTicketTab = () => {
     category: "all",
     status: "all",
     priority: "all",
+    sla_breached: false,
   });
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [chartPeriod, setChartPeriod] = useState("30d");
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -496,6 +457,8 @@ const SupportTicketTab = () => {
     fetchStatistics();
   };
 
+  const slaBreach = statistics?.sla_breached_tickets ?? 0;
+
   const statCardsData = [
     {
       title: "Open Tickets",
@@ -503,6 +466,7 @@ const SupportTicketTab = () => {
       icon: MessageSquare,
       footer: "Awaiting first response",
       color: colors.info,
+      isNumeric: true,
     },
     {
       title: "In Progress",
@@ -510,6 +474,24 @@ const SupportTicketTab = () => {
       icon: Clock,
       footer: "Actively being handled",
       color: colors.success,
+      isNumeric: true,
+    },
+    {
+      title: "SLA Breached",
+      value: slaBreach,
+      icon: AlertTriangle,
+      footer: slaBreach > 0 ? "Needs immediate attention" : "Within SLA",
+      color: slaBreach > 0 ? colors.error : colors.success,
+      urgent: slaBreach > 0,
+      isNumeric: true,
+    },
+    {
+      title: "Resolved Today",
+      value: statistics?.resolved_today ?? 0,
+      icon: CheckCircle2,
+      footer: "Closed in last 24h",
+      color: colors.success,
+      isNumeric: true,
     },
     {
       title: "Avg. First Response",
@@ -517,13 +499,15 @@ const SupportTicketTab = () => {
       icon: Mail,
       footer: "Time to first agent reply",
       color: colors.pink,
+      isNumeric: false,
     },
     {
       title: "Avg. Resolution Time",
       value: statistics?.avg_resolution_time,
       icon: BarChart2,
-      footer: "From creation to resolution",
+      footer: "From creation to resolved",
       color: colors.purple,
+      isNumeric: false,
     },
   ];
 
@@ -589,15 +573,16 @@ const SupportTicketTab = () => {
         const { color, text } = getPriorityProps(p);
         return (
           <Space>
-            <div
+            <Tag
               style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: color,
+                background: hexToRgba(color, 0.1),
+                color,
+                border: "none",
+                fontWeight: 600,
+                fontSize: 11,
+                margin: 0,
               }}
-            />
-            <Text>{text}</Text>
+            >{text}</Tag>
           </Space>
         );
       },
@@ -735,12 +720,11 @@ const SupportTicketTab = () => {
     </MobileCard>
   );
 
-  const StatSkeleton = () => <Skeleton active paragraph={{ rows: 2 }} />;
-
   return (
     <ConfigProvider theme={antdComponentTheme}>
       <DashboardWrapper>
-        <DashboardHeader>
+      <ContentLayer>
+        <DashboardHeader style={{ marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${colors.border}` }}>
           <div>
             <PageTitle>Support Inbox</PageTitle>
             <HeaderSubtitle>
@@ -749,13 +733,7 @@ const SupportTicketTab = () => {
           </div>
           <ActionButtonsContainer>
             <RefreshButton
-              icon={
-                <LordIcon
-                  src="https://cdn.lordicon.com/valwmkhs.json"
-                  trigger="hover"
-                  size="20px"
-                />
-              }
+              icon={<RefreshCw size={16} />}
               onClick={refreshData}
               loading={loading || statsLoading}
             >
@@ -764,81 +742,96 @@ const SupportTicketTab = () => {
           </ActionButtonsContainer>
         </DashboardHeader>
 
-        <Divider />
-        <div style={{ marginBottom: "20px" }}>
-          <Text
-            style={{
-              fontSize: isMobile ? "16px" : "17px",
-              fontWeight: 600,
-              color: colors.textPrimary,
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              marginBottom: "16px",
-            }}
-          >
-            <BarChart2 size={20} color={colors.primary} /> Support Overview
-          </Text>
+        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", color: colors.textTertiary, textTransform: "uppercase", marginBottom: 10 }}>
+          Support overview
+        </div>
+        <div style={{ marginBottom: 20 }}>
+          <AdminMetricCards
+            cards={statCardsData.map((card) => ({
+              ...card,
+              value: card.isNumeric ? card.value ?? 0 : card.value || "—",
+            }))}
+            loading={statsLoading}
+            isReadyForAnimation={isReadyForAnimation}
+          />
         </div>
 
-        <StatsGrid>
-          {statCardsData.map((stat) => (
-            <StatCard key={stat.title}>
-              {statsLoading ? (
-                <StatSkeleton />
+        <Divider style={{ margin: "16px 0" }} />
+
+        {/* Charts */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12, marginBottom: 20 }}>
+          <ChartCard>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+              <div>
+                <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", color: colors.textTertiary, textTransform: "uppercase" }}>Trend</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>Ticket Volume Over Time</div>
+              </div>
+              <Radio.Group
+                size="small"
+                value={chartPeriod}
+                onChange={(e) => setChartPeriod(e.target.value)}
+                optionType="button"
+                buttonStyle="solid"
+                options={[{ label: "7d", value: "7d" }, { label: "30d", value: "30d" }, { label: "90d", value: "90d" }]}
+              />
+            </div>
+            <div style={{ fontSize: 12, color: colors.textTertiary, marginBottom: 8 }}>New tickets opened vs resolved per day</div>
+            <div style={{ height: 200 }}>
+              {statistics?.ticket_trend?.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={statistics.ticket_trend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gradOpen" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={colors.info} stopOpacity={0.15} />
+                        <stop offset="95%" stopColor={colors.info} stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradResolved" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={colors.success} stopOpacity={0.15} />
+                        <stop offset="95%" stopColor={colors.success} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={colors.border} vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: colors.textTertiary }} tickFormatter={(d) => dayjs(d).format("MMM D")} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: colors.textTertiary }} axisLine={false} tickLine={false} allowDecimals={false} width={28} />
+                    <RechartsTooltip contentStyle={{ borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 12 }} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} iconSize={7} iconType="circle" />
+                    <Area type="monotone" dataKey="opened" name="Opened" stroke={colors.info} strokeWidth={2} fill="url(#gradOpen)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                    <Area type="monotone" dataKey="resolved" name="Resolved" stroke={colors.success} strokeWidth={2} fill="url(#gradResolved)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
               ) : (
-                <>
-                  <div>
-                    <StatCardHeader>
-                      <IconContainer
-                        background={hexToRgba(stat.color, 0.1)}
-                        color={stat.color}
-                      >
-                        <stat.icon size={18} />
-                      </IconContainer>
-                    </StatCardHeader>
-                    <StatLabel>{stat.title}</StatLabel>
-                  </div>
-                  <StatValue>
-                    {typeof stat.value === "number" ? (
-                      <NumberFlow
-                        value={isReadyForAnimation ? stat.value : 0}
-                        duration={800}
-                      />
-                    ) : (
-                      stat.value || "N/A"
-                    )}
-                  </StatValue>
-                  {stat.footer && <StatFooter>{stat.footer}</StatFooter>}
-                </>
+                <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: colors.textTertiary, fontSize: 13 }}>
+                  No trend data available
+                </div>
               )}
-            </StatCard>
-          ))}
-        </StatsGrid>
+            </div>
+          </ChartCard>
+        </div>
 
-        <Divider />
+        <Divider style={{ margin: "16px 0" }} />
 
-        <TableSection
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
+        <TableSection>
           <TableHeader>
-            <TableTitle>
-              <MessageSquare /> All Tickets
-            </TableTitle>
-            <TableDescription>
-              Complete list of tickets with filtering and search capabilities.
-            </TableDescription>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <TableTitle>
+                  <MessageSquare /> All Tickets
+                </TableTitle>
+                <TableDescription>
+                  Complete list of tickets with filtering and search capabilities.
+                </TableDescription>
+              </div>
+            </div>
           </TableHeader>
           <FilterBar>
             <SearchFilterContainer>
               <Input
+                prefix={<Search size={14} style={{ color: colors.textTertiary }} />}
                 placeholder="Search subject, user, ID..."
                 allowClear
                 value={filters.search}
                 onChange={(e) => handleFilterChange({ search: e.target.value })}
-                style={{ width: isMobile ? "100%" : 280 }}
+                style={{ width: isMobile ? "100%" : 240, borderRadius: 8 }}
               />
               <Select
                 value={filters.status}
@@ -862,8 +855,39 @@ const SupportTicketTab = () => {
                 <Option value="high">High</Option>
                 <Option value="urgent">Urgent</Option>
               </Select>
+              <Select
+                value={filters.category}
+                style={{ width: isMobile ? "100%" : 150 }}
+                onChange={(val) => handleFilterChange({ category: val })}
+              >
+                <Option value="all">All Categories</Option>
+                <Option value="account">Account</Option>
+                <Option value="booking">Booking</Option>
+                <Option value="payment">Payment</Option>
+                <Option value="technical">Technical</Option>
+                <Option value="feature">Feature Request</Option>
+              </Select>
+              <Button
+                size="small"
+                type={filters.sla_breached ? "primary" : "default"}
+                danger={filters.sla_breached}
+                icon={<AlertTriangle size={12} />}
+                onClick={() => handleFilterChange({ sla_breached: !filters.sla_breached })}
+              >
+                SLA Breached
+              </Button>
             </SearchFilterContainer>
           </FilterBar>
+          {selectedRowKeys.length > 0 && (
+            <BulkActionsBar>
+              <strong>{selectedRowKeys.length} selected</strong>
+              <Button size="small" icon={<UserCheck size={13} />}>Assign Agent</Button>
+              <Button size="small" icon={<Edit size={13} />}>Change Priority</Button>
+              <Button size="small" icon={<CheckCircle2 size={13} />}>Close Tickets</Button>
+              <Button size="small" icon={<FileText size={13} />}>Export</Button>
+              <Button size="small" type="text" onClick={() => setSelectedRowKeys([])}>Clear</Button>
+            </BulkActionsBar>
+          )}
 
           {isMobile ? (
             <div style={{ padding: "8px" }}>
@@ -880,6 +904,10 @@ const SupportTicketTab = () => {
               columns={ticketColumns}
               dataSource={tickets}
               rowKey="ticket_id"
+              rowSelection={{
+                selectedRowKeys,
+                onChange: (keys) => setSelectedRowKeys(keys),
+              }}
               loading={{
                 spinning: loading,
                 indicator: <GlobalLoaderWithInlineStyles />,
@@ -887,7 +915,7 @@ const SupportTicketTab = () => {
               pagination={{
                 ...pagination,
                 showSizeChanger: true,
-                showQuickJumper: true,
+                size: "small",
                 showTotal: (total, range) =>
                   `${range[0]}-${range[1]} of ${total} tickets`,
               }}
@@ -901,6 +929,7 @@ const SupportTicketTab = () => {
             />
           )}
         </TableSection>
+      </ContentLayer>
 
         <TicketDetailDrawer
           ticketId={selectedTicketId}

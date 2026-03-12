@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import ReactDOM from "react-dom";
 import styled, { ThemeProvider } from "styled-components";
-import { motion, AnimatePresence } from "framer-motion";
-import NumberFlow from "@number-flow/react";
+
 import {
   Table,
   Card,
@@ -58,6 +57,7 @@ import {
   GlobalLoaderWithInlineStyles,
   GlobalLoaderWithoutInlineStyles,
 } from "@/components/common/GlobalLoader";
+import AdminMetricCards from "../shared/AdminMetricCards";
 
 const { Option } = Select;
 const { useBreakpoint } = Grid;
@@ -151,106 +151,8 @@ const RefreshButton = styled(Button)`
   }
 `;
 
-// --- STATS CARDS (FROM BOOKINGSLIST) ---
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
-  }
-`;
-
-const StatCard = styled(Card)`
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid ${colors.border};
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-
-  .ant-card-body {
-    padding: 12px !important;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-
-    @media (max-width: 768px) {
-      padding: 16px !important;
-    }
-  }
-`;
-
-const StatCardHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-`;
-
-const IconContainer = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${(props) => props.background || "#f1f5f9"};
-  color: ${(props) => props.color || colors.textSecondary};
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  @media (max-width: 768px) {
-    width: 32px;
-    height: 32px;
-    svg {
-      width: 16px;
-      height: 16px;
-    }
-  }
-`;
-
-const StatValue = styled.div`
-  font-size: 22px;
-  font-weight: 700;
-  color: ${colors.textPrimary};
-  margin-bottom: 4px;
-  display: flex;
-  align-items: baseline;
-
-  @media (max-width: 768px) {
-    font-size: 17px;
-  }
-`;
-
-const StatLabel = styled.div`
-  font-size: 13px;
-  color: ${colors.textSecondary};
-  display: flex;
-  align-items: center;
-  gap: 6px;
-
-  @media (max-width: 768px) {
-    font-size: 12px;
-  }
-`;
-
-const StatFooter = styled.div`
-  font-size: 12px;
-  color: ${colors.textSecondary};
-`;
-
 // --- TABLE SECTION ---
-const TableSection = styled(motion.div)`
+const TableSection = styled.div`
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -383,7 +285,7 @@ const MobileCardFooter = styled.div`
 `;
 
 // --- DETAIL DRAWER STYLES ---
-const DrawerOverlay = styled(motion.div)`
+const DrawerOverlay = styled.div`
   position: fixed;
   top: 0;
   left: 0;
@@ -401,7 +303,7 @@ const DrawerOverlay = styled(motion.div)`
   }
 `;
 
-const DrawerContainer = styled(motion.div)`
+const DrawerContainer = styled.div`
   width: 100%;
   max-width: 800px;
   background: white;
@@ -419,7 +321,7 @@ const DrawerContainer = styled(motion.div)`
   }
 `;
 
-const DragHandle = styled(motion.div)`
+const DragHandle = styled.div`
   display: none;
   width: 40px;
   height: 5px;
@@ -432,7 +334,7 @@ const DragHandle = styled(motion.div)`
   }
 `;
 
-const DrawerCloseButton = styled(motion.button)`
+const DrawerCloseButton = styled.button`
   position: absolute;
   top: 16px;
   right: 16px;
@@ -638,14 +540,7 @@ const DetailDrawerContent = ({
       .join(", ") || "N/A";
 
   return (
-    <AnimatePresence>
-      <motion.div
-        key="content"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
-      >
+    <div>
         <DrawerHeader>
           <UserAvatar src={user_avatar}>{user_name?.[0]}</UserAvatar>
           <div>
@@ -826,8 +721,7 @@ const DetailDrawerContent = ({
             </Button>
           </div>
         )}
-      </motion.div>
-    </AnimatePresence>
+    </div>
   );
 };
 
@@ -842,82 +736,33 @@ const DetailDrawerModal = ({
 }) => {
   const isMobile = !useBreakpoint().md;
 
-  const handleDragEnd = (event, info) => {
-    if (info.offset.y > 100 && info.velocity.y > 20) {
-      onClose();
-    }
-  };
-
-  const modalVariants = isMobile
-    ? {
-        hidden: { y: "100%" },
-        visible: {
-          y: 0,
-          transition: { type: "spring", damping: 30, stiffness: 300 },
-        },
-        exit: { y: "100%", transition: { duration: 0.2 } },
-      }
-    : {
-        hidden: { scale: 0.95, opacity: 0 },
-        visible: {
-          scale: 1,
-          opacity: 1,
-          transition: { duration: 0.2, ease: "easeOut" },
-        },
-        exit: {
-          scale: 0.95,
-          opacity: 0,
-          transition: { duration: 0.2, ease: "easeIn" },
-        },
-      };
+  if (!isVisible) return null;
 
   const drawerComponent = (
-    <AnimatePresence>
-      {isVisible && (
-        <DrawerOverlay
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        >
-          <DrawerContainer
-            variants={modalVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            onClick={(e) => e.stopPropagation()}
-            drag={isMobile ? "y" : false}
-            dragConstraints={{ top: 0, bottom: 500 }}
-            dragElastic={{ top: 0, bottom: 0.5 }}
-            onDragEnd={handleDragEnd}
-            dragSnapToOrigin
-          >
-            <DragHandle />
-            <DrawerHeaderSection>
-              <Space align="center">
-                <Shield size={20} style={{ color: colors.primary }} />
-                <span
-                  style={{ fontWeight: 600, fontSize: "16px", color: "#222" }}
-                >
-                  Verification Details
-                </span>
-              </Space>
-              <DrawerCloseButton whileTap={{ scale: 0.9 }} onClick={onClose}>
-                <X size={20} />
-              </DrawerCloseButton>
-            </DrawerHeaderSection>
-            <DrawerContent>
-              <DetailDrawerContent
-                request={request}
-                userActivity={userActivity}
-                isLoading={isLoading}
-                onProcessRequest={onProcessRequest}
-              />
-            </DrawerContent>
-          </DrawerContainer>
-        </DrawerOverlay>
-      )}
-    </AnimatePresence>
+    <DrawerOverlay onClick={onClose}>
+      <DrawerContainer onClick={(e) => e.stopPropagation()}>
+        <DragHandle />
+        <DrawerHeaderSection>
+          <Space align="center">
+            <Shield size={20} style={{ color: colors.primary }} />
+            <span style={{ fontWeight: 600, fontSize: "16px", color: "#222" }}>
+              Verification Details
+            </span>
+          </Space>
+          <DrawerCloseButton onClick={onClose}>
+            <X size={20} />
+          </DrawerCloseButton>
+        </DrawerHeaderSection>
+        <DrawerContent>
+          <DetailDrawerContent
+            request={request}
+            userActivity={userActivity}
+            isLoading={isLoading}
+            onProcessRequest={onProcessRequest}
+          />
+        </DrawerContent>
+      </DrawerContainer>
+    </DrawerOverlay>
   );
 
   return ReactDOM.createPortal(drawerComponent, document.body);
@@ -1265,36 +1110,11 @@ const UserAccessControl = () => {
             <BarChart2 size={20} color={colors.primary} />
             Verification Overview
           </Text>
-          <StatsGrid>
-            {statCardsData.map((stat) => (
-              <StatCard key={stat.title}>
-                {statsLoading ? (
-                  <Skeleton active paragraph={{ rows: 2 }} />
-                ) : (
-                  <>
-                    <div>
-                      <StatCardHeader>
-                        <IconContainer
-                          background={hexToRgba(stat.color, 0.1)}
-                          color={stat.color}
-                        >
-                          <stat.icon size={18} />
-                        </IconContainer>
-                      </StatCardHeader>
-                      <StatLabel>{stat.title}</StatLabel>
-                    </div>
-                    <StatValue>
-                      <NumberFlow
-                        value={isReadyForAnimation ? stat.value : 0}
-                        duration={800}
-                      />
-                    </StatValue>
-                    <StatFooter>{stat.footer}</StatFooter>
-                  </>
-                )}
-              </StatCard>
-            ))}
-          </StatsGrid>
+          <AdminMetricCards
+            cards={statCardsData}
+            loading={statsLoading}
+            isReadyForAnimation={isReadyForAnimation}
+          />
         </div>
 
         <TableSection

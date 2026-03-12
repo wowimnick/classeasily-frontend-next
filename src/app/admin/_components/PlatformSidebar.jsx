@@ -16,6 +16,7 @@ import { X, LayoutGrid, SidebarOpen, Eye, AlertCircle } from "lucide-react";
 import { LordIcon } from "@/services/ReactUtils";
 import { theme as appTheme } from "@/components/theme";
 import { useAuth } from "@/lib/auth-client";
+import { ADMIN_TAB_PERMISSIONS } from "../adminTabsConfig";
 
 /* ─── Wrapper ────────────────────────────────────────────────────── */
 const SidebarWrapper = styled.div`
@@ -513,7 +514,7 @@ const menuGroupsConfig = [
           />
         ),
         children: [
-          { key: "class-listings", label: "Class Listings" },
+          { key: "class-listings", label: "Listing Management" },
           { key: "collections", label: "Collections" },
           { key: "class-reviews", label: "Reviews" },
         ],
@@ -563,7 +564,6 @@ const menuGroupsConfig = [
           />
         ),
         children: [
-          { key: "campaigns", label: "Campaigns" },
           { key: "global-discounts", label: "Global Discounts" },
           { key: "widget-subscriptions", label: "Widget Subscriptions" },
         ],
@@ -613,26 +613,6 @@ const menuGroupsConfig = [
       },
     ],
   },
-  {
-    groupKey: "platform",
-    label: "Platform",
-    items: [
-      {
-        key: "metrics",
-        label: "System Metrics",
-        icon: (
-          <LordIcon
-            src="https://cdn.lordicon.com/yycecovd.json"
-            colors="primary:#666,secondary:#666"
-            size="20px"
-            playOnLoad={false}
-            trigger="hover"
-            inState="in-wallet"
-          />
-        ),
-      },
-    ],
-  },
 ];
 
 const allMenuKeys = new Set();
@@ -647,29 +627,6 @@ menuGroupsConfig.forEach((g) => {
   });
 });
 
-const menuItemPermissions = {
-  overview: "quickstart.access_admin_dashboard",
-  users: "quickstart.view_customuser",
-  roles: "quickstart.view_role",
-  audit: "quickstart.view_auditlog",
-  "business-overview": "quickstart.view_business_metrics",
-  "business-listings": "quickstart.view_businessinfo",
-  "business-verification": "quickstart.view_all_verificationrequests",
-  "class-listings": "quickstart.view_classesmain",
-  "collections": "quickstart.view_classcollection",
-  "class-reviews": "quickstart.view_reviews",
-  "all-bookings": "quickstart.view_booking",
-  payments: "quickstart.access_payment_admin",
-  payouts: "quickstart.access_payout_admin",
-  campaigns: "quickstart.access_notification_admin",
-  "global-discounts": "quickstart.access_global_discount_admin",
-  "widget-subscriptions": "quickstart.view_businessinfo",
-  blog: "quickstart.access_blog_admin",
-  support: "quickstart.access_support_admin",
-  conversations: "quickstart.access_support_admin",
-  metrics: "quickstart.view_system_metrics",
-};
-
 const PlatformSidebar = memo(({ onMenuSelect, activeKey }) => {
   const { user } = useAuth();
   const permissions = user?.permissions || [];
@@ -683,7 +640,7 @@ const PlatformSidebar = memo(({ onMenuSelect, activeKey }) => {
 
   const hasPermission = useCallback(
     (key) => {
-      const required = menuItemPermissions[key];
+      const required = ADMIN_TAB_PERMISSIONS[key];
       if (!required) return true;
       return permissions.some((p) => p === required);
     },

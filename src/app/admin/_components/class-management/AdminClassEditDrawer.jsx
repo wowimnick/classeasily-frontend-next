@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import styled, { ThemeProvider } from "styled-components";
 import {
   Form,
-  Drawer,
   Input,
   Select,
   Button,
@@ -15,6 +14,7 @@ import {
   Tooltip,
   InputNumber,
   Upload,
+  Grid,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -42,7 +42,7 @@ import {
   Info,
   Clock,
 } from "lucide-react";
-import { motion } from "framer-motion";
+
 import { classManagementService } from "@/services/adminDash";
 import { uploadService } from "@/services/apiService";
 import debounce from "lodash/debounce";
@@ -56,60 +56,13 @@ import {
 import "leaflet/dist/leaflet.css";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { theme as appTheme } from "@/components/theme";
+import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 
 const { Option } = Select;
 const { TextArea } = Input;
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { TabPane } = Tabs;
-
-const StyledDrawer = styled(Drawer)`
-  .ant-drawer-header {
-    display: none;
-  }
-  .ant-drawer-body {
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow: hidden;
-    background-color: ${(props) =>
-      props.theme.token.colorBgLayout || "#f8fafc"};
-  }
-`;
-
-const DrawerHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  border-bottom: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
-  background-color: white;
-  position: sticky;
-  top: 0;
-  z-index: 1001;
-  @media (max-width: 768px) {
-    padding: 12px 16px;
-  }
-`;
-
-const DrawerTitle = styled(Title)`
-  margin: 0 !important;
-  font-size: 20px !important;
-  font-weight: 600 !important;
-  @media (max-width: 768px) {
-    font-size: 18px !important;
-  }
-`;
-
-const CloseButton = styled(Button)`
-  padding: 8px;
-  height: auto;
-  border: none;
-  background: none;
-  &:hover {
-    background: ${(props) => props.theme.token.colorBgTextHover};
-  }
-`;
+const { useBreakpoint } = Grid;
 
 const DrawerContentWrapper = styled.div`
   flex: 1 1 auto;
@@ -121,26 +74,7 @@ const DrawerContentWrapper = styled.div`
   }
 `;
 
-const DrawerFooter = styled.div`
-  padding: 16px 24px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  border-top: 1px solid ${(props) => props.theme.token.colorBorderSecondary};
-  background: white;
-  position: sticky;
-  bottom: 0;
-  z-index: 1001;
-  @media (max-width: 768px) {
-    padding: 12px 16px;
-    flex-direction: column-reverse;
-    .ant-btn {
-      width: 100%;
-    }
-  }
-`;
-
-const FormSection = styled(motion.div)`
+const FormSection = styled.div`
   margin-bottom: 2rem;
   border-radius: 12px;
   @media (max-width: 768px) {
@@ -464,13 +398,13 @@ const CoverBadge = styled.div`
   z-index: 10;
 `;
 
-const SearchWrapper = styled(motion.div)`
+const SearchWrapper = styled.div`
   position: relative;
   margin-bottom: 24px;
   max-width: 100%;
 `;
 
-const SearchResults = styled(motion.div)`
+const SearchResults = styled.div`
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
@@ -484,7 +418,7 @@ const SearchResults = styled(motion.div)`
   border: 1px solid ${(props) => props.theme.token.colorBorder};
 `;
 
-const SearchResult = styled(motion.div)`
+const SearchResult = styled.div`
   padding: 12px 16px;
   cursor: pointer;
   display: flex;
@@ -520,7 +454,7 @@ const PrimaryText = styled.div`
   text-overflow: ellipsis;
 `;
 
-const MapWrapper = styled(motion.div)`
+const MapWrapper = styled.div`
   position: relative;
   height: 300px;
   border-radius: ${(props) => props.theme.token.borderRadius}px;
@@ -539,7 +473,7 @@ const MapWrapper = styled(motion.div)`
   }
 `;
 
-const LocationText = styled(motion.div)`
+const LocationText = styled.div`
   font-size: 13px;
   color: ${(props) => props.theme.token.colorTextSecondary};
   text-align: center;
@@ -711,11 +645,14 @@ const presetFeaturesOptions = [
 ];
 
 const AdminClassEditDrawer = ({
-  visible,
+  open,
   onClose,
-  classData: initialClassDataProp,
+  classEntity,
+  classData: legacyClassData,
+  loading: externalLoading = false,
   onSuccess,
 }) => {
+  const initialClassDataProp = classEntity ?? legacyClassData;
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(false); // Changed: start with false
@@ -726,6 +663,8 @@ const AdminClassEditDrawer = ({
   const [selectedMapLocation, setSelectedMapLocation] = useState(null);
   const [hideExactLocation, setHideExactLocation] = useState(false);
   const [isActive, setIsActive] = useState(true);
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   // ADD: Refs for tracking async operations and preventing stale updates
   const currentAsyncOperation = useRef(null);
@@ -878,7 +817,7 @@ const AdminClassEditDrawer = ({
   );
 
   useEffect(() => {
-    if (visible && initialClassDataProp) {
+    if (open && initialClassDataProp) {
       // Cancel any ongoing operations when opening
       cancelCurrentOperation();
       setDataLoading(true);
@@ -889,11 +828,11 @@ const AdminClassEditDrawer = ({
       );
 
       // Initialize form with class data
-      if (isMountedRef.current && visible) {
+      if (isMountedRef.current && open) {
         initializeFormAndStates(initialClassDataRef.current, []);
         setDataLoading(false);
       }
-    } else if (!visible) {
+    } else if (!open) {
       // FIX: Immediate cleanup when closing, cancel ongoing operations
       cancelCurrentOperation();
 
@@ -918,14 +857,14 @@ const AdminClassEditDrawer = ({
       initialClassDataRef.current = null;
     }
   }, [
-    visible,
+    open,
     initialClassDataProp,
     initializeFormAndStates,
     cancelCurrentOperation,
   ]);
 
   const shouldShowLoader =
-    dataLoading || (!initialClassDataRef.current && visible);
+    externalLoading || dataLoading || (!initialClassDataRef.current && open);
 
   const searchAwsLocation = async (query) => {
     if (!query || query.trim().length < 3) {
@@ -1307,44 +1246,45 @@ const AdminClassEditDrawer = ({
     </div>
   );
 
+  const drawerFooter = (
+    <>
+      <Button
+        onClick={onClose}
+        disabled={loading || shouldShowLoader}
+        size="middle"
+      >
+        Cancel
+      </Button>
+      <Button
+        type="primary"
+        icon={<Save size={16} />}
+        onClick={handleSubmit}
+        loading={loading}
+        disabled={shouldShowLoader}
+        size="middle"
+        key={`btn-${loading}`}>
+        Save Changes
+      </Button>
+    </>
+  );
+
   return (
     <ThemeProvider theme={appTheme}>
       <ConfigProvider theme={appTheme}>
-        <StyledDrawer
-          open={visible}
+        <AdminResponsiveDrawer
+          open={open}
           onClose={loading ? undefined : onClose}
-          closable={false}
-          destroyOnClose
-          maskClosable={!loading}
-          width={
-            typeof window !== "undefined" && window.innerWidth > 768
-              ? 800
-              : "100%"
-          }
-          height={
-            typeof window !== "undefined" && window.innerWidth <= 768
-              ? "95%"
-              : "100%"
-          }
-          placement={
-            typeof window !== "undefined" && window.innerWidth <= 768
-              ? "bottom"
-              : "right"
-          }
+          title="Edit Class"
+          titleIcon={<Edit size={18} />}
+          isMobile={isMobile}
+          width="800px"
+          footer={drawerFooter}
         >
           <Form
             form={form}
             layout="vertical"
             style={{ display: "flex", flexDirection: "column", height: "100%" }}
           >
-            <DrawerHeader>
-              <DrawerTitle level={4}>Edit Class</DrawerTitle>
-              <CloseButton
-                icon={<X size={20} />}
-                onClick={onClose}
-                disabled={loading || shouldShowLoader}
-              />
-            </DrawerHeader>
             <DrawerContentWrapper>
               {shouldShowLoader ? (
                 <LoaderWrapper>
@@ -1715,11 +1655,7 @@ const AdminClassEditDrawer = ({
                                 allowClear
                               />
                               {mapSearchResults.length > 0 && (
-                                <SearchResults
-                                  initial={{ opacity: 0, y: -10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ duration: 0.2 }}
-                                >
+                                <SearchResults>
                                   {mapSearchResults.map((result, index) => (
                                     <SearchResult
                                       key={index}
@@ -1758,12 +1694,7 @@ const AdminClassEditDrawer = ({
                         </FormGrid>
                         {selectedMapLocation && (
                           <>
-                            <MapWrapper
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.3, delay: 0.1 }}
-                              key={mapContainerKey}
-                            >
+                            <MapWrapper key={mapContainerKey}>
                               <MapContainer
                                 key={`${mapContainerKey}-${selectedMapLocation.lat}-${selectedMapLocation.lon}-${hideExactLocation}`}
                                 center={[
@@ -2074,16 +2005,7 @@ const AdminClassEditDrawer = ({
                         </FormGrid>
 
                         {watchedCancellationPolicy === "custom" && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                            animate={{
-                              opacity: 1,
-                              height: "auto",
-                              marginTop: "24px",
-                            }}
-                            exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                            transition={{ duration: 0.3 }}
-                          >
+                          <div style={{ marginTop: "24px" }}>
                             <FormGroup>
                               <FormLabel htmlFor="admin_edit_cancellationCustomHours">
                                 <Clock size={16} />
@@ -2116,7 +2038,7 @@ const AdminClassEditDrawer = ({
                                 />
                               </FormItemAntd>
                             </FormGroup>
-                          </motion.div>
+                          </div>
                         )}
                       </FormSection>
                       <SectionDivider>
@@ -2174,27 +2096,8 @@ const AdminClassEditDrawer = ({
                 </>
               )}
             </DrawerContentWrapper>
-            <DrawerFooter>
-              <Button
-                onClick={onClose}
-                disabled={loading || shouldShowLoader}
-                size="middle"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="primary"
-                icon={<Save size={16} />}
-                onClick={handleSubmit}
-                loading={loading}
-                disabled={shouldShowLoader}
-                size="middle"
-                key={`btn-${loading}`}>
-                Save Changes
-              </Button>
-            </DrawerFooter>
           </Form>
-        </StyledDrawer>
+        </AdminResponsiveDrawer>
       </ConfigProvider>
     </ThemeProvider>
   );

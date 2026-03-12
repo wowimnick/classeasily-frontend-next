@@ -2,66 +2,110 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
-import { Drawer } from "vaul";
-import { Empty, Drawer as AntDrawer, ConfigProvider, Input, Select, Button } from "antd";
-import { MessageSquare, ChevronRight, X, Copy, ExternalLink, FileText, Mail } from "lucide-react";
+import { Empty, ConfigProvider, Input, Select, Button, Typography, Skeleton, Grid } from "antd";
+import {
+  MessageSquare,
+  ChevronRight,
+  Copy,
+  ExternalLink,
+  FileText,
+  Mail,
+  Search,
+  RefreshCw,
+} from "lucide-react";
 import { adminConversationsService, businessManagementService } from "@/services/adminDash";
 import { theme as globalTheme } from "@/components/theme";
 import message from "@/lib/message";
+import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 
-const MODAL_DRAWER_BREAKPOINT = 768;
+const { Text } = Typography;
+const { Option } = Select;
+const { useBreakpoint } = Grid;
 
+const colors = {
+  primary: "#ff385c",
+  success: "#10b981",
+  warning: "#f59e0b",
+  error: "#ef4444",
+  info: "#3b82f6",
+  lightBg: "#f8fafc",
+  border: "#f1f5f9",
+  textPrimary: "#334155",
+  textSecondary: "#64748b",
+};
+
+// --- Layout ---
 const PageWrap = styled.div`
   padding: 24px;
   min-height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
   @media (max-width: 768px) {
     padding: 16px;
+    gap: 16px;
   }
 `;
 
 const DashboardHeader = styled.div`
-  margin-bottom: 24px;
-  h1 {
-    font-size: 24px;
-    font-weight: 700;
-    color: #222;
-    margin: 0 0 4px;
-  }
-  .sub {
-    font-size: 15px;
-    color: #64748b;
-  }
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+`;
+
+const PageTitle = styled.h1`
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 2px 0;
 `;
 
 const FiltersRow = styled.div`
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 8px;
   flex-wrap: wrap;
-  .ant-select { min-width: 200px; }
-  .ant-input { max-width: 280px; }
+  align-items: center;
 `;
 
 const ListCard = styled.div`
-  border: 1px solid #ebebeb;
-  border-radius: 12px;
+  border: 1px solid ${colors.border};
+  border-radius: 16px;
   overflow: hidden;
   background: #fff;
+`;
+
+const ListHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid ${colors.border};
 `;
 
 const Row = styled.div`
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
+  gap: 14px;
+  padding: 14px 20px;
   cursor: pointer;
-  border-bottom: 1px solid #ebebeb;
-  transition: background 0.15s ease;
-  &:last-child { border-bottom: none; }
-  &:hover { background: #f7f7f7; }
+  border-bottom: 1px solid ${colors.border};
+  transition: background 0.12s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: ${colors.lightBg};
+  }
+
   @media (max-width: 640px) {
     padding: 12px 16px;
-    gap: 12px;
+    gap: 10px;
   }
 `;
 
@@ -71,77 +115,75 @@ const RowMain = styled.div`
 `;
 
 const GuestName = styled.div`
-  font-size: 15px;
+  font-size: 13.5px;
   font-weight: 600;
-  color: #334155;
+  color: ${colors.textPrimary};
   margin-bottom: 2px;
 `;
 
 const Preview = styled.div`
-  font-size: 13px;
-  color: #717171;
+  font-size: 12.5px;
+  color: ${colors.textSecondary};
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 `;
 
-const Meta = styled.div`
-  font-size: 12px;
+const RowMeta = styled.div`
+  font-size: 11px;
   color: #a3a3a3;
   margin-top: 2px;
 `;
 
-const ConversationPanel = styled.div`
+const IconBadge = styled.div`
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 53, 98, 0.08);
+  color: ${colors.primary};
   display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  padding: 0;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 `;
 
+// --- Drawer Panel ---
 const PanelHeader = styled.div`
-  padding: 20px 24px;
-  border-bottom: 1px solid #ebebeb;
+  padding: 16px 20px;
+  border-bottom: 1px solid ${colors.border};
   flex-shrink: 0;
-  h3 { margin: 0 0 4px; font-size: 18px; font-weight: 600; color: #334155; }
-  .sub { font-size: 13px; color: #717171; }
+`;
+
+const PanelTitle = styled.div`
+  font-size: 15px;
+  font-weight: 600;
+  color: ${colors.textPrimary};
+  margin-bottom: 2px;
+`;
+
+const PanelSub = styled.div`
+  font-size: 12px;
+  color: ${colors.textSecondary};
 `;
 
 const AdminActionsRow = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #eee;
-  .ant-btn { font-size: 12px; }
-`;
-
-const VaulDrawerContent = styled(Drawer.Content)`
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #fff;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  z-index: 1001;
-  outline: none;
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-  min-height: 70vh;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid ${colors.border};
 `;
 
 const MessagesArea = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
-  background: #fafafa;
+  padding: 16px 20px;
+  background: ${colors.lightBg};
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   min-height: 0;
 `;
 
@@ -151,21 +193,22 @@ const MsgRow = styled.div`
 `;
 
 const Bubble = styled.div`
-  max-width: 85%;
+  max-width: 80%;
   padding: 10px 14px;
   border-radius: 14px;
-  font-size: 14px;
-  line-height: 1.45;
+  font-size: 13.5px;
+  line-height: 1.5;
+
   ${(p) =>
     p.$isBusiness
-      ? "background: #ff3562; color: #fff; border-bottom-right-radius: 4px;"
-      : "background: #fff; color: #334155; border: 1px solid #ebebeb; border-bottom-left-radius: 4px;"}
+      ? `background: ${colors.primary}; color: #fff; border-bottom-right-radius: 4px;`
+      : `background: #fff; color: ${colors.textPrimary}; border: 1px solid ${colors.border}; border-bottom-left-radius: 4px;`}
 `;
 
 const MsgTime = styled.div`
   font-size: 11px;
   margin-top: 4px;
-  color: ${(p) => (p.$isBusiness ? "rgba(255,255,255,0.7)" : "#a3a3a3")};
+  color: ${(p) => (p.$isBusiness ? "rgba(255,255,255,0.65)" : "#a3a3a3")};
 `;
 
 const formatTime = (dateString) => {
@@ -189,16 +232,8 @@ export default function AdminConversationsTab() {
   const [businessFilter, setBusinessFilter] = useState(undefined);
   const [businesses, setBusinesses] = useState([]);
   const [search, setSearch] = useState("");
-  const [isMobile, setIsMobile] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const checkMobile = () => setIsMobile(window.innerWidth <= MODAL_DRAWER_BREAKPOINT);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -264,47 +299,132 @@ export default function AdminConversationsTab() {
     copyToClipboard(lines.join("\n"), "Conversation");
   };
 
-  const filteredList = search.trim()
-    ? list.filter(
-        (c) =>
-          (c.booker_display || "").toLowerCase().includes(search.toLowerCase()) ||
-          (c.booker_email || "").toLowerCase().includes(search.toLowerCase())
-      )
-    : list;
+  const filteredList = list.filter((c) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      (c.booker_display || "").toLowerCase().includes(q) ||
+      (c.booker_email || "").toLowerCase().includes(q)
+    );
+  });
+
+  const drawerContent = selected && (
+    <>
+      <PanelHeader>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <PanelTitle>{selected.booker_display || "Guest"}</PanelTitle>
+          {selected.booker_email && <PanelSub>{selected.booker_email}</PanelSub>}
+          {(selected.class_title || selected.booking_reference) && (
+            <PanelSub>{[selected.class_title, selected.booking_reference].filter(Boolean).join(" · ")}</PanelSub>
+          )}
+          <AdminActionsRow>
+            {selected.booker_email && (
+              <Button size="small" icon={<Mail size={13} />} onClick={() => copyToClipboard(selected.booker_email, "Email")} style={{ borderRadius: 6, fontSize: 12 }}>
+                Copy email
+              </Button>
+            )}
+            {getBusinessMessagesUrl() && (
+              <Button
+                size="small"
+                icon={<ExternalLink size={13} />}
+                href={getBusinessMessagesUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ borderRadius: 6, fontSize: 12 }}
+              >
+                Business dashboard
+              </Button>
+            )}
+            {selected.booking && (
+              <Button
+                size="small"
+                icon={<FileText size={13} />}
+                href={`/admin/all-bookings?booking_id=${selected.booking}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ borderRadius: 6, fontSize: 12 }}
+              >
+                View booking
+              </Button>
+            )}
+            <Button size="small" icon={<Copy size={13} />} onClick={copyConversationAsText} style={{ borderRadius: 6, fontSize: 12 }}>
+              Copy text
+            </Button>
+          </AdminActionsRow>
+        </div>
+      </PanelHeader>
+      <MessagesArea>
+        {(selected.messages || []).length === 0 ? (
+          <Empty description="No messages" style={{ margin: "auto" }} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        ) : (
+          (selected.messages || []).map((msg) => (
+            <MsgRow key={msg.id} $isBusiness={msg.sender_type === "business"}>
+              <Bubble $isBusiness={msg.sender_type === "business"}>
+                <div>{msg.text}</div>
+                <MsgTime $isBusiness={msg.sender_type === "business"}>{formatTime(msg.created_at)}</MsgTime>
+              </Bubble>
+            </MsgRow>
+          ))
+        )}
+      </MessagesArea>
+    </>
+  );
 
   return (
     <ConfigProvider theme={globalTheme}>
       <PageWrap>
         <DashboardHeader>
-          <h1>Conversations</h1>
-          <div className="sub">Guest–business messages (read-only)</div>
+          <div>
+            <PageTitle>Conversations</PageTitle>
+            <div style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
+              Guest–business messages (read-only admin view)
+            </div>
+          </div>
+          <Button
+            icon={<RefreshCw size={14} />}
+            onClick={fetchList}
+            loading={loading}
+            style={{ borderRadius: 8 }}
+          >
+            {!isMobile && "Refresh"}
+          </Button>
         </DashboardHeader>
 
         <FiltersRow>
+          <Input
+            prefix={<Search size={13} style={{ color: colors.textSecondary }} />}
+            placeholder="Search guest name or email"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            allowClear
+            style={{ width: 240, borderRadius: 8, fontSize: 13 }}
+          />
           <Select
             placeholder="All businesses"
             allowClear
             value={businessFilter}
             onChange={setBusinessFilter}
-            options={businesses.map((b) => ({
-              label: b.businessName || `Business #${b.businessId}`,
-              value: b.businessId,
-            }))}
             style={{ minWidth: 200 }}
-          />
-          <Input
-            placeholder="Search by guest name or email"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            allowClear
-            style={{ maxWidth: 280 }}
-          />
+          >
+            {businesses.map((b) => (
+              <Option key={b.businessId} value={b.businessId}>
+                {b.businessName || `Business #${b.businessId}`}
+              </Option>
+            ))}
+          </Select>
+          <div style={{ marginLeft: "auto", fontSize: 12, color: colors.textSecondary }}>
+            {filteredList.length} conversation{filteredList.length !== 1 ? "s" : ""}
+          </div>
         </FiltersRow>
 
         {loading ? (
-          <div style={{ padding: 48, textAlign: "center", color: "#717171" }}>
-            Loading…
-          </div>
+          <ListCard>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} style={{ padding: "14px 20px", borderBottom: `1px solid ${colors.border}` }}>
+                <Skeleton active paragraph={{ rows: 1 }} title={{ width: "40%" }} />
+              </div>
+            ))}
+          </ListCard>
         ) : filteredList.length === 0 ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -313,160 +433,49 @@ export default function AdminConversationsTab() {
           />
         ) : (
           <ListCard>
+            <ListHeader>
+              <Text style={{ fontSize: 13, fontWeight: 600, color: colors.textPrimary }}>
+                All Conversations
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+                {filteredList.length} total
+              </Text>
+            </ListHeader>
             {filteredList.map((c) => (
               <Row key={c.id} onClick={() => openConversation(c)}>
-                <div style={{ color: "#ff3562" }}>
-                  <MessageSquare size={24} />
-                </div>
+                <IconBadge>
+                  <MessageSquare size={18} />
+                </IconBadge>
                 <RowMain>
                   <GuestName>{c.booker_display || "Guest"}</GuestName>
                   {(c.class_title || c.booking_reference) && (
-                    <Meta>
+                    <RowMeta>
                       {[c.class_title, c.booking_reference].filter(Boolean).join(" · ")}
-                    </Meta>
+                    </RowMeta>
                   )}
                   {c.last_message_preview && (
                     <Preview>{c.last_message_preview}</Preview>
                   )}
                 </RowMain>
-                <div style={{ fontSize: 12, color: "#a3a3a3" }}>
+                <div style={{ fontSize: 11, color: "#a3a3a3", flexShrink: 0 }}>
                   {formatTime(c.last_message_at || c.created_at)}
                 </div>
-                <ChevronRight size={18} color="#717171" />
+                <ChevronRight size={16} color={colors.textSecondary} />
               </Row>
             ))}
           </ListCard>
         )}
 
-        {mounted && selected && (
-          <>
-            {isMobile ? (
-              <Drawer.Root open={open} onOpenChange={(o) => !o && closeConversation()}>
-                <Drawer.Portal>
-                  <Drawer.Overlay style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 1000 }} />
-                  <VaulDrawerContent>
-                    <div style={{ width: 40, height: 4, background: "#e5e7eb", borderRadius: 2, margin: "12px auto", flexShrink: 0 }} />
-                    <ConversationPanel>
-                      <PanelHeader style={{ display: "flex", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <h3>{selected.booker_display || "Guest"}</h3>
-                          {selected.booker_email && <div className="sub">{selected.booker_email}</div>}
-                          {(selected.class_title || selected.booking_reference) && (
-                            <div className="sub">{[selected.class_title, selected.booking_reference].filter(Boolean).join(" · ")}</div>
-                          )}
-                          <AdminActionsRow>
-                            {selected.booker_email && (
-                              <Button size="small" icon={<Mail size={14} />} onClick={() => copyToClipboard(selected.booker_email, "Email")}>
-                                Copy email
-                              </Button>
-                            )}
-                            {getBusinessMessagesUrl() && (
-                              <Button size="small" icon={<ExternalLink size={14} />} href={getBusinessMessagesUrl()} target="_blank" rel="noopener noreferrer">
-                                Open in business dashboard
-                              </Button>
-                            )}
-                            {selected.booking && (
-                              <Button size="small" icon={<FileText size={14} />} href={`/admin/all-bookings?booking_id=${selected.booking}`} target="_blank" rel="noopener noreferrer">
-                                View booking
-                              </Button>
-                            )}
-                            <Button size="small" icon={<Copy size={14} />} onClick={copyConversationAsText}>
-                              Copy conversation
-                            </Button>
-                          </AdminActionsRow>
-                        </div>
-                        <button type="button" onClick={closeConversation} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }} aria-label="Close">
-                          <X size={20} />
-                        </button>
-                      </PanelHeader>
-                      <MessagesArea>
-                        {(selected.messages || []).length === 0 ? (
-                          <Empty description="No messages" style={{ margin: "auto" }} />
-                        ) : (
-                          (selected.messages || []).map((msg) => (
-                            <MsgRow key={msg.id} $isBusiness={msg.sender_type === "business"}>
-                              <Bubble $isBusiness={msg.sender_type === "business"}>
-                                <div>{msg.text}</div>
-                                <MsgTime $isBusiness={msg.sender_type === "business"}>{formatTime(msg.created_at)}</MsgTime>
-                              </Bubble>
-                            </MsgRow>
-                          ))
-                        )}
-                      </MessagesArea>
-                    </ConversationPanel>
-                  </VaulDrawerContent>
-                </Drawer.Portal>
-              </Drawer.Root>
-            ) : (
-              <AntDrawer
-                open={open}
-                onClose={closeConversation}
-                placement="right"
-                width={480}
-                height="100%"
-                title={
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 18, color: "#334155", marginBottom: 4 }}>
-                      {selected.booker_display || "Guest"}
-                    </div>
-                    {selected.booker_email && (
-                      <div style={{ fontSize: 13, color: "#717171" }}>{selected.booker_email}</div>
-                    )}
-                    {(selected.class_title || selected.booking_reference) && (
-                      <div style={{ fontSize: 13, color: "#717171" }}>
-                        {[selected.class_title, selected.booking_reference].filter(Boolean).join(" · ")}
-                      </div>
-                    )}
-                    <AdminActionsRow>
-                      {selected.booker_email && (
-                        <Button size="small" icon={<Mail size={14} />} onClick={() => copyToClipboard(selected.booker_email, "Email")}>
-                          Copy email
-                        </Button>
-                      )}
-                      {getBusinessMessagesUrl() && (
-                        <Button size="small" icon={<ExternalLink size={14} />} href={getBusinessMessagesUrl()} target="_blank" rel="noopener noreferrer">
-                          Open in business dashboard
-                        </Button>
-                      )}
-                      {selected.booking && (
-                        <Button size="small" icon={<FileText size={14} />} href={`/admin/all-bookings?booking_id=${selected.booking}`} target="_blank" rel="noopener noreferrer">
-                          View booking
-                        </Button>
-                      )}
-                      <Button size="small" icon={<Copy size={14} />} onClick={copyConversationAsText}>
-                        Copy conversation
-                      </Button>
-                    </AdminActionsRow>
-                  </div>
-                }
-                styles={{
-                  body: {
-                    padding: 0,
-                    height: "calc(100% - 56px)",
-                    overflow: "hidden",
-                    display: "flex",
-                    flexDirection: "column",
-                  },
-                }}
-              >
-                <MessagesArea style={{ flex: 1, minHeight: 0 }}>
-                  {(selected.messages || []).length === 0 ? (
-                    <Empty description="No messages" style={{ margin: "auto" }} />
-                  ) : (
-                    (selected.messages || []).map((msg) => (
-                      <MsgRow key={msg.id} $isBusiness={msg.sender_type === "business"}>
-                        <Bubble $isBusiness={msg.sender_type === "business"}>
-                          <div>{msg.text}</div>
-                          <MsgTime $isBusiness={msg.sender_type === "business"}>{formatTime(msg.created_at)}</MsgTime>
-                        </Bubble>
-                      </MsgRow>
-                    ))
-                  )}
-                </MessagesArea>
-              </AntDrawer>
-            )}
-          </>
-        )}
+        <AdminResponsiveDrawer
+          open={open && !!selected}
+          onClose={closeConversation}
+          title={selected?.booker_display || "Conversation"}
+          titleIcon={<MessageSquare size={16} color={colors.primary} />}
+          isMobile={isMobile}
+          width="520px"
+        >
+          {drawerContent}
+        </AdminResponsiveDrawer>
       </PageWrap>
     </ConfigProvider>
   );

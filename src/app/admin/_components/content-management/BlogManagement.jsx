@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
-import { motion } from "framer-motion";
+
 import { Table, Card, Tabs, Button, Modal, Form, Input, Select, Grid, Space, Popconfirm, Tag, Divider, Avatar, Typography, ConfigProvider, DatePicker, Row, Col, Empty, Skeleton,  } from 'antd';
 import message from '@/lib/message';
 import {
@@ -116,7 +116,7 @@ const RefreshButton = styled(Button)`
 `;
 
 // --- TABLE SECTION ---
-const TableSection = styled(motion.div)`
+const TableSection = styled.div`
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);

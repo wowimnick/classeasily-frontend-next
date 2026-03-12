@@ -65,9 +65,10 @@ import { theme as appTheme } from "@/components/theme";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
 import AdminClassEditDrawer from "./AdminClassEditDrawer";
-import { Drawer } from "vaul";
 import moment from "moment";
-import { motion } from "framer-motion";
+import AdminMetricCards from "../shared/AdminMetricCards";
+import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+
 
 const { Option } = Select;
 const { useBreakpoint } = Grid;
@@ -174,46 +175,6 @@ const RefreshButton = styled(Button)`
   }
 `;
 
-// --- STATS CARDS ---
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
-  }
-`;
-
-const StatCard = styled(Card)`
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid ${colors.border};
-  transition: all 0.2s ease;
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-  .ant-card-body {
-    padding: 20px !important;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-    @media (max-width: 768px) {
-      padding: 16px !important;
-    }
-  }
-`;
-
-const StatCardHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-`;
-
 const IconContainer = styled.div`
   width: 36px;
   height: 36px;
@@ -229,32 +190,8 @@ const IconContainer = styled.div`
   }
 `;
 
-const StatValue = styled.div`
-  font-size: 22px;
-  font-weight: 700;
-  color: ${colors.textPrimary};
-  margin-bottom: 4px;
-  @media (max-width: 768px) {
-    font-size: 17px;
-  }
-`;
-
-const StatLabel = styled.div`
-  font-size: 13px;
-  color: ${colors.textSecondary};
-  display: block;
-  @media (max-width: 768px) {
-    font-size: 12px;
-  }
-`;
-const StatFooter = styled.div`
-  font-size: 12px;
-  color: ${colors.textSecondary};
-  margin-top: 4px;
-`;
-
 // --- TABLE SECTION ---
-const TableSection = styled(motion.div)`
+const TableSection = styled.div`
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -383,54 +320,6 @@ const MobileCardFooter = styled.div`
   gap: 8px;
 `;
 
-// --- NEW VAUL DRAWER STYLES ---
-const StyledDrawerOverlay = styled(Drawer.Overlay)`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 1049;
-`;
-const StyledDrawerContent = styled(Drawer.Content)`
-  background: white;
-  display: flex;
-  flex-direction: column;
-  border-radius: 24px 24px 0 0;
-  height: 90%;
-  max-height: 90vh;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1050;
-  outline: none;
-`;
-const DrawerHandle = styled(Drawer.Handle)`
-  width: 36px;
-  height: 4px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 2px;
-  margin: 12px auto 8px;
-  flex-shrink: 0;
-`;
-const DesktopDrawerContent = styled(Drawer.Content)`
-  right: 8px;
-  top: 8px;
-  bottom: 8px;
-  position: fixed;
-  z-index: 1050;
-  outline: none;
-  width: 680px;
-  display: flex;
-`;
-const DesktopDrawerInner = styled.div`
-  background: white;
-  height: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-`;
 const DrawerHeader = styled.div`
   background: white;
   border-bottom: 1px solid ${colors.border};
@@ -629,29 +518,21 @@ const EnhancedModal = styled(Modal)`
 
 const EnhancedStyledTable = styled(Table)`
   .ant-table-thead > tr > th {
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
+    background: #fafbfc;
+    border-bottom: 1px solid ${colors.border};
     font-weight: 600;
-    color: #475569;
-    font-size: 13px;
-    padding: 16px 20px;
+    color: ${colors.textSecondary};
+    font-size: 11px;
+    padding: 10px 14px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    &:first-child {
-      border-top-left-radius: 12px;
-    }
-    &:last-child {
-      border-top-right-radius: 12px;
-    }
+    letter-spacing: 0.05em;
   }
   .ant-table-tbody > tr > td {
-    padding: 16px 20px;
+    padding: 10px 14px;
     border-bottom: 1px solid ${colors.border};
-    font-size: 14px;
-    transition: all 0.2s;
+    font-size: 13px;
   }
   .ant-table-tbody > tr {
-    transition: all 0.2s;
     &:hover > td {
       background: #f8fafc;
     }
@@ -1012,13 +893,7 @@ const ClassDetailDrawerContent = ({ classData, onShowLockModal }) => {
 };
 
 // --- REBUILT DETAIL DRAWER COMPONENT ---
-const ClassDetailDrawer = ({
-  isVisible,
-  onClose,
-  classData,
-  isLoading,
-  onShowLockModal,
-}) => {
+const ClassDetailDrawer = ({ open, onClose, classData, isLoading, onShowLockModal }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
 
@@ -1030,13 +905,13 @@ const ClassDetailDrawer = ({
   }, []);
 
   useEffect(() => {
-    if (isVisible) {
+    if (open) {
       setShouldRender(true);
     } else {
       const timer = setTimeout(() => setShouldRender(false), 300);
       return () => clearTimeout(timer);
     }
-  }, [isVisible]);
+  }, [open]);
 
   if (!shouldRender) return null;
 
@@ -1068,36 +943,16 @@ const ClassDetailDrawer = ({
 
   return (
     <ConfigProvider theme={appTheme}>
-      {isMobile ? (
-        <Drawer.Root
-          open={isVisible}
-          onOpenChange={(open) => !open && onClose()}
-        >
-          <Drawer.Portal>
-            <StyledDrawerOverlay />
-            <StyledDrawerContent>
-              <DrawerHandle />
-              {renderDrawerContent()}
-            </StyledDrawerContent>
-          </Drawer.Portal>
-        </Drawer.Root>
-      ) : (
-        <Drawer.Root
-          open={isVisible}
-          onOpenChange={(open) => !open && onClose()}
-          direction="right"
-          dismissible
-          handleOnly
-        >
-          <Drawer.Portal>
-            <StyledDrawerOverlay />
-            <DesktopDrawerContent>
-              <DrawerHandle />
-              <DesktopDrawerInner>{renderDrawerContent()}</DesktopDrawerInner>
-            </DesktopDrawerContent>
-          </Drawer.Portal>
-        </Drawer.Root>
-      )}
+      <AdminResponsiveDrawer
+        open={open}
+        onClose={onClose}
+        title="Class Details"
+        titleIcon={<FileText size={20} />}
+        isMobile={isMobile}
+        width="860px"
+      >
+        {renderDrawerContent()}
+      </AdminResponsiveDrawer>
     </ConfigProvider>
   );
 };
@@ -1117,7 +972,7 @@ export default function ClassListings() {
     featured: false,
   });
   const [selectedClassDetails, setSelectedClassDetails] = useState(null);
-  const [isDetailDrawerVisible, setIsDetailDrawerVisible] = useState(false);
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [isLockModalVisible, setIsLockModalVisible] = useState(false);
   const [classToModify, setClassToModify] = useState(null);
   const [lockForm] = Form.useForm();
@@ -1249,7 +1104,7 @@ export default function ClassListings() {
         fetchClasses(filterParams, pagination, sortedInfo);
         fetchStats();
         if (
-          isDetailDrawerVisible &&
+          detailDrawerOpen &&
           selectedClassDetails?.classId === classId
         ) {
           setSelectedClassDetails((prev) => ({ ...prev, status: newStatus }));
@@ -1329,10 +1184,7 @@ export default function ClassListings() {
   const handleEditSuccess = useCallback(
     (updatedClassData) => {
       fetchClasses(filterParams, pagination, sortedInfo);
-      if (
-        isDetailDrawerVisible &&
-        selectedClassDetails?.classId === updatedClassData.classId
-      ) {
+      if (detailDrawerOpen && selectedClassDetails?.classId === updatedClassData.classId) {
         setSelectedClassDetails(updatedClassData);
       }
       fetchStats();
@@ -1343,14 +1195,14 @@ export default function ClassListings() {
       sortedInfo,
       fetchClasses,
       fetchStats,
-      isDetailDrawerVisible,
+      detailDrawerOpen,
       selectedClassDetails,
     ]
   );
 
   const showClassDetails = useCallback(async (classItem) => {
     try {
-      setIsDetailDrawerVisible(true);
+      setDetailDrawerOpen(true);
       setDetailsLoading(true);
       setSelectedClassDetails(null);
 
@@ -1362,11 +1214,11 @@ export default function ClassListings() {
         setSelectedClassDetails(response.data);
       } else {
         message.error(response.error || "Failed to fetch details");
-        setIsDetailDrawerVisible(false);
+        setDetailDrawerOpen(false);
       }
     } catch (error) {
       message.error("Error fetching details");
-      setIsDetailDrawerVisible(false);
+      setDetailDrawerOpen(false);
     } finally {
       setDetailsLoading(false);
     }
@@ -1947,7 +1799,7 @@ export default function ClassListings() {
       <DashboardWrapper>
         <DashboardHeader>
           <div>
-            <PageTitle>Class Management</PageTitle>
+            <PageTitle>Listing Management</PageTitle>
             <HeaderSubtitle>
               Monitor, manage, and moderate all classes across the platform.
             </HeaderSubtitle>
@@ -1972,31 +1824,22 @@ export default function ClassListings() {
 
         <Divider />
 
-        <StatsGrid>
-          {statCardsData.map((stat) => (
-            <StatCard key={stat.title}>
-              {statsLoading ? (
-                <Skeleton active paragraph={{ rows: 2 }} />
-              ) : (
-                <>
-                  <StatCardHeader>
-                    <IconContainer
-                      color={stat.color}
-                      background={hexToRgba(stat.color, 0.1)}
-                    >
-                      <stat.icon size={18} />
-                    </IconContainer>
-                  </StatCardHeader>
-                  <StatValue>{stat.value ?? "..."}</StatValue>
-                  <div>
-                    <StatLabel>{stat.title}</StatLabel>
-                    <StatFooter>{stat.footer}</StatFooter>
-                  </div>
-                </>
-              )}
-            </StatCard>
-          ))}
-        </StatsGrid>
+        <AdminMetricCards
+          cards={statCardsData.map((card) =>
+            card.title === "Average Rating"
+              ? {
+                  ...card,
+                  value: Number(card.value) || 0,
+                  numberFormatOptions: {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                  },
+                }
+              : card
+          )}
+          loading={statsLoading}
+          isReadyForAnimation
+        />
 
         {!statsLoading && renderScheduleWarnings()}
 
@@ -2095,15 +1938,16 @@ export default function ClassListings() {
         </TableSection>
 
         <AdminClassEditDrawer
-          visible={isEditDrawerVisible}
+          open={isEditDrawerVisible}
           onClose={handleEditDrawerClose}
-          classData={classToEdit}
+          classEntity={classToEdit}
+          loading={detailsLoading}
           onSuccess={handleEditSuccess}
         />
 
         <ClassDetailDrawer
-          isVisible={isDetailDrawerVisible}
-          onClose={() => setIsDetailDrawerVisible(false)}
+          open={detailDrawerOpen}
+          onClose={() => setDetailDrawerOpen(false)}
           classData={selectedClassDetails}
           isLoading={detailsLoading}
           onShowLockModal={showLockModal}

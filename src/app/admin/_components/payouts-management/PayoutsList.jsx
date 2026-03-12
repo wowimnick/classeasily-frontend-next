@@ -2,11 +2,9 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import styled, { keyframes } from "styled-components";
-import { motion, AnimatePresence } from "framer-motion";
-import { Drawer } from "vaul";
+
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import NumberFlow from "@number-flow/react";
 import {
   Table,
   Card,
@@ -54,6 +52,8 @@ import {
   GlobalLoaderWithoutInlineStyles,
 } from "@/components/common/GlobalLoader";
 import { LordIcon } from "@/services/ReactUtils";
+import AdminMetricCards from "../shared/AdminMetricCards";
+import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 
 dayjs.extend(utc);
 const { Option } = Select;
@@ -173,89 +173,8 @@ const ExportButton = styled(Button)`
   }
 `;
 
-// --- STATS CARDS (UPDATED TO MATCH BOOKINGSLIST) ---
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
-  }
-`;
-const StatCard = styled(Card)`
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid ${colors.border};
-  transition: all 0.2s ease;
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-  .ant-card-body {
-    padding: 20px !important;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-    @media (max-width: 768px) {
-      padding: 16px !important;
-    }
-  }
-`;
-const StatCardHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-`;
-const IconContainer = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${(props) => props.background || "#f1f5f9"};
-  color: ${(props) => props.color || colors.textSecondary};
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-  @media (max-width: 768px) {
-    width: 32px;
-    height: 32px;
-    svg {
-      width: 16px;
-      height: 16px;
-    }
-  }
-`;
-const StatValue = styled.div`
-  font-size: 22px;
-  font-weight: 700;
-  color: ${colors.textPrimary};
-  margin-bottom: 4px;
-  display: flex;
-  align-items: baseline;
-  @media (max-width: 768px) {
-    font-size: 17px;
-  }
-`;
-const StatLabel = styled.div`
-  font-size: 13px;
-  color: ${colors.textSecondary};
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  @media (max-width: 768px) {
-    font-size: 12px;
-  }
-`;
-
 // --- TABLE SECTION ---
-const TableSection = styled(motion.div)`
+const TableSection = styled.div`
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -331,59 +250,6 @@ const StyledTable = styled(Table)`
   .ant-table-tbody > tr:hover > td {
     background: #fafcff;
   }
-`;
-
-// --- VAUL DRAWER COMPONENTS ---
-const StyledDrawerOverlay = styled(Drawer.Overlay)`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 1049;
-`;
-
-const StyledDrawerContent = styled(Drawer.Content)`
-  background: white;
-  display: flex;
-  flex-direction: column;
-  border-radius: 24px 24px 0 0;
-  height: 90%;
-  max-height: 90vh;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1050;
-  outline: none;
-`;
-
-const DrawerHandle = styled.div`
-  width: 36px;
-  height: 4px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 2px;
-  margin: 12px auto 8px;
-  flex-shrink: 0;
-`;
-
-const DesktopDrawerContent = styled(Drawer.Content)`
-  right: 8px;
-  top: 8px;
-  bottom: 8px;
-  position: fixed;
-  z-index: 1050;
-  outline: none;
-  width: 680px;
-  display: flex;
-`;
-
-const DesktopDrawerInner = styled.div`
-  background: white;
-  height: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 `;
 
 const DrawerHeader = styled.div`
@@ -626,24 +492,17 @@ const PayoutDetailContent = ({ payout, isMobile, onRetry }) => {
   );
 };
 
-const DetailDrawerModal = ({
-  isVisible,
-  onClose,
-  payout,
-  isLoading,
-  isMobile,
-  onRetry,
-}) => {
+const DetailDrawerModal = ({ open, onClose, payout, isLoading, isMobile, onRetry }) => {
   const [shouldRender, setShouldRender] = useState(false);
 
   useEffect(() => {
-    if (isVisible) {
+    if (open) {
       setShouldRender(true);
     } else {
       const timer = setTimeout(() => setShouldRender(false), 300);
       return () => clearTimeout(timer);
     }
-  }, [isVisible]);
+  }, [open]);
 
   if (!shouldRender) return null;
 
@@ -676,34 +535,16 @@ const DetailDrawerModal = ({
 
   return (
     <ConfigProvider theme={appTheme}>
-      {isMobile ? (
-        <Drawer.Root
-          open={isVisible}
-          onOpenChange={(open) => !open && onClose()}
-        >
-          <Drawer.Portal>
-            <StyledDrawerOverlay />
-            <StyledDrawerContent>
-              <DrawerHandle />
-              {renderDrawerContent()}
-            </StyledDrawerContent>
-          </Drawer.Portal>
-        </Drawer.Root>
-      ) : (
-        <Drawer.Root
-          open={isVisible}
-          onOpenChange={(open) => !open && onClose()}
-          direction="right"
-          dismissible
-        >
-          <Drawer.Portal>
-            <StyledDrawerOverlay />
-            <DesktopDrawerContent>
-              <DesktopDrawerInner>{renderDrawerContent()}</DesktopDrawerInner>
-            </DesktopDrawerContent>
-          </Drawer.Portal>
-        </Drawer.Root>
-      )}
+      <AdminResponsiveDrawer
+        open={open}
+        onClose={onClose}
+        title={`Payout: ${payout?.id || "Details"}`}
+        titleIcon={<Hash size={20} />}
+        isMobile={isMobile}
+        width="680px"
+      >
+        {renderDrawerContent()}
+      </AdminResponsiveDrawer>
     </ConfigProvider>
   );
 };
@@ -762,7 +603,7 @@ const PayoutsList = () => {
   const [statsLoading, setStatsLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState(null);
-  const [isDetailDrawerVisible, setIsDetailDrawerVisible] = useState(false);
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
 
   const [dashboardStats, setDashboardStats] = useState({
@@ -798,13 +639,13 @@ const PayoutsList = () => {
   }, []);
 
   useEffect(() => {
-    if (isDetailDrawerVisible && isMobile)
+    if (detailDrawerOpen && isMobile)
       document.body.style.overflow = "hidden";
     else document.body.style.overflow = "unset";
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isDetailDrawerVisible, isMobile]);
+  }, [detailDrawerOpen, isMobile]);
 
   const handleFilterChange = (updates) => {
     setFilterParams((prev) => ({ ...prev, ...updates }));
@@ -888,8 +729,8 @@ const PayoutsList = () => {
   };
 
   const showPayoutDetails = async (payout) => {
-    if (isDetailDrawerVisible) return;
-    setIsDetailDrawerVisible(true);
+    if (detailDrawerOpen) return;
+    setDetailDrawerOpen(true);
     setDetailsLoading(true);
     setSelectedPayout(payout);
     try {
@@ -897,11 +738,11 @@ const PayoutsList = () => {
       if (response.success) setSelectedPayout(response.data);
       else {
         message.error(response.error || "Failed to load payout details");
-        setIsDetailDrawerVisible(false);
+        setDetailDrawerOpen(false);
       }
     } catch (e) {
       message.error("Error fetching details");
-      setIsDetailDrawerVisible(false);
+      setDetailDrawerOpen(false);
     } finally {
       setDetailsLoading(false);
     }
@@ -933,7 +774,7 @@ const PayoutsList = () => {
         key: "retry_payout",
         duration: 3,
       });
-      setIsDetailDrawerVisible(false);
+      setDetailDrawerOpen(false);
       refreshData();
     } else {
       message.error({
@@ -1050,8 +891,6 @@ const PayoutsList = () => {
     },
   ];
 
-  const StatSkeleton = () => <Skeleton active paragraph={{ rows: 2 }} />;
-
   return (
     <ConfigProvider theme={appTheme}>
       <DashboardWrapper>
@@ -1118,53 +957,19 @@ const PayoutsList = () => {
           </Text>
         </div>
 
-        <StatsGrid>
-          {statCardsData.map((stat) => (
-            <StatCard key={stat.title}>
-              {statsLoading ? (
-                <StatSkeleton />
-              ) : (
-                <>
-                  <div>
-                    <StatCardHeader>
-                      <IconContainer
-                        background={hexToRgba(stat.color, 0.1)}
-                        color={stat.color}
-                      >
-                        <stat.icon size={18} />
-                      </IconContainer>
-                    </StatCardHeader>
-                    <StatLabel>{stat.title}</StatLabel>
-                  </div>
-                  <StatValue>
-                    {stat.isCurrency ? (
-                      <NumberFlow
-                        value={isReadyForAnimation ? stat.value : 0}
-                        duration={800}
-                        prefix="$"
-                        numberFormatOptions={{
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        }}
-                      />
-                    ) : (
-                      <NumberFlow
-                        value={isReadyForAnimation ? stat.value : 0}
-                        duration={800}
-                      />
-                    )}
-                  </StatValue>
-                </>
-              )}
-            </StatCard>
-          ))}
-        </StatsGrid>
+        <AdminMetricCards
+          cards={statCardsData.map((card) => ({
+            ...card,
+            minimumFractionDigits: card.isCurrency ? 2 : undefined,
+            maximumFractionDigits: card.isCurrency ? 2 : undefined,
+          }))}
+          loading={statsLoading}
+          isReadyForAnimation={isReadyForAnimation}
+        />
 
         <Divider />
 
         <TableSection
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
           <TableHeader>
@@ -1252,8 +1057,8 @@ const PayoutsList = () => {
         </TableSection>
 
         <DetailDrawerModal
-          isVisible={isDetailDrawerVisible}
-          onClose={() => setIsDetailDrawerVisible(false)}
+          open={detailDrawerOpen}
+          onClose={() => setDetailDrawerOpen(false)}
           payout={selectedPayout}
           isLoading={detailsLoading}
           isMobile={isMobile}

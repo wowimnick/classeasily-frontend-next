@@ -26,13 +26,12 @@ import {
   Tooltip,
   message as antMessage,
 } from "antd";
-import { Plus, Edit, Trash2, BarChart3, Ticket, TrendingUp, Percent, Calendar, DollarSign } from "lucide-react";
-import { motion } from "framer-motion";
-import NumberFlow from "@number-flow/react";
+import { Plus, Edit, Trash2, BarChart3, Ticket, TrendingUp, Percent, Calendar, DollarSign, Search, RefreshCw } from "lucide-react";
 import { globalDiscountAdminService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
 import { ConfigProvider } from "antd";
 import dayjs from "dayjs";
+import AdminMetricCards from "../shared/AdminMetricCards";
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -57,13 +56,14 @@ const colors = {
 const DashboardWrapper = styled.div`
   display: flex;
   flex-direction: column;
+  gap: 20px;
   padding: 24px;
   background-color: #fff;
   min-height: 100%;
 
   @media (max-width: 768px) {
     padding: 16px;
-    gap: 0;
+    gap: 16px;
   }
 `;
 
@@ -80,14 +80,10 @@ const DashboardHeader = styled.div`
 `;
 
 const PageTitle = styled.h1`
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
-  color: #222222;
-  margin: 0 0 4px 0;
-
-  @media (max-width: 768px) {
-    font-size: 22px;
-  }
+  color: #1e293b;
+  margin: 0 0 2px 0;
 `;
 
 const HeaderSubtitle = styled(Text)`
@@ -99,95 +95,13 @@ const HeaderSubtitle = styled(Text)`
   }
 `;
 
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 20px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-
-  @media (max-width: 480px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const StatCard = styled(Card)`
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid ${colors.border};
-  margin-bottom: 0;
-  min-height: 140px;
-
-  .ant-card-body {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-
-    @media (max-width: 768px) {
-      padding: 16px;
-    }
-  }
-`;
-
-const StatCardHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 10px;
-`;
-
-const IconContainer = styled.div`
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${(p) => p.background || "#f1f5f9"};
-  color: ${(p) => p.color || colors.textSecondary};
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-`;
-
-const StatValue = styled.div`
-  font-size: 22px;
-  font-weight: 700;
-  color: ${colors.textPrimary};
-  display: flex;
-  align-items: baseline;
-`;
-
-const StatLabel = styled.div`
-  font-size: 13px;
-  color: ${colors.textSecondary};
-  display: flex;
-  align-items: center;
-  gap: 6px;
-`;
-
-const StatFooter = styled.div`
-  font-size: 12px;
-  color: ${colors.textSecondary};
-  margin-top: 4px;
-  line-height: 1.4;
-`;
-
 const ActionButton = styled(Button)`
   height: 40px;
   border-radius: 10px;
   font-weight: 500;
 `;
 
-const TableSection = styled(motion.div)`
+const TableSection = styled.div`
   background: white;
   border-radius: 16px;
   border: 1px solid ${colors.border};
@@ -219,12 +133,29 @@ const TableDescription = styled(Text)`
 const StyledTable = styled(Table)`
   .ant-table-thead > tr > th {
     background: ${colors.lightBg};
-    color: ${colors.textPrimary};
+    color: ${colors.textSecondary};
+    font-size: 11px;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 14px;
   }
-  .ant-table-cell {
-    padding: 12px 16px;
+  .ant-table-tbody > tr > td {
+    padding: 10px 14px;
+    font-size: 13px;
   }
+  .ant-table-tbody > tr:hover > td {
+    background: ${colors.lightBg};
+  }
+`;
+
+const FilterRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid ${colors.border};
+  flex-wrap: wrap;
 `;
 
 const EmptyStateContainer = styled.div`
@@ -342,6 +273,9 @@ export default function GlobalDiscountsManagement() {
   const [statsData, setStatsData] = useState(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [filterSearch, setFilterSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState(undefined);
+  const [filterType, setFilterType] = useState(undefined);
   const [form] = Form.useForm();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
@@ -456,14 +390,15 @@ export default function GlobalDiscountsManagement() {
   // Stats for header
   const totalDiscounts = list.length;
   const activeCount = list.filter((d) => d.is_active).length;
+  const inactiveCount = list.filter((d) => !d.is_active).length;
   const totalUsage = list.reduce((sum, d) => sum + (d.usage_count || 0), 0);
 
   const statisticCards = [
     {
       key: "total",
-      title: "Total discounts",
+      title: "Total Discounts",
       value: totalDiscounts,
-      icon: <Ticket size={18} />,
+      icon: Ticket,
       background: "rgba(59, 130, 246, 0.1)",
       color: colors.info,
       footer: "Platform-wide offers",
@@ -472,21 +407,42 @@ export default function GlobalDiscountsManagement() {
       key: "active",
       title: "Active",
       value: activeCount,
-      icon: <TrendingUp size={18} />,
+      icon: TrendingUp,
       background: "rgba(16, 185, 129, 0.1)",
       color: colors.success,
       footer: "Currently valid",
     },
     {
+      key: "inactive",
+      title: "Inactive",
+      value: inactiveCount,
+      icon: Percent,
+      background: "rgba(239, 68, 68, 0.1)",
+      color: colors.error,
+      footer: "Disabled or expired",
+    },
+    {
       key: "usage",
-      title: "Total redemptions",
+      title: "Total Redemptions",
       value: totalUsage,
-      icon: <BarChart3 size={18} />,
+      icon: BarChart3,
       background: "rgba(139, 92, 246, 0.1)",
       color: "#8b5cf6",
       footer: "All-time usage",
     },
   ];
+
+  const filteredList = list.filter((d) => {
+    const searchMatch =
+      !filterSearch ||
+      d.name?.toLowerCase().includes(filterSearch.toLowerCase());
+    const statusMatch =
+      filterStatus === undefined ||
+      (filterStatus === "active" && d.is_active) ||
+      (filterStatus === "inactive" && !d.is_active);
+    const typeMatch = !filterType || d.discount_type === filterType;
+    return searchMatch && statusMatch && typeMatch;
+  });
 
   const columns = [
     {
@@ -662,53 +618,68 @@ export default function GlobalDiscountsManagement() {
               Create and manage platform-wide discounts applied at checkout.
             </HeaderSubtitle>
           </div>
-          <ActionButton type="primary" icon={<Plus size={18} />} onClick={openCreate}>
-            Create global discount
-          </ActionButton>
+          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            <Button icon={<RefreshCw size={14} />} onClick={fetchList} loading={loading} style={{ borderRadius: 8 }}>
+              {!isMobile && "Refresh"}
+            </Button>
+            <ActionButton type="primary" icon={<Plus size={16} />} onClick={openCreate}>
+              {!isMobile ? "Create Discount" : "New"}
+            </ActionButton>
+          </div>
         </DashboardHeader>
 
-        <Divider />
-
-        <StatsGrid>
-          {statisticCards.map((stat) => (
-            <StatCard key={stat.key}>
-              {loading ? (
-                <StatSkeleton />
-              ) : (
-                <>
-                  <div>
-                    <StatCardHeader>
-                      <IconContainer background={stat.background} color={stat.color}>
-                        {stat.icon}
-                      </IconContainer>
-                    </StatCardHeader>
-                    <StatLabel>{stat.title}</StatLabel>
-                  </div>
-                  <div>
-                    <StatValue>
-                      <NumberFlow value={isReady ? stat.value : 0} duration={800} />
-                    </StatValue>
-                    {stat.footer && <StatFooter>{stat.footer}</StatFooter>}
-                  </div>
-                </>
-              )}
-            </StatCard>
-          ))}
-        </StatsGrid>
+        <AdminMetricCards
+          cards={statisticCards}
+          loading={loading}
+          isReadyForAnimation={isReady}
+        />
 
         <Divider />
 
-        <TableSection
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
+        <TableSection>
           <TableHeader>
-            <TableTitle>Discount management</TableTitle>
-            <TableDescription>
-              Edit, view stats, or remove global discounts. These apply across the platform when conditions are met.
-            </TableDescription>
+            <div>
+              <TableTitle>Discount Management</TableTitle>
+              <TableDescription>
+                Edit, view stats, or remove global discounts. These apply across the platform when conditions are met.
+              </TableDescription>
+            </div>
           </TableHeader>
+          <FilterRow>
+            <Input
+              prefix={<Search size={13} style={{ color: colors.textSecondary }} />}
+              placeholder="Search discounts..."
+              value={filterSearch}
+              onChange={(e) => setFilterSearch(e.target.value)}
+              allowClear
+              style={{ width: 200, borderRadius: 8, fontSize: 13 }}
+            />
+            <Select
+              placeholder="Status"
+              allowClear
+              value={filterStatus}
+              onChange={(v) => setFilterStatus(v)}
+              style={{ width: 120 }}
+              size="middle"
+            >
+              <Option value="active">Active</Option>
+              <Option value="inactive">Inactive</Option>
+            </Select>
+            <Select
+              placeholder="Type"
+              allowClear
+              value={filterType}
+              onChange={(v) => setFilterType(v)}
+              style={{ width: 140 }}
+              size="middle"
+            >
+              <Option value="percentage">Percentage</Option>
+              <Option value="fixed">Fixed Amount</Option>
+            </Select>
+            <div style={{ marginLeft: "auto", fontSize: 12, color: colors.textSecondary }}>
+              {filteredList.length} of {list.length} discounts
+            </div>
+          </FilterRow>
           {isMobile ? (
             <div style={{ padding: "0 16px 16px" }}>
               {loading ? (
@@ -717,8 +688,8 @@ export default function GlobalDiscountsManagement() {
                     <Skeleton active paragraph={{ rows: 3 }} />
                   </MobileDiscountCard>
                 ))
-              ) : list.length > 0 ? (
-                list.map((item) => <MobileDiscountItem key={item.id} record={item} />)
+              ) : filteredList.length > 0 ? (
+                filteredList.map((item) => <MobileDiscountItem key={item.id} record={item} />)
               ) : (
                 <EmptyStateContainer>
                   <Empty description="No global discounts" />
@@ -729,10 +700,11 @@ export default function GlobalDiscountsManagement() {
             <StyledTable
               rowKey="id"
               columns={columns}
-              dataSource={list}
-              pagination={{ pageSize: 10, showSizeChanger: true }}
+              dataSource={filteredList}
+              pagination={{ pageSize: 10, showSizeChanger: true, size: "small" }}
               loading={loading}
               locale={{ emptyText: <EmptyStateContainer><Empty description="No global discounts" /></EmptyStateContainer> }}
+              scroll={{ x: 800 }}
             />
           )}
         </TableSection>
