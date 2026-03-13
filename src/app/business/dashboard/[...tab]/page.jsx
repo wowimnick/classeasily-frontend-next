@@ -17,6 +17,7 @@ import Revenue from "../_components/tabs/finances/Revenue";
 import Payouts from "../_components/tabs/payouts/Payouts";
 import BookingTrends from "../_components/tabs/bookings/BookingTrends";
 import Discounts from "../_components/tabs/discounts/Discounts";
+import MembershipsDashboard from "../_components/tabs/memberships/MembershipsDashboard";
 import WidgetCustomizer from "../_components/tabs/widget/WidgetCustomizer";
 import Guests from "../_components/tabs/students/Guests";
 import BusinessMessages from "../_components/tabs/messages/BusinessMessages";
@@ -129,6 +130,17 @@ export default function DashboardPage() {
       componentToRender = (
         <TabGlassWrapper>
           <Discounts />
+        </TabGlassWrapper>
+      );
+      break;
+    case "memberships":
+    case "memberships/products":
+    case "memberships/members":
+      componentToRender = (
+        <TabGlassWrapper>
+          <MembershipsDashboard
+            defaultActiveKey={activeKey === "memberships/members" ? "members" : "products"}
+          />
         </TabGlassWrapper>
       );
       break;

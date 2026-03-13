@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import styled, { createGlobalStyle, css } from "styled-components";
 import Image from "next/image";
 import { 
   MapPin, Star, Phone, Mail, Clock, 
   ExternalLink, Facebook, Twitter, Instagram, Linkedin, Youtube, 
-  Share, Heart, Globe
+  Share, Heart, Globe, Users
 } from "lucide-react";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import L from "leaflet";
@@ -427,13 +428,34 @@ const HoursListSimple = ({ businessHours }) => {
 // --- MAIN COMPONENT ---
 
 const BusinessPageClient = ({ initialData, slug }) => {
+  const router = useRouter();
   const [businessData, setBusinessData] = useState(initialData);
+  const [memberships, setMemberships] = useState([]);
   const [isMounted, setIsMounted] = useState(false);
   const [mapContainerKey] = useState(() => `business-map-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!slug || typeof window === "undefined") return;
+    const base = process.env.NEXT_PUBLIC_API_URL || "";
+    fetch(`${base.replace(/\/$/, "")}/businesses/${slug}/memberships/`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setMemberships(Array.isArray(data) ? data : []))
+      .catch(() => setMemberships([]));
+  }, [slug]);
+
+  const handleJoinPlan = (productId) => {
+    if (website && (website.startsWith("http://") || website.startsWith("https://"))) {
+      const sep = website.includes("?") ? "&" : "?";
+      window.location.href = `${website}${sep}ce_plan=${productId}&ce_mode=membership`;
+    } else {
+      const key = widget_api_key ? String(widget_api_key) : "";
+      router.push(`/business/${slug}/join?ce_plan=${productId}&ce_mode=membership${key ? `&key=${encodeURIComponent(key)}` : ""}`);
+    }
+  };
 
   const handleFavoriteChange = (classId, newIsFavorited) => {
     setBusinessData((currentData) => {
@@ -461,6 +483,7 @@ const BusinessPageClient = ({ initialData, slug }) => {
     studentContactPhone,
     studentContactEmail,
     website,
+    widget_api_key,
     social_media_links = {}
   } = businessData;
 
@@ -574,6 +597,62 @@ const BusinessPageClient = ({ initialData, slug }) => {
               </DescriptionText>
             </div>
 
+            <SectionDivider />
+
+            {/* MEMBERSHIPS */}
+            {memberships.length > 0 && (
+              <div style={{ marginBottom: "32px" }}>
+                <h3 style={{ fontSize: "22px", fontWeight: 600, marginBottom: "16px", display: "flex", alignItems: "center", gap: 8 }}>
+                  <Users size={22} /> Memberships
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {memberships.map((p) => (
+                    <div
+                      key={p.id}
+                      style={{
+                        padding: 16,
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 12,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: 12,
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 600, marginBottom: 4 }}>{p.name}</div>
+                        <div style={{ fontSize: 14, color: "#6b7280" }}>
+                          ${p.price} / {p.billing_interval === "year" ? "year" : "month"}
+                          {p.access_type === "credits" && p.credit_allowance != null && (
+                            <> · {p.credit_allowance} {p.credit_unit || "credits"}</>
+                          )}
+                        </div>
+                        {p.description && (
+                          <div style={{ fontSize: 13, color: "#6b7280", marginTop: 6 }}>{p.description}</div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleJoinPlan(p.id)}
+                        style={{
+                          padding: "10px 20px",
+                          background: "#222",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: 8,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Join
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <SectionDivider />
 
             {/* UPCOMING CLASSES */}

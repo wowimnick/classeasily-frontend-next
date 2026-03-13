@@ -2037,6 +2037,7 @@ const PLAN_FEATURES_GROWTH = [
   { label: 'Pin widget to a specific class', tooltip: 'Embed a booking button for one class or location — great for landing pages, ads, and campaigns.' },
   { label: 'Widget revenue & booking analytics', tooltip: 'Track widget-specific conversion rates, revenue by class, and booking trends. Separate from your Marketplace stats.' },
   { label: 'Automated pre-class reminders', tooltip: 'Email (and optional SMS) reminders sent automatically before each session to cut no-shows.' },
+  { label: 'Memberships', tooltip: 'Sell recurring membership plans, manage members and credits, and collect subscription revenue from your widget or business page.' },
   { label: 'Promo codes & discounts' },
   { label: 'Priority support' },
 ];
@@ -2045,6 +2046,7 @@ const PLAN_FEATURES_ADVANCED = [
   { label: 'Everything in Growth' },
   { label: 'Lower commission (2%)', tooltip: 'Best for high-volume studios. Pay a higher subscription to keep more of every booking.' },
   { label: 'White-label widget', tooltip: 'Remove all Classeasily branding entirely. Customers only see your brand when they book.' },
+  { label: 'Memberships', tooltip: 'Sell recurring membership plans, manage members and credits, and collect subscription revenue from your widget or business page.' },
   { label: 'Dedicated account manager' },
   { label: 'Personal onboarding call' },
 ];
@@ -2150,6 +2152,9 @@ function PricingAndPath() {
           </h3>
           <p style={{ fontSize: 16, color: '#64748B', maxWidth: 560, margin: 0 }}>
             A flat monthly fee plus a small commission per booking — no hidden charges, no separate payment processor setup.
+          </p>
+          <p style={{ fontSize: 14, color: '#94a3b8', maxWidth: 560, margin: '8px 0 0', fontWeight: 500 }}>
+            Growth and Advanced include memberships — recurring plans and member management.
           </p>
         </MobileTypo>
 

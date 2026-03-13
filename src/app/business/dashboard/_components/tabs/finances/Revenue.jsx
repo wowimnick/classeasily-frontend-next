@@ -844,17 +844,18 @@ const Revenue = forwardRef((props, ref) => {
                 ? "Widget bookings only — revenue from your embedded booking widget."
                 : filterParams.source === "marketplace"
                 ? "Marketplace bookings only — revenue from Classeasily discovery."
+                : filterParams.source === "membership"
+                ? "Membership payments only — recurring revenue from member subscriptions."
                 : "Track revenue performance and growth insights across all sources."}
             </HeaderSubtitle>
           </div>
           <Controls>
-            {hasWidgetAnalytics && (
-              <SourceSegmentedWrapper>
-                <Segmented
-                  value={filterParams.source}
-                  onChange={handleSourceChange}
-                  size="small"
-                  options={[
+            <SourceSegmentedWrapper>
+              <Segmented
+                value={filterParams.source}
+                onChange={handleSourceChange}
+                size="small"
+                options={[
                   {
                     label: (
                       <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -873,19 +874,31 @@ const Revenue = forwardRef((props, ref) => {
                     ),
                     value: "marketplace",
                   },
+                  ...(hasWidgetAnalytics
+                    ? [
+                        {
+                          label: (
+                            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                              <span style={{ fontSize: 12 }}>⚡</span>
+                              Widget
+                            </span>
+                          ),
+                          value: "widget",
+                        },
+                      ]
+                    : []),
                   {
                     label: (
                       <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <span style={{ fontSize: 12 }}>⚡</span>
-                        Widget
+                        <Users size={13} />
+                        Membership
                       </span>
                     ),
-                    value: "widget",
+                    value: "membership",
                   },
                 ]}
-                />
-              </SourceSegmentedWrapper>
-            )}
+              />
+            </SourceSegmentedWrapper>
             {isMobile ? (
               <MobileDateRangePicker
                 value={[filterParams.startDate, filterParams.endDate]}

@@ -93,6 +93,11 @@ export const API_ENDPOINTS = {
   MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_REACTIVATE:
     "/my-business/addons/marketplace-email/reactivate/",
 
+  MY_BUSINESS_MEMBERSHIP_PRODUCTS: "/my-business/membership-products/",
+  MY_BUSINESS_MEMBERS: "/my-business/members/",
+  MY_BUSINESS_MEMBERS_MANUAL_ADD: "/my-business/members/manual-add/",
+  MY_BUSINESS_CONTACTS: "/my-business/contacts/",
+
   // Student Self-Service
   STUDENT_BOOKINGS: "/my-bookings/",
 
@@ -1674,6 +1679,140 @@ export const contactImportService = {
         success: false,
         error: error.response?.data || "Failed to start import.",
       };
+    }
+  },
+};
+
+export const businessMembershipService = {
+  getProducts: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_MEMBERSHIP_PRODUCTS);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || error.response?.data?.detail || "Failed to fetch products" };
+    }
+  },
+  createProduct: async (data) => {
+    try {
+      const response = await axiosInstance.post(API_ENDPOINTS.MY_BUSINESS_MEMBERSHIP_PRODUCTS, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || error.response?.data?.detail || "Failed to create" };
+    }
+  },
+  getProduct: async (id) => {
+    try {
+      const response = await axiosInstance.get(`${API_ENDPOINTS.MY_BUSINESS_MEMBERSHIP_PRODUCTS}${id}/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || "Failed to fetch" };
+    }
+  },
+  updateProduct: async (id, data) => {
+    try {
+      const response = await axiosInstance.patch(`${API_ENDPOINTS.MY_BUSINESS_MEMBERSHIP_PRODUCTS}${id}/`, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || "Failed to update" };
+    }
+  },
+  deleteProduct: async (id) => {
+    try {
+      await axiosInstance.delete(`${API_ENDPOINTS.MY_BUSINESS_MEMBERSHIP_PRODUCTS}${id}/`);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || "Failed to delete" };
+    }
+  },
+  syncStripe: async (id) => {
+    try {
+      const response = await axiosInstance.post(`${API_ENDPOINTS.MY_BUSINESS_MEMBERSHIP_PRODUCTS}${id}/sync-stripe/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || "Stripe sync failed" };
+    }
+  },
+  getMembers: async (params = {}) => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_MEMBERS, { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || "Failed to fetch members" };
+    }
+  },
+  getMember: async (id) => {
+    try {
+      const response = await axiosInstance.get(`${API_ENDPOINTS.MY_BUSINESS_MEMBERS}${id}/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || "Failed to fetch member" };
+    }
+  },
+  cancelMember: async (id, immediate = false) => {
+    try {
+      const response = await axiosInstance.post(`${API_ENDPOINTS.MY_BUSINESS_MEMBERS}${id}/cancel/`, { immediate });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || "Failed to cancel" };
+    }
+  },
+  pauseMember: async (id) => {
+    try {
+      const response = await axiosInstance.post(`${API_ENDPOINTS.MY_BUSINESS_MEMBERS}${id}/pause/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || "Failed to pause" };
+    }
+  },
+  manualAddMember: async (data) => {
+    try {
+      const response = await axiosInstance.post(API_ENDPOINTS.MY_BUSINESS_MEMBERS_MANUAL_ADD, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || "Failed to add member" };
+    }
+  },
+};
+
+export const businessContactService = {
+  getContacts: async (params = {}) => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_CONTACTS, { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || "Failed to fetch contacts" };
+    }
+  },
+  createContact: async (data) => {
+    try {
+      const response = await axiosInstance.post(API_ENDPOINTS.MY_BUSINESS_CONTACTS, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || "Failed to create contact" };
+    }
+  },
+  getContact: async (id) => {
+    try {
+      const response = await axiosInstance.get(`${API_ENDPOINTS.MY_BUSINESS_CONTACTS}${id}/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || "Failed to fetch contact" };
+    }
+  },
+  updateContact: async (id, data) => {
+    try {
+      const response = await axiosInstance.patch(`${API_ENDPOINTS.MY_BUSINESS_CONTACTS}${id}/`, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || "Failed to update contact" };
+    }
+  },
+  deleteContact: async (id) => {
+    try {
+      await axiosInstance.delete(`${API_ENDPOINTS.MY_BUSINESS_CONTACTS}${id}/`);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || "Failed to delete contact" };
     }
   },
 };

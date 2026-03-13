@@ -9,6 +9,7 @@ const SubscriptionContext = createContext({
   scheduledDowngrade: null,
   widgetSubscriptionRequired: false,
   hasWidgetAccess: false,
+  hasMembershipAccess: false,
   hasStripeSubscription: false,
   loading: true,
   error: null,
@@ -33,6 +34,7 @@ export function SubscriptionProvider({ children }) {
   const [scheduledDowngrade, setScheduledDowngrade] = useState(null);
   const [widgetSubscriptionRequired, setWidgetSubscriptionRequired] = useState(false);
   const [hasWidgetAccess, setHasWidgetAccess] = useState(false);
+  const [hasMembershipAccess, setHasMembershipAccess] = useState(false);
   const [hasStripeSubscription, setHasStripeSubscription] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,6 +47,7 @@ export function SubscriptionProvider({ children }) {
       setScheduledDowngrade(null);
       setWidgetSubscriptionRequired(false);
       setHasWidgetAccess(false);
+      setHasMembershipAccess(false);
       setHasStripeSubscription(false);
       setLoading(false);
       setError(null);
@@ -59,12 +62,14 @@ export function SubscriptionProvider({ children }) {
       setScheduledDowngrade(result.data.scheduled_downgrade ?? null);
       setWidgetSubscriptionRequired(Boolean(result.data.widget_subscription_required));
       setHasWidgetAccess(Boolean(result.data.has_widget_access));
+      setHasMembershipAccess(Boolean(result.data.has_membership_access));
       setHasStripeSubscription(Boolean(result.data.has_stripe_subscription));
     } else {
       setSubscription(null);
       setScheduledDowngrade(null);
       setWidgetSubscriptionRequired(false);
       setHasWidgetAccess(false);
+      setHasMembershipAccess(false);
       setHasStripeSubscription(false);
       if (!result.success && result.error) {
         setError(result.error);
@@ -111,6 +116,7 @@ export function SubscriptionProvider({ children }) {
     scheduledDowngrade,
     widgetSubscriptionRequired,
     hasWidgetAccess,
+    hasMembershipAccess,
     hasStripeSubscription,
     loading,
     error,

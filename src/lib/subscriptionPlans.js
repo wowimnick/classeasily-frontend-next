@@ -49,6 +49,11 @@ export const PLAN_FEATURES_GROWTH = [
     tooltip:
       "Automatically prompt customers for a review after each class to build your public reputation.",
   },
+  {
+    label: "Memberships",
+    tooltip:
+      "Sell recurring membership plans, manage members and credits, and collect subscription revenue from your widget or business page.",
+  },
   { label: "Promo codes & discounts" },
   { label: "Priority support" },
 ];
@@ -69,6 +74,11 @@ export const PLAN_FEATURES_ADVANCED = [
     label: "API access",
     tooltip:
       "Connect booking data directly to your CRM, scheduling tools, or custom apps via the Classeasily REST API.",
+  },
+  {
+    label: "Memberships",
+    tooltip:
+      "Sell recurring membership plans, manage members and credits, and collect subscription revenue from your widget or business page.",
   },
   { label: "Dedicated account manager" },
   { label: "Personal onboarding call" },

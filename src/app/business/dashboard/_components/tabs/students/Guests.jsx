@@ -41,7 +41,7 @@ import {
   Popconfirm,
 } from "antd";
 import message from "@/lib/message";
-import { businessStudentService } from "@/services/apiService";
+import { businessStudentService, businessContactService } from "@/services/apiService";
 import GuestCard from "./GuestCard";
 import GuestProfile from "./GuestProfile";
 import ImportGuestsModal from "./ImportGuestsModal";
@@ -480,6 +480,7 @@ const Guests = forwardRef((props, ref) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [segmentFilter, setSegmentFilter] = useState("");
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
@@ -501,30 +502,59 @@ const Guests = forwardRef((props, ref) => {
   const fetchTimeoutRef = useRef(null);
 
   const fetchGuestsData = useCallback(
-    async (page = 1, search = searchText, status = statusFilter) => {
+    async (page = 1, search = searchText, status = statusFilter, segment = segmentFilter) => {
       setIsLoading(true);
       setIsReadyForAnimation(false);
       setError(null);
       try {
-        const params = {
-          page: page,
-          page_size: pagination.pageSize,
-          search: search || undefined,
-          status_filter: status,
-        };
-        const response = await businessStudentService.getAllBusinessStudents(
-          params
-        );
-        if (response.success && response.data) {
-          setGuests(response.data);
-          setPagination((prev) => ({
-            ...prev,
-            current: page,
-            total: response.count || 0,
-          }));
-          setTimeout(() => setIsReadyForAnimation(true), 50);
+        if (segment) {
+          const params = {
+            page,
+            page_size: pagination.pageSize,
+            search: search || undefined,
+            segment,
+          };
+          const response = await businessContactService.getContacts(params);
+          if (response.success && response.data) {
+            const results = response.data.results || [];
+            const count = response.data.count ?? 0;
+            const mapped = results.map((c) => ({
+              id: c.id,
+              first_name: c.first_name,
+              last_name: c.last_name,
+              email: c.email,
+              phone_number: c.phone_number,
+              type: "contact",
+              total_classes_taken: 0,
+              total_spent_this_business: 0,
+              last_booking_date_this_business: null,
+              avatar_thumb_url: null,
+            }));
+            setGuests(mapped);
+            setPagination((prev) => ({ ...prev, current: page, total: count }));
+            setTimeout(() => setIsReadyForAnimation(true), 50);
+          } else {
+            throw new Error(response.error || "Failed to fetch contacts");
+          }
         } else {
-          throw new Error(response.error || "Failed to fetch guests");
+          const params = {
+            page,
+            page_size: pagination.pageSize,
+            search: search || undefined,
+            status_filter: status,
+          };
+          const response = await businessStudentService.getAllBusinessStudents(params);
+          if (response.success && response.data) {
+            setGuests(response.data);
+            setPagination((prev) => ({
+              ...prev,
+              current: page,
+              total: response.count || 0,
+            }));
+            setTimeout(() => setIsReadyForAnimation(true), 50);
+          } else {
+            throw new Error(response.error || "Failed to fetch guests");
+          }
         }
       } catch (err) {
         setError(err.message || "Failed to fetch guests");
@@ -535,16 +565,16 @@ const Guests = forwardRef((props, ref) => {
         setIsLoading(false);
       }
     },
-    [pagination.pageSize, searchText, statusFilter]
+    [pagination.pageSize, searchText, statusFilter, segmentFilter]
   );
 
   useEffect(() => {
     if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
     fetchTimeoutRef.current = setTimeout(() => {
-      fetchGuestsData(1, searchText, statusFilter);
+      fetchGuestsData(1, searchText, statusFilter, segmentFilter);
     }, 300);
     return () => clearTimeout(fetchTimeoutRef.current);
-  }, [searchText, statusFilter, fetchGuestsData]);
+  }, [searchText, statusFilter, segmentFilter, fetchGuestsData]);
 
   useEffect(() => {
     fetchGuestsData(1);
@@ -552,7 +582,7 @@ const Guests = forwardRef((props, ref) => {
   }, []);
 
   const handlePageChange = (page) => {
-    fetchGuestsData(page, searchText, statusFilter);
+    fetchGuestsData(page, searchText, statusFilter, segmentFilter);
   };
 
   const handleGuestClick = (guest) => {
@@ -570,6 +600,11 @@ const Guests = forwardRef((props, ref) => {
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
+  const handleSegmentFilterChange = (value) => {
+    setSegmentFilter(value || "");
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
   const handleSearchChange = (e) => {
     setSearchText(e.target.value);
     setPagination((prev) => ({ ...prev, current: 1 }));
@@ -578,13 +613,15 @@ const Guests = forwardRef((props, ref) => {
   const clearFilters = () => {
     setSearchText("");
     setStatusFilter("all");
+    setSegmentFilter("");
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
   const handleImportComplete = () => {
     setTimeout(() => {
       setStatusFilter("all");
-      fetchGuestsData(1, "", "all");
+      setSegmentFilter("");
+      fetchGuestsData(1, "", "all", "");
     }, 1000);
   };
 
@@ -616,7 +653,7 @@ const Guests = forwardRef((props, ref) => {
     });
   };
 
-  const isAnyFilterActive = searchText !== "" || statusFilter !== "all";
+  const isAnyFilterActive = searchText !== "" || statusFilter !== "all" || segmentFilter !== "";
 
   const columns = useMemo(
     () => [
@@ -1020,12 +1057,28 @@ const Guests = forwardRef((props, ref) => {
                 <Option value="active">Platform Guests</Option>
                 <Option value="inactive">Imported Only</Option>
               </StyledSelect>
+              <StyledSelect
+                placeholder="Segment"
+                value={segmentFilter || undefined}
+                onChange={handleSegmentFilterChange}
+                style={{ minWidth: 160 }}
+                allowClear
+              >
+                <Option value="">All segments</Option>
+                <Option value="booked_last_30">Booked last 30 days</Option>
+                <Option value="never_returned">Never returned</Option>
+                <Option value="high_value">High value</Option>
+                <Option value="no_recent_activity">No recent activity</Option>
+                <Option value="active_members">Active members</Option>
+                <Option value="lapsed_members">Lapsed members</Option>
+                <Option value="leads">Leads</Option>
+              </StyledSelect>
               <ActionButton
                 style={{ height: "44px" }}
                 icon={<RefreshCw size={16} />}
                 onClick={() => {
                   clearFilters();
-                  fetchGuestsData(1, "", "all");
+                  fetchGuestsData(1, "", "all", "");
                 }}
                 loading={isLoading && guests.length === 0}
                 disabled={isLoading}

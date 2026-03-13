@@ -199,6 +199,73 @@ function WidgetUpgradeModal({ open, onClose }) {
       </UpgradeModalInner>
     </>
   );
+  if (isMobile) {
+    return (
+      <Drawer.Root open={open} onOpenChange={(v) => !v && onClose()}>
+        <Drawer.Portal>
+          <Drawer.Overlay style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)", zIndex: 1000 }} />
+          <Drawer.Content
+            style={{
+              position: "fixed", bottom: 0, left: 0, right: 0,
+              background: "#fff",
+              borderRadius: "20px 20px 0 0",
+              overflow: "hidden",
+              zIndex: 1001,
+              outline: "none",
+            }}
+          >
+            <div style={{ position: "relative", minHeight: 120 }}>{content}</div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
+    );
+  }
+  return (
+    <Modal open={open} onCancel={onClose} footer={null} width={420} centered closable={false}
+      styles={{ body: { padding: 0, overflow: "hidden" } }}
+      getContainer={false}>
+      <div style={{ position: "relative", minHeight: 280 }}>{content}</div>
+    </Modal>
+  );
+}
+
+function MembershipsUpgradeModal({ open, onClose }) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const update = () => setIsMobile(window.innerWidth < 768);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  const content = (
+    <>
+      <ModalBackgroundContainer>
+        <Blob style={{ width: 300, height: 300, background: "#00e1ff", top: "-100px", left: "-100px" }}
+          animate={{ x: [0, 60, -40, 20, 0], y: [0, 40, 80, -20, 0], scale: [1, 1.2, 0.9, 1.1, 1] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} />
+        <Blob style={{ width: 280, height: 280, background: "#fff", top: "-80px", right: "-80px" }}
+          animate={{ x: [0, -70, 30, -50, 0], y: [0, 50, -40, 30, 0], scale: [1, 0.8, 1.15, 0.95, 1] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} />
+        <Blob style={{ width: 320, height: 320, background: "#F54927", bottom: "-120px", left: "-80px" }}
+          animate={{ x: [0, 80, -50, 40, 0], y: [0, -60, 30, -70, 0], scale: [1, 1.15, 0.85, 1.05, 1] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} />
+        <Blob style={{ width: 250, height: 250, background: "#F54927", bottom: "-80px", right: "-80px" }}
+          animate={{ x: [0, -90, 40, -30, 0], y: [0, -40, 60, -20, 0], scale: [1, 0.9, 1.2, 0.8, 1] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} />
+        <ModalWhiteOverlay />
+      </ModalBackgroundContainer>
+      <UpgradeModalInner>
+        <UpgradeModalTitle>Unlock Memberships</UpgradeModalTitle>
+        <UpgradeModalBody>
+          Subscribe to Growth or Advanced to create membership plans, manage members and credits, and collect recurring revenue from your widget or business page.
+        </UpgradeModalBody>
+        <UpgradeModalCta href="/booking-widget" onClick={onClose}>
+          View plans <ArrowRight size={14} />
+        </UpgradeModalCta>
+      </UpgradeModalInner>
+    </>
+  );
 
   if (isMobile) {
     return (
@@ -470,6 +537,9 @@ const StyledAntMenu = styled(Menu)`
   .widget-menu-item-shake.ant-menu-item {
     animation: ${shake} 0.4s ease-in-out;
   }
+  .ant-menu-submenu.widget-menu-item-shake .ant-menu-submenu-title {
+    animation: ${shake} 0.4s ease-in-out;
+  }
 `;
 
 /* ─── Footer ───────────────────────────────────────────────────── */
@@ -731,9 +801,26 @@ const menuGroupsConfig =[
           />
         ),
         children:[
+          { key: "guests",   label: "Guests" },
           { key: "reviews",  label: "Reviews" },
           { key: "staff",    label: "Staff" },
           { key: "messages", label: "Messages" },
+        ],
+      },
+      {
+        key: "memberships",
+        label: "Memberships",
+        icon: (
+          <LordIcon
+            src="https://cdn.lordicon.com/mudwpdhy.json"
+            colors="primary:#666,secondary:#666"
+            size="20px"
+            playOnLoad={true}
+          />
+        ),
+        children:[
+          { key: "memberships/products", label: "My Plans" },
+          { key: "memberships/members", label: "Members" },
         ],
       },
       {
@@ -822,6 +909,8 @@ const menuItemPermissions = {
   staff:       "manage_business_staff",
   messages:    "view_own_business_bookings",
   settings:    "manage_own_business_profile",
+  "memberships/products": "manage_own_classes",
+  "memberships/members":  "manage_own_classes",
 };
 
 /* ─── Component ────────────────────────────────────────────────── */
@@ -835,12 +924,14 @@ const SideMenuComponent = memo(
     const [businessError, setBusinessError]             = useState(null);
     const[transformOrigin, setTransformOrigin]         = useState("bottom left");
     const [shakeWidget, setShakeWidget]                 = useState(false);
+    const [shakeMemberships, setShakeMemberships]       = useState(false);
     const [showUpgradeModal, setShowUpgradeModal]       = useState(false);
+    const [showMembershipsUpgradeModal, setShowMembershipsUpgradeModal] = useState(false);
     const router = useRouter();
 
     const { user } = useAuth();
     const permissions = user?.permissions ||[];
-    const { hasWidgetAccess } = useSubscription();
+    const { hasWidgetAccess, hasMembershipAccess } = useSubscription();
 
     const isBusinessClickable =
       !loadingBusiness && !businessError && businessData && !businessData._isPlaceholder;
@@ -860,6 +951,7 @@ const SideMenuComponent = memo(
     const growthMenuRef         = useRef(null);
     const platformMenuRef       = useRef(null);
     const widgetMenuRef         = useRef(null);
+    const membershipsMenuRef   = useRef(null);
 
     useImperativeHandle(ref, () => ({
       homeMenuRef,
@@ -963,6 +1055,17 @@ const SideMenuComponent = memo(
         if (isMobile) setDrawerVisible(false);
         return;
       }
+      const membershipsKeys = ["memberships", "memberships/products", "memberships/members"];
+      if (membershipsKeys.includes(e.key) && !hasMembershipAccess) {
+        e.domEvent?.preventDefault?.();
+        setShakeMemberships(true);
+        setTimeout(() => {
+          setShowMembershipsUpgradeModal(true);
+          setShakeMemberships(false);
+        }, 400);
+        if (isMobile) setDrawerVisible(false);
+        return;
+      }
       onMenuSelect(e.key);
       if (isMobile) setDrawerVisible(false);
     };
@@ -1027,6 +1130,7 @@ const SideMenuComponent = memo(
           listings:    listingsMenuRef,
           bookings:    activeBookingsMenuRef,
           people:      managementMenuRef,
+          memberships: membershipsMenuRef,
           financials:  financialsMenuRef,
           growth:      growthMenuRef,
           widget:      widgetMenuRef,
@@ -1041,6 +1145,14 @@ const SideMenuComponent = memo(
         : (
             <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingRight: 2 }}>
               <span ref={widgetMenuRef}>Booking Widget</span>
+              <Lock size={14} style={{ flexShrink: 0, color: "#9ca3af" }} />
+            </span>
+          );
+      const membershipsLabel = hasMembershipAccess
+        ? attachRefToLabel("Memberships", "memberships")
+        : (
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingRight: 2 }}>
+              <span ref={membershipsMenuRef}>Memberships</span>
               <Lock size={14} style={{ flexShrink: 0, color: "#9ca3af" }} />
             </span>
           );
@@ -1065,7 +1177,8 @@ const SideMenuComponent = memo(
                 acc.push({
                   key: item.key,
                   icon: item.icon,
-                  label: attachRefToLabel(item.label, item.key),
+                  label: item.key === "memberships" ? membershipsLabel : attachRefToLabel(item.label, item.key),
+                  className: item.key === "memberships" && shakeMemberships ? "widget-menu-item-shake" : undefined,
                   onMouseEnter: ({ domEvent }) => handleMenuItemHover(domEvent, true),
                   onMouseLeave: ({ domEvent }) => handleMenuItemHover(domEvent, false),
                   children: visibleChildren.map((c) => ({
@@ -1093,7 +1206,7 @@ const SideMenuComponent = memo(
           return { type: "group", label: group.label, children: visibleItems };
         })
         .filter(Boolean);
-    },[handleMenuItemHover, permissions, hasWidgetAccess, shakeWidget]);
+    },[handleMenuItemHover, permissions, hasWidgetAccess, hasMembershipAccess, shakeWidget, shakeMemberships]);
 
     /* ── Render helpers ── */
 
@@ -1222,6 +1335,7 @@ const SideMenuComponent = memo(
       <ThemeProvider theme={augmentedTheme}>
         <LocalGlobalStyleForSkeleton />
         <WidgetUpgradeModal open={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
+        <MembershipsUpgradeModal open={showMembershipsUpgradeModal} onClose={() => setShowMembershipsUpgradeModal(false)} />
         <SideMenuWrapper>
           {/* ── Desktop ── */}
           <DesktopSideMenu className="desktop-sidemenu" initial={false}>
