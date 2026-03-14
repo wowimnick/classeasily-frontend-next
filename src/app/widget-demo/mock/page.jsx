@@ -551,6 +551,11 @@ function MockPageContent() {
     const existing = document.getElementById("ce-widget-script");
     if (existing) return;
 
+    // Set up a queue stub so buttons clicked before the script loads don't throw
+    if (!window.ClasseasilyWidget) {
+      window.ClasseasilyWidget = { _queue: [] };
+    }
+
     const cssUrl = scriptUrl.replace(/\.js$/i, ".css");
     const linkId = "ce-widget-styles";
     if (!document.getElementById(linkId)) {
@@ -776,7 +781,14 @@ function MockPageContent() {
                     <TriggerDemoButton
                       type="button"
                       style={{ width: "100%", justifyContent: "center", borderRadius: "0.75rem" }}
-                      onClick={() => window.ClasseasilyWidget?.open("ce-widget-mount-popup")}
+                      onClick={() => {
+                        const w = window.ClasseasilyWidget;
+                        if (typeof w?.open === "function") {
+                          w.open("ce-widget-mount-popup");
+                        } else if (w && Array.isArray(w._queue)) {
+                          w._queue.push({ method: "open", args: ["ce-widget-mount-popup"] });
+                        }
+                      }}
                     >
                       Book now
                     </TriggerDemoButton>
