@@ -797,18 +797,18 @@ export const helpCenterData = [
               "<strong>Step 2 block:</strong> A sample button with <code>onclick=\"ClasseasilyWidget.open()\"</code>. You can replace this with any button, link, or element on your site — just keep the <code>onclick</code> part.",
             ],
           },
-          { type: "h3", text: "Using your existing button" },
+          { type: "h3", text: "Using your own button" },
           {
             type: "p",
-            text: "If you already have a button on the page (e.g. a Wix button element, a Squarespace button block, or an existing HTML button), just add the click action to it:",
+            text: "The embed code includes a sample button. You can change its text, add CSS, or replace it with your own HTML — just keep <code>onclick=\"ClasseasilyWidget.open()\"</code> on the element that should open the booking modal.",
           },
           {
-            type: "ul",
-            items: [
-              "<strong>HTML:</strong> Add <code>onclick=\"ClasseasilyWidget.open()\"</code> to your existing button element.",
-              "<strong>Wix:</strong> Select your button → <strong>Link</strong> → choose <strong>No Link</strong>, then open the Wix Velo code panel and add: <code>$w('#myButton').onClick(() => { $w('#classEasilyEmbed').callFunction('open'); });</code> — or use the Wix Embed element's JavaScript injection: add <code>window.parent.ClasseasilyWidget?.open()</code> to a Wix code block. The simplest Wix approach is to use a custom HTML element for both the widget and button (see Wix installation guide).",
-              "<strong>Squarespace:</strong> Use a Code block for the button with the <code>onclick</code> attribute, or add a global Code Injection script that runs on click.",
-            ],
+            type: "p",
+            text: "<strong>Wix, Squarespace, and similar builders:</strong> Paste the <strong>entire</strong> code (Step 1 + Step 2) into <strong>one</strong> Embed or Custom HTML block. The button and widget must be in the same block so they work together. See <a href=\"/business/help?category=widget-installation&article=widget-installation-wix\">Installing on Wix</a> for Wix-specific steps.",
+          },
+          {
+            type: "p",
+            text: "If your site is plain HTML or you can edit a link/button's code directly, add <code>onclick=\"ClasseasilyWidget.open()\"</code> to that element. Make sure the widget code (Step 1) is also on the same page.",
           },
           { type: "h3", text: "Floating button (fixed position)" },
           {
@@ -874,7 +874,7 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "You can embed the Classeasily booking widget on your Wix site using Wix's embed feature. You will need the embed code from your Classeasily dashboard (Widget section).",
+            text: "You can embed the Classeasily booking widget on your Wix site using Wix's embed feature. You will need the embed code from your Classeasily dashboard (Widget section). Copy the full code — for Popup mode that means both the hidden widget and the button.",
           },
           { type: "h3", text: "Steps" },
           {
@@ -882,10 +882,14 @@ export const helpCenterData = [
             items: [
               "In the Wix editor, go to the page where you want the widget.",
               "Click <strong>Add</strong> (+) and choose <strong>Embed</strong> or <strong>Embed Code</strong> / <strong>HTML iframe</strong> (the name may vary by Wix version).",
-              "Paste your full embed code into the embed box.",
-              "Resize or position the embed block where you want the widget to appear.",
+              "Paste your <strong>full</strong> embed code into the embed box. For Popup mode, paste everything (the hidden widget block and the button) so the button opens the booking modal.",
+              "Resize or position the embed. For Popup mode you only need enough space for the button; the booking form opens full-screen when clicked.",
               "Click <strong>Publish</strong> to save your site.",
             ],
+          },
+          {
+            type: "p",
+            text: "You can style the button by editing the HTML inside the embed (e.g. change the text, add a class, or adjust inline styles). Keep <code>onclick=\"ClasseasilyWidget.open()\"</code> on the button so it keeps working.",
           },
           {
             type: "blockquote",
