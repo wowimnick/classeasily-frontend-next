@@ -834,6 +834,9 @@ export const helpCenterData = [
           },
         ],
       },
+      {
+        slug: "widget-installation-wordpress",
+        title: "Installing on WordPress",
         content: [
           {
             type: "p",
