@@ -378,6 +378,7 @@ const FONT_FAMILY_OPTIONS = [
   { value: "'Open Sans', sans-serif", label: "Open Sans" },
   { value: "Lato, sans-serif", label: "Lato" },
   { value: "Poppins, sans-serif", label: "Poppins" },
+  { value: '"Proxima Soft", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', label: "Proxima Soft" },
   { value: "Georgia, serif", label: "Georgia" },
   { value: "system-ui, sans-serif", label: "System default" },
 ];
