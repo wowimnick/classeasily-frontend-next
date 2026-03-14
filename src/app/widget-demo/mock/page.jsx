@@ -551,11 +551,6 @@ function MockPageContent() {
     const existing = document.getElementById("ce-widget-script");
     if (existing) return;
 
-    // Set up a queue stub so buttons clicked before the script loads don't throw
-    if (!window.ClasseasilyWidget) {
-      window.ClasseasilyWidget = { _queue: [] };
-    }
-
     const cssUrl = scriptUrl.replace(/\.js$/i, ".css");
     const linkId = "ce-widget-styles";
     if (!document.getElementById(linkId)) {
@@ -782,12 +777,18 @@ function MockPageContent() {
                       type="button"
                       style={{ width: "100%", justifyContent: "center", borderRadius: "0.75rem" }}
                       onClick={() => {
-                        const w = window.ClasseasilyWidget;
-                        if (typeof w?.open === "function") {
-                          w.open("ce-widget-mount-popup");
-                        } else if (w && Array.isArray(w._queue)) {
-                          w._queue.push({ method: "open", args: ["ce-widget-mount-popup"] });
-                        }
+                        const tryOpen = (attempts = 0) => {
+                          const instances = window._ceWidgetInstances || [];
+                          const target = instances.find(
+                            (e) => e.elementId === "ce-widget-mount-popup" && typeof e.open === "function"
+                          );
+                          if (target) {
+                            target.open();
+                          } else if (attempts < 20) {
+                            setTimeout(() => tryOpen(attempts + 1), 100);
+                          }
+                        };
+                        tryOpen();
                       }}
                     >
                       Book now
