@@ -874,26 +874,55 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "You can embed the Classeasily booking widget on your Wix site using Wix's embed feature. You will need the embed code from your Classeasily dashboard (Widget section). Copy the full code — for Popup mode that means both the hidden widget and the button.",
+            text: "Wix wraps every HTML embed in a sandboxed iframe. To get a true full-screen booking modal you need to <strong>pin the embed to the screen</strong> and stretch it to cover the full viewport — then use <code>pointer-events: none</code> on the wrapper so it doesn't block other page elements when the modal is closed.",
+          },
+          { type: "h3", text: "Popup mode (recommended)" },
+          {
+            type: "p",
+            text: "Use this embed code. It pins a transparent full-screen container over your page; only the button captures clicks, everything else is pass-through until the modal opens:",
+          },
+          {
+            type: "code",
+            text: `<link rel="stylesheet" href="https://staging.classeasily.com/widget/widget.css" />
+
+<div style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999">
+  <!-- Widget lives here — fills the full viewport so the modal can cover the page -->
+  <div id="classeasily-booking-widget"
+    data-widget-api-key="YOUR_API_KEY"
+    data-api-base="https://api.staging.classeasily.com/api"
+    style="display:none">
+  </div>
+
+  <!-- Button: pointer-events:auto so it's clickable even though the wrapper is not -->
+  <div style="position:absolute;bottom:32px;left:50%;transform:translateX(-50%);pointer-events:auto">
+    <button onclick="ClasseasilyWidget.open()"
+      style="padding:14px 28px;background:#222;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer">
+      Book now
+    </button>
+  </div>
+</div>
+
+<script src="https://staging.classeasily.com/widget/widget.js"></script>`,
           },
           { type: "h3", text: "Steps" },
           {
             type: "ol",
             items: [
               "In the Wix editor, go to the page where you want the widget.",
-              "Click <strong>Add</strong> (+) and choose <strong>Embed</strong> or <strong>Embed Code</strong> / <strong>HTML iframe</strong> (the name may vary by Wix version).",
-              "Paste your <strong>full</strong> embed code into the embed box. For Popup mode, paste everything (the hidden widget block and the button) so the button opens the booking modal.",
-              "Resize or position the embed. For Popup mode you only need enough space for the button; the booking form opens full-screen when clicked.",
-              "Click <strong>Publish</strong> to save your site.",
+              "Click <strong>Add</strong> (+) → <strong>Embed</strong> → <strong>HTML iframe</strong> (or <strong>Embed Code</strong> depending on your Wix version).",
+              "Paste the embed code above into the code box. Replace <code>YOUR_API_KEY</code> with your key from the dashboard.",
+              "<strong>Pin the embed to the screen:</strong> right-click the embed block → <strong>Pin to Screen</strong>. Set its size to 100% width and 100% viewport height. This makes the iframe cover the full page.",
+              "The button is positioned at the bottom-centre by default — move it by changing the <code>position:absolute</code> styles inside the code to wherever you want it on the page.",
+              "Click <strong>Publish</strong>.",
             ],
           },
           {
             type: "p",
-            text: "You can style the button by editing the HTML inside the embed (e.g. change the text, add a class, or adjust inline styles). Keep <code>onclick=\"ClasseasilyWidget.open()\"</code> on the button so it keeps working.",
+            text: "You can restyle the button freely (colours, size, position, text). The only thing that must stay is <code>onclick=\"ClasseasilyWidget.open()\"</code>.",
           },
           {
             type: "blockquote",
-            text: "Add your Wix site address (e.g. <code>https://yoursite.wixsite.com/yoursite</code>) to <strong>Allowed Domains</strong> in your Classeasily Widget settings. If the widget doesn't show, clear your browser cache or try in a private window.",
+            text: "Add your Wix site address (e.g. <code>https://yoursite.wixsite.com/yoursite</code>) to <strong>Allowed Domains</strong> in your Classeasily Widget settings. If the widget doesn't appear, clear your browser cache or try in a private window.",
           },
         ],
       },
