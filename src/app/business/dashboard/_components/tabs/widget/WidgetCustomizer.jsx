@@ -568,6 +568,8 @@ export default function WidgetCustomizer() {
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [copied, setCopied]     = useState(false);
+  const [copiedTrigger, setCopiedTrigger] = useState(false);
+  const [embedTab, setEmbedTab] = useState("standard"); // "standard" | "trigger"
   const [data, setData]         = useState(null);
   const [form, setForm]         = useState(DEFAULT_FORM);
   const [isWide, setIsWide]     = useState(
@@ -715,11 +717,30 @@ export default function WidgetCustomizer() {
 </div>
 <script src="${widgetScriptUrl}"><\/script>`;
 
+  // Trigger button snippet: widget is hidden (no built-in button); business uses their own button.
+  // Works on any website (Wix, Squarespace, etc.) and on normal HTML sites.
+  const triggerSnippet = `<!-- Step 1: Paste this anywhere on your page (hidden widget) -->
+<link rel="stylesheet" href="${widgetScriptUrl.replace(/\.js$/, ".css")}" />
+<div id="classeasily-booking-widget"
+  data-widget-api-key="${apiKey}"
+  data-api-base="${apiBase}"
+  style="display:none">
+</div>
+<script src="${widgetScriptUrl}"><\/script>
+
+<!-- Step 2: Add this to your own "Book now" button -->
+<button onclick="ClasseasilyWidget.open()">Book now<\/button>`;
+
   const handleCopy = () => {
     if (typeof navigator?.clipboard?.writeText === "function") {
-      navigator.clipboard.writeText(embedSnippet);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2200);
+      navigator.clipboard.writeText(embedTab === "trigger" ? triggerSnippet : embedSnippet);
+      if (embedTab === "trigger") {
+        setCopiedTrigger(true);
+        setTimeout(() => setCopiedTrigger(false), 2200);
+      } else {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2200);
+      }
     }
   };
 
@@ -1067,6 +1088,35 @@ export default function WidgetCustomizer() {
           </a>
         </div>
 
+        {/* Tab switcher */}
+        <div style={{ display: "flex", gap: 0, marginBottom: 10, border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
+          {[
+            { id: "standard", label: "Standard" },
+            { id: "trigger", label: "Custom button" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setEmbedTab(tab.id)}
+              style={{
+                flex: 1, padding: "7px 4px", border: "none", cursor: "pointer",
+                fontSize: 12, fontWeight: 600,
+                background: embedTab === tab.id ? SEL_COLOR : "#f9fafb",
+                color: embedTab === tab.id ? "#ffffff" : "#6b7280",
+                transition: "all 0.15s",
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {embedTab === "trigger" && (
+          <div style={{ marginBottom: 10, padding: "9px 11px", background: "#eff6ff", borderRadius: 7, border: "1px solid #bfdbfe", fontSize: 11, color: "#1e40af", lineHeight: 1.55 }}>
+            <strong>Custom trigger button:</strong> The widget is hidden — it only opens when your own button is clicked. Use this if you have your own &quot;Book now&quot; button on the page. Works on Wix, Squarespace, any website.
+          </div>
+        )}
+
         <pre style={{
           background: "#f1f3f5", border: "1px dashed #d1d5db",
           borderRadius: 8, padding: "11px 13px", fontSize: 11,
@@ -1074,17 +1124,17 @@ export default function WidgetCustomizer() {
           whiteSpace: "pre-wrap", wordBreak: "break-all",
           color: "#1f2937", fontFamily: "monospace",
         }}>
-          {embedSnippet}
+          {embedTab === "trigger" ? triggerSnippet : embedSnippet}
         </pre>
 
         <Button
           type="primary"
-          icon={copied ? <Check size={14} /> : <Copy size={14} />}
+          icon={(embedTab === "trigger" ? copiedTrigger : copied) ? <Check size={14} /> : <Copy size={14} />}
           onClick={handleCopy}
           block
-          style={{ marginTop: 8, background: copied ? "#16a34a" : SEL_COLOR, borderColor: copied ? "#16a34a" : SEL_COLOR, fontWeight: 600 }}
+          style={{ marginTop: 8, background: (embedTab === "trigger" ? copiedTrigger : copied) ? "#16a34a" : SEL_COLOR, borderColor: (embedTab === "trigger" ? copiedTrigger : copied) ? "#16a34a" : SEL_COLOR, fontWeight: 600 }}
         >
-          {copied ? "Copied!" : "Copy code"}
+          {(embedTab === "trigger" ? copiedTrigger : copied) ? "Copied!" : "Copy code"}
         </Button>
 
         {apiKey && (
@@ -1096,11 +1146,6 @@ export default function WidgetCustomizer() {
         <div style={{ marginTop: 10, padding: "8px 12px", background: "#fffbeb", borderRadius: 7, border: "1px solid #fde68a" }}>
           <div style={{ fontSize: 11, color: "#92400e", lineHeight: 1.5 }}>
             <strong>Before going live:</strong> add your domain to Allowed Domains so the widget can load from your site.
-          </div>
-        </div>
-        <div style={{ marginTop: 10, padding: "8px 12px", background: "#eff6ff", borderRadius: 7, border: "1px solid #bfdbfe" }}>
-          <div style={{ fontSize: 11, color: "#1e40af", lineHeight: 1.5 }}>
-            <strong>Using your own button?</strong> (e.g. on Wix) Add <code style={{ background: "rgba(255,255,255,0.7)", padding: "1px 4px", borderRadius: 3 }}>data-ce-trigger="custom"</code> to the div, include the trigger script on your page, and add <code style={{ background: "rgba(255,255,255,0.7)", padding: "1px 4px", borderRadius: 3 }}>data-ce-booking-trigger</code> to your button. The modal will open fullscreen. See the demo page for the full snippet.
           </div>
         </div>
       </div>

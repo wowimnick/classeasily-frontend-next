@@ -13,6 +13,7 @@ const LAYOUTS = [
   { id: "inline", label: "Inline", description: "Widget embedded in the page" },
   { id: "modal", label: "Modal", description: "Button opens booking in a modal" },
   { id: "floating", label: "Floating button", description: "Fixed button opens booking" },
+  { id: "trigger", label: "Custom button", description: "Your own button opens the widget" },
 ];
 
 /* ── Tokens ── */
@@ -474,6 +475,34 @@ const FloatingMount = styled.div`
   & > * { pointer-events: auto; }
 `;
 
+const TriggerMount = styled.div`
+  display: ${(p) => (p.$hide ? "none" : "block")};
+  min-height: 0;
+`;
+
+const TriggerDemoButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  border-radius: 2rem;
+  border: none;
+  background: ${C.ink};
+  color: ${C.white};
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  transition: all 0.18s;
+  &:hover {
+    background: ${C.charcoal};
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    transform: translateY(-1px);
+  }
+  &:active { transform: translateY(0); }
+`;
+
 const NoKeyWrap = styled.div`
   min-height: 100vh;
   display: flex;
@@ -743,6 +772,23 @@ function MockPageContent() {
                 <WidgetMount $hide={layout !== "modal"} style={{ marginLeft: "1rem" }}>
                   <div id="ce-widget-mount-modal" {...widgetProps} data-demo-view="modal" />
                 </WidgetMount>
+                <WidgetMount $hide={layout !== "trigger"} style={{ padding: "1.25rem 1.375rem 1.5rem", textAlign: "center" }}>
+                  <div style={{ fontSize: "0.75rem", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: C.fog, marginBottom: "1rem" }}>
+                    Use your own button to open the widget
+                  </div>
+                  <TriggerDemoButton
+                    type="button"
+                    onClick={() => {
+                      // ClasseasilyWidget.open() works when widget is on the same page.
+                      if (typeof window !== "undefined" && window.ClasseasilyWidget?.open) {
+                        window.ClasseasilyWidget.open();
+                      }
+                    }}
+                  >
+                    Book now
+                  </TriggerDemoButton>
+                  <div id="ce-widget-mount-trigger" {...widgetProps} data-demo-view="modal" style={{ display: "none" }} />
+                </WidgetMount>
               </BookingCard>
             </Sidebar>
           </Grid>
@@ -750,6 +796,9 @@ function MockPageContent() {
           <FloatingMount $hide={layout !== "floating"}>
             <div id="ce-widget-mount-floating" {...widgetProps} data-demo-view="floating" />
           </FloatingMount>
+          <TriggerMount $hide={true}>
+            {/* trigger widget is mounted inside the BookingCard above; this element is intentionally hidden */}
+          </TriggerMount>
         </Main>
       </PageWrap>
     </>
