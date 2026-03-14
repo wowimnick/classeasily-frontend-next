@@ -769,35 +769,34 @@ function MockPageContent() {
                 <WidgetMount $hide={layout !== "inline"}>
                   <div id="ce-widget-mount-inline" {...widgetProps} data-demo-view="inline" />
                 </WidgetMount>
-                <WidgetMount $hide={layout !== "modal"} style={{ marginLeft: "1rem" }}>
-                  <div id="ce-widget-mount-modal" {...widgetProps} data-demo-view="modal" />
-                </WidgetMount>
-                <WidgetMount $hide={layout !== "trigger"} style={{ padding: "1.25rem 1.375rem 1.5rem", textAlign: "center" }}>
-                  <div style={{ fontSize: "0.75rem", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: C.fog, marginBottom: "1rem" }}>
-                    Use your own button to open the widget
+
+                {/* Modal / floating / trigger: show a Book Now button that opens the shared widget */}
+                {(layout === "modal" || layout === "floating" || layout === "trigger") && (
+                  <div style={{ padding: "1.25rem 1.375rem 1.5rem", textAlign: "center" }}>
+                    {layout === "trigger" && (
+                      <div style={{ fontSize: "0.75rem", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: C.fog, marginBottom: "1rem" }}>
+                        This is your own button — the widget has no built-in button
+                      </div>
+                    )}
+                    <TriggerDemoButton
+                      type="button"
+                      onClick={() => {
+                        if (typeof window !== "undefined" && window.ClasseasilyWidget?.open) {
+                          window.ClasseasilyWidget.open("ce-widget-mount-popup");
+                        }
+                      }}
+                    >
+                      Book now
+                    </TriggerDemoButton>
                   </div>
-                  <TriggerDemoButton
-                    type="button"
-                    onClick={() => {
-                      if (typeof window !== "undefined" && window.ClasseasilyWidget?.open) {
-                        window.ClasseasilyWidget.open("ce-widget-mount-trigger");
-                      }
-                    }}
-                  >
-                    Book now
-                  </TriggerDemoButton>
-                  <div id="ce-widget-mount-trigger" {...widgetProps} data-demo-view="modal" />
-                </WidgetMount>
+                )}
+
+                {/* Single shared widget mount for all popup/modal/floating layouts */}
+                <div id="ce-widget-mount-popup" {...widgetProps} data-demo-view="modal" style={{ display: "none" }} />
               </BookingCard>
             </Sidebar>
           </Grid>
 
-          <FloatingMount $hide={layout !== "floating"}>
-            <div id="ce-widget-mount-floating" {...widgetProps} data-demo-view="floating" />
-          </FloatingMount>
-          <TriggerMount $hide={true}>
-            {/* trigger widget is mounted inside the BookingCard above; this element is intentionally hidden */}
-          </TriggerMount>
         </Main>
       </PageWrap>
     </>
