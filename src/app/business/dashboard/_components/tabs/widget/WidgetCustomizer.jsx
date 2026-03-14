@@ -590,18 +590,15 @@ export default function WidgetCustomizer() {
 </div>
 <script src="${widgetScriptUrl}"><\/script>`;
 
-  // Popup snippet: widget stays hidden, business places their own button anywhere
-  const popupSnippet = `<!-- Step 1: Hidden widget (paste once anywhere on the page) -->
+  // Popup snippet: widget only (no button). Business adds their own button and calls ClasseasilyWidget.open() or openClasseasilyBooking() on Wix.
+  const popupSnippet = `<!-- Hidden widget — paste once on the page. Add your own button elsewhere and call ClasseasilyWidget.open() -->
 <link rel="stylesheet" href="${widgetScriptUrl.replace(/\.js$/, ".css")}" />
 <div id="classeasily-booking-widget"
   data-widget-api-key="${apiKey}"
   data-api-base="${apiBase}"
   style="display:none">
 </div>
-<script src="${widgetScriptUrl}"><\/script>
-
-<!-- Step 2: Your own button — place it anywhere, style it however you like -->
-<button onclick="ClasseasilyWidget.open()">Book now<\/button>`;
+<script src="${widgetScriptUrl}"><\/script>`;
 
   const activeSnippet = form.view === "modal" ? popupSnippet : embedSnippet;
 

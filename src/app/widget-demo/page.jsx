@@ -2,18 +2,13 @@
 
 import React, { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import Script from "next/script";
 import styled from "styled-components";
 
 const PageWrap = styled.div`
   padding: 24px;
   min-height: 100vh;
   font-family: system-ui, -apple-system, sans-serif;
-`;
-
-const Subtitle = styled.p`
-  margin-bottom: 16px;
-  color: #6b7280;
-  font-size: 14px;
 `;
 
 const FallbackWrap = styled.div`
@@ -27,41 +22,15 @@ const ErrorWrap = styled.div`
 `;
 
 /**
- * Inner content that uses useSearchParams - must be wrapped in Suspense
- * so Next.js can prerender the route and avoid blocking.
+ * Same structure as a business page: one hidden widget block + script, and a button
+ * that calls ClasseasilyWidget.open(). Demo data (key, base) comes from URL only.
  */
 function WidgetDemoContent() {
   const searchParams = useSearchParams();
   const apiKey = searchParams.get("key");
   const apiBase = searchParams.get("base") || "";
-
-  useEffect(() => {
-    if (!apiKey || typeof window === "undefined") return;
-    const scriptUrl = process.env.NEXT_PUBLIC_WIDGET_SCRIPT_URL;
-    if (!scriptUrl) return;
-    const existing = document.getElementById("ce-widget-script");
-    if (existing) return;
-
-    const cssUrl = scriptUrl.replace(/\.js$/i, ".css");
-    const linkId = "ce-widget-styles";
-    if (!document.getElementById(linkId)) {
-      const link = document.createElement("link");
-      link.id = linkId;
-      link.rel = "stylesheet";
-      link.href = cssUrl;
-      document.head.appendChild(link);
-    }
-
-    const script = document.createElement("script");
-    script.id = "ce-widget-script";
-    script.src = scriptUrl;
-    script.async = true;
-    document.body.appendChild(script);
-    return () => {
-      script.remove();
-      document.getElementById(linkId)?.remove();
-    };
-  }, [apiKey]);
+  const scriptUrl = typeof window !== "undefined" ? process.env.NEXT_PUBLIC_WIDGET_SCRIPT_URL : "";
+  const fullApiBase = apiBase || (typeof window !== "undefined" ? process.env.NEXT_PUBLIC_API_URL : "") || "";
 
   if (!apiKey) {
     return (
@@ -72,23 +41,42 @@ function WidgetDemoContent() {
     );
   }
 
-  const fullApiBase = apiBase || (typeof window !== "undefined" ? process.env.NEXT_PUBLIC_API_URL : "") || "";
-
   return (
     <PageWrap>
+      {/* Same as business page: hidden widget div + script (widget injects CSS). */}
       <div
         id="classeasily-booking-widget"
         data-widget-api-key={apiKey}
         {...(fullApiBase ? { "data-api-base": fullApiBase } : {})}
+        style={{ display: "none" }}
       />
+      {scriptUrl && <Script src={scriptUrl} strategy="afterInteractive" />}
+      {/* Business adds their own button; same pattern. */}
+      <p style={{ marginTop: 24, marginBottom: 8, fontSize: 14, color: "#6b7280" }}>
+        Your button — opens the booking modal when widget is in Popup mode:
+      </p>
+      <button
+        type="button"
+        onClick={() => typeof window !== "undefined" && window.ClasseasilyWidget?.open?.()}
+        style={{
+          padding: "12px 24px",
+          fontSize: 16,
+          fontWeight: 600,
+          color: "#fff",
+          background: "#222",
+          border: "none",
+          borderRadius: 8,
+          cursor: "pointer",
+        }}
+      >
+        Book now
+      </button>
     </PageWrap>
   );
 }
 
 /**
- * Standalone page for widget preview.
- * Query: key=widget_api_key (required). Optional: base=API_BASE_URL
- * Loads the widget script and mounts it in the div with data-widget-api-key.
+ * Widget demo: same embed structure as a business page. Query: key (required), base (optional).
  */
 export default function WidgetDemoPage() {
   return (

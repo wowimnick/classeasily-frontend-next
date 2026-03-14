@@ -607,7 +607,7 @@ export const helpCenterData = [
           },
           {
             type: "p",
-            text: "For the popup mode, the embed code includes a hidden widget block <em>and</em> a sample button. You can style the button however you like, and place it anywhere on your page. See <a href=\"/business/help?category=widget-installation&article=widget-using-custom-button\">Using a custom button</a> for details.",
+            text: "For popup mode, the embed code is the hidden widget only (no button). You add your own button anywhere and wire it to open the modal. See <a href=\"/business/help?category=widget-installation&article=widget-using-custom-button\">Using a custom button</a> for details.",
           },
           { type: "h3", text: "Security" },
           {
@@ -774,63 +774,59 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "In Popup mode, the booking widget stays completely hidden on your page until a visitor clicks a button. There is no built-in button — <strong>you decide what the button looks like and where it goes</strong>. This works on any website: Wix, Squarespace, WordPress, Webflow, and plain HTML.",
+            text: "The widget never renders an \"open\" button. In Popup mode you add the hidden widget once, then <strong>you add your own button</strong> (or link, or image) wherever you want and wire it to open the booking modal. You control the look and position completely.",
           },
           { type: "h3", text: "How it works" },
           {
             type: "ol",
             items: [
-              "You paste the hidden widget code once anywhere on the page (the widget loads silently — visitors never see it).",
-              "You add your own button anywhere else on the page, styled however you want.",
-              "The button calls <code>ClasseasilyWidget.open()</code> when clicked — the booking flow opens as a full-screen overlay instantly.",
+              "Paste the <strong>widget-only</strong> embed code once on the page (hidden div + script). The widget loads silently.",
+              "Add your own button, link, or clickable element anywhere on the page and call <code>ClasseasilyWidget.open()</code> when it is clicked (same page) or <code>openClasseasilyBooking()</code> (Wix — see below).",
+              "The booking flow opens as a full-screen overlay. No widget-owned button is ever shown.",
             ],
           },
           { type: "h3", text: "The embed code" },
           {
             type: "p",
-            text: "In <strong>Widget Settings</strong>, select <strong>Popup</strong> as the display type and copy the embed code. It looks like this:",
+            text: "In <strong>Widget Settings</strong>, select <strong>Popup</strong> and copy the embed code. It contains only the hidden widget (CSS link, div, script). There is no button in the snippet. Add your own trigger separately.",
           },
           {
             type: "ul",
             items: [
-              "<strong>Step 1 block:</strong> The hidden widget (a CSS link, a hidden div, and a script). Paste this once on any page where you want the popup to work.",
-              "<strong>Step 2 block:</strong> A sample button with <code>onclick=\"ClasseasilyWidget.open()\"</code>. You can replace this with any button, link, or element on your site — just keep the <code>onclick</code> part.",
+              "<strong>Widget block:</strong> Paste this once per page (or in header/footer so it loads on every page).",
+              "<strong>Your button:</strong> Add any button/link/element and call <code>onclick=\"ClasseasilyWidget.open()\"</code> (plain HTML, WordPress, Squarespace, etc.) or use the connector script on Wix (see <a href=\"/business/help?category=widget-installation&article=widget-installation-wix\">Installing on Wix</a>).",
             ],
           },
-          { type: "h3", text: "Using your own button" },
+          { type: "h3", text: "Same-page button (HTML, WordPress, Squarespace, Webflow)" },
           {
             type: "p",
-            text: "The embed code includes a sample button. You can change its text, add CSS, or replace it with your own HTML — just keep <code>onclick=\"ClasseasilyWidget.open()\"</code> on the element that should open the booking modal.",
+            text: "If the widget and your button are on the same page (same HTML or same builder block), add <code>onclick=\"ClasseasilyWidget.open()\"</code> to the element that should open the modal. Example: <code>&lt;button onclick=\"ClasseasilyWidget.open()\"&gt;Book now&lt;/button&gt;</code>. Style and place it however you like.",
           },
+          { type: "h3", text: "Wix: button anywhere on the page" },
           {
             type: "p",
-            text: "<strong>Wix, Squarespace, and similar builders:</strong> Paste the <strong>entire</strong> code (Step 1 + Step 2) into <strong>one</strong> Embed or Custom HTML block. The button and widget must be in the same block so they work together. See <a href=\"/business/help?category=widget-installation&article=widget-installation-wix\">Installing on Wix</a> for Wix-specific steps.",
-          },
-          {
-            type: "p",
-            text: "If your site is plain HTML or you can edit a link/button's code directly, add <code>onclick=\"ClasseasilyWidget.open()\"</code> to that element. Make sure the widget code (Step 1) is also on the same page.",
+            text: "On Wix the widget runs inside an iframe. To put your button in a different place (e.g. header or hero) and still get a full-screen modal with a clickable page when closed, use the <strong>two-embed + connector</strong> flow: one embed for the widget (pinned full viewport), one for the connector script, and any Wix element as your button that runs <code>openClasseasilyBooking()</code>. Full steps: <a href=\"/business/help?category=widget-installation&article=widget-installation-wix\">Installing on Wix</a>.",
           },
           { type: "h3", text: "Floating button (fixed position)" },
           {
             type: "p",
-            text: "Want a button pinned to the bottom-right corner of the page, like a chat widget? Just style your button with CSS — no special widget setting needed:",
+            text: "For a fixed corner button (e.g. bottom-right), style your own button with CSS and keep the same open call:",
           },
           {
             type: "ul",
             items: [
               "<code>position: fixed; bottom: 24px; right: 24px; z-index: 9999;</code>",
-              "Add a <code>border-radius: 999px</code> for a pill shape.",
-              "Place this button anywhere on your page and the Step 1 hidden widget block anywhere on the same page.",
+              "Use <code>onclick=\"ClasseasilyWidget.open()\"</code> (or <code>openClasseasilyBooking()</code> on Wix).",
             ],
           },
           {
             type: "blockquote",
-            text: "<strong>Tip:</strong> You can place the Step 1 hidden widget block in your site's global header or footer so it loads on every page, then place your button wherever you want it. The widget will be available on all pages automatically.",
+            text: "<strong>Tip:</strong> Paste the widget block in your site's global header or footer so it loads on every page; then place your button on any page. The modal will work wherever your button is.",
           },
-          { type: "h3", text: "Inline mode vs Popup mode" },
+          { type: "h3", text: "Inline mode (no button)" },
           {
             type: "p",
-            text: "If you just want the booking form to live directly on the page (no button, no popup), use <strong>Inline</strong> mode instead. The widget renders in the exact spot you paste the embed code.",
+            text: "If you want the booking form to sit directly on the page with no popup and no trigger button, use <strong>Inline</strong> mode. Paste the widget embed where you want the form to appear. Layout is fully controlled by where you paste the block.",
           },
         ],
       },
@@ -874,55 +870,54 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Wix wraps every HTML embed in a sandboxed iframe. To get a true full-screen booking modal you need to <strong>pin the embed to the screen</strong> and stretch it to cover the full viewport — then use <code>pointer-events: none</code> on the wrapper so it doesn't block other page elements when the modal is closed.",
+            text: "Wix wraps every HTML embed in a sandboxed iframe. To get a <strong>full-screen booking modal</strong> with your <strong>button placed anywhere</strong> on the page (header, hero, footer — you choose), use two embeds plus our connector script. The connector makes the iframe pass-through when the modal is closed so the rest of your page stays clickable.",
           },
-          { type: "h3", text: "Popup mode (recommended)" },
+          { type: "h3", text: "Popup mode: two embeds + your button" },
           {
             type: "p",
-            text: "Use this embed code. It pins a transparent full-screen container over your page; only the button captures clicks, everything else is pass-through until the modal opens:",
+            text: "<strong>Embed 1 — Widget only</strong> (full viewport, pinned). Paste this into the first HTML embed. Replace <code>YOUR_API_KEY</code> with your key from the dashboard. No button here: the widget stays hidden until opened.",
           },
           {
             type: "code",
             text: `<link rel="stylesheet" href="https://staging.classeasily.com/widget/widget.css" />
-
-<div style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999">
-  <!-- Widget lives here — fills the full viewport so the modal can cover the page -->
-  <div id="classeasily-booking-widget"
-    data-widget-api-key="YOUR_API_KEY"
-    data-api-base="https://api.staging.classeasily.com/api"
-    style="display:none">
-  </div>
-
-  <!-- Button: pointer-events:auto so it's clickable even though the wrapper is not -->
-  <div style="position:absolute;bottom:32px;left:50%;transform:translateX(-50%);pointer-events:auto">
-    <button onclick="ClasseasilyWidget.open()"
-      style="padding:14px 28px;background:#222;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer">
-      Book now
-    </button>
-  </div>
+<div id="classeasily-booking-widget"
+  data-widget-api-key="YOUR_API_KEY"
+  data-api-base="https://api.staging.classeasily.com/api"
+  style="display:none">
 </div>
-
 <script src="https://staging.classeasily.com/widget/widget.js"></script>`,
+          },
+          {
+            type: "p",
+            text: "<strong>Embed 2 — Connector script</strong>. Add a second HTML embed and paste only this script tag. It finds the widget iframe, keeps the page clickable when the modal is closed, and exposes <code>openClasseasilyBooking()</code> for your button:",
+          },
+          {
+            type: "code",
+            text: `<script src="https://staging.classeasily.com/widget/connector.js"></script>`,
           },
           { type: "h3", text: "Steps" },
           {
             type: "ol",
             items: [
-              "In the Wix editor, go to the page where you want the widget.",
-              "Click <strong>Add</strong> (+) → <strong>Embed</strong> → <strong>HTML iframe</strong> (or <strong>Embed Code</strong> depending on your Wix version).",
-              "Paste the embed code above into the code box. Replace <code>YOUR_API_KEY</code> with your key from the dashboard.",
-              "<strong>Pin the embed to the screen:</strong> right-click the embed block → <strong>Pin to Screen</strong>. Set its size to 100% width and 100% viewport height. This makes the iframe cover the full page.",
-              "The button is positioned at the bottom-centre by default — move it by changing the <code>position:absolute</code> styles inside the code to wherever you want it on the page.",
+              "In the Wix editor, add the first embed: <strong>Add</strong> (+) → <strong>Embed</strong> → <strong>HTML iframe</strong>. Paste the widget code (Embed 1) and replace <code>YOUR_API_KEY</code>.",
+              "<strong>Pin this embed to the screen</strong> and set it to 100% width and 100% viewport height so the modal can open full-screen.",
+              "Add a second embed and paste only the connector script (Embed 2). Place it anywhere (e.g. at the bottom of the page); it runs once and doesn't show anything.",
+              "Add your <strong>button</strong>: use a Wix button, text, or image. Place it wherever you want (header, hero, sidebar, etc.). In the button's link or click action, choose <strong>Run custom code</strong> (or use Wix Velo) and call <code>openClasseasilyBooking()</code>.",
               "Click <strong>Publish</strong>.",
             ],
           },
           {
             type: "p",
-            text: "You can restyle the button freely (colours, size, position, text). The only thing that must stay is <code>onclick=\"ClasseasilyWidget.open()\"</code>.",
+            text: "The connector script runs on your page and listens for the widget iframe. When a visitor clicks your button, it sends a message to the widget to open the booking modal. When they close the modal, the iframe becomes pass-through again so the rest of the page is clickable.",
           },
           {
             type: "blockquote",
             text: "Add your Wix site address (e.g. <code>https://yoursite.wixsite.com/yoursite</code>) to <strong>Allowed Domains</strong> in your Classeasily Widget settings. If the widget doesn't appear, clear your browser cache or try in a private window.",
+          },
+          { type: "h3", text: "Inline mode on Wix" },
+          {
+            type: "p",
+            text: "If you want the booking form to appear directly on the page (no popup, no button), use <strong>Inline</strong> mode. Paste the widget embed code (with your API key and <code>data-api-base</code>) in one HTML embed where you want the form. Do not use <code>style=\"display:none\"</code> — the widget will render in that spot. No connector script needed.",
           },
         ],
       },

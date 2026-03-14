@@ -11,7 +11,7 @@ const GlobalStyles = createGlobalStyle`
 
 const LAYOUTS = [
   { id: "inline", label: "Inline", description: "Widget embedded directly in the page" },
-  { id: "popup",  label: "Popup",  description: "Your button opens the booking modal" },
+  { id: "popup", label: "Popup", description: "Your button opens the booking modal" },
 ];
 
 /* ── Tokens ── */
@@ -536,21 +536,14 @@ function MockPageContent() {
   const apiKey = searchParams.get("key") || "demo";
   const apiBase = searchParams.get("base") || "";
   const layoutParam = searchParams.get("layout");
-  const initialLayout = LAYOUTS.some((l) => l.id === layoutParam) ? layoutParam : "inline";
-  const [layout, setLayout] = useState(initialLayout);
+  const layout = LAYOUTS.some((l) => l.id === layoutParam) ? layoutParam : "inline";
   const [inlineWidthMode, setInlineWidthMode] = useState("sidebar");
+  const scriptUrl = typeof window !== "undefined" ? process.env.NEXT_PUBLIC_WIDGET_SCRIPT_URL : "";
+  const fullApiBase = apiBase || (typeof window !== "undefined" ? process.env.NEXT_PUBLIC_API_URL : "") || "";
 
   useEffect(() => {
-    if (layoutParam && LAYOUTS.some((l) => l.id === layoutParam)) setLayout(layoutParam);
-  }, [layoutParam]);
-
-  useEffect(() => {
-    if (!apiKey || typeof window === "undefined") return;
-    const scriptUrl = process.env.NEXT_PUBLIC_WIDGET_SCRIPT_URL;
-    if (!scriptUrl) return;
-    const existing = document.getElementById("ce-widget-script");
-    if (existing) return;
-
+    if (!apiKey || !scriptUrl || typeof window === "undefined") return;
+    if (document.getElementById("ce-widget-script")) return;
     const cssUrl = scriptUrl.replace(/\.js$/i, ".css");
     const linkId = "ce-widget-styles";
     if (!document.getElementById(linkId)) {
@@ -560,7 +553,6 @@ function MockPageContent() {
       link.href = cssUrl;
       document.head.appendChild(link);
     }
-
     const script = document.createElement("script");
     script.id = "ce-widget-script";
     script.src = scriptUrl;
@@ -570,14 +562,13 @@ function MockPageContent() {
       script.remove();
       document.getElementById(linkId)?.remove();
     };
-  }, [apiKey]);
-
-  const fullApiBase =
-    apiBase || (typeof window !== "undefined" ? process.env.NEXT_PUBLIC_API_URL : "") || "";
+  }, [apiKey, scriptUrl]);
 
   const widgetProps = {
+    id: "classeasily-booking-widget",
     "data-widget-api-key": apiKey,
     ...(fullApiBase ? { "data-api-base": fullApiBase } : {}),
+    "data-demo-view": layout === "inline" ? "inline" : "modal",
   };
 
   return (
@@ -606,22 +597,23 @@ function MockPageContent() {
           <Banner>
             <BannerDot />
             <span>
-              <strong>Widget layout preview.</strong> Toggle between <strong>Inline</strong> (widget on the page) and <strong>Popup</strong> (your button opens a full-screen modal). Both are preloaded for instant switching.
+              <strong>Demo.</strong> Same as a business page: one widget embed and, for Popup mode, one button that calls <code>ClasseasilyWidget.open()</code>. Switch layout via URL: <code>?layout=inline</code> or <code>?layout=popup</code>.
             </span>
           </Banner>
 
           <SwitcherRow>
-            <SwitcherLabel>Widget layout:</SwitcherLabel>
+            <SwitcherLabel>Layout (URL):</SwitcherLabel>
             {LAYOUTS.map((opt) => (
-              <LayoutTab
+              <Link
                 key={opt.id}
-                type="button"
-                $active={layout === opt.id}
-                onClick={() => setLayout(opt.id)}
+                href={`/widget-demo/mock?key=${encodeURIComponent(apiKey)}${fullApiBase ? `&base=${encodeURIComponent(fullApiBase)}` : ""}&layout=${opt.id}`}
+                style={{ textDecoration: "none" }}
                 title={opt.description}
               >
-                {opt.label}
-              </LayoutTab>
+                <LayoutTab as="span" $active={layout === opt.id}>
+                  {opt.label}
+                </LayoutTab>
+              </Link>
             ))}
           </SwitcherRow>
 
@@ -649,29 +641,21 @@ function MockPageContent() {
 
           <Grid $inlineFullWidth={layout === "inline" && inlineWidthMode === "full"}>
             <ContentCol>
-              {/* Hero */}
               <HeroImage>
                 <HeroOverlay />
               </HeroImage>
-
-              {/* Title */}
               <Category>Sample Experience</Category>
               <Title>Example Experience</Title>
-
               <RatingRow>
                 <Stars>★★★★★</Stars>
                 <RatingText>4.9 · 214 reviews</RatingText>
               </RatingRow>
-
               <Lead>
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod lacinia
                 facilisis. Phasellus volutpat nisl eu augue tincidunt, vitae dignissim nulla
                 venenatis. Proin fringilla felis at neque interdum, non scelerisque libero auctor.
               </Lead>
-
               <Divider $my="1.5rem" />
-
-              {/* Meta grid */}
               <MetaGrid>
                 <MetaItem>
                   <MetaLabel>Duration</MetaLabel>
@@ -686,55 +670,33 @@ function MockPageContent() {
                   <MetaValue>Max 8 guests</MetaValue>
                 </MetaItem>
               </MetaGrid>
-
               <Divider $my="2rem" />
-
-              {/* What to expect */}
               <Section>
                 <SectionTitle>What to expect</SectionTitle>
                 <SectionText>
                   Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
                   incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute
-                  irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-                  pariatur.
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
                 </SectionText>
               </Section>
-
               <Divider $my="2rem" />
-
-              {/* What's included */}
               <Section style={{ marginTop: 0 }}>
                 <SectionTitle>What&apos;s included</SectionTitle>
                 <IncludesList>
-                  {[
-                    "All equipment",
-                    "Safety briefing",
-                    "Life jackets",
-                    "Dry bags",
-                    "Guided instruction",
-                    "Post-tour refreshments",
-                  ].map((item) => (
+                  {["All equipment", "Safety briefing", "Life jackets", "Dry bags", "Guided instruction", "Post-tour refreshments"].map((item) => (
                     <IncludesItem key={item}>{item}</IncludesItem>
                   ))}
                 </IncludesList>
               </Section>
-
               <Divider $my="2rem" />
-
-              {/* Cancellation */}
               <Section style={{ marginTop: 0 }}>
                 <SectionTitle>Cancellation policy</SectionTitle>
                 <SectionText>
                   Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-                  mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit
-                  voluptatem accusantium doloremque laudantium totam rem aperiam.
+                  mollit anim id est laborum.
                 </SectionText>
               </Section>
-
               <Divider $my="2rem" />
-
-              {/* Host */}
               <Section style={{ marginTop: 0 }}>
                 <SectionTitle>Your host</SectionTitle>
                 <HostRow>
@@ -748,7 +710,6 @@ function MockPageContent() {
               </Section>
             </ContentCol>
 
-            {/* Sidebar */}
             <Sidebar $fullWidth={layout === "inline" && inlineWidthMode === "full"}>
               <BookingCard>
                 <BookingCardTop>
@@ -763,46 +724,30 @@ function MockPageContent() {
                   <Divider $my="0" style={{ marginBottom: "1.25rem" }} />
                 </BookingCardTop>
 
-                <WidgetMount $hide={layout !== "inline"}>
-                  <div id="ce-widget-mount-inline" {...widgetProps} data-demo-view="inline" />
-                </WidgetMount>
-
-                {/* Popup: the business places any button they want on their page */}
-                {layout === "popup" && (
-                  <div style={{ padding: "0 1.375rem 1.5rem", textAlign: "center" }}>
-                    <div style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: C.fog, marginBottom: "0.75rem" }}>
-                      Your button — place it anywhere
+                {layout === "inline" ? (
+                  <WidgetMount $hide={false}>
+                    <div {...widgetProps} />
+                  </WidgetMount>
+                ) : (
+                  <>
+                    <div {...widgetProps} style={{ display: "none" }} />
+                    <div style={{ padding: "0 1.375rem 1.5rem", textAlign: "center" }}>
+                      <div style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: C.fog, marginBottom: "0.75rem" }}>
+                        Your button — place it anywhere
+                      </div>
+                      <TriggerDemoButton
+                        type="button"
+                        style={{ width: "100%", justifyContent: "center", borderRadius: "0.75rem" }}
+                        onClick={() => typeof window !== "undefined" && window.ClasseasilyWidget?.open?.()}
+                      >
+                        Book now
+                      </TriggerDemoButton>
                     </div>
-                    <TriggerDemoButton
-                      type="button"
-                      style={{ width: "100%", justifyContent: "center", borderRadius: "0.75rem" }}
-                      onClick={() => {
-                        const tryOpen = (attempts = 0) => {
-                          const instances = window._ceWidgetInstances || [];
-                          const target = instances.find(
-                            (e) => e.elementId === "ce-widget-mount-popup" && typeof e.open === "function"
-                          );
-                          if (target) {
-                            target.open();
-                          } else if (attempts < 20) {
-                            setTimeout(() => tryOpen(attempts + 1), 100);
-                          }
-                        };
-                        tryOpen();
-                      }}
-                    >
-                      Book now
-                    </TriggerDemoButton>
-                  </div>
+                  </>
                 )}
               </BookingCard>
             </Sidebar>
           </Grid>
-
-          {/* Widget mount for popup mode — always in DOM, zero-size, invisible.
-              The modal expands to full viewport when open. */}
-          <div id="ce-widget-mount-popup" {...widgetProps} data-demo-view="modal" style={{ position: "fixed", bottom: 0, right: 0, width: 0, height: 0, overflow: "visible" }} />
-
         </Main>
       </PageWrap>
     </>
