@@ -1098,6 +1098,11 @@ export default function WidgetCustomizer() {
             <strong>Before going live:</strong> add your domain to Allowed Domains so the widget can load from your site.
           </div>
         </div>
+        <div style={{ marginTop: 10, padding: "8px 12px", background: "#eff6ff", borderRadius: 7, border: "1px solid #bfdbfe" }}>
+          <div style={{ fontSize: 11, color: "#1e40af", lineHeight: 1.5 }}>
+            <strong>Using your own button?</strong> (e.g. on Wix) Add <code style={{ background: "rgba(255,255,255,0.7)", padding: "1px 4px", borderRadius: 3 }}>data-ce-trigger="custom"</code> to the div, include the trigger script on your page, and add <code style={{ background: "rgba(255,255,255,0.7)", padding: "1px 4px", borderRadius: 3 }}>data-ce-booking-trigger</code> to your button. The modal will open fullscreen. See the demo page for the full snippet.
+          </div>
+        </div>
       </div>
 
     </div>
