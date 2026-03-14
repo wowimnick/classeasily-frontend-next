@@ -10,10 +10,8 @@ const GlobalStyles = createGlobalStyle`
 `;
 
 const LAYOUTS = [
-  { id: "inline", label: "Inline", description: "Widget embedded in the page" },
-  { id: "modal", label: "Modal", description: "Button opens booking in a modal" },
-  { id: "floating", label: "Floating button", description: "Fixed button opens booking" },
-  { id: "trigger", label: "Custom button", description: "Your own button opens the widget" },
+  { id: "inline", label: "Inline", description: "Widget embedded directly in the page" },
+  { id: "popup",  label: "Popup",  description: "Your button opens the booking modal" },
 ];
 
 /* ── Tokens ── */
@@ -608,8 +606,7 @@ function MockPageContent() {
           <Banner>
             <BannerDot />
             <span>
-              <strong>Widget layout preview.</strong> Toggle the layouts below to preview your booking
-              widget as inline, modal, or floating. All three are preloaded for instant switching.
+              <strong>Widget layout preview.</strong> Toggle between <strong>Inline</strong> (widget on the page) and <strong>Popup</strong> (your button opens a full-screen modal). Both are preloaded for instant switching.
             </span>
           </Banner>
 
@@ -770,32 +767,28 @@ function MockPageContent() {
                   <div id="ce-widget-mount-inline" {...widgetProps} data-demo-view="inline" />
                 </WidgetMount>
 
-                {/* Modal / floating / trigger: show a Book Now button that opens the shared widget */}
-                {(layout === "modal" || layout === "floating" || layout === "trigger") && (
-                  <div style={{ padding: "1.25rem 1.375rem 1.5rem", textAlign: "center" }}>
-                    {layout === "trigger" && (
-                      <div style={{ fontSize: "0.75rem", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: C.fog, marginBottom: "1rem" }}>
-                        This is your own button — the widget has no built-in button
-                      </div>
-                    )}
+                {/* Popup: the business places any button they want on their page */}
+                {layout === "popup" && (
+                  <div style={{ padding: "0 1.375rem 1.5rem", textAlign: "center" }}>
+                    <div style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: C.fog, marginBottom: "0.75rem" }}>
+                      Your button — place it anywhere
+                    </div>
                     <TriggerDemoButton
                       type="button"
-                      onClick={() => {
-                        if (typeof window !== "undefined" && window.ClasseasilyWidget?.open) {
-                          window.ClasseasilyWidget.open("ce-widget-mount-popup");
-                        }
-                      }}
+                      style={{ width: "100%", justifyContent: "center", borderRadius: "0.75rem" }}
+                      onClick={() => window.ClasseasilyWidget?.open("ce-widget-mount-popup")}
                     >
                       Book now
                     </TriggerDemoButton>
                   </div>
                 )}
-
-                {/* Single shared widget mount for all popup/modal/floating layouts */}
-                <div id="ce-widget-mount-popup" {...widgetProps} data-demo-view="modal" style={{ display: "none" }} />
               </BookingCard>
             </Sidebar>
           </Grid>
+
+          {/* Widget mount for popup mode — always in DOM, zero-size, invisible.
+              The modal expands to full viewport when open. */}
+          <div id="ce-widget-mount-popup" {...widgetProps} data-demo-view="modal" style={{ position: "fixed", bottom: 0, right: 0, width: 0, height: 0, overflow: "visible" }} />
 
         </Main>
       </PageWrap>

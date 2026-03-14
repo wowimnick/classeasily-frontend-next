@@ -143,54 +143,12 @@ function InlineIllustration({ active }) {
   );
 }
 
-function FloatingIllustration({ active }) {
-  const line = active ? `${SEL_COLOR}25` : "#edf0f2";
-  const accent = active ? SEL_COLOR : "#d1d5db";
-  return (
-    <svg width="52" height="38" viewBox="0 0 52 38" fill="none">
-      <rect width="52" height="38" rx="4" fill={active ? "#f3f4f6" : "#f9fafb"} />
-      <rect x="0" y="0" width="52" height="7" rx="2" fill={active ? "#e5e7eb" : "#eef0f2"} />
-      <circle cx="5" cy="3.5" r="1.5" fill={active ? "#d1d5db" : "#e5e7eb"} />
-      <circle cx="10" cy="3.5" r="1.5" fill={active ? "#d1d5db" : "#e5e7eb"} />
-      <rect x="4" y="11" width="28" height="2.5" rx="1" fill={line} />
-      <rect x="4" y="16" width="22" height="2" rx="1" fill={line} />
-      <rect x="4" y="21" width="18" height="2" rx="1" fill={line} />
-      {/* floating pill button */}
-      <rect x="28" y="27" width="20" height="8" rx="4" fill={accent} />
-      <rect x="31" y="30" width="14" height="2" rx="1" fill="rgba(255,255,255,0.7)" />
-    </svg>
-  );
-}
-
-function DrawerIllustration({ active }) {
-  const lineFill = active ? (SEL_COLOR + "25") : "#edf0f2";
-  const accent = active ? SEL_COLOR : "#d1d5db";
-  const bgFill = active ? "#f3f4f6" : "#f9fafb";
-  const barFill = active ? "#e5e7eb" : "#eef0f2";
-  const dotFill = active ? "#d1d5db" : "#e5e7eb";
-  return (
-    <svg width="52" height="38" viewBox="0 0 52 38" fill="none">
-      <rect width="52" height="38" rx="4" fill={bgFill} />
-      <rect x="0" y="0" width="52" height="7" rx="2" fill={barFill} />
-      <circle cx="5" cy="3.5" r="1.5" fill={dotFill} />
-      <circle cx="10" cy="3.5" r="1.5" fill={dotFill} />
-      <rect x="4" y="11" width="24" height="2.5" rx="1" fill={lineFill} />
-      <rect x="4" y="16" width="18" height="2" rx="1" fill={lineFill} />
-      <rect x="22" y="7" width="26" height="31" rx="2" fill="white" stroke={accent} strokeWidth="1" />
-      <rect x="24" y="9" width="22" height="5" rx="1" fill="#f9fafb" />
-      <rect x="24" y="16" width="16" height="2" rx="1" fill="#e5e7eb" />
-      <rect x="24" y="20" width="12" height="2" rx="1" fill="#edf0f2" />
-      <rect x="24" y="26" width="18" height="3" rx="1.5" fill={accent} />
-    </svg>
-  );
-}
+// Popup illustration: page with overlay + modal open (same as ModalIllustration, aliased)
+const PopupIllustration = ModalIllustration;
 
 const VIEW_OPTIONS = [
-  { id: "modal",    label: "Modal",    Illustration: ModalIllustration },
-  { id: "inline",   label: "Inline",   Illustration: InlineIllustration },
-  // Drawer display type commented out for now (unused)
-  // { id: "drawer",   label: "Drawer",   Illustration: DrawerIllustration },
-  { id: "floating", label: "Floating", Illustration: FloatingIllustration },
+  { id: "inline", label: "Inline",  Illustration: InlineIllustration },
+  { id: "modal",  label: "Popup",   Illustration: PopupIllustration },
 ];
 
 function ViewTypeCard({ id, current, onChange, label, Illustration }) {
@@ -215,44 +173,6 @@ function ViewTypeCard({ id, current, onChange, label, Illustration }) {
   );
 }
 
-// ─── Button size cards ─────────────────────────────────────────────────────────
-const SIZE_OPTIONS = [
-  { id: "large",  label: "Large",  pillWidth: 58 },
-  { id: "medium", label: "Medium", pillWidth: 42 },
-  { id: "small",  label: "Small",  pillWidth: 26 },
-];
-
-function ButtonSizeCard({ id, current, onChange, label, pillWidth }) {
-  const active = current === id;
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-      <button
-        type="button"
-        onClick={() => onChange(id)}
-        style={{
-          width: "100%", padding: "11px 6px",
-          border: `${active ? 2 : 1}px solid ${active ? SEL_COLOR : "#e5e7eb"}`,
-          borderRadius: 10, background: active ? "#fafafa" : "#ffffff",
-          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          position: "relative", transition: "all 0.15s",
-        }}
-      >
-        {active && <ActiveBadge />}
-        <div style={{
-          width: pillWidth, height: 11, borderRadius: 6,
-          background: active ? "#d1d5db" : "#e5e7eb",
-        }} />
-      </button>
-      <span style={{ fontSize: 11, color: active ? SEL_COLOR : "#9ca3af", fontWeight: active ? 600 : 400 }}>
-        {label}
-      </span>
-    </div>
-  );
-}
-
-// Button size → mock padding/font (for preview only)
-const MOCK_BTN_SIZE = { large: { p: "4px 10px", fs: 9 }, medium: { p: "3px 8px", fs: 8 }, small: { p: "2px 6px", fs: 7 } };
-
 // ─── Accurate inline widget mockup (uses full theme) ───────────────────────────
 function InlineWidgetMock({
   primary,
@@ -263,7 +183,6 @@ function InlineWidgetMock({
   textSecondary,
   border,
   radiusPx = 8,
-  buttonSize = "medium",
 }) {
   const bc = primary || SEL_COLOR;
   const btc = textOnPrimary || "#ffffff";
@@ -273,7 +192,6 @@ function InlineWidgetMock({
   const ts = textSecondary || "#6b7280";
   const bdr = border || "#e5e7eb";
   const r = radiusPx;
-  const btnSize = MOCK_BTN_SIZE[buttonSize] || MOCK_BTN_SIZE.medium;
   const DAYS = [
     [null, null, null, null, null, { n: 1 }, { n: 2, dot: true }],
     [{ n: 3, dot: true }, { n: 4 }, { n: 5, sel: true }, { n: 6, dot: true }, { n: 7 }, { n: 8, dot: true }, { n: 9 }],
@@ -335,20 +253,13 @@ function InlineWidgetMock({
                 <div style={{ fontSize: 9, fontWeight: 700, color: tp }}>{slot.time}</div>
                 <div style={{ fontSize: 7.5, color: ts }}>{slot.dur} · {slot.price}</div>
               </div>
-              <div style={{ background: bc, color: btc, borderRadius: Math.max(2, r - 4), padding: btnSize.p, fontSize: btnSize.fs, fontWeight: 700 }}>Book</div>
+              <div style={{ background: bc, color: btc, borderRadius: Math.max(2, r - 4), padding: "3px 8px", fontSize: 8, fontWeight: 700 }}>Book</div>
             </div>
           ))}
         </div>
       </div>
   );
 }
-
-// ─── Drawer position options (when view === drawer) ───────────────────────────
-const DRAWER_POSITION_OPTIONS = [
-  { id: "bottom", label: "Bottom" },
-  { id: "left", label: "Left" },
-  { id: "right", label: "Right" },
-];
 
 // ─── Border radius options (widget uses borderRadiusPreset) ──────────────────
 const BORDER_RADIUS_OPTIONS = [
@@ -386,35 +297,23 @@ const FONT_FAMILY_OPTIONS = [
 // ─── Browser mockup shell + view-specific content (uses full theme) ─────────────
 function BrowserMockup({
   view,
-  buttonText,
-  buttonColor,
-  buttonTextColor,
-  buttonSize,
   borderRadiusPreset,
   background,
   cardBackground,
   textPrimary,
   textSecondary,
   border,
+  primary,
+  textOnPrimary,
 }) {
-  const bc = buttonColor || SEL_COLOR;
-  const btc = buttonTextColor || "#ffffff";
+  const bc = primary || SEL_COLOR;
+  const btc = textOnPrimary || "#ffffff";
   const bg = background || "#f9fafb";
   const cardBg = cardBackground || "#ffffff";
   const tp = textPrimary || "#111827";
   const ts = textSecondary || "#6b7280";
   const bdr = border || "#e5e7eb";
-  const label = (buttonText || "Book now").slice(0, 16);
   const r = RADIUS_PX[borderRadiusPreset] ?? 8;
-
-  const btnPadding = { large: "5px 12px", medium: "4px 9px", small: "3px 7px" }[buttonSize] || "4px 9px";
-  const btnFontSize = { large: 9, medium: 8, small: 7 }[buttonSize] || 8;
-
-  const TriggerBtn = ({ extraStyle = {} }) => (
-    <div style={{ background: bc, color: btc, borderRadius: r, fontSize: btnFontSize, fontWeight: 700, padding: btnPadding, display: "inline-block", ...extraStyle }}>
-      {label}
-    </div>
-  );
 
   const PageLines = () => (
     <div style={{ padding: "12px 10px 10px" }}>
@@ -425,95 +324,76 @@ function BrowserMockup({
   );
 
   const themeProps = {
-    primary: bc,
-    textOnPrimary: btc,
-    background: bg,
-    cardBackground: cardBg,
-    textPrimary: tp,
-    textSecondary: ts,
-    border: bdr,
-    radiusPx: r,
-    buttonSize,
+    primary: bc, textOnPrimary: btc, background: bg,
+    cardBackground: cardBg, textPrimary: tp, textSecondary: ts,
+    border: bdr, radiusPx: r,
   };
 
   const innerContent = (() => {
     if (view === "inline") {
-      return (
-          <InlineWidgetMock {...themeProps} />
-      );
+      return <InlineWidgetMock {...themeProps} />;
     }
 
-    if (view === "modal") {
-      return (
-        <div style={{ position: "relative", minHeight: 170 }}>
-          <PageLines />
-          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }}>
-            <div style={{
-              position: "absolute", top: "8%", left: "9%", right: "9%",
-              background: cardBg, borderRadius: r,
-              boxShadow: "0 8px 24px rgba(0,0,0,0.22)", overflow: "hidden",
-              border: `1px solid ${bdr}`,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", padding: "7px 10px", borderBottom: `1px solid ${bdr}`, gap: 6, background: bg, borderRadius: `${r}px ${r}px 0 0` }}>
-                <div style={{ width: 15, height: 15, borderRadius: "50%", border: `1px solid ${bdr}`, background: cardBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <span style={{ fontSize: 8, color: ts, userSelect: "none" }}>‹</span>
-                </div>
-                <span style={{ flex: 1, textAlign: "center", fontSize: 9, fontWeight: 700, color: tp }}>Select date & time</span>
-                <div style={{ width: 15, height: 15, borderRadius: "50%", background: bg, border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <X size={7} color={ts} />
-                </div>
+    // Popup / modal: show page content with a "Book now" button (placed by the business),
+    // then the booking modal overlaid on top — illustrating the custom button pattern.
+    return (
+      <div style={{ position: "relative", minHeight: 170 }}>
+        <PageLines />
+        {/* Business's own button on the page */}
+        <div style={{ padding: "0 10px 10px" }}>
+          <div style={{ display: "inline-block", background: bc, color: btc, borderRadius: r, fontSize: 8, fontWeight: 700, padding: "4px 10px" }}>
+            Book now
+          </div>
+          <div style={{ marginTop: 4, fontSize: 7, color: ts }}>← your button, anywhere on the page</div>
+        </div>
+        {/* Modal overlay */}
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }}>
+          <div style={{
+            position: "absolute", top: "8%", left: "9%", right: "9%",
+            background: cardBg, borderRadius: r,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.22)", overflow: "hidden",
+            border: `1px solid ${bdr}`,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", padding: "7px 10px", borderBottom: `1px solid ${bdr}`, gap: 6, background: bg, borderRadius: `${r}px ${r}px 0 0` }}>
+              <div style={{ width: 15, height: 15, borderRadius: "50%", border: `1px solid ${bdr}`, background: cardBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span style={{ fontSize: 8, color: ts, userSelect: "none" }}>‹</span>
               </div>
-              <div style={{ padding: "8px 10px 10px", background: cardBg }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
-                  <span style={{ fontSize: 7.5, color: ts, userSelect: "none" }}>‹</span>
-                  <span style={{ fontSize: 8.5, fontWeight: 700, color: tp }}>February 2026</span>
-                  <span style={{ fontSize: 7.5, color: ts, userSelect: "none" }}>›</span>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 2 }}>
-                  {["S","M","T","W","T","F","S"].map((d, i) => (
-                    <div key={i} style={{ textAlign: "center", fontSize: 6, color: ts }}>{d}</div>
-                  ))}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
-                  {Array.from({ length: 21 }, (_, i) => {
-                    const n = i - 4;
-                    if (n <= 0) return <div key={i} style={{ aspectRatio: "1" }} />;
-                    const isSelected = n === 5;
-                    return (
-                      <div key={i} style={{ aspectRatio: "1", borderRadius: Math.max(1, r - 4), display: "flex", alignItems: "center", justifyContent: "center", background: isSelected ? bc : "transparent" }}>
-                        <span style={{ fontSize: 8.5, color: isSelected ? btc : tp }}>{n}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+              <span style={{ flex: 1, textAlign: "center", fontSize: 9, fontWeight: 700, color: tp }}>Select date & time</span>
+              <div style={{ width: 15, height: 15, borderRadius: "50%", background: bg, border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <X size={7} color={ts} />
+              </div>
+            </div>
+            <div style={{ padding: "8px 10px 10px", background: cardBg }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+                <span style={{ fontSize: 7.5, color: ts, userSelect: "none" }}>‹</span>
+                <span style={{ fontSize: 8.5, fontWeight: 700, color: tp }}>February 2026</span>
+                <span style={{ fontSize: 7.5, color: ts, userSelect: "none" }}>›</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 2 }}>
+                {["S","M","T","W","T","F","S"].map((d, i) => (
+                  <div key={i} style={{ textAlign: "center", fontSize: 6, color: ts }}>{d}</div>
+                ))}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
+                {Array.from({ length: 21 }, (_, i) => {
+                  const n = i - 4;
+                  if (n <= 0) return <div key={i} style={{ aspectRatio: "1" }} />;
+                  const isSelected = n === 5;
+                  return (
+                    <div key={i} style={{ aspectRatio: "1", borderRadius: Math.max(1, r - 4), display: "flex", alignItems: "center", justifyContent: "center", background: isSelected ? bc : "transparent" }}>
+                      <span style={{ fontSize: 8.5, color: isSelected ? btc : tp }}>{n}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
         </div>
-      );
-    }
-
-    return (
-      <div style={{ position: "relative" }}>
-        <PageLines />
-        <div style={{ padding: "0 10px 4px" }}>
-          <div style={{ height: 5, background: bdr, borderRadius: Math.max(1, r - 4), width: "78%", marginBottom: 5, opacity: 0.6 }} />
-          <div style={{ height: 5, background: bdr, borderRadius: Math.max(1, r - 4), width: "50%", opacity: 0.5 }} />
-        </div>
-        <div style={{ position: "absolute", bottom: 8, right: 8 }}>
-          <TriggerBtn extraStyle={{ borderRadius: 999 }} />
-        </div>
-        <div style={{ height: 32 }} />
       </div>
     );
   })();
 
-  return (
-
-    <div>
-      {innerContent}
-      </div>
-  );
+  return <div>{innerContent}</div>;
 }
 
 // ─── Settings card ─────────────────────────────────────────────────────────────
@@ -545,7 +425,6 @@ const DEFAULT_EMAIL_BRANDING = {
 
 const DEFAULT_FORM = {
   view: "modal",
-  buttonText: "Book now",
   drawerPosition: "bottom",
   responsiveDrawerOnMobile: true,
   primary: SEL_COLOR,
@@ -557,7 +436,6 @@ const DEFAULT_FORM = {
   border: "#e5e7eb",
   fontFamily: "",
   borderRadiusPreset: "medium",
-  buttonSize: "medium",
   specificClassId: "",
   allowed_widget_origins: "",
   emailBranding: { ...DEFAULT_EMAIL_BRANDING },
@@ -568,8 +446,6 @@ export default function WidgetCustomizer() {
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [copied, setCopied]     = useState(false);
-  const [copiedTrigger, setCopiedTrigger] = useState(false);
-  const [embedTab, setEmbedTab] = useState("standard"); // "standard" | "trigger"
   const [data, setData]         = useState(null);
   const [form, setForm]         = useState(DEFAULT_FORM);
   const [isWide, setIsWide]     = useState(
@@ -647,7 +523,6 @@ export default function WidgetCustomizer() {
           setForm((prev) => ({
             ...prev,
             view:                     c.view                     ?? prev.view,
-            buttonText:               c.buttonText               ?? prev.buttonText,
             drawerPosition:           c.drawerPosition           ?? prev.drawerPosition,
             responsiveDrawerOnMobile: c.responsiveDrawerOnMobile !== false,
             primary:                  norm(c.primary, prev.primary),
@@ -659,7 +534,6 @@ export default function WidgetCustomizer() {
             border:                   norm(c.border, prev.border),
             fontFamily:               (typeof c.fontFamily === "string" ? c.fontFamily : prev.fontFamily) ?? "",
             borderRadiusPreset:       c.borderRadiusPreset       ?? prev.borderRadiusPreset,
-            buttonSize:               c.buttonSize               ?? prev.buttonSize,
             specificClassId:          c.specificClassId != null ? String(c.specificClassId) : "",
             allowed_widget_origins:   typeof c.allowed_widget_origins === "string" ? c.allowed_widget_origins : "",
             emailBranding:           {
@@ -677,13 +551,12 @@ export default function WidgetCustomizer() {
     setSaving(true);
     const hex = (v) => (normalizeHex(v) || v);
     const payload = {
-      view: form.view, buttonText: form.buttonText,
+      view: form.view,
       drawerPosition: form.drawerPosition, responsiveDrawerOnMobile: form.responsiveDrawerOnMobile,
       primary: hex(form.primary), background: hex(form.background), cardBackground: hex(form.cardBackground),
       textPrimary: hex(form.textPrimary), textSecondary: hex(form.textSecondary), textOnPrimary: hex(form.textOnPrimary),
       border: hex(form.border), fontFamily: (form.fontFamily && form.fontFamily.trim()) || undefined,
-      borderRadiusPreset: form.borderRadiusPreset, buttonSize: form.buttonSize,
-      // Always send specificClassId so backend can clear it when "Profile page with all classes" is selected (partial merge would otherwise leave old value)
+      borderRadiusPreset: form.borderRadiusPreset,
       specificClassId: (form.specificClassId && String(form.specificClassId).trim()) || null,
       allowed_widget_origins: form.allowed_widget_origins,
     };
@@ -707,7 +580,7 @@ export default function WidgetCustomizer() {
   const previewUrl    = apiKey
     ? `${origin}/widget-demo?key=${encodeURIComponent(apiKey)}${apiBase ? `&base=${encodeURIComponent(apiBase)}` : ""}`
     : "";
-  const mockDemoUrl   = `${origin}/widget-demo/mock?key=${encodeURIComponent(apiKey || "demo")}${apiBase ? `&base=${encodeURIComponent(apiBase)}` : ""}`;
+  const mockDemoUrl   = `${origin}/widget-demo/mock?key=${encodeURIComponent(apiKey || "demo")}${apiBase ? `&base=${encodeURIComponent(apiBase)}` : ""}&layout=${form.view === "modal" ? "popup" : "inline"}`;
 
   const embedSnippet = `<!-- Class Easily Booking Widget -->
 <link rel="stylesheet" href="${widgetScriptUrl.replace(/\.js$/, ".css")}" />
@@ -717,9 +590,8 @@ export default function WidgetCustomizer() {
 </div>
 <script src="${widgetScriptUrl}"><\/script>`;
 
-  // Trigger button snippet: widget is hidden (no built-in button); business uses their own button.
-  // Works on any website (Wix, Squarespace, etc.) and on normal HTML sites.
-  const triggerSnippet = `<!-- Step 1: Paste this anywhere on your page (hidden widget) -->
+  // Popup snippet: widget stays hidden, business places their own button anywhere
+  const popupSnippet = `<!-- Step 1: Hidden widget (paste once anywhere on the page) -->
 <link rel="stylesheet" href="${widgetScriptUrl.replace(/\.js$/, ".css")}" />
 <div id="classeasily-booking-widget"
   data-widget-api-key="${apiKey}"
@@ -728,19 +600,16 @@ export default function WidgetCustomizer() {
 </div>
 <script src="${widgetScriptUrl}"><\/script>
 
-<!-- Step 2: Add this to your own "Book now" button -->
+<!-- Step 2: Your own button — place it anywhere, style it however you like -->
 <button onclick="ClasseasilyWidget.open()">Book now<\/button>`;
+
+  const activeSnippet = form.view === "modal" ? popupSnippet : embedSnippet;
 
   const handleCopy = () => {
     if (typeof navigator?.clipboard?.writeText === "function") {
-      navigator.clipboard.writeText(embedTab === "trigger" ? triggerSnippet : embedSnippet);
-      if (embedTab === "trigger") {
-        setCopiedTrigger(true);
-        setTimeout(() => setCopiedTrigger(false), 2200);
-      } else {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2200);
-      }
+      navigator.clipboard.writeText(activeSnippet);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
     }
   };
 
@@ -770,7 +639,7 @@ export default function WidgetCustomizer() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
       {/* Display type */}
-      <SettingsCard title="Display Type" subtitle="How the booking flow opens for visitors">
+      <SettingsCard title="Display Type" subtitle="How the booking form appears on your site">
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {VIEW_OPTIONS.map((opt) => (
             <ViewTypeCard
@@ -780,62 +649,16 @@ export default function WidgetCustomizer() {
             />
           ))}
         </div>
-        {form.view === "drawer" && (
-          <div style={{ marginTop: 14 }}>
-            <FieldLabel>Drawer position</FieldLabel>
-            <div style={{ display: "flex", gap: 8 }}>
-              {DRAWER_POSITION_OPTIONS.map((opt) => {
-                const active = form.drawerPosition === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => set("drawerPosition")(opt.id)}
-                    style={{
-                      flex: 1, padding: "8px 10px",
-                      border: `${active ? 2 : 1}px solid ${active ? SEL_COLOR : "#e5e7eb"}`,
-                      borderRadius: 8, background: active ? "#fafafa" : "#ffffff",
-                      cursor: "pointer", fontSize: 12, fontWeight: active ? 600 : 500,
-                      color: active ? SEL_COLOR : "#374151",
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
+        {form.view === "modal" && (
+          <div style={{ marginTop: 10, padding: "9px 11px", background: "#eff6ff", borderRadius: 7, border: "1px solid #bfdbfe", fontSize: 11, color: "#1e40af", lineHeight: 1.55 }}>
+            <strong>Popup mode:</strong> The widget stays hidden until your visitor clicks a button. You place any button you want on your page — the embed code section below shows you exactly how.
           </div>
         )}
-
-      </SettingsCard>
-
-      {/* Button */}
-      <SettingsCard title="Button" subtitle="Customize the trigger button">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <div>
-            <FieldLabel>Button Label</FieldLabel>
-            <Input
-              value={form.buttonText}
-              onChange={(e) => set("buttonText")(e.target.value)}
-              maxLength={40}
-              placeholder="Book now"
-              size="middle"
-            />
+        {form.view === "inline" && (
+          <div style={{ marginTop: 10, padding: "9px 11px", background: "#f0fdf4", borderRadius: 7, border: "1px solid #bbf7d0", fontSize: 11, color: "#166534", lineHeight: 1.55 }}>
+            <strong>Inline mode:</strong> The full booking widget is embedded directly on the page — no button needed.
           </div>
-          <div>
-            <FieldLabel>Size</FieldLabel>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
-              {SIZE_OPTIONS.map((opt) => (
-                <ButtonSizeCard
-                  key={opt.id} id={opt.id}
-                  current={form.buttonSize} onChange={set("buttonSize")}
-                  label={opt.label} pillWidth={opt.pillWidth}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
+        )}
       </SettingsCard>
 
       {/* Typography & shape */}
@@ -1047,16 +870,14 @@ export default function WidgetCustomizer() {
         </div>
         <BrowserMockup
           view={form.view}
-          buttonText={form.buttonText}
-          buttonColor={form.primary}
-          buttonTextColor={form.textOnPrimary}
-          buttonSize={form.buttonSize}
           borderRadiusPreset={form.borderRadiusPreset}
           background={form.background}
           cardBackground={form.cardBackground}
           textPrimary={form.textPrimary}
           textSecondary={form.textSecondary}
           border={form.border}
+          primary={form.primary}
+          textOnPrimary={form.textOnPrimary}
         />
         {previewUrl && (
           <Button
@@ -1083,37 +904,14 @@ export default function WidgetCustomizer() {
         <div style={{ fontSize: 14, fontWeight: 700, color: "#111827", marginBottom: 3 }}>Embed Code</div>
         <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 10, lineHeight: 1.5 }}>
           Paste this into your website HTML.{" "}
-          <a href="https://classeasily.com" target="_blank" rel="noopener noreferrer"
+          <a href="/business/help?category=widget-installation" target="_blank" rel="noopener noreferrer"
             style={{ color: SEL_COLOR, textDecoration: "underline" }}>Setup guide
           </a>
         </div>
 
-        {/* Tab switcher */}
-        <div style={{ display: "flex", gap: 0, marginBottom: 10, border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
-          {[
-            { id: "standard", label: "Standard" },
-            { id: "trigger", label: "Custom button" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setEmbedTab(tab.id)}
-              style={{
-                flex: 1, padding: "7px 4px", border: "none", cursor: "pointer",
-                fontSize: 12, fontWeight: 600,
-                background: embedTab === tab.id ? SEL_COLOR : "#f9fafb",
-                color: embedTab === tab.id ? "#ffffff" : "#6b7280",
-                transition: "all 0.15s",
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {embedTab === "trigger" && (
+        {form.view === "modal" && (
           <div style={{ marginBottom: 10, padding: "9px 11px", background: "#eff6ff", borderRadius: 7, border: "1px solid #bfdbfe", fontSize: 11, color: "#1e40af", lineHeight: 1.55 }}>
-            <strong>Custom trigger button:</strong> The widget is hidden — it only opens when your own button is clicked. Use this if you have your own &quot;Book now&quot; button on the page. Works on Wix, Squarespace, any website.
+            <strong>Step 1</strong> pastes the hidden widget. <strong>Step 2</strong> is your trigger button — you can style it however you want, place it anywhere on the page. Works on Wix, Squarespace, any website.
           </div>
         )}
 
@@ -1124,17 +922,17 @@ export default function WidgetCustomizer() {
           whiteSpace: "pre-wrap", wordBreak: "break-all",
           color: "#1f2937", fontFamily: "monospace",
         }}>
-          {embedTab === "trigger" ? triggerSnippet : embedSnippet}
+          {activeSnippet}
         </pre>
 
         <Button
           type="primary"
-          icon={(embedTab === "trigger" ? copiedTrigger : copied) ? <Check size={14} /> : <Copy size={14} />}
+          icon={copied ? <Check size={14} /> : <Copy size={14} />}
           onClick={handleCopy}
           block
-          style={{ marginTop: 8, background: (embedTab === "trigger" ? copiedTrigger : copied) ? "#16a34a" : SEL_COLOR, borderColor: (embedTab === "trigger" ? copiedTrigger : copied) ? "#16a34a" : SEL_COLOR, fontWeight: 600 }}
+          style={{ marginTop: 8, background: copied ? "#16a34a" : SEL_COLOR, borderColor: copied ? "#16a34a" : SEL_COLOR, fontWeight: 600 }}
         >
-          {(embedTab === "trigger" ? copiedTrigger : copied) ? "Copied!" : "Copy code"}
+          {copied ? "Copied!" : "Copy code"}
         </Button>
 
         {apiKey && (

@@ -580,26 +580,39 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Turn your own website into a booking engine. Our widget (beta) allows Guests to reserve experiences without leaving your site. You can access widget settings from your dashboard setup guide or the widget section of your dashboard.",
+            text: "Turn your own website into a booking engine. Our widget lets Guests reserve experiences without leaving your site. You can access widget settings from your dashboard setup guide or the Widget section of your dashboard.",
           },
           {
             type: "p",
             text: "For step-by-step installation guides for your website host (WordPress, Wix, Squarespace, and more), see <a href=\"/business/help?category=widget-installation\">Widget installation</a>.",
           },
+          { type: "h3", text: "Two display modes" },
+          {
+            type: "ul",
+            items: [
+              "<strong>Inline:</strong> The booking widget is embedded directly on the page — no button needed. Great for a dedicated booking page.",
+              "<strong>Popup:</strong> The widget stays hidden. When a visitor clicks your button, the booking flow opens as a full-screen modal. Works on any website builder (Wix, Squarespace, WordPress, and more).",
+            ],
+          },
           { type: "h3", text: "Setup" },
           {
             type: "ol",
             items: [
-              "Go to <strong>Widget Settings</strong> in your dashboard (via the setup guide or widget section).",
+              "Go to <strong>Widget Settings</strong> in your dashboard.",
+              "Choose <strong>Inline</strong> or <strong>Popup</strong> display mode.",
               "Customize the colors and fonts to match your brand.",
-              "Copy the generated HTML code.",
-              "Paste it into your website builder (Wix, Squarespace, WordPress, etc.) inside a 'Custom HTML' block.",
+              "Copy the generated embed code.",
+              "Paste it into your website builder inside a 'Custom HTML' block.",
             ],
+          },
+          {
+            type: "p",
+            text: "For the popup mode, the embed code includes a hidden widget block <em>and</em> a sample button. You can style the button however you like, and place it anywhere on your page. See <a href=\"/business/help?category=widget-installation&article=widget-using-custom-button\">Using a custom button</a> for details.",
           },
           { type: "h3", text: "Security" },
           {
             type: "p",
-            text: "To prevent others from using your widget, you must whitelist your website domain in the widget settings (e.g., <code>www.myadventures.com</code>).",
+            text: "To prevent others from using your widget, you must add your website domain to the Allowed Domains list in widget settings (e.g., <code>www.myadventures.com</code>).",
           },
           { type: "h3", text: "Pricing" },
           {
@@ -618,20 +631,15 @@ export const helpCenterData = [
           },
           { type: "h3", text: "Display modes" },
           {
-            type: "p",
-            text: "You can show the widget in different ways:",
-          },
-          {
             type: "ul",
             items: [
-              "<strong>Inline / embedded:</strong> The widget is embedded in a section of your page (e.g. inside a div). It expands to show the class list and booking steps.",
-              "<strong>Button / popup:</strong> A floating or inline button opens the widget in a modal or slide-out panel. Good for keeping the page clean until the user is ready to book.",
-              "<strong>Full page:</strong> The widget can be loaded as the main content of a dedicated page (e.g. /book or /classes) on your site.",
+              "<strong>Inline:</strong> The widget renders directly on the page inside whatever container you choose. No button needed. Best for a dedicated booking page or a sidebar section.",
+              "<strong>Popup:</strong> The widget is hidden on load. When a visitor clicks your button, a full-screen booking modal opens over the page. Best for any website where you want a clean layout until the visitor is ready to book.",
             ],
           },
           {
             type: "p",
-            text: "The exact behavior depends on how you place the script and container element. In the dashboard, you can copy the default embed code (script + container) and optionally adjust the container size or position.",
+            text: "There is no built-in floating button. You control the trigger — place any button anywhere on your page and call <code>ClasseasilyWidget.open()</code> when it is clicked. See <a href=\"/business/help?category=widget-installation&article=widget-using-custom-button\">Using a custom button</a> for details.",
           },
           { type: "h3", text: "Theming and branding" },
           {
@@ -644,31 +652,31 @@ export const helpCenterData = [
               "<strong>Primary color:</strong> Used for buttons, links, and accents so the widget matches your brand.",
               "<strong>Font family:</strong> Choose a font that matches your site (or use the default).",
               "<strong>Border radius:</strong> Control how rounded buttons and cards appear.",
-              "<strong>Optional logo/header:</strong> Some layouts let you show your logo or a heading above the widget.",
+              "<strong>Color presets:</strong> One-click color themes to get started quickly.",
             ],
           },
           {
             type: "p",
-            text: "Changes in the customizer are reflected in the preview and in the script snippet you embed. After publishing, your live widget will use the same theme.",
+            text: "Changes in the customizer are reflected in the live preview and in the embed snippet you copy. After saving, your live widget will use the updated theme.",
           },
           { type: "h3", text: "Security: Allowed origins (whitelist)" },
           {
             type: "p",
-            text: "To prevent other sites from using your widget and API key, you must whitelist the domains where the widget is allowed to run. In widget settings, add each full origin (e.g. <code>https://www.myadventures.com</code> or <code>https://myadventures.com</code>). Only requests from those origins will receive CORS headers and be able to load classes and complete bookings. Do not add untrusted or third-party domains.",
+            text: "To prevent other sites from using your widget and API key, you must whitelist the domains where the widget is allowed to run. In widget settings, add each domain (e.g. <code>www.myadventures.com</code> or <code>myadventures.com</code>). Only requests from those origins will load classes and accept bookings. Do not add untrusted or third-party domains.",
           },
           {
             type: "p",
-            text: "For local development, <code>http://localhost</code> and <code>http://127.0.0.1</code> (any port) are automatically allowed by the API so you can test the widget before going live.",
+            text: "For local development, <code>http://localhost</code> and <code>http://127.0.0.1</code> (any port) are automatically allowed so you can test before going live.",
           },
           { type: "h3", text: "Embedding the widget" },
           {
             type: "p",
-            text: "After customizing, copy the generated HTML from the dashboard. It typically includes: (1) a script tag that loads the widget bundle from Classeasily, and (2) a div with a specific id where the widget will mount. Paste the script in your page head or before the closing body, and place the div where you want the widget to appear. The script will automatically find the div and render the widget. Works with Wix, Squarespace, WordPress, custom HTML, and other builders that allow custom code. For step-by-step installation on your host, see <a href=\"/business/help?category=widget-installation\">Widget installation</a>.",
+            text: "Copy the generated code from the dashboard and paste it into your website builder (Wix, Squarespace, WordPress, etc.) inside a Custom HTML block. The code includes the widget CSS, a container div, and the widget script. For step-by-step platform guides see <a href=\"/business/help?category=widget-installation\">Widget installation</a>.",
           },
           { type: "h3", text: "Subscription and pricing" },
           {
             type: "p",
-            text: "Widget access is subject to a per-booking fee (e.g. 4% added to the class price) and a monthly subscription (e.g. $50/month). Stripe processing fees are deducted from your payout. See the <strong>Website Integration (Widget)</strong> article in this section for current pricing details.",
+            text: "Widget access is subject to a per-booking fee (4% added to the class price) and a monthly subscription ($50/month). Stripe processing fees are deducted from your payout. See <strong>Website Integration (Widget)</strong> for current pricing details.",
           },
         ],
       },
@@ -719,7 +727,19 @@ export const helpCenterData = [
             type: "p",
             text: "Adding the Classeasily booking widget to your website takes a few minutes. You will copy a small piece of code from your dashboard and paste it into your site. This guide tells you what to do first so everything works the first time.",
           },
-          { type: "h3", text: "Step 1: Add your website to the allowed list" },
+          { type: "h3", text: "Step 1: Choose your display mode" },
+          {
+            type: "ul",
+            items: [
+              "<strong>Inline:</strong> The booking form lives directly on the page inside your content. Paste the embed code wherever you want the widget to appear.",
+              "<strong>Popup:</strong> The widget is hidden until a visitor clicks a button. The booking form then opens as a full-screen overlay. You place any button you want on your page and connect it to the widget with one line of code.",
+            ],
+          },
+          {
+            type: "p",
+            text: "Select your display mode in <strong>Widget Settings</strong> → <strong>Display Type</strong>. The embed code shown in the dashboard updates automatically based on your choice.",
+          },
+          { type: "h3", text: "Step 2: Add your website to the allowed list" },
           {
             type: "p",
             text: "Before you paste the code on your site, you must tell Classeasily which website is allowed to show your widget. This keeps your widget secure.",
@@ -729,7 +749,7 @@ export const helpCenterData = [
             items: [
               "Go to your dashboard and open <strong>Widget</strong> (in the sidebar).",
               "Find the <strong>Allowed Domains</strong> section.",
-              "Add your website address exactly as visitors see it (e.g. <code>https://www.yoursite.com</code> or <code>https://yoursite.com</code>).",
+              "Add your website address exactly as visitors see it (e.g. <code>www.yoursite.com</code> or <code>yoursite.com</code>).",
               "Click save.",
             ],
           },
@@ -737,7 +757,7 @@ export const helpCenterData = [
             type: "blockquote",
             text: "If you use both <code>www.yoursite.com</code> and <code>yoursite.com</code>, add both addresses to the list.",
           },
-          { type: "h3", text: "Step 2: Copy your embed code" },
+          { type: "h3", text: "Step 3: Copy your embed code" },
           {
             type: "p",
             text: "In the same Widget page, find the <strong>Embed code</strong> box. Click to copy the full code. Do not change or remove any part of it. You will paste this entire block into your website builder in the next step.",
@@ -749,8 +769,71 @@ export const helpCenterData = [
         ],
       },
       {
-        slug: "widget-installation-wordpress",
-        title: "Installing on WordPress",
+        slug: "widget-using-custom-button",
+        title: "Using a custom button (Popup mode)",
+        content: [
+          {
+            type: "p",
+            text: "In Popup mode, the booking widget stays completely hidden on your page until a visitor clicks a button. There is no built-in button — <strong>you decide what the button looks like and where it goes</strong>. This works on any website: Wix, Squarespace, WordPress, Webflow, and plain HTML.",
+          },
+          { type: "h3", text: "How it works" },
+          {
+            type: "ol",
+            items: [
+              "You paste the hidden widget code once anywhere on the page (the widget loads silently — visitors never see it).",
+              "You add your own button anywhere else on the page, styled however you want.",
+              "The button calls <code>ClasseasilyWidget.open()</code> when clicked — the booking flow opens as a full-screen overlay instantly.",
+            ],
+          },
+          { type: "h3", text: "The embed code" },
+          {
+            type: "p",
+            text: "In <strong>Widget Settings</strong>, select <strong>Popup</strong> as the display type and copy the embed code. It looks like this:",
+          },
+          {
+            type: "ul",
+            items: [
+              "<strong>Step 1 block:</strong> The hidden widget (a CSS link, a hidden div, and a script). Paste this once on any page where you want the popup to work.",
+              "<strong>Step 2 block:</strong> A sample button with <code>onclick=\"ClasseasilyWidget.open()\"</code>. You can replace this with any button, link, or element on your site — just keep the <code>onclick</code> part.",
+            ],
+          },
+          { type: "h3", text: "Using your existing button" },
+          {
+            type: "p",
+            text: "If you already have a button on the page (e.g. a Wix button element, a Squarespace button block, or an existing HTML button), just add the click action to it:",
+          },
+          {
+            type: "ul",
+            items: [
+              "<strong>HTML:</strong> Add <code>onclick=\"ClasseasilyWidget.open()\"</code> to your existing button element.",
+              "<strong>Wix:</strong> Select your button → <strong>Link</strong> → choose <strong>No Link</strong>, then open the Wix Velo code panel and add: <code>$w('#myButton').onClick(() => { $w('#classEasilyEmbed').callFunction('open'); });</code> — or use the Wix Embed element's JavaScript injection: add <code>window.parent.ClasseasilyWidget?.open()</code> to a Wix code block. The simplest Wix approach is to use a custom HTML element for both the widget and button (see Wix installation guide).",
+              "<strong>Squarespace:</strong> Use a Code block for the button with the <code>onclick</code> attribute, or add a global Code Injection script that runs on click.",
+            ],
+          },
+          { type: "h3", text: "Floating button (fixed position)" },
+          {
+            type: "p",
+            text: "Want a button pinned to the bottom-right corner of the page, like a chat widget? Just style your button with CSS — no special widget setting needed:",
+          },
+          {
+            type: "ul",
+            items: [
+              "<code>position: fixed; bottom: 24px; right: 24px; z-index: 9999;</code>",
+              "Add a <code>border-radius: 999px</code> for a pill shape.",
+              "Place this button anywhere on your page and the Step 1 hidden widget block anywhere on the same page.",
+            ],
+          },
+          {
+            type: "blockquote",
+            text: "<strong>Tip:</strong> You can place the Step 1 hidden widget block in your site's global header or footer so it loads on every page, then place your button wherever you want it. The widget will be available on all pages automatically.",
+          },
+          { type: "h3", text: "Inline mode vs Popup mode" },
+          {
+            type: "p",
+            text: "If you just want the booking form to live directly on the page (no button, no popup), use <strong>Inline</strong> mode instead. The widget renders in the exact spot you paste the embed code.",
+          },
+        ],
+      },
         content: [
           {
             type: "p",
