@@ -779,15 +779,14 @@ function MockPageContent() {
                   <TriggerDemoButton
                     type="button"
                     onClick={() => {
-                      // ClasseasilyWidget.open() works when widget is on the same page.
                       if (typeof window !== "undefined" && window.ClasseasilyWidget?.open) {
-                        window.ClasseasilyWidget.open();
+                        window.ClasseasilyWidget.open("ce-widget-mount-trigger");
                       }
                     }}
                   >
                     Book now
                   </TriggerDemoButton>
-                  <div id="ce-widget-mount-trigger" {...widgetProps} data-demo-view="modal" style={{ display: "none" }} />
+                  <div id="ce-widget-mount-trigger" {...widgetProps} data-demo-view="modal" />
                 </WidgetMount>
               </BookingCard>
             </Sidebar>
