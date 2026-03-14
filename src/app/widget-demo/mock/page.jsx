@@ -541,11 +541,31 @@ function MockPageContent() {
   const scriptUrl = typeof window !== "undefined" ? process.env.NEXT_PUBLIC_WIDGET_SCRIPT_URL : "";
   const fullApiBase = apiBase || (typeof window !== "undefined" ? process.env.NEXT_PUBLIC_API_URL : "") || "";
 
+  const loaderUrl = scriptUrl ? scriptUrl.replace(/\/widget\.js$/i, "/loader.js") : "";
+
   useEffect(() => {
     if (!apiKey || !scriptUrl || typeof window === "undefined") return;
-    if (document.getElementById("ce-widget-script")) return;
     const cssUrl = scriptUrl.replace(/\.js$/i, ".css");
     const linkId = "ce-widget-styles";
+
+    if (layout === "popup") {
+      document.getElementById("ce-widget-script")?.remove();
+      document.getElementById(linkId)?.remove();
+      if (document.getElementById("ce-loader-script")) return;
+      const script = document.createElement("script");
+      script.id = "ce-loader-script";
+      script.src = loaderUrl;
+      script.setAttribute("data-api-key", apiKey);
+      script.setAttribute("data-api-base", fullApiBase);
+      script.async = true;
+      document.body.appendChild(script);
+      return () => {
+        script.remove();
+      };
+    }
+
+    document.getElementById("ce-loader-script")?.remove();
+    if (document.getElementById("ce-widget-script")) return;
     if (!document.getElementById(linkId)) {
       const link = document.createElement("link");
       link.id = linkId;
@@ -562,7 +582,7 @@ function MockPageContent() {
       script.remove();
       document.getElementById(linkId)?.remove();
     };
-  }, [apiKey, scriptUrl]);
+  }, [apiKey, scriptUrl, fullApiBase, layout, loaderUrl]);
 
   const widgetProps = {
     id: "classeasily-booking-widget",
@@ -597,7 +617,7 @@ function MockPageContent() {
           <Banner>
             <BannerDot />
             <span>
-              <strong>Demo.</strong> Same as a business page: one widget embed and, for Popup mode, one button that calls <code>ClasseasilyWidget.open()</code>. Switch layout via URL: <code>?layout=inline</code> or <code>?layout=popup</code>.
+              <strong>Demo.</strong> Same as production: Popup uses the loader script and a button that calls <code>openClasseasilyBooking()</code>; Inline embeds the widget in the page. Switch via URL: <code>?layout=inline</code> or <code>?layout=popup</code>.
             </span>
           </Banner>
 
@@ -729,21 +749,18 @@ function MockPageContent() {
                     <div {...widgetProps} />
                   </WidgetMount>
                 ) : (
-                  <>
-                    <div {...widgetProps} style={{ display: "none" }} />
-                    <div style={{ padding: "0 1.375rem 1.5rem", textAlign: "center" }}>
-                      <div style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: C.fog, marginBottom: "0.75rem" }}>
-                        Your button — place it anywhere
-                      </div>
-                      <TriggerDemoButton
-                        type="button"
-                        style={{ width: "100%", justifyContent: "center", borderRadius: "0.75rem" }}
-                        onClick={() => typeof window !== "undefined" && window.ClasseasilyWidget?.open?.()}
-                      >
-                        Book now
-                      </TriggerDemoButton>
+                  <div style={{ padding: "0 1.375rem 1.5rem", textAlign: "center" }}>
+                    <div style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: C.fog, marginBottom: "0.75rem" }}>
+                      Your button — place it anywhere (calls <code>openClasseasilyBooking()</code>)
                     </div>
-                  </>
+                    <TriggerDemoButton
+                      type="button"
+                      style={{ width: "100%", justifyContent: "center", borderRadius: "0.75rem" }}
+                      onClick={() => typeof window !== "undefined" && window.openClasseasilyBooking?.()}
+                    >
+                      Book now
+                    </TriggerDemoButton>
+                  </div>
                 )}
               </BookingCard>
             </Sidebar>

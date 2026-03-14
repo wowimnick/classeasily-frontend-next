@@ -870,45 +870,35 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Wix wraps every HTML embed in a sandboxed iframe. To get a <strong>full-screen booking modal</strong> with your <strong>button placed anywhere</strong> on the page (header, hero, footer — you choose), use two embeds plus our connector script. The connector makes the iframe pass-through when the modal is closed so the rest of your page stays clickable.",
+            text: "Use one script on the main page (Wix Custom Code) so the booking modal and <code>openClasseasilyBooking()</code> work from any button — same page or inside an embed.",
           },
-          { type: "h3", text: "Popup mode: two embeds + your button" },
+          { type: "h3", text: "Popup mode: one loader + your button" },
           {
             type: "p",
-            text: "<strong>Embed 1 — Widget only</strong> (full viewport, pinned). Paste this into the first HTML embed. Replace <code>YOUR_API_KEY</code> with your key from the dashboard. No button here: the widget stays hidden until opened.",
+            text: "Add the loader script via <strong>Settings → Custom Code</strong> (place at <strong>Body - end</strong>). Replace <code>YOUR_API_KEY</code> and <code>YOUR_API_BASE</code>. The loader creates the full-screen widget iframe and exposes <code>openClasseasilyBooking()</code> on the page.",
           },
           {
             type: "code",
-            text: `<link rel="stylesheet" href="https://staging.classeasily.com/widget/widget.css" />
-<div id="classeasily-booking-widget"
-  data-widget-api-key="YOUR_API_KEY"
-  data-api-base="https://api.staging.classeasily.com/api"
-  style="display:none">
-</div>
-<script src="https://staging.classeasily.com/widget/widget.js"></script>`,
-          },
-          {
-            type: "p",
-            text: "<strong>Embed 2 — Connector script</strong>. Add a second HTML embed and paste only this script tag. It finds the widget iframe, keeps the page clickable when the modal is closed, and exposes <code>openClasseasilyBooking()</code> for your button:",
-          },
-          {
-            type: "code",
-            text: `<script src="https://staging.classeasily.com/widget/connector.js"></script>`,
+            text: `<script src="https://staging.classeasily.com/widget/loader.js"
+  data-api-key="YOUR_API_KEY"
+  data-api-base="https://api.staging.classeasily.com/api"></script>`,
           },
           { type: "h3", text: "Steps" },
           {
             type: "ol",
             items: [
-              "In the Wix editor, add the first embed: <strong>Add</strong> (+) → <strong>Embed</strong> → <strong>HTML iframe</strong>. Paste the widget code (Embed 1) and replace <code>YOUR_API_KEY</code>.",
-              "<strong>Pin this embed to the screen</strong> and set it to 100% width and 100% viewport height so the modal can open full-screen.",
-              "Add a second embed and paste only the connector script (Embed 2). Place it anywhere (e.g. at the bottom of the page); it runs once and doesn't show anything.",
-              "Add your <strong>button</strong>: use a Wix button, text, or image. Place it wherever you want (header, hero, sidebar, etc.). In the button's link or click action, choose <strong>Run custom code</strong> (or use Wix Velo) and call <code>openClasseasilyBooking()</code>.",
+              "In Wix: <strong>Settings</strong> → <strong>Custom Code</strong> → <strong>+ Add Code</strong>. Paste the script above, set placement to <strong>Body - end</strong>, apply to <strong>All pages</strong> (or the page you want). Replace <code>YOUR_API_KEY</code> and <code>YOUR_API_BASE</code>.",
+              "Add your button. If the button is <strong>inside an HTML embed</strong>, use <code>onclick=\"window.parent.openClasseasilyBooking()\"</code>. If you use a <strong>Wix button with Velo</strong>, add an <strong>onClick</strong> handler that runs <code>openClasseasilyBooking()</code> (no \"Link to\" needed).",
               "Click <strong>Publish</strong>.",
             ],
           },
           {
             type: "p",
-            text: "The connector script runs on your page and listens for the widget iframe. When a visitor clicks your button, it sends a message to the widget to open the booking modal. When they close the modal, the iframe becomes pass-through again so the rest of the page is clickable.",
+            text: "Example button in an HTML embed (use <code>window.parent</code> so the function is found on the main page):",
+          },
+          {
+            type: "code",
+            text: `<button type="button" onclick="window.parent.openClasseasilyBooking()" style="padding:14px 28px;background:#2563eb;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:16px;font-weight:600;">Book now</button>`,
           },
           {
             type: "blockquote",
@@ -917,7 +907,7 @@ export const helpCenterData = [
           { type: "h3", text: "Inline mode on Wix" },
           {
             type: "p",
-            text: "If you want the booking form to appear directly on the page (no popup, no button), use <strong>Inline</strong> mode. Paste the widget embed code (with your API key and <code>data-api-base</code>) in one HTML embed where you want the form. Do not use <code>style=\"display:none\"</code> — the widget will render in that spot. No connector script needed.",
+            text: "If you want the booking form to appear directly on the page (no popup, no button), use <strong>Inline</strong> mode. Paste the widget embed code (with your API key and <code>data-api-base</code>) in one HTML embed where you want the form. Do not use <code>style=\"display:none\"</code> — the widget will render in that spot.",
           },
         ],
       },

@@ -22,8 +22,8 @@ const ErrorWrap = styled.div`
 `;
 
 /**
- * Same structure as a business page: one hidden widget block + script, and a button
- * that calls ClasseasilyWidget.open(). Demo data (key, base) comes from URL only.
+ * Production-style demo: one loader script (creates widget iframe) and a button
+ * that calls openClasseasilyBooking(). Matches how businesses embed on Wix, WordPress, etc.
  */
 function WidgetDemoContent() {
   const searchParams = useSearchParams();
@@ -31,6 +31,7 @@ function WidgetDemoContent() {
   const apiBase = searchParams.get("base") || "";
   const scriptUrl = typeof window !== "undefined" ? process.env.NEXT_PUBLIC_WIDGET_SCRIPT_URL : "";
   const fullApiBase = apiBase || (typeof window !== "undefined" ? process.env.NEXT_PUBLIC_API_URL : "") || "";
+  const loaderUrl = scriptUrl ? scriptUrl.replace(/\/widget\.js$/i, "/loader.js") : "";
 
   if (!apiKey) {
     return (
@@ -43,21 +44,22 @@ function WidgetDemoContent() {
 
   return (
     <PageWrap>
-      {/* Same as business page: hidden widget div + script (widget injects CSS). */}
-      <div
-        id="classeasily-booking-widget"
-        data-widget-api-key={apiKey}
-        {...(fullApiBase ? { "data-api-base": fullApiBase } : {})}
-        style={{ display: "none" }}
-      />
-      {scriptUrl && <Script src={scriptUrl} strategy="afterInteractive" />}
-      {/* Business adds their own button; same pattern. */}
+      {/* Same as production: one loader script; it creates the widget iframe and exposes openClasseasilyBooking(). */}
+      {loaderUrl && (
+        <Script
+          id="ce-loader"
+          src={loaderUrl}
+          strategy="afterInteractive"
+          data-api-key={apiKey}
+          data-api-base={fullApiBase}
+        />
+      )}
       <p style={{ marginTop: 24, marginBottom: 8, fontSize: 14, color: "#6b7280" }}>
-        Your button — opens the booking modal when widget is in Popup mode:
+        Your button — opens the booking modal (calls <code>openClasseasilyBooking()</code>):
       </p>
       <button
         type="button"
-        onClick={() => typeof window !== "undefined" && window.ClasseasilyWidget?.open?.()}
+        onClick={() => typeof window !== "undefined" && window.openClasseasilyBooking?.()}
         style={{
           padding: "12px 24px",
           fontSize: 16,
@@ -76,7 +78,7 @@ function WidgetDemoContent() {
 }
 
 /**
- * Widget demo: same embed structure as a business page. Query: key (required), base (optional).
+ * Widget demo: loader + openClasseasilyBooking(), same as production embed. Query: key (required), base (optional).
  */
 export default function WidgetDemoPage() {
   return (

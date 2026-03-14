@@ -590,15 +590,10 @@ export default function WidgetCustomizer() {
 </div>
 <script src="${widgetScriptUrl}"><\/script>`;
 
-  // Popup snippet: widget only (no button). Business adds their own button and calls ClasseasilyWidget.open() or openClasseasilyBooking() on Wix.
-  const popupSnippet = `<!-- Hidden widget — paste once on the page. Add your own button elsewhere and call ClasseasilyWidget.open() -->
-<link rel="stylesheet" href="${widgetScriptUrl.replace(/\.js$/, ".css")}" />
-<div id="classeasily-booking-widget"
-  data-widget-api-key="${apiKey}"
-  data-api-base="${apiBase}"
-  style="display:none">
-</div>
-<script src="${widgetScriptUrl}"><\/script>`;
+  // Popup: one loader script on the host page. It creates the widget iframe and exposes openClasseasilyBooking() so any button works (same page or in an iframe, e.g. Wix).
+  const loaderUrl = widgetScriptUrl.replace(/\/widget\.js$/i, "/loader.js");
+  const popupSnippet = `<!-- One script on the page. Add a button that calls openClasseasilyBooking() (or window.parent.openClasseasilyBooking() from inside an iframe). -->
+<script src="${loaderUrl}" data-api-key="${apiKey}" data-api-base="${apiBase}"><\/script>`;
 
   const activeSnippet = form.view === "modal" ? popupSnippet : embedSnippet;
 
@@ -908,7 +903,8 @@ export default function WidgetCustomizer() {
 
         {form.view === "modal" && (
           <div style={{ marginBottom: 10, padding: "9px 11px", background: "#eff6ff", borderRadius: 7, border: "1px solid #bfdbfe", fontSize: 11, color: "#1e40af", lineHeight: 1.55 }}>
-            <strong>Step 1</strong> pastes the hidden widget. <strong>Step 2</strong> is your trigger button — you can style it however you want, place it anywhere on the page. Works on Wix, Squarespace, any website.
+            Add this script once on the page (e.g. in the &lt;body&gt; or via your platform’s “Custom Code”). Then add a button that runs <code style={{ background: "rgba(255,255,255,0.6)", padding: "1px 4px", borderRadius: 3 }}>openClasseasilyBooking()</code>. On Wix use <strong>Settings → Custom Code</strong> and, in an embed button, <code style={{ background: "rgba(255,255,255,0.6)", padding: "1px 4px", borderRadius: 3 }}>window.parent.openClasseasilyBooking()</code>.{" "}
+            <a href="/business/help?category=widget-installation&article=widget-installation-wix" target="_blank" rel="noopener noreferrer" style={{ color: "#1e40af", fontWeight: 600 }}>Wix guide →</a>
           </div>
         )}
 
