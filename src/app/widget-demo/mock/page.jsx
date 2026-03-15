@@ -537,6 +537,7 @@ function MockPageContent() {
   const apiBase = searchParams.get("base") || "";
   const layoutParam = searchParams.get("layout");
   const layout = LAYOUTS.some((l) => l.id === layoutParam) ? layoutParam : "inline";
+  const planId = searchParams.get("plan") || "";
   const [inlineWidthMode, setInlineWidthMode] = useState("sidebar");
   const scriptUrl = typeof window !== "undefined" ? process.env.NEXT_PUBLIC_WIDGET_SCRIPT_URL : "";
   const fullApiBase = apiBase || (typeof window !== "undefined" ? process.env.NEXT_PUBLIC_API_URL : "") || "";
@@ -617,7 +618,7 @@ function MockPageContent() {
           <Banner>
             <BannerDot />
             <span>
-              <strong>Demo.</strong> Same as production: Popup uses the loader script and a button that calls <code>openClasseasilyBooking()</code>; Inline embeds the widget in the page. Switch via URL: <code>?layout=inline</code> or <code>?layout=popup</code>.
+              <strong>Demo.</strong> Same as production: Popup uses the loader script and a button that calls <code>openClasseasilyBooking()</code>; Inline embeds the widget in the page. You can also add a &quot;Join&quot; button so visitors go straight to a membership plan—no plan list. Switch via URL: <code>?layout=inline</code> or <code>?layout=popup</code>. To try membership, add <code>?plan=YOUR_PLAN_ID</code>.
             </span>
           </Banner>
 
@@ -749,17 +750,39 @@ function MockPageContent() {
                     <div {...widgetProps} />
                   </WidgetMount>
                 ) : (
-                  <div style={{ padding: "0 1.375rem 1.5rem", textAlign: "center" }}>
-                    <div style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: C.fog, marginBottom: "0.75rem" }}>
-                      Your button — place it anywhere (calls <code>openClasseasilyBooking()</code>)
+                  <div style={{ padding: "0 1.375rem 1.5rem" }}>
+                    <div style={{ textAlign: "center", marginBottom: "1.25rem" }}>
+                      <div style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: C.fog, marginBottom: "0.75rem" }}>
+                        Your button — place it anywhere (calls <code>openClasseasilyBooking()</code>)
+                      </div>
+                      <TriggerDemoButton
+                        type="button"
+                        style={{ width: "100%", justifyContent: "center", borderRadius: "0.75rem" }}
+                        onClick={() => typeof window !== "undefined" && window.openClasseasilyBooking?.()}
+                      >
+                        Book now
+                      </TriggerDemoButton>
                     </div>
-                    <TriggerDemoButton
-                      type="button"
-                      style={{ width: "100%", justifyContent: "center", borderRadius: "0.75rem" }}
-                      onClick={() => typeof window !== "undefined" && window.openClasseasilyBooking?.()}
-                    >
-                      Book now
-                    </TriggerDemoButton>
+                    <Divider $my="0" style={{ margin: "0 0 1.25rem" }} />
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "0.7rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: C.fog, marginBottom: "0.5rem" }}>
+                        Join as a member
+                      </div>
+                      <SectionText style={{ marginBottom: "0.75rem", fontSize: "0.8125rem", textAlign: "center" }}>
+                        Like on a real business page: a second button can open your membership sign-up. The visitor goes straight to the plan you choose—no list to pick from.
+                      </SectionText>
+                      {planId ? (
+                        <TriggerDemoButton
+                          type="button"
+                          style={{ width: "100%", justifyContent: "center", borderRadius: "0.75rem", background: C.earth }}
+                          onClick={() => typeof window !== "undefined" && window.openClasseasilyMembership?.(planId)}
+                        >
+                          Join
+                        </TriggerDemoButton>
+                      ) : (
+                        <p style={{ fontSize: "0.75rem", color: C.mist }}>Add <code>?plan=YOUR_PLAN_ID</code> to the URL to try it.</p>
+                      )}
+                    </div>
                   </div>
                 )}
               </BookingCard>

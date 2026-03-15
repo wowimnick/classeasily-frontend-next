@@ -819,6 +819,22 @@ export const helpCenterData = [
               "Use <code>onclick=\"ClasseasilyWidget.open()\"</code> (or <code>openClasseasilyBooking()</code> on Wix).",
             ],
           },
+          { type: "h3", text: "Opening the membership / subscription popup" },
+          {
+            type: "p",
+            text: "If you sell memberships, you can add your own buttons that open the subscription popup for a specific plan. Use the same loader/embed code as for booking; then call <code>openClasseasilyMembership(planId)</code> with the plan ID (you can find plan IDs in your dashboard or API). The visitor goes straight to the payment form for that plan — no plan list.",
+          },
+          {
+            type: "ul",
+            items: [
+              "<strong>Same page:</strong> <code>onclick=\"ClasseasilyWidget.openMembership('your-plan-id')\"</code>",
+              "<strong>From an iframe (e.g. Wix embed):</strong> <code>onclick=\"window.parent.openClasseasilyMembership('your-plan-id')\"</code>",
+            ],
+          },
+          {
+            type: "p",
+            text: "Example: <code>&lt;button onclick=\"window.parent.openClasseasilyMembership('212059dd-2af4-4540-977c-e1d607433e39')\"&gt;Join monthly&lt;/button&gt;</code>. Replace the ID with your plan's ID. You can have one button per plan (e.g. \"Join monthly\", \"Join annual\").",
+          },
           {
             type: "blockquote",
             text: "<strong>Tip:</strong> Paste the widget block in your site's global header or footer so it loads on every page; then place your button on any page. The modal will work wherever your button is.",

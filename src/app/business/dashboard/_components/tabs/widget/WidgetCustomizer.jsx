@@ -914,6 +914,13 @@ export default function WidgetCustomizer() {
             <pre style={{ marginBottom: 10, padding: "8px 10px", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 6, fontSize: 11, overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-all", color: "#1f2937", fontFamily: "monospace" }}>
               {`<button type="button" onclick="openClasseasilyBooking()">Book now</button>`}
             </pre>
+            <div style={{ marginBottom: 6, fontSize: 11, color: "#6b7280" }}>
+              For membership/subscription, use <code style={{ background: "rgba(255,255,255,0.6)", padding: "1px 4px", borderRadius: 3 }}>openClasseasilyMembership('your-plan-id')</code> (same page) or <code style={{ background: "rgba(255,255,255,0.6)", padding: "1px 4px", borderRadius: 3 }}>window.parent.openClasseasilyMembership('your-plan-id')</code> from an iframe. Replace <code>your-plan-id</code> with your plan ID (from your membership settings or API).{" "}
+              <a href="/business/help?category=widget-installation&article=widget-using-custom-button" target="_blank" rel="noopener noreferrer" style={{ color: SEL_COLOR, fontWeight: 600 }}>Help →</a>
+            </div>
+            <pre style={{ marginBottom: 10, padding: "8px 10px", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 6, fontSize: 11, overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-all", color: "#1f2937", fontFamily: "monospace" }}>
+              {`<button type="button" onclick="openClasseasilyMembership('your-plan-id')">Join</button>`}
+            </pre>
             <div style={{ marginBottom: 10, fontSize: 11, color: "#6b7280" }}>
               Script to add (paste once):
             </div>
