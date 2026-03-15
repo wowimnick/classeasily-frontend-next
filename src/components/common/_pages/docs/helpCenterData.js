@@ -836,31 +836,27 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "You can add the Classeasily widget to any WordPress page or post using a block that allows custom HTML. You will need the embed code from your Classeasily dashboard (Widget section).",
+            text: "Add your Classeasily booking form to any page or post using the block editor’s <strong>Custom HTML</strong> block. You copy the code from your Classeasily dashboard and paste it into that block.",
           },
           { type: "h3", text: "Block editor (Gutenberg)" },
           {
             type: "ol",
             items: [
-              "Edit the page or post where you want the widget to appear.",
-              "Click the <strong>+</strong> button to add a block.",
-              "Search for <strong>Custom HTML</strong> and add it.",
-              "Paste your full embed code into the Custom HTML block.",
-              "Publish or update the page.",
+              "In your Classeasily dashboard, go to <strong>Widget</strong>, choose Inline or Popup, and copy the code.",
+              "In WordPress, edit the page or post where you want the form.",
+              "Click the <strong>+</strong> (Block Inserter), search for <strong>Custom HTML</strong>, and add that block. You can also type <code>/html</code> in a new block and press Enter to insert it quickly.",
+              "Paste the code you copied into the Custom HTML block.",
+              "Click <strong>Publish</strong> or <strong>Update</strong>.",
             ],
           },
-          { type: "h3", text: "Classic editor" },
+          { type: "h3", text: "Classic editor or page builders" },
           {
             type: "p",
-            text: "Add a <strong>Custom HTML</strong> widget in the widget area, or use a plugin that lets you insert HTML into a page. Paste the full embed code there.",
-          },
-          {
-            type: "p",
-            text: "If you use a page builder (e.g. Elementor, Beaver Builder), look for an <strong>HTML</strong> or <strong>Code</strong> block or widget, then paste the same embed code.",
+            text: "Add a <strong>Custom HTML</strong> widget in the widget area, or use your page builder’s <strong>HTML</strong> / <strong>Code</strong> block (Elementor, Beaver Builder, etc.). Paste the same code from the dashboard there.",
           },
           {
             type: "blockquote",
-            text: "Don't forget to add your website domain in <strong>Widget</strong> → <strong>Allowed Domains</strong> before testing. If the widget doesn't appear, clear your site cache and try again.",
+            text: "Add your site address (e.g. <code>https://yoursite.com</code>) under <strong>Widget → Allowed Domains</strong> in Classeasily before testing. If the form doesn’t show, clear your site cache and try again.",
           },
         ],
       },
@@ -930,26 +926,29 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "You can add the Classeasily widget to a Squarespace page using a Code block or Embed block. You will need the embed code from your Classeasily dashboard (Widget section).",
+            text: "Add your booking form to any Squarespace page using a <strong>Code</strong> block. You copy the code from your Classeasily dashboard and paste it into the block.",
           },
           { type: "h3", text: "Steps" },
           {
             type: "ol",
             items: [
-              "Edit the page where you want the widget.",
-              "Add a block: choose <strong>Code</strong> or <strong>Embed</strong> (depending on your Squarespace version).",
-              "Paste your full embed code into the block.",
-              "Save the block and the page.",
-              "Publish your site.",
+              "In your Classeasily dashboard, go to <strong>Widget</strong>, choose Inline or Popup, and copy the code.",
+              "In Squarespace, click <strong>Edit</strong> on the page where you want the form. Click the <strong>+</strong> (add block) and select <strong>Code</strong> from the content blocks.",
+              "Double-click the Code block (or click the pencil icon) to open it, then paste your code and save the block.",
+              "Save the page and <strong>Publish</strong> your site.",
             ],
           },
           {
+            type: "blockquote",
+            text: "<strong>Plan note:</strong> Code blocks that run JavaScript require a <strong>Business or Commerce</strong> plan. The <strong>Personal</strong> plan does not support JavaScript in code blocks. Our booking form uses scripts, so if you’re on Personal and the form doesn’t work, you’ll need to upgrade or use Code Injection if your plan allows it.",
+          },
+          {
             type: "p",
-            text: "Some Squarespace themes also offer a <strong>Code Injection</strong> area in settings. For most users, the Code or Embed block on the page is the simplest option.",
+            text: "You can also use an <strong>Embed</strong> block and choose “code snippet” to paste your code, or use <strong>Code Injection</strong> in site settings if you prefer.",
           },
           {
             type: "blockquote",
-            text: "Add your Squarespace domain (e.g. <code>https://yoursite.squarespace.com</code> or your custom domain) to <strong>Allowed Domains</strong> in Widget settings. Clear cache if the widget doesn't appear.",
+            text: "Add your site address (e.g. <code>https://yoursite.squarespace.com</code> or your custom domain) under <strong>Widget → Allowed Domains</strong> in Classeasily. If the form doesn’t show, clear your cache and try again.",
           },
         ],
       },
@@ -959,21 +958,21 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "You can add the Classeasily widget to any Webflow page using the Embed component. You will need the embed code from your Classeasily dashboard (Widget section).",
+            text: "Add your booking form to any Webflow page using the <strong>Code Embed</strong> element. You copy the code from your Classeasily dashboard and paste it into the embed. Code Embed requires a Core, Growth, Agency, or Freelancer Workspace, or an active Site plan.",
           },
           { type: "h3", text: "Steps" },
           {
             type: "ol",
             items: [
-              "Open your Webflow project and the page where you want the widget.",
-              "Drag an <strong>Embed</strong> component onto the page where the widget should appear.",
-              "Double-click the Embed and paste your full embed code into the code box.",
-              "Save and then <strong>Publish</strong> your site so the changes go live.",
+              "In your Classeasily dashboard, go to <strong>Widget</strong>, choose Inline or Popup, and copy the code.",
+              "In Webflow, open the page where you want the form. Open the <strong>Add</strong> panel and drag a <strong>Code Embed</strong> element onto the canvas where the form should appear.",
+              "Paste your code into the Code Embed modal. Don’t include <code>&lt;html&gt;</code>, <code>&lt;head&gt;</code>, or <code>&lt;body&gt;</code> tags — just the code from the dashboard.",
+              "Click <strong>Save and Close</strong>, then <strong>Publish</strong> your site so the form goes live.",
             ],
           },
           {
             type: "blockquote",
-            text: "Add your Webflow site URL (e.g. <code>https://yoursite.webflow.io</code> or your custom domain) to <strong>Allowed Domains</strong> in Widget settings. Clear cache if needed.",
+            text: "Add your site address (e.g. <code>https://yoursite.webflow.io</code> or your custom domain) under <strong>Widget → Allowed Domains</strong> in Classeasily. If the form doesn’t show, clear cache and try again. Custom code only appears after you publish; preview may show a placeholder.",
           },
         ],
       },
@@ -983,21 +982,29 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "You can show the Classeasily widget on your Shopify store by adding the embed code to a page or a section that allows custom HTML. You will need the embed code from your Classeasily dashboard (Widget section).",
+            text: "Add your booking form to a Shopify page (e.g. “Book a class”). You’ll paste the code from your Classeasily dashboard into a place that accepts custom HTML — either the page editor (if your theme supports it) or the theme code editor.",
           },
-          { type: "h3", text: "Option 1: A page with custom HTML" },
+          { type: "h3", text: "Option 1: Page with HTML (simplest when available)" },
+          {
+            type: "ol",
+            items: [
+              "In your Classeasily dashboard, go to <strong>Widget</strong>, choose Inline or Popup, and copy the code.",
+              "In Shopify admin go to <strong>Online Store</strong> → <strong>Pages</strong>. Create a new page or edit one (e.g. “Book a class”).",
+              "In the page content area, if you see a <strong>Show HTML</strong> button or a section that allows custom HTML, paste the code there and save. Add the page to your navigation if you want it in the menu.",
+            ],
+          },
           {
             type: "p",
-            text: "If your theme or an app lets you add custom HTML to a page (e.g. a \"Show HTML\" option or a custom liquid section), create or edit a page (e.g. \"Book a class\"), paste your full embed code there, and save. This is the simplest approach for most store owners.",
+            text: "Not all themes show a “Show HTML” or custom HTML option on pages. If you don’t see it, use Option 2 or an app that adds custom HTML to a page.",
           },
-          { type: "h3", text: "Option 2: Theme code" },
+          { type: "h3", text: "Option 2: Theme code (advanced)" },
           {
             type: "p",
-            text: "Advanced users can add the embed code to a theme template or a custom liquid section. If you are not comfortable editing theme code, use Option 1 or contact a developer.",
+            text: "Go to <strong>Online Store</strong> → <strong>Themes</strong> → <strong>Edit code</strong>. Duplicate your theme first to be safe. Add the code to a custom Liquid section or to the template that powers your page. If you’re not comfortable editing theme code, use Option 1 with a theme that supports HTML on pages, or ask a developer.",
           },
           {
             type: "blockquote",
-            text: "Add your Shopify store URL (e.g. <code>https://yourstore.myshopify.com</code> or your custom domain) to <strong>Allowed Domains</strong> in Widget settings. Clear cache after adding the code.",
+            text: "Add your store address (e.g. <code>https://yourstore.myshopify.com</code> or your custom domain) under <strong>Widget → Allowed Domains</strong> in Classeasily. Clear cache after adding the code.",
           },
         ],
       },
@@ -1007,26 +1014,26 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "If your GoDaddy website builder has an option to add custom code or an embed, you can use it to add the Classeasily widget. You will need the embed code from your Classeasily dashboard (Widget section).",
+            text: "On <strong>Websites + Marketing</strong>, you add your booking form using the <strong>HTML</strong> section and paste the code into the Custom Code field. This applies to GoDaddy’s website builder (Websites + Marketing).",
           },
           { type: "h3", text: "Steps" },
           {
             type: "ol",
             items: [
-              "Edit your site in GoDaddy Website Builder.",
-              "Look for <strong>Embed</strong>, <strong>Custom Code</strong>, or <strong>HTML</strong> in the add element or block menu.",
-              "Add that element to the page where you want the widget.",
-              "Paste your full embed code and save.",
-              "Publish your site.",
+              "In your Classeasily dashboard, go to <strong>Widget</strong>, choose Inline or Popup, and copy the code.",
+              "Go to your GoDaddy <strong>product page</strong>, find your site under Websites + Marketing, and click <strong>Manage</strong>.",
+              "Open the page and the spot where you want the form (e.g. a section). Click <strong>Add a section</strong>, search for <strong>HTML</strong>, and select <strong>Add</strong>.",
+              "Paste your code into the <strong>Custom Code</strong> field. You can leave the section title and other options as is, or customize them. Leave <strong>Forced Height</strong> blank so the form can size itself.",
+              "Changes save automatically. Use <strong>Preview</strong> to check, then <strong>Publish</strong> to make the form live.",
             ],
           },
           {
             type: "p",
-            text: "If your plan does not allow custom code or embed, you may need to upgrade or use a different builder that supports it. You can also contact GoDaddy support to confirm how to add third-party embed code.",
+            text: "If your plan doesn’t offer an HTML section or custom code, you may need to upgrade or contact GoDaddy support to confirm how to add third-party code.",
           },
           {
             type: "blockquote",
-            text: "Add your GoDaddy site address to <strong>Allowed Domains</strong> in Widget settings before testing.",
+            text: "Add your site address under <strong>Widget → Allowed Domains</strong> in Classeasily before testing. If the form doesn’t show, clear cache and try again.",
           },
         ],
       },
@@ -1036,33 +1043,33 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Most website builders and custom sites let you add a block or section for custom HTML, embed code, or code. You can use that to add the Classeasily widget.",
+            text: "Most website builders let you add a block or section for “Custom HTML”, “Embed”, or “Code”. Use that to add your Classeasily booking form.",
           },
           { type: "h3", text: "What you need" },
           {
             type: "ul",
             items: [
-              "The full embed code from your Classeasily dashboard (go to <strong>Widget</strong> and copy the code from the Embed code box).",
-              "A place on your site that accepts \"Custom HTML\", \"Embed\", or \"Code\" (often in the page or section editor).",
+              "The code from your Classeasily dashboard (go to <strong>Widget</strong>, choose Inline or Popup, and copy the code).",
+              "A spot on your site that accepts custom HTML, embed, or code (usually when editing a page or section).",
             ],
           },
           { type: "h3", text: "What to do" },
           {
             type: "ol",
             items: [
-              "Add your website address to <strong>Allowed Domains</strong> in Widget settings and save.",
-              "Copy the full embed code from the dashboard (do not change it).",
-              "Paste the entire code into the custom HTML / embed / code area where you want the widget to appear.",
+              "In Classeasily, add your website address under <strong>Widget → Allowed Domains</strong> and save.",
+              "Copy the code from the dashboard. Don’t change or shorten it — paste the whole thing.",
+              "Paste it into the custom HTML / embed / code area where you want the form to appear.",
               "Save and publish your page or site.",
             ],
           },
           {
             type: "p",
-            text: "The code includes a link, a div, and a script. Paste all of it together. The widget will show up where you placed the div. If your builder has separate \"header\" and \"body\" code areas, you can paste the full block in the body (or where content is allowed).",
+            text: "Paste the entire block in one go. The booking form will show where you placed it. If your builder has separate “header” and “body” code areas, use the body (or wherever page content goes).",
           },
           {
             type: "blockquote",
-            text: "If the widget does not appear, see <strong>Troubleshooting and tips</strong> in this section. Make sure your domain is in Allowed Domains and try clearing your site and browser cache.",
+            text: "If the form doesn’t show, see <strong>Troubleshooting and tips</strong> in this section. Check that your domain is in Allowed Domains and try clearing your site and browser cache.",
           },
         ],
       },
