@@ -3,6 +3,7 @@
 import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Script from "next/script";
 import styled, { createGlobalStyle } from "styled-components";
 
 const GlobalStyles = createGlobalStyle`
@@ -493,12 +494,16 @@ const TriggerDemoButton = styled.button`
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(0,0,0,0.15);
   transition: all 0.18s;
-  &:hover {
+  &:hover:not(:disabled) {
     background: ${C.charcoal};
     box-shadow: 0 6px 20px rgba(0,0,0,0.2);
     transform: translateY(-1px);
   }
-  &:active { transform: translateY(0); }
+  &:active:not(:disabled) { transform: translateY(0); }
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
 `;
 
 const NoKeyWrap = styled.div`
@@ -538,31 +543,20 @@ function MockPageContent() {
   const layoutParam = searchParams.get("layout");
   const layout = LAYOUTS.some((l) => l.id === layoutParam) ? layoutParam : "inline";
   const [inlineWidthMode, setInlineWidthMode] = useState("sidebar");
+  const [loaderReady, setLoaderReady] = useState(false);
   const scriptUrl = typeof window !== "undefined" ? process.env.NEXT_PUBLIC_WIDGET_SCRIPT_URL : "";
   const fullApiBase = apiBase || (typeof window !== "undefined" ? process.env.NEXT_PUBLIC_API_URL : "") || "";
 
   const loaderUrl = scriptUrl ? scriptUrl.replace(/\/widget\.js$/i, "/loader.js") : "";
 
   useEffect(() => {
-    if (!apiKey || !scriptUrl || typeof window === "undefined") return;
+    if (layout !== "popup") setLoaderReady(false);
+  }, [layout]);
+
+  useEffect(() => {
+    if (!apiKey || !scriptUrl || typeof window === "undefined" || layout === "popup") return;
     const cssUrl = scriptUrl.replace(/\.js$/i, ".css");
     const linkId = "ce-widget-styles";
-
-    if (layout === "popup") {
-      document.getElementById("ce-widget-script")?.remove();
-      document.getElementById(linkId)?.remove();
-      if (document.getElementById("ce-loader-script")) return;
-      const script = document.createElement("script");
-      script.id = "ce-loader-script";
-      script.src = loaderUrl;
-      script.setAttribute("data-api-key", apiKey);
-      script.setAttribute("data-api-base", fullApiBase);
-      script.async = true;
-      document.body.appendChild(script);
-      return () => {
-        script.remove();
-      };
-    }
 
     document.getElementById("ce-loader-script")?.remove();
     if (document.getElementById("ce-widget-script")) return;
@@ -594,6 +588,16 @@ function MockPageContent() {
   return (
     <>
       <GlobalStyles />
+      {layout === "popup" && loaderUrl && (
+        <Script
+          id="ce-loader-script"
+          src={loaderUrl}
+          strategy="afterInteractive"
+          data-api-key={apiKey}
+          data-api-base={fullApiBase}
+          onLoad={() => setLoaderReady(true)}
+        />
+      )}
       <PageWrap>
         <Header>
           <HeaderInner>
@@ -754,15 +758,17 @@ function MockPageContent() {
                       type="button"
                       style={{ width: "100%", justifyContent: "center", borderRadius: "0.75rem", marginBottom: "0.75rem" }}
                       onClick={() => typeof window !== "undefined" && window.openClasseasilyBooking?.()}
+                      disabled={!loaderReady}
                     >
-                      Book now
+                      {loaderReady ? "Book now" : "Loading…"}
                     </TriggerDemoButton>
                     <TriggerDemoButton
                       type="button"
                       style={{ width: "100%", justifyContent: "center", borderRadius: "0.75rem", background: C.earth }}
                       onClick={() => typeof window !== "undefined" && window.openClasseasilyMembership?.()}
+                      disabled={!loaderReady}
                     >
-                      Join as a member
+                      {loaderReady ? "Join as a member" : "Loading…"}
                     </TriggerDemoButton>
                   </div>
                 )}
