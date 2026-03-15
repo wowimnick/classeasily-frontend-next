@@ -895,17 +895,29 @@ export default function WidgetCustomizer() {
       <div>
         <div style={{ fontSize: 14, fontWeight: 700, color: "#111827", marginBottom: 3 }}>Embed Code</div>
         <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 10, lineHeight: 1.5 }}>
-          Paste this into your website HTML.{" "}
+          {form.view === "modal"
+            ? "One script loads the booking popup. Add it once on your page, then add your own button that opens it."
+            : "Paste this where you want the booking form to appear on the page."}{" "}
           <a href="/business/help?category=widget-installation" target="_blank" rel="noopener noreferrer"
-            style={{ color: SEL_COLOR, textDecoration: "underline" }}>Setup guide
-          </a>
+            style={{ color: SEL_COLOR, textDecoration: "underline" }}>Setup guide</a>
         </div>
 
         {form.view === "modal" && (
-          <div style={{ marginBottom: 10, padding: "9px 11px", background: "#eff6ff", borderRadius: 7, border: "1px solid #bfdbfe", fontSize: 11, color: "#1e40af", lineHeight: 1.55 }}>
-            Add this script once on the page (e.g. in the &lt;body&gt; or via your platform’s “Custom Code”). Then add a button that runs <code style={{ background: "rgba(255,255,255,0.6)", padding: "1px 4px", borderRadius: 3 }}>openClasseasilyBooking()</code>. On Wix use <strong>Settings → Custom Code</strong> and, in an embed button, <code style={{ background: "rgba(255,255,255,0.6)", padding: "1px 4px", borderRadius: 3 }}>window.parent.openClasseasilyBooking()</code>.{" "}
-            <a href="/business/help?category=widget-installation&article=widget-installation-wix" target="_blank" rel="noopener noreferrer" style={{ color: "#1e40af", fontWeight: 600 }}>Wix guide →</a>
-          </div>
+          <>
+            <div style={{ marginBottom: 10, padding: "9px 11px", background: "#eff6ff", borderRadius: 7, border: "1px solid #bfdbfe", fontSize: 11, color: "#1e40af", lineHeight: 1.55 }}>
+              <strong>Step 1 —</strong> Paste the code below once (in your page &lt;body&gt; or your platform’s “Custom Code”). <strong>Step 2 —</strong> Add a button anywhere that runs <code style={{ background: "rgba(255,255,255,0.6)", padding: "1px 4px", borderRadius: 3 }}>openClasseasilyBooking()</code>. On Wix: put the script in <strong>Settings → Custom Code</strong>; for a button inside an embed use <code style={{ background: "rgba(255,255,255,0.6)", padding: "1px 4px", borderRadius: 3 }}>window.parent.openClasseasilyBooking()</code>.{" "}
+              <a href="/business/help?category=widget-installation&article=widget-installation-wix" target="_blank" rel="noopener noreferrer" style={{ color: "#1e40af", fontWeight: 600 }}>Wix guide →</a>
+            </div>
+            <div style={{ marginBottom: 10, fontSize: 11, color: "#6b7280" }}>
+              Example button (style and place it however you like):
+            </div>
+            <pre style={{ marginBottom: 10, padding: "8px 10px", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 6, fontSize: 11, overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-all", color: "#1f2937", fontFamily: "monospace" }}>
+              {`<button type="button" onclick="openClasseasilyBooking()">Book now</button>`}
+            </pre>
+            <div style={{ marginBottom: 10, fontSize: 11, color: "#6b7280" }}>
+              Script to add (paste once):
+            </div>
+          </>
         )}
 
         <pre style={{
