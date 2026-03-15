@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { Modal, Input, Select, Button, ColorPicker, Switch, Tooltip, message as antMessage } from "antd";
+import { Input, Select, Button, ColorPicker, Tooltip, message as antMessage } from "antd";
 import { Copy, Loader2, Check, X, Plus, Trash2, Pencil } from "lucide-react";
 import { businessService } from "@/services/apiService";
 import message from "@/lib/message";
@@ -281,19 +281,6 @@ const COLOR_PRESETS = [
   { id: "rose", label: "Rose", primary: "#E11D48", textOnPrimary: "#ffffff", background: "#FFF1F2", cardBackground: "#FFFFFF", textPrimary: "#4C0519", textSecondary: "#BE123C", border: "#FECDD3" },
 ];
 
-// Font options: value is the exact CSS font-family string sent to the widget (--ce-font-family).
-const FONT_FAMILY_OPTIONS = [
-  { value: "", label: "Inherit from website" },
-  { value: "Inter, sans-serif", label: "Inter" },
-  { value: "Roboto, sans-serif", label: "Roboto" },
-  { value: "'Open Sans', sans-serif", label: "Open Sans" },
-  { value: "Lato, sans-serif", label: "Lato" },
-  { value: "Poppins, sans-serif", label: "Poppins" },
-  { value: '"Proxima Soft", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', label: "Proxima Soft" },
-  { value: "Georgia, serif", label: "Georgia" },
-  { value: "system-ui, sans-serif", label: "System default" },
-];
-
 // ─── Browser mockup shell + view-specific content (uses full theme) ─────────────
 function BrowserMockup({
   view,
@@ -519,6 +506,7 @@ export default function WidgetCustomizer() {
         if (res.success && res.data) {
           setData(res.data);
           const c = res.data.config || {};
+          console.error('[CE FONT] WidgetCustomizer loaded config from API', { fontFamily: c.fontFamily, fullConfig: c });
           const norm = (v, fallback) => (normalizeHex(v) || normalizeHex(fallback) || fallback);
           setForm((prev) => ({
             ...prev,
@@ -555,11 +543,12 @@ export default function WidgetCustomizer() {
       drawerPosition: form.drawerPosition, responsiveDrawerOnMobile: form.responsiveDrawerOnMobile,
       primary: hex(form.primary), background: hex(form.background), cardBackground: hex(form.cardBackground),
       textPrimary: hex(form.textPrimary), textSecondary: hex(form.textSecondary), textOnPrimary: hex(form.textOnPrimary),
-      border: hex(form.border), fontFamily: (form.fontFamily && form.fontFamily.trim()) || undefined,
+      border: hex(form.border), fontFamily: null,
       borderRadiusPreset: form.borderRadiusPreset,
       specificClassId: (form.specificClassId && String(form.specificClassId).trim()) || null,
       allowed_widget_origins: form.allowed_widget_origins,
     };
+    console.error('[CE FONT] WidgetCustomizer saving payload', { fontFamily: payload.fontFamily, fullPayload: payload });
     businessService.updateWidgetConfig(payload)
       .then((res) => {
         if (res.success) {
@@ -654,19 +643,7 @@ export default function WidgetCustomizer() {
       </SettingsCard>
 
       {/* Typography & shape */}
-      <SettingsCard title="Typography & Shape" subtitle="Font and corner rounding">
-        <div style={{ marginBottom: 14 }}>
-          <FieldLabel>Font</FieldLabel>
-          <Select
-            value={form.fontFamily ?? ""}
-            onChange={(v) => set("fontFamily")(v ?? "")}
-            style={{ width: "100%" }}
-            size="middle"
-            options={FONT_FAMILY_OPTIONS}
-            placeholder="Inherit from website"
-          />
-          <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>Choose how text appears in the widget. &quot;Inherit&quot; uses your site&apos;s font.</div>
-        </div>
+      <SettingsCard title="Typography & Shape" subtitle="Corner rounding">
         <div>
           <FieldLabel>Corner radius</FieldLabel>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

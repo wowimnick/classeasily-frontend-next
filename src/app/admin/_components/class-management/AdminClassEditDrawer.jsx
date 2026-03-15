@@ -39,6 +39,7 @@ import {
   Percent,
   UserCheck,
   FileText,
+  Edit,
   Info,
   Clock,
 } from "lucide-react";
