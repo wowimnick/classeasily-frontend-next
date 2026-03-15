@@ -870,44 +870,57 @@ export const helpCenterData = [
         content: [
           {
             type: "p",
-            text: "Use one script on the main page (Wix Custom Code) so the booking modal and <code>openClasseasilyBooking()</code> work from any button — same page or inside an embed.",
+            text: "You can show the booking form in two ways: <strong>Popup</strong> (visitors click a button and a full-screen form appears) or <strong>Inline</strong> (the form sits directly on the page).",
           },
-          { type: "h3", text: "Popup mode: one loader + your button" },
+          {
+            type: "blockquote",
+            text: "<strong>Wix Free vs paid:</strong> Popup (button + modal) requires adding site-wide code, which is only available on a <strong>paid Wix plan</strong> (Custom Code). On the <strong>free plan</strong> you can only use <strong>Inline</strong> — the booking form embedded in the page. Both work; choose the option that fits your plan.",
+          },
+          { type: "h3", text: "Option 1: Inline (form on the page) — works on Free and paid" },
           {
             type: "p",
-            text: "Add the loader script via <strong>Settings → Custom Code</strong> (place at <strong>Body - end</strong>). Replace <code>YOUR_API_KEY</code> and <code>YOUR_API_BASE</code>. The loader creates the full-screen widget iframe and exposes <code>openClasseasilyBooking()</code> on the page.",
+            text: "The booking form appears right where you place it. No button: visitors see and use the form in place.",
           },
-          {
-            type: "code",
-            text: `<script src="https://staging.classeasily.com/widget/loader.js"
-  data-api-key="YOUR_API_KEY"
-  data-api-base="https://api.staging.classeasily.com/api"></script>`,
-          },
-          { type: "h3", text: "Steps" },
+          { type: "h4", text: "Steps" },
           {
             type: "ol",
             items: [
-              "In Wix: <strong>Settings</strong> → <strong>Custom Code</strong> → <strong>+ Add Code</strong>. Paste the script above, set placement to <strong>Body - end</strong>, apply to <strong>All pages</strong> (or the page you want). Replace <code>YOUR_API_KEY</code> and <code>YOUR_API_BASE</code>.",
-              "Add your button. If the button is <strong>inside an HTML embed</strong>, use <code>onclick=\"window.parent.openClasseasilyBooking()\"</code>. If you use a <strong>Wix button with Velo</strong>, add an <strong>onClick</strong> handler that runs <code>openClasseasilyBooking()</code> (no \"Link to\" needed).",
+              "In your Classeasily dashboard, go to <strong>Widget</strong>, choose <strong>Inline</strong>, and copy the embed code.",
+              "In Wix: <strong>Add</strong> (+) → <strong>Embed</strong> → <strong>HTML iframe</strong>. Paste the code into the embed.",
+              "Place the embed where you want the form (e.g. in a section or sidebar). Don’t hide it — leave it visible so the form shows.",
+              "Click <strong>Publish</strong>.",
+            ],
+          },
+          {
+            type: "blockquote",
+            text: "Add your Wix site address (e.g. <code>https://yoursite.wixsite.com/yoursite</code>) under <strong>Widget → Allowed Domains</strong> in Classeasily. If the form doesn’t show, try clearing your browser cache or a private window.",
+          },
+          { type: "h3", text: "Option 2: Popup (button opens full-screen form) — paid Wix plan only" },
+          {
+            type: "p",
+            text: "A “Book now” (or similar) button sits on your page. When visitors click it, a full-screen booking form opens. This needs <strong>Custom Code</strong>, which is only on paid Wix plans.",
+          },
+          { type: "h4", text: "Steps" },
+          {
+            type: "ol",
+            items: [
+              "In your Classeasily dashboard, go to <strong>Widget</strong>, choose <strong>Popup</strong>, and copy the code snippet (one script line with your key).",
+              "In Wix: <strong>Settings</strong> → <strong>Custom Code</strong> → <strong>+ Add Code</strong>. Paste that snippet. Set <strong>Placement</strong> to <strong>Body - end</strong> and where to load it (e.g. All pages). Save.",
+              "Add your button. If you use an <strong>HTML embed</strong> for the button: paste the button code from the dashboard (or use the example below). If you use a <strong>Wix button</strong> with Dev Mode (Velo), you can connect the click to open the form — see the dashboard for the exact line to run.",
               "Click <strong>Publish</strong>.",
             ],
           },
           {
             type: "p",
-            text: "Example button in an HTML embed (use <code>window.parent</code> so the function is found on the main page):",
+            text: "Example button you can paste inside an HTML embed (change the text if you like):",
           },
           {
             type: "code",
             text: `<button type="button" onclick="window.parent.openClasseasilyBooking()" style="padding:14px 28px;background:#2563eb;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:16px;font-weight:600;">Book now</button>`,
           },
           {
-            type: "blockquote",
-            text: "Add your Wix site address (e.g. <code>https://yoursite.wixsite.com/yoursite</code>) to <strong>Allowed Domains</strong> in your Classeasily Widget settings. If the widget doesn't appear, clear your browser cache or try in a private window.",
-          },
-          { type: "h3", text: "Inline mode on Wix" },
-          {
             type: "p",
-            text: "If you want the booking form to appear directly on the page (no popup, no button), use <strong>Inline</strong> mode. Paste the widget embed code (with your API key and <code>data-api-base</code>) in one HTML embed where you want the form. Do not use <code>style=\"display:none\"</code> — the widget will render in that spot.",
+            text: "Add your Wix site URL to <strong>Allowed Domains</strong> in Classeasily (Widget settings). If the popup doesn’t open, clear cache or try a private window.",
           },
         ],
       },
