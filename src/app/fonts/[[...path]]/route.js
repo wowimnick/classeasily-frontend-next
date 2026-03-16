@@ -79,6 +79,7 @@ export async function GET(request, context) {
       headers: {
         "Content-Type": "text/css; charset=utf-8",
         "Cache-Control": "public, max-age=31536000, immutable",
+        "Access-Control-Allow-Origin": "*",
       },
     });
   }
@@ -91,6 +92,7 @@ export async function GET(request, context) {
         headers: {
           "Content-Type": "font/ttf",
           "Cache-Control": "public, max-age=31536000, immutable",
+          "Access-Control-Allow-Origin": "*",
         },
       });
     } catch (err) {

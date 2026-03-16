@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { Input, Select, Button, ColorPicker, Tooltip, message as antMessage } from "antd";
-import { Copy, Loader2, Check, X, Plus, Trash2, Pencil } from "lucide-react";
-import { businessService } from "@/services/apiService";
+import Link from "next/link";
+import { Input, Select, Button, ColorPicker, Tooltip, message as antMessage, Collapse, Tabs, Alert } from "antd";
+import { Copy, Loader2, Check, X, Plus, Trash2, Pencil, Code, Layout, Settings } from "lucide-react";
+import { businessService, businessMembershipService } from "@/services/apiService";
 import message from "@/lib/message";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 
@@ -12,7 +13,7 @@ import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 const ACCENT      = "#ff385b";  // big CTAs
 const SEL_COLOR   = "#111827";  // active selection borders / small buttons
 
-/** Normalize to #rrggbb for ColorPicker and API. Handles #fff, #ffffff, rgb(), etc. */
+/** Normalize to #rrggbb for ColorPicker and API. */
 function normalizeHex(val) {
   if (val == null || typeof val !== "string") return null;
   const s = val.trim();
@@ -29,7 +30,6 @@ function normalizeHex(val) {
   return null;
 }
 
-// ─── Debounce ─────────────────────────────────────────────────────────────────
 function useDebounce(fn, delay = 300) {
   const timer = useRef(null);
   return useCallback(
@@ -48,10 +48,10 @@ function ColorRow({ label, value, onChange, tooltip }) {
   return (
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "9px 0", borderBottom: "1px solid #f3f4f6",
+      padding: "7px 0", borderBottom: "1px solid #f3f4f6",
     }}>
       <Tooltip title={tooltip} placement="left" mouseEnterDelay={0.4}>
-        <span style={{ fontSize: 13, color: "#374151", fontWeight: 500, cursor: tooltip ? "help" : "default", borderBottom: tooltip ? "1px dashed #d1d5db" : "none" }}>
+        <span style={{ fontSize: 12, color: "#374151", fontWeight: 500, cursor: tooltip ? "help" : "default", borderBottom: tooltip ? "1px dashed #d1d5db" : "none" }}>
           {label}
         </span>
       </Tooltip>
@@ -73,12 +73,12 @@ function ColorRow({ label, value, onChange, tooltip }) {
 function ActiveBadge() {
   return (
     <div style={{
-      position: "absolute", top: -7, right: -7,
-      width: 18, height: 18, borderRadius: "50%",
+      position: "absolute", top: -6, right: -6,
+      width: 16, height: 16, borderRadius: "50%",
       background: SEL_COLOR, color: "white",
       display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1,
     }}>
-      <Check size={10} strokeWidth={3} />
+      <Check size={9} strokeWidth={3} />
     </div>
   );
 }
@@ -88,29 +88,21 @@ function ModalIllustration({ active }) {
   const line = active ? `${SEL_COLOR}30` : "#edf0f2";
   const border = active ? SEL_COLOR : "#d1d5db";
   return (
-    <svg width="52" height="38" viewBox="0 0 52 38" fill="none">
-      {/* browser bg */}
+    <svg width="44" height="32" viewBox="0 0 52 38" fill="none">
       <rect width="52" height="38" rx="4" fill={active ? "#f3f4f6" : "#f9fafb"} />
-      {/* top bar */}
       <rect x="0" y="0" width="52" height="7" rx="2" fill={active ? "#e5e7eb" : "#eef0f2"} />
       <circle cx="5" cy="3.5" r="1.5" fill={active ? "#d1d5db" : "#e5e7eb"} />
       <circle cx="10" cy="3.5" r="1.5" fill={active ? "#d1d5db" : "#e5e7eb"} />
-      {/* page lines */}
       <rect x="4" y="11" width="28" height="3" rx="1" fill={line} />
       <rect x="4" y="16" width="20" height="2" rx="1" fill={line} />
-      {/* overlay */}
       <rect x="0" y="7" width="52" height="31" rx="0" fill="rgba(0,0,0,0.35)" />
-      {/* modal card */}
       <rect x="10" y="10" width="32" height="25" rx="3" fill="white" />
-      {/* modal header */}
       <rect x="10" y="10" width="32" height="8" rx="3" fill="#f9fafb" />
       <rect x="10" y="14" width="32" height="4" fill="#f9fafb" />
       <rect x="14" y="12.5" width="18" height="3" rx="1" fill="#d1d5db" />
       <circle cx="38" cy="14" r="2.5" fill="#e5e7eb" />
-      {/* modal body lines */}
       <rect x="13" y="22" width="20" height="2" rx="1" fill="#e5e7eb" />
       <rect x="13" y="26" width="14" height="2" rx="1" fill="#edf0f2" />
-      {/* modal button */}
       <rect x="13" y="30" width="20" height="3.5" rx="1.5" fill={border} />
     </svg>
   );
@@ -120,35 +112,26 @@ function InlineIllustration({ active }) {
   const line = active ? `${SEL_COLOR}25` : "#edf0f2";
   const accent = active ? SEL_COLOR : "#d1d5db";
   return (
-    <svg width="52" height="38" viewBox="0 0 52 38" fill="none">
+    <svg width="44" height="32" viewBox="0 0 52 38" fill="none">
       <rect width="52" height="38" rx="4" fill={active ? "#f3f4f6" : "#f9fafb"} />
       <rect x="0" y="0" width="52" height="7" rx="2" fill={active ? "#e5e7eb" : "#eef0f2"} />
       <circle cx="5" cy="3.5" r="1.5" fill={active ? "#d1d5db" : "#e5e7eb"} />
       <circle cx="10" cy="3.5" r="1.5" fill={active ? "#d1d5db" : "#e5e7eb"} />
       <rect x="4" y="11" width="22" height="2.5" rx="1" fill={line} />
-      {/* inline widget card */}
       <rect x="4" y="16" width="44" height="19" rx="3" fill="white" stroke={accent} strokeWidth="0.8" />
-      {/* mini calendar grid inside */}
-      {[0,1,2,3,4,5,6].map(i => (
-        <rect key={i} x={6 + i*6} y="19" width="4" height="3.5" rx="0.8"
-          fill={i===3 ? accent : "#f0f0f0"} />
-      ))}
-      {[0,1,2,3,4,5,6].map(i => (
-        <rect key={i} x={6 + i*6} y="24" width="4" height="3.5" rx="0.8" fill="#f0f0f0" />
-      ))}
-      {/* slot row */}
+      {[0,1,2,3,4,5,6].map(i => <rect key={i} x={6 + i*6} y="19" width="4" height="3.5" rx="0.8" fill={i===3 ? accent : "#f0f0f0"} />)}
+      {[0,1,2,3,4,5,6].map(i => <rect key={i} x={6 + i*6} y="24" width="4" height="3.5" rx="0.8" fill="#f0f0f0" />)}
       <rect x="6" y="30" width="28" height="3" rx="1" fill="#f3f4f6" />
       <rect x="36" y="30" width="10" height="3" rx="1.5" fill={accent} />
     </svg>
   );
 }
 
-// Popup illustration: page with overlay + modal open (same as ModalIllustration, aliased)
 const PopupIllustration = ModalIllustration;
 
-const VIEW_OPTIONS = [
-  { id: "inline", label: "Inline",  Illustration: InlineIllustration },
-  { id: "modal",  label: "Popup",   Illustration: PopupIllustration },
+const VIEW_OPTIONS =[
+  { id: "inline", label: "Inline (Embedded)",  Illustration: InlineIllustration },
+  { id: "modal",  label: "Popup (Button)",   Illustration: PopupIllustration },
 ];
 
 function ViewTypeCard({ id, current, onChange, label, Illustration }) {
@@ -158,12 +141,12 @@ function ViewTypeCard({ id, current, onChange, label, Illustration }) {
       type="button"
       onClick={() => onChange(id)}
       style={{
-        flex: 1, minWidth: 0, padding: "12px 8px 10px",
+        flex: 1, minWidth: 0, padding: "12px 8px",
         border: `${active ? 2 : 1}px solid ${active ? SEL_COLOR : "#e5e7eb"}`,
-        borderRadius: 10, background: active ? "#fafafa" : "#ffffff",
+        borderRadius: 8, background: active ? "#fafafa" : "#ffffff",
         cursor: "pointer", textAlign: "center",
         transition: "all 0.15s", position: "relative",
-        display: "flex", flexDirection: "column", alignItems: "center", gap: 7,
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
       }}
     >
       {active && <ActiveBadge />}
@@ -173,79 +156,53 @@ function ViewTypeCard({ id, current, onChange, label, Illustration }) {
   );
 }
 
-// ─── Accurate inline widget mockup (uses full theme) ───────────────────────────
-function InlineWidgetMock({
-  primary,
-  textOnPrimary,
-  background,
-  cardBackground,
-  textPrimary,
-  textSecondary,
-  border,
-  radiusPx = 8,
-}) {
-  const bc = primary || SEL_COLOR;
-  const btc = textOnPrimary || "#ffffff";
-  const bg = background || "#f9fafb";
-  const cardBg = cardBackground || "#ffffff";
-  const tp = textPrimary || "#111827";
-  const ts = textSecondary || "#6b7280";
-  const bdr = border || "#e5e7eb";
-  const r = radiusPx;
-  const DAYS = [
-    [null, null, null, null, null, { n: 1 }, { n: 2, dot: true }],
-    [{ n: 3, dot: true }, { n: 4 }, { n: 5, sel: true }, { n: 6, dot: true }, { n: 7 }, { n: 8, dot: true }, { n: 9 }],
-    [{ n: 10, dot: true }, { n: 11 }, { n: 12 }, { n: 13, dot: true }, { n: 14 }, { n: 15, dot: true }, { n: 16 }],
-    [{ n: 17 }, { n: 18, dot: true }, { n: 19, dot: true }, { n: 20 }, { n: 21, dot: true }, { n: 22 }, { n: 23 }],
-    [{ n: 24, dot: true }, { n: 25 }, { n: 26 }, { n: 27, dot: true }, { n: 28 }, null, null],
-  ];
+// ─── Widget mockup UI ───────────────────────────
+function InlineWidgetMock({ primary, textOnPrimary, background, cardBackground, textPrimary, textSecondary, border, radiusPx = 8 }) {
+  const bc = primary || SEL_COLOR; const btc = textOnPrimary || "#ffffff";
+  const bg = background || "#f9fafb"; const cardBg = cardBackground || "#ffffff";
+  const tp = textPrimary || "#111827"; const ts = textSecondary || "#6b7280";
+  const bdr = border || "#e5e7eb"; const r = radiusPx;
+  const DAYS = [[null, null, null, null, null, { n: 1 }, { n: 2, dot: true }],[{ n: 3, dot: true }, { n: 4 }, { n: 5, sel: true }, { n: 6, dot: true }, { n: 7 }, { n: 8, dot: true }, { n: 9 }],[{ n: 10, dot: true }, { n: 11 }, { n: 12 }, { n: 13, dot: true }, { n: 14 }, { n: 15, dot: true }, { n: 16 }],[{ n: 17 }, { n: 18, dot: true }, { n: 19, dot: true }, { n: 20 }, { n: 21, dot: true }, { n: 22 }, { n: 23 }],[{ n: 24, dot: true }, { n: 25 }, { n: 26 }, { n: 27, dot: true }, { n: 28 }, null, null]];
 
   return (
-
-      <div style={{
-        background: cardBg,
-        borderRadius: r,
-        border: `1px solid ${bdr}`,
-        padding: "10px 10px 8px",
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
-          <div style={{ width: 16, height: 16, borderRadius: Math.max(2, r - 6), background: bg, border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ fontSize: 9, color: ts, lineHeight: 1, userSelect: "none" }}>‹</span>
+      <div style={{ background: cardBg, borderRadius: r, border: `1px solid ${bdr}`, padding: "10px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <div style={{ width: 16, height: 16, borderRadius: Math.max(2, r - 6), background: bg, border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: 9, color: ts }}>‹</span>
           </div>
           <span style={{ fontSize: 10, fontWeight: 700, color: tp }}>February 2026</span>
-          <div style={{ width: 16, height: 16, borderRadius: Math.max(2, r - 6), background: bg, border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ fontSize: 9, color: ts, lineHeight: 1, userSelect: "none" }}>›</span>
+          <div style={{ width: 16, height: 16, borderRadius: Math.max(2, r - 6), background: bg, border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontSize: 9, color: ts }}>›</span>
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 3 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 4 }}>
           {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
             <div key={i} style={{ textAlign: "center", fontSize: 7, fontWeight: 600, color: ts }}>{d}</div>
           ))}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 10 }}>
           {DAYS.flat().map((cell, i) => {
             if (!cell) return <div key={i} style={{ aspectRatio: "1" }} />;
             return (
               <div key={i} style={{
                 aspectRatio: "1", borderRadius: Math.max(2, r - 6),
                 display: "flex", alignItems: "center", justifyContent: "center",
-                background: cell.sel ? bc : "transparent",
-                position: "relative",
+                background: cell.sel ? bc : "transparent", position: "relative",
               }}>
-                <span style={{ fontSize: 9.5, fontWeight: cell.sel ? 700 : 400, color: cell.sel ? btc : cell.dot ? tp : ts }}>
+                <span style={{ fontSize: 9, fontWeight: cell.sel ? 700 : 400, color: cell.sel ? btc : cell.dot ? tp : ts }}>
                   {cell.n}
                 </span>
                 {cell.dot && !cell.sel && (
-                  <div style={{ position: "absolute", bottom: 1, left: "50%", transform: "translateX(-50%)", width: 2.5, height: 2.5, borderRadius: "50%", background: bc }} />
+                  <div style={{ position: "absolute", bottom: 2, left: "50%", transform: "translateX(-50%)", width: 2.5, height: 2.5, borderRadius: "50%", background: bc }} />
                 )}
               </div>
             );
           })}
         </div>
 
-        <div style={{ fontSize: 8, fontWeight: 700, color: tp, marginBottom: 5 }}>Select a time — Wed, Feb 5</div>
+        <div style={{ fontSize: 8, fontWeight: 700, color: tp, marginBottom: 6 }}>Select a time — Wed, Feb 5</div>
         <div style={{ border: `1px solid ${bdr}`, borderRadius: r, overflow: "hidden" }}>
           {[{ time: "10:00 AM", dur: "60 min", price: "$45" }, { time: "2:00 PM", dur: "60 min", price: "$45" }].map((slot, i) => (
             <div key={i} style={{ borderTop: i === 0 ? "none" : `1px solid ${bdr}`, padding: "6px 8px", display: "flex", alignItems: "center", justifyContent: "space-between", background: cardBg }}>
@@ -261,18 +218,16 @@ function InlineWidgetMock({
   );
 }
 
-// ─── Border radius options (widget uses borderRadiusPreset) ──────────────────
-const BORDER_RADIUS_OPTIONS = [
-  { id: "none", label: "None" },
+const BORDER_RADIUS_OPTIONS =[
+  { id: "none", label: "Sharp" },
   { id: "small", label: "Small" },
   { id: "medium", label: "Medium" },
-  { id: "large", label: "Large" },
+  { id: "large", label: "Rounded" },
 ];
 
 const RADIUS_PX = { none: 0, small: 4, medium: 8, large: 12 };
 
-// Color presets derived from WidgetLandingClient WIDGET_THEMES (Classic, Sunset, Retro, Minimal, Ocean, Rose).
-const COLOR_PRESETS = [
+const COLOR_PRESETS =[
   { id: "classic", label: "Classic", primary: "#2563EB", textOnPrimary: "#ffffff", background: "#EFF6FF", cardBackground: "#FFFFFF", textPrimary: "#1E293B", textSecondary: "#64748B", border: "#E2E8F0" },
   { id: "sunset", label: "Sunset", primary: "#EA580C", textOnPrimary: "#ffffff", background: "#FEF3C7", cardBackground: "#FFFFFF", textPrimary: "#431407", textSecondary: "#B45309", border: "#FED7AA" },
   { id: "retro", label: "Retro", primary: "#D97706", textOnPrimary: "#1C1917", background: "#FDF6E3", cardBackground: "#FFFBEB", textPrimary: "#292524", textSecondary: "#92400E", border: "#D97706" },
@@ -281,94 +236,63 @@ const COLOR_PRESETS = [
   { id: "rose", label: "Rose", primary: "#E11D48", textOnPrimary: "#ffffff", background: "#FFF1F2", cardBackground: "#FFFFFF", textPrimary: "#4C0519", textSecondary: "#BE123C", border: "#FECDD3" },
 ];
 
-// ─── Browser mockup shell + view-specific content (uses full theme) ─────────────
-function BrowserMockup({
-  view,
-  borderRadiusPreset,
-  background,
-  cardBackground,
-  textPrimary,
-  textSecondary,
-  border,
-  primary,
-  textOnPrimary,
-}) {
-  const bc = primary || SEL_COLOR;
-  const btc = textOnPrimary || "#ffffff";
-  const bg = background || "#f9fafb";
-  const cardBg = cardBackground || "#ffffff";
-  const tp = textPrimary || "#111827";
-  const ts = textSecondary || "#6b7280";
-  const bdr = border || "#e5e7eb";
-  const r = RADIUS_PX[borderRadiusPreset] ?? 8;
+// ─── Browser mockup shell ─────────────────────────────
+function BrowserMockup({ view, borderRadiusPreset, background, cardBackground, textPrimary, textSecondary, border, primary, textOnPrimary }) {
+  const bc = primary || SEL_COLOR; const btc = textOnPrimary || "#ffffff";
+  const bg = background || "#f9fafb"; const cardBg = cardBackground || "#ffffff";
+  const tp = textPrimary || "#111827"; const ts = textSecondary || "#6b7280";
+  const bdr = border || "#e5e7eb"; const r = RADIUS_PX[borderRadiusPreset] ?? 8;
 
   const PageLines = () => (
-    <div style={{ padding: "12px 10px 10px" }}>
-      <div style={{ height: 8, background: bdr, borderRadius: 3, width: "62%", marginBottom: 7 }} />
-      <div style={{ height: 6, background: bdr, borderRadius: 3, width: "88%", marginBottom: 5, opacity: 0.7 }} />
-      <div style={{ height: 6, background: bdr, borderRadius: 3, width: "72%", marginBottom: 5, opacity: 0.5 }} />
+    <div style={{ padding: "12px" }}>
+      <div style={{ height: 8, background: bdr, borderRadius: 3, width: "62%", marginBottom: 8 }} />
+      <div style={{ height: 6, background: bdr, borderRadius: 3, width: "88%", marginBottom: 6, opacity: 0.7 }} />
+      <div style={{ height: 6, background: bdr, borderRadius: 3, width: "72%", marginBottom: 6, opacity: 0.5 }} />
     </div>
   );
 
-  const themeProps = {
-    primary: bc, textOnPrimary: btc, background: bg,
-    cardBackground: cardBg, textPrimary: tp, textSecondary: ts,
-    border: bdr, radiusPx: r,
-  };
+  const themeProps = { primary: bc, textOnPrimary: btc, background: bg, cardBackground: cardBg, textPrimary: tp, textSecondary: ts, border: bdr, radiusPx: r };
 
   const innerContent = (() => {
-    if (view === "inline") {
-      return <InlineWidgetMock {...themeProps} />;
-    }
+    if (view === "inline") return <InlineWidgetMock {...themeProps} />;
 
-    // Popup / modal: show page content with a "Book now" button (placed by the business),
-    // then the booking modal overlaid on top — illustrating the custom button pattern.
     return (
-      <div style={{ position: "relative", minHeight: 170 }}>
+      <div style={{ position: "relative", minHeight: 180, border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff', overflow: 'hidden' }}>
         <PageLines />
-        {/* Business's own button on the page */}
-        <div style={{ padding: "0 10px 10px" }}>
-          <div style={{ display: "inline-block", background: bc, color: btc, borderRadius: r, fontSize: 8, fontWeight: 700, padding: "4px 10px" }}>
+        <div style={{ padding: "0 12px 12px" }}>
+          <div style={{ display: "inline-block", background: bc, color: btc, borderRadius: r, fontSize: 9, fontWeight: 700, padding: "5px 12px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
             Book now
           </div>
-          <div style={{ marginTop: 4, fontSize: 7, color: ts }}>← your button, anywhere on the page</div>
+          <div style={{ marginTop: 5, fontSize: 8, color: ts }}>← Imagine your button here</div>
         </div>
-        {/* Modal overlay */}
-        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }}>
+        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }}>
           <div style={{
-            position: "absolute", top: "8%", left: "9%", right: "9%",
+            position: "absolute", top: "10%", left: "8%", right: "8%",
             background: cardBg, borderRadius: r,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.22)", overflow: "hidden",
-            border: `1px solid ${bdr}`,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.22)", overflow: "hidden", border: `1px solid ${bdr}`,
           }}>
-            <div style={{ display: "flex", alignItems: "center", padding: "7px 10px", borderBottom: `1px solid ${bdr}`, gap: 6, background: bg, borderRadius: `${r}px ${r}px 0 0` }}>
-              <div style={{ width: 15, height: 15, borderRadius: "50%", border: `1px solid ${bdr}`, background: cardBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <span style={{ fontSize: 8, color: ts, userSelect: "none" }}>‹</span>
+            <div style={{ display: "flex", alignItems: "center", padding: "8px 10px", borderBottom: `1px solid ${bdr}`, gap: 6, background: bg }}>
+              <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1px solid ${bdr}`, background: cardBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontSize: 8, color: ts }}>‹</span>
               </div>
               <span style={{ flex: 1, textAlign: "center", fontSize: 9, fontWeight: 700, color: tp }}>Select date & time</span>
-              <div style={{ width: 15, height: 15, borderRadius: "50%", background: bg, border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <X size={7} color={ts} />
+              <div style={{ width: 14, height: 14, borderRadius: "50%", background: bg, border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <X size={8} color={ts} />
               </div>
             </div>
-            <div style={{ padding: "8px 10px 10px", background: cardBg }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
-                <span style={{ fontSize: 7.5, color: ts, userSelect: "none" }}>‹</span>
-                <span style={{ fontSize: 8.5, fontWeight: 700, color: tp }}>February 2026</span>
-                <span style={{ fontSize: 7.5, color: ts, userSelect: "none" }}>›</span>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 2 }}>
-                {["S","M","T","W","T","F","S"].map((d, i) => (
-                  <div key={i} style={{ textAlign: "center", fontSize: 6, color: ts }}>{d}</div>
-                ))}
+            <div style={{ padding: "10px", background: cardBg }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <span style={{ fontSize: 8, color: ts }}>‹</span>
+                <span style={{ fontSize: 8, fontWeight: 700, color: tp }}>February 2026</span>
+                <span style={{ fontSize: 8, color: ts }}>›</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
-                {Array.from({ length: 21 }, (_, i) => {
-                  const n = i - 4;
-                  if (n <= 0) return <div key={i} style={{ aspectRatio: "1" }} />;
+                {Array.from({ length: 14 }, (_, i) => {
+                  const n = i + 1;
                   const isSelected = n === 5;
                   return (
                     <div key={i} style={{ aspectRatio: "1", borderRadius: Math.max(1, r - 4), display: "flex", alignItems: "center", justifyContent: "center", background: isSelected ? bc : "transparent" }}>
-                      <span style={{ fontSize: 8.5, color: isSelected ? btc : tp }}>{n}</span>
+                      <span style={{ fontSize: 9, color: isSelected ? btc : tp, fontWeight: isSelected ? 700 : 400 }}>{n}</span>
                     </div>
                   );
                 })}
@@ -383,32 +307,19 @@ function BrowserMockup({
   return <div>{innerContent}</div>;
 }
 
-// ─── Settings card ─────────────────────────────────────────────────────────────
-function SettingsCard({ title, subtitle, children }) {
+function SectionTitle({ title, subtitle }) {
   return (
-    <div style={{ background: "#ffffff", border: "1px solid #e9ecef", borderRadius: 12, overflow: "hidden" }}>
-      {(title || subtitle) && (
-        <div style={{ padding: "13px 18px", borderBottom: "1px solid #f3f4f6" }}>
-          {title && <div style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{title}</div>}
-          {subtitle && <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>{subtitle}</div>}
-        </div>
-      )}
-      <div style={{ padding: "14px 18px" }}>{children}</div>
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>{title}</div>
+      {subtitle && <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{subtitle}</div>}
     </div>
   );
 }
 
-function FieldLabel({ children }) {
-  return <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 5 }}>{children}</div>;
+function escapeSubscriptionLabel(s) {
+  if (s == null || typeof s !== "string") return "";
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-
-// ─── Default form ─────────────────────────────────────────────────────────────
-const DEFAULT_EMAIL_BRANDING = {
-  logo_url: "",
-  primary_color: "",
-  footer_text: "",
-  confirmation_message: "",
-};
 
 const DEFAULT_FORM = {
   view: "modal",
@@ -425,22 +336,33 @@ const DEFAULT_FORM = {
   borderRadiusPreset: "medium",
   specificClassId: "",
   allowed_widget_origins: "",
-  emailBranding: { ...DEFAULT_EMAIL_BRANDING },
 };
+
+// ─── Code Snippet Styling ─────────────────────────────────────────────────────
+const snippetContainerStyle = { position: "relative" };
+const snippetPreStyle = {
+  background: "#111827", color: "#f3f4f6", padding: "12px 16px", borderRadius: 8,
+  fontSize: 12, lineHeight: 1.5, overflowX: "auto", fontFamily: "monospace", margin: 0
+};
+const getCopyBtnStyle = (isCopied) => ({
+  position: "absolute", top: 8, right: 8,
+  background: isCopied ? "#16a34a" : "#374151", color: "#fff", border: "none", fontSize: 12
+});
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function WidgetCustomizer() {
-  const [loading, setLoading]   = useState(true);
+  const[loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [copied, setCopied]     = useState(false);
-  const [data, setData]         = useState(null);
+  const[data, setData]         = useState(null);
   const [form, setForm]         = useState(DEFAULT_FORM);
-  const [isWide, setIsWide]     = useState(
-    typeof window !== "undefined" ? window.innerWidth >= 960 : true
-  );
+  const[isWide, setIsWide]     = useState(typeof window !== "undefined" ? window.innerWidth >= 960 : true);
+  
   const [newDomainInput, setNewDomainInput] = useState("");
-  const [editingDomainIndex, setEditingDomainIndex] = useState(-1);
-  const [editingDomainValue, setEditingDomainValue] = useState("");
+  
+  const [membershipProducts, setMembershipProducts] = useState([]);
+  const[membershipProductsLoading, setMembershipProductsLoading] = useState(true);
+  const[copiedSubscriptionId, setCopiedSubscriptionId] = useState(null);
   const searchParams = useSearchParams();
 
   const allowedDomainsArray = (form.allowed_widget_origins || "")
@@ -457,7 +379,7 @@ export default function WidgetCustomizer() {
     }
     setForm((f) => ({
       ...f,
-      allowed_widget_origins: [f.allowed_widget_origins.trim(), domain].filter(Boolean).join("\n"),
+      allowed_widget_origins:[f.allowed_widget_origins.trim(), domain].filter(Boolean).join("\n"),
     }));
     setNewDomainInput("");
   };
@@ -467,29 +389,11 @@ export default function WidgetCustomizer() {
     setForm((f) => ({ ...f, allowed_widget_origins: next.join("\n") }));
   };
 
-  const startEditDomain = (index) => {
-    setEditingDomainIndex(index);
-    setEditingDomainValue(allowedDomainsArray[index]);
-  };
-
-  const saveEditDomain = () => {
-    const domain = editingDomainValue.trim().toLowerCase().replace(/^https?:\/\//, "").split("/")[0];
-    if (!domain) {
-      setEditingDomainIndex(-1);
-      return;
-    }
-    const next = [...allowedDomainsArray];
-    next[editingDomainIndex] = domain;
-    setForm((f) => ({ ...f, allowed_widget_origins: next.join("\n") }));
-    setEditingDomainIndex(-1);
-    setEditingDomainValue("");
-  };
-
   useEffect(() => {
     const check = () => setIsWide(window.innerWidth >= 960);
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
-  }, []);
+  },[]);
 
   useEffect(() => {
     if (searchParams.get("subscribed") === "1") {
@@ -506,53 +410,54 @@ export default function WidgetCustomizer() {
         if (res.success && res.data) {
           setData(res.data);
           const c = res.data.config || {};
-          console.error('[CE FONT] WidgetCustomizer loaded config from API', { fontFamily: c.fontFamily, fullConfig: c });
           const norm = (v, fallback) => (normalizeHex(v) || normalizeHex(fallback) || fallback);
           setForm((prev) => ({
             ...prev,
-            view:                     c.view                     ?? prev.view,
-            drawerPosition:           c.drawerPosition           ?? prev.drawerPosition,
-            responsiveDrawerOnMobile: c.responsiveDrawerOnMobile !== false,
-            primary:                  norm(c.primary, prev.primary),
-            background:               norm(c.background, prev.background),
-            cardBackground:           norm(c.cardBackground, prev.cardBackground),
-            textPrimary:              norm(c.textPrimary, prev.textPrimary),
-            textSecondary:            norm(c.textSecondary, prev.textSecondary),
-            textOnPrimary:            norm(c.textOnPrimary, prev.textOnPrimary),
-            border:                   norm(c.border, prev.border),
-            fontFamily:               (typeof c.fontFamily === "string" ? c.fontFamily : prev.fontFamily) ?? "",
-            borderRadiusPreset:       c.borderRadiusPreset       ?? prev.borderRadiusPreset,
-            specificClassId:          c.specificClassId != null ? String(c.specificClassId) : "",
-            allowed_widget_origins:   typeof c.allowed_widget_origins === "string" ? c.allowed_widget_origins : "",
-            emailBranding:           {
-              ...DEFAULT_EMAIL_BRANDING,
-              ...(res.data.widget_email_branding || {}),
-            },
+            view: c.view ?? prev.view,
+            primary: norm(c.primary, prev.primary),
+            background: norm(c.background, prev.background),
+            cardBackground: norm(c.cardBackground, prev.cardBackground),
+            textPrimary: norm(c.textPrimary, prev.textPrimary),
+            textSecondary: norm(c.textSecondary, prev.textSecondary),
+            textOnPrimary: norm(c.textOnPrimary, prev.textOnPrimary),
+            border: norm(c.border, prev.border),
+            borderRadiusPreset: c.borderRadiusPreset ?? prev.borderRadiusPreset,
+            specificClassId: c.specificClassId != null ? String(c.specificClassId) : "",
+            allowed_widget_origins: typeof c.allowed_widget_origins === "string" ? c.allowed_widget_origins : "",
           }));
+          
+          const activePlans = (list) => (Array.isArray(list) ? list :[]).filter((p) => p.is_active !== false);
+          if (res.data.membership_products && Array.isArray(res.data.membership_products)) {
+            setMembershipProducts(activePlans(res.data.membership_products));
+            setMembershipProductsLoading(false);
+          } else {
+            businessMembershipService.getProducts().then((res2) => {
+              setMembershipProducts(res2.success && Array.isArray(res2.data) ? activePlans(res2.data) :[]);
+            }).finally(() => setMembershipProductsLoading(false));
+          }
         }
       })
       .catch(() => antMessage.error("Failed to load widget settings"))
       .finally(() => setLoading(false));
-  }, []);
+  },[]);
 
   const handleSave = () => {
     setSaving(true);
     const hex = (v) => (normalizeHex(v) || v);
     const payload = {
       view: form.view,
-      drawerPosition: form.drawerPosition, responsiveDrawerOnMobile: form.responsiveDrawerOnMobile,
       primary: hex(form.primary), background: hex(form.background), cardBackground: hex(form.cardBackground),
       textPrimary: hex(form.textPrimary), textSecondary: hex(form.textSecondary), textOnPrimary: hex(form.textOnPrimary),
-      border: hex(form.border), fontFamily: null,
+      border: hex(form.border),
       borderRadiusPreset: form.borderRadiusPreset,
       specificClassId: (form.specificClassId && String(form.specificClassId).trim()) || null,
       allowed_widget_origins: form.allowed_widget_origins,
     };
-    console.error('[CE FONT] WidgetCustomizer saving payload', { fontFamily: payload.fontFamily, fullPayload: payload });
+    
     businessService.updateWidgetConfig(payload)
       .then((res) => {
         if (res.success) {
-          message.success("Widget settings saved.");
+          message.success("Widget settings saved successfully!");
           setData((d) => (d ? { ...d, config: { ...d.config, ...payload } } : null));
         } else {
           antMessage.error(res.error || "Failed to save");
@@ -563,26 +468,19 @@ export default function WidgetCustomizer() {
   };
 
   const apiKey        = data?.widget_api_key || "";
-  const apiBase       = typeof window !== "undefined" ? process.env.NEXT_PUBLIC_API_URL || "" : "";
   const widgetScriptUrl = typeof window !== "undefined" ? process.env.NEXT_PUBLIC_WIDGET_SCRIPT_URL || "" : "";
-  const origin        = typeof window !== "undefined" ? window.location.origin : "";
-  const previewUrl    = apiKey
-    ? `${origin}/widget-demo?key=${encodeURIComponent(apiKey)}${apiBase ? `&base=${encodeURIComponent(apiBase)}` : ""}`
-    : "";
-  const mockDemoUrl   = `${origin}/widget-demo/mock?key=${encodeURIComponent(apiKey || "demo")}${apiBase ? `&base=${encodeURIComponent(apiBase)}` : ""}&layout=${form.view === "modal" ? "popup" : "inline"}`;
-
+  
   const embedSnippet = `<!-- Class Easily Booking Widget -->
 <link rel="stylesheet" href="${widgetScriptUrl.replace(/\.js$/, ".css")}" />
-<div id="classeasily-booking-widget"
-  data-widget-api-key="${apiKey}"
-  data-api-base="${apiBase}">
-</div>
+<div id="classeasily-booking-widget" data-widget-api-key="${apiKey}"></div>
 <script src="${widgetScriptUrl}"><\/script>`;
 
-  // Popup: one loader script on the host page. It creates the widget iframe and exposes openClasseasilyBooking() so any button works (same page or in an iframe, e.g. Wix).
   const loaderUrl = widgetScriptUrl.replace(/\/widget\.js$/i, "/loader.js");
-  const popupSnippet = `<!-- One script on the page. Add a button that calls openClasseasilyBooking() (or window.parent.openClasseasilyBooking() from inside an iframe). -->
-<script src="${loaderUrl}" data-api-key="${apiKey}" data-api-base="${apiBase}"><\/script>`;
+  const popupSnippet = `<!-- Add this script once on your page -->
+<script src="${loaderUrl}" data-api-key="${apiKey}"><\/script>
+
+<!-- Add a button anywhere to open the widget -->
+<button onclick="openClasseasilyBooking()">Book Now</button>`;
 
   const activeSnippet = form.view === "modal" ? popupSnippet : embedSnippet;
 
@@ -594,394 +492,272 @@ export default function WidgetCustomizer() {
     }
   };
 
+  const handleCopySubscription = (text, id) => {
+    if (typeof navigator?.clipboard?.writeText === "function") {
+      navigator.clipboard.writeText(text);
+      setCopiedSubscriptionId(id);
+      setTimeout(() => setCopiedSubscriptionId(null), 2200);
+    }
+  };
+
   if (loading) {
     return (
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexDirection: "column",
-        gap: 12,
-        background: "rgba(255,255,255,0.9)",
-        zIndex: 10,
-      }}>
-        <Loader2 size={24} style={{ animation: "spin 1s linear infinite", color: "#9ca3af" }} />
-        <span style={{ color: "#6b7280", fontSize: 14 }}>Loading widget settings…</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", flexDirection: "column", gap: 12 }}>
+        <Loader2 size={20} style={{ animation: "spin 1s linear infinite", color: "#9ca3af" }} />
+        <span style={{ color: "#6b7280", fontSize: 13 }}>Loading widget settings…</span>
       </div>
     );
   }
 
-  const classes = data?.classes || [];
+  // ─── TABS CONTENT ──────────────────────────────────────────────────────────
 
-  // ─── Left column ─────────────────────────────────────────────────────────────
-  const leftColumn = (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-
-      {/* Display type */}
-      <SettingsCard title="Display Type" subtitle="How the booking form appears on your site">
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+  const designTab = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div>
+        <SectionTitle title="1. Choose a layout" subtitle="How do you want the booking experience to appear on your site? Widget setup differs between the two options." />
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           {VIEW_OPTIONS.map((opt) => (
-            <ViewTypeCard
-              key={opt.id} id={opt.id}
-              current={form.view} onChange={set("view")}
-              label={opt.label} Illustration={opt.Illustration}
-            />
+            <ViewTypeCard key={opt.id} id={opt.id} current={form.view} onChange={set("view")} label={opt.label} Illustration={opt.Illustration} />
           ))}
         </div>
-        {form.view === "modal" && (
-          <div style={{ marginTop: 10, padding: "9px 11px", background: "#eff6ff", borderRadius: 7, border: "1px solid #bfdbfe", fontSize: 11, color: "#1e40af", lineHeight: 1.55 }}>
-            <strong>Popup mode:</strong> The widget stays hidden until your visitor clicks a button. You place any button you want on your page — the embed code section below shows you exactly how.
-          </div>
-        )}
-        {form.view === "inline" && (
-          <div style={{ marginTop: 10, padding: "9px 11px", background: "#f0fdf4", borderRadius: 7, border: "1px solid #bbf7d0", fontSize: 11, color: "#166534", lineHeight: 1.55 }}>
-            <strong>Inline mode:</strong> The full booking widget is embedded directly on the page — no button needed.
-          </div>
-        )}
-      </SettingsCard>
+      </div>
 
-      {/* Typography & shape */}
-      <SettingsCard title="Typography & Shape" subtitle="Corner rounding">
-        <div>
-          <FieldLabel>Corner radius</FieldLabel>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {BORDER_RADIUS_OPTIONS.map((opt) => {
-              const active = form.borderRadiusPreset === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => set("borderRadiusPreset")(opt.id)}
-                  style={{
-                    flex: 1, minWidth: 60, padding: "8px 10px",
-                    border: `${active ? 2 : 1}px solid ${active ? SEL_COLOR : "#e5e7eb"}`,
-                    borderRadius: 8, background: active ? "#fafafa" : "#ffffff",
-                    cursor: "pointer", fontSize: 12, fontWeight: active ? 600 : 500,
-                    color: active ? SEL_COLOR : "#374151",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </SettingsCard>
-
-      {/* Colors */}
-      <SettingsCard title="Colors" subtitle="Match the widget to your brand">
-        <FieldLabel style={{ marginBottom: 8 }}>Presets</FieldLabel>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+      <div>
+        <SectionTitle title="2. Pick a theme" subtitle="Match the widget to your brand's look and feel." />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
           {COLOR_PRESETS.map((preset) => (
             <button
               key={preset.id}
               type="button"
               onClick={() => setForm((f) => ({
                 ...f,
-                primary: preset.primary,
-                textOnPrimary: preset.textOnPrimary,
-                background: preset.background,
-                cardBackground: preset.cardBackground,
-                textPrimary: preset.textPrimary,
-                textSecondary: preset.textSecondary,
-                border: preset.border,
+                primary: preset.primary, textOnPrimary: preset.textOnPrimary,
+                background: preset.background, cardBackground: preset.cardBackground,
+                textPrimary: preset.textPrimary, textSecondary: preset.textSecondary, border: preset.border,
               }))}
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "6px 12px",
-                borderRadius: 8,
-                border: "1px solid #e5e7eb",
-                background: "#fff",
-                cursor: "pointer",
-                fontSize: 12,
-                fontWeight: 500,
-                color: "#374151",
+                display: "flex", alignItems: "center", gap: 6, padding: "6px 10px",
+                borderRadius: 6, border: "1px solid #e5e7eb", background: "#fff",
+                cursor: "pointer", fontSize: 12, fontWeight: 500, color: "#374151",
+                transition: "all 0.2s"
               }}
             >
-              <span style={{ width: 14, height: 14, borderRadius: 4, background: preset.primary, flexShrink: 0 }} />
+              <span style={{ width: 14, height: 14, borderRadius: 4, background: preset.primary }} />
               {preset.label}
             </button>
           ))}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 28px" }}>
-          <div>
-            <ColorRow label="Primary" value={form.primary} onChange={set("primary")}
-              tooltip="Main accent color — used for the Book button, selected date cells, the Continue button, and active highlights throughout the widget." />
-            <ColorRow label="Widget Background" value={form.background} onChange={set("background")}
-              tooltip="Outermost background of the widget. Also used for subtle fills like available date cells, price badges, and booking summary strips." />
-            <ColorRow label="Card Background" value={form.cardBackground} onChange={set("cardBackground")}
-              tooltip="Background of the main card panels, the modal/drawer surface, and individual booking slots. Usually white or a near-white shade." />
-            <ColorRow label="Primary Text" value={form.textPrimary} onChange={set("textPrimary")}
-              tooltip="Main text color for headings, time labels, names, and prices." />
-          </div>
-          <div>
-            <ColorRow label="Secondary Text" value={form.textSecondary} onChange={set("textSecondary")}
-              tooltip="Muted text for dates, duration, spots remaining, labels, and helper copy." />
-            <ColorRow label="Borders" value={form.border} onChange={set("border")}
-              tooltip="Color of dividers, card outlines, input borders, and nav button rings." />
-          </div>
-        </div>
-        <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 8, lineHeight: 1.45 }}>
-          Text on the primary color (e.g. the date number inside selected cells) auto-adjusts to black or white for maximum contrast.
-        </div>
-      </SettingsCard>
+        
+        <Collapse
+          ghost
+          size="small"
+          items={[{
+            key: "advanced-colors",
+            label: <span style={{ color: "#6b7280", fontSize: 12, fontWeight: 500 }}>Custom advanced colors</span>,
+            children: (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px", background: "#f9fafb", padding: "10px 14px", borderRadius: 6, border: "1px solid #f3f4f6" }}>
+                <div>
+                  <ColorRow label="Primary Accent" value={form.primary} onChange={set("primary")} />
+                  <ColorRow label="Main Background" value={form.background} onChange={set("background")} />
+                  <ColorRow label="Card Surface" value={form.cardBackground} onChange={set("cardBackground")} />
+                </div>
+                <div>
+                  <ColorRow label="Primary Text" value={form.textPrimary} onChange={set("textPrimary")} />
+                  <ColorRow label="Muted Text" value={form.textSecondary} onChange={set("textSecondary")} />
+                  <ColorRow label="Borders" value={form.border} onChange={set("border")} />
+                </div>
+              </div>
+            )
+          }]}
+        />
+      </div>
 
-      {/* Content */}
-      <SettingsCard title="Content" subtitle="Control which classes are shown">
-        <FieldLabel>Starting page</FieldLabel>
+      <div>
+        <SectionTitle title="3. Corner style" subtitle="Adjust how rounded the widget edges are." />
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {BORDER_RADIUS_OPTIONS.map((opt) => {
+            const active = form.borderRadiusPreset === opt.id;
+            return (
+              <button
+                key={opt.id} type="button" onClick={() => set("borderRadiusPreset")(opt.id)}
+                style={{
+                  flex: 1, minWidth: 60, padding: "8px 10px",
+                  border: `${active ? 2 : 1}px solid ${active ? SEL_COLOR : "#e5e7eb"}`,
+                  borderRadius: 6, background: active ? "#fafafa" : "#ffffff",
+                  cursor: "pointer", fontSize: 12, fontWeight: active ? 600 : 500, color: active ? SEL_COLOR : "#374151"
+                }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  const settingsTab = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      
+      <div>
+        <SectionTitle title="Allowed Website Domains" subtitle="For security, list the websites where you plan to install this widget. Without this, the widget will not load." />
+        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
+          <Input
+            value={newDomainInput} onChange={(e) => setNewDomainInput(e.target.value)} onPressEnter={addDomain}
+            placeholder="e.g. www.mywebsite.com" size="small" style={{ flex: 1 }}
+          />
+          <Button type="primary" size="small" onClick={addDomain} style={{ background: SEL_COLOR }}>Add Domain</Button>
+        </div>
+        
+        {allowedDomainsArray.length > 0 ? (
+          <div style={{ border: "1px solid #e5e7eb", borderRadius: 6, overflow: "hidden" }}>
+            {allowedDomainsArray.map((domain, index) => (
+              <div key={index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "#fff", borderBottom: index < allowedDomainsArray.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                <span style={{ fontSize: 13, color: "#111827", fontWeight: 500 }}>{domain}</span>
+                <Button type="text" size="small" danger icon={<Trash2 size={14} />} onClick={() => removeDomain(index)} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Alert type="warning" showIcon message={<span style={{ fontSize: 12 }}>No domains added yet. Your widget won't work on your website until you add your domain here.</span>} />
+        )}
+      </div>
+
+      <div style={{ height: 1, background: "#f3f4f6" }} />
+
+      <div>
+        <SectionTitle title="Specific Starting Page" subtitle="Instead of showing all your classes, skip directly to a specific class when the widget loads." />
         {(() => {
           const planId = (data?.widget_subscription?.planId || "").toLowerCase();
-          const canPinToClass = ["growth", "advanced"].includes(planId);
+          const canPinToClass =["growth", "advanced"].includes(planId);
+          const classes = data?.classes ||[];
           const select = (
             <Select
-              value={form.specificClassId || ""}
-              onChange={(v) => set("specificClassId")(v)}
-              style={{ width: "100%" }}
-              size="middle"
-              disabled={!canPinToClass}
-              options={[
-                { value: "", label: "Profile page with all classes" },
-                ...classes.map((c) => ({ value: String(c.classId), label: c.title })),
-              ]}
+              value={form.specificClassId || ""} onChange={set("specificClassId")}
+              size="small" style={{ width: "100%", maxWidth: 350 }} disabled={!canPinToClass}
+              options={[{ value: "", label: "Show all classes (Default)" }, ...classes.map((c) => ({ value: String(c.classId), label: c.title }))]}
             />
           );
-          return canPinToClass ? (
-            select
-          ) : (
+          return canPinToClass ? select : (
             <Tooltip title="Upgrade to Growth or Advanced to pin the widget to a specific class.">
-              <span style={{ display: "inline-block", width: "100%" }}>{select}</span>
+              <div style={{ display: "inline-block", width: "100%" }}>{select}</div>
             </Tooltip>
           );
         })()}
-        <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 6, lineHeight: 1.4 }}>
-          Selecting a class skips the class-selection step for your customers.
-        </div>
-      </SettingsCard>
-
-      {/* Allowed Domains */}
-      <SettingsCard title="Allowed Domains" subtitle="Restrict which websites can embed your widget">
-        <FieldLabel>Add a domain</FieldLabel>
-        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-          <Input
-            value={newDomainInput}
-            onChange={(e) => setNewDomainInput(e.target.value)}
-            onPressEnter={addDomain}
-            placeholder="yoursite.com or www.yoursite.com"
-            style={{ flex: 1, fontFamily: "monospace" }}
-            size="middle"
-          />
-          <Button type="primary" icon={<Plus size={14} />} onClick={addDomain} style={{ background: SEL_COLOR, borderColor: SEL_COLOR }}>
-            Add
-          </Button>
-        </div>
-        {allowedDomainsArray.length > 0 ? (
-          <ul style={{ margin: 0, padding: 0, listStyle: "none", border: "1px solid #e5e7eb", borderRadius: 8, overflow: "hidden" }}>
-            {allowedDomainsArray.map((domain, index) => (
-              <li
-                key={`${domain}-${index}`}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "8px 12px",
-                  borderBottom: index < allowedDomainsArray.length - 1 ? "1px solid #f3f4f6" : "none",
-                  background: "#fff",
-                  gap: 8,
-                }}
-              >
-                {editingDomainIndex === index ? (
-                  <>
-                    <Input
-                      value={editingDomainValue}
-                      onChange={(e) => setEditingDomainValue(e.target.value)}
-                      onPressEnter={saveEditDomain}
-                      size="small"
-                      style={{ flex: 1, fontFamily: "monospace" }}
-                      autoFocus
-                    />
-                    <Button type="text" size="small" icon={<Check size={14} />} onClick={saveEditDomain} style={{ color: "#16a34a" }} />
-                    <Button type="text" size="small" icon={<X size={14} />} onClick={() => { setEditingDomainIndex(-1); setEditingDomainValue(""); }} style={{ color: "#6b7280" }} />
-                  </>
-                ) : (
-                  <>
-                    <span style={{ fontFamily: "monospace", fontSize: 13, color: "#111827", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{domain}</span>
-                    <Button type="text" size="small" icon={<Pencil size={12} />} onClick={() => startEditDomain(index)} style={{ color: "#6b7280", padding: "4px" }} title="Edit" />
-                    <Button type="text" size="small" danger icon={<Trash2 size={12} />} onClick={() => removeDomain(index)} style={{ padding: "4px" }} title="Remove" />
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div style={{ fontSize: 13, color: "#9ca3af", padding: "12px 0" }}>No domains added yet. Add your website domain so the widget can load.</div>
-        )}
-        <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 8, lineHeight: 1.4 }}>
-          Without <code style={{ background: "#f3f4f6", padding: "1px 4px", borderRadius: 3 }}>https://</code>. ClassEasily domains are always allowed.
-        </div>
-      </SettingsCard>
-
-    </div>
-  );
-
-  // ─── Right column ─────────────────────────────────────────────────────────────
-  const rightColumn = (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-
-      {/* Live mockup */}
-      <div>
-        <div style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
-          Live Preview
-        </div>
-        <BrowserMockup
-          view={form.view}
-          borderRadiusPreset={form.borderRadiusPreset}
-          background={form.background}
-          cardBackground={form.cardBackground}
-          textPrimary={form.textPrimary}
-          textSecondary={form.textSecondary}
-          border={form.border}
-          primary={form.primary}
-          textOnPrimary={form.textOnPrimary}
-        />
-        {previewUrl && (
-          <Button
-            size="small"
-            onClick={() => window.open(previewUrl, "_blank")}
-            style={{ marginTop: 8, width: "100%" }}
-          >
-            Open full preview
-          </Button>
-        )}
-        <Button
-          size="small"
-          onClick={() => window.open(mockDemoUrl, "_blank")}
-          style={{ marginTop: 6, width: "100%" }}
-        >
-          Open experience demo
-        </Button>
-      </div>
-
-      <div style={{ height: 1, background: "#e9ecef" }} />
-
-      {/* Embed code */}
-      <div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#111827", marginBottom: 3 }}>Embed Code</div>
-        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 10, lineHeight: 1.5 }}>
-          {form.view === "modal"
-            ? "One script loads the booking popup. Add it once on your page, then add your own button that opens it."
-            : "Paste this where you want the booking form to appear on the page."}{" "}
-          <a href="/business/help?category=widget-installation" target="_blank" rel="noopener noreferrer"
-            style={{ color: SEL_COLOR, textDecoration: "underline" }}>Setup guide</a>
-        </div>
-
-        {form.view === "modal" && (
-          <>
-            <div style={{ marginBottom: 10, padding: "9px 11px", background: "#eff6ff", borderRadius: 7, border: "1px solid #bfdbfe", fontSize: 11, color: "#1e40af", lineHeight: 1.55 }}>
-              <strong>Step 1 —</strong> Paste the code below once (in your page &lt;body&gt; or your platform’s “Custom Code”). <strong>Step 2 —</strong> Add a button anywhere that runs <code style={{ background: "rgba(255,255,255,0.6)", padding: "1px 4px", borderRadius: 3 }}>openClasseasilyBooking()</code>. On Wix: put the script in <strong>Settings → Custom Code</strong>; for a button inside an embed use <code style={{ background: "rgba(255,255,255,0.6)", padding: "1px 4px", borderRadius: 3 }}>window.parent.openClasseasilyBooking()</code>.{" "}
-              <a href="/business/help?category=widget-installation&article=widget-installation-wix" target="_blank" rel="noopener noreferrer" style={{ color: "#1e40af", fontWeight: 600 }}>Wix guide →</a>
-            </div>
-            <div style={{ marginBottom: 10, fontSize: 11, color: "#6b7280" }}>
-              Example button (style and place it however you like):
-            </div>
-            <pre style={{ marginBottom: 10, padding: "8px 10px", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 6, fontSize: 11, overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-all", color: "#1f2937", fontFamily: "monospace" }}>
-              {`<button type="button" onclick="openClasseasilyBooking()">Book now</button>`}
-            </pre>
-            <div style={{ marginBottom: 6, fontSize: 11, color: "#6b7280" }}>
-              For membership/subscription, use <code style={{ background: "rgba(255,255,255,0.6)", padding: "1px 4px", borderRadius: 3 }}>openClasseasilyMembership('your-plan-id')</code> (same page) or <code style={{ background: "rgba(255,255,255,0.6)", padding: "1px 4px", borderRadius: 3 }}>window.parent.openClasseasilyMembership('your-plan-id')</code> from an iframe. Replace <code>your-plan-id</code> with your plan ID (from your membership settings or API).{" "}
-              <a href="/business/help?category=widget-installation&article=widget-using-custom-button" target="_blank" rel="noopener noreferrer" style={{ color: SEL_COLOR, fontWeight: 600 }}>Help →</a>
-            </div>
-            <pre style={{ marginBottom: 10, padding: "8px 10px", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 6, fontSize: 11, overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-all", color: "#1f2937", fontFamily: "monospace" }}>
-              {`<button type="button" onclick="openClasseasilyMembership('your-plan-id')">Join</button>`}
-            </pre>
-            <div style={{ marginBottom: 10, fontSize: 11, color: "#6b7280" }}>
-              Script to add (paste once):
-            </div>
-          </>
-        )}
-
-        <pre style={{
-          background: "#f1f3f5", border: "1px dashed #d1d5db",
-          borderRadius: 8, padding: "11px 13px", fontSize: 11,
-          lineHeight: 1.75, margin: 0, overflowX: "auto",
-          whiteSpace: "pre-wrap", wordBreak: "break-all",
-          color: "#1f2937", fontFamily: "monospace",
-        }}>
-          {activeSnippet}
-        </pre>
-
-        <Button
-          type="primary"
-          icon={copied ? <Check size={14} /> : <Copy size={14} />}
-          onClick={handleCopy}
-          block
-          style={{ marginTop: 8, background: copied ? "#16a34a" : SEL_COLOR, borderColor: copied ? "#16a34a" : SEL_COLOR, fontWeight: 600 }}
-        >
-          {copied ? "Copied!" : "Copy code"}
-        </Button>
-
-        {apiKey && (
-          <div style={{ marginTop: 10, fontSize: 11, color: "#9ca3af" }}>
-            API key: <code style={{ background: "#f1f5f9", padding: "2px 6px", borderRadius: 4 }}>{apiKey}</code>
-          </div>
-        )}
-
-        <div style={{ marginTop: 10, padding: "8px 12px", background: "#fffbeb", borderRadius: 7, border: "1px solid #fde68a" }}>
-          <div style={{ fontSize: 11, color: "#92400e", lineHeight: 1.5 }}>
-            <strong>Before going live:</strong> add your domain to Allowed Domains so the widget can load from your site.
-          </div>
-        </div>
       </div>
 
     </div>
   );
 
-  return (
-    <div style={{ padding: "24px 24px 80px", position: "relative" }}>
-      <DashboardBreadcrumb title="Booking Widget" />
-
-      <h1 style={{ margin: "0 0 20px", fontSize: 20, fontWeight: 700, color: "#111827" }}>Booking Widget</h1>
-
-      {isWide ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 18, alignItems: "start" }}>
-          {leftColumn}
-          <div style={{ position: "sticky", top: 24, background: "#F8F9FA", borderRadius: 14, border: "1px solid #e9ecef", padding: "20px" }}>
-            {rightColumn}
-          </div>
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ background: "#F8F9FA", borderRadius: 14, border: "1px solid #e9ecef", padding: "18px" }}>
-            {rightColumn}
-          </div>
-          {leftColumn}
-        </div>
+  const installTab = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      
+      {allowedDomainsArray.length === 0 && (
+        <Alert type="error" showIcon message={<span style={{ fontSize: 12 }}>Wait! You haven't added your website domain in the 'Settings' tab. The code below will not work until you do.</span>} />
       )}
 
-      {/* Sticky Save button — bottom-left with margin so it doesn't cover content */}
-      <div
-        style={{
-          position: "sticky",
-          bottom: 24,
-          left: 24,
-          marginTop: 24,
-          display: "inline-block",
-          zIndex: 10,
-        }}
-      >
-        <Button
-          type="primary"
-          size="middle"
-          onClick={handleSave}
-          loading={saving}
-          style={{ background: ACCENT, borderColor: ACCENT, fontWeight: 600, minWidth: 140 }}
-        >
-          {saving ? "Saving…" : "Save changes"}
+      <div>
+        <SectionTitle title="Embed Code" subtitle={form.view === "modal" ? "Copy and paste this code anywhere on your website. It adds the required script and a basic Book Now button to trigger the popup." : "Copy and paste this code onto your website where you want the booking form to appear."} />
+        <div style={snippetContainerStyle}>
+          <pre style={snippetPreStyle}>
+            {activeSnippet}
+          </pre>
+          <Button size="small" icon={copied ? <Check size={12} /> : <Copy size={12} />} onClick={handleCopy} style={getCopyBtnStyle(copied)}>
+            {copied ? "Copied" : "Copy"}
+          </Button>
+        </div>
+      </div>
+
+      <div style={{ padding: "12px", background: "#f3f6f8", borderRadius: 8 }}>
+        <h4 style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600 }}>Need help installing?</h4>
+        <p style={{ margin: 0, fontSize: 12, color: "#4b5563", lineHeight: 1.4 }}>
+          Not sure where to paste this or how to add buttons? Check out our <a href="/business/help?category=widget-installation" target="_blank" rel="noreferrer" style={{ color: SEL_COLOR, fontWeight: 600, textDecoration: "underline" }}>setup guides</a> for Squarespace, Wix, WordPress, and more.
+        </p>
+      </div>
+
+      {membershipProducts.length > 0 && (
+        <>
+          <div style={{ height: 1, background: "#e5e7eb", margin: "8px 0" }} />
+          <div>
+            <SectionTitle title="Sell Memberships" subtitle="Want to sell subscriptions directly from your site? Use these specific buttons." />
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {membershipProducts.map((product) => {
+                const label = escapeSubscriptionLabel(product.name);
+                const snippet = `<button onclick="openClasseasilyMembership('${product.id}')">Join ${label}</button>`;
+                const copyId = `plan-${product.id}`;
+                const isCopied = copiedSubscriptionId === copyId;
+                
+                return (
+                  <div key={product.id} style={{ border: "1px solid #e5e7eb", borderRadius: 6, padding: "12px" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#111827", marginBottom: 6 }}>{product.name}</div>
+                    <div style={snippetContainerStyle}>
+                      <pre style={snippetPreStyle}>
+                        {snippet}
+                      </pre>
+                      <Button size="small" icon={isCopied ? <Check size={12} /> : <Copy size={12} />} onClick={() => handleCopySubscription(snippet, copyId)} style={getCopyBtnStyle(isCopied)}>
+                        {isCopied ? "Copied" : "Copy"}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
+    </div>
+  );
+
+  const tabItems =[
+    { key: "design", label: <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}><Layout size={14} /> Design</span>, children: designTab },
+    { key: "settings", label: <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}><Settings size={14} /> Settings</span>, children: settingsTab },
+    { key: "install", label: <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}><Code size={14} /> Add to Website</span>, children: installTab },
+  ];
+
+  return (
+    <div style={{ padding: "16px 24px 80px", maxWidth: 1200, margin: "0 auto" }}>
+      
+      {/* HEADER */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <DashboardBreadcrumb title="Booking Widget" />
+          <h1 style={{ margin: "6px 0 0", fontSize: 24, fontWeight: 800, color: "#111827" }}>Customize Your Widget</h1>
+          <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6b7280" }}>Design your booking experience and get the code to install it.</p>
+        </div>
+        <Button type="primary" size="small" onClick={handleSave} loading={saving} style={{ background: ACCENT, borderColor: ACCENT, fontWeight: 600, padding: "0 16px" }}>
+          {saving ? "Saving…" : "Save Changes"}
         </Button>
+      </div>
+
+      {/* MAIN GRID */}
+      <div style={{ display: "grid", gridTemplateColumns: isWide ? "1fr 320px" : "1fr", gap: 32, alignItems: "start" }}>
+        
+        {/* LEFT PANE - TABS */}
+        <div style={{ background: "#ffffff", borderRadius: 12, border: "1px solid #e5e7eb", padding: "16px 20px", boxShadow: "0 2px 4px -1px rgba(0,0,0,0.05)" }}>
+          <Tabs defaultActiveKey="design" items={tabItems} size="small" tabBarGutter={16} />
+        </div>
+
+        {/* RIGHT PANE - LIVE PREVIEW */}
+        <div style={{ position: "sticky", top: 16 }}>
+          <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ height: 1, flex: 1, background: "#e5e7eb" }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>Live Preview</span>
+            <div style={{ height: 1, flex: 1, background: "#e5e7eb" }} />
+          </div>
+          
+          <div style={{ boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)", borderRadius: 8 }}>
+            <BrowserMockup
+              view={form.view}
+              borderRadiusPreset={form.borderRadiusPreset}
+              background={form.background} cardBackground={form.cardBackground}
+              textPrimary={form.textPrimary} textSecondary={form.textSecondary}
+              border={form.border} primary={form.primary} textOnPrimary={form.textOnPrimary}
+            />
+          </div>
+        </div>
+
       </div>
     </div>
   );
