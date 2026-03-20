@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
-import { Table, Button, Tag, Space, Input, Select, Skeleton } from "antd";
+import { Table, Button, Tag, Space, Input, Select, Skeleton, Popconfirm } from "antd";
 import { Plus, Search, User } from "lucide-react";
 import message from "@/lib/message";
 import { businessMembershipService } from "@/services/apiService";
@@ -95,6 +95,21 @@ export default function MembersTable({ noWrapperPadding, productId: propProductI
     load();
   };
 
+  const handleApprove = async (id) => {
+    const res = await businessMembershipService.approveMember(id);
+    if (res.success) {
+      message.success("Member approved; they will receive an email to complete payment.");
+      load();
+    } else message.error(res.error || "Failed to approve");
+  };
+  const handleDecline = async (id) => {
+    const res = await businessMembershipService.declineMember(id);
+    if (res.success) {
+      message.success("Application declined.");
+      load();
+    } else message.error(res.error || "Failed to decline");
+  };
+
   const columns = [
     {
       title: "Member",
@@ -137,9 +152,21 @@ export default function MembersTable({ noWrapperPadding, productId: propProductI
       title: "Actions",
       key: "actions",
       render: (_, record) => (
-        <Button type="link" size="small" icon={<User size={14} />} onClick={() => openDrawer(record)}>
-          View
-        </Button>
+        <Space size="small">
+          <Button type="link" size="small" icon={<User size={14} />} onClick={() => openDrawer(record)}>
+            View
+          </Button>
+          {record.status === "pending_approval" && (
+            <>
+              <Button type="link" size="small" style={{ color: "green" }} onClick={() => handleApprove(record.id)}>
+                Approve
+              </Button>
+              <Popconfirm title="Decline this application?" onConfirm={() => handleDecline(record.id)}>
+                <Button type="link" size="small" danger>Decline</Button>
+              </Popconfirm>
+            </>
+          )}
+        </Space>
       ),
     },
   ];
@@ -203,6 +230,7 @@ export default function MembersTable({ noWrapperPadding, productId: propProductI
             open={!!drawerMemberId}
             onClose={closeDrawer}
             onUpdated={load}
+            products={products}
           />
           <AddMemberModal
             open={addModalOpen}

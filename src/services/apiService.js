@@ -1764,6 +1764,22 @@ export const businessMembershipService = {
       return { success: false, error: error.response?.data?.error || "Failed to pause" };
     }
   },
+  approveMember: async (id) => {
+    try {
+      const response = await axiosInstance.post(`${API_ENDPOINTS.MY_BUSINESS_MEMBERS}${id}/approve/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || error.response?.data?.detail || "Failed to approve" };
+    }
+  },
+  declineMember: async (id) => {
+    try {
+      const response = await axiosInstance.post(`${API_ENDPOINTS.MY_BUSINESS_MEMBERS}${id}/decline/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return { success: false, error: error.response?.data?.error || error.response?.data?.detail || "Failed to decline" };
+    }
+  },
   manualAddMember: async (data) => {
     try {
       const response = await axiosInstance.post(API_ENDPOINTS.MY_BUSINESS_MEMBERS_MANUAL_ADD, data);

@@ -17,7 +17,7 @@ import { businessMembershipService } from "@/services/apiService";
 
 const { Text } = Typography;
 
-export default function MemberDrawer({ memberId, open, onClose, onUpdated }) {
+export default function MemberDrawer({ memberId, open, onClose, onUpdated, products = [] }) {
   const [member, setMember] = useState(null);
   const [loading, setLoading] = useState(false);
   const [actioning, setActioning] = useState(false);
@@ -136,6 +136,24 @@ export default function MemberDrawer({ memberId, open, onClose, onUpdated }) {
             <Descriptions.Item label="Source">{member.source || "—"}</Descriptions.Item>
             {member.notes && <Descriptions.Item label="Notes">{member.notes}</Descriptions.Item>}
           </Descriptions>
+
+          {member.custom_data && typeof member.custom_data === "object" && Object.keys(member.custom_data).length > 0 && (
+            <>
+              <Text strong style={{ display: "block", marginTop: 24, marginBottom: 8 }}>Signup responses</Text>
+              <Descriptions column={1} size="small" bordered>
+                {(() => {
+                  const product = products.find((p) => p.id === member.product_id);
+                  const signupFields = Array.isArray(product?.signup_fields) ? product.signup_fields : [];
+                  const labelForKey = (key) => signupFields.find((f) => f.key === key)?.label || key;
+                  return Object.entries(member.custom_data).map(([key, value]) => (
+                    <Descriptions.Item key={key} label={labelForKey(key)}>
+                      {value === true || value === false ? String(value) : (value ?? "—")}
+                    </Descriptions.Item>
+                  ));
+                })()}
+              </Descriptions>
+            </>
+          )}
 
           {Array.isArray(member.ledger) && member.ledger.length > 0 && (
             <>
