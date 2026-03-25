@@ -4,10 +4,9 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styled, { keyframes } from "styled-components";
-import { Typography, Tag, Avatar, Button, Popconfirm } from "antd";
+import { Typography, Tag, Button, Popconfirm } from "antd";
 import message from "@/lib/message";
 import {
-  User,
   Clock,
   Calendar,
   MessageSquare,
@@ -124,10 +123,10 @@ const MobileDetailsBody = styled.div`
 
 // LEFT column – white, scrollable
 const LeftCol = styled.div`
-  flex: 1; background: ${C.white}; overflow-y: auto; padding: 0;
+  flex: 1; background: ${C.white}; overflow-y: auto; padding: 20px 24px;
   display: flex; flex-direction: column; gap: 28px;
   animation: ${fadeIn} 0.3s ease-out;
-  @media (max-width: 768px) { gap: 20px; }
+  @media (max-width: 768px) { gap: 20px; padding: 16px 20px; }
 `;
 
 // RIGHT column – cool gray, fixed-width, scrollable (z-index so content stays below footer)
@@ -139,7 +138,7 @@ const RightCol = styled.div`
 `;
 
 const RightColInner = styled.div`
-  padding: 0; display: flex; flex-direction: column; gap: 20px; flex: 1;
+  padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; flex: 1;
 `;
 
 // RIGHT column header (title + close)
@@ -159,9 +158,6 @@ const CloseBtn = styled.button`
 const BookerCard = styled.div`
   background: ${C.white}; border-radius: 12px; padding: 16px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: flex; flex-direction: column; gap: 12px;
-`;
-const BookerRow = styled.div`
-  display: flex; align-items: center; gap: 12px;
 `;
 const BookerName = styled.span`
   font-size: 15px; font-weight: 700; color: ${C.textPrimary}; display: block;
@@ -284,10 +280,6 @@ const Skel = styled.div`
   background: linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);
   background-size: 200% 100%; animation: ${pulse} 1.5s ease-in-out infinite;
 `;
-const SkelCircle = styled(Skel)`
-  width: ${p => p.$s || "40px"}; height: ${p => p.$s || "40px"}; border-radius: 50%;
-`;
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const statusConfig = {
   confirmed: { color: C.accent, bg: "#eff6ff", icon: <UserCheck size={11} /> },
@@ -325,16 +317,6 @@ function fmt(date, format = "MMM d, yyyy") {
   if (!date) return null;
   try { return new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "short", day: "numeric" }).format(new Date(date)); }
   catch { return String(date); }
-}
-
-// Stable memoji for guests (no account): hash seed to index
-const GUEST_MEMOJIS = ["👤", "🧑", "🙂", "😊", "🤗", "👋", "🙌", "✌️", "🤝", "👏", "👍", "🌟", "💫", "✨", "🎯", "🔔", "📌", "📎", "🧩", "🎨"];
-function getGuestMemoji(seed) {
-  if (seed == null) return GUEST_MEMOJIS[0];
-  const s = String(seed);
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return GUEST_MEMOJIS[h % GUEST_MEMOJIS.length];
 }
 
 function formatDuration(minutes) {
@@ -482,33 +464,17 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
       <>
         {loading ? (
           <BookerCard>
-            <BookerRow>
-              <SkelCircle $s="48px" />
-              <div style={{ flex: 1 }}>
-                <Skel $h="15px" $w="65%" style={{ marginBottom: 6 }} />
-                <Skel $h="12px" $w="85%" />
-              </div>
-            </BookerRow>
+            <div>
+              <Skel $h="15px" $w="65%" style={{ marginBottom: 6 }} />
+              <Skel $h="12px" $w="85%" />
+            </div>
           </BookerCard>
         ) : booking ? (
           <BookerCard>
-            <BookerRow>
-              <Avatar
-                size={48}
-                src={bd.avatar_url}
-                style={{
-                  background: bd.avatar_url ? "transparent" : (bd.userId != null ? C.brand : "#f4f5f8"),
-                  flexShrink: 0,
-                  fontSize: bd.userId == null && !bd.avatar_url ? "24px" : undefined,
-                }}
-              >
-                {bd.avatar_url ? null : bd.userId != null ? <User size={22} /> : getGuestMemoji(booking.id || bd.email)}
-              </Avatar>
-              <div>
-                <BookerName>{bd.full_name || "Unknown Guest"}</BookerName>
-                <BookerEmail>{bd.email || "—"}</BookerEmail>
-              </div>
-            </BookerRow>
+            <div>
+              <BookerName>{bd.full_name || "Unknown Guest"}</BookerName>
+              <BookerEmail>{bd.email || "—"}</BookerEmail>
+            </div>
             <div>
               <StatusBadge status={booking.status} paymentStatus={booking.payment_status} />
             </div>
@@ -847,7 +813,6 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
       <MobileDetailsHeader type="button" onClick={() => setMobileDetailsExpanded((e) => !e)}>
         {loading ? (
           <>
-            <SkelCircle $s="40px" />
             <div style={{ flex: 1, minWidth: 0 }}>
               <Skel $h="14px" $w="60%" style={{ marginBottom: 4 }} />
               <Skel $h="12px" $w="80%" />
@@ -856,17 +821,6 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
           </>
         ) : booking ? (
           <>
-            <Avatar
-              size={40}
-              src={booking.booker_details?.avatar_url}
-              style={{
-                background: booking.booker_details?.avatar_url ? "transparent" : (booking.booker_details?.userId != null ? C.brand : "#f4f5f8"),
-                flexShrink: 0,
-                fontSize: booking.booker_details?.userId == null && !booking.booker_details?.avatar_url ? "20px" : undefined,
-              }}
-            >
-              {booking.booker_details?.avatar_url ? null : booking.booker_details?.userId != null ? <User size={18} /> : getGuestMemoji(booking.id || booking.booker_details?.email)}
-            </Avatar>
             <div style={{ flex: 1, minWidth: 0 }}>
               <BookerName style={{ fontSize: 14 }}>{booking.booker_details?.full_name || "Guest"}</BookerName>
               <StatusBadge status={booking.status} paymentStatus={booking.payment_status} />
@@ -886,7 +840,7 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
       </MobileDetailsHeader>
       {mobileDetailsExpanded && (loading || booking) && (
         <MobileDetailsBody>
-          <div style={{ padding: "0 16px 20px" }}>{renderRightCol({ mobileBodyOnly: true })}</div>
+          <div style={{ padding: "0 20px 20px" }}>{renderRightCol({ mobileBodyOnly: true })}</div>
         </MobileDetailsBody>
       )}
       <MobileScrollArea>
