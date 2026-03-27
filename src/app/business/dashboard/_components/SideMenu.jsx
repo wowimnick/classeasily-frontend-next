@@ -808,22 +808,6 @@ const menuGroupsConfig =[
         ],
       },
       {
-        key: "memberships",
-        label: "Memberships",
-        icon: (
-          <LordIcon
-            src="https://cdn.lordicon.com/mudwpdhy.json"
-            colors="primary:#666,secondary:#666"
-            size="20px"
-            playOnLoad={true}
-          />
-        ),
-        children:[
-          { key: "memberships/products", label: "My Plans" },
-          { key: "memberships/members", label: "Members" },
-        ],
-      },
-      {
         key: "financials",
         label: "Financials",
         icon: (
@@ -874,6 +858,22 @@ const menuGroupsConfig =[
             playOnLoad={true}
           />
         ),
+      },
+      {
+        key: "memberships",
+        label: "Memberships",
+        icon: (
+          <LordIcon
+            src="https://cdn.lordicon.com/mudwpdhy.json"
+            colors="primary:#666,secondary:#666"
+            size="20px"
+            playOnLoad={true}
+          />
+        ),
+        children: [
+          { key: "memberships/products", label: "My Plans" },
+          { key: "memberships/members", label: "Members" },
+        ],
       },
       {
         key: "settings",
@@ -1030,9 +1030,12 @@ const SideMenuComponent = memo(
         (item) => item.children?.some((child) => child.key === activeKey)
       )?.key;
       if (parentKey) {
-        setOpenKeys((prev) => (prev.includes(parentKey) ? prev :[parentKey]));
+        if (parentKey === "memberships" && !hasMembershipAccess) {
+          return;
+        }
+        setOpenKeys((prev) => (prev.includes(parentKey) ? prev : [parentKey]));
       }
-    }, [activeKey]);
+    }, [activeKey, hasMembershipAccess]);
 
     useEffect(() => {
       if (typeof window === "undefined") return;
@@ -1071,9 +1074,23 @@ const SideMenuComponent = memo(
     };
 
     const handleOpenChange = (keys) => {
+      if (!hasMembershipAccess) {
+        const attemptingOpenMemberships =
+          keys.includes("memberships") && !openKeys.includes("memberships");
+        if (attemptingOpenMemberships) {
+          setShakeMemberships(true);
+          setTimeout(() => {
+            setShowMembershipsUpgradeModal(true);
+            setShakeMemberships(false);
+          }, 400);
+        }
+        setOpenKeys(keys.filter((k) => k !== "memberships"));
+        return;
+      }
+
       const latestOpenKey = keys.find((k) => !openKeys.includes(k));
       if (allMenuItems.some((item) => item.key === latestOpenKey && item.children)) {
-        setOpenKeys(latestOpenKey ? [latestOpenKey] :[]);
+        setOpenKeys(latestOpenKey ? [latestOpenKey] : []);
       } else if (latestOpenKey) {
         setOpenKeys(keys);
       } else {

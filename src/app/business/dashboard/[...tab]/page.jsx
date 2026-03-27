@@ -147,7 +147,7 @@ export default function DashboardPage() {
     case "widget": {
       const showWidget = !subLoading && hasWidgetAccess;
       componentToRender = showWidget ? (
-        <TabGlassWrapper>
+        <TabGlassWrapper unclipped>
           <WidgetCustomizer />
         </TabGlassWrapper>
       ) : subLoading ? (

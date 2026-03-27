@@ -833,6 +833,14 @@ export const helpCenterData = [
           },
           {
             type: "p",
+            text: "<strong>Inline-only widget:</strong> These membership buttons open the subscription <strong>popup</strong> via the same loader / parent-page helpers as “Book now.” If you <em>only</em> use <strong>Inline</strong> mode (the booking form embedded in the page with no popup setup), that path is not available — for example on <strong>Wix free</strong>, where only a single inline HTML embed is used. Use <strong>Popup</strong> mode with the loader (and on Wix, the two-embed + connector flow from <a href=\"/business/help?category=widget-installation&article=widget-installation-wix\">Installing on Wix</a>) if you want custom membership signup buttons on the same site.",
+          },
+          {
+            type: "p",
+            text: "<strong>Button size:</strong> The code from your dashboard styles the button to fill its container (<code>width: 100%; height: 100%</code>) with the label centered. Put the button inside a box or HTML wrapper where <em>you</em> set the width and height (or min-height) you want — for example a Wix strip, a div with CSS, or a grid cell.",
+          },
+          {
+            type: "p",
             text: "Example: <code>&lt;button onclick=\"window.parent.openClasseasilyMembership('212059dd-2af4-4540-977c-e1d607433e39')\"&gt;Join monthly&lt;/button&gt;</code>. Replace the ID with your plan's ID. You can have one button per plan (e.g. \"Join monthly\", \"Join annual\").",
           },
           {

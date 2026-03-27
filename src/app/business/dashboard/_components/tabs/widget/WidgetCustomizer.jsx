@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Input, Select, Button, ColorPicker, Tooltip, message as antMessage, Collapse, Tabs, Alert } from "antd";
-import { Copy, Loader2, Check, X, Plus, Trash2, Pencil, Code, Layout, Settings } from "lucide-react";
+import { Copy, Loader2, Check, Plus, Trash2, Pencil, Code, Layout, Settings } from "lucide-react";
 import { businessService, businessMembershipService } from "@/services/apiService";
 import message from "@/lib/message";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
@@ -42,9 +42,9 @@ function useDebounce(fn, delay = 300) {
 }
 
 // ─── Color row with antd ColorPicker ─────────────────────────────────────────
-function ColorRow({ label, value, onChange, tooltip }) {
+function ColorRow({ label, value, onChange, tooltip, emptyFallback = "#000000" }) {
   const debounced = useDebounce(onChange, 120);
-  const hex = normalizeHex(value) || "#000000";
+  const hex = normalizeHex(value) || normalizeHex(emptyFallback) || emptyFallback;
   return (
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -156,68 +156,6 @@ function ViewTypeCard({ id, current, onChange, label, Illustration }) {
   );
 }
 
-// ─── Widget mockup UI ───────────────────────────
-function InlineWidgetMock({ primary, textOnPrimary, background, cardBackground, textPrimary, textSecondary, border, radiusPx = 8 }) {
-  const bc = primary || SEL_COLOR; const btc = textOnPrimary || "#ffffff";
-  const bg = background || "#f9fafb"; const cardBg = cardBackground || "#ffffff";
-  const tp = textPrimary || "#111827"; const ts = textSecondary || "#6b7280";
-  const bdr = border || "#e5e7eb"; const r = radiusPx;
-  const DAYS = [[null, null, null, null, null, { n: 1 }, { n: 2, dot: true }],[{ n: 3, dot: true }, { n: 4 }, { n: 5, sel: true }, { n: 6, dot: true }, { n: 7 }, { n: 8, dot: true }, { n: 9 }],[{ n: 10, dot: true }, { n: 11 }, { n: 12 }, { n: 13, dot: true }, { n: 14 }, { n: 15, dot: true }, { n: 16 }],[{ n: 17 }, { n: 18, dot: true }, { n: 19, dot: true }, { n: 20 }, { n: 21, dot: true }, { n: 22 }, { n: 23 }],[{ n: 24, dot: true }, { n: 25 }, { n: 26 }, { n: 27, dot: true }, { n: 28 }, null, null]];
-
-  return (
-      <div style={{ background: cardBg, borderRadius: r, border: `1px solid ${bdr}`, padding: "10px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <div style={{ width: 16, height: 16, borderRadius: Math.max(2, r - 6), background: bg, border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 9, color: ts }}>‹</span>
-          </div>
-          <span style={{ fontSize: 10, fontWeight: 700, color: tp }}>February 2026</span>
-          <div style={{ width: 16, height: 16, borderRadius: Math.max(2, r - 6), background: bg, border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 9, color: ts }}>›</span>
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 4 }}>
-          {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-            <div key={i} style={{ textAlign: "center", fontSize: 7, fontWeight: 600, color: ts }}>{d}</div>
-          ))}
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 10 }}>
-          {DAYS.flat().map((cell, i) => {
-            if (!cell) return <div key={i} style={{ aspectRatio: "1" }} />;
-            return (
-              <div key={i} style={{
-                aspectRatio: "1", borderRadius: Math.max(2, r - 6),
-                display: "flex", alignItems: "center", justifyContent: "center",
-                background: cell.sel ? bc : "transparent", position: "relative",
-              }}>
-                <span style={{ fontSize: 9, fontWeight: cell.sel ? 700 : 400, color: cell.sel ? btc : cell.dot ? tp : ts }}>
-                  {cell.n}
-                </span>
-                {cell.dot && !cell.sel && (
-                  <div style={{ position: "absolute", bottom: 2, left: "50%", transform: "translateX(-50%)", width: 2.5, height: 2.5, borderRadius: "50%", background: bc }} />
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{ fontSize: 8, fontWeight: 700, color: tp, marginBottom: 6 }}>Select a time — Wed, Feb 5</div>
-        <div style={{ border: `1px solid ${bdr}`, borderRadius: r, overflow: "hidden" }}>
-          {[{ time: "10:00 AM", dur: "60 min", price: "$45" }, { time: "2:00 PM", dur: "60 min", price: "$45" }].map((slot, i) => (
-            <div key={i} style={{ borderTop: i === 0 ? "none" : `1px solid ${bdr}`, padding: "6px 8px", display: "flex", alignItems: "center", justifyContent: "space-between", background: cardBg }}>
-              <div>
-                <div style={{ fontSize: 9, fontWeight: 700, color: tp }}>{slot.time}</div>
-                <div style={{ fontSize: 7.5, color: ts }}>{slot.dur} · {slot.price}</div>
-              </div>
-              <div style={{ background: bc, color: btc, borderRadius: Math.max(2, r - 4), padding: "3px 8px", fontSize: 8, fontWeight: 700 }}>Book</div>
-            </div>
-          ))}
-        </div>
-      </div>
-  );
-}
-
 const BORDER_RADIUS_OPTIONS =[
   { id: "none", label: "Sharp" },
   { id: "small", label: "Small" },
@@ -227,6 +165,21 @@ const BORDER_RADIUS_OPTIONS =[
 
 const RADIUS_PX = { none: 0, small: 4, medium: 8, large: 12 };
 
+/** Map stored config to a corner preset (legacy button_radius_px supported). */
+function effectiveMembershipButtonRadiusPreset(cfg) {
+  const c = cfg || {};
+  if (c.button_radius_preset && RADIUS_PX[c.button_radius_preset] !== undefined) {
+    return c.button_radius_preset;
+  }
+  const px = c.button_radius_px;
+  if (px == null || px === "") return "medium";
+  const n = Number(px);
+  if (!Number.isFinite(n) || n <= 0) return "none";
+  if (n <= 4) return "small";
+  if (n <= 8) return "medium";
+  return "large";
+}
+
 const COLOR_PRESETS =[
   { id: "classic", label: "Classic", primary: "#2563EB", textOnPrimary: "#ffffff", background: "#EFF6FF", cardBackground: "#FFFFFF", textPrimary: "#1E293B", textSecondary: "#64748B", border: "#E2E8F0" },
   { id: "sunset", label: "Sunset", primary: "#EA580C", textOnPrimary: "#ffffff", background: "#FEF3C7", cardBackground: "#FFFFFF", textPrimary: "#431407", textSecondary: "#B45309", border: "#FED7AA" },
@@ -235,77 +188,6 @@ const COLOR_PRESETS =[
   { id: "ocean", label: "Ocean", primary: "#0D9488", textOnPrimary: "#ffffff", background: "#CCFBF1", cardBackground: "#FFFFFF", textPrimary: "#134E4A", textSecondary: "#0F766E", border: "#99F6E4" },
   { id: "rose", label: "Rose", primary: "#E11D48", textOnPrimary: "#ffffff", background: "#FFF1F2", cardBackground: "#FFFFFF", textPrimary: "#4C0519", textSecondary: "#BE123C", border: "#FECDD3" },
 ];
-
-// ─── Browser mockup shell ─────────────────────────────
-function BrowserMockup({ view, borderRadiusPreset, background, cardBackground, textPrimary, textSecondary, border, primary, textOnPrimary }) {
-  const bc = primary || SEL_COLOR; const btc = textOnPrimary || "#ffffff";
-  const bg = background || "#f9fafb"; const cardBg = cardBackground || "#ffffff";
-  const tp = textPrimary || "#111827"; const ts = textSecondary || "#6b7280";
-  const bdr = border || "#e5e7eb"; const r = RADIUS_PX[borderRadiusPreset] ?? 8;
-
-  const PageLines = () => (
-    <div style={{ padding: "12px" }}>
-      <div style={{ height: 8, background: bdr, borderRadius: 3, width: "62%", marginBottom: 8 }} />
-      <div style={{ height: 6, background: bdr, borderRadius: 3, width: "88%", marginBottom: 6, opacity: 0.7 }} />
-      <div style={{ height: 6, background: bdr, borderRadius: 3, width: "72%", marginBottom: 6, opacity: 0.5 }} />
-    </div>
-  );
-
-  const themeProps = { primary: bc, textOnPrimary: btc, background: bg, cardBackground: cardBg, textPrimary: tp, textSecondary: ts, border: bdr, radiusPx: r };
-
-  const innerContent = (() => {
-    if (view === "inline") return <InlineWidgetMock {...themeProps} />;
-
-    return (
-      <div style={{ position: "relative", minHeight: 180, border: '1px solid #e5e7eb', borderRadius: 8, background: '#fff', overflow: 'hidden' }}>
-        <PageLines />
-        <div style={{ padding: "0 12px 12px" }}>
-          <div style={{ display: "inline-block", background: bc, color: btc, borderRadius: r, fontSize: 9, fontWeight: 700, padding: "5px 12px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
-            Book now
-          </div>
-          <div style={{ marginTop: 5, fontSize: 8, color: ts }}>← Imagine your button here</div>
-        </div>
-        <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }}>
-          <div style={{
-            position: "absolute", top: "10%", left: "8%", right: "8%",
-            background: cardBg, borderRadius: r,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.22)", overflow: "hidden", border: `1px solid ${bdr}`,
-          }}>
-            <div style={{ display: "flex", alignItems: "center", padding: "8px 10px", borderBottom: `1px solid ${bdr}`, gap: 6, background: bg }}>
-              <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1px solid ${bdr}`, background: cardBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ fontSize: 8, color: ts }}>‹</span>
-              </div>
-              <span style={{ flex: 1, textAlign: "center", fontSize: 9, fontWeight: 700, color: tp }}>Select date & time</span>
-              <div style={{ width: 14, height: 14, borderRadius: "50%", background: bg, border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <X size={8} color={ts} />
-              </div>
-            </div>
-            <div style={{ padding: "10px", background: cardBg }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <span style={{ fontSize: 8, color: ts }}>‹</span>
-                <span style={{ fontSize: 8, fontWeight: 700, color: tp }}>February 2026</span>
-                <span style={{ fontSize: 8, color: ts }}>›</span>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
-                {Array.from({ length: 14 }, (_, i) => {
-                  const n = i + 1;
-                  const isSelected = n === 5;
-                  return (
-                    <div key={i} style={{ aspectRatio: "1", borderRadius: Math.max(1, r - 4), display: "flex", alignItems: "center", justifyContent: "center", background: isSelected ? bc : "transparent" }}>
-                      <span style={{ fontSize: 9, color: isSelected ? btc : tp, fontWeight: isSelected ? 700 : 400 }}>{n}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  })();
-
-  return <div>{innerContent}</div>;
-}
 
 function SectionTitle({ title, subtitle }) {
   return (
@@ -319,6 +201,33 @@ function SectionTitle({ title, subtitle }) {
 function escapeSubscriptionLabel(s) {
   if (s == null || typeof s !== "string") return "";
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function buildMembershipButtonHtml(product) {
+  const cfg = product.widget_button_config || {};
+  const classArg =
+    cfg.open_class_id != null && cfg.open_class_id !== ""
+      ? `, '${String(cfg.open_class_id)}'`
+      : "";
+  const rawLabel =
+    (cfg.button_label && String(cfg.button_label).trim()) || `Join ${product.name || "plan"}`;
+  const label = escapeSubscriptionLabel(rawLabel);
+  const styles = [];
+  styles.push(
+    "display:flex;align-items:center;justify-content:center;width:100%;height:100%;box-sizing:border-box;cursor:pointer;border:none;font:inherit"
+  );
+  if (cfg.button_background) styles.push(`background:${cfg.button_background}`);
+  if (cfg.button_text_color) styles.push(`color:${cfg.button_text_color}`);
+  let radiusPx = null;
+  if (cfg.button_radius_preset && RADIUS_PX[cfg.button_radius_preset] !== undefined) {
+    radiusPx = RADIUS_PX[cfg.button_radius_preset];
+  } else if (cfg.button_radius_px != null && cfg.button_radius_px !== "") {
+    const n = Number(cfg.button_radius_px);
+    if (Number.isFinite(n)) radiusPx = n;
+  }
+  if (radiusPx != null && radiusPx > 0) styles.push(`border-radius:${radiusPx}px`);
+  const styleAttr = styles.length ? ` style="${styles.join(";")}"` : "";
+  return `<button type="button"${styleAttr} onclick="openClasseasilyMembership('${product.id}'${classArg})">${label}</button>`;
 }
 
 const DEFAULT_FORM = {
@@ -339,10 +248,26 @@ const DEFAULT_FORM = {
 };
 
 // ─── Code Snippet Styling ─────────────────────────────────────────────────────
-const snippetContainerStyle = { position: "relative" };
+const snippetContainerStyle = {
+  position: "relative",
+  width: "100%",
+  minWidth: 0,
+  boxSizing: "border-box",
+};
 const snippetPreStyle = {
-  background: "#111827", color: "#f3f4f6", padding: "12px 16px", borderRadius: 8,
-  fontSize: 12, lineHeight: 1.5, overflowX: "auto", fontFamily: "monospace", margin: 0
+  background: "#111827",
+  color: "#f3f4f6",
+  padding: "12px 16px",
+  borderRadius: 8,
+  fontSize: 12,
+  lineHeight: 1.5,
+  overflowX: "auto",
+  fontFamily: "monospace",
+  margin: 0,
+  width: "100%",
+  maxWidth: "100%",
+  boxSizing: "border-box",
+  display: "block",
 };
 const getCopyBtnStyle = (isCopied) => ({
   position: "absolute", top: 8, right: 8,
@@ -356,13 +281,17 @@ export default function WidgetCustomizer() {
   const [copied, setCopied]     = useState(false);
   const[data, setData]         = useState(null);
   const [form, setForm]         = useState(DEFAULT_FORM);
-  const[isWide, setIsWide]     = useState(typeof window !== "undefined" ? window.innerWidth >= 960 : true);
-  
+  /** SideMenu mobile FAB: fixed bottom 24px, height 52px — keep sticky bar above it. */
+  const [isMobileLayout, setIsMobileLayout] = useState(
+    typeof window !== "undefined" ? window.innerWidth <= 1024 : false
+  );
+
   const [newDomainInput, setNewDomainInput] = useState("");
   
   const [membershipProducts, setMembershipProducts] = useState([]);
   const[membershipProductsLoading, setMembershipProductsLoading] = useState(true);
   const[copiedSubscriptionId, setCopiedSubscriptionId] = useState(null);
+  const embedSaveTimersRef = useRef({});
   const searchParams = useSearchParams();
 
   const allowedDomainsArray = (form.allowed_widget_origins || "")
@@ -390,10 +319,11 @@ export default function WidgetCustomizer() {
   };
 
   useEffect(() => {
-    const check = () => setIsWide(window.innerWidth >= 960);
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  },[]);
+    const onResize = () => setIsMobileLayout(window.innerWidth <= 1024);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     if (searchParams.get("subscribed") === "1") {
@@ -499,6 +429,35 @@ export default function WidgetCustomizer() {
       setTimeout(() => setCopiedSubscriptionId(null), 2200);
     }
   };
+
+  const scheduleSaveWidgetButtonConfig = useCallback((productId, config) => {
+    if (embedSaveTimersRef.current[productId]) clearTimeout(embedSaveTimersRef.current[productId]);
+    embedSaveTimersRef.current[productId] = setTimeout(async () => {
+      const res = await businessMembershipService.updateProduct(productId, { widget_button_config: config });
+      if (!res.success) antMessage.error(res.error || "Could not save button options");
+      else if (res.data?.widget_button_config) {
+        setMembershipProducts((prev) =>
+          prev.map((p) => (p.id === productId ? { ...p, widget_button_config: res.data.widget_button_config } : p))
+        );
+      }
+    }, 450);
+  }, []);
+
+  const patchProductEmbedConfig = useCallback(
+    (product, patch) => {
+      const base = { ...(product.widget_button_config || {}) };
+      const next = { ...base, ...patch };
+      if (Object.prototype.hasOwnProperty.call(patch, "button_radius_preset")) {
+        delete next.button_radius_px;
+      }
+      Object.keys(next).forEach((k) => {
+        if (next[k] === "" || next[k] === undefined || next[k] === null) delete next[k];
+      });
+      setMembershipProducts((prev) => prev.map((p) => (p.id === product.id ? { ...p, widget_button_config: next } : p)));
+      scheduleSaveWidgetButtonConfig(product.id, next);
+    },
+    [scheduleSaveWidgetButtonConfig]
+  );
 
   if (loading) {
     return (
@@ -650,14 +609,21 @@ export default function WidgetCustomizer() {
   );
 
   const installTab = (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, width: "100%", minWidth: 0, boxSizing: "border-box" }}>
       
       {allowedDomainsArray.length === 0 && (
         <Alert type="error" showIcon message={<span style={{ fontSize: 12 }}>Wait! You haven't added your website domain in the 'Settings' tab. The code below will not work until you do.</span>} />
       )}
 
-      <div>
-        <SectionTitle title="Embed Code" subtitle={form.view === "modal" ? "Copy and paste this code anywhere on your website. It adds the required script and a basic Book Now button to trigger the popup." : "Copy and paste this code onto your website where you want the booking form to appear."} />
+      <div style={{ width: "100%", minWidth: 0, boxSizing: "border-box" }}>
+        <SectionTitle
+          title="Embed code"
+          subtitle={
+            form.view === "modal"
+              ? "Copy this code into your site. It loads the booking widget and adds a Book Now button that opens it."
+              : "Copy this code and paste it where you want the booking calendar to appear on the page."
+          }
+        />
         <div style={snippetContainerStyle}>
           <pre style={snippetPreStyle}>
             {activeSnippet}
@@ -678,25 +644,195 @@ export default function WidgetCustomizer() {
       {membershipProducts.length > 0 && (
         <>
           <div style={{ height: 1, background: "#e5e7eb", margin: "8px 0" }} />
-          <div>
-            <SectionTitle title="Sell Memberships" subtitle="Want to sell subscriptions directly from your site? Use these specific buttons." />
-            
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box" }}>
+            <SectionTitle
+              title="Membership signup buttons"
+              subtitle="Let customers join a plan from your website."
+            />
+            <div
+              style={{
+                fontSize: 13,
+                color: "#4b5563",
+                lineHeight: 1.55,
+                marginBottom: 16,
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            >
+              <p style={{ margin: "0 0 10px" }}>For each plan, set how the button looks, then copy the code and paste it into your site—wherever you want that subscribe button to appear (for example next to your Book button).</p>
+              <Collapse
+                ghost
+                size="small"
+                style={{ marginBottom: 10 }}
+                items={[
+                  {
+                    key: "membership-dev-note",
+                    label: (
+                      <span style={{ color: "#6b7280", fontSize: 12, fontWeight: 500 }}>For developers</span>
+                    ),
+                    children: (
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: 12,
+                          color: "#92400e",
+                          background: "#fffbeb",
+                          padding: "8px 10px",
+                          borderRadius: 6,
+                          border: "1px solid #fcd34d",
+                          lineHeight: 1.45,
+                        }}
+                      >
+                        <strong>React / Next.js:</strong> This snippet is plain HTML for Wix, Squarespace, WordPress custom HTML, and similar. In React/JSX, paste the idea—not this markup: call{" "}
+                        <code style={{ fontSize: 11, background: "#fef3c7", padding: "1px 4px", borderRadius: 4 }}>window.openClasseasilyMembership</code> from an{" "}
+                        <code style={{ fontSize: 11, background: "#fef3c7", padding: "1px 4px", borderRadius: 4 }}>onClick</code> function and pass a{" "}
+                        <code style={{ fontSize: 11, background: "#fef3c7", padding: "1px 4px", borderRadius: 4 }}>style</code> object, not HTML{" "}
+                        <code style={{ fontSize: 11, background: "#fef3c7", padding: "1px 4px", borderRadius: 4 }}>onclick</code> or{" "}
+                        <code style={{ fontSize: 11, background: "#fef3c7", padding: "1px 4px", borderRadius: 4 }}>style=&quot;…&quot;</code>.
+                      </p>
+                    ),
+                  },
+                ]}
+              />
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, width: "100%", minWidth: 0 }}>
               {membershipProducts.map((product) => {
-                const label = escapeSubscriptionLabel(product.name);
-                const snippet = `<button onclick="openClasseasilyMembership('${product.id}')">Join ${label}</button>`;
+                const cfg = product.widget_button_config || {};
+                const snippet = buildMembershipButtonHtml(product);
                 const copyId = `plan-${product.id}`;
                 const isCopied = copiedSubscriptionId === copyId;
-                
+                const classOptions = [
+                  { value: "", label: "No specific class" },
+                  ...(data?.classes || []).map((c) => ({ value: String(c.classId), label: c.title })),
+                ];
+                const radiusActive = effectiveMembershipButtonRadiusPreset(cfg);
+
                 return (
-                  <div key={product.id} style={{ border: "1px solid #e5e7eb", borderRadius: 6, padding: "12px" }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#111827", marginBottom: 6 }}>{product.name}</div>
+                  <div
+                    key={product.id}
+                    style={{
+                      width: "100%",
+                      maxWidth: "100%",
+                      minWidth: 0,
+                      boxSizing: "border-box",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 8,
+                      padding: "14px 16px",
+                    }}
+                  >
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#111827", marginBottom: 14 }}>Button Configuration</div>
+
+                    <div style={{ marginBottom: 12, width: "100%" }}>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+                        Button text
+                      </label>
+                      <Input
+                        size="small"
+                        placeholder={`e.g. Join ${product.name}`}
+                        value={cfg.button_label || ""}
+                        onChange={(e) => patchProductEmbedConfig(product, { button_label: e.target.value || null })}
+                        style={{ width: "100%", maxWidth: "100%" }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: 14, width: "100%" }}>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+                        Class shown on signup (optional)
+                      </label>
+                      <Select
+                        size="small"
+                        value={cfg.open_class_id != null && cfg.open_class_id !== "" ? String(cfg.open_class_id) : ""}
+                        onChange={(v) =>
+                          patchProductEmbedConfig(product, {
+                            open_class_id: v && String(v).trim() !== "" ? Number(v) : null,
+                          })
+                        }
+                        options={classOptions}
+                        style={{ width: "100%", maxWidth: "100%" }}
+                      />
+                      <p style={{ margin: "6px 0 0", fontSize: 11, color: "#6b7280", lineHeight: 1.45 }}>
+                        If you pick a class, that name appears on the signup screen so people know what the plan applies to.
+                      </p>
+                    </div>
+
+                    <div style={{ marginBottom: 12, width: "100%" }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Corner shape</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", width: "100%" }}>
+                        {BORDER_RADIUS_OPTIONS.map((opt) => {
+                          const active = radiusActive === opt.id;
+                          return (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() =>
+                                patchProductEmbedConfig(product, {
+                                  button_radius_preset: opt.id,
+                                  button_radius_px: null,
+                                })
+                              }
+                              style={{
+                                flex: "1 1 72px",
+                                minWidth: 72,
+                                padding: "8px 10px",
+                                border: `${active ? 2 : 1}px solid ${active ? SEL_COLOR : "#e5e7eb"}`,
+                                borderRadius: 6,
+                                background: active ? "#fafafa" : "#ffffff",
+                                cursor: "pointer",
+                                fontSize: 12,
+                                fontWeight: active ? 600 : 500,
+                                color: active ? SEL_COLOR : "#374151",
+                              }}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        background: "#f9fafb",
+                        padding: "10px 14px",
+                        borderRadius: 8,
+                        border: "1px solid #f3f4f6",
+                        marginBottom: 14,
+                        width: "100%",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 8, letterSpacing: "0.03em" }}>
+                        BUTTON COLORS
+                      </div>
+                      <ColorRow
+                        label="Fill"
+                        value={cfg.button_background || ""}
+                        emptyFallback={form.primary}
+                        onChange={(hex) =>
+                          patchProductEmbedConfig(product, { button_background: normalizeHex(hex) || null })
+                        }
+                      />
+                      <ColorRow
+                        label="Text"
+                        value={cfg.button_text_color || ""}
+                        emptyFallback={form.textOnPrimary}
+                        onChange={(hex) =>
+                          patchProductEmbedConfig(product, { button_text_color: normalizeHex(hex) || null })
+                        }
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: 6, fontSize: 12, fontWeight: 600, color: "#374151" }}>Code for your website</div>
                     <div style={snippetContainerStyle}>
-                      <pre style={snippetPreStyle}>
-                        {snippet}
-                      </pre>
-                      <Button size="small" icon={isCopied ? <Check size={12} /> : <Copy size={12} />} onClick={() => handleCopySubscription(snippet, copyId)} style={getCopyBtnStyle(isCopied)}>
-                        {isCopied ? "Copied" : "Copy"}
+                      <pre style={snippetPreStyle}>{snippet}</pre>
+                      <Button
+                        size="small"
+                        icon={isCopied ? <Check size={12} /> : <Copy size={12} />}
+                        onClick={() => handleCopySubscription(snippet, copyId)}
+                        style={getCopyBtnStyle(isCopied)}
+                      >
+                        {isCopied ? "Copied" : "Copy code"}
                       </Button>
                     </div>
                   </div>
@@ -716,48 +852,84 @@ export default function WidgetCustomizer() {
     { key: "install", label: <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}><Code size={14} /> Add to Website</span>, children: installTab },
   ];
 
+  /* Mobile menu FAB: bottom 24px, height 52px — bar clears it + gap; safe-area once here (FAB does not add it). */
+  const mobileStickyBottom = "calc(24px + 52px + 14px + env(safe-area-inset-bottom, 0px))";
+  const pageBottomPad = isMobileLayout
+    ? `max(112px, calc(96px + env(safe-area-inset-bottom, 0px)))`
+    : "max(96px, calc(72px + env(safe-area-inset-bottom, 0px)))";
+
   return (
-    <div style={{ padding: "16px 24px 80px", maxWidth: 1200, margin: "0 auto" }}>
-      
-      {/* HEADER */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
-        <div>
-          <DashboardBreadcrumb title="Booking Widget" />
-          <h1 style={{ margin: "6px 0 0", fontSize: 24, fontWeight: 800, color: "#111827" }}>Customize Your Widget</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6b7280" }}>Design your booking experience and get the code to install it.</p>
-        </div>
-        <Button type="primary" size="small" onClick={handleSave} loading={saving} style={{ background: ACCENT, borderColor: ACCENT, fontWeight: 600, padding: "0 16px" }}>
-          {saving ? "Saving…" : "Save Changes"}
-        </Button>
+    <div
+      style={{
+        padding: `16px 24px ${pageBottomPad}`,
+        maxWidth: 1200,
+        margin: "0 auto",
+        boxSizing: "border-box",
+      }}
+    >
+      <div style={{ marginBottom: 24 }}>
+        <DashboardBreadcrumb title="Booking Widget" />
+        <h1 style={{ margin: "6px 0 0", fontSize: 24, fontWeight: 800, color: "#111827" }}>Customize Your Widget</h1>
+        <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6b7280" }}>Design your booking experience and get the code to install it.</p>
       </div>
 
-      {/* MAIN GRID */}
-      <div style={{ display: "grid", gridTemplateColumns: isWide ? "1fr 320px" : "1fr", gap: 32, alignItems: "start" }}>
-        
-        {/* LEFT PANE - TABS */}
-        <div style={{ background: "#ffffff", borderRadius: 12, border: "1px solid #e5e7eb", padding: "16px 20px", boxShadow: "0 2px 4px -1px rgba(0,0,0,0.05)" }}>
-          <Tabs defaultActiveKey="design" items={tabItems} size="small" tabBarGutter={16} />
-        </div>
+      <div
+        style={{
+          background: "#ffffff",
+          borderRadius: 12,
+          border: "1px solid #e5e7eb",
+          padding: "16px 20px",
+          boxShadow: "0 2px 4px -1px rgba(0,0,0,0.05)",
+          minWidth: 0,
+          width: "100%",
+          maxWidth: "100%",
+          boxSizing: "border-box",
+        }}
+      >
+        <Tabs defaultActiveKey="design" items={tabItems} size="small" tabBarGutter={16} />
+      </div>
 
-        {/* RIGHT PANE - LIVE PREVIEW */}
-        <div style={{ position: "sticky", top: 16 }}>
-          <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ height: 1, flex: 1, background: "#e5e7eb" }} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>Live Preview</span>
-            <div style={{ height: 1, flex: 1, background: "#e5e7eb" }} />
-          </div>
-          
-          <div style={{ boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)", borderRadius: 8 }}>
-            <BrowserMockup
-              view={form.view}
-              borderRadiusPreset={form.borderRadiusPreset}
-              background={form.background} cardBackground={form.cardBackground}
-              textPrimary={form.textPrimary} textSecondary={form.textSecondary}
-              border={form.border} primary={form.primary} textOnPrimary={form.textOnPrimary}
-            />
-          </div>
+      <div
+        style={{
+          position: "sticky",
+          bottom: isMobileLayout ? mobileStickyBottom : 16,
+          zIndex: 6,
+          marginTop: 24,
+          marginLeft: "max(0px, env(safe-area-inset-left, 0px))",
+          marginRight: "max(0px, env(safe-area-inset-right, 0px))",
+          padding: 0,
+          background: "transparent",
+          pointerEvents: "none",
+        }}
+      >
+        <div
+          style={{
+            pointerEvents: "auto",
+            borderRadius: 18,
+            padding: "12px 16px",
+            paddingLeft: "max(16px, env(safe-area-inset-left, 0px))",
+            paddingRight: "max(16px, env(safe-area-inset-right, 0px))",
+            paddingBottom: 12,
+            background: "rgba(255, 255, 255, 0.94)",
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
+            boxShadow:
+              "0 10px 40px rgba(0, 0, 0, 0.1), 0 2px 12px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04)",
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <Button
+            type="primary"
+            onClick={handleSave}
+            loading={saving}
+            style={{ background: ACCENT, borderColor: ACCENT, fontWeight: 600, padding: "0 20px", minHeight: 40 }}
+          >
+            {saving ? "Saving…" : "Save Changes"}
+          </Button>
         </div>
-
       </div>
     </div>
   );

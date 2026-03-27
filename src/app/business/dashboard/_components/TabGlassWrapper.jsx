@@ -26,7 +26,7 @@ const Glass = styled.div`
   -webkit-backdrop-filter: blur(14px);
   border-radius: 16px;
   border: 1px solid rgba(229, 231, 235, 0.8);
-  overflow: hidden;
+  overflow: ${(p) => (p.$unclipped ? "visible" : "hidden")};
   isolation: isolate;
   @media (max-width: 768px) {
     padding: 0;
@@ -34,10 +34,15 @@ const Glass = styled.div`
   }
 `;
 
-export default function TabGlassWrapper({ children }) {
+/**
+ * @param {object} props
+ * @param {boolean} [props.unclipped] — If true, `overflow: visible` so children can use `position: sticky`
+ *   (e.g. widget save bar). Default keeps `overflow: hidden` for frosted panel clipping.
+ */
+export default function TabGlassWrapper({ children, unclipped = false }) {
   return (
     <Outer>
-      <Glass>{children}</Glass>
+      <Glass $unclipped={unclipped}>{children}</Glass>
     </Outer>
   );
 }

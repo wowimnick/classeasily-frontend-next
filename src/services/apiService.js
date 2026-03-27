@@ -1756,14 +1756,6 @@ export const businessMembershipService = {
       return { success: false, error: error.response?.data?.error || "Failed to cancel" };
     }
   },
-  pauseMember: async (id) => {
-    try {
-      const response = await axiosInstance.post(`${API_ENDPOINTS.MY_BUSINESS_MEMBERS}${id}/pause/`);
-      return { success: true, data: response.data };
-    } catch (error) {
-      return { success: false, error: error.response?.data?.error || "Failed to pause" };
-    }
-  },
   approveMember: async (id) => {
     try {
       const response = await axiosInstance.post(`${API_ENDPOINTS.MY_BUSINESS_MEMBERS}${id}/approve/`);
