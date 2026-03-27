@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { Input, Select, Button, ColorPicker, Tooltip, message as antMessage, Collapse, Tabs, Alert } from "antd";
-import { Copy, Loader2, Check, Plus, Trash2, Pencil, Code, Layout, Settings } from "lucide-react";
+import { Input, Select, Button, ColorPicker, Tooltip, message as antMessage, Collapse, Tabs, Alert, Modal, Checkbox } from "antd";
+import { Copy, Loader2, Check, Trash2, Code, Layout, Settings } from "lucide-react";
 import { businessService, businessMembershipService } from "@/services/apiService";
 import message from "@/lib/message";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
@@ -205,10 +204,6 @@ function escapeSubscriptionLabel(s) {
 
 function buildMembershipButtonHtml(product) {
   const cfg = product.widget_button_config || {};
-  const classArg =
-    cfg.open_class_id != null && cfg.open_class_id !== ""
-      ? `, '${String(cfg.open_class_id)}'`
-      : "";
   const rawLabel =
     (cfg.button_label && String(cfg.button_label).trim()) || `Join ${product.name || "plan"}`;
   const label = escapeSubscriptionLabel(rawLabel);
@@ -227,7 +222,67 @@ function buildMembershipButtonHtml(product) {
   }
   if (radiusPx != null && radiusPx > 0) styles.push(`border-radius:${radiusPx}px`);
   const styleAttr = styles.length ? ` style="${styles.join(";")}"` : "";
-  return `<button type="button"${styleAttr} onclick="openClasseasilyMembership('${product.id}'${classArg})">${label}</button>`;
+  return `<button type="button"${styleAttr} onclick="openClasseasilyMembership('${product.id}')">${label}</button>`;
+}
+
+/** Human-readable price line for membership plans (matches MembershipProducts table). */
+function formatPlanPrice(product) {
+  if (!product) return "";
+  const p = product.price != null ? String(product.price) : "—";
+  const unit = product.billing_interval === "year" ? "year" : "month";
+  return `$${p} / ${unit}`;
+}
+
+/** Visual props for live preview; aligns with buildMembershipButtonHtml and theme fallbacks. */
+function getMembershipButtonVisuals(product, themeForm) {
+  const cfg = product.widget_button_config || {};
+  const label =
+    (cfg.button_label && String(cfg.button_label).trim()) || `Join ${product.name || "plan"}`;
+  const bg = normalizeHex(cfg.button_background) || normalizeHex(themeForm.primary) || themeForm.primary;
+  const color = normalizeHex(cfg.button_text_color) || normalizeHex(themeForm.textOnPrimary) || themeForm.textOnPrimary;
+  let radiusPx = 0;
+  if (cfg.button_radius_preset && RADIUS_PX[cfg.button_radius_preset] !== undefined) {
+    radiusPx = RADIUS_PX[cfg.button_radius_preset];
+  } else if (cfg.button_radius_px != null && cfg.button_radius_px !== "") {
+    const n = Number(cfg.button_radius_px);
+    if (Number.isFinite(n)) radiusPx = n;
+  }
+  return { label, background: bg, color, borderRadius: radiusPx };
+}
+
+function mergeWidgetButtonStyleFromSource(targetCfg, sourceCfg, { copyButtonLabel }) {
+  const next = { ...targetCfg };
+  if (sourceCfg.button_background != null && sourceCfg.button_background !== "") {
+    next.button_background = sourceCfg.button_background;
+  } else {
+    delete next.button_background;
+  }
+  if (sourceCfg.button_text_color != null && sourceCfg.button_text_color !== "") {
+    next.button_text_color = sourceCfg.button_text_color;
+  } else {
+    delete next.button_text_color;
+  }
+  if (sourceCfg.button_radius_preset && RADIUS_PX[sourceCfg.button_radius_preset] !== undefined) {
+    next.button_radius_preset = sourceCfg.button_radius_preset;
+    delete next.button_radius_px;
+  } else if (sourceCfg.button_radius_px != null && sourceCfg.button_radius_px !== "") {
+    next.button_radius_px = sourceCfg.button_radius_px;
+    delete next.button_radius_preset;
+  } else {
+    delete next.button_radius_preset;
+    delete next.button_radius_px;
+  }
+  if (copyButtonLabel) {
+    if (sourceCfg.button_label != null && String(sourceCfg.button_label).trim() !== "") {
+      next.button_label = sourceCfg.button_label;
+    } else {
+      delete next.button_label;
+    }
+  }
+  Object.keys(next).forEach((k) => {
+    if (next[k] === "" || next[k] === undefined || next[k] === null) delete next[k];
+  });
+  return next;
 }
 
 const DEFAULT_FORM = {
@@ -243,7 +298,6 @@ const DEFAULT_FORM = {
   border: "#e5e7eb",
   fontFamily: "",
   borderRadiusPreset: "medium",
-  specificClassId: "",
   allowed_widget_origins: "",
 };
 
@@ -291,6 +345,14 @@ export default function WidgetCustomizer() {
   const [membershipProducts, setMembershipProducts] = useState([]);
   const[membershipProductsLoading, setMembershipProductsLoading] = useState(true);
   const[copiedSubscriptionId, setCopiedSubscriptionId] = useState(null);
+  const [widgetTabKey, setWidgetTabKey] = useState("design");
+  /** Per-plan embed save indicator: "saving" | "saved" */
+  const [planSaveUi, setPlanSaveUi] = useState({});
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkSourceId, setBulkSourceId] = useState("");
+  const [bulkCopyLabel, setBulkCopyLabel] = useState(false);
+  const [bulkApplyLoading, setBulkApplyLoading] = useState(false);
+  const [installSpecificClassId, setInstallSpecificClassId] = useState("");
   const embedSaveTimersRef = useRef({});
   const searchParams = useSearchParams();
 
@@ -352,7 +414,6 @@ export default function WidgetCustomizer() {
             textOnPrimary: norm(c.textOnPrimary, prev.textOnPrimary),
             border: norm(c.border, prev.border),
             borderRadiusPreset: c.borderRadiusPreset ?? prev.borderRadiusPreset,
-            specificClassId: c.specificClassId != null ? String(c.specificClassId) : "",
             allowed_widget_origins: typeof c.allowed_widget_origins === "string" ? c.allowed_widget_origins : "",
           }));
           
@@ -380,7 +441,7 @@ export default function WidgetCustomizer() {
       textPrimary: hex(form.textPrimary), textSecondary: hex(form.textSecondary), textOnPrimary: hex(form.textOnPrimary),
       border: hex(form.border),
       borderRadiusPreset: form.borderRadiusPreset,
-      specificClassId: (form.specificClassId && String(form.specificClassId).trim()) || null,
+      specificClassId: null,
       allowed_widget_origins: form.allowed_widget_origins,
     };
     
@@ -399,18 +460,28 @@ export default function WidgetCustomizer() {
 
   const apiKey        = data?.widget_api_key || "";
   const widgetScriptUrl = typeof window !== "undefined" ? process.env.NEXT_PUBLIC_WIDGET_SCRIPT_URL || "" : "";
-  
-  const embedSnippet = `<!-- Class Easily Booking Widget -->
-<link rel="stylesheet" href="${widgetScriptUrl.replace(/\.js$/, ".css")}" />
-<div id="classeasily-booking-widget" data-widget-api-key="${apiKey}"></div>
-<script src="${widgetScriptUrl}"><\/script>`;
-
   const loaderUrl = widgetScriptUrl.replace(/\/widget\.js$/i, "/loader.js");
-  const popupSnippet = `<!-- Add this script once on your page -->
+  const pinClass = String(installSpecificClassId || "").trim();
+
+  const embedSnippet = useMemo(() => {
+    const attr = pinClass ? ` data-specific-class-id="${pinClass}"` : "";
+    return `<!-- Class Easily Booking Widget -->
+<link rel="stylesheet" href="${widgetScriptUrl.replace(/\.js$/, ".css")}" />
+<div id="classeasily-booking-widget" data-widget-api-key="${apiKey}"${attr}></div>
+<script src="${widgetScriptUrl}"><\/script>`;
+  }, [widgetScriptUrl, apiKey, pinClass]);
+
+  const popupSnippet = useMemo(() => {
+    const onclick =
+      pinClass !== ""
+        ? `onclick="openClasseasilyBooking(undefined,'${pinClass}')"`
+        : `onclick="openClasseasilyBooking()"`;
+    return `<!-- Add this script once on your page -->
 <script src="${loaderUrl}" data-api-key="${apiKey}"><\/script>
 
 <!-- Add a button anywhere to open the widget -->
-<button onclick="openClasseasilyBooking()">Book Now</button>`;
+<button ${onclick}>Book Now</button>`;
+  }, [loaderUrl, apiKey, pinClass]);
 
   const activeSnippet = form.view === "modal" ? popupSnippet : embedSnippet;
 
@@ -433,13 +504,31 @@ export default function WidgetCustomizer() {
   const scheduleSaveWidgetButtonConfig = useCallback((productId, config) => {
     if (embedSaveTimersRef.current[productId]) clearTimeout(embedSaveTimersRef.current[productId]);
     embedSaveTimersRef.current[productId] = setTimeout(async () => {
+      setPlanSaveUi((prev) => ({ ...prev, [productId]: "saving" }));
       const res = await businessMembershipService.updateProduct(productId, { widget_button_config: config });
-      if (!res.success) antMessage.error(res.error || "Could not save button options");
-      else if (res.data?.widget_button_config) {
+      if (!res.success) {
+        antMessage.error(res.error || "Could not save button options");
+        setPlanSaveUi((prev) => {
+          const next = { ...prev };
+          delete next[productId];
+          return next;
+        });
+        return;
+      }
+      if (res.data?.widget_button_config) {
         setMembershipProducts((prev) =>
           prev.map((p) => (p.id === productId ? { ...p, widget_button_config: res.data.widget_button_config } : p))
         );
       }
+      setPlanSaveUi((prev) => ({ ...prev, [productId]: "saved" }));
+      setTimeout(() => {
+        setPlanSaveUi((prev) => {
+          if (prev[productId] !== "saved") return prev;
+          const next = { ...prev };
+          delete next[productId];
+          return next;
+        });
+      }, 2000);
     }, 450);
   }, []);
 
@@ -458,6 +547,81 @@ export default function WidgetCustomizer() {
     },
     [scheduleSaveWidgetButtonConfig]
   );
+
+  useEffect(() => {
+    if (membershipProducts.length > 0) {
+      setBulkSourceId((id) =>
+        id && membershipProducts.some((p) => p.id === id) ? id : membershipProducts[0].id
+      );
+    }
+  }, [membershipProducts]);
+
+  const matchWidgetThemeToProduct = useCallback(
+    (product) => {
+      const hex = (v) => normalizeHex(v) || v;
+      patchProductEmbedConfig(product, {
+        button_background: hex(form.primary),
+        button_text_color: hex(form.textOnPrimary),
+        button_radius_preset: form.borderRadiusPreset,
+        button_radius_px: null,
+      });
+    },
+    [form.primary, form.textOnPrimary, form.borderRadiusPreset, patchProductEmbedConfig]
+  );
+
+  const matchWidgetThemeToAllPlans = useCallback(() => {
+    const hex = (v) => normalizeHex(v) || v;
+    const patch = {
+      button_background: hex(form.primary),
+      button_text_color: hex(form.textOnPrimary),
+      button_radius_preset: form.borderRadiusPreset,
+      button_radius_px: null,
+    };
+    membershipProducts.forEach((p) => patchProductEmbedConfig(p, patch));
+  }, [form.primary, form.textOnPrimary, form.borderRadiusPreset, membershipProducts, patchProductEmbedConfig]);
+
+  const handleBulkApplyConfirm = useCallback(async () => {
+    const source = membershipProducts.find((p) => p.id === bulkSourceId);
+    if (!source) {
+      setBulkModalOpen(false);
+      return;
+    }
+    const targets = membershipProducts.filter((p) => p.id !== source.id);
+    if (targets.length === 0) {
+      setBulkModalOpen(false);
+      return;
+    }
+    const sourceCfg = source.widget_button_config || {};
+    setBulkApplyLoading(true);
+    const failed = [];
+    try {
+      await Promise.all(
+        targets.map(async (p) => {
+          const next = mergeWidgetButtonStyleFromSource(p.widget_button_config || {}, sourceCfg, {
+            copyButtonLabel: bulkCopyLabel,
+          });
+          const res = await businessMembershipService.updateProduct(p.id, { widget_button_config: next });
+          if (!res.success) failed.push(p.name || "Plan");
+          else if (res.data?.widget_button_config) {
+            setMembershipProducts((prev) =>
+              prev.map((x) => (x.id === p.id ? { ...x, widget_button_config: res.data.widget_button_config } : x))
+            );
+          }
+        })
+      );
+      if (failed.length) {
+        antMessage.error(`Could not update: ${failed.join(", ")}`);
+      } else {
+        message.success("Button look applied to all other plans.");
+      }
+    } catch {
+      antMessage.error("Something went wrong. Please try again.");
+    } finally {
+      setBulkApplyLoading(false);
+      setBulkModalOpen(false);
+      setBulkCopyLabel(false);
+    }
+  }, [bulkSourceId, bulkCopyLabel, membershipProducts]);
 
   if (loading) {
     return (
@@ -582,267 +746,343 @@ export default function WidgetCustomizer() {
         )}
       </div>
 
-      <div style={{ height: 1, background: "#f3f4f6" }} />
-
-      <div>
-        <SectionTitle title="Specific Starting Page" subtitle="Instead of showing all your classes, skip directly to a specific class when the widget loads." />
-        {(() => {
-          const planId = (data?.widget_subscription?.planId || "").toLowerCase();
-          const canPinToClass =["growth", "advanced"].includes(planId);
-          const classes = data?.classes ||[];
-          const select = (
-            <Select
-              value={form.specificClassId || ""} onChange={set("specificClassId")}
-              size="small" style={{ width: "100%", maxWidth: 350 }} disabled={!canPinToClass}
-              options={[{ value: "", label: "Show all classes (Default)" }, ...classes.map((c) => ({ value: String(c.classId), label: c.title }))]}
-            />
-          );
-          return canPinToClass ? select : (
-            <Tooltip title="Upgrade to Growth or Advanced to pin the widget to a specific class.">
-              <div style={{ display: "inline-block", width: "100%" }}>{select}</div>
-            </Tooltip>
-          );
-        })()}
-      </div>
-
     </div>
   );
 
   const installTab = (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20, width: "100%", minWidth: 0, boxSizing: "border-box" }}>
-      
-      {allowedDomainsArray.length === 0 && (
-        <Alert type="error" showIcon message={<span style={{ fontSize: 12 }}>Wait! You haven't added your website domain in the 'Settings' tab. The code below will not work until you do.</span>} />
-      )}
+    <div style={{ display: "flex", flexDirection: "column", gap: 28, width: "100%", minWidth: 0, boxSizing: "border-box" }}>
+      <div
+        style={{
+          padding: "14px 16px",
+          borderRadius: 10,
+          border: "1px solid #e5e7eb",
+          background: "#fafafa",
+        }}
+      >
+        <SectionTitle
+          title="1. Before you copy anything"
+          subtitle="For your security, we only show the booking widget on websites you approve."
+        />
+        <p style={{ margin: "0 0 10px", fontSize: 13, color: "#4b5563", lineHeight: 1.55 }}>
+          Add your site’s address (domain) under{" "}
+          <Button
+            type="link"
+            size="small"
+            onClick={() => setWidgetTabKey("settings")}
+            style={{ padding: 0, height: "auto", fontWeight: 700, color: ACCENT }}
+          >
+            Settings
+          </Button>
+          , then click <strong>Save Changes</strong> at the bottom of this page. Without that step, the code below will not work on your site.
+        </p>
+        {allowedDomainsArray.length === 0 ? (
+          <Alert
+            type="error"
+            style={{ width: "fit-content" }}
+            showIcon
+            message={<span style={{ fontSize: 12 }}>Step 1 is not finished yet — add your website domain in Settings, then save.</span>}
+          />
+        ) : (
+          <Alert type="success" showIcon style={{ width: "fit-content" }} message={<span style={{ fontSize: 12 }}>You have added at least one website. You can continue to step 2.</span>} />
+        )}
+      </div>
 
       <div style={{ width: "100%", minWidth: 0, boxSizing: "border-box" }}>
         <SectionTitle
-          title="Embed code"
+          title="2. Put the booking calendar on your website"
           subtitle={
             form.view === "modal"
-              ? "Copy this code into your site. It loads the booking widget and adds a Book Now button that opens it."
-              : "Copy this code and paste it where you want the booking calendar to appear on the page."
+              ? "This installs a small script and gives you a “Book now” style button that opens your calendar in a popup. You can use different optional class settings for each button or embed by changing the option below before you copy."
+              : "This places your calendar directly inside your page, in the spot where you paste the code. Change the optional class below before each copy if you want different pages to open a different class first."
           }
         />
+        {(data?.classes || []).length > 0 && (
+          <div style={{ marginBottom: 14, maxWidth: "100%" }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+              Optional: skip the class list and open this class first
+            </label>
+            <Select
+              size="small"
+              style={{ width: "100%", maxWidth: 400 }}
+              value={installSpecificClassId || ""}
+              onChange={(v) => setInstallSpecificClassId(v || "")}
+              options={[
+                { value: "", label: "Show all classes (default)" },
+                ...(data?.classes || []).map((c) => ({ value: String(c.classId), label: c.title })),
+              ]}
+            />
+            <p style={{ margin: "8px 0 0", fontSize: 11, color: "#6b7280", lineHeight: 1.45 }}>
+              This only changes the code in the box below — it is not saved. Copy again after changing it for another page or button.
+            </p>
+          </div>
+        )}
         <div style={snippetContainerStyle}>
-          <pre style={snippetPreStyle}>
-            {activeSnippet}
-          </pre>
+          <pre style={snippetPreStyle}>{activeSnippet}</pre>
           <Button size="small" icon={copied ? <Check size={12} /> : <Copy size={12} />} onClick={handleCopy} style={getCopyBtnStyle(copied)}>
             {copied ? "Copied" : "Copy"}
           </Button>
         </div>
       </div>
 
-      <div style={{ padding: "12px", background: "#f3f6f8", borderRadius: 8 }}>
+      <div style={{ padding: "12px 14px", background: "#f3f6f8", borderRadius: 8 }}>
         <h4 style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600 }}>Need help installing?</h4>
-        <p style={{ margin: 0, fontSize: 12, color: "#4b5563", lineHeight: 1.4 }}>
-          Not sure where to paste this or how to add buttons? Check out our <a href="/business/help?category=widget-installation" target="_blank" rel="noreferrer" style={{ color: SEL_COLOR, fontWeight: 600, textDecoration: "underline" }}>setup guides</a> for Squarespace, Wix, WordPress, and more.
+        <p style={{ margin: 0, fontSize: 12, color: "#4b5563", lineHeight: 1.45 }}>
+          Not sure where to paste this? Our{" "}
+          <a href="/business/help?category=widget-installation" target="_blank" rel="noreferrer" style={{ color: SEL_COLOR, fontWeight: 600, textDecoration: "underline" }}>
+            setup guides
+          </a>{" "}
+          walk through Squarespace, Wix, WordPress, and more.
         </p>
       </div>
 
       {membershipProducts.length > 0 && (
         <>
-          <div style={{ height: 1, background: "#e5e7eb", margin: "8px 0" }} />
+          <div style={{ height: 1, background: "#e5e7eb" }} />
           <div style={{ width: "100%", maxWidth: "100%", minWidth: 0, boxSizing: "border-box" }}>
             <SectionTitle
-              title="Membership signup buttons"
-              subtitle="Let customers join a plan from your website."
+              title="3. Optional: buttons for membership plans"
+              subtitle="Each plan has its own button and its own short code. That way, when someone clicks, we know exactly which plan they chose."
             />
-            <div
-              style={{
-                fontSize: 13,
-                color: "#4b5563",
-                lineHeight: 1.55,
-                marginBottom: 16,
-                width: "100%",
-                boxSizing: "border-box",
-              }}
-            >
-              <p style={{ margin: "0 0 10px" }}>For each plan, set how the button looks, then copy the code and paste it into your site—wherever you want that subscribe button to appear (for example next to your Book button).</p>
-              <Collapse
-                ghost
-                size="small"
-                style={{ marginBottom: 10 }}
-                items={[
-                  {
-                    key: "membership-dev-note",
-                    label: (
-                      <span style={{ color: "#6b7280", fontSize: 12, fontWeight: 500 }}>For developers</span>
-                    ),
-                    children: (
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: 12,
-                          color: "#92400e",
-                          background: "#fffbeb",
-                          padding: "8px 10px",
-                          borderRadius: 6,
-                          border: "1px solid #fcd34d",
-                          lineHeight: 1.45,
-                        }}
-                      >
-                        <strong>React / Next.js:</strong> This snippet is plain HTML for Wix, Squarespace, WordPress custom HTML, and similar. In React/JSX, paste the idea—not this markup: call{" "}
-                        <code style={{ fontSize: 11, background: "#fef3c7", padding: "1px 4px", borderRadius: 4 }}>window.openClasseasilyMembership</code> from an{" "}
-                        <code style={{ fontSize: 11, background: "#fef3c7", padding: "1px 4px", borderRadius: 4 }}>onClick</code> function and pass a{" "}
-                        <code style={{ fontSize: 11, background: "#fef3c7", padding: "1px 4px", borderRadius: 4 }}>style</code> object, not HTML{" "}
-                        <code style={{ fontSize: 11, background: "#fef3c7", padding: "1px 4px", borderRadius: 4 }}>onclick</code> or{" "}
-                        <code style={{ fontSize: 11, background: "#fef3c7", padding: "1px 4px", borderRadius: 4 }}>style=&quot;…&quot;</code>.
-                      </p>
-                    ),
-                  },
-                ]}
-              />
+            <p style={{ margin: "0 0 8px", fontSize: 13, color: "#4b5563", lineHeight: 1.55 }}>
+              If you offer memberships, add one button per plan on your site (for example next to your booking button). Do not swap codes between plans — each snippet is tied to one plan only.
+            </p>
+            <p style={{ margin: "0 0 14px", fontSize: 12, color: "#6b7280", fontStyle: "italic" }}>
+              Looks for each plan save automatically a moment after you change them. Use Save Changes at the bottom only for Design and Settings.
+            </p>
+
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14, alignItems: "center" }}>
+              <Button size="small" onClick={() => setBulkModalOpen(true)} disabled={membershipProducts.length < 2}>
+                Copy look from one plan to all others
+              </Button>
+              <Button size="small" onClick={matchWidgetThemeToAllPlans}>
+                Match all plan buttons to my widget colors
+              </Button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 14, width: "100%", minWidth: 0 }}>
-              {membershipProducts.map((product) => {
+            <Collapse
+              bordered
+              size="small"
+              style={{ width: "100%" }}
+              defaultActiveKey={[]}
+              items={membershipProducts.map((product) => {
                 const cfg = product.widget_button_config || {};
                 const snippet = buildMembershipButtonHtml(product);
                 const copyId = `plan-${product.id}`;
                 const isCopied = copiedSubscriptionId === copyId;
-                const classOptions = [
-                  { value: "", label: "No specific class" },
-                  ...(data?.classes || []).map((c) => ({ value: String(c.classId), label: c.title })),
-                ];
                 const radiusActive = effectiveMembershipButtonRadiusPreset(cfg);
+                const visuals = getMembershipButtonVisuals(product, form);
+                const saveState = planSaveUi[product.id];
 
-                return (
-                  <div
-                    key={product.id}
-                    style={{
-                      width: "100%",
-                      maxWidth: "100%",
-                      minWidth: 0,
-                      boxSizing: "border-box",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: 8,
-                      padding: "14px 16px",
-                    }}
-                  >
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#111827", marginBottom: 14 }}>Button Configuration</div>
-
-                    <div style={{ marginBottom: 12, width: "100%" }}>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
-                        Button text
-                      </label>
-                      <Input
-                        size="small"
-                        placeholder={`e.g. Join ${product.name}`}
-                        value={cfg.button_label || ""}
-                        onChange={(e) => patchProductEmbedConfig(product, { button_label: e.target.value || null })}
-                        style={{ width: "100%", maxWidth: "100%" }}
-                      />
-                    </div>
-
-                    <div style={{ marginBottom: 14, width: "100%" }}>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
-                        Class shown on signup (optional)
-                      </label>
-                      <Select
-                        size="small"
-                        value={cfg.open_class_id != null && cfg.open_class_id !== "" ? String(cfg.open_class_id) : ""}
-                        onChange={(v) =>
-                          patchProductEmbedConfig(product, {
-                            open_class_id: v && String(v).trim() !== "" ? Number(v) : null,
-                          })
-                        }
-                        options={classOptions}
-                        style={{ width: "100%", maxWidth: "100%" }}
-                      />
-                      <p style={{ margin: "6px 0 0", fontSize: 11, color: "#6b7280", lineHeight: 1.45 }}>
-                        If you pick a class, that name appears on the signup screen so people know what the plan applies to.
-                      </p>
-                    </div>
-
-                    <div style={{ marginBottom: 12, width: "100%" }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Corner shape</div>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", width: "100%" }}>
-                        {BORDER_RADIUS_OPTIONS.map((opt) => {
-                          const active = radiusActive === opt.id;
-                          return (
-                            <button
-                              key={opt.id}
-                              type="button"
-                              onClick={() =>
-                                patchProductEmbedConfig(product, {
-                                  button_radius_preset: opt.id,
-                                  button_radius_px: null,
-                                })
-                              }
-                              style={{
-                                flex: "1 1 72px",
-                                minWidth: 72,
-                                padding: "8px 10px",
-                                border: `${active ? 2 : 1}px solid ${active ? SEL_COLOR : "#e5e7eb"}`,
-                                borderRadius: 6,
-                                background: active ? "#fafafa" : "#ffffff",
-                                cursor: "pointer",
-                                fontSize: 12,
-                                fontWeight: active ? 600 : 500,
-                                color: active ? SEL_COLOR : "#374151",
-                              }}
-                            >
-                              {opt.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
+                return {
+                  key: String(product.id),
+                  label: (
                     <div
                       style={{
-                        background: "#f9fafb",
-                        padding: "10px 14px",
-                        borderRadius: 8,
-                        border: "1px solid #f3f4f6",
-                        marginBottom: 14,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        gap: 12,
                         width: "100%",
-                        boxSizing: "border-box",
+                        paddingRight: 8,
                       }}
                     >
-                      <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 8, letterSpacing: "0.03em" }}>
-                        BUTTON COLORS
+                      <div style={{ textAlign: "left", minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, color: "#111827", wordBreak: "break-word" }}>{product.name}</div>
+                        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{formatPlanPrice(product)}</div>
                       </div>
-                      <ColorRow
-                        label="Fill"
-                        value={cfg.button_background || ""}
-                        emptyFallback={form.primary}
-                        onChange={(hex) =>
-                          patchProductEmbedConfig(product, { button_background: normalizeHex(hex) || null })
-                        }
-                      />
-                      <ColorRow
-                        label="Text"
-                        value={cfg.button_text_color || ""}
-                        emptyFallback={form.textOnPrimary}
-                        onChange={(hex) =>
-                          patchProductEmbedConfig(product, { button_text_color: normalizeHex(hex) || null })
-                        }
-                      />
+                      <div style={{ flexShrink: 0, fontSize: 11, color: "#6b7280" }}>
+                        {saveState === "saving" ? "Saving…" : saveState === "saved" ? <span style={{ color: "#16a34a" }}>Saved</span> : null}
+                      </div>
                     </div>
+                  ),
+                  children: (
+                    <div style={{ padding: "4px 0 8px", maxWidth: "100%" }}>
+                      <p style={{ margin: "0 0 12px", fontSize: 12, color: "#374151", lineHeight: 1.5 }}>
+                        <strong>This snippet only signs people up for “{product.name}”.</strong> Copy it from this section only for that plan.
+                      </p>
+                      {(product.badge_text || product.widget_cta_label) && (
+                        <p style={{ margin: "0 0 12px", fontSize: 12, color: "#6b7280" }}>
+                          {product.badge_text ? <span>{product.badge_text}</span> : null}
+                          {product.badge_text && product.widget_cta_label ? " · " : null}
+                          {product.widget_cta_label ? <span>{product.widget_cta_label}</span> : null}
+                        </p>
+                      )}
 
-                    <div style={{ marginBottom: 6, fontSize: 12, fontWeight: 600, color: "#374151" }}>Code for your website</div>
-                    <div style={snippetContainerStyle}>
-                      <pre style={snippetPreStyle}>{snippet}</pre>
-                      <Button
-                        size="small"
-                        icon={isCopied ? <Check size={12} /> : <Copy size={12} />}
-                        onClick={() => handleCopySubscription(snippet, copyId)}
-                        style={getCopyBtnStyle(isCopied)}
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#111827", marginBottom: 10 }}>How this button looks</div>
+                      <div style={{ marginBottom: 12 }}>
+                        <Button size="small" type="default" onClick={() => matchWidgetThemeToProduct(product)}>
+                          Use my widget colors and corner style for this plan
+                        </Button>
+                      </div>
+
+                      <div
+                        style={{
+                          marginBottom: 14,
+                          padding: "16px",
+                          background: "#f9fafb",
+                          borderRadius: 8,
+                          border: "1px dashed #d1d5db",
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          minHeight: 52,
+                        }}
                       >
-                        {isCopied ? "Copied" : "Copy code"}
-                      </Button>
+                        <button
+                          type="button"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "10px 20px",
+                            border: "none",
+                            cursor: "default",
+                            font: "inherit",
+                            fontWeight: 600,
+                            fontSize: 14,
+                            background: visuals.background,
+                            color: visuals.color,
+                            borderRadius: visuals.borderRadius > 0 ? visuals.borderRadius : 0,
+                            maxWidth: "100%",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {visuals.label}
+                        </button>
+                      </div>
+
+                      <div style={{ marginBottom: 12, width: "100%" }}>
+                        <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+                          Words on the button
+                        </label>
+                        <Input
+                          size="small"
+                          placeholder={`e.g. Join ${product.name}`}
+                          value={cfg.button_label || ""}
+                          onChange={(e) => patchProductEmbedConfig(product, { button_label: e.target.value || null })}
+                          style={{ width: "100%", maxWidth: "100%" }}
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: 12, width: "100%" }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Corner shape</div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", width: "100%" }}>
+                          {BORDER_RADIUS_OPTIONS.map((opt) => {
+                            const active = radiusActive === opt.id;
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() =>
+                                  patchProductEmbedConfig(product, {
+                                    button_radius_preset: opt.id,
+                                    button_radius_px: null,
+                                  })
+                                }
+                                style={{
+                                  flex: "1 1 72px",
+                                  minWidth: 72,
+                                  padding: "8px 10px",
+                                  border: `${active ? 2 : 1}px solid ${active ? SEL_COLOR : "#e5e7eb"}`,
+                                  borderRadius: 6,
+                                  background: active ? "#fafafa" : "#ffffff",
+                                  cursor: "pointer",
+                                  fontSize: 12,
+                                  fontWeight: active ? 600 : 500,
+                                  color: active ? SEL_COLOR : "#374151",
+                                }}
+                              >
+                                {opt.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          background: "#f9fafb",
+                          padding: "10px 14px",
+                          borderRadius: 8,
+                          border: "1px solid #f3f4f6",
+                          marginBottom: 14,
+                          width: "100%",
+                          boxSizing: "border-box",
+                        }}
+                      >
+                        <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", marginBottom: 8, letterSpacing: "0.03em" }}>
+                          BUTTON COLORS
+                        </div>
+                        <ColorRow
+                          label="Fill"
+                          value={cfg.button_background || ""}
+                          emptyFallback={form.primary}
+                          onChange={(hex) =>
+                            patchProductEmbedConfig(product, { button_background: normalizeHex(hex) || null })
+                          }
+                        />
+                        <ColorRow
+                          label="Text"
+                          value={cfg.button_text_color || ""}
+                          emptyFallback={form.textOnPrimary}
+                          onChange={(hex) =>
+                            patchProductEmbedConfig(product, { button_text_color: normalizeHex(hex) || null })
+                          }
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: 6, fontSize: 12, fontWeight: 600, color: "#374151" }}>
+                        Copy and paste this on your website
+                      </div>
+                      <div style={snippetContainerStyle}>
+                        <pre style={snippetPreStyle}>{snippet}</pre>
+                        <Button
+                          size="small"
+                          icon={isCopied ? <Check size={12} /> : <Copy size={12} />}
+                          onClick={() => handleCopySubscription(snippet, copyId)}
+                          style={getCopyBtnStyle(isCopied)}
+                        >
+                          {isCopied ? "Copied" : "Copy code"}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                );
+                  ),
+                };
               })}
-            </div>
+            />
+
+            <Collapse
+              ghost
+              size="small"
+              style={{ marginTop: 16 }}
+              items={[
+                {
+                  key: "membership-dev-note",
+                  label: <span style={{ color: "#6b7280", fontSize: 12, fontWeight: 500 }}>Custom website builders or app code (React, Next.js, …)</span>,
+                  children: (
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: 12,
+                        color: "#92400e",
+                        background: "#fffbeb",
+                        padding: "8px 10px",
+                        borderRadius: 6,
+                        border: "1px solid #fcd34d",
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      The snippet is plain HTML for Wix, Squarespace, WordPress custom HTML, and similar. If you use React or another framework, use the same idea: call{" "}
+                      <code style={{ fontSize: 11, background: "#fef3c7", padding: "1px 4px", borderRadius: 4 }}>window.openClasseasilyMembership</code> from your click handler and pass your styles in code — do not paste raw{" "}
+                      <code style={{ fontSize: 11, background: "#fef3c7", padding: "1px 4px", borderRadius: 4 }}>onclick</code> attributes.
+                    </p>
+                  ),
+                },
+              ]}
+            />
           </div>
         </>
       )}
-
     </div>
   );
 
@@ -886,8 +1126,37 @@ export default function WidgetCustomizer() {
           boxSizing: "border-box",
         }}
       >
-        <Tabs defaultActiveKey="design" items={tabItems} size="small" tabBarGutter={16} />
+        <Tabs activeKey={widgetTabKey} onChange={setWidgetTabKey} items={tabItems} size="small" tabBarGutter={16} />
       </div>
+
+      <Modal
+        title="Copy button look to all other plans"
+        open={bulkModalOpen}
+        onCancel={() => {
+          if (!bulkApplyLoading) setBulkModalOpen(false);
+        }}
+        onOk={handleBulkApplyConfirm}
+        confirmLoading={bulkApplyLoading}
+        okText="Apply to other plans"
+        destroyOnClose
+      >
+        <p style={{ marginBottom: 12, fontSize: 13, color: "#4b5563", lineHeight: 1.5 }}>
+          Pick one plan to use as the template. We always copy colors and corner shape. You can also copy the exact button words if you want every plan to match.
+        </p>
+        <label style={{ display: "block", marginBottom: 6, fontSize: 12, fontWeight: 600, color: "#374151" }}>Copy from</label>
+        <Select
+          style={{ width: "100%", marginBottom: 16 }}
+          value={bulkSourceId || undefined}
+          onChange={setBulkSourceId}
+          options={membershipProducts.map((p) => ({
+            value: p.id,
+            label: `${p.name} (${formatPlanPrice(p)})`,
+          }))}
+        />
+        <Checkbox checked={bulkCopyLabel} onChange={(e) => setBulkCopyLabel(e.target.checked)}>
+          Also copy the button text (same words on every plan)
+        </Checkbox>
+      </Modal>
 
       <div
         style={{
