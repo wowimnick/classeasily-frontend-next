@@ -80,6 +80,8 @@ export const API_ENDPOINTS = {
     "/my-business/widget-subscription/set-default-payment-method/",
   MY_BUSINESS_WIDGET_SUBSCRIPTION_DEFAULT_PAYMENT_METHOD:
     "/my-business/widget-subscription/default-payment-method/",
+  MY_BUSINESS_WIDGET_SUBSCRIPTION_DETACH_PAYMENT_METHOD:
+    "/my-business/widget-subscription/detach-payment-method/",
 
   MY_BUSINESS_ADDONS: "/my-business/addons/",
   MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_CHECKOUT:
@@ -92,6 +94,19 @@ export const API_ENDPOINTS = {
     "/my-business/addons/marketplace-email/cancel/",
   MY_BUSINESS_ADDON_MARKETPLACE_EMAIL_REACTIVATE:
     "/my-business/addons/marketplace-email/reactivate/",
+
+  MY_BUSINESS_MARKETING_ACCOUNT: "/my-business/marketing/account/",
+  MY_BUSINESS_MARKETING_CAMPAIGNS: "/my-business/marketing/campaigns/",
+  MY_BUSINESS_MARKETING_CAMPAIGN: (id) => `/my-business/marketing/campaigns/${id}/`,
+  MY_BUSINESS_MARKETING_CAMPAIGN_SEND: (id) => `/my-business/marketing/campaigns/${id}/send/`,
+  MY_BUSINESS_MARKETING_CAMPAIGN_TEST_SEND: (id) =>
+    `/my-business/marketing/campaigns/${id}/test-send/`,
+  MY_BUSINESS_ADDON_EMAIL_MARKETING_CHECKOUT: "/my-business/addons/email-marketing/checkout/",
+  MY_BUSINESS_ADDON_EMAIL_MARKETING_INSTANT_SUBSCRIBE:
+    "/my-business/addons/email-marketing/instant-subscribe/",
+  MY_BUSINESS_ADDON_EMAIL_MARKETING_CANCEL: "/my-business/addons/email-marketing/cancel/",
+  MY_BUSINESS_ADDON_EMAIL_MARKETING_REACTIVATE: "/my-business/addons/email-marketing/reactivate/",
+  MY_BUSINESS_ADDON_EMAIL_MARKETING_CHANGE_TIER: "/my-business/addons/email-marketing/change-tier/",
 
   MY_BUSINESS_MEMBERSHIP_PRODUCTS: "/my-business/membership-products/",
   MY_BUSINESS_MEMBERS: "/my-business/members/",
@@ -886,7 +901,10 @@ export const businessService = {
     }
   },
 
-  /** Get masked default payment method (brand, last4) for UI, or null. */
+  /**
+   * Saved cards for the business customer: payment_methods[], default_payment_method_id,
+   * and payment_method (default row, backward-compatible).
+   */
   getDefaultPaymentMethod: async () => {
     try {
       const response = await axiosInstance.get(
@@ -902,6 +920,22 @@ export const businessService = {
         error.response?.data?.error ||
         error.response?.data?.detail ||
         "Failed to load payment method.";
+      return { success: false, error: errorMessage };
+    }
+  },
+
+  detachPaymentMethod: async ({ payment_method }) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION_DETACH_PAYMENT_METHOD,
+        { payment_method },
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.detail ||
+        "Failed to remove payment method.";
       return { success: false, error: errorMessage };
     }
   },
@@ -1004,6 +1038,160 @@ export const businessService = {
         error.response?.data?.detail ||
         "Failed to reactivate.";
       return { success: false, error: errorMessage };
+    }
+  },
+
+  createEmailMarketingAddonCheckout: async ({ price_id, success_url, cancel_url } = {}) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_ADDON_EMAIL_MARKETING_CHECKOUT,
+        { price_id, success_url, cancel_url },
+      );
+      return { success: true, url: response.data?.url };
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error.response?.data?.error ||
+          error.response?.data?.detail ||
+          "Failed to start checkout.",
+      };
+    }
+  },
+
+  subscribeEmailMarketingAddonInstant: async (price_id) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_ADDON_EMAIL_MARKETING_INSTANT_SUBSCRIBE,
+        { price_id },
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      const errData = error.response?.data;
+      return {
+        success: false,
+        error: errData?.error || errData?.detail || "Failed to subscribe.",
+        can_instant: errData?.can_instant,
+      };
+    }
+  },
+
+  cancelEmailMarketingAddon: async () => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_ADDON_EMAIL_MARKETING_CANCEL,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to cancel.",
+      };
+    }
+  },
+
+  reactivateEmailMarketingAddon: async () => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_ADDON_EMAIL_MARKETING_REACTIVATE,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to reactivate.",
+      };
+    }
+  },
+
+  changeEmailMarketingTier: async (price_id) => {
+    try {
+      await axiosInstance.post(API_ENDPOINTS.MY_BUSINESS_ADDON_EMAIL_MARKETING_CHANGE_TIER, {
+        price_id,
+      });
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to change tier.",
+      };
+    }
+  },
+
+  getMarketingAccount: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_MARKETING_ACCOUNT);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to load.",
+      };
+    }
+  },
+
+  listMarketingCampaigns: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_MARKETING_CAMPAIGNS);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to load campaigns.",
+      };
+    }
+  },
+
+  createMarketingCampaign: async (payload) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_MARKETING_CAMPAIGNS,
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to create.",
+      };
+    }
+  },
+
+  updateMarketingCampaign: async (id, payload) => {
+    try {
+      await axiosInstance.put(API_ENDPOINTS.MY_BUSINESS_MARKETING_CAMPAIGN(id), payload);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to save.",
+      };
+    }
+  },
+
+  sendMarketingCampaign: async (id) => {
+    try {
+      const response = await axiosInstance.post(API_ENDPOINTS.MY_BUSINESS_MARKETING_CAMPAIGN_SEND(id));
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to send.",
+      };
+    }
+  },
+
+  testMarketingCampaign: async (id) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_MARKETING_CAMPAIGN_TEST_SEND(id),
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Test send failed.",
+      };
     }
   },
 

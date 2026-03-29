@@ -4,9 +4,9 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { Button, Modal, message as antMessage } from "antd";
 import {
-  ArrowRight, ArrowUp, ArrowDown, Loader2, RefreshCw, Mail, Lock,
+  ArrowRight, ArrowUp, ArrowDown, Loader2, RefreshCw, Lock,
   CreditCard, ChevronDown, ChevronUp, Check, Download,
-  Search, SlidersHorizontal, Package,
+  Search, SlidersHorizontal, Trash2,
 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -20,6 +20,7 @@ import message from "@/lib/message";
 import { businessService, API_ENDPOINTS } from "@/services/apiService";
 import axiosInstance from "@/lib/axiosInstance";
 import { theme as appTheme } from "@/components/theme";
+import EmailMarketingTierModal from "./EmailMarketingTierModal";
 
 // ─── stripe setup ─────────────────────────────────────────────────────────────
 const stripePromise =
@@ -39,7 +40,6 @@ const paymentElementOptions = {
 
 // ─── animations ───────────────────────────────────────────────────────────────
 const spin = keyframes`from { transform: rotate(0deg) } to { transform: rotate(360deg) }`;
-const fadeUp = keyframes`from { opacity: 0; transform: translateY(5px) } to { opacity: 1; transform: translateY(0) }`;
 
 // ─── global ───────────────────────────────────────────────────────────────────
 const GlobalStyle = createGlobalStyle`
@@ -60,18 +60,16 @@ const T = {
   amberBg: "#FEF3C7",
 };
 
-// ─── shared primitives (glassy) ───────────────────────────────────────────────
+// ─── shared primitives (flat) ─────────────────────────────────────────────────
 const Card = styled.div`
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(229, 231, 235, 0.8);
-  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   padding: ${({ $pad }) => $pad ?? "20px"};
-  animation: ${fadeUp} 0.2s ease;
+  box-shadow: none;
 
   @media (max-width: 640px) {
-    border-radius: 10px;
+    border-radius: 8px;
     padding: ${({ $pad, $mobilePad }) => $mobilePad ?? ($pad === "0" ? "0" : "16px")};
   }
 `;
@@ -107,204 +105,356 @@ const LoadingRow = styled.div`
 // ─── page layout (responsive, centered) ───────────────────────────────────────
 const PageOuter = styled.div`
   width: 100%;
-  max-width: 1000px;
+  max-width: 1040px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 0 4px;
+  gap: 24px;
+  padding: 8px 8px 40px;
   overflow: visible;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #000000;
+  background: #f9fafb;
+  border-radius: 8px;
 
   @media (max-width: 640px) {
-    padding: 0;
-    gap: 14px;
+    padding: 8px 0 32px;
+    gap: 20px;
   }
 `;
 
-// ─── gradient strip: full viewport width, no clip ─────────────────────────────
-const ContentTopWrap = styled.div`
-  position: relative;
-  width: 100vw;
-  max-width: 100vw;
-  left: 50%;
-  margin-left: -50vw;
-  margin-top: 32px;
-  min-height: 140px;
-  overflow: visible;
-  @media (max-width: 640px) {
-    margin-top: 24px;
-    min-height: 100px;
-  }
-`;
-
-const BillingGradientStrip = styled.div`
-  position: absolute;
-  left: 0;
-  width: 100%;
-  height: 280px;
-  top: 50%;
-  transform: translateY(-50%) rotate(-12deg);
-  z-index: 0;
-  overflow: visible;
-  border-radius: 4px;
-  pointer-events: none;
-
-  @media (max-width: 900px) {
-    height: 200px;
-    width: 110%;
-    left: -5%;
-    }
-  @media (max-width: 640px) {
-    display: none;
-  }
-`;
-
-const BillingGradientStripInner = styled.div`
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-`;
-
-const BillingGradientCanvas = styled.canvas`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  --gradient-color-1: #f9fafb;
-  --gradient-color-2: #fc4056;
-  --gradient-color-3: #f9fafc;
-  --gradient-color-4: #fc4056;
-`;
-
-const ContentLayer = styled.div`
-  position: relative;
-  z-index: 1;
-  margin-top: -160px;
+const MainStack = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 16px;
-
-  @media (max-width: 640px) {
-    margin-top: -120px;
-  }
+  gap: 0;
 `;
 
-// ─── plan grid ────────────────────────────────────────────────────────────────
-const PlansGridWrapper = styled.div`
-  @media (max-width: 599px) {
-    margin: 0 -4px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    &::-webkit-scrollbar { display: none; }
-    padding: 0 4px 4px;
-  }
-`;
-
-const PlansGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
-  background: rgba(249, 250, 251, 0.65);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(229, 231, 235, 0.75);
-  border-radius: 12px;
-  padding: 5px;
-  gap: 4px;
-
-  @media (max-width: 599px) {
-    grid-template-columns: repeat(3, 260px);
-    width: max-content;
-    min-width: 100%;
-  }
-  @media (min-width: 600px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  @media (min-width: 900px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-`;
-
-const PlanCol = styled.div`
-  padding: 18px 20px;
-  border-radius: 9px;
-  display: flex;
-  flex-direction: column;
-  background: ${({ $current }) => $current ? "rgba(255, 255, 255, 0.78)" : "rgba(255, 255, 255, 0.35)"};
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: ${({ $current }) => $current ? "0 1px 4px rgba(0,0,0,0.06)" : "none"};
-  border: ${({ $current }) => $current ? `1px solid rgba(229, 231, 235, 0.9)` : "1px solid transparent"};
-  transition: background 0.15s, border-color 0.15s;
-`;
-
-const PlanHeader = styled.div`
+// ─── choose plans header + decorative monthly toggle ─────────────────────────
+const PlansHeaderRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 `;
 
-const PlanNameRow = styled.div`
+const SectionEyebrow = styled.div`
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: 0.04em;
+`;
+
+const MonthlyToggleDecor = styled.div`
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 10px;
+  flex-wrap: wrap;
+  user-select: none;
 `;
 
+const ToggleLabel = styled.span`
+  font-size: 12px;
+  font-weight: 400;
+  color: ${({ $muted }) => ($muted ? "#6b7280" : "#111827")};
+`;
+
+const TogglePill = styled.div`
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  position: relative;
+  flex-shrink: 0;
+`;
+
+const ToggleThumb = styled.div`
+  position: absolute;
+  left: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #000000;
+`;
+
+const SavePctBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #000000;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+`;
+
+// ─── promo banner ────────────────────────────────────────────────────────────
+const PromoBanner = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 20px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px 24px;
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+`;
+
+const PromoLeft = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+`;
+
+const PromoTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+const PromoTitle = styled.span`
+  font-size: 16px;
+  font-weight: 700;
+  color: #000000;
+`;
+
+const PromoSaveBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #000000;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+`;
+
+const PromoSub = styled.p`
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: #6b7280;
+  line-height: 1.45;
+  max-width: 520px;
+`;
+
+const PromoOutlineBtn = styled.button`
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: not-allowed;
+  white-space: nowrap;
+
+  @media (max-width: 720px) {
+    width: 100%;
+  }
+`;
+
+// ─── pricing cards ───────────────────────────────────────────────────────────
+const PricingCardsGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-top: 24px;
+
+  @media (min-width: 900px) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+`;
+
+const PriceCard = styled.article`
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  box-shadow: none;
+`;
+
+const PriceCardTop = styled.div`
+  padding: 24px;
+`;
+
+const PriceCardTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+const PriceCardName = styled.span`
+  font-size: 20px;
+  font-weight: 700;
+  color: #000000;
+`;
+
+const BlackCapsBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #000000;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+`;
+
+const OutlineCapsBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+`;
+
+const PriceCardSubtitle = styled.p`
+  margin: 8px 0 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: #6b7280;
+  line-height: 1.4;
+`;
+
+const PriceRow = styled.div`
+  margin-top: 16px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+`;
+
+const PriceAmount = styled.span`
+  font-size: clamp(28px, 5vw, 36px);
+  font-weight: 700;
+  color: #000000;
+  line-height: 1;
+`;
+
+const PriceSuffix = styled.span`
+  font-size: 13px;
+  font-weight: 400;
+  color: #6b7280;
+`;
+
+const PriceCta = styled.button`
+  margin-top: 16px;
+  width: 100%;
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+  border: 1px solid ${({ $primary }) => ($primary ? "#000000" : "#e5e7eb")};
+  background: ${({ $primary }) => ($primary ? "#000000" : "#ffffff")};
+  color: ${({ $primary }) => ($primary ? "#ffffff" : "#111827")};
+
+  &:disabled {
+    cursor: default;
+    opacity: 1;
+  }
+
+  &:not(:disabled):hover {
+    opacity: 0.88;
+  }
+
+  &:disabled:not([data-primary="true"]) {
+    color: #111827;
+    background: #ffffff;
+  }
+`;
+
+const PriceCardDivider = styled.div`
+  height: 1px;
+  background: #e5e7eb;
+  width: 100%;
+`;
+
+const PriceCardBottom = styled.div`
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const FeatureList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const FeatureItem = styled.li`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+`;
+
+const FeatureBullet = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border-radius: 50%;
+  background: #000000;
+  color: #ffffff;
+  flex-shrink: 0;
+  margin-top: 2px;
+
+  svg {
+    width: 10px;
+    height: 10px;
+  }
+`;
+
+const FeatureText = styled.span`
+  font-size: 13px;
+  font-weight: 400;
+  color: #374151;
+  line-height: 1.45;
+`;
+
+// ─── plan dots (current plan display) ─────────────────────────────────────────
 const PlanDot = styled.div`
   width: 14px;
   height: 14px;
   border-radius: 50%;
   background: ${({ $grad }) => $grad};
   flex-shrink: 0;
-`;
-
-const PlanName = styled.span`
-  font-size: 13px;
-  font-weight: 600;
-  color: ${T.text};
-`;
-
-const PlanPrice = styled.span`
-  font-size: 12px;
-  color: ${T.sub};
-`;
-
-const FeatureList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 16px 0 0;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  flex: 1;
-`;
-
-const FeatureItem = styled.li`
-  display: flex;
-  align-items: flex-start;
-  gap: 7px;
-  font-size: 12px;
-  color: ${T.sub};
-  line-height: 1.4;
-  svg { flex-shrink: 0; margin-top: 1px; }
-`;
-
-const PlanBtn = styled.button`
-  margin-top: 16px;
-  width: 100%;
-  height: 30px;
-  border-radius: 6px;
-  border: 1px solid ${({ $active }) => $active ? T.text : T.border};
-  background: ${({ $active }) => $active ? T.text : "transparent"};
-  color: ${({ $active }) => $active ? T.white : T.faint};
-  font-size: 12px;
-  font-weight: 500;
-  cursor: ${({ $active }) => $active ? "pointer" : "default"};
-  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
-  &:hover { ${({ $active }) => $active && `opacity: 0.85;`} }
 `;
 
 const PageHeader = styled.div`
@@ -334,10 +484,17 @@ const PLAN_GRADIENTS = {
   advanced: "linear-gradient(135deg, #fcd34d, #f59e0b)",
 };
 
+const PLAN_TAGLINES = {
+  basic: "Widget essentials & marketplace",
+  growth: "Everything you needed",
+  advanced: "Power team with scale",
+};
+
 // ─── invoice section ──────────────────────────────────────────────────────────
 const TabsWrap = styled.div`
   display: inline-flex;
-  background: ${T.bg};
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 3px;
   gap: 2px;
@@ -352,12 +509,12 @@ const TabsWrap = styled.div`
 const Tab = styled.button`
   padding: 5px 14px;
   border-radius: 6px;
-  border: none;
+  border: 1px solid ${({ $active }) => ($active ? "#d1d5db" : "transparent")};
   font-size: 13px;
   font-weight: ${({ $active }) => $active ? "500" : "400"};
   color: ${({ $active }) => $active ? T.text : T.sub};
   background: ${({ $active }) => $active ? T.white : "transparent"};
-  box-shadow: ${({ $active }) => $active ? "0 1px 3px rgba(0,0,0,0.1)" : "none"};
+  box-shadow: none;
   cursor: pointer;
   transition: all 0.15s;
 `;
@@ -606,13 +763,11 @@ const ActionGroup = styled.div`
 
 // ─── redesigned plan & billing card ──────────────────────────────────────────
 const PlanBillingCard = styled.div`
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(229, 231, 235, 0.8);
-  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   overflow: hidden;
-  animation: ${fadeUp} 0.2s ease;
+  box-shadow: none;
 `;
 
 const PlanBillingHeader = styled.div`
@@ -646,25 +801,40 @@ const SectionDivider = styled.div`
 `;
 
 const PlanBillingBody = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  divide-x: 1px solid ${T.border};
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 100%;
 
   @media (max-width: 640px) {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 `;
 
 const PlanBillingSection = styled.div`
+  box-sizing: border-box;
+  flex: 1 1 0;
+  min-width: 0;
   padding: 18px 20px;
-  border-right: ${({ $noBorder }) => $noBorder ? "none" : `1px solid ${T.border}`};
+  border-right: ${({ $noBorder }) => ($noBorder ? "none" : `1px solid ${T.border}`)};
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
 
   @media (max-width: 640px) {
+    flex: 1 1 auto;
+    width: 100%;
     border-right: none;
-    border-bottom: ${({ $noBorder }) => $noBorder ? "none" : `1px solid ${T.border}`};
+    border-bottom: ${({ $noBorder }) => ($noBorder ? "none" : `1px solid ${T.border}`)};
   }
+`;
+
+const PlanBillingPaymentStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
 `;
 
 const PlanBillingSectionLabel = styled.div`
@@ -698,113 +868,415 @@ const PlanBillingActions = styled.div`
   gap: 6px;
 `;
 
-const PaymentMethodDisplay = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 2px;
+const PmListOuter = styled.div`
+  margin-top: 4px;
+  border-radius: 8px;
 `;
 
-const CardIconWrap = styled.div`
-  width: 36px;
-  height: 24px;
-  background: ${T.bg};
-  border: 1px solid ${T.border};
-  border-radius: 4px;
+const PmListWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const PmRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  min-width: 0;
+
+  @media (max-width: 560px) {
+    flex-wrap: wrap;
+  }
+`;
+
+const PmRowLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  flex: 1;
+`;
+
+const PmBrandBox = styled.div`
+  height: 30px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+
+  svg {
+    max-width: 46px;
+    max-height: 24px;
+    width: auto;
+    height: auto;
+    display: block;
+  }
+`;
+
+const PmBrandImg = styled.img`
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+`;
+
+const PmTextCol = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+`;
+
+const PmTitleLine = styled.div`
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.3;
+`;
+
+const PmMetaLine = styled.div`
+  font-size: 13px;
+  font-weight: 400;
+  color: #6b7280;
+`;
+
+const PmRowRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+
+  @media (max-width: 560px) {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+`;
+
+const PmStatusSlot = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-height: 20px;
+`;
+
+const PmDefaultBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #000000;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+`;
+
+const PmExpiredBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+`;
+
+const PmSetDefaultLink = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: #2563eb;
+  cursor: pointer;
+  text-decoration: none;
+  line-height: 1.2;
+
+  &:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+    text-decoration: none;
+  }
+`;
+
+const PmAddNewLinkBtn = styled.button`
+  margin-top: 12px;
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: #2563eb;
+  cursor: pointer;
+  line-height: 1.4;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const PmActionsGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 2px;
   flex-shrink: 0;
 `;
 
-const CardDetails = styled.div`
+const PmDeleteIconBtn = styled.button`
   display: flex;
-  flex-direction: column;
-  gap: 1px;
-`;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
 
-const CardNumber = styled.div`
-  font-size: 14px;
-  font-weight: 600;
-  color: ${T.text};
-  letter-spacing: 0.03em;
-`;
+  &:hover:not(:disabled) {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
 
-const CardBrand = styled.div`
-  font-size: 11.5px;
-  color: ${T.sub};
-  text-transform: capitalize;
-`;
-
-const PaymentMethodAction = styled.div`
-  margin-top: 14px;
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
 `;
 
 // ─── add-ons ──────────────────────────────────────────────────────────────────
-const AddonsGrid = styled.div`
-  display: flex;
-  flex-direction: column;
-  border: 1px solid ${T.border};
-  border-radius: 10px;
+const AddonsStack = styled.div`
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   overflow: hidden;
 `;
 
-const AddonRow = styled.div`
+const AddonCard = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  &:last-child { border-bottom: none; }
+
+  @media (max-width: 700px) {
+    flex-wrap: wrap;
+    padding: 16px 18px;
+  }
+`;
+
+const AddonIconBox = styled.div`
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: #f3f4f6;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 13px 16px;
-  background: ${T.white};
-  transition: background 0.12s;
-  &:not(:last-child) { border-bottom: 1px solid ${T.border}; }
-  &:hover { background: ${T.bg}; }
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 14px 14px;
-  }
+  justify-content: center;
+  margin-top: 1px;
 `;
 
-const AddonLeft = styled.div`
-  display: flex; align-items: center; gap: 11px; min-width: 0;
+const AddonBody = styled.div`
+  flex: 1;
+  min-width: 0;
 `;
 
-const AddonIcon = styled.div`
-  width: 32px; height: 32px; border-radius: 7px;
-  background: ${T.bg}; border: 1px solid ${T.border};
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+const AddonTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 3px;
 `;
 
-const AddonName = styled.div`
-  font-size: 13.5px; font-weight: 500; color: ${T.text};
+const AddonName = styled.span`
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
 `;
 
-const AddonDesc = styled.div`
-  font-size: 12px; color: ${T.sub}; margin-top: 2px;
+const NewBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 `;
 
-const AddonRight = styled.div`
-  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+const AddonActiveBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 600;
+`;
 
-  @media (max-width: 600px) {
+const AddonCancelsBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 11px;
+  font-weight: 600;
+`;
+
+const AddonDesc = styled.p`
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0;
+`;
+
+const AddonUsageWrap = styled.div`
+  margin-top: 8px;
+`;
+
+const AddonUsageBar = styled.div`
+  height: 4px;
+  border-radius: 99px;
+  background: #e5e7eb;
+  margin-top: 5px;
+  overflow: hidden;
+`;
+
+const AddonUsageFill = styled.div`
+  height: 100%;
+  border-radius: 99px;
+  background: #111827;
+  width: ${({ $pct }) => Math.min(100, $pct ?? 0)}%;
+`;
+
+const AddonSide = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+  min-width: 130px;
+
+  @media (max-width: 700px) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
     width: 100%;
-    justify-content: flex-start;
-    padding-top: 10px;
-    border-top: 1px solid ${T.border};
+    padding-top: 12px;
+    border-top: 1px solid #f3f4f6;
+    min-width: 0;
   }
 `;
 
-const ActivePill = styled.span`
-  font-size: 11.5px; font-weight: 600;
-  color: ${T.green}; background: ${T.greenBg};
-  padding: 2px 9px; border-radius: 20px;
+const AddonPriceLabel = styled.div`
+  text-align: right;
+  line-height: 1.2;
+`;
+
+const AddonPriceStrong = styled.span`
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+`;
+
+const AddonPriceSuffix = styled.span`
+  font-size: 12px;
+  color: #9ca3af;
+`;
+
+const AddonCtaGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+`;
+
+const AddonCtaRow = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+const AddonOutlineBtn = styled.button`
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover:not(:disabled) {
+    background: #f9fafb;
+    border-color: #9ca3af;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+`;
+
+const AddonPrimaryBtn = styled.button`
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid #111827;
+  background: #111827;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+
+  &:hover:not(:disabled) { background: #1f2937; }
+  &:disabled { opacity: 0.55; cursor: default; }
 `;
 
 const CancellingNote = styled.span`
-  font-size: 11px; color: ${T.sub}; display: block; margin-top: 3px; text-align: right;
+  font-size: 11px;
+  color: ${T.sub};
+  text-align: right;
 `;
 
 const SmallLink = styled.button`
@@ -1089,6 +1561,66 @@ function UpdatePaymentMethodForm({ clientSecret, onSuccess }) {
   );
 }
 
+function formatCardBrandLabel(brand) {
+  if (!brand) return "Card";
+  const b = String(brand).toLowerCase();
+  if (b === "mastercard") return "Mastercard";
+  if (b === "amex") return "Amex";
+  if (b === "diners") return "Diners";
+  if (b === "discover") return "Discover";
+  if (b === "unionpay") return "UnionPay";
+  return b.charAt(0).toUpperCase() + b.slice(1);
+}
+
+function isCardExpired(expMonth, expYear) {
+  if (expMonth == null || expYear == null) return false;
+  const now = new Date();
+  const cy = now.getFullYear();
+  const cm = now.getMonth() + 1;
+  const y = Number(expYear);
+  const m = Number(expMonth);
+  if (!y || !m) return false;
+  if (y < cy) return true;
+  if (y > cy) return false;
+  return m < cm;
+}
+
+function formatExpShort(expMonth, expYear) {
+  if (expMonth == null || expYear == null) return null;
+  const m = Number(expMonth);
+  const y = Number(expYear);
+  if (!m || !y) return null;
+  const yy = y >= 100 ? y % 100 : y;
+  return `${String(m).padStart(2, "0")}/${String(yy).padStart(2, "0")}`;
+}
+
+/**
+ * Flat card-art SVGs (MIT): aaronfagan/svg-credit-card-payment-icons
+ * Fetched from: https://github.com/aaronfagan/svg-credit-card-payment-icons/tree/master/flat
+ * Served from /public/payment-brands/
+ */
+const PAYMENT_BRAND_IMG = {
+  visa: "/payment-brands/visa.svg",
+  mastercard: "/payment-brands/mastercard.svg",
+  amex: "/payment-brands/amex.svg",
+  americanexpress: "/payment-brands/amex.svg",
+  american_express: "/payment-brands/amex.svg",
+  discover: "/payment-brands/discover.svg",
+  diners: "/payment-brands/diners.svg",
+  diners_club: "/payment-brands/diners.svg",
+  jcb: "/payment-brands/jcb.svg",
+  unionpay: "/payment-brands/unionpay.svg",
+};
+
+function PaymentMethodBrandIcon({ brand }) {
+  const raw = (brand || "card").toLowerCase().replace(/\s+/g, "_");
+  const src = PAYMENT_BRAND_IMG[raw];
+  if (!src) {
+    return <CreditCard size={16} color="#6b7280" strokeWidth={1.75} />;
+  }
+  return <PmBrandImg src={src} alt="" aria-hidden draggable={false} />;
+}
+
 // ─── main component ───────────────────────────────────────────────────────────
 export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchAddons } = {}) {
   const { subscription, scheduledDowngrade, loading: subLoading, cancel, reactivate, refetch: refetchSubscription, subscribe, hasStripeSubscription } = useSubscription();
@@ -1101,6 +1633,8 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   const [addonSubscribing, setAddonSubscribing] = useState(false);
   const [addonCancelModalOpen, setAddonCancelModalOpen] = useState(false);
   const [addonCancelling, setAddonCancelling] = useState(false);
+  const [emSubscribing, setEmSubscribing] = useState(false);
+  const [emailMarketingTierModalOpen, setEmailMarketingTierModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("View all");
   const [invoiceSearchQuery, setInvoiceSearchQuery] = useState("");
   const [invoiceSortOrder, setInvoiceSortOrder] = useState("recent"); // "recent" | "oldest"
@@ -1114,8 +1648,14 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   const [updatePaymentClientSecret, setUpdatePaymentClientSecret] = useState(null);
   const [updatePaymentIntentLoading, setUpdatePaymentIntentLoading] = useState(false);
   const [updatePaymentIntentError, setUpdatePaymentIntentError] = useState(null);
-  const [defaultPaymentMethod, setDefaultPaymentMethod] = useState(null);
+  const [savedPaymentMethods, setSavedPaymentMethods] = useState([]);
+  const [defaultPaymentMethodId, setDefaultPaymentMethodId] = useState(null);
   const [defaultPaymentMethodLoading, setDefaultPaymentMethodLoading] = useState(false);
+  const [settingDefaultPmId, setSettingDefaultPmId] = useState(null);
+  const [detachPmModalOpen, setDetachPmModalOpen] = useState(false);
+  const [detachPmId, setDetachPmId] = useState(null);
+  const [detachPmLabel, setDetachPmLabel] = useState("");
+  const [detachPmLoading, setDetachPmLoading] = useState(false);
 
   const [stripeFontSize, setStripeFontSize] = useState("14px");
   useEffect(() => {
@@ -1163,16 +1703,23 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   const planDisplay = useMemo(() => {
     return PLANS.map((plan) => {
       const isCurrent = subscription?.planId === plan.id;
-      const featureLabels = (plan.features || []).slice(0, 5).map((f) => (typeof f === "object" && f?.label) ? f.label : String(f));
+      const subId = subscription?.planId;
+      const features = (plan.features || []).map((f) =>
+        (typeof f === "object" && f?.label)
+          ? { label: f.label, tooltip: f.tooltip }
+          : { label: String(f) }
+      );
+      const featureRows = features.length
+        ? features
+        : [{ label: `${plan.commission}% commission per booking` }];
       return {
         id: plan.id,
         name: plan.name,
-        price: `$${plan.price}/mth`,
+        priceNum: plan.price,
         grad: PLAN_GRADIENTS[plan.id] || "linear-gradient(135deg, #a5b4fc, #818cf8)",
-        features: featureLabels.length ? featureLabels : [`${plan.commission}% commission per booking`],
+        features: featureRows,
         isCurrent,
-        btnText: isCurrent ? "Current plan" : `Switch to ${plan.name}`,
-        btnActive: !isCurrent,
+        isUpgrade: Boolean(subId && isUpgrade(subId, plan.id)),
       };
     });
   }, [subscription?.planId]);
@@ -1286,6 +1833,16 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     ? new Date(marketplaceEmail.currentPeriodEnd).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
     : null;
 
+  const emailMkt = addons?.email_marketing;
+  const emActive = emailMkt?.active === true;
+  const emTiers = emailMkt?.tiers || [];
+  const emCurrentTierKey = emailMkt?.current_tier_key ?? null;
+  const emUsage = emailMkt?.usage;
+  const emCanInstant = emailMkt?.canInstantSubscribe === true;
+  const emNextBilling = emailMkt?.currentPeriodEnd
+    ? new Date(emailMkt.currentPeriodEnd).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+    : null;
+
   const createAddonPaymentIntent = useCallback(async () => {
     if (typeof businessService.createMarketplaceEmailAddonPaymentIntent === "function")
       return businessService.createMarketplaceEmailAddonPaymentIntent();
@@ -1313,20 +1870,39 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   }, [subscribeModalOpen, createAddonPaymentIntent]);
 
   const showPaymentMethodSection = hasStripeSubscription || canInstantSubscribeAddon;
-  useEffect(() => {
-    if (!showPaymentMethodSection) return;
-    let cancelled = false;
+
+  const fetchPaymentMethods = useCallback(async () => {
     setDefaultPaymentMethodLoading(true);
-    businessService.getDefaultPaymentMethod().then((res) => {
-      if (cancelled) return;
+    try {
+      const res = await businessService.getDefaultPaymentMethod();
+      if (res.success && res.data) {
+        let list = Array.isArray(res.data.payment_methods) ? res.data.payment_methods : [];
+        if (!list.length && res.data.payment_method?.last4) {
+          list = [{ ...res.data.payment_method }];
+        }
+        setSavedPaymentMethods(list);
+        setDefaultPaymentMethodId(res.data.default_payment_method_id ?? null);
+      } else {
+        setSavedPaymentMethods([]);
+        setDefaultPaymentMethodId(null);
+      }
+    } catch {
+      setSavedPaymentMethods([]);
+      setDefaultPaymentMethodId(null);
+    } finally {
       setDefaultPaymentMethodLoading(false);
-      if (res.success && res.data) setDefaultPaymentMethod(res.data.payment_method ?? null);
-      else setDefaultPaymentMethod(null);
-    }).catch(() => {
-      if (!cancelled) { setDefaultPaymentMethodLoading(false); setDefaultPaymentMethod(null); }
-    });
-    return () => { cancelled = true; };
-  }, [showPaymentMethodSection]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!showPaymentMethodSection) {
+      setSavedPaymentMethods([]);
+      setDefaultPaymentMethodId(null);
+      return undefined;
+    }
+    fetchPaymentMethods();
+    return undefined;
+  }, [showPaymentMethodSection, fetchPaymentMethods]);
 
   useEffect(() => {
     if (!updatePaymentModalOpen) { setUpdatePaymentClientSecret(null); setUpdatePaymentIntentError(null); return; }
@@ -1343,34 +1919,60 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     return () => { cancelled = true; };
   }, [updatePaymentModalOpen]);
 
+  const handleSetDefaultPaymentMethod = useCallback(async (pmId) => {
+    if (!pmId) return;
+    setSettingDefaultPmId(pmId);
+    try {
+      const result = await businessService.setDefaultPaymentMethod({ payment_method: pmId });
+      if (result.success) {
+        message.success("Default payment method updated.");
+        await fetchPaymentMethods();
+        refetchAddons?.();
+      } else {
+        antMessage.error(result.error || "Could not set default payment method.");
+      }
+    } finally {
+      setSettingDefaultPmId(null);
+    }
+  }, [fetchPaymentMethods, refetchAddons]);
+
+  const handleDetachPaymentMethodConfirm = useCallback(async () => {
+    if (!detachPmId) return;
+    setDetachPmLoading(true);
+    try {
+      const r = await businessService.detachPaymentMethod({ payment_method: detachPmId });
+      if (r.success) {
+        message.success("Payment method removed.");
+        setDetachPmModalOpen(false);
+        setDetachPmId(null);
+        setDetachPmLabel("");
+        await fetchPaymentMethods();
+        refetchAddons?.();
+      } else {
+        antMessage.error(r.error || "Could not remove card.");
+      }
+    } finally {
+      setDetachPmLoading(false);
+    }
+  }, [detachPmId, fetchPaymentMethods, refetchAddons]);
+
   const handleUpdatePaymentMethodSuccess = useCallback(async (paymentMethodId) => {
     const result = await businessService.setDefaultPaymentMethod({ payment_method: paymentMethodId });
     if (result.success) {
       setUpdatePaymentModalOpen(false);
       setUpdatePaymentClientSecret(null);
       message.success("Payment method updated. It will be used for future charges and renewals.");
-      const pmRes = await businessService.getDefaultPaymentMethod();
-      if (pmRes.success && pmRes.data) setDefaultPaymentMethod(pmRes.data.payment_method ?? null);
+      await fetchPaymentMethods();
       refetchAddons?.();
     } else {
       antMessage.error(result.error || "Failed to update payment method.");
     }
-  }, [refetchAddons]);
+  }, [fetchPaymentMethods, refetchAddons]);
 
   useEffect(() => {
-    const id = "billing-gradient-canvas";
-    const run = () => {
-      import("stripe-gradient")
-        .then(({ Gradient }) => {
-          const canvas = document.getElementById(id);
-          if (!canvas || !canvas.getContext) return;
-          const gradient = new Gradient();
-          gradient.initGradient(`#${id}`);
-        })
-        .catch(() => {});
-    };
-    const t = setTimeout(run, 0);
-    return () => clearTimeout(t);
+    if (typeof window === "undefined") return;
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("email_marketing_modal") === "1") setEmailMarketingTierModalOpen(true);
   }, []);
 
   const handleAddonPaymentSuccess = useCallback(async () => {
@@ -1401,62 +2003,135 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     else antMessage.error(result.error || "Failed to reactivate.");
   };
 
+  const startEmailMarketingCheckout = async (priceId) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const r = await businessService.createEmailMarketingAddonCheckout({
+      price_id: priceId,
+      success_url: `${origin}/business/dashboard/settings?tab=plan-billing&email_marketing=1`,
+      cancel_url: `${origin}/business/dashboard/settings?tab=plan-billing`,
+    });
+    if (r.success && r.url) window.location.href = r.url;
+    else antMessage.error(r.error || "Could not start checkout.");
+  };
+
+  const handleEmailMarketingInstant = async (priceId) => {
+    setEmSubscribing(true);
+    const r = await businessService.subscribeEmailMarketingAddonInstant(priceId);
+    setEmSubscribing(false);
+    if (r.success) {
+      await refreshBillingViewsWithRetries();
+      refetchAddons?.();
+      message.success("Email marketing add-on is now active.");
+    } else antMessage.error(r.error || "Failed to subscribe.");
+    return r;
+  };
+
+  const handleEmailMarketingChangeTier = async (priceId) => {
+    setEmSubscribing(true);
+    const r = await businessService.changeEmailMarketingTier(priceId);
+    setEmSubscribing(false);
+    if (r.success) {
+      await refreshBillingViews();
+      refetchAddons?.();
+      message.success("Email marketing plan updated.");
+    } else antMessage.error(r.error || "Could not change plan.");
+    return r;
+  };
+
+  const handleEmailMarketingCancel = async () => {
+    const r = await businessService.cancelEmailMarketingAddon();
+    if (r.success) {
+      await refreshBillingViews();
+      refetchAddons?.();
+      message.success("Email marketing will cancel at the end of the billing period.");
+    } else antMessage.error(r.error || "Failed to cancel.");
+  };
+
+  const handleEmailMarketingReactivate = async () => {
+    const r = await businessService.reactivateEmailMarketingAddon();
+    if (r.success) {
+      await refreshBillingViews();
+      refetchAddons?.();
+      message.success("Email marketing add-on reactivated.");
+    } else antMessage.error(r.error || "Failed to reactivate.");
+  };
+
   // ─── render ──────────────────────────────────────────────────────────────────
   return (
     <PageOuter>
       <GlobalStyle />
 
-      <ContentTopWrap>
-        <BillingGradientStrip>
-          <BillingGradientStripInner>
-            <BillingGradientCanvas id="billing-gradient-canvas" data-transition-in />
-          </BillingGradientStripInner>
-        </BillingGradientStrip>
-      </ContentTopWrap>
-
-      <ContentLayer>
+      <MainStack>
       {/* Header */}
       <PageHeader>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 600, color: T.text, lineHeight: 1.2 }}>Plans &amp; billing</div>
-            <div style={{ fontSize: 13, color: T.sub, marginTop: 3 }}>Manage your plan and billing history here.</div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: "#000000", lineHeight: 1.2 }}>Plans &amp; billing</div>
+            <div style={{ fontSize: 13, color: "#6b7280", marginTop: 3 }}>Manage your plan and billing history here.</div>
           </div>
         </div>
       </PageHeader>
 
-      {/* Pricing Plans Grid */}
-      <PlansGridWrapper>
-        <PlansGrid>
-          {planDisplay.map((plan) => (
-            <PlanCol key={plan.id} $current={plan.isCurrent}>
-              <PlanHeader>
-                <PlanNameRow>
-                  <PlanDot $grad={plan.grad} />
-                  <PlanName>{plan.name}</PlanName>
-                </PlanNameRow>
-                <PlanPrice>{plan.price}</PlanPrice>
-              </PlanHeader>
-              <FeatureList>
-                {plan.features.map((f) => (
-                  <FeatureItem key={f}>
-                    <Check size={12} color={T.text} strokeWidth={2.5} />
-                    {f}
-                  </FeatureItem>
-                ))}
-              </FeatureList>
-              <PlanBtn
-                $active={plan.btnActive}
-                onClick={() => plan.btnActive && handleSwitchPlan(plan.id)}
-                disabled={!plan.btnActive || switchPlanLoading !== null}
-                type="button"
-              >
-                {switchPlanLoading === plan.id ? "Switching…" : plan.btnText}
-              </PlanBtn>
-            </PlanCol>
-          ))}
-        </PlansGrid>
-      </PlansGridWrapper>
+ 
+      <PricingCardsGrid>
+        {planDisplay.map((plan) => {
+          const ctaBusy = switchPlanLoading === plan.id;
+          const ctaDisabled = plan.isCurrent || switchPlanLoading !== null;
+          let ctaPrimary = false;
+          let ctaLabel = "";
+          if (plan.isCurrent) {
+            ctaLabel = ctaBusy ? "Switching…" : "Your current plan";
+          } else if (!subscription?.planId) {
+            ctaPrimary = true;
+            ctaLabel = ctaBusy ? "Switching…" : `Switch to ${plan.name}`;
+          } else if (plan.isUpgrade) {
+            ctaPrimary = true;
+            ctaLabel = ctaBusy ? "Switching…" : "Upgrade now";
+          } else {
+            ctaLabel = ctaBusy ? "Switching…" : `Switch to ${plan.name}`;
+          }
+          return (
+            <PriceCard key={plan.id}>
+              <PriceCardTop>
+                <PriceCardTitleRow>
+                  <PriceCardName>{plan.name}</PriceCardName>
+                  {plan.id === "growth" && <BlackCapsBadge>Most popular</BlackCapsBadge>}
+                  {plan.id === "advanced" && <OutlineCapsBadge>Most valuable</OutlineCapsBadge>}
+                </PriceCardTitleRow>
+                <PriceCardSubtitle>{PLAN_TAGLINES[plan.id] ?? ""}</PriceCardSubtitle>
+                <PriceRow>
+                  <PriceAmount>${plan.priceNum}</PriceAmount>
+                  <PriceSuffix>/ month</PriceSuffix>
+                </PriceRow>
+                <PriceCta
+                  type="button"
+                  $primary={ctaPrimary}
+                  data-primary={ctaPrimary ? "true" : undefined}
+                  disabled={ctaDisabled}
+                  onClick={() => !ctaDisabled && handleSwitchPlan(plan.id)}
+                >
+                  {ctaLabel}
+                </PriceCta>
+              </PriceCardTop>
+              <PriceCardDivider />
+              <PriceCardBottom>
+                <FeatureList>
+                  {plan.features.map((f) => (
+                    <FeatureItem key={`${plan.id}-${f.label}`}>
+                      <FeatureBullet aria-hidden>
+                        <Check size={10} color="#ffffff" strokeWidth={3} />
+                      </FeatureBullet>
+                      <FeatureText title={f.tooltip || undefined}>
+                        {f.label}
+                      </FeatureText>
+                    </FeatureItem>
+                  ))}
+                </FeatureList>
+              </PriceCardBottom>
+            </PriceCard>
+          );
+        })}
+      </PricingCardsGrid>
 
       <SectionDivider />
 
@@ -1492,7 +2167,6 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
             <PlanBillingSection>
               <PlanBillingSectionLabel>Current plan</PlanBillingSectionLabel>
               <PlanBillingPlanName>
-                <PlanDot $grad={PLAN_GRADIENTS[subscription.planId] || "linear-gradient(135deg, #a5b4fc, #818cf8)"} />
                 {currentPlan?.name ?? subscription.planId}
                 {subscription.cancelAtPeriodEnd && (
                   <Badge style={{ marginTop: 0, marginLeft: 4 }}>Cancels {nextBilling || "at period end"}</Badge>
@@ -1552,30 +2226,78 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
               {defaultPaymentMethodLoading ? (
                 <LoadingRow style={{ padding: 0 }}><SpinIcon size={14} /><span>Loading…</span></LoadingRow>
               ) : showPaymentMethodSection ? (
-                <>
-                  <PaymentMethodDisplay>
-                    <CardIconWrap>
-                      <CreditCard size={14} color={T.sub} />
-                    </CardIconWrap>
-                    <CardDetails>
-                      <CardNumber>
-                        {defaultPaymentMethod?.last4 ? `•••• •••• •••• ${defaultPaymentMethod.last4}` : "•••• •••• •••• ––––"}
-                      </CardNumber>
-                      {defaultPaymentMethod?.brand && (
-                        <CardBrand>{defaultPaymentMethod.brand}</CardBrand>
-                      )}
-                    </CardDetails>
-                  </PaymentMethodDisplay>
-                  <PaymentMethodAction>
-                    <Button
-                      size="small"
-                      onClick={() => setUpdatePaymentModalOpen(true)}
-                      style={{ fontSize: 12 }}
-                    >
-                      Update payment method
-                    </Button>
-                  </PaymentMethodAction>
-                </>
+                <PlanBillingPaymentStack>
+                  {savedPaymentMethods.length > 0 ? (
+                    <PmListOuter>
+                      <PmListWrap>
+                        {savedPaymentMethods.map((pm) => {
+                          const isDefault = Boolean(pm.id && defaultPaymentMethodId && pm.id === defaultPaymentMethodId);
+                          const expired = isCardExpired(pm.exp_month, pm.exp_year);
+                          const expStr = formatExpShort(pm.exp_month, pm.exp_year);
+                          const brandLabel = formatCardBrandLabel(pm.brand);
+                          const last4 = pm.last4 || "––––";
+                          const canDetach = savedPaymentMethods.length > 1 && Boolean(pm.id);
+                          return (
+                            <PmRow key={pm.id || `${pm.brand}-${last4}`}>
+                              <PmRowLeft>
+                                <PmBrandBox>
+                                  <PaymentMethodBrandIcon brand={pm.brand} />
+                                </PmBrandBox>
+                                <PmTextCol>
+                                  <PmTitleLine>
+                                    {brandLabel} ending in {last4}
+                                  </PmTitleLine>
+                                  <PmMetaLine>
+                                    {expStr ? `Exp. date ${expStr}` : "Expiration not available"}
+                                  </PmMetaLine>
+                                </PmTextCol>
+                              </PmRowLeft>
+                              <PmRowRight>
+                                <PmStatusSlot>
+                                  {expired && <PmExpiredBadge>Expired</PmExpiredBadge>}
+                                  {isDefault && <PmDefaultBadge>Default</PmDefaultBadge>}
+                                  {!isDefault && !expired && pm.id && (
+                                    <PmSetDefaultLink
+                                      type="button"
+                                      disabled={Boolean(settingDefaultPmId)}
+                                      onClick={() => handleSetDefaultPaymentMethod(pm.id)}
+                                    >
+                                      {settingDefaultPmId === pm.id ? "Updating…" : "Set as default"}
+                                    </PmSetDefaultLink>
+                                  )}
+                                </PmStatusSlot>
+                                {canDetach && (
+                                  <PmActionsGroup>
+                                    <PmDeleteIconBtn
+                                      type="button"
+                                      aria-label="Remove payment method"
+                                      title="Remove card"
+                                      disabled={Boolean(detachPmLoading || settingDefaultPmId)}
+                                      onClick={() => {
+                                        setDetachPmId(pm.id);
+                                        setDetachPmLabel(`${brandLabel} ending in ${last4}`);
+                                        setDetachPmModalOpen(true);
+                                      }}
+                                    >
+                                      <Trash2 size={16} strokeWidth={1.75} />
+                                    </PmDeleteIconBtn>
+                                  </PmActionsGroup>
+                                )}
+                              </PmRowRight>
+                            </PmRow>
+                          );
+                        })}
+                      </PmListWrap>
+                    </PmListOuter>
+                  ) : (
+                    <PlanBillingPlanPrice style={{ marginTop: 6 }}>
+                      No payment method on file yet.
+                    </PlanBillingPlanPrice>
+                  )}
+                  <PmAddNewLinkBtn type="button" onClick={() => setUpdatePaymentModalOpen(true)}>
+                    + Add new payment method
+                  </PmAddNewLinkBtn>
+                </PlanBillingPaymentStack>
               ) : (
                 <PlanBillingPlanPrice style={{ marginTop: 4 }}>
                   No payment method on file yet.
@@ -1589,75 +2311,113 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
       <SectionDivider />
 
       {/* Add-ons */}
-      <Card>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-          <Package size={14} color={T.sub} />
-          <SectionTitle style={{ margin: 0 }}>Add-ons</SectionTitle>
-          <SectionSub style={{ marginLeft: "auto", fontSize: 12 }}>Billed separately</SectionSub>
-        </div>
+      <div style={{ marginTop: 16 }}>
+        <PlansHeaderRow style={{ marginBottom: 16 }}>
+          <SectionEyebrow>Add-ons</SectionEyebrow>
+          <SectionSub style={{ margin: 0, fontSize: 12, color: "#6b7280" }}>Billed separately</SectionSub>
+        </PlansHeaderRow>
 
         {addonsLoading ? (
           <LoadingRow><SpinIcon size={15} /><span>Loading add-ons…</span></LoadingRow>
         ) : (
-          <AddonsGrid>
-            {/* Marketplace email branding */}
-            <AddonRow>
-              <AddonLeft>
-                <AddonIcon><Mail size={15} color={T.sub} /></AddonIcon>
-                <div>
+          <AddonsStack>
+            {/* ── Marketplace email branding ── */}
+            <AddonCard>
+              <AddonIconBox>
+                <lord-icon src="https://cdn.lordicon.com/axroojxh.json" trigger="in" style={{ width: 28, height: 28 }} />
+              </AddonIconBox>
+              <AddonBody>
+                <AddonTitleRow>
                   <AddonName>Marketplace email branding</AddonName>
-                  <AddonDesc>
-                    ${ADDON_PRICE}/mo · Custom logo, colors &amp; footer in marketplace booking emails.
-                  </AddonDesc>
-                </div>
-              </AddonLeft>
-
-              <AddonRight>
-                {addonActive ? (
-                  <>
-                    <div style={{ textAlign: "right" }}>
-                      <ActivePill>Active</ActivePill>
-                      {addonNextBilling && (
-                        <CancellingNote>
-                          {marketplaceEmail?.cancelAtPeriodEnd ? `Cancels ${addonNextBilling}` : `Renews ${addonNextBilling}`}
-                        </CancellingNote>
-                      )}
-                    </div>
-                    {marketplaceEmail?.cancelAtPeriodEnd ? (
-                      <Button size="small" icon={<RefreshCw size={11} />} onClick={handleAddonReactivate}
-                        style={{ background: SEL_COLOR, borderColor: SEL_COLOR, color: "white", fontSize: 12 }}>
-                        Reactivate
-                      </Button>
+                  <NewBadge>New</NewBadge>
+                  {addonActive && (
+                    marketplaceEmail?.cancelAtPeriodEnd
+                      ? <AddonCancelsBadge>Cancels {addonNextBilling}</AddonCancelsBadge>
+                      : <AddonActiveBadge>Active · Renews {addonNextBilling}</AddonActiveBadge>
+                  )}
+                </AddonTitleRow>
+                <AddonDesc>Custom logo, colors &amp; footer in marketplace booking emails — sent under your brand.</AddonDesc>
+              </AddonBody>
+              <AddonSide>
+                <AddonPriceLabel>
+                  <AddonPriceStrong>+${ADDON_PRICE}</AddonPriceStrong>
+                  <AddonPriceSuffix> / mo</AddonPriceSuffix>
+                </AddonPriceLabel>
+                <AddonCtaGroup>
+                  {addonActive ? (
+                    marketplaceEmail?.cancelAtPeriodEnd ? (
+                      <AddonPrimaryBtn type="button" onClick={handleAddonReactivate}>
+                        <RefreshCw size={11} style={{ marginRight: 5, verticalAlign: "middle" }} />Reactivate
+                      </AddonPrimaryBtn>
                     ) : (
-                      <Button size="small" danger onClick={() => setAddonCancelModalOpen(true)} style={{ fontSize: 12 }}>
-                        Cancel
-                      </Button>
-                    )}
-                  </>
-                ) : canInstantSubscribeAddon ? (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5 }}>
-                    <Button type="primary" size="small" onClick={handleInstantSubscribeAddon} loading={addonSubscribing}
-                      style={{ background: SEL_COLOR, borderColor: SEL_COLOR, fontSize: 12 }}>
-                      {addonSubscribing ? "Subscribing…" : `Add — $${ADDON_PRICE}/mo`}
-                    </Button>
-                    <SmallLink onClick={() => setSubscribeModalOpen(true)}>Use different card</SmallLink>
-                  </div>
-                ) : (
-                  <Button type="primary" size="small" onClick={() => setSubscribeModalOpen(true)}
-                    style={{ background: SEL_COLOR, borderColor: SEL_COLOR, fontSize: 12 }}>
-                    Add — ${ADDON_PRICE}/mo
-                  </Button>
-                )}
-              </AddonRight>
-            </AddonRow>
+                      <AddonOutlineBtn type="button" onClick={() => setAddonCancelModalOpen(true)}>Cancel</AddonOutlineBtn>
+                    )
+                  ) : canInstantSubscribeAddon ? (
+                    <>
+                      <AddonPrimaryBtn type="button" onClick={handleInstantSubscribeAddon} disabled={addonSubscribing}>
+                        {addonSubscribing ? "Subscribing…" : "Add to plan"}
+                      </AddonPrimaryBtn>
+                      <SmallLink type="button" onClick={() => setSubscribeModalOpen(true)} style={{ textAlign: "right" }}>Use different card</SmallLink>
+                    </>
+                  ) : (
+                    <AddonPrimaryBtn type="button" onClick={() => setSubscribeModalOpen(true)}>Add to plan</AddonPrimaryBtn>
+                  )}
+                </AddonCtaGroup>
+              </AddonSide>
+            </AddonCard>
 
-            {/*
-              Future add-ons slot — copy the <AddonRow> pattern above.
-              Each row gets its own icon, name, desc, price, and action button.
-            */}
-          </AddonsGrid>
+            {/* ── Email marketing campaigns ── */}
+            <AddonCard>
+              <AddonIconBox>
+                <lord-icon src="https://cdn.lordicon.com/cfkiwvcc.json" trigger="in" delay="2000" style={{ width: 28, height: 28 }} />
+              </AddonIconBox>
+              <AddonBody>
+                <AddonTitleRow>
+                  <AddonName>Email marketing campaigns</AddonName>
+                  {emActive && (
+                    emailMkt?.cancelAtPeriodEnd
+                      ? <AddonCancelsBadge>Cancels {emNextBilling}</AddonCancelsBadge>
+                      : <AddonActiveBadge>Active · Renews {emNextBilling}</AddonActiveBadge>
+                  )}
+                </AddonTitleRow>
+                <AddonDesc>Broadcast to your contacts with tiered monthly limits. Transactional emails are not counted.</AddonDesc>
+                {emActive && emUsage && (
+                  <AddonUsageWrap>
+                    <AddonDesc style={{ fontSize: 12 }}>
+                      {(emUsage.used_this_period ?? 0).toLocaleString()} / {(emUsage.monthly_limit ?? 0).toLocaleString()} sends this period
+                    </AddonDesc>
+                    <AddonUsageBar>
+                      <AddonUsageFill $pct={emUsage.monthly_limit ? (emUsage.used_this_period / emUsage.monthly_limit) * 100 : 0} />
+                    </AddonUsageBar>
+                  </AddonUsageWrap>
+                )}
+              </AddonBody>
+              <AddonSide>
+                <AddonPriceLabel>
+                  <AddonPriceStrong>From $6</AddonPriceStrong>
+                  <AddonPriceSuffix> / mo</AddonPriceSuffix>
+                </AddonPriceLabel>
+                <AddonCtaGroup>
+                  {emActive ? (
+                    emailMkt?.cancelAtPeriodEnd ? (
+                      <AddonPrimaryBtn type="button" onClick={handleEmailMarketingReactivate}>
+                        <RefreshCw size={11} style={{ marginRight: 5, verticalAlign: "middle" }} />Reactivate
+                      </AddonPrimaryBtn>
+                    ) : (
+                      <AddonCtaRow>
+                        <AddonPrimaryBtn type="button" onClick={() => setEmailMarketingTierModalOpen(true)}>Change plan</AddonPrimaryBtn>
+                        <AddonOutlineBtn type="button" onClick={handleEmailMarketingCancel}>Cancel</AddonOutlineBtn>
+                      </AddonCtaRow>
+                    )
+                  ) : (
+                    <AddonPrimaryBtn type="button" onClick={() => setEmailMarketingTierModalOpen(true)}>Add to plan</AddonPrimaryBtn>
+                  )}
+                </AddonCtaGroup>
+              </AddonSide>
+            </AddonCard>
+          </AddonsStack>
         )}
-      </Card>
+      </div>
 
       <SectionDivider />
 
@@ -1788,6 +2548,27 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
         </p>
       </Modal>
 
+      <Modal
+        title="Remove payment method"
+        open={detachPmModalOpen}
+        onCancel={() => {
+          if (!detachPmLoading) {
+            setDetachPmModalOpen(false);
+            setDetachPmId(null);
+            setDetachPmLabel("");
+          }
+        }}
+        onOk={handleDetachPaymentMethodConfirm}
+        okText={detachPmLoading ? "Removing…" : "Remove"}
+        okButtonProps={{ danger: true, loading: detachPmLoading }}
+        cancelText="Keep card"
+      >
+        <p style={{ margin: 0, fontSize: 14, color: "#374151", lineHeight: 1.5 }}>
+          Remove {detachPmLabel ? <strong>{detachPmLabel}</strong> : "this card"} from your saved payment methods?
+          You must keep at least one card on file for billing.
+        </p>
+      </Modal>
+
       <Modal title="Subscribe to Marketplace email branding" open={subscribeModalOpen}
         onCancel={() => !addonIntentLoading && setSubscribeModalOpen(false)}
         footer={null} destroyOnClose width={440}>
@@ -1877,7 +2658,22 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
           </Elements>
         )}
       </Modal>
-      </ContentLayer>
+
+      <EmailMarketingTierModal
+        open={emailMarketingTierModalOpen}
+        onClose={() => setEmailMarketingTierModalOpen(false)}
+        apiTiers={emTiers}
+        isSubscribed={emActive}
+        currentTierKey={emCurrentTierKey}
+        canInstantSubscribe={emCanInstant}
+        subscribing={emSubscribing}
+        onCheckout={async (priceId) => {
+          await startEmailMarketingCheckout(priceId);
+        }}
+        onInstantSubscribe={handleEmailMarketingInstant}
+        onChangeTier={handleEmailMarketingChangeTier}
+      />
+      </MainStack>
     </PageOuter>
   );
 }

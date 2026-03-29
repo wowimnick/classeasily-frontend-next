@@ -17,6 +17,7 @@ import Revenue from "../_components/tabs/finances/Revenue";
 import Payouts from "../_components/tabs/payouts/Payouts";
 import BookingTrends from "../_components/tabs/bookings/BookingTrends";
 import Discounts from "../_components/tabs/discounts/Discounts";
+import EmailMarketingDashboard from "../_components/tabs/marketing/EmailMarketingDashboard";
 import MembershipsDashboard from "../_components/tabs/memberships/MembershipsDashboard";
 import WidgetCustomizer from "../_components/tabs/widget/WidgetCustomizer";
 import Guests from "../_components/tabs/students/Guests";
@@ -133,6 +134,13 @@ export default function DashboardPage() {
         </TabGlassWrapper>
       );
       break;
+    case "email-campaigns":
+      componentToRender = (
+        <TabGlassWrapper>
+          <EmailMarketingDashboard />
+        </TabGlassWrapper>
+      );
+      break;
     case "memberships":
     case "memberships/products":
     case "memberships/members":
@@ -159,7 +167,8 @@ export default function DashboardPage() {
     }
     case "settings": {
       const settingsTab = searchParams.get("tab") || "general";
-      const addonReturn = searchParams.get("addon") === "1";
+      const addonReturn =
+        searchParams.get("addon") === "1" || searchParams.get("email_marketing") === "1";
       componentToRender = (
         <SettingsPage defaultTab={settingsTab} addonReturn={addonReturn} />
       );
