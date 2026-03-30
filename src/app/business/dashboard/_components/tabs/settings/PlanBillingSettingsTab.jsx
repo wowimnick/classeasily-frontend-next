@@ -5,8 +5,8 @@ import Link from "next/link";
 import { Button, Modal, message as antMessage } from "antd";
 import {
   ArrowRight, ArrowUp, ArrowDown, Loader2, RefreshCw, Lock,
-  CreditCard, ChevronDown, ChevronUp, Check, Download,
-  Search, SlidersHorizontal, Trash2,
+  CreditCard, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
+  Check, Download, SlidersHorizontal, Trash2,
 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -30,6 +30,7 @@ const stripePromise =
 
 const ADDON_PRICE = 7;
 const SEL_COLOR = "#111827";
+const INVOICES_PAGE_SIZE = 10;
 
 const paymentElementOptions = {
   layout: "tabs",
@@ -130,21 +131,6 @@ const MainStack = styled.div`
 `;
 
 // ─── choose plans header + decorative monthly toggle ─────────────────────────
-const PlansHeaderRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-`;
-
-const SectionEyebrow = styled.div`
-  font-size: 16px;
-  font-weight: 600;
-  color: #374151;
-  letter-spacing: 0.04em;
-`;
-
 const MonthlyToggleDecor = styled.div`
   display: flex;
   align-items: center;
@@ -467,17 +453,6 @@ const PageHeader = styled.div`
   }
 `;
 
-const InvoicesSectionHeader = styled.div`
-  font-size: 16px;
-  font-weight: 600;
-  color: ${T.text};
-  margin-bottom: 14px;
-
-  @media (max-width: 640px) {
-    font-size: 15px;
-    margin-bottom: 10px;
-  }
-`;
 const PLAN_GRADIENTS = {
   basic: "linear-gradient(135deg, #93c5fd, #60a5fa)",
   growth: "linear-gradient(135deg, #a7f3d0, #34d399)",
@@ -491,85 +466,73 @@ const PLAN_TAGLINES = {
 };
 
 // ─── invoice section ──────────────────────────────────────────────────────────
-const TabsWrap = styled.div`
-  display: inline-flex;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+const SortBtn = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 11px;
+  min-width: 0;
+  background: ${T.white};
+  border: 1px solid ${T.border};
   border-radius: 8px;
-  padding: 3px;
-  gap: 2px;
+  font-size: 13px;
+  color: ${T.text};
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  &:hover { background: ${T.bg}; }
 
-  @media (max-width: 600px) {
-    display: flex;
-    width: 100%;
-    & > * { flex: 1; text-align: center; }
+  @media (max-width: 380px) {
+    white-space: normal;
+    text-align: center;
   }
 `;
 
-const Tab = styled.button`
-  padding: 5px 14px;
-  border-radius: 6px;
-  border: 1px solid ${({ $active }) => ($active ? "#d1d5db" : "transparent")};
-  font-size: 13px;
-  font-weight: ${({ $active }) => $active ? "500" : "400"};
-  color: ${({ $active }) => $active ? T.text : T.sub};
-  background: ${({ $active }) => $active ? T.white : "transparent"};
-  box-shadow: none;
-  cursor: pointer;
-  transition: all 0.15s;
-`;
-
-const ControlsRow = styled.div`
+const InvoicePaginationBar = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
+  flex-wrap: wrap;
+  margin-top: 12px;
 `;
 
-const InvoiceSearchGroup = styled.div`
-  display: flex;
-  gap: 10px;
-
-  @media (max-width: 600px) {
-    & > * { flex: 1; }
-  }
+const InvoicePageInfo = styled.span`
+  font-size: 13px;
+  color: ${T.sub};
+  min-width: 0;
 `;
 
-const SearchBox = styled.div`
+const InvoicePaginationActions = styled.div`
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 11px;
-  background: ${T.white};
-  border: 1px solid ${T.border};
-  border-radius: 8px;
-  min-width: 170px;
-  input {
-    border: none; outline: none;
-    font-size: 13px; color: ${T.text}; background: transparent; width: 100%;
-    &::placeholder { color: ${T.faint}; }
-  }
-
-  @media (max-width: 600px) {
-    min-width: 0;
-    flex: 1;
-  }
+  gap: 8px;
+  flex-wrap: wrap;
 `;
 
-const SortBtn = styled.button`
-  display: flex; align-items: center; gap: 6px;
-  padding: 7px 11px;
-  background: ${T.white}; border: 1px solid ${T.border};
-  border-radius: 8px; font-size: 13px; color: ${T.text};
-  cursor: pointer; white-space: nowrap;
-  transition: background 0.15s;
-  &:hover { background: ${T.bg}; }
+const InvoicePageBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid ${T.border};
+  border-radius: 8px;
+  background: ${T.white};
+  color: ${T.text};
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+
+  &:hover:not(:disabled) {
+    background: ${T.bg};
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
 `;
 
 const InvoiceRow = styled.div`
@@ -582,7 +545,7 @@ const InvoiceRow = styled.div`
   &:last-child { border-bottom: none; }
 
   @media (min-width: 640px) {
-    grid-template-columns: 18px 1fr 110px 90px 100px 28px 26px;
+    grid-template-columns: 1fr 110px 90px 100px 28px 26px;
     padding: 12px 20px;
   }
 
@@ -618,20 +581,6 @@ const InvoiceExpandBtn = styled.button`
   flex-shrink: 0;
   &:hover:not(:disabled) { background: ${T.border}; color: ${T.text}; }
   &:disabled { opacity: 0.5; cursor: default; }
-`;
-
-const Checkbox = styled.div`
-  width: 14px; height: 14px;
-  border: 1px solid #D1D5DB;
-  border-radius: 3px; cursor: pointer; flex-shrink: 0;
-`;
-
-const InvoiceCheckboxCell = styled.div`
-  display: none;
-  @media (min-width: 640px) {
-    display: flex;
-    align-items: center;
-  }
 `;
 
 const InvoiceId = styled.span`
@@ -775,11 +724,17 @@ const PlanBillingHeader = styled.div`
   border-bottom: 1px solid ${T.border};
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  ${SectionTitle} {
+    flex-shrink: 0;
+    max-width: 100%;
+  }
 
   @media (max-width: 640px) {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 6px;
   }
 `;
@@ -787,10 +742,23 @@ const PlanBillingHeader = styled.div`
 const PlanBillingHeaderNote = styled(SectionSub)`
   margin-left: auto;
   font-size: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+  line-height: 1.45;
 
   @media (max-width: 640px) {
     margin-left: 0;
     margin-top: 2px;
+    text-align: left;
+  }
+`;
+
+const PlanBillingPanelBody = styled.div`
+  padding: 16px 20px 20px;
+
+  @media (max-width: 640px) {
+    padding: 14px 16px 18px;
   }
 `;
 
@@ -1070,8 +1038,6 @@ const PmDeleteIconBtn = styled.button`
 
 // ─── add-ons ──────────────────────────────────────────────────────────────────
 const AddonsStack = styled.div`
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
   overflow: hidden;
 `;
 
@@ -1079,14 +1045,15 @@ const AddonCard = styled.div`
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  padding: 20px 24px;
+  padding: 18px 20px;
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
   &:last-child { border-bottom: none; }
 
-  @media (max-width: 700px) {
+  @media (max-width: 640px) {
     flex-wrap: wrap;
-    padding: 16px 18px;
+    padding: 16px 16px;
+    gap: 14px;
   }
 `;
 
@@ -1191,7 +1158,7 @@ const AddonSide = styled.div`
   flex-shrink: 0;
   min-width: 130px;
 
-  @media (max-width: 700px) {
+  @media (max-width: 640px) {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
@@ -1635,8 +1602,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   const [addonCancelling, setAddonCancelling] = useState(false);
   const [emSubscribing, setEmSubscribing] = useState(false);
   const [emailMarketingTierModalOpen, setEmailMarketingTierModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("View all");
-  const [invoiceSearchQuery, setInvoiceSearchQuery] = useState("");
+  const [invoicePage, setInvoicePage] = useState(1);
   const [invoiceSortOrder, setInvoiceSortOrder] = useState("recent"); // "recent" | "oldest"
   const [invoices, setInvoices] = useState([]);
   const [invoicesLoading, setInvoicesLoading] = useState(true);
@@ -1741,13 +1707,8 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     fetchInvoices();
   }, [fetchInvoices]);
 
-  const displayedInvoices = useMemo(() => {
-    let list = [...invoices];
-    list = list.filter((inv) => Number(inv?.amount_paid || 0) > 0);
-    if (activeTab === "Active") list = list.filter((inv) => inv.status === "paid");
-    else if (activeTab === "Archived") list = list.filter((inv) => (inv.status && !["paid", "open", "draft"].includes(inv.status)) || false);
-    const q = (invoiceSearchQuery || "").trim().toLowerCase();
-    if (q) list = list.filter((inv) => (inv.number && String(inv.number).toLowerCase().includes(q)) || (inv.id && String(inv.id).toLowerCase().includes(q)));
+  const sortedInvoices = useMemo(() => {
+    const list = invoices.filter((inv) => Number(inv?.amount_paid || 0) > 0);
     const asc = invoiceSortOrder === "oldest";
     list.sort((a, b) => {
       const da = a.created || "";
@@ -1755,7 +1716,27 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
       return asc ? (da < db ? -1 : da > db ? 1 : 0) : (db < da ? -1 : db > da ? 1 : 0);
     });
     return list;
-  }, [invoices, activeTab, invoiceSearchQuery, invoiceSortOrder]);
+  }, [invoices, invoiceSortOrder]);
+
+  const invoiceTotalPages = Math.max(1, Math.ceil(sortedInvoices.length / INVOICES_PAGE_SIZE));
+
+  const paginatedInvoices = useMemo(() => {
+    const start = (invoicePage - 1) * INVOICES_PAGE_SIZE;
+    return sortedInvoices.slice(start, start + INVOICES_PAGE_SIZE);
+  }, [sortedInvoices, invoicePage]);
+
+  useEffect(() => {
+    setInvoicePage((p) => Math.min(Math.max(1, p), invoiceTotalPages));
+  }, [invoiceTotalPages, sortedInvoices.length]);
+
+  useEffect(() => {
+    setExpandedInvoiceId(null);
+  }, [invoicePage]);
+
+  useEffect(() => {
+    setInvoicePage(1);
+    setExpandedInvoiceId(null);
+  }, [invoiceSortOrder]);
 
   const refreshBillingViews = useCallback(async () => {
     await Promise.allSettled([
@@ -2311,14 +2292,16 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
       <SectionDivider />
 
       {/* Add-ons */}
-      <div style={{ marginTop: 16 }}>
-        <PlansHeaderRow style={{ marginBottom: 16 }}>
-          <SectionEyebrow>Add-ons</SectionEyebrow>
-          <SectionSub style={{ margin: 0, fontSize: 12, color: "#6b7280" }}>Billed separately</SectionSub>
-        </PlansHeaderRow>
+      <PlanBillingCard>
+        <PlanBillingHeader>
+          <SectionTitle style={{ margin: 0 }}>Add-ons</SectionTitle>
+          <PlanBillingHeaderNote>Billed separately from your widget plan.</PlanBillingHeaderNote>
+        </PlanBillingHeader>
 
         {addonsLoading ? (
-          <LoadingRow><SpinIcon size={15} /><span>Loading add-ons…</span></LoadingRow>
+          <PlanBillingPanelBody>
+            <LoadingRow style={{ padding: 0 }}><SpinIcon size={15} /><span>Loading add-ons…</span></LoadingRow>
+          </PlanBillingPanelBody>
         ) : (
           <AddonsStack>
             {/* ── Marketplace email branding ── */}
@@ -2417,38 +2400,19 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
             </AddonCard>
           </AddonsStack>
         )}
-      </div>
+      </PlanBillingCard>
 
       <SectionDivider />
 
       {/* Previous invoices */}
-      <div>
-        <InvoicesSectionHeader>Previous invoices</InvoicesSectionHeader>
+      <PlanBillingCard>
+        <PlanBillingHeader>
+          <SectionTitle style={{ margin: 0 }}>Previous invoices</SectionTitle>
+          <PlanBillingHeaderNote>Download PDFs and view line-item breakdowns.</PlanBillingHeaderNote>
+        </PlanBillingHeader>
 
-        <ControlsRow>
-          <TabsWrap>
-            {["View all", "Active", "Archived"].map((t) => (
-              <Tab key={t} $active={activeTab === t} onClick={() => setActiveTab(t)}>{t}</Tab>
-            ))}
-          </TabsWrap>
-          <InvoiceSearchGroup>
-            <SearchBox>
-              <Search size={13} color={T.faint} />
-              <input
-                placeholder="Search"
-                value={invoiceSearchQuery}
-                onChange={(e) => setInvoiceSearchQuery(e.target.value)}
-                aria-label="Search invoices"
-              />
-            </SearchBox>
-            <SortBtn type="button" onClick={() => setInvoiceSortOrder((o) => (o === "recent" ? "oldest" : "recent"))}>
-              <SlidersHorizontal size={13} color={T.sub} />
-              {invoiceSortOrder === "recent" ? "Most recent" : "Oldest first"}
-            </SortBtn>
-          </InvoiceSearchGroup>
-        </ControlsRow>
-
-        <Card $pad="0" style={{ marginTop: 12, overflow: "hidden" }}>
+        <PlanBillingPanelBody>
+          <Card $pad="0" style={{ overflow: "hidden" }}>
           {invoicesLoading ? (
             <LoadingRow style={{ padding: 24 }}><SpinIcon size={16} /><span>Loading invoices…</span></LoadingRow>
           ) : invoices.length === 0 ? (
@@ -2457,12 +2421,12 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                 ? "No invoices yet. Invoices appear here after your first payment."
                 : "Invoices appear after you subscribe through Stripe (e.g. booking widget checkout). Plan changes above update your access only until then."}
             </div>
-          ) : displayedInvoices.length === 0 ? (
+          ) : sortedInvoices.length === 0 ? (
             <div style={{ padding: 24, textAlign: "center", fontSize: 13, color: T.sub }}>
-              No invoices match your filters. Try a different tab or search.
+              No paid invoices to show yet.
             </div>
           ) : (
-            displayedInvoices.map((inv) => {
+            paginatedInvoices.map((inv) => {
               const dateStr = inv.created
                 ? new Date(inv.created).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
                 : "—";
@@ -2477,7 +2441,6 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
               return (
                 <React.Fragment key={inv.id}>
                   <InvoiceRow>
-                    <InvoiceCheckboxCell aria-hidden><Checkbox /></InvoiceCheckboxCell>
                     <InvoiceId>{inv.number || inv.id}</InvoiceId>
                     <InvoiceCell>{dateStr}</InvoiceCell>
                     <InvoiceCell>{amountStr}</InvoiceCell>
@@ -2534,7 +2497,42 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
             })
           )}
         </Card>
-      </div>
+
+          {!invoicesLoading && sortedInvoices.length > 0 && (
+            <InvoicePaginationBar>
+              <InvoicePageInfo>
+                Showing{" "}
+                {(invoicePage - 1) * INVOICES_PAGE_SIZE + 1}
+                –
+                {Math.min(invoicePage * INVOICES_PAGE_SIZE, sortedInvoices.length)}
+                {" "}of {sortedInvoices.length}
+              </InvoicePageInfo>
+              <InvoicePaginationActions>
+                <SortBtn type="button" onClick={() => setInvoiceSortOrder((o) => (o === "recent" ? "oldest" : "recent"))}>
+                  <SlidersHorizontal size={13} color={T.sub} />
+                  {invoiceSortOrder === "recent" ? "Most recent" : "Oldest first"}
+                </SortBtn>
+                <InvoicePageBtn
+                  type="button"
+                  aria-label="Previous page"
+                  disabled={invoicePage <= 1}
+                  onClick={() => setInvoicePage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft size={18} strokeWidth={1.75} />
+                </InvoicePageBtn>
+                <InvoicePageBtn
+                  type="button"
+                  aria-label="Next page"
+                  disabled={invoicePage >= invoiceTotalPages}
+                  onClick={() => setInvoicePage((p) => Math.min(invoiceTotalPages, p + 1))}
+                >
+                  <ChevronRight size={18} strokeWidth={1.75} />
+                </InvoicePageBtn>
+              </InvoicePaginationActions>
+            </InvoicePaginationBar>
+          )}
+        </PlanBillingPanelBody>
+      </PlanBillingCard>
 
       {/* Modals */}
       <Modal title="Cancel subscription" open={cancelModalOpen}

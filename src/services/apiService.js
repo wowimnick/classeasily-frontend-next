@@ -101,6 +101,23 @@ export const API_ENDPOINTS = {
   MY_BUSINESS_MARKETING_CAMPAIGN_SEND: (id) => `/my-business/marketing/campaigns/${id}/send/`,
   MY_BUSINESS_MARKETING_CAMPAIGN_TEST_SEND: (id) =>
     `/my-business/marketing/campaigns/${id}/test-send/`,
+  MY_BUSINESS_MARKETING_CAMPAIGN_SCHEDULE: (id) => `/my-business/marketing/campaigns/${id}/schedule/`,
+  MY_BUSINESS_MARKETING_SETTINGS: "/my-business/marketing/settings/",
+  MY_BUSINESS_MARKETING_TEMPLATES: "/my-business/marketing/templates/",
+  MY_BUSINESS_MARKETING_TEMPLATE: (id) => `/my-business/marketing/templates/${id}/`,
+  MY_BUSINESS_MARKETING_SENDERS: "/my-business/marketing/senders/",
+  MY_BUSINESS_MARKETING_SENDER: (id) => `/my-business/marketing/senders/${id}/`,
+  MY_BUSINESS_MARKETING_DOMAINS: "/my-business/marketing/domains/",
+  MY_BUSINESS_MARKETING_DOMAIN: (id) => `/my-business/marketing/domains/${id}/`,
+  MY_BUSINESS_MARKETING_DOMAIN_VERIFY: (id) => `/my-business/marketing/domains/${id}/verify/`,
+  MY_BUSINESS_MARKETING_AUDIENCE_PREVIEW: "/my-business/marketing/audience/preview/",
+  MY_BUSINESS_MARKETING_AUDIENCE_FACETS: "/my-business/marketing/audience/facets/",
+  MY_BUSINESS_MARKETING_SEGMENTS: "/my-business/marketing/segments/",
+  MY_BUSINESS_MARKETING_SEGMENT: (id) => `/my-business/marketing/segments/${id}/`,
+  MY_BUSINESS_MARKETING_WORKFLOWS: "/my-business/marketing/workflows/",
+  MY_BUSINESS_MARKETING_WORKFLOW: (id) => `/my-business/marketing/workflows/${id}/`,
+  MY_BUSINESS_MARKETING_WORKFLOW_ENROLL: (id) => `/my-business/marketing/workflows/${id}/enroll/`,
+  MY_BUSINESS_MARKETING_WORKFLOW_ENROLLMENTS: "/my-business/marketing/workflow-enrollments/",
   MY_BUSINESS_ADDON_EMAIL_MARKETING_CHECKOUT: "/my-business/addons/email-marketing/checkout/",
   MY_BUSINESS_ADDON_EMAIL_MARKETING_INSTANT_SUBSCRIBE:
     "/my-business/addons/email-marketing/instant-subscribe/",
@@ -1191,6 +1208,402 @@ export const businessService = {
       return {
         success: false,
         error: error.response?.data?.error || error.response?.data?.detail || "Test send failed.",
+      };
+    }
+  },
+
+  fetchMarketingCampaign: async (id) => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_MARKETING_CAMPAIGN(id));
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to load campaign.",
+      };
+    }
+  },
+
+  deleteMarketingCampaign: async (id) => {
+    try {
+      await axiosInstance.delete(API_ENDPOINTS.MY_BUSINESS_MARKETING_CAMPAIGN(id));
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to delete.",
+      };
+    }
+  },
+
+  scheduleMarketingCampaign: async (id, payload) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_MARKETING_CAMPAIGN_SCHEDULE(id),
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      const st = error.response?.status;
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Schedule failed.",
+        status: st,
+        used: error.response?.data?.used,
+        limit: error.response?.data?.limit,
+      };
+    }
+  },
+
+  previewMarketingAudience: async (payload) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_MARKETING_AUDIENCE_PREVIEW,
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Preview failed.",
+      };
+    }
+  },
+
+  getMarketingAudienceFacets: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_MARKETING_AUDIENCE_FACETS);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to load audience options.",
+      };
+    }
+  },
+
+  getMarketingSettings: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_MARKETING_SETTINGS);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to load settings.",
+      };
+    }
+  },
+
+  patchMarketingSettings: async (payload) => {
+    try {
+      const response = await axiosInstance.patch(
+        API_ENDPOINTS.MY_BUSINESS_MARKETING_SETTINGS,
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to save settings.",
+      };
+    }
+  },
+
+  listMarketingTemplates: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_MARKETING_TEMPLATES);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to load templates.",
+      };
+    }
+  },
+
+  createMarketingTemplate: async (payload) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_MARKETING_TEMPLATES,
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to create template.",
+      };
+    }
+  },
+
+  fetchMarketingTemplate: async (id) => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_MARKETING_TEMPLATE(id));
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to load template.",
+      };
+    }
+  },
+
+  updateMarketingTemplate: async (id, payload) => {
+    try {
+      await axiosInstance.put(API_ENDPOINTS.MY_BUSINESS_MARKETING_TEMPLATE(id), payload);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to save template.",
+      };
+    }
+  },
+
+  deleteMarketingTemplate: async (id) => {
+    try {
+      await axiosInstance.delete(API_ENDPOINTS.MY_BUSINESS_MARKETING_TEMPLATE(id));
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to delete template.",
+      };
+    }
+  },
+
+  listMarketingSenders: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_MARKETING_SENDERS);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to load senders.",
+      };
+    }
+  },
+
+  createMarketingSender: async (payload) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_MARKETING_SENDERS,
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to create sender.",
+      };
+    }
+  },
+
+  deleteMarketingSender: async (id) => {
+    try {
+      await axiosInstance.delete(API_ENDPOINTS.MY_BUSINESS_MARKETING_SENDER(id));
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to delete sender.",
+      };
+    }
+  },
+
+  listMarketingDomains: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_MARKETING_DOMAINS);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to load domains.",
+      };
+    }
+  },
+
+  createMarketingDomain: async (payload) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_MARKETING_DOMAINS,
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to add domain.",
+      };
+    }
+  },
+
+  verifyMarketingDomain: async (id) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_MARKETING_DOMAIN_VERIFY(id),
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Verification failed.",
+      };
+    }
+  },
+
+  deleteMarketingDomain: async (id) => {
+    try {
+      await axiosInstance.delete(API_ENDPOINTS.MY_BUSINESS_MARKETING_DOMAIN(id));
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to remove domain.",
+      };
+    }
+  },
+
+  listMarketingSegments: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_MARKETING_SEGMENTS);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to load audiences.",
+      };
+    }
+  },
+
+  createMarketingSegment: async (payload) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_MARKETING_SEGMENTS,
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to save audience.",
+      };
+    }
+  },
+
+  updateMarketingSegment: async (id, payload) => {
+    try {
+      await axiosInstance.put(API_ENDPOINTS.MY_BUSINESS_MARKETING_SEGMENT(id), payload);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to update audience.",
+      };
+    }
+  },
+
+  deleteMarketingSegment: async (id) => {
+    try {
+      await axiosInstance.delete(API_ENDPOINTS.MY_BUSINESS_MARKETING_SEGMENT(id));
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to delete audience.",
+      };
+    }
+  },
+
+  listMarketingWorkflows: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_MARKETING_WORKFLOWS);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to load automations.",
+      };
+    }
+  },
+
+  createMarketingWorkflow: async (payload) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_MARKETING_WORKFLOWS,
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to create automation.",
+      };
+    }
+  },
+
+  fetchMarketingWorkflow: async (id) => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_MARKETING_WORKFLOW(id));
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to load automation.",
+      };
+    }
+  },
+
+  updateMarketingWorkflow: async (id, payload) => {
+    try {
+      await axiosInstance.put(API_ENDPOINTS.MY_BUSINESS_MARKETING_WORKFLOW(id), payload);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to save automation.",
+      };
+    }
+  },
+
+  deleteMarketingWorkflow: async (id) => {
+    try {
+      await axiosInstance.delete(API_ENDPOINTS.MY_BUSINESS_MARKETING_WORKFLOW(id));
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to delete automation.",
+      };
+    }
+  },
+
+  enrollMarketingWorkflow: async (id, payload) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_MARKETING_WORKFLOW_ENROLL(id),
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Enrollment failed.",
+      };
+    }
+  },
+
+  listMarketingWorkflowEnrollments: async (params = {}) => {
+    try {
+      const response = await axiosInstance.get(
+        API_ENDPOINTS.MY_BUSINESS_MARKETING_WORKFLOW_ENROLLMENTS,
+        { params },
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || error.response?.data?.detail || "Failed to load enrollments.",
       };
     }
   },

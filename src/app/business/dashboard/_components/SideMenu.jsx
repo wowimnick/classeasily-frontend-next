@@ -906,7 +906,7 @@ const menuItemPermissions = {
   payouts:     "view_business_revenue_analytics",
   discounts:   "manage_own_business_discounts",
   trends:      "view_own_booking_analytics",
-  "email-campaigns": "manage_own_classes",
+  "email-campaigns": ["manage_email_marketing", "manage_own_classes"],
   widget:      "manage_own_business_profile",
   staff:       "manage_business_staff",
   messages:    "view_own_business_bookings",
