@@ -68,32 +68,6 @@ function DashboardLayoutInner({ children }) {
   const pathname = usePathname();
   const sideMenuRef = useRef(null);
 
-  // #region agent log
-  const dbgLayoutRenders = useRef(0);
-  const dbgLayoutPrev = useRef(0);
-  dbgLayoutRenders.current += 1;
-  useEffect(() => {
-    const id = setInterval(() => {
-      const cur = dbgLayoutRenders.current;
-      const delta = cur - dbgLayoutPrev.current;
-      dbgLayoutPrev.current = cur;
-      fetch("http://127.0.0.1:7242/ingest/eb6ffefa-84be-4d0e-b24e-a8eb4b88bd94", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          location: "layout.jsx:DashboardLayoutInner",
-          message: "render rate 5s",
-          data: { rendersIn5s: delta, totalRenders: cur },
-          timestamp: Date.now(),
-          hypothesisId: "A",
-          runId: "cpu-debug-v2",
-        }),
-      }).catch(() => {});
-    }, 5000);
-    return () => clearInterval(id);
-  }, []);
-  // #endregion
-
   // Derive activeKey directly from pathname - no state needed!
   const activeKey = pathname.replace("/business/dashboard/", "") || "overview";
   // When on "bookings" (no sub-path), highlight "Active Bookings" in the sidebar

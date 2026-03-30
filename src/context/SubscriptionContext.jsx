@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { businessService } from "@/services/apiService";
 
@@ -77,25 +77,9 @@ export function SubscriptionProvider({ children }) {
     }
   }, [canManageSubscription]);
 
-  // #region agent log
-  const subRefetchFxCount = useRef(0);
   useEffect(() => {
-    subRefetchFxCount.current += 1;
-    fetch("http://127.0.0.1:7242/ingest/eb6ffefa-84be-4d0e-b24e-a8eb4b88bd94", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        location: "SubscriptionContext.jsx:useEffect",
-        message: "refetch effect run",
-        data: { invocationCount: subRefetchFxCount.current },
-        timestamp: Date.now(),
-        hypothesisId: "B",
-        runId: "cpu-debug-v2",
-      }),
-    }).catch(() => {});
     refetch();
   }, [refetch]);
-  // #endregion
 
   const subscribe = useCallback(
     async (planId) => {
