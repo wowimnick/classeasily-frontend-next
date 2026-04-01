@@ -4,8 +4,10 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styled from "styled-components";
-import { Alert, Button, Divider, Modal, Progress, Table, Tabs, Tag, Typography } from "antd";
+import { Alert, Button, Divider, Modal, Progress, Tabs, Tag, Typography } from "antd";
 import dayjs from "dayjs";
+import NumberFlow, { NumberFlowGroup } from "@number-flow/react";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { businessService } from "@/services/apiService";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
 import CampaignsMarketingPanel from "./CampaignsMarketingPanel";
@@ -13,12 +15,22 @@ import CampaignEditorScreen from "./CampaignEditorScreen";
 import AudiencesMarketingPanel from "./AudiencesMarketingPanel";
 import TemplatesMarketingPanel from "./TemplatesMarketingPanel";
 import SendingMarketingPanel from "./SendingMarketingPanel";
-import AutomationsMarketingPanel from "./AutomationsMarketingPanel";
-import { MarketingHubSkeleton } from "./marketingSkeletons";
+import { MarketingHubSkeleton, Skel } from "./marketingSkeletons";
 import { resolveEffectiveMarketingTier } from "./resolveMarketingTier";
 import { MarketingTabContent, MARKETING_BILLING_PATH } from "./marketingLayout";
 
 const { Title, Paragraph, Text } = Typography;
+
+const QUOTA_CHART_COLORS = [
+  "#6366f1",
+  "#22c55e",
+  "#f59e0b",
+  "#ef4444",
+  "#8b5cf6",
+  "#06b6d4",
+  "#ec4899",
+  "#64748b",
+];
 
 const Shell = styled.div`
   display: flex;
@@ -54,12 +66,87 @@ const UsageRow = styled.div`
   &:hover {
     background: #f8fafc;
   }
+  @media (max-width: 576px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
 `;
 
 const UsageStat = styled.div`
   display: flex;
   flex-direction: column;
   min-width: 120px;
+`;
+
+const QuotaModalBanner = styled.div`
+  background: linear-gradient(135deg, #f5f3ff 0%, #eef2ff 50%, #f8fafc 100%);
+  border-bottom: 1px solid #e2e8f0;
+  padding: 16px 18px;
+`;
+
+const QuotaModalBody = styled.div`
+  padding: 16px 18px 18px;
+`;
+
+const UsageFlowRow = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #1e293b;
+`;
+
+const ChartWrap = styled.div`
+  position: relative;
+  height: 260px;
+  width: 100%;
+`;
+
+const ChartCenter = styled.div`
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  margin-top: 0;
+`;
+
+const LegendList = styled.ul`
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  max-height: 160px;
+  overflow-y: auto;
+`;
+
+const LegendItem = styled.li`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: #475569;
+  padding: 4px 0;
+  border-bottom: 1px solid #f1f5f9;
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const LegendLeft = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+`;
+
+const LegendSwatch = styled.span`
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  background: ${(p) => p.$color};
 `;
 
 export default function EmailMarketingHub() {
@@ -85,36 +172,42 @@ export default function EmailMarketingHub() {
     setLoading(true);
     setAddonsLoadFailed(false);
     setAccountLoadFailed(false);
-    const [ad, ac] = await Promise.all([
-      businessService.getAddons(),
-      businessService.getMarketingAccount(),
-    ]);
-    if (ad.success) {
-      setAddons(ad.data);
-    } else {
+    try {
+      const [ad, ac] = await Promise.all([
+        businessService.getAddons(),
+        businessService.getMarketingAccount(),
+      ]);
+      if (ad.success) {
+        setAddons(ad.data);
+      } else {
+        setAddonsLoadFailed(true);
+        setAddons(null);
+      }
+      if (ac.success) {
+        setAccount(ac.data);
+      } else {
+        setAccountLoadFailed(true);
+        setAccount(null);
+      }
+
+      const emOn = ad.success && ad.data?.email_marketing?.active === true;
+      const accountTier = ac.success ? ac.data?.tier : null;
+      const em = ad.success ? ad.data?.email_marketing : null;
+      const effTier = resolveEffectiveMarketingTier(accountTier, em?.current_price_id, em?.tiers);
+
+      if (emOn && effTier?.saved_segments_enabled) {
+        const sg = await businessService.listMarketingSegments();
+        if (sg.success) setSegments(Array.isArray(sg.data) ? sg.data : []);
+        else setSegments([]);
+      } else {
+        setSegments([]);
+      }
+    } catch {
       setAddonsLoadFailed(true);
-      setAddons(null);
-    }
-    if (ac.success) {
-      setAccount(ac.data);
-    } else {
       setAccountLoadFailed(true);
-      setAccount(null);
+    } finally {
+      setLoading(false);
     }
-
-    const emOn = ad.success && ad.data?.email_marketing?.active === true;
-    const accountTier = ac.success ? ac.data?.tier : null;
-    const em = ad.success ? ad.data?.email_marketing : null;
-    const effTier = resolveEffectiveMarketingTier(accountTier, em?.current_price_id, em?.tiers);
-
-    if (emOn && effTier?.saved_segments_enabled) {
-      const sg = await businessService.listMarketingSegments();
-      if (sg.success) setSegments(Array.isArray(sg.data) ? sg.data : []);
-      else setSegments([]);
-    } else {
-      setSegments([]);
-    }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -124,14 +217,19 @@ export default function EmailMarketingHub() {
   const openQuotaModal = async () => {
     setQuotaModalOpen(true);
     setQuotaModalLoading(true);
-    const r = await businessService.listMarketingCampaigns();
-    if (r.success && Array.isArray(r.data)) {
-      const withSends = r.data
-        .filter((c) => Number(c.sends_sent) > 0)
-        .sort((a, b) => Number(b.sends_sent) - Number(a.sends_sent));
-      setQuotaCampaigns(withSends);
-    } else setQuotaCampaigns([]);
-    setQuotaModalLoading(false);
+    try {
+      const r = await businessService.listMarketingCampaigns();
+      if (r.success && Array.isArray(r.data)) {
+        const withSends = r.data
+          .filter((c) => Number(c.sends_sent) > 0)
+          .sort((a, b) => Number(b.sends_sent) - Number(a.sends_sent));
+        setQuotaCampaigns(withSends);
+      } else setQuotaCampaigns([]);
+    } catch {
+      setQuotaCampaigns([]);
+    } finally {
+      setQuotaModalLoading(false);
+    }
   };
 
   const em = addons?.email_marketing;
@@ -142,6 +240,15 @@ export default function EmailMarketingHub() {
   );
   const usage = account?.usage ?? em?.usage ?? null;
   const tiers = em?.tiers || [];
+
+  const quotaChartData = useMemo(
+    () =>
+      quotaCampaigns.map((c) => ({
+        name: (c.name || "Untitled").slice(0, 48),
+        value: Number(c.sends_sent) || 0,
+      })),
+    [quotaCampaigns],
+  );
 
   const onEditCampaign = (id, opts) => {
     setEditingId(id);
@@ -316,23 +423,30 @@ export default function EmailMarketingHub() {
           aria-label="Open send quota details"
         >
           <UsageStat>
-            <Text style={{ fontSize: 13, fontWeight: 500 }}>
-              {usedNum.toLocaleString()} / {limitNum.toLocaleString()}
-            </Text>
+            <UsageFlowRow>
+              <NumberFlowGroup>
+                <span style={{ display: "inline-flex", alignItems: "baseline", gap: 4 }}>
+                  <NumberFlow value={usedNum} />
+                  <span>/</span>
+                  <NumberFlow value={limitNum} />
+                </span>
+              </NumberFlowGroup>
+            </UsageFlowRow>
             <Text type="secondary" style={{ fontSize: 12 }}>
               sends this period · click for breakdown
             </Text>
           </UsageStat>
           <UsageStat>
-            <Text
+            <span
               style={{
                 fontSize: 13,
-                fontWeight: 500,
+                fontWeight: 600,
+                fontVariantNumeric: "tabular-nums",
                 color: quotaExhausted ? "#ef4444" : "#10b981",
               }}
             >
-              {remainNum.toLocaleString()}
-            </Text>
+              <NumberFlow value={remainNum} />
+            </span>
             <Text type="secondary" style={{ fontSize: 12 }}>
               remaining
             </Text>
@@ -357,57 +471,122 @@ export default function EmailMarketingHub() {
         open={quotaModalOpen}
         onCancel={() => setQuotaModalOpen(false)}
         footer={null}
-        width={560}
+        width="min(520px, 92vw)"
         destroyOnClose
+        styles={{ body: { padding: 0 } }}
       >
         {usage && (
-          <div style={{ marginBottom: 16 }}>
-            <Text strong>
-              {usedNum.toLocaleString()} / {limitNum.toLocaleString()} sends used
+          <QuotaModalBanner>
+            <Text strong style={{ fontSize: 15, display: "block", color: "#312e81" }}>
+              <NumberFlowGroup>
+                <span style={{ display: "inline-flex", alignItems: "baseline", gap: 4 }}>
+                  <NumberFlow value={usedNum} />
+                  <span>/</span>
+                  <NumberFlow value={limitNum} />
+                </span>
+              </NumberFlowGroup>{" "}
+              sends used
             </Text>
-            <div>
-              <Text type="secondary" style={{ fontSize: 13 }}>
-                {remainNum.toLocaleString()} remaining this period
-                {periodLabel ? ` · ${periodLabel}` : ""}
-              </Text>
-            </div>
-          </div>
+            <Text type="secondary" style={{ fontSize: 13, display: "block", marginTop: 4 }}>
+              <NumberFlow value={remainNum} /> remaining this period
+              {periodLabel ? ` · ${periodLabel}` : ""}
+            </Text>
+          </QuotaModalBanner>
         )}
-        <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 12 }}>
-          Your plan counts every marketing email delivered toward this total. Below are campaigns with
-          recorded sends (lifetime on the campaign); use this as a guide for where volume went.
-        </Text>
-        <Table
-          size="small"
-          rowKey="id"
-          loading={quotaModalLoading}
-          dataSource={quotaCampaigns}
-          pagination={false}
-          locale={{ emptyText: "No campaign send totals on record yet." }}
-          columns={[
-            { title: "Campaign", dataIndex: "name", ellipsis: true },
-            {
-              title: "Sends recorded",
-              dataIndex: "sends_sent",
-              width: 130,
-              align: "right",
-              render: (v) => Number(v || 0).toLocaleString(),
-            },
-            {
-              title: "Failed",
-              dataIndex: "sends_failed",
-              width: 80,
-              align: "right",
-              render: (v) => Number(v || 0).toLocaleString(),
-            },
-          ]}
-        />
-        {quotaCampaigns.length > 0 && (
-          <Text type="secondary" style={{ fontSize: 11, display: "block", marginTop: 12 }}>
-            Sum of sends shown: {attributedSum.toLocaleString()} (may exceed period total if campaigns
-            span multiple periods).
+        <QuotaModalBody>
+          <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 14 }}>
+            Your plan counts every marketing email delivered toward this total. The chart shows
+            recorded sends per campaign (lifetime totals); use it as a guide for where volume went.
           </Text>
-        )}
+          {quotaModalLoading ? (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 16,
+                padding: "20px 0 32px",
+              }}
+            >
+              <Skel $h="200px" $w="200px" $r="50%" />
+              <Skel $h="12px" $w="70%" $r="4px" />
+              <Skel $h="12px" $w="50%" $r="4px" />
+            </div>
+          ) : quotaChartData.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "36px 12px",
+                color: "#94a3b8",
+                fontSize: 13,
+              }}
+            >
+              No campaign send totals on record yet.
+            </div>
+          ) : (
+            <>
+              <ChartWrap>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={quotaChartData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={68}
+                      outerRadius={96}
+                      paddingAngle={1}
+                    >
+                      {quotaChartData.map((_, i) => (
+                        <Cell
+                          key={`cell-${i}`}
+                          fill={QUOTA_CHART_COLORS[i % QUOTA_CHART_COLORS.length]}
+                          stroke="#fff"
+                          strokeWidth={1}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) => [Number(value).toLocaleString(), "Sends"]}
+                      contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <ChartCenter>
+                  <Text type="secondary" style={{ fontSize: 11, display: "block" }}>
+                    Period used
+                  </Text>
+                  <span style={{ fontSize: 22, fontWeight: 700, color: "#4338ca", fontVariantNumeric: "tabular-nums" }}>
+                    <NumberFlow value={usedNum} />
+                  </span>
+                </ChartCenter>
+              </ChartWrap>
+              <LegendList>
+                {quotaChartData.map((d, i) => (
+                  <LegendItem key={`${d.name}-${i}`}>
+                    <LegendLeft>
+                      <LegendSwatch $color={QUOTA_CHART_COLORS[i % QUOTA_CHART_COLORS.length]} />
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {d.name}
+                      </span>
+                    </LegendLeft>
+                    <span style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+                      <NumberFlow value={d.value} />
+                    </span>
+                  </LegendItem>
+                ))}
+              </LegendList>
+            </>
+          )}
+          {quotaCampaigns.length > 0 && (
+            <Text type="secondary" style={{ fontSize: 11, display: "block", marginTop: 14 }}>
+              Sum of sends shown: {attributedSum.toLocaleString()} (may exceed period total if campaigns
+              span multiple periods).
+            </Text>
+          )}
+        </QuotaModalBody>
       </Modal>
 
       <Divider style={{ margin: "12px 0 4px" }} />
@@ -422,22 +601,6 @@ export default function EmailMarketingHub() {
             children: (
               <MarketingTabContent key="tab-campaigns">
                 <CampaignsMarketingPanel onEditCampaign={onEditCampaign} usage={usage} />
-              </MarketingTabContent>
-            ),
-          },
-          {
-            key: "automations",
-            label: (
-              <span>
-                Automations{" "}
-                {!effectiveTier?.automation_enabled && (
-                  <Tag style={{ marginInlineStart: 6 }}>Business+</Tag>
-                )}
-              </span>
-            ),
-            children: (
-              <MarketingTabContent key="tab-automations">
-                <AutomationsMarketingPanel tier={effectiveTier} />
               </MarketingTabContent>
             ),
           },

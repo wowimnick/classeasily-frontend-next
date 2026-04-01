@@ -13,6 +13,7 @@ import {
   buildSourceOptions,
   canonicalSourceValue,
 } from "./marketingAudienceConfig";
+import { Skel } from "./marketingSkeletons";
 
 const { Text } = Typography;
 
@@ -55,6 +56,16 @@ export default function AudienceFields({
   }
 
   if (audienceType === AUDIENCE_TYPES.BOOKED_CLASS) {
+    if (!facets) {
+      return (
+        <div>
+          <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
+            Class(es)
+          </Text>
+          <Skel $h="36px" $w="100%" $r="8px" />
+        </div>
+      );
+    }
     return (
       <div>
         <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
@@ -63,16 +74,15 @@ export default function AudienceFields({
         <Select
           mode="multiple"
           style={{ width: "100%" }}
-          placeholder={classes.length > 0 ? "Select class(es)…" : "Loading classes…"}
+          placeholder={classes.length > 0 ? "Select class(es)…" : "No classes to select"}
           value={(audienceFilter.class_ids || []).map(Number)}
           onChange={(v) => onFilterChange({ class_ids: v })}
           options={classes.map((c) => ({ value: c.id, label: c.title }))}
           optionFilterProp="label"
           showSearch
           allowClear
-          loading={classes.length === 0 && !!facets}
         />
-        {classes.length === 0 && !facets && (
+        {classes.length === 0 && (
           <Text type="secondary" style={{ fontSize: 12, display: "block", marginTop: 4 }}>
             No active classes found for your business.
           </Text>

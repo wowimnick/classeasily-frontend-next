@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useRef, useState, useEffect } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import styled, { ThemeProvider } from "styled-components";
 import { theme as appTheme } from "@/components/theme";
@@ -81,6 +81,17 @@ function DashboardLayoutInner({ children }) {
     [router]
   );
 
+  const openSettingsDrawer = useCallback(
+    (tab = "general", sectionId = null) => {
+      if (sectionId) sessionStorage.setItem("scrollToSection", sectionId);
+      else sessionStorage.removeItem("scrollToSection");
+      router.push(`/business/dashboard/settings${tab !== "general" ? `?tab=${tab}` : ""}`);
+    },
+    [router],
+  );
+
+  const dashboardCtxValue = useMemo(() => ({ openSettingsDrawer }), [openSettingsDrawer]);
+
   return (
     <ThemeProvider theme={appTheme}>
       <ConfigProvider theme={appTheme}>
@@ -99,15 +110,7 @@ function DashboardLayoutInner({ children }) {
               />
             </SideMenuWrapper>
             <MainContent $isSettings={pathname?.includes("/business/dashboard/settings")}>
-              <DashboardContext.Provider
-                value={{
-                  openSettingsDrawer: (tab = "general", sectionId = null) => {
-                    if (sectionId) sessionStorage.setItem("scrollToSection", sectionId);
-                    else sessionStorage.removeItem("scrollToSection");
-                    router.push(`/business/dashboard/settings${tab !== "general" ? `?tab=${tab}` : ""}`);
-                  },
-                }}
-              >
+              <DashboardContext.Provider value={dashboardCtxValue}>
                 {children}
               </DashboardContext.Provider>
             </MainContent>

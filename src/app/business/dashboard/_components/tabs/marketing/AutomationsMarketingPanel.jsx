@@ -198,13 +198,20 @@ export default function AutomationsMarketingPanel({ tier }) {
                         <Button
                           size="small"
                           danger
-                          onClick={async () => {
-                            if (!window.confirm("Delete automation?")) return;
-                            const r = await businessService.deleteMarketingWorkflow(row.id);
-                            if (r.success) {
-                              message.success("Deleted.");
-                              load();
-                            } else message.error(r.error);
+                          onClick={() => {
+                            Modal.confirm({
+                              title: "Delete automation?",
+                              content: "This cannot be undone.",
+                              okText: "Delete",
+                              okButtonProps: { danger: true },
+                              onOk: async () => {
+                                const r = await businessService.deleteMarketingWorkflow(row.id);
+                                if (r.success) {
+                                  message.success("Deleted.");
+                                  load();
+                                } else message.error(r.error);
+                              },
+                            });
                           }}
                         >
                           Delete

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { businessService } from "@/services/apiService";
 
@@ -111,21 +111,38 @@ export function SubscriptionProvider({ children }) {
     return result;
   }, [refetch]);
 
-  const value = {
-    subscription,
-    scheduledDowngrade,
-    widgetSubscriptionRequired,
-    hasWidgetAccess,
-    hasMembershipAccess,
-    hasStripeSubscription,
-    loading,
-    error,
-    refetch,
-    subscribe,
-    cancel,
-    reactivate,
-    canManageSubscription,
-  };
+  const value = useMemo(
+    () => ({
+      subscription,
+      scheduledDowngrade,
+      widgetSubscriptionRequired,
+      hasWidgetAccess,
+      hasMembershipAccess,
+      hasStripeSubscription,
+      loading,
+      error,
+      refetch,
+      subscribe,
+      cancel,
+      reactivate,
+      canManageSubscription,
+    }),
+    [
+      subscription,
+      scheduledDowngrade,
+      widgetSubscriptionRequired,
+      hasWidgetAccess,
+      hasMembershipAccess,
+      hasStripeSubscription,
+      loading,
+      error,
+      refetch,
+      subscribe,
+      cancel,
+      reactivate,
+      canManageSubscription,
+    ],
+  );
 
   return (
     <SubscriptionContext.Provider value={value}>

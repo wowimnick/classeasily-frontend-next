@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
-import { Button, Dropdown, Input, Select, Table, Tag, Tooltip, Typography, message } from "antd";
-import { MoreHorizontal } from "lucide-react";
+import { Button, Dropdown, Input, Modal, Select, Tag, Tooltip, Typography, message } from "antd";
+import { Check, MoreHorizontal, Pencil, RefreshCw, Send, X } from "lucide-react";
 import { businessService } from "@/services/apiService";
 import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import {
   Panel,
   MarketingTableSection,
@@ -13,6 +14,8 @@ import {
   MarketingEmptyState,
 } from "./marketingLayout";
 import { Skel, generateMarketingTableSkeletonRows } from "./marketingSkeletons";
+
+dayjs.extend(relativeTime);
 
 const { Text } = Typography;
 
@@ -22,6 +25,40 @@ const Toolbar = styled.div`
   gap: 10px;
   align-items: center;
   margin-bottom: 16px;
+  @media (max-width: 576px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+`;
+
+const StatPill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  line-height: 1.4;
+  ${(p) =>
+    p.$variant === "ok"
+      ? "background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;"
+      : "background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;"}
+`;
+
+const StatsStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+`;
+
+const ActionCluster = styled.div`
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
 `;
 
 const statusColor = (s) => {
@@ -49,6 +86,19 @@ function useDebouncedValue(value, ms) {
   return d;
 }
 
+function useMinWidth768() {
+  const [ok, setOk] = useState(true);
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const mq = window.matchMedia("(min-width: 768px)");
+    const fn = () => setOk(mq.matches);
+    fn();
+    mq.addEventListener("change", fn);
+    return () => mq.removeEventListener("change", fn);
+  }, []);
+  return ok;
+}
+
 export default function CampaignsMarketingPanel({ onEditCampaign, usage }) {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,20 +106,27 @@ export default function CampaignsMarketingPanel({ onEditCampaign, usage }) {
   const [searchInput, setSearchInput] = useState("");
   const searchDebounced = useDebouncedValue(searchInput, 300);
   const [sendingRowId, setSendingRowId] = useState(null);
+  const showWideColumns = useMinWidth768();
 
   const load = useCallback(async () => {
     setLoading(true);
-    const r = await businessService.listMarketingCampaigns();
-    if (r.success) setCampaigns(Array.isArray(r.data) ? r.data : []);
-    else setCampaigns([]);
-    setLoading(false);
+    try {
+      const r = await businessService.listMarketingCampaigns();
+      if (r.success) setCampaigns(Array.isArray(r.data) ? r.data : []);
+      else setCampaigns([]);
+    } catch (e) {
+      message.error(e?.message || "Could not load campaigns.");
+      setCampaigns([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const filtered = useMemo(() => {
+  const filtered = (() => {
     let rows = campaigns;
     if (statusFilter !== "all") rows = rows.filter((c) => c.status === statusFilter);
     if (searchDebounced.trim()) {
@@ -81,7 +138,7 @@ export default function CampaignsMarketingPanel({ onEditCampaign, usage }) {
       );
     }
     return rows;
-  }, [campaigns, statusFilter, searchDebounced]);
+  })();
 
   const duplicateCampaign = async (row) => {
     const det = await businessService.fetchMarketingCampaign(row.id);
@@ -112,13 +169,20 @@ export default function CampaignsMarketingPanel({ onEditCampaign, usage }) {
     load();
   };
 
-  const deleteCampaign = async (row) => {
-    if (!window.confirm(`Delete "${row.name}"?`)) return;
-    const r = await businessService.deleteMarketingCampaign(row.id);
-    if (r.success) {
-      message.success("Deleted.");
-      load();
-    } else message.error(r.error);
+  const deleteCampaign = (row) => {
+    Modal.confirm({
+      title: `Delete "${row.name}"?`,
+      content: "This campaign will be removed permanently.",
+      okText: "Delete",
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        const r = await businessService.deleteMarketingCampaign(row.id);
+        if (r.success) {
+          message.success("Deleted.");
+          load();
+        } else message.error(r.error);
+      },
+    });
   };
 
   const sendNow = async (row) => {
@@ -153,33 +217,33 @@ export default function CampaignsMarketingPanel({ onEditCampaign, usage }) {
     const isSending = row.status === "sending";
 
     const primary = (
-      <Button
-        size="small"
-        type="primary"
-        ghost
-        onClick={(e) => {
-          e.stopPropagation();
-          onEditCampaign(row.id);
-        }}
-      >
-        Edit
-      </Button>
+      <Tooltip title="Edit">
+        <Button
+          size="small"
+          type="default"
+          icon={<Pencil size={15} />}
+          aria-label="Edit campaign"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEditCampaign(row.id);
+          }}
+        />
+      </Tooltip>
     );
 
     const sendBtn =
       isDraft || isFailed ? (
-        <Tooltip title={quotaExhausted ? quotaTooltip : null}>
+        <Tooltip title={quotaExhausted ? quotaTooltip : "Send now"}>
           <span onClick={(e) => e.stopPropagation()}>
             <Button
               size="small"
               type="primary"
               disabled={quotaExhausted}
               loading={sendingRowId === row.id}
-              key={`send-${row.id}-${sendingRowId === row.id}`}
+              icon={<Send size={15} />}
+              aria-label="Send now"
               onClick={() => sendNow(row)}
-            >
-              Send now
-            </Button>
+            />
           </span>
         </Tooltip>
       ) : null;
@@ -215,10 +279,7 @@ export default function CampaignsMarketingPanel({ onEditCampaign, usage }) {
     }
 
     return (
-      <div
-        style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "nowrap" }}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <ActionCluster onClick={(e) => e.stopPropagation()}>
         {primary}
         {sendBtn}
         {moreItems.length > 0 && (
@@ -226,96 +287,122 @@ export default function CampaignsMarketingPanel({ onEditCampaign, usage }) {
             <Button size="small" icon={<MoreHorizontal size={15} />} aria-label="More actions" />
           </Dropdown>
         )}
-      </div>
+      </ActionCluster>
     );
   };
 
-  const columns = [
-    {
-      title: "Name",
-      dataIndex: "name",
-      ellipsis: true,
-      render: (v, row) =>
-        row.__skeleton ? (
-          <div>
-            <Skel $h="14px" $w="72%" $r="4px" />
-            <Skel $h="10px" $w="55%" $r="4px" style={{ marginTop: 6 }} />
-          </div>
-        ) : (
-          <div>
-            <Text strong style={{ display: "block" }}>
-              {v || "—"}
-            </Text>
-            {row.subject && (
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {row.subject}
+  const baseColumns = [
+      {
+        title: "Name",
+        dataIndex: "name",
+        ellipsis: true,
+        render: (v, row) =>
+          row.__skeleton ? (
+            <div>
+              <Skel $h="14px" $w="72%" $r="4px" />
+              <Skel $h="10px" $w="55%" $r="4px" style={{ marginTop: 6 }} />
+            </div>
+          ) : (
+            <div>
+              <Text strong style={{ display: "block" }}>
+                {v || "—"}
               </Text>
-            )}
-          </div>
-        ),
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      width: 100,
-      render: (v, row) =>
-        row.__skeleton ? <Skel $h="22px" $w="52px" $r="10px" /> : <Tag color={statusColor(v)}>{v || "—"}</Tag>,
-    },
-    {
-      title: "Scheduled",
-      dataIndex: "scheduled_at",
-      width: 150,
-      render: (v, row) =>
-        row.__skeleton ? (
-          <Skel $h="14px" $w="85%" $r="4px" />
-        ) : v ? (
-          dayjs(v).format("MMM D, YYYY h:mm A")
-        ) : (
-          "—"
-        ),
-    },
-    {
-      title: "Sent",
-      dataIndex: "sent_at",
-      width: 110,
-      render: (v, row) =>
-        row.__skeleton ? <Skel $h="14px" $w="70%" $r="4px" /> : v ? dayjs(v).format("MMM D, YYYY") : "—",
-    },
-    {
-      title: "Recipients",
-      key: "rec",
-      width: 90,
-      align: "right",
-      render: (_, row) =>
-        row.__skeleton ? (
-          <Skel $h="14px" $w="36px" $r="4px" style={{ marginLeft: "auto" }} />
-        ) : row.status === "sent" ? (
-          (row.recipient_count ?? "—")
-        ) : (
-          "—"
-        ),
-    },
-    {
-      title: "Stats",
-      key: "stats",
-      width: 90,
-      align: "right",
-      render: (_, row) =>
-        row.__skeleton ? (
-          <Skel $h="14px" $w="48px" $r="4px" style={{ marginLeft: "auto" }} />
-        ) : row.sends_sent != null ? (
-          `${row.sends_sent}✓  ${row.sends_failed || 0}✗`
-        ) : (
-          "—"
-        ),
-    },
-    {
-      title: "",
-      key: "act",
-      width: 160,
-      render: (_, row) => (row.__skeleton ? <Skel $h="28px" $w="120px" $r="6px" /> : rowActions(row)),
-    },
-  ];
+              {row.subject && (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {row.subject}
+                </Text>
+              )}
+              {row.updated_at && (
+                <Text type="secondary" style={{ fontSize: 11, display: "block", marginTop: 2 }}>
+                  Updated {dayjs(row.updated_at).fromNow()}
+                </Text>
+              )}
+            </div>
+          ),
+      },
+      {
+        title: "Status",
+        dataIndex: "status",
+        width: 100,
+        render: (v, row) =>
+          row.__skeleton ? <Skel $h="22px" $w="52px" $r="10px" /> : <Tag color={statusColor(v)}>{v || "—"}</Tag>,
+      },
+    ];
+
+  if (showWideColumns) {
+    baseColumns.push(
+        {
+          title: "Scheduled",
+          dataIndex: "scheduled_at",
+          width: 150,
+          render: (v, row) =>
+            row.__skeleton ? (
+              <Skel $h="14px" $w="85%" $r="4px" />
+            ) : v ? (
+              dayjs(v).format("MMM D, YYYY h:mm A")
+            ) : (
+              "—"
+            ),
+        },
+        {
+          title: "Sent",
+          dataIndex: "sent_at",
+          width: 110,
+          render: (v, row) =>
+            row.__skeleton ? <Skel $h="14px" $w="70%" $r="4px" /> : v ? dayjs(v).format("MMM D, YYYY") : "—",
+        },
+    );
+  }
+
+  baseColumns.push(
+      {
+        title: "Recipients",
+        key: "rec",
+        width: 90,
+        align: "right",
+        render: (_, row) =>
+          row.__skeleton ? (
+            <Skel $h="14px" $w="36px" $r="4px" style={{ marginLeft: "auto" }} />
+          ) : row.status === "sent" ? (
+            (row.recipient_count ?? "—")
+          ) : (
+            "—"
+          ),
+      },
+      {
+        title: "Stats",
+        key: "stats",
+        width: 108,
+        align: "right",
+        render: (_, row) =>
+          row.__skeleton ? (
+            <Skel $h="14px" $w="48px" $r="4px" style={{ marginLeft: "auto" }} />
+          ) : row.sends_sent != null ? (
+            <StatsStack>
+              <StatPill $variant="ok">
+                <Check size={12} strokeWidth={2.5} aria-hidden />
+                {Number(row.sends_sent).toLocaleString()}
+              </StatPill>
+              {Number(row.sends_failed || 0) > 0 && (
+                <StatPill $variant="bad">
+                  <X size={12} strokeWidth={2.5} aria-hidden />
+                  {Number(row.sends_failed).toLocaleString()}
+                </StatPill>
+              )}
+            </StatsStack>
+          ) : (
+            "—"
+          ),
+      },
+      {
+        title: "",
+        key: "act",
+        width: 132,
+        align: "right",
+        fixed: "right",
+        render: (_, row) => (row.__skeleton ? <Skel $h="28px" $w="100px" $r="6px" style={{ marginLeft: "auto" }} /> : rowActions(row)),
+      },
+  );
 
   const tableData = loading ? generateMarketingTableSkeletonRows(8) : filtered;
   const showEmpty = !loading && filtered.length === 0;
@@ -327,8 +414,11 @@ export default function CampaignsMarketingPanel({ onEditCampaign, usage }) {
           <Button type="primary" onClick={() => onEditCampaign("new")}>
             New campaign
           </Button>
+          <Button icon={<RefreshCw size={16} />} onClick={() => load()} disabled={loading}>
+            Refresh
+          </Button>
           <Select
-            style={{ width: 160 }}
+            style={{ width: 160, minWidth: 140 }}
             value={statusFilter}
             onChange={setStatusFilter}
             options={[
@@ -343,7 +433,7 @@ export default function CampaignsMarketingPanel({ onEditCampaign, usage }) {
           <Input.Search
             allowClear
             placeholder="Search name or subject…"
-            style={{ maxWidth: 260 }}
+            style={{ maxWidth: 260, flex: "1 1 200px" }}
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
@@ -365,7 +455,9 @@ export default function CampaignsMarketingPanel({ onEditCampaign, usage }) {
             loading={false}
             dataSource={tableData}
             pagination={loading ? false : { pageSize: 12, showSizeChanger: false }}
-            columns={columns}
+            columns={baseColumns}
+            locale={{ emptyText: "No campaigns" }}
+            scroll={{ x: showWideColumns ? undefined : 720 }}
             onRow={(row) =>
               row.__skeleton
                 ? {}
@@ -375,7 +467,7 @@ export default function CampaignsMarketingPanel({ onEditCampaign, usage }) {
                       if (t.closest("button") || t.closest(".ant-dropdown")) return;
                       onEditCampaign(row.id);
                     },
-                    style: { cursor: "pointer" },
+                    style: { cursor: "pointer", transition: "background 0.15s ease" },
                   }
             }
           />

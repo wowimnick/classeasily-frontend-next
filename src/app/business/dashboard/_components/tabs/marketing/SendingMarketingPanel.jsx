@@ -1,13 +1,19 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import {
   Button,
   Card,
+  Col,
   Collapse,
+  ColorPicker,
   Form,
   Input,
+  Popconfirm,
+  Radio,
+  Row,
+  Table,
   Tag,
   Tooltip,
   Typography,
@@ -18,8 +24,17 @@ import { businessService } from "@/services/apiService";
 import MarketingFeatureUpsell from "./MarketingFeatureUpsell";
 import { Panel, MarketingSection } from "./marketingLayout";
 import { SendingPanelSkeleton } from "./marketingSkeletons";
+import {
+  buildMarketingFooterPreviewHtml,
+  sanitizeFooterAlignment,
+  sanitizeMarketingHexColor,
+} from "./marketingPreviewFooter";
 
 const { Text } = Typography;
+
+const COLOR_PRESETS = [
+  { label: "Suggested", colors: ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#374151"] },
+];
 
 const SenderList = styled.ul`
   list-style: none;
@@ -27,7 +42,7 @@ const SenderList = styled.ul`
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 `;
 
 const SenderRow = styled.li`
@@ -35,21 +50,10 @@ const SenderRow = styled.li`
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #fafafa;
-`;
-
-const FooterPreview = styled.div`
-  border: 1px dashed #d1d5db;
-  border-radius: 8px;
-  padding: 10px 12px;
-  background: #f9fafb;
-  font-size: 12px;
-  color: #6b7280;
-  line-height: 1.5;
-  margin-top: 6px;
 `;
 
 const CompactCard = styled(Card)`
@@ -59,6 +63,46 @@ const CompactCard = styled(Card)`
   .ant-card-body {
     padding: 14px 16px !important;
   }
+`;
+
+const SendingColumn = styled.div`
+  display: flex;
+  margin: 0 auto;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1200px;
+  width: 100%;
+`;
+
+const FooterPreviewChrome = styled.div`
+  margin-top: 14px;
+  max-width: 400px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  background: #fff;
+`;
+
+const FooterPreview = styled.div`
+  line-height: 0;
+  & * {
+    line-height: normal;
+  }
+`;
+
+const SenderFormGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px 12px;
+  align-items: end;
+  margin-bottom: ${(p) => (p.$hasList ? "14px" : "0")};
+`;
+
+const DnsScroll = styled.div`
+  overflow-x: auto;
+  margin-top: 8px;
+  -webkit-overflow-scrolling: touch;
 `;
 
 function domainStatusTag(status) {
@@ -72,40 +116,71 @@ export default function SendingMarketingPanel({ tier }) {
   const [domains, setDomains] = useState([]);
   const [senders, setSenders] = useState([]);
   const [footer, setFooter] = useState("");
-  const [footerDirty, setFooterDirty] = useState(false);
+  const [unsubText, setUnsubText] = useState("Unsubscribe");
+  const [unsubStyle, setUnsubStyle] = useState("link");
+  const [unsubColor, setUnsubColor] = useState("#6366f1");
+  const [footerAlignment, setFooterAlignment] = useState("left");
+  const [settingsDirty, setSettingsDirty] = useState(false);
   const [newDomain, setNewDomain] = useState("");
   const [newSender, setNewSender] = useState({ display_name: "", from_email: "", reply_to: "" });
   const [loading, setLoading] = useState(true);
-  const [savingFooter, setSavingFooter] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [d, s, st] = await Promise.all([
-      businessService.listMarketingDomains(),
-      businessService.listMarketingSenders(),
-      businessService.getMarketingSettings(),
-    ]);
-    if (d.success) setDomains(Array.isArray(d.data) ? d.data : []);
-    if (s.success) setSenders(Array.isArray(s.data) ? s.data : []);
-    if (st.success && st.data) {
-      setFooter(st.data.physical_address_footer || "");
-      setFooterDirty(false);
+    try {
+      const [d, s, st] = await Promise.all([
+        businessService.listMarketingDomains(),
+        businessService.listMarketingSenders(),
+        businessService.getMarketingSettings(),
+      ]);
+      if (d.success) setDomains(Array.isArray(d.data) ? d.data : []);
+      if (s.success) setSenders(Array.isArray(s.data) ? s.data : []);
+      if (st.success && st.data) {
+        setFooter(st.data.physical_address_footer || "");
+        setUnsubText(st.data.unsubscribe_text || "Unsubscribe");
+        setUnsubStyle(st.data.unsubscribe_style === "button" ? "button" : "link");
+        setUnsubColor(sanitizeMarketingHexColor(st.data.unsubscribe_color));
+        setFooterAlignment(sanitizeFooterAlignment(st.data.footer_alignment));
+        setSettingsDirty(false);
+      }
+    } catch (e) {
+      message.error(e?.message || "Could not load sending settings.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  const saveFooter = async () => {
-    setSavingFooter(true);
-    const r = await businessService.patchMarketingSettings({ physical_address_footer: footer });
-    setSavingFooter(false);
+  const previewHtml = useMemo(
+    () =>
+      buildMarketingFooterPreviewHtml({
+        physical_address_footer: footer,
+        unsubscribe_text: unsubText,
+        unsubscribe_style: unsubStyle,
+        unsubscribe_color: unsubColor,
+        footer_alignment: footerAlignment,
+      }),
+    [footer, unsubText, unsubStyle, unsubColor, footerAlignment],
+  );
+
+  const saveSettings = async () => {
+    setSavingSettings(true);
+    const r = await businessService.patchMarketingSettings({
+      physical_address_footer: footer,
+      unsubscribe_text: unsubText.trim().slice(0, 50) || "Unsubscribe",
+      unsubscribe_style: unsubStyle,
+      unsubscribe_color: sanitizeMarketingHexColor(unsubColor),
+      footer_alignment: sanitizeFooterAlignment(footerAlignment),
+    });
+    setSavingSettings(false);
     if (r.success) {
-      message.success("Footer saved.");
-      setFooterDirty(false);
-    } else message.error(r.error);
+      message.success("Footer settings saved.");
+      setSettingsDirty(false);
+    } else message.error(r.error || "Save failed.");
   };
 
   const addDomain = async () => {
@@ -141,6 +216,19 @@ export default function SendingMarketingPanel({ tier }) {
     } else message.error(r.error);
   };
 
+  const dnsColumns = [
+    { title: "Type", dataIndex: "type", key: "type", width: 72, ellipsis: true },
+    { title: "Name / host", dataIndex: "name", key: "name", ellipsis: true },
+    { title: "Value", dataIndex: "value", key: "value", ellipsis: true },
+    {
+      title: "Priority",
+      dataIndex: "priority",
+      key: "priority",
+      width: 80,
+      render: (v) => (v != null && v !== "" ? v : "—"),
+    },
+  ];
+
   if (loading) {
     return (
       <Panel>
@@ -151,76 +239,190 @@ export default function SendingMarketingPanel({ tier }) {
 
   return (
     <Panel>
+      <SendingColumn>
       <MarketingSection
-        title="Compliance footer"
-        description="Physical address shown below the unsubscribe link on every marketing email."
+        title="Sender profiles"
+        description="From name and email shown to recipients. On Growth+, the from address must match a verified domain."
       >
         <CompactCard size="small">
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 10 }}>
-            <Tooltip title="Every marketing email includes a one-click unsubscribe. Contacts who unsubscribe are excluded from future marketing sends.">
-              <InfoCircleOutlined style={{ color: "#6366f1", marginTop: 2 }} />
-            </Tooltip>
-            <Text type="secondary" style={{ fontSize: 12, flex: 1 }}>
-              Unsubscribe is automatic. Add your business address (required for compliance).
-            </Text>
-          </div>
-          <Collapse
-            ghost
-            size="small"
-            items={[
-              {
-                key: "more",
-                label: <span style={{ fontSize: 12 }}>More about unsubscribe</span>,
-                children: (
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    When a contact clicks unsubscribe, they are removed from marketing immediately. This
-                    does not affect transactional emails such as booking confirmations.
-                  </Text>
-                ),
-              },
-            ]}
-          />
-          <Form layout="vertical" style={{ marginTop: 4 }}>
-            <Form.Item
-              label="Physical address"
-              help={`${footer.length}/2000 characters`}
-              style={{ marginBottom: 8 }}
-            >
-              <Input.TextArea
-                rows={2}
-                value={footer}
-                onChange={(e) => {
-                  setFooter(e.target.value);
-                  setFooterDirty(true);
-                }}
-                placeholder="e.g. 123 Main St, Suite 4, New York, NY 10001"
-                maxLength={2000}
+          <SenderFormGrid $hasList={senders.length > 0}>
+            <Form.Item label="Display name" style={{ marginBottom: 0 }}>
+              <Input
+                size="small"
+                placeholder="My Studio"
+                value={newSender.display_name}
+                onChange={(e) => setNewSender((s) => ({ ...s, display_name: e.target.value }))}
               />
             </Form.Item>
-          </Form>
-          <FooterPreview>
-            <hr style={{ border: "none", borderTop: "1px solid #e5e7eb", margin: "0 0 8px" }} />
-            <div>
-              <span style={{ color: "#6366f1", textDecoration: "underline" }}>Unsubscribe</span> from
-              marketing emails.
-            </div>
-            {footer && <div style={{ marginTop: 4, color: "#9ca3af" }}>{footer}</div>}
-            {!footer && (
-              <div style={{ marginTop: 4, color: "#d1d5db", fontStyle: "italic" }}>
-                Your business address will appear here.
-              </div>
-            )}
-          </FooterPreview>
+            <Form.Item label="From email" style={{ marginBottom: 0 }}>
+              <Input
+                size="small"
+                placeholder="hello@yourdomain.com"
+                value={newSender.from_email}
+                onChange={(e) => setNewSender((s) => ({ ...s, from_email: e.target.value }))}
+              />
+            </Form.Item>
+            <Form.Item label="Reply-to" style={{ marginBottom: 0 }}>
+              <Input
+                size="small"
+                placeholder="Optional"
+                value={newSender.reply_to}
+                onChange={(e) => setNewSender((s) => ({ ...s, reply_to: e.target.value }))}
+              />
+            </Form.Item>
+            <Button type="primary" size="small" onClick={addSender} style={{ height: 32 }}>
+              Add sender
+            </Button>
+          </SenderFormGrid>
+          {senders.length === 0 ? (
+            <Text type="secondary" style={{ fontSize: 13 }}>
+              No sender profiles yet. Add at least one if you use custom from addresses.
+            </Text>
+          ) : (
+            <SenderList>
+              {senders.map((s) => (
+                <SenderRow key={s.id}>
+                  <div>
+                    <Text strong style={{ display: "block", fontSize: 13 }}>
+                      {s.display_name}
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {s.from_email}
+                      {s.reply_to ? ` · reply: ${s.reply_to}` : ""}
+                    </Text>
+                  </div>
+                  <Popconfirm
+                    title="Remove this sender?"
+                    description="You can add it again later."
+                    okText="Remove"
+                    okButtonProps={{ danger: true }}
+                    onConfirm={async () => {
+                      const r = await businessService.deleteMarketingSender(s.id);
+                      if (r.success) {
+                        message.success("Removed.");
+                        load();
+                      } else message.error(r.error);
+                    }}
+                  >
+                    <Button type="link" danger size="small">
+                      Remove
+                    </Button>
+                  </Popconfirm>
+                </SenderRow>
+              ))}
+            </SenderList>
+          )}
+        </CompactCard>
+      </MarketingSection>
+
+      <MarketingSection
+        title="Unsubscribe & compliance footer"
+        description="Customize how the unsubscribe control looks. Physical address is required for CAN-SPAM."
+      >
+        <CompactCard size="small">
+
+            <Form layout="vertical" style={{ marginTop: 0 }}>
+              <Row gutter={[12, 0]}>
+                <Col xs={24} sm={14}>
+                  <Form.Item label="Unsubscribe label" help={`${unsubText.length}/50`} style={{ marginBottom: 12 }}>
+                    <Input
+                      value={unsubText}
+                      maxLength={50}
+                      placeholder="Unsubscribe"
+                      onChange={(e) => {
+                        setUnsubText(e.target.value);
+                        setSettingsDirty(true);
+                      }}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={10}>
+                  <Form.Item label="Link color" style={{ marginBottom: 12 }}>
+                    <ColorPicker
+                      value={sanitizeMarketingHexColor(unsubColor)}
+                      onChange={(c, hex) => {
+                        const next =
+                          hex ||
+                          (typeof c?.toHexString === "function" ? c.toHexString() : null) ||
+                          "#6366f1";
+                        setUnsubColor(sanitizeMarketingHexColor(next));
+                        setSettingsDirty(true);
+                      }}
+                      presets={COLOR_PRESETS}
+                      showText
+                      format="hex"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={24}>
+                  <Form.Item label="Style" style={{ marginBottom: 12 }}>
+                    <Radio.Group
+                      value={unsubStyle}
+                      onChange={(e) => {
+                        setUnsubStyle(e.target.value);
+                        setSettingsDirty(true);
+                      }}
+                      options={[
+                        { value: "link", label: "Text link" },
+                        { value: "button", label: "Button" },
+                      ]}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={24}>
+                  <Form.Item label="Footer alignment" style={{ marginBottom: 12 }}>
+                    <Radio.Group
+                      value={footerAlignment}
+                      onChange={(e) => {
+                        setFooterAlignment(e.target.value);
+                        setSettingsDirty(true);
+                      }}
+                      options={[
+                        { value: "left", label: "Left" },
+                        { value: "center", label: "Center" },
+                        { value: "right", label: "Right" },
+                      ]}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col span={24}>
+                  <Form.Item
+                    label="Physical address"
+                    help={`${footer.length}/2000 characters`}
+                    style={{ marginBottom: 8 }}
+                  >
+                    <Input.TextArea
+                      rows={3}
+                      value={footer}
+                      onChange={(e) => {
+                        setFooter(e.target.value);
+                        setSettingsDirty(true);
+                      }}
+                      placeholder="e.g. 123 Main St, Suite 4, New York, NY 10001"
+                      maxLength={2000}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
+          <Text type="secondary" style={{ fontSize: 11, display: "block", marginTop: 2, marginBottom: 0 }}>
+            Preview — how the footer appears after your message
+          </Text>
+          <FooterPreviewChrome>
+            <FooterPreview dangerouslySetInnerHTML={{ __html: previewHtml }} />
+          </FooterPreviewChrome>
+          <Text type="secondary" style={{ fontSize: 11, marginTop: 8, display: "block", maxWidth: 400 }}>
+            Recipients get a working one-click link; this mockup is static.
+          </Text>
           <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }}>
             <Button
               type="primary"
               size="small"
-              onClick={saveFooter}
-              disabled={!footerDirty}
-              loading={savingFooter}
-              key={`footer-save-${savingFooter}`}
+              onClick={saveSettings}
+              disabled={!settingsDirty}
+              loading={savingSettings}
             >
-              Save address
+              Save footer settings
             </Button>
           </div>
         </CompactCard>
@@ -242,7 +444,15 @@ export default function SendingMarketingPanel({ tier }) {
           />
         ) : (
           <CompactCard size="small">
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
               <Input
                 placeholder="yourdomain.com"
                 value={newDomain}
@@ -286,20 +496,22 @@ export default function SendingMarketingPanel({ tier }) {
                         key: "dns",
                         label: "DNS records",
                         children: (
-                          <pre
-                            style={{
-                              fontSize: 11,
-                              margin: 0,
-                              overflow: "auto",
-                              maxHeight: 180,
-                              background: "#fff",
-                              padding: 8,
-                              borderRadius: 6,
-                              border: "1px solid #eee",
-                            }}
-                          >
-                            {JSON.stringify(dom.dns_records, null, 2)}
-                          </pre>
+                          <DnsScroll>
+                            <Table
+                              size="small"
+                              pagination={false}
+                              rowKey={(_, i) => `${dom.id}-dns-${i}`}
+                              dataSource={dom.dns_records.map((rec, i) => ({
+                                key: i,
+                                type: rec.type ?? rec.record_type ?? "—",
+                                name: rec.name ?? rec.host ?? "—",
+                                value: rec.value ?? rec.content ?? "—",
+                                priority: rec.priority,
+                              }))}
+                              columns={dnsColumns}
+                              locale={{ emptyText: "No records" }}
+                            />
+                          </DnsScroll>
                         ),
                       },
                     ]}
@@ -310,91 +522,7 @@ export default function SendingMarketingPanel({ tier }) {
           </CompactCard>
         )}
       </MarketingSection>
-
-      <MarketingSection
-        title="Sender profiles"
-        description="From name and email shown to recipients (from email must match a verified domain on Growth+)."
-      >
-        <CompactCard size="small">
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 8,
-              alignItems: "flex-end",
-              marginBottom: senders.length ? 12 : 0,
-            }}
-          >
-            <div style={{ minWidth: 140, flex: "1 1 140px" }}>
-              <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
-                Display name
-              </Text>
-              <Input
-                size="small"
-                placeholder="My Studio"
-                value={newSender.display_name}
-                onChange={(e) => setNewSender((s) => ({ ...s, display_name: e.target.value }))}
-              />
-            </div>
-            <div style={{ minWidth: 180, flex: "1 1 180px" }}>
-              <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
-                From email
-              </Text>
-              <Input
-                size="small"
-                placeholder="hello@yourdomain.com"
-                value={newSender.from_email}
-                onChange={(e) => setNewSender((s) => ({ ...s, from_email: e.target.value }))}
-              />
-            </div>
-            <div style={{ minWidth: 160, flex: "1 1 160px" }}>
-              <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
-                Reply-to
-              </Text>
-              <Input
-                size="small"
-                placeholder="Optional"
-                value={newSender.reply_to}
-                onChange={(e) => setNewSender((s) => ({ ...s, reply_to: e.target.value }))}
-              />
-            </div>
-            <Button type="primary" size="small" onClick={addSender} style={{ marginBottom: 1 }}>
-              Add
-            </Button>
-          </div>
-          {senders.length > 0 && (
-            <SenderList>
-              {senders.map((s) => (
-                <SenderRow key={s.id}>
-                  <div>
-                    <Text strong style={{ display: "block", fontSize: 13 }}>
-                      {s.display_name}
-                    </Text>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {s.from_email}
-                      {s.reply_to ? ` · reply: ${s.reply_to}` : ""}
-                    </Text>
-                  </div>
-                  <Button
-                    type="link"
-                    danger
-                    size="small"
-                    onClick={async () => {
-                      const r = await businessService.deleteMarketingSender(s.id);
-                      if (r.success) {
-                        message.success("Removed.");
-                        load();
-                      } else message.error(r.error);
-                    }}
-                  >
-                    Remove
-                  </Button>
-                </SenderRow>
-              ))}
-            </SenderList>
-          )}
-        </CompactCard>
-      </MarketingSection>
+      </SendingColumn>
     </Panel>
   );
 }

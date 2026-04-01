@@ -119,21 +119,11 @@ const EditorTop = styled.div`
   margin-bottom: 20px;
 `;
 
-const EditorGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr minmax(260px, 320px);
-  gap: 20px;
-  @media (max-width: 960px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const PreviewBlock = styled.div`
-  min-height: 380px;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  padding: 16px;
-  background: #fafafa;
+const EditorMainCol = styled.div`
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 `;
 
 /** Campaign editor initial load */
@@ -144,27 +134,17 @@ export function MarketingEditorSkeleton() {
         <Skel $h="32px" $w="72px" $r="6px" />
         <Skel $h="22px" $w="160px" $r="6px" style={{ flex: 1, minWidth: 120 }} />
         <Skel $h="32px" $w="88px" $r="6px" />
+        <Skel $h="32px" $w="100px" $r="6px" />
         <Skel $h="32px" $w="120px" $r="6px" />
         <Skel $h="32px" $w="100px" $r="6px" />
       </EditorTop>
-      <EditorGrid>
-        <div>
-          <Skel $h="14px" $w="40%" $r="4px" style={{ marginBottom: 12 }} />
-          <Skel $h="36px" $w="100%" $r="8px" style={{ marginBottom: 12 }} />
-          <Skel $h="120px" $w="100%" $r="8px" style={{ marginBottom: 12 }} />
-          <PreviewBlock>
-            <Skel $h="12px" $w="30%" $r="4px" style={{ marginBottom: 16 }} />
-            <Skel $h="200px" $w="100%" $r="8px" />
-          </PreviewBlock>
-        </div>
-        <div>
-          <Skel $h="14px" $w="50%" $r="4px" style={{ marginBottom: 12 }} />
-          <Skel $h="40px" $w="100%" $r="8px" style={{ marginBottom: 10 }} />
-          <Skel $h="40px" $w="100%" $r="8px" style={{ marginBottom: 10 }} />
-          <Skel $h="80px" $w="100%" $r="8px" style={{ marginBottom: 10 }} />
-          <Skel $h="36px" $w="100%" $r="8px" />
-        </div>
-      </EditorGrid>
+      <EditorMainCol>
+        <Skel $h="14px" $w="40%" $r="4px" />
+        <Skel $h="36px" $w="100%" $r="8px" />
+        <Skel $h="36px" $w="100%" $r="8px" />
+        <Skel $h="120px" $w="100%" $r="8px" />
+        <Skel $h="200px" $w="100%" $r="8px" />
+      </EditorMainCol>
     </div>
   );
 }

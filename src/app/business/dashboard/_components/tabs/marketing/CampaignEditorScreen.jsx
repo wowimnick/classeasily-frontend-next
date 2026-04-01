@@ -13,14 +13,14 @@ import {
   Modal,
   Radio,
   Select,
-  Statistic,
   Tooltip,
   Typography,
   message,
 } from "antd";
-import { CalendarOutlined, SendOutlined } from "@ant-design/icons";
+import { CalendarOutlined, EyeOutlined, SendOutlined } from "@ant-design/icons";
 import { ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
+import NumberFlow from "@number-flow/react";
 import { businessService } from "@/services/apiService";
 import dayjs from "dayjs";
 import EmailBuilderEditor from "./builder/EmailBuilderEditor";
@@ -29,6 +29,9 @@ import { renderBuilderPreviewHtml } from "./builder/renderPreview";
 import { MarketingEditorSkeleton } from "./marketingSkeletons";
 import { getAudienceOptions, getAudienceOption, AUDIENCE_TYPES } from "./marketingAudienceConfig";
 import AudienceFields from "./AudienceFields";
+import { buildMarketingFooterPreviewHtml, sanitizeFooterAlignment } from "./marketingPreviewFooter";
+import MarketingEmailPreviewDrawer from "./MarketingEmailPreviewDrawer";
+import MarketingHtmlCodeEditor from "./MarketingHtmlCodeEditor";
 
 const { Text } = Typography;
 
@@ -79,28 +82,11 @@ const TopBarActions = styled.div`
   }
 `;
 
-const EditorGrid = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  gap: 24px;
-  align-items: start;
-  @media (max-width: 960px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const LeftPane = styled.div`
+const EditorMain = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
-`;
-
-const RightPane = styled.div`
-  position: sticky;
-  top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  max-width: 900px;
 `;
 
 const SettingsCard = styled.div`
@@ -112,47 +98,6 @@ const SettingsCard = styled.div`
   flex-direction: column;
   gap: 16px;
 `;
-
-const PreviewCard = styled.div`
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  overflow: hidden;
-`;
-
-const PreviewBar = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
-`;
-
-const PreviewFrame = styled.iframe`
-  width: 100%;
-  height: ${(p) => (p.$mobile ? "667px" : "580px")};
-  min-height: 480px;
-  border: none;
-  background: #fff;
-  display: block;
-`;
-
-// Footer HTML that mirrors backend _footer_html for preview fidelity
-function buildPreviewFooter(footerAddress) {
-  const addr = footerAddress || "<em style=\"color:#9ca3af\">(Business address — set in Sending tab)</em>";
-  return `
-    <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
-    <p style="font-size:12px;color:#6b7280;font-family:system-ui,sans-serif;">
-      <a href="#" style="color:#6b7280;" onclick="return false;">Unsubscribe</a>
-      from marketing emails.
-    </p>
-    <p style="font-size:12px;color:#9ca3af;font-family:system-ui,sans-serif;">${addr}</p>
-    <p style="font-size:11px;color:#d1d5db;font-family:system-ui,sans-serif;margin-top:4px;">
-      Preview only — unsubscribe link is live in real sends.
-    </p>
-  `;
-}
 
 function serializeEditorState(parts) {
   return JSON.stringify({
@@ -188,12 +133,19 @@ export default function CampaignEditorScreen({
   const [previewCount, setPreviewCount] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [previewMode, setPreviewMode] = useState("desktop");
+  const [previewMode, setPreviewMode] = useState("mobile");
+  const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleAt, setScheduleAt] = useState(null);
   const [scheduleFieldError, setScheduleFieldError] = useState("");
   const [editorInitializing, setEditorInitializing] = useState(true);
   const [footerAddress, setFooterAddress] = useState("");
+  const [unsubPreview, setUnsubPreview] = useState({
+    unsubscribe_text: "Unsubscribe",
+    unsubscribe_style: "link",
+    unsubscribe_color: "#6366f1",
+    footer_alignment: "left",
+  });
   const [facets, setFacets] = useState(null);
 
   const baselineRef = useRef(null);
@@ -206,6 +158,7 @@ export default function CampaignEditorScreen({
 
   const load = useCallback(async () => {
     setEditorInitializing(true);
+    try {
     const [sr, st, fct] = await Promise.all([
       businessService.listMarketingSenders(),
       businessService.getMarketingSettings(),
@@ -216,7 +169,15 @@ export default function CampaignEditorScreen({
       const def = sr.data.find((s) => s.is_default);
       if (def) setSenderProfile(def.id);
     }
-    if (st.success && st.data) setFooterAddress(st.data.physical_address_footer || "");
+    if (st.success && st.data) {
+      setFooterAddress(st.data.physical_address_footer || "");
+      setUnsubPreview({
+        unsubscribe_text: st.data.unsubscribe_text || "Unsubscribe",
+        unsubscribe_style: st.data.unsubscribe_style === "button" ? "button" : "link",
+        unsubscribe_color: st.data.unsubscribe_color || "#6366f1",
+        footer_alignment: sanitizeFooterAlignment(st.data.footer_alignment),
+      });
+    }
     if (fct.success) setFacets(fct.data);
     if (isNew) {
       setEditorInitializing(false);
@@ -224,7 +185,7 @@ export default function CampaignEditorScreen({
     }
     const r = await businessService.fetchMarketingCampaign(campaignId);
     if (!r.success || !r.data) {
-      message.error(r.error || "Failed to load");
+      message.error(r.error || "Failed to load campaign.");
       setEditorInitializing(false);
       return;
     }
@@ -244,6 +205,10 @@ export default function CampaignEditorScreen({
     );
     if (d.sender_profile) setSenderProfile(d.sender_profile);
     setEditorInitializing(false);
+    } catch (e) {
+      message.error(e?.message || "Could not load the editor.");
+      setEditorInitializing(false);
+    }
   }, [campaignId, isNew]);
 
   useEffect(() => { load(); }, [load]);
@@ -329,7 +294,10 @@ export default function CampaignEditorScreen({
     });
     setPreviewLoading(false);
     if (r.success) setPreviewCount(r.data);
-    else message.error(r.error);
+    else {
+      setPreviewCount(null);
+      message.error(r.error || "Could not estimate audience size.");
+    }
   };
 
   const sendTest = async () => {
@@ -377,10 +345,14 @@ export default function CampaignEditorScreen({
 
   const srcDoc = useMemo(() => {
     const mobileStyle = previewMode === "mobile" ? "max-width:375px;margin:0 auto;" : "";
+    const footer = buildMarketingFooterPreviewHtml({
+      physical_address_footer: footerAddress,
+      ...unsubPreview,
+    });
     return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
 <style>body{margin:0;padding:16px;${mobileStyle}font-family:system-ui,sans-serif;}</style>
-</head><body>${srcDocInner}${buildPreviewFooter(footerAddress)}</body></html>`;
-  }, [previewMode, srcDocInner, footerAddress]);
+</head><body>${srcDocInner}${footer}</body></html>`;
+  }, [previewMode, srcDocInner, footerAddress, unsubPreview]);
 
   const quotaExhausted = usage && Number(usage.remaining) === 0;
   const quotaTooltip =
@@ -423,6 +395,9 @@ export default function CampaignEditorScreen({
           </TopBarTitle>
         </TopBarLeading>
         <TopBarActions>
+          <Button icon={<EyeOutlined />} onClick={() => setPreviewDrawerOpen(true)}>
+            Preview
+          </Button>
           <Button loading={saving} key={`save-draft-${saving}`} onClick={saveDraft}>
             Save draft
           </Button>
@@ -447,16 +422,16 @@ export default function CampaignEditorScreen({
         </TopBarActions>
       </TopBar>
 
-      <EditorGrid>
-        {/* ── Left: builder + settings ─────────────────────────────────── */}
-        <LeftPane>
+      <EditorMain>
           <SettingsCard>
             <Form layout="vertical" style={{ gap: 0 }}>
               <Form.Item label="Subject line" style={{ marginBottom: 16 }}>
                 <Input
                   value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
+                  onChange={(e) => setSubject(e.target.value.slice(0, 255))}
                   placeholder="Your subject line…"
+                  maxLength={255}
+                  showCount={{ formatter: ({ count, maxLength }) => `${count} / ${maxLength}` }}
                 />
               </Form.Item>
 
@@ -521,18 +496,26 @@ export default function CampaignEditorScreen({
                     Estimate recipients
                   </Button>
                 </motion.span>
-                {previewCount && (
+                {previewCount != null && (
                   <motion.div
                     key={previewCount.count}
                     initial={{ opacity: 0, scale: 0.92 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.22 }}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "baseline",
+                      gap: 6,
+                      padding: "4px 10px",
+                      borderRadius: 999,
+                      background: "#ecfdf5",
+                      border: "1px solid #a7f3d0",
+                    }}
                   >
-                    <Statistic
-                      value={previewCount.count}
-                      suffix="contacts"
-                      valueStyle={{ fontSize: 14, color: "#10b981" }}
-                    />
+                    <span style={{ fontSize: 15, fontWeight: 700, color: "#059669", fontVariantNumeric: "tabular-nums" }}>
+                      <NumberFlow value={Number(previewCount.count) || 0} />
+                    </span>
+                    <span style={{ fontSize: 12, color: "#047857" }}>contacts</span>
                   </motion.div>
                 )}
               </div>
@@ -558,38 +541,8 @@ export default function CampaignEditorScreen({
           {contentType === "builder_json" ? (
             <EmailBuilderEditor document={builderDoc} onChange={setBuilderDoc} />
           ) : (
-            <Input.TextArea
-              rows={18}
-              value={htmlBody}
-              onChange={(e) => setHtmlBody(e.target.value)}
-              style={{ fontFamily: "monospace", fontSize: 13 }}
-            />
+            <MarketingHtmlCodeEditor value={htmlBody} onChange={setHtmlBody} minRows={20} />
           )}
-        </LeftPane>
-
-        {/* ── Right: live preview ───────────────────────────────────────── */}
-        <RightPane>
-          <PreviewCard>
-            <PreviewBar>
-              <Text strong style={{ fontSize: 13 }}>
-                Preview
-              </Text>
-              <Radio.Group
-                value={previewMode}
-                onChange={(e) => setPreviewMode(e.target.value)}
-                size="small"
-              >
-                <Radio.Button value="desktop">Desktop</Radio.Button>
-                <Radio.Button value="mobile">Mobile</Radio.Button>
-              </Radio.Group>
-            </PreviewBar>
-            <PreviewFrame
-              title="email preview"
-              sandbox="allow-same-origin"
-              srcDoc={srcDoc}
-              $mobile={previewMode === "mobile"}
-            />
-          </PreviewCard>
 
           <Alert
             type="info"
@@ -597,13 +550,33 @@ export default function CampaignEditorScreen({
             style={{ borderRadius: 10, fontSize: 12 }}
             message={
               <Text style={{ fontSize: 12 }}>
-                The footer and unsubscribe link above are shown as they will appear in real sends.
-                Set your business address in the <strong>Sending</strong> tab.
+                Open <strong>Preview</strong> to see the email with footer and unsubscribe. Configure
+                them in the <strong>Sending</strong> tab.
               </Text>
             }
           />
-        </RightPane>
-      </EditorGrid>
+      </EditorMain>
+
+      <MarketingEmailPreviewDrawer
+        open={previewDrawerOpen}
+        onClose={() => setPreviewDrawerOpen(false)}
+        srcDoc={srcDoc}
+        previewMode={previewMode}
+        onPreviewModeChange={setPreviewMode}
+        footer={
+          <Alert
+            type="info"
+            showIcon={false}
+            style={{ borderRadius: 10, fontSize: 12 }}
+            message={
+              <Text style={{ fontSize: 12 }}>
+                Footer and unsubscribe match your Sending tab. Mobile uses a 375px-wide frame; Desktop
+                uses a wider layout.
+              </Text>
+            }
+          />
+        }
+      />
 
       {/* Schedule modal */}
       <Modal

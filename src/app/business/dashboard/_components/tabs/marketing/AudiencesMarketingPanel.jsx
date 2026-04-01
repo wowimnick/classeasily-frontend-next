@@ -2,9 +2,10 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
-import { Alert, Button, Form, Input, Modal, Statistic, Table, Tag, Typography, message } from "antd";
+import { Alert, Button, Form, Input, Modal, Table, Tag, Typography, message } from "antd";
 import { UsergroupAddOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
+import NumberFlow from "@number-flow/react";
 import { businessService } from "@/services/apiService";
 import MarketingFeatureUpsell from "./MarketingFeatureUpsell";
 import {
@@ -74,14 +75,20 @@ export default function AudiencesMarketingPanel({ tier, onSegmentsChanged }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [r, f] = await Promise.all([
-      businessService.listMarketingSegments(),
-      businessService.getMarketingAudienceFacets(),
-    ]);
-    if (r.success) setRows(Array.isArray(r.data) ? r.data : []);
-    else setRows([]);
-    if (f.success) setFacets(f.data);
-    setLoading(false);
+    try {
+      const [r, f] = await Promise.all([
+        businessService.listMarketingSegments(),
+        businessService.getMarketingAudienceFacets(),
+      ]);
+      if (r.success) setRows(Array.isArray(r.data) ? r.data : []);
+      else setRows([]);
+      if (f.success) setFacets(f.data);
+    } catch (e) {
+      message.error(e?.message || "Could not load audiences.");
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -185,14 +192,21 @@ export default function AudiencesMarketingPanel({ tier, onSegmentsChanged }) {
             type="link"
             danger
             size="small"
-            onClick={async () => {
-              if (!window.confirm("Delete this audience?")) return;
-              const r = await businessService.deleteMarketingSegment(row.id);
-              if (r.success) {
-                message.success("Deleted.");
-                load();
-                onSegmentsChanged?.();
-              } else message.error(r.error);
+            onClick={() => {
+              Modal.confirm({
+                title: "Delete this audience?",
+                content: "This cannot be undone.",
+                okText: "Delete",
+                okButtonProps: { danger: true },
+                onOk: async () => {
+                  const r = await businessService.deleteMarketingSegment(row.id);
+                  if (r.success) {
+                    message.success("Deleted.");
+                    load();
+                    onSegmentsChanged?.();
+                  } else message.error(r.error);
+                },
+              });
             }}
           >
             Delete
@@ -231,6 +245,7 @@ export default function AudiencesMarketingPanel({ tier, onSegmentsChanged }) {
               dataSource={tableData}
               pagination={false}
               columns={columns}
+              locale={{ emptyText: "No audiences" }}
             />
           )}
         </MarketingTableSection>
@@ -305,12 +320,27 @@ export default function AudiencesMarketingPanel({ tier, onSegmentsChanged }) {
                 initial={{ opacity: 0, scale: 0.92 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.22 }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "baseline",
+                  gap: 6,
+                  padding: "4px 10px",
+                  borderRadius: 999,
+                  background: "#ecfdf5",
+                  border: "1px solid #a7f3d0",
+                }}
               >
-                <Statistic
-                  value={preview.count}
-                  suffix="contacts"
-                  valueStyle={{ fontSize: 16, color: "#10b981" }}
-                />
+                <span
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: "#059669",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  <NumberFlow value={Number(preview.count) || 0} />
+                </span>
+                <span style={{ fontSize: 12, color: "#047857" }}>contacts</span>
               </motion.div>
             )}
             {previewError && (

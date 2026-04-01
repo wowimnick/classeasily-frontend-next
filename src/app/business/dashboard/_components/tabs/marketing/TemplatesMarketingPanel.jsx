@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
-import { Button, Card, Dropdown, Typography, message } from "antd";
+import { Button, Card, Dropdown, Modal, Typography, message } from "antd";
 import { MoreHorizontal, FileText } from "lucide-react";
 import { businessService } from "@/services/apiService";
 import {
@@ -136,13 +136,20 @@ export default function TemplatesMarketingPanel({ tier }) {
                               key: "del",
                               label: "Delete",
                               danger: true,
-                              onClick: async () => {
-                                if (!window.confirm("Delete this template?")) return;
-                                const r = await businessService.deleteMarketingTemplate(row.id);
-                                if (r.success) {
-                                  message.success("Deleted.");
-                                  load();
-                                } else message.error(r.error);
+                              onClick: () => {
+                                Modal.confirm({
+                                  title: "Delete this template?",
+                                  content: "This cannot be undone.",
+                                  okText: "Delete",
+                                  okButtonProps: { danger: true },
+                                  onOk: async () => {
+                                    const r = await businessService.deleteMarketingTemplate(row.id);
+                                    if (r.success) {
+                                      message.success("Deleted.");
+                                      load();
+                                    } else message.error(r.error);
+                                  },
+                                });
                               },
                             },
                           ],

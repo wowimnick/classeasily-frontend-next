@@ -3,11 +3,19 @@
 import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { Button, Divider, Form, Input, Modal, Radio, Typography, message } from "antd";
+import { EyeOutlined } from "@ant-design/icons";
 import { businessService } from "@/services/apiService";
 import EmailBuilderEditor from "./builder/EmailBuilderEditor";
 import { createEmptyDocument } from "./builder/schema";
 import { renderBuilderPreviewHtml } from "./builder/renderPreview";
 import { MarketingEditorSkeleton } from "./marketingSkeletons";
+import {
+  buildMarketingFooterPreviewHtml,
+  sanitizeFooterAlignment,
+  sanitizeMarketingHexColor,
+} from "./marketingPreviewFooter";
+import MarketingEmailPreviewDrawer from "./MarketingEmailPreviewDrawer";
+import MarketingHtmlCodeEditor from "./MarketingHtmlCodeEditor";
 
 const { Text } = Typography;
 
@@ -58,28 +66,11 @@ const TopBarActions = styled.div`
   }
 `;
 
-const EditorGrid = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  gap: 24px;
-  align-items: start;
-  @media (max-width: 960px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const LeftPane = styled.div`
+const EditorMain = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
-`;
-
-const RightPane = styled.div`
-  position: sticky;
-  top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  max-width: 900px;
 `;
 
 const SettingsCard = styled.div`
@@ -88,44 +79,6 @@ const SettingsCard = styled.div`
   border-radius: 14px;
   padding: 20px 20px 4px;
 `;
-
-const PreviewCard = styled.div`
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  overflow: hidden;
-`;
-
-const PreviewBar = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
-`;
-
-const PreviewFrame = styled.iframe`
-  width: 100%;
-  height: ${(p) => (p.$mobile ? "667px" : "520px")};
-  min-height: 400px;
-  border: none;
-  background: #fff;
-  display: block;
-`;
-
-function buildPreviewFooter(footerAddress) {
-  const addr =
-    footerAddress || '<em style="color:#9ca3af">(Business address — set in Sending tab)</em>';
-  return `
-    <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
-    <p style="font-size:12px;color:#6b7280;font-family:system-ui,sans-serif;">
-      <a href="#" style="color:#6b7280;" onclick="return false;">Unsubscribe</a>
-      from marketing emails.
-    </p>
-    <p style="font-size:12px;color:#9ca3af;font-family:system-ui,sans-serif;">${addr}</p>
-  `;
-}
 
 function serializeState(parts) {
   return JSON.stringify({
@@ -145,9 +98,16 @@ export default function TemplateEditorScreen({ templateId, tier, onBack }) {
   const [htmlBody, setHtmlBody] = useState("<p>Hi {{first_name}},</p>");
   const [builderDoc, setBuilderDoc] = useState(() => createEmptyDocument());
   const [saving, setSaving] = useState(false);
-  const [previewMode, setPreviewMode] = useState("desktop");
+  const [previewMode, setPreviewMode] = useState("mobile");
+  const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false);
   const [init, setInit] = useState(true);
   const [footerAddress, setFooterAddress] = useState("");
+  const [unsubPreview, setUnsubPreview] = useState({
+    unsubscribe_text: "Unsubscribe",
+    unsubscribe_style: "link",
+    unsubscribe_color: "#6366f1",
+    footer_alignment: "left",
+  });
 
   const baselineRef = useRef(null);
   const deferredBuilder = useDeferredValue(builderDoc);
@@ -155,7 +115,15 @@ export default function TemplateEditorScreen({ templateId, tier, onBack }) {
   const load = useCallback(async () => {
     setInit(true);
     const st = await businessService.getMarketingSettings();
-    if (st.success && st.data) setFooterAddress(st.data.physical_address_footer || "");
+    if (st.success && st.data) {
+      setFooterAddress(st.data.physical_address_footer || "");
+      setUnsubPreview({
+        unsubscribe_text: st.data.unsubscribe_text || "Unsubscribe",
+        unsubscribe_style: st.data.unsubscribe_style === "button" ? "button" : "link",
+        unsubscribe_color: sanitizeMarketingHexColor(st.data.unsubscribe_color),
+        footer_alignment: sanitizeFooterAlignment(st.data.footer_alignment),
+      });
+    }
     if (isNew) {
       setInit(false);
       return;
@@ -247,10 +215,14 @@ export default function TemplateEditorScreen({ templateId, tier, onBack }) {
 
   const srcDoc = useMemo(() => {
     const mobileStyle = previewMode === "mobile" ? "max-width:375px;margin:0 auto;" : "";
+    const footer = buildMarketingFooterPreviewHtml({
+      physical_address_footer: footerAddress,
+      ...unsubPreview,
+    });
     return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
 <style>body{margin:0;padding:16px;${mobileStyle}font-family:system-ui,sans-serif;}</style>
-</head><body>${srcDocInner}${buildPreviewFooter(footerAddress)}</body></html>`;
-  }, [previewMode, srcDocInner, footerAddress]);
+</head><body>${srcDocInner}${footer}</body></html>`;
+  }, [previewMode, srcDocInner, footerAddress, unsubPreview]);
 
   if (init) {
     return (
@@ -276,14 +248,16 @@ export default function TemplateEditorScreen({ templateId, tier, onBack }) {
           </TopBarTitle>
         </TopBarLeading>
         <TopBarActions>
+          <Button icon={<EyeOutlined />} onClick={() => setPreviewDrawerOpen(true)}>
+            Preview
+          </Button>
           <Button loading={saving} key={`tpl-save-${saving}`} type="primary" onClick={save}>
             Save template
           </Button>
         </TopBarActions>
       </TopBar>
 
-      <EditorGrid>
-        <LeftPane>
+      <EditorMain>
           <SettingsCard>
             <Form layout="vertical" style={{ gap: 0 }}>
               <Form.Item label="Default subject line" style={{ marginBottom: 16 }}>
@@ -314,42 +288,22 @@ export default function TemplateEditorScreen({ templateId, tier, onBack }) {
           {contentType === "builder_json" ? (
             <EmailBuilderEditor document={builderDoc} onChange={setBuilderDoc} />
           ) : (
-            <Input.TextArea
-              rows={18}
-              value={htmlBody}
-              onChange={(e) => setHtmlBody(e.target.value)}
-              style={{ fontFamily: "monospace", fontSize: 13 }}
-            />
+            <MarketingHtmlCodeEditor value={htmlBody} onChange={setHtmlBody} minRows={20} />
           )}
-        </LeftPane>
-
-        <RightPane>
-          <PreviewCard>
-            <PreviewBar>
-              <Text strong style={{ fontSize: 13 }}>
-                Preview
-              </Text>
-              <Radio.Group
-                value={previewMode}
-                onChange={(e) => setPreviewMode(e.target.value)}
-                size="small"
-              >
-                <Radio.Button value="desktop">Desktop</Radio.Button>
-                <Radio.Button value="mobile">Mobile</Radio.Button>
-              </Radio.Group>
-            </PreviewBar>
-            <PreviewFrame
-              title="template preview"
-              sandbox="allow-same-origin"
-              srcDoc={srcDoc}
-              $mobile={previewMode === "mobile"}
-            />
-          </PreviewCard>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            Apply this template when creating a campaign (copy subject and body into the campaign editor).
+            Apply this template when creating a campaign. Use <strong>Preview</strong> to see footer and
+            unsubscribe (from Sending settings).
           </Text>
-        </RightPane>
-      </EditorGrid>
+      </EditorMain>
+
+      <MarketingEmailPreviewDrawer
+        open={previewDrawerOpen}
+        onClose={() => setPreviewDrawerOpen(false)}
+        srcDoc={srcDoc}
+        previewMode={previewMode}
+        onPreviewModeChange={setPreviewMode}
+        title="Template preview"
+      />
     </Shell>
   );
 }

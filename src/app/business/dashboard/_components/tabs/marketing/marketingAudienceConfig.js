@@ -41,11 +41,6 @@ const ADVANCED_OPTIONS = [
     help: "Contacts with at least one booking (can filter by date range).",
   },
   {
-    value: AUDIENCE_TYPES.HAS_NO_BOOKINGS,
-    label: "No bookings yet",
-    help: "Contacts who have never made a booking — great for first-time offers.",
-  },
-  {
     value: AUDIENCE_TYPES.CONTACT_SOURCE_IN,
     label: "Contact source",
     help: "Filter by how the contact originally entered your system.",
@@ -64,6 +59,11 @@ const LEGACY_OPTIONS = [
   {
     value: AUDIENCE_TYPES.TAGS,
     label: "Tags (legacy)",
+    help: "This rule type is no longer available for new audiences.",
+  },
+  {
+    value: AUDIENCE_TYPES.HAS_NO_BOOKINGS,
+    label: "No bookings yet (legacy)",
     help: "This rule type is no longer available for new audiences.",
   },
 ];

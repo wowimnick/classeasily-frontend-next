@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useSubscription } from "@/context/SubscriptionContext";
 
