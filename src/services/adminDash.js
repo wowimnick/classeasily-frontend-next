@@ -2306,6 +2306,35 @@ export const adminPayoutService = {
       };
     }
   },
+
+  /**
+   * Queue the same Celery task as the scheduled daily payout run (process_daily_payouts).
+   */
+  triggerManualPayout: async () => {
+    try {
+      const response = await axiosInstance.post(
+        "/admin/payouts/trigger-manual/"
+      );
+      return {
+        success: true,
+        data: response.data,
+        message: response.data?.message,
+      };
+    } catch (error) {
+      console.error("Error triggering manual payout run:", error);
+      const d = error.response?.data;
+      const detail =
+        typeof d?.detail === "string"
+          ? d.detail
+          : Array.isArray(d?.detail)
+            ? d.detail.map((x) => x?.string || JSON.stringify(x)).join(" ")
+            : null;
+      return {
+        success: false,
+        error: detail || d?.error || "Failed to trigger payout run",
+      };
+    }
+  },
 };
 
 export const blogAdminService = {

@@ -43,8 +43,10 @@ import {
   ExternalLink,
   Users,
   X,
+  Play,
 } from "lucide-react";
 import { adminPayoutService } from "@/services/adminDash";
+import { useAuth } from "@/lib/auth-client";
 import { theme as appTheme } from "@/components/theme";
 import { LordIcon } from "@/services/ReactUtils";
 import AdminMetricCards from "../shared/AdminMetricCards";
@@ -157,6 +159,19 @@ const RefreshButton = styled(Button)`
 `;
 
 const ExportButton = styled(Button)`
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  @media (max-width: 768px) {
+    flex: 1;
+  }
+`;
+
+const ManualPayoutButton = styled(Button)`
   height: 44px;
   border-radius: 12px;
   display: flex;
@@ -587,11 +602,19 @@ const MobilePayoutItem = ({ payout, onViewDetails }) => (
   </MobileCard>
 );
 
+const TRIGGER_MANUAL_PAYOUT_PERM = "quickstart.trigger_manual_payout";
+
 const PayoutsList = () => {
+  const { user } = useAuth();
+  const canTriggerManualPayout = (user?.permissions || []).includes(
+    TRIGGER_MANUAL_PAYOUT_PERM
+  );
+
   const [payouts, setPayouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [manualPayoutTriggering, setManualPayoutTriggering] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
@@ -755,12 +778,45 @@ const PayoutsList = () => {
       });
   };
 
+  const handleTriggerManualPayout = async () => {
+    setManualPayoutTriggering(true);
+    message.loading({ content: "Queueing payout run...", key: "manual_payout" });
+    try {
+      const response = await adminPayoutService.triggerManualPayout();
+      if (response.success) {
+        message.success({
+          content:
+            response.message ||
+            response.data?.message ||
+            "Payout run queued. Results appear after the worker processes the job.",
+          key: "manual_payout",
+          duration: 4,
+        });
+      } else {
+        message.error({
+          content: response.error || "Failed to trigger payout run.",
+          key: "manual_payout",
+          duration: 4,
+        });
+      }
+    } catch {
+      message.error({
+        content: "Failed to trigger payout run.",
+        key: "manual_payout",
+        duration: 4,
+      });
+    } finally {
+      setManualPayoutTriggering(false);
+    }
+  };
+
   const handleRetryPayout = async (payoutId) => {
     message.loading({ content: "Retrying payout...", key: "retry_payout" });
-    const response = await adminPayoutService.retryPayout(payoutId);
+    const response = await adminPayoutService.retryFailedPayout(payoutId);
     if (response.success) {
       message.success({
-        content: response.message || "Payout re-queued successfully!",
+        content:
+          response.data?.message || response.message || "Payout re-queued successfully!",
         key: "retry_payout",
         duration: 3,
       });
@@ -892,6 +948,23 @@ const PayoutsList = () => {
             </HeaderSubtitle>
           </div>
           <ActionButtonsContainer>
+            {canTriggerManualPayout && (
+              <Popconfirm
+                title="Run payout job now?"
+                description="Queues the same automated payout task as the nightly schedule. Workers process it in the background—refresh shortly to see updates."
+                okText="Run now"
+                cancelText="Cancel"
+                onConfirm={handleTriggerManualPayout}
+              >
+                <ManualPayoutButton
+                  type="primary"
+                  icon={<Play size={16} />}
+                  loading={manualPayoutTriggering}
+                >
+                  {!isMobile && "Run payout job"}
+                </ManualPayoutButton>
+              </Popconfirm>
+            )}
             <ExportButton
               icon={<Download size={16} />}
               onClick={handleExportData}
