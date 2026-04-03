@@ -69,6 +69,7 @@ import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { LordIcon } from "@/services/ReactUtils";
 
 import { Drawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 
 const { Option } = Select;
 const { useBreakpoint } = Grid;
@@ -216,6 +217,7 @@ const StyledDrawerOverlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1049;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const StyledDrawerContent = styled(Drawer.Content)`

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
 import { Table, Tag, Button, Space, Popconfirm, Typography, Divider } from "antd";
 import { Drawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import { Mail, Calendar, CreditCard, Hash, X } from "lucide-react";
 import message from "@/lib/message";
 import { businessMembershipService } from "@/services/apiService";
@@ -40,6 +41,7 @@ const Overlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1049;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const MobileShell = styled(Drawer.Content)`

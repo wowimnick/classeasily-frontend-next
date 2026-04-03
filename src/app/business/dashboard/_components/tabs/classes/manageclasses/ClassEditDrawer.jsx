@@ -78,6 +78,7 @@ import "leaflet/dist/leaflet.css";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
 import { theme as appTheme } from "@/components/theme";
 import { Drawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import {
   bookingTheme,
   InfoCard,
@@ -138,8 +139,8 @@ const StyledDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
   z-index: 1049;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const StyledDrawerContent = styled(Drawer.Content)`

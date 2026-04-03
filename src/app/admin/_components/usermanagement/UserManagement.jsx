@@ -79,6 +79,7 @@ import dayjs from "dayjs";
 import NumberFlow from "@number-flow/react";
 import { useAuthStore } from "@/lib/auth-client";
 import { Drawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import ShadowUserModal from "./ShadowUserModal";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
@@ -223,6 +224,7 @@ const StyledDrawerOverlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1049;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const StyledDrawerContent = styled(Drawer.Content)`
@@ -294,6 +296,7 @@ const RoleDrawerOverlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
   z-index: 1060;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const RoleMobileShell = styled(Drawer.Content)`

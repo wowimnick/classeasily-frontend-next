@@ -13,9 +13,11 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from "@dnd-kit/utilities";
 import { Alert, Button, Input, Select, Typography } from "antd";
 import { Drawer } from "vaul";
+import { vaulOverlayInlineBlur } from "@/lib/vaulOverlayBlur";
 import {
   GripVertical,
   Image as ImageLucide,
+  MailMinus,
   Minus,
   MousePointerClick,
   MoveVertical,
@@ -29,6 +31,7 @@ import {
   createImageBlock,
   createSpacerBlock,
   createTextBlock,
+  createUnsubscribeBlock,
   isBuilderDocumentVisuallyEmpty,
 } from "./schema";
 
@@ -42,6 +45,7 @@ const LABELS = {
   [BLOCK_TYPES.SPACER]: "Spacer",
   [BLOCK_TYPES.SECTION]: "Section",
   [BLOCK_TYPES.COLUMNS]: "Two columns",
+  [BLOCK_TYPES.UNSUBSCRIBE]: "Unsubscribe",
 };
 
 const PALETTE = [
@@ -50,6 +54,7 @@ const PALETTE = [
   { type: BLOCK_TYPES.BUTTON, icon: MousePointerClick, label: "Button" },
   { type: BLOCK_TYPES.DIVIDER, icon: Minus, label: "Divider" },
   { type: BLOCK_TYPES.SPACER, icon: MoveVertical, label: "Spacer" },
+  { type: BLOCK_TYPES.UNSUBSCRIBE, icon: MailMinus, label: "Unsubscribe" },
 ];
 
 const Studio = styled.div`
@@ -213,7 +218,8 @@ function BlockFields({ block, onChange }) {
           message="Merge fields"
           description={
             <Paragraph style={{ marginBottom: 0 }}>
-              Use placeholders like <Text code>{`{{first_name}}`}</Text> in your HTML.
+              Use <Text code>{`{{first_name}}`}</Text>, <Text code>{`{{unsubscribe_url}}`}</Text> (required
+              to send), and other merge tags in your HTML. The Unsubscribe block inserts the link for you.
             </Paragraph>
           }
         />
@@ -346,6 +352,58 @@ function BlockFields({ block, onChange }) {
       </>
     );
   }
+  if (block.type === BLOCK_TYPES.UNSUBSCRIBE) {
+    return (
+      <>
+        <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 6 }}>
+          Label
+        </Text>
+        <Input
+          size="small"
+          value={props.label || ""}
+          onChange={(e) => patch({ label: e.target.value })}
+          style={{ marginBottom: 10 }}
+        />
+        <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 6 }}>
+          Style
+        </Text>
+        <Select
+          size="small"
+          style={{ width: "100%", marginBottom: 10 }}
+          value={props.style || "link"}
+          onChange={(v) => patch({ style: v })}
+          options={[
+            { value: "link", label: "Text link" },
+            { value: "button", label: "Button" },
+          ]}
+        />
+        <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 6 }}>
+          Color
+        </Text>
+        <Input
+          size="small"
+          placeholder="#6366f1"
+          value={props.color || ""}
+          onChange={(e) => patch({ color: e.target.value })}
+          style={{ marginBottom: 10 }}
+        />
+        <Select
+          size="small"
+          style={{ width: "100%" }}
+          value={props.align || "center"}
+          onChange={(v) => patch({ align: v })}
+          options={[
+            { value: "left", label: "Left" },
+            { value: "center", label: "Center" },
+            { value: "right", label: "Right" },
+          ]}
+        />
+        <Text type="secondary" style={{ fontSize: 11, display: "block", marginTop: 10 }}>
+          Links to <Text code>{`{{unsubscribe_url}}`}</Text> for each recipient.
+        </Text>
+      </>
+    );
+  }
   if (block.type === BLOCK_TYPES.SECTION) {
     return (
       <Alert
@@ -407,7 +465,7 @@ function useNarrowMobile() {
 /**
  * @param {{ document: import('./schema.js').MarketingBuilderDocument, onChange: (d: import('./schema.js').MarketingBuilderDocument) => void }} props
  */
-export default function EmailBuilderEditor({ document: doc, onChange }) {
+export default function EmailBuilderEditor({ document: doc, onChange, unsubDefaults = {} }) {
   const blocks = doc?.blocks || [];
   const ids = useMemo(() => blocks.map((b) => b.id), [blocks]);
   const [selectedId, setSelectedId] = useState(() => blocks[0]?.id ?? null);
@@ -457,6 +515,13 @@ export default function EmailBuilderEditor({ document: doc, onChange }) {
   };
 
   const addBlock = (type) => {
+    if (type === BLOCK_TYPES.UNSUBSCRIBE) {
+      const nb = createUnsubscribeBlock({}, unsubDefaults);
+      setBlocks([...blocks, nb]);
+      setSelectedId(nb.id);
+      setPaletteOpen(false);
+      return;
+    }
     const creators = {
       [BLOCK_TYPES.TEXT]: createTextBlock,
       [BLOCK_TYPES.IMAGE]: createImageBlock,
@@ -544,6 +609,8 @@ export default function EmailBuilderEditor({ document: doc, onChange }) {
             if (block.type === BLOCK_TYPES.SPACER) preview = `Spacer ${block.props?.height ?? 24}px`;
             if (block.type === BLOCK_TYPES.SECTION) preview = "Section (use HTML for edits)";
             if (block.type === BLOCK_TYPES.COLUMNS) preview = "Two columns (use HTML for edits)";
+            if (block.type === BLOCK_TYPES.UNSUBSCRIBE)
+              preview = block.props?.label || "Unsubscribe";
 
             return (
               <SortableRow
@@ -569,7 +636,7 @@ export default function EmailBuilderEditor({ document: doc, onChange }) {
   const drawerShell = (title, open, onOpenChange, children) => (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
       <Drawer.Portal>
-        <Drawer.Overlay style={{ background: "rgba(0,0,0,0.4)", position: "fixed", inset: 0 }} />
+        <Drawer.Overlay style={{ background: "rgba(0,0,0,0.4)", position: "fixed", inset: 0, ...vaulOverlayInlineBlur }} />
         <Drawer.Content
           style={{
             position: "fixed",

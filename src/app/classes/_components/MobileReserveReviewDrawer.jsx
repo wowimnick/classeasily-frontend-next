@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 import styled from "styled-components";
 import { Drawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import { Star, CalendarDays, Clock, Users, ChevronRight, Shield } from "lucide-react";
 import { formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
 import { getCancellationPolicyText, getDurationText } from "./steps/utils";
@@ -27,13 +28,15 @@ const DrawerOverlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1050;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const NestedDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 1055; 
+  z-index: 1055;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const DrawerContent = styled(Drawer.Content)`

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import styled from "styled-components";
 import { Drawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import {
   Table,
   Button,
@@ -124,6 +125,7 @@ const StyledDrawerOverlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1049;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const StyledDrawerContent = styled(Drawer.Content)`

@@ -41,6 +41,7 @@ import { businessService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
 import { useDashboard } from "../../DashboardContext";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 
 const { Title, Text, Paragraph, Link } = Typography;
 const { useBreakpoint } = Grid;
@@ -85,8 +86,8 @@ const StyledDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
   z-index: 1049;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const StyledDrawerContent = styled(Drawer.Content)`

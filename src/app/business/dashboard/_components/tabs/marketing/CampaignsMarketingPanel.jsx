@@ -325,7 +325,13 @@ export default function CampaignsMarketingPanel({ onEditCampaign, usage }) {
         dataIndex: "status",
         width: 100,
         render: (v, row) =>
-          row.__skeleton ? <Skel $h="22px" $w="52px" $r="10px" /> : <Tag color={statusColor(v)}>{v || "—"}</Tag>,
+          row.__skeleton ? (
+            <Skel $h="22px" $w="52px" $r="10px" />
+          ) : (
+            <Tag color={statusColor(v)}>
+              {v ? v.charAt(0).toUpperCase() + v.slice(1) : "—"}
+            </Tag>
+          ),
       },
     ];
 

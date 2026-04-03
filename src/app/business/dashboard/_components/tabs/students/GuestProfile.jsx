@@ -34,6 +34,7 @@ import dayjs from "dayjs";
 import { theme as appTheme } from "@/components/theme";
 import NumberFlow from "@number-flow/react";
 import { Drawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import CompactContactModal from "./CompactContactModal";
 
 const { Text, Title } = Typography;
@@ -43,8 +44,8 @@ const StyledDrawerOverlay = styled(Drawer.Overlay)`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
   z-index: 1010;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const StyledDrawerContent = styled(Drawer.Content)`

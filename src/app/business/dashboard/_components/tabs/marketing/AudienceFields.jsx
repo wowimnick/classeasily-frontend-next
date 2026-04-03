@@ -158,18 +158,29 @@ export default function AudienceFields({
         />
       );
     }
+    const segIds = Array.isArray(audienceFilter.segment_ids)
+      ? audienceFilter.segment_ids
+      : audienceFilter.segment_id
+        ? [audienceFilter.segment_id]
+        : [];
     return (
       <div>
         <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
-          Saved audience
+          Saved audience(s)
         </Text>
         <Select
+          mode="multiple"
           showSearch
           optionFilterProp="label"
           style={{ width: "100%" }}
-          placeholder="Choose saved audience…"
-          value={audienceFilter.segment_id}
-          onChange={(v) => onFilterChange({ segment_id: v })}
+          placeholder="Choose one or more saved audiences…"
+          value={segIds}
+          onChange={(v) =>
+            onFilterChange({
+              segment_ids: v,
+              segment_id: undefined,
+            })
+          }
           options={segments.map((s) => ({ value: s.id, label: s.name }))}
         />
       </div>

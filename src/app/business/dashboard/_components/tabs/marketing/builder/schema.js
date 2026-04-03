@@ -19,15 +19,49 @@ export const BLOCK_TYPES = {
   SPACER: "spacer",
   SECTION: "section",
   COLUMNS: "columns",
+  UNSUBSCRIBE: "unsubscribe",
 };
 
 /**
  * @returns {import('./schema').MarketingBuilderDocument}
  */
+const DEFAULT_INTRO_HTML =
+  '<p>Hi {{first_name}},</p><p>Your message here.</p><p><a href="{{unsubscribe_url}}">Unsubscribe</a></p>';
+
 export function createEmptyDocument() {
   return {
     schema_version: MARKETING_BUILDER_SCHEMA_VERSION,
-    blocks: [createTextBlock()],
+    blocks: [
+      createTextBlock({
+        props: {
+          content: DEFAULT_INTRO_HTML,
+        },
+      }),
+    ],
+  };
+}
+
+/**
+ * @param {object} [unsubDefaults]
+ * @param {string} [unsubDefaults.unsubscribe_text]
+ * @param {'link'|'button'} [unsubDefaults.unsubscribe_style]
+ * @param {string} [unsubDefaults.unsubscribe_color]
+ * @param {string} [unsubDefaults.footer_alignment]
+ */
+export function createUnsubscribeBlock(overrides = {}, unsubDefaults = {}) {
+  const style =
+    unsubDefaults.unsubscribe_style === "button" ? "button" : "link";
+  return {
+    id: crypto.randomUUID(),
+    type: BLOCK_TYPES.UNSUBSCRIBE,
+    props: {
+      label: unsubDefaults.unsubscribe_text || "Unsubscribe",
+      style,
+      color: unsubDefaults.unsubscribe_color || "#6366f1",
+      align: unsubDefaults.footer_alignment || "center",
+      ...overrides.props,
+    },
+    ...overrides,
   };
 }
 
@@ -36,7 +70,7 @@ export function createTextBlock(overrides = {}) {
     id: crypto.randomUUID(),
     type: BLOCK_TYPES.TEXT,
     props: {
-      content: "<p>Hi {{first_name}},</p><p>Your message here.</p>",
+      content: DEFAULT_INTRO_HTML,
       align: "left",
       fontSize: 16,
       color: "#333333",

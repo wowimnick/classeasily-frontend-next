@@ -8,6 +8,7 @@ import { UserPlus, X } from "lucide-react";
 import message from "@/lib/message";
 import { businessMembershipService } from "@/services/apiService";
 import { theme as appTheme } from "@/components/theme";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 
 const { TextArea } = Input;
 
@@ -27,6 +28,7 @@ const Overlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1049;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const MobileShell = styled(Drawer.Content)`

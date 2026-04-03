@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
-import { Alert, Button, Form, Input, Modal, Table, Tag, Typography, message } from "antd";
+import { Alert, Button, Checkbox, Form, Input, Modal, Table, Tag, Typography, message } from "antd";
 import { UsergroupAddOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import NumberFlow from "@number-flow/react";
@@ -18,6 +18,7 @@ import {
 import { Skel, generateMarketingTableSkeletonRows } from "./marketingSkeletons";
 import { getAudienceOptions, getAudienceOption, AUDIENCE_TYPES } from "./marketingAudienceConfig";
 import AudienceFields from "./AudienceFields";
+import { campaignAudienceToApi } from "./marketingAudiencePayload";
 
 const { Text } = Typography;
 
@@ -30,16 +31,19 @@ const AudienceTypeSelect = styled.div`
   }
 `;
 
-const TypeCard = styled.button`
-  text-align: left;
-  padding: 10px 14px;
-  border: 2px solid ${(p) => (p.$active ? "#6366f1" : "#e5e7eb")};
+const TypeRow = styled.label`
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid ${(p) => (p.$on ? "#6366f1" : "#e5e7eb")};
   border-radius: 10px;
-  background: ${(p) => (p.$active ? "#f5f3ff" : "#fff")};
+  background: ${(p) => (p.$on ? "#f5f3ff" : "#fff")};
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
+  margin: 0;
   &:hover {
-    border-color: #6366f1;
+    border-color: #a5b4fc;
   }
 `;
 
@@ -47,7 +51,7 @@ const TypeLabel = styled.span`
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: ${(p) => (p.$active ? "#4338ca" : "#374151")};
+  color: ${(p) => (p.$on ? "#4338ca" : "#374151")};
 `;
 
 const TypeHelp = styled.span`
@@ -64,8 +68,8 @@ export default function AudiencesMarketingPanel({ tier, onSegmentsChanged }) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
-  const [audienceType, setAudienceType] = useState(AUDIENCE_TYPES.ALL_CONTACTS);
-  const [audienceFilter, setAudienceFilter] = useState({});
+  const [selectedTypes, setSelectedTypes] = useState([AUDIENCE_TYPES.ALL_CONTACTS]);
+  const [filterByType, setFilterByType] = useState({});
   const [preview, setPreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(null);
@@ -95,10 +99,28 @@ export default function AudiencesMarketingPanel({ tier, onSegmentsChanged }) {
     if (tier?.saved_segments_enabled) load();
   }, [load, tier?.saved_segments_enabled]);
 
+  const toggleType = (value) => {
+    setPreview(null);
+    setPreviewError(null);
+    if (value === AUDIENCE_TYPES.ALL_CONTACTS) {
+      setSelectedTypes([AUDIENCE_TYPES.ALL_CONTACTS]);
+      setFilterByType({});
+      return;
+    }
+    setSelectedTypes((prev) => {
+      const withoutAll = prev.filter((x) => x !== AUDIENCE_TYPES.ALL_CONTACTS);
+      if (withoutAll.includes(value)) {
+        const next = withoutAll.filter((x) => x !== value);
+        return next.length ? next : [AUDIENCE_TYPES.ALL_CONTACTS];
+      }
+      return [...withoutAll, value];
+    });
+  };
+
   const openModal = () => {
     setName("");
-    setAudienceType(AUDIENCE_TYPES.ALL_CONTACTS);
-    setAudienceFilter({});
+    setSelectedTypes([AUDIENCE_TYPES.ALL_CONTACTS]);
+    setFilterByType({});
     setPreview(null);
     setPreviewError(null);
     setOpen(true);
@@ -107,9 +129,10 @@ export default function AudiencesMarketingPanel({ tier, onSegmentsChanged }) {
   const runPreview = async () => {
     setPreviewLoading(true);
     setPreviewError(null);
+    const { audience_type, audience_filter } = campaignAudienceToApi(selectedTypes, filterByType);
     const r = await businessService.previewMarketingAudience({
-      audience_type: audienceType,
-      audience_filter: audienceFilter,
+      audience_type,
+      audience_filter,
     });
     setPreviewLoading(false);
     if (r.success) setPreview(r.data);
@@ -125,10 +148,11 @@ export default function AudiencesMarketingPanel({ tier, onSegmentsChanged }) {
       return;
     }
     setSaving(true);
+    const { audience_type, audience_filter } = campaignAudienceToApi(selectedTypes, filterByType);
     const r = await businessService.createMarketingSegment({
       name: name.trim(),
-      audience_type: audienceType,
-      audience_filter: audienceFilter,
+      audience_type,
+      audience_filter,
     });
     setSaving(false);
     if (r.success) {
@@ -174,7 +198,9 @@ export default function AudiencesMarketingPanel({ tier, onSegmentsChanged }) {
               {v}
             </Text>
             <Tag style={{ marginTop: 4, fontSize: 11 }}>
-              {getAudienceOption(row.audience_type)?.label || row.audience_type}
+              {row.audience_type === "multi"
+                ? "Combined audience"
+                : getAudienceOption(row.audience_type)?.label || row.audience_type}
             </Tag>
           </div>
         ),
@@ -214,6 +240,8 @@ export default function AudiencesMarketingPanel({ tier, onSegmentsChanged }) {
         ),
     },
   ];
+
+  const typesNeedingFields = selectedTypes.filter((t) => t !== AUDIENCE_TYPES.ALL_CONTACTS);
 
   return (
     <Panel>
@@ -268,49 +296,45 @@ export default function AudiencesMarketingPanel({ tier, onSegmentsChanged }) {
             />
           </Form.Item>
 
-          <Form.Item label="Match rule" style={{ marginBottom: 12 }}>
+          <Form.Item label="Match rules (combine with OR)" style={{ marginBottom: 12 }}>
             <AudienceTypeSelect>
-              {options.map((opt) => (
-                <TypeCard
-                  key={opt.value}
-                  type="button"
-                  $active={audienceType === opt.value}
-                  onClick={() => {
-                    setAudienceType(opt.value);
-                    setAudienceFilter({});
-                    setPreview(null);
-                    setPreviewError(null);
-                  }}
-                >
-                  <TypeLabel $active={audienceType === opt.value}>{opt.label}</TypeLabel>
-                  <TypeHelp>{opt.help}</TypeHelp>
-                </TypeCard>
-              ))}
+              {options.map((opt) => {
+                const on = selectedTypes.includes(opt.value);
+                return (
+                  <TypeRow key={opt.value} $on={on} htmlFor={`aud-${opt.value}`}>
+                    <Checkbox
+                      id={`aud-${opt.value}`}
+                      checked={on}
+                      onChange={() => toggleType(opt.value)}
+                    />
+                    <div>
+                      <TypeLabel $on={on}>{opt.label}</TypeLabel>
+                      <TypeHelp>{opt.help}</TypeHelp>
+                    </div>
+                  </TypeRow>
+                );
+              })}
             </AudienceTypeSelect>
           </Form.Item>
 
-          {audienceType !== AUDIENCE_TYPES.ALL_CONTACTS && (
-            <Form.Item style={{ marginBottom: 12 }}>
+          {typesNeedingFields.map((t) => (
+            <Form.Item key={t} label={getAudienceOption(t)?.label || t} style={{ marginBottom: 12 }}>
               <AudienceFields
-                audienceType={audienceType}
-                audienceFilter={audienceFilter}
+                audienceType={t}
+                audienceFilter={filterByType[t] || {}}
                 onFilterChange={(patch) => {
-                  setAudienceFilter((prev) => ({ ...prev, ...patch }));
+                  setFilterByType((prev) => ({ ...prev, [t]: { ...(prev[t] || {}), ...patch } }));
                   setPreview(null);
                 }}
                 facets={facets}
                 segments={[]}
               />
             </Form.Item>
-          )}
+          ))}
 
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 16 }}>
             <motion.span whileTap={{ scale: 0.97 }} style={{ display: "inline-block" }}>
-              <Button
-                onClick={runPreview}
-                loading={previewLoading}
-                key={`preview-${previewLoading}`}
-              >
+              <Button onClick={runPreview} loading={previewLoading}>
                 Preview count
               </Button>
             </motion.span>
@@ -350,7 +374,7 @@ export default function AudiencesMarketingPanel({ tier, onSegmentsChanged }) {
 
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <Button onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="primary" loading={saving} key={`aud-save-${saving}`} onClick={saveSegment}>
+            <Button type="primary" loading={saving} onClick={saveSegment}>
               Save audience
             </Button>
           </div>

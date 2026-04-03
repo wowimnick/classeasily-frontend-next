@@ -15,6 +15,7 @@ import { Mail, Lock, User, Phone, ArrowLeft, ArrowRight } from "lucide-react";
 import posthog from "posthog-js";
 import dynamic from "next/dynamic";
 import { Drawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import { useRouter } from "next/navigation";
 
 // Better Auth imports
@@ -89,6 +90,7 @@ const StyledDrawerOverlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1049;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const StyledDrawerContent = styled(Drawer.Content)`

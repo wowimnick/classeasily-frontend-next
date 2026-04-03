@@ -18,6 +18,7 @@ import {
 } from "antd";
 import { Plus, RefreshCcw, X } from "lucide-react";
 import { Drawer } from "vaul";
+import { vaulOverlayInlineBlur } from "@/lib/vaulOverlayBlur";
 import NumberFlow from "@number-flow/react";
 import dayjs from "dayjs";
 import DashboardBreadcrumb from "@/app/business/dashboard/_components/DashboardBreadcrumb";
@@ -427,7 +428,7 @@ export default function NotificationCampaigns() {
 
       <Drawer.Root open={drawerOpen} onOpenChange={setDrawerOpen}>
         <Drawer.Portal>
-          <Drawer.Overlay style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }} />
+          <Drawer.Overlay style={{ background: "rgba(0,0,0,0.3)", ...vaulOverlayInlineBlur }} />
           <Drawer.Content
             style={{
               background: "#fff",

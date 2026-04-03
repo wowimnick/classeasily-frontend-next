@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import styled from "styled-components";
 import { Drawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import NumberFlow from "@number-flow/react";
 import {
   Table,
@@ -321,6 +322,7 @@ const VaulOverlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1049;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const VaulMobileContent = styled(Drawer.Content)`
@@ -388,6 +390,7 @@ const VerifOverlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
   z-index: 1060;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const VerifMobileShell = styled(Drawer.Content)`

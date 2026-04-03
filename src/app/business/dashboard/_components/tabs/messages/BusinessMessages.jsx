@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useSearchParams } from "next/navigation";
 import styled, { keyframes } from "styled-components";
 import { Drawer } from "vaul";
+import { vaulOverlayInlineBlur } from "@/lib/vaulOverlayBlur";
 import {
   MessageSquare,
   Send,
@@ -1098,6 +1099,7 @@ export default function BusinessMessages() {
                 inset: 0,
                 backgroundColor: "rgba(0,0,0,0.4)",
                 zIndex: 1000,
+                ...vaulOverlayInlineBlur,
               }}
             />
             <VaulDrawerContent>

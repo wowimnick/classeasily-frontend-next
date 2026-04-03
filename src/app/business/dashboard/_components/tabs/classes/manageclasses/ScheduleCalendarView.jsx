@@ -23,6 +23,7 @@ import {
   Button,
 } from "antd";
 import { Drawer as VaulDrawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import dayjs from "dayjs";
 import weekOfYear from "dayjs/plugin/weekOfYear";
 import isBetween from "dayjs/plugin/isBetween";
@@ -1300,6 +1301,7 @@ const VaulOverlay = styled(VaulDrawer.Overlay)`
   inset: 0;
   background: rgba(0,0,0,0.4);
   z-index: 1100;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const VaulContent = styled(VaulDrawer.Content)`

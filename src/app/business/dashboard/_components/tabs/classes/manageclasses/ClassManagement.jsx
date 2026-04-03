@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { Drawer as VaulDrawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import {
   Form,
   Tabs,
@@ -579,8 +580,8 @@ const StyledScheduleDrawerOverlay = styled(VaulDrawer.Overlay)`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
   z-index: 1000;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const StyledScheduleDrawerContent = styled(VaulDrawer.Content)`

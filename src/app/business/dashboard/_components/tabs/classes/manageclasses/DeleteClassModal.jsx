@@ -6,6 +6,7 @@ import { AlertTriangle } from "lucide-react";
 import styled from "styled-components";
 import { LordIcon } from "@/services/ReactUtils";
 import { Drawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import { theme } from "@/components/theme";
 
 const { Text, Title, Paragraph } = Typography;
@@ -16,6 +17,7 @@ const StyledDrawerOverlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1049;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const StyledDrawerContent = styled(Drawer.Content)`

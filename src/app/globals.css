@@ -131,6 +131,14 @@ a {
   touch-action: auto;
 }
 
+/* Vaul injects user-select: none on [data-vaul-drawer] for pointer devices; allow selecting text in all drawers */
+@media (hover: hover) and (pointer: fine) {
+  [data-vaul-drawer] {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+  }
+}
+
 /* =========================================
    3. LAYOUT UTILITIES
    ========================================= */

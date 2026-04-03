@@ -11,6 +11,7 @@ import React, {
 } from "react";
 import styled from "styled-components";
 import { Drawer as VaulDrawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import {
   Form,
   Input,
@@ -82,6 +83,7 @@ const StyledDrawerOverlay = styled(VaulDrawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1049;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const StyledDrawerContent = styled(VaulDrawer.Content)`

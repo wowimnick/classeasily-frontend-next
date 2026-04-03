@@ -32,6 +32,7 @@ import {
   formatPhoneNumber,
 } from "@/services/utils";
 import { Drawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 
 const { Text, Title, Paragraph } = Typography;
 
@@ -56,6 +57,7 @@ const fadeIn = keyframes`from{opacity:0;transform:translateY(6px)}to{opacity:1;t
 // ─── Vaul drawer shells ──────────────────────────────────────────────────────
 const Overlay = styled(Drawer.Overlay)`
   position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1049;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const MobileShell = styled(Drawer.Content)`

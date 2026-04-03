@@ -209,15 +209,17 @@ export default function TemplateEditorScreen({ templateId, tier, onBack }) {
   };
 
   const srcDocInner = useMemo(() => {
-    if (contentType === "builder_json") return renderBuilderPreviewHtml(deferredBuilder);
-    return htmlBody || "<p>(empty)</p>";
+    let inner =
+      contentType === "builder_json" ? renderBuilderPreviewHtml(deferredBuilder) : htmlBody || "<p>(empty)</p>";
+    inner = inner.replace(/\{\{unsubscribe_url\}\}/g, "#unsub-preview");
+    return inner;
   }, [contentType, deferredBuilder, htmlBody]);
 
   const srcDoc = useMemo(() => {
     const mobileStyle = previewMode === "mobile" ? "max-width:375px;margin:0 auto;" : "";
     const footer = buildMarketingFooterPreviewHtml({
       physical_address_footer: footerAddress,
-      ...unsubPreview,
+      footer_alignment: unsubPreview.footer_alignment,
     });
     return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
 <style>body{margin:0;padding:16px;${mobileStyle}font-family:system-ui,sans-serif;}</style>

@@ -25,6 +25,7 @@ import {
 } from "antd";
 import { X, AlertCircle, SidebarOpen, Eye, ChevronRight, Lock, ArrowRight } from "lucide-react";
 import { Drawer } from "vaul";
+import { vaulOverlayInlineBlur } from "@/lib/vaulOverlayBlur";
 
 import { businessService } from "@/services/apiService";
 import { useAuth } from "@/lib/auth-client";
@@ -203,7 +204,7 @@ function WidgetUpgradeModal({ open, onClose }) {
     return (
       <Drawer.Root open={open} onOpenChange={(v) => !v && onClose()}>
         <Drawer.Portal>
-          <Drawer.Overlay style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)", zIndex: 1000 }} />
+          <Drawer.Overlay style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 1000, ...vaulOverlayInlineBlur }} />
           <Drawer.Content
             style={{
               position: "fixed", bottom: 0, left: 0, right: 0,
@@ -271,7 +272,7 @@ function MembershipsUpgradeModal({ open, onClose }) {
     return (
       <Drawer.Root open={open} onOpenChange={(v) => !v && onClose()}>
         <Drawer.Portal>
-          <Drawer.Overlay style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)", zIndex: 1000 }} />
+          <Drawer.Overlay style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 1000, ...vaulOverlayInlineBlur }} />
           <Drawer.Content
             style={{
               position: "fixed", bottom: 0, left: 0, right: 0,

@@ -47,6 +47,16 @@ function renderBlock(block) {
     const h = Number(props.height) || 24;
     return `<div style="height:${h}px;line-height:${h}px;">&nbsp;</div>`;
   }
+  if (type === "unsubscribe") {
+    const align = esc(props.align || "center");
+    const color = esc(props.color || "#6366f1");
+    const label = esc(props.label || "Unsubscribe");
+    const href = "#unsub-preview";
+    if ((props.style || "link") === "button") {
+      return `<div style="text-align:${align};margin:16px 0;"><a href="${href}" style="display:inline-block;background-color:${color};color:#ffffff;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;">${label}</a></div>`;
+    }
+    return `<div style="text-align:${align};margin:12px 0;"><a href="${href}" style="color:${color};text-decoration:underline;font-size:14px;font-weight:500;">${label}</a></div>`;
+  }
   if (type === "section") {
     const bg = esc(props.backgroundColor || "#ffffff");
     const py = Number(props.paddingY) || 24;

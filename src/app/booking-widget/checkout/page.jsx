@@ -25,6 +25,7 @@ import { theme as appTheme } from "@/components/theme";
 import { Modal } from "antd";
 import confetti from "canvas-confetti";
 import { Drawer } from "vaul";
+import { vaulOverlayInlineBlur } from "@/lib/vaulOverlayBlur";
 
 // ─── Stripe ───────────────────────────────────────────────────────────────────
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
@@ -828,7 +829,7 @@ function SuccessModal({ open, plan, onClose }) {
       {isMobile ? (
         <Drawer.Root open={open} onOpenChange={(v) => !v && onClose()}>
           <Drawer.Portal>
-            <Drawer.Overlay style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)", zIndex: 1000 }} />
+            <Drawer.Overlay style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 1000, ...vaulOverlayInlineBlur }} />
             <Drawer.Content
               style={{
                 position: "fixed", bottom: 0, left: 0, right: 0,

@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import Lottie from "lottie-react";
 import { Drawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 
 import { getCancellationPolicyText, getDurationText } from "./utils";
 import {
@@ -900,6 +901,7 @@ const PriceDetailsDrawerOverlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1049;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 const PriceDetailsDrawerContent = styled(Drawer.Content)`
   background: white;
@@ -933,6 +935,7 @@ const PolicyDetailsDrawerOverlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1055;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 const PolicyDetailsDrawerContent = styled(Drawer.Content)`
   background: #fff;

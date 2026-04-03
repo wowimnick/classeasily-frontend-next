@@ -24,6 +24,7 @@ import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import styled, { ThemeProvider } from "styled-components";
 import { motion } from "framer-motion";
 import { Drawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 
 import { useAuth } from "@/lib/auth-client";
 import { useAuthModal } from "@/context/AuthContext";
@@ -43,6 +44,7 @@ const StyledDrawerOverlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1049;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const StyledDrawerContent = styled(Drawer.Content)`

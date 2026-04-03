@@ -6,6 +6,7 @@ import { Modal, Button, Result, Typography, ConfigProvider, Skeleton } from "ant
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, Clock, Users, AlertTriangle, Info, Check } from "lucide-react";
 import { Drawer } from "vaul";
+import { vaulOverlayInlineBlur } from "@/lib/vaulOverlayBlur";
 import { useSearchParams, useRouter } from "next/navigation";
 import message from "@/lib/message";
 
@@ -341,7 +342,7 @@ function CancellationOverlayInner() {
             {isMobile ? (
                 <Drawer.Root open={!!token} onOpenChange={(open) => !open && handleClose()}>
                     <Drawer.Portal>
-                        <Drawer.Overlay style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 1000 }} />
+                        <Drawer.Overlay style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 1000, ...vaulOverlayInlineBlur }} />
                         <Drawer.Content style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: 'white', borderTopLeftRadius: 16, borderTopRightRadius: 16, zIndex: 1001, outline: 'none' }}>
                             <div style={{ width: 40, height: 4, background: '#ddd', borderRadius: 2, margin: '12px auto' }} />
                             <AnimatedModalContent>

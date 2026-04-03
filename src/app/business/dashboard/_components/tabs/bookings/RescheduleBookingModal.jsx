@@ -9,6 +9,7 @@ import {
   CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ArrowRight,
 } from "lucide-react";
 import { Drawer } from "vaul";
+import { vaulOverlayInlineBlur } from "@/lib/vaulOverlayBlur";
 import moment from "moment";
 
 import message from "@/lib/message";
@@ -561,7 +562,7 @@ const RescheduleBookingModal = ({ visible, booking, onSuccess, onCancel }) => {
       {isMobile ? (
         <Drawer.Root open={visible} onOpenChange={open => !open && onCancel()}>
           <Drawer.Portal>
-            <Drawer.Overlay style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1000 }} />
+            <Drawer.Overlay style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1000, ...vaulOverlayInlineBlur }} />
             <Drawer.Content style={{
               position: "fixed", bottom: 0, left: 0, right: 0, background: "white",
               borderTopLeftRadius: 20, borderTopRightRadius: 20,

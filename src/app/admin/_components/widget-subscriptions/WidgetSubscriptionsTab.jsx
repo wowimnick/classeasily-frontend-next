@@ -33,6 +33,7 @@ import {
   Hash,
 } from "lucide-react";
 import { Drawer } from "vaul";
+import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import { adminWidgetSubscriptionService } from "@/services/adminDash";
 import { theme as appTheme } from "@/components/theme";
 import dayjs from "dayjs";
@@ -147,6 +148,7 @@ const DrawerOverlay = styled(Drawer.Overlay)`
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 1050;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
 const MobileShell = styled(Drawer.Content)`
