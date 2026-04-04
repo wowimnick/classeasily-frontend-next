@@ -3,7 +3,6 @@
 import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { Modal, Button, message as antMessage } from "antd";
 import NumberFlow, { NumberFlowGroup } from "@number-flow/react";
-import { motion, AnimatePresence } from "framer-motion";
 import { X, Check } from "lucide-react";
 import styled from "styled-components";
 
@@ -181,24 +180,56 @@ const Table = styled.table`
 
 const Th = styled.th`
   text-align: left;
-  padding: 12px 14px;
+  padding: 12px 10px;
   font-weight: 600;
   color: #374151;
   border-bottom: 1px solid #e5e7eb;
   background: #fff;
 `;
 
+const ThTier = styled.th`
+  text-align: center;
+  padding: 12px 8px;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+  min-width: 72px;
+`;
+
+const ThTierActive = styled(ThTier)`
+  background: #fff5f5;
+  color: #111827;
+  box-shadow: inset 0 -2px 0 #fc4056;
+`;
+
 const Td = styled.td`
-  padding: 11px 14px;
+  padding: 11px 10px;
   border-bottom: 1px solid #e5e7eb;
   color: #1f2937;
   vertical-align: middle;
   background: #fff;
+  font-size: 13px;
 `;
 
-const TdRight = styled(Td)`
-  text-align: right;
-  width: 120px;
+const TdCenter = styled(Td)`
+  text-align: center;
+  padding: 11px 6px;
+  vertical-align: middle;
+`;
+
+const TdCenterActive = styled(TdCenter)`
+  background: #fffafb;
+`;
+
+const TdCenterInner = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 22px;
 `;
 
 const FooterActions = styled.div`
@@ -398,91 +429,75 @@ export default function EmailMarketingTierModal({
         </SliderWrap>
 
         <TableWrap>
-          <Table>
-            <thead>
-              <tr>
-                <Th>Included</Th>
-                <Th style={{ textAlign: "right" }}>This plan</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {FEATURE_DEFS.map((f) => {
-                const included = idx >= f.minTier;
-                return (
-                  <motion.tr
-                    key={f.id}
-                    layout
-                    initial={false}
-                    animate={{ opacity: included ? 1 : 0.4 }}
-                    transition={{ duration: 0.22 }}
-                  >
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <Table style={{ minWidth: 520 }}>
+              <thead>
+                <tr>
+                  <Th>Feature</Th>
+                  {steps.map((s, i) => {
+                    const H = i === idx ? ThTierActive : ThTier;
+                    return <H key={s.tier_key}>{s.plan_label}</H>;
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {FEATURE_DEFS.map((f) => (
+                  <tr key={f.id}>
                     <Td>{f.label}</Td>
-                    <TdRight>
-                      <AnimatePresence mode="wait" initial={false}>
-                        {included ? (
-                          <motion.span
-                            key="check"
-                            initial={{ scale: 0.65, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.65, opacity: 0 }}
-                            transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                            style={{
-                              display: "inline-flex",
-                              justifyContent: "flex-end",
-                              width: "100%",
-                              color: "#059669",
-                            }}
-                          >
-                            <Check size={18} strokeWidth={2.5} />
-                          </motion.span>
-                        ) : (
-                          <motion.span
-                            key="dash"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            style={{ color: "#d1d5db" }}
-                          >
-                            —
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-                    </TdRight>
-                  </motion.tr>
-                );
-              })}
-              <motion.tr
-                key="templates-row"
-                layout
-                initial={false}
-                animate={{ opacity: 1 }}
-              >
-                <Td>Saved templates (max)</Td>
-                <TdRight>
-                  <motion.span
-                    key={idx}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      justifyContent: "flex-end",
-                      width: "100%",
-                      fontVariantNumeric: "tabular-nums",
-                    }}
-                  >
-                    <NumberFlow
-                      value={tier?.max_saved_templates ?? 0}
-                      format={{ maximumFractionDigits: 0 }}
-                    />
-                    <span style={{ fontSize: 12, opacity: 0.65 }}>saved</span>
-                  </motion.span>
-                </TdRight>
-              </motion.tr>
-            </tbody>
-          </Table>
+                    {steps.map((s, colIdx) => {
+                      const included = colIdx >= f.minTier;
+                      const Cell = colIdx === idx ? TdCenterActive : TdCenter;
+                      return (
+                        <Cell key={`${f.id}-${s.tier_key}`}>
+                          <TdCenterInner>
+                            {included ? (
+                              <span style={{ display: "inline-flex", justifyContent: "center", color: "#059669" }} aria-label="Included">
+                                <Check size={18} strokeWidth={2.5} />
+                              </span>
+                            ) : (
+                              <span style={{ color: "#d1d5db" }} aria-label="Not included">—</span>
+                            )}
+                          </TdCenterInner>
+                        </Cell>
+                      );
+                    })}
+                  </tr>
+                ))}
+                <tr>
+                  <Td>Marketing emails / month</Td>
+                  {steps.map((s, colIdx) => {
+                    const Cell = colIdx === idx ? TdCenterActive : TdCenter;
+                    return (
+                      <Cell key={`em-${s.tier_key}`}>
+                        <TdCenterInner>
+                          <NumberFlow
+                            value={s.monthly_marketing_send_limit ?? 0}
+                            format={{ maximumFractionDigits: 0, useGrouping: true }}
+                          />
+                        </TdCenterInner>
+                      </Cell>
+                    );
+                  })}
+                </tr>
+                <tr>
+                  <Td>Saved templates (max)</Td>
+                  {steps.map((s, colIdx) => {
+                    const Cell = colIdx === idx ? TdCenterActive : TdCenter;
+                    return (
+                      <Cell key={`tpl-${s.tier_key}`}>
+                        <TdCenterInner>
+                          <NumberFlow
+                            value={s.max_saved_templates ?? 0}
+                            format={{ maximumFractionDigits: 0 }}
+                          />
+                        </TdCenterInner>
+                      </Cell>
+                    );
+                  })}
+                </tr>
+              </tbody>
+            </Table>
+          </div>
         </TableWrap>
 
         {!hasPrice && (

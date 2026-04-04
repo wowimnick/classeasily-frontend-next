@@ -15,7 +15,7 @@ import {
 } from "@stripe/react-stripe-js";
 import styled, { createGlobalStyle, keyframes } from "styled-components";
 import { useSubscription } from "@/context/SubscriptionContext";
-import { getPlanById, PLANS, isUpgrade } from "@/lib/subscriptionPlans";
+import { getPlanById, PLANS, PLAN_IDS, isUpgrade, WIDGET_PLAN_COMPARISON_ROWS } from "@/lib/subscriptionPlans";
 import message from "@/lib/message";
 import { businessService, API_ENDPOINTS } from "@/services/apiService";
 import axiosInstance from "@/lib/axiosInstance";
@@ -256,16 +256,190 @@ const PromoOutlineBtn = styled.button`
 `;
 
 // ─── pricing cards ───────────────────────────────────────────────────────────
+const PlansBundle = styled.div`
+  margin-top: 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+`;
+
+/** Mobile / tablet: stacked cards + horizontal-scroll table */
+const PlansMobileLayout = styled.div`
+  @media (min-width: 900px) {
+    display: none;
+  }
+`;
+
+const PlansBundleCards = styled.div`
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid #e5e7eb;
+
+  @media (max-width: 380px) {
+    padding: 12px 12px 10px;
+  }
+`;
+
 const PricingCardsGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
-  margin-top: 24px;
+  gap: 12px;
+  margin-top: 0;
+`;
 
+/** Desktop: one grid so plan cards sit above the same columns as the comparison table */
+const PlansDesktopLayout = styled.div`
+  display: none;
   @media (min-width: 900px) {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    display: block;
   }
+`;
+
+const PlansDesktopGrid = styled.div`
+  display: grid;
+  grid-template-columns: minmax(220px, 1.15fr) repeat(3, minmax(0, 1fr));
+  column-gap: 0;
+  row-gap: 0;
+  padding: 14px 14px 12px;
+  align-items: stretch;
+`;
+
+const PlansDesktopCorner = styled.div`
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 1px;
+  border-right: 1px solid #e5e7eb;
+`;
+
+const PlanCompareScroll = styled.div`
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+`;
+
+const PlanCompareTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 560px;
+`;
+
+const PcThFeature = styled.th`
+  text-align: left;
+  padding: 12px 14px;
+  font-weight: 700;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  min-width: 220px;
+  max-width: 320px;
+  box-shadow: 1px 0 0 #e5e7eb;
+`;
+
+const PcThPlan = styled.th`
+  text-align: center;
+  padding: 12px 10px;
+  font-weight: 700;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+  width: 1%;
+`;
+
+const PcTdFeature = styled.td`
+  padding: 10px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+  color: #374151;
+  font-weight: 500;
+  line-height: 1.4;
+  position: sticky;
+  left: 0;
+  background: #ffffff;
+  z-index: 1;
+  min-width: 220px;
+  max-width: 320px;
+  box-shadow: 1px 0 0 #f3f4f6;
+`;
+
+const PcTdMark = styled.td`
+  text-align: center;
+  padding: 10px 8px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+`;
+
+const PcTdMarkInner = styled.span`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 22px;
+`;
+
+const GridFeatHead = styled.div`
+  grid-column: 1;
+  grid-row: 2;
+  padding: 12px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #111827;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  border-right: 1px solid #e5e7eb;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+`;
+
+const GridPlanHead = styled.div`
+  grid-column: ${({ $col }) => $col};
+  grid-row: 2;
+  padding: 12px 10px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #111827;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  border-left: ${({ $divider }) => ($divider ? "1px solid #e5e7eb" : "none")};
+  border-right: ${({ $col }) => ($col === 4 ? "1px solid #e5e7eb" : "none")};
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const GridFeatCell = styled.div`
+  grid-column: 1;
+  grid-row: ${({ $row }) => $row};
+  padding: 10px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  border-right: 1px solid #e5e7eb;
+  font-weight: 500;
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+`;
+
+const GridMarkCell = styled.div`
+  grid-column: ${({ $col }) => $col};
+  grid-row: ${({ $row }) => $row};
+  padding: 10px 8px;
+  border-bottom: 1px solid #f3f4f6;
+  border-left: ${({ $divider }) => ($divider ? "1px solid #e5e7eb" : "none")};
+  border-right: ${({ $col }) => ($col === 4 ? "1px solid #e5e7eb" : "none")};
+  font-size: 13px;
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 `;
 
 const PriceCard = styled.article`
@@ -278,87 +452,180 @@ const PriceCard = styled.article`
   box-shadow: none;
 `;
 
-const PriceCardTop = styled.div`
-  padding: 24px;
+/** Shared inner layout: mobile = title block + price side-by-side; desktop = stacked, compact */
+const PlanCardBody = styled.div`
+  padding: 14px 16px 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+
+  @media (max-width: 899px) {
+    padding: 14px 14px 14px;
+  }
+
+  @media (max-width: 380px) {
+    padding: 12px 12px 12px;
+  }
+
+  .plan-card-cta {
+    margin-top: 12px;
+    @media (min-width: 900px) {
+      margin-top: auto;
+    }
+  }
+`;
+
+const PlanCardTopCluster = styled.div`
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px 14px;
+  min-width: 0;
+
+  @media (min-width: 900px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+`;
+
+const PlanCardTextCol = styled.div`
+  min-width: 0;
+  flex: 1;
+`;
+
+const PlanPriceCluster = styled.div`
+  flex-shrink: 0;
+  text-align: right;
+
+  @media (min-width: 900px) {
+    text-align: left;
+  }
+`;
+
+const PriceCardPlaced = styled(PriceCard)`
+  @media (min-width: 900px) {
+    grid-column: ${({ $planCol }) => $planCol};
+    grid-row: 1;
+    min-width: 0;
+    height: 100%;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    border-radius: 0;
+    border-bottom: none;
+    border-left: ${({ $planCol }) => ($planCol > 2 ? "1px solid #e5e7eb" : "none")};
+    border-right: ${({ $planCol }) => ($planCol === 4 ? "1px solid #e5e7eb" : "none")};
+  }
 `;
 
 const PriceCardTitleRow = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px 8px;
 `;
 
 const PriceCardName = styled.span`
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 700;
   color: #000000;
+  line-height: 1.2;
+
+  @media (min-width: 900px) {
+    font-size: 16px;
+  }
 `;
 
 const BlackCapsBadge = styled.span`
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  padding: 2px 6px;
   border-radius: 4px;
   background: #000000;
   color: #ffffff;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  white-space: nowrap;
 `;
 
 const OutlineCapsBadge = styled.span`
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  padding: 2px 6px;
   border-radius: 4px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   color: #374151;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  white-space: nowrap;
 `;
 
 const PriceCardSubtitle = styled.p`
-  margin: 8px 0 0;
-  font-size: 14px;
-  font-weight: 400;
-  color: #6b7280;
-  line-height: 1.4;
-`;
-
-const PriceRow = styled.div`
-  margin-top: 16px;
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-`;
-
-const PriceAmount = styled.span`
-  font-size: clamp(28px, 5vw, 36px);
-  font-weight: 700;
-  color: #000000;
-  line-height: 1;
-`;
-
-const PriceSuffix = styled.span`
+  margin: 4px 0 0;
   font-size: 13px;
   font-weight: 400;
   color: #6b7280;
+  line-height: 1.35;
+`;
+
+const PriceRow = styled.div`
+  margin-top: 0;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 5px;
+  justify-content: flex-end;
+
+  @media (min-width: 900px) {
+    margin-top: 6px;
+    justify-content: flex-start;
+  }
+`;
+
+const PriceAmount = styled.span`
+  font-size: clamp(22px, 5.2vw, 28px);
+  font-weight: 700;
+  color: #000000;
+  line-height: 1;
+
+  @media (min-width: 900px) {
+    font-size: 24px;
+  }
+`;
+
+const PriceSuffix = styled.span`
+  font-size: 12px;
+  font-weight: 400;
+  color: #6b7280;
+
+  @media (min-width: 900px) {
+    font-size: 12px;
+  }
 `;
 
 const PriceCta = styled.button`
-  margin-top: 16px;
+  margin-top: 0;
   width: 100%;
   border-radius: 6px;
-  padding: 12px 16px;
-  font-size: 14px;
+  padding: 10px 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
+  flex-shrink: 0;
+
+  @media (min-width: 900px) {
+    padding: 9px 12px;
+    font-size: 13px;
+  }
   transition: opacity 0.15s, background 0.15s, border-color 0.15s;
   border: 1px solid ${({ $primary }) => ($primary ? "#000000" : "#e5e7eb")};
   background: ${({ $primary }) => ($primary ? "#000000" : "#ffffff")};
@@ -377,61 +644,6 @@ const PriceCta = styled.button`
     color: #111827;
     background: #ffffff;
   }
-`;
-
-const PriceCardDivider = styled.div`
-  height: 1px;
-  background: #e5e7eb;
-  width: 100%;
-`;
-
-const PriceCardBottom = styled.div`
-  padding: 24px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-`;
-
-const FeatureList = styled.ul`
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-`;
-
-const FeatureItem = styled.li`
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-`;
-
-const FeatureBullet = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  min-width: 16px;
-  border-radius: 50%;
-  background: #000000;
-  color: #ffffff;
-  flex-shrink: 0;
-  margin-top: 2px;
-
-  svg {
-    width: 10px;
-    height: 10px;
-  }
-`;
-
-const FeatureText = styled.span`
-  font-size: 13px;
-  font-weight: 400;
-  color: #374151;
-  line-height: 1.45;
 `;
 
 // ─── plan dots (current plan display) ─────────────────────────────────────────
@@ -1588,6 +1800,22 @@ function PaymentMethodBrandIcon({ brand }) {
   return <PmBrandImg src={src} alt="" aria-hidden draggable={false} />;
 }
 
+function renderWidgetPlanComparisonCell(row, pid) {
+  if (row.valueType === "text") {
+    return row.text?.[pid] ?? "—";
+  }
+  if (row.plans?.[pid]) {
+    return (
+      <span style={{ display: "inline-flex", justifyContent: "center", color: "#059669" }} aria-label="Included">
+        <Check size={18} strokeWidth={2.5} />
+      </span>
+    );
+  }
+  return (
+    <span style={{ color: "#d1d5db" }} aria-label="Not included">—</span>
+  );
+}
+
 // ─── main component ───────────────────────────────────────────────────────────
 export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchAddons } = {}) {
   const { subscription, scheduledDowngrade, loading: subLoading, cancel, reactivate, refetch: refetchSubscription, subscribe, hasStripeSubscription } = useSubscription();
@@ -1670,20 +1898,11 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     return PLANS.map((plan) => {
       const isCurrent = subscription?.planId === plan.id;
       const subId = subscription?.planId;
-      const features = (plan.features || []).map((f) =>
-        (typeof f === "object" && f?.label)
-          ? { label: f.label, tooltip: f.tooltip }
-          : { label: String(f) }
-      );
-      const featureRows = features.length
-        ? features
-        : [{ label: `${plan.commission}% commission per booking` }];
       return {
         id: plan.id,
         name: plan.name,
         priceNum: plan.price,
         grad: PLAN_GRADIENTS[plan.id] || "linear-gradient(135deg, #a5b4fc, #818cf8)",
-        features: featureRows,
         isCurrent,
         isUpgrade: Boolean(subId && isUpgrade(subId, plan.id)),
       };
@@ -2053,66 +2272,170 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
         </div>
       </PageHeader>
 
- 
-      <PricingCardsGrid>
-        {planDisplay.map((plan) => {
-          const ctaBusy = switchPlanLoading === plan.id;
-          const ctaDisabled = plan.isCurrent || switchPlanLoading !== null;
-          let ctaPrimary = false;
-          let ctaLabel = "";
-          if (plan.isCurrent) {
-            ctaLabel = ctaBusy ? "Switching…" : "Your current plan";
-          } else if (!subscription?.planId) {
-            ctaPrimary = true;
-            ctaLabel = ctaBusy ? "Switching…" : `Switch to ${plan.name}`;
-          } else if (plan.isUpgrade) {
-            ctaPrimary = true;
-            ctaLabel = ctaBusy ? "Switching…" : "Upgrade now";
-          } else {
-            ctaLabel = ctaBusy ? "Switching…" : `Switch to ${plan.name}`;
-          }
-          return (
-            <PriceCard key={plan.id}>
-              <PriceCardTop>
-                <PriceCardTitleRow>
-                  <PriceCardName>{plan.name}</PriceCardName>
-                  {plan.id === "growth" && <BlackCapsBadge>Most popular</BlackCapsBadge>}
-                  {plan.id === "advanced" && <OutlineCapsBadge>Most valuable</OutlineCapsBadge>}
-                </PriceCardTitleRow>
-                <PriceCardSubtitle>{PLAN_TAGLINES[plan.id] ?? ""}</PriceCardSubtitle>
-                <PriceRow>
-                  <PriceAmount>${plan.priceNum}</PriceAmount>
-                  <PriceSuffix>/ month</PriceSuffix>
-                </PriceRow>
-                <PriceCta
-                  type="button"
-                  $primary={ctaPrimary}
-                  data-primary={ctaPrimary ? "true" : undefined}
-                  disabled={ctaDisabled}
-                  onClick={() => !ctaDisabled && handleSwitchPlan(plan.id)}
-                >
-                  {ctaLabel}
-                </PriceCta>
-              </PriceCardTop>
-              <PriceCardDivider />
-              <PriceCardBottom>
-                <FeatureList>
-                  {plan.features.map((f) => (
-                    <FeatureItem key={`${plan.id}-${f.label}`}>
-                      <FeatureBullet aria-hidden>
-                        <Check size={10} color="#ffffff" strokeWidth={3} />
-                      </FeatureBullet>
-                      <FeatureText title={f.tooltip || undefined}>
-                        {f.label}
-                      </FeatureText>
-                    </FeatureItem>
+      <PlansBundle>
+        <PlansMobileLayout>
+          <PlansBundleCards>
+            <PricingCardsGrid>
+              {planDisplay.map((plan) => {
+                const ctaBusy = switchPlanLoading === plan.id;
+                const ctaDisabled = plan.isCurrent || switchPlanLoading !== null;
+                let ctaPrimary = false;
+                let ctaLabel = "";
+                if (plan.isCurrent) {
+                  ctaLabel = ctaBusy ? "Switching…" : "Your current plan";
+                } else if (!subscription?.planId) {
+                  ctaPrimary = true;
+                  ctaLabel = ctaBusy ? "Switching…" : `Switch to ${plan.name}`;
+                } else if (plan.isUpgrade) {
+                  ctaPrimary = true;
+                  ctaLabel = ctaBusy ? "Switching…" : "Upgrade now";
+                } else {
+                  ctaLabel = ctaBusy ? "Switching…" : `Switch to ${plan.name}`;
+                }
+                return (
+                  <PriceCard key={plan.id}>
+                    <PlanCardBody>
+                      <PlanCardTopCluster>
+                        <PlanCardTextCol>
+                          <PriceCardTitleRow>
+                            <PriceCardName>{plan.name}</PriceCardName>
+                            {plan.id === "growth" && <BlackCapsBadge>Most popular</BlackCapsBadge>}
+                            {plan.id === "advanced" && <OutlineCapsBadge>Most valuable</OutlineCapsBadge>}
+                          </PriceCardTitleRow>
+                          <PriceCardSubtitle>{PLAN_TAGLINES[plan.id] ?? ""}</PriceCardSubtitle>
+                        </PlanCardTextCol>
+                        <PlanPriceCluster>
+                          <PriceRow>
+                            <PriceAmount>${plan.priceNum}</PriceAmount>
+                            <PriceSuffix>/ month</PriceSuffix>
+                          </PriceRow>
+                        </PlanPriceCluster>
+                      </PlanCardTopCluster>
+                      <PriceCta
+                        type="button"
+                        className="plan-card-cta"
+                        $primary={ctaPrimary}
+                        data-primary={ctaPrimary ? "true" : undefined}
+                        disabled={ctaDisabled}
+                        onClick={() => !ctaDisabled && handleSwitchPlan(plan.id)}
+                      >
+                        {ctaLabel}
+                      </PriceCta>
+                    </PlanCardBody>
+                  </PriceCard>
+                );
+              })}
+            </PricingCardsGrid>
+          </PlansBundleCards>
+          <PlanCompareScroll>
+            <PlanCompareTable>
+              <thead>
+                <tr>
+                  <PcThFeature scope="col">Feature</PcThFeature>
+                  {PLAN_IDS.map((pid) => (
+                    <PcThPlan key={pid} scope="col">
+                      {getPlanById(pid)?.name ?? pid}
+                    </PcThPlan>
                   ))}
-                </FeatureList>
-              </PriceCardBottom>
-            </PriceCard>
-          );
-        })}
-      </PricingCardsGrid>
+                </tr>
+              </thead>
+              <tbody>
+                {WIDGET_PLAN_COMPARISON_ROWS.map((row) => (
+                  <tr key={row.id}>
+                    <PcTdFeature title={row.tooltip || undefined}>{row.label}</PcTdFeature>
+                    {PLAN_IDS.map((pid) => (
+                      <PcTdMark key={`${row.id}-${pid}`}>
+                        <PcTdMarkInner>{renderWidgetPlanComparisonCell(row, pid)}</PcTdMarkInner>
+                      </PcTdMark>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </PlanCompareTable>
+          </PlanCompareScroll>
+        </PlansMobileLayout>
+
+        <PlansDesktopLayout>
+          <PlansDesktopGrid>
+            <PlansDesktopCorner aria-hidden />
+            {planDisplay.map((plan, planIdx) => {
+              const ctaBusy = switchPlanLoading === plan.id;
+              const ctaDisabled = plan.isCurrent || switchPlanLoading !== null;
+              let ctaPrimary = false;
+              let ctaLabel = "";
+              if (plan.isCurrent) {
+                ctaLabel = ctaBusy ? "Switching…" : "Your current plan";
+              } else if (!subscription?.planId) {
+                ctaPrimary = true;
+                ctaLabel = ctaBusy ? "Switching…" : `Switch to ${plan.name}`;
+              } else if (plan.isUpgrade) {
+                ctaPrimary = true;
+                ctaLabel = ctaBusy ? "Switching…" : "Upgrade now";
+              } else {
+                ctaLabel = ctaBusy ? "Switching…" : `Switch to ${plan.name}`;
+              }
+              return (
+                <PriceCardPlaced key={plan.id} $planCol={planIdx + 2}>
+                  <PlanCardBody>
+                    <PlanCardTopCluster>
+                      <PlanCardTextCol>
+                        <PriceCardTitleRow>
+                          <PriceCardName>{plan.name}</PriceCardName>
+                          {plan.id === "growth" && <BlackCapsBadge>Most popular</BlackCapsBadge>}
+                          {plan.id === "advanced" && <OutlineCapsBadge>Most valuable</OutlineCapsBadge>}
+                        </PriceCardTitleRow>
+                        <PriceCardSubtitle>{PLAN_TAGLINES[plan.id] ?? ""}</PriceCardSubtitle>
+                      </PlanCardTextCol>
+                      <PlanPriceCluster>
+                        <PriceRow>
+                          <PriceAmount>${plan.priceNum}</PriceAmount>
+                          <PriceSuffix>/ month</PriceSuffix>
+                        </PriceRow>
+                      </PlanPriceCluster>
+                    </PlanCardTopCluster>
+                    <PriceCta
+                      type="button"
+                      className="plan-card-cta"
+                      $primary={ctaPrimary}
+                      data-primary={ctaPrimary ? "true" : undefined}
+                      disabled={ctaDisabled}
+                      onClick={() => !ctaDisabled && handleSwitchPlan(plan.id)}
+                    >
+                      {ctaLabel}
+                    </PriceCta>
+                  </PlanCardBody>
+                </PriceCardPlaced>
+              );
+            })}
+            <GridFeatHead>Feature</GridFeatHead>
+            {PLAN_IDS.map((pid, i) => (
+              <GridPlanHead key={pid} $col={i + 2} $divider={i > 0}>
+                {getPlanById(pid)?.name ?? pid}
+              </GridPlanHead>
+            ))}
+            {WIDGET_PLAN_COMPARISON_ROWS.map((row, ri) => {
+              const gridRow = ri + 3;
+              return (
+                <React.Fragment key={row.id}>
+                  <GridFeatCell $row={gridRow} title={row.tooltip || undefined}>
+                    {row.label}
+                  </GridFeatCell>
+                  {PLAN_IDS.map((pid, ci) => (
+                    <GridMarkCell
+                      key={`${row.id}-${pid}`}
+                      $row={gridRow}
+                      $col={ci + 2}
+                      $divider={ci > 0}
+                    >
+                      {renderWidgetPlanComparisonCell(row, pid)}
+                    </GridMarkCell>
+                  ))}
+                </React.Fragment>
+              );
+            })}
+          </PlansDesktopGrid>
+        </PlansDesktopLayout>
+      </PlansBundle>
 
       <SectionDivider />
 

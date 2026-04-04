@@ -10,7 +10,6 @@ import {
   ChevronRight,
   CreditCard,
   Globe,
-  HelpCircle,
   LayoutGrid,
   Megaphone,
   PlayCircle,
@@ -20,7 +19,13 @@ import {
 } from 'lucide-react';
 import FooterSmart from '@/components/homepage/FooterSmart';
 import { useSubscription } from '@/context/SubscriptionContext';
-import { isUpgrade, isDowngrade } from '@/lib/subscriptionPlans';
+import {
+  getPlanById,
+  isUpgrade,
+  isDowngrade,
+  PLAN_IDS,
+  WIDGET_PLAN_COMPARISON_ROWS,
+} from '@/lib/subscriptionPlans';
 
 
 const theme = {
@@ -1810,20 +1815,176 @@ const Faq = () => (
 // PRICING & PATH
 // ==========================================
 
-const PricingGrid = styled(motion.div)`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-top: 48px;
-  align-items: start;
-  overflow: visible;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
+const PricingMobileLayout = styled.div`
+  @media (min-width: 900px) {
+    display: none;
   }
 `;
 
-/* Single unified card — no split sections. overflow: visible so tooltips can extend outside. */
+const PricingDesktopLayout = styled.div`
+  display: none;
+  @media (min-width: 900px) {
+    display: block;
+  }
+`;
+
+const PricingCardsGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+`;
+
+const PlanCompareScroll = styled.div`
+  margin-top: 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+`;
+
+const PlanCompareTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 560px;
+`;
+
+const PcThFeature = styled.th`
+  text-align: left;
+  padding: 12px 14px;
+  font-weight: 700;
+  color: #0a2540;
+  border-bottom: 1px solid #e4e4e7;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  min-width: 200px;
+  max-width: 300px;
+  background: #ffffff;
+  box-shadow: 1px 0 0 #e4e4e7;
+`;
+
+const PcThPlan = styled.th`
+  text-align: center;
+  padding: 12px 10px;
+  font-weight: 700;
+  color: #0a2540;
+  border-bottom: 1px solid #e4e4e7;
+  white-space: nowrap;
+  width: 1%;
+  background: #ffffff;
+`;
+
+const PcTdFeature = styled.td`
+  padding: 10px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+  color: #374151;
+  font-weight: 500;
+  line-height: 1.4;
+  position: sticky;
+  left: 0;
+  background: #ffffff;
+  z-index: 1;
+  min-width: 200px;
+  max-width: 300px;
+  box-shadow: 1px 0 0 #f3f4f6;
+`;
+
+const PcTdMark = styled.td`
+  text-align: center;
+  padding: 10px 8px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+`;
+
+const PcTdMarkInner = styled.span`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 22px;
+`;
+
+const PricingDesktopGrid = styled.div`
+  display: grid;
+  grid-template-columns: minmax(200px, 1.15fr) repeat(3, minmax(0, 1fr));
+  column-gap: 0;
+  row-gap: 0;
+  padding: 0;
+  align-items: stretch;
+`;
+
+const PricingDesktopCorner = styled.div`
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 1px;
+  border-right: 1px solid #e4e4e7;
+`;
+
+const GridFeatHead = styled.div`
+  grid-column: 1;
+  grid-row: 2;
+  padding: 12px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #0a2540;
+  border-top: 1px solid #e4e4e7;
+  border-bottom: 1px solid #e4e4e7;
+  border-right: 1px solid #e4e4e7;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+`;
+
+const GridPlanHead = styled.div`
+  grid-column: ${({ $col }) => $col};
+  grid-row: 2;
+  padding: 12px 10px;
+  font-weight: 700;
+  font-size: 13px;
+  color: #0a2540;
+  border-top: 1px solid #e4e4e7;
+  border-bottom: 1px solid #e4e4e7;
+  border-left: ${({ $divider }) => ($divider ? '1px solid #e4e4e7' : 'none')};
+  border-right: ${({ $col }) => ($col === 4 ? '1px solid #e4e4e7' : 'none')};
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const GridFeatCell = styled.div`
+  grid-column: 1;
+  grid-row: ${({ $row }) => $row};
+  padding: 10px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  border-right: 1px solid #e4e4e7;
+  font-weight: 500;
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+`;
+
+const GridMarkCell = styled.div`
+  grid-column: ${({ $col }) => $col};
+  grid-row: ${({ $row }) => $row};
+  padding: 10px 8px;
+  border-bottom: 1px solid #f3f4f6;
+  border-left: ${({ $divider }) => ($divider ? '1px solid #e4e4e7' : 'none')};
+  border-right: ${({ $col }) => ($col === 4 ? '1px solid #e4e4e7' : 'none')};
+  font-size: 13px;
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+`;
+
+/* Single unified card — gradients on $featured; overflow visible for shadows */
 const PlanCard = styled(motion.div)`
   border-radius: 18px;
   padding: 22px 22px 20px;
@@ -1853,12 +2014,32 @@ const PlanCard = styled(motion.div)`
   }
 `;
 
+const PlanCardPlaced = styled(PlanCard)`
+  @media (min-width: 900px) {
+    grid-column: ${({ $planCol }) => $planCol};
+    grid-row: 1;
+    min-width: 0;
+    height: 100%;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    border-radius: 0;
+    border-bottom: none !important;
+    box-shadow: none;
+    border-left: ${({ $planCol }) => ($planCol > 2 ? '1px solid #e4e4e7' : 'none')} !important;
+    border-right: ${({ $planCol }) => ($planCol === 4 ? '1px solid #e4e4e7' : 'none')} !important;
+    border-top: 1px solid #e4e4e7;
+    padding: 18px 18px 16px;
+  }
+`;
+
 const PlanInner = styled.div`
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
 `;
 
 const PlanName = styled.h3`
@@ -1905,10 +2086,22 @@ const PlanPriceRow = styled.div`
 
 const PlanCommission = styled.div`
   font-size: 12.5px;
-  color: #6B7280;
-  margin-bottom: 18px;
+  color: #6b7280;
+  margin-bottom: 0;
   @media (max-width: 640px) {
     font-size: 11px;
+  }
+`;
+
+const PlanCtaFoot = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+
+  @media (min-width: 900px) {
+    margin-top: auto;
+    padding-top: 10px;
   }
 `;
 
@@ -1920,7 +2113,7 @@ const PlanCtaBtn = styled(Link)`
   font-weight: 600;
   font-size: 14px;
   text-decoration: none;
-  margin-bottom: 18px;
+  margin-bottom: 0;
   background: ${props => props.$featured ? '#111' : '#E4E4E7'};
   color: ${props => props.$featured ? '#fff' : '#111'};
   &:hover { color: ${props => props.$featured ? '#fff' : '#111'}; opacity: 0.85; }
@@ -1938,74 +2131,13 @@ const CurrentPlanBadge = styled.span`
   letter-spacing: 0.04em;
   color: #0d9488;
   border-radius: 999px;
-  margin-bottom: 12px;
-`;
-
-const PlanFeatureRow = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  padding: 6px 0;
-  font-size: 13.5px;
-  color: #374151;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-  &:last-child { border-bottom: none; }
-  @media (max-width: 640px) {
-    font-size: 12px;
-  }
-`;
-
-const PlanFeatureLabel = styled.span`
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-`;
-
-const PlanFeatureTooltipWrap = styled.span`
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  .tooltip-icon {
-    color: #9CA3AF;
-    cursor: help;
-    &:hover { color: #6B7280; }
-  }
-  .tooltip-bubble {
-    position: absolute;
-    left: 50%;
-    bottom: 100%;
-    padding: 8px 10px;
-    font-size: 12px;
-    font-weight: 400;
-    line-height: 1.4;
-    color: #fff;
-    background: #374151;
-    border-radius: 6px;
-    white-space: normal;
-    width: max-content;
-    max-width: 220px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    z-index: 50;
-    pointer-events: none;
-    transform-origin: center bottom;
-  }
-  .tooltip-bubble::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 5px solid transparent;
-    border-top-color: #374151;
-  }
+  margin-bottom: 6px;
 `;
 
 const PlanFootnote = styled.div`
   font-size: 12.5px;
-  color: #9CA3AF;
-  margin-top: 14px;
+  color: #9ca3af;
+  margin-top: 0;
   @media (max-width: 640px) {
     font-size: 11px;
   }
@@ -2021,105 +2153,26 @@ const PricingStripeNote = styled(motion.p)`
   }
 `;
 
-// Features: { label, tooltip? }. Tooltip shows on hover for clarity.
-const PLAN_FEATURES_BASIC = [
-  { label: 'Widget on your website' },
-  { label: 'Marketplace listing', tooltip: 'Get discovered by customers searching for classes on Classeasily.' },
-  { label: 'One dashboard & payout' },
-  { label: 'Brand colors & fonts' },
-  { label: 'Modal, inline, or floating embed' },
-  { label: 'Domain whitelist', tooltip: 'Restrict your widget so it only loads on your own site. Prevents unauthorized embedding on third-party pages.' },
-];
-
-const PLAN_FEATURES_GROWTH = [
-  { label: 'Everything in Basic' },
-  { label: 'Personalized booking emails', tooltip: 'Confirmation and reminder emails sent under your brand — your logo, colors, and custom message. Not generic Classeasily emails.' },
-  { label: 'Pin widget to a specific class', tooltip: 'Embed a booking button for one class or location — great for landing pages, ads, and campaigns.' },
-  { label: 'Widget revenue & booking analytics', tooltip: 'Track widget-specific conversion rates, revenue by class, and booking trends. Separate from your Marketplace stats.' },
-  { label: 'Automated pre-class reminders', tooltip: 'Email (and optional SMS) reminders sent automatically before each session to cut no-shows.' },
-  { label: 'Memberships', tooltip: 'Sell recurring membership plans, manage members and credits, and collect subscription revenue from your widget or business page.' },
-  { label: 'Promo codes & discounts' },
-  { label: 'Priority support' },
-];
-
-const PLAN_FEATURES_ADVANCED = [
-  { label: 'Everything in Growth' },
-  { label: 'Lower commission (2%)', tooltip: 'Best for high-volume studios. Pay a higher subscription to keep more of every booking.' },
-  { label: 'White-label widget', tooltip: 'Remove all Classeasily branding entirely. Customers only see your brand when they book.' },
-  { label: 'Memberships', tooltip: 'Sell recurring membership plans, manage members and credits, and collect subscription revenue from your widget or business page.' },
-  { label: 'Dedicated account manager' },
-  { label: 'Personal onboarding call' },
-];
-
-const tooltipVariants = {
-  hidden: {
-    opacity: 0,
-    scale: 0.65,
-    y: 14,
-    x: '-50%',
-    rotateX: -28,
-    filter: 'blur(7px)',
-  },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    y: -8,
-    x: '-50%',
-    rotateX: 0,
-    filter: 'blur(0px)',
-    transition: {
-      type: 'spring',
-      damping: 18,
-      stiffness: 320,
-      mass: 0.6,
-      filter: { duration: 0.2, ease: 'easeOut' },
-      opacity: { duration: 0.15 },
-    },
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.7,
-    y: 8,
-    x: '-50%',
-    rotateX: 14,
-    filter: 'blur(5px)',
-    transition: { duration: 0.13, ease: [0.4, 0, 1, 1] },
-  },
-};
-
-function FeatureTooltip({ tooltip }) {
-  const [isVisible, setIsVisible] = useState(false);
+function renderLandingCompareCell(row, pid) {
+  if (row.valueType === 'text') {
+    return row.text?.[pid] ?? '—';
+  }
+  if (row.plans?.[pid]) {
+    return (
+      <span style={{ display: 'inline-flex', justifyContent: 'center', color: '#059669' }} aria-label="Included">
+        <Check size={18} strokeWidth={2.5} />
+      </span>
+    );
+  }
   return (
-    <PlanFeatureTooltipWrap
-      onMouseEnter={() => setIsVisible(true)}
-      onMouseLeave={() => setIsVisible(false)}
-      style={{ perspective: '500px' }}
-    >
-      <HelpCircle size={14} className="tooltip-icon" aria-hidden />
-      <AnimatePresence>
-        {isVisible && (
-          <motion.span
-            key="bubble"
-            className="tooltip-bubble"
-            role="tooltip"
-            variants={tooltipVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            style={{ position: 'absolute', left: '50%', bottom: '100%', transformOrigin: 'bottom center' }}
-          >
-            {tooltip}
-          </motion.span>
-        )}
-      </AnimatePresence>
-    </PlanFeatureTooltipWrap>
+    <span style={{ color: '#d1d5db' }} aria-label="Not included">—</span>
   );
 }
 
 const PLAN_CARDS = [
-  { id: 'basic', name: 'Basic', price: '$29', commission: '4%', gradient: 'linear-gradient(90deg, #2563eb 0%, #ef4444 50%, #eab308 100%)', features: PLAN_FEATURES_BASIC, footnote: 'Need more bookings?', featured: false },
-  { id: 'growth', name: 'Growth', price: '$49', commission: '3%', gradient: 'none', features: PLAN_FEATURES_GROWTH, footnote: 'Best value for growing studios.', featured: true },
-  { id: 'advanced', name: 'Advanced', price: '$89', commission: '2%', gradient: 'linear-gradient(90deg, #2563eb 0%, #ef4444 50%, #eab308 100%)', features: PLAN_FEATURES_ADVANCED, footnote: 'Need a custom plan?', featured: false },
+  { id: 'basic', name: 'Basic', price: '$29', commission: '4%', gradient: 'linear-gradient(90deg, #2563eb 0%, #ef4444 50%, #eab308 100%)', footnote: 'Need more bookings?', featured: false },
+  { id: 'growth', name: 'Growth', price: '$49', commission: '3%', gradient: 'none', footnote: 'Best value for growing studios.', featured: true },
+  { id: 'advanced', name: 'Advanced', price: '$89', commission: '2%', gradient: 'linear-gradient(90deg, #2563eb 0%, #ef4444 50%, #eab308 100%)', footnote: 'Need a custom plan?', featured: false },
 ];
 
 function PricingAndPath() {
@@ -2158,43 +2211,128 @@ function PricingAndPath() {
           </p>
         </MobileTypo>
 
-        <PricingGrid variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-          {PLAN_CARDS.map((plan) => {
-            const isCurrent = currentPlanId === plan.id;
-            const cta = getCta(plan.id);
-            return (
-              <PlanCard key={plan.id} variants={fadeUp} $featured={plan.featured}>
-                <PlanInner>
-                  {isCurrent && <CurrentPlanBadge>Current plan</CurrentPlanBadge>}
-                  <PlanName
-                    $gradient={plan.gradient}
-                    style={plan.featured ? { WebkitTextFillColor: '#111', backgroundImage: 'none', color: '#111' } : undefined}
-                  >
-                    {plan.name}
-                  </PlanName>
-                  <PlanPriceRow>
-                    <span className="big">{plan.price}</span>
-                    <span className="meta"><span>per month</span></span>
-                  </PlanPriceRow>
-                  <PlanCommission>+ {plan.commission} commission per booking</PlanCommission>
-                  <PlanCtaBtn href={cta.href} $featured={plan.featured}>{cta.label}</PlanCtaBtn>
-                  <div>
-                    {plan.features.map((f, i) => (
-                      <PlanFeatureRow key={f.label + i}>
-                        <Check size={15} color="#6B7280" style={{ marginTop: 1, flexShrink: 0 }} />
-                        <PlanFeatureLabel>
-                          {f.label}
-                          {f.tooltip && <FeatureTooltip tooltip={f.tooltip} />}
-                        </PlanFeatureLabel>
-                      </PlanFeatureRow>
+        <motion.div
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          style={{ marginTop: 48 }}
+        >
+            <PricingMobileLayout>
+                <PricingCardsGrid>
+                  {PLAN_CARDS.map((plan) => {
+                    const isCurrent = currentPlanId === plan.id;
+                    const cta = getCta(plan.id);
+                    return (
+                      <PlanCard key={plan.id} $featured={plan.featured}>
+                        <PlanInner>
+                          {isCurrent && <CurrentPlanBadge>Current plan</CurrentPlanBadge>}
+                          <PlanName
+                            $gradient={plan.gradient}
+                            style={plan.featured ? { WebkitTextFillColor: '#111', backgroundImage: 'none', color: '#111' } : undefined}
+                          >
+                            {plan.name}
+                          </PlanName>
+                          <PlanPriceRow>
+                            <span className="big">{plan.price}</span>
+                            <span className="meta"><span>per month</span></span>
+                          </PlanPriceRow>
+                          <PlanCommission>+ {plan.commission} commission per booking</PlanCommission>
+                          <PlanCtaFoot>
+                            <PlanCtaBtn href={cta.href} $featured={plan.featured}>{cta.label}</PlanCtaBtn>
+                            <PlanFootnote>{plan.footnote}</PlanFootnote>
+                          </PlanCtaFoot>
+                        </PlanInner>
+                      </PlanCard>
+                    );
+                  })}
+                </PricingCardsGrid>
+              <PlanCompareScroll>
+                <PlanCompareTable>
+                  <thead>
+                    <tr>
+                      <PcThFeature scope="col">Feature</PcThFeature>
+                      {PLAN_IDS.map((pid) => (
+                        <PcThPlan key={pid} scope="col">
+                          {getPlanById(pid)?.name ?? pid}
+                        </PcThPlan>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {WIDGET_PLAN_COMPARISON_ROWS.map((row) => (
+                      <tr key={row.id}>
+                        <PcTdFeature title={row.tooltip || undefined}>{row.label}</PcTdFeature>
+                        {PLAN_IDS.map((pid) => (
+                          <PcTdMark key={`${row.id}-${pid}`}>
+                            <PcTdMarkInner>{renderLandingCompareCell(row, pid)}</PcTdMarkInner>
+                          </PcTdMark>
+                        ))}
+                      </tr>
                     ))}
-                  </div>
-                  <PlanFootnote>{plan.footnote}</PlanFootnote>
-                </PlanInner>
-              </PlanCard>
-            );
-          })}
-        </PricingGrid>
+                  </tbody>
+                </PlanCompareTable>
+              </PlanCompareScroll>
+            </PricingMobileLayout>
+
+            <PricingDesktopLayout>
+              <PricingDesktopGrid>
+                <PricingDesktopCorner aria-hidden />
+                {PLAN_CARDS.map((plan, planIdx) => {
+                  const isCurrent = currentPlanId === plan.id;
+                  const cta = getCta(plan.id);
+                  return (
+                    <PlanCardPlaced key={plan.id} $featured={plan.featured} $planCol={planIdx + 2}>
+                      <PlanInner>
+                        {isCurrent && <CurrentPlanBadge>Current plan</CurrentPlanBadge>}
+                        <PlanName
+                          $gradient={plan.gradient}
+                          style={plan.featured ? { WebkitTextFillColor: '#111', backgroundImage: 'none', color: '#111' } : undefined}
+                        >
+                          {plan.name}
+                        </PlanName>
+                        <PlanPriceRow>
+                          <span className="big">{plan.price}</span>
+                          <span className="meta"><span>per month</span></span>
+                        </PlanPriceRow>
+                        <PlanCommission>+ {plan.commission} commission per booking</PlanCommission>
+                        <PlanCtaFoot>
+                          <PlanCtaBtn href={cta.href} $featured={plan.featured}>{cta.label}</PlanCtaBtn>
+                          <PlanFootnote>{plan.footnote}</PlanFootnote>
+                        </PlanCtaFoot>
+                      </PlanInner>
+                    </PlanCardPlaced>
+                  );
+                })}
+                <GridFeatHead>Feature</GridFeatHead>
+                {PLAN_IDS.map((pid, i) => (
+                  <GridPlanHead key={pid} $col={i + 2} $divider={i > 0}>
+                    {getPlanById(pid)?.name ?? pid}
+                  </GridPlanHead>
+                ))}
+                {WIDGET_PLAN_COMPARISON_ROWS.map((row, ri) => {
+                  const gridRow = ri + 3;
+                  return (
+                    <React.Fragment key={row.id}>
+                      <GridFeatCell $row={gridRow} title={row.tooltip || undefined}>
+                        {row.label}
+                      </GridFeatCell>
+                      {PLAN_IDS.map((pid, ci) => (
+                        <GridMarkCell
+                          key={`${row.id}-${pid}`}
+                          $row={gridRow}
+                          $col={ci + 2}
+                          $divider={ci > 0}
+                        >
+                          {renderLandingCompareCell(row, pid)}
+                        </GridMarkCell>
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
+              </PricingDesktopGrid>
+            </PricingDesktopLayout>
+        </motion.div>
 
         <PricingStripeNote
           variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
