@@ -31,6 +31,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import NumberFlow from "@number-flow/react";
 import debounce from "lodash/debounce";
 import dayjs from "dayjs";
+import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import { bookingService } from "@/services/apiService";
 import DesktopActiveBookings from "./DesktopActiveBookings";
 import MobileActiveBookings from "./MobileActiveBookings";
@@ -373,7 +374,13 @@ const EmptyStateSubtext = styled.div`
   }
 `;
 
-const ActiveBookings = ({ noWrapperPadding } = {}) => {
+const ActiveBookings = ({
+  noWrapperPadding,
+  openBookingIdFromQuery = false,
+} = {}) => {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingTable, setLoadingTable] = useState(true);
   const [isViewDrawerVisible, setIsViewDrawerVisible] = useState(false);
@@ -476,6 +483,20 @@ const ActiveBookings = ({ noWrapperPadding } = {}) => {
     debouncedFetch();
     return () => debouncedFetch.cancel();
   }, [debouncedFetch]);
+
+  useEffect(() => {
+    if (!openBookingIdFromQuery) return;
+    const raw = searchParams.get("bookingId");
+    if (!raw) return;
+    const numericId = Number(raw);
+    if (!Number.isInteger(numericId) || numericId <= 0) return;
+    setSelectedBookingId(numericId);
+    setIsViewDrawerVisible(true);
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("bookingId");
+    const qs = next.toString();
+    router.replace(`${pathname}${qs ? `?${qs}` : ""}`);
+  }, [openBookingIdFromQuery, searchParams, pathname, router]);
 
   const handleTableChange = (pagination, filters, sorter) => {
     const resetPage =

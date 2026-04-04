@@ -473,10 +473,9 @@ export default function MobileReserveReviewDrawer({
 
   const handleNext = () => {
     if (!classData?.slug || !slot || !option) return;
-    const participantDetails = Array.from(
-      { length: participants },
-      () => ({ name: "" })
-    );
+    const participantDetails = Array.from({ length: participants }, () => ({
+      name: "",
+    }));
     const nextBookingState = {
       selectedSlots: [slot],
       participants,

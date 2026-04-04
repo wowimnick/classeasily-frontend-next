@@ -1,15 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import {
-  Modal,
-  Avatar,
-  Table,
-  Typography,
-  Button,
-  Tag,
-  Skeleton,
-} from "antd";
+import { Avatar, Table, Typography, Button, Tag, Skeleton } from "antd";
 import {
   User,
   Mail,
@@ -37,127 +29,108 @@ import { Drawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import CompactContactModal from "./CompactContactModal";
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
-// --- Vaul Drawer Styles ---
-const StyledDrawerOverlay = styled(Drawer.Overlay)`
+const GuestOverlay = styled(Drawer.Overlay)`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 1010;
+  z-index: 1049;
   ${VAUL_OVERLAY_BACKDROP_BLUR}
 `;
 
-const StyledDrawerContent = styled(Drawer.Content)`
-  position: fixed;
-  inset: 0;
+const GuestMobileShell = styled(Drawer.Content)`
   background: #f8fafc;
   display: flex;
   flex-direction: column;
-  z-index: 1011;
-  top: 8vh;
-  border-radius: 16px 16px 0 0;
-  box-shadow: 0 -20px 40px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  border-radius: 24px 24px 0 0;
+  height: 92%;
+  max-height: 92vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
   outline: none;
 `;
 
-const DrawerHandle = styled(Drawer.Handle)`
-  width: 32px;
-  height: 3px;
-  background: #d1d5db;
-  border-radius: 2px;
-  margin: 8px auto;
-  cursor: grab;
-  flex-shrink: 0;
-
-  &:active {
-    cursor: grabbing;
-  }
+const GuestDesktopShell = styled(Drawer.Content)`
+  right: 8px;
+  top: 8px;
+  bottom: 8px;
+  position: fixed;
+  z-index: 1050;
+  outline: none;
+  width: 860px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: -4px 0 32px rgba(0, 0, 0, 0.14), 0 4px 24px rgba(0, 0, 0, 0.1);
 `;
 
-const DrawerHeader = styled.div`
+const GuestThumbArea = styled.div`
+  flex-shrink: 0;
+  background: #f4f5f8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+const GuestDrawerHandle = styled(Drawer.Handle)`
+  width: 36px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 2px;
+  margin: 12px auto 8px;
+  flex-shrink: 0;
+`;
+
+const GuestDrawerInner = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+`;
+
+const GuestShellHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+  flex-shrink: 0;
+`;
+
+const GuestShellTitle = styled.span`
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+`;
+
+const GuestShellClose = styled.button`
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #6b7280;
+  border-radius: 6px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid #e2e8f0;
-  background: white;
-  flex-shrink: 0;
-`;
-
-const DrawerTitle = styled(Title)`
-  &.ant-typography {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0 !important;
-    color: #1f2937;
-  }
-`;
-
-const CloseButton = styled(Button)`
-  border: none;
-  background: none;
-  padding: 8px;
-  height: auto;
-  color: #6b7280;
-  border-radius: 8px;
   &:hover {
-    background: #f3f4f6;
-    color: #374151;
+    background: #e5e7eb;
   }
 `;
 
-const DrawerFooter = styled.div`
-  padding: 12px 16px;
-  border-top: 1px solid #e2e8f0;
-  background: white;
-  flex-shrink: 0;
-`;
-
-const ScrollableContent = styled.div`
+const GuestShellScroll = styled.div`
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-  scrollbar-width: none;
-`;
-
-// --- Desktop Modal ---
-const CompactModal = styled(Modal)`
-  .ant-modal-content {
-    border-radius: 16px;
-    padding: 0;
-    overflow: hidden;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
-  }
-  .ant-modal-header {
-    background: #ffffff;
-    border-bottom: 1px solid #e2e8f0;
-    padding: 16px 20px;
-    margin: 0;
-    .ant-modal-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: #1e293b;
-      margin: 0;
-    }
-  }
-  .ant-modal-body {
-    padding: 0;
-    background: #f8fafc;
-    max-height: 70vh;
-    overflow-y: auto;
-  }
-  .ant-modal-footer {
-    border-top: 1px solid #e2e8f0;
-    padding: 12px 20px;
-    background: #ffffff;
-    margin-top: 0px;
-  }
+  background: #f8fafc;
 `;
 
 // Compact header for imported contacts
@@ -341,6 +314,107 @@ const StyledTable = styled(Table)`
   }
 `;
 
+const BookingHistoryTableWrapper = styled.div`
+  .ant-table {
+    background: white;
+  }
+  .ant-table-thead > tr > th {
+    background: #f8fafc !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    font-weight: 600;
+    color: #64748b;
+    font-size: 11px;
+    padding: 10px 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .ant-table-tbody > tr > td {
+    padding: 12px 14px;
+    font-size: 13px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .ant-table-tbody > tr:last-child > td {
+    border-bottom: none;
+  }
+  .ant-table-tbody > tr:hover > td {
+    background: #f8fafc !important;
+  }
+`;
+
+const HistoryOverlay = styled(Drawer.Overlay)`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1100;
+  ${VAUL_OVERLAY_BACKDROP_BLUR}
+`;
+
+const HistoryMobileShell = styled(Drawer.Content)`
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 24px 24px 0 0;
+  height: 88%;
+  max-height: 88vh;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1101;
+  outline: none;
+`;
+
+const HistoryDesktopShell = styled(Drawer.Content)`
+  right: 8px;
+  top: 8px;
+  bottom: 8px;
+  position: fixed;
+  z-index: 1101;
+  outline: none;
+  width: min(900px, 96vw);
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: -4px 0 32px rgba(0, 0, 0, 0.14);
+`;
+
+const HistoryDrawerInner = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+`;
+
+const HistoryDrawerHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
+  flex-shrink: 0;
+`;
+
+const HistoryDrawerTitle = styled.span`
+  font-size: 17px;
+  font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+const HistoryScroll = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0;
+  background: #f8fafc;
+`;
+
 // Skeleton for table loading
 const TableSkeleton = () => (
   <div style={{ padding: "16px" }}>
@@ -363,8 +437,68 @@ const TableSkeleton = () => (
   </div>
 );
 
-// Booking History Modal
-const BookingHistoryModal = ({ visible, onClose, guest }) => {
+const BOOKING_HISTORY_COLUMNS = [
+  {
+    title: "EXPERIENCE NAME",
+    dataIndex: "class_name",
+    key: "class",
+    ellipsis: true,
+    render: (text) => (
+      <Text strong style={{ fontSize: "14px" }}>
+        {text}
+      </Text>
+    ),
+  },
+  {
+    title: "DATE",
+    dataIndex: "date",
+    key: "date",
+    width: 140,
+    render: (text) => (
+      <Text style={{ fontSize: "13px", color: "#475569" }}>{text}</Text>
+    ),
+  },
+  {
+    title: "TIME",
+    dataIndex: "time",
+    key: "time",
+    width: 120,
+    render: (text) => (
+      <Text style={{ fontSize: "13px", color: "#475569" }}>{text}</Text>
+    ),
+  },
+  {
+    title: "STATUS",
+    dataIndex: "status",
+    key: "status",
+    width: 120,
+    align: "center",
+    render: (status) => {
+      let color = "default";
+      if (status === "completed") color = "success";
+      else if (status === "confirmed") color = "processing";
+      else if (status === "cancelled") color = "error";
+      const formattedStatus = (status?.replace("_", " ") || "N/A").replace(
+        /\b\w/g,
+        (char) => char.toUpperCase()
+      );
+      return (
+        <Tag
+          color={color}
+          style={{
+            borderRadius: "6px",
+            fontWeight: 500,
+            fontSize: "12px",
+          }}
+        >
+          {formattedStatus}
+        </Tag>
+      );
+    },
+  },
+];
+
+const BookingHistoryDrawer = ({ visible, onClose, guest, isMobile }) => {
   const [bookingHistoryData, setBookingHistoryData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -373,8 +507,7 @@ const BookingHistoryModal = ({ visible, onClose, guest }) => {
   useEffect(() => {
     if (visible && guest?.booking_history) {
       setIsLoading(true);
-      // Simulate loading for skeleton
-      setTimeout(() => {
+      const t = setTimeout(() => {
         const data = Array.isArray(guest.booking_history)
           ? guest.booking_history.map((item, index) => ({
               ...item,
@@ -390,175 +523,98 @@ const BookingHistoryModal = ({ visible, onClose, guest }) => {
         setBookingHistoryData(data);
         setIsLoading(false);
       }, 300);
+      return () => clearTimeout(t);
     }
   }, [visible, guest]);
 
-  const bookingHistoryColumns = [
-    {
-      title: "EXPERIENCE NAME",
-      dataIndex: "class_name",
-      key: "class",
-      ellipsis: true,
-      render: (text) => (
-        <Text strong style={{ fontSize: "14px" }}>
-          {text}
-        </Text>
-      ),
-    },
-    {
-      title: "DATE",
-      dataIndex: "date",
-      key: "date",
-      width: 140,
-      render: (text) => (
-        <Text style={{ fontSize: "13px", color: "#475569" }}>{text}</Text>
-      ),
-    },
-    {
-      title: "TIME",
-      dataIndex: "time",
-      key: "time",
-      width: 120,
-      render: (text) => (
-        <Text style={{ fontSize: "13px", color: "#475569" }}>{text}</Text>
-      ),
-    },
-    {
-      title: "STATUS",
-      dataIndex: "status",
-      key: "status",
-      width: 120,
-      align: "center",
-      render: (status) => {
-        let color = "default";
-        if (status === "completed") color = "success";
-        else if (status === "confirmed") color = "processing";
-        else if (status === "cancelled") color = "error";
-        const formattedStatus = (status?.replace("_", " ") || "N/A").replace(
-          /\b\w/g,
-          (char) => char.toUpperCase()
-        );
-        return (
-          <Tag
-            color={color}
-            style={{
-              borderRadius: "6px",
-              fontWeight: 500,
-              fontSize: "12px",
-            }}
-          >
-            {formattedStatus}
-          </Tag>
-        );
-      },
-    },
-  ];
+  const body = isLoading ? (
+    <TableSkeleton />
+  ) : bookingHistoryData.length > 0 ? (
+    <BookingHistoryTableWrapper style={{ padding: "16px 20px 24px" }}>
+      <Table
+        columns={BOOKING_HISTORY_COLUMNS}
+        dataSource={bookingHistoryData}
+        pagination={{
+          pageSize: 10,
+          hideOnSinglePage: true,
+          showSizeChanger: false,
+        }}
+        rowKey="key"
+        size="middle"
+        loading={false}
+      />
+    </BookingHistoryTableWrapper>
+  ) : (
+    <CompactAlert style={{ margin: "24px" }}>
+      <AlertIcon>
+        <Calendar size={20} />
+      </AlertIcon>
+      <AlertText>No booking history available for this guest.</AlertText>
+    </CompactAlert>
+  );
 
-  const StyledBookingModal = styled(Modal)`
-    .ant-modal-content {
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
-    }
-    .ant-modal-header {
-      background: #ffffff;
-      border-bottom: 1px solid #e2e8f0;
-      padding: 20px 24px;
-      .ant-modal-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #1e293b;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        svg {
-          color: #ff385c;
-        }
-      }
-    }
-    .ant-modal-body {
-      padding: 0;
-      background: #f8fafc;
-    }
-    .ant-modal-footer {
-      border-top: 1px solid #e2e8f0;
-      padding: 16px 24px;
-      background: #ffffff;
-    }
-  `;
+  const headerTitle = (
+    <>
+      <Calendar size={18} style={{ color: "#ff385c" }} />
+      {`${guest?.first_name || "Guest"}'s Booking History`}
+    </>
+  );
 
-  const TableWrapper = styled.div`
-    .ant-table {
-      background: white;
-    }
-    .ant-table-thead > tr > th {
-      background: #f8fafc !important;
-      border-bottom: 2px solid #e2e8f0 !important;
-      font-weight: 600;
-      color: #64748b;
-      font-size: 11px;
-      padding: 10px 14px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .ant-table-tbody > tr > td {
-      padding: 12px 14px;
-      font-size: 13px;
-      border-bottom: 1px solid #f1f5f9;
-    }
-    .ant-table-tbody > tr:last-child > td {
-      border-bottom: none;
-    }
-    .ant-table-tbody > tr:hover > td {
-      background: #f8fafc !important;
-    }
-  `;
-
-  return (
-    <StyledBookingModal
-      title={
-        <>
-          <Calendar size={18} />
-          {`${guest?.first_name || "Guest"}'s Booking History`}
-        </>
-      }
-      open={visible}
-      onCancel={onClose}
-      footer={[
-        <Button key="close" type="primary" onClick={onClose}>
+  const inner = (
+    <HistoryDrawerInner>
+      <HistoryDrawerHeader>
+        <HistoryDrawerTitle>{headerTitle}</HistoryDrawerTitle>
+        <GuestShellClose type="button" onClick={onClose} aria-label="Close">
+          <X size={20} />
+        </GuestShellClose>
+      </HistoryDrawerHeader>
+      <HistoryScroll>{body}</HistoryScroll>
+      <div
+        style={{
+          padding: "12px 20px",
+          borderTop: "1px solid #e2e8f0",
+          background: "#fff",
+          flexShrink: 0,
+        }}
+      >
+        <Button type="primary" block onClick={onClose}>
           Close
-        </Button>,
-      ]}
-      width={900}
-      zIndex={9999}
-      destroyOnClose
+        </Button>
+      </div>
+    </HistoryDrawerInner>
+  );
+
+  return isMobile ? (
+    <Drawer.Root
+      open={visible}
+      onOpenChange={(open) => !open && onClose()}
+      snapPoints={[1]}
+      activeSnapPoint={1}
+      dismissible
     >
-      {isLoading ? (
-        <TableSkeleton />
-      ) : bookingHistoryData.length > 0 ? (
-        <TableWrapper>
-          <Table
-            columns={bookingHistoryColumns}
-            dataSource={bookingHistoryData}
-            pagination={{
-              pageSize: 10,
-              hideOnSinglePage: true,
-              showSizeChanger: false,
-            }}
-            rowKey="key"
-            size="middle"
-            loading={false}
-          />
-        </TableWrapper>
-      ) : (
-        <CompactAlert style={{ margin: "24px" }}>
-          <AlertIcon>
-            <Calendar size={20} />
-          </AlertIcon>
-          <AlertText>No booking history available for this guest.</AlertText>
-        </CompactAlert>
-      )}
-    </StyledBookingModal>
+      <Drawer.Portal>
+        <HistoryOverlay />
+        <HistoryMobileShell>
+          <GuestThumbArea>
+            <GuestDrawerHandle />
+          </GuestThumbArea>
+          {inner}
+        </HistoryMobileShell>
+      </Drawer.Portal>
+    </Drawer.Root>
+  ) : (
+    <Drawer.Root
+      open={visible}
+      onOpenChange={(open) => !open && onClose()}
+      direction="right"
+      dismissible
+      handleOnly
+    >
+      <Drawer.Portal>
+        <HistoryOverlay />
+        <HistoryDesktopShell>{inner}</HistoryDesktopShell>
+      </Drawer.Portal>
+    </Drawer.Root>
   );
 };
 
@@ -568,6 +624,7 @@ const CompactPlatformUserModal = ({
   currentUser,
   onClose,
   isReadyForAnimation,
+  isMobile,
 }) => {
   const [showBookingHistory, setShowBookingHistory] = useState(false);
   const [userTimeZone, setUserTimeZone] = useState("UTC");
@@ -772,10 +829,11 @@ const CompactPlatformUserModal = ({
         </InfoSection>
       </ContentBody>
 
-      <BookingHistoryModal
+      <BookingHistoryDrawer
         visible={showBookingHistory}
         onClose={() => setShowBookingHistory(false)}
         guest={guest}
+        isMobile={isMobile}
       />
     </>
   );
@@ -886,6 +944,7 @@ const GuestProfile = ({
                 guest={guest}
                 currentUser={currentUser}
                 onClose={onClose}
+                embedded
               />
             ) : (
               <CompactPlatformUserModal
@@ -893,6 +952,7 @@ const GuestProfile = ({
                 currentUser={currentUser}
                 onClose={onClose}
                 isReadyForAnimation={isReadyForAnimation}
+                isMobile={isMobile}
               />
             )}
           </motion.div>
@@ -911,50 +971,51 @@ const GuestProfile = ({
     return "Guest Profile";
   };
 
-  return (
-    <>
-      {/* Mobile Drawer with Vaul */}
-      {isMobile ? (
-        <Drawer.Root
-          open={visible}
-          onOpenChange={(open) => !open && onClose()}
-          repositionInputs={false}
-        >
-          <Drawer.Portal>
-            <StyledDrawerOverlay />
-            <StyledDrawerContent>
-              <DrawerHandle />
-              <DrawerHeader>
-                <DrawerTitle>{getModalTitle()}</DrawerTitle>
-                <CloseButton icon={<X size={20} />} onClick={onClose} />
-              </DrawerHeader>
-              <ScrollableContent>{renderContent()}</ScrollableContent>
-              <DrawerFooter>
-                <Button block type="primary" onClick={onClose}>
-                  Close
-                </Button>
-              </DrawerFooter>
-            </StyledDrawerContent>
-          </Drawer.Portal>
-        </Drawer.Root>
-      ) : (
-        /* Desktop Modal */
-        <CompactModal
-          title={getModalTitle()}
-          open={visible}
-          onCancel={onClose}
-          width={error ? 500 : 600}
-          footer={[
-            <Button key="close" onClick={onClose}>
-              Close
-            </Button>,
-          ]}
-          destroyOnClose
-        >
-          {renderContent()}
-        </CompactModal>
-      )}
-    </>
+  const shellContent = (
+    <GuestDrawerInner>
+      <GuestShellHeader>
+        <GuestShellTitle>{getModalTitle()}</GuestShellTitle>
+        <GuestShellClose type="button" onClick={onClose} aria-label="Close">
+          <X size={20} />
+        </GuestShellClose>
+      </GuestShellHeader>
+      <GuestShellScroll>{renderContent()}</GuestShellScroll>
+    </GuestDrawerInner>
+  );
+
+  return isMobile ? (
+    <Drawer.Root
+      open={visible}
+      onOpenChange={(open) => !open && onClose()}
+      snapPoints={[1]}
+      activeSnapPoint={1}
+      dismissible
+    >
+      <Drawer.Portal>
+        <GuestOverlay />
+        <GuestMobileShell>
+          <GuestThumbArea>
+            <GuestDrawerHandle />
+          </GuestThumbArea>
+          {shellContent}
+        </GuestMobileShell>
+      </Drawer.Portal>
+    </Drawer.Root>
+  ) : (
+    <Drawer.Root
+      open={visible}
+      onOpenChange={(open) => !open && onClose()}
+      direction="right"
+      dismissible
+      handleOnly
+    >
+      <Drawer.Portal>
+        <GuestOverlay />
+        <GuestDesktopShell style={{ "--initial-transform": "calc(100% + 8px)" }}>
+          {shellContent}
+        </GuestDesktopShell>
+      </Drawer.Portal>
+    </Drawer.Root>
   );
 };
 

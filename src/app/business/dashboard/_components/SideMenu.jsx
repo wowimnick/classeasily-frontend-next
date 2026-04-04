@@ -20,10 +20,9 @@ import {
   Space,
   Avatar,
   Skeleton,
-  Tooltip,
   Modal,
 } from "antd";
-import { X, AlertCircle, SidebarOpen, Eye, ChevronRight, Lock, ArrowRight } from "lucide-react";
+import { X, AlertCircle, SidebarOpen, ChevronRight, Lock, ArrowRight, Mail } from "lucide-react";
 import { Drawer } from "vaul";
 import { vaulOverlayInlineBlur } from "@/lib/vaulOverlayBlur";
 
@@ -333,9 +332,19 @@ const DesktopSideMenu = styled(motion.div)`
   overflow: hidden;
 `;
 
-/* ─── Profile card area ────────────────────────────────────────── */
+/* ─── Profile header (card + quick actions) ───────────────────── */
 const ProfileCardArea = styled.div`
-  padding: 14px 14px 10px;
+  padding: 14px 14px 8px;
+  flex-shrink: 0;
+`;
+
+/** Single chrome: logo/name row + help/settings strip read as one block */
+const ProfileHeaderBundle = styled.div`
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07), 0 1px 2px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  overflow: hidden;
   flex-shrink: 0;
 `;
 
@@ -343,23 +352,36 @@ const BusinessProfileCard = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #ffffff;
-  border-radius: 12px;
   padding: 10px 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
-  border: 1px solid rgba(0,0,0,0.05);
   cursor: ${(p) => (p.$clickable ? "pointer" : "default")};
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
-  overflow: hidden;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
 
   &:hover {
     ${(p) =>
       p.$clickable &&
       `
-      box-shadow: 0 4px 12px rgba(0,0,0,0.10);
-      transform: translateY(-1px);
+      background: rgba(0, 0, 0, 0.02);
     `}
   }
+`;
+
+const ProfileQuickActionsRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  padding: 4px 8px 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+`;
+
+const QuickActionLabel = styled.span`
+  font-size: 12.5px;
+  font-weight: ${(p) => (p.$active ? 600 : 500)};
+  color: ${(p) => (p.$active ? p.theme.token.colorPrimary : "#6b7280")};
+  white-space: nowrap;
+  letter-spacing: -0.01em;
 `;
 
 const BusinessLogoImg = styled.img`
@@ -411,6 +433,25 @@ const MenuContainer = styled.div`
   }
   scrollbar-width: thin;
   scrollbar-color: #d1d5db transparent;
+`;
+
+/* ─── Bottom footer (Info / help only) ─────────────────────────── */
+const SideMenuFooterBar = styled.div`
+  padding: 10px 14px 14px;
+  border-top: 1px solid #ebebeb;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+`;
+
+const MobileFooterContainer = styled.div`
+  padding: 12px 14px 16px;
+  border-top: 1px solid #ebebeb;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
 `;
 
 /* ─── Ant Design Menu overrides ────────────────────────────────── */
@@ -543,33 +584,37 @@ const StyledAntMenu = styled(Menu)`
   }
 `;
 
-/* ─── Footer ───────────────────────────────────────────────────── */
-const FooterActionsContainer = styled.div`
-  padding: 10px 14px 16px;
-  border-top: 1px solid #EBEBEB;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-`;
-
-const FooterBtn = styled(Link)`
-  display: flex;
+/* ─── Profile quick actions (help / settings) ──────────────────── */
+const FooterIconLink = styled(Link)`
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #6b7280;
-  text-decoration: none;
+  gap: 6px;
+  padding: 4px 8px;
+  min-height: 32px;
   border-radius: 8px;
-  transition: background 0.15s ease, color 0.15s ease;
-  background: transparent;
+  text-decoration: none;
+  transition: background 0.15s ease;
 
   &:hover {
-    background: rgba(0,0,0,0.05);
-    color: #111827;
+    background: rgba(0, 0, 0, 0.05);
     text-decoration: none;
+  }
+`;
+
+const FooterIconButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  min-height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
   }
 `;
 
@@ -642,12 +687,16 @@ const ButtonText = styled(motion.span)`
 `;
 
 const MobileHeaderContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding: 18px 20px 14px;
   border-bottom: 1px solid #EBEBEB;
   flex-shrink: 0;
+`;
+
+const MobileHeaderTopRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
 `;
 
 const MobileCloseButton = styled(motion.button)`
@@ -671,34 +720,36 @@ const MobileMenuContainer = styled.div`
   scrollbar-width: thin;
 `;
 
-const MobileFooterContainer = styled.div`
-  padding: 12px 14px 18px;
-  border-top: 1px solid #EBEBEB;
-  flex-shrink: 0;
-  display: flex;
-  gap: 8px;
-`;
-
-const MobileFooterBtn = styled(Link)`
-  flex: 1;
-  display: flex;
+const MobileFooterIconLink = styled(Link)`
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
-  padding: 9px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #6b7280;
-  text-decoration: none;
+  padding: 6px 10px;
+  min-height: 36px;
   border-radius: 8px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
+  text-decoration: none;
   transition: background 0.15s ease;
 
   &:hover {
     background: #e5e7eb;
     text-decoration: none;
-    color: #111827;
+  }
+`;
+
+const MobileFooterIconButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  min-height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: #e5e7eb;
   }
 `;
 
@@ -825,30 +876,12 @@ const menuGroupsConfig =[
           { key: "payouts", label: "Payouts" },
         ],
       },
-      {
-        key: "growth",
-        label: "Marketing",
-        icon: (
-          <LordIcon
-            src="https://cdn.lordicon.com/excswhey.json"
-            colors="primary:#666,secondary:#666"
-            size="20px"
-            playOnLoad={true}
-            inState="in-trend-up"
-          />
-        ),
-        children:[
-          { key: "trends",    label: "Booking Trends" },
-          { key: "discounts", label: "Discounts" },
-          { key: "email-campaigns", label: "Email Campaigns" },
-        ],
-      },
     ],
   },
   {
-    groupKey: "platform",
-    label: "Platform",
-    items:[
+    groupKey: "sell",
+    label: "Sell",
+    items: [
       {
         key: "widget",
         label: "Booking Widget",
@@ -877,18 +910,42 @@ const menuGroupsConfig =[
           { key: "memberships/members", label: "Members" },
         ],
       },
+    ],
+  },
+  {
+    groupKey: "marketing",
+    label: "Marketing",
+    items: [
       {
-        key: "settings",
-        label: "Settings",
+        key: "trends",
+        label: "Booking Trends",
         icon: (
           <LordIcon
-            src="https://cdn.lordicon.com/lrubprlz.json"
+            src="https://cdn.lordicon.com/excswhey.json"
             colors="primary:#666,secondary:#666"
             size="20px"
             playOnLoad={true}
-            state="in-code"
+            inState="in-trend-up"
           />
         ),
+      },
+      {
+        key: "discounts",
+        label: "Discounts",
+        icon: (
+          <LordIcon
+            src="https://cdn.lordicon.com/rguyoaum.json"
+            colors="primary:#666,secondary:#666"
+            size="20px"
+            playOnLoad={true}
+            inState="in-ticket"
+          />
+        ),
+      },
+      {
+        key: "email-campaigns",
+        label: "Email Campaigns",
+        icon: <Mail size={20} color="#9ca3af" strokeWidth={2} />,
       },
     ],
   },
@@ -928,13 +985,14 @@ const SideMenuComponent = memo(
     const[transformOrigin, setTransformOrigin]         = useState("bottom left");
     const [shakeWidget, setShakeWidget]                 = useState(false);
     const [shakeMemberships, setShakeMemberships]       = useState(false);
+    const [shakeEmailMarketing, setShakeEmailMarketing]   = useState(false);
     const [showUpgradeModal, setShowUpgradeModal]       = useState(false);
     const [showMembershipsUpgradeModal, setShowMembershipsUpgradeModal] = useState(false);
     const router = useRouter();
 
     const { user } = useAuth();
     const permissions = user?.permissions ||[];
-    const { hasWidgetAccess, hasMembershipAccess } = useSubscription();
+    const { hasWidgetAccess, hasMembershipAccess, hasEmailMarketingAccess } = useSubscription();
 
     const isBusinessClickable =
       !loadingBusiness && !businessError && businessData && !businessData._isPlaceholder;
@@ -955,6 +1013,7 @@ const SideMenuComponent = memo(
     const platformMenuRef       = useRef(null);
     const widgetMenuRef         = useRef(null);
     const membershipsMenuRef   = useRef(null);
+    const emailCampaignsMenuRef = useRef(null);
 
     useImperativeHandle(ref, () => ({
       homeMenuRef,
@@ -1050,7 +1109,33 @@ const SideMenuComponent = memo(
       }
     }, [fetchBusinessProfile, router]);
 
+    const permissionCheck = useCallback(
+      (codename) =>
+        permissions.some((p) => {
+          const parts = p.split(".");
+          return parts.length === 2 && parts[1] === codename;
+        }),
+      [permissions]
+    );
+
+    const canAccessSettings = permissionCheck(menuItemPermissions.settings);
+
+    const handleFooterSettings = useCallback(() => {
+      onMenuSelect("settings");
+      if (isMobile) setDrawerVisible(false);
+    }, [isMobile, onMenuSelect]);
+
     const handleMenuClick = (e) => {
+      if (e.key === "email-campaigns" && !hasEmailMarketingAccess) {
+        e.domEvent?.preventDefault?.();
+        setShakeEmailMarketing(true);
+        setTimeout(() => {
+          router.push("/business/dashboard/settings?tab=plan-billing&email_marketing_modal=1");
+          setShakeEmailMarketing(false);
+        }, 400);
+        if (isMobile) setDrawerVisible(false);
+        return;
+      }
       if (e.key === "widget" && !hasWidgetAccess) {
         e.domEvent?.preventDefault?.();
         setShakeWidget(true);
@@ -1152,9 +1237,9 @@ const SideMenuComponent = memo(
           people:      managementMenuRef,
           memberships: membershipsMenuRef,
           financials:  financialsMenuRef,
-          growth:      growthMenuRef,
+          trends:      growthMenuRef,
           widget:      widgetMenuRef,
-          settings:    platformMenuRef,
+          "email-campaigns": emailCampaignsMenuRef,
         };
         const r = refMap[key];
         return r ? <span ref={r}>{label}</span> : label;
@@ -1173,6 +1258,15 @@ const SideMenuComponent = memo(
         : (
             <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingRight: 2 }}>
               <span ref={membershipsMenuRef}>Memberships</span>
+              <Lock size={14} style={{ flexShrink: 0, color: "#9ca3af" }} />
+            </span>
+          );
+
+      const emailCampaignsLabel = hasEmailMarketingAccess
+        ? attachRefToLabel("Email Campaigns", "email-campaigns")
+        : (
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingRight: 2 }}>
+              <span ref={emailCampaignsMenuRef}>Email Campaigns</span>
               <Lock size={14} style={{ flexShrink: 0, color: "#9ca3af" }} />
             </span>
           );
@@ -1197,7 +1291,9 @@ const SideMenuComponent = memo(
                 acc.push({
                   key: item.key,
                   icon: item.icon,
-                  label: item.key === "memberships" ? membershipsLabel : attachRefToLabel(item.label, item.key),
+                  label: item.key === "memberships"
+                    ? membershipsLabel
+                    : attachRefToLabel(item.label, item.key),
                   className: item.key === "memberships" && shakeMemberships ? "widget-menu-item-shake" : undefined,
                   onMouseEnter: ({ domEvent }) => handleMenuItemHover(domEvent, true),
                   onMouseLeave: ({ domEvent }) => handleMenuItemHover(domEvent, false),
@@ -1210,11 +1306,17 @@ const SideMenuComponent = memo(
                 });
               }
             } else if (hasPermission(item.key)) {
+              let leafLabel = attachRefToLabel(item.label, item.key);
+              if (item.key === "widget") leafLabel = widgetLabel;
+              else if (item.key === "email-campaigns") leafLabel = emailCampaignsLabel;
+              let leafClass;
+              if (item.key === "widget" && shakeWidget) leafClass = "widget-menu-item-shake";
+              else if (item.key === "email-campaigns" && shakeEmailMarketing) leafClass = "widget-menu-item-shake";
               acc.push({
                 key: item.key,
                 icon: item.icon,
-                label: item.key === "widget" ? widgetLabel : attachRefToLabel(item.label, item.key),
-                className: item.key === "widget" && shakeWidget ? "widget-menu-item-shake" : undefined,
+                label: leafLabel,
+                className: leafClass,
                 onMouseEnter: ({ domEvent }) => handleMenuItemHover(domEvent, true),
                 onMouseLeave: ({ domEvent }) => handleMenuItemHover(domEvent, false),
               });
@@ -1226,7 +1328,7 @@ const SideMenuComponent = memo(
           return { type: "group", label: group.label, children: visibleItems };
         })
         .filter(Boolean);
-    },[handleMenuItemHover, permissions, hasWidgetAccess, hasMembershipAccess, shakeWidget, shakeMemberships]);
+    },[handleMenuItemHover, permissions, hasWidgetAccess, hasMembershipAccess, hasEmailMarketingAccess, shakeWidget, shakeMemberships, shakeEmailMarketing]);
 
     /* ── Render helpers ── */
 
@@ -1304,50 +1406,67 @@ const SideMenuComponent = memo(
       </MenuContainer>
     );
 
-    const renderFooterActions = () => {
-      if (loadingBusiness || businessError || !businessData || businessData._isPlaceholder) {
-        return (
-          <FooterBtn href="/business/help/">
-            <AlertCircle size={15} />
-            Get Help
-          </FooterBtn>
-        );
-      }
+    const footerGearColors =
+      activeKey === "settings"
+        ? `primary:${augmentedTheme.token.colorPrimary},secondary:${augmentedTheme.token.colorPrimary}`
+        : "primary:#9ca3af,secondary:#9ca3af";
+
+    const renderFooterInfo = (forMobileDrawer) => {
+      const LinkComp = forMobileDrawer ? MobileFooterIconLink : FooterIconLink;
+      const helpExtra = forMobileDrawer ? { onClick: () => setDrawerVisible(false) } : {};
+
       return (
-        <>
-          {businessData.slug && (
-            <FooterBtn href={`/business/${businessData.slug}`}>
-              <Eye size={15} />
-              Preview page
-            </FooterBtn>
-          )}
-          <FooterBtn href="/business/help/">
-            <AlertCircle size={15} />
-            Help &amp; Docs
-          </FooterBtn>
-        </>
+        <LinkComp
+          href="/business/help/"
+          aria-label="Help and documentation"
+          {...helpExtra}
+        >
+          <LordIcon
+            src="https://cdn.lordicon.com/biqqsrac.json"
+            colors="primary:#9ca3af,secondary:#9ca3af"
+            size="22px"
+            playOnLoad={true}
+            inState="in-help-center"
+          />
+          <QuickActionLabel>Info</QuickActionLabel>
+        </LinkComp>
       );
     };
 
-    const renderMobileFooter = () => {
-      if (loadingBusiness || businessError || !businessData || businessData._isPlaceholder) {
-        return (
-          <MobileFooterBtn href="/business/help/" onClick={() => setDrawerVisible(false)}>
-            <AlertCircle size={14} /> Get Help
-          </MobileFooterBtn>
-        );
-      }
+    const renderSettingsQuickAction = (forMobileDrawer) => {
+      if (!canAccessSettings) return null;
+      const BtnComp = forMobileDrawer ? MobileFooterIconButton : FooterIconButton;
+      const settingsActive = activeKey === "settings";
+
       return (
-        <>
-          {businessData.slug && (
-            <MobileFooterBtn href={`/business/${businessData.slug}`} onClick={() => setDrawerVisible(false)}>
-              <Eye size={14} /> Preview
-            </MobileFooterBtn>
+        <BtnComp type="button" aria-label="Settings" onClick={handleFooterSettings}>
+          {forMobileDrawer ? (
+            <>
+              <LordIcon
+                src="https://cdn.lordicon.com/asyunleq.json"
+                colors={footerGearColors}
+                size="22px"
+                playOnLoad={true}
+                inState="in-cog"
+              />
+              <QuickActionLabel $active={settingsActive}>Settings</QuickActionLabel>
+            </>
+          ) : (
+            <span
+              ref={platformMenuRef}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <LordIcon
+                src="https://cdn.lordicon.com/asyunleq.json"
+                colors={footerGearColors}
+                size="22px"
+                playOnLoad={true}
+                inState="in-cog"
+              />
+              <QuickActionLabel $active={settingsActive}>Settings</QuickActionLabel>
+            </span>
           )}
-          <MobileFooterBtn href="/business/help/" onClick={() => setDrawerVisible(false)}>
-            <AlertCircle size={14} /> Help
-          </MobileFooterBtn>
-        </>
+        </BtnComp>
       );
     };
 
@@ -1360,20 +1479,23 @@ const SideMenuComponent = memo(
           {/* ── Desktop ── */}
           <DesktopSideMenu className="desktop-sidemenu" initial={false}>
             <ProfileCardArea>
-              <BusinessProfileCard
-                $clickable={!!businessClickHandler}
-                onClick={businessClickHandler}
-                title={isBusinessClickable ? "Preview your public page" : undefined}
-              >
-                {renderProfileCardContent()}
-              </BusinessProfileCard>
+              <ProfileHeaderBundle>
+                <BusinessProfileCard
+                  $clickable={!!businessClickHandler}
+                  onClick={businessClickHandler}
+                  title={isBusinessClickable ? "Preview your public page" : undefined}
+                >
+                  {renderProfileCardContent()}
+                </BusinessProfileCard>
+                {canAccessSettings && (
+                  <ProfileQuickActionsRow>{renderSettingsQuickAction(false)}</ProfileQuickActionsRow>
+                )}
+              </ProfileHeaderBundle>
             </ProfileCardArea>
 
             {renderMenu()}
 
-            <FooterActionsContainer>
-              {renderFooterActions()}
-            </FooterActionsContainer>
+            <SideMenuFooterBar>{renderFooterInfo(false)}</SideMenuFooterBar>
           </DesktopSideMenu>
 
           {/* ── Mobile ── */}
@@ -1427,19 +1549,24 @@ const SideMenuComponent = memo(
                       style={{ transformOrigin }}
                     >
                       <MobileHeaderContainer>
-                        <BusinessProfileCard
-                          style={{ flex: 1, marginRight: 10 }}
-                          $clickable={false}
-                        >
-                          {renderProfileCardContent()}
-                        </BusinessProfileCard>
-                        <MobileCloseButton
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setDrawerVisible(false)}
-                        >
-                          <X size={18} />
-                        </MobileCloseButton>
+                        <MobileHeaderTopRow>
+                          <ProfileHeaderBundle style={{ flex: 1, minWidth: 0 }}>
+                            <BusinessProfileCard $clickable={false}>
+                              {renderProfileCardContent()}
+                            </BusinessProfileCard>
+                            {canAccessSettings && (
+                              <ProfileQuickActionsRow>{renderSettingsQuickAction(true)}</ProfileQuickActionsRow>
+                            )}
+                          </ProfileHeaderBundle>
+                          <MobileCloseButton
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setDrawerVisible(false)}
+                            style={{ flexShrink: 0, marginTop: 2 }}
+                          >
+                            <X size={18} />
+                          </MobileCloseButton>
+                        </MobileHeaderTopRow>
                       </MobileHeaderContainer>
 
                       <MobileMenuContainer>
@@ -1453,9 +1580,7 @@ const SideMenuComponent = memo(
                         />
                       </MobileMenuContainer>
 
-                      <MobileFooterContainer>
-                        {renderMobileFooter()}
-                      </MobileFooterContainer>
+                      <MobileFooterContainer>{renderFooterInfo(true)}</MobileFooterContainer>
                     </MobileSidebarContainer>
                   </>
                 )}

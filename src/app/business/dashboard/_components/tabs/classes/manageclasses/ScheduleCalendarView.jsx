@@ -21,6 +21,7 @@ import {
   Tag,
   Modal,
   Button,
+  Dropdown,
 } from "antd";
 import { Drawer as VaulDrawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
@@ -52,18 +53,17 @@ import {
   AlertTriangle,
   Info,
 } from "lucide-react";
-import { businessClassService, scheduleService } from "@/services/apiService";
+import { businessClassService, businessService, scheduleService } from "@/services/apiService";
 import message from "@/lib/message";
 
 dayjs.extend(weekOfYear);
 dayjs.extend(isBetween);
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
-const START_HOUR = 6;
-const END_HOUR = 22;
+/** Fallback when profile hours are missing or unusable (same as previous hard-coded grid). */
+const DEFAULT_CAL_START_HOUR = 6;
+const DEFAULT_CAL_END_HOUR = 22;
 const HOUR_HEIGHT = 64;
-const TOTAL_HEIGHT = (END_HOUR - START_HOUR) * HOUR_HEIGHT;
-const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
 
 const CLASS_COLORS = [
   { bg: "#fff0f2", accent: "#ff385c", text: "#991b1b" },
@@ -101,9 +101,90 @@ function getWeekDays(weekStart) {
   return Array.from({ length: 7 }, (_, i) => weekStart.add(i, "day"));
 }
 
-function timeToTop(timeStr) {
-  const [h, m] = timeStr.split(":").map(Number);
-  return Math.max(0, (h - START_HOUR + m / 60) * HOUR_HEIGHT);
+function hourFloatFromHHMM(str) {
+  if (!str || typeof str !== "string") return null;
+  const parts = str.trim().slice(0, 5).split(":");
+  const hh = parseInt(parts[0], 10);
+  const mm = parseInt(parts[1] ?? "0", 10);
+  if (Number.isNaN(hh)) return null;
+  return hh + (Number.isNaN(mm) ? 0 : mm) / 60;
+}
+
+/** Exclusive end hour for grid rows [startHour, endHour) so a close at 17:00 includes the 5–6 PM row. */
+function exclusiveEndHourFromLatestMinute(latestHourFloat) {
+  if (latestHourFloat == null || Number.isNaN(latestHourFloat)) return DEFAULT_CAL_END_HOUR;
+  const c = Math.min(latestHourFloat, 24);
+  return Math.min(24, Math.floor(c) + 1);
+}
+
+/** Union of business-hours windows (from settings) and loaded schedules; always fits sessions. */
+function buildCalendarGrid(businessHours, schedules) {
+  let bizMin = null;
+  let bizMax = null;
+  for (const day of businessHours || []) {
+    if (day?.isOpen === false) continue;
+    let openStr;
+    let closeStr;
+    if (day?.time && Array.isArray(day.time) && day.time.length >= 2) {
+      const t0 = day.time[0];
+      const t1 = day.time[1];
+      openStr = typeof t0 === "string" ? t0.slice(0, 5) : (t0?.format ? t0.format("HH:mm") : null);
+      closeStr = typeof t1 === "string" ? t1.slice(0, 5) : (t1?.format ? t1.format("HH:mm") : null);
+    } else if (day?.open && day?.close) {
+      openStr = String(day.open).slice(0, 5);
+      closeStr = String(day.close).slice(0, 5);
+    }
+    if (!openStr || !closeStr) continue;
+    const openH = hourFloatFromHHMM(openStr);
+    const closeH = hourFloatFromHHMM(closeStr);
+    if (openH == null || closeH == null) continue;
+    let closeExtent = closeH;
+    if (closeExtent <= openH) closeExtent += 24;
+    bizMin = bizMin === null ? openH : Math.min(bizMin, openH);
+    bizMax = bizMax === null ? closeExtent : Math.max(bizMax, closeExtent);
+  }
+
+  let schedMin = null;
+  let schedMax = null;
+  for (const s of schedules || []) {
+    const t = String(s?.time ?? "09:00").slice(0, 5);
+    const start = hourFloatFromHHMM(t);
+    if (start == null) continue;
+    const dur = Number(s?.duration) || 60;
+    const end = start + dur / 60;
+    schedMin = schedMin === null ? start : Math.min(schedMin, start);
+    schedMax = schedMax === null ? end : Math.max(schedMax, end);
+  }
+
+  let startHour = DEFAULT_CAL_START_HOUR;
+  let endHour = DEFAULT_CAL_END_HOUR;
+  if (bizMin != null && bizMax != null) {
+    startHour = Math.floor(bizMin);
+    endHour = exclusiveEndHourFromLatestMinute(Math.min(bizMax, 24));
+  }
+  if (schedMin != null) {
+    startHour = Math.min(startHour, Math.floor(schedMin));
+  }
+  if (schedMax != null) {
+    endHour = Math.max(endHour, exclusiveEndHourFromLatestMinute(Math.min(schedMax, 24)));
+  }
+  startHour = Math.max(0, Math.min(startHour, 23));
+  endHour = Math.max(startHour + 1, Math.min(endHour, 24));
+  if (endHour - startHour < 4) {
+    const deficit = 4 - (endHour - startHour);
+    const shrinkStart = Math.min(deficit, startHour);
+    startHour -= shrinkStart;
+    endHour = Math.min(24, endHour + (deficit - shrinkStart));
+    if (endHour - startHour < 4) endHour = Math.min(24, startHour + 4);
+  }
+  const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
+  const totalHeight = (endHour - startHour) * HOUR_HEIGHT;
+  return { startHour, endHour, hours, totalHeight };
+}
+
+function timeToTop(timeStr, startHour) {
+  const [h, m] = String(timeStr || "09:00").split(":").map(Number);
+  return Math.max(0, (h - startHour + m / 60) * HOUR_HEIGHT);
 }
 
 function durationToHeight(mins) {
@@ -604,8 +685,19 @@ const IconBtn = styled.button`
   &:hover { border-color: #93c5fd; background: #eff6ff; color: #3b82f6; }
 `;
 
-// ── Bulk Actions Bar ──────────────────────────────────────────────────────────
-const BulkBar = styled(motion.div)`
+// ── Bulk Actions Bar (grid row animation avoids height:auto jank) ─────────────
+const BulkBarGridWrap = styled.div`
+  display: grid;
+  grid-template-rows: ${(p) => (p.$open ? "1fr" : "0fr")};
+  transition: grid-template-rows 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+`;
+
+const BulkBarGridInner = styled.div`
+  overflow: hidden;
+  min-height: 0;
+`;
+
+const BulkBar = styled.div`
   background: #1e293b;
   color: #fff;
   padding: 8px 20px;
@@ -732,14 +824,14 @@ const CalScrollArea = styled.div`
 const CalBodyGrid = styled.div`
   display: grid;
   grid-template-columns: 56px repeat(7, minmax(0, 1fr));
-  min-height: ${TOTAL_HEIGHT}px;
+  min-height: ${p => p.$minHeight}px;
   position: relative;
 `;
 
 const DayCalBodyGrid = styled.div`
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr);
-  min-height: ${TOTAL_HEIGHT}px;
+  min-height: ${p => p.$minHeight}px;
 `;
 
 const TimeCol = styled.div`
@@ -1583,6 +1675,7 @@ function ScheduleFormPanel({ open, onClose, schedule, prefill, classes, onSucces
   const defaultClassId = useMemo(() => {
     if (schedule) return schedule.classId;
     if (prefill?.classId) return prefill.classId;
+    if (prefill?.duplicateFrom?.classId) return prefill.duplicateFrom.classId;
     if (classes.length === 1) return classes[0].classId;
     return null;
   }, [schedule, prefill, classes]);
@@ -1616,17 +1709,27 @@ function ScheduleFormPanel({ open, onClose, schedule, prefill, classes, onSucces
       });
     } else {
       setMode("single");
-      setDuration(60);
-      const prefillDate = prefill?.date ? dayjs(prefill.date) : dayjs();
-      const prefillTime = prefill?.time ? dayjs(`2000-01-01T${prefill.time}`) : dayjs("09:00", "HH:mm");
+      const dup = prefill?.duplicateFrom;
+      setDuration(dup ? dup.duration || 60 : 60);
+      const prefillDate = prefill?.date
+        ? dayjs(prefill.date)
+        : dup
+          ? dayjs().add(1, "day")
+          : dayjs();
+      const timeStr = dup?.time ? String(dup.time).slice(0, 5) : null;
+      const prefillTime = prefill?.time
+        ? dayjs(`2000-01-01T${String(prefill.time).slice(0, 5)}`)
+        : timeStr
+          ? dayjs(`2000-01-01T${timeStr}`)
+          : dayjs("09:00", "HH:mm");
       form.setFieldsValue({
         classId: defaultClassId,
         date: prefillDate,
         time: prefillTime,
-        price: 0,
-        maxParticipants: 10,
-        minParticipants: 1,
-        name: "",
+        price: dup ? parseFloat(dup.price) || 0 : 0,
+        maxParticipants: dup?.maxParticipants ?? 10,
+        minParticipants: dup?.minParticipants ?? 1,
+        name: dup?.name || "",
       });
     }
   }, [open, schedule, prefill, isEdit, defaultClassId, form]);
@@ -1903,7 +2006,7 @@ function ScheduleFormPanel({ open, onClose, schedule, prefill, classes, onSucces
 }
 
 // Shared form state hook
-function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose }) {
+function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose, moveOnly }) {
   const [form] = Form.useForm();
   const [mode, setMode] = useState("single");
   const [submitting, setSubmitting] = useState(false);
@@ -1922,6 +2025,7 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose 
   const defaultClassId = useMemo(() => {
     if (schedule) return schedule.classId;
     if (prefill?.classId) return prefill.classId;
+    if (prefill?.duplicateFrom?.classId) return prefill.duplicateFrom.classId;
     if (classes.length === 1) return classes[0].classId;
     return null;
   }, [schedule, prefill, classes]);
@@ -1949,21 +2053,50 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose 
       });
     } else {
       setMode("single");
-      setDuration(60);
+      const dup = prefill?.duplicateFrom;
+      setDuration(dup ? dup.duration || 60 : 60);
+      const timeStr = dup?.time ? String(dup.time).slice(0, 5) : null;
       form.setFieldsValue({
         classId: defaultClassId,
-        date: prefill?.date ? dayjs(prefill.date) : dayjs(),
-        time: prefill?.time ? dayjs(`2000-01-01T${prefill.time}`) : dayjs("09:00", "HH:mm"),
-        price: 0,
-        maxParticipants: 10,
-        minParticipants: 1,
-        name: "",
+        date: prefill?.date
+          ? dayjs(prefill.date)
+          : dup
+            ? dayjs().add(1, "day")
+            : dayjs(),
+        time: prefill?.time
+          ? dayjs(`2000-01-01T${String(prefill.time).slice(0, 5)}`)
+          : timeStr
+            ? dayjs(`2000-01-01T${timeStr}`)
+            : dayjs("09:00", "HH:mm"),
+        price: dup ? parseFloat(dup.price) || 0 : 0,
+        maxParticipants: dup?.maxParticipants ?? 10,
+        minParticipants: dup?.minParticipants ?? 1,
+        name: dup?.name || "",
       });
     }
   }, [open, schedule, prefill, isEdit, defaultClassId, form]);
 
   const handleSubmit = async () => {
     try {
+      if (moveOnly && isEdit) {
+        const values = await form.validateFields(["date", "time"]);
+        setSubmitting(true);
+        const timeStr = values.time.format("HH:mm");
+        const dateStr = values.date.format("YYYY-MM-DD");
+        const changed = {};
+        if (dateStr !== schedule.date) changed.date = dateStr;
+        if (timeStr !== schedule.time?.slice(0, 5)) changed.time = timeStr;
+        if (Object.keys(changed).length === 0) {
+          message.info("No changes.");
+          return;
+        }
+        const res = await scheduleService.updateSchedule(schedule.id, changed);
+        if (res.success) {
+          message.success("Schedule moved.");
+          onSuccess();
+        } else message.error(getErrorMessage(res.error));
+        return;
+      }
       if (mode === "single") {
         const values = await form.validateFields(["classId", "date", "time", "maxParticipants", "price"]);
         setSubmitting(true);
@@ -2061,7 +2194,7 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose 
 
   const FormBody = (
     <Form form={form} layout="vertical">
-      {classes.length > 1 && (
+      {classes.length > 1 && !moveOnly && (
         <FieldGroup>
           <FieldLabel><Calendar size={13} />Experience</FieldLabel>
           <Form.Item name="classId" noStyle rules={[{ required: true, message: "Select an experience" }]}>
@@ -2074,7 +2207,7 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose 
         </FieldGroup>
       )}
 
-      {!isEdit && (
+      {!isEdit && !moveOnly && (
         <div style={{ marginTop: 8 }}>
           <ModeToggle>
             <ModeBtn $active={mode === "single"} onClick={() => setMode("single")} type="button">
@@ -2093,13 +2226,17 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose 
             <FieldGroup>
               <FieldLabel>Date</FieldLabel>
               <Form.Item name="date" noStyle rules={[{ required: true, message: "Required" }]}>
-                <DatePicker style={{ width: "100%" }} inputReadOnly disabledDate={d => !isEdit && d && d < dayjs().startOf("day")} />
+                <DatePicker
+                  style={{ width: "100%" }}
+                  inputReadOnly
+                  disabledDate={d => (moveOnly ? d && d < dayjs().startOf("day") : !isEdit && d && d < dayjs().startOf("day"))}
+                />
               </Form.Item>
             </FieldGroup>
             <FieldGroup>
               <FieldLabel>Time</FieldLabel>
               <Form.Item name="time" noStyle rules={[{ required: true, message: "Required" }]}>
-                <TimePicker style={{ width: "100%" }} use12Hours format="h:mm A" minuteStep={15} inputReadOnly />
+                <TimePicker style={{ width: "100%" }} use12Hours format="h:mm A" minuteStep={moveOnly ? 5 : 15} inputReadOnly />
               </Form.Item>
             </FieldGroup>
           </TwoCol>
@@ -2155,51 +2292,55 @@ function useScheduleForm({ open, schedule, prefill, classes, onSuccess, onClose 
           </>
         )}
 
-        <FieldGroup>
-          <FieldLabel><Clock size={13} />Duration<InfoTip text="How long each session lasts. This affects booking slots and calendar display." /></FieldLabel>
-          <DurationPresets>
-            {DURATION_PRESETS.map(d => (
-              <DurationChip key={d} $active={duration === d} onClick={() => setDuration(d)} type="button">
-                {d < 60 ? `${d}m` : d === 60 ? "1h" : d === 90 ? "1.5h" : `${d / 60}h`}
-              </DurationChip>
-            ))}
-          </DurationPresets>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
-            <InputNumber min={15} max={480} step={15} value={duration} onChange={v => setDuration(v || 60)} style={{ width: 80 }} size="small" />
-            <span style={{ fontSize: 12, color: "#6b7280" }}>min</span>
-          </div>
-        </FieldGroup>
-
-        <TwoCol>
-          <FieldGroup>
-            <FieldLabel><DollarSign size={13} />Price<InfoTip text="Per-person booking price. Enter 0 for free sessions." /></FieldLabel>
-            <Form.Item name="price" noStyle rules={[{ required: true, message: "Required" }]}>
-              <InputNumber min={0} step={0.01} precision={2} style={{ width: "100%" }} addonBefore="$" />
-            </Form.Item>
-          </FieldGroup>
-          <FieldGroup>
-            <FieldLabel><Users size={13} />Max Guests<InfoTip text="Maximum number of participants that can book this session." /></FieldLabel>
-            <Form.Item name="maxParticipants" noStyle rules={[{ required: true, message: "Required" }]}>
-              <InputNumber min={1} max={9999} style={{ width: "100%" }} />
-            </Form.Item>
-          </FieldGroup>
-        </TwoCol>
-        <TwoCol>
-          <FieldGroup>
-            <FieldLabel>Min Guests<InfoTip text="Minimum bookings needed for the session to be confirmed. Leave blank for no minimum." /></FieldLabel>
-            <Form.Item name="minParticipants" noStyle>
-              <InputNumber min={1} max={9999} style={{ width: "100%" }} />
-            </Form.Item>
-          </FieldGroup>
-          {mode === "single" && (
+        {!moveOnly && (
+          <>
             <FieldGroup>
-              <FieldLabel>Group<InfoTip text="Optionally assign this session to a group so you can filter and bulk-edit related sessions together." /></FieldLabel>
-              <Form.Item name="name" noStyle>
-                <Input placeholder="Optional" />
-              </Form.Item>
+              <FieldLabel><Clock size={13} />Duration<InfoTip text="How long each session lasts. This affects booking slots and calendar display." /></FieldLabel>
+              <DurationPresets>
+                {DURATION_PRESETS.map(d => (
+                  <DurationChip key={d} $active={duration === d} onClick={() => setDuration(d)} type="button">
+                    {d < 60 ? `${d}m` : d === 60 ? "1h" : d === 90 ? "1.5h" : `${d / 60}h`}
+                  </DurationChip>
+                ))}
+              </DurationPresets>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                <InputNumber min={15} max={480} step={15} value={duration} onChange={v => setDuration(v || 60)} style={{ width: 80 }} size="small" />
+                <span style={{ fontSize: 12, color: "#6b7280" }}>min</span>
+              </div>
             </FieldGroup>
-          )}
-        </TwoCol>
+
+            <TwoCol>
+              <FieldGroup>
+                <FieldLabel><DollarSign size={13} />Price<InfoTip text="Per-person booking price. Enter 0 for free sessions." /></FieldLabel>
+                <Form.Item name="price" noStyle rules={[{ required: true, message: "Required" }]}>
+                  <InputNumber min={0} step={0.01} precision={2} style={{ width: "100%" }} addonBefore="$" />
+                </Form.Item>
+              </FieldGroup>
+              <FieldGroup>
+                <FieldLabel><Users size={13} />Max Guests<InfoTip text="Maximum number of participants that can book this session." /></FieldLabel>
+                <Form.Item name="maxParticipants" noStyle rules={[{ required: true, message: "Required" }]}>
+                  <InputNumber min={1} max={9999} style={{ width: "100%" }} />
+                </Form.Item>
+              </FieldGroup>
+            </TwoCol>
+            <TwoCol>
+              <FieldGroup>
+                <FieldLabel>Min Guests<InfoTip text="Minimum bookings needed for the session to be confirmed. Leave blank for no minimum." /></FieldLabel>
+                <Form.Item name="minParticipants" noStyle>
+                  <InputNumber min={1} max={9999} style={{ width: "100%" }} />
+                </Form.Item>
+              </FieldGroup>
+              {mode === "single" && (
+                <FieldGroup>
+                  <FieldLabel>Group<InfoTip text="Optionally assign this session to a group so you can filter and bulk-edit related sessions together." /></FieldLabel>
+                  <Form.Item name="name" noStyle>
+                    <Input placeholder="Optional" />
+                  </Form.Item>
+                </FieldGroup>
+              )}
+            </TwoCol>
+          </>
+        )}
       </div>
     </Form>
   );
@@ -2296,8 +2437,19 @@ function BulkEditPanel({ selectedIds, allSchedules, onSuccess, onClose }) {
 }
 
 // ─── EVENT CARD ───────────────────────────────────────────────────────────────
-function EventCardItem({ schedule, color, selectMode, isSelected, onToggleSelect, onClick, colIndex = 0, colCount = 1 }) {
-  const top = timeToTop(schedule.time);
+function EventCardItem({
+  schedule,
+  color,
+  selectMode,
+  isSelected,
+  onToggleSelect,
+  onClick,
+  colIndex = 0,
+  colCount = 1,
+  getContextMenuItems,
+  gridStartHour,
+}) {
+  const top = timeToTop(schedule.time, gridStartHour);
   const height = durationToHeight(schedule.duration);
   const isShort = height < 44;
 
@@ -2307,7 +2459,7 @@ function EventCardItem({ schedule, color, selectMode, isSelected, onToggleSelect
   const leftPct = GAP + colIndex * (pctWidth + GAP);
   const rightPct = 100 - leftPct - pctWidth;
 
-  return (
+  const card = (
     <EventCardEl
       $top={top}
       $bg={color.bg}
@@ -2338,6 +2490,15 @@ function EventCardItem({ schedule, color, selectMode, isSelected, onToggleSelect
       )}
     </EventCardEl>
   );
+
+  if (selectMode || !getContextMenuItems) return card;
+  const items = getContextMenuItems(schedule);
+  if (!items?.length) return card;
+  return (
+    <Dropdown menu={{ items }} trigger={["contextMenu"]}>
+      {card}
+    </Dropdown>
+  );
 }
 
 // ─── TIMEZONE LABEL ──────────────────────────────────────────────────────────
@@ -2351,21 +2512,24 @@ function getLocalTzAbbr() {
 const LOCAL_TZ = getLocalTzAbbr();
 
 // ─── WEEK VIEW ────────────────────────────────────────────────────────────────
-function WeekView({ weekDays, schedulesByDay, getClassColor, onEventClick, onSlotClick, loading, selectMode, selectedIds, onToggleSelect, isMobile }) {
+function WeekView({ weekDays, schedulesByDay, getClassColor, onEventClick, onSlotClick, loading, selectMode, selectedIds, onToggleSelect, isMobile, getContextMenuItems, grid }) {
   const scrollRef = useRef(null);
   const [hoveredCell, setHoveredCell] = useState(null);
   const today = dayjs();
+  const { startHour, endHour, hours } = grid;
 
   useEffect(() => {
-    if (!isMobile && scrollRef.current) scrollRef.current.scrollTop = (8 - START_HOUR) * HOUR_HEIGHT;
-  }, [isMobile]);
+    if (!isMobile && scrollRef.current) {
+      scrollRef.current.scrollTop = Math.max(0, (8 - startHour) * HOUR_HEIGHT);
+    }
+  }, [isMobile, startHour]);
 
   const currentTimeTop = useMemo(() => {
     const now = dayjs();
     const h = now.hour(), m = now.minute();
-    if (h < START_HOUR || h >= END_HOUR) return null;
-    return (h - START_HOUR + m / 60) * HOUR_HEIGHT;
-  }, []);
+    if (h < startHour || h >= endHour) return null;
+    return (h - startHour + m / 60) * HOUR_HEIGHT;
+  }, [startHour, endHour]);
 
   // Mobile: simplified vertical list (one section per day, no grid)
   if (isMobile) {
@@ -2385,9 +2549,8 @@ function WeekView({ weekDays, schedulesByDay, getClassColor, onEventClick, onSlo
               {daySchedules.map((s) => {
                 const color = getClassColor(s.optionId);
                 const isSelected = selectedIds.has(s.id);
-                return (
+                const row = (
                   <WeekListEvent
-                    key={s.id}
                     $bg={color.bg}
                     $accent={color.accent}
                     onClick={(e) => {
@@ -2409,6 +2572,18 @@ function WeekView({ weekDays, schedulesByDay, getClassColor, onEventClick, onSlo
                     <WeekListEventTime>{formatTimeShort(s.time)}</WeekListEventTime>
                     <WeekListEventTitle $text={color.text}>{s.className || s.name || "Session"}</WeekListEventTitle>
                   </WeekListEvent>
+                );
+                if (selectMode || !getContextMenuItems) {
+                  return <React.Fragment key={s.id}>{row}</React.Fragment>;
+                }
+                const items = getContextMenuItems(s);
+                if (!items?.length) {
+                  return <React.Fragment key={s.id}>{row}</React.Fragment>;
+                }
+                return (
+                  <Dropdown key={s.id} menu={{ items }} trigger={["contextMenu"]}>
+                    {row}
+                  </Dropdown>
                 );
               })}
               {!selectMode && (
@@ -2446,9 +2621,9 @@ function WeekView({ weekDays, schedulesByDay, getClassColor, onEventClick, onSlo
 
       <CalScrollArea ref={scrollRef}>
         {loading && <LoadingOverlay><SpinnerEl $size={36} /></LoadingOverlay>}
-        <CalBodyGrid>
+        <CalBodyGrid $minHeight={grid.totalHeight}>
           <TimeCol>
-            {HOURS.map(h => <TimeSlot key={h}>{formatHour(h)}</TimeSlot>)}
+            {hours.map(h => <TimeSlot key={h}>{formatHour(h)}</TimeSlot>)}
           </TimeCol>
 
           {weekDays.map((day, dayIdx) => {
@@ -2463,7 +2638,7 @@ function WeekView({ weekDays, schedulesByDay, getClassColor, onEventClick, onSlo
                 onClick={(e) => {
                   const rect = e.currentTarget.getBoundingClientRect();
                   const y = e.clientY - rect.top;
-                  const h = START_HOUR + Math.floor(y / HOUR_HEIGHT);
+                  const h = startHour + Math.floor(y / HOUR_HEIGHT);
                   onSlotClick(day, `${String(h).padStart(2, "0")}:00`);
                 }}
                 onMouseMove={(e) => {
@@ -2473,7 +2648,7 @@ function WeekView({ weekDays, schedulesByDay, getClassColor, onEventClick, onSlo
                 }}
                 onMouseLeave={() => setHoveredCell(null)}
               >
-                {HOURS.map((_, hi) => (
+                {hours.map((_, hi) => (
                   <React.Fragment key={hi}>
                     <HourLine $top={hi * HOUR_HEIGHT} />
                     <HalfHourLine $top={hi * HOUR_HEIGHT + HOUR_HEIGHT / 2} />
@@ -2494,6 +2669,8 @@ function WeekView({ weekDays, schedulesByDay, getClassColor, onEventClick, onSlo
                       onClick={onEventClick}
                       colIndex={colIndex}
                       colCount={colCount}
+                      getContextMenuItems={getContextMenuItems}
+                      gridStartHour={startHour}
                     />
                   );
                 })}
@@ -2504,7 +2681,7 @@ function WeekView({ weekDays, schedulesByDay, getClassColor, onEventClick, onSlo
                     style={{ opacity: 1, pointerEvents: "auto" }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      const h = START_HOUR + Math.floor(hoveredCell.slotIdx / 2);
+                      const h = startHour + Math.floor(hoveredCell.slotIdx / 2);
                       const m = hoveredCell.slotIdx % 2 === 0 ? "00" : "30";
                       onSlotClick(day, `${String(h).padStart(2, "0")}:${m}`);
                     }}
@@ -2522,22 +2699,23 @@ function WeekView({ weekDays, schedulesByDay, getClassColor, onEventClick, onSlo
 }
 
 // ─── DAY VIEW ─────────────────────────────────────────────────────────────────
-function DayView({ day, schedules, getClassColor, onEventClick, onSlotClick, loading, selectMode, selectedIds, onToggleSelect }) {
+function DayView({ day, schedules, getClassColor, onEventClick, onSlotClick, loading, selectMode, selectedIds, onToggleSelect, getContextMenuItems, grid }) {
   const scrollRef = useRef(null);
   const [hoveredSlot, setHoveredSlot] = useState(null);
   const today = dayjs();
+  const { startHour, endHour, hours } = grid;
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = (8 - START_HOUR) * HOUR_HEIGHT;
-  }, [day]);
+    if (scrollRef.current) scrollRef.current.scrollTop = Math.max(0, (8 - startHour) * HOUR_HEIGHT);
+  }, [day, startHour]);
 
   const currentTimeTop = useMemo(() => {
     if (!day.isSame(today, "day")) return null;
     const now = dayjs();
     const h = now.hour(), m = now.minute();
-    if (h < START_HOUR || h >= END_HOUR) return null;
-    return (h - START_HOUR + m / 60) * HOUR_HEIGHT;
-  }, [day, today]);
+    if (h < startHour || h >= endHour) return null;
+    return (h - startHour + m / 60) * HOUR_HEIGHT;
+  }, [day, today, startHour, endHour]);
 
   return (
     <CalendarOuter>
@@ -2551,15 +2729,15 @@ function DayView({ day, schedules, getClassColor, onEventClick, onSlotClick, loa
 
       <CalScrollArea ref={scrollRef}>
         {loading && <LoadingOverlay><SpinnerEl $size={36} /></LoadingOverlay>}
-        <DayCalBodyGrid>
+        <DayCalBodyGrid $minHeight={grid.totalHeight}>
           <TimeCol>
-            {HOURS.map(h => <TimeSlot key={h}>{formatHour(h)}</TimeSlot>)}
+            {hours.map(h => <TimeSlot key={h}>{formatHour(h)}</TimeSlot>)}
           </TimeCol>
           <DayCol
             style={{ borderLeft: "1px solid #f3f4f6" }}
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
-              const h = START_HOUR + Math.floor((e.clientY - rect.top) / HOUR_HEIGHT);
+              const h = startHour + Math.floor((e.clientY - rect.top) / HOUR_HEIGHT);
               onSlotClick(day, `${String(h).padStart(2, "0")}:00`);
             }}
             onMouseMove={(e) => {
@@ -2568,7 +2746,7 @@ function DayView({ day, schedules, getClassColor, onEventClick, onSlotClick, loa
             }}
             onMouseLeave={() => setHoveredSlot(null)}
           >
-            {HOURS.map((_, hi) => (
+            {hours.map((_, hi) => (
               <React.Fragment key={hi}>
                 <HourLine $top={hi * HOUR_HEIGHT} />
                 <HalfHourLine $top={hi * HOUR_HEIGHT + HOUR_HEIGHT / 2} />
@@ -2590,6 +2768,8 @@ function DayView({ day, schedules, getClassColor, onEventClick, onSlotClick, loa
                     onClick={onEventClick}
                     colIndex={colIndex}
                     colCount={colCount}
+                    getContextMenuItems={getContextMenuItems}
+                    gridStartHour={startHour}
                   />
                 );
               });
@@ -2600,7 +2780,7 @@ function DayView({ day, schedules, getClassColor, onEventClick, onSlotClick, loa
                 style={{ opacity: 1, pointerEvents: "auto" }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  const h = START_HOUR + Math.floor(hoveredSlot / 2);
+                  const h = startHour + Math.floor(hoveredSlot / 2);
                   const m = hoveredSlot % 2 === 0 ? "00" : "30";
                   onSlotClick(day, `${String(h).padStart(2, "0")}:${m}`);
                 }}
@@ -2616,7 +2796,7 @@ function DayView({ day, schedules, getClassColor, onEventClick, onSlotClick, loa
 }
 
 // ─── MONTH VIEW ───────────────────────────────────────────────────────────────
-function MonthView({ currentMonth, schedulesByDay, getClassColor, onEventClick, onDayClick, selectMode, selectedIds, isMobile }) {
+function MonthView({ currentMonth, schedulesByDay, getClassColor, onEventClick, onDayClick, selectMode, selectedIds, isMobile, getContextMenuItems }) {
   const startOfMonth = currentMonth.startOf("month");
   const firstWeekday = startOfMonth.day();
   const gridStart = startOfMonth.subtract(firstWeekday === 0 ? 6 : firstWeekday - 1, "day");
@@ -2649,8 +2829,8 @@ function MonthView({ currentMonth, schedulesByDay, getClassColor, onEventClick, 
                 {daySchedules.slice(0, maxVis).map((s) => {
                   const color = getClassColor(s.optionId);
                   const isSelected = selectedIds?.has(s.id);
-                  return (
-                    <PillEl key={s.id} $bg={color.bg} $accent={color.accent} $text={color.text}
+                  const pill = (
+                    <PillEl $bg={color.bg} $accent={color.accent} $text={color.text}
                       onClick={(e) => { e.stopPropagation(); onEventClick(s); }}>
                       {selectMode && (
                         <MonthPillCheck $selected={isSelected}>
@@ -2660,6 +2840,18 @@ function MonthView({ currentMonth, schedulesByDay, getClassColor, onEventClick, 
                       <MonthPillContent>{s.className || s.name || "Session"}</MonthPillContent>
                       {!isMobile && <MonthPillTime>{formatTimeShort(s.time)}</MonthPillTime>}
                     </PillEl>
+                  );
+                  if (selectMode || !getContextMenuItems) {
+                    return <React.Fragment key={s.id}>{pill}</React.Fragment>;
+                  }
+                  const items = getContextMenuItems(s);
+                  if (!items?.length) {
+                    return <React.Fragment key={s.id}>{pill}</React.Fragment>;
+                  }
+                  return (
+                    <Dropdown key={s.id} menu={{ items }} trigger={["contextMenu"]}>
+                      {pill}
+                    </Dropdown>
                   );
                 })}
                 {daySchedules.length > maxVis && (
@@ -2677,8 +2869,8 @@ function MonthView({ currentMonth, schedulesByDay, getClassColor, onEventClick, 
 }
 
 // ─── DESKTOP FORM PANEL WRAPPER ───────────────────────────────────────────────
-function DesktopFormPanel({ open, onClose, schedule, prefill, classes, onSuccess, isBulkEdit, selectedIds, allSchedules }) {
-  const formState = useScheduleForm({ open, schedule, prefill, classes, onSuccess: () => { onSuccess(); onClose(); }, onClose });
+function DesktopFormPanel({ open, onClose, schedule, prefill, classes, onSuccess, isBulkEdit, selectedIds, allSchedules, moveOnly }) {
+  const formState = useScheduleForm({ open, schedule, prefill, classes, onSuccess: () => { onSuccess(); onClose(); }, onClose, moveOnly });
 
   return (
     <AnimatePresence>
@@ -2695,7 +2887,7 @@ function DesktopFormPanel({ open, onClose, schedule, prefill, classes, onSuccess
           >
             <PanelHeader>
               <PanelTitle>
-                {isBulkEdit ? `Edit ${selectedIds?.size || 0} Schedules` : formState.isEdit ? "Edit Schedule" : "Add Schedule"}
+                {isBulkEdit ? `Edit ${selectedIds?.size || 0} Schedules` : moveOnly ? "Move schedule" : formState.isEdit ? "Edit Schedule" : "Add Schedule"}
               </PanelTitle>
               <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", display: "flex" }}>
                 <X size={20} />
@@ -2711,7 +2903,7 @@ function DesktopFormPanel({ open, onClose, schedule, prefill, classes, onSuccess
 
             {!isBulkEdit && (
               <PanelFooter>
-                {formState.isEdit && (
+                {formState.isEdit && !moveOnly && (
                   <Popconfirm
                     title="Delete this schedule?"
                     description="This cannot be undone."
@@ -2727,7 +2919,7 @@ function DesktopFormPanel({ open, onClose, schedule, prefill, classes, onSuccess
                 )}
                 <CancelBtn onClick={onClose}>Cancel</CancelBtn>
                 <SaveBtn onClick={formState.handleSubmit} disabled={formState.submitting}>
-                  {formState.submitting ? "Saving..." : formState.isEdit ? "Save" : formState.mode === "bulk" ? "Generate" : "Create"}
+                  {formState.submitting ? "Saving..." : moveOnly ? "Move" : formState.isEdit ? "Save" : formState.mode === "bulk" ? "Generate" : "Create"}
                 </SaveBtn>
               </PanelFooter>
             )}
@@ -2739,8 +2931,8 @@ function DesktopFormPanel({ open, onClose, schedule, prefill, classes, onSuccess
 }
 
 // ─── MOBILE FORM DRAWER ───────────────────────────────────────────────────────
-function MobileFormDrawer({ open, onClose, schedule, prefill, classes, onSuccess, isBulkEdit, selectedIds, allSchedules }) {
-  const formState = useScheduleForm({ open, schedule, prefill, classes, onSuccess: () => { onSuccess(); onClose(); }, onClose });
+function MobileFormDrawer({ open, onClose, schedule, prefill, classes, onSuccess, isBulkEdit, selectedIds, allSchedules, moveOnly }) {
+  const formState = useScheduleForm({ open, schedule, prefill, classes, onSuccess: () => { onSuccess(); onClose(); }, onClose, moveOnly });
 
   return (
     <VaulDrawer.Root open={open} onOpenChange={o => { if (!o) onClose(); }} dismissible>
@@ -2750,7 +2942,7 @@ function MobileFormDrawer({ open, onClose, schedule, prefill, classes, onSuccess
           <VaulHandle />
           <VaulHeader>
             <span style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>
-              {isBulkEdit ? `Edit ${selectedIds?.size || 0} Schedules` : formState.isEdit ? "Edit Schedule" : "Add Schedule"}
+              {isBulkEdit ? `Edit ${selectedIds?.size || 0} Schedules` : moveOnly ? "Move schedule" : formState.isEdit ? "Edit Schedule" : "Add Schedule"}
             </span>
             <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}>
               <X size={20} />
@@ -2763,7 +2955,7 @@ function MobileFormDrawer({ open, onClose, schedule, prefill, classes, onSuccess
                 <>
                   {formState.FormBody}
                   <div style={{ display: "flex", gap: 8, paddingTop: 8, flexWrap: "wrap" }}>
-                    {formState.isEdit && (
+                    {formState.isEdit && !moveOnly && (
                       <Popconfirm
                         title="Delete this schedule?"
                         onConfirm={formState.handleDelete}
@@ -2777,7 +2969,7 @@ function MobileFormDrawer({ open, onClose, schedule, prefill, classes, onSuccess
                       </Popconfirm>
                     )}
                     <SaveBtn onClick={formState.handleSubmit} disabled={formState.submitting} style={{ flex: 1, justifyContent: "center" }}>
-                      {formState.submitting ? "Saving..." : formState.isEdit ? "Save" : formState.mode === "bulk" ? "Generate" : "Create"}
+                      {formState.submitting ? "Saving..." : moveOnly ? "Move" : formState.isEdit ? "Save" : formState.mode === "bulk" ? "Generate" : "Create"}
                     </SaveBtn>
                   </div>
                 </>
@@ -2823,7 +3015,7 @@ export default function ScheduleCalendarView({ initialClassId }) {
   const [selectedIds, setSelectedIds] = useState(new Set());
 
   // Form panel state
-  const [formState, setFormState] = useState({ open: false, schedule: null, prefill: null, isBulk: false });
+  const [formState, setFormState] = useState({ open: false, schedule: null, prefill: null, isBulk: false, moveOnly: false });
 
   // Group bulk-edit (dropdown + modal)
   const [selectedGroup, setSelectedGroup] = useState("all");
@@ -2834,6 +3026,23 @@ export default function ScheduleCalendarView({ initialClassId }) {
   // Mobile
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  const [businessHours, setBusinessHours] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await businessService.getMyBusinessProfile();
+        if (!cancelled && res.success && Array.isArray(res.data?.businessHours)) {
+          setBusinessHours(res.data.businessHours);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [refreshKey]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth <= 1024);
@@ -2936,6 +3145,11 @@ export default function ScheduleCalendarView({ initialClassId }) {
     return list;
   }, [allSchedules, visibleClassIds, visibleGroups]);
 
+  const calendarGrid = useMemo(
+    () => buildCalendarGrid(businessHours, filteredSchedules),
+    [businessHours, filteredSchedules]
+  );
+
   const schedulesByDay = useMemo(() => {
     const map = {};
     filteredSchedules.forEach(s => {
@@ -3007,21 +3221,96 @@ export default function ScheduleCalendarView({ initialClassId }) {
   // ── Event & slot clicks ────────────────────────────────────────────────────
   const handleEventClick = useCallback((schedule) => {
     if (selectMode) { handleToggleSelect(schedule.id); return; }
-    setFormState({ open: true, schedule, prefill: null, isBulk: false });
+    setFormState({ open: true, schedule, prefill: null, isBulk: false, moveOnly: false });
   }, [selectMode, handleToggleSelect]);
 
   const handleSlotClick = useCallback((day, timeStr) => {
     if (selectMode) return;
     const prefill = { date: day, time: timeStr, classId: classes.length === 1 ? classes[0].classId : null };
-    setFormState({ open: true, schedule: null, prefill, isBulk: false });
+    setFormState({ open: true, schedule: null, prefill, isBulk: false, moveOnly: false });
   }, [selectMode, classes]);
 
-  const handleSuccess = () => {
+  const handleSuccess = useCallback(() => {
     setRefreshKey(k => k + 1);
-    exitSelectMode();
-  };
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }, []);
 
-  const closeForm = () => setFormState(s => ({ ...s, open: false }));
+  const handleDuplicateSchedule = useCallback((schedule) => {
+    setFormState({
+      open: true,
+      schedule: null,
+      prefill: { classId: schedule.classId, duplicateFrom: schedule },
+      isBulk: false,
+      moveOnly: false,
+    });
+  }, []);
+
+  const openMoveInDrawer = useCallback((schedule) => {
+    setFormState({ open: true, schedule, prefill: null, isBulk: false, moveOnly: true });
+  }, []);
+
+  const getScheduleContextMenuItems = useCallback(
+    (schedule) => [
+      {
+        key: "edit",
+        label: "Edit",
+        icon: <Edit3 size={14} />,
+        onClick: ({ domEvent }) => {
+          domEvent?.preventDefault?.();
+          domEvent?.stopPropagation?.();
+          handleEventClick(schedule);
+        },
+      },
+      {
+        key: "duplicate",
+        label: "Duplicate to new time",
+        icon: <Copy size={14} />,
+        onClick: ({ domEvent }) => {
+          domEvent?.preventDefault?.();
+          domEvent?.stopPropagation?.();
+          handleDuplicateSchedule(schedule);
+        },
+      },
+      {
+        key: "move",
+        label: "Move to…",
+        icon: <Calendar size={14} />,
+        onClick: ({ domEvent }) => {
+          domEvent?.preventDefault?.();
+          domEvent?.stopPropagation?.();
+          openMoveInDrawer(schedule);
+        },
+      },
+      { type: "divider" },
+      {
+        key: "delete",
+        label: "Delete",
+        danger: true,
+        icon: <Trash2 size={14} />,
+        onClick: ({ domEvent }) => {
+          domEvent?.preventDefault?.();
+          domEvent?.stopPropagation?.();
+          Modal.confirm({
+            title: "Delete this schedule?",
+            content: "This cannot be undone.",
+            okText: "Delete",
+            okButtonProps: { danger: true },
+            onOk: async () => {
+              const res = await scheduleService.deleteSchedule(schedule.id);
+              if (res.success) {
+                message.success("Schedule deleted.");
+                handleSuccess();
+              }
+            },
+          });
+        },
+      },
+    ],
+    [handleEventClick, handleDuplicateSchedule, openMoveInDrawer, handleSuccess]
+  );
+
+  const closeForm = () => setFormState(s => ({ ...s, open: false, moveOnly: false }));
 
   const sidebarProps = {
     classes, visibleClassIds,
@@ -3155,7 +3444,7 @@ export default function ScheduleCalendarView({ initialClassId }) {
               <AddBtn
                 onClick={() => {
                   const prefill = { classId: classes.length === 1 ? classes[0].classId : null };
-                  setFormState({ open: true, schedule: null, prefill, isBulk: false });
+                  setFormState({ open: true, schedule: null, prefill, isBulk: false, moveOnly: false });
                 }}
                 disabled={classes.length === 0}
               >
@@ -3166,49 +3455,46 @@ export default function ScheduleCalendarView({ initialClassId }) {
         </TopBar>
 
         {/* Bulk actions bar */}
-        <AnimatePresence>
-          {selectMode && (
-            <BulkBar
-              initial={{ height: 0, opacity: 0, overflow: "hidden" }}
-              animate={{ height: "auto", opacity: 1, overflow: "visible" }}
-              exit={{ height: 0, opacity: 0, overflow: "hidden" }}
-              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-            >
-              <BulkCount>
-                {selectedIds.size === 0 ? "Click events to select" : `${selectedIds.size} selected`}
-              </BulkCount>
-              {selectedIds.size > 0 && (
-                <>
-                  <BulkBtn onClick={() => setFormState({ open: true, schedule: null, prefill: null, isBulk: true })}>
-                    <Edit3 size={13} /> Edit
-                  </BulkBtn>
-                  <Popconfirm
-                    title={`Delete ${selectedIds.size} schedule${selectedIds.size > 1 ? "s" : ""}?`}
-                    description="This cannot be undone."
-                    onConfirm={async () => {
-                      try {
-                        await Promise.all([...selectedIds].map(id => scheduleService.deleteSchedule(id)));
-                        message.success(`Deleted ${selectedIds.size} schedule${selectedIds.size > 1 ? "s" : ""}.`);
-                        handleSuccess();
-                      } catch (e) {
-                        message.error(getErrorMessage(e));
-                      }
-                    }}
-                    okText="Delete"
-                    okButtonProps={{ danger: true }}
-                  >
-                    <BulkBtn $danger>
-                      <Trash2 size={13} /> Delete
+        <BulkBarGridWrap $open={selectMode}>
+          <BulkBarGridInner>
+            {selectMode && (
+              <BulkBar>
+                <BulkCount>
+                  {selectedIds.size === 0 ? "Click events to select" : `${selectedIds.size} selected`}
+                </BulkCount>
+                {selectedIds.size > 0 && (
+                  <>
+                    <BulkBtn onClick={() => setFormState({ open: true, schedule: null, prefill: null, isBulk: true, moveOnly: false })}>
+                      <Edit3 size={13} /> Edit
                     </BulkBtn>
-                  </Popconfirm>
-                </>
-              )}
-              <BulkBtn onClick={exitSelectMode}>
-                <X size={13} /> Cancel
-              </BulkBtn>
-            </BulkBar>
-          )}
-        </AnimatePresence>
+                    <Popconfirm
+                      title={`Delete ${selectedIds.size} schedule${selectedIds.size > 1 ? "s" : ""}?`}
+                      description="This cannot be undone."
+                      onConfirm={async () => {
+                        try {
+                          await Promise.all([...selectedIds].map(id => scheduleService.deleteSchedule(id)));
+                          message.success(`Deleted ${selectedIds.size} schedule${selectedIds.size > 1 ? "s" : ""}.`);
+                          handleSuccess();
+                        } catch (e) {
+                          message.error(getErrorMessage(e));
+                        }
+                      }}
+                      okText="Delete"
+                      okButtonProps={{ danger: true }}
+                    >
+                      <BulkBtn $danger>
+                        <Trash2 size={13} /> Delete
+                      </BulkBtn>
+                    </Popconfirm>
+                  </>
+                )}
+                <BulkBtn onClick={exitSelectMode}>
+                  <X size={13} /> Cancel
+                </BulkBtn>
+              </BulkBar>
+            )}
+          </BulkBarGridInner>
+        </BulkBarGridWrap>
 
         {/* Calendar views */}
         {viewMode === "week" && (
@@ -3223,6 +3509,8 @@ export default function ScheduleCalendarView({ initialClassId }) {
             selectedIds={selectedIds}
             onToggleSelect={handleToggleSelect}
             isMobile={isMobile}
+            getContextMenuItems={getScheduleContextMenuItems}
+            grid={calendarGrid}
           />
         )}
         {viewMode === "day" && (
@@ -3236,6 +3524,8 @@ export default function ScheduleCalendarView({ initialClassId }) {
             selectMode={selectMode}
             selectedIds={selectedIds}
             onToggleSelect={handleToggleSelect}
+            getContextMenuItems={getScheduleContextMenuItems}
+            grid={calendarGrid}
           />
         )}
         {viewMode === "month" && (
@@ -3248,6 +3538,7 @@ export default function ScheduleCalendarView({ initialClassId }) {
             selectMode={selectMode}
             selectedIds={selectedIds}
             isMobile={isMobile}
+            getContextMenuItems={getScheduleContextMenuItems}
           />
         )}
 
@@ -3263,6 +3554,7 @@ export default function ScheduleCalendarView({ initialClassId }) {
             isBulkEdit={formState.isBulk}
             selectedIds={selectedIds}
             allSchedules={allSchedules}
+            moveOnly={formState.moveOnly}
           />
         ) : (
           <MobileFormDrawer
@@ -3275,6 +3567,7 @@ export default function ScheduleCalendarView({ initialClassId }) {
             isBulkEdit={formState.isBulk}
             selectedIds={selectedIds}
             allSchedules={allSchedules}
+            moveOnly={formState.moveOnly}
           />
         )}
       </MainArea>

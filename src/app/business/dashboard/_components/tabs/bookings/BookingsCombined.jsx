@@ -31,15 +31,25 @@ export default function BookingsCombined({ defaultActiveKey = TAB_ACTIVE }) {
       {
         key: TAB_ACTIVE,
         label: "Active Bookings",
-        children: <ActiveBookings noWrapperPadding />,
+        children: (
+          <ActiveBookings
+            noWrapperPadding
+            openBookingIdFromQuery={defaultActiveKey === TAB_ACTIVE}
+          />
+        ),
       },
       {
         key: TAB_HISTORY,
         label: "Booking History",
-        children: <BookingHistory noWrapperPadding />,
+        children: (
+          <BookingHistory
+            noWrapperPadding
+            openBookingIdFromQuery={defaultActiveKey === TAB_HISTORY}
+          />
+        ),
       },
     ],
-    []
+    [defaultActiveKey]
   );
 
   return (

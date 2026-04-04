@@ -1307,6 +1307,27 @@ const Countdown = ({ seconds }) => {
   );
 };
 
+function buildParticipantDetailsPayload(
+  values,
+  participantsCount,
+  requirePerParticipantNames,
+) {
+  const bookerName =
+    (values?.booker_name && String(values.booker_name).trim()) || "Guest";
+  if (!requirePerParticipantNames || participantsCount <= 1) {
+    return Array.from({ length: participantsCount }, () => ({ name: bookerName }));
+  }
+  const extraRaw = values?.additional_participant_names;
+  const extra = Array.isArray(extraRaw)
+    ? extraRaw.map((n) => String(n ?? "").trim())
+    : [];
+  const names = [bookerName];
+  for (let i = 1; i < participantsCount; i++) {
+    names.push(extra[i - 1] ?? "");
+  }
+  return names.map((name) => ({ name }));
+}
+
 const ExpressCheckoutButton = ({
   finalTotal,
   clientSecret,
@@ -1318,6 +1339,7 @@ const ExpressCheckoutButton = ({
   onPaymentRequestReady,
   /** When provided, render this instead of Stripe's button; it receives paymentRequest so the parent can call paymentRequest.show() */
   customTrigger,
+  requirePerParticipantNames = false,
 }) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState(null);
@@ -1357,9 +1379,10 @@ const ExpressCheckoutButton = ({
         const phone = (values?.phone && String(values.phone).trim()) || "";
         const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "";
         const participantsCount = bookingData?.participants || 1;
-        const participantDetailsPayload = Array.from(
-          { length: participantsCount },
-          () => ({ name: bookerName }),
+        const participantDetailsPayload = buildParticipantDetailsPayload(
+          values,
+          participantsCount,
+          requirePerParticipantNames,
         );
 
         // Only call update_intent when we have real guest data; otherwise leave metadata
@@ -1418,6 +1441,7 @@ const ExpressCheckoutButton = ({
     paymentService,
     bookingData,
     form,
+    requirePerParticipantNames,
   ]);
 
   if (!paymentRequest || !isFormValid) return null;
@@ -1473,7 +1497,8 @@ const PaymentFormContent = ({
   paymentService,
   bookingData,
   currentStep,
-  isVisible
+  isVisible,
+  requirePerParticipantNames = false,
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -1569,6 +1594,7 @@ const PaymentFormContent = ({
           bookingData={bookingData}
           form={form}
           isFormValid={isFormValid}
+          requirePerParticipantNames={requirePerParticipantNames}
           onPaymentRequestReady={() => {
             setHasExpressPay(true);
           }}
@@ -1630,6 +1656,20 @@ const ReviewAndPaymentStep = ({
   const paymentStepRef = useRef(null);
   // Notes UI state
   const [showNotes, setShowNotes] = useState(false);
+
+  const participantsCount = bookingData?.participants || 1;
+  const requirePerParticipantNames =
+    Boolean(classData?.require_participant_names) && participantsCount > 1;
+
+  const guestContactFieldNames = useMemo(() => {
+    const base = ["booker_name", "email", "phone"];
+    if (!requirePerParticipantNames || participantsCount <= 1) return base;
+    const extra = [];
+    for (let i = 0; i < participantsCount - 1; i++) {
+      extra.push(["additional_participant_names", i]);
+    }
+    return [...base, ...extra];
+  }, [requirePerParticipantNames, participantsCount]);
 
   useEffect(() => {
     const fromStorage = bookingData?.clientSecret;
@@ -1700,11 +1740,20 @@ const ReviewAndPaymentStep = ({
     (values) => {
       const { email, phone, booker_name } = values;
       const contactFields = [email, phone, booker_name];
-      return contactFields.every(
-        (val) => val && String(val).trim().length > 0,
-      );
+      if (!contactFields.every((val) => val && String(val).trim().length > 0)) {
+        return false;
+      }
+      if (!requirePerParticipantNames || participantsCount <= 1) return true;
+      const extra = values?.additional_participant_names;
+      if (!Array.isArray(extra)) return false;
+      for (let i = 0; i < participantsCount - 1; i++) {
+        const n = extra[i];
+        if (!n || !String(n).trim()) return false;
+        if (String(n).trim().toLowerCase() === "guest") return false;
+      }
+      return true;
     },
-    [],
+    [requirePerParticipantNames, participantsCount],
   );
 
   const getGuestFullName = useCallback(
@@ -1745,6 +1794,28 @@ const ReviewAndPaymentStep = ({
       formData.notes = notesFromBooking;
     }
 
+    const pc = bookingData.participants || 1;
+    const rp = Boolean(classData?.require_participant_names) && pc > 1;
+    if (rp) {
+      const need = pc - 1;
+      const fromPd = bookingData.participant_details;
+      const curExtra = form.getFieldValue("additional_participant_names");
+      const allEmpty =
+        !Array.isArray(curExtra) ||
+        curExtra.slice(0, need).every((x) => !x || !String(x).trim());
+      if (allEmpty && fromPd?.length) {
+        const extra = [];
+        for (let i = 0; i < need; i++) {
+          extra.push(
+            fromPd[i + 1]?.name != null ? String(fromPd[i + 1].name) : "",
+          );
+        }
+        formData.additional_participant_names = extra;
+      }
+    } else {
+      formData.additional_participant_names = undefined;
+    }
+
     if (Object.keys(formData).length > 0) {
       form.setFieldsValue(formData);
     }
@@ -1754,11 +1825,24 @@ const ReviewAndPaymentStep = ({
       ...formData,
     });
     setIsFormValid(isValid);
-  }, [isUserLoggedIn, bookingData, form, validateValues]);
+  }, [isUserLoggedIn, bookingData, classData, form, validateValues]);
+
+  useEffect(() => {
+    if (!form) return;
+    if (!requirePerParticipantNames || participantsCount <= 1) {
+      form.setFieldValue("additional_participant_names", undefined);
+      return;
+    }
+    const need = participantsCount - 1;
+    const cur = form.getFieldValue("additional_participant_names");
+    const arr = Array.isArray(cur) ? [...cur] : [];
+    while (arr.length < need) arr.push("");
+    if (arr.length > need) arr.length = need;
+    form.setFieldValue("additional_participant_names", arr);
+  }, [form, requirePerParticipantNames, participantsCount]);
 
   const selectedSlot = bookingData.selectedSlots?.[0];
   const option = bookingData.selectedOption;
-  const participantsCount = bookingData.participants || 1;
   const basePrice = parseFloat(selectedSlot?.price || option?.price || 0);
   const subtotal = basePrice * participantsCount;
 
@@ -1829,9 +1913,10 @@ const ReviewAndPaymentStep = ({
         setPaymentIntentError(null);
         const values = form.getFieldsValue();
         const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "Guest";
-        const participantDetailsPayload = Array.from(
-          { length: participantsCount },
-          () => ({ name: bookerName }),
+        const participantDetailsPayload = buildParticipantDetailsPayload(
+          values,
+          participantsCount,
+          requirePerParticipantNames,
         );
 
         const payload = {
@@ -1886,6 +1971,7 @@ const ReviewAndPaymentStep = ({
       onUpdateBookingData,
       appliedGiftCard,
       getGuestFullName,
+      requirePerParticipantNames,
     ],
   );
 
@@ -1963,9 +2049,10 @@ const ReviewAndPaymentStep = ({
 
     const run = async () => {
       try {
-        const participantDetailsPayload = Array.from(
-          { length: participantsCount },
-          () => ({ name: "Guest" }),
+        const participantDetailsPayload = buildParticipantDetailsPayload(
+          { booker_name: "Guest", additional_participant_names: [] },
+          participantsCount,
+          requirePerParticipantNames,
         );
         const payload = {
           selectedSlots: bookingData.selectedSlots,
@@ -2030,6 +2117,7 @@ const ReviewAndPaymentStep = ({
     bookingFingerprint,
     onUpdateBookingData,
     paymentService,
+    requirePerParticipantNames,
   ]);
 
   // When paid and no clientSecret: hide footer until we have intent; when we have clientSecret it's set by PaymentFormContent.
@@ -2071,7 +2159,7 @@ const ReviewAndPaymentStep = ({
   const handleCreateIntentAndShowPayment = useCallback(async () => {
     if (slotUnavailable || creatingIntent || isFree) return;
     try {
-      await form.validateFields(["booker_name", "email", "phone"]);
+      await form.validateFields(guestContactFieldNames);
     } catch {
       return;
     }
@@ -2088,9 +2176,10 @@ const ReviewAndPaymentStep = ({
       const values = form.getFieldsValue();
       const bookerName =
         (values?.booker_name && String(values.booker_name).trim()) || "Guest";
-      const participantDetailsPayload = Array.from(
-        { length: participantsCount },
-        () => ({ name: bookerName }),
+      const participantDetailsPayload = buildParticipantDetailsPayload(
+        values,
+        participantsCount,
+        requirePerParticipantNames,
       );
       const payload = {
         selectedSlots: bookingData.selectedSlots,
@@ -2147,6 +2236,8 @@ const ReviewAndPaymentStep = ({
     bookingFingerprint,
     onUpdateBookingData,
     paymentService,
+    guestContactFieldNames,
+    requirePerParticipantNames,
   ]);
 
   const handleApplyCoupon = async () => {
@@ -2219,11 +2310,11 @@ const ReviewAndPaymentStep = ({
 
   const handleGoToPayment = async () => {
     try {
-      await form.validateFields(["booker_name", "email", "phone"]);
+      await form.validateFields(guestContactFieldNames);
     } catch (e) {
-      const errorField = e.errorFields?.[0]?.name?.[0];
-      if (errorField) {
-        form.scrollToField(errorField);
+      const errName = e.errorFields?.[0]?.name;
+      if (errName != null) {
+        form.scrollToField(errName);
       }
       return;
     }
@@ -2236,9 +2327,10 @@ const ReviewAndPaymentStep = ({
         const paymentIntentId = clientSecret.split("_secret_")[0];
         const values = form.getFieldsValue();
         const bookerName = values.booker_name || "Guest";
-        const participantDetailsPayload = Array.from(
-          { length: participantsCount },
-          () => ({ name: bookerName }),
+        const participantDetailsPayload = buildParticipantDetailsPayload(
+          values,
+          participantsCount,
+          requirePerParticipantNames,
         );
         const updatePayload = {
           payment_intent_id: paymentIntentId,
@@ -2312,9 +2404,10 @@ const ReviewAndPaymentStep = ({
           }
 
           const bookerName = (values?.booker_name && String(values.booker_name).trim()) || "Guest";
-          const participantDetailsPayload = Array.from(
-            { length: participantsCount },
-            () => ({ name: bookerName }),
+          const participantDetailsPayload = buildParticipantDetailsPayload(
+            values,
+            participantsCount,
+            requirePerParticipantNames,
           );
           const payload = {
             selectedSlots: bookingData.selectedSlots,
@@ -2389,10 +2482,14 @@ const ReviewAndPaymentStep = ({
           return;
         }
         if (paymentIntent && paymentIntent.status === "succeeded") {
-          const bookerName = billingName;
-          const participantDetails = Array.from(
-            { length: participantsCount },
-            () => ({ name: bookerName }),
+          const allFormValues = form.getFieldsValue(true);
+          const participantDetails = buildParticipantDetailsPayload(
+            {
+              ...allFormValues,
+              booker_name: allFormValues.booker_name || billingName,
+            },
+            participantsCount,
+            requirePerParticipantNames,
           );
           const basePayload = {
             payment_intent_id: paymentIntent.id,
@@ -2444,6 +2541,7 @@ const ReviewAndPaymentStep = ({
       clientSecret,
       appliedGiftCard,
       getGuestFullName,
+      requirePerParticipantNames,
     ],
   );
 
@@ -3026,6 +3124,7 @@ const ReviewAndPaymentStep = ({
               bookingData={bookingData}
               currentStep={checkoutStep}
               isVisible={checkoutStep === "payment"}
+              requirePerParticipantNames={requirePerParticipantNames}
             />
             {confirmFooter && <DesktopInlineFooter>{confirmFooter}</DesktopInlineFooter>}
           </CheckoutPaymentBody>
@@ -3066,6 +3165,7 @@ const ReviewAndPaymentStep = ({
             bookingData={bookingData}
             currentStep={checkoutStep}
             isVisible={checkoutStep === "payment"}
+            requirePerParticipantNames={requirePerParticipantNames}
           />
           {confirmFooter && <DesktopInlineFooter>{confirmFooter}</DesktopInlineFooter>}
         </CheckoutPaymentBody>
@@ -3165,6 +3265,44 @@ const ReviewAndPaymentStep = ({
                           />
                         </Form.Item>
                       </CheckoutFieldRow>
+                      {requirePerParticipantNames &&
+                        Array.from(
+                          { length: Math.max(0, participantsCount - 1) },
+                          (_, i) => (
+                            <CheckoutFieldRow key={`extra-participant-${i + 2}`}>
+                              <Form.Item
+                                name={["additional_participant_names", i]}
+                                rules={[
+                                  {
+                                    required: true,
+                                    message: `Enter participant ${i + 2}'s full name`,
+                                  },
+                                  {
+                                    whitespace: true,
+                                    message: `Enter participant ${i + 2}'s full name`,
+                                  },
+                                  {
+                                    validator: (_, value) => {
+                                      const v = (value && String(value).trim()) || "";
+                                      if (v.toLowerCase() === "guest") {
+                                        return Promise.reject(
+                                          new Error("Please enter a real full name"),
+                                        );
+                                      }
+                                      return Promise.resolve();
+                                    },
+                                  },
+                                ]}
+                                style={{ marginBottom: 0 }}
+                                label={
+                                  <FieldLabel>{`Participant ${i + 2} full name`}</FieldLabel>
+                                }
+                              >
+                                <Input placeholder={`e.g. Participant ${i + 2}`} />
+                              </Form.Item>
+                            </CheckoutFieldRow>
+                          ),
+                        )}
                       <CheckoutContactRow>
                         <CheckoutFieldRow>
                           <Form.Item

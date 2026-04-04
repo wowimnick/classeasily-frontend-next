@@ -410,6 +410,7 @@ const BusinessSettingsContent = forwardRef(
             reminderNotification: data.reminderNotification !== false,
             scheduleExpiryNotification: data.scheduleExpiryNotification !== false,
             smsNotifications: data.smsNotifications === true,
+            require_participant_names: data.require_participant_names === true,
           });
 
           if (onProfileUpdate) onProfileUpdate();
@@ -566,6 +567,10 @@ const BusinessSettingsContent = forwardRef(
         masterFormData.append("reminderNotification",       String(preferencesValues.reminderNotification ?? true));
         masterFormData.append("scheduleExpiryNotification", String(preferencesValues.scheduleExpiryNotification ?? true));
         masterFormData.append("smsNotifications",           String(preferencesValues.smsNotifications ?? false));
+        masterFormData.append(
+          "require_participant_names",
+          String(preferencesValues.require_participant_names === true)
+        );
 
         const response = await businessService.updateMyBusinessProfile(masterFormData);
 

@@ -29,7 +29,7 @@ export default function DashboardPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { hasWidgetAccess, loading: subLoading } = useSubscription();
+  const { hasWidgetAccess, hasEmailMarketingAccess, loading: subLoading } = useSubscription();
 
   // Calculate key
   const activeKey = params.tab ? params.tab.join("/") : "overview";
@@ -41,6 +41,13 @@ export default function DashboardPage() {
       router.replace("/business/dashboard");
     }
   }, [activeKey, hasWidgetAccess, subLoading, router]);
+
+  useEffect(() => {
+    if (subLoading || activeKey !== "email-campaigns") return;
+    if (!hasEmailMarketingAccess) {
+      router.replace("/business/dashboard/settings?tab=plan-billing&email_marketing_modal=1");
+    }
+  }, [activeKey, hasEmailMarketingAccess, subLoading, router]);
 
   let componentToRender;
 

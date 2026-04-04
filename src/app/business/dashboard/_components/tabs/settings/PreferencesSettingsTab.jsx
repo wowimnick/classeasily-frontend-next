@@ -14,6 +14,7 @@ import {
   RefreshCw,
   ExternalLink,
   Shield,
+  Users,
   CheckCircle,
   Moon,
   ChevronUp,
@@ -663,6 +664,33 @@ function PreferencesSettingsTabContent({ form, stripeStatus, isMobile, refetchBu
                   Public
                 </PrivacyOption>
               </PrivacyRadioGroup>
+            </Form.Item>
+          </SettingControl>
+        </SettingRow>
+      </SectionCard>
+
+      {/* ── Booking checkout ── */}
+      <SectionCard>
+        <SectionHeader>
+          <SectionIconBox><Users size={17} /></SectionIconBox>
+          <SectionTitleBlock>
+            <SectionTitle>Booking checkout</SectionTitle>
+            <SectionSubtitle>How guest information is collected when someone books</SectionSubtitle>
+          </SectionTitleBlock>
+        </SectionHeader>
+        <SettingRow>
+          <SettingInfo>
+            <SettingLabel>Require each participant&apos;s name</SettingLabel>
+            <SettingDesc>
+              When guests book more than one spot, ask for every participant&apos;s name (not only the booker&apos;s).
+            </SettingDesc>
+          </SettingInfo>
+          <SettingControl>
+            <Form.Item name="require_participant_names" valuePropName="checked" noStyle>
+              <Switch
+                size="small"
+                onChange={(checked) => onFieldChange?.("require_participant_names", checked)}
+              />
             </Form.Item>
           </SettingControl>
         </SettingRow>

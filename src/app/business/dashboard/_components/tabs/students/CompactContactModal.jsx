@@ -231,20 +231,33 @@ const HeaderSkeleton = () => (
   </CompactHeader>
 );
 
-const CompactContactModal = ({ guest: initialGuest, onClose, currentUser }) => {
+const CompactContactModal = ({
+  guest: initialGuest,
+  onClose,
+  currentUser,
+  embedded = false,
+}) => {
   const [guest, setGuest] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    if (embedded) return;
     const checkMobile = () => setIsMobile(window.innerWidth <= 768);
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  }, [embedded]);
 
   useEffect(() => {
+    if (embedded && initialGuest?.id) {
+      setGuest(initialGuest);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
     const fetchGuestDetails = async () => {
       if (!initialGuest?.id) {
         setError("No contact selected.");
@@ -276,7 +289,7 @@ const CompactContactModal = ({ guest: initialGuest, onClose, currentUser }) => {
     };
 
     fetchGuestDetails();
-  }, [initialGuest]);
+  }, [initialGuest, embedded]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -370,9 +383,12 @@ const CompactContactModal = ({ guest: initialGuest, onClose, currentUser }) => {
     );
   };
 
+  if (embedded) {
+    return renderContent();
+  }
+
   return (
     <>
-      {/* Mobile Drawer */}
       {isMobile ? (
         <Drawer.Root
           open={true}
@@ -388,7 +404,6 @@ const CompactContactModal = ({ guest: initialGuest, onClose, currentUser }) => {
           </Drawer.Portal>
         </Drawer.Root>
       ) : (
-        /* Desktop Modal */
         <StyledModal
           open={true}
           onCancel={onClose}
