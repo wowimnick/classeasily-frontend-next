@@ -1164,9 +1164,11 @@ export default function WidgetCustomizer() {
           bottom: isMobileLayout ? mobileStickyBottom : 16,
           zIndex: 6,
           marginTop: 24,
-          marginLeft: "max(0px, env(safe-area-inset-left, 0px))",
-          marginRight: "max(0px, env(safe-area-inset-right, 0px))",
-          padding: 0,
+          paddingLeft: "max(12px, env(safe-area-inset-left, 0px))",
+          paddingRight: "max(12px, env(safe-area-inset-right, 0px))",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
           background: "transparent",
           pointerEvents: "none",
         }}
@@ -1174,27 +1176,32 @@ export default function WidgetCustomizer() {
         <div
           style={{
             pointerEvents: "auto",
+            width: "fit-content",
+            maxWidth: "min(100%, calc(100vw - 48px))",
             borderRadius: 18,
-            padding: "12px 16px",
-            paddingLeft: "max(16px, env(safe-area-inset-left, 0px))",
-            paddingRight: "max(16px, env(safe-area-inset-right, 0px))",
-            paddingBottom: 12,
-            background: "rgba(255, 255, 255, 0.94)",
+            padding: "12px 18px",
+            background: "rgba(255, 255, 255, 0.96)",
             backdropFilter: "blur(14px)",
             WebkitBackdropFilter: "blur(14px)",
             boxShadow:
-              "0 10px 40px rgba(0, 0, 0, 0.1), 0 2px 12px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04)",
+              "0 12px 40px rgba(0, 0, 0, 0.14), 0 4px 16px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.06)",
             display: "flex",
-            justifyContent: "flex-end",
+            justifyContent: "center",
             alignItems: "center",
-            gap: 12,
           }}
         >
           <Button
             type="primary"
             onClick={handleSave}
             loading={saving}
-            style={{ background: ACCENT, borderColor: ACCENT, fontWeight: 600, padding: "0 20px", minHeight: 40 }}
+            style={{
+              background: ACCENT,
+              borderColor: ACCENT,
+              fontWeight: 600,
+              padding: "0 22px",
+              minHeight: 40,
+              width: "fit-content",
+            }}
           >
             {saving ? "Saving…" : "Save Changes"}
           </Button>

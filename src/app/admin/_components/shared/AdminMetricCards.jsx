@@ -3,7 +3,7 @@
 import React from "react";
 import styled from "styled-components";
 import NumberFlow from "@number-flow/react";
-import { Card } from "antd";
+import { Card, Popover, Tag } from "antd";
 import { AdminCardSkeleton } from "./AdminSkeletons";
 import { TrendingDown, TrendingUp } from "lucide-react";
 
@@ -70,7 +70,9 @@ const StatCardHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  width: 100%;
   margin-bottom: 4px;
+  gap: 8px;
 `;
 
 const IconContainer = styled.div`
@@ -173,8 +175,8 @@ const AdminMetricCards = ({
         const title = card.title || card.label || "Metric";
         const iconColor = card.color || adminColors.info;
 
-        return (
-          <StatCard key={key}>
+        const cardInner = (
+          <StatCard>
             {loading ? (
               <AdminCardSkeleton />
             ) : (
@@ -187,6 +189,18 @@ const AdminMetricCards = ({
                     >
                       {Icon ? <Icon size={18} /> : null}
                     </IconContainer>
+                    {card.periodBadge ? (
+                      <Tag
+                        style={{
+                          margin: 0,
+                          fontSize: 10,
+                          lineHeight: "18px",
+                          borderRadius: 6,
+                        }}
+                      >
+                        {card.periodBadge}
+                      </Tag>
+                    ) : null}
                   </StatCardHeader>
                   <StatLabel>{title}</StatLabel>
                 </div>
@@ -205,6 +219,28 @@ const AdminMetricCards = ({
               </>
             )}
           </StatCard>
+        );
+
+        if (card.popoverContent && !loading) {
+          return (
+            <Popover
+              key={key}
+              mouseEnterDelay={0.2}
+              placement="bottom"
+              styles={{ body: { background: "#fff", maxWidth: 320 } }}
+              content={card.popoverContent}
+            >
+              <span style={{ display: "block", height: "100%", cursor: "default" }}>
+                {cardInner}
+              </span>
+            </Popover>
+          );
+        }
+
+        return (
+          <React.Fragment key={key}>
+            {cardInner}
+          </React.Fragment>
         );
       })}
     </StatsGrid>

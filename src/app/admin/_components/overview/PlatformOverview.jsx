@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import styled from "styled-components";
 import {
@@ -29,6 +29,9 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
   Legend,
+  PieChart,
+  Pie,
+  Cell,
   defs,
   linearGradient,
   stop,
@@ -67,6 +70,15 @@ const colors = {
   textSecondary: "#64748b",
   textTertiary: "#94a3b8",
 };
+
+const USER_ROLE_PIE_COLORS = [
+  colors.info,
+  colors.primary,
+  colors.purple,
+  colors.success,
+  colors.warning,
+  colors.error,
+];
 
 const hexToRgba = (hex, alpha = 1) => {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -416,6 +428,7 @@ export default function PlatformOverview() {
     businessGrowth: null,
     bookingGrowth: null,
     revenueGrowth: null,
+    roleDistribution: [],
   });
   const [chartData, setChartData] = useState([]);
   const [auditItems, setAuditItems] = useState([]);
@@ -438,10 +451,10 @@ export default function PlatformOverview() {
           supportStatsRes,
           payoutsRes,
         ] = await Promise.all([
-          userAdminService.getUserMetrics({ start_date: null, end_date: null }),
+          userAdminService.getUserMetrics({}),
           businessManagementService.getPlatformMetrics(),
-          adminBookingService.getBookingAnalytics({}),
-          paymentService.getPaymentStats(),
+          adminBookingService.getBookingAnalytics({ all_time: true }),
+          paymentService.getPaymentStats({ all_time: true }),
           auditService.getAuditLogs({ page_size: 12, page: 1 }),
           verificationService.getVerificationStats(),
           supportTicketService.getTicketStats(),
@@ -495,12 +508,12 @@ export default function PlatformOverview() {
           avgRevenuePerBusiness: avgRevPerBiz,
           userGrowth: userData.growth_percent ?? userData.mom_growth ?? null,
           businessGrowth: bizData.growth_percent ?? bizData.mom_growth ?? null,
-          bookingGrowth: bookingData.growth_percent ?? bookingData.mom_growth ?? null,
-          revenueGrowth: paymentData.growth_percent ?? paymentData.mom_growth ?? null,
+          bookingGrowth: bookingData.all_time ? null : bookingData.booking_growth ?? null,
+          revenueGrowth: paymentData.all_time ? null : paymentData.revenue_growth ?? null,
+          roleDistribution: Array.isArray(userData.role_distribution)
+            ? userData.role_distribution
+            : [],
         });
-
-        // Chart data is loaded separately by chart period (see useEffect below)
-        setChartData([]);
       } catch (e) {
         if (!cancelled) console.error("Platform overview fetch error:", e);
       } finally {
@@ -559,76 +572,133 @@ export default function PlatformOverview() {
     },
   ];
 
-  const kpiCards = [
-    {
-      label: "Platform GMV",
-      value: formatCompact(stats.platformRevenue),
-      isText: true,
-      icon: DollarSign,
-      color: colors.success,
-      growth: stats.revenueGrowth,
-      footer: "All-time gross revenue",
-    },
-    {
-      label: "Total Users",
-      value: stats.totalUsers,
-      icon: Users,
-      color: colors.info,
-      growth: stats.userGrowth,
-      footer: `${stats.activeUsers30d.toLocaleString()} active last 30d`,
-    },
-    {
-      label: "Total Businesses",
-      value: stats.totalBusinesses,
-      icon: Building2,
-      color: colors.primary,
-      growth: stats.businessGrowth,
-      footer: `${stats.activeBusinesses30d.toLocaleString()} active last 30d`,
-    },
-    {
-      label: "Bookings (All-time)",
-      value: stats.totalBookings,
-      icon: BookOpen,
-      color: colors.purple,
-      growth: stats.bookingGrowth,
-      footer: `${stats.bookingsThisMonth.toLocaleString()} this month`,
-    },
-    {
-      label: "New Users (30d)",
-      value: stats.newUsers30d,
-      icon: UserPlus,
-      color: colors.info,
-      growth: null,
-      footer: "vs previous 30 days",
-    },
-    {
-      label: "New Businesses (30d)",
-      value: stats.newBusinesses30d,
-      icon: Building2,
-      color: colors.primary,
-      growth: null,
-      footer: "Net new registrations",
-    },
-    {
-      label: "Avg Rev / Business",
-      value: 0,
-      isText: true,
-      computedValue: formatCompact(stats.avgRevenuePerBusiness),
-      icon: BarChart2,
-      color: colors.warning,
-      growth: null,
-      footer: "Platform average",
-    },
-    {
-      label: "Pending Verifications",
-      value: stats.pendingVerifications,
-      icon: ShieldCheck,
-      color: stats.pendingVerifications > 0 ? colors.error : colors.success,
-      growth: null,
-      footer: stats.pendingVerifications > 0 ? "Action required" : "All reviewed",
-      urgent: stats.pendingVerifications > 0,
-    },
-  ];
+  const userRolePopoverContent = useMemo(() => {
+    const dist = stats.roleDistribution || [];
+    if (!dist.length) {
+      return (
+        <div style={{ padding: 12, background: "#fff" }}>
+          <Text type="secondary">No role breakdown</Text>
+        </div>
+      );
+    }
+    const pieData = dist.map((r, i) => {
+      const raw = r.role__color;
+      const fill =
+        raw && String(raw).startsWith("#")
+          ? raw
+          : USER_ROLE_PIE_COLORS[i % USER_ROLE_PIE_COLORS.length];
+      return {
+        name: r.role__name || "Unknown",
+        value: Number(r.count) || 0,
+        fill,
+      };
+    });
+    return (
+      <div style={{ width: 280, height: 240, background: "#fff" }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={pieData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={72}
+              paddingAngle={1}
+            >
+              {pieData.map((entry, i) => (
+                <Cell key={i} fill={entry.fill} />
+              ))}
+            </Pie>
+            <RechartsTooltip />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }, [stats.roleDistribution]);
+
+  const kpiCards = useMemo(
+    () => [
+      {
+        label: "Platform GMV",
+        value: formatCompact(stats.platformRevenue),
+        isText: true,
+        icon: DollarSign,
+        color: colors.success,
+        growth: stats.revenueGrowth,
+        periodBadge: "All-time",
+        footer: "Succeeded payment volume",
+      },
+      {
+        label: "Total Users",
+        value: stats.totalUsers,
+        icon: Users,
+        color: colors.info,
+        growth: stats.userGrowth,
+        periodBadge: "All-time",
+        popoverContent: userRolePopoverContent,
+        footer: `${stats.activeUsers30d.toLocaleString()} logged in (last 30d)`,
+      },
+      {
+        label: "Total Businesses",
+        value: stats.totalBusinesses,
+        icon: Building2,
+        color: colors.primary,
+        growth: stats.businessGrowth,
+        periodBadge: "All-time",
+        footer: `${stats.activeBusinesses30d.toLocaleString()} owner/staff active (30d)`,
+      },
+      {
+        label: "Bookings",
+        value: stats.totalBookings,
+        icon: BookOpen,
+        color: colors.purple,
+        growth: stats.bookingGrowth,
+        periodBadge: "All-time",
+        footer: "All statuses, by booking date",
+      },
+      {
+        label: "New Users",
+        value: stats.newUsers30d,
+        icon: UserPlus,
+        color: colors.info,
+        growth: null,
+        periodBadge: "30d",
+        footer: "vs previous 30 days",
+      },
+      {
+        label: "New Businesses",
+        value: stats.newBusinesses30d,
+        icon: Building2,
+        color: colors.primary,
+        growth: null,
+        periodBadge: "30d",
+        footer: "Created in period",
+      },
+      {
+        label: "Avg Rev / Business",
+        value: 0,
+        isText: true,
+        computedValue: formatCompact(stats.avgRevenuePerBusiness),
+        icon: BarChart2,
+        color: colors.warning,
+        growth: null,
+        periodBadge: "All-time",
+        footer: "GMV ÷ total businesses",
+      },
+      {
+        label: "Pending Verifications",
+        value: stats.pendingVerifications,
+        icon: ShieldCheck,
+        color: stats.pendingVerifications > 0 ? colors.error : colors.success,
+        growth: null,
+        periodBadge: "Now",
+        footer: stats.pendingVerifications > 0 ? "Action required" : "All reviewed",
+        urgent: stats.pendingVerifications > 0,
+      },
+    ],
+    [stats, userRolePopoverContent]
+  );
 
   if (loading) {
     return (

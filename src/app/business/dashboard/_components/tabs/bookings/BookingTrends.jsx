@@ -7,7 +7,7 @@ import React, {
   useRef,
   useMemo,
 } from "react";
-import styled, { keyframes } from "styled-components";
+import styled from "styled-components";
 import {
   Calendar,
   TrendingUp,
@@ -29,7 +29,6 @@ import {
   Card,
   Select,
   Empty,
-  Skeleton,
   Row,
   Col,
   Divider,
@@ -63,6 +62,16 @@ import { bookingAnalyticsService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
+import {
+  AdminMetricCardsSkeleton,
+  AdminAreaChartSkeleton,
+  AdminPieChartSkeleton,
+  AdminTableSkeleton,
+} from "@/app/admin/_components/shared/AdminSkeletons";
+import {
+  MetricPeriodBadge,
+  formatDayjsRangeBadge,
+} from "../../shared/MetricPeriodBadge";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -489,148 +498,6 @@ const EmptyStateSubtext = styled.div`
   max-width: 300px;
 `;
 
-/* --- Custom Skeletons (Kept same as original for brevity) --- */
-const shimmer = keyframes`
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-`;
-
-const SkeletonBase = styled.div`
-  background: linear-gradient(
-    90deg,
-    ${colors.lightBg} 25%,
-    #eef1f5 50%,
-    ${colors.lightBg} 75%
-  );
-  background-size: 200% 100%;
-  animation: ${shimmer} 1.5s infinite;
-  border-radius: ${(props) => props.$borderRadius || "6px"};
-  width: ${(props) => props.$width || "100%"};
-  height: ${(props) => props.$height || "16px"};
-  margin-bottom: ${(props) => props.$marginBottom || "0"};
-`;
-
-// Chart Skeleton Containers
-const ChartSkeletonContainer = styled.div`
-  width: 100%;
-  height: 100%;
-  display: flex;
-  padding: 10px 0;
-`;
-
-const ChartYAxis = styled.div`
-  width: 40px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding-right: 10px;
-  border-right: 1px solid ${colors.border};
-`;
-
-const ChartGridArea = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding-left: 10px;
-  position: relative;
-`;
-
-const ChartGridLine = styled.div`
-  width: 100%;
-  height: 1px;
-  background-color: ${colors.border};
-`;
-
-const DailyActivitySkeleton = () => (
-  <ChartSkeletonContainer>
-    <ChartYAxis>
-      {[...Array(5)].map((_, i) => (
-        <SkeletonBase key={i} $width="20px" $height="8px" />
-      ))}
-    </ChartYAxis>
-    <ChartGridArea>
-      {[...Array(5)].map((_, i) => (
-        <ChartGridLine key={i} />
-      ))}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 30,
-          left: 10,
-          right: 0,
-          display: "flex",
-          justifyContent: "space-around",
-          alignItems: "flex-end",
-          height: "60%",
-        }}
-      >
-        {[...Array(10)].map((_, i) => (
-          <SkeletonBase
-            key={i}
-            $width="5%"
-            $height={`${Math.random() * 80 + 10}%`}
-            $borderRadius="4px 4px 0 0"
-          />
-        ))}
-      </div>
-    </ChartGridArea>
-  </ChartSkeletonContainer>
-);
-
-const PieSkeleton = () => (
-  <div
-    style={{
-      width: "100%",
-      height: "100%",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-    }}
-  >
-    <div style={{ position: "relative", width: "160px", height: "160px" }}>
-      <SkeletonBase
-        $width="160px"
-        $height="160px"
-        $borderRadius="50%"
-        style={{ border: `4px solid white` }}
-      />
-    </div>
-  </div>
-);
-
-const TableSkeleton = () => (
-  <div>
-    <div
-      style={{
-        display: "flex",
-        background: colors.lightBg,
-        padding: "16px 20px",
-        gap: "10px",
-      }}
-    >
-      <SkeletonBase $width="30%" $height="14px" />
-      <SkeletonBase $width="70%" $height="14px" />
-    </div>
-    {[...Array(5)].map((_, i) => (
-      <div
-        key={i}
-        style={{
-          display: "flex",
-          padding: "16px 20px",
-          gap: "10px",
-          borderBottom: `1px solid ${colors.border}`,
-        }}
-      >
-        <SkeletonBase $width="30%" $height="12px" />
-        <SkeletonBase $width="70%" $height="12px" />
-      </div>
-    ))}
-  </div>
-);
-
 const CustomTooltip = ({ active, payload, label, type }) => {
   if (active && payload && payload.length) {
     return (
@@ -890,6 +757,11 @@ const BookingTrends = () => {
     },
   ];
 
+  const metricsPeriodLabel = useMemo(
+    () => formatDayjsRangeBadge(filterParams.startDate, filterParams.endDate),
+    [filterParams.startDate, filterParams.endDate],
+  );
+
   return (
     <DashboardWrapper>
         <DashboardBreadcrumb title="Booking Trends" />
@@ -965,12 +837,12 @@ const BookingTrends = () => {
 
         <ResponsiveDivider />
 
-        <StatsGrid>
-          {statisticCards.map((stat) => (
-            <StatCard key={stat.key}>
-              {loading ? (
-                <Skeleton active paragraph={{ rows: 2 }} />
-              ) : (
+        {loading ? (
+          <AdminMetricCardsSkeleton count={5} />
+        ) : (
+          <StatsGrid>
+            {statisticCards.map((stat) => (
+              <StatCard key={stat.key}>
                 <>
                   <div>
                     <StatCardHeader>
@@ -980,6 +852,7 @@ const BookingTrends = () => {
                       >
                         {stat.icon}
                       </IconContainer>
+                      <MetricPeriodBadge>{metricsPeriodLabel}</MetricPeriodBadge>
                     </StatCardHeader>
                     <StatLabel>{stat.title}</StatLabel>
                   </div>
@@ -995,10 +868,10 @@ const BookingTrends = () => {
                     {stat.footer && <StatFooter>{stat.footer}</StatFooter>}
                   </div>
                 </>
-              )}
-            </StatCard>
-          ))}
-        </StatsGrid>
+              </StatCard>
+            ))}
+          </StatsGrid>
+        )}
 
         <ResponsiveDivider />
 
@@ -1031,7 +904,9 @@ const BookingTrends = () => {
 
           <ChartContainer>
             {loading ? (
-              <DailyActivitySkeleton />
+              <div style={{ width: "100%", height: 380 }}>
+                <AdminAreaChartSkeleton height={380} />
+              </div>
             ) : !analytics.trends?.length ? (
               <EmptyStateContainer>
                 <EmptyStateIcon>
@@ -1185,7 +1060,9 @@ const BookingTrends = () => {
               </ChartHeader>
               <ChartContainer>
                 {loading ? (
-                  <DailyActivitySkeleton />
+                  <div style={{ width: "100%", height: 300 }}>
+                    <AdminAreaChartSkeleton height={300} />
+                  </div>
                 ) : !analytics.booking_patterns?.time_distribution?.length ? (
                   <EmptyStateContainer>
                     <EmptyStateIcon>
@@ -1284,7 +1161,9 @@ const BookingTrends = () => {
               </ChartHeader>
               <ChartContainer>
                 {loading ? (
-                  <PieSkeleton />
+                  <div style={{ width: "100%", height: 280, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <AdminPieChartSkeleton size={168} />
+                  </div>
                 ) : !guestTypeData.some((d) => d.value > 0) ? (
                   <EmptyStateContainer $padding="20px">
                     <EmptyStateText>No Data</EmptyStateText>
@@ -1345,7 +1224,9 @@ const BookingTrends = () => {
                 </ChartDescription>
               </TableHeader>
               {loading ? (
-                <TableSkeleton />
+                <div style={{ padding: "0 16px 16px" }}>
+                  <AdminTableSkeleton rows={5} columns={4} />
+                </div>
               ) : !analytics.class_insights?.popular_classes?.length ? (
                 <EmptyStateContainer>
                   <EmptyStateText>No Bookings Found</EmptyStateText>
@@ -1430,7 +1311,9 @@ const BookingTrends = () => {
               </ChartHeader>
               <ChartContainer>
                 {loading ? (
-                  <PieSkeleton />
+                  <div style={{ width: "100%", height: 280, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <AdminPieChartSkeleton size={168} />
+                  </div>
                 ) : !analytics.booking_patterns?.booking_types?.length ? (
                   <EmptyStateContainer $padding="20px">
                     <EmptyStateText>No Data</EmptyStateText>

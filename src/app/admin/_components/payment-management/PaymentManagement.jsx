@@ -45,7 +45,7 @@ import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 
 const { RangePicker } = DatePicker;
-const { Text, Title } = Typography;
+const { Text, Title, Paragraph } = Typography;
 const { useBreakpoint } = Grid;
 
 const colors = {
@@ -135,28 +135,56 @@ const ActionRow = styled.div`
 const TableSection = styled.div`
   background: white;
   border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+  position: relative;
   border: 1px solid ${colors.border};
 `;
 
-const TableHeaderBar = styled.div`
-  padding: 16px 20px;
+const TableHeader = styled.div`
+  padding: 20px 24px 16px;
   border-bottom: 1px solid ${colors.border};
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  background: white;
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
 `;
 
-const FilterRow = styled.div`
+const TableTitle = styled(Title).attrs({ level: 4 })`
+  margin: 0 0 4px 0 !important;
+  color: ${colors.textPrimary};
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  svg {
+    color: ${colors.primary};
+    width: 18px;
+    height: 18px;
+  }
+`;
+
+const TableDescription = styled(Paragraph)`
+  margin: 0 !important;
+  color: ${colors.textSecondary};
+  font-size: 14px;
+  @media (max-width: 768px) {
+    font-size: 13px;
+  }
+`;
+
+const FilterBar = styled.div`
+  padding: 20px 24px;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
-  padding: 12px 20px;
   border-bottom: 1px solid ${colors.border};
+  @media (max-width: 768px) {
+    padding: 16px;
+    flex-direction: column;
+    align-items: stretch;
+  }
 `;
 
 const StyledTable = styled(Table)`
@@ -304,7 +332,11 @@ export default function PaymentManagement() {
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
     try {
-      const res = await paymentService.getPaymentStats();
+      const statsParams =
+        filters.start_date && filters.end_date
+          ? { start_date: filters.start_date, end_date: filters.end_date }
+          : { all_time: true };
+      const res = await paymentService.getPaymentStats(statsParams);
       if (res.success && res.data) {
         const d = res.data;
         setStats({
@@ -319,7 +351,7 @@ export default function PaymentManagement() {
     } finally {
       setStatsLoading(false);
     }
-  }, []);
+  }, [filters.start_date, filters.end_date]);
 
   const fetchPayments = useCallback(async () => {
     setLoading(true);
@@ -411,7 +443,20 @@ export default function PaymentManagement() {
   };
 
   const payment = selectedPayment;
-  const canRefund = payment?.status === "succeeded" && (payment?.refunded_amount == null || payment.refunded_amount < (payment.amount ?? 0));
+  const refundableAmount =
+    payment == null
+      ? 0
+      : Number(
+          payment.available_refund_amount ??
+            Math.max(
+              0,
+              Number(payment.amount ?? 0) - Number(payment.refunded_amount ?? 0)
+            )
+        );
+  const canRefund =
+    payment &&
+    ["succeeded", "partially_refunded"].includes(payment.status) &&
+    refundableAmount > 0.009;
   const canMarkPaid = payment?.status === "pending";
 
   const statCardsData = [
@@ -622,16 +667,20 @@ export default function PaymentManagement() {
           </DrawerBodyInner>
         </DrawerBody>
 
-        {(canRefund || canMarkPaid) && (
+        {!detailLoading && payment && (
           <DrawerFooter>
-            {canMarkPaid && (
-              <Button onClick={handleMarkPaid}>Mark as paid</Button>
-            )}
-            {canRefund && (
-              <Button type="primary" danger onClick={() => setRefundModalOpen(true)} icon={<RotateCcw size={14} />}>
-                Process Refund
-              </Button>
-            )}
+            <Button onClick={handleMarkPaid} disabled={!canMarkPaid}>
+              Mark as paid
+            </Button>
+            <Button
+              type="primary"
+              danger
+              disabled={!canRefund}
+              onClick={() => setRefundModalOpen(true)}
+              icon={<RotateCcw size={14} />}
+            >
+              Process Refund
+            </Button>
           </DrawerFooter>
         )}
       </>
@@ -659,6 +708,13 @@ export default function PaymentManagement() {
             </ActionRow>
           </DashboardHeader>
 
+          <div style={{ marginBottom: 4 }}>
+            <Text type="secondary" style={{ fontSize: 13 }}>
+              {filters.start_date && filters.end_date
+                ? `Stats for ${filters.start_date} – ${filters.end_date} (apply filters to align list).`
+                : "Stats are all-time. Use the date range below and Apply to filter the table."}
+            </Text>
+          </div>
           <AdminMetricCards
             cards={statCardsData.map((card) => ({
               ...card,
@@ -669,11 +725,23 @@ export default function PaymentManagement() {
           />
 
           <TableSection>
-            <TableHeaderBar>
-              <Title level={5} style={{ margin: 0, color: colors.textPrimary }}>All Payments</Title>
-              <Text style={{ fontSize: 12, color: colors.textSecondary }}>{totalCount.toLocaleString()} total records</Text>
-            </TableHeaderBar>
-            <FilterRow>
+            <TableHeader>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <TableTitle>
+                    <CreditCard size={18} />
+                    All Payments
+                  </TableTitle>
+                  <TableDescription>
+                    Complete list of payments with filtering and search.
+                  </TableDescription>
+                </div>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, whiteSpace: "nowrap" }}>
+                  {totalCount.toLocaleString()} records
+                </Text>
+              </div>
+            </TableHeader>
+            <FilterBar>
               <Input
                 prefix={<Search size={13} />}
                 placeholder="Search..."
@@ -704,8 +772,17 @@ export default function PaymentManagement() {
                 }}
                 style={{ borderRadius: 8 }}
               />
-              <Button type="primary" onClick={fetchPayments} style={{ borderRadius: 8 }}>Apply</Button>
-            </FilterRow>
+              <Button
+                type="primary"
+                onClick={() => {
+                  fetchPayments();
+                  fetchStats();
+                }}
+                style={{ borderRadius: 8 }}
+              >
+                Apply
+              </Button>
+            </FilterBar>
             {loading ? (
               <AdminTableSkeleton rows={8} />
             ) : (
@@ -717,7 +794,7 @@ export default function PaymentManagement() {
                 current: page,
                 pageSize,
                 total: totalCount,
-                showSizeChanger: true,
+                showSizeChanger: false,
                 size: "small",
                 onChange: (p, ps) => { setPage(p); setPageSize(ps || 10); },
               }}

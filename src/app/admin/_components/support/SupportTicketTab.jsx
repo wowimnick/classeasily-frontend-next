@@ -20,7 +20,6 @@ import {
   Skeleton,
   Tooltip,
   Tag,
-  Radio,
   Modal,
   Form,
 } from "antd";
@@ -36,8 +35,6 @@ import {
   RefreshCw,
   Hash,
   User,
-  TrendingUp,
-  TrendingDown,
   AlertTriangle,
   CheckCircle2,
   Shield,
@@ -45,16 +42,6 @@ import {
   Edit,
   FileText,
 } from "lucide-react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
 import dayjs from "dayjs";
 import { supportTicketService } from "@/services/adminDash";
 import { theme as antdComponentTheme } from "@/components/theme";
@@ -62,6 +49,7 @@ import TicketDetailDrawer from "./TicketDetailDrawer";
 import axios from "axios";
 import { GlobalLoaderWithInlineStyles } from "@/components/common/GlobalLoader";
 import AdminMetricCards from "../shared/AdminMetricCards";
+import { AdminMetricCardsSkeleton } from "../shared/AdminSkeletons";
 
 const { Option } = Select;
 const { useBreakpoint } = Grid;
@@ -163,15 +151,6 @@ const RefreshButton = styled(Button)`
     border-color: ${colors.primary};
     box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.1);
     transform: translateY(-1px);
-  }
-`;
-
-const ChartCard = styled(Card)`
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  border: 1px solid ${colors.border};
-  .ant-card-body {
-    padding: 16px 20px !important;
   }
 `;
 
@@ -338,11 +317,9 @@ const SupportTicketTab = () => {
     category: "all",
     status: "all",
     priority: "all",
-    sla_breached: false,
   });
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
-  const [chartPeriod, setChartPeriod] = useState("30d");
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -545,8 +522,6 @@ const SupportTicketTab = () => {
     message.success("CSV downloaded.");
   };
 
-  const slaBreach = statistics?.sla_breached_tickets ?? 0;
-
   const statCardsData = [
     {
       title: "Open Tickets",
@@ -555,6 +530,7 @@ const SupportTicketTab = () => {
       footer: "Awaiting first response",
       color: colors.info,
       isNumeric: true,
+      periodBadge: "30d",
     },
     {
       title: "In Progress",
@@ -563,15 +539,7 @@ const SupportTicketTab = () => {
       footer: "Actively being handled",
       color: colors.success,
       isNumeric: true,
-    },
-    {
-      title: "SLA Breached",
-      value: slaBreach,
-      icon: AlertTriangle,
-      footer: slaBreach > 0 ? "Needs immediate attention" : "Within SLA",
-      color: slaBreach > 0 ? colors.error : colors.success,
-      urgent: slaBreach > 0,
-      isNumeric: true,
+      periodBadge: "30d",
     },
     {
       title: "Resolved Today",
@@ -580,22 +548,7 @@ const SupportTicketTab = () => {
       footer: "Closed in last 24h",
       color: colors.success,
       isNumeric: true,
-    },
-    {
-      title: "Avg. First Response",
-      value: statistics?.avg_first_response_time,
-      icon: Mail,
-      footer: "Time to first agent reply",
-      color: colors.pink,
-      isNumeric: false,
-    },
-    {
-      title: "Avg. Resolution Time",
-      value: statistics?.avg_resolution_time,
-      icon: BarChart2,
-      footer: "From creation to resolved",
-      color: colors.purple,
-      isNumeric: false,
+      periodBadge: "24h",
     },
   ];
 
@@ -834,66 +787,17 @@ const SupportTicketTab = () => {
           Support overview
         </div>
         <div style={{ marginBottom: 20 }}>
-          <AdminMetricCards
-            cards={statCardsData.map((card) => ({
-              ...card,
-              value: card.isNumeric ? card.value ?? 0 : card.value || "—",
-            }))}
-            loading={statsLoading}
-            isReadyForAnimation={isReadyForAnimation}
-          />
-        </div>
-
-        <Divider style={{ margin: "16px 0" }} />
-
-        {/* Charts */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12, marginBottom: 20 }}>
-          <ChartCard>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-              <div>
-                <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", color: colors.textTertiary, textTransform: "uppercase" }}>Trend</div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>Ticket Volume Over Time</div>
-              </div>
-              <Radio.Group
-                size="small"
-                value={chartPeriod}
-                onChange={(e) => setChartPeriod(e.target.value)}
-                optionType="button"
-                buttonStyle="solid"
-                options={[{ label: "7d", value: "7d" }, { label: "30d", value: "30d" }, { label: "90d", value: "90d" }]}
-              />
-            </div>
-            <div style={{ fontSize: 12, color: colors.textTertiary, marginBottom: 8 }}>New tickets opened vs resolved per day</div>
-            <div style={{ height: 200 }}>
-              {statistics?.ticket_trend?.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={statistics.ticket_trend} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="gradOpen" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={colors.info} stopOpacity={0.15} />
-                        <stop offset="95%" stopColor={colors.info} stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="gradResolved" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={colors.success} stopOpacity={0.15} />
-                        <stop offset="95%" stopColor={colors.success} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={colors.border} vertical={false} />
-                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: colors.textTertiary }} tickFormatter={(d) => dayjs(d).format("MMM D")} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 10, fill: colors.textTertiary }} axisLine={false} tickLine={false} allowDecimals={false} width={28} />
-                    <RechartsTooltip contentStyle={{ borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 11 }} iconSize={7} iconType="circle" />
-                    <Area type="monotone" dataKey="opened" name="Opened" stroke={colors.info} strokeWidth={2} fill="url(#gradOpen)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                    <Area type="monotone" dataKey="resolved" name="Resolved" stroke={colors.success} strokeWidth={2} fill="url(#gradResolved)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: colors.textTertiary, fontSize: 13 }}>
-                  No trend data available
-                </div>
-              )}
-            </div>
-          </ChartCard>
+          {statsLoading ? (
+            <AdminMetricCardsSkeleton count={statCardsData.length} />
+          ) : (
+            <AdminMetricCards
+              cards={statCardsData.map((card) => ({
+                ...card,
+                value: card.isNumeric ? card.value ?? 0 : card.value || "—",
+              }))}
+              isReadyForAnimation={isReadyForAnimation}
+            />
+          )}
         </div>
 
         <Divider style={{ margin: "16px 0" }} />
@@ -955,15 +859,6 @@ const SupportTicketTab = () => {
                 <Option value="technical">Technical</Option>
                 <Option value="feature">Feature Request</Option>
               </Select>
-              <Button
-                size="small"
-                type={filters.sla_breached ? "primary" : "default"}
-                danger={filters.sla_breached}
-                icon={<AlertTriangle size={12} />}
-                onClick={() => handleFilterChange({ sla_breached: !filters.sla_breached })}
-              >
-                SLA Breached
-              </Button>
             </SearchFilterContainer>
           </FilterBar>
           {selectedRowKeys.length > 0 && (

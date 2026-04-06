@@ -45,7 +45,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (subLoading || activeKey !== "email-campaigns") return;
     if (!hasEmailMarketingAccess) {
-      router.replace("/business/dashboard/settings?tab=plan-billing&email_marketing_modal=1");
+      router.replace("/business/dashboard/settings?tab=billing&email_marketing_modal=1");
     }
   }, [activeKey, hasEmailMarketingAccess, subLoading, router]);
 

@@ -286,83 +286,10 @@ const MobileCardFooter = styled.div`
 `;
 
 // --- DETAIL DRAWER STYLES ---
-const DrawerOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  z-index: 1050;
-  @media (max-width: 768px) {
-    padding: 0;
-    align-items: flex-end;
-  }
-`;
-
-const DrawerContainer = styled.div`
-  width: 100%;
-  max-width: 800px;
-  background: white;
-  border-radius: 24px;
-  overflow: hidden;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  @media (max-width: 768px) {
-    height: auto;
-    max-height: 85vh;
-    border-radius: 24px 24px 0 0;
-  }
-`;
-
-const DragHandle = styled.div`
-  display: none;
-  width: 40px;
-  height: 5px;
-  background: #d1d1d1;
-  border-radius: 2.5px;
-  margin: 12px auto 0;
-  cursor: grab;
-  @media (max-width: 768px) {
-    display: block;
-  }
-`;
-
-const DrawerCloseButton = styled.button`
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: #f0f0f0;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  &:hover {
-    background: #e0e0e0;
-  }
-`;
-
-const DrawerHeaderSection = styled.header`
-  padding: 20px 24px;
-  border-bottom: 1px solid #f0f0f0;
-  flex-shrink: 0;
-`;
-
 const DrawerContent = styled.div`
   flex: 1;
   overflow-y: auto;
-  background-color: ${colors.lightBg};
+  background-color: #fff;
 `;
 
 const DrawerHeader = styled.div`
@@ -551,6 +478,45 @@ const DetailDrawerContent = ({
             <Text type="secondary">{user_email}</Text>
           </div>
         </DrawerHeader>
+
+        {Array.isArray(userActivity) && userActivity.length > 0 && (
+          <InfoGroup>
+            <InfoGroupTitle>
+              <Activity />
+              Recent activity
+            </InfoGroupTitle>
+            <Timeline
+              items={userActivity.slice(0, 12).map((log) => ({
+                color: colors.info,
+                children: (
+                  <div>
+                    <Text strong>
+                      {log.action_display || log.action || "Event"}
+                    </Text>
+                    <br />
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {formatDateTime(log.timestamp)}
+                    </Text>
+                    {log.details != null && log.details !== "" ? (
+                      <Paragraph
+                        type="secondary"
+                        style={{
+                          marginTop: 4,
+                          marginBottom: 0,
+                          fontSize: 13,
+                        }}
+                      >
+                        {typeof log.details === "string"
+                          ? log.details
+                          : JSON.stringify(log.details)}
+                      </Paragraph>
+                    ) : null}
+                  </div>
+                ),
+              }))}
+            />
+          </InfoGroup>
+        )}
 
         <InfoGroup>
           <InfoGroupTitle>

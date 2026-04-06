@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import styled, { keyframes } from "styled-components";
 
 import dayjs from "dayjs";
@@ -30,7 +31,6 @@ import {
   RefreshCcw,
   Download,
   BarChart2,
-  TrendingUp,
   AlertCircle,
   Clock,
   CheckCircle,
@@ -51,7 +51,12 @@ import { theme as appTheme } from "@/components/theme";
 import { LordIcon } from "@/services/ReactUtils";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
-import { AdminTableSkeleton, AdminDrawerContentSkeleton } from "../shared/AdminSkeletons";
+import {
+  AdminTableSkeleton,
+  AdminDrawerContentSkeleton,
+  AdminMetricCardsSkeleton,
+  SkeletonBlock,
+} from "../shared/AdminSkeletons";
 
 dayjs.extend(utc);
 const { Option } = Select;
@@ -304,7 +309,7 @@ const DrawerContentContainer = styled.div`
 const DrawerContent = styled.div`
   flex: 1;
   overflow-y: auto;
-  background-color: ${colors.lightBg};
+  background-color: #fff;
   padding: 24px;
   animation: ${fadeIn} 0.5s 0.1s ease-out both;
   border-radius: 0 0 16px 16px;
@@ -413,92 +418,147 @@ const getPayoutStatusTag = (status) => {
 };
 
 // --- DETAIL DRAWER ---
-const PayoutDetailContent = ({ payout, isMobile, onRetry }) => {
+const PayoutDetailContent = ({ payout, isMobile }) => {
   if (!payout)
     return (
       <Empty description="No payout selected" style={{ paddingTop: 100 }} />
     );
 
-  const stripeTransferUrl = payout.stripe_transfer_id
-    ? `https://dashboard.stripe.com/transfers/${payout.stripe_transfer_id}`
-    : null;
   const bookingColumns = [
-    { title: "Booking Ref", dataIndex: "user_facing_reference", key: "ref" },
-    { title: "Class", dataIndex: "class_name", key: "class" },
     {
-      title: "Net Amount",
+      title: "Reference",
+      dataIndex: "user_facing_reference",
+      key: "ref",
+      ellipsis: true,
+    },
+    {
+      title: "Class",
+      dataIndex: "class_name",
+      key: "class",
+      ellipsis: true,
+    },
+    {
+      title: "Booker",
+      dataIndex: "booker_name",
+      key: "booker",
+      ellipsis: true,
+    },
+    {
+      title: "Date",
+      key: "session_date",
+      width: 120,
+      render: (_, row) =>
+        formatDate(row.session_date || row.booking_date),
+    },
+    {
+      title: "Net",
       dataIndex: "net_amount",
       key: "net",
+      width: 100,
+      align: "right",
       render: (val) => formatCurrency(val),
+    },
+    {
+      title: "",
+      key: "actions",
+      width: 120,
+      fixed: "right",
+      render: (_, row) => (
+        <Button
+          type="link"
+          size="small"
+          href={`/admin/all-bookings?id=${row.id}`}
+          style={{ padding: 0 }}
+        >
+          View booking
+        </Button>
+      ),
     },
   ];
 
   return (
     <>
+      <div
+        style={{
+          marginBottom: 16,
+          padding: 16,
+          background: "white",
+          borderRadius: 12,
+          border: `1px solid ${colors.border}`,
+        }}
+      >
+        <Space align="start" size={16} wrap>
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 12,
+              background: hexToRgba(colors.info, 0.12),
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Building size={28} color={colors.info} />
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <AntTitle level={4} style={{ margin: 0 }}>
+              {payout.business_name}
+            </AntTitle>
+            <div style={{ marginTop: 6 }}>
+              <Text strong style={{ fontSize: 22 }}>
+                {formatCurrency(payout.amount)}
+              </Text>
+            </div>
+            <div style={{ marginTop: 8 }}>{getPayoutStatusTag(payout.status)}</div>
+            <Text type="secondary" style={{ display: "block", marginTop: 8, fontSize: 13 }}>
+              Initiated {formatDateTime(payout.created_at)}
+              {payout.arrival_date
+                ? ` · Expected arrival ${formatDate(payout.arrival_date)}`
+                : ""}
+            </Text>
+          </div>
+        </Space>
+      </div>
+
       <InfoGroup>
         <InfoGroupTitle>
-          <Hash /> Payout Summary
+          <Hash /> Payout summary
         </InfoGroupTitle>
         <Descriptions bordered column={1} size="middle">
-          <Descriptions.Item label="Business">
-            {payout.business_name}
+          <Descriptions.Item label="Stripe transfer ID">
+            <Text copyable={{ text: payout.stripe_transfer_id }}>
+              {payout.stripe_transfer_id || "—"}
+            </Text>
           </Descriptions.Item>
-          <Descriptions.Item label="Payout Amount">
+          <Descriptions.Item label="Amount">
             {formatCurrency(payout.amount)}
           </Descriptions.Item>
           <Descriptions.Item label="Status">
             {getPayoutStatusTag(payout.status)}
           </Descriptions.Item>
-          <Descriptions.Item label="Date Initiated">
+          <Descriptions.Item label="Initiated">
             {formatDateTime(payout.created_at)}
           </Descriptions.Item>
-          <Descriptions.Item label="Expected Arrival">
-            {formatDate(payout.arrival_date)}
-          </Descriptions.Item>
-          <Descriptions.Item label="Stripe Transfer ID">
-            <Text copyable>{payout.stripe_transfer_id}</Text>
+          <Descriptions.Item label="Expected arrival">
+            {payout.arrival_date ? formatDate(payout.arrival_date) : "—"}
           </Descriptions.Item>
         </Descriptions>
       </InfoGroup>
 
       <InfoGroup>
         <InfoGroupTitle>
-          <BookOpen /> Included Bookings ({payout.bookings?.length || 0})
+          <BookOpen /> Included bookings ({payout.bookings?.length || 0})
         </InfoGroupTitle>
         <Table
           columns={bookingColumns}
           dataSource={payout.bookings}
           rowKey="id"
-          pagination={{ pageSize: 5 }}
+          pagination={false}
           size="small"
-          scroll={{ x: isMobile ? 350 : "auto" }}
+          scroll={{ x: isMobile ? 720 : "auto" }}
         />
       </InfoGroup>
-
-      <Space>
-        {stripeTransferUrl && (
-          <Button
-            icon={<ExternalLink size={14} />}
-            href={stripeTransferUrl}
-            target="_blank"
-          >
-            View on Stripe
-          </Button>
-        )}
-        {payout.status === "failed" && (
-          <Popconfirm
-            title="Retry this payout?"
-            description="This will re-queue the payout for the next automatic run."
-            onConfirm={() => onRetry(payout.id)}
-            okText="Yes, Retry"
-            cancelText="Cancel"
-          >
-            <Button danger icon={<Repeat size={14} />}>
-              Retry Payout
-            </Button>
-          </Popconfirm>
-        )}
-      </Space>
     </>
   );
 };
@@ -523,11 +583,7 @@ const DetailDrawerModal = ({ open, onClose, payout, isLoading, isMobile, onRetry
         {isLoading ? (
           <AdminDrawerContentSkeleton />
         ) : (
-          <PayoutDetailContent
-            payout={payout}
-            isMobile={isMobile}
-            onRetry={onRetry}
-          />
+          <PayoutDetailContent payout={payout} isMobile={isMobile} />
         )}
       </DrawerContent>
     </DrawerContentContainer>
@@ -538,6 +594,47 @@ const DetailDrawerModal = ({ open, onClose, payout, isLoading, isMobile, onRetry
     ? `${formatCurrency(payout.amount)} · ${payout.business_name || "Payout"}`
     : `Payout${payout?.id ? ` #${payout.id}` : ""}`;
 
+  const stripeTransferUrl =
+    hasPayout && payout.stripe_transfer_id
+      ? `https://dashboard.stripe.com/transfers/${payout.stripe_transfer_id}`
+      : null;
+
+  const drawerFooter =
+    hasPayout && (stripeTransferUrl || payout.status === "failed") ? (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 10,
+          flexWrap: "wrap",
+          width: "100%",
+        }}
+      >
+        {stripeTransferUrl && (
+          <Button
+            icon={<ExternalLink size={14} />}
+            href={stripeTransferUrl}
+            target="_blank"
+          >
+            View on Stripe
+          </Button>
+        )}
+        {payout.status === "failed" && (
+          <Popconfirm
+            title="Retry this payout?"
+            description="This will re-queue the payout for the next automatic run."
+            onConfirm={() => onRetry(payout.id)}
+            okText="Yes, Retry"
+            cancelText="Cancel"
+          >
+            <Button danger icon={<Repeat size={14} />}>
+              Retry payout
+            </Button>
+          </Popconfirm>
+        )}
+      </div>
+    ) : null;
+
   return (
     <ConfigProvider theme={appTheme}>
       <AdminResponsiveDrawer
@@ -546,7 +643,8 @@ const DetailDrawerModal = ({ open, onClose, payout, isLoading, isMobile, onRetry
         title={drawerTitle}
         titleIcon={<DollarSign size={18} />}
         isMobile={isMobile}
-        width="680px"
+        width="min(760px, 96vw)"
+        footer={drawerFooter}
       >
         {renderDrawerContent()}
       </AdminResponsiveDrawer>
@@ -605,6 +703,11 @@ const MobilePayoutItem = ({ payout, onViewDetails }) => (
 const TRIGGER_MANUAL_PAYOUT_PERM = "quickstart.trigger_manual_payout";
 
 const PayoutsList = () => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const payoutDeepLinkLastIdRef = useRef("");
+
   const { user } = useAuth();
   const canTriggerManualPayout = (user?.permissions || []).includes(
     TRIGGER_MANUAL_PAYOUT_PERM
@@ -624,7 +727,6 @@ const PayoutsList = () => {
     payouts_pending: 0,
     payouts_failed: 0,
     businesses_paid_count: 0,
-    average_payout_amount: 0,
   });
 
   const [filterParams, setFilterParams] = useState({
@@ -741,8 +843,8 @@ const PayoutsList = () => {
     fetchDashboardStats(filterParams);
   };
 
-  const showPayoutDetails = async (payout) => {
-    if (detailDrawerOpen) return;
+  const showPayoutDetails = useCallback(async (payout) => {
+    if (!payout?.id) return;
     setDetailDrawerOpen(true);
     setDetailsLoading(true);
     setSelectedPayout(payout);
@@ -759,7 +861,21 @@ const PayoutsList = () => {
     } finally {
       setDetailsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const rawId = searchParams.get("payout");
+    if (!rawId) {
+      payoutDeepLinkLastIdRef.current = "";
+      return;
+    }
+    if (payoutDeepLinkLastIdRef.current === rawId) return;
+    const payoutId = parseInt(rawId, 10);
+    if (Number.isNaN(payoutId)) return;
+    payoutDeepLinkLastIdRef.current = rawId;
+    showPayoutDetails({ id: payoutId });
+    router.replace(pathname || "/admin/payouts", { scroll: false });
+  }, [searchParams, router, pathname, showPayoutDetails]);
 
   const handleExportData = async () => {
     message.loading({ content: "Preparing export...", key: "export" });
@@ -831,6 +947,11 @@ const PayoutsList = () => {
     }
   };
 
+  const statsPeriodBadge =
+    filterParams.startDate && filterParams.endDate
+      ? `${filterParams.startDate.format("MMM D")} – ${filterParams.endDate.format("MMM D, YYYY")}`
+      : "Period";
+
   const statCardsData = [
     {
       title: "Total Paid Out",
@@ -838,31 +959,28 @@ const PayoutsList = () => {
       value: dashboardStats.total_paid_out,
       color: colors.success,
       isCurrency: true,
+      periodBadge: statsPeriodBadge,
     },
     {
       title: "Payouts Pending",
       icon: Clock,
       value: dashboardStats.payouts_pending,
       color: colors.warning,
+      periodBadge: statsPeriodBadge,
     },
     {
       title: "Failed Payouts",
       icon: AlertCircle,
       value: dashboardStats.payouts_failed,
       color: colors.error,
+      periodBadge: statsPeriodBadge,
     },
     {
       title: "Businesses Paid",
       icon: Building,
       value: dashboardStats.businesses_paid_count,
       color: colors.info,
-    },
-    {
-      title: "Avg. Payout Amount",
-      icon: TrendingUp,
-      value: dashboardStats.average_payout_amount,
-      color: "#8b5cf6",
-      isCurrency: true,
+      periodBadge: statsPeriodBadge,
     },
   ];
 
@@ -1020,15 +1138,18 @@ const PayoutsList = () => {
           </Text>
         </div>
 
-        <AdminMetricCards
-          cards={statCardsData.map((card) => ({
-            ...card,
-            minimumFractionDigits: card.isCurrency ? 2 : undefined,
-            maximumFractionDigits: card.isCurrency ? 2 : undefined,
-          }))}
-          loading={statsLoading}
-          isReadyForAnimation={isReadyForAnimation}
-        />
+        {statsLoading ? (
+          <AdminMetricCardsSkeleton count={statCardsData.length} />
+        ) : (
+          <AdminMetricCards
+            cards={statCardsData.map((card) => ({
+              ...card,
+              minimumFractionDigits: card.isCurrency ? 2 : undefined,
+              maximumFractionDigits: card.isCurrency ? 2 : undefined,
+            }))}
+            isReadyForAnimation={isReadyForAnimation}
+          />
+        )}
 
         <Divider />
 
@@ -1093,7 +1214,7 @@ const PayoutsList = () => {
               )}
             </div>
           ) : loading ? (
-            <AdminTableSkeleton rows={8} />
+            <AdminTableSkeleton rows={8} columns={7} />
           ) : (
             <StyledTable
               columns={columns}
@@ -1101,7 +1222,7 @@ const PayoutsList = () => {
               rowKey="id"
               pagination={{
                 ...pagination,
-                showSizeChanger: true,
+                showSizeChanger: false,
                 showQuickJumper: true,
                 showTotal: (total, range) =>
                   `${range[0]}-${range[1]} of ${total} payouts`,

@@ -826,6 +826,8 @@ const BusinessListings = () => {
     category: "all",
     status: "all",
     featured: false,
+    province: undefined,
+    verification_status: undefined,
   });
 
   const [pagination, setPagination] = useState({
@@ -867,6 +869,10 @@ const BusinessListings = () => {
           status:
             currentFilters.status === "all" ? undefined : currentFilters.status,
           featured: currentFilters.featured ? true : undefined,
+          ...(currentFilters.province && { province: currentFilters.province }),
+          ...(currentFilters.verification_status && {
+            verification_status: currentFilters.verification_status,
+          }),
           ordering:
             currentSorter.columnKey && currentSorter.order
               ? `${currentSorter.order === "descend" ? "-" : ""}${
@@ -912,6 +918,8 @@ const BusinessListings = () => {
     filterParams.category,
     filterParams.status,
     filterParams.featured,
+    filterParams.province,
+    filterParams.verification_status,
     pagination.current,
     pagination.pageSize,
     sortedInfo,
@@ -1104,14 +1112,18 @@ const BusinessListings = () => {
         const google = b.google_review_count || 0;
         const total = platform + google;
         return (
-          <Space>
-            <Star size={15} fill="#f59e0b" color="#f59e0b" />
-            <span>{rating || 0}</span>
-            <Text type="secondary">
-              ({total} {total === 1 ? "review" : "reviews"}
-              {google > 0 ? `, ${platform} platform + ${google} Google` : ""})
-            </Text>
-          </Space>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Star size={15} fill="#f59e0b" color="#f59e0b" />
+              <Text strong>{rating || 0}</Text>
+              <Text type="secondary">({total})</Text>
+            </div>
+            {google > 0 && (
+              <Text type="secondary" style={{ fontSize: 12, display: "block", marginTop: 2 }}>
+                {platform} platform, {google} Google
+              </Text>
+            )}
+          </div>
         );
       },
     },
@@ -1119,13 +1131,19 @@ const BusinessListings = () => {
       title: "Status",
       key: "status",
       dataIndex: "status",
-      width: 150,
+      width: 170,
       render: (_, b) => (
         <Space direction="vertical" size={2}>
-          <Badge
-            status={b.isActive ? "success" : "error"}
-            text={b.isActive ? "Active" : "Inactive"}
-          />
+          {b.verificationStatus === "pending" && (
+            <Tag color="blue">Pending Review</Tag>
+          )}
+          {!b.isActive ? (
+            <Tag color="error">Closed</Tag>
+          ) : b.has_active_schedules ? (
+            <Tag color="success">Open</Tag>
+          ) : (
+            <Tag color="warning">No Schedules</Tag>
+          )}
           {b.featured && (
             <FeaturedTag color="gold">
               <Award size={12} />
@@ -1133,7 +1151,11 @@ const BusinessListings = () => {
             </FeaturedTag>
           )}
           {b.verificationStatus === "verified" && (
-            <Tag color="success" icon={<Check size={12} />}>
+            <Tag
+              color="success"
+              icon={<Check size={12} />}
+              style={{ display: "inline-flex", alignItems: "center" }}
+            >
               Verified
             </Tag>
           )}
@@ -1179,10 +1201,18 @@ const BusinessListings = () => {
               </Text>
             </div>
           </Space>
-          <Badge
-            status={b.isActive ? "success" : "error"}
-            text={b.isActive ? "Active" : "Inactive"}
-          />
+          <Space direction="vertical" size={4} align="end">
+            {b.verificationStatus === "pending" && (
+              <Tag color="blue">Pending</Tag>
+            )}
+            {!b.isActive ? (
+              <Tag color="error">Closed</Tag>
+            ) : b.has_active_schedules ? (
+              <Tag color="success">Open</Tag>
+            ) : (
+              <Tag color="warning">No Schedules</Tag>
+            )}
+          </Space>
         </div>
         <MobileCardRow>
           <MobileCardLabel>Owner</MobileCardLabel>
@@ -1192,10 +1222,20 @@ const BusinessListings = () => {
         </MobileCardRow>
         <MobileCardRow>
           <MobileCardLabel>Rating</MobileCardLabel>
-          <Space>
-            <Star size={14} fill="#f59e0b" color="#f59e0b" />
-            {b.rating || 0} ({b.review_count || 0})
-          </Space>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Star size={14} fill="#f59e0b" color="#f59e0b" />
+              <Text strong>{b.rating || 0}</Text>
+              <Text type="secondary">
+                ({(b.review_count || 0) + (b.google_review_count || 0)})
+              </Text>
+            </div>
+            {(b.google_review_count || 0) > 0 && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {b.review_count || 0} platform, {b.google_review_count} Google
+              </Text>
+            )}
+          </div>
         </MobileCardRow>
         <div
           style={{
@@ -1246,11 +1286,7 @@ const BusinessListings = () => {
           </ActionButtonsContainer>
         </DashboardHeader>
 
-        <TableSection
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
+        <TableSection>
           <TableHeader>
             <TableTitle>
               <Building /> All Businesses
@@ -1285,6 +1321,7 @@ const BusinessListings = () => {
                 placeholder="Province"
                 allowClear
                 style={{ width: isMobile ? "100%" : 130 }}
+                value={filterParams.province}
                 onChange={(val) => handleFilterChange({ province: val })}
               >
                 {["AB","BC","MB","NB","NL","NS","ON","PE","QC","SK"].map(p => (
@@ -1295,7 +1332,10 @@ const BusinessListings = () => {
                 placeholder="Verification"
                 allowClear
                 style={{ width: isMobile ? "100%" : 150 }}
-                onChange={(val) => handleFilterChange({ verification_status: val })}
+                value={filterParams.verification_status}
+                onChange={(val) =>
+                  handleFilterChange({ verification_status: val })
+                }
               >
                 <Option value="verified">Verified</Option>
                 <Option value="pending">Pending</Option>

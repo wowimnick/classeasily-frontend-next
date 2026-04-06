@@ -392,7 +392,7 @@ export default function EmailMarketingHub() {
         </Paragraph>
         <Paragraph type="secondary" style={{ fontSize: 13 }}>
           Opens the plan picker on{" "}
-          <Link href="/business/dashboard/settings?tab=plan-billing">Plans &amp; billing</Link>
+          <Link href="/business/dashboard/settings?tab=billing&email_marketing=1">Plans &amp; billing</Link>
           {tiers.length === 0
             ? " (set Stripe price IDs in the backend to enable checkout)."
             : "."}

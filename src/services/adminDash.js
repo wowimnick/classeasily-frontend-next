@@ -104,9 +104,11 @@ export const businessManagementService = {
   /**
    * Get platform metrics for business dashboard
    */
-  getPlatformMetrics: async () => {
+  getPlatformMetrics: async (params = {}) => {
     try {
-      const response = await axiosInstance.get("/admin/businesses/metrics/");
+      const response = await axiosInstance.get("/admin/businesses/metrics/", {
+        params,
+      });
       return {
         success: true,
         data: response.data,
@@ -318,6 +320,19 @@ export const businessManagementService = {
         success: false,
         error: "Failed to export businesses data",
       };
+    }
+  },
+};
+
+/** Public search logging (AllowAny + throttle on backend). */
+export const publicAnalyticsService = {
+  logSearch: async (payload = {}) => {
+    try {
+      await axiosInstance.post("/search-log/", payload);
+      return { success: true };
+    } catch (error) {
+      console.warn("logSearch failed:", error?.response?.data || error?.message);
+      return { success: false };
     }
   },
 };
@@ -1821,9 +1836,11 @@ export const paymentService = {
   /**
    * Get payment statistics for dashboard
    */
-  getPaymentStats: async () => {
+  getPaymentStats: async (params = {}) => {
     try {
-      const response = await axiosInstance.get("/admin/payments/stats/");
+      const response = await axiosInstance.get("/admin/payments/stats/", {
+        params,
+      });
       return {
         success: true,
         data: response.data,
@@ -2562,6 +2579,25 @@ export const supportTicketService = {
       return {
         success: false,
         error: error.response?.data?.detail || "Failed to assign ticket",
+      };
+    }
+  },
+
+  setTicketPriority: async (ticketId, payload) => {
+    try {
+      const response = await axiosInstance.post(
+        `/admin/support-tickets/${ticketId}/set_priority/`,
+        payload
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(`Error updating priority for ticket ${ticketId}:`, error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail ||
+          error.response?.data?.error ||
+          "Failed to update priority",
       };
     }
   },

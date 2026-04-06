@@ -7,6 +7,7 @@ import React, {
   useRef,
   forwardRef,
   useImperativeHandle,
+  useMemo,
 } from "react";
 import styled from "styled-components";
 import {
@@ -42,6 +43,10 @@ import MobileBookingHistory from "./MobileBookingHistory";
 import BookingDetailsDrawer from "./BookingDetailsDrawer";
 import { LordIcon } from "@/services/ReactUtils";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
+import {
+  MetricPeriodBadge,
+  formatDayjsRangeBadge,
+} from "../../shared/MetricPeriodBadge";
 
 const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
@@ -592,6 +597,11 @@ const BookingHistory = forwardRef((props, ref) => {
     }
   }, []);
 
+  const metricsPeriodLabel = useMemo(
+    () => formatDayjsRangeBadge(dateRange?.[0], dateRange?.[1]),
+    [dateRange],
+  );
+
   return (
     <DashboardWrapper ref={mainContentRef} $noPadding={noWrapperPadding}>
         <DashboardHeader>
@@ -616,6 +626,7 @@ const BookingHistory = forwardRef((props, ref) => {
                     <IconContainer background="rgba(16, 185, 129, 0.1)">
                       <UsersIcon size={20} color={colors.success} />
                     </IconContainer>
+                    <MetricPeriodBadge>{metricsPeriodLabel}</MetricPeriodBadge>
                   </StatCardHeader>
                   <StatLabel>Completed Guest Spots</StatLabel>
                 </div>
@@ -644,6 +655,7 @@ const BookingHistory = forwardRef((props, ref) => {
                     <IconContainer background="rgba(239, 68, 68, 0.1)">
                       <UsersIcon size={20} color={colors.error} />
                     </IconContainer>
+                    <MetricPeriodBadge>{metricsPeriodLabel}</MetricPeriodBadge>
                   </StatCardHeader>
                   <StatLabel>Cancelled Guest Spots</StatLabel>
                 </div>

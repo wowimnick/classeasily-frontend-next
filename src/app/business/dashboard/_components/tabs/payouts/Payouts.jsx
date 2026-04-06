@@ -41,6 +41,7 @@ import { businessService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
 import { useDashboard } from "../../DashboardContext";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
+import { MetricPeriodBadge } from "../../shared/MetricPeriodBadge";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 
 const { Title, Text, Paragraph, Link } = Typography;
@@ -1433,6 +1434,7 @@ const Payouts = () => {
       background: "rgba(59, 130, 246, 0.1)",
       suffix: summary?.currency,
       footer: "Funds held for all future experiences.",
+      periodBadge: "Current",
     },
     {
       key: "next_payout",
@@ -1445,6 +1447,7 @@ const Payouts = () => {
       tooltip:
         "Payouts for completed bookings are processed daily. Funds typically arrive in your bank account in 1-3 business days.",
       footer: "Payouts are processed daily.",
+      periodBadge: "Schedule",
     },
     {
       key: "last_payout",
@@ -1455,6 +1458,7 @@ const Payouts = () => {
       background: "rgba(16, 185, 129, 0.1)",
       suffix: summary?.currency,
       footer: "Most recent successful payout.",
+      periodBadge: "Latest",
     },
     {
       key: "payout_status",
@@ -1473,6 +1477,7 @@ const Payouts = () => {
         : "rgba(239, 68, 68, 0.1)",
       isText: true,
       footer: "Your account's payout eligibility.",
+      periodBadge: "Current",
     },
   ];
 
@@ -1523,6 +1528,7 @@ const Payouts = () => {
                       >
                         {stat.icon}
                       </IconContainer>
+                      <MetricPeriodBadge>{stat.periodBadge}</MetricPeriodBadge>
                     </StatCardHeader>
                     <StatLabel>{stat.title}</StatLabel>
                   </div>

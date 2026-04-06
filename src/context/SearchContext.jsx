@@ -4,6 +4,53 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import debounce from "lodash/debounce";
 import { useRouter } from "next/navigation"; // Removed usePathname, useSearchParams
 import { LordIcon } from "@/services/ReactUtils";
+import { publicAnalyticsService } from "@/services/adminDash";
+
+function getSearchLogSessionId() {
+  if (typeof window === "undefined") return "";
+  try {
+    let id = sessionStorage.getItem("ce_search_session");
+    if (!id) {
+      id = `s_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      sessionStorage.setItem("ce_search_session", id);
+    }
+    return id;
+  } catch {
+    return "";
+  }
+}
+
+/** Fire-and-forget analytics when user runs a location-based explore search. */
+function logExploreSearchFromParams(params, { searchTerm, selectedLocation }) {
+  let keyword = "";
+  if (typeof window !== "undefined" && window.location.pathname === "/explore") {
+    const cur = new URLSearchParams(window.location.search);
+    keyword =
+      cur.get("keyword") ||
+      cur.get("collection") ||
+      cur.get("category") ||
+      "";
+  }
+  const locStr = params.get("location") || "";
+  const lat = params.get("lat");
+  const lng = params.get("lng");
+  let province = "";
+  const m = locStr.match(/\b([A-Z]{2})\s*$/);
+  if (m) province = m[1];
+  else if (selectedLocation?.displayName) {
+    const m2 = String(selectedLocation.displayName).match(/\b([A-Z]{2})\s*$/);
+    if (m2) province = m2[1];
+  }
+  void publicAnalyticsService.logSearch({
+    query: String(keyword || searchTerm || "").trim().slice(0, 255),
+    location: locStr.slice(0, 255),
+    province: province.slice(0, 50),
+    latitude: lat != null && lat !== "" ? Number.parseFloat(lat) : null,
+    longitude: lng != null && lng !== "" ? Number.parseFloat(lng) : null,
+    session_id: getSearchLogSessionId().slice(0, 100),
+    results_count: 0,
+  });
+}
 
 const SearchContext = createContext();
 
@@ -52,7 +99,8 @@ export const ICON_PALETTE = [
   { bg: "#faf5ff", icon: "#9333ea" }, // Purple
 ];
 
-// Toronto / GTA towns for full-screen location presets (mobile drawer + desktop banner)
+// Toronto / GTA towns for full-screen location presets (mobile drawer + desktop banner).
+// Keep displayName values in sync with backend quickstart/constants/search_location_presets.py (admin search analytics).
 export const GTA_PRESETS = [
   { name: "Toronto", displayName: "Toronto, ON", description: "Downtown & neighbourhoods", coords: { lat: 43.6532, lng: -79.3832 }, provinceSlug: "ontario", citySlug: "toronto" },
   { name: "Mississauga", displayName: "Mississauga, ON", description: "West of Toronto", coords: { lat: 43.589, lng: -79.6441 }, provinceSlug: "ontario", citySlug: "mississauga" },
@@ -274,6 +322,7 @@ export const SearchProvider = ({ children }) => {
 
       const newUrl = `/explore?${params.toString()}`;
 
+      logExploreSearchFromParams(params, { searchTerm, selectedLocation });
       setIsSearching(true);
       router.push(newUrl);
 
@@ -293,6 +342,7 @@ export const SearchProvider = ({ children }) => {
 
     const newUrl = `/explore?${params.toString()}`;
 
+    logExploreSearchFromParams(params, { searchTerm, selectedLocation });
     // Trigger global loading state immediately
     setIsSearching(true);
     router.push(newUrl);

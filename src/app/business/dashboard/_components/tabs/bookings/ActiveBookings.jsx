@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import styled from "styled-components";
 import {
   Input,
@@ -39,6 +39,10 @@ import BookingDetailsDrawer from "./BookingDetailsDrawer";
 import RescheduleBookingModal from "./RescheduleBookingModal";
 import { LordIcon } from "@/services/ReactUtils";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
+import {
+  MetricPeriodBadge,
+  formatDayjsRangeBadge,
+} from "../../shared/MetricPeriodBadge";
 
 const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
@@ -622,6 +626,11 @@ const ActiveBookings = ({
     }
   }, []);
 
+  const metricsPeriodLabel = useMemo(
+    () => formatDayjsRangeBadge(dateRange?.[0], dateRange?.[1]),
+    [dateRange],
+  );
+
   return (
     <DashboardWrapper $noPadding={noWrapperPadding}>
         <DashboardHeader>
@@ -646,6 +655,7 @@ const ActiveBookings = ({
                     <IconContainer background="rgba(59, 130, 246, 0.1)">
                       <UsersIcon size={20} color={colors.info} />
                     </IconContainer>
+                    <MetricPeriodBadge>{metricsPeriodLabel}</MetricPeriodBadge>
                   </StatCardHeader>
                   <StatLabel>Active Guest Bookings</StatLabel>
                 </div>

@@ -105,6 +105,7 @@ const TableSection = styled.div`
   background: white;
   border-radius: 16px;
   border: 1px solid ${colors.border};
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   position: relative;
   overflow: hidden;
 `;
@@ -153,7 +154,7 @@ const FilterRow = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px;
+  padding: 20px 24px;
   border-bottom: 1px solid ${colors.border};
   flex-wrap: wrap;
 `;
@@ -701,7 +702,7 @@ export default function GlobalDiscountsManagement() {
               rowKey="id"
               columns={columns}
               dataSource={filteredList}
-              pagination={{ pageSize: 10, showSizeChanger: true, size: "small" }}
+              pagination={{ pageSize: 10, showSizeChanger: false, size: "small" }}
               loading={loading}
               locale={{ emptyText: <EmptyStateContainer><Empty description="No global discounts" /></EmptyStateContainer> }}
               scroll={{ x: 800 }}

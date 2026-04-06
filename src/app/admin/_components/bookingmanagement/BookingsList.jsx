@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import styled from "styled-components";
 
 import dayjs from "dayjs";
@@ -68,7 +69,11 @@ import { theme as appTheme } from "@/components/theme";
 import { LordIcon } from "@/services/ReactUtils";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
-import { AdminTableSkeleton, AdminDrawerContentSkeleton } from "../shared/AdminSkeletons";
+import {
+  AdminTableSkeleton,
+  AdminMetricCardsSkeleton,
+  SkeletonBlock,
+} from "../shared/AdminSkeletons";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -624,7 +629,7 @@ const DetailDrawerContent = ({
   );
 
   if (isLoading) {
-    return <AdminDrawerContentSkeleton />;
+    return <BookingDrawerSkeleton isMobile={isMobile} />;
   }
 
   const mainContent = (
@@ -810,6 +815,23 @@ const DetailDrawerContent = ({
                   </InfoItem>
                   <InfoItem>
                     <InfoIcon>
+                      <CreditCard />
+                    </InfoIcon>
+                    <InfoContent>
+                      <InfoLabel>Stripe processing fee (est.)</InfoLabel>
+                      <InfoValue>
+                        −
+                        {formatCurrency(
+                          Math.max(
+                            0,
+                            Number(payment.amount || 0) * 0.029 + 0.3
+                          )
+                        )}
+                      </InfoValue>
+                    </InfoContent>
+                  </InfoItem>
+                  <InfoItem>
+                    <InfoIcon>
                       <TrendingUp />
                     </InfoIcon>
                     <InfoContent>
@@ -817,6 +839,63 @@ const DetailDrawerContent = ({
                       <InfoValue>
                         {formatCurrency(payment.net_payout_amount)}
                       </InfoValue>
+                    </InfoContent>
+                  </InfoItem>
+                  <InfoItem style={{ gridColumn: "1 / -1" }}>
+                    <InfoContent>
+                      {(() => {
+                        const gross = Number(payment.amount || 0);
+                        const plat = Number(payment.platform_fee_amount || 0);
+                        const stripeEst = Math.max(0, gross * 0.029 + 0.3);
+                        const net = Number(payment.net_payout_amount || 0);
+                        const line = (label, val, neg) => (
+                          <div
+                            key={label}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              gap: 16,
+                            }}
+                          >
+                            <span style={{ color: colors.textSecondary }}>{label}</span>
+                            <span style={{ color: neg ? colors.error : colors.textPrimary }}>
+                              {neg ? "−" : ""}
+                              {formatCurrency(neg ? Math.abs(val) : val)}
+                            </span>
+                          </div>
+                        );
+                        return (
+                          <div
+                            style={{
+                              fontSize: 13,
+                              lineHeight: 1.75,
+                              background: "#f8fafc",
+                              padding: 12,
+                              borderRadius: 8,
+                              border: `1px solid ${colors.border}`,
+                              fontFamily:
+                                "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                            }}
+                          >
+                            {line("Gross amount", gross, false)}
+                            {line("Platform fee", plat, true)}
+                            {line("Stripe fee (est.)", stripeEst, true)}
+                            <div
+                              style={{
+                                borderTop: `1px solid ${colors.border}`,
+                                marginTop: 8,
+                                paddingTop: 8,
+                                display: "flex",
+                                justifyContent: "space-between",
+                                fontWeight: 600,
+                              }}
+                            >
+                              <span>Net to business</span>
+                              <span>{formatCurrency(net)}</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </InfoContent>
                   </InfoItem>
                   <InfoItem>
@@ -967,51 +1046,61 @@ const DetailDrawerContent = ({
   );
 };
 
+const BookingDrawerSkeleton = ({ isMobile }) => (
+  <div style={{ padding: 16, background: colors.lightBg }}>
+    <div style={{ display: "flex", gap: 16, flexDirection: isMobile ? "column" : "row" }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <SkeletonBlock style={{ height: 14, width: 160, marginBottom: 16 }} />
+        <SkeletonBlock style={{ height: 220, width: "100%", marginBottom: 16 }} />
+        <SkeletonBlock style={{ height: 14, width: 200, marginBottom: 12 }} />
+        <SkeletonBlock style={{ height: 140, width: "100%", marginBottom: 16 }} />
+        <SkeletonBlock style={{ height: 14, width: 140, marginBottom: 12 }} />
+        <SkeletonBlock style={{ height: 180, width: "100%", marginBottom: 16 }} />
+        <SkeletonBlock style={{ height: 14, width: 120, marginBottom: 12 }} />
+        <SkeletonBlock style={{ height: 160, width: "100%" }} />
+      </div>
+      {!isMobile && (
+        <div style={{ width: 260, flexShrink: 0 }}>
+          <SkeletonBlock style={{ height: 100, width: "100%", marginBottom: 16 }} />
+          <SkeletonBlock style={{ height: 120, width: "100%" }} />
+        </div>
+      )}
+    </div>
+  </div>
+);
+
 const DetailDrawerModal = ({ open, onClose, booking, isLoading, isMobile, onOpenCancelModal, onOpenRefundModal, isActionLoading }) => {
   if (!booking) return null;
 
   const { payment } = booking;
 
-  const renderDrawerContent = () => (
-    <>
-      <DrawerScrollContent>
-        <DetailDrawerContent
-          booking={booking}
-          isLoading={isLoading}
-          isMobile={isMobile}
-          onOpenCancelModal={onOpenCancelModal}
-          onOpenRefundModal={onOpenRefundModal}
-          isActionLoading={isActionLoading}
-        />
-      </DrawerScrollContent>
-
-      <DrawerFooter>
-        <Button
-          danger
-          icon={<XCircle size={16} />}
-          onClick={onOpenCancelModal}
-          disabled={
-            booking.status === "cancelled" ||
-            booking.status === "completed" ||
-            isActionLoading
-          }
-        >
-          Cancel Booking
-        </Button>
-        <Button
-          type="primary"
-          icon={<DollarSign size={16} />}
-          onClick={onOpenRefundModal}
-          disabled={
-            !payment ||
-            !(payment.available_refund_amount > 0) ||
-            isActionLoading
-          }
-        >
-          Process Refund
-        </Button>
-      </DrawerFooter>
-    </>
+  const drawerFooter = (
+    <DrawerFooter>
+      <Button
+        danger
+        icon={<XCircle size={16} />}
+        onClick={onOpenCancelModal}
+        disabled={
+          booking.status === "cancelled" ||
+          booking.status === "completed" ||
+          isActionLoading
+        }
+      >
+        Cancel Booking
+      </Button>
+      <Button
+        type="primary"
+        icon={<DollarSign size={16} />}
+        onClick={onOpenRefundModal}
+        disabled={
+          !payment ||
+          !(payment.available_refund_amount > 0) ||
+          isActionLoading
+        }
+      >
+        Process Refund
+      </Button>
+    </DrawerFooter>
   );
 
   return (
@@ -1022,8 +1111,18 @@ const DetailDrawerModal = ({ open, onClose, booking, isLoading, isMobile, onOpen
       titleIcon={<Hash size={20} style={{ color: colors.primary }} />}
       isMobile={isMobile}
       width="860px"
+      footer={drawerFooter}
     >
-      {renderDrawerContent()}
+      <DrawerScrollContent>
+        <DetailDrawerContent
+          booking={booking}
+          isLoading={isLoading}
+          isMobile={isMobile}
+          onOpenCancelModal={onOpenCancelModal}
+          onOpenRefundModal={onOpenRefundModal}
+          isActionLoading={isActionLoading}
+        />
+      </DrawerScrollContent>
     </AdminResponsiveDrawer>
   );
 };
@@ -1146,6 +1245,8 @@ const MobileBookingItem = ({ booking, onViewDetails }) => (
 );
 
 const BookingsList = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -1197,6 +1298,7 @@ const BookingsList = () => {
   const searchInputRef = useRef(null);
   const abortControllerRef = useRef(null);
   const refreshButtonRef = useRef(null);
+  const bookingDeepLinkLastIdRef = useRef("");
   const screens = useBreakpoint();
 
   // Handle window resize
@@ -1292,10 +1394,13 @@ const BookingsList = () => {
     setStatsLoading(true);
     setIsReadyForAnimation(false);
     try {
-      const params = {
-        start_date: filterParams.startDate?.format("YYYY-MM-DD"),
-        end_date: filterParams.endDate?.format("YYYY-MM-DD"),
-      };
+      const params =
+        filterParams.startDate && filterParams.endDate
+          ? {
+              start_date: filterParams.startDate.format("YYYY-MM-DD"),
+              end_date: filterParams.endDate.format("YYYY-MM-DD"),
+            }
+          : { all_time: true };
       const response = await adminBookingService.getBookingAnalytics(params);
       if (response.success && response.data) {
         setDashboardStats(response.data);
@@ -1350,6 +1455,20 @@ const BookingsList = () => {
       setDetailsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const rawId = searchParams.get("id");
+    if (!rawId) {
+      bookingDeepLinkLastIdRef.current = "";
+      return;
+    }
+    if (bookingDeepLinkLastIdRef.current === rawId) return;
+    const bookingId = parseInt(rawId, 10);
+    if (Number.isNaN(bookingId)) return;
+    bookingDeepLinkLastIdRef.current = rawId;
+    showBookingDetails({ id: bookingId });
+    router.replace("/admin/all-bookings", { scroll: false });
+  }, [searchParams, router]);
 
   const handleOpenCancelModal = () => setIsCancelModalVisible(true);
 
@@ -1461,7 +1580,13 @@ const BookingsList = () => {
   const totalRevenue = dashboardStats.total_confirmed_revenue ?? dashboardStats.confirmed_bookings * Number(dashboardStats.average_booking_value);
   const platformFees = dashboardStats.total_platform_fees ?? totalRevenue * 0.08;
   const stripeFees = dashboardStats.total_stripe_fees ?? totalRevenue * 0.029;
-  const netRevenue = totalRevenue - platformFees - stripeFees;
+  const statsRangeLabel =
+    filterParams.startDate && filterParams.endDate
+      ? `${filterParams.startDate.format("MMM D, YYYY")} – ${filterParams.endDate.format("MMM D, YYYY")}`
+      : "All time";
+
+  const metricsPeriodBadge =
+    filterParams.startDate && filterParams.endDate ? "Period" : "All-time";
 
   const statCardsData = [
     {
@@ -1472,6 +1597,7 @@ const BookingsList = () => {
       footer: "vs last period",
       color: colors.info,
       isCurrency: false,
+      periodBadge: metricsPeriodBadge,
     },
     {
       title: "Confirmed",
@@ -1480,6 +1606,7 @@ const BookingsList = () => {
       footer: `${dashboardStats.total_bookings > 0 ? ((dashboardStats.confirmed_bookings / dashboardStats.total_bookings) * 100).toFixed(0) : "0"}% of total`,
       color: colors.success,
       isCurrency: false,
+      periodBadge: metricsPeriodBadge,
     },
     {
       title: "Cancelled",
@@ -1488,6 +1615,7 @@ const BookingsList = () => {
       footer: `${dashboardStats.cancellation_rate?.toFixed(1) ?? "0"}% cancellation rate`,
       color: colors.error,
       isCurrency: false,
+      periodBadge: metricsPeriodBadge,
     },
     {
       title: "Pending",
@@ -1496,6 +1624,7 @@ const BookingsList = () => {
       footer: "Awaiting confirmation",
       color: colors.warning,
       isCurrency: false,
+      periodBadge: metricsPeriodBadge,
     },
     {
       title: "Gross Revenue",
@@ -1505,14 +1634,7 @@ const BookingsList = () => {
       footer: "Total GMV",
       color: "#8b5cf6",
       isCurrency: true,
-    },
-    {
-      title: "Net Revenue",
-      icon: TrendingUp,
-      value: netRevenue,
-      footer: "After all fees",
-      color: colors.success,
-      isCurrency: true,
+      periodBadge: metricsPeriodBadge,
     },
     {
       title: "Platform Fees",
@@ -1521,14 +1643,16 @@ const BookingsList = () => {
       footer: "Collected by platform",
       color: colors.info,
       isCurrency: true,
+      periodBadge: metricsPeriodBadge,
     },
     {
       title: "Stripe Fees",
       icon: CreditCard,
       value: stripeFees,
-      footer: "Payment processing",
+      footer: "Payment processing (est.)",
       color: colors.textSecondary,
       isCurrency: true,
+      periodBadge: metricsPeriodBadge,
     },
   ];
 
@@ -1699,7 +1823,10 @@ const BookingsList = () => {
               marginBottom: "8px",
             }}
           >
-            <BarChart2 size={20} color={colors.primary} /> Period Overview
+            <BarChart2 size={20} color={colors.primary} />{" "}
+            {filterParams.startDate && filterParams.endDate
+              ? "Period overview"
+              : "All-time overview"}
           </Text>
           <Text
             style={{
@@ -1709,23 +1836,23 @@ const BookingsList = () => {
               marginBottom: "16px",
             }}
           >
-            Key operational metrics for the selected date range.{" "}
-            <Text strong>
-              {filterParams.startDate?.format("MMM D, YYYY")} -{" "}
-              {filterParams.endDate?.format("MMM D, YYYY")}
-            </Text>
+            Key operational metrics for the selected range.{" "}
+            <Text strong>{statsRangeLabel}</Text>
           </Text>
         </div>
 
-        <AdminMetricCards
-          cards={statCardsData.map((card) => ({
-            ...card,
-            minimumFractionDigits: card.isCurrency ? 0 : undefined,
-            maximumFractionDigits: card.isCurrency ? 0 : undefined,
-          }))}
-          loading={statsLoading}
-          isReadyForAnimation={isReadyForAnimation}
-        />
+        {statsLoading ? (
+          <AdminMetricCardsSkeleton count={7} />
+        ) : (
+          <AdminMetricCards
+            cards={statCardsData.map((card) => ({
+              ...card,
+              minimumFractionDigits: card.isCurrency ? 0 : undefined,
+              maximumFractionDigits: card.isCurrency ? 0 : undefined,
+            }))}
+            isReadyForAnimation={isReadyForAnimation}
+          />
+        )}
 
         <Divider />
 

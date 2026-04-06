@@ -63,6 +63,10 @@ import { revenueService, businessClassService } from "@/services/apiService";
 import { LordIcon } from "@/services/ReactUtils";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
+import {
+  MetricPeriodBadge,
+  formatDayjsRangeBadge,
+} from "../../shared/MetricPeriodBadge";
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -833,6 +837,11 @@ const Revenue = forwardRef((props, ref) => {
     },
   ];
 
+  const metricsPeriodLabel = useMemo(
+    () => formatDayjsRangeBadge(filterParams.startDate, filterParams.endDate),
+    [filterParams.startDate, filterParams.endDate],
+  );
+
   return (
     <DashboardWrapper ref={mainContentRef}>
         <DashboardBreadcrumb title="Revenue" />
@@ -956,6 +965,7 @@ const Revenue = forwardRef((props, ref) => {
                       >
                         {stat.icon}
                       </IconContainer>
+                      <MetricPeriodBadge>{metricsPeriodLabel}</MetricPeriodBadge>
                     </StatCardHeader>
                     <StatLabel>{stat.title}</StatLabel>
                   </div>

@@ -51,7 +51,7 @@ export default function MarketingFeatureUpsell({ title, bullets, minPlanLabel })
           </Button>
           <Text type="secondary" style={{ display: "block", marginTop: 12, fontSize: 13 }}>
             Or open{" "}
-            <Link href="/business/dashboard/settings?tab=plan-billing">Plans &amp; billing</Link> directly.
+            <Link href="/business/dashboard/settings?tab=billing">Plans &amp; billing</Link> directly.
           </Text>
         </div>
       </div>

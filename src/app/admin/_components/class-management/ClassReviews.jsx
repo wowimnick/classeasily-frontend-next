@@ -239,7 +239,7 @@ const DrawerTopBar = styled.div`
 const DrawerScrollBody = styled.div`
   flex: 1;
   overflow-y: auto;
-  background: ${colors.lightBg};
+  background: #fff;
 `;
 
 const DrawerHeaderSection = styled.div`
@@ -252,7 +252,7 @@ const DrawerHeaderSection = styled.div`
 `;
 
 const DrawerContent = styled.div`
-  padding: 20px 24px;
+  padding: 24px;
 `;
 
 const DrawerHeader = styled.div`
@@ -901,7 +901,7 @@ const ClassReviews = () => {
                 spinning: loading,
                 indicator: <GlobalLoaderWithInlineStyles />,
               }}
-              pagination={pagination}
+              pagination={{ ...pagination, showSizeChanger: false }}
               onChange={(p) => setPagination(p)}
               scroll={{ x: "max-content" }}
             />

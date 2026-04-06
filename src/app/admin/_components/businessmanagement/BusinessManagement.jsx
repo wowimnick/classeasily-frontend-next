@@ -1,8 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import React, { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import styled from "styled-components";
 import { Drawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
@@ -65,6 +64,7 @@ import {
   FileText,
   AlertTriangle,
   ExternalLink,
+  LogIn,
 } from "lucide-react";
 import {
   AreaChart,
@@ -78,19 +78,28 @@ import {
   PieChart,
   Pie,
   Cell,
+  BarChart,
+  Bar,
 } from "recharts";
-import { AdminCardSkeleton, AdminTableSkeleton, AdminDrawerContentSkeleton } from "../shared/AdminSkeletons";
+import {
+  AdminCardSkeleton,
+  AdminTableSkeleton,
+  AdminDrawerContentSkeleton,
+  AdminMetricCardsSkeleton,
+  AdminAreaChartSkeleton,
+  AdminPieChartSkeleton,
+  AdminHorizontalBarChartSkeleton,
+  AdminRankedListSkeleton,
+} from "../shared/AdminSkeletons";
 
-const CanadianDistribution = dynamic(() => import("./CanadianDistribution"), {
-  ssr: false,
-  loading: () => (
-    <div style={{ height: "100%", minHeight: 320, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <AdminCardSkeleton />
-    </div>
-  ),
-});
-
-import { businessManagementService, verificationService } from "@/services/adminDash"; // Adjust path
+import {
+  businessManagementService,
+  verificationService,
+  classManagementService,
+  userAdminService,
+} from "@/services/adminDash";
+import { useAuthStore } from "@/lib/auth-client";
+import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 import { theme as appTheme } from "@/components/theme"; // Adjust path
 import { businessClassService } from "@/services/apiService";
 import AdminMetricCards from "../shared/AdminMetricCards";
@@ -316,74 +325,6 @@ const MobileCardLabel = styled(Text)`
   font-weight: 500;
 `;
 
-// --- VAUL DRAWER STYLES ---
-const VaulOverlay = styled(Drawer.Overlay)`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 1049;
-  ${VAUL_OVERLAY_BACKDROP_BLUR}
-`;
-
-const VaulMobileContent = styled(Drawer.Content)`
-  background: white;
-  display: flex;
-  flex-direction: column;
-  border-radius: 24px 24px 0 0;
-  height: 90%;
-  max-height: 90vh;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1050;
-  outline: none;
-`;
-
-const VaulDesktopContent = styled(Drawer.Content)`
-  right: 8px;
-  top: 8px;
-  bottom: 8px;
-  position: fixed;
-  z-index: 1050;
-  outline: none;
-  width: 860px;
-  display: flex;
-  flex-direction: column;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: -4px 0 32px rgba(0,0,0,0.14), 0 4px 24px rgba(0,0,0,0.10);
-  background: white;
-  @media (max-width: 900px) {
-    width: 95vw;
-  }
-`;
-
-const DrawerHandle = styled.div`
-  width: 36px;
-  height: 4px;
-  background: rgba(0, 0, 0, 0.18);
-  border-radius: 2px;
-  margin: 12px auto 8px;
-  flex-shrink: 0;
-`;
-
-const DrawerHeaderBar = styled.div`
-  padding: 16px 24px;
-  border-bottom: 1px solid ${colors.border};
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  background: white;
-`;
-
-const DrawerBody = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  background: ${colors.lightBg};
-`;
-
 // --- VERIFICATION REVIEW DRAWER ---
 const VerifOverlay = styled(Drawer.Overlay)`
   position: fixed;
@@ -391,6 +332,15 @@ const VerifOverlay = styled(Drawer.Overlay)`
   background: rgba(0, 0, 0, 0.45);
   z-index: 1060;
   ${VAUL_OVERLAY_BACKDROP_BLUR}
+`;
+
+const VerifDrawerHandle = styled.div`
+  width: 36px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 2px;
+  margin: 12px auto 8px;
+  flex-shrink: 0;
 `;
 
 const VerifMobileShell = styled(Drawer.Content)`
@@ -626,20 +576,58 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-// --- DRAWER COMPONENT ---
-const DetailDrawerContent = ({ business, onAction, actionLoading, onViewOwnerProfile }) => {
-  if (!business)
-    return (
-      <div style={{ padding: 24 }}>
-        <AdminDrawerContentSkeleton />
-      </div>
-    );
+// --- BUSINESS DETAIL DRAWER (AdminResponsiveDrawer) ---
+const BusinessDetailDrawerInner = ({
+  business,
+  onAction,
+  actionLoading,
+  onViewOwnerProfile,
+  onImpersonate,
+  onOpenVerif,
+}) => {
+  const [classRows, setClassRows] = useState([]);
+  const [reviewRows, setReviewRows] = useState([]);
+  const [extrasLoading, setExtrasLoading] = useState(true);
+
+  useEffect(() => {
+    const bid = business?.businessId;
+    if (!bid) {
+      setClassRows([]);
+      setReviewRows([]);
+      setExtrasLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setExtrasLoading(true);
+      const [cRes, rRes] = await Promise.all([
+        classManagementService.getClasses({ business_id: bid, page_size: 50 }),
+        classManagementService.getReviews({ business_id: bid, page_size: 5 }),
+      ]);
+      if (cancelled) return;
+      const unpack = (res) => {
+        if (!res?.success) return [];
+        const d = res.data;
+        if (Array.isArray(d?.results)) return d.results;
+        if (Array.isArray(d)) return d;
+        return [];
+      };
+      setClassRows(unpack(cRes));
+      setReviewRows(unpack(rRes));
+      setExtrasLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [business?.businessId]);
 
   const {
     businessName,
     businessType,
     businessCity,
     businessState,
+    businessAddress,
+    businessZipCode,
     verificationStatus,
     average_rating,
     review_count,
@@ -654,117 +642,233 @@ const DetailDrawerContent = ({ business, onAction, actionLoading, onViewOwnerPro
     isActive,
     featured,
     owner_email,
+    owner_id,
     business_image_medium_url,
+    has_active_schedules,
+    revenue,
+    classes_count,
+    bookings_count,
   } = business;
 
   const formattedHours = formatBusinessHours(businessHours || []);
+  const totalReviews = (review_count || 0) + (google_review_count || 0);
+  const operationalTag = !isActive ? (
+    <Tag color="error">Closed</Tag>
+  ) : has_active_schedules ? (
+    <Tag color="success">Open</Tag>
+  ) : (
+    <Tag color="warning">No Schedules</Tag>
+  );
+
+  const classColumns = [
+    { title: "Class", dataIndex: "title", key: "title", ellipsis: true },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      width: 100,
+      render: (s) => <Tag>{s || "—"}</Tag>,
+    },
+  ];
 
   return (
-    <div>
-        <div style={{ padding: "0 24px 24px" }}>
-          <InfoGroup>
-            <InfoGroupTitle>
-              <Shield />
-              Admin Actions
-            </InfoGroupTitle>
-            <Space wrap>
-              <Popconfirm
-                title={`Permanently delete ${businessName}? This cannot be undone.`}
-                onConfirm={() => onAction("delete", business.businessId)}
-                okText="Yes, Delete"
-                cancelText="Cancel"
-                okButtonProps={{ danger: true, loading: actionLoading }}
+    <div style={{ background: colors.lightBg, minHeight: "100%" }}>
+      <div
+        style={{
+          margin: 16,
+          padding: 16,
+          background: "white",
+          borderRadius: 12,
+          border: `1px solid ${colors.border}`,
+        }}
+      >
+        <Space align="start" size={16} style={{ width: "100%" }}>
+          <Avatar
+            src={business_image_medium_url}
+            shape="square"
+            size={72}
+            style={{ borderRadius: 10 }}
+          >
+            {businessName?.[0]}
+          </Avatar>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <Title level={4} style={{ margin: 0 }} ellipsis>
+                {businessName}
+              </Title>
+              {operationalTag}
+              {verificationStatus === "pending" && (
+                <Tag color="blue">Pending Review</Tag>
+              )}
+              {verificationStatus === "verified" && (
+                <Tag
+                  color="processing"
+                  icon={<CheckCircle size={12} />}
+                  style={{ display: "inline-flex", alignItems: "center" }}
+                >
+                  Verified
+                </Tag>
+              )}
+            </div>
+            <div style={{ marginTop: 6 }}>
+              <Star
+                size={16}
+                fill="#f59e0b"
+                color="#f59e0b"
+                style={{ verticalAlign: "middle", marginRight: 4 }}
+              />
+              <Text strong>{parseFloat(average_rating || 0).toFixed(1)}</Text>
+              <Text type="secondary" style={{ marginLeft: 4 }}>
+                ({totalReviews})
+              </Text>
+            </div>
+            {(google_review_count || 0) > 0 && (
+              <Text
+                type="secondary"
+                style={{ fontSize: 12, display: "block", marginTop: 2 }}
               >
-                <Button
-                  danger
-                  icon={<Trash2 size={16} />}
-                  loading={actionLoading}
-                  key={`btn-${actionLoading}`}>
-                  Delete
-                </Button>
-              </Popconfirm>
-              <Button
-                icon={
-                  isActive ? (
-                    <ToggleLeft size={16} />
-                  ) : (
-                    <ToggleRight size={16} />
-                  )
-                }
-                onClick={() =>
-                  onAction("toggleActive", business.businessId, !isActive)
-                }
-                loading={actionLoading}
-                key={`btn-${actionLoading}`}>
-                {isActive ? "Deactivate" : "Activate"}
-              </Button>
-              <Button
-                type="primary"
-                ghost={featured}
-                icon={<Award size={16} />}
-                onClick={() =>
-                  onAction("toggleFeature", business.businessId, !featured)
-                }
-                loading={actionLoading}
-                key={`btn-${actionLoading}`}>
-                {featured ? "Unfeature" : "Feature"}
-              </Button>
-            </Space>
-          </InfoGroup>
-        </div>
+                {review_count || 0} platform, {google_review_count} Google
+              </Text>
+            )}
+            <Text type="secondary" style={{ display: "block", marginTop: 8 }}>
+              {owner_email || "—"}
+            </Text>
+          </div>
+        </Space>
+      </div>
+
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 2,
+          background: colors.lightBg,
+          padding: "0 16px 12px",
+          borderBottom: `1px solid ${colors.border}`,
+        }}
+      >
+        <Space wrap>
+          <Button
+            icon={
+              isActive ? <ToggleLeft size={16} /> : <ToggleRight size={16} />
+            }
+            onClick={() =>
+              onAction("toggleActive", business.businessId, !isActive)
+            }
+            loading={actionLoading}
+          >
+            {isActive ? "Deactivate" : "Activate"}
+          </Button>
+          <Button
+            type="primary"
+            ghost={featured}
+            icon={<Award size={16} />}
+            onClick={() =>
+              onAction("toggleFeature", business.businessId, !featured)
+            }
+            loading={actionLoading}
+          >
+            {featured ? "Unfeature" : "Feature"}
+          </Button>
+          {owner_id != null && (
+            <Button
+              icon={<LogIn size={16} />}
+              onClick={() => onImpersonate(owner_id)}
+            >
+              Impersonate owner
+            </Button>
+          )}
+          {owner_email && (
+            <Button
+              type="default"
+              icon={<ExternalLink size={16} />}
+              onClick={() => onViewOwnerProfile(owner_email)}
+            >
+              View owner profile
+            </Button>
+          )}
+          <Popconfirm
+            title={`Permanently delete ${businessName}? This cannot be undone.`}
+            onConfirm={() => onAction("delete", business.businessId)}
+            okText="Yes, Delete"
+            cancelText="Cancel"
+            okButtonProps={{ danger: true, loading: actionLoading }}
+          >
+            <Button danger icon={<Trash2 size={16} />} loading={actionLoading}>
+              Delete
+            </Button>
+          </Popconfirm>
+        </Space>
+      </div>
+
+      <div style={{ padding: 16 }}>
         <InfoGroup>
           <InfoGroupTitle>
-            <InfoGrid />
-            Business Overview
+            <MapPin />
+            Overview
           </InfoGroupTitle>
           <InfoGrid>
-            <InfoItem>
-              <InfoIcon>
-                <Star />
-              </InfoIcon>
-              <InfoContent>
-                <InfoLabel>Avg. Rating</InfoLabel>
-                <InfoValue>
-                  {parseFloat(average_rating || 0).toFixed(1)} (
-                  {(review_count || 0) + (google_review_count || 0)} reviews
-                  {(google_review_count || 0) > 0
-                    ? ` — ${review_count || 0} platform, ${google_review_count || 0} Google`
-                    : ""}
-                  )
-                </InfoValue>
-              </InfoContent>
-            </InfoItem>
-            <InfoItem>
-              <InfoIcon>
-                <UserCheck />
-              </InfoIcon>
-              <InfoContent>
-                <InfoLabel>Owner</InfoLabel>
-                <InfoValue copyable={{ text: owner_email }}>
-                  {owner_email || "N/A"}
-                </InfoValue>
-                {owner_email && onViewOwnerProfile && (
-                  <Button
-                    type="link"
-                    size="small"
-                    icon={<ExternalLink size={14} />}
-                    onClick={() => onViewOwnerProfile(owner_email)}
-                    style={{ paddingLeft: 0, marginTop: 4 }}
-                  >
-                    View owner profile
-                  </Button>
-                )}
-              </InfoContent>
-            </InfoItem>
-            <InfoItem>
-              <InfoIcon>
-                <Calendar />
-              </InfoIcon>
-              <InfoContent>
-                <InfoLabel>Member Since</InfoLabel>
-                <InfoValue>{formatDate(createdAt)}</InfoValue>
-              </InfoContent>
-            </InfoItem>
+            {[businessAddress, businessCity, businessState, businessZipCode].some(
+              Boolean
+            ) && (
+              <InfoItem style={{ gridColumn: "1 / -1" }}>
+                <InfoIcon>
+                  <MapPin />
+                </InfoIcon>
+                <InfoContent>
+                  <InfoLabel>Address</InfoLabel>
+                  <InfoValue>
+                    {[businessAddress, businessCity, businessState, businessZipCode]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </InfoValue>
+                </InfoContent>
+              </InfoItem>
+            )}
+            {studentContactPhone && (
+              <InfoItem>
+                <InfoIcon>
+                  <Phone />
+                </InfoIcon>
+                <InfoContent>
+                  <InfoLabel>Phone</InfoLabel>
+                  <InfoValue>{studentContactPhone}</InfoValue>
+                </InfoContent>
+              </InfoItem>
+            )}
+            {studentContactEmail && (
+              <InfoItem>
+                <InfoIcon>
+                  <Mail />
+                </InfoIcon>
+                <InfoContent>
+                  <InfoLabel>Public email</InfoLabel>
+                  <InfoValue as="a" href={`mailto:${studentContactEmail}`}>
+                    {studentContactEmail}
+                  </InfoValue>
+                </InfoContent>
+              </InfoItem>
+            )}
+            {website && (
+              <InfoItem>
+                <InfoIcon>
+                  <Globe />
+                </InfoIcon>
+                <InfoContent>
+                  <InfoLabel>Website</InfoLabel>
+                  <InfoValue as="a" href={website} target="_blank">
+                    {website}
+                  </InfoValue>
+                </InfoContent>
+              </InfoItem>
+            )}
             <InfoItem>
               <InfoIcon>
                 <Building />
@@ -772,6 +876,15 @@ const DetailDrawerContent = ({ business, onAction, actionLoading, onViewOwnerPro
               <InfoContent>
                 <InfoLabel>Type</InfoLabel>
                 <InfoValue>{businessType?.replace(/_/g, " ")}</InfoValue>
+              </InfoContent>
+            </InfoItem>
+            <InfoItem>
+              <InfoIcon>
+                <Calendar />
+              </InfoIcon>
+              <InfoContent>
+                <InfoLabel>Member since</InfoLabel>
+                <InfoValue>{formatDate(createdAt)}</InfoValue>
               </InfoContent>
             </InfoItem>
             <InfoItem
@@ -809,88 +922,42 @@ const DetailDrawerContent = ({ business, onAction, actionLoading, onViewOwnerPro
                 )}
               </InfoContent>
             </InfoItem>
-            <InfoItem>
+            <InfoItem style={{ gridColumn: "1 / -1" }}>
               <InfoIcon>
-                <CheckCircle />
+                <Shield />
               </InfoIcon>
               <InfoContent>
                 <InfoLabel>Verification</InfoLabel>
                 <InfoValue>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <Space wrap align="center">
                     {verificationStatus === "verified" ? (
-                      <Tag color="success" icon={<CheckCircle size={12} />}>Verified</Tag>
-                    ) : (
-                      <Tag icon={<AlertTriangle size={12} />}>Not Verified</Tag>
-                    )}
-                    {owner_email && verificationStatus !== "verified" && (
-                      <Button
-                        size="small"
-                        type="link"
-                        icon={<ExternalLink size={13} />}
-                        onClick={() => openVerifDrawer(owner_email)}
-                        style={{ padding: "0 4px", height: "auto", fontSize: 12 }}
+                      <Tag
+                        color="success"
+                        icon={<CheckCircle size={12} />}
+                        style={{ display: "inline-flex", alignItems: "center" }}
                       >
-                        Review Request
-                      </Button>
+                        Verified
+                      </Tag>
+                    ) : (
+                      <Tag icon={<AlertTriangle size={12} />}>Not verified</Tag>
                     )}
-                  </div>
+                    {owner_email &&
+                      verificationStatus !== "verified" &&
+                      onOpenVerif && (
+                        <Button
+                          size="small"
+                          type="link"
+                          icon={<ExternalLink size={13} />}
+                          onClick={() => onOpenVerif(owner_email)}
+                          style={{ padding: "0 4px", height: "auto", fontSize: 12 }}
+                        >
+                          Review request
+                        </Button>
+                      )}
+                  </Space>
                 </InfoValue>
               </InfoContent>
             </InfoItem>
-          </InfoGrid>
-        </InfoGroup>
-        {businessDescription && (
-          <InfoGroup>
-            <InfoGroupTitle>
-              <Briefcase />
-              About
-            </InfoGroupTitle>
-            <Paragraph type="secondary">{businessDescription}</Paragraph>
-          </InfoGroup>
-        )}
-        <InfoGroup>
-          <InfoGroupTitle>
-            <Phone />
-            Contact
-          </InfoGroupTitle>
-          <InfoGrid>
-            {studentContactPhone && (
-              <InfoItem>
-                <InfoIcon>
-                  <Phone />
-                </InfoIcon>
-                <InfoContent>
-                  <InfoLabel>Phone</InfoLabel>
-                  <InfoValue>{studentContactPhone}</InfoValue>
-                </InfoContent>
-              </InfoItem>
-            )}
-            {studentContactEmail && (
-              <InfoItem>
-                <InfoIcon>
-                  <Mail />
-                </InfoIcon>
-                <InfoContent>
-                  <InfoLabel>Email</InfoLabel>
-                  <InfoValue as="a" href={`mailto:${studentContactEmail}`}>
-                    {studentContactEmail}
-                  </InfoValue>
-                </InfoContent>
-              </InfoItem>
-            )}
-            {website && (
-              <InfoItem>
-                <InfoIcon>
-                  <Globe />
-                </InfoIcon>
-                <InfoContent>
-                  <InfoLabel>Website</InfoLabel>
-                  <InfoValue as="a" href={website} target="_blank">
-                    {website}
-                  </InfoValue>
-                </InfoContent>
-              </InfoItem>
-            )}
           </InfoGrid>
           {social_media_links &&
             Object.values(social_media_links).some((v) => v) && (
@@ -915,57 +982,160 @@ const DetailDrawerContent = ({ business, onAction, actionLoading, onViewOwnerPro
               </>
             )}
         </InfoGroup>
+
+        {businessDescription && (
+          <InfoGroup>
+            <InfoGroupTitle>
+              <Briefcase />
+              About
+            </InfoGroupTitle>
+            <Paragraph type="secondary">{businessDescription}</Paragraph>
+          </InfoGroup>
+        )}
+
+        <InfoGroup>
+          <InfoGroupTitle>
+            <BarChart2 />
+            Performance
+          </InfoGroupTitle>
+          <InfoGrid>
+            <InfoItem>
+              <InfoIcon>
+                <DollarSign />
+              </InfoIcon>
+              <InfoContent>
+                <InfoLabel>Revenue</InfoLabel>
+                <InfoValue>{formatCurrency(Number(revenue || 0))}</InfoValue>
+              </InfoContent>
+            </InfoItem>
+            <InfoItem>
+              <InfoIcon>
+                <Calendar />
+              </InfoIcon>
+              <InfoContent>
+                <InfoLabel>Bookings</InfoLabel>
+                <InfoValue>{bookings_count ?? 0}</InfoValue>
+              </InfoContent>
+            </InfoItem>
+            <InfoItem>
+              <InfoIcon>
+                <Briefcase />
+              </InfoIcon>
+              <InfoContent>
+                <InfoLabel>Classes</InfoLabel>
+                <InfoValue>{classes_count ?? 0}</InfoValue>
+              </InfoContent>
+            </InfoItem>
+          </InfoGrid>
+        </InfoGroup>
+
+        <InfoGroup>
+          <InfoGroupTitle>
+            <Briefcase />
+            Classes
+          </InfoGroupTitle>
+          {extrasLoading ? (
+            <AdminTableSkeleton rows={4} />
+          ) : (
+            <Table
+              size="small"
+              columns={classColumns}
+              dataSource={classRows}
+              rowKey={(r) => r.classId}
+              pagination={false}
+              locale={{ emptyText: "No classes" }}
+            />
+          )}
+        </InfoGroup>
+
+        <InfoGroup>
+          <InfoGroupTitle>
+            <Star />
+            Recent reviews
+          </InfoGroupTitle>
+          {extrasLoading ? (
+            <AdminCardSkeleton />
+          ) : reviewRows.length === 0 ? (
+            <Text type="secondary">No reviews yet.</Text>
+          ) : (
+            reviewRows.map((rev) => (
+              <div
+                key={rev.reviewId}
+                style={{
+                  padding: "10px 0",
+                  borderBottom: `1px solid ${colors.border}`,
+                }}
+              >
+                <Space>
+                  <Text strong>
+                    {rev.rating != null ? `${rev.rating}★` : "—"}
+                  </Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {formatDate(rev.createdAt)}
+                  </Text>
+                </Space>
+                {rev.comment && (
+                  <Paragraph
+                    style={{ marginBottom: 0, marginTop: 6, fontSize: 13 }}
+                    ellipsis={{ rows: 3 }}
+                  >
+                    {rev.comment}
+                  </Paragraph>
+                )}
+              </div>
+            ))
+          )}
+        </InfoGroup>
+      </div>
     </div>
   );
 };
 
-const DetailDrawerModal = ({
+const BusinessDetailDrawer = ({
   open,
   onClose,
   business,
+  detailsLoading,
   onAction,
   actionLoading,
   onViewOwnerProfile,
+  onImpersonate,
+  onOpenVerif,
 }) => {
   const isMobile = !useBreakpoint().md;
-
-  const DrawerShell = isMobile ? VaulMobileContent : VaulDesktopContent;
-
+  const title = business?.businessName || "Business details";
   return (
-    <Drawer.Root
+    <AdminResponsiveDrawer
       open={open}
-      onOpenChange={(open) => { if (!open) onClose(); }}
-      direction={isMobile ? "bottom" : "right"}
-      dismissible
+      onClose={onClose}
+      title={title}
+      titleIcon={<Briefcase size={20} style={{ color: colors.primary }} />}
+      isMobile={isMobile}
+      width="min(920px, 96vw)"
     >
-      <Drawer.Portal>
-        <VaulOverlay />
-        <DrawerShell style={isMobile ? undefined : { "--initial-transform": "calc(100% + 8px)" }}>
-          {isMobile && <DrawerHandle />}
-          <DrawerHeaderBar>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 600, fontSize: 15, color: colors.textPrimary }}>
-              <Briefcase size={18} style={{ color: colors.primary }} />
-              Business Details
-            </div>
-            <Button type="text" icon={<X size={18} />} onClick={onClose} style={{ border: "none" }} />
-          </DrawerHeaderBar>
-          <DrawerBody>
-            <DetailDrawerContent
-              business={business}
-              onAction={onAction}
-              actionLoading={actionLoading}
-              onViewOwnerProfile={onViewOwnerProfile}
-            />
-          </DrawerBody>
-        </DrawerShell>
-      </Drawer.Portal>
-    </Drawer.Root>
+      {detailsLoading || !business ? (
+        <div style={{ padding: 24 }}>
+          <AdminDrawerContentSkeleton />
+        </div>
+      ) : (
+        <BusinessDetailDrawerInner
+          business={business}
+          onAction={onAction}
+          actionLoading={actionLoading}
+          onViewOwnerProfile={onViewOwnerProfile}
+          onImpersonate={onImpersonate}
+          onOpenVerif={onOpenVerif}
+        />
+      )}
+    </AdminResponsiveDrawer>
   );
 };
 
 // --- MAIN COMPONENT ---
 const BusinessManagement = () => {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [businesses, setBusinesses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [metricsLoading, setMetricsLoading] = useState(true);
@@ -978,7 +1148,6 @@ const BusinessManagement = () => {
     setDetailDrawerOpen(false);
     router.push(`/admin/users?openUserByEmail=${encodeURIComponent(ownerEmail)}`);
   }, [router]);
-  const [mapLoading, setMapLoading] = useState(true);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [categoriesList, setCategoriesList] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -990,6 +1159,12 @@ const BusinessManagement = () => {
     total_platform_revenue: 0,
     featured_businesses: 0,
     category_distribution: [],
+    collection_distribution: [],
+    province_distribution: [],
+    top_cities: [],
+    search_location_top: [],
+    search_preset_demand: [],
+    search_custom_top: [],
     growth_trend: [],
   });
   const [filters, setFilters] = useState({
@@ -997,6 +1172,9 @@ const BusinessManagement = () => {
     category: "all",
     status: "all",
     featured: false,
+    province: undefined,
+    revenue_tier: undefined,
+    verification_status: undefined,
   });
   const [timeframe, setTimeframe] = useState("month");
   const [selectedBusiness, setSelectedBusiness] = useState(null);
@@ -1008,8 +1186,6 @@ const BusinessManagement = () => {
   const [verifDecision, setVerifDecision] = useState(null);
   const [verifNotes, setVerifNotes] = useState("");
   const [verifForm] = Form.useForm();
-  const [geographicalData, setGeographicalData] = useState([]);
-  const [mapDataType, setMapDataType] = useState("count");
   const [sortedInfo, setSortedInfo] = useState({});
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
@@ -1030,6 +1206,11 @@ const BusinessManagement = () => {
         category: filters.category !== "all" ? filters.category : undefined,
         status: filters.status !== "all" ? filters.status : undefined,
         featured: filters.featured ? true : undefined,
+        ...(filters.province && { province: filters.province }),
+        ...(filters.verification_status && {
+          verification_status: filters.verification_status,
+        }),
+        ...(filters.revenue_tier && { revenue_tier: filters.revenue_tier }),
         ordering:
           currentSorter.columnKey && currentSorter.order
             ? `${currentSorter.order === "descend" ? "-" : ""}${
@@ -1098,26 +1279,10 @@ const BusinessManagement = () => {
     }
   }, [timeframe]);
 
-  const fetchGeographicalData = useCallback(async () => {
-    setMapLoading(true);
-    try {
-      const r = await businessManagementService.getGeographicalData(
-        mapDataType
-      );
-      if (r.success) setGeographicalData(r.data);
-      else message.error(r.error || "Failed geographical data");
-    } catch (e) {
-      message.error("Failed to load map data.");
-    } finally {
-      setMapLoading(false);
-    }
-  }, [mapDataType]);
-
   useEffect(() => {
     fetchDashboardData();
-    fetchGeographicalData();
     fetchCategories();
-  }, [fetchDashboardData, fetchGeographicalData, fetchCategories]);
+  }, [fetchDashboardData, fetchCategories]);
 
   useEffect(() => {
     fetchData(pagination, sortedInfo);
@@ -1139,7 +1304,6 @@ const BusinessManagement = () => {
 
   const refreshAllData = () => {
     fetchDashboardData();
-    fetchGeographicalData();
     fetchGrowthTrends();
     fetchCategories();
     fetchData({ ...pagination, current: 1 }, sortedInfo);
@@ -1241,6 +1405,11 @@ const BusinessManagement = () => {
         ...(filters.category !== "all" && { category: filters.category }),
         ...(filters.status !== "all" && { status: filters.status }),
         ...(filters.featured && { featured: true }),
+        ...(filters.province && { province: filters.province }),
+        ...(filters.verification_status && {
+          verification_status: filters.verification_status,
+        }),
+        ...(filters.revenue_tier && { revenue_tier: filters.revenue_tier }),
       };
       const res = await businessManagementService.exportBusinessesData(params);
       if (res.success) message.success("Export started.");
@@ -1295,7 +1464,8 @@ const BusinessManagement = () => {
     }
   };
 
-  const showBusinessDetails = async (business) => {
+  const showBusinessDetails = useCallback(async (business) => {
+    if (!business?.businessId) return;
     setDetailDrawerOpen(true);
     setDetailsLoading(true);
     setSelectedBusiness(null);
@@ -1310,7 +1480,47 @@ const BusinessManagement = () => {
     } finally {
       setDetailsLoading(false);
     }
-  };
+  }, []);
+
+  const handleImpersonateOwner = useCallback(
+    async (userId) => {
+      if (userId == null) return;
+      try {
+        setActionLoading(true);
+        const result = await userAdminService.impersonateUser(userId);
+        if (result.success && result.data?.user) {
+          useAuthStore.setState({
+            user: result.data.user,
+            isAuthenticated: true,
+            isImpersonating: true,
+            isLoading: false,
+          });
+          message.success("Now impersonating owner.");
+          router.push("/");
+        } else {
+          message.error(result.error || "Could not start impersonation.");
+        }
+      } catch (e) {
+        console.error(e);
+        message.error("An unexpected error occurred.");
+      } finally {
+        setActionLoading(false);
+      }
+    },
+    [router]
+  );
+
+  useEffect(() => {
+    const raw = searchParams.get("businessId");
+    if (!raw) return;
+    const id = Number(raw);
+    if (!Number.isFinite(id)) return;
+    void showBusinessDetails({ businessId: id });
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("businessId");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [searchParams, pathname, router, showBusinessDetails]);
 
   const renderVerifDrawerBody = () => {
     if (verifLoading) {
@@ -1472,14 +1682,18 @@ const BusinessManagement = () => {
         const google = b.google_review_count || 0;
         const total = platform + google;
         return (
-          <Space>
-            <Star size={15} fill="#f59e0b" color="#f59e0b" />
-            <span>{r || 0}</span>
-            <Text type="secondary">
-              ({total}
-              {google > 0 ? ` — ${platform}+${google} Google` : ""})
-            </Text>
-          </Space>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Star size={15} fill="#f59e0b" color="#f59e0b" />
+              <Text strong>{r || 0}</Text>
+              <Text type="secondary">({total})</Text>
+            </div>
+            {google > 0 && (
+              <Text type="secondary" style={{ fontSize: 12, display: "block", marginTop: 2 }}>
+                {platform} platform, {google} Google
+              </Text>
+            )}
+          </div>
         );
       },
     },
@@ -1487,19 +1701,30 @@ const BusinessManagement = () => {
       title: "Status",
       key: "status",
       dataIndex: "isActive",
-      width: 150,
+      width: 170,
       render: (_, b) => (
         <Space direction="vertical" size={2}>
-          <Tag color={b.isActive ? "success" : "error"}>
-            {b.isActive ? "Active" : "Inactive"}
-          </Tag>
+          {b.verificationStatus === "pending" && (
+            <Tag color="blue">Pending Review</Tag>
+          )}
+          {!b.isActive ? (
+            <Tag color="error">Closed</Tag>
+          ) : b.has_active_schedules ? (
+            <Tag color="success">Open</Tag>
+          ) : (
+            <Tag color="warning">No Schedules</Tag>
+          )}
           {b.featured && (
             <Tag color="gold" icon={<Award size={12} />}>
               Featured
             </Tag>
           )}
           {b.verificationStatus === "verified" && (
-            <Tag color="blue" icon={<CheckCircle size={12} />}>
+            <Tag
+              color="blue"
+              icon={<CheckCircle size={12} />}
+              style={{ display: "inline-flex", alignItems: "center" }}
+            >
               Verified
             </Tag>
           )}
@@ -1540,6 +1765,15 @@ const BusinessManagement = () => {
               >
                 {b.featured ? "Unfeature" : "Feature"}
               </Button>
+              {b.owner_id != null && (
+                <Button
+                  type="text"
+                  icon={<LogIn size={14} />}
+                  onClick={() => handleImpersonateOwner(b.owner_id)}
+                >
+                  Impersonate owner
+                </Button>
+              )}
             </Space>
           }
           trigger={["click"]}
@@ -1577,9 +1811,18 @@ const BusinessManagement = () => {
               </Text>
             </div>
           </Space>
-          <Tag color={business.isActive ? "success" : "error"}>
-            {business.isActive ? "Active" : "Inactive"}
-          </Tag>
+          <Space direction="vertical" size={4} align="end">
+            {business.verificationStatus === "pending" && (
+              <Tag color="blue">Pending</Tag>
+            )}
+            {!business.isActive ? (
+              <Tag color="error">Closed</Tag>
+            ) : business.has_active_schedules ? (
+              <Tag color="success">Open</Tag>
+            ) : (
+              <Tag color="warning">No Schedules</Tag>
+            )}
+          </Space>
         </div>
         <MobileCardRow>
           <MobileCardLabel>Owner</MobileCardLabel>
@@ -1589,15 +1832,20 @@ const BusinessManagement = () => {
         </MobileCardRow>
         <MobileCardRow>
           <MobileCardLabel>Rating</MobileCardLabel>
-          <Space>
-            <Star size={14} fill="#f59e0b" color="#f59e0b" />
-            {business.rating || 0} (
-            {(business.review_count || 0) + (business.google_review_count || 0)}
-            {(business.google_review_count || 0) > 0
-              ? ` — ${business.review_count || 0} platform, ${business.google_review_count || 0} Google`
-              : ""}
-            )
-          </Space>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Star size={14} fill="#f59e0b" color="#f59e0b" />
+              <Text strong>{business.rating || 0}</Text>
+              <Text type="secondary">
+                ({(business.review_count || 0) + (business.google_review_count || 0)})
+              </Text>
+            </div>
+            {(business.google_review_count || 0) > 0 && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {business.review_count || 0} platform, {business.google_review_count} Google
+              </Text>
+            )}
+          </div>
         </MobileCardRow>
       </MobileCardContent>
     </MobileCard>
@@ -1605,9 +1853,11 @@ const BusinessManagement = () => {
 
   const totalRevenue = metrics.total_revenue ?? metrics.gross_sales ?? 0;
   const totalBiz = metrics.total_businesses ?? 0;
-  const activeBiz = metrics.active_businesses ?? 0;
-  const avgRevPerBiz = totalBiz > 0 ? Math.round(totalRevenue / totalBiz) : 0;
-
+  const activeBiz =
+    metrics.active_businesses_in_period ??
+    metrics.active_businesses_30d ??
+    metrics.active_businesses ??
+    0;
   const statCardsData = [
     {
       title: "Total Businesses",
@@ -1616,13 +1866,15 @@ const BusinessManagement = () => {
       growth: metrics.total_business_growth ?? null,
       color: colors.info,
       footer: "All registered",
+      periodBadge: "All-time",
     },
     {
       title: "Active (30d)",
       icon: Activity,
       value: activeBiz,
-      footer: `${totalBiz > 0 ? ((activeBiz / totalBiz) * 100).toFixed(0) : 0}% of total`,
+      footer: "Owner or staff logged in (period)",
       color: colors.success,
+      periodBadge: "30d",
     },
     {
       title: "Pending Verifications",
@@ -1631,6 +1883,7 @@ const BusinessManagement = () => {
       footer: (metrics.pending_verifications ?? 0) > 0 ? "Action required" : "All reviewed",
       color: (metrics.pending_verifications ?? 0) > 0 ? colors.error : colors.success,
       urgent: (metrics.pending_verifications ?? 0) > 0,
+      periodBadge: "All-time",
     },
     {
       title: "Platform GMV",
@@ -1639,28 +1892,7 @@ const BusinessManagement = () => {
       isCurrency: true,
       footer: "All-time bookings value",
       color: colors.purple,
-    },
-    {
-      title: "Avg Rev / Business",
-      icon: BarChart2,
-      value: avgRevPerBiz,
-      isCurrency: true,
-      footer: "Platform average",
-      color: colors.warning,
-    },
-    {
-      title: "Avg Classes / Business",
-      icon: Activity,
-      value: metrics.avg_classes_per_business ?? 0,
-      footer: "Active businesses",
-      color: colors.info,
-    },
-    {
-      title: "Featured",
-      icon: Award,
-      value: metrics.featured_businesses ?? 0,
-      footer: "Highlighted businesses",
-      color: colors.warning,
+      periodBadge: "All-time",
     },
     {
       title: "Widget Subscribers",
@@ -1668,8 +1900,14 @@ const BusinessManagement = () => {
       value: metrics.widget_subscribers ?? 0,
       footer: "Paid embed plans",
       color: colors.purple,
+      periodBadge: "Current",
     },
   ];
+
+  const provinceBarData = useMemo(() => {
+    const rows = [...(metrics.province_distribution || [])];
+    return rows.sort((a, b) => (b.count || 0) - (a.count || 0));
+  }, [metrics.province_distribution]);
 
   return (
     <ConfigProvider theme={appTheme}>
@@ -1697,15 +1935,18 @@ const BusinessManagement = () => {
           Business metrics
         </div>
         <div style={{ marginBottom: 20 }}>
-          <AdminMetricCards
-            cards={statCardsData.map((card) => ({
-              ...card,
-              minimumFractionDigits: card.isCurrency ? 0 : undefined,
-              maximumFractionDigits: card.isCurrency ? 0 : undefined,
-            }))}
-            loading={metricsLoading}
-            isReadyForAnimation={isReadyForAnimation}
-          />
+          {metricsLoading ? (
+            <AdminMetricCardsSkeleton count={5} />
+          ) : (
+            <AdminMetricCards
+              cards={statCardsData.map((card) => ({
+                ...card,
+                minimumFractionDigits: card.isCurrency ? 0 : undefined,
+                maximumFractionDigits: card.isCurrency ? 0 : undefined,
+              }))}
+              isReadyForAnimation={isReadyForAnimation}
+            />
+          )}
         </div>
 
         <Divider style={{ margin: "16px 0" }} />
@@ -1732,7 +1973,7 @@ const BusinessManagement = () => {
             </div>
             <div style={{ height: 240, marginTop: 12 }}>
               {growthTrendLoading ? (
-                <AdminCardSkeleton />
+                <AdminAreaChartSkeleton height={240} />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart
@@ -1765,16 +2006,16 @@ const BusinessManagement = () => {
           <ChartCard>
             <div>
               <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", color: colors.textTertiary, textTransform: "uppercase" }}>Breakdown</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>Category Distribution</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>Collection Distribution</div>
             </div>
             <div style={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 8 }}>
               {metricsLoading ? (
-                <AdminCardSkeleton />
+                <AdminPieChartSkeleton size={168} />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={metrics.category_distribution}
+                      data={metrics.collection_distribution || []}
                       nameKey="name"
                       dataKey="value"
                       cx="50%"
@@ -1783,11 +2024,11 @@ const BusinessManagement = () => {
                       outerRadius={90}
                       paddingAngle={2}
                     >
-                      {(metrics.category_distribution || []).map((entry) => (
+                      {(metrics.collection_distribution || []).map((entry) => (
                         <Cell key={entry.name} fill={entry.color} />
                       ))}
                     </Pie>
-                    <RechartsTooltip formatter={(v) => [`${v} businesses`]} contentStyle={{ borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 12 }} />
+                    <RechartsTooltip formatter={(v) => [`${v} classes`]} contentStyle={{ borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 12 }} />
                     <Legend iconSize={8} wrapperStyle={{ fontSize: "11px" }} iconType="circle" />
                   </PieChart>
                 </ResponsiveContainer>
@@ -1801,19 +2042,129 @@ const BusinessManagement = () => {
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <div>
-              <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", color: colors.textTertiary, textTransform: "uppercase" }}>Map</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>Geographical Distribution</div>
+              <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.07em", color: colors.textTertiary, textTransform: "uppercase" }}>Geography</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>Provinces & cities</div>
             </div>
           </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1.4fr) minmax(260px, 0.75fr)",
+              gap: 16,
+              marginBottom: 16,
+            }}
+          >
+            <ContentSection>
+              <div style={{ padding: "12px 16px 8px" }}>
+                <Text strong style={{ fontSize: 13 }}>Businesses by province</Text>
+                <Text type="secondary" style={{ display: "block", fontSize: 12, marginTop: 4 }}>
+                  Ranked by count. Zero counts use a muted tone to highlight gaps.
+                </Text>
+              </div>
+              <div style={{ height: isMobile ? 300 : 360, padding: "0 8px 12px" }}>
+                {metricsLoading ? (
+                  <AdminHorizontalBarChartSkeleton rows={13} height={isMobile ? 300 : 360} />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      layout="vertical"
+                      data={provinceBarData}
+                      margin={{ left: 4, right: 12, top: 4, bottom: 4 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke={colors.border} horizontal />
+                      <XAxis type="number" tick={{ fontSize: 10, fill: colors.textTertiary }} allowDecimals={false} />
+                      <YAxis
+                        type="category"
+                        dataKey="province"
+                        width={36}
+                        tick={{ fontSize: 10, fill: colors.textTertiary }}
+                      />
+                      <RechartsTooltip
+                        formatter={(v) => [`${v} businesses`, "Count"]}
+                        contentStyle={{ borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 12 }}
+                      />
+                      <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={22}>
+                        {provinceBarData.map((p) => (
+                          <Cell key={p.province} fill={p.count === 0 ? "#fecaca" : colors.info} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </ContentSection>
+            <ContentSection>
+              <div style={{ padding: "12px 16px" }}>
+                <Text strong style={{ fontSize: 13 }}>Explore search demand</Text>
+                <Text type="secondary" style={{ display: "block", fontSize: 12, marginTop: 4 }}>
+                  Suggested Ontario areas (same presets as explore) and custom location searches.
+                </Text>
+              </div>
+              <div style={{ padding: "0 16px 16px", maxHeight: 420, overflowY: "auto" }}>
+                {metricsLoading ? (
+                  <AdminRankedListSkeleton rows={16} />
+                ) : (
+                  <>
+                    <Text type="secondary" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.04em", display: "block", marginBottom: 8 }}>
+                      Suggested areas
+                    </Text>
+                    <ul style={{ margin: "0 0 16px", paddingLeft: 18, fontSize: 13, listStyle: "disc" }}>
+                      {(metrics.search_preset_demand || []).map((row) => (
+                        <li key={row.label} style={{ marginBottom: 6 }}>
+                          <Text strong>{row.label}</Text>
+                          <Text type="secondary" style={{ marginLeft: 8 }}>({row.count})</Text>
+                        </li>
+                      ))}
+                    </ul>
+                    <Text type="secondary" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.04em", display: "block", marginBottom: 8 }}>
+                      Custom searches
+                    </Text>
+                    {(metrics.search_custom_top || []).length === 0 ? (
+                      <Text type="secondary" style={{ fontSize: 13 }}>No custom locations yet.</Text>
+                    ) : (
+                      <ol style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
+                        {(metrics.search_custom_top || []).map((row, i) => (
+                          <li key={`${row.label}-${i}`} style={{ marginBottom: 8 }}>
+                            <Text strong>{row.label || "—"}</Text>
+                            <Text type="secondary" style={{ marginLeft: 8 }}>
+                              ({row.count})
+                            </Text>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </>
+                )}
+              </div>
+            </ContentSection>
+          </div>
           <ContentSection>
-            <div style={{ height: isMobile ? 320 : 440 }}>
-              {mapLoading ? (
-                <div style={{ padding: 24, height: "100%" }}><AdminCardSkeleton /></div>
+            <div style={{ padding: "12px 16px" }}>
+              <Text strong style={{ fontSize: 13 }}>Top cities</Text>
+            </div>
+            <div style={{ padding: "0 16px 16px" }}>
+              {metricsLoading ? (
+                <AdminTableSkeleton rows={6} />
               ) : (
-                <CanadianDistribution
-                  data={geographicalData}
-                  dataType={mapDataType}
-                  onDataTypeChange={setMapDataType}
+                <Table
+                  size="small"
+                  showSizeChanger={false}
+                  pagination={false}
+                  dataSource={metrics.top_cities || []}
+                  rowKey={(r) => `${r.city}-${r.state}`}
+                  columns={[
+                    { title: "City", dataIndex: "city", key: "city" },
+                    { title: "Province", dataIndex: "state", key: "state", width: 100 },
+                    { title: "Businesses", dataIndex: "count", key: "count", width: 110 },
+                    { title: "Classes", dataIndex: "classes_count", key: "classes_count", width: 100 },
+                    {
+                      title: "Revenue",
+                      dataIndex: "revenue",
+                      key: "revenue",
+                      width: 120,
+                      render: (v) => formatCurrency(Number(v || 0)),
+                    },
+                  ]}
                 />
               )}
             </div>
@@ -1865,16 +2216,18 @@ const BusinessManagement = () => {
               <Select
                 placeholder="Province"
                 allowClear
+                value={filters.province}
                 style={{ width: isMobile ? "100%" : 140 }}
                 onChange={(v) => handleFilterChange("province", v)}
               >
-                {["AB","BC","MB","NB","NL","NS","ON","PE","QC","SK"].map(p => (
+                {["AB","BC","MB","NB","NL","NS","NT","NU","ON","PE","QC","SK","YT"].map((p) => (
                   <Option key={p} value={p}>{p}</Option>
                 ))}
               </Select>
               <Select
                 placeholder="Revenue Tier"
                 allowClear
+                value={filters.revenue_tier}
                 style={{ width: isMobile ? "100%" : 160 }}
                 onChange={(v) => handleFilterChange("revenue_tier", v)}
               >
@@ -1885,6 +2238,7 @@ const BusinessManagement = () => {
               <Select
                 placeholder="Verification"
                 allowClear
+                value={filters.verification_status}
                 style={{ width: isMobile ? "100%" : 150 }}
                 onChange={(v) => handleFilterChange("verification_status", v)}
               >
@@ -1948,13 +2302,16 @@ const BusinessManagement = () => {
         </ContentSection>
       </ContentLayer>
 
-        <DetailDrawerModal
+        <BusinessDetailDrawer
           open={detailDrawerOpen}
           onClose={() => setDetailDrawerOpen(false)}
           business={detailsLoading ? null : selectedBusiness}
+          detailsLoading={detailsLoading}
           onAction={handleAction}
           actionLoading={actionLoading}
           onViewOwnerProfile={handleViewOwnerProfile}
+          onImpersonate={handleImpersonateOwner}
+          onOpenVerif={openVerifDrawer}
         />
 
         {/* VERIFICATION REVIEW DRAWER */}
@@ -1968,7 +2325,7 @@ const BusinessManagement = () => {
             <VerifOverlay />
             {isMobile ? (
               <VerifMobileShell>
-                <DrawerHandle />
+                <VerifDrawerHandle />
                 <VerifDrawerInner>
                   <VerifDrawerHeader>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 16, color: colors.textPrimary }}>

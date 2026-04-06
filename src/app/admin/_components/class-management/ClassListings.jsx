@@ -30,6 +30,7 @@ import {
   Popover,
   Popconfirm,
   Badge,
+  Alert,
 } from "antd";
 import {
   Search,
@@ -44,13 +45,11 @@ import {
   LogIn,
   BookOpen,
   User as UserIcon,
-  Tag as TagIcon,
   Calendar,
   ShieldAlert,
   Edit,
   List as ListIcon,
   FileText,
-  X,
   Layers,
   CheckCircle,
   HelpCircle,
@@ -67,6 +66,7 @@ import { LordIcon } from "@/services/ReactUtils";
 import AdminClassEditDrawer from "./AdminClassEditDrawer";
 import moment from "moment";
 import AdminMetricCards from "../shared/AdminMetricCards";
+import { AdminMetricCardsSkeleton } from "../shared/AdminSkeletons";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 
 
@@ -320,33 +320,6 @@ const MobileCardFooter = styled.div`
   gap: 8px;
 `;
 
-const DrawerHeader = styled.div`
-  background: white;
-  border-bottom: 1px solid ${colors.border};
-  padding: 20px 24px;
-  border-radius: 16px 16px 0 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-`;
-const DrawerHeaderTitle = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: ${colors.textPrimary};
-  font-size: 20px;
-  font-weight: 600;
-`;
-const CloseButton = styled(Button)`
-  padding: 8px;
-  height: auto;
-  border: none;
-  background: none;
-  &:hover {
-    background: ${colors.border};
-  }
-`;
 const DrawerContentContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -917,13 +890,6 @@ const ClassDetailDrawer = ({ open, onClose, classData, isLoading, onShowLockModa
 
   const renderDrawerContent = () => (
     <>
-      <DrawerHeader>
-        <DrawerHeaderTitle>
-          <FileText size={20} />
-          <span>Class Details</span>
-        </DrawerHeaderTitle>
-        <CloseButton icon={<X size={20} />} onClick={onClose} />
-      </DrawerHeader>
       <DrawerContentContainer>
         {isLoading ? (
           <LoaderWrapper>
@@ -1664,6 +1630,7 @@ export default function ClassListings() {
       icon: BookOpen,
       color: colors.primary,
       footer: `${classStats.activeClasses || 0} active`,
+      periodBadge: "All-time",
     },
     {
       title: "Average Rating",
@@ -1673,13 +1640,7 @@ export default function ClassListings() {
       footer: `${classStats.totalReviews || 0} reviews (${
         classStats.platformReviews || 0
       } platform + ${classStats.googleReviews || 0} Google)`,
-    },
-    {
-      title: "Categories",
-      value: classStats.totalCategories,
-      icon: TagIcon,
-      color: colors.info,
-      footer: `${classStats.totalSubcategories || 0} subcategories`,
+      periodBadge: "All-time",
     },
     {
       title: "Schedule Warnings",
@@ -1691,6 +1652,7 @@ export default function ClassListings() {
         classStats.scheduleWarningsCount > 0
           ? "Classes need attention"
           : "All schedules healthy",
+      periodBadge: "Current",
     },
   ];
 
@@ -1824,22 +1786,25 @@ export default function ClassListings() {
 
         <Divider />
 
-        <AdminMetricCards
-          cards={statCardsData.map((card) =>
-            card.title === "Average Rating"
-              ? {
-                  ...card,
-                  value: Number(card.value) || 0,
-                  numberFormatOptions: {
-                    minimumFractionDigits: 1,
-                    maximumFractionDigits: 1,
-                  },
-                }
-              : card
-          )}
-          loading={statsLoading}
-          isReadyForAnimation
-        />
+        {statsLoading ? (
+          <AdminMetricCardsSkeleton count={3} />
+        ) : (
+          <AdminMetricCards
+            cards={statCardsData.map((card) =>
+              card.title === "Average Rating"
+                ? {
+                    ...card,
+                    value: Number(card.value) || 0,
+                    numberFormatOptions: {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 1,
+                    },
+                  }
+                : card
+            )}
+            isReadyForAnimation
+          />
+        )}
 
         {!statsLoading && renderScheduleWarnings()}
 

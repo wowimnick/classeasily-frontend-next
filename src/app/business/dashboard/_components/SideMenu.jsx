@@ -1130,7 +1130,7 @@ const SideMenuComponent = memo(
         e.domEvent?.preventDefault?.();
         setShakeEmailMarketing(true);
         setTimeout(() => {
-          router.push("/business/dashboard/settings?tab=plan-billing&email_marketing_modal=1");
+          router.push("/business/dashboard/settings?tab=billing&email_marketing_modal=1");
           setShakeEmailMarketing(false);
         }, 400);
         if (isMobile) setDrawerVisible(false);

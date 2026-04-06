@@ -2,7 +2,26 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import styled from "styled-components";
-import { Skeleton, Empty, Avatar, Space, Typography, Badge, Tabs, Form, Input, Button, Modal, Select, Timeline, Alert, Tooltip, ConfigProvider, Tag, Grid } from "antd";
+import {
+  Skeleton,
+  Empty,
+  Avatar,
+  Space,
+  Typography,
+  Form,
+  Input,
+  Button,
+  Modal,
+  Select,
+  Timeline,
+  Alert,
+  Tooltip,
+  ConfigProvider,
+  Tag,
+  Grid,
+  Collapse,
+  Tabs,
+} from "antd";
 import message from "@/lib/message";
 import {
   Hash,
@@ -11,7 +30,6 @@ import {
   Send,
   CheckCircle,
   Edit,
-  Calendar,
   UserCheck,
   ShieldQuestion,
   Briefcase,
@@ -26,7 +44,6 @@ import dayjs from "dayjs";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
 
 const { Text, Title, Paragraph } = Typography;
-const { Option } = Select;
 const { useBreakpoint } = Grid;
 
 const colors = {
@@ -52,19 +69,36 @@ function getSLAStatus(ticket) {
   return "ok";
 }
 
-// --- Drawer inner layout ---
+function conversationWithDaySeparators(messages) {
+  if (!messages?.length) return [];
+  const out = [];
+  let lastDay = null;
+  for (const msg of messages) {
+    const d = dayjs(msg.timestamp).format("YYYY-MM-DD");
+    if (d !== lastDay) {
+      lastDay = d;
+      out.push({
+        __day: true,
+        key: `day-${d}`,
+        label: dayjs(msg.timestamp).format("dddd, MMM D, YYYY"),
+      });
+    }
+    out.push({ __day: false, ...msg });
+  }
+  return out;
+}
+
 const DrawerTopBar = styled.div`
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  padding: 16px 24px;
+  gap: 14px;
+  padding: 14px 20px;
   border-bottom: 1px solid ${colors.border};
   flex-shrink: 0;
   background: #fff;
 
   @media (max-width: 768px) {
     padding: 12px 16px;
-    gap: 12px;
   }
 `;
 
@@ -75,78 +109,65 @@ const DrawerTitleArea = styled.div`
 
 const DrawerScrollBody = styled.div`
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   min-height: 0;
   background: ${colors.lightBg};
 `;
 
-const DrawerTabs = styled(Tabs)`
-  flex: 1;
+const TwoColumnLayout = styled.div`
   display: flex;
-  flex-direction: column;
-
-  .ant-tabs-nav {
-    background: #fff;
-    margin: 0;
-    padding: 0 24px;
-    border-bottom: 1px solid ${colors.border};
-    flex-shrink: 0;
-
-    @media (max-width: 768px) {
-      padding: 0 16px;
-    }
-  }
-
-  .ant-tabs-content-holder {
-    flex: 1;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-
-  .ant-tabs-content {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .ant-tabs-tabpane {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-  }
-`;
-
-// --- Conversation ---
-const ConversationContainer = styled.div`
-  display: flex;
-  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow: hidden;
 `;
 
+const ConversationColumn = styled.div`
+  flex: 3;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid ${colors.border};
+  background: ${colors.lightBg};
+`;
+
+const SidebarColumn = styled.div`
+  flex: 2;
+  min-width: 240px;
+  max-width: 380px;
+  overflow-y: auto;
+  background: #fff;
+  padding: 12px 14px 20px;
+`;
+
 const ChatMessages = styled.div`
   flex: 1;
-  padding: 0;
+  padding: 16px 18px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  background: ${colors.lightBg};
   min-height: 0;
+`;
+
+const DaySeparator = styled.div`
+  align-self: center;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 14px;
+  background: #e2e8f0;
+  border-radius: 20px;
+  color: ${colors.textSecondary};
+  margin: 8px 0;
 `;
 
 const MessageWrapper = styled.div`
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  max-width: 82%;
+  max-width: 88%;
   align-self: ${(p) => (p.$isUser ? "flex-end" : "flex-start")};
   flex-direction: ${(p) => (p.$isUser ? "row-reverse" : "row")};
 `;
@@ -193,30 +214,19 @@ const SystemMessage = styled.div`
   margin: 4px 0;
 `;
 
-const ReplyFormWrapper = styled.div`
-  padding: 14px 20px;
-  border-top: 1px solid ${colors.border};
-  background: #fff;
-  flex-shrink: 0;
-
-  @media (max-width: 768px) {
-    padding: 12px 16px;
-  }
-`;
-
-// --- Details Tab ---
-const TabScrollArea = styled.div`
-  flex: 1;
-  overflow-y: auto;
-  padding: 0;
+const FooterBar = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  width: 100%;
 `;
 
 const InfoCard = styled.div`
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid ${colors.border};
-  padding: 16px 20px;
-  margin-bottom: 16px;
+  background: ${colors.lightBg};
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
 `;
 
 const InfoCardTitle = styled.div`
@@ -225,7 +235,7 @@ const InfoCardTitle = styled.div`
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: ${colors.textSecondary};
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -233,8 +243,8 @@ const InfoCardTitle = styled.div`
 
 const InfoGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
 `;
 
 const InfoItem = styled.div`
@@ -259,20 +269,18 @@ const InfoValue = styled.div`
 
 const DescriptionBox = styled.div`
   white-space: pre-wrap;
-  padding: 12px;
-  background: ${colors.lightBg};
+  padding: 10px 12px;
+  background: #fff;
   border-radius: 8px;
   font-size: 13px;
   color: ${colors.textPrimary};
   line-height: 1.6;
-  margin-top: 10px;
+  margin-top: 8px;
+  border: 1px solid ${colors.border};
 `;
 
-// ---
 const formatDateTime = (dateString) =>
-  dateString
-    ? dayjs(dateString).format("MMM D, YYYY h:mm A")
-    : "N/A";
+  dateString ? dayjs(dateString).format("MMM D, YYYY h:mm A") : "N/A";
 
 const statusTagColor = {
   open: "orange",
@@ -288,7 +296,6 @@ const priorityTagColor = {
   urgent: "red",
 };
 
-// --- COMPONENT ---
 const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
   const [ticket, setTicket] = useState(null);
   const [history, setHistory] = useState([]);
@@ -297,7 +304,7 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
   const [replyForm] = Form.useForm();
   const [assignableAgents, setAssignableAgents] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("conversation");
+  const [mobileTab, setMobileTab] = useState("conversation");
 
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [resolveModalOpen, setResolveModalOpen] = useState(false);
@@ -338,7 +345,7 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
 
   useEffect(() => {
     if (open && ticketId) {
-      setActiveTab("conversation");
+      setMobileTab("conversation");
       fetchTicketDetails();
       fetchHistory();
     }
@@ -346,13 +353,13 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [ticket?.conversation]);
+  }, [ticket?.conversation, mobileTab, open]);
 
-  const handleAction = async (action, payload, successMessage) => {
+  const handleAction = async (actionFn, payload, successMessage) => {
     if (!ticket) return false;
     setActionLoading(true);
     try {
-      const response = await action(ticket.ticket_id, payload);
+      const response = await actionFn(ticket.ticket_id, payload);
       if (response.success) {
         message.success(successMessage);
         const updatedTicket = response.data;
@@ -360,10 +367,9 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
         if (onUpdate) onUpdate(updatedTicket);
         fetchHistory();
         return true;
-      } else {
-        message.error(response.error || "Action failed");
-        return false;
       }
+      message.error(response.error || "Action failed");
+      return false;
     } catch {
       message.error("An error occurred");
       return false;
@@ -403,6 +409,15 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
     if (success) setResolveModalOpen(false);
   };
 
+  const handlePriorityChange = async (value) => {
+    if (!ticket || !value || value === ticket.priority) return;
+    await handleAction(
+      supportTicketService.setTicketPriority,
+      { priority: value },
+      "Priority updated"
+    );
+  };
+
   const openAssignModal = async () => {
     if (!ticket) return;
     setAssignModalOpen(true);
@@ -411,7 +426,10 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
       setActionLoading(true);
       try {
         const res = await supportTicketService.getAssignableAgents();
-        if (res.success) setAssignableAgents(res.data);
+        if (res.success) {
+          const d = res.data;
+          setAssignableAgents(Array.isArray(d) ? d : d?.results || []);
+        }
       } catch {
         message.error("Could not load agents list.");
       } finally {
@@ -436,7 +454,11 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
           <Avatar
             src={senderDetails?.avatar_thumb_url}
             size={32}
-            style={{ backgroundColor: isUser ? colors.info : colors.success, color: "#fff", flexShrink: 0 }}
+            style={{
+              backgroundColor: isUser ? colors.info : colors.success,
+              color: "#fff",
+              flexShrink: 0,
+            }}
           >
             {senderName ? senderName[0] : "A"}
           </Avatar>
@@ -454,8 +476,252 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
 
   const slaStatus = ticket ? getSLAStatus(ticket) : null;
 
+  const sidebarCollapseItems = ticket
+    ? [
+        {
+          key: "ticket",
+          label: (
+            <Space size={6}>
+              <Hash size={14} />
+              <span>Ticket info</span>
+            </Space>
+          ),
+          children: (
+            <div>
+              <InfoGrid style={{ marginBottom: 12 }}>
+                <InfoItem>
+                  <InfoLabel>Status</InfoLabel>
+                  <InfoValue>
+                    <Tag color={statusTagColor[ticket.status] || "default"}>{ticket.status_display}</Tag>
+                  </InfoValue>
+                </InfoItem>
+                <InfoItem>
+                  <InfoLabel>Priority</InfoLabel>
+                  <InfoValue>
+                    <Tag color={priorityTagColor[ticket.priority] || "default"}>{ticket.priority_display}</Tag>
+                  </InfoValue>
+                </InfoItem>
+                <InfoItem>
+                  <InfoLabel>Category</InfoLabel>
+                  <InfoValue>{ticket.category_display}</InfoValue>
+                </InfoItem>
+                <InfoItem>
+                  <InfoLabel>Created</InfoLabel>
+                  <InfoValue>{formatDateTime(ticket.created_at)}</InfoValue>
+                </InfoItem>
+                <InfoItem>
+                  <InfoLabel>Updated</InfoLabel>
+                  <InfoValue>{formatDateTime(ticket.updated_at)}</InfoValue>
+                </InfoItem>
+                {slaStatus && (
+                  <InfoItem>
+                    <InfoLabel>SLA</InfoLabel>
+                    <InfoValue>
+                      <Tag
+                        color={slaStatus === "breached" ? "red" : slaStatus === "at_risk" ? "orange" : "green"}
+                        icon={
+                          slaStatus === "breached" ? (
+                            <AlertTriangle size={11} style={{ marginRight: 4 }} />
+                          ) : (
+                            <Clock size={11} style={{ marginRight: 4 }} />
+                          )
+                        }
+                      >
+                        {slaStatus === "breached" ? "Breached" : slaStatus === "at_risk" ? "At risk" : "On track"}
+                      </Tag>
+                    </InfoValue>
+                  </InfoItem>
+                )}
+              </InfoGrid>
+              <InfoLabel style={{ marginBottom: 4 }}>Subject</InfoLabel>
+              <InfoValue style={{ fontWeight: 600 }}>{ticket.subject}</InfoValue>
+              <InfoLabel style={{ marginTop: 12, marginBottom: 4 }}>Description</InfoLabel>
+              <DescriptionBox>{ticket.description}</DescriptionBox>
+            </div>
+          ),
+        },
+        {
+          key: "user",
+          label: (
+            <Space size={6}>
+              <Briefcase size={14} />
+              <span>User context</span>
+            </Space>
+          ),
+          children: ticket.user_context ? (
+            <InfoGrid>
+              <InfoItem>
+                <InfoLabel>Member since</InfoLabel>
+                <InfoValue>{ticket.user_context.member_since}</InfoValue>
+              </InfoItem>
+              <InfoItem>
+                <InfoLabel>Total bookings</InfoLabel>
+                <InfoValue>{ticket.user_context.total_bookings}</InfoValue>
+              </InfoItem>
+              <InfoItem>
+                <InfoLabel>Account</InfoLabel>
+                <InfoValue>
+                  {ticket.user_context.is_business_owner ? (
+                    <Tag color="success">Business owner</Tag>
+                  ) : (
+                    <Tag>Standard user</Tag>
+                  )}
+                </InfoValue>
+              </InfoItem>
+            </InfoGrid>
+          ) : (
+            <Text type="secondary">No extended context</Text>
+          ),
+        },
+        {
+          key: "assign",
+          label: (
+            <Space size={6}>
+              <UserCheck size={14} />
+              <span>Assignment</span>
+            </Space>
+          ),
+          children: (
+            <div>
+              <InfoLabel>Current agent</InfoLabel>
+              <InfoValue style={{ marginTop: 4 }}>
+                {ticket.assigned_to_details ? (
+                  <Space>
+                    <Avatar size="small" src={ticket.assigned_to_details?.avatar_thumb_url}>
+                      {ticket.assigned_to_details.full_name?.[0]}
+                    </Avatar>
+                    {ticket.assigned_to_details.full_name}
+                  </Space>
+                ) : (
+                  <Text type="secondary">Unassigned</Text>
+                )}
+              </InfoValue>
+              <Paragraph type="secondary" style={{ fontSize: 12, marginTop: 10, marginBottom: 0 }}>
+                Use <strong>Assign</strong> in the footer to change assignment.
+              </Paragraph>
+            </div>
+          ),
+        },
+        {
+          key: "actions",
+          label: (
+            <Space size={6}>
+              <Edit size={14} />
+              <span>Priority</span>
+            </Space>
+          ),
+          children: (
+            <div>
+              <InfoLabel style={{ marginBottom: 6 }}>Change priority</InfoLabel>
+              <Select
+                value={ticket.priority}
+                style={{ width: "100%", maxWidth: 280 }}
+                onChange={handlePriorityChange}
+                disabled={actionLoading || ticket.status === "closed"}
+                options={[
+                  { value: "low", label: "Low" },
+                  { value: "medium", label: "Medium" },
+                  { value: "high", label: "High" },
+                  { value: "urgent", label: "Urgent" },
+                ]}
+              />
+            </div>
+          ),
+        },
+        {
+          key: "history",
+          label: (
+            <Space size={6}>
+              <Activity size={14} />
+              <span>History</span>
+            </Space>
+          ),
+          children: historyLoading ? (
+            <Skeleton active />
+          ) : (
+            <Timeline
+              items={[
+                ...history.map((log) => ({
+                  key: log.id,
+                  children: (
+                    <>
+                      <Text strong style={{ fontSize: 13 }}>{log.details}</Text>
+                      <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                        {log.user_email} · {formatDateTime(log.timestamp)}
+                      </div>
+                    </>
+                  ),
+                })),
+                {
+                  key: "created",
+                  color: "gray",
+                  dot: <ShieldQuestion size={14} />,
+                  children: (
+                    <>
+                      <Text style={{ fontSize: 13 }}>Ticket created by {ticket.user_details?.full_name}</Text>
+                      <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                        {formatDateTime(ticket.created_at)}
+                      </div>
+                    </>
+                  ),
+                },
+              ]}
+            />
+          ),
+        },
+      ]
+    : [];
+
+  const conversationStream = (
+    <ChatMessages>
+      {ticket?.conversation?.length ? (
+        conversationWithDaySeparators(ticket.conversation).map((item) =>
+          item.__day ? (
+            <DaySeparator key={item.key}>{item.label}</DaySeparator>
+          ) : (
+            renderChatMessage(item)
+          )
+        )
+      ) : (
+        <Empty description="No messages yet" style={{ marginTop: 48 }} />
+      )}
+      <div ref={messagesEndRef} />
+    </ChatMessages>
+  );
+
+  const sidebarContent = (
+    <Collapse bordered={false} defaultActiveKey={["ticket", "user", "assign", "actions"]} items={sidebarCollapseItems} />
+  );
+
+  const mobileSummaryCard =
+    ticket && !loading ? (
+      <div
+        style={{
+          padding: "12px 16px",
+          background: "#fff",
+          borderBottom: `1px solid ${colors.border}`,
+        }}
+      >
+        <Text strong style={{ display: "block", fontSize: 14, lineHeight: 1.35 }}>
+          {ticket.subject}
+        </Text>
+        <Space size={6} wrap style={{ marginTop: 8 }}>
+            <Tag color={statusTagColor[ticket.status] || "default"}>{ticket.status_display}</Tag>
+            <Tag color={priorityTagColor[ticket.priority] || "default"}>{ticket.priority_display}</Tag>
+            {slaStatus && slaStatus !== "ok" && (
+              <Tag color={slaStatus === "breached" ? "red" : "orange"} icon={<AlertTriangle size={11} style={{ marginRight: 3 }} />}>
+                SLA
+              </Tag>
+            )}
+        </Space>
+        <Text type="secondary" style={{ fontSize: 12, display: "block", marginTop: 6 }}>
+          {ticket.user_details?.full_name} · {ticket.user_details?.email}
+        </Text>
+      </div>
+    ) : null;
+
   const drawerBody = (
-    <DrawerScrollBody style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+    <DrawerScrollBody>
       {loading ? (
         <div style={{ padding: 24 }}>
           <Skeleton active avatar paragraph={{ rows: 12 }} />
@@ -464,314 +730,196 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
         <div style={{ padding: 40, textAlign: "center" }}>
           <Empty description="Ticket not found" />
         </div>
+      ) : isMobile ? (
+        <>
+          {mobileSummaryCard}
+          <Tabs
+            activeKey={mobileTab}
+            onChange={setMobileTab}
+            style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}
+            tabBarStyle={{ margin: 0, padding: "0 12px", background: "#fff" }}
+            items={[
+              {
+                key: "conversation",
+                label: (
+                  <Space size={6}>
+                    <MessageSquare size={14} />
+                    Thread
+                  </Space>
+                ),
+                children: (
+                  <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 280 }}>
+                    {conversationStream}
+                  </div>
+                ),
+              },
+              {
+                key: "details",
+                label: (
+                  <Space size={6}>
+                    <User size={14} />
+                    Details
+                  </Space>
+                ),
+                children: <div style={{ padding: 12, overflowY: "auto", maxHeight: "55vh" }}>{sidebarContent}</div>,
+              },
+            ]}
+          />
+        </>
       ) : (
-        <DrawerTabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}
-          items={[
-            {
-              key: "conversation",
-              label: (
-                <Space>
-                  <MessageSquare size={14} />
-                  Conversation
-                </Space>
-              ),
-              children: (
-                <ConversationContainer>
-                  <ChatMessages>
-                    {ticket.conversation?.map(renderChatMessage)}
-                    <div ref={messagesEndRef} />
-                  </ChatMessages>
-                  <ReplyFormWrapper>
-                    {ticket.status === "closed" ? (
-                      <Alert message="This ticket is closed and read-only." type="info" showIcon style={{ borderRadius: 8 }} />
-                    ) : ticket.status === "resolved" ? (
-                      <Alert message="This ticket is resolved. Replying will re-open it." type="warning" showIcon style={{ borderRadius: 8 }} />
-                    ) : (
-                      <Form form={replyForm} onFinish={handleReply} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                        <Form.Item name="message" style={{ flex: 1, margin: 0 }} rules={[{ required: true, message: " " }]}>
-                          <Input.TextArea
-                            autoSize={{ minRows: 2, maxRows: 5 }}
-                            placeholder="Type your reply..."
-                            disabled={actionLoading}
-                            style={{ borderRadius: 8 }}
-                          />
-                        </Form.Item>
-                        <Form.Item style={{ margin: 0 }}>
-                          <Button
-                            type="primary"
-                            htmlType="submit"
-                            icon={<Send size={14} />}
-                            loading={actionLoading}
-                            style={{ borderRadius: 8, height: 36 }}
-                          >
-                            Send
-                          </Button>
-                        </Form.Item>
-                      </Form>
-                    )}
-                  </ReplyFormWrapper>
-                </ConversationContainer>
-              ),
-            },
-            {
-              key: "details",
-              label: (
-                <Space>
-                  <User size={14} />
-                  Details
-                </Space>
-              ),
-              children: (
-                <TabScrollArea>
-                  {ticket.user_context && (
-                    <InfoCard>
-                      <InfoCardTitle><Briefcase size={12} /> User Context</InfoCardTitle>
-                      <InfoGrid>
-                        <InfoItem>
-                          <InfoLabel>Member Since</InfoLabel>
-                          <InfoValue>{ticket.user_context.member_since}</InfoValue>
-                        </InfoItem>
-                        <InfoItem>
-                          <InfoLabel>Total Bookings</InfoLabel>
-                          <InfoValue>{ticket.user_context.total_bookings}</InfoValue>
-                        </InfoItem>
-                        <InfoItem>
-                          <InfoLabel>Account Type</InfoLabel>
-                          <InfoValue>
-                            {ticket.user_context.is_business_owner ? (
-                              <Tag color="success">Business Owner</Tag>
-                            ) : (
-                              <Tag>Standard User</Tag>
-                            )}
-                          </InfoValue>
-                        </InfoItem>
-                      </InfoGrid>
-                    </InfoCard>
-                  )}
-                  <InfoCard>
-                    <InfoCardTitle><Hash size={12} /> Ticket Details</InfoCardTitle>
-                    <InfoGrid>
-                      <InfoItem>
-                        <InfoLabel>Status</InfoLabel>
-                        <InfoValue>
-                          <Tag color={statusTagColor[ticket.status] || "default"}>{ticket.status_display}</Tag>
-                        </InfoValue>
-                      </InfoItem>
-                      <InfoItem>
-                        <InfoLabel>Priority</InfoLabel>
-                        <InfoValue>
-                          <Tag color={priorityTagColor[ticket.priority] || "default"}>{ticket.priority_display}</Tag>
-                        </InfoValue>
-                      </InfoItem>
-                      <InfoItem>
-                        <InfoLabel>Category</InfoLabel>
-                        <InfoValue>{ticket.category_display}</InfoValue>
-                      </InfoItem>
-                      <InfoItem>
-                        <InfoLabel>Created</InfoLabel>
-                        <InfoValue>{formatDateTime(ticket.created_at)}</InfoValue>
-                      </InfoItem>
-                      <InfoItem>
-                        <InfoLabel>Last Updated</InfoLabel>
-                        <InfoValue>{formatDateTime(ticket.updated_at)}</InfoValue>
-                      </InfoItem>
-                      {slaStatus && (
-                        <InfoItem>
-                          <InfoLabel>SLA Status</InfoLabel>
-                          <InfoValue>
-                            <Tag
-                              color={slaStatus === "breached" ? "red" : slaStatus === "at_risk" ? "orange" : "green"}
-                              icon={slaStatus === "breached" ? <AlertTriangle size={11} style={{ marginRight: 4 }} /> : <Clock size={11} style={{ marginRight: 4 }} />}
-                            >
-                              {slaStatus === "breached" ? "SLA Breached" : slaStatus === "at_risk" ? "At Risk" : "On Track"}
-                            </Tag>
-                          </InfoValue>
-                        </InfoItem>
-                      )}
-                    </InfoGrid>
-                    <div style={{ marginTop: 14 }}>
-                      <InfoLabel style={{ marginBottom: 6 }}>Subject</InfoLabel>
-                      <InfoValue style={{ fontSize: 14, fontWeight: 600 }}>{ticket.subject}</InfoValue>
-                    </div>
-                    <div style={{ marginTop: 14 }}>
-                      <InfoLabel style={{ marginBottom: 6 }}>Description</InfoLabel>
-                      <DescriptionBox>{ticket.description}</DescriptionBox>
-                    </div>
-                  </InfoCard>
-                  <InfoCard>
-                    <InfoCardTitle><UserCheck size={12} /> Assignment &amp; Actions</InfoCardTitle>
-                    <InfoItem style={{ marginBottom: 14 }}>
-                      <InfoLabel>Assigned Agent</InfoLabel>
-                      <InfoValue>
-                        {ticket.assigned_to_details ? (
-                          <Space>
-                            <Avatar size="small" src={ticket.assigned_to_details?.avatar_thumb_url}>
-                              {ticket.assigned_to_details.full_name?.[0]}
-                            </Avatar>
-                            {ticket.assigned_to_details.full_name}
-                          </Space>
-                        ) : (
-                          <Text style={{ fontSize: 13, color: colors.textSecondary }}>Unassigned</Text>
-                        )}
-                      </InfoValue>
-                    </InfoItem>
-                    <Space wrap>
-                      <Button icon={<Edit size={14} />} onClick={openAssignModal} style={{ borderRadius: 8 }}>
-                        Assign / Re-assign
-                      </Button>
-                      <Button
-                        type="primary"
-                        icon={<CheckCircle size={14} />}
-                        onClick={() => setResolveModalOpen(true)}
-                        disabled={ticket.status === "resolved" || ticket.status === "closed"}
-                        style={{ borderRadius: 8 }}
-                      >
-                        Resolve Ticket
-                      </Button>
-                    </Space>
-                  </InfoCard>
-                </TabScrollArea>
-              ),
-            },
-            {
-              key: "history",
-              label: (
-                <Space>
-                  <Activity size={14} />
-                  History
-                </Space>
-              ),
-              children: (
-                <TabScrollArea>
-                  <InfoCard>
-                    <InfoCardTitle><Activity size={12} /> Ticket History</InfoCardTitle>
-                    {historyLoading ? (
-                      <Skeleton active />
-                    ) : (
-                      <Timeline
-                        items={[
-                          ...history.map((log) => ({
-                            key: log.id,
-                            children: (
-                              <>
-                                <Text strong style={{ fontSize: 13 }}>{log.details}</Text>
-                                <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                                  by {log.user_email} at {formatDateTime(log.timestamp)}
-                                </div>
-                              </>
-                            ),
-                          })),
-                          {
-                            key: "created",
-                            color: "gray",
-                            dot: <ShieldQuestion size={14} />,
-                            children: (
-                              <>
-                                <Text style={{ fontSize: 13 }}>Ticket created by {ticket.user_details?.full_name}</Text>
-                                <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                                  {formatDateTime(ticket.created_at)}
-                                </div>
-                              </>
-                            ),
-                          },
-                        ]}
-                      />
-                    )}
-                  </InfoCard>
-                </TabScrollArea>
-              ),
-            },
-          ]}
-        />
+        <TwoColumnLayout>
+          <ConversationColumn>{conversationStream}</ConversationColumn>
+          <SidebarColumn>{sidebarContent}</SidebarColumn>
+        </TwoColumnLayout>
       )}
     </DrawerScrollBody>
   );
 
-  const topBar = ticket && (
-    <DrawerTopBar>
-      <Avatar
-        src={ticket.user_details?.avatar_thumb_url}
-        size={44}
-        style={{ backgroundColor: colors.primary, color: "#fff", flexShrink: 0, fontSize: 20 }}
-      >
-        {ticket.user_details?.full_name?.[0]}
-      </Avatar>
-      <DrawerTitleArea>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <div style={{ fontWeight: 700, fontSize: 15, color: colors.textPrimary }}>
-            {ticket.user_details?.full_name}
-          </div>
-          <Tag color={statusTagColor[ticket.status] || "default"} style={{ fontSize: 11 }}>
-            {ticket.status_display}
-          </Tag>
-          <Tag color={priorityTagColor[ticket.priority] || "default"} style={{ fontSize: 11 }}>
-            {ticket.priority_display}
-          </Tag>
-          {slaStatus && slaStatus !== "ok" && (
-            <Tag
-              color={slaStatus === "breached" ? "red" : "orange"}
-              icon={<AlertTriangle size={11} style={{ marginRight: 3 }} />}
-              style={{ fontSize: 11 }}
-            >
-              {slaStatus === "breached" ? "SLA Breached" : "SLA At Risk"}
-            </Tag>
-          )}
-        </div>
-        <div style={{ fontSize: 12, color: colors.textSecondary, marginTop: 3 }}>
-          {ticket.user_details?.email} · #{ticket.user_facing_id || ticket.ticket_id}
-        </div>
-      </DrawerTitleArea>
-      <button
-        type="button"
-        onClick={onClose}
-        style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: colors.textSecondary, borderRadius: 6, display: "flex", alignItems: "center" }}
-        aria-label="Close"
-      >
-        <X size={18} />
-      </button>
-    </DrawerTopBar>
-  );
-
-  const mainContent = (
-    <>
-      {topBar || (
-        <DrawerTopBar>
-          <div style={{ fontWeight: 700, fontSize: 15, color: colors.textPrimary }}>
-            Ticket Details
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: colors.textSecondary, marginLeft: "auto" }}
-            aria-label="Close"
+  const drawerFooter =
+    ticket && !loading && ticket.status !== "closed" ? (
+      <FooterBar>
+        {ticket.status === "resolved" && (
+          <Alert
+            message="Replying will re-open this ticket."
+            type="warning"
+            showIcon
+            style={{ flex: "1 1 100%", margin: 0, borderRadius: 8 }}
+          />
+        )}
+        <Form
+          form={replyForm}
+          onFinish={handleReply}
+          style={{
+            flex: "1 1 240px",
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 8,
+            margin: 0,
+            minWidth: 0,
+          }}
+        >
+          <Form.Item name="message" style={{ flex: 1, margin: 0, minWidth: 0 }} rules={[{ required: true, message: "Enter a message" }]}>
+            <Input.TextArea
+              autoSize={{ minRows: 1, maxRows: 4 }}
+              placeholder="Reply to customer…"
+              disabled={actionLoading}
+              style={{ borderRadius: 8 }}
+            />
+          </Form.Item>
+          <Form.Item style={{ margin: 0 }}>
+            <Button type="primary" htmlType="submit" icon={<Send size={14} />} loading={actionLoading} style={{ borderRadius: 8 }}>
+              Send
+            </Button>
+          </Form.Item>
+        </Form>
+        <Space wrap>
+          <Button icon={<Edit size={14} />} onClick={openAssignModal} style={{ borderRadius: 8 }}>
+            Assign
+          </Button>
+          <Button
+            type="primary"
+            icon={<CheckCircle size={14} />}
+            onClick={() => setResolveModalOpen(true)}
+            disabled={ticket.status === "resolved" || ticket.status === "closed"}
+            style={{ borderRadius: 8 }}
           >
-            <X size={18} />
-          </button>
-        </DrawerTopBar>
-      )}
-      {drawerBody}
-    </>
-  );
+            Resolve
+          </Button>
+        </Space>
+      </FooterBar>
+    ) : ticket && !loading && ticket.status === "closed" ? (
+      <FooterBar>
+        <Alert message="This ticket is closed (read-only)." type="info" showIcon style={{ flex: 1, margin: 0, borderRadius: 8 }} />
+      </FooterBar>
+    ) : null;
+
+  const topBar =
+    ticket && !loading ? (
+      <DrawerTopBar>
+        <Avatar
+          src={ticket.user_details?.avatar_thumb_url}
+          size={40}
+          style={{ backgroundColor: colors.primary, color: "#fff", flexShrink: 0 }}
+        >
+          {ticket.user_details?.full_name?.[0]}
+        </Avatar>
+        <DrawerTitleArea>
+          <Title level={5} style={{ margin: 0, fontSize: 15, lineHeight: 1.35, fontWeight: 700 }}>
+            {ticket.subject}
+          </Title>
+          <Space size={6} wrap style={{ marginTop: 8 }}>
+            <Tag color={statusTagColor[ticket.status]}>{ticket.status_display}</Tag>
+            <Tag color={priorityTagColor[ticket.priority]}>{ticket.priority_display}</Tag>
+            {slaStatus && slaStatus !== "ok" && (
+              <Tag
+                color={slaStatus === "breached" ? "red" : "orange"}
+                icon={<AlertTriangle size={11} style={{ marginRight: 3 }} />}
+              >
+                {slaStatus === "breached" ? "SLA breached" : "SLA at risk"}
+              </Tag>
+            )}
+          </Space>
+          <Text type="secondary" style={{ fontSize: 12, display: "block", marginTop: 6 }}>
+            {ticket.user_details?.full_name} · {ticket.user_details?.email} · #{ticket.user_facing_id || ticket.ticket_id}
+          </Text>
+        </DrawerTitleArea>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 4,
+            color: colors.textSecondary,
+            borderRadius: 6,
+            display: "flex",
+            alignItems: "center",
+          }}
+          aria-label="Close"
+        >
+          <X size={18} />
+        </button>
+      </DrawerTopBar>
+    ) : (
+      <DrawerTopBar>
+        <div style={{ fontWeight: 700, fontSize: 15, color: colors.textPrimary }}>Ticket details</div>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 4,
+            color: colors.textSecondary,
+            marginLeft: "auto",
+          }}
+          aria-label="Close"
+        >
+          <X size={18} />
+        </button>
+      </DrawerTopBar>
+    );
 
   return (
     <ConfigProvider theme={theme}>
       <AdminResponsiveDrawer
         open={open}
         onClose={onClose}
-        title="Ticket Details"
+        title="Support ticket"
         titleIcon={<MessageSquare size={16} color={colors.primary} />}
         isMobile={isMobile}
-        width="860px"
-        hideHeader={!!ticket}
+        width="min(960px, 96vw)"
+        hideHeader
+        footer={drawerFooter}
       >
-        {mainContent}
+        {topBar}
+        {drawerBody}
       </AdminResponsiveDrawer>
 
       <Modal
-        title="Assign Ticket"
+        title="Assign ticket"
         open={assignModalOpen}
         onCancel={() => setAssignModalOpen(false)}
         confirmLoading={actionLoading}
@@ -786,22 +934,18 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
           style={{ width: "100%", marginTop: 16 }}
           value={selectedAgent}
           onChange={setSelectedAgent}
+          filterOption={(input, option) =>
+            (option?.label ?? "").toString().toLowerCase().includes(input.toLowerCase())
+          }
           options={assignableAgents.map((agent) => ({
             value: agent.userId,
-            label: (
-              <Space>
-                <Avatar size="small" src={agent.avatar_thumb_url}>
-                  {agent.full_name ? agent.full_name[0] : "U"}
-                </Avatar>
-                {agent.full_name || agent.email}
-              </Space>
-            ),
+            label: agent.full_name || agent.email,
           }))}
         />
       </Modal>
 
       <Modal
-        title="Resolve Ticket"
+        title="Resolve ticket"
         open={resolveModalOpen}
         onCancel={() => setResolveModalOpen(false)}
         footer={null}
@@ -811,14 +955,14 @@ const TicketDetailDrawer = ({ ticketId, open, onClose, onUpdate }) => {
         <Form onFinish={handleResolve} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item
             name="resolution_notes"
-            label="Resolution Notes"
+            label="Resolution notes"
             rules={[{ required: true, message: "Resolution notes are required." }]}
           >
             <Input.TextArea rows={4} placeholder="Describe how the issue was resolved." style={{ borderRadius: 8 }} />
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit" block loading={actionLoading} style={{ borderRadius: 8 }}>
-              Confirm Resolution
+              Confirm resolution
             </Button>
           </Form.Item>
         </Form>

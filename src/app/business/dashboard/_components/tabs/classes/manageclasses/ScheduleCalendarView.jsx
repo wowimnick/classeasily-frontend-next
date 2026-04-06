@@ -2997,7 +2997,7 @@ function MobileFiltersDrawer({ open, onClose, ...sidebarProps }) {
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function ScheduleCalendarView({ initialClassId }) {
-  const [viewMode, setViewMode] = useState("week");
+  const [viewMode, setViewMode] = useState("month");
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [classes, setClasses] = useState([]);
   const [allSchedules, setAllSchedules] = useState([]);

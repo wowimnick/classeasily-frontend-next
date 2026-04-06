@@ -73,6 +73,10 @@ import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 
 import { reviewService } from "@/services/apiService";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
+import {
+  MetricPeriodBadge,
+  formatDayjsRangeBadge,
+} from "../../shared/MetricPeriodBadge";
 import { LordIcon } from "@/services/ReactUtils";
 import { MobileDateRangePicker } from "@/components/common/mobile/MobilePickers";
 
@@ -1203,6 +1207,15 @@ const BusinessReviews = () => {
     },
   ];
 
+  const reviewsPeriodLabel = useMemo(
+    () =>
+      formatDayjsRangeBadge(
+        analyticsDateRange?.[0],
+        analyticsDateRange?.[1],
+      ),
+    [analyticsDateRange],
+  );
+
   const isGoogleReview = (review) => review.source === "google";
   const isPlatformReview = (review) => review.source === "platform";
 
@@ -1642,6 +1655,7 @@ const BusinessReviews = () => {
                       >
                         {stat.icon}
                       </IconContainer>
+                      <MetricPeriodBadge>{reviewsPeriodLabel}</MetricPeriodBadge>
                     </StatHeader>
                     <StatLabel>{stat.title}</StatLabel>
                   </div>

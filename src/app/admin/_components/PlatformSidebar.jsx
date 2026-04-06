@@ -75,32 +75,6 @@ const AdminLogoIcon = styled.div`
   flex-shrink: 0;
 `;
 
-const AdminTextBlock = styled.div`
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-`;
-
-const AdminNameText = styled.div`
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #111827;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.3;
-`;
-
-const AdminSubtitleText = styled.div`
-  font-size: 11.5px;
-  color: #9ca3af;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.3;
-  margin-top: 1px;
-`;
-
 /* ─── Menu container ─────────────────────────────────────────────── */
 const MenuContainer = styled.div`
   flex-grow: 1;
@@ -773,19 +747,6 @@ const PlatformSidebar = memo(({ onMenuSelect, activeKey }) => {
     });
   }, []);
 
-  const renderProfileCard = (collapsed) => (
-    <AdminProfileCard>
-      <AdminLogoIcon>
-        <LayoutGrid size={18} strokeWidth={2.5} />
-      </AdminLogoIcon>
-      {!collapsed && (
-        <AdminTextBlock>
-          <AdminNameText>Platform Admin</AdminNameText>
-          <AdminSubtitleText>Platform Management</AdminSubtitleText>
-        </AdminTextBlock>
-      )}
-    </AdminProfileCard>
-  );
 
   const renderMenu = (containerClass = "", inlineCollapsed = false) => (
     <MenuContainer className={containerClass}>
@@ -801,27 +762,13 @@ const PlatformSidebar = memo(({ onMenuSelect, activeKey }) => {
     </MenuContainer>
   );
 
-  const renderFooterActions = () => (
-    <>
-      <FooterBtn href="/">
-        <Eye size={15} />
-        View Platform
-      </FooterBtn>
-      <FooterBtn href="/business/help/">
-        <AlertCircle size={15} />
-        Help &amp; Docs
-      </FooterBtn>
-    </>
-  );
 
   return (
     <ThemeProvider theme={appTheme}>
       <SidebarWrapper>
         {!isSmallMobile && (
           <DesktopSideMenu className="desktop-sidemenu" initial={false} $collapsed={isTablet}>
-            <ProfileCardArea>{renderProfileCard(isTablet)}</ProfileCardArea>
             {renderMenu("", isTablet)}
-            {!isTablet && <FooterActionsContainer>{renderFooterActions()}</FooterActionsContainer>}
           </DesktopSideMenu>
         )}
 

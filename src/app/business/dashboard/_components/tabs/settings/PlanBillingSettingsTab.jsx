@@ -2207,8 +2207,8 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const r = await businessService.createEmailMarketingAddonCheckout({
       price_id: priceId,
-      success_url: `${origin}/business/dashboard/settings?tab=plan-billing&email_marketing=1`,
-      cancel_url: `${origin}/business/dashboard/settings?tab=plan-billing`,
+      success_url: `${origin}/business/dashboard/settings?tab=billing&email_marketing=1`,
+      cancel_url: `${origin}/business/dashboard/settings?tab=billing`,
     });
     if (r.success && r.url) window.location.href = r.url;
     else antMessage.error(r.error || "Could not start checkout.");

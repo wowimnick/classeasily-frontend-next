@@ -10,7 +10,7 @@ const { Title, Text } = Typography;
 
 /** Opens Plans & billing with email marketing tier picker. */
 export const MARKETING_BILLING_PATH =
-  "/business/dashboard/settings?tab=plan-billing&email_marketing_modal=1";
+  "/business/dashboard/settings?tab=billing&email_marketing_modal=1";
 
 // ─── spacing tokens ────────────────────────────────────────────────────────────
 export const SPACE = {

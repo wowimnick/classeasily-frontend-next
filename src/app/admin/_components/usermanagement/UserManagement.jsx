@@ -26,8 +26,8 @@ import {
   Divider,
   DatePicker,
   Typography,
-  Skeleton,
   Radio,
+  Popconfirm,
 } from "antd";
 import message from "@/lib/message";
 import {
@@ -83,6 +83,7 @@ import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import ShadowUserModal from "./ShadowUserModal";
 import AdminMetricCards from "../shared/AdminMetricCards";
 import AdminResponsiveDrawer from "../shared/AdminResponsiveDrawer";
+import { AdminAreaChartSkeleton, AdminPieChartSkeleton, AdminMetricCardsSkeleton } from "../shared/AdminSkeletons";
 
 const { RangePicker } = DatePicker;
 const { TabPane } = Tabs;
@@ -105,6 +106,15 @@ const colors = {
   textSecondary: "#64748b",
   textTertiary: "#94a3b8",
 };
+
+const USER_ROLE_PIE_COLORS = [
+  colors.info,
+  colors.primary,
+  colors.purple,
+  colors.success,
+  colors.warning,
+  colors.error,
+];
 
 const hexToRgba = (hex, alpha = 1) => {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -290,86 +300,6 @@ const DrawerHeader = styled.div`
   }
 `;
 
-// --- ROLE CHANGE DRAWER COMPONENTS ---
-const RoleDrawerOverlay = styled(Drawer.Overlay)`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 1060;
-  ${VAUL_OVERLAY_BACKDROP_BLUR}
-`;
-
-const RoleMobileShell = styled(Drawer.Content)`
-  background: white;
-  display: flex;
-  flex-direction: column;
-  border-radius: 24px 24px 0 0;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 1061;
-  outline: none;
-  max-height: 85vh;
-`;
-
-const RoleDesktopShell = styled(Drawer.Content)`
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  position: fixed;
-  z-index: 1061;
-  outline: none;
-  width: 480px;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: -4px 0 32px rgba(0, 0, 0, 0.14), 0 4px 24px rgba(0, 0, 0, 0.10);
-  background: white;
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-`;
-
-const RoleDrawerInner = styled.div`
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-`;
-
-const RoleDrawerHeader = styled.div`
-  padding: 20px 24px;
-  border-bottom: 1px solid ${colors.border};
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-`;
-
-const RoleDrawerUserInfo = styled.div`
-  padding: 16px 24px;
-  background: ${colors.lightBg};
-  border-bottom: 1px solid ${colors.border};
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-const RoleDrawerBody = styled.div`
-  padding: 0;
-  overflow-y: auto;
-  flex: 1;
-`;
-
-const RoleDrawerFooter = styled.div`
-  padding: 16px 24px;
-  border-top: 1px solid ${colors.border};
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  flex-shrink: 0;
-`;
-
 const RoleWarningBanner = styled.div`
   display: flex;
   align-items: flex-start;
@@ -477,7 +407,8 @@ const UserEmailText = styled(Text)`
 `;
 
 const ContentBody = styled.div`
-  padding: 0;
+  padding: 24px;
+  background: #ffffff;
   flex: 1;
   overflow-y: auto;
   animation: ${fadeIn} 0.5s 0.1s ease-out both;
@@ -507,7 +438,7 @@ const ContentBody = styled.div`
   }
 
   @media (max-width: 768px) {
-    padding: 16px;
+    padding: 16px 20px;
   }
 `;
 
@@ -671,10 +602,12 @@ const generateSkeletonData = (count = 10) => {
 
 const ChartCard = styled(Card)`
   border-radius: 12px;
+  background: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   border: 1px solid ${colors.border};
   .ant-card-body {
     padding: 16px 20px !important;
+    background: #ffffff;
   }
 `;
 const GridRow = styled.div`
@@ -688,6 +621,8 @@ const ChartContainer = styled.div`
   width: 100%;
   margin-top: 12px;
   position: relative;
+  background: #ffffff;
+  border-radius: 8px;
   @media (max-width: 768px) {
     height: 200px;
   }
@@ -890,10 +825,8 @@ const UserManagementDashboard = () => {
   const [searchText, setSearchText] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [dateRange, setDateRange] = useState([
-    dayjs().subtract(29, "days"),
-    dayjs(),
-  ]);
+  const [bookingActivityFilter, setBookingActivityFilter] = useState(undefined);
+  const [lastActiveFilter, setLastActiveFilter] = useState(undefined);
 
   // Drawer & Modal State
   const [selectedUser, setSelectedUser] = useState(null);
@@ -947,6 +880,8 @@ const UserManagementDashboard = () => {
     if ("search" in updates) setSearchText(updates.search);
     if ("role" in updates) setRoleFilter(updates.role);
     if ("status" in updates) setStatusFilter(updates.status);
+    if ("booking_count" in updates) setBookingActivityFilter(updates.booking_count);
+    if ("last_active" in updates) setLastActiveFilter(updates.last_active);
   };
 
   const fetchUsers = useCallback(
@@ -958,6 +893,8 @@ const UserManagementDashboard = () => {
         ...(roleFilter !== "all" && { role_id: roleFilter }),
         ...(statusFilter !== "all" && { status: statusFilter }),
         ...(searchText && { search: searchText }),
+        ...(bookingActivityFilter && { booking_count: bookingActivityFilter }),
+        ...(lastActiveFilter && { last_active: lastActiveFilter }),
       };
       try {
         const response = await userAdminService.getUsers(params);
@@ -984,6 +921,8 @@ const UserManagementDashboard = () => {
       roleFilter,
       statusFilter,
       searchText,
+      bookingActivityFilter,
+      lastActiveFilter,
       pagination.current,
       pagination.pageSize,
     ]
@@ -991,11 +930,18 @@ const UserManagementDashboard = () => {
 
   useEffect(() => {
     fetchUsers(1, pagination.pageSize);
-  }, [roleFilter, statusFilter, searchText]);
+  }, [roleFilter, statusFilter, searchText, bookingActivityFilter, lastActiveFilter]);
 
   const handleTableChange = (newPagination) => {
     fetchUsers(newPagination.current, newPagination.pageSize);
   };
+
+  const getMetricsDateRange = useCallback(() => {
+    const days =
+      chartPeriod === "7d" ? 7 : chartPeriod === "90d" ? 90 : 30;
+    const end = dayjs();
+    return [end.subtract(days - 1, "day"), end];
+  }, [chartPeriod]);
 
   const fetchMetrics = useCallback(async (currentDateRange) => {
     setMetricsLoading(true);
@@ -1027,12 +973,11 @@ const UserManagementDashboard = () => {
     };
     fetchRoles();
     fetchUsers();
-    fetchMetrics(dateRange);
   }, []);
 
   useEffect(() => {
-    fetchMetrics(dateRange);
-  }, [dateRange]);
+    fetchMetrics(getMetricsDateRange());
+  }, [chartPeriod, fetchMetrics, getMetricsDateRange]);
 
   useEffect(() => {
     if (!metricsLoading) {
@@ -1265,7 +1210,8 @@ const UserManagementDashboard = () => {
       if (response.success) {
         message.success(successMsg);
         fetchUsers(pagination.current, pagination.pageSize);
-        if (action === userAdminService.deleteUser) fetchMetrics(dateRange);
+        if (action === userAdminService.deleteUser)
+          fetchMetrics(getMetricsDateRange());
         if (isDetailsDrawerOpen) {
           setIsDetailsDrawerOpen(false);
         }
@@ -1544,12 +1490,17 @@ const UserManagementDashboard = () => {
                       label: "Edit Role",
                       onClick: () => showEditModal(user),
                     },
-                    {
-                      key: "handover",
-                      icon: <Send size={14} />,
-                      label: "Send Invite/Handover",
-                      onClick: () => handleSendHandover(user.userId),
-                    },
+                    ...(user.roleName === "Business Owner" ||
+                    user.role_name === "Business Owner"
+                      ? [
+                          {
+                            key: "handover",
+                            icon: <Send size={14} />,
+                            label: "Send Invite/Handover",
+                            onClick: () => handleSendHandover(user.userId),
+                          },
+                        ]
+                      : []),
                     {
                       key: "5",
                       icon: <LogIn size={14} />,
@@ -1677,66 +1628,108 @@ const UserManagementDashboard = () => {
     </MobileUserCard>
   );
 
-  const daysInPeriod = dateRange
-    ? dayjs(dateRange[1]).diff(dayjs(dateRange[0]), "day") + 1
-    : 30;
+  const daysInPeriod =
+    chartPeriod === "7d" ? 7 : chartPeriod === "90d" ? 90 : 30;
 
-  const statsData = [
-    {
-      key: "total_users",
-      title: "Total Users",
-      value: metrics.total_users,
-      icon: Users,
-      color: colors.info,
-      growth: metrics.user_growth_percent ?? null,
-      footer: "All registered accounts",
-    },
-    {
-      key: "active_users",
-      title: "Active (30d)",
-      value: metrics.active_users_in_period,
-      icon: Activity,
-      color: colors.success,
-      growth: metrics.active_growth_percent ?? null,
-      footer: `${daysInPeriod}d active users`,
-    },
-    {
-      key: "new_users",
-      title: `New Signups (${daysInPeriod}d)`,
-      value: metrics.new_users_in_period,
-      icon: UserPlus,
-      color: colors.warning,
-      growth: null,
-      footer: "vs previous period",
-    },
-    {
-      key: "with_bookings",
-      title: "Users w/ Bookings",
-      value: metrics.users_with_bookings || 0,
-      icon: BookOpen,
-      color: colors.purple,
-      growth: null,
-      footer: `${metrics.total_users > 0 ? Math.round((metrics.users_with_bookings / metrics.total_users) * 100) : 0}% conversion`,
-    },
-    {
-      key: "churned",
-      title: "Churned (90d+)",
-      value: metrics.churned_users || 0,
-      icon: AlertTriangle,
-      color: colors.error,
-      growth: null,
-      footer: "Inactive 90+ days",
-    },
-    {
-      key: "business_accounts",
-      title: "Business Accounts",
-      value: metrics.business_accounts || 0,
-      icon: Shield,
-      color: colors.primary,
-      growth: null,
-      footer: "Owner-type users",
-    },
-  ];
+  const userRolePopoverContent = useMemo(() => {
+    const dist = metrics.role_distribution || [];
+    if (!dist.length) {
+      return (
+        <div style={{ padding: 12, background: "#fff" }}>
+          <Text type="secondary">No role breakdown</Text>
+        </div>
+      );
+    }
+    const pieData = dist.map((r, i) => {
+      const raw = r.role__color;
+      const fill =
+        raw && String(raw).startsWith("#")
+          ? raw
+          : USER_ROLE_PIE_COLORS[i % USER_ROLE_PIE_COLORS.length];
+      return {
+        name: r.role__name || "Unknown",
+        value: Number(r.count) || 0,
+        fill,
+      };
+    });
+    return (
+      <div style={{ width: 260, height: 220, background: "#fff" }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={pieData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={72}
+              paddingAngle={1}
+            >
+              {pieData.map((entry, i) => (
+                <Cell key={i} fill={entry.fill} />
+              ))}
+            </Pie>
+            <RechartsTooltip
+              contentStyle={{
+                background: "#fff",
+                borderRadius: 8,
+                border: `1px solid ${colors.border}`,
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }, [metrics.role_distribution]);
+
+  const statsData = useMemo(
+    () => [
+      {
+        key: "total_users",
+        title: "Total Users",
+        value: metrics.total_users,
+        icon: Users,
+        color: colors.info,
+        growth: metrics.user_growth_percent ?? null,
+        periodBadge: "Snapshot",
+        popoverContent: userRolePopoverContent,
+        footer: "Hover for breakdown by role",
+      },
+      {
+        key: "active_users",
+        title: `Active (${daysInPeriod}d)`,
+        value: metrics.active_users_in_period,
+        icon: Activity,
+        color: colors.success,
+        growth: metrics.active_growth_percent ?? null,
+        periodBadge: `${daysInPeriod}d`,
+        popoverContent: userRolePopoverContent,
+        footer: "Distinct logins in period",
+      },
+      {
+        key: "new_users",
+        title: `New Signups (${daysInPeriod}d)`,
+        value: metrics.new_users_in_period,
+        icon: UserPlus,
+        color: colors.warning,
+        growth: null,
+        periodBadge: `${daysInPeriod}d`,
+        popoverContent: userRolePopoverContent,
+        footer: "vs previous period",
+      },
+      {
+        key: "business_accounts",
+        title: "Business Accounts",
+        value: metrics.business_accounts || 0,
+        icon: Shield,
+        color: colors.primary,
+        growth: null,
+        periodBadge: "Snapshot",
+        footer: "Total business records",
+      },
+    ],
+    [metrics, daysInPeriod, userRolePopoverContent]
+  );
 
   // --- RENDER USER DETAILS (INSIDE DRAWER) ---
   const renderUserDetailsContent = () => {
@@ -2025,7 +2018,7 @@ const UserManagementDashboard = () => {
           <ActionButtonsContainer>
             <Button
               icon={<RefreshCw size={14} />}
-              onClick={() => fetchMetrics(dateRange)}
+              onClick={() => fetchMetrics(getMetricsDateRange())}
               loading={metricsLoading}
             >
               Refresh
@@ -2045,11 +2038,11 @@ const UserManagementDashboard = () => {
           User metrics
         </div>
         <div style={{ marginBottom: 20 }}>
-          <AdminMetricCards
-            cards={statsData}
-            loading={metricsLoading}
-            isReadyForAnimation={isReadyForAnimation}
-          />
+          {metricsLoading ? (
+            <AdminMetricCardsSkeleton count={Math.max(statsData.length, 4)} />
+          ) : (
+            <AdminMetricCards cards={statsData} isReadyForAnimation={isReadyForAnimation} />
+          )}
         </div>
 
         <Divider style={{ margin: "16px 0" }} />
@@ -2073,7 +2066,7 @@ const UserManagementDashboard = () => {
             <HelpText>Daily new user registrations</HelpText>
             <ChartContainer>
               {metricsLoading ? (
-                <Skeleton active paragraph={{ rows: 4 }} title={false} />
+                <AdminAreaChartSkeleton fillParent />
               ) : metrics.registration_trend?.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart
@@ -2135,23 +2128,7 @@ const UserManagementDashboard = () => {
             <HelpText>Click a slice to filter the table by role</HelpText>
             <ChartContainer>
               {metricsLoading ? (
-                <div
-                  style={{
-                    height: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 150,
-                      height: 150,
-                      borderRadius: "50%",
-                      border: "20px solid #f8fafc",
-                    }}
-                  />
-                </div>
+                <AdminPieChartSkeleton size={isMobile ? 140 : 168} fillParent />
               ) : metrics.role_distribution?.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -2179,6 +2156,7 @@ const UserManagementDashboard = () => {
                     </Pie>
                     <RechartsTooltip
                       contentStyle={{
+                        background: "#fff",
                         borderRadius: "12px",
                         border: `1px solid ${colors.border}`,
                       }}
@@ -2256,6 +2234,7 @@ const UserManagementDashboard = () => {
                 placeholder="Booking Activity"
                 style={{ width: isMobile ? "100%" : 160 }}
                 allowClear
+                value={bookingActivityFilter}
                 onChange={(value) => handleFilterChange({ booking_count: value })}
               >
                 <Option value="none">No Bookings</Option>
@@ -2267,6 +2246,7 @@ const UserManagementDashboard = () => {
                 placeholder="Last Active"
                 style={{ width: isMobile ? "100%" : 150 }}
                 allowClear
+                value={lastActiveFilter}
                 onChange={(value) => handleFilterChange({ last_active: value })}
               >
                 <Option value="7d">Active last 7d</Option>
@@ -2345,107 +2325,94 @@ const UserManagementDashboard = () => {
 
       </ContentLayer>
 
-        {/* ROLE CHANGE VAUL DRAWER */}
-        <Drawer.Root
+        <Modal
+          title={
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Shield size={18} color={colors.primary} />
+              Change user role
+            </span>
+          }
           open={isEditModalVisible}
-          onOpenChange={(open) => {
-            if (!open) { setIsEditModalVisible(false); form.resetFields(); }
+          onCancel={() => {
+            setIsEditModalVisible(false);
+            form.resetFields();
           }}
-          direction={isMobile ? undefined : "right"}
-          dismissible
+          footer={[
+            <Button
+              key="cancel"
+              onClick={() => {
+                setIsEditModalVisible(false);
+                form.resetFields();
+              }}
+            >
+              Cancel
+            </Button>,
+            <Button
+              key="apply"
+              type="primary"
+              loading={loading}
+              onClick={handleEditSubmit}
+              icon={<Shield size={15} />}
+            >
+              Apply role change
+            </Button>,
+          ]}
+          width={480}
+          destroyOnClose
+          styles={{ content: { background: "#fff" }, body: {  background: "#fff" } }}
         >
-          <Drawer.Portal>
-            <RoleDrawerOverlay />
-            {isMobile ? (
-              <RoleMobileShell>
-                <DrawerHandle />
-                <RoleDrawerInner>
-                  <RoleDrawerHeader>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 16, color: colors.textPrimary }}>
-                      <Shield size={18} color={colors.primary} />
-                      Change User Role
-                    </div>
-                    <Button type="text" icon={<X size={18} />} onClick={() => { setIsEditModalVisible(false); form.resetFields(); }} />
-                  </RoleDrawerHeader>
-                  {selectedUser && (
-                    <RoleDrawerUserInfo>
-                      <Avatar size={40} src={selectedUser.avatarUrl} icon={<User size={18} />} />
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 14, color: colors.textPrimary }}>{selectedUser.name}</div>
-                        <div style={{ fontSize: 12, color: colors.textSecondary }}>{selectedUser.email}</div>
-                      </div>
-                      {selectedUser.roleName && <Tag style={{ marginLeft: "auto", flexShrink: 0 }}>{selectedUser.roleName}</Tag>}
-                    </RoleDrawerUserInfo>
-                  )}
-                  <RoleDrawerBody>
-                    <RoleWarningBanner>
-                      <AlertTriangle size={16} />
-                      <span>Changing a user&apos;s role will immediately alter their permissions and platform access.</span>
-                    </RoleWarningBanner>
-                    <Form form={form} layout="vertical">
-                      <Form.Item name="role" label="New Role" rules={[{ required: true, message: "Please select a role." }]}>
-                        <Select placeholder="Select a role" size="large" loading={!roles.length}>
-                          {roles.map((r) => (
-                            <Option key={r.id} value={r.id}>{r.name}</Option>
-                          ))}
-                        </Select>
-                      </Form.Item>
-                    </Form>
-                  </RoleDrawerBody>
-                  <RoleDrawerFooter>
-                    <Button onClick={() => { setIsEditModalVisible(false); form.resetFields(); }}>Cancel</Button>
-                    <Button type="primary" loading={loading} onClick={handleEditSubmit} icon={<Shield size={15} />}>
-                      Apply Role Change
-                    </Button>
-                  </RoleDrawerFooter>
-                </RoleDrawerInner>
-              </RoleMobileShell>
-            ) : (
-              <RoleDesktopShell style={{ "--initial-transform": "calc(100% + 8px)" }}>
-                <RoleDrawerInner>
-                  <RoleDrawerHeader>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 16, color: colors.textPrimary }}>
-                      <Shield size={18} color={colors.primary} />
-                      Change User Role
-                    </div>
-                    <Button type="text" icon={<X size={18} />} onClick={() => { setIsEditModalVisible(false); form.resetFields(); }} />
-                  </RoleDrawerHeader>
-                  {selectedUser && (
-                    <RoleDrawerUserInfo>
-                      <Avatar size={44} src={selectedUser.avatarUrl} icon={<User size={20} />} />
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 14, color: colors.textPrimary }}>{selectedUser.name}</div>
-                        <div style={{ fontSize: 12, color: colors.textSecondary }}>{selectedUser.email}</div>
-                      </div>
-                      {selectedUser.roleName && <Tag style={{ marginLeft: "auto", flexShrink: 0 }}>{selectedUser.roleName}</Tag>}
-                    </RoleDrawerUserInfo>
-                  )}
-                  <RoleDrawerBody>
-                    <RoleWarningBanner>
-                      <AlertTriangle size={16} />
-                      <span>Changing this user&apos;s role will immediately alter their permissions and platform access.</span>
-                    </RoleWarningBanner>
-                    <Form form={form} layout="vertical">
-                      <Form.Item name="role" label="New Role" rules={[{ required: true, message: "Please select a role." }]}>
-                        <Select placeholder="Select a role" size="large" loading={!roles.length}>
-                          {roles.map((r) => (
-                            <Option key={r.id} value={r.id}>{r.name}</Option>
-                          ))}
-                        </Select>
-                      </Form.Item>
-                    </Form>
-                  </RoleDrawerBody>
-                  <RoleDrawerFooter>
-                    <Button onClick={() => { setIsEditModalVisible(false); form.resetFields(); }}>Cancel</Button>
-                    <Button type="primary" loading={loading} onClick={handleEditSubmit} icon={<Shield size={15} />}>
-                      Apply Role Change
-                    </Button>
-                  </RoleDrawerFooter>
-                </RoleDrawerInner>
-              </RoleDesktopShell>
-            )}
-          </Drawer.Portal>
-        </Drawer.Root>
+          {selectedUser && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: 16,
+              }}
+            >
+              <Avatar
+                size={44}
+                src={selectedUser.avatarUrl}
+                icon={<User size={20} />}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, color: colors.textPrimary }}>
+                  {selectedUser.name}
+                </div>
+                <div style={{ fontSize: 12, color: colors.textSecondary }}>
+                  {selectedUser.email}
+                </div>
+              </div>
+              {selectedUser.roleName && <Tag>{selectedUser.roleName}</Tag>}
+            </div>
+          )}
+          <RoleWarningBanner>
+            <AlertTriangle size={16} />
+            <span>
+              Changing this user&apos;s role will immediately alter their
+              permissions and platform access.
+            </span>
+          </RoleWarningBanner>
+          <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+            <Form.Item
+              name="role"
+              label="New role"
+              rules={[{ required: true, message: "Please select a role." }]}
+            >
+              <Select
+                placeholder="Select a role"
+                size="large"
+                loading={!roles.length}
+              >
+                {roles.map((r) => (
+                  <Option key={r.id} value={r.id}>
+                    {r.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Form>
+        </Modal>
 
         <Modal
           title={`Assign role to ${selectedRowKeys.length} user(s)`}
@@ -2456,6 +2423,7 @@ const UserManagementDashboard = () => {
             <Button key="submit" type="primary" loading={bulkRoleLoading} onClick={() => handleBulkAssignRoleSubmit()} icon={<Shield size={14} />}>Apply to selected</Button>,
           ]}
           destroyOnClose
+          styles={{ content: { background: "#fff" }, body: { padding: "20px 24px", background: "#fff" } }}
         >
           <Form form={bulkRoleForm} layout="vertical">
             <Form.Item name="role" label="New role" rules={[{ required: true, message: "Select a role." }]}>

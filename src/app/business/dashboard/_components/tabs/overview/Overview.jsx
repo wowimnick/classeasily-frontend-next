@@ -42,6 +42,7 @@ import {
 import { useAuth } from "@/lib/auth-client";
 import DashboardContext from "../../DashboardContext";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
+import { MetricPeriodBadge } from "../../shared/MetricPeriodBadge";
 import {
   Typography,
   Card,
@@ -1542,6 +1543,7 @@ const Overview = forwardRef((props, ref) => {
                       >
                         <Shield />
                       </IconContainer>
+                      <MetricPeriodBadge>This month</MetricPeriodBadge>
                     </StatHeader>
                     <StatLabel style={{ opacity: 0.6 }}>Revenue Data</StatLabel>
                   </div>
@@ -1575,6 +1577,7 @@ const Overview = forwardRef((props, ref) => {
                     >
                       <MetricIconComponent />
                     </IconContainer>
+                    <MetricPeriodBadge>This month</MetricPeriodBadge>
                   </StatHeader>
                   <StatLabel>
                     {displayInfo?.title || key.replace(/_/g, " ")}
@@ -1658,6 +1661,7 @@ const Overview = forwardRef((props, ref) => {
                       >
                         {React.createElement(stat.icon)}
                       </IconContainer>
+                      <MetricPeriodBadge>Today</MetricPeriodBadge>
                     </StatHeader>
                     <StatLabel>{stat.title}</StatLabel>
                   </div>

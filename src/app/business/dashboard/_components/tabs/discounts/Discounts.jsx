@@ -36,6 +36,7 @@ import NumberFlow from "@number-flow/react";
 import { businessDiscountService } from "@/services/apiService";
 import DiscountsDrawer from "./DiscountsDrawer";
 import DashboardBreadcrumb from "../../DashboardBreadcrumb";
+import { MetricPeriodBadge } from "../../shared/MetricPeriodBadge";
 
 const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -459,6 +460,7 @@ const Discounts = ({ businessId }) => {
       background: `rgba(59, 130, 246, 0.1)`, // info
       color: colors.info,
       footer: "All created discounts",
+      periodBadge: "Current",
     },
     {
       key: "active",
@@ -468,6 +470,7 @@ const Discounts = ({ businessId }) => {
       background: `rgba(16, 185, 129, 0.1)`, // success
       color: colors.success,
       footer: "Currently valid",
+      periodBadge: "Current",
     },
     {
       key: "usage",
@@ -477,6 +480,7 @@ const Discounts = ({ businessId }) => {
       background: `rgba(139, 92, 246, 0.1)`, // purple
       color: "#8b5cf6",
       footer: "All-time redemptions",
+      periodBadge: "All-time",
     },
   ];
 
@@ -769,6 +773,7 @@ const Discounts = ({ businessId }) => {
                       >
                         {stat.icon}
                       </IconContainer>
+                      <MetricPeriodBadge>{stat.periodBadge}</MetricPeriodBadge>
                     </StatCardHeader>
                     <StatLabel>{stat.title}</StatLabel>
                   </div>
