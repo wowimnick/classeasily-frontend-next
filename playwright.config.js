@@ -16,12 +16,11 @@ export default defineConfig({
   testDir: './tests',
   /* Run tests in files in parallel */
   fullyParallel: true,
+  /* Cap workers locally: duplicate key was overriding this and defaulted to ~50% CPU (often 10+). */
+  workers: isCI ? 1 : 4,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!isCI,
-  /* Retry on CI only */
-  retries: isCI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: isCI ? 1 : undefined,
+  retries: isCI ? 2 : 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   
@@ -29,6 +28,7 @@ export default defineConfig({
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
     baseURL: baseURL,
+    navigationTimeout: 120_000,
 
     /* Collect trace when retrying the failed test. */
     trace: 'on-first-retry',

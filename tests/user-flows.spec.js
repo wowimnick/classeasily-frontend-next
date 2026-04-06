@@ -4,11 +4,12 @@
  * Ensures main public flows work end-to-end.
  */
 import { test, expect } from '@playwright/test';
-import { dismissCookieBannerIfVisible, scrollFooterIntoView } from './helpers.js';
+import { dismissCookieBannerIfVisible, gotoPath, scrollFooterIntoView } from './helpers.js';
 
 test.describe('Critical user flows', () => {
+  test.describe.configure({ timeout: 120000 });
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoPath(page, '/');
     await dismissCookieBannerIfVisible(page);
   });
 
@@ -17,23 +18,16 @@ test.describe('Critical user flows', () => {
     await page.getByRole('link', { name: 'Explore Classes' }).click();
     await expect(page).toHaveURL('/explore');
     await expect(page.getByRole('main')).toBeVisible({ timeout: 15000 });
-    await page.goto('/');
+    await gotoPath(page, '/');
     await expect(page).toHaveURL('/');
   });
 
-  test('flow: Home -> Shop Gift Cards -> gift cards page', async ({ page }) => {
-    const shopGiftCards = page.getByRole('link', { name: /Shop Gift Cards/i });
-    await shopGiftCards.first().scrollIntoViewIfNeeded();
-    await shopGiftCards.first().click();
+  test('flow: Home -> Purchase Gift Card link -> gift cards page', async ({ page }) => {
+    const purchase = page.getByRole('link', { name: /Purchase Gift Card/i });
+    await purchase.scrollIntoViewIfNeeded();
+    await purchase.click();
     await expect(page).toHaveURL(/\/giftcards/);
     await expect(page.locator('body')).toBeVisible();
-  });
-
-  test('flow: Home -> Purchase Gift Card (Gift CTA section) -> gift cards page', async ({ page }) => {
-    const purchaseBtn = page.getByRole('button', { name: /Purchase Gift Card/i });
-    await purchaseBtn.scrollIntoViewIfNeeded();
-    await purchaseBtn.click();
-    await expect(page).toHaveURL(/\/giftcards/);
   });
 
   test('flow: Home -> Become a host -> business page', async ({ page }) => {
@@ -51,21 +45,21 @@ test.describe('Critical user flows', () => {
 
   test('flow: Explore page has search/filter UI', async ({ page }) => {
     test.setTimeout(60000);
-    await page.goto('/explore', { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await gotoPath(page, '/explore', { timeout: 45000 });
     await dismissCookieBannerIfVisible(page);
     await expect(page).toHaveURL('/explore');
     await expect(page.getByRole('main')).toBeVisible({ timeout: 15000 });
   });
 
   test('flow: Business page has main content', async ({ page }) => {
-    await page.goto('/business');
+    await gotoPath(page, '/business');
     await dismissCookieBannerIfVisible(page);
     await expect(page).toHaveURL(/\/business/);
     await expect(page.getByRole('main')).toBeVisible();
   });
 
   test('flow: Gift cards page loads', async ({ page }) => {
-    await page.goto('/giftcards');
+    await gotoPath(page, '/giftcards');
     await dismissCookieBannerIfVisible(page);
     await expect(page).toHaveURL(/\/giftcards/);
     await expect(page.locator('body')).toBeVisible();

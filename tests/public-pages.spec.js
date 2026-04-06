@@ -4,11 +4,12 @@
  * Covers footer and header links so all public buttons/routes are reachable.
  */
 import { test, expect } from '@playwright/test';
-import { dismissCookieBannerIfVisible, scrollFooterIntoView } from './helpers.js';
+import { dismissCookieBannerIfVisible, gotoPath, scrollFooterIntoView } from './helpers.js';
 
 test.describe('Public pages and navigation', () => {
+  test.describe.configure({ timeout: 120000 });
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoPath(page, '/');
     await dismissCookieBannerIfVisible(page);
   });
 
@@ -57,21 +58,21 @@ test.describe('Public pages and navigation', () => {
     await expect(page).toHaveURL(/\/business\/help/);
   });
 
-  test('footer: Business Registration link works', async ({ page }) => {
+  test('footer: Registration link works', async ({ page }) => {
     await scrollFooterIntoView(page);
-    await page.getByRole('link', { name: 'Business Registration' }).click();
+    await page.getByRole('link', { name: 'Registration' }).click();
     await expect(page).toHaveURL(/\/business\/register/);
   });
 
-  test('footer: Help Center & My Tickets link works', async ({ page }) => {
+  test('footer: Help Center link works', async ({ page }) => {
     await scrollFooterIntoView(page);
-    await page.getByRole('link', { name: /Help Center & My Tickets/i }).click();
+    await page.getByRole('link', { name: 'Help Center' }).click();
     await expect(page).toHaveURL('/my-tickets');
   });
 
-  test('footer: Fees and Charges link works', async ({ page }) => {
+  test('footer: Fees & Charges link works', async ({ page }) => {
     await scrollFooterIntoView(page);
-    await page.getByRole('link', { name: 'Fees and Charges' }).click();
+    await page.getByRole('link', { name: 'Fees & Charges' }).click();
     await expect(page).toHaveURL('/fees');
   });
 

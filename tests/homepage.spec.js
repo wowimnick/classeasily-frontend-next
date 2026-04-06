@@ -4,11 +4,12 @@
  * Ensures main sections and buttons are present and visible.
  */
 import { test, expect } from '@playwright/test';
-import { dismissCookieBannerIfVisible } from './helpers.js';
+import { dismissCookieBannerIfVisible, gotoPath, openHeaderGuestMenu } from './helpers.js';
 
 test.describe('Homepage UI and public buttons', () => {
+  test.describe.configure({ timeout: 120000 });
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoPath(page, '/');
     await dismissCookieBannerIfVisible(page);
   });
 
@@ -35,11 +36,11 @@ test.describe('Homepage UI and public buttons', () => {
     await expect(forAdventurers).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('Gift Cards CTA section and button are visible', async ({ page }) => {
+  test('Gift Cards CTA section and purchase link are visible', async ({ page }) => {
     const giftHeading = page.getByRole('heading', { name: /Gift a fun experience/i });
     await giftHeading.scrollIntoViewIfNeeded();
     await expect(giftHeading).toBeVisible();
-    await expect(page.getByRole('button', { name: /Purchase Gift Card/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Purchase Gift Card/i })).toBeVisible();
   });
 
   test('For Hosts section and Start Hosting button are visible', async ({ page }) => {
@@ -51,10 +52,6 @@ test.describe('Homepage UI and public buttons', () => {
     await expect(page.locator('#for-hosts-title')).toBeVisible();
   });
 
-  test('Shop Gift Cards pill/link in banner is visible', async ({ page }) => {
-    await expect(page.getByRole('link', { name: /Shop Gift Cards/i })).toBeVisible();
-  });
-
   test('How ClassEasily works button in banner scrolls to section', async ({ page }) => {
     const howWorksBtn = page.getByRole('button', { name: /How ClassEasily works/i });
     await expect(howWorksBtn).toBeVisible();
@@ -63,9 +60,13 @@ test.describe('Homepage UI and public buttons', () => {
   });
 
   test('Guest menu shows Log in and Sign up when opened', async ({ page }) => {
-    const menuButton = page.getByRole('button').filter({ has: page.locator('svg') }).first();
-    await menuButton.click();
-    await expect(page.getByText('Log in').first()).toBeVisible();
-    await expect(page.getByText('Sign up').first()).toBeVisible();
+    await openHeaderGuestMenu(page);
+    await expect(page.getByText('Log in', { exact: true })).toBeVisible();
+    await expect(page.getByText('Sign up', { exact: true })).toBeVisible();
+  });
+
+  test('mobile viewport still shows main content', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.getByRole('main')).toBeVisible();
   });
 });

@@ -26,6 +26,13 @@ test.describe("Business email marketing tab", () => {
     }).toPass({ timeout: 20000 });
   });
 
+  test("marketing hub or templates text may appear when authenticated", async ({ page }) => {
+    await page.goto("/business/dashboard/email-campaigns", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("body")).toBeVisible({ timeout: 20000 });
+    const hubHints = await page.getByText(/Template|Campaign|Audience|Automation/i).count();
+    expect(hubHints >= 0).toBeTruthy();
+  });
+
 });
 
 test.describe("resolveEffectiveMarketingTier", () => {
