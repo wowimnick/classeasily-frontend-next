@@ -394,8 +394,17 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
 
   const buildPreferencesPayload = useCallback((form, fieldName, directValue) => {
     const v = form.getFieldValue;
-    if (directValue !== undefined && ["newBookingNotification", "cancellationNotification", "reminderNotification", "scheduleExpiryNotification", "smsNotifications"].includes(fieldName)) {
-      return { [fieldName]: Boolean(directValue) };
+    const booleanPrefFields = [
+      "newBookingNotification",
+      "cancellationNotification",
+      "reminderNotification",
+      "scheduleExpiryNotification",
+      "smsNotifications",
+      "require_participant_names",
+    ];
+    if (booleanPrefFields.includes(fieldName)) {
+      const val = directValue !== undefined ? directValue : v(fieldName);
+      return { [fieldName]: Boolean(val) };
     }
     if (fieldName === "business_timezone") {
       const val = directValue !== undefined ? directValue : v("business_timezone");
@@ -475,6 +484,7 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
           reminderNotification: data.reminderNotification !== false,
           scheduleExpiryNotification: data.scheduleExpiryNotification !== false,
           smsNotifications: data.smsNotifications === true,
+          require_participant_names: data.require_participant_names === true,
         });
 
         if (onProfileUpdate) onProfileUpdate();
@@ -622,6 +632,10 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
       masterFormData.append("reminderNotification", String(preferencesValues.reminderNotification));
       masterFormData.append("scheduleExpiryNotification", String(preferencesValues.scheduleExpiryNotification));
       masterFormData.append("smsNotifications", String(preferencesValues.smsNotifications));
+      masterFormData.append(
+        "require_participant_names",
+        String(preferencesValues.require_participant_names === true)
+      );
 
       const response = await businessService.updateMyBusinessProfile(masterFormData);
 
