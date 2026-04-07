@@ -1321,9 +1321,14 @@ function buildParticipantDetailsPayload(
   const extra = Array.isArray(extraRaw)
     ? extraRaw.map((n) => String(n ?? "").trim())
     : [];
+  // API requires every slot to have a non-empty name. Use the same placeholder as the
+  // booker default until the guest fills additional names; Next / updatePaymentIntent
+  // replaces these with real values before capture.
+  const placeholder = "Guest";
   const names = [bookerName];
   for (let i = 1; i < participantsCount; i++) {
-    names.push(extra[i - 1] ?? "");
+    const entered = extra[i - 1];
+    names.push(entered && entered.length > 0 ? entered : placeholder);
   }
   return names.map((name) => ({ name }));
 }
