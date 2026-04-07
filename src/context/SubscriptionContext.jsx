@@ -88,32 +88,56 @@ export function SubscriptionProvider({ children }) {
 
   const subscribe = useCallback(
     async (planId) => {
-      const result = await businessService.subscribeWidgetPlan(planId);
-      if (result.success && result.data?.subscription != null && !result.data?.requires_payment) {
-        setSubscription(result.data.subscription);
-        refetch();
+      try {
+        const result = await businessService.subscribeWidgetPlan(planId);
+        if (result.success && result.data?.subscription != null && !result.data?.requires_payment) {
+          setSubscription(result.data.subscription);
+          await refetch();
+        }
+        return result;
+      } catch (e) {
+        await refetch();
+        return {
+          success: false,
+          error: e?.response?.data?.detail || e?.response?.data?.error || e?.message || "Network error",
+        };
       }
-      return result;
     },
     [refetch],
   );
 
   const cancel = useCallback(async () => {
-    const result = await businessService.cancelWidgetSubscription();
-    if (result.success && result.data?.subscription) {
-      setSubscription(result.data.subscription);
-      refetch();
+    try {
+      const result = await businessService.cancelWidgetSubscription();
+      if (result.success && result.data?.subscription) {
+        setSubscription(result.data.subscription);
+        await refetch();
+      }
+      return result;
+    } catch (e) {
+      await refetch();
+      return {
+        success: false,
+        error: e?.response?.data?.detail || e?.response?.data?.error || e?.message || "Network error",
+      };
     }
-    return result;
   }, [refetch]);
 
   const reactivate = useCallback(async () => {
-    const result = await businessService.reactivateWidgetSubscription();
-    if (result.success && result.data?.subscription) {
-      setSubscription(result.data.subscription);
-      refetch();
+    try {
+      const result = await businessService.reactivateWidgetSubscription();
+      if (result.success && result.data?.subscription) {
+        setSubscription(result.data.subscription);
+        await refetch();
+      }
+      return result;
+    } catch (e) {
+      await refetch();
+      return {
+        success: false,
+        error: e?.response?.data?.detail || e?.response?.data?.error || e?.message || "Network error",
+      };
     }
-    return result;
   }, [refetch]);
 
   const value = useMemo(

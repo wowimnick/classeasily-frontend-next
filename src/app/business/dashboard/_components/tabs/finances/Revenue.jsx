@@ -698,6 +698,14 @@ const Revenue = forwardRef((props, ref) => {
   }, [fetchBusinessExperiencesForFilter]);
 
   useEffect(() => {
+    if (filterParams.source === "widget" && !hasWidgetAnalytics) {
+      setFilterParams((prev) =>
+        prev.source === "widget" ? { ...prev, source: "all" } : prev
+      );
+    }
+  }, [filterParams.source, hasWidgetAnalytics]);
+
+  useEffect(() => {
     if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
     fetchTimeoutRef.current = setTimeout(() => {
       fetchAnalytics(filterParams);

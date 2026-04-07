@@ -45,11 +45,6 @@ export const PLAN_FEATURES_GROWTH = [
       "Email (and optional SMS) reminders sent automatically before each session to cut no-shows.",
   },
   {
-    label: "Post-class review requests",
-    tooltip:
-      "Automatically prompt customers for a review after each class to build your public reputation.",
-  },
-  {
     label: "Memberships",
     tooltip:
       "Sell recurring membership plans, manage members and credits, and collect subscription revenue from your widget or business page.",
@@ -66,23 +61,10 @@ export const PLAN_FEATURES_ADVANCED = [
       "Best for high-volume studios. Pay a higher subscription to keep more of every booking.",
   },
   {
-    label: "White-label widget",
-    tooltip:
-      "Remove all Classeasily branding entirely. Customers only see your brand when they book.",
-  },
-  {
-    label: "API access",
-    tooltip:
-      "Connect booking data directly to your CRM, scheduling tools, or custom apps via the Classeasily REST API.",
-  },
-  {
     label: "Memberships",
     tooltip:
       "Sell recurring membership plans, manage members and credits, and collect subscription revenue from your widget or business page.",
   },
-  { label: "Dedicated account manager" },
-  { label: "Personal onboarding call" },
-  { label: "SLA-backed support" },
 ];
 
 /**
@@ -169,14 +151,6 @@ export const WIDGET_PLAN_COMPARISON_ROWS = [
     plans: { basic: false, growth: true, advanced: true },
   },
   {
-    id: "reviews",
-    label: "Post-class review requests",
-    tooltip:
-      "Automatically prompt customers for a review after each class to build your public reputation.",
-    valueType: "check",
-    plans: { basic: false, growth: true, advanced: true },
-  },
-  {
     id: "memberships",
     label: "Memberships",
     tooltip:
@@ -195,40 +169,6 @@ export const WIDGET_PLAN_COMPARISON_ROWS = [
     label: "Priority support",
     valueType: "check",
     plans: { basic: false, growth: true, advanced: true },
-  },
-  {
-    id: "white_label",
-    label: "White-label widget",
-    tooltip:
-      "Remove all Classeasily branding entirely. Customers only see your brand when they book.",
-    valueType: "check",
-    plans: { basic: false, growth: false, advanced: true },
-  },
-  {
-    id: "api",
-    label: "API access",
-    tooltip:
-      "Connect booking data directly to your CRM, scheduling tools, or custom apps via the Classeasily REST API.",
-    valueType: "check",
-    plans: { basic: false, growth: false, advanced: true },
-  },
-  {
-    id: "account_manager",
-    label: "Dedicated account manager",
-    valueType: "check",
-    plans: { basic: false, growth: false, advanced: true },
-  },
-  {
-    id: "onboarding_call",
-    label: "Personal onboarding call",
-    valueType: "check",
-    plans: { basic: false, growth: false, advanced: true },
-  },
-  {
-    id: "sla_support",
-    label: "SLA-backed support",
-    valueType: "check",
-    plans: { basic: false, growth: false, advanced: true },
   },
 ];
 

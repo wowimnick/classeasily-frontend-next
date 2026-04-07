@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { Button, Modal, message as antMessage } from "antd";
 import {
@@ -1851,6 +1851,15 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   const [detachPmLabel, setDetachPmLabel] = useState("");
   const [detachPmLoading, setDetachPmLoading] = useState(false);
 
+  /** Avoid setState after unmount / tab switch during async plan or billing actions */
+  const billingMountedRef = useRef(true);
+  useEffect(() => {
+    billingMountedRef.current = true;
+    return () => {
+      billingMountedRef.current = false;
+    };
+  }, []);
+
   const [stripeFontSize, setStripeFontSize] = useState("14px");
   useEffect(() => {
     const update = () => setStripeFontSize(typeof window !== "undefined" && window.innerWidth < 969 ? "12px" : "14px");
@@ -1974,25 +1983,36 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   const handleSwitchPlan = async (planId) => {
     if (subscription?.planId === planId) return;
     setSwitchPlanLoading(planId);
-    const result = await subscribe(planId);
-    setSwitchPlanLoading(null);
-    if (result.success) {
-      if (result.data?.requires_payment && result.data?.client_secret) {
-        setSwitchPaymentSecret(result.data.client_secret);
-        setSwitchPaymentTargetPlanId(result.data.target_plan_id ?? planId);
-        return;
-      }
-      await refreshBillingViews();
-      const planName = getPlanById(planId)?.name ?? planId;
-      if (result.data?.downgrade_scheduled_at_period_end && result.data?.scheduled_plan_id) {
-        message.success(`Downgrade to ${planName} scheduled for the end of your billing period. You'll keep your current plan until then.`, 6);
-      } else if (result.data?.stripe_updated) {
-        message.success(`You're now on the ${planName} plan. Any proration will appear on your invoice or payment method.`, 5);
+    try {
+      const result = await subscribe(planId);
+      if (!billingMountedRef.current) return;
+      if (result.success) {
+        if (result.data?.requires_payment && result.data?.client_secret) {
+          setSwitchPaymentSecret(result.data.client_secret);
+          setSwitchPaymentTargetPlanId(result.data.target_plan_id ?? planId);
+          return;
+        }
+        await refreshBillingViews();
+        if (!billingMountedRef.current) return;
+        const planName = getPlanById(planId)?.name ?? planId;
+        if (result.data?.downgrade_scheduled_at_period_end && result.data?.scheduled_plan_id) {
+          message.success(`Downgrade to ${planName} scheduled for the end of your billing period. You'll keep your current plan until then.`, 6);
+        } else if (result.data?.stripe_updated) {
+          message.success(`You're now on the ${planName} plan. Any proration will appear on your invoice or payment method.`, 5);
+        } else {
+          message.success(`Switched to ${planName} plan.`, 4);
+        }
       } else {
-        message.success(`Switched to ${planName} plan.`, 4);
+        antMessage.error(result.error || "Failed to switch plan.");
       }
-    } else {
-      antMessage.error(result.error || "Failed to switch plan.");
+    } catch (e) {
+      if (billingMountedRef.current) {
+        antMessage.error("Something went wrong while switching plans. Please try again.");
+      }
+    } finally {
+      if (billingMountedRef.current) {
+        setSwitchPlanLoading(null);
+      }
     }
   };
 
@@ -2001,29 +2021,63 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     setSwitchPaymentSecret(null);
     setSwitchPaymentTargetPlanId(null);
     await refreshBillingViewsWithRetries();
-    message.success(`Switched to ${planName} plan.`);
+    if (billingMountedRef.current) {
+      message.success(`Switched to ${planName} plan.`);
+    }
   }, [switchPaymentTargetPlanId, refreshBillingViewsWithRetries]);
 
   const handleSwitchPaymentLoadError = useCallback(() => {
     setSwitchPaymentSecret(null);
     setSwitchPaymentTargetPlanId(null);
-    antMessage.error(
-      "This payment link can't be used anymore (already used or expired). Please try switching plan again."
-    );
+    if (billingMountedRef.current) {
+      antMessage.error(
+        "This payment link can't be used anymore (already used or expired). Please try switching plan again."
+      );
+    }
   }, []);
 
   const handleCancelConfirm = async () => {
     setCancelling(true);
-    const result = await cancel();
-    setCancelling(false); setCancelModalOpen(false);
-    if (result.success) { await refreshBillingViews(); message.success("Subscription will cancel at the end of the billing period."); }
-    else antMessage.error(result.error || "Failed to cancel.");
+    try {
+      const result = await cancel();
+      if (!billingMountedRef.current) return;
+      setCancelModalOpen(false);
+      if (result.success) {
+        await refreshBillingViews();
+        if (billingMountedRef.current) {
+          message.success("Subscription will cancel at the end of the billing period.");
+        }
+      } else {
+        antMessage.error(result.error || "Failed to cancel.");
+      }
+    } catch {
+      if (billingMountedRef.current) {
+        antMessage.error("Failed to cancel. Please try again.");
+      }
+    } finally {
+      if (billingMountedRef.current) {
+        setCancelling(false);
+      }
+    }
   };
 
   const handleReactivate = async () => {
-    const result = await reactivate();
-    if (result.success) { await refreshBillingViews(); message.success("Subscription reactivated."); }
-    else antMessage.error(result.error || "Failed to reactivate.");
+    try {
+      const result = await reactivate();
+      if (!billingMountedRef.current) return;
+      if (result.success) {
+        await refreshBillingViews();
+        if (billingMountedRef.current) {
+          message.success("Subscription reactivated.");
+        }
+      } else {
+        antMessage.error(result.error || "Failed to reactivate.");
+      }
+    } catch {
+      if (billingMountedRef.current) {
+        antMessage.error("Failed to reactivate. Please try again.");
+      }
+    }
   };
 
   const marketplaceEmail = addons?.marketplace_email_branding;
