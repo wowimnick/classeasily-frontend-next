@@ -657,7 +657,7 @@ const ActiveBookings = ({
                     </IconContainer>
                     <MetricPeriodBadge>{metricsPeriodLabel}</MetricPeriodBadge>
                   </StatCardHeader>
-                  <StatLabel>Active Guest Bookings</StatLabel>
+                  <StatLabel>Active Guest Spots</StatLabel>
                 </div>
                 <StatValue>
                   <NumberFlow

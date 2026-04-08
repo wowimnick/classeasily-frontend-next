@@ -664,13 +664,15 @@ const BookingTrends = () => {
   const peakHourInsight = useMemo(() => {
     const data = analytics.booking_patterns?.time_distribution || [];
     if (!data.length) return null;
+    const hourTotal = (row) =>
+      (row.active_participant_spots || 0) + (row.cancelled_participant_spots || 0);
     const peak = data.reduce((prev, current) =>
-      prev.booking_transactions > current.booking_transactions ? prev : current,
+      hourTotal(prev) > hourTotal(current) ? prev : current,
     );
-    return peak.booking_transactions > 0
+    return hourTotal(peak) > 0
       ? {
           time: dayjs().hour(peak.hour).format("h A"),
-          count: peak.booking_transactions,
+          count: hourTotal(peak),
         }
       : null;
   }, [analytics.booking_patterns]);
@@ -694,13 +696,13 @@ const BookingTrends = () => {
 
   const statisticCards = [
     {
-      key: "total_booking_transactions",
-      title: "Total Bookings",
-      value: analytics.summary.total_booking_transactions,
+      key: "total_participant_spots",
+      title: "Total Guest Spots",
+      value: analytics.summary.total_participant_spots,
       icon: <Calendar size={20} />,
       color: colors.chart.blue,
       background: `rgba(59, 130, 246, 0.1)`,
-      footer: "Total confirmed bookings",
+      footer: "Participant spots across bookings in this period",
     },
     {
       key: "booker_retention_rate",
@@ -720,7 +722,7 @@ const BookingTrends = () => {
       icon: <AlertCircle size={20} />,
       color: colors.chart.red,
       background: `rgba(239, 68, 68, 0.1)`,
-      footer: "Percentage of bookings cancelled",
+      footer: "Share of guest spots on cancelled bookings",
     },
     {
       key: "average_lead_time_days",
@@ -890,15 +892,10 @@ const BookingTrends = () => {
                 />
                 Daily Booking Activity
               </ChartTitle>
-              {!loading && analytics.trends?.length > 0 && (
-                <InsightBadge>
-                  Total Spots:{" "}
-                  <strong>{analytics.summary.total_participant_spots}</strong>
-                </InsightBadge>
-              )}
             </ChartTitleRow>
             <ChartDescription>
-              Comparison of new bookings vs net volume (after cancellations).
+              New guest spots vs net spots after cancellations; line shows daily
+              cancellation rate by spots.
             </ChartDescription>
           </ChartHeader>
 
@@ -1016,7 +1013,7 @@ const BookingTrends = () => {
                     yAxisId="right"
                     type="monotone"
                     dataKey="cancellation_rate_by_transaction"
-                    name="Cancel Rate"
+                    name="Cancel rate (spots)"
                     stroke={colors.chart.red}
                     strokeWidth={2}
                     dot={false}
@@ -1050,12 +1047,12 @@ const BookingTrends = () => {
                   {!loading && peakHourInsight && (
                     <InsightBadge>
                       Peak: <strong>{peakHourInsight.time}</strong> (
-                      {peakHourInsight.count} bkgs)
+                      {peakHourInsight.count} spots)
                     </InsightBadge>
                   )}
                 </ChartTitleRow>
                 <ChartDescription>
-                  Distribution of confirmed and cancelled bookings by hour.
+                  Guest spots booked by hour (active vs cancelled).
                 </ChartDescription>
               </ChartHeader>
               <ChartContainer>
@@ -1113,15 +1110,15 @@ const BookingTrends = () => {
                         wrapperStyle={{ fontSize: 12, paddingTop: 10 }}
                       />
                       <Bar
-                        dataKey="booking_transactions"
-                        name="Confirmed"
+                        dataKey="active_participant_spots"
+                        name="Guest spots"
                         fill={colors.chart.blue}
                         stackId="a"
                         radius={[0, 0, 4, 4]}
                       />
                       <Bar
-                        dataKey="cancelled_transactions"
-                        name="Cancelled"
+                        dataKey="cancelled_participant_spots"
+                        name="Cancelled spots"
                         fill={colors.chart.red}
                         stackId="a"
                         radius={[4, 4, 0, 0]}
@@ -1157,7 +1154,9 @@ const BookingTrends = () => {
                     </AntTooltip>
                   )}
                 </ChartTitleRow>
-                <ChartDescription>New vs Returning.</ChartDescription>
+                <ChartDescription>
+                  New vs returning bookers by participant spots.
+                </ChartDescription>
               </ChartHeader>
               <ChartContainer>
                 {loading ? (

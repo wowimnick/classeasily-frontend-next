@@ -1166,7 +1166,7 @@ const metricDisplayInfo = {
     icon: Users,
     color: colors.chart.blue,
     link: "/business/dashboard/bookings",
-    footer: "vs last month",
+    footer: "Paid guest spots vs last month",
   },
   active_classes: {
     title: "Active Experiences",

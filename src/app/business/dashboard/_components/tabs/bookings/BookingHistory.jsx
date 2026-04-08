@@ -465,15 +465,9 @@ const BookingHistory = forwardRef((props, ref) => {
           setBookings(result.data.results || []);
           setTotalResults(result.data.count || 0);
 
-          const calculatedCompletedSpots = (result.data.results || [])
-            .filter((b) => b.status === "completed")
-            .reduce((acc, curr) => acc + (curr.participants || 0), 0);
-          const calculatedCancelledSpots = (result.data.results || [])
-            .filter((b) => b.status === "cancelled")
-            .reduce((acc, curr) => acc + (curr.participants || 0), 0);
-
-          setTotalCompletedSpots(calculatedCompletedSpots);
-          setTotalCancelledSpots(calculatedCancelledSpots);
+          const s = result.data.summary || {};
+          setTotalCompletedSpots(s.completed_participant_spots_in_filter ?? 0);
+          setTotalCancelledSpots(s.cancelled_participant_spots_in_filter ?? 0);
 
           setLoadingStats(false);
           const timer = setTimeout(() => setIsReadyForAnimation(true), 50);

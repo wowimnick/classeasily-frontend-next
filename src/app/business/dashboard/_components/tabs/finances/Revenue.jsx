@@ -821,7 +821,7 @@ const Revenue = forwardRef((props, ref) => {
       icon: <CreditCard size={20} />,
       color: colors.chart.purple,
       background: `rgba(139, 92, 246, 0.1)`,
-      footer: "Average per transaction",
+      footer: "Average gross per booking (one payment)",
     },
     {
       key: "revenue_per_booker",
@@ -831,7 +831,7 @@ const Revenue = forwardRef((props, ref) => {
       icon: <Users size={20} />,
       color: colors.chart.orange,
       background: `rgba(249, 115, 22, 0.1)`,
-      footer: "Average per unique guest",
+      footer: "Average per unique paying booker",
     },
     {
       key: "revenue_per_spot",
@@ -841,7 +841,7 @@ const Revenue = forwardRef((props, ref) => {
       icon: <Percent size={20} />,
       color: colors.chart.teal,
       background: `rgba(20, 184, 166, 0.1)`,
-      footer: "Average revenue per seat",
+      footer: "Average gross per participant spot",
     },
   ];
 
