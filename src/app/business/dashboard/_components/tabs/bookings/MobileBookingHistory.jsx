@@ -113,6 +113,19 @@ const StatusTag = styled(Tag)`
   gap: 4px; /* Space for icon */
   margin-top: 4px; /* Small margin below other meta */
 
+  .ant-tag-icon {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+  }
+
+  .lucide {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    display: block;
+  }
+
   &.completed {
     background: #dcfce7;
     color: #166534;
@@ -295,11 +308,11 @@ const MobileBookingHistory = ({ data, showViewDrawer, loading }) => {
         const statusLower = booking.status?.toLowerCase();
         const statusIcon =
           statusLower === "completed" ? (
-            <CheckCircle size={12} />
+            <CheckCircle size={14} />
           ) : statusLower === "cancelled" || statusLower === "forfeited" ? (
-            <XCircle size={12} />
+            <XCircle size={14} />
           ) : statusLower === "pending" ? (
-            <Clock size={12} />
+            <Clock size={14} />
           ) : null;
 
         return (

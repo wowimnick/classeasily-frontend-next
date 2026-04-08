@@ -116,6 +116,19 @@ const StyledTag = styled(Tag)`
   align-items: center;
   gap: 6px;
 
+  .ant-tag-icon {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+  }
+
+  .lucide {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    display: block;
+  }
+
   &.confirmed {
     background: #eff6ff; /* Light Blue */
     color: #1d4ed8; /* Dark Blue */
