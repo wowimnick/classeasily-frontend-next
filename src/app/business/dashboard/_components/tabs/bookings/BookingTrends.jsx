@@ -702,7 +702,7 @@ const BookingTrends = () => {
       icon: <Calendar size={20} />,
       color: colors.chart.blue,
       background: `rgba(59, 130, 246, 0.1)`,
-      footer: "Participant spots across bookings in this period",
+      footer: "In this period",
     },
     {
       key: "booker_retention_rate",
@@ -722,7 +722,7 @@ const BookingTrends = () => {
       icon: <AlertCircle size={20} />,
       color: colors.chart.red,
       background: `rgba(239, 68, 68, 0.1)`,
-      footer: "Share of guest spots on cancelled bookings",
+      footer: "% of spots cancelled",
     },
     {
       key: "average_lead_time_days",
@@ -894,8 +894,7 @@ const BookingTrends = () => {
               </ChartTitle>
             </ChartTitleRow>
             <ChartDescription>
-              New guest spots vs net spots after cancellations; line shows daily
-              cancellation rate by spots.
+              New spots, net after cancels, cancel %.
             </ChartDescription>
           </ChartHeader>
 
@@ -1013,7 +1012,7 @@ const BookingTrends = () => {
                     yAxisId="right"
                     type="monotone"
                     dataKey="cancellation_rate_by_transaction"
-                    name="Cancel rate (spots)"
+                    name="Cancel rate"
                     stroke={colors.chart.red}
                     strokeWidth={2}
                     dot={false}
@@ -1052,7 +1051,7 @@ const BookingTrends = () => {
                   )}
                 </ChartTitleRow>
                 <ChartDescription>
-                  Guest spots booked by hour (active vs cancelled).
+                  Spots by hour.
                 </ChartDescription>
               </ChartHeader>
               <ChartContainer>
@@ -1111,14 +1110,14 @@ const BookingTrends = () => {
                       />
                       <Bar
                         dataKey="active_participant_spots"
-                        name="Guest spots"
+                        name="Booked"
                         fill={colors.chart.blue}
                         stackId="a"
                         radius={[0, 0, 4, 4]}
                       />
                       <Bar
                         dataKey="cancelled_participant_spots"
-                        name="Cancelled spots"
+                        name="Cancelled"
                         fill={colors.chart.red}
                         stackId="a"
                         radius={[4, 4, 0, 0]}
@@ -1155,7 +1154,7 @@ const BookingTrends = () => {
                   )}
                 </ChartTitleRow>
                 <ChartDescription>
-                  New vs returning bookers by participant spots.
+                  New vs returning.
                 </ChartDescription>
               </ChartHeader>
               <ChartContainer>
@@ -1219,7 +1218,7 @@ const BookingTrends = () => {
                   </ChartTitle>
                 </ChartTitleRow>
                 <ChartDescription>
-                  Ranked by participant spots.
+                  By guest spots.
                 </ChartDescription>
               </TableHeader>
               {loading ? (
