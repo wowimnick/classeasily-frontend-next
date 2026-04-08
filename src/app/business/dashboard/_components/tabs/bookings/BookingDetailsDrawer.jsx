@@ -589,6 +589,13 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
       business_context: biz = {},
       payment_info: pay = {},
     } = booking;
+    const participantNames = Array.isArray(booking.participant_details)
+      ? booking.participant_details
+          .map((p) =>
+            typeof p?.name === "string" ? p.name.trim() : ""
+          )
+          .filter(Boolean)
+      : [];
 
     const bizTz = biz.business_timezone || "UTC";
     const userTz = bd.user_timezone || bizTz;
@@ -662,9 +669,24 @@ const BookingDetailsDrawer = ({ visible, onClose, bookingId, onBookingCancel, on
               <div>
                 <FieldLabel>Participants</FieldLabel>
                 <FieldValue>
-                  {booking.participant_details?.[0]?.name
-                    ? `${booking.participant_details[0].name} · ${booking.participants} spot${booking.participants !== 1 ? "s" : ""}`
-                    : `${booking.participants} participant${booking.participants !== 1 ? "s" : ""}`}
+                  {participantNames.length > 0 ? (
+                    <>
+                      {`${booking.participants} spot${booking.participants !== 1 ? "s" : ""}`}
+                      <div
+                        style={{
+                          marginTop: 4,
+                          fontWeight: 400,
+                          fontSize: 13,
+                          color: C.textSecondary,
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {participantNames.join(" · ")}
+                      </div>
+                    </>
+                  ) : (
+                    `${booking.participants} participant${booking.participants !== 1 ? "s" : ""}`
+                  )}
                 </FieldValue>
               </div>
             )}
