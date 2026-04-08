@@ -804,16 +804,16 @@ const SummaryValue = styled(Text)`
 const getStatusIcon = (status) => {
   switch (status?.toLowerCase()) {
     case "paid":
-      return <CheckCircle size={12} />;
+      return <CheckCircle size={14} />;
     case "pending":
-      return <Clock size={12} />;
+      return <Clock size={14} />;
 
     case "in_transit":
-      return <Clock size={12} />;
+      return <Clock size={14} />;
     case "failed":
     case "canceled":
     case "cancelled":
-      return <AlertCircle size={12} />;
+      return <AlertCircle size={14} />;
     default:
       return null;
 
@@ -1328,7 +1328,7 @@ const Payouts = () => {
             <Link href={stripeUrl} target="_blank" rel="noopener noreferrer">
               {id}{" "}
               <ExternalLink
-                size={12}
+                size={14}
                 style={{ marginLeft: 4, color: colors.info }}
               />
             </Link>
@@ -1370,7 +1370,7 @@ const Payouts = () => {
           count
         ) : (
           <BookingCountTag>
-            <Box size={12} />
+            <Box size={14} />
             {count}
           </BookingCountTag>
         ),

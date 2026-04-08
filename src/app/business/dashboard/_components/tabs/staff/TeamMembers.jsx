@@ -331,6 +331,11 @@ const ActionButtonSmall = styled(Button)`
     min-width: 26px;
     padding: 0 4px;
   }
+
+  .lucide {
+    width: 14px;
+    height: 14px;
+  }
 `;
 
 // Mobile Card Component
@@ -459,6 +464,11 @@ const StatusTag = styled(Tag)`
     padding: 3px 5px;
     font-size: 10px;
     gap: 3px;
+  }
+
+  .lucide {
+    width: 14px;
+    height: 14px;
   }
 `;
 
@@ -601,13 +611,13 @@ const MobileStaffItem = ({
       color: "#f59e0b",
       background: "#fef3c7",
       text: "Pending",
-      icon: <Mail size={12} />,
+      icon: <Mail size={14} />,
     },
     accepted: {
       color: "#10b981",
       background: "#d1fae5",
       text: "Accepted",
-      icon: <CheckCircle size={12} />,
+      icon: <CheckCircle size={14} />,
     },
   };
 
@@ -897,13 +907,13 @@ const TeamMembers = () => {
               color: "#f59e0b",
               background: "#fef3c7",
               text: "Pending",
-              icon: <Mail size={12} />,
+              icon: <Mail size={14} />,
             },
             accepted: {
               color: "#10b981",
               background: "#d1fae5",
               text: "Accepted",
-              icon: <CheckCircle size={12} />,
+              icon: <CheckCircle size={14} />,
             },
           };
           const { color, background, text, icon } = statusMap[status] || {

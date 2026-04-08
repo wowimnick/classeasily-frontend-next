@@ -290,6 +290,11 @@ const ActionButtonSmall = styled(Button)`
     min-width: 26px;
     padding: 0 4px;
   }
+
+  .lucide {
+    width: 14px;
+    height: 14px;
+  }
 `;
 
 const DesktopDrawerContent = styled(VaulDrawer.Content)`
@@ -420,6 +425,11 @@ const MemberCountTag = styled.div`
     gap: 3px;
     padding: 2px 6px;
     border-radius: 3px;
+  }
+
+  .lucide {
+    width: 14px;
+    height: 14px;
   }
 `;
 
@@ -930,7 +940,7 @@ const Roles = () => {
         key: "user_count",
         render: (count) => (
           <MemberCountTag>
-            <Users size={12} />
+            <Users size={14} />
             <Text strong style={{ fontSize: "13px" }}>
               {typeof count === "number" ? count : 0} members
             </Text>

@@ -348,8 +348,8 @@ const DesktopActiveBookings = ({
 
   const getBookingTypeTag = (type, sessionInfo) => {
     const types = {
-      "Single Session": { icon: <Hash size={12} />, className: "single" },
-      "Full Course": { icon: <Calendar size={12} />, className: "course" },
+      "Single Session": { icon: <Hash size={14} />, className: "single" },
+      "Full Course": { icon: <Calendar size={14} />, className: "course" },
     };
     const config = types[type] || types["Single Session"];
     return (
@@ -358,7 +358,7 @@ const DesktopActiveBookings = ({
           {type || "N/A"}
         </BookingTypeTag>
         {type === "Full Course" && sessionInfo && (
-          <RecurringTag icon={<Calendar size={12} />}>
+          <RecurringTag icon={<Calendar size={14} />}>
             Session {sessionInfo.current_session} of{" "}
             {sessionInfo.total_sessions}
           </RecurringTag>
@@ -493,16 +493,16 @@ const DesktopActiveBookings = ({
           status && typeof status === "string" ? status.toLowerCase() : "";
         if (statusLower === "confirmed") {
           return (
-            <StyledTag className="confirmed" icon={<CheckCircle size={12} />}>
+            <StyledTag className="confirmed" icon={<CheckCircle size={14} />}>
               {status.toUpperCase()}
             </StyledTag>
           );
         }
         const fallbackIcon =
           statusLower === "pending" ? (
-            <Clock size={12} />
+            <Clock size={14} />
           ) : statusLower === "cancelled" || statusLower === "forfeited" ? (
-            <XCircle size={12} />
+            <XCircle size={14} />
           ) : null;
         return (
           <StyledTag className={statusLower} icon={fallbackIcon}>
