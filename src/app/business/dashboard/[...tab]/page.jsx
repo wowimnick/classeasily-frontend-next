@@ -173,7 +173,9 @@ export default function DashboardPage() {
       break;
     }
     case "settings": {
-      const settingsTab = searchParams.get("tab") || "general";
+      const rawSettingsTab = searchParams.get("tab") || "general";
+      const settingsTab =
+        rawSettingsTab === "location" ? "locations" : rawSettingsTab;
       const addonReturn =
         searchParams.get("addon") === "1" || searchParams.get("email_marketing") === "1";
       componentToRender = (

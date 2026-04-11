@@ -28,6 +28,7 @@ const defaultInitialState = {
     state: "",
     zipCode: "",
     country: "",
+    location_ref: null,
     saltLocation: false,
     studentContactEmail: "",
     studentContactPhone: "",

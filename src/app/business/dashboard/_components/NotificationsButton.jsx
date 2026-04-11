@@ -1,7 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Badge, Popover, List, Typography, Button, Empty } from "antd";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
+import { Badge, Popover, List, Typography, Button, Empty, Segmented } from "antd";
 import {
   BellOutlined,
   BellFilled,
@@ -21,18 +27,52 @@ import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoade
 
 const { Text, Title } = Typography;
 
-// Animations
-const slideIn = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`;
+const NOTIFICATION_FILTER_TABS = [
+  { key: "all", label: "All" },
+  { key: "bookings", label: "Bookings" },
+  { key: "payments", label: "Payments" },
+  { key: "messages", label: "Messages" },
+  { key: "memberships", label: "Memberships" },
+];
 
+function getNotificationCategory(notificationType) {
+  const t = notificationType || "";
+  if (
+    [
+      "new_booking",
+      "booking_cancelled_by_user",
+      "booking_cancelled_by_biz",
+      "class_reminder_biz",
+      "class_reminder_student",
+      "booking_completed",
+      "new_review",
+      "staff_joined",
+    ].includes(t)
+  ) {
+    return "bookings";
+  }
+  if (
+    [
+      "payment_succeeded",
+      "payment_failed",
+      "payout_initiated",
+      "stripe_action_required",
+    ].includes(t)
+  ) {
+    return "payments";
+  }
+  if (["new_message_chat", "new_message_support"].includes(t)) {
+    return "messages";
+  }
+  if (
+    ["membership_new", "membership_cancelled", "membership_renewed"].includes(t)
+  ) {
+    return "memberships";
+  }
+  return "other";
+}
+
+// Animations
 const pulseGlow = keyframes`
   0%, 100% {
     box-shadow: 0 0 0 0 rgba(255, 56, 92, 0.4);
@@ -90,7 +130,8 @@ const PopoverContainer = styled.div`
   border-radius: 16px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  animation: ${slideIn} 0.3s ease-out;
+  /* No CSS keyframe animation here: re-renders (e.g. filter changes) must not
+     restart the whole panel animation or confuse Segmented thumb motion. */
 
   @media (max-width: 768px) {
     display: none;
@@ -101,9 +142,38 @@ const PopoverHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px 16px;
+  padding: 20px 24px 12px;
   background: linear-gradient(135deg, #f8fafc, #f1f5f9);
   border-bottom: 1px solid #e2e8f0;
+`;
+
+const FilterRow = styled.div`
+  padding: 0 16px 12px;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border-bottom: 1px solid #e2e8f0;
+
+  .ant-segmented {
+    width: 100%;
+  }
+
+  /* Instant thumb move: rc-segmented motion can replay from segment 0 when the
+     popover body re-renders; CSS transitions still give a subtle slide. */
+  .ant-segmented-thumb-motion-appear,
+  .ant-segmented-thumb-motion-appear-active,
+  .ant-segmented-thumb-motion-appear-prepare {
+    transition: none !important;
+  }
+  .ant-segmented-thumb {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      width 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+`;
+
+const LoadMoreWrap = styled.div`
+  padding: 12px 16px 16px;
+  text-align: center;
+  border-top: 1px solid #f1f5f9;
+  background: #fafafa;
 `;
 
 const HeaderTitle = styled(Title)`
@@ -372,11 +442,21 @@ const NotificationsButton = () => {
   const [countLoading, setCountLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [transformOrigin, setTransformOrigin] = useState("top right");
+  const [filterTab, setFilterTab] = useState("all");
+  const [nextPageUrl, setNextPageUrl] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const router = useRouter();
   const { user: currentUser } = useAuth();
   const popoverRef = useRef(null);
   const notificationButtonRef = useRef(null);
+
+  const displayedNotifications = useMemo(() => {
+    if (filterTab === "all") return notifications;
+    return notifications.filter(
+      (n) => getNotificationCategory(n.notification_type) === filterTab,
+    );
+  }, [notifications, filterTab]);
 
   useNotificationsWebSocket({
     enabled: !!currentUser,
@@ -473,16 +553,45 @@ const NotificationsButton = () => {
       });
       if (response.success) {
         setNotifications(response.data || []);
+        setNextPageUrl(response.next || null);
       } else {
         setNotifications([]);
+        setNextPageUrl(null);
       }
     } catch (error) {
       setNotifications([]);
+      setNextPageUrl(null);
     } finally {
       setLoading(false);
       if (!initialLoadDone) setInitialLoadDone(true);
     }
   }, [currentUser, initialLoadDone]);
+
+  const loadMoreNotifications = useCallback(async () => {
+    if (!currentUser || !nextPageUrl || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const response = await notificationService.getNotifications({
+        url: nextPageUrl,
+      });
+      if (response.success) {
+        const more = response.data || [];
+        setNotifications((prev) => {
+          const ids = new Set(prev.map((x) => x.id));
+          const merged = [...prev];
+          for (const item of more) {
+            if (!ids.has(item.id)) merged.push(item);
+          }
+          return merged;
+        });
+        setNextPageUrl(response.next || null);
+      }
+    } catch (e) {
+      console.error("Load more notifications failed:", e);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [currentUser, nextPageUrl, loadingMore]);
 
   useEffect(() => {
     if (currentUser) {
@@ -567,6 +676,9 @@ const NotificationsButton = () => {
       Clock: "⏰",
       UserX: "🚫",
       MessageSquare: "💬",
+      AlertTriangle: "⚠️",
+      CreditCard: "💳",
+      CheckCircle: "✅",
     };
     const emoji = iconMap[iconNameString];
     if (emoji) {
@@ -591,11 +703,23 @@ const NotificationsButton = () => {
       Clock: "linear-gradient(135deg, #8b5cf6, #7c3aed)",
       UserX: "linear-gradient(135deg, #ff385c, #e02954)",
       MessageSquare: "linear-gradient(135deg, #ff385c, #e02954)",
+      AlertTriangle: "linear-gradient(135deg, #f59e0b, #d97706)",
+      CreditCard: "linear-gradient(135deg, #6366f1, #4f46e5)",
+      CheckCircle: "linear-gradient(135deg, #22c55e, #16a34a)",
     };
     return (
       colorMap[iconNameString] || "linear-gradient(135deg, #64748b, #475569)"
     );
   };
+
+  const filterSegmentedOptions = useMemo(
+    () =>
+      NOTIFICATION_FILTER_TABS.map(({ key, label }) => ({
+        label,
+        value: key,
+      })),
+    [],
+  );
 
   // Desktop popover content
   const desktopPopoverContent = (
@@ -612,6 +736,18 @@ const NotificationsButton = () => {
           </MarkAllButton>
         )}
       </PopoverHeader>
+
+      {currentUser && !(loading && !initialLoadDone) && !countLoading && (
+        <FilterRow>
+          <Segmented
+            name="business-notification-filter"
+            size="small"
+            options={filterSegmentedOptions}
+            value={filterTab}
+            onChange={setFilterTab}
+          />
+        </FilterRow>
+      )}
 
       {!currentUser ? (
         <EmptyContainer>
@@ -634,42 +770,68 @@ const NotificationsButton = () => {
             }
           />
         </EmptyContainer>
+      ) : displayedNotifications.length === 0 ? (
+        <EmptyContainer>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <Text style={{ color: "#64748b", fontSize: "16px" }}>
+                No notifications in this category
+              </Text>
+            }
+          />
+        </EmptyContainer>
       ) : (
-        <StyledList
-          itemLayout="horizontal"
-          dataSource={notifications}
-          renderItem={(item) => (
-            <List.Item style={{ padding: 0, border: "none" }}>
-              <NotificationItem
-                $isunread={!item.is_read}
-                onClick={() => handleNotificationClick(item)}
+        <>
+          <StyledList
+            itemLayout="horizontal"
+            dataSource={displayedNotifications}
+            renderItem={(item) => (
+              <List.Item style={{ padding: 0, border: "none" }}>
+                <NotificationItem
+                  $isunread={!item.is_read}
+                  onClick={() => handleNotificationClick(item)}
+                >
+                  <NotificationIconWrapper color={getIconColor(item.icon)}>
+                    {getIconComponent(item.icon)}
+                  </NotificationIconWrapper>
+                  <NotificationContent>
+                    <NotificationMessage $isunread={!item.is_read}>
+                      {item.message}
+                    </NotificationMessage>
+                    <NotificationTime>
+                      <ClockCircleOutlined />
+                      {item.time_since}
+                    </NotificationTime>
+                  </NotificationContent>
+                  {!item.is_read && (
+                    <ActionButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markAsRead(item.id);
+                      }}
+                      title="Mark as read"
+                      icon={<CheckOutlined style={{ fontSize: "12px" }} />}
+                    />
+                  )}
+                </NotificationItem>
+              </List.Item>
+            )}
+          />
+          {nextPageUrl ? (
+            <LoadMoreWrap>
+              <Button
+                type="default"
+                size="small"
+                loading={loadingMore}
+                onClick={loadMoreNotifications}
+                block
               >
-                <NotificationIconWrapper color={getIconColor(item.icon)}>
-                  {getIconComponent(item.icon)}
-                </NotificationIconWrapper>
-                <NotificationContent>
-                  <NotificationMessage $isunread={!item.is_read}>
-                    {item.message}
-                  </NotificationMessage>
-                  <NotificationTime>
-                    <ClockCircleOutlined />
-                    {item.time_since}
-                  </NotificationTime>
-                </NotificationContent>
-                {!item.is_read && (
-                  <ActionButton
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      markAsRead(item.id);
-                    }}
-                    title="Mark as read"
-                    icon={<CheckOutlined style={{ fontSize: "12px" }} />}
-                  />
-                )}
-              </NotificationItem>
-            </List.Item>
-          )}
-        />
+                Load more
+              </Button>
+            </LoadMoreWrap>
+          ) : null}
+        </>
       )}
     </PopoverContainer>
   );
@@ -685,6 +847,7 @@ const NotificationsButton = () => {
             open={popoverVisible}
             onOpenChange={setPopoverVisible}
             placement="bottomRight"
+            destroyTooltipOnHide={false}
             styles={{
               body: {
                 padding: 0,
@@ -824,6 +987,19 @@ const NotificationsButton = () => {
                     </div>
                   </PopoverHeader>
 
+                  {currentUser &&
+                    !(loading && !initialLoadDone) &&
+                    !countLoading && (
+                      <FilterRow>
+                        <Segmented
+                          size="small"
+                          options={filterSegmentedOptions}
+                          value={filterTab}
+                          onChange={setFilterTab}
+                        />
+                      </FilterRow>
+                    )}
+
                   {!currentUser ? (
                     <EmptyContainer>
                       <Text style={{ color: "#64748b", fontSize: "16px" }}>
@@ -845,46 +1021,74 @@ const NotificationsButton = () => {
                         }
                       />
                     </EmptyContainer>
+                  ) : displayedNotifications.length === 0 ? (
+                    <EmptyContainer>
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={
+                          <Text style={{ color: "#64748b", fontSize: "16px" }}>
+                            No notifications in this category
+                          </Text>
+                        }
+                      />
+                    </EmptyContainer>
                   ) : (
-                    <StyledList
-                      itemLayout="horizontal"
-                      dataSource={notifications}
-                      renderItem={(item) => (
-                        <List.Item style={{ padding: 0, border: "none" }}>
-                          <NotificationItem
-                            $isunread={!item.is_read}
-                            onClick={() => handleNotificationClick(item)}
-                          >
-                            <NotificationIconWrapper
-                              color={getIconColor(item.icon)}
+                    <>
+                      <StyledList
+                        itemLayout="horizontal"
+                        dataSource={displayedNotifications}
+                        renderItem={(item) => (
+                          <List.Item style={{ padding: 0, border: "none" }}>
+                            <NotificationItem
+                              $isunread={!item.is_read}
+                              onClick={() => handleNotificationClick(item)}
                             >
-                              {getIconComponent(item.icon)}
-                            </NotificationIconWrapper>
-                            <NotificationContent>
-                              <NotificationMessage $isunread={!item.is_read}>
-                                {item.message}
-                              </NotificationMessage>
-                              <NotificationTime>
-                                <ClockCircleOutlined />
-                                {item.time_since}
-                              </NotificationTime>
-                            </NotificationContent>
-                            {!item.is_read && (
-                              <ActionButton
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  markAsRead(item.id);
-                                }}
-                                title="Mark as read"
-                                icon={
-                                  <CheckOutlined style={{ fontSize: "12px" }} />
-                                }
-                              />
-                            )}
-                          </NotificationItem>
-                        </List.Item>
-                      )}
-                    />
+                              <NotificationIconWrapper
+                                color={getIconColor(item.icon)}
+                              >
+                                {getIconComponent(item.icon)}
+                              </NotificationIconWrapper>
+                              <NotificationContent>
+                                <NotificationMessage $isunread={!item.is_read}>
+                                  {item.message}
+                                </NotificationMessage>
+                                <NotificationTime>
+                                  <ClockCircleOutlined />
+                                  {item.time_since}
+                                </NotificationTime>
+                              </NotificationContent>
+                              {!item.is_read && (
+                                <ActionButton
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    markAsRead(item.id);
+                                  }}
+                                  title="Mark as read"
+                                  icon={
+                                    <CheckOutlined
+                                      style={{ fontSize: "12px" }}
+                                    />
+                                  }
+                                />
+                              )}
+                            </NotificationItem>
+                          </List.Item>
+                        )}
+                      />
+                      {nextPageUrl ? (
+                        <LoadMoreWrap>
+                          <Button
+                            type="default"
+                            size="small"
+                            loading={loadingMore}
+                            onClick={loadMoreNotifications}
+                            block
+                          >
+                            Load more
+                          </Button>
+                        </LoadMoreWrap>
+                      ) : null}
+                    </>
                   )}
                 </MobileNotificationContainer>
               </>

@@ -484,19 +484,33 @@ const BusinessPageClient = ({ initialData, slug }) => {
     studentContactEmail,
     website,
     widget_api_key,
-    social_media_links = {}
+    social_media_links = {},
+    locations = [],
   } = businessData;
 
   const ratingAsNumber = average_rating ? parseFloat(average_rating) : 0;
-  
-  // Coordinates for map
+
+  const primaryBusinessLocation = useMemo(() => {
+    if (!locations?.length) return null;
+    return locations.find((l) => l.is_primary) || locations[0];
+  }, [locations]);
+
+  // Coordinates for map (prefer primary saved location, then first class)
   const mapCoordinates = useMemo(() => {
+    if (
+      primaryBusinessLocation?.latitude != null &&
+      primaryBusinessLocation?.longitude != null
+    ) {
+      const lat = parseFloat(primaryBusinessLocation.latitude);
+      const lng = parseFloat(primaryBusinessLocation.longitude);
+      if (!Number.isNaN(lat) && !Number.isNaN(lng)) return [lat, lng];
+    }
     if (classes.length > 0 && classes[0].coordinates) {
-      const parts = classes[0].coordinates.split(',');
+      const parts = classes[0].coordinates.split(",");
       if (parts.length === 2) return [parseFloat(parts[0]), parseFloat(parts[1])];
     }
-    return [40.7128, -74.0060];
-  }, [classes]);
+    return [40.7128, -74.006];
+  }, [classes, primaryBusinessLocation]);
 
   const socialIcons = {
     facebook: <Facebook size={18} />,
@@ -589,6 +603,82 @@ const BusinessPageClient = ({ initialData, slug }) => {
             </HighlightsGrid>
 
             <SectionDivider />
+
+            {locations.length > 0 && (
+              <div style={{ marginBottom: "32px" }}>
+                <h3
+                  style={{
+                    fontSize: "22px",
+                    fontWeight: 600,
+                    marginBottom: "16px",
+                  }}
+                >
+                  Locations
+                </h3>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 12,
+                  }}
+                >
+                  {locations.map((loc) => {
+                    const line = [loc.address, loc.unit, loc.city, loc.state, loc.zip_code]
+                      .filter(Boolean)
+                      .join(", ");
+                    const q = encodeURIComponent(line || loc.address || "");
+                    return (
+                      <div
+                        key={loc.id}
+                        style={{
+                          padding: 16,
+                          border: "1px solid #e5e7eb",
+                          borderRadius: 12,
+                        }}
+                      >
+                        <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                          {loc.name}
+                          {loc.is_primary ? (
+                            <span
+                              style={{
+                                marginLeft: 8,
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: "#2563eb",
+                                textTransform: "uppercase",
+                              }}
+                            >
+                              Primary
+                            </span>
+                          ) : null}
+                        </div>
+                        <p style={{ margin: 0, fontSize: 14, color: "#4b5563" }}>
+                          {line}
+                        </p>
+                        {line ? (
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${q}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              display: "inline-block",
+                              marginTop: 10,
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: "#111827",
+                            }}
+                          >
+                            Open in Maps
+                          </a>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {locations.length > 0 && <SectionDivider />}
 
             <div style={{marginBottom: '32px'}}>
               <h3 style={{fontSize:'22px', fontWeight:600, marginBottom:'16px'}}>About this business</h3>

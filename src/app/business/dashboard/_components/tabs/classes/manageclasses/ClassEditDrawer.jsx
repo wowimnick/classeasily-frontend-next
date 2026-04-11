@@ -65,7 +65,11 @@ import {
   Type,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { businessClassService, uploadService } from "@/services/apiService";
+import {
+  businessClassService,
+  businessService,
+  uploadService,
+} from "@/services/apiService";
 import debounce from "lodash/debounce";
 import {
   MapContainer,
@@ -96,7 +100,7 @@ const FormLabelWithIcon = styled(FormLabel)`
 
 const { Option } = Select;
 const { TextArea } = Input;
-const { Title, Text } = Typography;
+const { Title, Text, Link: TextLink } = Typography;
 
 // --- ANIMATION HOOKS (From ClassOptionsStep) ---
 
@@ -210,7 +214,11 @@ const ScrollContainer = styled.div`
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
-  padding: 0;
+  /* Match tab nav inset (.ant-tabs-nav uses 24px / 16px mobile) */
+  padding: 16px 24px 28px;
+  @media (max-width: 768px) {
+    padding: 12px 16px 24px;
+  }
 `;
 
 const FormContainer = styled(motion.div)`
@@ -2012,6 +2020,10 @@ const ClassEditDrawer = ({
   const [selectedMapLocation, setSelectedMapLocation] = useState(null);
   const [hideExactLocation, setHideExactLocation] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [businessLocations, setBusinessLocations] = useState([]);
+  const [locationsFetchComplete, setLocationsFetchComplete] = useState(false);
+  const [showCustomLocation, setShowCustomLocation] = useState(false);
+  const editLocationUiSeededRef = useRef(false);
 
   // Active tier for accordion
   const [activeTier, setActiveTier] = useState(0);
@@ -2028,6 +2040,23 @@ const ClassEditDrawer = ({
 
   // Watch booking type for Policy Tab logic
   const bookingType = Form.useWatch("booking_type", form);
+  const watchedLocationRef = Form.useWatch("location_ref", form);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLocationsFetchComplete(false);
+      const res = await businessService.getBusinessLocations();
+      if (cancelled) return;
+      if (res.success && Array.isArray(res.data)) {
+        setBusinessLocations(res.data.filter((l) => l.is_active !== false));
+      }
+      if (!cancelled) setLocationsFetchComplete(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -2041,6 +2070,7 @@ const ClassEditDrawer = ({
 
   useEffect(() => {
     if (visible && initialClassDataProp) {
+      editLocationUiSeededRef.current = false;
       setDataLoading(true);
       initialClassDataRef.current = JSON.parse(
         JSON.stringify(initialClassDataProp),
@@ -2054,9 +2084,11 @@ const ClassEditDrawer = ({
       setMapSearchValue("");
       setSelectedMapLocation(null);
       setHideExactLocation(false);
+      setShowCustomLocation(false);
       setActiveTab("1");
       setActiveTier(0);
       initialClassDataRef.current = null;
+      editLocationUiSeededRef.current = false;
     }
   }, [visible, initialClassDataProp, form]);
 
@@ -2119,6 +2151,7 @@ const ClassEditDrawer = ({
       saltLocation: classData.saltLocation || false,
       city: classData.city || "",
       state: classData.state || "",
+      location_ref: classData.location_ref ?? null,
       studentContactEmail: classData.studentContactEmail || "",
       studentContactPhone: classData.studentContactPhone || "",
 
@@ -2204,6 +2237,7 @@ const ClassEditDrawer = ({
     const { lat, lng } = coordinates;
     setMapSearchValue(displayName);
     setSelectedMapLocation({ lat, lon: lng, display_name: displayName });
+    setShowCustomLocation(true);
     form.setFieldsValue({
       location: displayName,
       coordinates: `${lat},${lng}`,
@@ -2211,9 +2245,74 @@ const ClassEditDrawer = ({
       state: state || "",
       zipCode: zipCode || "",
       country: country || "",
+      location_ref: null,
     });
     setMapSearchResults([]);
   };
+
+  const applySavedBusinessLocation = (loc) => {
+    if (!loc) return;
+    setShowCustomLocation(false);
+    const lat = loc.latitude != null ? Number(loc.latitude) : null;
+    const lng = loc.longitude != null ? Number(loc.longitude) : null;
+    const hasCoords =
+      lat != null &&
+      lng != null &&
+      !Number.isNaN(lat) &&
+      !Number.isNaN(lng);
+    setMapSearchValue(loc.address || "");
+    if (hasCoords) {
+      setSelectedMapLocation({
+        lat,
+        lon: lng,
+        display_name: loc.address,
+      });
+    } else {
+      setSelectedMapLocation(null);
+    }
+    setHideExactLocation(loc.show_exact_location === false);
+    form.setFieldsValue({
+      location_ref: loc.id,
+      location: loc.address || "",
+      unit_number: loc.unit || "",
+      coordinates: hasCoords ? `${lat},${lng}` : form.getFieldValue("coordinates"),
+      saltLocation: loc.show_exact_location === false,
+      city: loc.city || "",
+      state: loc.state || "",
+      zipCode: loc.zip_code || "",
+    });
+  };
+
+  useEffect(() => {
+    if (!visible || !locationsFetchComplete) return;
+    if (editLocationUiSeededRef.current) return;
+    const cd = initialClassDataRef.current;
+    if (!cd) return;
+
+    if (businessLocations.length === 0) {
+      editLocationUiSeededRef.current = true;
+      setShowCustomLocation(true);
+      return;
+    }
+    if (cd.location_ref) {
+      editLocationUiSeededRef.current = true;
+      setShowCustomLocation(false);
+      return;
+    }
+    const hasCustom =
+      (cd.location || "").trim() ||
+      (cd.coordinates &&
+        cd.coordinates !== "0,0" &&
+        cd.coordinates !== "0, 0");
+    editLocationUiSeededRef.current = true;
+    if (hasCustom) {
+      setShowCustomLocation(true);
+    } else {
+      const loc =
+        businessLocations.find((l) => l.is_primary) || businessLocations[0];
+      applySavedBusinessLocation(loc);
+    }
+  }, [visible, locationsFetchComplete, businessLocations]);
 
   const handleLocationPrivacyToggle = (type) => {
     const newValue = type === "hide";
@@ -2445,6 +2544,7 @@ const ClassEditDrawer = ({
       // 2. Prepare Base Payload
       const payload = { ...values };
       payload.saltLocation = hideExactLocation;
+      payload.location_ref = form.getFieldValue("location_ref") ?? null;
 
       // 3. Handle Deleted/New Images
       const initialImageIds = (initialClassDataRef.current?.images || []).map(
@@ -2577,6 +2677,7 @@ const ClassEditDrawer = ({
           [
             "location",
             "coordinates",
+            "location_ref",
             "studentContactEmail",
             "studentContactPhone",
           ].includes(firstErrorField)
@@ -2911,7 +3012,75 @@ const ClassEditDrawer = ({
                       </StepHeader>
                       <StepContentWrapper>
                       <FormSection>
-                        <FormGrid>
+                        {businessLocations.length > 0 && (
+                          <FormGroup style={{ marginBottom: 20 }}>
+                            <FormLabelWithIcon>
+                              <Building2 size={16} />
+                              Business location
+                            </FormLabelWithIcon>
+                            <HelpText>
+                              <Info size={14} />
+                              This class meets at a saved venue by default.
+                              Manage venues in Settings → Locations.
+                            </HelpText>
+                            <Select
+                              size="middle"
+                              style={{ width: "100%" }}
+                              placeholder="Select a saved location"
+                              value={
+                                showCustomLocation
+                                  ? undefined
+                                  : watchedLocationRef ?? undefined
+                              }
+                              onChange={(v) => {
+                                const loc = businessLocations.find(
+                                  (x) => x.id === v,
+                                );
+                                if (loc) applySavedBusinessLocation(loc);
+                              }}
+                              options={businessLocations.map((l) => ({
+                                value: l.id,
+                                label: `${l.name} — ${[l.city, l.state].filter(Boolean).join(", ")}`,
+                              }))}
+                            />
+                            {!showCustomLocation && (
+                              <div style={{ marginTop: 10 }}>
+                                <TextLink
+                                  onClick={() => {
+                                    setShowCustomLocation(true);
+                                    form.setFieldsValue({ location_ref: null });
+                                  }}
+                                >
+                                  Or select a custom location
+                                </TextLink>
+                              </div>
+                            )}
+                            {showCustomLocation && (
+                              <div style={{ marginTop: 10 }}>
+                                <TextLink
+                                  onClick={() => {
+                                    const loc =
+                                      businessLocations.find(
+                                        (l) => l.is_primary,
+                                      ) || businessLocations[0];
+                                    if (loc) applySavedBusinessLocation(loc);
+                                  }}
+                                >
+                                  Use a saved business location instead
+                                </TextLink>
+                              </div>
+                            )}
+                          </FormGroup>
+                        )}
+                        <FormGrid
+                          style={{
+                            display:
+                              showCustomLocation ||
+                              businessLocations.length === 0
+                                ? "grid"
+                                : "none",
+                          }}
+                        >
                           <FormGroup>
                             <FormLabelWithIcon htmlFor="edit_location_search_input_display_only">
                               <Search size={16} />

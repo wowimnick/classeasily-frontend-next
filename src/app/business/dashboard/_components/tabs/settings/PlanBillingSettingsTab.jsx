@@ -2,18 +2,23 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
-import { Button, Modal, message as antMessage } from "antd";
+import { Button, Modal, message as antMessage, Tooltip } from "antd";
+import confetti from "canvas-confetti";
+import { motion, AnimatePresence, useInView } from "framer-motion";
+import NumberFlow, { NumberFlowGroup } from "@number-flow/react";
 import {
   ArrowRight, ArrowUp, ArrowDown, Loader2, RefreshCw, Lock,
   CreditCard, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
-  Check, Download, SlidersHorizontal, Trash2,
+  Check, Download, Trash2,
+  Calendar, LayoutGrid, TrendingUp, Zap, Shield, Package, Receipt,
+  AlertTriangle, Info, AlertCircle, Plus, X,
 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements, PaymentElement,
   PaymentRequestButtonElement, useStripe, useElements,
 } from "@stripe/react-stripe-js";
-import styled, { createGlobalStyle, keyframes } from "styled-components";
+import styled, { createGlobalStyle, css } from "styled-components";
 import { useSubscription } from "@/context/SubscriptionContext";
 import { getPlanById, PLANS, PLAN_IDS, isUpgrade, WIDGET_PLAN_COMPARISON_ROWS } from "@/lib/subscriptionPlans";
 import message from "@/lib/message";
@@ -21,6 +26,13 @@ import { businessService, API_ENDPOINTS } from "@/services/apiService";
 import axiosInstance from "@/lib/axiosInstance";
 import { theme as appTheme } from "@/components/theme";
 import EmailMarketingTierModal from "./EmailMarketingTierModal";
+import {
+  BRAND_PRIMARY,
+  BRAND_PRIMARY_HOVER,
+  shimmerMove,
+  borderPulse,
+  btnShimmer,
+} from "./PlanBillingAnimations";
 
 // ─── stripe setup ─────────────────────────────────────────────────────────────
 const stripePromise =
@@ -38,9 +50,6 @@ const paymentElementOptions = {
   defaultValues: { billingDetails: { address: { country: "CA" } } },
   fields: { billingDetails: { address: { country: "never", postalCode: "never" } } },
 };
-
-// ─── animations ───────────────────────────────────────────────────────────────
-const spin = keyframes`from { transform: rotate(0deg) } to { transform: rotate(360deg) }`;
 
 // ─── global ───────────────────────────────────────────────────────────────────
 const GlobalStyle = createGlobalStyle`
@@ -89,20 +98,6 @@ const SectionSub = styled.p`
   line-height: 1.5;
 `;
 
-const SpinIcon = styled(Loader2)`
-  animation: ${spin} 1s linear infinite;
-  color: ${T.faint};
-`;
-
-const LoadingRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 0;
-  font-size: 13px;
-  color: ${T.faint};
-`;
-
 // ─── page layout (responsive, centered) ───────────────────────────────────────
 const PageOuter = styled.div`
   width: 100%;
@@ -148,7 +143,7 @@ const ToggleLabel = styled.span`
 const TogglePill = styled.div`
   width: 44px;
   height: 24px;
-  border-radius: 999px;
+  border-radius: 12px;
   background: #e5e7eb;
   position: relative;
   flex-shrink: 0;
@@ -169,7 +164,7 @@ const SavePctBadge = styled.span`
   display: inline-flex;
   align-items: center;
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: 12px;
   background: #000000;
   color: #ffffff;
   font-size: 10px;
@@ -220,7 +215,7 @@ const PromoSaveBadge = styled.span`
   display: inline-flex;
   align-items: center;
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: 8px;
   background: #000000;
   color: #ffffff;
   font-size: 10px;
@@ -241,7 +236,7 @@ const PromoSub = styled.p`
 const PromoOutlineBtn = styled.button`
   flex-shrink: 0;
   padding: 8px 16px;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid #e5e7eb;
   background: #ffffff;
   color: #374151;
@@ -297,7 +292,7 @@ const PlansDesktopLayout = styled.div`
 
 const PlansDesktopGrid = styled.div`
   display: grid;
-  grid-template-columns: minmax(220px, 1.15fr) repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(120px, 0.88fr) repeat(3, minmax(0, 1fr));
   column-gap: 0;
   row-gap: 0;
   padding: 14px 14px 12px;
@@ -314,62 +309,108 @@ const PlansDesktopCorner = styled.div`
 const PlanCompareScroll = styled.div`
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  width: 100%;
+  min-width: 0;
 `;
 
 const PlanCompareTable = styled.table`
   width: 100%;
+  max-width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  min-width: 560px;
+  table-layout: fixed;
+
+  @media (max-width: 480px) {
+    font-size: 12px;
+  }
 `;
 
 const PcThFeature = styled.th`
   text-align: left;
-  padding: 12px 14px;
+  padding: 12px 12px 12px 14px;
   font-weight: 700;
   color: #111827;
   border-bottom: 1px solid #e5e7eb;
   position: sticky;
   left: 0;
   z-index: 2;
-  min-width: 220px;
-  max-width: 320px;
+  width: 28%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+  line-height: 1.25;
   box-shadow: 1px 0 0 #e5e7eb;
+
+  @media (max-width: 480px) {
+    width: 26%;
+    padding: 10px 8px 10px 10px;
+    font-size: 12px;
+  }
 `;
 
 const PcThPlan = styled.th`
   text-align: center;
-  padding: 12px 10px;
+  padding: 12px 6px;
   font-weight: 700;
   color: #111827;
   border-bottom: 1px solid #e5e7eb;
-  white-space: nowrap;
-  width: 1%;
+  white-space: normal;
+  width: 24%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.2;
+
+  @media (max-width: 480px) {
+    padding: 10px 4px;
+    font-size: 11px;
+  }
 `;
 
 const PcTdFeature = styled.td`
-  padding: 10px 14px;
+  padding: 10px 12px 10px 14px;
   border-bottom: 1px solid #f3f4f6;
-  vertical-align: middle;
+  vertical-align: top;
   color: #374151;
   font-weight: 500;
-  line-height: 1.4;
+  line-height: 1.35;
   position: sticky;
   left: 0;
   background: #ffffff;
   z-index: 1;
-  min-width: 220px;
-  max-width: 320px;
+  width: 28%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
   box-shadow: 1px 0 0 #f3f4f6;
+
+  @media (max-width: 480px) {
+    width: 26%;
+    padding: 8px 8px 8px 10px;
+    font-size: 12px;
+  }
 `;
 
 const PcTdMark = styled.td`
   text-align: center;
-  padding: 10px 8px;
+  padding: 10px 6px;
   border-bottom: 1px solid #f3f4f6;
   vertical-align: middle;
   color: #6b7280;
   font-variant-numeric: tabular-nums;
+  width: 24%;
+  min-width: 0;
+  box-sizing: border-box;
+
+  @media (max-width: 480px) {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
 `;
 
 const PcTdMarkInner = styled.span`
@@ -383,7 +424,7 @@ const PcTdMarkInner = styled.span`
 const GridFeatHead = styled.div`
   grid-column: 1;
   grid-row: 2;
-  padding: 12px 14px;
+  padding: 12px 12px 12px 14px;
   font-weight: 700;
   font-size: 13px;
   color: #111827;
@@ -393,12 +434,15 @@ const GridFeatHead = styled.div`
   align-self: stretch;
   display: flex;
   align-items: center;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 `;
 
 const GridPlanHead = styled.div`
   grid-column: ${({ $col }) => $col};
   grid-row: 2;
-  padding: 12px 10px;
+  padding: 12px 8px;
   font-weight: 700;
   font-size: 13px;
   color: #111827;
@@ -410,26 +454,33 @@ const GridPlanHead = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.2;
 `;
 
 const GridFeatCell = styled.div`
   grid-column: 1;
   grid-row: ${({ $row }) => $row};
-  padding: 10px 14px;
+  padding: 10px 12px 10px 14px;
   border-bottom: 1px solid #f3f4f6;
   border-right: 1px solid #e5e7eb;
   font-weight: 500;
   font-size: 13px;
   color: #374151;
-  line-height: 1.4;
+  line-height: 1.35;
   display: flex;
   align-items: center;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 `;
 
 const GridMarkCell = styled.div`
   grid-column: ${({ $col }) => $col};
   grid-row: ${({ $row }) => $row};
-  padding: 10px 8px;
+  padding: 10px 6px;
   border-bottom: 1px solid #f3f4f6;
   border-left: ${({ $divider }) => ($divider ? "1px solid #e5e7eb" : "none")};
   border-right: ${({ $col }) => ($col === 4 ? "1px solid #e5e7eb" : "none")};
@@ -440,6 +491,7 @@ const GridMarkCell = styled.div`
   align-items: center;
   justify-content: center;
   text-align: center;
+  min-width: 0;
 `;
 
 const PriceCard = styled.article`
@@ -543,7 +595,7 @@ const BlackCapsBadge = styled.span`
   display: inline-flex;
   align-items: center;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 8px;
   background: #000000;
   color: #ffffff;
   font-size: 9px;
@@ -557,7 +609,7 @@ const OutlineCapsBadge = styled.span`
   display: inline-flex;
   align-items: center;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 8px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   color: #374151;
@@ -615,7 +667,7 @@ const PriceSuffix = styled.span`
 const PriceCta = styled.button`
   margin-top: 0;
   width: 100%;
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 10px 14px;
   font-size: 13px;
   font-weight: 500;
@@ -666,9 +718,16 @@ const PageHeader = styled.div`
 `;
 
 const PLAN_GRADIENTS = {
-  basic: "linear-gradient(135deg, #93c5fd, #60a5fa)",
-  growth: "linear-gradient(135deg, #a7f3d0, #34d399)",
-  advanced: "linear-gradient(135deg, #fcd34d, #f59e0b)",
+  basic: "linear-gradient(135deg, #f3f4f6, #e5e7eb)",
+  growth: "linear-gradient(135deg, #e5e7eb, #d1d5db)",
+  advanced: "linear-gradient(135deg, #d1d5db, #cbd5e1)",
+};
+
+/** Dark neutrals for plan emblem (white icon) in plan-switch modal. */
+const PLAN_EMBLEM_GRADIENTS = {
+  basic: "linear-gradient(135deg, #4b5563, #374151)",
+  growth: "linear-gradient(135deg, #374151, #1f2937)",
+  advanced: "linear-gradient(135deg, #1f2937, #111827)",
 };
 
 const PLAN_TAGLINES = {
@@ -678,40 +737,17 @@ const PLAN_TAGLINES = {
 };
 
 // ─── invoice section ──────────────────────────────────────────────────────────
-const SortBtn = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 7px 11px;
-  min-width: 0;
-  background: ${T.white};
-  border: 1px solid ${T.border};
-  border-radius: 8px;
-  font-size: 13px;
-  color: ${T.text};
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s;
-  &:hover { background: ${T.bg}; }
-
-  @media (max-width: 380px) {
-    white-space: normal;
-    text-align: center;
-  }
-`;
-
 const InvoicePaginationBar = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
-  margin-top: 12px;
+  margin-top: 10px;
 `;
 
 const InvoicePageInfo = styled.span`
-  font-size: 13px;
+  font-size: 12px;
   color: ${T.sub};
   min-width: 0;
 `;
@@ -727,8 +763,8 @@ const InvoicePageBtn = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   padding: 0;
   border: 1px solid ${T.border};
   border-radius: 8px;
@@ -742,41 +778,184 @@ const InvoicePageBtn = styled.button`
   }
 
   &:disabled {
-    opacity: 0.4;
+    opacity: 0.35;
     cursor: default;
   }
 `;
 
-const InvoiceRow = styled.div`
-  display: grid;
-  grid-template-columns: 1fr auto auto 26px;
-  align-items: center;
-  gap: 8px 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid ${T.border};
-  &:last-child { border-bottom: none; }
+const InvoiceListWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
 
-  @media (min-width: 640px) {
-    grid-template-columns: 1fr 110px 90px 100px 28px 26px;
-    padding: 12px 20px;
+const InvoiceRowCard = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 108px 92px 108px auto auto;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  transition: background 0.1s ease;
+
+  &:hover {
+    background: #fafbfc;
   }
 
   @media (max-width: 639px) {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    padding: 13px 16px;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 10px 12px;
   }
 `;
 
-const InvoiceBreakdownRow = styled.div`
-  padding: 12px 20px 14px;
-  background: ${T.bg};
-  border-bottom: 1px solid ${T.border};
-  font-size: 13px;
-  color: ${T.sub};
-  @media (max-width: 639px) { padding: 12px 16px 14px; }
+const InvoiceColMain = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 `;
+
+const InvoiceNumStrong = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${T.text};
+`;
+
+const InvoiceDateMuted = styled.span`
+  font-size: 11px;
+  color: ${T.sub};
+`;
+
+const InvoiceAmountCol = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+
+  @media (max-width: 639px) {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+  }
+`;
+
+const InvoiceCurrencyTiny = styled.span`
+  font-size: 11px;
+  color: ${T.faint};
+  text-transform: uppercase;
+`;
+
+const InvoiceAmountStrong = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${T.text};
+`;
+
+const InvoicePmCol = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: ${T.sub};
+`;
+
+const InvoicePaidPill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 11px;
+  font-weight: 600;
+`;
+
+const InvoiceRowActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+
+  @media (max-width: 639px) {
+    justify-content: space-between;
+    width: 100%;
+    padding-top: 4px;
+    border-top: 1px solid ${T.border};
+  }
+`;
+
+const InvoiceDownloadOutline = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid ${T.border};
+  color: ${T.sub};
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: #f3f4f6;
+    color: ${T.text};
+  }
+
+  &[data-disabled="true"] {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+`;
+
+const SortSegmentWrap = styled.div`
+  position: relative;
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 12px;
+  background: ${T.bg};
+  border: 1px solid ${T.border};
+`;
+
+const SortSegmentBtn = styled.button`
+  position: relative;
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: ${({ $active }) => ($active ? "#ffffff" : T.sub)};
+  transition: color 0.2s ease;
+  min-width: 72px;
+  overflow: hidden;
+`;
+
+const InvoicePageCenter = styled.span`
+  font-size: 12px;
+  color: ${T.sub};
+  min-width: 88px;
+  text-align: center;
+`;
+
+const BreakdownTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  color: ${T.sub};
+`;
+
+const BreakdownTr = styled.tr`
+  background: ${({ $alt }) => ($alt ? "#f9fafb" : "#ffffff")};
+`;
+
+const BreakdownTd = styled.td`
+  padding: 6px 12px;
+  border-bottom: 1px solid ${T.border};
+`;
+
 
 const InvoiceExpandBtn = styled.button`
   display: inline-flex;
@@ -788,7 +967,7 @@ const InvoiceExpandBtn = styled.button`
   background: transparent;
   color: ${T.sub};
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 8px;
   transition: background 0.15s, color 0.15s;
   flex-shrink: 0;
   &:hover:not(:disabled) { background: ${T.border}; color: ${T.text}; }
@@ -796,7 +975,7 @@ const InvoiceExpandBtn = styled.button`
 `;
 
 const InvoiceId = styled.span`
-  font-size: 13.5px; font-weight: 500; color: ${T.text};
+  font-size: 12px; font-weight: 500; color: ${T.text};
 
   @media (max-width: 639px) {
     display: none;
@@ -804,7 +983,7 @@ const InvoiceId = styled.span`
 `;
 
 const InvoiceCell = styled.span`
-  font-size: 13px; color: ${T.sub};
+  font-size: 12px; color: ${T.sub};
 
   @media (max-width: 639px) {
     display: none;
@@ -823,7 +1002,7 @@ const MobileInvoiceInfo = styled.div`
 `;
 
 const MobileInvoiceId = styled.span`
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   color: ${T.text};
   white-space: nowrap;
@@ -859,7 +1038,7 @@ const MobileDownloadBtn = styled.a`
 const DownloadBtn = styled.button`
   display: flex; align-items: center; justify-content: center;
   background: none; border: none; cursor: pointer;
-  color: ${T.faint}; padding: 3px; border-radius: 4px;
+  color: ${T.faint}; padding: 3px; border-radius: 8px;
   transition: color 0.15s, background 0.15s;
   &:hover { color: ${T.text}; background: ${T.bg}; }
 
@@ -894,7 +1073,7 @@ const Badge = styled.span`
   display: inline-block;
   padding: 3px 10px;
   background: ${T.amberBg}; color: ${T.amber};
-  border-radius: 20px; font-size: 11.5px; margin-top: 8px;
+  border-radius: 12px; font-size: 11.5px; margin-top: 8px;
 `;
 
 const ActionGroup = styled.div`
@@ -926,9 +1105,11 @@ const ActionGroup = styled.div`
 const PlanBillingCard = styled.div`
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: none;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 6px 16px rgba(0, 0, 0, 0.04);
 `;
 
 const PlanBillingHeader = styled.div`
@@ -949,6 +1130,24 @@ const PlanBillingHeader = styled.div`
     align-items: stretch;
     gap: 6px;
   }
+`;
+
+const PlanBillingHeaderTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+`;
+
+const HeaderPill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: ${T.bg};
+  color: ${T.sub};
+  font-size: 11px;
+  font-weight: 500;
 `;
 
 const PlanBillingHeaderNote = styled(SectionSub)`
@@ -974,16 +1173,49 @@ const PlanBillingPanelBody = styled.div`
   }
 `;
 
-const SectionDivider = styled.div`
-  height: 1px;
-  background: ${T.border};
-  margin: 8px 0;
+/** Tighter panel for billing history list */
+const InvoiceHistoryPanelBody = styled(PlanBillingPanelBody)`
+  padding: 10px 16px 12px;
+
+  @media (max-width: 640px) {
+    padding: 8px 12px 10px;
+  }
+`;
+
+const PlanBillingHeaderCompact = styled(PlanBillingHeader)`
+  padding: 12px 16px 10px;
+  gap: 8px;
+
+  ${PlanBillingHeaderNote} {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+`;
+
+const SkeletonLine = styled.div`
+  border-radius: 8px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: ${shimmerMove} 1.2s ease-in-out infinite;
+`;
+
+const SkeletonPlanBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+`;
+
+const SkeletonPmBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 `;
 
 const PlanBillingBody = styled.div`
   display: flex;
   flex-direction: row;
-  align-items: stretch;
+  align-items: flex-start;
   width: 100%;
 
   @media (max-width: 640px) {
@@ -995,11 +1227,10 @@ const PlanBillingSection = styled.div`
   box-sizing: border-box;
   flex: 1 1 0;
   min-width: 0;
-  padding: 18px 20px;
+  position: relative;
+  padding: 0;
   border-right: ${({ $noBorder }) => ($noBorder ? "none" : `1px solid ${T.border}`)};
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  display: block;
 
   @media (max-width: 640px) {
     flex: 1 1 auto;
@@ -1007,6 +1238,145 @@ const PlanBillingSection = styled.div`
     border-right: none;
     border-bottom: ${({ $noBorder }) => ($noBorder ? "none" : `1px solid ${T.border}`)};
   }
+`;
+
+const PlanBillingSectionInner = styled.div`
+  flex: 1;
+  min-width: 0;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+`;
+
+/** Tighter padding + layout for the current-plan column only */
+const PlanCurrentPlanInner = styled(PlanBillingSectionInner)`
+  padding: 12px 16px 14px;
+`;
+
+const PlanEmblem = styled.div`
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: ${({ $grad }) => $grad || T.border};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+`;
+
+const PlanTitleBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+`;
+
+const PlanNameText = styled.div`
+  font-size: 17px;
+  font-weight: 700;
+  color: ${T.text};
+  line-height: 1.25;
+`;
+
+const PlanPriceRow = styled.div`
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 4px;
+`;
+
+const PlanPriceSuffix = styled.span`
+  font-size: 13px;
+  color: ${T.sub};
+  font-weight: 400;
+`;
+
+const CommissionPill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: ${T.bg};
+  color: ${T.sub};
+  font-size: 11px;
+  font-weight: 600;
+`;
+
+const RenewalRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: ${T.sub};
+`;
+
+const PlanActionBtn = styled(motion.button)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  &:not(:disabled):hover {
+    transform: scale(1.02);
+  }
+`;
+
+const PlanActionPrimary = styled(PlanActionBtn)`
+  background: #111827;
+  color: #ffffff;
+  border-color: #111827;
+`;
+
+const PlanActionOutline = styled(PlanActionBtn)`
+  background: #ffffff;
+  color: #374151;
+  border-color: #e5e7eb;
+`;
+
+const PlanActionGhost = styled(PlanActionBtn)`
+  background: transparent;
+  color: #6b7280;
+  border-color: transparent;
+  text-decoration: none;
+
+  &:not(:disabled):hover {
+    text-decoration: underline;
+    transform: none;
+  }
+`;
+
+const PmSectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: ${T.faint};
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 `;
 
 const PlanBillingPaymentStack = styled.div`
@@ -1018,12 +1388,12 @@ const PlanBillingPaymentStack = styled.div`
 `;
 
 const PlanBillingSectionLabel = styled.div`
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   color: ${T.faint};
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 `;
 
 const PlanBillingPlanName = styled.div`
@@ -1042,10 +1412,11 @@ const PlanBillingPlanPrice = styled.div`
 `;
 
 const PlanBillingActions = styled.div`
-  margin-top: 14px;
+  margin-top: 10px;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
+  align-items: center;
 `;
 
 const PmListOuter = styled.div`
@@ -1065,10 +1436,10 @@ const PmRow = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 12px;
-  background: #ffffff;
+  padding: 12px 14px;
+  background: #f9fafb;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 12px;
   min-width: 0;
 
   @media (max-width: 560px) {
@@ -1085,18 +1456,19 @@ const PmRowLeft = styled.div`
 `;
 
 const PmBrandBox = styled.div`
-  height: 30px;
+  width: 48px;
+  height: 32px;
   flex-shrink: 0;
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
 
   svg {
-    max-width: 46px;
+    max-width: 40px;
     max-height: 24px;
     width: auto;
     height: auto;
@@ -1121,14 +1493,14 @@ const PmTextCol = styled.div`
 `;
 
 const PmTitleLine = styled.div`
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #111827;
   line-height: 1.3;
 `;
 
 const PmMetaLine = styled.div`
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 400;
   color: #6b7280;
 `;
@@ -1157,11 +1529,12 @@ const PmStatusSlot = styled.div`
 const PmDefaultBadge = styled.span`
   display: inline-flex;
   align-items: center;
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: #000000;
-  color: #ffffff;
-  font-size: 9px;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.02em;
 `;
@@ -1169,51 +1542,62 @@ const PmDefaultBadge = styled.span`
 const PmExpiredBadge = styled.span`
   display: inline-flex;
   align-items: center;
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: #fee2e2;
-  color: #991b1b;
-  font-size: 9px;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.02em;
 `;
 
-const PmSetDefaultLink = styled.button`
-  background: none;
-  border: none;
-  padding: 0;
+const PmSetDefaultBtn = styled.button`
+  padding: 4px 10px;
+  border-radius: 8px;
   font-size: 11px;
   font-weight: 500;
-  color: #2563eb;
+  color: #374151;
   cursor: pointer;
-  text-decoration: none;
-  line-height: 1.2;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  transition: border-color 0.15s ease;
 
   &:hover:not(:disabled) {
-    text-decoration: underline;
+    border-color: #9ca3af;
   }
 
   &:disabled {
     opacity: 0.55;
     cursor: default;
-    text-decoration: none;
   }
 `;
 
-const PmAddNewLinkBtn = styled.button`
+const PmAddCardDashed = styled(motion.button)`
   margin-top: 12px;
-  align-self: flex-start;
-  padding: 0;
-  border: none;
-  background: none;
-  font-size: 12px;
-  font-weight: 500;
-  color: #2563eb;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px 16px;
+  border-radius: 12px;
+  border: 2px dashed #d1d5db;
+  background: #fafafa;
+  color: ${T.sub};
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  line-height: 1.4;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
 
   &:hover {
-    text-decoration: underline;
+    border-color: #9ca3af;
+    color: #111827;
+    background: #f9fafb;
   }
 `;
 
@@ -1232,14 +1616,14 @@ const PmDeleteIconBtn = styled.button`
   height: 32px;
   border: none;
   background: transparent;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #9ca3af;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.2s ease, color 0.2s ease;
 
   &:hover:not(:disabled) {
     background: #f3f4f6;
-    color: #6b7280;
+    color: #374151;
   }
 
   &:disabled {
@@ -1250,36 +1634,61 @@ const PmDeleteIconBtn = styled.button`
 
 // ─── add-ons ──────────────────────────────────────────────────────────────────
 const AddonsStack = styled.div`
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px 16px;
+
+  @media (max-width: 640px) {
+    padding: 10px 14px 14px;
+  }
 `;
 
-const AddonCard = styled.div`
+const AddonCard = styled(motion.div)`
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.03);
+
+  ${({ $pulse }) =>
+    $pulse
+      ? css`
+          animation: ${borderPulse} 1.5s ease-out 1;
+        `
+      : css``}
+`;
+
+const AddonCardInner = styled.div`
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  padding: 18px 20px;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-  &:last-child { border-bottom: none; }
+  gap: 12px;
+  padding: 12px 14px;
+  width: 100%;
+  box-sizing: border-box;
 
   @media (max-width: 640px) {
     flex-wrap: wrap;
-    padding: 16px 16px;
-    gap: 14px;
+    padding: 12px 12px;
   }
 `;
 
 const AddonIconBox = styled.div`
-  width: 42px;
-  height: 42px;
-  min-width: 42px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
   flex-shrink: 0;
   border-radius: 10px;
   background: #f3f4f6;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 1px;
 `;
 
 const AddonBody = styled.div`
@@ -1291,8 +1700,8 @@ const AddonTitleRow = styled.div`
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 7px;
-  margin-bottom: 3px;
+  gap: 6px;
+  margin-bottom: 2px;
 `;
 
 const AddonName = styled.span`
@@ -1305,7 +1714,7 @@ const NewBadge = styled.span`
   display: inline-flex;
   align-items: center;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 8px;
   background: #111827;
   color: #ffffff;
   font-size: 10px;
@@ -1318,9 +1727,9 @@ const AddonActiveBadge = styled.span`
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 99px;
-  background: #dcfce7;
-  color: #15803d;
+  border-radius: 12px;
+  background: #f3f4f6;
+  color: #374151;
   font-size: 11px;
   font-weight: 600;
 `;
@@ -1329,53 +1738,54 @@ const AddonCancelsBadge = styled.span`
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 99px;
-  background: #fef2f2;
-  color: #b91c1c;
+  border-radius: 12px;
+  background: #f3f4f6;
+  color: #6b7280;
   font-size: 11px;
   font-weight: 600;
 `;
 
 const AddonDesc = styled.p`
-  font-size: 13px;
+  font-size: 12px;
   color: #6b7280;
-  line-height: 1.5;
+  line-height: 1.45;
   margin: 0;
 `;
 
 const AddonUsageWrap = styled.div`
-  margin-top: 8px;
+  margin-top: 6px;
 `;
 
 const AddonUsageBar = styled.div`
-  height: 4px;
-  border-radius: 99px;
-  background: #e5e7eb;
-  margin-top: 5px;
+  height: 6px;
+  border-radius: 6px;
+  background: #f3f4f6;
+  margin-top: 6px;
   overflow: hidden;
 `;
 
 const AddonUsageFill = styled.div`
   height: 100%;
-  border-radius: 99px;
-  background: #111827;
+  border-radius: 6px;
+  background: ${({ $fill }) => $fill || "#374151"};
   width: ${({ $pct }) => Math.min(100, $pct ?? 0)}%;
+  transition: width 0.35s ease, background 0.35s ease;
 `;
 
 const AddonSide = styled.div`
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 10px;
+  gap: 6px;
   flex-shrink: 0;
-  min-width: 130px;
+  min-width: 118px;
 
   @media (max-width: 640px) {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding-top: 12px;
+    padding-top: 8px;
     border-top: 1px solid #f3f4f6;
     min-width: 0;
   }
@@ -1387,7 +1797,7 @@ const AddonPriceLabel = styled.div`
 `;
 
 const AddonPriceStrong = styled.span`
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: #111827;
 `;
@@ -1401,7 +1811,7 @@ const AddonCtaGroup = styled.div`
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 5px;
+  gap: 4px;
 `;
 
 const AddonCtaRow = styled.div`
@@ -1415,7 +1825,7 @@ const AddonCtaRow = styled.div`
 
 const AddonOutlineBtn = styled.button`
   padding: 7px 14px;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid #d1d5db;
   background: #ffffff;
   color: #111827;
@@ -1436,20 +1846,30 @@ const AddonOutlineBtn = styled.button`
   }
 `;
 
-const AddonPrimaryBtn = styled.button`
-  padding: 7px 14px;
-  border-radius: 6px;
-  border: 1px solid #111827;
-  background: #111827;
+const AddonPrimaryBtn = styled(motion.button)`
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: ${({ $brand }) => ($brand ? BRAND_PRIMARY : "#111827")};
   color: #ffffff;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s;
+  box-shadow: ${({ $brand }) =>
+    $brand ? "0 2px 8px rgba(247, 50, 78, 0.2)" : "0 2px 8px rgba(17, 24, 39, 0.12)"};
+  transition: box-shadow 0.2s ease, background 0.15s ease;
 
-  &:hover:not(:disabled) { background: #1f2937; }
-  &:disabled { opacity: 0.55; cursor: default; }
+  &:hover:not(:disabled) {
+    background: ${({ $brand }) => ($brand ? BRAND_PRIMARY_HOVER : "#0f172a")};
+    box-shadow: ${({ $brand }) =>
+      $brand ? "0 4px 14px rgba(247, 50, 78, 0.28)" : "0 4px 14px rgba(17, 24, 39, 0.15)"};
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
 `;
 
 const CancellingNote = styled.span`
@@ -1464,6 +1884,228 @@ const SmallLink = styled.button`
   text-decoration: underline; cursor: pointer;
   &:hover { color: ${T.text}; }
 `;
+
+const ModalCloseFab = styled(motion.button)`
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+  z-index: 2;
+
+  &:hover {
+    background: #e5e7eb;
+  }
+`;
+
+const EmptyStateWrap = styled.div`
+  margin: 20px 24px 28px;
+  padding: 28px 20px;
+  text-align: center;
+  border: 1px dashed ${T.border};
+  border-radius: 12px;
+  background: ${T.bg};
+`;
+
+const PrimaryCtaBtn = styled(motion.button)`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  background: ${BRAND_PRIMARY};
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: ${BRAND_PRIMARY_HOVER};
+  }
+`;
+
+const ModalSectionTitle = styled.div`
+  font-size: 18px;
+  font-weight: 700;
+  color: ${T.text};
+  text-align: center;
+  margin-top: 8px;
+`;
+
+const ModalBodyText = styled.p`
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #374151;
+  text-align: center;
+`;
+
+const ModalInfoBox = styled.div`
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.45;
+`;
+
+const ModalFooterStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 22px;
+  padding: 0 24px 24px;
+`;
+
+const PaySectionLabel = styled.div`
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: ${T.faint};
+  text-transform: uppercase;
+  margin-bottom: 10px;
+`;
+
+const StripeSecureNote = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: ${T.faint};
+`;
+
+const ShimmerPrimaryBtn = styled(Button)`
+  &.ant-btn-primary {
+    background: linear-gradient(90deg, #111827 0%, #1f2937 50%, #111827 100%) !important;
+    background-size: 200% 100% !important;
+    border-color: #111827 !important;
+  }
+
+  &.ant-btn-loading.ant-btn-primary {
+    animation: ${btnShimmer} 1.2s linear infinite !important;
+  }
+`;
+
+const ShimmerBrandBtn = styled(Button)`
+  &.ant-btn-primary {
+    background: linear-gradient(90deg, ${BRAND_PRIMARY} 0%, #ff4d67 50%, ${BRAND_PRIMARY} 100%) !important;
+    background-size: 200% 100% !important;
+    border-color: ${BRAND_PRIMARY} !important;
+  }
+
+  &.ant-btn-loading.ant-btn-primary {
+    animation: ${btnShimmer} 1.2s linear infinite !important;
+  }
+`;
+
+const billingModalStyles = {
+  content: {
+    borderRadius: 12,
+    padding: 0,
+    overflow: "hidden",
+    boxShadow: "0 25px 60px -12px rgba(0,0,0,0.2)",
+  },
+  header: { display: "none" },
+  body: { padding: 0 },
+  mask: { backdropFilter: "blur(4px)", background: "rgba(0,0,0,0.25)" },
+};
+
+function AnimatedSectionDivider() {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "0px 0px -10% 0px" });
+  return (
+    <motion.div
+      ref={ref}
+      style={{
+        height: 2,
+        background: T.border,
+        margin: "12px 0",
+        transformOrigin: "left",
+        borderRadius: 1,
+      }}
+      initial={{ scaleX: 0 }}
+      animate={inView ? { scaleX: 1 } : { scaleX: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    />
+  );
+}
+
+function ShieldBillingIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 3L5 6v5c0 5.25 3.5 9.74 7 11 3.5-1.26 7-5.75 7-11V6l-7-3z"
+        stroke={BRAND_PRIMARY}
+        strokeWidth="1.75"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function EmptyPlanIllustration() {
+  return (
+    <svg width="120" height="80" viewBox="0 0 120 80" fill="none" aria-hidden style={{ margin: "0 auto 16px", display: "block" }}>
+      <rect x="8" y="12" width="104" height="56" rx="8" fill="#f3f4f6" stroke="#e5e7eb" />
+      <rect x="20" y="24" width="48" height="8" rx="2" fill="#e5e7eb" />
+      <rect x="20" y="38" width="72" height="6" rx="2" fill="#e5e7eb" />
+      <rect x="20" y="50" width="32" height="6" rx="2" fill={BRAND_PRIMARY} opacity="0.35" />
+      <rect x="78" y="22" width="28" height="22" rx="4" fill="#fff" stroke={BRAND_PRIMARY} strokeWidth="1.5" />
+      <path d="M84 32h16M84 36h10" stroke="#9ca3af" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ReceiptEmptyIllustration() {
+  return (
+    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" aria-hidden style={{ margin: "0 auto 12px", display: "block" }}>
+      <rect x="14" y="8" width="36" height="48" rx="4" stroke="#d1d5db" strokeWidth="2" strokeDasharray="4 3" fill="#fafafa" />
+      <path d="M22 20h20M22 28h16M22 36h20" stroke="#e5e7eb" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function PlanEmblemIcon({ planId }) {
+  if (planId === "growth") return <TrendingUp size={18} strokeWidth={2.25} />;
+  if (planId === "advanced") return <Zap size={18} strokeWidth={2.25} />;
+  return <LayoutGrid size={18} strokeWidth={2.25} />;
+}
+
+function EmailMarketingUsageBlock({ emUsage }) {
+  if (!emUsage) return null;
+  const pct = emUsage.monthly_limit ? (emUsage.used_this_period / emUsage.monthly_limit) * 100 : 0;
+  const fill = pct > 95 ? BRAND_PRIMARY : "#374151";
+  return (
+    <AddonUsageWrap>
+      <AddonDesc style={{ fontSize: 12, display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+        <NumberFlow value={emUsage.used_this_period ?? 0} format={{ maximumFractionDigits: 0, useGrouping: true }} />
+        <span>/</span>
+        <NumberFlow value={emUsage.monthly_limit ?? 0} format={{ maximumFractionDigits: 0, useGrouping: true }} />
+        <span>sends this period</span>
+      </AddonDesc>
+      <AddonUsageBar>
+        <AddonUsageFill $pct={pct} $fill={fill} />
+      </AddonUsageBar>
+    </AddonUsageWrap>
+  );
+}
 
 // ─── payment form ─────────────────────────────────────────────────────────────
 const dividerStyle = {
@@ -1550,11 +2192,23 @@ function AddonPaymentForm({ clientSecret, onSuccess }) {
   return (
     <div style={{ position: "relative", minHeight: notReady ? 120 : undefined }}>
       <div style={{ visibility: notReady ? "hidden" : "visible" }}>
+        <PaySectionLabel style={{ marginBottom: 10 }}>Pay with</PaySectionLabel>
         <AddonExpressCheckoutButton clientSecret={clientSecret} onSuccess={onSuccess} onPaymentRequestReady={() => setHasExpressPay(true)} />
         {hasExpressPay && (
           <div style={dividerStyle}>
             <div style={{ flex: 1, height: 1, background: "#e5e7eb" }} />
-            <span style={{ padding: "0 12px" }}>or</span>
+            <span
+              style={{
+                padding: "2px 12px",
+                background: "#ffffff",
+                borderRadius: 12,
+                fontSize: 12,
+                fontWeight: 600,
+                color: "#9ca3af",
+              }}
+            >
+              or
+            </span>
             <div style={{ flex: 1, height: 1, background: "#e5e7eb" }} />
           </div>
         )}
@@ -1574,17 +2228,40 @@ function AddonPaymentForm({ clientSecret, onSuccess }) {
               <PaymentElement options={paymentElementOptions} onReady={() => setReady(true)} />
             </div>
             {err && (
-              <div style={{ marginBottom: 12, padding: "8px 12px", background: "#fef2f2", borderRadius: 8, fontSize: 13, color: "#b91c1c" }}>
-                {err}
+              <div
+                style={{
+                  marginBottom: 12,
+                  padding: "10px 12px",
+                  background: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  fontSize: 13,
+                  color: "#991b1b",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 8,
+                }}
+              >
+                <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span>{err}</span>
               </div>
             )}
-            <Button type="primary" htmlType="submit"
+            <ShimmerPrimaryBtn
+              type="primary"
+              htmlType="submit"
               disabled={!stripe || !elements || !ready || submitting}
-              loading={submitting} block
-              style={{ background: SEL_COLOR, borderColor: SEL_COLOR }}
-              icon={<Lock size={14} />}>
+              loading={submitting}
+              block
+              size="large"
+              style={{ height: 48, borderRadius: 12, fontWeight: 600 }}
+              icon={<Lock size={14} />}
+            >
               {submitting ? "Processing…" : `Pay $${ADDON_PRICE}/month`}
-            </Button>
+            </ShimmerPrimaryBtn>
+            <StripeSecureNote>
+              <Lock size={12} />
+              Secured by Stripe
+            </StripeSecureNote>
           </form>
         </div>
       </div>
@@ -1655,21 +2332,41 @@ function PlanSwitchPaymentForm({ clientSecret, onSuccess, onLoadError, planName 
         />
       </div>
       {err && (
-        <div style={{ marginBottom: 12, padding: "8px 12px", background: "#fef2f2", borderRadius: 8, fontSize: 13, color: "#b91c1c" }}>
-          {err}
+        <div
+          style={{
+            marginBottom: 12,
+            padding: "10px 12px",
+            background: "#f9fafb",
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+            fontSize: 13,
+            color: "#991b1b",
+            display: "flex",
+            gap: 8,
+            alignItems: "flex-start",
+          }}
+        >
+          <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+          <span>{err}</span>
         </div>
       )}
-      <Button
+      <PaySectionLabel>Payment</PaySectionLabel>
+      <ShimmerPrimaryBtn
         type="primary"
         htmlType="submit"
         disabled={!stripe || !elements || !ready || submitting}
         loading={submitting}
         block
-        style={{ background: SEL_COLOR, borderColor: SEL_COLOR }}
+        size="large"
+        style={{ height: 48, borderRadius: 12, fontWeight: 600 }}
         icon={<Lock size={14} />}
       >
-        {submitting ? "Processing…" : `Confirm payment to switch to ${planName || "new plan"}`}
-      </Button>
+        {submitting ? "Processing…" : `Confirm and switch to ${planName || "new plan"}`}
+      </ShimmerPrimaryBtn>
+      <StripeSecureNote>
+        <Lock size={12} />
+        Secured by Stripe
+      </StripeSecureNote>
     </form>
   );
 }
@@ -1721,21 +2418,41 @@ function UpdatePaymentMethodForm({ clientSecret, onSuccess }) {
         <PaymentElement options={paymentElementOptions} onReady={() => setReady(true)} />
       </div>
       {err && (
-        <div style={{ marginBottom: 12, padding: "8px 12px", background: "#fef2f2", borderRadius: 8, fontSize: 13, color: "#b91c1c" }}>
-          {err}
+        <div
+          style={{
+            marginBottom: 12,
+            padding: "10px 12px",
+            background: "#f9fafb",
+            border: "1px solid #e5e7eb",
+            borderRadius: 10,
+            fontSize: 13,
+            color: "#991b1b",
+            display: "flex",
+            gap: 8,
+            alignItems: "flex-start",
+          }}
+        >
+          <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+          <span>{err}</span>
         </div>
       )}
-      <Button
+      <PaySectionLabel>Card details</PaySectionLabel>
+      <ShimmerBrandBtn
         type="primary"
         htmlType="submit"
         disabled={!stripe || !elements || !ready || submitting}
         loading={submitting}
         block
-        style={{ background: SEL_COLOR, borderColor: SEL_COLOR }}
+        size="large"
+        style={{ height: 48, borderRadius: 12, fontWeight: 600 }}
         icon={<Lock size={14} />}
       >
-        {submitting ? "Saving…" : "Update payment method"}
-      </Button>
+        {submitting ? "Saving…" : "Save payment method"}
+      </ShimmerBrandBtn>
+      <StripeSecureNote>
+        <Lock size={12} />
+        Secured by Stripe
+      </StripeSecureNote>
     </form>
   );
 }
@@ -1806,7 +2523,7 @@ function renderWidgetPlanComparisonCell(row, pid) {
   }
   if (row.plans?.[pid]) {
     return (
-      <span style={{ display: "inline-flex", justifyContent: "center", color: "#059669" }} aria-label="Included">
+      <span style={{ display: "inline-flex", justifyContent: "center", color: "#111827" }} aria-label="Included">
         <Check size={18} strokeWidth={2.5} />
       </span>
     );
@@ -1850,6 +2567,8 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   const [detachPmId, setDetachPmId] = useState(null);
   const [detachPmLabel, setDetachPmLabel] = useState("");
   const [detachPmLoading, setDetachPmLoading] = useState(false);
+  const [marketplacePulse, setMarketplacePulse] = useState(false);
+  const prevAddonActiveRef = useRef(null);
 
   /** Avoid setState after unmount / tab switch during async plan or billing actions */
   const billingMountedRef = useRef(true);
@@ -1881,7 +2600,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
         colorText: appTheme.token.colorText,
         colorDanger: appTheme.token.colorError,
         fontFamily, spacingUnit: "4px",
-        borderRadius: `${appTheme.token.borderRadius}px`,
+        borderRadius: "10px",
         fontSizeBase: stripeFontSize,
       },
       rules: {
@@ -1892,7 +2611,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
         ".Input--invalid:focus": { borderColor: appTheme.token.colorError, boxShadow: `0 0 0 2px ${appTheme.token.colorError}20` },
         ".Label": { fontWeight: "600", color: "#000", marginBottom: "8px", fontFamily },
         ".Input::placeholder": { color: "#c5c5c5", fontWeight: "600", fontFamily },
-        ".Tab": { borderColor: appTheme.token.colorBorder, borderRadius: `${appTheme.token.borderRadius}px`, fontFamily, fontWeight: "600" },
+        ".Tab": { borderColor: appTheme.token.colorBorder, borderRadius: "10px", fontFamily, fontWeight: "600" },
         ".Tab:selected": { borderColor: appTheme.token.colorPrimary },
       },
     };
@@ -1911,7 +2630,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
         id: plan.id,
         name: plan.name,
         priceNum: plan.price,
-        grad: PLAN_GRADIENTS[plan.id] || "linear-gradient(135deg, #a5b4fc, #818cf8)",
+        grad: PLAN_GRADIENTS[plan.id] || "linear-gradient(135deg, #f3f4f6, #e5e7eb)",
         isCurrent,
         isUpgrade: Boolean(subId && isUpgrade(subId, plan.id)),
       };
@@ -2083,6 +2802,25 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   const marketplaceEmail = addons?.marketplace_email_branding;
   const addonActive = marketplaceEmail?.active === true;
   const canInstantSubscribeAddon = marketplaceEmail?.canInstantSubscribe === true;
+
+  useEffect(() => {
+    if (addonsLoading) return undefined;
+    const prev = prevAddonActiveRef.current;
+    if (prev === null) {
+      prevAddonActiveRef.current = addonActive;
+      return undefined;
+    }
+    let tid;
+    if (addonActive && !prev) {
+      confetti({ particleCount: 50, spread: 70, origin: { y: 0.72, x: 0.5 } });
+      setMarketplacePulse(true);
+      tid = setTimeout(() => setMarketplacePulse(false), 1500);
+    }
+    prevAddonActiveRef.current = addonActive;
+    return () => {
+      if (tid) clearTimeout(tid);
+    };
+  }, [addonActive, addonsLoading]);
   const addonNextBilling = marketplaceEmail?.currentPeriodEnd
     ? new Date(marketplaceEmail.currentPeriodEnd).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
     : null;
@@ -2310,6 +3048,8 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     } else antMessage.error(r.error || "Failed to reactivate.");
   };
 
+  const detachPmPreview = savedPaymentMethods.find((p) => p.id === detachPmId);
+
   // ─── render ──────────────────────────────────────────────────────────────────
   return (
     <PageOuter>
@@ -2396,7 +3136,15 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
               <tbody>
                 {WIDGET_PLAN_COMPARISON_ROWS.map((row) => (
                   <tr key={row.id}>
-                    <PcTdFeature title={row.tooltip || undefined}>{row.label}</PcTdFeature>
+                    <PcTdFeature title={row.tooltip || undefined}>
+                      {row.tooltip ? (
+                        <Tooltip title={row.tooltip}>
+                          <span style={{ cursor: "help", borderBottom: "1px dotted #9ca3af" }}>{row.label}</span>
+                        </Tooltip>
+                      ) : (
+                        row.label
+                      )}
+                    </PcTdFeature>
                     {PLAN_IDS.map((pid) => (
                       <PcTdMark key={`${row.id}-${pid}`}>
                         <PcTdMarkInner>{renderWidgetPlanComparisonCell(row, pid)}</PcTdMarkInner>
@@ -2472,7 +3220,13 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
               return (
                 <React.Fragment key={row.id}>
                   <GridFeatCell $row={gridRow} title={row.tooltip || undefined}>
-                    {row.label}
+                    {row.tooltip ? (
+                      <Tooltip title={row.tooltip}>
+                        <span style={{ cursor: "help", borderBottom: "1px dotted #9ca3af" }}>{row.label}</span>
+                      </Tooltip>
+                    ) : (
+                      row.label
+                    )}
                   </GridFeatCell>
                   {PLAN_IDS.map((pid, ci) => (
                     <GridMarkCell
@@ -2491,440 +3245,845 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
         </PlansDesktopLayout>
       </PlansBundle>
 
-      <SectionDivider />
+      <AnimatedSectionDivider />
 
       {/* Active subscription + Payment method — redesigned */}
-      <PlanBillingCard>
-        <PlanBillingHeader>
-          <SectionTitle style={{ margin: 0 }}>Widget plan &amp; billing</SectionTitle>
-          <PlanBillingHeaderNote>
-            Upgrades take effect immediately. Downgrades and cancellations take effect at the end of the billing period.
-          </PlanBillingHeaderNote>
-        </PlanBillingHeader>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
+      >
+        <PlanBillingCard>
+          <PlanBillingHeader>
+            <PlanBillingHeaderTitleRow>
+              <ShieldBillingIcon />
+              <SectionTitle style={{ margin: 0 }}>Widget plan &amp; billing</SectionTitle>
+            </PlanBillingHeaderTitleRow>
+            <PlanBillingHeaderNote>
+              Upgrades take effect immediately. Downgrades and cancellations take effect at the end of the billing period.
+            </PlanBillingHeaderNote>
+          </PlanBillingHeader>
 
-        {subLoading ? (
-          <LoadingRow style={{ padding: "20px 20px" }}><SpinIcon size={16} /><span>Loading…</span></LoadingRow>
-        ) : !subscription?.planId ? (
-          <div style={{
-            margin: 20, background: T.bg, border: `1px dashed ${T.border}`,
-            borderRadius: 10, padding: 24, textAlign: "center",
-          }}>
-            <p style={{ fontSize: 13, color: "#374151", margin: "0 0 14px", lineHeight: 1.5 }}>
-              You don&apos;t have an active widget plan. Subscribe to embed the booking widget on your website.
-            </p>
-            <Link href="/booking-widget">
-              <Button type="primary" icon={<ArrowRight size={14} />} size="small"
-                style={{ background: SEL_COLOR, borderColor: SEL_COLOR }}>
-                View plans
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <PlanBillingBody>
-            {/* Left: Current plan */}
-            <PlanBillingSection>
-              <PlanBillingSectionLabel>Current plan</PlanBillingSectionLabel>
-              <PlanBillingPlanName>
-                {currentPlan?.name ?? subscription.planId}
-                {subscription.cancelAtPeriodEnd && (
-                  <Badge style={{ marginTop: 0, marginLeft: 4 }}>Cancels {nextBilling || "at period end"}</Badge>
-                )}
-                {scheduledDowngrade?.planId && !subscription.cancelAtPeriodEnd && (
-                  <Badge style={{ marginTop: 0, marginLeft: 4, background: T.bg, color: T.sub }}>
-                    Switching to {getPlanById(scheduledDowngrade.planId)?.name ?? scheduledDowngrade.planId}
-                    {scheduledDowngrade.effectiveDate
-                      ? ` ${new Date(scheduledDowngrade.effectiveDate).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`
-                      : " at period end"}
-                  </Badge>
-                )}
-              </PlanBillingPlanName>
-              <PlanBillingPlanPrice>
-                ${currentPlan?.price ?? 0}/mo
-                {currentPlan?.commission ? ` · ${currentPlan.commission}% per booking` : ""}
-                {nextBilling && !subscription.cancelAtPeriodEnd ? ` · Renews ${nextBilling}` : ""}
-              </PlanBillingPlanPrice>
-              <PlanBillingActions>
-                {subscription.cancelAtPeriodEnd ? (
-                  <Button size="small" icon={<RefreshCw size={12} />} onClick={handleReactivate}
-                    style={{ background: SEL_COLOR, borderColor: SEL_COLOR, color: "white", fontSize: 12 }}>
-                    Reactivate
-                  </Button>
-                ) : (
-                  <>
-                    {PLANS.filter((p) => p.id !== subscription.planId).map((p) => (
-                      <Button
-                        key={p.id}
-                        size="small"
-                        style={{ fontSize: 12 }}
-                        loading={switchPlanLoading === p.id}
-                        disabled={switchPlanLoading !== null}
-                        onClick={() => handleSwitchPlan(p.id)}
+          {subLoading ? (
+            <PlanBillingPanelBody>
+              <PlanBillingBody>
+                <PlanBillingSection>
+                  <PlanCurrentPlanInner>
+                    <SkeletonPlanBlock>
+                      <SkeletonLine style={{ height: 12, width: "30%" }} />
+                      <SkeletonLine style={{ height: 24, width: "55%" }} />
+                      <SkeletonLine style={{ height: 18, width: "40%" }} />
+                      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                        <SkeletonLine style={{ height: 36, width: 120, borderRadius: 12 }} />
+                        <SkeletonLine style={{ height: 36, width: 120, borderRadius: 12 }} />
+                      </div>
+                    </SkeletonPlanBlock>
+                  </PlanCurrentPlanInner>
+                </PlanBillingSection>
+                <PlanBillingSection $noBorder>
+                  <PlanBillingSectionInner>
+                    <SkeletonPmBlock>
+                      <SkeletonLine style={{ height: 14, width: "45%" }} />
+                      <SkeletonLine style={{ height: 72, width: "100%", borderRadius: 12 }} />
+                    </SkeletonPmBlock>
+                  </PlanBillingSectionInner>
+                </PlanBillingSection>
+              </PlanBillingBody>
+            </PlanBillingPanelBody>
+          ) : !subscription?.planId ? (
+            <EmptyStateWrap>
+              <EmptyPlanIllustration />
+              <div style={{ fontSize: 16, fontWeight: 600, color: T.text, marginBottom: 8 }}>No active plan</div>
+              <p style={{ fontSize: 13, color: "#374151", margin: "0 0 18px", lineHeight: 1.55 }}>
+                You don&apos;t have an active widget plan. Subscribe to embed the booking widget on your website.
+              </p>
+              <Link href="/booking-widget" style={{ textDecoration: "none" }}>
+                <PrimaryCtaBtn type="button" whileTap={{ scale: 0.97 }}>
+                  View plans
+                  <ArrowRight size={16} />
+                </PrimaryCtaBtn>
+              </Link>
+            </EmptyStateWrap>
+          ) : (
+            <PlanBillingBody>
+              <PlanBillingSection>
+                <PlanCurrentPlanInner>
+                  <PlanBillingSectionLabel>Current plan</PlanBillingSectionLabel>
+                  <PlanTitleBlock style={{ gap: 2 }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 8px", rowGap: 4 }}>
+                      <PlanNameText>{currentPlan?.name ?? subscription.planId}</PlanNameText>
+                      <AnimatePresence mode="popLayout">
+                        {subscription.cancelAtPeriodEnd && (
+                          <motion.span
+                            key="cancel-badge"
+                            layout
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            transition={{ duration: 0.2 }}
+                            style={{ display: "inline-flex" }}
+                          >
+                            <Badge style={{ marginTop: 0 }}>Cancels {nextBilling || "at period end"}</Badge>
+                          </motion.span>
+                        )}
+                        {scheduledDowngrade?.planId && !subscription.cancelAtPeriodEnd && (
+                          <motion.span
+                            key="downgrade-badge"
+                            layout
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            transition={{ duration: 0.2 }}
+                            style={{ display: "inline-flex" }}
+                          >
+                            <Badge style={{ marginTop: 0, background: T.bg, color: T.sub }}>
+                              Switching to {getPlanById(scheduledDowngrade.planId)?.name ?? scheduledDowngrade.planId}
+                              {scheduledDowngrade.effectiveDate
+                                ? ` ${new Date(scheduledDowngrade.effectiveDate).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`
+                                : " at period end"}
+                            </Badge>
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    <PlanPriceRow>
+                      <NumberFlowGroup>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "baseline",
+                            gap: 1,
+                            fontVariantNumeric: "tabular-nums",
+                            fontSize: 22,
+                            fontWeight: 700,
+                            color: T.text,
+                            // Tighter digit spacing inside NumberFlow (default mask width adds visible gaps)
+                            ["--number-flow-mask-width"]: "0.1em",
+                          }}
+                        >
+                          $
+                          <NumberFlow
+                            value={currentPlan?.price ?? 0}
+                            format={{ maximumFractionDigits: 0, useGrouping: true }}
+                          />
+                        </span>
+                      </NumberFlowGroup>
+                      <PlanPriceSuffix>/mo</PlanPriceSuffix>
+                      {currentPlan?.commission != null ? (
+                        <CommissionPill>{currentPlan.commission}% per booking</CommissionPill>
+                      ) : null}
+                    </PlanPriceRow>
+                    {nextBilling && !subscription.cancelAtPeriodEnd ? (
+                      <RenewalRow>
+                        <Calendar size={13} strokeWidth={2} />
+                        <span>Renews {nextBilling}</span>
+                      </RenewalRow>
+                    ) : null}
+                  </PlanTitleBlock>
+                  <PlanBillingActions>
+                    {subscription.cancelAtPeriodEnd ? (
+                      <PlanActionPrimary
+                        type="button"
+                        whileTap={{ scale: 0.97 }}
+                        onClick={handleReactivate}
                       >
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                        {isUpgrade(subscription.planId, p.id) ? (
-                          <><ArrowUp size={12} /> Upgrade</>
-                        ) : (
-                          <><ArrowDown size={12} /> Downgrade</>
-                        )}{" "}
-                        to {p.name}
-                      </span>
-                      </Button>
-                    ))}
-                    <Button size="small" danger onClick={() => setCancelModalOpen(true)} style={{ fontSize: 12 }}>
-                      Cancel
-                    </Button>
-                  </>
-                )}
-              </PlanBillingActions>
-            </PlanBillingSection>
-
-            {/* Right: Payment method */}
-            <PlanBillingSection $noBorder>
-              <PlanBillingSectionLabel>Payment method</PlanBillingSectionLabel>
-              {defaultPaymentMethodLoading ? (
-                <LoadingRow style={{ padding: 0 }}><SpinIcon size={14} /><span>Loading…</span></LoadingRow>
-              ) : showPaymentMethodSection ? (
-                <PlanBillingPaymentStack>
-                  {savedPaymentMethods.length > 0 ? (
-                    <PmListOuter>
-                      <PmListWrap>
-                        {savedPaymentMethods.map((pm) => {
-                          const isDefault = Boolean(pm.id && defaultPaymentMethodId && pm.id === defaultPaymentMethodId);
-                          const expired = isCardExpired(pm.exp_month, pm.exp_year);
-                          const expStr = formatExpShort(pm.exp_month, pm.exp_year);
-                          const brandLabel = formatCardBrandLabel(pm.brand);
-                          const last4 = pm.last4 || "––––";
-                          const canDetach = savedPaymentMethods.length > 1 && Boolean(pm.id);
+                        <RefreshCw size={14} />
+                        Reactivate
+                      </PlanActionPrimary>
+                    ) : (
+                      <>
+                        {PLANS.filter((p) => p.id !== subscription.planId).map((p) => {
+                          const up = isUpgrade(subscription.planId, p.id);
+                          const Btn = up ? PlanActionPrimary : PlanActionOutline;
                           return (
-                            <PmRow key={pm.id || `${pm.brand}-${last4}`}>
-                              <PmRowLeft>
-                                <PmBrandBox>
-                                  <PaymentMethodBrandIcon brand={pm.brand} />
-                                </PmBrandBox>
-                                <PmTextCol>
-                                  <PmTitleLine>
-                                    {brandLabel} ending in {last4}
-                                  </PmTitleLine>
-                                  <PmMetaLine>
-                                    {expStr ? `Exp. date ${expStr}` : "Expiration not available"}
-                                  </PmMetaLine>
-                                </PmTextCol>
-                              </PmRowLeft>
-                              <PmRowRight>
-                                <PmStatusSlot>
-                                  {expired && <PmExpiredBadge>Expired</PmExpiredBadge>}
-                                  {isDefault && <PmDefaultBadge>Default</PmDefaultBadge>}
-                                  {!isDefault && !expired && pm.id && (
-                                    <PmSetDefaultLink
-                                      type="button"
-                                      disabled={Boolean(settingDefaultPmId)}
-                                      onClick={() => handleSetDefaultPaymentMethod(pm.id)}
-                                    >
-                                      {settingDefaultPmId === pm.id ? "Updating…" : "Set as default"}
-                                    </PmSetDefaultLink>
-                                  )}
-                                </PmStatusSlot>
-                                {canDetach && (
-                                  <PmActionsGroup>
-                                    <PmDeleteIconBtn
-                                      type="button"
-                                      aria-label="Remove payment method"
-                                      title="Remove card"
-                                      disabled={Boolean(detachPmLoading || settingDefaultPmId)}
-                                      onClick={() => {
-                                        setDetachPmId(pm.id);
-                                        setDetachPmLabel(`${brandLabel} ending in ${last4}`);
-                                        setDetachPmModalOpen(true);
-                                      }}
-                                    >
-                                      <Trash2 size={16} strokeWidth={1.75} />
-                                    </PmDeleteIconBtn>
-                                  </PmActionsGroup>
-                                )}
-                              </PmRowRight>
-                            </PmRow>
+                            <Btn
+                              key={p.id}
+                              type="button"
+                              whileTap={{ scale: 0.97 }}
+                              disabled={switchPlanLoading !== null}
+                              onClick={() => handleSwitchPlan(p.id)}
+                            >
+                              {switchPlanLoading === p.id ? (
+                                <motion.span
+                                  animate={{ rotate: 360 }}
+                                  transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+                                  style={{ display: "inline-flex" }}
+                                >
+                                  <Loader2 size={14} />
+                                </motion.span>
+                              ) : up ? (
+                                <ArrowUp size={14} />
+                              ) : (
+                                <ArrowDown size={14} />
+                              )}
+                              {switchPlanLoading === p.id
+                                ? "Switching…"
+                                : `${up ? "Upgrade" : "Downgrade"} to ${p.name}`}
+                            </Btn>
                           );
                         })}
-                      </PmListWrap>
-                    </PmListOuter>
+                        <PlanActionGhost
+                          type="button"
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => setCancelModalOpen(true)}
+                        >
+                          Cancel subscription
+                        </PlanActionGhost>
+                      </>
+                    )}
+                  </PlanBillingActions>
+                </PlanCurrentPlanInner>
+              </PlanBillingSection>
+
+              <PlanBillingSection $noBorder>
+                <PlanBillingSectionInner>
+                  <PmSectionHeader>
+                    <CreditCard size={16} strokeWidth={2} aria-hidden />
+                    Payment methods
+                  </PmSectionHeader>
+                  {defaultPaymentMethodLoading ? (
+                    <SkeletonPmBlock style={{ marginTop: 4 }}>
+                      <SkeletonLine style={{ height: 72, width: "100%", borderRadius: 12 }} />
+                    </SkeletonPmBlock>
+                  ) : showPaymentMethodSection ? (
+                    <PlanBillingPaymentStack>
+                      {savedPaymentMethods.length > 0 ? (
+                        <PmListOuter>
+                          <PmListWrap>
+                            <AnimatePresence initial={false}>
+                              {savedPaymentMethods.map((pm) => {
+                                const isDefault = Boolean(pm.id && defaultPaymentMethodId && pm.id === defaultPaymentMethodId);
+                                const expired = isCardExpired(pm.exp_month, pm.exp_year);
+                                const expStr = formatExpShort(pm.exp_month, pm.exp_year);
+                                const brandLabel = formatCardBrandLabel(pm.brand);
+                                const last4 = pm.last4 || "––––";
+                                const canDetach = savedPaymentMethods.length > 1 && Boolean(pm.id);
+                                return (
+                                  <motion.div
+                                    key={pm.id || `${pm.brand}-${last4}`}
+                                    layout
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.22 }}
+                                    style={{ overflow: "hidden" }}
+                                  >
+                                    <PmRow>
+                                      <PmRowLeft>
+                                        <PmBrandBox>
+                                          <PaymentMethodBrandIcon brand={pm.brand} />
+                                        </PmBrandBox>
+                                        <PmTextCol>
+                                          <PmTitleLine>
+                                            {brandLabel} ending in {last4}
+                                          </PmTitleLine>
+                                          <PmMetaLine>
+                                            {expStr ? `Exp. ${expStr}` : "Expiration not available"}
+                                          </PmMetaLine>
+                                        </PmTextCol>
+                                      </PmRowLeft>
+                                      <PmRowRight>
+                                        <PmStatusSlot>
+                                          {expired && (
+                                            <PmExpiredBadge>
+                                              <AlertCircle size={10} strokeWidth={2.5} aria-hidden />
+                                              Expired
+                                            </PmExpiredBadge>
+                                          )}
+                                          {isDefault && (
+                                            <PmDefaultBadge>
+                                              <Check size={10} strokeWidth={3} aria-hidden />
+                                              Default
+                                            </PmDefaultBadge>
+                                          )}
+                                          {!isDefault && !expired && pm.id && (
+                                            <PmSetDefaultBtn
+                                              type="button"
+                                              disabled={Boolean(settingDefaultPmId)}
+                                              onClick={() => handleSetDefaultPaymentMethod(pm.id)}
+                                            >
+                                              {settingDefaultPmId === pm.id ? "Updating…" : "Set as default"}
+                                            </PmSetDefaultBtn>
+                                          )}
+                                        </PmStatusSlot>
+                                        {canDetach && (
+                                          <PmActionsGroup>
+                                            <PmDeleteIconBtn
+                                              type="button"
+                                              aria-label="Remove payment method"
+                                              title="Remove card"
+                                              disabled={Boolean(detachPmLoading || settingDefaultPmId)}
+                                              onClick={() => {
+                                                setDetachPmId(pm.id);
+                                                setDetachPmLabel(`${brandLabel} ending in ${last4}`);
+                                                setDetachPmModalOpen(true);
+                                              }}
+                                            >
+                                              <Trash2 size={16} strokeWidth={1.75} />
+                                            </PmDeleteIconBtn>
+                                          </PmActionsGroup>
+                                        )}
+                                      </PmRowRight>
+                                    </PmRow>
+                                  </motion.div>
+                                );
+                              })}
+                            </AnimatePresence>
+                          </PmListWrap>
+                        </PmListOuter>
+                      ) : (
+                        <PlanBillingPlanPrice style={{ marginTop: 6 }}>
+                          No payment method on file yet.
+                        </PlanBillingPlanPrice>
+                      )}
+                      <PmAddCardDashed type="button" whileTap={{ scale: 0.98 }} onClick={() => setUpdatePaymentModalOpen(true)}>
+                        <Plus size={22} strokeWidth={2} />
+                        Add payment method
+                      </PmAddCardDashed>
+                    </PlanBillingPaymentStack>
                   ) : (
-                    <PlanBillingPlanPrice style={{ marginTop: 6 }}>
+                    <PlanBillingPlanPrice style={{ marginTop: 4 }}>
                       No payment method on file yet.
                     </PlanBillingPlanPrice>
                   )}
-                  <PmAddNewLinkBtn type="button" onClick={() => setUpdatePaymentModalOpen(true)}>
-                    + Add new payment method
-                  </PmAddNewLinkBtn>
-                </PlanBillingPaymentStack>
-              ) : (
-                <PlanBillingPlanPrice style={{ marginTop: 4 }}>
-                  No payment method on file yet.
-                </PlanBillingPlanPrice>
-              )}
-            </PlanBillingSection>
-          </PlanBillingBody>
-        )}
-      </PlanBillingCard>
+                </PlanBillingSectionInner>
+              </PlanBillingSection>
+            </PlanBillingBody>
+          )}
+        </PlanBillingCard>
+      </motion.div>
 
-      <SectionDivider />
+      <AnimatedSectionDivider />
 
       {/* Add-ons */}
-      <PlanBillingCard>
-        <PlanBillingHeader>
-          <SectionTitle style={{ margin: 0 }}>Add-ons</SectionTitle>
-          <PlanBillingHeaderNote>Billed separately from your widget plan.</PlanBillingHeaderNote>
-        </PlanBillingHeader>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 }}
+      >
+        <PlanBillingCard>
+          <PlanBillingHeader>
+            <PlanBillingHeaderTitleRow>
+              <Package size={18} strokeWidth={2} aria-hidden />
+              <SectionTitle style={{ margin: 0 }}>Add-ons</SectionTitle>
+              <HeaderPill>Billed separately</HeaderPill>
+            </PlanBillingHeaderTitleRow>
+            <PlanBillingHeaderNote>Power-ups for your widget and customer comms.</PlanBillingHeaderNote>
+          </PlanBillingHeader>
 
-        {addonsLoading ? (
-          <PlanBillingPanelBody>
-            <LoadingRow style={{ padding: 0 }}><SpinIcon size={15} /><span>Loading add-ons…</span></LoadingRow>
-          </PlanBillingPanelBody>
-        ) : (
-          <AddonsStack>
-            {/* ── Marketplace email branding ── */}
-            <AddonCard>
-              <AddonIconBox>
-                <lord-icon src="https://cdn.lordicon.com/axroojxh.json" trigger="in" style={{ width: 28, height: 28 }} />
-              </AddonIconBox>
-              <AddonBody>
-                <AddonTitleRow>
-                  <AddonName>Marketplace email branding</AddonName>
-                  <NewBadge>New</NewBadge>
-                  {addonActive && (
-                    marketplaceEmail?.cancelAtPeriodEnd
-                      ? <AddonCancelsBadge>Cancels {addonNextBilling}</AddonCancelsBadge>
-                      : <AddonActiveBadge>Active · Renews {addonNextBilling}</AddonActiveBadge>
-                  )}
-                </AddonTitleRow>
-                <AddonDesc>Custom logo, colors &amp; footer in marketplace booking emails — sent under your brand.</AddonDesc>
-              </AddonBody>
-              <AddonSide>
-                <AddonPriceLabel>
-                  <AddonPriceStrong>+${ADDON_PRICE}</AddonPriceStrong>
-                  <AddonPriceSuffix> / mo</AddonPriceSuffix>
-                </AddonPriceLabel>
-                <AddonCtaGroup>
-                  {addonActive ? (
-                    marketplaceEmail?.cancelAtPeriodEnd ? (
-                      <AddonPrimaryBtn type="button" onClick={handleAddonReactivate}>
-                        <RefreshCw size={11} style={{ marginRight: 5, verticalAlign: "middle" }} />Reactivate
-                      </AddonPrimaryBtn>
-                    ) : (
-                      <AddonOutlineBtn type="button" onClick={() => setAddonCancelModalOpen(true)}>Cancel</AddonOutlineBtn>
-                    )
-                  ) : canInstantSubscribeAddon ? (
-                    <>
-                      <AddonPrimaryBtn type="button" onClick={handleInstantSubscribeAddon} disabled={addonSubscribing}>
-                        {addonSubscribing ? "Subscribing…" : "Add to plan"}
-                      </AddonPrimaryBtn>
-                      <SmallLink type="button" onClick={() => setSubscribeModalOpen(true)} style={{ textAlign: "right" }}>Use different card</SmallLink>
-                    </>
-                  ) : (
-                    <AddonPrimaryBtn type="button" onClick={() => setSubscribeModalOpen(true)}>Add to plan</AddonPrimaryBtn>
-                  )}
-                </AddonCtaGroup>
-              </AddonSide>
-            </AddonCard>
-
-            {/* ── Email marketing campaigns ── */}
-            <AddonCard>
-              <AddonIconBox>
-                <lord-icon src="https://cdn.lordicon.com/cfkiwvcc.json" trigger="in" delay="2000" style={{ width: 28, height: 28 }} />
-              </AddonIconBox>
-              <AddonBody>
-                <AddonTitleRow>
-                  <AddonName>Email marketing campaigns</AddonName>
-                  {emActive && (
-                    emailMkt?.cancelAtPeriodEnd
-                      ? <AddonCancelsBadge>Cancels {emNextBilling}</AddonCancelsBadge>
-                      : <AddonActiveBadge>Active · Renews {emNextBilling}</AddonActiveBadge>
-                  )}
-                </AddonTitleRow>
-                <AddonDesc>Broadcast to your contacts with tiered monthly limits. Transactional emails are not counted.</AddonDesc>
-                {emActive && emUsage && (
-                  <AddonUsageWrap>
-                    <AddonDesc style={{ fontSize: 12 }}>
-                      {(emUsage.used_this_period ?? 0).toLocaleString()} / {(emUsage.monthly_limit ?? 0).toLocaleString()} sends this period
-                    </AddonDesc>
-                    <AddonUsageBar>
-                      <AddonUsageFill $pct={emUsage.monthly_limit ? (emUsage.used_this_period / emUsage.monthly_limit) * 100 : 0} />
-                    </AddonUsageBar>
-                  </AddonUsageWrap>
-                )}
-              </AddonBody>
-              <AddonSide>
-                <AddonPriceLabel>
-                  <AddonPriceStrong>From $6</AddonPriceStrong>
-                  <AddonPriceSuffix> / mo</AddonPriceSuffix>
-                </AddonPriceLabel>
-                <AddonCtaGroup>
-                  {emActive ? (
-                    emailMkt?.cancelAtPeriodEnd ? (
-                      <AddonPrimaryBtn type="button" onClick={handleEmailMarketingReactivate}>
-                        <RefreshCw size={11} style={{ marginRight: 5, verticalAlign: "middle" }} />Reactivate
-                      </AddonPrimaryBtn>
-                    ) : (
-                      <AddonCtaRow>
-                        <AddonPrimaryBtn type="button" onClick={() => setEmailMarketingTierModalOpen(true)}>Change plan</AddonPrimaryBtn>
-                        <AddonOutlineBtn type="button" onClick={handleEmailMarketingCancel}>Cancel</AddonOutlineBtn>
-                      </AddonCtaRow>
-                    )
-                  ) : (
-                    <AddonPrimaryBtn type="button" onClick={() => setEmailMarketingTierModalOpen(true)}>Add to plan</AddonPrimaryBtn>
-                  )}
-                </AddonCtaGroup>
-              </AddonSide>
-            </AddonCard>
-          </AddonsStack>
-        )}
-      </PlanBillingCard>
-
-      <SectionDivider />
-
-      {/* Previous invoices */}
-      <PlanBillingCard>
-        <PlanBillingHeader>
-          <SectionTitle style={{ margin: 0 }}>Previous invoices</SectionTitle>
-          <PlanBillingHeaderNote>Download PDFs and view line-item breakdowns.</PlanBillingHeaderNote>
-        </PlanBillingHeader>
-
-        <PlanBillingPanelBody>
-          <Card $pad="0" style={{ overflow: "hidden" }}>
-          {invoicesLoading ? (
-            <LoadingRow style={{ padding: 24 }}><SpinIcon size={16} /><span>Loading invoices…</span></LoadingRow>
-          ) : invoices.length === 0 ? (
-            <div style={{ padding: 24, textAlign: "center", fontSize: 13, color: T.sub }}>
-              {hasStripeSubscription
-                ? "No invoices yet. Invoices appear here after your first payment."
-                : "Invoices appear after you subscribe through Stripe (e.g. booking widget checkout). Plan changes above update your access only until then."}
-            </div>
-          ) : sortedInvoices.length === 0 ? (
-            <div style={{ padding: 24, textAlign: "center", fontSize: 13, color: T.sub }}>
-              No paid invoices to show yet.
-            </div>
+          {addonsLoading ? (
+            <PlanBillingPanelBody>
+              <SkeletonPmBlock>
+                <SkeletonLine style={{ height: 108, width: "100%", borderRadius: 12 }} />
+                <SkeletonLine style={{ height: 108, width: "100%", borderRadius: 12 }} />
+              </SkeletonPmBlock>
+            </PlanBillingPanelBody>
           ) : (
-            paginatedInvoices.map((inv) => {
-              const dateStr = inv.created
-                ? new Date(inv.created).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
-                : "—";
-              const amountStr = inv.currency && inv.amount_paid != null
-                ? `${inv.currency} $${Number(inv.amount_paid).toFixed(2)}`
-                : "—";
-              const cardStr = inv.payment_method
-                ? `${inv.payment_method.brand} •••• ${inv.payment_method.last4}`
-                : "—";
-              const hasLines = Array.isArray(inv.lines) && inv.lines.length > 0;
-              const isExpanded = expandedInvoiceId === inv.id;
-              return (
-                <React.Fragment key={inv.id}>
-                  <InvoiceRow>
-                    <InvoiceId>{inv.number || inv.id}</InvoiceId>
-                    <InvoiceCell>{dateStr}</InvoiceCell>
-                    <InvoiceCell>{amountStr}</InvoiceCell>
-                    <InvoiceCell style={{ fontSize: 12 }}>{cardStr}</InvoiceCell>
-                    <InvoiceExpandBtn
-                      type="button"
-                      onClick={() => setExpandedInvoiceId(isExpanded ? null : inv.id)}
-                      aria-expanded={isExpanded}
-                      aria-label={isExpanded ? "Hide breakdown" : "Show charge breakdown"}
-                      title={hasLines ? (isExpanded ? "Hide breakdown" : "Show charge breakdown") : "No line items"}
-                      disabled={!hasLines}
-                    >
-                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    </InvoiceExpandBtn>
-                    {/* Mobile combined cell */}
-                    <MobileInvoiceInfo>
-                      <MobileInvoiceId>{inv.number || inv.id}</MobileInvoiceId>
-                      <MobileInvoiceMeta>{dateStr}{amountStr !== "—" ? ` · ${amountStr}` : ""}{cardStr !== "—" ? ` · ${cardStr}` : ""}</MobileInvoiceMeta>
-                    </MobileInvoiceInfo>
-                    <DownloadBtn
-                      as={inv.invoice_pdf ? "a" : "span"}
-                      href={inv.invoice_pdf || undefined}
-                      target={inv.invoice_pdf ? "_blank" : undefined}
-                      rel={inv.invoice_pdf ? "noopener noreferrer" : undefined}
-                      aria-label="Download invoice"
-                      style={{ display: "inline-flex", cursor: inv.invoice_pdf ? "pointer" : "default", opacity: inv.invoice_pdf ? 1 : 0.5 }}
-                    >
-                      <Download size={14} />
-                    </DownloadBtn>
-                    <MobileDownloadBtn
-                      href={inv.invoice_pdf || undefined}
-                      target={inv.invoice_pdf ? "_blank" : undefined}
-                      rel={inv.invoice_pdf ? "noopener noreferrer" : undefined}
-                      data-disabled={!inv.invoice_pdf ? "true" : undefined}
-                      aria-label="Download invoice"
-                    >
-                      <Download size={14} />
-                    </MobileDownloadBtn>
-                  </InvoiceRow>
-                  {isExpanded && hasLines && (
-                    <InvoiceBreakdownRow>
-                      <div style={{ fontWeight: 600, color: "inherit", marginBottom: 8 }}>Charge breakdown</div>
-                      <ul style={{ margin: 0, paddingLeft: 18 }}>
-                        {inv.lines.map((line, i) => (
-                          <li key={i} style={{ marginBottom: 4 }}>
-                            {line.description} — {line.currency} ${Number(line.amount).toFixed(2)}
-                          </li>
-                        ))}
-                      </ul>
-                    </InvoiceBreakdownRow>
-                  )}
-                </React.Fragment>
-              );
-            })
-          )}
-        </Card>
+            <AddonsStack>
+              {/* ── Marketplace email branding ── */}
+              <AddonCard
+                $pulse={marketplacePulse}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0 }}
+              >
+                <AddonCardInner>
+                  <AddonIconBox>
+                    <lord-icon src="https://cdn.lordicon.com/axroojxh.json" trigger="in" style={{ width: 26, height: 26 }} />
+                  </AddonIconBox>
+                  <AddonBody>
+                    <AddonTitleRow>
+                      <AddonName>Marketplace email branding</AddonName>
+                      <NewBadge>New</NewBadge>
+                      {addonActive && (
+                        <motion.span layout style={{ display: "inline-flex" }}>
+                          {marketplaceEmail?.cancelAtPeriodEnd ? (
+                            <AddonCancelsBadge>Cancels {addonNextBilling}</AddonCancelsBadge>
+                          ) : (
+                            <AddonActiveBadge>Active · Renews {addonNextBilling}</AddonActiveBadge>
+                          )}
+                        </motion.span>
+                      )}
+                    </AddonTitleRow>
+                    <AddonDesc>Custom logo, colors &amp; footer in marketplace booking emails — sent under your brand.</AddonDesc>
+                  </AddonBody>
+                  <AddonSide>
+                    <AddonPriceLabel>
+                      <AddonPriceStrong style={{ display: "inline-flex", alignItems: "baseline", gap: 4 }}>
+                        +$
+                        <NumberFlow value={ADDON_PRICE} format={{ maximumFractionDigits: 0 }} />
+                      </AddonPriceStrong>
+                      <AddonPriceSuffix> / mo</AddonPriceSuffix>
+                    </AddonPriceLabel>
+                    <AddonCtaGroup>
+                      {addonActive ? (
+                        marketplaceEmail?.cancelAtPeriodEnd ? (
+                          <AddonPrimaryBtn
+                            type="button"
+                            whileTap={{ scale: 0.97 }}
+                            onClick={handleAddonReactivate}
+                          >
+                            <RefreshCw size={12} style={{ marginRight: 6 }} />
+                            Reactivate
+                          </AddonPrimaryBtn>
+                        ) : (
+                          <AddonOutlineBtn type="button" onClick={() => setAddonCancelModalOpen(true)}>
+                            Cancel
+                          </AddonOutlineBtn>
+                        )
+                      ) : canInstantSubscribeAddon ? (
+                        <>
+                          <AddonPrimaryBtn
+                            type="button"
+                            $brand
+                            whileTap={{ scale: 0.97 }}
+                            onClick={handleInstantSubscribeAddon}
+                            disabled={addonSubscribing}
+                          >
+                            {addonSubscribing ? "Subscribing…" : "Add to plan"}
+                          </AddonPrimaryBtn>
+                          <SmallLink type="button" onClick={() => setSubscribeModalOpen(true)} style={{ textAlign: "right" }}>
+                            Use different card
+                          </SmallLink>
+                        </>
+                      ) : (
+                        <AddonPrimaryBtn
+                          type="button"
+                          $brand
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => setSubscribeModalOpen(true)}
+                        >
+                          Add to plan
+                        </AddonPrimaryBtn>
+                      )}
+                    </AddonCtaGroup>
+                  </AddonSide>
+                </AddonCardInner>
+              </AddonCard>
 
-          {!invoicesLoading && sortedInvoices.length > 0 && (
-            <InvoicePaginationBar>
-              <InvoicePageInfo>
-                Showing{" "}
-                {(invoicePage - 1) * INVOICES_PAGE_SIZE + 1}
-                –
-                {Math.min(invoicePage * INVOICES_PAGE_SIZE, sortedInvoices.length)}
-                {" "}of {sortedInvoices.length}
-              </InvoicePageInfo>
-              <InvoicePaginationActions>
-                <SortBtn type="button" onClick={() => setInvoiceSortOrder((o) => (o === "recent" ? "oldest" : "recent"))}>
-                  <SlidersHorizontal size={13} color={T.sub} />
-                  {invoiceSortOrder === "recent" ? "Most recent" : "Oldest first"}
-                </SortBtn>
-                <InvoicePageBtn
-                  type="button"
-                  aria-label="Previous page"
-                  disabled={invoicePage <= 1}
-                  onClick={() => setInvoicePage((p) => Math.max(1, p - 1))}
-                >
-                  <ChevronLeft size={18} strokeWidth={1.75} />
-                </InvoicePageBtn>
-                <InvoicePageBtn
-                  type="button"
-                  aria-label="Next page"
-                  disabled={invoicePage >= invoiceTotalPages}
-                  onClick={() => setInvoicePage((p) => Math.min(invoiceTotalPages, p + 1))}
-                >
-                  <ChevronRight size={18} strokeWidth={1.75} />
-                </InvoicePageBtn>
-              </InvoicePaginationActions>
-            </InvoicePaginationBar>
+              {/* ── Email marketing campaigns ── */}
+              <AddonCard
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                <AddonCardInner>
+                  <AddonIconBox>
+                    <lord-icon src="https://cdn.lordicon.com/cfkiwvcc.json" trigger="in" delay="2000" style={{ width: 26, height: 26 }} />
+                  </AddonIconBox>
+                  <AddonBody>
+                    <AddonTitleRow>
+                      <AddonName>Email marketing campaigns</AddonName>
+                      {emActive && (
+                        <motion.span layout style={{ display: "inline-flex" }}>
+                          {emailMkt?.cancelAtPeriodEnd ? (
+                            <AddonCancelsBadge>Cancels {emNextBilling}</AddonCancelsBadge>
+                          ) : (
+                            <AddonActiveBadge>Active · Renews {emNextBilling}</AddonActiveBadge>
+                          )}
+                        </motion.span>
+                      )}
+                    </AddonTitleRow>
+                    <AddonDesc>Broadcast to your contacts with tiered monthly limits. Transactional emails are not counted.</AddonDesc>
+                    {emActive && emUsage ? <EmailMarketingUsageBlock emUsage={emUsage} /> : null}
+                  </AddonBody>
+                  <AddonSide>
+                    <AddonPriceLabel>
+                      <AddonPriceStrong style={{ display: "inline-flex", alignItems: "baseline", gap: 4 }}>
+                        From $
+                        <NumberFlow value={6} format={{ maximumFractionDigits: 0 }} />
+                      </AddonPriceStrong>
+                      <AddonPriceSuffix> / mo</AddonPriceSuffix>
+                    </AddonPriceLabel>
+                    <AddonCtaGroup>
+                      {emActive ? (
+                        emailMkt?.cancelAtPeriodEnd ? (
+                          <AddonPrimaryBtn
+                            type="button"
+                            whileTap={{ scale: 0.97 }}
+                            onClick={handleEmailMarketingReactivate}
+                          >
+                            <RefreshCw size={12} style={{ marginRight: 6 }} />
+                            Reactivate
+                          </AddonPrimaryBtn>
+                        ) : (
+                          <AddonCtaRow>
+                            <AddonPrimaryBtn
+                              type="button"
+                              whileTap={{ scale: 0.97 }}
+                              onClick={() => setEmailMarketingTierModalOpen(true)}
+                            >
+                              Change plan
+                            </AddonPrimaryBtn>
+                            <AddonOutlineBtn type="button" onClick={handleEmailMarketingCancel}>
+                              Cancel
+                            </AddonOutlineBtn>
+                          </AddonCtaRow>
+                        )
+                      ) : (
+                        <AddonPrimaryBtn
+                          type="button"
+                          $brand
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => setEmailMarketingTierModalOpen(true)}
+                        >
+                          Add to plan
+                        </AddonPrimaryBtn>
+                      )}
+                    </AddonCtaGroup>
+                  </AddonSide>
+                </AddonCardInner>
+              </AddonCard>
+            </AddonsStack>
           )}
-        </PlanBillingPanelBody>
-      </PlanBillingCard>
+        </PlanBillingCard>
+      </motion.div>
+
+      <AnimatedSectionDivider />
+
+      {/* Billing history */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: "easeOut", delay: 0.08 }}
+      >
+        <PlanBillingCard>
+          <PlanBillingHeaderCompact>
+            <PlanBillingHeaderTitleRow>
+              <Receipt size={16} strokeWidth={2} aria-hidden />
+              <SectionTitle style={{ margin: 0, fontSize: 15 }}>Billing history</SectionTitle>
+            </PlanBillingHeaderTitleRow>
+            <PlanBillingHeaderNote>Download receipts and view charge breakdowns.</PlanBillingHeaderNote>
+          </PlanBillingHeaderCompact>
+
+          <InvoiceHistoryPanelBody>
+            {invoicesLoading ? (
+              <InvoiceListWrap>
+                {[1, 2, 3].map((k) => (
+                  <SkeletonLine key={k} style={{ height: 56, width: "100%", borderRadius: 8 }} />
+                ))}
+              </InvoiceListWrap>
+            ) : invoices.length === 0 ? (
+              <div style={{ padding: "20px 12px", textAlign: "center" }}>
+                <ReceiptEmptyIllustration />
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 6 }}>No invoices yet</div>
+                <div style={{ fontSize: 13, color: T.sub, lineHeight: 1.55, maxWidth: 400, margin: "0 auto" }}>
+                  {hasStripeSubscription
+                    ? "Invoices appear here after your first payment."
+                    : "Invoices appear after you subscribe through Stripe (e.g. booking widget checkout). Plan changes above update your access only until then."}
+                </div>
+              </div>
+            ) : sortedInvoices.length === 0 ? (
+              <div style={{ padding: "16px 12px", textAlign: "center", fontSize: 12, color: T.sub }}>
+                No paid invoices to show yet.
+              </div>
+            ) : (
+              <InvoiceListWrap>
+                {paginatedInvoices.map((inv) => {
+                  const dateStr = inv.created
+                    ? new Date(inv.created).toLocaleDateString(undefined, {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })
+                    : "—";
+                  const hasLines = Array.isArray(inv.lines) && inv.lines.length > 0;
+                  const isExpanded = expandedInvoiceId === inv.id;
+                  const cur = inv.currency ? String(inv.currency).toUpperCase() : "";
+                  const totalPaid =
+                    inv.currency && inv.amount_paid != null
+                      ? `${inv.currency} $${Number(inv.amount_paid).toFixed(2)}`
+                      : "—";
+                  return (
+                    <React.Fragment key={inv.id}>
+                      <InvoiceRowCard>
+                        <InvoiceColMain>
+                          <InvoiceNumStrong>{inv.number || inv.id}</InvoiceNumStrong>
+                          <InvoiceDateMuted>{dateStr}</InvoiceDateMuted>
+                        </InvoiceColMain>
+                        <InvoiceAmountCol>
+                          {cur ? <InvoiceCurrencyTiny>{cur}</InvoiceCurrencyTiny> : null}
+                          <InvoiceAmountStrong>
+                            {inv.amount_paid != null ? `$${Number(inv.amount_paid).toFixed(2)}` : "—"}
+                          </InvoiceAmountStrong>
+                        </InvoiceAmountCol>
+                        <InvoicePmCol>
+                          {inv.payment_method?.brand ? (
+                            <PmBrandBox style={{ width: 36, height: 22 }}>
+                              <PaymentMethodBrandIcon brand={inv.payment_method.brand} />
+                            </PmBrandBox>
+                          ) : null}
+                          <span>
+                            {inv.payment_method
+                              ? `${formatCardBrandLabel(inv.payment_method.brand)} •••• ${inv.payment_method.last4 || "—"}`
+                              : "—"}
+                          </span>
+                        </InvoicePmCol>
+                        <InvoicePaidPill>Paid</InvoicePaidPill>
+                        <InvoiceRowActions>
+                          <InvoiceExpandBtn
+                            type="button"
+                            onClick={() => setExpandedInvoiceId(isExpanded ? null : inv.id)}
+                            aria-expanded={isExpanded}
+                            aria-label={isExpanded ? "Hide breakdown" : "Show charge breakdown"}
+                            title={hasLines ? (isExpanded ? "Hide breakdown" : "Show charge breakdown") : "No line items"}
+                            disabled={!hasLines}
+                          >
+                            <motion.span
+                              animate={{ rotate: isExpanded ? 180 : 0 }}
+                              transition={{ duration: 0.22 }}
+                              style={{ display: "inline-flex" }}
+                            >
+                              <ChevronDown size={16} />
+                            </motion.span>
+                          </InvoiceExpandBtn>
+                          <InvoiceDownloadOutline
+                            href={inv.invoice_pdf || undefined}
+                            target={inv.invoice_pdf ? "_blank" : undefined}
+                            rel={inv.invoice_pdf ? "noopener noreferrer" : undefined}
+                            data-disabled={!inv.invoice_pdf ? "true" : undefined}
+                            aria-label="Download invoice"
+                            onClick={!inv.invoice_pdf ? (e) => e.preventDefault() : undefined}
+                          >
+                            <Download size={16} />
+                          </InvoiceDownloadOutline>
+                        </InvoiceRowActions>
+                      </InvoiceRowCard>
+                      <AnimatePresence initial={false}>
+                        {isExpanded && hasLines ? (
+                          <motion.div
+                            key={`bd-${inv.id}`}
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.25 }}
+                            style={{ overflow: "hidden" }}
+                          >
+                            <div
+                              style={{
+                                padding: 0,
+                                background: T.bg,
+                                borderRadius: 8,
+                                marginBottom: 6,
+                                border: `1px solid ${T.border}`,
+                                overflow: "hidden",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  padding: "8px 12px",
+                                  fontWeight: 700,
+                                  color: T.text,
+                                  fontSize: 12,
+                                  borderBottom: `1px solid ${T.border}`,
+                                  background: "#ffffff",
+                                }}
+                              >
+                                Charge breakdown
+                              </div>
+                              <BreakdownTable>
+                                <tbody>
+                                  {inv.lines.map((line, i) => (
+                                    <BreakdownTr key={i} $alt={i % 2 === 1}>
+                                      <BreakdownTd>{line.description}</BreakdownTd>
+                                      <BreakdownTd style={{ textAlign: "right", fontWeight: 500 }}>
+                                        {line.currency} ${Number(line.amount).toFixed(2)}
+                                      </BreakdownTd>
+                                    </BreakdownTr>
+                                  ))}
+                                  <BreakdownTr $alt={false}>
+                                    <BreakdownTd
+                                      style={{
+                                        paddingTop: 8,
+                                        fontWeight: 700,
+                                        color: T.text,
+                                        borderTop: `1px solid ${T.border}`,
+                                      }}
+                                    >
+                                      Total paid
+                                    </BreakdownTd>
+                                    <BreakdownTd
+                                      style={{
+                                        paddingTop: 8,
+                                        textAlign: "right",
+                                        fontWeight: 700,
+                                        color: T.text,
+                                        borderTop: `1px solid ${T.border}`,
+                                      }}
+                                    >
+                                      {totalPaid}
+                                    </BreakdownTd>
+                                  </BreakdownTr>
+                                </tbody>
+                              </BreakdownTable>
+                            </div>
+                          </motion.div>
+                        ) : null}
+                      </AnimatePresence>
+                    </React.Fragment>
+                  );
+                })}
+              </InvoiceListWrap>
+            )}
+
+            {!invoicesLoading && sortedInvoices.length > 0 && (
+              <InvoicePaginationBar>
+                <InvoicePageInfo>
+                  Showing {(invoicePage - 1) * INVOICES_PAGE_SIZE + 1}–
+                  {Math.min(invoicePage * INVOICES_PAGE_SIZE, sortedInvoices.length)} of {sortedInvoices.length}
+                </InvoicePageInfo>
+                <InvoicePaginationActions style={{ alignItems: "center", gap: 12 }}>
+                  <SortSegmentWrap>
+                    <SortSegmentBtn
+                      type="button"
+                      $active={invoiceSortOrder === "recent"}
+                      onClick={() => setInvoiceSortOrder("recent")}
+                    >
+                      {invoiceSortOrder === "recent" && (
+                        <motion.div
+                          layoutId="billing-invoice-sort"
+                          transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                          style={{
+                            position: "absolute",
+                            inset: 3,
+                            borderRadius: 8,
+                            background: "#111827",
+                            zIndex: 0,
+                          }}
+                        />
+                      )}
+                      <span style={{ position: "relative", zIndex: 1, color: invoiceSortOrder === "recent" ? "#fff" : T.sub }}>
+                        Newest
+                      </span>
+                    </SortSegmentBtn>
+                    <SortSegmentBtn
+                      type="button"
+                      $active={invoiceSortOrder === "oldest"}
+                      onClick={() => setInvoiceSortOrder("oldest")}
+                    >
+                      {invoiceSortOrder === "oldest" && (
+                        <motion.div
+                          layoutId="billing-invoice-sort"
+                          transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                          style={{
+                            position: "absolute",
+                            inset: 3,
+                            borderRadius: 10,
+                            background: "#111827",
+                            zIndex: 0,
+                          }}
+                        />
+                      )}
+                      <span style={{ position: "relative", zIndex: 1, color: invoiceSortOrder === "oldest" ? "#fff" : T.sub }}>
+                        Oldest
+                      </span>
+                    </SortSegmentBtn>
+                  </SortSegmentWrap>
+                  <InvoicePageCenter>
+                    Page {invoicePage} of {invoiceTotalPages}
+                  </InvoicePageCenter>
+                  <InvoicePageBtn
+                    type="button"
+                    aria-label="Previous page"
+                    disabled={invoicePage <= 1}
+                    onClick={() => setInvoicePage((p) => Math.max(1, p - 1))}
+                  >
+                    <ChevronLeft size={18} strokeWidth={1.75} />
+                  </InvoicePageBtn>
+                  <InvoicePageBtn
+                    type="button"
+                    aria-label="Next page"
+                    disabled={invoicePage >= invoiceTotalPages}
+                    onClick={() => setInvoicePage((p) => Math.min(invoiceTotalPages, p + 1))}
+                  >
+                    <ChevronRight size={18} strokeWidth={1.75} />
+                  </InvoicePageBtn>
+                </InvoicePaginationActions>
+              </InvoicePaginationBar>
+            )}
+          </InvoiceHistoryPanelBody>
+        </PlanBillingCard>
+      </motion.div>
 
       {/* Modals */}
-      <Modal title="Cancel subscription" open={cancelModalOpen}
-        onCancel={() => setCancelModalOpen(false)} onOk={handleCancelConfirm}
-        okText={cancelling ? "Cancelling…" : "Cancel at period end"}
-        okButtonProps={{ danger: true, loading: cancelling }}
-        cancelText="Keep subscription">
-        <p style={{ margin: 0 }}>
-          Your subscription will cancel at the end of the current billing period ({nextBilling || "see above"}).
-          You&apos;ll keep access until then.
-        </p>
+      <Modal
+        open={cancelModalOpen}
+        onCancel={() => !cancelling && setCancelModalOpen(false)}
+        footer={null}
+        closable={false}
+        width={440}
+        styles={billingModalStyles}
+        destroyOnClose
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          style={{ position: "relative" }}
+        >
+          <ModalCloseFab
+            type="button"
+            aria-label="Close"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => !cancelling && setCancelModalOpen(false)}
+          >
+            <X size={18} />
+          </ModalCloseFab>
+          <div style={{ padding: "28px 28px 0", textAlign: "center" }}>
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: "50%",
+                background: "#f3f4f6",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 12px",
+              }}
+            >
+              <AlertTriangle size={28} color="#6b7280" strokeWidth={2} />
+            </div>
+            <ModalSectionTitle>Cancel subscription?</ModalSectionTitle>
+          </div>
+          <div style={{ padding: "12px 28px 0" }}>
+            <ModalBodyText>
+              Your subscription will cancel at the end of the current billing period (
+              <strong style={{ color: T.text }}>{nextBilling || "see above"}</strong>
+              ). You&apos;ll keep access until then.
+            </ModalBodyText>
+            <ModalInfoBox>
+              <Info size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>You&apos;ll keep full access until your billing period ends.</span>
+            </ModalInfoBox>
+          </div>
+          <ModalFooterStack>
+            <Button
+              type="primary"
+              block
+              size="large"
+              style={{ height: 48, borderRadius: 12, background: BRAND_PRIMARY, borderColor: BRAND_PRIMARY, fontWeight: 600 }}
+              onClick={() => setCancelModalOpen(false)}
+            >
+              Keep my plan
+            </Button>
+            <Button
+              type="text"
+              danger
+              block
+              size="large"
+              loading={cancelling}
+              onClick={handleCancelConfirm}
+              style={{ fontWeight: 500 }}
+            >
+              {cancelling ? "Cancelling…" : "Cancel at period end"}
+            </Button>
+          </ModalFooterStack>
+        </motion.div>
       </Modal>
 
       <Modal
-        title="Remove payment method"
         open={detachPmModalOpen}
         onCancel={() => {
           if (!detachPmLoading) {
@@ -2933,105 +4092,454 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
             setDetachPmLabel("");
           }
         }}
-        onOk={handleDetachPaymentMethodConfirm}
-        okText={detachPmLoading ? "Removing…" : "Remove"}
-        okButtonProps={{ danger: true, loading: detachPmLoading }}
-        cancelText="Keep card"
+        footer={null}
+        closable={false}
+        width={440}
+        styles={billingModalStyles}
+        destroyOnClose
       >
-        <p style={{ margin: 0, fontSize: 14, color: "#374151", lineHeight: 1.5 }}>
-          Remove {detachPmLabel ? <strong>{detachPmLabel}</strong> : "this card"} from your saved payment methods?
-          You must keep at least one card on file for billing.
-        </p>
-      </Modal>
-
-      <Modal title="Subscribe to Marketplace email branding" open={subscribeModalOpen}
-        onCancel={() => !addonIntentLoading && setSubscribeModalOpen(false)}
-        footer={null} destroyOnClose width={440}>
-        <p style={{ margin: "0 0 16px", fontSize: 13, color: T.sub }}>
-          This add-on is <strong>${ADDON_PRICE}/month</strong>, billed as a separate subscription. Payment is secure and stays on this page.
-        </p>
-        {addonIntentLoading && (
-          <LoadingRow><SpinIcon size={16} /><span>Preparing payment form…</span></LoadingRow>
-        )}
-        {addonIntentError && !addonIntentLoading && (
-          <div style={{ padding: "12px", background: "#fef2f2", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#b91c1c" }}>
-            {addonIntentError}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          style={{ position: "relative" }}
+        >
+          <ModalCloseFab
+            type="button"
+            aria-label="Close"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              if (!detachPmLoading) {
+                setDetachPmModalOpen(false);
+                setDetachPmId(null);
+                setDetachPmLabel("");
+              }
+            }}
+          >
+            <X size={18} />
+          </ModalCloseFab>
+          <div style={{ padding: "28px 28px 0", textAlign: "center" }}>
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: "50%",
+                background: "#f3f4f6",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 12px",
+              }}
+            >
+              <CreditCard size={26} color="#6b7280" strokeWidth={2} />
+            </div>
+            <ModalSectionTitle>Remove card?</ModalSectionTitle>
           </div>
-        )}
-        {addonClientSecret && stripePromise && (
-          <Elements stripe={stripePromise} options={{ clientSecret: addonClientSecret, appearance: stripeAppearance, fonts: stripeFonts }}>
-            <AddonPaymentForm clientSecret={addonClientSecret} onSuccess={handleAddonPaymentSuccess} />
-          </Elements>
-        )}
-      </Modal>
-
-      <Modal title="Cancel add-on" open={addonCancelModalOpen}
-        onCancel={() => setAddonCancelModalOpen(false)} onOk={handleAddonCancelConfirm}
-        okText={addonCancelling ? "Cancelling…" : "Cancel at period end"}
-        okButtonProps={{ danger: true, loading: addonCancelling }}
-        cancelText="Keep add-on">
-        <p style={{ margin: 0 }}>
-          Marketplace email branding will cancel at the end of the current billing period ({addonNextBilling || "see above"}).
-          You&apos;ll keep access until then.
-        </p>
+          <div style={{ padding: "12px 28px 0" }}>
+            {detachPmPreview ? (
+              <div style={{ marginBottom: 14 }}>
+                <PmRow style={{ border: `1px solid ${T.border}`, background: T.bg }}>
+                  <PmRowLeft>
+                    <PmBrandBox>
+                      <PaymentMethodBrandIcon brand={detachPmPreview.brand} />
+                    </PmBrandBox>
+                    <PmTextCol>
+                      <PmTitleLine>
+                        {formatCardBrandLabel(detachPmPreview.brand)} ending in {detachPmPreview.last4 || "—"}
+                      </PmTitleLine>
+                      <PmMetaLine>
+                        {formatExpShort(detachPmPreview.exp_month, detachPmPreview.exp_year)
+                          ? `Exp. ${formatExpShort(detachPmPreview.exp_month, detachPmPreview.exp_year)}`
+                          : ""}
+                      </PmMetaLine>
+                    </PmTextCol>
+                  </PmRowLeft>
+                </PmRow>
+              </div>
+            ) : null}
+            <ModalBodyText style={{ textAlign: "left" }}>
+              Remove {detachPmLabel ? <strong>{detachPmLabel}</strong> : "this card"} from your saved payment methods? You must keep at least one card on file for billing.
+            </ModalBodyText>
+          </div>
+          <ModalFooterStack>
+            <Button
+              type="primary"
+              block
+              size="large"
+              style={{ height: 48, borderRadius: 12, background: BRAND_PRIMARY, borderColor: BRAND_PRIMARY, fontWeight: 600 }}
+              onClick={() => {
+                if (!detachPmLoading) {
+                  setDetachPmModalOpen(false);
+                  setDetachPmId(null);
+                  setDetachPmLabel("");
+                }
+              }}
+            >
+              Keep card
+            </Button>
+            <Button
+              type="text"
+              danger
+              block
+              size="large"
+              loading={detachPmLoading}
+              onClick={handleDetachPaymentMethodConfirm}
+            >
+              {detachPmLoading ? "Removing…" : "Remove card"}
+            </Button>
+          </ModalFooterStack>
+        </motion.div>
       </Modal>
 
       <Modal
-        title="Update payment method"
+        open={subscribeModalOpen}
+        onCancel={() => !addonIntentLoading && setSubscribeModalOpen(false)}
+        footer={null}
+        closable={false}
+        destroyOnClose
+        width={480}
+        styles={billingModalStyles}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          style={{ position: "relative", padding: "20px 24px 24px" }}
+        >
+          <ModalCloseFab
+            type="button"
+            aria-label="Close"
+            whileTap={{ scale: 0.95 }}
+            onClick={() => !addonIntentLoading && setSubscribeModalOpen(false)}
+          >
+            <X size={18} />
+          </ModalCloseFab>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18, paddingRight: 40 }}>
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: 12,
+                background: "#f3f4f6",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <lord-icon src="https://cdn.lordicon.com/axroojxh.json" trigger="in" style={{ width: 36, height: 36 }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: T.text }}>Marketplace email branding</div>
+              <span
+                style={{
+                  display: "inline-block",
+                  marginTop: 6,
+                  padding: "2px 10px",
+                  borderRadius: 12,
+                  background: T.bg,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: T.sub,
+                }}
+              >
+                ${ADDON_PRICE}/month
+              </span>
+            </div>
+          </div>
+          {[
+            "Custom logo in marketplace booking emails",
+            "Your brand colors & footer",
+            "Sent under your brand — not generic Classeasily",
+          ].map((text, i) => (
+            <motion.div
+              key={text}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 + i * 0.06, duration: 0.25 }}
+              style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, fontSize: 13, color: "#374151" }}
+            >
+              <span style={{ color: "#111827", display: "inline-flex" }}>
+                <Check size={18} strokeWidth={2.5} />
+              </span>
+              {text}
+            </motion.div>
+          ))}
+          {addonIntentLoading && (
+            <SkeletonPmBlock style={{ marginTop: 16 }}>
+              <SkeletonLine style={{ height: 100, borderRadius: 10 }} />
+            </SkeletonPmBlock>
+          )}
+          {addonIntentError && !addonIntentLoading && (
+            <div
+              style={{
+                marginTop: 16,
+                padding: "10px 12px",
+                background: "#f9fafb",
+                border: "1px solid #e5e7eb",
+                borderRadius: 10,
+                marginBottom: 16,
+                fontSize: 13,
+                color: "#991b1b",
+                display: "flex",
+                gap: 8,
+                alignItems: "flex-start",
+              }}
+            >
+              <AlertCircle size={16} style={{ flexShrink: 0 }} />
+              <span>{addonIntentError}</span>
+            </div>
+          )}
+          {addonClientSecret && stripePromise && (
+            <div style={{ marginTop: 16 }}>
+              <Elements stripe={stripePromise} options={{ clientSecret: addonClientSecret, appearance: stripeAppearance, fonts: stripeFonts }}>
+                <AddonPaymentForm clientSecret={addonClientSecret} onSuccess={handleAddonPaymentSuccess} />
+              </Elements>
+            </div>
+          )}
+        </motion.div>
+      </Modal>
+
+      <Modal
+        open={addonCancelModalOpen}
+        onCancel={() => !addonCancelling && setAddonCancelModalOpen(false)}
+        footer={null}
+        closable={false}
+        width={440}
+        styles={billingModalStyles}
+        destroyOnClose
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          style={{ position: "relative" }}
+        >
+          <ModalCloseFab
+            type="button"
+            aria-label="Close"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => !addonCancelling && setAddonCancelModalOpen(false)}
+          >
+            <X size={18} />
+          </ModalCloseFab>
+          <div style={{ padding: "28px 28px 0", textAlign: "center" }}>
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: "50%",
+                background: "#f3f4f6",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 12px",
+              }}
+            >
+              <lord-icon src="https://cdn.lordicon.com/axroojxh.json" trigger="in" style={{ width: 32, height: 32 }} />
+            </div>
+            <ModalSectionTitle>Cancel Marketplace email branding?</ModalSectionTitle>
+          </div>
+          <div style={{ padding: "12px 28px 0" }}>
+            <ModalBodyText>
+              This add-on will cancel at the end of the current billing period (
+              <strong style={{ color: T.text }}>{addonNextBilling || "see above"}</strong>
+              ). You&apos;ll keep access until then.
+            </ModalBodyText>
+            <ModalInfoBox>
+              <Info size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>You&apos;ll keep full access until your billing period ends.</span>
+            </ModalInfoBox>
+          </div>
+          <ModalFooterStack>
+            <Button
+              type="primary"
+              block
+              size="large"
+              style={{ height: 48, borderRadius: 12, background: BRAND_PRIMARY, borderColor: BRAND_PRIMARY, fontWeight: 600 }}
+              onClick={() => setAddonCancelModalOpen(false)}
+            >
+              Keep add-on
+            </Button>
+            <Button type="text" danger block size="large" loading={addonCancelling} onClick={handleAddonCancelConfirm}>
+              {addonCancelling ? "Cancelling…" : "Cancel at period end"}
+            </Button>
+          </ModalFooterStack>
+        </motion.div>
+      </Modal>
+
+      <Modal
         open={updatePaymentModalOpen}
         onCancel={() => !updatePaymentIntentLoading && setUpdatePaymentModalOpen(false)}
         footer={null}
+        closable={false}
         destroyOnClose
-        width={440}
+        width={480}
+        styles={billingModalStyles}
       >
-        <p style={{ margin: "0 0 16px", fontSize: 13, color: T.sub }}>
-          Enter a new card below. It will be used for plan renewals and add-ons. No charge is made when updating.
-        </p>
-        {updatePaymentIntentLoading && (
-          <LoadingRow><SpinIcon size={16} /><span>Preparing form…</span></LoadingRow>
-        )}
-        {updatePaymentIntentError && !updatePaymentIntentLoading && (
-          <div style={{ padding: "12px", background: "#fef2f2", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#b91c1c" }}>
-            {updatePaymentIntentError}
-          </div>
-        )}
-        {updatePaymentClientSecret && stripePromise && (
-          <Elements
-            stripe={stripePromise}
-            options={{ clientSecret: updatePaymentClientSecret, appearance: stripeAppearance, fonts: stripeFonts }}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          style={{ position: "relative", padding: "20px 24px 24px" }}
+        >
+          <ModalCloseFab
+            type="button"
+            aria-label="Close"
+            whileTap={{ scale: 0.95 }}
+            onClick={() => !updatePaymentIntentLoading && setUpdatePaymentModalOpen(false)}
           >
-            <UpdatePaymentMethodForm
-              clientSecret={updatePaymentClientSecret}
-              onSuccess={handleUpdatePaymentMethodSuccess}
-            />
-          </Elements>
-        )}
+            <X size={18} />
+          </ModalCloseFab>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 8, paddingRight: 40 }}>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: T.text }}>Add payment method</div>
+              <p style={{ fontSize: 13, color: T.sub, lineHeight: 1.5 }}>
+                This card will be saved for future charges. No charge is made now.
+              </p>
+            </div>
+          </div>
+          {savedPaymentMethods.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", color: T.faint, marginBottom: 8 }}>
+                EXISTING CARDS
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {savedPaymentMethods.slice(0, 3).map((pm) => (
+                  <PmRow key={pm.id || pm.last4} style={{ opacity: 0.85, pointerEvents: "none" }}>
+                    <PmRowLeft>
+                      <PmBrandBox>
+                        <PaymentMethodBrandIcon brand={pm.brand} />
+                      </PmBrandBox>
+                      <PmTextCol>
+                        <PmTitleLine>
+                          {formatCardBrandLabel(pm.brand)} ·••• {pm.last4}
+                        </PmTitleLine>
+                      </PmTextCol>
+                    </PmRowLeft>
+                  </PmRow>
+                ))}
+              </div>
+            </div>
+          )}
+          {updatePaymentIntentLoading && (
+            <SkeletonPmBlock>
+              <SkeletonLine style={{ height: 120, borderRadius: 10 }} />
+            </SkeletonPmBlock>
+          )}
+          {updatePaymentIntentError && !updatePaymentIntentLoading && (
+            <div
+              style={{
+                padding: "10px 12px",
+                background: "#f9fafb",
+                border: "1px solid #e5e7eb",
+                borderRadius: 10,
+                marginBottom: 16,
+                fontSize: 13,
+                color: "#991b1b",
+                display: "flex",
+                gap: 8,
+                alignItems: "flex-start",
+              }}
+            >
+              <AlertCircle size={16} style={{ flexShrink: 0 }} />
+              <span>{updatePaymentIntentError}</span>
+            </div>
+          )}
+          {updatePaymentClientSecret && stripePromise && (
+            <Elements
+              stripe={stripePromise}
+              options={{ clientSecret: updatePaymentClientSecret, appearance: stripeAppearance, fonts: stripeFonts }}
+            >
+              <UpdatePaymentMethodForm
+                clientSecret={updatePaymentClientSecret}
+                onSuccess={handleUpdatePaymentMethodSuccess}
+              />
+            </Elements>
+          )}
+        </motion.div>
       </Modal>
 
       <Modal
-        title={`Confirm payment to switch to ${getPlanById(switchPaymentTargetPlanId)?.name ?? switchPaymentTargetPlanId ?? "new"} plan`}
         open={Boolean(switchPaymentSecret)}
-        onCancel={() => { setSwitchPaymentSecret(null); setSwitchPaymentTargetPlanId(null); }}
+        onCancel={() => {
+          setSwitchPaymentSecret(null);
+          setSwitchPaymentTargetPlanId(null);
+        }}
         footer={null}
+        closable={false}
         destroyOnClose
-        width={440}
+        width={480}
+        styles={billingModalStyles}
       >
-        <p style={{ margin: "0 0 16px", fontSize: 13, color: T.sub }}>
-          Complete payment below to switch to the {getPlanById(switchPaymentTargetPlanId)?.name ?? switchPaymentTargetPlanId ?? "chosen"} plan. You may see a prorated charge for the remainder of this billing period.
-        </p>
-        {switchPaymentSecret && stripePromise && (
-          <Elements
-            stripe={stripePromise}
-            options={{ clientSecret: switchPaymentSecret, appearance: stripeAppearance, fonts: stripeFonts }}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          style={{ position: "relative", padding: "24px 24px 20px" }}
+        >
+          <ModalCloseFab
+            type="button"
+            aria-label="Close"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              setSwitchPaymentSecret(null);
+              setSwitchPaymentTargetPlanId(null);
+            }}
           >
-            <PlanSwitchPaymentForm
-              clientSecret={switchPaymentSecret}
-              onSuccess={handleSwitchPaymentSuccess}
-              onLoadError={handleSwitchPaymentLoadError}
-              planName={getPlanById(switchPaymentTargetPlanId)?.name}
-            />
-          </Elements>
-        )}
+            <X size={18} />
+          </ModalCloseFab>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 12,
+              marginBottom: 16,
+              paddingRight: 32,
+            }}
+          >
+            <PlanEmblem
+              $grad={PLAN_EMBLEM_GRADIENTS[subscription?.planId] || PLAN_EMBLEM_GRADIENTS.basic}
+              style={{ width: 28, height: 28, borderRadius: 8, opacity: 0.75 }}
+            >
+              <span style={{ display: "flex", transform: "scale(0.82)" }}>
+                <PlanEmblemIcon planId={subscription?.planId || "basic"} />
+              </span>
+            </PlanEmblem>
+            <motion.div
+              animate={{ x: [0, 4, 0] }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+              style={{ color: T.sub }}
+            >
+              <ArrowRight size={22} />
+            </motion.div>
+            <PlanEmblem $grad={PLAN_EMBLEM_GRADIENTS[switchPaymentTargetPlanId] || PLAN_EMBLEM_GRADIENTS.growth}>
+              <PlanEmblemIcon planId={switchPaymentTargetPlanId || "growth"} />
+            </PlanEmblem>
+          </div>
+          <ModalSectionTitle style={{ marginBottom: 8 }}>
+            Switch to {getPlanById(switchPaymentTargetPlanId)?.name ?? switchPaymentTargetPlanId ?? "new plan"}
+          </ModalSectionTitle>
+          <ModalBodyText style={{ marginBottom: 16 }}>
+            You may see a prorated charge for the remainder of this billing period.
+          </ModalBodyText>
+          {switchPaymentSecret && stripePromise && (
+            <Elements
+              stripe={stripePromise}
+              options={{ clientSecret: switchPaymentSecret, appearance: stripeAppearance, fonts: stripeFonts }}
+            >
+              <PlanSwitchPaymentForm
+                clientSecret={switchPaymentSecret}
+                onSuccess={handleSwitchPaymentSuccess}
+                onLoadError={handleSwitchPaymentLoadError}
+                planName={getPlanById(switchPaymentTargetPlanId)?.name}
+              />
+            </Elements>
+          )}
+        </motion.div>
       </Modal>
 
       <EmailMarketingTierModal

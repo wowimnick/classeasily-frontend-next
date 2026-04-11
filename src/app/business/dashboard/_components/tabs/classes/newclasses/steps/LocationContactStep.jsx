@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { Form, Input, Switch, Typography, Button } from "antd";
+import { Form, Input, Switch, Typography, Button, Select } from "antd";
 import message from "@/lib/message";
 import styled from "styled-components";
 import {
@@ -26,14 +26,14 @@ import { motion } from "framer-motion";
 import debounce from "lodash/debounce";
 import { useClass } from "../ClassContext";
 import "leaflet/dist/leaflet.css";
-import { businessClassService } from "@/services/apiService";
+import { businessClassService, businessService } from "@/services/apiService";
 import {
   bookingTheme,
   PageTitle,
   FieldDivider,
 } from "../../_shared/BookingFlowDesign";
 
-const { Text } = Typography;
+const { Text, Link: TextLink } = Typography;
 
 const StyledForm = styled(Form)`
   .ant-form-item {
@@ -319,12 +319,94 @@ const LocationContactStep = ({ onValidatedNext }) => {
   const [businessContact, setBusinessContact] = useState(null);
   const [isLoadingBusinessContact, setIsLoadingBusinessContact] =
     useState(true);
+  const [businessLocations, setBusinessLocations] = useState([]);
+  /** Saved venue id when using a business location; ignored while `showCustomLocation` is true */
+  const [venueSelect, setVenueSelect] = useState(null);
+  const [showCustomLocation, setShowCustomLocation] = useState(false);
   const isFormInitialized = useRef(false);
+  const autoDefaultVenueRef = useRef(false);
   const [mapContainerKey] = useState(() => `loc-contact-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
+
+  const applyVenueFromRecord = useCallback(
+    (loc) => {
+      if (!loc) return;
+      const lat = loc.latitude != null ? Number(loc.latitude) : null;
+      const lng = loc.longitude != null ? Number(loc.longitude) : null;
+      const hasCoords =
+        lat != null &&
+        lng != null &&
+        !Number.isNaN(lat) &&
+        !Number.isNaN(lng);
+      const coordStr = hasCoords ? `${lat},${lng}` : "";
+      const salt = loc.show_exact_location === false;
+      setVenueSelect(loc.id);
+      setShowCustomLocation(false);
+      setSearchValue(loc.address || "");
+      setHideExactLocation(salt);
+      if (hasCoords) {
+        setSelectedLocation({
+          lat,
+          lon: lng,
+          display_name: loc.address,
+        });
+      } else {
+        setSelectedLocation(null);
+      }
+      form.setFieldsValue({
+        location: loc.address || "",
+        unit_number: loc.unit || "",
+        coordinates: coordStr,
+        saltLocation: salt,
+        city: loc.city || "",
+        state: loc.state || "",
+        zipCode: loc.zip_code || "",
+        country: "",
+      });
+      updateLocationContact({
+        ...state.locationContact,
+        location: loc.address || "",
+        unit_number: loc.unit || "",
+        coordinates: coordStr,
+        saltLocation: salt,
+        city: loc.city || "",
+        state: loc.state || "",
+        zipCode: loc.zip_code || "",
+        country: "",
+        searchValue: loc.address || "",
+        location_ref: loc.id,
+      });
+    },
+    [form, updateLocationContact, state.locationContact],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const res = await businessService.getBusinessLocations();
+      if (cancelled) return;
+      if (res.success && Array.isArray(res.data)) {
+        const active = res.data.filter((l) => l.is_active !== false);
+        setBusinessLocations(active);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (isLoaded && !isFormInitialized.current && state.locationContact) {
       const contextLocationContact = state.locationContact;
+      if (contextLocationContact.location_ref) {
+        setVenueSelect(contextLocationContact.location_ref);
+        setShowCustomLocation(false);
+      } else if ((contextLocationContact.location || "").trim()) {
+        setVenueSelect(null);
+        setShowCustomLocation(true);
+      } else {
+        setVenueSelect(null);
+        setShowCustomLocation(false);
+      }
       form.setFieldsValue({
         studentContactEmail: contextLocationContact.studentContactEmail || "",
         studentContactPhone: contextLocationContact.studentContactPhone || "",
@@ -361,6 +443,26 @@ const LocationContactStep = ({ onValidatedNext }) => {
   }, [isLoaded, state.locationContact, form]);
 
   useEffect(() => {
+    if (!isLoaded || !isFormInitialized.current || autoDefaultVenueRef.current)
+      return;
+    if (!businessLocations.length) return;
+    const ctx = state.locationContact;
+    if (ctx?.location_ref || (ctx?.location || "").trim()) {
+      autoDefaultVenueRef.current = true;
+      return;
+    }
+    autoDefaultVenueRef.current = true;
+    const loc =
+      businessLocations.find((l) => l.is_primary) || businessLocations[0];
+    applyVenueFromRecord(loc);
+  }, [
+    businessLocations,
+    isLoaded,
+    state.locationContact,
+    applyVenueFromRecord,
+  ]);
+
+  useEffect(() => {
     const fetchBusinessContact = async () => {
       try {
         const contactData = await businessClassService.getContactInfo();
@@ -378,10 +480,13 @@ const LocationContactStep = ({ onValidatedNext }) => {
 
   const handleFieldsChange = () => {
     if (isFormInitialized.current) {
+      const locRef =
+        showCustomLocation || !venueSelect ? null : venueSelect;
       debouncedUpdateLocationContact({
         ...form.getFieldsValue(),
         searchValue,
         saltLocation: hideExactLocation,
+        location_ref: locRef,
       });
     }
   };
@@ -424,6 +529,8 @@ const LocationContactStep = ({ onValidatedNext }) => {
 
     setSearchValue(displayName);
     setSelectedLocation(newLocation);
+    setVenueSelect(null);
+    setShowCustomLocation(true);
 
     form.setFieldsValue({
       location: displayName,
@@ -435,6 +542,12 @@ const LocationContactStep = ({ onValidatedNext }) => {
     });
     form.validateFields(["location", "coordinates"]);
     setSearchResults([]);
+    updateLocationContact({
+      ...form.getFieldsValue(),
+      searchValue: displayName,
+      saltLocation: hideExactLocation,
+      location_ref: null,
+    });
   };
 
   const handleSubmit = (values) => {
@@ -442,6 +555,8 @@ const LocationContactStep = ({ onValidatedNext }) => {
       ...values,
       saltLocation: hideExactLocation,
       searchValue: searchValue,
+      location_ref:
+        showCustomLocation || !venueSelect ? null : venueSelect,
     };
     updateLocationContact(finalValues);
     onValidatedNext();
@@ -465,6 +580,8 @@ const LocationContactStep = ({ onValidatedNext }) => {
   };
 
   const handleUseBusinessLocation = () => {
+    setVenueSelect(null);
+    setShowCustomLocation(true);
     if (
       businessContact &&
       businessContact.latitude &&
@@ -504,6 +621,7 @@ const LocationContactStep = ({ onValidatedNext }) => {
         unit_number: businessUnit || "",
         city: businessCity || "",
         state: businessState || "",
+        location_ref: null,
       });
       message.success("Location populated from your business profile.");
     } else {
@@ -521,6 +639,8 @@ const LocationContactStep = ({ onValidatedNext }) => {
       debouncedUpdateLocationContact({
         ...form.getFieldsValue(),
         ...valuesToSet,
+        location_ref:
+          showCustomLocation || !venueSelect ? null : venueSelect,
       });
       message.success(
         "Contact information populated from your business profile."
@@ -546,17 +666,72 @@ const LocationContactStep = ({ onValidatedNext }) => {
         id="step-1-form"
         preserve={true}
       >
-        {!isLoadingBusinessContact && businessContact?.businessAddress && (
-          <ActionContainer>
-            <ActionButton
-              type="default"
-              onClick={handleUseBusinessLocation}
-              icon={<Building size={14} />}
-              disabled={!businessContact.latitude || !businessContact.longitude}
-            >
-              Use Business Address
-            </ActionButton>
-          </ActionContainer>
+        {businessLocations.length > 0 && (
+          <FormSection
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+          >
+            <FormGroup>
+              <FormLabel>
+                <Building size={16} />
+                Business location
+              </FormLabel>
+              <HelpText>
+                <Info size={14} />
+                This class meets at one of your saved venues by default. Manage
+                venues in Settings → Locations.
+              </HelpText>
+              <Select
+                size="large"
+                style={{ width: "100%" }}
+                placeholder="Select a saved location"
+                value={
+                  showCustomLocation ? undefined : (venueSelect ?? undefined)
+                }
+                onChange={(v) => {
+                  const loc = businessLocations.find((x) => x.id === v);
+                  if (loc) applyVenueFromRecord(loc);
+                }}
+                options={businessLocations.map((l) => ({
+                  value: l.id,
+                  label: `${l.name} — ${[l.city, l.state].filter(Boolean).join(", ")}`,
+                }))}
+              />
+              {!showCustomLocation && (
+                <div style={{ marginTop: 10 }}>
+                  <TextLink
+                    onClick={() => {
+                      setShowCustomLocation(true);
+                      setVenueSelect(null);
+                      debouncedUpdateLocationContact({
+                        ...form.getFieldsValue(),
+                        searchValue,
+                        saltLocation: hideExactLocation,
+                        location_ref: null,
+                      });
+                    }}
+                  >
+                    Or select a custom location
+                  </TextLink>
+                </div>
+              )}
+              {showCustomLocation && (
+                <div style={{ marginTop: 10 }}>
+                  <TextLink
+                    onClick={() => {
+                      const loc =
+                        businessLocations.find((l) => l.is_primary) ||
+                        businessLocations[0];
+                      if (loc) applyVenueFromRecord(loc);
+                    }}
+                  >
+                    Use a saved business location instead
+                  </TextLink>
+                </div>
+              )}
+            </FormGroup>
+          </FormSection>
         )}
 
         <FormSection
@@ -564,7 +739,25 @@ const LocationContactStep = ({ onValidatedNext }) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <FormGrid>
+          {(showCustomLocation || businessLocations.length === 0) && (
+            <>
+              {!isLoadingBusinessContact &&
+                businessContact?.businessAddress && (
+                  <ActionContainer>
+                    <ActionButton
+                      type="default"
+                      onClick={handleUseBusinessLocation}
+                      icon={<Building size={14} />}
+                      disabled={
+                        !businessContact.latitude ||
+                        !businessContact.longitude
+                      }
+                    >
+                      Use Business Address
+                    </ActionButton>
+                  </ActionContainer>
+                )}
+              <FormGrid>
             <FormGroup>
               <FormLabel>
                 <Search size={16} />
@@ -617,7 +810,9 @@ const LocationContactStep = ({ onValidatedNext }) => {
                 <StyledInput placeholder="Optional details..." size="large" />
               </Form.Item>
             </FormGroup>
-          </FormGrid>
+              </FormGrid>
+            </>
+          )}
 
           <Form.Item
             name="location"

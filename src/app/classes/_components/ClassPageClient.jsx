@@ -1343,10 +1343,19 @@ export default function ClassPageClient({
     setShowMobileBestPriceBanner(true);
   }, [mounted, optionToDisplayOnCard]);
 
-  const locationText =
-    classData?.business_city && classData?.business_state
-      ? `${classData.business_city}, ${classData.business_state}`
-      : classData?.business_state || classData?.business_city || null;
+  const locationText = useMemo(() => {
+    const venue =
+      typeof classData?.location_name === "string"
+        ? classData.location_name.trim()
+        : "";
+    const cityState =
+      classData?.business_city && classData?.business_state
+        ? `${classData.business_city}, ${classData.business_state}`
+        : classData?.business_state || classData?.business_city || null;
+    if (venue && cityState) return `${venue} · ${cityState}`;
+    if (venue) return venue;
+    return cityState;
+  }, [classData]);
 
   return (
     <>
@@ -1444,6 +1453,18 @@ export default function ClassPageClient({
                 <>
                   <MapSectionWrapper>
                     <PageSectionTitle>Where you&apos;ll be</PageSectionTitle>
+                    {classData.location_name ? (
+                      <div
+                        style={{
+                          margin: "0 0 14px",
+                          fontSize: 16,
+                          fontWeight: 600,
+                          color: "#374151",
+                        }}
+                      >
+                        {classData.location_name}
+                      </div>
+                    ) : null}
                     <MapInnerContainer>
                       <ClassPageMap
                         coordinates={classData.coordinates}

@@ -6,6 +6,17 @@ import { Input, Button, Upload } from "antd";
 import { UploadOutlined, DeleteOutlined } from "@ant-design/icons";
 import { businessService, uploadService } from "@/services/apiService";
 import message from "@/lib/message";
+import {
+  EDITOR_MODE_HTML,
+  EDITOR_MODE_VISUAL,
+  PREVIEW_TYPE_TO_EMAIL_KEY,
+  PLACEHOLDER_GROUPS,
+  applySamplePlaceholders,
+  checkMarketingHtml,
+  checkRequiredPlaceholdersForType,
+  formatMarketingHtml,
+  starterHtmlTemplate,
+} from "./emailBrandingHtmlTools";
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
 
@@ -18,6 +29,19 @@ const DEFAULT_BRANDING = {
   card_border_radius: "",
   logo_max_width: "",
   logo_max_height: "",
+  mode: "builder",
+  custom_html: {},
+  button_text: "",
+  button_text_guest: "",
+  button_style: "pill",
+  font_family: "",
+  background_color: "",
+  visible_sections: {
+    cancellation_policy: true,
+    contact_info: true,
+    equipment: true,
+    participants: true,
+  },
 };
 
 const PREVIEW_OPTIONS = [
@@ -39,6 +63,20 @@ const CARD_STYLE_PRESETS = [
   { value: "soft",    label: "Soft",      border: 1, radius: 24, preview: "24px" },
   { value: "sharp",   label: "Sharp",     border: 1, radius: 0,  preview: "0px"  },
   { value: "minimal", label: "Minimal",   border: 0, radius: 12, preview: "12px", noLine: true },
+];
+
+const BUTTON_STYLE_PRESETS = [
+  { value: "pill", label: "Pill" },
+  { value: "rounded_rect", label: "Rounded" },
+  { value: "square", label: "Square" },
+];
+
+const FONT_OPTIONS = [
+  { value: "", label: "Default (system)" },
+  { value: "arial", label: "Arial" },
+  { value: "georgia", label: "Georgia" },
+  { value: "trebuchet", label: "Trebuchet MS" },
+  { value: "verdana", label: "Verdana" },
 ];
 
 /* ─── Helpers ────────────────────────────────────────────────────────────────── */
@@ -90,6 +128,27 @@ function buildEmailPreviewHtml(branding, previewType) {
   const cardBorderRadius = parseNum(branding?.card_border_radius, 16);
   const logoMaxWidth = parseNum(branding?.logo_max_width, 160);
   const logoMaxHeight = parseNum(branding?.logo_max_height, 60);
+  const bg = normalizeHex(branding?.background_color) || "#F5F5F7";
+  const ff =
+    branding?.font_family === "arial"
+      ? "Arial,Helvetica,sans-serif"
+      : branding?.font_family === "georgia"
+        ? "Georgia,'Times New Roman',serif"
+        : branding?.font_family === "trebuchet"
+          ? "'Trebuchet MS',Helvetica,sans-serif"
+          : branding?.font_family === "verdana"
+            ? "Verdana,Geneva,sans-serif"
+            : "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+  const br =
+    branding?.button_style === "rounded_rect"
+      ? "12px"
+      : branding?.button_style === "square"
+        ? "4px"
+        : "980px";
+  const btnLabel =
+    esc((branding?.button_text || "").trim()) || "View Ticket &amp; Details";
+  const vs = branding?.visible_sections || {};
+  const showPart = (k) => vs[k] !== false;
 
   const headerLogoRow = logoUrl
     ? `<tr><td align="center" style="padding-bottom: 32px;"><img src="${logoUrl.replace(/"/g, "&quot;")}" alt="" style="max-width: ${logoMaxWidth}px; max-height: ${logoMaxHeight}px; width: auto; height: auto; display: block; object-fit: contain;" /></td></tr>`
@@ -98,7 +157,7 @@ function buildEmailPreviewHtml(branding, previewType) {
   let content = "";
   switch (previewType) {
     case "booking_confirmation":
-      content = `<div style="text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      content = `<div style="text-align:center;font-family:${ff};">
         <div style="font-size:48px;margin-bottom:16px;line-height:1;">🎉</div>
         <h1 style="margin-bottom:8px;font-size:28px;color:#1D1D1F;font-weight:700;">Get ready for something great.</h1>
         <p style="font-size:16px;color:#484848;margin-bottom:${confirmationMessage?"8":"24"}px;">Hi Alex, your spot is secured for <strong>Morning Yoga Flow</strong>.</p>
@@ -115,16 +174,20 @@ function buildEmailPreviewHtml(branding, previewType) {
               <div style="display:table-row;"><div style="display:table-cell;font-size:11px;color:#86868B;text-transform:uppercase;padding:6px 12px 6px 0;white-space:nowrap;">Location</div><div style="display:table-cell;font-size:14px;color:#1D1D1F;">123 Studio Lane</div></div>
               <div style="display:table-row;"><div style="display:table-cell;font-size:11px;color:#86868B;text-transform:uppercase;padding:6px 12px 6px 0;">Provider</div><div style="display:table-cell;font-size:14px;color:#1D1D1F;">Your Business Name</div></div>
               <div style="display:table-row;"><div style="display:table-cell;font-size:11px;color:#86868B;text-transform:uppercase;padding:6px 12px 6px 0;">Reference</div><div style="display:table-cell;font-size:14px;font-family:monospace;color:#1D1D1F;">BK-ABC123</div></div>
+              ${showPart("contact_info")?`<div style="display:table-row;"><div style="display:table-cell;font-size:11px;color:#86868B;text-transform:uppercase;padding:6px 12px 6px 0;">Contact</div><div style="display:table-cell;font-size:14px;color:#1D1D1F;">hello@studio.com · (555) 010-0000</div></div>`:""}
+              ${showPart("equipment")?`<div style="display:table-row;"><div style="display:table-cell;font-size:11px;color:#86868B;text-transform:uppercase;padding:6px 12px 6px 0;vertical-align:top;">Note from host</div><div style="display:table-cell;font-size:14px;color:#1D1D1F;">Bring a mat.</div></div>`:""}
             </div>
+            ${showPart("participants")?`<div style="margin-top:16px;padding-top:16px;border-top:1px dashed #E5E7EB;"><span style="display:inline-block;background:#F5F5F7;border-radius:99px;padding:4px 10px;font-size:13px;color:#1D1D1F;">Booked by Alex Guest</span> <span style="display:inline-block;background:#F5F5F7;border-radius:99px;padding:4px 10px;font-size:13px;color:#1D1D1F;">2 participants</span></div>`:""}
           </div>
         </div>
+        ${showPart("cancellation_policy")?`<div style="margin-bottom:24px;padding:12px 16px;background:#F9FAFB;border-radius:12px;border:1px solid #E5E7EB;text-align:left;max-width:480px;margin-left:auto;margin-right:auto;"><div style="font-size:11px;color:#6B7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;font-weight:600;">Cancellation policy</div><div style="font-size:13px;color:#374151;line-height:1.45;">Cancel up to 24 hours before for a full refund.</div></div>`:""}
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td align="center">
-          <a href="#" style="background-color:${primaryColor};color:#fff;border-radius:980px;padding:16px 36px;display:inline-block;font-weight:600;font-size:16px;text-decoration:none;">View Ticket &amp; Details</a>
+          <a href="#" style="background-color:${primaryColor};color:#fff;border-radius:${br};padding:16px 36px;display:inline-block;font-weight:600;font-size:16px;text-decoration:none;">${btnLabel}</a>
         </td></tr></table>
       </div>`;
       break;
     case "booking_reminder":
-      content = `<div style="text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      content = `<div style="text-align:center;font-family:${ff};">
         <div style="font-size:48px;margin-bottom:16px;line-height:1;">⏰</div>
         <h1 style="margin-bottom:8px;font-size:28px;color:#1D1D1F;">Your class is coming up</h1>
         <p style="font-size:16px;color:#484848;margin-bottom:${confirmationMessage?"8":"24"}px;">Hi Alex, <strong>Morning Yoga Flow</strong> is coming up.</p>
@@ -141,12 +204,12 @@ function buildEmailPreviewHtml(branding, previewType) {
           </div>
         </div>
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td align="center">
-          <a href="#" style="background-color:${primaryColor};color:#fff;border-radius:980px;padding:16px 36px;display:inline-block;font-weight:600;font-size:16px;text-decoration:none;">View details</a>
+          <a href="#" style="background-color:${primaryColor};color:#fff;border-radius:${br};padding:16px 36px;display:inline-block;font-weight:600;font-size:16px;text-decoration:none;">${btnLabel}</a>
         </td></tr></table>
       </div>`;
       break;
     case "booking_cancelled_by_host":
-      content = `<div style="text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      content = `<div style="text-align:center;font-family:${ff};">
         <div style="font-size:48px;margin-bottom:24px;line-height:1;">📣</div>
         <h1 style="margin-bottom:8px;font-size:28px;color:#1D1D1F;">We have an update.</h1>
         <p style="font-size:18px;color:#1D1D1F;margin-bottom:32px;">Hi Alex,<br>Your booking for <strong>Morning Yoga Flow</strong> has been cancelled by the host.</p>
@@ -158,12 +221,12 @@ function buildEmailPreviewHtml(branding, previewType) {
           </div>
         </div>
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td align="center">
-          <a href="#" style="background-color:${primaryColor};color:#fff;border-radius:980px;padding:16px 36px;display:inline-block;font-weight:600;font-size:16px;text-decoration:none;">Find another class</a>
+          <a href="#" style="background-color:${primaryColor};color:#fff;border-radius:${br};padding:16px 36px;display:inline-block;font-weight:600;font-size:16px;text-decoration:none;">Find another class</a>
         </td></tr></table>
       </div>`;
       break;
     case "booking_rescheduled":
-      content = `<div style="text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      content = `<div style="text-align:center;font-family:${ff};">
         <div style="font-size:48px;margin-bottom:24px;line-height:1;">🗓️</div>
         <h1 style="margin-bottom:8px;font-size:28px;color:#1D1D1F;">New time, same great experience.</h1>
         <p style="font-size:18px;color:#1D1D1F;margin-bottom:32px;">Hi Alex,<br>The host has rescheduled <strong>Morning Yoga Flow</strong>.</p>
@@ -179,12 +242,12 @@ function buildEmailPreviewHtml(branding, previewType) {
           </div>
         </div>
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td align="center">
-          <a href="#" style="background-color:${primaryColor};color:#fff;border-radius:980px;padding:16px 36px;display:inline-block;font-weight:600;font-size:16px;text-decoration:none;">View updated booking</a>
+          <a href="#" style="background-color:${primaryColor};color:#fff;border-radius:${br};padding:16px 36px;display:inline-block;font-weight:600;font-size:16px;text-decoration:none;">${btnLabel}</a>
         </td></tr></table>
       </div>`;
       break;
     case "booking_cancellation_confirmed":
-      content = `<div style="text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+      content = `<div style="text-align:center;font-family:${ff};">
         <div style="font-size:48px;margin-bottom:24px;line-height:1;">🗓️</div>
         <h1 style="margin-bottom:8px;font-size:28px;color:#1D1D1F;">Your schedule is clear.</h1>
         <p style="font-size:18px;color:#1D1D1F;margin-bottom:32px;">Hi Alex,<br>We've processed your cancellation for <strong>Morning Yoga Flow</strong>.</p>
@@ -194,7 +257,7 @@ function buildEmailPreviewHtml(branding, previewType) {
           <div style="border-top:1px dashed #D1D5DB;padding-top:12px;margin-top:16px;"><div style="font-size:14px;color:#86868B;">Refund Status</div><div style="font-size:16px;color:#1D1D1F;">Processed per the host's policy.</div></div>
         </div>
         <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td align="center">
-          <a href="#" style="background-color:${primaryColor};color:#fff;border-radius:980px;padding:16px 36px;display:inline-block;font-weight:600;font-size:16px;text-decoration:none;">Browse classes</a>
+          <a href="#" style="background-color:${primaryColor};color:#fff;border-radius:${br};padding:16px 36px;display:inline-block;font-weight:600;font-size:16px;text-decoration:none;">Browse classes</a>
         </td></tr></table>
       </div>`;
       break;
@@ -203,7 +266,7 @@ function buildEmailPreviewHtml(branding, previewType) {
   }
 
   return `
-  <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;margin:0 auto;border-collapse:collapse;background:#F5F5F7;">
+  <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;margin:0 auto;border-collapse:collapse;background:${bg};font-family:${ff};">
     ${headerLogoRow}
     <tr><td style="background:#fff;border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,0.04);overflow:hidden;"><div style="padding:32px 24px;box-sizing:border-box;">${content}</div></td></tr>
     <tr><td style="padding:24px 20px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
@@ -211,6 +274,17 @@ function buildEmailPreviewHtml(branding, previewType) {
       <p style="font-size:11px;color:#86868B;margin:0;">© ClassEasily. All rights reserved.</p>
     </td></tr>
   </table>`.trim();
+}
+
+function buildHtmlModePreviewHtml(branding, previewType, customHtmlByType) {
+  const key = PREVIEW_TYPE_TO_EMAIL_KEY[previewType];
+  const raw = (customHtmlByType && customHtmlByType[key]) || "";
+  const inner = applySamplePlaceholders(raw);
+  const bg = normalizeHex(branding?.background_color) || "#F5F5F7";
+  if (!inner.trim()) {
+    return `<div style="padding:40px;text-align:center;color:#98A2B3;font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:${bg};border-radius:12px;">No HTML for this email yet. Switch to the template above, use “Starter template”, or paste your own.</div>`;
+  }
+  return `<div style="background:${bg};padding:24px;max-width:600px;margin:0 auto;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">${inner}</div>`;
 }
 
 /* ─── Animations ─────────────────────────────────────────────────────────────── */
@@ -907,18 +981,33 @@ const EMAIL_MODE_WIDGET = "widget";
 
 function applyBrandingToForm(data, setters) {
   const d = { ...DEFAULT_BRANDING, ...(data || {}) };
-  setters.setBranding(d);
+  const mergedVs = { ...DEFAULT_BRANDING.visible_sections, ...(d.visible_sections || {}) };
+  const d2 = { ...d, visible_sections: mergedVs };
+  setters.setBranding(d2);
   setters.setDraftFooterText(d.footer_text ?? "");
   setters.setDraftConfirmMsg(d.confirmation_message ?? "");
   setters.setDraftPrimaryColor(d.primary_color ?? "");
   setters.setColorInputValue(normalizeHex(d.primary_color) || "#f81e3e");
   setters.setDraftLogoSize(logoSizeToPreset(d.logo_max_width, d.logo_max_height));
   setters.setDraftCardStyle(cardStyleToPreset(d.card_border_width, d.card_border_radius));
+  setters.setEditorMode(d.mode === "html" ? EDITOR_MODE_HTML : EDITOR_MODE_VISUAL);
+  const ch = typeof d.custom_html === "object" && d.custom_html ? d.custom_html : {};
+  setters.setCustomHtmlByType({ ...ch });
 }
 
-function formToBrandingPayload(branding, draftFooterText, draftConfirmMessage, draftPrimaryColor, draftLogoSize, draftCardStyle) {
+function formToBrandingPayload(
+  branding,
+  draftFooterText,
+  draftConfirmMessage,
+  draftPrimaryColor,
+  draftLogoSize,
+  draftCardStyle,
+  editorMode,
+  customHtmlByType,
+) {
   const logoPreset = LOGO_SIZE_PRESETS.find((p) => p.value === draftLogoSize) || LOGO_SIZE_PRESETS[1];
   const cardPreset = CARD_STYLE_PRESETS.find((p) => p.value === draftCardStyle) || CARD_STYLE_PRESETS[0];
+  const bgHex = normalizeHex(branding.background_color);
   return {
     logo_url: (branding.logo_url || "").trim() || undefined,
     primary_color: (draftPrimaryColor || branding.primary_color || "").trim() || undefined,
@@ -928,6 +1017,17 @@ function formToBrandingPayload(branding, draftFooterText, draftConfirmMessage, d
     card_border_radius: cardPreset.radius,
     logo_max_width: logoPreset.width,
     logo_max_height: logoPreset.height,
+    mode: editorMode === EDITOR_MODE_HTML ? "html" : "builder",
+    custom_html: editorMode === EDITOR_MODE_HTML ? { ...customHtmlByType } : {},
+    button_text: (branding.button_text || "").trim() || undefined,
+    button_text_guest: (branding.button_text_guest || "").trim() || undefined,
+    button_style: branding.button_style || "pill",
+    font_family: (branding.font_family || "").trim() || undefined,
+    background_color: bgHex || undefined,
+    visible_sections: {
+      ...DEFAULT_BRANDING.visible_sections,
+      ...(branding.visible_sections || {}),
+    },
   };
 }
 
@@ -945,6 +1045,11 @@ export default function EmailBrandingSettingsTab() {
   const [draftLogoSize, setDraftLogoSize]         = useState("medium");
   const [draftCardStyle, setDraftCardStyle]       = useState("rounded");
   const [previewType, setPreviewType]             = useState("booking_confirmation");
+  const [editorMode, setEditorMode]               = useState(EDITOR_MODE_VISUAL);
+  const [customHtmlByType, setCustomHtmlByType]   = useState({});
+  const [htmlCheckSummary, setHtmlCheckSummary] = useState(null);
+  const [htmlFormatting, setHtmlFormatting]     = useState(false);
+  const [htmlChecking, setHtmlChecking]           = useState(false);
   const [fullScreenOpen, setFullScreenOpen]       = useState(false);
   const hasLoadedRef = useRef(false);
   const logoUploadRef = useRef(null);
@@ -980,6 +1085,7 @@ export default function EmailBrandingSettingsTab() {
           applyBrandingToForm(marketplace, {
             setBranding, setDraftFooterText, setDraftConfirmMsg, setDraftPrimaryColor,
             setColorInputValue, setDraftLogoSize, setDraftCardStyle,
+            setEditorMode, setCustomHtmlByType,
           });
           hasLoadedRef.current = true;
         }
@@ -990,7 +1096,16 @@ export default function EmailBrandingSettingsTab() {
 
   const handleModeChange = (mode) => {
     if (mode === emailMode) return;
-    const payload = formToBrandingPayload(branding, draftFooterText, draftConfirmMessage, draftPrimaryColor, draftLogoSize, draftCardStyle);
+    const payload = formToBrandingPayload(
+      branding,
+      draftFooterText,
+      draftConfirmMessage,
+      draftPrimaryColor,
+      draftLogoSize,
+      draftCardStyle,
+      editorMode,
+      customHtmlByType,
+    );
     const currentFull = { ...branding, ...payload };
     setBrandingByMode((prev) => ({ ...prev, [emailMode]: currentFull }));
     setEmailMode(mode);
@@ -1000,6 +1115,7 @@ export default function EmailBrandingSettingsTab() {
     applyBrandingToForm(nextData, {
       setBranding, setDraftFooterText, setDraftConfirmMsg, setDraftPrimaryColor,
       setColorInputValue, setDraftLogoSize, setDraftCardStyle,
+      setEditorMode, setCustomHtmlByType,
     });
   };
 
@@ -1022,14 +1138,46 @@ export default function EmailBrandingSettingsTab() {
     return () => clearTimeout(t);
   }, [draftFooterText, draftConfirmMessage, draftPrimaryColor, draftLogoSize, draftCardStyle]);
 
-  const previewHtml = useMemo(
-    () => buildEmailPreviewHtml(branding, previewType),
-    [branding, previewType]
+  const previewHtml = useMemo(() => {
+    if (editorMode === EDITOR_MODE_HTML) {
+      return buildHtmlModePreviewHtml(branding, previewType, customHtmlByType);
+    }
+    return buildEmailPreviewHtml(branding, previewType);
+  }, [branding, previewType, editorMode, customHtmlByType]);
+
+  const emailKeyForPreview = PREVIEW_TYPE_TO_EMAIL_KEY[previewType];
+  const requiredCheck = useMemo(
+    () => checkRequiredPlaceholdersForType(
+      emailKeyForPreview,
+      customHtmlByType[emailKeyForPreview] || "",
+    ),
+    [emailKeyForPreview, customHtmlByType],
   );
 
   const handleSave = () => {
+    if (editorMode === EDITOR_MODE_HTML) {
+      for (const [k, html] of Object.entries(customHtmlByType)) {
+        if (!html || !String(html).trim()) continue;
+        const chk = checkRequiredPlaceholdersForType(k, html);
+        if (!chk.ok) {
+          message.error(
+            `Template “${k}” is missing: ${chk.missing.map((m) => `{{${m}}}`).join(", ")}`,
+          );
+          return;
+        }
+      }
+    }
     setSaving(true);
-    const payload = formToBrandingPayload(branding, draftFooterText, draftConfirmMessage, draftPrimaryColor, draftLogoSize, draftCardStyle);
+    const payload = formToBrandingPayload(
+      branding,
+      draftFooterText,
+      draftConfirmMessage,
+      draftPrimaryColor,
+      draftLogoSize,
+      draftCardStyle,
+      editorMode,
+      customHtmlByType,
+    );
     const key = emailMode === EMAIL_MODE_MARKETPLACE ? "marketplace_email_branding" : "widget_email_branding";
     businessService.updateWidgetConfig({ [key]: payload })
       .then((res) => {
@@ -1139,8 +1287,147 @@ export default function EmailBrandingSettingsTab() {
           )}
         </ModeToggleWrap>
 
-        <FieldsWrap>
+        <ModeToggleWrap>
+          <ModeToggleLabel>Editor</ModeToggleLabel>
+          <ModeToggleGroup>
+            <ModeToggleBtn type="button" $active={editorMode === EDITOR_MODE_VISUAL} onClick={() => { setEditorMode(EDITOR_MODE_VISUAL); setHtmlCheckSummary(null); }}>
+              Visual builder
+            </ModeToggleBtn>
+            <ModeToggleBtn type="button" $active={editorMode === EDITOR_MODE_HTML} onClick={() => { setEditorMode(EDITOR_MODE_HTML); setHtmlCheckSummary(null); }}>
+              HTML code
+            </ModeToggleBtn>
+          </ModeToggleGroup>
+          <FieldHint style={{ marginTop: 8 }}>
+            Visual mode styles ClassEasily templates. HTML mode uses your markup with {"{{placeholders}}"}; required tokens are checked before save.
+          </FieldHint>
+        </ModeToggleWrap>
 
+        <FieldsWrap>
+          {editorMode === EDITOR_MODE_HTML ? (
+            <>
+              <Section $delay="0s">
+                <SectionLabel>
+                  HTML — {PREVIEW_OPTIONS.find((o) => o.value === previewType)?.label || previewType}
+                </SectionLabel>
+                <FieldHint style={{ marginBottom: 10 }}>
+                  Switch email types with the tabs in the preview. Each type can have its own HTML. Use placeholders exactly like {"{{class_title}}"}.
+                </FieldHint>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                  <Button
+                    size="small"
+                    type="default"
+                    onClick={() => {
+                      setCustomHtmlByType((prev) => ({
+                        ...prev,
+                        [emailKeyForPreview]: starterHtmlTemplate(emailKeyForPreview),
+                      }));
+                      message.info("Starter template inserted for this email type.");
+                    }}
+                  >
+                    Starter template
+                  </Button>
+                  <Button
+                    size="small"
+                    type="default"
+                    loading={htmlFormatting}
+                    onClick={async () => {
+                      setHtmlFormatting(true);
+                      setHtmlCheckSummary(null);
+                      try {
+                        const cur = customHtmlByType[emailKeyForPreview] || "";
+                        const next = await formatMarketingHtml(cur);
+                        setCustomHtmlByType((prev) => ({ ...prev, [emailKeyForPreview]: next }));
+                        message.success("HTML formatted.");
+                      } catch (e) {
+                        message.error(e?.message || "Could not format HTML.");
+                      } finally {
+                        setHtmlFormatting(false);
+                      }
+                    }}
+                  >
+                    Format HTML
+                  </Button>
+                  <Button
+                    size="small"
+                    type="default"
+                    loading={htmlChecking}
+                    onClick={async () => {
+                      setHtmlChecking(true);
+                      try {
+                        const r = await checkMarketingHtml(customHtmlByType[emailKeyForPreview] || "");
+                        setHtmlCheckSummary(r);
+                        if (r.ok && r.warningCount === 0) message.success("No HTML issues reported.");
+                        else if (r.ok) message.warning(`${r.warningCount} warning(s).`);
+                        else message.error(`${r.errorCount} HTML error(s).`);
+                      } catch (e) {
+                        message.error(e?.message || "Check failed.");
+                      } finally {
+                        setHtmlChecking(false);
+                      }
+                    }}
+                  >
+                    Check HTML
+                  </Button>
+                </div>
+                <Input.TextArea
+                  value={customHtmlByType[emailKeyForPreview] || ""}
+                  onChange={(e) => {
+                    setCustomHtmlByType((prev) => ({ ...prev, [emailKeyForPreview]: e.target.value }));
+                    setHtmlCheckSummary(null);
+                  }}
+                  rows={16}
+                  placeholder="Paste HTML here…"
+                  style={{ fontFamily: "ui-monospace, monospace", fontSize: 12 }}
+                />
+                <div style={{ marginTop: 10, fontSize: 12, lineHeight: 1.5 }}>
+                  <strong>Required placeholders</strong> for this email:{" "}
+                  {requiredCheck.ok ? (
+                    <span style={{ color: "#059669" }}>All present.</span>
+                  ) : (
+                    <span style={{ color: "#b45309" }}>
+                      Missing {requiredCheck.missing.map((m) => `{{${m}}}`).join(", ")}
+                    </span>
+                  )}
+                </div>
+                {htmlCheckSummary && htmlCheckSummary.items?.length > 0 && (
+                  <div style={{ marginTop: 8, maxHeight: 120, overflow: "auto", fontSize: 11, color: "#667085" }}>
+                    {htmlCheckSummary.items.slice(0, 12).map((it, i) => (
+                      <div key={i}>
+                        L{it.line}: {it.message}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Section>
+              <Section $delay="0.05s">
+                <SectionLabel>Placeholder reference</SectionLabel>
+                <FieldHint style={{ marginBottom: 10 }}>Click to copy into clipboard.</FieldHint>
+                {PLACEHOLDER_GROUPS.map((g) => (
+                  <div key={g.label} style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#98A2B3", textTransform: "uppercase", marginBottom: 6 }}>{g.label}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {g.keys.map((k) => (
+                        <Button
+                          key={k}
+                          size="small"
+                          type="link"
+                          style={{ padding: "0 4px", height: "auto", fontFamily: "monospace", fontSize: 11 }}
+                          onClick={() => {
+                            const token = `{{${k}}}`;
+                            void navigator.clipboard?.writeText(token);
+                            message.success(`Copied ${token}`);
+                          }}
+                        >
+                          {`{{${k}}}`}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </Section>
+            </>
+          ) : (
+          <>
           {/* Logo */}
           <Section $delay="0s">
             <SectionLabel>Logo</SectionLabel>
@@ -1251,6 +1538,140 @@ export default function EmailBrandingSettingsTab() {
             <FieldHint>Shape of the info boxes (date, time, location) in your emails.</FieldHint>
           </Section>
 
+          {/* Page background */}
+          <Section $delay="0.13s">
+            <SectionLabel>Email background</SectionLabel>
+            <ColorRow>
+              <ColorSwatchBtn $color={normalizeHex(branding.background_color) || "#F5F5F7"} title="Background">
+                <input
+                  type="color"
+                  value={normalizeHex(branding.background_color) || "#F5F5F7"}
+                  onChange={(e) => setBranding((b) => ({ ...b, background_color: e.target.value }))}
+                />
+              </ColorSwatchBtn>
+              <Input
+                value={branding.background_color || ""}
+                onChange={(e) => setBranding((b) => ({ ...b, background_color: e.target.value }))}
+                placeholder="#F5F5F7"
+                maxLength={7}
+                style={{ flex: 1, height: 44, borderRadius: 10 }}
+              />
+            </ColorRow>
+            <FieldHint>Outer background behind the email card (default light gray).</FieldHint>
+          </Section>
+
+          {/* Font */}
+          <Section $delay="0.135s">
+            <SectionLabel>Font</SectionLabel>
+            <select
+              value={branding.font_family || ""}
+              onChange={(e) => setBranding((b) => ({ ...b, font_family: e.target.value }))}
+              style={{
+                width: "100%",
+                height: 44,
+                borderRadius: 10,
+                border: "1.5px solid #E4E7EC",
+                padding: "0 12px",
+                fontSize: 13,
+                background: "#FAFAFA",
+              }}
+            >
+              {FONT_OPTIONS.map((o) => (
+                <option key={o.value || "default"} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <FieldHint>Email-safe font stack applied in sent mail.</FieldHint>
+          </Section>
+
+          {/* Button shape */}
+          <Section $delay="0.137s">
+            <SectionLabel>Button shape</SectionLabel>
+            <PresetGrid $cols={3}>
+              {BUTTON_STYLE_PRESETS.map((p) => {
+                const active = (branding.button_style || "pill") === p.value;
+                return (
+                  <PresetCard key={p.value} $active={active} onClick={() => setBranding((b) => ({ ...b, button_style: p.value }))} type="button">
+                    <PresetCardLabel $active={active}>{p.label}</PresetCardLabel>
+                  </PresetCard>
+                );
+              })}
+            </PresetGrid>
+          </Section>
+
+          {/* CTA labels */}
+          <Section $delay="0.138s">
+            <FieldLabel>Button text (signed-in guests)</FieldLabel>
+            <Input
+              value={branding.button_text || ""}
+              onChange={(e) => setBranding((b) => ({ ...b, button_text: e.target.value }))}
+              placeholder="e.g. View ticket & details"
+              maxLength={80}
+              showCount
+            />
+            <FieldLabel style={{ marginTop: 12 }}>Button text (guest checkout)</FieldLabel>
+            <Input
+              value={branding.button_text_guest || ""}
+              onChange={(e) => setBranding((b) => ({ ...b, button_text_guest: e.target.value }))}
+              placeholder="e.g. Manage booking"
+              maxLength={80}
+              showCount
+            />
+          </Section>
+
+          {/* Section visibility */}
+          <Section $delay="0.139s">
+            <SectionLabel>Show in confirmation &amp; reminder</SectionLabel>
+            {[
+              { key: "cancellation_policy", label: "Cancellation policy block" },
+              { key: "contact_info", label: "Host contact row" },
+              { key: "equipment", label: "Note from host / equipment" },
+              { key: "participants", label: "Participants / attendees row" },
+            ].map(({ key, label }) => {
+              const on = branding.visible_sections?.[key] !== false;
+              return (
+                <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <span style={{ fontSize: 13, color: "#344054" }}>{label}</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setBranding((b) => ({
+                        ...b,
+                        visible_sections: {
+                          ...DEFAULT_BRANDING.visible_sections,
+                          ...b.visible_sections,
+                          [key]: !on,
+                        },
+                      }))}
+                    style={{
+                      width: 44,
+                      height: 24,
+                      borderRadius: 12,
+                      border: "none",
+                      background: on ? "#101828" : "#E4E7EC",
+                      cursor: "pointer",
+                      position: "relative",
+                    }}
+                    aria-pressed={on}
+                  >
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: 2,
+                        left: on ? 22 : 2,
+                        width: 20,
+                        height: 20,
+                        borderRadius: "50%",
+                        background: "#fff",
+                        transition: "left 0.15s",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.12)",
+                      }}
+                    />
+                  </button>
+                </div>
+              );
+            })}
+          </Section>
+
           {/* Footer text */}
           <Section $delay="0.16s">
             <FieldLabel>Footer text</FieldLabel>
@@ -1282,7 +1703,8 @@ export default function EmailBrandingSettingsTab() {
             </TextAreaWrap>
             <FieldHint>Shown just below the booking details in confirmation and reminder emails.</FieldHint>
           </Section>
-
+          </>
+          )}
         </FieldsWrap>
 
         <SaveBar>

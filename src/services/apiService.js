@@ -51,6 +51,8 @@ export const API_ENDPOINTS = {
   BUSINESS_REGISTER: "/business/register/",
   MY_BUSINESSES: "/my-businesses/",
   MY_BUSINESS_PROFILE: "/my-business/profile/",
+  MY_BUSINESS_LOCATIONS: "/my-business/locations/",
+  MY_BUSINESS_LOCATION: (id) => `/my-business/locations/${id}/`,
   MY_BUSINESS_OVERVIEW: "/my-business/overview/",
   BUSINESS_STATS: "/business-stats/",
   BUSINESS_CLASSES: "/business/classes/",
@@ -66,6 +68,7 @@ export const API_ENDPOINTS = {
   BUSINESS_ROLES: "/business/roles/",
   ACCEPT_INVITE: "/business/accept-invitation/",
   MY_BUSINESS_WIDGET_CONFIG: "/my-business/widget-config/",
+  MY_BUSINESS_EMAIL_BRANDING_PREVIEW: "/my-business/email-branding/preview/",
   MY_BUSINESS_WIDGET_SUBSCRIPTION: "/my-business/widget-subscription/",
   MY_BUSINESS_WIDGET_SUBSCRIPTION_CHECKOUT: "/my-business/widget-subscription/checkout/",
   MY_BUSINESS_WIDGET_SUBSCRIPTION_PAYMENT_INTENT: "/my-business/widget-subscription/payment-intent/",
@@ -640,6 +643,80 @@ export const businessService = {
     }
   },
 
+  getBusinessLocations: async () => {
+    try {
+      const response = await axiosInstance.get(API_ENDPOINTS.MY_BUSINESS_LOCATIONS);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Error fetching business locations:",
+        error.response?.data || error,
+      );
+      return {
+        success: false,
+        error: error.response?.data?.detail || "Failed to fetch locations",
+      };
+    }
+  },
+
+  createBusinessLocation: async (payload) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_LOCATIONS,
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Error creating business location:",
+        error.response?.data || error,
+      );
+      return {
+        success: false,
+        error: error.response?.data || "Failed to create location",
+      };
+    }
+  },
+
+  updateBusinessLocation: async (id, payload) => {
+    try {
+      const response = await axiosInstance.patch(
+        API_ENDPOINTS.MY_BUSINESS_LOCATION(id),
+        payload,
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Error updating business location:",
+        error.response?.data || error,
+      );
+      return {
+        success: false,
+        error: error.response?.data || "Failed to update location",
+      };
+    }
+  },
+
+  deleteBusinessLocation: async (id) => {
+    try {
+      const response = await axiosInstance.delete(API_ENDPOINTS.MY_BUSINESS_LOCATION(id));
+      return {
+        success: true,
+        data: response.data,
+        deactivated: response.status === 200 && response.data?.deactivated,
+      };
+    } catch (error) {
+      console.error(
+        "Error deleting business location:",
+        error.response?.data || error,
+      );
+      return {
+        success: false,
+        error: error.response?.data || "Failed to delete location",
+      };
+    }
+  },
+
   deleteMyBusinessProfile: async () => {
     try {
       await axiosInstance.delete(API_ENDPOINTS.MY_BUSINESS_PROFILE);
@@ -713,14 +790,44 @@ export const businessService = {
         error.response?.data || error,
       );
       const errorData = error.response?.data;
-      // Handle nested validation errors if they exist
+      const errorsList = errorData?.errors;
+      const detail = errorData?.detail;
       const errorMessage =
-        typeof errorData === "object" && errorData !== null
-          ? Object.values(errorData).flat().join(" ")
-          : "Failed to save widget settings.";
+        Array.isArray(errorsList) && errorsList.length
+          ? errorsList.join(" ")
+          : typeof detail === "string"
+            ? detail
+            : typeof errorData === "object" && errorData !== null
+              ? Object.values(errorData)
+                  .flat()
+                  .filter((x) => typeof x === "string")
+                  .join(" ")
+              : "Failed to save widget settings.";
       return {
         success: false,
         error: errorMessage || "An unknown error occurred.",
+        errors: errorsList,
+        status: error.response?.status,
+      };
+    }
+  },
+
+  previewEmailBranding: async ({ branding, emailType }) => {
+    try {
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_EMAIL_BRANDING_PREVIEW,
+        { branding, email_type: emailType },
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error(
+        "Email branding preview:",
+        error.response?.data || error,
+      );
+      return {
+        success: false,
+        error:
+          error.response?.data?.detail || "Failed to load email preview.",
       };
     }
   },
@@ -4014,13 +4121,15 @@ export const guestMessageService = {
 // --- Notification Service (NEW) ---
 export const notificationService = {
   getNotifications: async (params = {}) => {
-    // params for pagination if needed
+    // params for pagination if needed, or pass { url } for absolute next page URL from DRF
     try {
-      const response = await axiosInstance.get(API_ENDPOINTS.NOTIFICATIONS, {
-        params,
-      });
-      // Assuming paginated response: { count, next, previous, results }
-      // If not paginated, it will just be an array in response.data
+      const response = params.url
+        ? await axiosInstance.get(params.url)
+        : await axiosInstance.get(API_ENDPOINTS.NOTIFICATIONS, {
+            params,
+          });
+      // Paginated response: { count, next, previous, results }
+      // Legacy non-paginated: array on response.data
       return {
         success: true,
         data:
@@ -4028,8 +4137,8 @@ export const notificationService = {
             ? response.data.results
             : response.data,
         count: response.data.count,
-        next: response.data.next,
-        previous: response.data.previous,
+        next: response.data.next ?? null,
+        previous: response.data.previous ?? null,
       };
     } catch (error) {
       console.error(
@@ -4039,6 +4148,7 @@ export const notificationService = {
       return {
         success: false,
         error: error.response?.data?.detail || "Failed to fetch notifications",
+        next: null,
       };
     }
   },

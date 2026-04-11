@@ -224,6 +224,9 @@ const ClassSteps = ({
           state: state.locationContact.state,
           zipCode: state.locationContact.zipCode,
           country: state.locationContact.country,
+          ...(state.locationContact.location_ref
+            ? { location_ref: state.locationContact.location_ref }
+            : {}),
 
           // Images
           image_s3_keys: imageS3Keys,

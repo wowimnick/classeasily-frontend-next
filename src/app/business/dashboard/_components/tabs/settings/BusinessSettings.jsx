@@ -18,9 +18,10 @@ import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
 import { theme as appProvidedTheme } from "@/components/theme";
 import { businessService, uploadService } from "@/services/apiService";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
+import { getAddressFieldsForProfileSave } from "./locationsSettingsHelpers";
 
 const GeneralSettingsTab = React.lazy(() => import("./GeneralSettingsTab"));
-const LocationSettingsTab = React.lazy(() => import("./LocationSettingsTab"));
+const LocationsSettingsTab = React.lazy(() => import("./LocationsSettingsTab"));
 const PreferencesSettingsTab = React.lazy(() =>
   import("./PreferencesSettingsTab")
 );
@@ -338,9 +339,9 @@ const BusinessSettingsContent = forwardRef(
     ref
   ) => {
     const [generalForm] = Form.useForm();
-    const [locationForm] = Form.useForm();
     const [preferencesForm] = Form.useForm();
-    const [currentTab, setCurrentTab] = useState(activeTabKey);
+    const normalizedTabKey = activeTabKey === "location" ? "locations" : activeTabKey;
+    const [currentTab, setCurrentTab] = useState(normalizedTabKey);
     const [loading, setLoading] = useState(true);
     const [logoUrl, setLogoUrl] = useState("");
     const [logoFile, setLogoFile] = useState(null);
@@ -379,17 +380,6 @@ const BusinessSettingsContent = forwardRef(
             tags_keywords: data.tags_keywords || [],
           });
 
-          locationForm.setFieldsValue({
-            location: data.businessAddress,
-            businessUnit: data.businessUnit,
-            latitude: data.latitude,
-            longitude: data.longitude,
-            saltLocation: data.showExactLocation === false,
-            city: data.businessCity,
-            state: data.businessState,
-            zipCode: data.businessZipCode,
-          });
-
           const formattedHours = (data.businessHours || []).map((day) => ({
             ...day,
             time: [
@@ -423,14 +413,14 @@ const BusinessSettingsContent = forwardRef(
       } finally {
         setLoading(false);
       }
-    }, [generalForm, locationForm, preferencesForm, onProfileUpdate]);
+    }, [generalForm, preferencesForm, onProfileUpdate]);
 
     useEffect(() => {
       fetchBusinessData();
     }, [fetchBusinessData]);
 
     useEffect(() => {
-      setCurrentTab(activeTabKey);
+      setCurrentTab(activeTabKey === "location" ? "locations" : activeTabKey);
     }, [activeTabKey]);
 
     useEffect(() => {
@@ -457,30 +447,25 @@ const BusinessSettingsContent = forwardRef(
     const handleSaveAllChanges = async () => {
       // Validate all three forms independently so we can give precise error feedback
       // per tab rather than a single opaque "validation failed" message.
-      let generalValues, locationValues, preferencesValues;
+      let generalValues, preferencesValues;
 
       const validationErrors = [];
 
       try {
         generalValues = await generalForm.validateFields();
       } catch (err) {
-        validationErrors.push("General");
-      }
-      try {
-        locationValues = await locationForm.validateFields();
-      } catch (err) {
-        validationErrors.push("Location");
+        validationErrors.push("general");
       }
       try {
         preferencesValues = await preferencesForm.validateFields();
       } catch (err) {
-        validationErrors.push("Preferences");
+        validationErrors.push("preferences");
       }
 
       if (validationErrors.length > 0) {
         message.error(`Please fix errors in: ${validationErrors.join(", ")} tab${validationErrors.length > 1 ? "s" : ""}.`);
         // Switch to the first failing tab so the user can see the errors
-        const tabKey = validationErrors[0].toLowerCase();
+        const tabKey = validationErrors[0];
         setCurrentTab(tabKey);
         onTabChangeExternal(tabKey);
         return false;
@@ -528,22 +513,18 @@ const BusinessSettingsContent = forwardRef(
           masterFormData.append("businessImage", "");
         }
 
-        // ── Location ──
-        masterFormData.append("businessAddress", locationValues.location || "");
-        // Always send businessUnit — empty string clears it
-        masterFormData.append("businessUnit", locationValues.businessUnit || "");
-        if (locationValues.city)   masterFormData.append("businessCity",    locationValues.city);
-        if (locationValues.state)  masterFormData.append("businessState",   locationValues.state);
-        if (locationValues.zipCode) masterFormData.append("businessZipCode", locationValues.zipCode);
-
-        // Guard against 0,0 being treated as falsy — use explicit null check
-        const lat = locationValues.latitude;
-        const lon = locationValues.longitude;
-        if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
-          masterFormData.append("latitude",  lat.toString());
-          masterFormData.append("longitude", lon.toString());
+        // ── Location (primary BusinessLocation or legacy profile) ──
+        const addr = getAddressFieldsForProfileSave(initialBusinessData);
+        masterFormData.append("businessAddress", addr.businessAddress || "");
+        masterFormData.append("businessUnit", addr.businessUnit || "");
+        if (addr.businessCity) masterFormData.append("businessCity", addr.businessCity);
+        if (addr.businessState) masterFormData.append("businessState", addr.businessState);
+        if (addr.businessZipCode) masterFormData.append("businessZipCode", addr.businessZipCode);
+        if (addr.latitude != null && addr.longitude != null) {
+          masterFormData.append("latitude", String(addr.latitude));
+          masterFormData.append("longitude", String(addr.longitude));
         }
-        masterFormData.append("showExactLocation", String(!locationValues.saltLocation));
+        masterFormData.append("showExactLocation", String(addr.showExactLocation !== false));
 
         // ── Preferences / Business Hours ──
         if (preferencesValues.businessHours && preferencesValues.businessHours.length > 0) {
@@ -633,28 +614,19 @@ const BusinessSettingsContent = forwardRef(
         forceRender: true,
       },
       {
-        key: "location",
+        key: "locations",
         label: (
           <TabIcon>
-            <MapPin size={16} /> Location
+            <MapPin size={16} /> Locations
           </TabIcon>
         ),
         children: (
           <ScrollContainer>
             <FormContainer>
               <Suspense fallback={<TabLoader />}>
-                <LocationSettingsTab
-                  form={locationForm}
-                  initialData={{
-                    address: initialBusinessData?.businessAddress,
-                    businessUnit: initialBusinessData?.businessUnit,
-                    city: initialBusinessData?.businessCity,
-                    state: initialBusinessData?.businessState,
-                    zipCode: initialBusinessData?.businessZipCode,
-                    lat: initialBusinessData?.latitude,
-                    lon: initialBusinessData?.longitude,
-                    hide: initialBusinessData?.showExactLocation === false,
-                  }}
+                <LocationsSettingsTab
+                  onLocationsChanged={fetchBusinessData}
+                  nestedInParentDrawer
                 />
               </Suspense>
             </FormContainer>

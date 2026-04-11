@@ -4,7 +4,6 @@ import React, {
   useState,
   useEffect,
   useCallback,
-  useMemo,
   Suspense,
   forwardRef,
   useImperativeHandle,
@@ -19,9 +18,10 @@ import "leaflet/dist/leaflet.css";
 import message from "@/lib/message";
 import { businessService, uploadService } from "@/services/apiService";
 import { GlobalLoaderWithoutInlineStyles } from "@/components/common/GlobalLoader";
+import { getAddressFieldsForProfileSave } from "./locationsSettingsHelpers";
 
 const GeneralSettingsTab = React.lazy(() => import("./GeneralSettingsTab"));
-const LocationSettingsTab = React.lazy(() => import("./LocationSettingsTab"));
+const LocationsSettingsTab = React.lazy(() => import("./LocationsSettingsTab"));
 const PreferencesSettingsTab = React.lazy(() => import("./PreferencesSettingsTab"));
 const PlanBillingSettingsTab = React.lazy(() => import("./PlanBillingSettingsTab"));
 const EmailBrandingSettingsTab = React.lazy(() => import("./EmailBrandingSettingsTab"));
@@ -222,17 +222,17 @@ const TabLoader = () => (
 
 /* ─── Settings Page Component ────────────────────────────────────── */
 
-const VALID_SETTINGS_TABS = ["general", "location", "preferences", "billing", "email"];
+const VALID_SETTINGS_TABS = ["general", "locations", "preferences", "billing", "email"];
 
 const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addonReturn = false }, ref) => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [generalForm] = Form.useForm();
-  const [locationForm] = Form.useForm();
   const [preferencesForm] = Form.useForm();
   const tabFromUrl = searchParams.get("tab");
-  const initialTab = VALID_SETTINGS_TABS.includes(tabFromUrl) ? tabFromUrl : defaultTab;
+  const normalizedTab = tabFromUrl === "location" ? "locations" : tabFromUrl;
+  const initialTab = VALID_SETTINGS_TABS.includes(normalizedTab) ? normalizedTab : defaultTab;
   const [currentTab, setCurrentTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
 
@@ -248,7 +248,8 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
   );
 
   useEffect(() => {
-    const tabFromUrl = searchParams.get("tab");
+    const raw = searchParams.get("tab");
+    const tabFromUrl = raw === "location" ? "locations" : raw;
     if (VALID_SETTINGS_TABS.includes(tabFromUrl) && tabFromUrl !== currentTab) {
       setCurrentTab(tabFromUrl);
     }
@@ -267,32 +268,6 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
   const isMobile = !screens.md;
 
   const hasEmailAddon = addons?.marketplace_email_branding?.active === true;
-
-  const locationInitialData = useMemo(
-    () =>
-      initialBusinessData
-        ? {
-            address: initialBusinessData.businessAddress,
-            businessUnit: initialBusinessData.businessUnit,
-            businessCity: initialBusinessData.businessCity,
-            businessState: initialBusinessData.businessState,
-            businessZipCode: initialBusinessData.businessZipCode,
-            latitude: initialBusinessData.latitude,
-            longitude: initialBusinessData.longitude,
-            hide: initialBusinessData.showExactLocation === false,
-          }
-        : null,
-    [
-      initialBusinessData?.businessAddress,
-      initialBusinessData?.businessUnit,
-      initialBusinessData?.businessCity,
-      initialBusinessData?.businessState,
-      initialBusinessData?.businessZipCode,
-      initialBusinessData?.latitude,
-      initialBusinessData?.longitude,
-      initialBusinessData?.showExactLocation,
-    ]
-  );
 
   const refetchAddons = useCallback(async () => {
     const result = await businessService.getAddons();
@@ -370,28 +345,6 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
     return Object.keys(payload).length ? payload : null;
   }, []);
 
-  const buildLocationPayload = useCallback((form, fieldName) => {
-    const v = form.getFieldValue;
-    if (fieldName === "businessUnit") {
-      return { businessUnit: v("businessUnit") ?? "" };
-    }
-    if (fieldName === "location" || fieldName === "city" || fieldName === "state" || fieldName === "zipCode" || fieldName === "latitude" || fieldName === "longitude") {
-      return {
-        businessAddress: v("location"),
-        businessUnit: v("businessUnit") ?? "",
-        businessCity: v("city") ?? "",
-        businessState: v("state") ?? "",
-        businessZipCode: v("zipCode") ?? "",
-        latitude: v("latitude") != null ? Number(v("latitude")) : null,
-        longitude: v("longitude") != null ? Number(v("longitude")) : null,
-      };
-    }
-    if (fieldName === "showExactLocation") {
-      return { showExactLocation: !v("saltLocation") };
-    }
-    return null;
-  }, []);
-
   const buildPreferencesPayload = useCallback((form, fieldName, directValue) => {
     const v = form.getFieldValue;
     const booleanPrefFields = [
@@ -454,17 +407,6 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
           tags_keywords: data.tags_keywords || [],
         });
 
-        locationForm.setFieldsValue({
-          location: data.businessAddress,
-          businessUnit: data.businessUnit,
-          latitude: data.latitude,
-          longitude: data.longitude,
-          saltLocation: data.showExactLocation === false,
-          city: data.businessCity,
-          state: data.businessState,
-          zipCode: data.businessZipCode,
-        });
-
         const formattedHours = (data.businessHours || []).map((day) => ({
           ...day,
           time: [
@@ -497,7 +439,7 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
     } finally {
       setLoading(false);
     }
-  }, [generalForm, locationForm, preferencesForm, onProfileUpdate]);
+  }, [generalForm, preferencesForm, onProfileUpdate]);
 
   useEffect(() => {
     fetchBusinessData();
@@ -552,12 +494,11 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
 
   const handleSaveAllChanges = async () => {
     try {
-      const [generalValues, locationValues, preferencesValues] =
-        await Promise.all([
-          generalForm.validateFields(),
-          locationForm.validateFields(),
-          preferencesForm.validateFields(),
-        ]);
+      const [generalValues, preferencesValues] = await Promise.all([
+        generalForm.validateFields(),
+        preferencesForm.validateFields(),
+      ]);
+      const addr = getAddressFieldsForProfileSave(initialBusinessData);
 
       let businessImageS3Key = null;
       if (logoFile) {
@@ -601,20 +542,17 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
         masterFormData.append("businessImage", "");
       }
 
-      masterFormData.append("businessAddress", locationValues.location);
-      if (locationValues.businessUnit)
-        masterFormData.append("businessUnit", locationValues.businessUnit);
-      if (locationValues.city)
-        masterFormData.append("businessCity", locationValues.city);
-      if (locationValues.state)
-        masterFormData.append("businessState", locationValues.state);
-      if (locationValues.zipCode)
-        masterFormData.append("businessZipCode", locationValues.zipCode);
-      if (locationValues.latitude && locationValues.longitude) {
-        masterFormData.append("latitude", locationValues.latitude.toString());
-        masterFormData.append("longitude", locationValues.longitude.toString());
+      masterFormData.append("businessAddress", addr.businessAddress || "");
+      if (addr.businessUnit) masterFormData.append("businessUnit", addr.businessUnit);
+      if (addr.businessCity) masterFormData.append("businessCity", addr.businessCity);
+      if (addr.businessState) masterFormData.append("businessState", addr.businessState);
+      if (addr.businessZipCode)
+        masterFormData.append("businessZipCode", addr.businessZipCode);
+      if (addr.latitude != null && addr.longitude != null) {
+        masterFormData.append("latitude", String(addr.latitude));
+        masterFormData.append("longitude", String(addr.longitude));
       }
-      masterFormData.append("showExactLocation", String(!locationValues.saltLocation));
+      masterFormData.append("showExactLocation", String(addr.showExactLocation !== false));
 
       if (preferencesValues.businessHours?.length > 0) {
         const formattedHours = preferencesValues.businessHours.map((day) => ({
@@ -682,24 +620,6 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
     }).catch(() => { /* validation failed */ });
   }, [buildGeneralPayload, generalForm, savePayload]);
 
-  const onLocationFieldBlur = useCallback((fieldName) => {
-    const fieldsToValidate = fieldName === "location" || fieldName === "businessUnit"
-      ? [fieldName]
-      : ["location", "businessUnit", "city", "state", "zipCode", "latitude", "longitude"];
-    locationForm.validateFields(fieldsToValidate).then(() => {
-      const payload = buildLocationPayload(locationForm, fieldName);
-      if (payload) savePayload(payload);
-    }).catch(() => {});
-  }, [buildLocationPayload, locationForm, savePayload]);
-
-  const onLocationVisibilityChange = useCallback(
-    async (showExact) => {
-      const ok = await savePayload({ showExactLocation: showExact });
-      if (ok) fetchBusinessData();
-    },
-    [savePayload, fetchBusinessData]
-  );
-
   const onPreferencesFieldChange = useCallback((fieldName, value) => {
     const fieldsToValidate = fieldName === "businessHours" ? ["businessHours"] : [fieldName];
     preferencesForm.validateFields(fieldsToValidate).then(() => {
@@ -741,12 +661,12 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
 
   const mainTabs = [
     { key: "general", label: "General", icon: <Building /> },
-    { key: "location", label: "Location", icon: <MapPin /> },
+    { key: "locations", label: "Locations", icon: <MapPin /> },
     { key: "preferences", label: "Preferences", icon: <SlidersHorizontal /> },
     { key: "billing", label: "Plan & Billing", icon: <CreditCard /> },
   ];
   const emailTab = hasEmailAddon ? [{ key: "email", label: "Email Branding", icon: <Mail />, $gradient: true }] : [];
-  const showAutoSaveIndicator = ["general", "location", "preferences"].includes(currentTab);
+  const showAutoSaveIndicator = ["general", "preferences"].includes(currentTab);
 
   if (loading) {
     return (
@@ -840,14 +760,9 @@ const SettingsPage = forwardRef(({ defaultTab = "general", onProfileUpdate, addo
                     />
                   </Suspense>
                 )}
-                {currentTab === "location" && (
+                {currentTab === "locations" && (
                   <Suspense fallback={<TabLoader />}>
-                    <LocationSettingsTab
-                      form={locationForm}
-                      initialData={locationInitialData}
-                      onFieldBlur={onLocationFieldBlur}
-                      onVisibilityChange={onLocationVisibilityChange}
-                    />
+                    <LocationsSettingsTab onLocationsChanged={fetchBusinessData} />
                   </Suspense>
                 )}
                 {currentTab === "preferences" && (
