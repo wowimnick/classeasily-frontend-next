@@ -10,7 +10,7 @@ import {
   ArrowRight, ArrowUp, ArrowDown, Loader2, RefreshCw, Lock,
   CreditCard, ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
   Check, Download, Trash2,
-  Calendar, LayoutGrid, TrendingUp, Zap, Shield, Package, Receipt,
+  Calendar, LayoutGrid, TrendingUp, Zap, Shield, Package, Receipt, Mail,
   AlertTriangle, Info, AlertCircle, Plus, X,
 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
@@ -1216,10 +1216,14 @@ const PlanBillingBody = styled.div`
   display: flex;
   flex-direction: row;
   align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px 20px;
   width: 100%;
+  box-sizing: border-box;
 
   @media (max-width: 640px) {
     flex-direction: column;
+    padding: 14px 16px 18px;
   }
 `;
 
@@ -1227,16 +1231,14 @@ const PlanBillingSection = styled.div`
   box-sizing: border-box;
   flex: 1 1 0;
   min-width: 0;
-  position: relative;
-  padding: 0;
-  border-right: ${({ $noBorder }) => ($noBorder ? "none" : `1px solid ${T.border}`)};
-  display: block;
+  border: 1px solid ${T.border};
+  border-radius: 8px;
+  background: ${T.white};
+  align-self: flex-start;
 
   @media (max-width: 640px) {
     flex: 1 1 auto;
     width: 100%;
-    border-right: none;
-    border-bottom: ${({ $noBorder }) => ($noBorder ? "none" : `1px solid ${T.border}`)};
   }
 `;
 
@@ -2555,6 +2557,8 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   const [switchPlanLoading, setSwitchPlanLoading] = useState(null);
   const [switchPaymentSecret, setSwitchPaymentSecret] = useState(null);
   const [switchPaymentTargetPlanId, setSwitchPaymentTargetPlanId] = useState(null);
+  const [emailMarketingTierPaymentSecret, setEmailMarketingTierPaymentSecret] = useState(null);
+  const [emailMarketingTierPaymentLabel, setEmailMarketingTierPaymentLabel] = useState(null);
   const [updatePaymentModalOpen, setUpdatePaymentModalOpen] = useState(false);
   const [updatePaymentClientSecret, setUpdatePaymentClientSecret] = useState(null);
   const [updatePaymentIntentLoading, setUpdatePaymentIntentLoading] = useState(false);
@@ -3023,12 +3027,42 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
     const r = await businessService.changeEmailMarketingTier(priceId);
     setEmSubscribing(false);
     if (r.success) {
+      if (r.data?.requires_payment && r.data?.client_secret) {
+        const tier = emTiers.find((t) => t.price_id === priceId);
+        const label = tier?.plan_label || tier?.planLabel || "new plan";
+        setEmailMarketingTierPaymentSecret(r.data.client_secret);
+        setEmailMarketingTierPaymentLabel(label);
+        return { ...r, requires_payment: true };
+      }
       await refreshBillingViews();
       refetchAddons?.();
       message.success("Email marketing plan updated.");
     } else antMessage.error(r.error || "Could not change plan.");
     return r;
   };
+
+  const handleEmailMarketingTierPaymentSuccess = useCallback(async () => {
+    const label = emailMarketingTierPaymentLabel;
+    setEmailMarketingTierPaymentSecret(null);
+    setEmailMarketingTierPaymentLabel(null);
+    await refreshBillingViewsWithRetries();
+    if (billingMountedRef.current) {
+      message.success(
+        label ? `Email marketing plan updated (${label}).` : "Email marketing plan updated.",
+      );
+    }
+    setEmailMarketingTierModalOpen(false);
+  }, [emailMarketingTierPaymentLabel, refreshBillingViewsWithRetries]);
+
+  const handleEmailMarketingTierPaymentLoadError = useCallback(() => {
+    setEmailMarketingTierPaymentSecret(null);
+    setEmailMarketingTierPaymentLabel(null);
+    if (billingMountedRef.current) {
+      antMessage.error(
+        "This payment link can't be used anymore (already used or expired). Please try changing plan again.",
+      );
+    }
+  }, []);
 
   const handleEmailMarketingCancel = async () => {
     const r = await businessService.cancelEmailMarketingAddon();
@@ -3265,31 +3299,29 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
           </PlanBillingHeader>
 
           {subLoading ? (
-            <PlanBillingPanelBody>
-              <PlanBillingBody>
-                <PlanBillingSection>
-                  <PlanCurrentPlanInner>
-                    <SkeletonPlanBlock>
-                      <SkeletonLine style={{ height: 12, width: "30%" }} />
-                      <SkeletonLine style={{ height: 24, width: "55%" }} />
-                      <SkeletonLine style={{ height: 18, width: "40%" }} />
-                      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                        <SkeletonLine style={{ height: 36, width: 120, borderRadius: 12 }} />
-                        <SkeletonLine style={{ height: 36, width: 120, borderRadius: 12 }} />
-                      </div>
-                    </SkeletonPlanBlock>
-                  </PlanCurrentPlanInner>
-                </PlanBillingSection>
-                <PlanBillingSection $noBorder>
-                  <PlanBillingSectionInner>
-                    <SkeletonPmBlock>
-                      <SkeletonLine style={{ height: 14, width: "45%" }} />
-                      <SkeletonLine style={{ height: 72, width: "100%", borderRadius: 12 }} />
-                    </SkeletonPmBlock>
-                  </PlanBillingSectionInner>
-                </PlanBillingSection>
-              </PlanBillingBody>
-            </PlanBillingPanelBody>
+            <PlanBillingBody>
+              <PlanBillingSection>
+                <PlanCurrentPlanInner>
+                  <SkeletonPlanBlock>
+                    <SkeletonLine style={{ height: 12, width: "30%" }} />
+                    <SkeletonLine style={{ height: 24, width: "55%" }} />
+                    <SkeletonLine style={{ height: 18, width: "40%" }} />
+                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                      <SkeletonLine style={{ height: 36, width: 120, borderRadius: 12 }} />
+                      <SkeletonLine style={{ height: 36, width: 120, borderRadius: 12 }} />
+                    </div>
+                  </SkeletonPlanBlock>
+                </PlanCurrentPlanInner>
+              </PlanBillingSection>
+              <PlanBillingSection>
+                <PlanBillingSectionInner>
+                  <SkeletonPmBlock>
+                    <SkeletonLine style={{ height: 14, width: "45%" }} />
+                    <SkeletonLine style={{ height: 72, width: "100%", borderRadius: 12 }} />
+                  </SkeletonPmBlock>
+                </PlanBillingSectionInner>
+              </PlanBillingSection>
+            </PlanBillingBody>
           ) : !subscription?.planId ? (
             <EmptyStateWrap>
               <EmptyPlanIllustration />
@@ -3435,7 +3467,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                 </PlanCurrentPlanInner>
               </PlanBillingSection>
 
-              <PlanBillingSection $noBorder>
+              <PlanBillingSection>
                 <PlanBillingSectionInner>
                   <PmSectionHeader>
                     <CreditCard size={16} strokeWidth={2} aria-hidden />
@@ -4536,6 +4568,83 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                 onSuccess={handleSwitchPaymentSuccess}
                 onLoadError={handleSwitchPaymentLoadError}
                 planName={getPlanById(switchPaymentTargetPlanId)?.name}
+              />
+            </Elements>
+          )}
+        </motion.div>
+      </Modal>
+
+      <Modal
+        open={Boolean(emailMarketingTierPaymentSecret)}
+        onCancel={() => {
+          setEmailMarketingTierPaymentSecret(null);
+          setEmailMarketingTierPaymentLabel(null);
+        }}
+        footer={null}
+        closable={false}
+        destroyOnClose
+        width={480}
+        styles={billingModalStyles}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          style={{ position: "relative", padding: "24px 24px 20px" }}
+        >
+          <ModalCloseFab
+            type="button"
+            aria-label="Close"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              setEmailMarketingTierPaymentSecret(null);
+              setEmailMarketingTierPaymentLabel(null);
+            }}
+          >
+            <X size={18} />
+          </ModalCloseFab>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              marginBottom: 16,
+              paddingRight: 32,
+            }}
+          >
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+              }}
+            >
+              <Mail size={22} strokeWidth={2} />
+            </div>
+          </div>
+          <ModalSectionTitle style={{ marginBottom: 8 }}>
+            Complete payment — {emailMarketingTierPaymentLabel || "Email marketing"}
+          </ModalSectionTitle>
+          <ModalBodyText style={{ marginBottom: 16 }}>
+            You may see a prorated charge for the remainder of this billing period.
+          </ModalBodyText>
+          {emailMarketingTierPaymentSecret && stripePromise && (
+            <Elements
+              stripe={stripePromise}
+              options={{ clientSecret: emailMarketingTierPaymentSecret, appearance: stripeAppearance, fonts: stripeFonts }}
+            >
+              <PlanSwitchPaymentForm
+                clientSecret={emailMarketingTierPaymentSecret}
+                onSuccess={handleEmailMarketingTierPaymentSuccess}
+                onLoadError={handleEmailMarketingTierPaymentLoadError}
+                planName={emailMarketingTierPaymentLabel || "Email marketing"}
               />
             </Elements>
           )}

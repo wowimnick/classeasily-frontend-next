@@ -1230,14 +1230,16 @@ export const businessService = {
 
   changeEmailMarketingTier: async (price_id) => {
     try {
-      await axiosInstance.post(API_ENDPOINTS.MY_BUSINESS_ADDON_EMAIL_MARKETING_CHANGE_TIER, {
-        price_id,
-      });
-      return { success: true };
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.MY_BUSINESS_ADDON_EMAIL_MARKETING_CHANGE_TIER,
+        { price_id },
+      );
+      return { success: true, data: response.data };
     } catch (error) {
       return {
         success: false,
         error: error.response?.data?.error || error.response?.data?.detail || "Failed to change tier.",
+        data: error.response?.data,
       };
     }
   },

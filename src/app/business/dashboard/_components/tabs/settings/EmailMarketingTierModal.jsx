@@ -771,6 +771,7 @@ export default function EmailMarketingTierModal({
     if (isSubscribed) {
       if (tier.tier_key === currentTierKey) return;
       const r = await onChangeTier?.(tier.price_id);
+      if (r?.requires_payment) return;
       if (r?.success) onClose?.();
       return;
     }

@@ -191,7 +191,6 @@ const LocationCardTitleRow = styled.div`
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-bottom: 4px;
 `;
 
 const LocationCardName = styled.span`
@@ -204,7 +203,6 @@ const LocationCardAddress = styled.div`
   font-size: 12.5px;
   color: #6b7280;
   line-height: 1.4;
-  margin-bottom: 8px;
 `;
 
 const LocationCardFooter = styled.div`
@@ -755,7 +753,6 @@ export default function LocationsSettingsTab({
 
   const editorFields = (
     <>
-      <SectionLabel $first>Location info</SectionLabel>
       <div>
         <FieldLabel htmlFor="loc-name">Location name</FieldLabel>
         <Form.Item
@@ -767,9 +764,8 @@ export default function LocationsSettingsTab({
         </Form.Item>
       </div>
 
-      <SectionLabel>Address</SectionLabel>
       <div>
-        <FieldLabel htmlFor="loc-search">Search address</FieldLabel>
+        <FieldLabel style={{ marginTop: 8, marginBottom: 0 }} htmlFor="loc-search">Search address</FieldLabel>
         <FieldHint style={{ marginTop: 0, marginBottom: 6 }}>
           Type 3+ characters, choose a result — it fills the field and map.
         </FieldHint>
@@ -940,18 +936,23 @@ export default function LocationsSettingsTab({
               </Button>
             </ListToolbar>
             <LocationCardsStack>
-            {locations.map((row) => (
+            {locations.map((row) => {
+              const cardTitle = (row.name || "").trim() || formatAddressLine(row);
+              const cardAddress = formatAddressLine(row);
+              const showAddressLine =
+                cardAddress && cardAddress.trim().toLowerCase() !== cardTitle.trim().toLowerCase();
+              return (
               <LocationCard key={row.id}>
                 <LocationCardIcon>
                   <MapPin size={16} />
                 </LocationCardIcon>
                 <LocationCardMain>
                   <LocationCardTitleRow>
-                    <LocationCardName>{row.name}</LocationCardName>
+                    <LocationCardName>{cardTitle}</LocationCardName>
                     {row.is_primary ? <Tag color="blue">Primary</Tag> : null}
                     {row.is_active === false ? <Tag>Inactive</Tag> : null}
                   </LocationCardTitleRow>
-                  <LocationCardAddress>{formatAddressLine(row)}</LocationCardAddress>
+                  {showAddressLine ? <LocationCardAddress>{cardAddress}</LocationCardAddress> : null}
                   <LocationCardFooter>
                     <LocationCardMeta>{countLabel(row.assigned_classes_count)}</LocationCardMeta>
                     <LocationCardActions>
@@ -974,7 +975,8 @@ export default function LocationsSettingsTab({
                   </LocationCardFooter>
                 </LocationCardMain>
               </LocationCard>
-            ))}
+              );
+            })}
             </LocationCardsStack>
           </>
         )}
