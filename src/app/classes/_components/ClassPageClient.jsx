@@ -1450,18 +1450,6 @@ export default function ClassPageClient({
                 <>
                   <MapSectionWrapper>
                     <PageSectionTitle>Where you&apos;ll be</PageSectionTitle>
-                    {classData.location_name ? (
-                      <div
-                        style={{
-                          margin: "0 0 14px",
-                          fontSize: 16,
-                          fontWeight: 600,
-                          color: "#374151",
-                        }}
-                      >
-                        {classData.location_name}
-                      </div>
-                    ) : null}
                     <MapInnerContainer>
                       <ClassPageMap
                         coordinates={classData.coordinates}

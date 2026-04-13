@@ -9,6 +9,7 @@ const SubscriptionContext = createContext({
   scheduledDowngrade: null,
   widgetSubscriptionRequired: false,
   hasWidgetAccess: false,
+  hasWidgetAnalytics: false,
   hasMembershipAccess: false,
   hasEmailMarketingAccess: false,
   hasStripeSubscription: false,
@@ -35,6 +36,7 @@ export function SubscriptionProvider({ children }) {
   const [scheduledDowngrade, setScheduledDowngrade] = useState(null);
   const [widgetSubscriptionRequired, setWidgetSubscriptionRequired] = useState(false);
   const [hasWidgetAccess, setHasWidgetAccess] = useState(false);
+  const [hasWidgetAnalytics, setHasWidgetAnalytics] = useState(false);
   const [hasMembershipAccess, setHasMembershipAccess] = useState(false);
   const [hasEmailMarketingAccess, setHasEmailMarketingAccess] = useState(false);
   const [hasStripeSubscription, setHasStripeSubscription] = useState(false);
@@ -49,6 +51,7 @@ export function SubscriptionProvider({ children }) {
       setScheduledDowngrade(null);
       setWidgetSubscriptionRequired(false);
       setHasWidgetAccess(false);
+      setHasWidgetAnalytics(false);
       setHasMembershipAccess(false);
       setHasEmailMarketingAccess(false);
       setHasStripeSubscription(false);
@@ -65,6 +68,7 @@ export function SubscriptionProvider({ children }) {
       setScheduledDowngrade(result.data.scheduled_downgrade ?? null);
       setWidgetSubscriptionRequired(Boolean(result.data.widget_subscription_required));
       setHasWidgetAccess(Boolean(result.data.has_widget_access));
+      setHasWidgetAnalytics(Boolean(result.data.has_widget_analytics));
       setHasMembershipAccess(Boolean(result.data.has_membership_access));
       setHasEmailMarketingAccess(Boolean(result.data.has_email_marketing_access));
       setHasStripeSubscription(Boolean(result.data.has_stripe_subscription));
@@ -73,6 +77,7 @@ export function SubscriptionProvider({ children }) {
       setScheduledDowngrade(null);
       setWidgetSubscriptionRequired(false);
       setHasWidgetAccess(false);
+      setHasWidgetAnalytics(false);
       setHasMembershipAccess(false);
       setHasEmailMarketingAccess(false);
       setHasStripeSubscription(false);
@@ -146,6 +151,7 @@ export function SubscriptionProvider({ children }) {
       scheduledDowngrade,
       widgetSubscriptionRequired,
       hasWidgetAccess,
+      hasWidgetAnalytics,
       hasMembershipAccess,
       hasEmailMarketingAccess,
       hasStripeSubscription,
@@ -162,6 +168,7 @@ export function SubscriptionProvider({ children }) {
       scheduledDowngrade,
       widgetSubscriptionRequired,
       hasWidgetAccess,
+      hasWidgetAnalytics,
       hasMembershipAccess,
       hasEmailMarketingAccess,
       hasStripeSubscription,

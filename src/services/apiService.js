@@ -836,7 +836,8 @@ export const businessService = {
 
   /**
    * GET widget subscription. Response: { subscription, widget_subscription_required,
-   * has_stripe_subscription, has_widget_access, scheduled_downgrade? }.
+   * has_stripe_subscription, has_widget_access, has_widget_analytics,
+   * has_membership_access, has_email_marketing_access, scheduled_downgrade? }.
    * subscription: { planId, status, currentPeriodEnd, cancelAtPeriodEnd } or null.
    */
   getWidgetSubscription: async () => {

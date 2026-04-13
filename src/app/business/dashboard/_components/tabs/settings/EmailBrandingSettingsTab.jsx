@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import styled, { keyframes, css } from "styled-components";
 import { Input, Button, Upload } from "antd";
 import { UploadOutlined, DeleteOutlined } from "@ant-design/icons";
@@ -69,14 +69,6 @@ const BUTTON_STYLE_PRESETS = [
   { value: "pill", label: "Pill" },
   { value: "rounded_rect", label: "Rounded" },
   { value: "square", label: "Square" },
-];
-
-const FONT_OPTIONS = [
-  { value: "", label: "Default (system)" },
-  { value: "arial", label: "Arial" },
-  { value: "georgia", label: "Georgia" },
-  { value: "trebuchet", label: "Trebuchet MS" },
-  { value: "verdana", label: "Verdana" },
 ];
 
 /* ─── Helpers ────────────────────────────────────────────────────────────────── */
@@ -890,6 +882,7 @@ const PreviewTab = styled.button`
 
 const PreviewBodyWrap = styled.div`
   flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 32px 24px;
   background: #F2F4F7;
@@ -922,7 +915,19 @@ const PreviewBodyWrap = styled.div`
 
 const ScaledPreviewWrap = styled.div`
   width: 100%;
-  /* height is set inline via JS to match the scaled content */
+  overflow: visible;
+`;
+
+const HtmlLintPanel = styled.div`
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid ${(p) => (p.$hasErrors ? "#FDA29B" : "#E4E7EC")};
+  background: ${(p) => (p.$hasErrors ? "#FEF3F2" : "#F9FAFB")};
+  max-height: 220px;
+  overflow: auto;
+  font-size: 11px;
+  line-height: 1.45;
 `;
 
 /* Mobile floating preview button — kept for backward compat but hidden */
@@ -1057,6 +1062,7 @@ export default function EmailBrandingSettingsTab() {
   const previewWrapRef = useRef(null);
   const previewInnerRef = useRef(null);
   const [previewScale, setPreviewScale] = useState(1);
+  const [previewSpacerH, setPreviewSpacerH] = useState(0);
 
   // Scale the email preview to always fit the container width
   useEffect(() => {
@@ -1145,6 +1151,24 @@ export default function EmailBrandingSettingsTab() {
     return buildEmailPreviewHtml(branding, previewType);
   }, [branding, previewType, editorMode, customHtmlByType]);
 
+  useLayoutEffect(() => {
+    if (loading) return;
+    const el = previewInnerRef.current;
+    if (!el) return;
+    const sync = () => {
+      const h = el.scrollHeight;
+      if (!Number.isFinite(h) || h <= 0) {
+        setPreviewSpacerH(0);
+        return;
+      }
+      setPreviewSpacerH(Math.max(0, h * (1 - previewScale)));
+    };
+    sync();
+    const ro = new ResizeObserver(() => sync());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [loading, previewHtml, previewScale]);
+
   const emailKeyForPreview = PREVIEW_TYPE_TO_EMAIL_KEY[previewType];
   const requiredCheck = useMemo(
     () => checkRequiredPlaceholdersForType(
@@ -1153,6 +1177,30 @@ export default function EmailBrandingSettingsTab() {
     ),
     [emailKeyForPreview, customHtmlByType],
   );
+
+  const liveHtmlForPreview = customHtmlByType[emailKeyForPreview] || "";
+
+  useEffect(() => {
+    if (editorMode !== EDITOR_MODE_HTML) return undefined;
+    const html = (liveHtmlForPreview || "").trim();
+    if (!html) {
+      setHtmlCheckSummary(null);
+      return undefined;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        const r = await checkMarketingHtml(liveHtmlForPreview);
+        if (!cancelled) setHtmlCheckSummary(r);
+      } catch {
+        if (!cancelled) setHtmlCheckSummary(null);
+      }
+    }, 550);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [editorMode, emailKeyForPreview, liveHtmlForPreview]);
 
   const handleSave = () => {
     if (editorMode === EDITOR_MODE_HTML) {
@@ -1233,13 +1281,10 @@ export default function EmailBrandingSettingsTab() {
   }
 
   const EMAIL_NATURAL_WIDTH = 560;
-  const scaledHeight = previewInnerRef.current
-    ? previewInnerRef.current.scrollHeight * previewScale
-    : "auto";
 
   const previewPanel = (
     <PreviewBodyWrap ref={previewWrapRef}>
-      <ScaledPreviewWrap style={{ height: scaledHeight !== "auto" ? scaledHeight : undefined }}>
+      <ScaledPreviewWrap>
         <div
           ref={previewInnerRef}
           className="email-preview-root"
@@ -1250,6 +1295,7 @@ export default function EmailBrandingSettingsTab() {
             marginLeft: previewScale < 1
               ? `${((previewWrapRef.current?.clientWidth ?? EMAIL_NATURAL_WIDTH) - EMAIL_NATURAL_WIDTH * previewScale) / 2}px`
               : "auto",
+            marginBottom: previewSpacerH ? -previewSpacerH : undefined,
           }}
           dangerouslySetInnerHTML={{ __html: previewHtml }}
           role="article"
@@ -1373,30 +1419,51 @@ export default function EmailBrandingSettingsTab() {
                   value={customHtmlByType[emailKeyForPreview] || ""}
                   onChange={(e) => {
                     setCustomHtmlByType((prev) => ({ ...prev, [emailKeyForPreview]: e.target.value }));
-                    setHtmlCheckSummary(null);
                   }}
                   rows={16}
                   placeholder="Paste HTML here…"
                   style={{ fontFamily: "ui-monospace, monospace", fontSize: 12 }}
                 />
-                <div style={{ marginTop: 10, fontSize: 12, lineHeight: 1.5 }}>
+                <div
+                  role="status"
+                  style={{
+                    marginTop: 10,
+                    fontSize: 12,
+                    lineHeight: 1.55,
+                    color: requiredCheck.ok ? "#344054" : "#D92D20",
+                    textDecoration: requiredCheck.ok ? "none" : "underline",
+                    textDecorationColor: requiredCheck.ok ? "transparent" : "#D92D20",
+                    textUnderlineOffset: "4px",
+                    textDecorationThickness: "2px",
+                  }}
+                >
                   <strong>Required placeholders</strong> for this email:{" "}
                   {requiredCheck.ok ? (
-                    <span style={{ color: "#059669" }}>All present.</span>
+                    <span style={{ color: "#059669", fontWeight: 600 }}>All present.</span>
                   ) : (
-                    <span style={{ color: "#b45309" }}>
+                    <span style={{ color: "#D92D20", fontWeight: 600 }}>
                       Missing {requiredCheck.missing.map((m) => `{{${m}}}`).join(", ")}
                     </span>
                   )}
                 </div>
                 {htmlCheckSummary && htmlCheckSummary.items?.length > 0 && (
-                  <div style={{ marginTop: 8, maxHeight: 120, overflow: "auto", fontSize: 11, color: "#667085" }}>
-                    {htmlCheckSummary.items.slice(0, 12).map((it, i) => (
-                      <div key={i}>
-                        L{it.line}: {it.message}
-                      </div>
-                    ))}
-                  </div>
+                  <HtmlLintPanel $hasErrors={!htmlCheckSummary.ok}>
+                    {htmlCheckSummary.items.slice(0, 20).map((it, i) => {
+                      const sev = Number(it.severity);
+                      const isWarning = sev === 1;
+                      const color = isWarning ? "#B54708" : "#B42318";
+                      return (
+                        <div key={i} style={{ marginBottom: 6, color }}>
+                          <span style={{ fontWeight: 700 }}>{isWarning ? "Warning" : "Error"}</span>
+                          {" "}
+                          L{it.line}:{it.column != null ? `:${it.column}` : ""} — {it.message}
+                          {it.ruleId ? (
+                            <span style={{ color: "#667085", fontWeight: 500 }}> ({it.ruleId})</span>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </HtmlLintPanel>
                 )}
               </Section>
               <Section $delay="0.05s">
@@ -1558,29 +1625,6 @@ export default function EmailBrandingSettingsTab() {
               />
             </ColorRow>
             <FieldHint>Outer background behind the email card (default light gray).</FieldHint>
-          </Section>
-
-          {/* Font */}
-          <Section $delay="0.135s">
-            <SectionLabel>Font</SectionLabel>
-            <select
-              value={branding.font_family || ""}
-              onChange={(e) => setBranding((b) => ({ ...b, font_family: e.target.value }))}
-              style={{
-                width: "100%",
-                height: 44,
-                borderRadius: 10,
-                border: "1.5px solid #E4E7EC",
-                padding: "0 12px",
-                fontSize: 13,
-                background: "#FAFAFA",
-              }}
-            >
-              {FONT_OPTIONS.map((o) => (
-                <option key={o.value || "default"} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-            <FieldHint>Email-safe font stack applied in sent mail.</FieldHint>
           </Section>
 
           {/* Button shape */}

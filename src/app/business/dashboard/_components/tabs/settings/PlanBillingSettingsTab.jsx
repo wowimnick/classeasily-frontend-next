@@ -2659,7 +2659,11 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
   }, [fetchInvoices]);
 
   const sortedInvoices = useMemo(() => {
-    const list = invoices.filter((inv) => Number(inv?.amount_paid || 0) > 0);
+    const list = invoices.filter(
+      (inv) =>
+        String(inv?.status || "").toLowerCase() === "paid" &&
+        Number(inv?.amount_paid || 0) > 0,
+    );
     const asc = invoiceSortOrder === "oldest";
     list.sort((a, b) => {
       const da = a.created || "";

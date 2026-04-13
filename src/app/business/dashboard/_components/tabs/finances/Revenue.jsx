@@ -601,12 +601,7 @@ const Revenue = forwardRef((props, ref) => {
     classId: null,
     source: "all",
   });
-  const { subscription } = useSubscription();
-  const hasWidgetAnalytics = Boolean(
-    subscription?.status &&
-      ["active", "trialing"].includes(subscription.status) &&
-      ["growth", "advanced"].includes(subscription?.planId)
-  );
+  const { loading: subscriptionLoading, hasWidgetAnalytics } = useSubscription();
   const [analytics, setAnalytics] = useState({
     metrics: {
       total_gross_revenue: 0,
@@ -698,12 +693,13 @@ const Revenue = forwardRef((props, ref) => {
   }, [fetchBusinessExperiencesForFilter]);
 
   useEffect(() => {
+    if (subscriptionLoading) return;
     if (filterParams.source === "widget" && !hasWidgetAnalytics) {
       setFilterParams((prev) =>
         prev.source === "widget" ? { ...prev, source: "all" } : prev
       );
     }
-  }, [filterParams.source, hasWidgetAnalytics]);
+  }, [subscriptionLoading, filterParams.source, hasWidgetAnalytics]);
 
   useEffect(() => {
     if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);

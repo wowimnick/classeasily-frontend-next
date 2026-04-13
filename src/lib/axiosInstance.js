@@ -10,7 +10,7 @@ const DEFAULT_API_TIMEOUT_MS = Number(
 );
 /** Longer timeout for payments, Stripe, and file uploads (ms). */
 const LONG_API_TIMEOUT_MS = Number(
-  process.env.NEXT_PUBLIC_API_LONG_TIMEOUT_MS || 30000,
+  process.env.NEXT_PUBLIC_API_LONG_TIMEOUT_MS || 90000,
 );
 
 function getTimeoutMsForUrl(url) {
@@ -21,7 +21,8 @@ function getTimeoutMsForUrl(url) {
     lower.includes("stripe") ||
     lower.includes("intent") ||
     lower.includes("upload-url") ||
-    lower.includes("/upload");
+    lower.includes("/upload") ||
+    lower.includes("/business/classes");
   return needsLong ? LONG_API_TIMEOUT_MS : DEFAULT_API_TIMEOUT_MS;
 }
 

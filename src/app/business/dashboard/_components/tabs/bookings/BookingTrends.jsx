@@ -18,6 +18,7 @@ import {
   GitCompareArrows,
   BarChart2,
   PieChart as PieIcon,
+  Filter,
   Info,
   Lock,
   Globe,
@@ -552,6 +553,27 @@ const getChartTotal = (data) => {
   );
 };
 
+function formatDurationSeconds(sec) {
+  if (sec == null || !Number.isFinite(Number(sec))) return "—";
+  const n = Number(sec);
+  if (n < 60) return `${Math.round(n)}s`;
+  const m = Math.floor(n / 60);
+  const s = Math.round(n % 60);
+  return `${m}m ${s}s`;
+}
+
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+const FUNNEL_BAR_COLORS = [
+  colors.chart.darkBlue,
+  colors.chart.blue,
+  colors.chart.teal,
+  colors.chart.green,
+  colors.chart.orange,
+  colors.chart.purple,
+  colors.chart.green,
+];
+
 const BookingTrends = () => {
   const [loading, setLoading] = useState(true);
   const [isReadyForAnimation, setIsReadyForAnimation] = useState(false);
@@ -561,17 +583,13 @@ const BookingTrends = () => {
     classId: null,
     source: "all",
   });
-  const { subscription } = useSubscription();
-  const hasWidgetAnalytics = Boolean(
-    subscription?.status &&
-      ["active", "trialing"].includes(subscription.status) &&
-      ["growth", "advanced"].includes(subscription?.planId)
-  );
+  const { loading: subscriptionLoading, hasWidgetAnalytics } = useSubscription();
   const [analytics, setAnalytics] = useState({
     summary: {},
     trends: [],
     class_insights: { popular_classes: [] },
     booking_patterns: { time_distribution: [], booking_types: [] },
+    widget_funnel: null,
   });
   const [businessClasses, setBusinessClasses] = useState([]);
   const abortControllerRef = useRef(null);
@@ -628,6 +646,15 @@ const BookingTrends = () => {
       if (!abortControllerRef.current?.signal.aborted) setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (subscriptionLoading) return;
+    if (filterParams.source === "widget" && !hasWidgetAnalytics) {
+      setFilterParams((p) =>
+        p.source === "widget" ? { ...p, source: "all" } : p,
+      );
+    }
+  }, [subscriptionLoading, hasWidgetAnalytics, filterParams.source]);
 
   useEffect(() => {
     fetchBusinessClassesForFilter();
@@ -693,6 +720,48 @@ const BookingTrends = () => {
       0,
     );
   }, [analytics.class_insights]);
+
+  const bookingsByWeekday = useMemo(() => {
+    const trends = analytics.trends || [];
+    const byDow = [0, 0, 0, 0, 0, 0, 0];
+    trends.forEach((t) => {
+      const d = dayjs(t.date).day();
+      byDow[d] += t.new_participant_spots || 0;
+    });
+    return WEEKDAY_LABELS.map((name, i) => ({
+      name,
+      spots: byDow[i],
+    }));
+  }, [analytics.trends]);
+
+  const widgetFunnelStepsForChart = useMemo(() => {
+    const steps = analytics.widget_funnel?.steps;
+    if (!Array.isArray(steps)) return [];
+    return steps.map((s, i) => ({
+      ...s,
+      fill: FUNNEL_BAR_COLORS[i % FUNNEL_BAR_COLORS.length],
+    }));
+  }, [analytics.widget_funnel]);
+
+  // Funnel is returned only for Growth/Advanced on the API — trust the response,
+  // not a duplicate subscription check (avoids missing chart when planId shape differs).
+  const showWidgetFunnelPanel =
+    filterParams.source !== "marketplace" &&
+    analytics.widget_funnel != null &&
+    Array.isArray(analytics.widget_funnel.steps) &&
+    analytics.widget_funnel.steps.length > 0;
+
+  const hasWidgetFunnelActivity = widgetFunnelStepsForChart.some(
+    (s) => (s.session_count || 0) > 0,
+  );
+
+  const funnelChartMaxSessions = useMemo(() => {
+    const m = Math.max(
+      0,
+      ...widgetFunnelStepsForChart.map((s) => s.session_count || 0),
+    );
+    return m < 1 ? 1 : m;
+  }, [widgetFunnelStepsForChart]);
 
   const statisticCards = [
     {
@@ -1295,69 +1364,265 @@ const BookingTrends = () => {
             </TableWrapper>
           </Col>
 
-          {/* PIE CHART - NARROWER (33%) */}
+          {/* Widget funnel (Growth/Advanced) or weekday volume fallback */}
           <Col xs={24} lg={8}>
             <ChartCard>
               <ChartHeader>
                 <ChartTitleRow>
                   <ChartTitle>
-                    <PieIcon size={15} color="#d1d5db" />
-                    Booking Types
+                    {showWidgetFunnelPanel ? (
+                      <Filter size={15} color="#d1d5db" />
+                    ) : (
+                      <BarChart2 size={15} color="#d1d5db" />
+                    )}
+                    {showWidgetFunnelPanel
+                      ? "Widget booking funnel"
+                      : "Bookings by weekday"}
                   </ChartTitle>
+                  {showWidgetFunnelPanel && hasWidgetFunnelActivity && (
+                    <InsightBadge>
+                      Conv.:{" "}
+                      <strong>
+                        {analytics.widget_funnel?.summary?.conversion_pct ?? 0}%
+                      </strong>
+                    </InsightBadge>
+                  )}
                 </ChartTitleRow>
-                <ChartDescription>Single vs. Course.</ChartDescription>
+                <ChartDescription>
+                  {showWidgetFunnelPanel ? (
+                    "Unique sessions at each step (embed)."
+                  ) : (
+                    <>
+                      Guest spots by weekday when bookings were made.
+                      {!hasWidgetAnalytics && (
+                        <span
+                          style={{
+                            display: "block",
+                            marginTop: 6,
+                            fontSize: 11,
+                            color: colors.textSecondary,
+                          }}
+                        >
+                          The widget booking funnel appears here on Growth and
+                          Advanced plans.
+                        </span>
+                      )}
+                    </>
+                  )}
+                </ChartDescription>
               </ChartHeader>
               <ChartContainer>
                 {loading ? (
-                  <div style={{ width: "100%", height: 280, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <AdminPieChartSkeleton size={168} />
+                  <div
+                    style={{
+                      width: "100%",
+                      height: 320,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <AdminAreaChartSkeleton height={280} />
                   </div>
-                ) : !analytics.booking_patterns?.booking_types?.length ? (
+                ) : showWidgetFunnelPanel ? (
+                  <>
+                    {!hasWidgetFunnelActivity && (
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: colors.textSecondary,
+                          lineHeight: 1.45,
+                          marginBottom: 12,
+                          padding: "10px 12px",
+                          background: colors.lightBg,
+                          borderRadius: 8,
+                          border: `1px solid ${colors.border}`,
+                        }}
+                      >
+                        No widget sessions in this date range yet. Traffic
+                        appears here after visitors use your embedded booking
+                        widget (deploy the latest widget script for step
+                        tracking).
+                      </div>
+                    )}
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr",
+                        gap: 10,
+                        marginBottom: 12,
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: "10px 12px",
+                          borderRadius: 10,
+                          background: "rgba(59, 130, 246, 0.08)",
+                          border: `1px solid ${colors.border}`,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: colors.textSecondary,
+                            fontWeight: 600,
+                            marginBottom: 2,
+                          }}
+                        >
+                          Checkout abandon
+                        </div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>
+                          {analytics.widget_funnel?.summary
+                            ?.checkout_abandonment_pct ?? 0}
+                          %
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          padding: "10px 12px",
+                          borderRadius: 10,
+                          background: "rgba(16, 185, 129, 0.08)",
+                          border: `1px solid ${colors.border}`,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: colors.textSecondary,
+                            fontWeight: 600,
+                            marginBottom: 2,
+                          }}
+                        >
+                          Avg. time to book
+                        </div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: colors.textPrimary }}>
+                          {formatDurationSeconds(
+                            analytics.widget_funnel?.summary
+                              ?.avg_time_to_book_seconds,
+                          )}
+                        </div>
+                      </div>
+                      {(analytics.widget_funnel?.device_breakdown || []).map(
+                        (row) => (
+                          <div
+                            key={row.device_type}
+                            style={{
+                              padding: "10px 12px",
+                              borderRadius: 10,
+                              background: colors.lightBg,
+                              border: `1px solid ${colors.border}`,
+                              gridColumn: isMobile ? "span 1" : "span 1",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: colors.textSecondary,
+                                fontWeight: 600,
+                                marginBottom: 2,
+                                textTransform: "capitalize",
+                              }}
+                            >
+                              {row.device_type || "unknown"}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 600,
+                                color: colors.textPrimary,
+                              }}
+                            >
+                              {row.sessions_opened} opened ·{" "}
+                              {row.conversion_pct ?? 0}% booked
+                            </div>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                    <ResponsiveContainer width="100%" height={240}>
+                      <BarChart
+                        layout="vertical"
+                        data={widgetFunnelStepsForChart}
+                        margin={{ top: 4, right: 16, left: 0, bottom: 4 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          horizontal={false}
+                          stroke={colors.border}
+                        />
+                        <XAxis
+                          type="number"
+                          allowDecimals={false}
+                          domain={[0, funnelChartMaxSessions]}
+                          tick={{ fontSize: 11, fill: colors.textSecondary }}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="label"
+                          width={118}
+                          tick={{ fontSize: 11, fill: colors.textSecondary }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Bar
+                          dataKey="session_count"
+                          radius={[0, 4, 4, 0]}
+                          maxBarSize={24}
+                          name="Sessions"
+                        >
+                          {widgetFunnelStepsForChart.map((entry) => (
+                            <Cell key={entry.event} fill={entry.fill} />
+                          ))}
+                        </Bar>
+                        <RechartsTooltip
+                          formatter={(value, _n, item) => {
+                            const drop = item?.payload?.drop_off_from_prev_pct;
+                            const extra =
+                              drop != null
+                                ? ` · drop from prev ${drop}%`
+                                : "";
+                            return [`${value} sessions${extra}`, "Funnel"];
+                          }}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </>
+                ) : !bookingsByWeekday.some((d) => d.spots > 0) ? (
                   <EmptyStateContainer $padding="20px">
                     <EmptyStateText>No Data</EmptyStateText>
                   </EmptyStateContainer>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={analytics.booking_patterns.booking_types}
-                        dataKey="spot_count"
-                        nameKey="type"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius="60%"
-                        outerRadius="85%"
-                        paddingAngle={5}
-                        cornerRadius={5}
-                        stroke="none"
-                      >
-                        {analytics.booking_patterns.booking_types.map(
-                          (entry, index) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={
-                                PIE_COLORS_EXTENDED[
-                                  index % PIE_COLORS_EXTENDED.length
-                                ]
-                              }
-                            />
-                          ),
-                        )}
-                        <Label
-                          value={getChartTotal(
-                            analytics.booking_patterns.booking_types,
-                          )}
-                          position="center"
-                          fill={colors.textPrimary}
-                          style={{ fontSize: "24px", fontWeight: "bold" }}
-                        />
-                      </Pie>
-                      <Legend
-                        wrapperStyle={{ fontSize: 12 }}
-                        iconType="circle"
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={bookingsByWeekday}
+                      margin={{ top: 10, right: 8, left: -20, bottom: 5 }}
+                      barSize={22}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke={colors.border}
+                      />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 11, fill: colors.textSecondary }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fontSize: 11, fill: colors.textSecondary }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Bar
+                        dataKey="spots"
+                        fill={colors.chart.blue}
+                        radius={[4, 4, 0, 0]}
+                        name="Guest spots"
                       />
                       <RechartsTooltip />
-                    </PieChart>
+                    </BarChart>
                   </ResponsiveContainer>
                 )}
               </ChartContainer>
