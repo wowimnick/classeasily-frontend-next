@@ -301,6 +301,53 @@ const DEFAULT_FORM = {
   allowed_widget_origins: "",
 };
 
+/** Normalize domain list for dirty comparison (order-insensitive, case-insensitive). */
+function normalizeAllowedOriginsForCompare(raw) {
+  return (typeof raw === "string" ? raw : "")
+    .split(/\r?\n/)
+    .map((line) => line.trim().toLowerCase())
+    .filter(Boolean)
+    .sort()
+    .join("\n");
+}
+
+/** Canonical shape for widget settings that require “Save Changes” (matches update payload). */
+function comparableWidgetSettingsFromForm(form) {
+  const hex = (v) => (normalizeHex(v) || v);
+  return {
+    view: form.view,
+    primary: hex(form.primary),
+    background: hex(form.background),
+    cardBackground: hex(form.cardBackground),
+    textPrimary: hex(form.textPrimary),
+    textSecondary: hex(form.textSecondary),
+    textOnPrimary: hex(form.textOnPrimary),
+    border: hex(form.border),
+    borderRadiusPreset: form.borderRadiusPreset,
+    allowed_widget_origins: normalizeAllowedOriginsForCompare(form.allowed_widget_origins),
+  };
+}
+
+function comparableWidgetSettingsFromSavedConfig(config) {
+  const d = DEFAULT_FORM;
+  const c = config || {};
+  const norm = (v, fallback) => (normalizeHex(v) || normalizeHex(fallback) || fallback);
+  return {
+    view: c.view ?? d.view,
+    primary: norm(c.primary, d.primary),
+    background: norm(c.background, d.background),
+    cardBackground: norm(c.cardBackground, d.cardBackground),
+    textPrimary: norm(c.textPrimary, d.textPrimary),
+    textSecondary: norm(c.textSecondary, d.textSecondary),
+    textOnPrimary: norm(c.textOnPrimary, d.textOnPrimary),
+    border: norm(c.border, d.border),
+    borderRadiusPreset: c.borderRadiusPreset ?? d.borderRadiusPreset,
+    allowed_widget_origins: normalizeAllowedOriginsForCompare(
+      typeof c.allowed_widget_origins === "string" ? c.allowed_widget_origins : ""
+    ),
+  };
+}
+
 // ─── Code Snippet Styling ─────────────────────────────────────────────────────
 const snippetContainerStyle = {
   position: "relative",
@@ -335,7 +382,7 @@ export default function WidgetCustomizer() {
   const [copied, setCopied]     = useState(false);
   const[data, setData]         = useState(null);
   const [form, setForm]         = useState(DEFAULT_FORM);
-  /** SideMenu mobile FAB: fixed bottom 24px, height 52px — keep sticky bar above it. */
+  /** SideMenu mobile FAB: fixed bottom 24px, height 52px — offset fixed UI (e.g. unsaved hint). */
   const [isMobileLayout, setIsMobileLayout] = useState(
     typeof window !== "undefined" ? window.innerWidth <= 1024 : false
   );
@@ -623,6 +670,15 @@ export default function WidgetCustomizer() {
     }
   }, [bulkSourceId, bulkCopyLabel, membershipProducts]);
 
+  const savedComparable = useMemo(
+    () => (data?.config != null ? comparableWidgetSettingsFromSavedConfig(data.config) : null),
+    [data]
+  );
+  const currentComparable = useMemo(() => comparableWidgetSettingsFromForm(form), [form]);
+  const isDirty =
+    savedComparable != null &&
+    JSON.stringify(savedComparable) !== JSON.stringify(currentComparable);
+
   if (loading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", flexDirection: "column", gap: 12 }}>
@@ -773,7 +829,7 @@ export default function WidgetCustomizer() {
           >
             Settings
           </Button>
-          , then click <strong>Save Changes</strong> at the bottom of this page. Without that step, the code below will not work on your site.
+          , then click <strong>Save Changes</strong> (top right, next to the tabs). Without that step, the code below will not work on your site.
         </p>
         {allowedDomainsArray.length === 0 ? (
           <Alert
@@ -847,7 +903,7 @@ export default function WidgetCustomizer() {
               If you offer memberships, add one button per plan on your site (for example next to your booking button). Do not swap codes between plans — each snippet is tied to one plan only.
             </p>
             <p style={{ margin: "0 0 14px", fontSize: 12, color: "#6b7280", fontStyle: "italic" }}>
-              Looks for each plan save automatically a moment after you change them. Use Save Changes at the bottom only for Design and Settings.
+              Looks for each plan save automatically a moment after you change them. Use Save Changes (next to the tabs) only for Design and Settings.
             </p>
 
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14, alignItems: "center" }}>
@@ -1092,11 +1148,11 @@ export default function WidgetCustomizer() {
     { key: "install", label: <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}><Code size={14} /> Add to Website</span>, children: installTab },
   ];
 
-  /* Mobile menu FAB: bottom 24px, height 52px — bar clears it + gap; safe-area once here (FAB does not add it). */
-  const mobileStickyBottom = "calc(24px + 52px + 14px + env(safe-area-inset-bottom, 0px))";
+  /* Mobile menu FAB: bottom 24px, height 52px — keep fixed hint above it. */
+  const mobileFabOffset = "calc(24px + 52px + 14px + env(safe-area-inset-bottom, 0px))";
   const pageBottomPad = isMobileLayout
-    ? `max(112px, calc(96px + env(safe-area-inset-bottom, 0px)))`
-    : "max(96px, calc(72px + env(safe-area-inset-bottom, 0px)))";
+    ? `max(72px, calc(56px + env(safe-area-inset-bottom, 0px)))`
+    : "32px";
 
   return (
     <div
@@ -1126,7 +1182,31 @@ export default function WidgetCustomizer() {
           boxSizing: "border-box",
         }}
       >
-        <Tabs activeKey={widgetTabKey} onChange={setWidgetTabKey} items={tabItems} size="small" tabBarGutter={16} />
+        <Tabs
+          activeKey={widgetTabKey}
+          onChange={setWidgetTabKey}
+          items={tabItems}
+          size="small"
+          tabBarGutter={16}
+          tabBarExtraContent={{
+            right: (
+              <Button
+                type="primary"
+                onClick={handleSave}
+                loading={saving}
+                style={{
+                  background: ACCENT,
+                  borderColor: ACCENT,
+                  fontWeight: 600,
+                  minHeight: 36,
+                }}
+              >
+                {saving ? "Saving…" : "Save Changes"}
+              </Button>
+            ),
+          }}
+          tabBarStyle={{ flexWrap: "wrap", rowGap: 10 }}
+        />
       </div>
 
       <Modal
@@ -1158,55 +1238,30 @@ export default function WidgetCustomizer() {
         </Checkbox>
       </Modal>
 
-      <div
-        style={{
-          position: "sticky",
-          bottom: isMobileLayout ? mobileStickyBottom : 16,
-          zIndex: 6,
-          marginTop: 24,
-          paddingLeft: "max(12px, env(safe-area-inset-left, 0px))",
-          paddingRight: "max(12px, env(safe-area-inset-right, 0px))",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          background: "transparent",
-          pointerEvents: "none",
-        }}
-      >
+      {isDirty && (
         <div
+          role="status"
           style={{
-            pointerEvents: "auto",
-            width: "fit-content",
-            maxWidth: "min(100%, calc(100vw - 48px))",
-            borderRadius: 18,
-            padding: "12px 18px",
-            background: "rgba(255, 255, 255, 0.96)",
-            backdropFilter: "blur(14px)",
-            WebkitBackdropFilter: "blur(14px)",
-            boxShadow:
-              "0 12px 40px rgba(0, 0, 0, 0.14), 0 4px 16px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.06)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
+            position: "fixed",
+            bottom: isMobileLayout ? mobileFabOffset : 24,
+            right: "max(16px, env(safe-area-inset-right, 0px))",
+            zIndex: 20,
+            fontSize: 12,
+            fontWeight: 600,
+            color: "#9a3412",
+            background: "#fff7ed",
+            border: "1px solid #fdba74",
+            borderRadius: 8,
+            padding: "8px 12px",
+            boxShadow: "0 4px 14px rgba(0,0,0,0.08)",
+            maxWidth: "min(280px, calc(100vw - 32px))",
+            lineHeight: 1.35,
+            pointerEvents: "none",
           }}
         >
-          <Button
-            type="primary"
-            onClick={handleSave}
-            loading={saving}
-            style={{
-              background: ACCENT,
-              borderColor: ACCENT,
-              fontWeight: 600,
-              padding: "0 22px",
-              minHeight: 40,
-              width: "fit-content",
-            }}
-          >
-            {saving ? "Saving…" : "Save Changes"}
-          </Button>
+          Changes are not saved
         </div>
-      </div>
+      )}
     </div>
   );
 }

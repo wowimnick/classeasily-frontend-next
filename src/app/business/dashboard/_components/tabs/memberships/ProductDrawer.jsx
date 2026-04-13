@@ -10,6 +10,7 @@ import {
   Switch,
   Button,
   Tabs,
+  Steps,
   Tooltip,
 } from "antd";
 import {
@@ -207,6 +208,46 @@ const StyledTabs = styled(Tabs)`
       font-size: 13px;
     }
   }
+`;
+
+const StepperNav = styled.div`
+  flex-shrink: 0;
+  padding: 16px 24px 8px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+
+  .ant-steps-item-title {
+    font-size: 13px !important;
+    font-weight: 500;
+  }
+
+  .ant-steps-item-process .ant-steps-item-icon {
+    background: #222 !important;
+    border-color: #222 !important;
+  }
+
+  .ant-steps-item-finish .ant-steps-item-icon {
+    border-color: #222 !important;
+  }
+
+  .ant-steps-item-finish .ant-steps-icon {
+    color: #222 !important;
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px 16px 6px;
+
+    .ant-steps-item-title {
+      font-size: 12px !important;
+    }
+  }
+`;
+
+const StepperBody = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: #fff;
 `;
 
 const ScrollContainer = styled.div`
@@ -435,6 +476,12 @@ const FIELD_TO_ID = {
   trial_period_days: "mp_trial_period_days",
 };
 
+const CREATE_PLAN_STEPS = [
+  { title: "Plan details" },
+  { title: "Signup form" },
+  { title: "After signup" },
+];
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ProductDrawer({ open, onClose, product, onSaved }) {
@@ -527,6 +574,54 @@ export default function ProductDrawer({ open, onClose, product, onSaved }) {
   const updateSignupField = (i, updates) =>
     setSignupFields((p) => p.map((f, idx) => (idx === i ? { ...f, ...updates } : f)));
 
+  const showValidationAndScroll = (err) => {
+    if (!err?.errorFields?.length) return;
+    message.error("Please correct the highlighted errors.");
+    const first = err.errorFields[0];
+    const fieldName = Array.isArray(first?.name) ? first.name[0] : first?.name;
+    if (fieldName && FIELD_TO_TAB[fieldName]) {
+      setActiveTab(FIELD_TO_TAB[fieldName]);
+      const id = FIELD_TO_ID[fieldName];
+      if (id) {
+        setTimeout(() => {
+          const el = document.getElementById(id);
+          el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 150);
+      }
+    }
+  };
+
+  const handleStepBack = () => {
+    if (activeTab === "2") setActiveTab("1");
+    else if (activeTab === "3") setActiveTab("2");
+  };
+
+  const handleStepNext = async () => {
+    if (activeTab === "1") {
+      try {
+        const names = [
+          "name",
+          "description",
+          "price",
+          "billing_interval",
+          "access_type",
+          "applicable_class_ids",
+          "requires_approval",
+          "is_active",
+        ];
+        if (accessType === "credits") {
+          names.push("credit_allowance", "credit_unit");
+        }
+        await form.validateFields(names);
+        setActiveTab("2");
+      } catch (err) {
+        showValidationAndScroll(err);
+      }
+    } else if (activeTab === "2") {
+      setActiveTab("3");
+    }
+  };
+
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     try {
@@ -611,21 +706,7 @@ export default function ProductDrawer({ open, onClose, product, onSaved }) {
       onSaved?.();
       onClose?.();
     } catch (err) {
-      if (err?.errorFields?.length) {
-        message.error("Please correct the highlighted errors.");
-        const first = err.errorFields[0];
-        const fieldName = Array.isArray(first?.name) ? first.name[0] : first?.name;
-        if (fieldName && FIELD_TO_TAB[fieldName]) {
-          setActiveTab(FIELD_TO_TAB[fieldName]);
-          const id = FIELD_TO_ID[fieldName];
-          if (id) {
-            setTimeout(() => {
-              const el = document.getElementById(id);
-              el?.scrollIntoView({ behavior: "smooth", block: "center" });
-            }, 150);
-          }
-        }
-      }
+      showValidationAndScroll(err);
     } finally {
       setSaving(false);
     }
@@ -1187,23 +1268,57 @@ export default function ProductDrawer({ open, onClose, product, onSaved }) {
       </DrawerHeader>
 
       <DrawerContentWrapper>
-        <StyledTabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          items={[
-            { label: "Plan details", key: "1", children: tab1 },
-            { label: "Signup form", key: "2", children: tab2 },
-            { label: "After signup", key: "3", children: tab3 },
-          ]}
-        />
+        {isEdit ? (
+          <StyledTabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            items={[
+              { label: "Plan details", key: "1", children: tab1 },
+              { label: "Signup form", key: "2", children: tab2 },
+              { label: "After signup", key: "3", children: tab3 },
+            ]}
+          />
+        ) : (
+          <>
+            <StepperNav>
+              <Steps
+                size="small"
+                current={Number(activeTab) - 1}
+                items={CREATE_PLAN_STEPS}
+              />
+            </StepperNav>
+            <StepperBody>
+              {activeTab === "1" && tab1}
+              {activeTab === "2" && tab2}
+              {activeTab === "3" && tab3}
+            </StepperBody>
+          </>
+        )}
       </DrawerContentWrapper>
 
       <DrawerFooter>
-        <Button onClick={onClose} disabled={saving}>
+        <Button
+          onClick={onClose}
+          disabled={saving}
+          style={!isEdit ? { marginRight: "auto" } : undefined}
+        >
           Cancel
         </Button>
-        <Button type="primary" loading={saving} onClick={handleSave}>
-          {isEdit ? "Save changes" : "Create plan"}
+        {!isEdit && activeTab !== "1" && (
+          <Button onClick={handleStepBack} disabled={saving}>
+            Back
+          </Button>
+        )}
+        <Button
+          type="primary"
+          loading={saving}
+          onClick={!isEdit && activeTab !== "3" ? handleStepNext : handleSave}
+        >
+          {!isEdit && activeTab !== "3"
+            ? "Next"
+            : isEdit
+              ? "Save changes"
+              : "Create plan"}
         </Button>
       </DrawerFooter>
     </>
