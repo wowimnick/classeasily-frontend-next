@@ -51,10 +51,49 @@ const MainContainer = styled.main`
   }
 `;
 
-// --- 1. HEADER SECTION (Title & Meta) ---
-const HeaderSection = styled.div`
+// --- 1. HEADER SECTION (Logo + Title & Meta) ---
+const BrandHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
   padding-top: 24px;
-  padding-bottom: 24px;
+  padding-bottom: 8px;
+  margin-bottom: 24px;
+
+  @media (max-width: 744px) {
+    gap: 12px;
+  }
+`;
+
+const LogoSlot = styled.div`
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  @media (min-width: 744px) {
+    width: 64px;
+    height: 64px;
+  }
+`;
+
+const LogoInitial = styled.span`
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #6b7280;
+  line-height: 1;
+`;
+
+const HeaderTextBlock = styled.div`
+  min-width: 0;
+  flex: 1;
 `;
 
 const Title = styled.h1`
@@ -127,37 +166,7 @@ const ActionBtn = styled.button`
   }
 `;
 
-// --- 2. IMAGE GALLERY (Rounded Hero) ---
-const HeroImageWrapper = styled.div`
-  position: relative;
-  width: 100%;
-  height: 0;
-  padding-bottom: 50%; /* 2:1 Aspect Ratio */
-  border-radius: 16px;
-  overflow: hidden;
-  background-color: #dddddd;
-  margin-bottom: 32px;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-
-  @media (max-width: 744px) {
-    border-radius: 0;
-    margin-left: -24px;
-    margin-right: -24px;
-    width: calc(100% + 48px);
-    padding-bottom: 65%;
-  }
-
-  img {
-    object-fit: cover;
-    transition: transform 0.5s ease;
-  }
-  
-  &:hover img {
-    transform: scale(1.02);
-  }
-`;
-
-// --- 3. TWO COLUMN LAYOUT ---
+// --- 2. TWO COLUMN LAYOUT ---
 const ContentGrid = styled.div`
   display: grid;
   grid-template-columns: 1.8fr 1fr;
@@ -527,49 +536,61 @@ const BusinessPageClient = ({ initialData, slug }) => {
 
       <MainContainer>
         
-        {/* 1. HEADER & META */}
-        <HeaderSection>
-          <Title>{businessName}</Title>
-          
-          <MetaRow>
-            <LeftMeta>
-              {ratingAsNumber > 0 && (
-                <>
-                  <div style={{display:'flex', alignItems:'center', gap:'4px'}}>
-                     <Star size={14} fill="#222" strokeWidth={0} />
-                     <span style={{fontWeight: 600}}><NumberFlow value={ratingAsNumber} format={{minimumFractionDigits:1, maximumFractionDigits:1}} /></span>
-                  </div>
-                  <span className="dot">•</span>
-                  <a href="#reviews-section">
-                    <NumberFlow value={totalReviews || 0} /> reviews
-                  </a>
-                  <span className="dot">•</span>
-                </>
-              )}
-              {ratingAsNumber === 0 && (
-                <>
-                  <span style={{color: '#222', fontWeight: 600}}>New Business</span>
-                  <span className="dot">•</span>
-                </>
-              )}
-              <span>{businessCity}, {businessState}</span>
-            </LeftMeta>
+        {/* 1. BRAND: compact logo + title & meta */}
+        <BrandHeader>
+          <LogoSlot>
+            {business_image_medium_url ? (
+              <Image
+                src={business_image_medium_url}
+                alt={`${businessName} logo`}
+                fill
+                priority
+                sizes="64px"
+                style={{ objectFit: "contain", padding: "6px" }}
+              />
+            ) : (
+              <LogoInitial>
+                {(businessName && businessName.charAt(0).toUpperCase()) || "?"}
+              </LogoInitial>
+            )}
+          </LogoSlot>
+          <HeaderTextBlock>
+            <Title>{businessName}</Title>
+            <MetaRow>
+              <LeftMeta>
+                {ratingAsNumber > 0 && (
+                  <>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <Star size={14} fill="#222" strokeWidth={0} />
+                      <span style={{ fontWeight: 600 }}>
+                        <NumberFlow
+                          value={ratingAsNumber}
+                          format={{ minimumFractionDigits: 1, maximumFractionDigits: 1 }}
+                        />
+                      </span>
+                    </div>
+                    <span className="dot">•</span>
+                    <a href="#reviews-section">
+                      <NumberFlow value={totalReviews || 0} /> reviews
+                    </a>
+                    <span className="dot">•</span>
+                  </>
+                )}
+                {ratingAsNumber === 0 && (
+                  <>
+                    <span style={{ color: "#222", fontWeight: 600 }}>New Business</span>
+                    <span className="dot">•</span>
+                  </>
+                )}
+                <span>
+                  {businessCity}, {businessState}
+                </span>
+              </LeftMeta>
+            </MetaRow>
+          </HeaderTextBlock>
+        </BrandHeader>
 
-          </MetaRow>
-        </HeaderSection>
-
-        {/* 2. HERO IMAGE */}
-        <HeroImageWrapper>
-          <Image 
-            src={business_image_medium_url || "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1600&q=80"} 
-            alt={businessName}
-            fill
-            priority
-            sizes="(max-width: 768px) 100vw, 1120px"
-          />
-        </HeroImageWrapper>
-
-        {/* 3. MAIN CONTENT GRID */}
+        {/* 2. MAIN CONTENT GRID */}
         <ContentGrid>
           
           {/* LEFT COLUMN: Details, Description, Reviews */}
@@ -579,7 +600,6 @@ const BusinessPageClient = ({ initialData, slug }) => {
                 <h2>Hosted by {businessName}</h2>
                 <p>{classes.length} active classes • Joined recently</p>
               </HostInfo>
-              {/* Optional: Add a logo avatar here if available */}
             </HostRow>
 
             {/* Highlights Section */}

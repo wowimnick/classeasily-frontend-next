@@ -1,13 +1,6 @@
-import { cacheLife, cacheTag } from "next/cache";
+import { cache } from "react";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-
-/** Apply multiple cache tags inside a `"use cache"` scope. */
-function applyCacheTags(tags) {
-  for (const t of tags) {
-    cacheTag(t);
-  }
-}
 
 // Shared cache tags for homepage-content so all callers hit the same Data Cache entry
 const HOMEPAGE_CONTENT_TAGS = ["homepage-content", "collections"];
@@ -44,38 +37,6 @@ function generateSearchCacheTags(params) {
 // ==================== ENHANCED CLASS SEARCH FUNCTIONS ====================
 
 /**
- * Cached subset: default explore search (no geo/collection/tag/keyword/date filters).
- * Next.js 16: `"use cache"` + cacheLife replaces fetch force-cache / next.revalidate.
- */
-async function searchClassesCategoryOnlyCached(queryString) {
-  "use cache";
-  cacheLife("hours");
-  applyCacheTags(generateSearchCacheTags({}));
-
-  const url = `${BASE_URL}/classes/search/?${queryString}`;
-  if (process.env.NODE_ENV === "development") {
-    console.log(`[Server] Fetching classes (cached): ${url}`);
-  }
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (!response.ok) throw new Error(`API request failed: ${response.status}`);
-
-  const data = await response.json();
-
-  return {
-    success: true,
-    results: data?.results || [],
-    count: data?.count || 0,
-    next: data?.next || null,
-    previous: data?.previous || null,
-  };
-}
-
-/**
  * Search classes with category-aware caching
  * Endpoint: /classes/search/
  */
@@ -88,12 +49,11 @@ export async function searchClasses(params = {}) {
       queryParams.append("page_size", "24");
     }
 
-    if (process.env.NODE_ENV === "development") {
-      console.log(
-        "[server-data-fetchers] searchClasses params:",
-        JSON.stringify(params),
-      );
-    }
+    // Explicitly log the params coming in for debugging
+    console.log(
+      "[server-data-fetchers] searchClasses params:",
+      JSON.stringify(params),
+    );
 
     Object.entries(params).forEach(([key, value]) => {
       if (Array.isArray(value)) {
@@ -103,8 +63,8 @@ export async function searchClasses(params = {}) {
       }
     });
 
-    const queryString = queryParams.toString();
-    const url = `${BASE_URL}/classes/search/?${queryString}`;
+    const url = `${BASE_URL}/classes/search/?${queryParams.toString()}`;
+    const cacheTags = generateSearchCacheTags(params);
 
     // No location/keyword/tag/collection and no date/participant filters: cache for instant explore page
     const hasNoGeoOrFilters =
@@ -119,27 +79,25 @@ export async function searchClasses(params = {}) {
       !params.start_date &&
       !params.end_date &&
       !params.participants &&
-      (!params.time_preference ||
-        (Array.isArray(params.time_preference) &&
-          params.time_preference.length === 0)) &&
-      (!params.days ||
-        (Array.isArray(params.days) && params.days.length === 0));
+      (!params.time_preference || (Array.isArray(params.time_preference) && params.time_preference.length === 0)) &&
+      (!params.days || (Array.isArray(params.days) && params.days.length === 0));
     const isCategoryOnlyCacheable = hasNoGeoOrFilters && hasNoExtraFilters;
+
+    const cacheStrategy = isCategoryOnlyCacheable ? "force-cache" : "no-store";
+    const nextConfig = { tags: cacheTags };
 
     if (process.env.NODE_ENV === "development") {
       console.log(`[Server] Fetching classes: ${url}`);
       console.log(
-        `[Server] Cache: ${isCategoryOnlyCacheable ? "use cache (hours)" : "dynamic (no-store)"}`,
+        `[Server] Cache Strategy: ${cacheStrategy}, Tags: ${JSON.stringify(cacheTags)}`,
       );
-    }
-
-    if (isCategoryOnlyCacheable) {
-      return await searchClassesCategoryOnlyCached(queryString);
     }
 
     const response = await fetch(url, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
+      cache: cacheStrategy,
+      next: nextConfig,
     });
 
     if (!response.ok) throw new Error(`API request failed: ${response.status}`);
@@ -171,25 +129,24 @@ export async function fetchClassesByCollection(collectionSlug, additionalParams 
 
 /**
  * Single cached fetch for homepage-content (collections mode).
- * Next.js 16: `"use cache"` replaces React cache() + fetch force-cache.
+ * Deduplicated per-request via React cache() and by Data Cache so building
+ * many pages (Footer on each) doesn't spam the API.
  */
-async function fetchHomepageContentCached() {
-  "use cache";
-  cacheLife("homepage");
-  applyCacheTags(HOMEPAGE_CONTENT_TAGS);
-
+const fetchHomepageContentCached = cache(async () => {
   const response = await fetch(
     `${BASE_URL}/classes/homepage-content/?mode=collections`,
     {
       method: "GET",
       headers: { "Content-Type": "application/json" },
+      cache: "force-cache",
+      next: { revalidate: 3600, tags: HOMEPAGE_CONTENT_TAGS },
     },
   );
   if (!response.ok) {
     throw new Error(`API request failed: ${response.status}`);
   }
   return response.json();
-}
+});
 
 /**
  * Fetch Collections
@@ -217,23 +174,22 @@ export async function fetchClassesByTag(tag, additionalParams = {}) {
 
 // ==================== BLOG FUNCTIONS ====================
 
-async function fetchBlogPostsCached(pageSize) {
-  "use cache";
-  cacheLife("hours");
-  cacheTag("blog-posts");
-
+/** Deduplicated per-request so multiple pages (blog list, [slug], tag) don't each hit the API. */
+const fetchBlogPostsCached = cache(async (pageSize) => {
   const response = await fetch(
     `${BASE_URL}/blog/posts/?page_size=${pageSize}`,
     {
       method: "GET",
       headers: { "Content-Type": "application/json" },
+      cache: "force-cache",
+      next: { revalidate: 3600, tags: ["blog-posts"] },
     },
   );
   if (!response.ok) {
     throw new Error(`API request failed: ${response.status}`);
   }
   return response.json();
-}
+});
 
 /**
  * Fetch all blog posts for the blog listing page
@@ -265,84 +221,48 @@ export async function fetchBlogPosts(pageSize = 50) {
   }
 }
 
-async function fetchBlogPostBySlugCached(slug) {
-  "use cache";
-  cacheLife("blog");
-  cacheTag("blog-posts");
-  cacheTag(`blog-post-${slug}`);
-
-  const response = await fetch(`${BASE_URL}/blog/posts/${slug}/`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    if (response.status === 404) {
-      return { success: false, error: "Post not found", status: 404 };
-    }
-    throw new Error(`API request failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-
-  if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
-    console.log("[blog] fetchBlogPostBySlug ok", { slug, title: data?.title });
-  }
-
-  return {
-    success: true,
-    data: data,
-  };
-}
-
 /**
  * Fetch a single blog post by slug
  * Endpoint: /blog/posts/{slug}/
  */
 export async function fetchBlogPostBySlug(slug) {
   try {
-    return await fetchBlogPostBySlugCached(slug);
-  } catch (error) {
-    console.error("[blog] fetchBlogPostBySlug error", {
-      slug,
-      message: error?.message || error,
+    const response = await fetch(`${BASE_URL}/blog/posts/${slug}/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "force-cache",
+      next: {
+        revalidate: 86400,
+        tags: ["blog-posts", `blog-post-${slug}`],
+      },
     });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { success: false, error: "Post not found", status: 404 };
+      }
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
+      console.log("[blog] fetchBlogPostBySlug ok", { slug, title: data?.title });
+    }
+
+    return {
+      success: true,
+      data: data,
+    };
+  } catch (error) {
+    console.error("[blog] fetchBlogPostBySlug error", { slug, message: error?.message || error });
     return {
       success: false,
       error: error.message || "Failed to fetch blog post",
     };
   }
-}
-
-async function fetchBlogCategoriesCached() {
-  "use cache";
-  cacheLife("days");
-  cacheTag("blog-categories");
-
-  const response = await fetch(`${BASE_URL}/blog/categories/`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const categories = Array.isArray(data) ? data : [];
-
-  if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
-    console.log("[blog] fetchBlogCategories ok", { count: categories.length });
-  }
-
-  return {
-    success: true,
-    categories,
-  };
 }
 
 /**
@@ -351,7 +271,33 @@ async function fetchBlogCategoriesCached() {
  */
 export async function fetchBlogCategories() {
   try {
-    return await fetchBlogCategoriesCached();
+    const response = await fetch(`${BASE_URL}/blog/categories/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "force-cache",
+      next: {
+        revalidate: 86400,
+        tags: ["blog-categories"],
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const categories = Array.isArray(data) ? data : [];
+
+    if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
+      console.log("[blog] fetchBlogCategories ok", { count: categories.length });
+    }
+
+    return {
+      success: true,
+      categories,
+    };
   } catch (error) {
     console.error("[blog] fetchBlogCategories error", error?.message || error);
     return {
@@ -361,43 +307,39 @@ export async function fetchBlogCategories() {
   }
 }
 
-async function fetchRecentBlogPostsCached(limit) {
-  "use cache";
-  cacheLife("days");
-  cacheTag("blog-posts");
-  cacheTag("blog-recent");
-
-  const response = await fetch(`${BASE_URL}/blog/posts/?page_size=${limit}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const posts = data?.results || [];
-
-  if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
-    console.log("[blog] fetchRecentBlogPosts ok", { limit, returned: posts.length });
-  }
-
-  return {
-    success: true,
-    posts,
-  };
-}
-
 /**
  * Fetch recent blog posts for sidebar
  * Endpoint: /blog/posts/?page_size=4
  */
 export async function fetchRecentBlogPosts(limit = 4) {
   try {
-    return await fetchRecentBlogPostsCached(limit);
+    const response = await fetch(`${BASE_URL}/blog/posts/?page_size=${limit}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "force-cache",
+      next: {
+        revalidate: 86400,
+        tags: ["blog-recent"],
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const posts = data?.results || [];
+
+    if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
+      console.log("[blog] fetchRecentBlogPosts ok", { limit, returned: posts.length });
+    }
+
+    return {
+      success: true,
+      posts,
+    };
   } catch (error) {
     console.error("[blog] fetchRecentBlogPosts error", error?.message || error);
     return {
@@ -407,60 +349,49 @@ export async function fetchRecentBlogPosts(limit = 4) {
   }
 }
 
-async function fetchBlogPostsByCategoryCached(categorySlug, pageSize) {
-  "use cache";
-  cacheLife("days");
-  cacheTag("blog-posts");
-  cacheTag(`category-${categorySlug}`);
-
-  const response = await fetch(
-    `${BASE_URL}/blog/posts/?category=${categorySlug}&page_size=${pageSize}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    },
-  );
-
-  if (!response.ok) {
-    if (response.status === 404) {
-      return { success: true, posts: [], count: 0 };
-    }
-    throw new Error(`API request failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const posts = data?.results || [];
-  const count = data?.count || 0;
-
-  if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
-    console.log("[blog] fetchBlogPostsByCategory ok", {
-      categorySlug,
-      count,
-      returned: posts.length,
-    });
-  }
-
-  return {
-    success: true,
-    posts,
-    count,
-  };
-}
-
 /**
  * Fetch blog posts by category
  * Endpoint: /blog/posts/?category={slug}
  */
 export async function fetchBlogPostsByCategory(categorySlug, pageSize = 50) {
   try {
-    return await fetchBlogPostsByCategoryCached(categorySlug, pageSize);
+    const response = await fetch(
+      `${BASE_URL}/blog/posts/?category=${categorySlug}&page_size=${pageSize}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "force-cache",
+        next: {
+          revalidate: 86400,
+          tags: ["blog-posts", `category-${categorySlug}`],
+        },
+      },
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { success: true, posts: [] };
+      }
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const posts = data?.results || [];
+    const count = data?.count || 0;
+
+    if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
+      console.log("[blog] fetchBlogPostsByCategory ok", { categorySlug, count, returned: posts.length });
+    }
+
+    return {
+      success: true,
+      posts,
+      count,
+    };
   } catch (error) {
-    console.error("[blog] fetchBlogPostsByCategory error", {
-      categorySlug,
-      message: error?.message || error,
-    });
+    console.error("[blog] fetchBlogPostsByCategory error", { categorySlug, message: error?.message || error });
     return {
       success: false,
       posts: [],
@@ -469,60 +400,49 @@ export async function fetchBlogPostsByCategory(categorySlug, pageSize = 50) {
   }
 }
 
-async function fetchBlogPostsByTagCached(tagSlug, pageSize) {
-  "use cache";
-  cacheLife("days");
-  cacheTag("blog-posts");
-  cacheTag(`blog-tag-${tagSlug}`);
-
-  const response = await fetch(
-    `${BASE_URL}/blog/posts/?tag=${encodeURIComponent(tagSlug)}&page_size=${pageSize}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    },
-  );
-
-  if (!response.ok) {
-    if (response.status === 404) {
-      return { success: true, posts: [], count: 0 };
-    }
-    throw new Error(`API request failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const posts = data?.results || [];
-  const count = data?.count || 0;
-
-  if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
-    console.log("[blog] fetchBlogPostsByTag ok", {
-      tagSlug,
-      count,
-      returned: posts.length,
-    });
-  }
-
-  return {
-    success: true,
-    posts,
-    count,
-  };
-}
-
 /**
  * Fetch blog posts by tag (tag slug from URL e.g. "education" -> matches tag "Education")
  * Endpoint: /blog/posts/?tag={tagSlug}
  */
 export async function fetchBlogPostsByTag(tagSlug, pageSize = 50) {
   try {
-    return await fetchBlogPostsByTagCached(tagSlug, pageSize);
+    const response = await fetch(
+      `${BASE_URL}/blog/posts/?tag=${encodeURIComponent(tagSlug)}&page_size=${pageSize}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "force-cache",
+        next: {
+          revalidate: 86400,
+          tags: ["blog-posts", `blog-tag-${tagSlug}`],
+        },
+      },
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { success: true, posts: [], count: 0 };
+      }
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const posts = data?.results || [];
+    const count = data?.count || 0;
+
+    if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV) {
+      console.log("[blog] fetchBlogPostsByTag ok", { tagSlug, count, returned: posts.length });
+    }
+
+    return {
+      success: true,
+      posts,
+      count,
+    };
   } catch (error) {
-    console.error("[blog] fetchBlogPostsByTag error", {
-      tagSlug,
-      message: error?.message || error,
-    });
+    console.error("[blog] fetchBlogPostsByTag error", { tagSlug, message: error?.message || error });
     return {
       success: false,
       posts: [],
@@ -533,47 +453,43 @@ export async function fetchBlogPostsByTag(tagSlug, pageSize = 50) {
 
 // ==================== CLASS FUNCTIONS ====================
 
-async function fetchInitialClassesCached() {
-  "use cache";
-  cacheLife("hours");
-  cacheTag("classes");
-  cacheTag("homepage-classes");
-
-  const response = await fetch(`${BASE_URL}/classes/`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    console.error(`API request failed with status: ${response.status}`);
-    throw new Error(`API request failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-
-  if (!data || typeof data !== "object") {
-    console.error("Invalid response structure:", data);
-    return {
-      classes: [],
-      nextPageUrl: null,
-    };
-  }
-
-  return {
-    classes: data?.results || [],
-    nextPageUrl: data?.next || null,
-  };
-}
-
 /**
  * Fetch initial classes for the homepage
  * Endpoint: /classes/
  */
 export async function fetchInitialClasses() {
   try {
-    return await fetchInitialClassesCached();
+    const response = await fetch(`${BASE_URL}/classes/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "force-cache",
+      next: {
+        revalidate: 3600,
+        tags: ["classes", "homepage-classes"],
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`API request failed with status: ${response.status}`);
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data || typeof data !== "object") {
+      console.error("Invalid response structure:", data);
+      return {
+        classes: [],
+        nextPageUrl: null,
+      };
+    }
+
+    return {
+      classes: data?.results || [],
+      nextPageUrl: data?.next || null,
+    };
   } catch (error) {
     console.error("Error fetching initial classes:", error);
     return {
@@ -583,38 +499,34 @@ export async function fetchInitialClasses() {
   }
 }
 
-async function fetchHomepageCategoriesCached() {
-  "use cache";
-  cacheLife("max");
-  cacheTag("categories");
-
-  const response = await fetch(`${BASE_URL}/categories/`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-
-  return {
-    success: true,
-    data: Array.isArray(data) ? data : data?.data || [],
-  };
-}
-
 /**
  * Fetch homepage categories (explore page, header, etc.)
  * Endpoint: /categories/
- * Revalidate when categories change (admin triggers revalidateTag("categories")).
+ * Cached indefinitely; revalidate only when categories change (admin triggers revalidateTag("categories")).
  */
 export async function fetchHomepageCategories() {
   try {
-    return await fetchHomepageCategoriesCached();
+    const response = await fetch(`${BASE_URL}/categories/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "force-cache",
+      next: {
+        tags: ["categories"],
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      success: true,
+      data: Array.isArray(data) ? data : data?.data || [],
+    };
   } catch (error) {
     console.error("Error fetching categories:", error);
     return {
@@ -624,41 +536,36 @@ export async function fetchHomepageCategories() {
   }
 }
 
-async function fetchClassDetailCached(classIdOrSlug) {
-  "use cache";
-  cacheLife("classDetail");
-  cacheTag("classes");
-  cacheTag(`class-${classIdOrSlug}`);
-
-  const response = await fetch(`${BASE_URL}/classes/${classIdOrSlug}/`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    if (response.status === 404) {
-      return { success: false, error: "Class not found", status: 404 };
-    }
-    throw new Error(`API request failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-
-  return {
-    success: true,
-    data: data,
-  };
-}
-
 /**
  * Fetch class detail by ID or slug.
- * Invalidate with revalidateTag(`class-${slug}`) when class details or schedules change.
+ * Cached until invalidated (revalidateTag) when class details or schedules change — no time-based revalidate so pages stay instant.
  */
 export async function fetchClassDetail(classIdOrSlug) {
   try {
-    return await fetchClassDetailCached(classIdOrSlug);
+    const response = await fetch(`${BASE_URL}/classes/${classIdOrSlug}/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "force-cache",
+      next: {
+        tags: ["classes", `class-${classIdOrSlug}`],
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { success: false, error: "Class not found", status: 404 };
+      }
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      success: true,
+      data: data,
+    };
   } catch (error) {
     console.error(`Error fetching class detail ${classIdOrSlug}:`, error);
     return {
@@ -668,29 +575,6 @@ export async function fetchClassDetail(classIdOrSlug) {
   }
 }
 
-async function fetchClassReviewsCached(slug, page, pageSize) {
-  "use cache";
-  cacheLife("days");
-  cacheTag("reviews");
-  cacheTag(`class-${slug}-reviews`);
-
-  const params = new URLSearchParams({
-    page: page.toString(),
-    page_size: pageSize.toString(),
-  });
-  const response = await fetch(
-    `${BASE_URL}/classes/${slug}/reviews/?${params.toString()}`,
-    {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    },
-  );
-  if (!response.ok) return { success: true, data: [] };
-  const data = await response.json();
-  const results = data.results ?? data ?? [];
-  return { success: true, data: Array.isArray(results) ? results : [] };
-}
-
 /**
  * Fetch class reviews with caching (for class detail page)
  * Endpoint: /classes/{slug}/reviews/
@@ -698,7 +582,26 @@ async function fetchClassReviewsCached(slug, page, pageSize) {
 export async function fetchClassReviews(slug, page = 1, pageSize = 6) {
   if (!slug) return { success: true, data: [] };
   try {
-    return await fetchClassReviewsCached(slug, page, pageSize);
+    const params = new URLSearchParams({
+      page: page.toString(),
+      page_size: pageSize.toString(),
+    });
+    const response = await fetch(
+      `${BASE_URL}/classes/${slug}/reviews/?${params.toString()}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        cache: "force-cache",
+        next: {
+          revalidate: 86400,
+          tags: ["reviews", `class-${slug}-reviews`, `reviews-page-${page}`],
+        },
+      },
+    );
+    if (!response.ok) return { success: true, data: [] };
+    const data = await response.json();
+    const results = data.results ?? data ?? [];
+    return { success: true, data: Array.isArray(results) ? results : [] };
   } catch (error) {
     console.error(`Error fetching class reviews ${slug}:`, error);
     return { success: false, data: [] };
@@ -707,39 +610,35 @@ export async function fetchClassReviews(slug, page = 1, pageSize = 6) {
 
 // ==================== BUSINESS FUNCTIONS ====================
 
-async function fetchPublicBusinessesCached() {
-  "use cache";
-  cacheLife("days");
-  cacheTag("businesses");
-  cacheTag("public-businesses");
-
-  const response = await fetch(`${BASE_URL}/businesses/`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-
-  return {
-    success: true,
-    data: data,
-    results: data?.results || [],
-  };
-}
-
 /**
  * Fetch all public businesses for static generation
  * Endpoint: /businesses/ (PUBLIC_BUSINESSES from apiService)
  */
 export async function fetchPublicBusinesses() {
   try {
-    return await fetchPublicBusinessesCached();
+    const response = await fetch(`${BASE_URL}/businesses/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "force-cache",
+      next: {
+        revalidate: 86400, // 2 hours
+        tags: ["businesses", "public-businesses"],
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      success: true,
+      data: data,
+      results: data?.results || [],
+    };
   } catch (error) {
     console.error("Error fetching public businesses:", error);
     return {
@@ -750,46 +649,42 @@ export async function fetchPublicBusinesses() {
   }
 }
 
-async function fetchBusinessDetailCached(slug) {
-  "use cache";
-  cacheLife("days");
-  cacheTag("businesses");
-  cacheTag(`business-${slug}`);
-
-  const response = await fetch(`${BASE_URL}/businesses/${slug}/`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    if (response.status === 404) {
-      return {
-        success: false,
-        error: "Business not found",
-        status: 404,
-        data: null,
-      };
-    }
-    throw new Error(`API request failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-
-  return {
-    success: true,
-    data: data,
-  };
-}
-
 /**
  * Fetch business detail by slug with caching
  * Endpoint: /businesses/{slug}/ (PUBLIC_BUSINESSES + slug from apiService)
  */
 export async function fetchBusinessDetail(slug) {
   try {
-    return await fetchBusinessDetailCached(slug);
+    const response = await fetch(`${BASE_URL}/businesses/${slug}/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "force-cache",
+      next: {
+        revalidate: 86400, // 1 day
+        tags: ["businesses", `business-${slug}`],
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return {
+          success: false,
+          error: "Business not found",
+          status: 404,
+          data: null,
+        };
+      }
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      success: true,
+      data: data,
+    };
   } catch (error) {
     console.error(`Error fetching business detail ${slug}:`, error);
     return {
@@ -800,57 +695,53 @@ export async function fetchBusinessDetail(slug) {
   }
 }
 
-async function fetchBusinessReviewsCached(slug, page, pageSize) {
-  "use cache";
-  cacheLife("days");
-  cacheTag("reviews");
-  cacheTag(`business-${slug}-reviews`);
-
-  const params = new URLSearchParams({
-    page: page.toString(),
-    page_size: pageSize.toString(),
-  });
-
-  const response = await fetch(
-    `${BASE_URL}/businesses/${slug}/reviews/?${params.toString()}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    },
-  );
-
-  if (!response.ok) {
-    if (response.status === 404) {
-      return {
-        success: true,
-        data: [],
-        hasMore: false,
-        total: 0,
-      };
-    }
-    throw new Error(`API request failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-
-  return {
-    success: true,
-    data: data?.results || [],
-    hasMore: !!data?.next,
-    total: data?.count || 0,
-    next: data?.next || null,
-  };
-}
-
 /**
  * Fetch business reviews with pagination
  * Endpoint: /businesses/{slug}/reviews/ (from fetchBusinessReviews in apiService)
  */
 export async function fetchBusinessReviews(slug, page = 1, pageSize = 10) {
   try {
-    return await fetchBusinessReviewsCached(slug, page, pageSize);
+    const params = new URLSearchParams({
+      page: page.toString(),
+      page_size: pageSize.toString(),
+    });
+
+    const response = await fetch(
+      `${BASE_URL}/businesses/${slug}/reviews/?${params.toString()}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "force-cache",
+        next: {
+          revalidate: 86400,
+          tags: ["reviews", `business-${slug}-reviews`, `reviews-page-${page}`],
+        },
+      },
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return {
+          success: true,
+          data: [],
+          hasMore: false,
+          total: 0,
+        };
+      }
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      success: true,
+      data: data?.results || [],
+      hasMore: !!data?.next,
+      total: data?.count || 0,
+      next: data?.next || null,
+    };
   } catch (error) {
     console.error(`Error fetching reviews for ${slug}:`, error);
     return {
@@ -966,11 +857,11 @@ export function generateBusinessStructuredData(businessData) {
   return {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "@id": `https://classeasily.com/business/${businessData.slug}`,
+    "@id": `https://classeasily.com/businesses/${businessData.slug}`,
     name: businessData.businessName,
     description: businessData.businessDescription,
     image: businessData.business_image_medium_url,
-    url: `https://classeasily.com/business/${businessData.slug}`,
+    url: `https://classeasily.com/businesses/${businessData.slug}`,
     telephone: businessData.studentContactPhone,
     email: businessData.studentContactEmail,
     address: {
@@ -1016,7 +907,7 @@ export function generateBlogStructuredData(posts) {
     "@context": "https://schema.org",
     "@type": "Blog",
     "@id": "https://classeasily.com/blog",
-    name: "Classeasily Blog",
+    name: "ClassEasily Blog",
     description: "Inspiration and insights for learners and instructors",
     url: "https://classeasily.com/blog",
     blogPost: posts.slice(0, 10).map((post) => ({
@@ -1035,7 +926,7 @@ export function generateBlogStructuredData(posts) {
         : undefined,
       publisher: {
         "@type": "Organization",
-        name: "Classeasily",
+        name: "ClassEasily",
         logo: {
           "@type": "ImageObject",
           url: "https://classeasily.com/logo.png",
@@ -1068,11 +959,11 @@ export function generateBlogPostStructuredData(post) {
         }
       : {
           "@type": "Organization",
-          name: "Classeasily",
+          name: "ClassEasily",
         },
     publisher: {
       "@type": "Organization",
-      name: "Classeasily",
+      name: "ClassEasily",
       logo: {
         "@type": "ImageObject",
         url: "https://classeasily.com/logo.png",
@@ -1142,13 +1033,13 @@ export function generateBusinessBreadcrumbStructuredData(businessData) {
         "@type": "ListItem",
         position: 2,
         name: "Businesses",
-        item: "https://classeasily.com/business",
+        item: "https://classeasily.com/businesses",
       },
       {
         "@type": "ListItem",
         position: 3,
         name: businessData.businessName,
-        item: `https://classeasily.com/business/${businessData.slug}`,
+        item: `https://classeasily.com/businesses/${businessData.slug}`,
       },
     ],
   };
@@ -1213,37 +1104,34 @@ export async function preloadHomepageData() {
   }
 }
 
-async function fetchBusinessCategoriesCached() {
-  "use cache";
-  cacheLife("days");
-  cacheTag("business-categories");
-
-  const response = await fetch(`${BASE_URL}/business/all-categories/`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
-  }
-
-  const data = await response.json();
-
-  return {
-    success: true,
-    data: data,
-  };
-}
-
 /**
  * Fetch business categories for footer
  * Endpoint: /business/all-categories/
  */
 export async function fetchBusinessCategories() {
   try {
-    return await fetchBusinessCategoriesCached();
+    const response = await fetch(`${BASE_URL}/business/all-categories/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "force-cache",
+      next: {
+        revalidate: 86400, // 24 hours
+        tags: ["business-categories"],
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      success: true,
+      data: data,
+    };
   } catch (error) {
     console.error("Error fetching business categories:", error);
     return {
