@@ -29,16 +29,24 @@ const IconFallback = (props) => (
   <div {...props} style={{ width: 18, height: 18, ...props.style }} />
 );
 
-const loadIcon = (iconName) => {
-  return lazy(() =>
-    import("lucide-react").then((module) => {
-      return { default: module[iconName] || Layers };
-    })
-  );
-};
+const lazyIconCache = new Map();
+
+function getLazyIcon(iconName) {
+  if (!lazyIconCache.has(iconName)) {
+    lazyIconCache.set(
+      iconName,
+      lazy(() =>
+        import("lucide-react").then((module) => ({
+          default: module[iconName] || Layers,
+        })),
+      ),
+    );
+  }
+  return lazyIconCache.get(iconName);
+}
 
 const CategoryIcon = memo(({ iconName, ...props }) => {
-  const IconComponent = loadIcon(iconName);
+  const IconComponent = getLazyIcon(iconName);
   return (
     <Suspense fallback={<IconFallback {...props} />}>
       <IconComponent {...props} />
@@ -118,14 +126,18 @@ const CategoryGroup = styled.div`
   border-bottom: 1px solid transparent;
   border-bottom-color: ${({ $isSelected }) =>
     $isSelected ? "#ff385c" : "transparent"};
+  min-width: 44px;
+  min-height: 44px;
   width: 72px;
   height: 100%;
-  padding-top: 8px;
+  padding: 8px 4px 4px;
   position: relative;
   z-index: 2;
+  box-sizing: border-box;
 
   @media (max-width: 768px) {
     width: 60px;
+    padding: 6px 2px 4px;
   }
 `;
 

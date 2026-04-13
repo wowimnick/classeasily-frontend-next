@@ -35,6 +35,7 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
   const [mobileParticipants, setMobileParticipants] = useState(DEFAULT_PARTICIPANTS);
   const [mobileParticipantsDraft, setMobileParticipantsDraft] = useState(DEFAULT_PARTICIPANTS);
   const [mobileReviewDrawerOpen, setMobileReviewDrawerOpen] = useState(false);
+  const [mobileAvailabilityError, setMobileAvailabilityError] = useState(false);
   const reopenReviewDrawerOnCloseEditRef = useRef(false);
   const hasFiredDateSelectedRef = useRef(false);
 
@@ -53,7 +54,9 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
 
   useEffect(() => {
     const check = () =>
-      setIsMobileView(typeof window !== "undefined" && window.innerWidth <= MOBILE_RESERVE_BREAKPOINT);
+      setIsMobileView(
+        typeof window !== "undefined" && window.innerWidth < MOBILE_RESERVE_BREAKPOINT,
+      );
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
@@ -63,6 +66,7 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     if (!mounted || !optionToDisplayOnCard?.optionId || !isMobileView) return;
     const optionId = optionToDisplayOnCard.optionId;
     setMobileSlotsLoading(true);
+    setMobileAvailabilityError(false);
     const start = new Date(mobileMinSelectableDate);
     const end = new Date(start);
     end.setDate(end.getDate() + MOBILE_AVAILABILITY_DAYS);
@@ -76,7 +80,10 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
           setMobileAvailableSlots((prev) => ({ ...prev, ...res }));
         }
       })
-      .catch((e) => console.error("Mobile availability fetch failed", e))
+      .catch((e) => {
+        console.error("Mobile availability fetch failed", e);
+        setMobileAvailabilityError(true);
+      })
       .finally(() => setMobileSlotsLoading(false));
   }, [mounted, optionToDisplayOnCard?.optionId, isMobileView, mobileMinSelectableDate]);
 
@@ -275,5 +282,6 @@ export function useMobileReserveFlow(mounted, classData, optionToDisplayOnCard) 
     handleMobileCalendarMonthChange,
     createEditDrawerOnOpenChange,
     handleParticipantsApply,
+    mobileAvailabilityError,
   };
 }

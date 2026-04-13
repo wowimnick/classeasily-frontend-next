@@ -29,7 +29,7 @@ export async function generateMetadata({ params }) {
 
     if (!result.success) {
       return {
-        title: "Post Not Found | ClassEasily Blog",
+        title: "Post Not Found | Classeasily Blog",
         description: "The blog post you're looking for could not be found.",
       };
     }
@@ -37,14 +37,14 @@ export async function generateMetadata({ params }) {
     const post = result.data;
 
     return {
-      title: `${post.title} | ClassEasily Blog`,
+      title: `${post.title} | Classeasily Blog`,
       description: post.excerpt || post.title,
       openGraph: {
         title: post.title,
         description: post.excerpt,
         type: "article",
         url: `https://classeasily.com/blog/${post.slug}`,
-        siteName: "ClassEasily",
+        siteName: "Classeasily",
         publishedTime: post.publishedDate,
         modifiedTime: post.updatedDate || post.publishedDate,
         images: [
@@ -79,7 +79,7 @@ export async function generateMetadata({ params }) {
     };
   } catch {
     return {
-      title: "Post Not Found | ClassEasily Blog",
+      title: "Post Not Found | Classeasily Blog",
       description: "The blog post you're looking for could not be found.",
     };
   }

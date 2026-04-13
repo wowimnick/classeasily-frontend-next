@@ -1,5 +1,5 @@
 /**
- * Widget subscription plan definitions. Shared by landing, checkout, and dashboard.
+ * Widget subscription plan definitions. Shared by booking-widget landing and dashboard settings.
  * Keep in sync with backend WidgetSubscription.PLAN_CHOICES and pricing.
  */
 

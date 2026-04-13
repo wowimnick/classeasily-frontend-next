@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import useEmblaCarousel from "embla-carousel-react";
 import { Modal, Typography, Tooltip } from "antd";
@@ -763,6 +764,10 @@ const ClassPageImagesTitle = React.memo(
     // Logic: If using placeholders, use all 5. If real images, use up to 5 for grid, but keep all for carousel.
     const imagesToDisplay = usePlaceholders ? PLACEHOLDER_IMAGES : classImages;
     const desktopGridImages = imagesToDisplay.slice(0, 5); // Max 5 for grid
+    const sharePreviewSrc =
+      imagesToDisplay[0]?.thumbnail_url ||
+      imagesToDisplay[0]?.medium_url ||
+      (typeof imagesToDisplay[0] === "string" ? imagesToDisplay[0] : null);
 
     const embedCode = `<iframe src="${currentUrl}" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>`;
 
@@ -986,13 +991,20 @@ const ClassPageImagesTitle = React.memo(
                     className={usePlaceholders ? "non-clickable" : ""}
                     onClick={() => !usePlaceholders && showGalleryModal(index)}
                   >
-                    <img
-                      src={imageUrl}
-                      alt={isLcp ? `${title || "Class"} - image 1` : `Class image ${index + 1}`}
-                      loading={isLcp ? "eager" : "lazy"}
-                      fetchPriority={isLcp ? "high" : "auto"}
-                      decoding="async"
-                    />
+                    {imageUrl ? (
+                      <Image
+                        src={imageUrl}
+                        alt={
+                          isLcp
+                            ? `${title || "Class"} - image 1`
+                            : `Class image ${index + 1}`
+                        }
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 40vw"
+                        priority={isLcp}
+                        style={{ objectFit: "cover" }}
+                      />
+                    ) : null}
                   </GridImageItem>
                 );
               })}
@@ -1033,13 +1045,20 @@ const ClassPageImagesTitle = React.memo(
                         <CarouselImageContent
                           className={usePlaceholders ? "non-clickable" : ""}
                         >
-                          <img
-                            src={imgSrc}
-                            alt={isLcp ? `${title || "Class"} - image 1` : `Class image ${index + 1}`}
-                            loading={isLcp ? "eager" : "lazy"}
-                            fetchPriority={isLcp ? "high" : "auto"}
-                            decoding="async"
-                          />
+                          {imgSrc ? (
+                            <Image
+                              src={imgSrc}
+                              alt={
+                                isLcp
+                                  ? `${title || "Class"} - image 1`
+                                  : `Class image ${index + 1}`
+                              }
+                              fill
+                              sizes="100vw"
+                              priority={isLcp}
+                              style={{ objectFit: "cover" }}
+                            />
+                          ) : null}
                         </CarouselImageContent>
                       </EmblaSlide>
                     );
@@ -1080,23 +1099,31 @@ const ClassPageImagesTitle = React.memo(
                   <ThumbnailWrapper>
                     <ThumbnailEmblaViewport ref={thumbnailEmblaRef}>
                       <ThumbnailEmblaContainer>
-                        {classImages.map((img, index) => (
-                          <ThumbnailEmblaSlide key={index}>
-                            <ThumbnailImage
-                              $isActive={index === galleryCurrentSlide}
-                              onClick={() => onThumbClick(index)}
-                            >
-                              <img
-                                src={
-                                  img?.thumbnail_url ||
-                                  img?.medium_url ||
-                                  (typeof img === "string" ? img : undefined)
-                                }
-                                alt={`Thumbnail ${index + 1}`}
-                              />
-                            </ThumbnailImage>
-                          </ThumbnailEmblaSlide>
-                        ))}
+                        {classImages.map((img, index) => {
+                          const thumbSrc =
+                            img?.thumbnail_url ||
+                            img?.medium_url ||
+                            (typeof img === "string" ? img : null);
+                          return (
+                            <ThumbnailEmblaSlide key={index}>
+                              <ThumbnailImage
+                                $isActive={index === galleryCurrentSlide}
+                                onClick={() => onThumbClick(index)}
+                              >
+                                {thumbSrc ? (
+                                  <Image
+                                    src={thumbSrc}
+                                    alt={`Thumbnail ${index + 1}`}
+                                    width={80}
+                                    height={53}
+                                    sizes="80px"
+                                    style={{ objectFit: "cover" }}
+                                  />
+                                ) : null}
+                              </ThumbnailImage>
+                            </ThumbnailEmblaSlide>
+                          );
+                        })}
                       </ThumbnailEmblaContainer>
                     </ThumbnailEmblaViewport>
                   </ThumbnailWrapper>
@@ -1173,16 +1200,16 @@ const ClassPageImagesTitle = React.memo(
                     </ShareCopyBtn>
                   </ShareCopySection>
                   <PlaceInfo>
-                    <img
-                      src={
-                        imagesToDisplay[0]?.thumbnail_url ||
-                        imagesToDisplay[0]?.medium_url ||
-                        (typeof imagesToDisplay[0] === "string"
-                          ? imagesToDisplay[0]
-                          : null)
-                      }
-                      alt=""
-                    />
+                    {sharePreviewSrc ? (
+                      <Image
+                        src={sharePreviewSrc}
+                        alt=""
+                        width={56}
+                        height={56}
+                        sizes="56px"
+                        style={{ borderRadius: 12, objectFit: "cover" }}
+                      />
+                    ) : null}
                     <div>
                       <p>{title}</p>
                       <PlaceMeta>
@@ -1305,16 +1332,16 @@ const ClassPageImagesTitle = React.memo(
                   </ShareCopyBtn>
                 </ShareCopySection>
                 <PlaceInfo>
-                  <img
-                    src={
-                      imagesToDisplay[0]?.thumbnail_url ||
-                      imagesToDisplay[0]?.medium_url ||
-                      (typeof imagesToDisplay[0] === "string"
-                        ? imagesToDisplay[0]
-                        : null)
-                    }
-                    alt=""
-                  />
+                  {sharePreviewSrc ? (
+                    <Image
+                      src={sharePreviewSrc}
+                      alt=""
+                      width={56}
+                      height={56}
+                      sizes="56px"
+                      style={{ borderRadius: 12, objectFit: "cover" }}
+                    />
+                  ) : null}
                   <div>
                     <p>{title}</p>
                     <PlaceMeta>

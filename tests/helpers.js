@@ -144,3 +144,60 @@ export async function waitForApiResponse(page, urlPattern, timeoutMs = 30000) {
     { timeout: timeoutMs }
   );
 }
+
+/**
+ * @param {import('@playwright/test').Page} page
+ * @param {number} [designIndex]
+ */
+export async function navigateToGiftCardCheckout(page, designIndex = 0) {
+  const q = Number.isFinite(designIndex) ? `?designIndex=${designIndex}` : '';
+  await gotoPath(page, `/giftcards/checkout${q}`);
+  await dismissCookieBannerIfVisible(page);
+}
+
+/**
+ * Fills the gift card config step (Ant Design form). Assumes preset amount is used unless customAmount is set.
+ * @param {import('@playwright/test').Page} page
+ * @param {{
+ *   amountPreset?: number,
+ *   customAmount?: string,
+ *   recipientName?: string,
+ *   recipientEmail?: string,
+ *   senderName?: string,
+ *   senderEmail?: string,
+ *   message?: string,
+ * }} opts
+ */
+export async function fillGiftCardConfigForm(page, opts = {}) {
+  const {
+    amountPreset = 50,
+    customAmount,
+    recipientName = 'Playwright Recipient',
+    recipientEmail = 'recipient-e2e@example.com',
+    senderName = 'Playwright Sender',
+    senderEmail = 'sender-e2e@example.com',
+    message = 'Enjoy your class!',
+  } = opts;
+
+  if (customAmount != null && customAmount !== '') {
+    await page.getByRole('button', { name: 'Custom' }).click();
+    await page.getByLabel('Custom Amount').fill(String(customAmount));
+  } else {
+    await page.getByRole('button', { name: `$${amountPreset}`, exact: true }).click();
+  }
+
+  await page.locator('#recipientName').fill(recipientName);
+  const recEmail = page.locator('#recipientEmail');
+  if (await recEmail.isVisible().catch(() => false)) {
+    await recEmail.fill(recipientEmail);
+  }
+  await page.getByPlaceholder('e.g. Jane Smith').fill(senderName);
+  const senderEmailInput = page.getByPlaceholder('e.g. you@example.com');
+  if (await senderEmailInput.isVisible().catch(() => false)) {
+    await senderEmailInput.fill(senderEmail);
+  }
+  const note = page.getByPlaceholder('Write a personal note...');
+  if (await note.isVisible().catch(() => false)) {
+    await note.fill(message);
+  }
+}

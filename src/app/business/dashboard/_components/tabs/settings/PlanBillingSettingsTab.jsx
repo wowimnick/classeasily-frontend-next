@@ -3326,15 +3326,9 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
             <EmptyStateWrap>
               <EmptyPlanIllustration />
               <div style={{ fontSize: 16, fontWeight: 600, color: T.text, marginBottom: 8 }}>No active plan</div>
-              <p style={{ fontSize: 13, color: "#374151", margin: "0 0 18px", lineHeight: 1.55 }}>
-                You don&apos;t have an active widget plan. Subscribe to embed the booking widget on your website.
+              <p style={{ fontSize: 13, color: "#374151", margin: 0, lineHeight: 1.55 }}>
+                You don&apos;t have an active widget plan yet. Choose a plan in the comparison above to subscribe and embed the booking widget on your website.
               </p>
-              <Link href="/booking-widget" style={{ textDecoration: "none" }}>
-                <PrimaryCtaBtn type="button" whileTap={{ scale: 0.97 }}>
-                  View plans
-                  <ArrowRight size={16} />
-                </PrimaryCtaBtn>
-              </Link>
             </EmptyStateWrap>
           ) : (
             <PlanBillingBody>
@@ -3802,7 +3796,7 @@ export default function PlanBillingSettingsTab({ addons, addonsLoading, refetchA
                 <div style={{ fontSize: 13, color: T.sub, lineHeight: 1.55, maxWidth: 400, margin: "0 auto" }}>
                   {hasStripeSubscription
                     ? "Invoices appear here after your first payment."
-                    : "Invoices appear after you subscribe through Stripe (e.g. booking widget checkout). Plan changes above update your access only until then."}
+                    : "Invoices appear after your first successful Stripe payment when you subscribe here. Plan changes above update your access only until then."}
                 </div>
               </div>
             ) : sortedInvoices.length === 0 ? (

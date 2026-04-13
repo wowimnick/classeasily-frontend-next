@@ -50,19 +50,36 @@ const SearchUrlHandler = () => {
 
     const participantsParam = searchParams.get("participants");
 
+    // Only sync "missing param → clear context" on flat /explore (query-driven).
+    // Slug routes like /explore/ontario/toronto often have no location in the query.
+    const isFlatExplore = pathname === "/explore";
+
     // --- LOCATION ---
-    // Only update context when URL has location; when missing, leave context unchanged
-    // so that search term/location persist in header and full-screen drawer.
     if (locParam) {
       setSearchTerm(locParam);
-
-      if (latParam && lngParam) {
+      const lat = latParam != null && latParam !== "" ? parseFloat(latParam) : NaN;
+      const lng = lngParam != null && lngParam !== "" ? parseFloat(lngParam) : NaN;
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
         setSelectedLocation((prev) => ({
           ...prev,
           displayName: locParam,
-          coordinates: { lat: parseFloat(latParam), lng: parseFloat(lngParam) },
+          coordinates: { lat, lng },
+        }));
+      } else {
+        setSelectedLocation((prev) => ({
+          ...prev,
+          displayName: locParam,
+          coordinates: null,
         }));
       }
+    } else if (isFlatExplore) {
+      setSearchTerm("");
+      setSelectedLocation({
+        displayName: "",
+        coordinates: null,
+        citySlug: null,
+        provinceSlug: null,
+      });
     }
 
     // --- DATE ---
@@ -74,14 +91,19 @@ const SearchUrlHandler = () => {
     } else if (dateParam) {
       const parsedDate = dayjs(dateParam);
       if (parsedDate.isValid()) setDatePickerValue(parsedDate);
+    } else if (isFlatExplore) {
+      setDatePickerValue(null);
     }
 
     // --- PARTICIPANTS ---
     if (participantsParam) {
       const count = parseInt(participantsParam, 10);
       if (!isNaN(count) && count > 0) setParticipantCount(count);
+    } else if (isFlatExplore) {
+      setParticipantCount(1);
     }
   }, [
+    pathname,
     searchParams,
     setSearchTerm,
     setSelectedLocation,

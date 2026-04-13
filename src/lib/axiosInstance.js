@@ -3,7 +3,29 @@
 import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-const API_TIMEOUT = 99999999;
+
+/** Default API timeout (ms). Override with NEXT_PUBLIC_API_TIMEOUT_MS. */
+const DEFAULT_API_TIMEOUT_MS = Number(
+  process.env.NEXT_PUBLIC_API_TIMEOUT_MS || 15000,
+);
+/** Longer timeout for payments, Stripe, and file uploads (ms). */
+const LONG_API_TIMEOUT_MS = Number(
+  process.env.NEXT_PUBLIC_API_LONG_TIMEOUT_MS || 30000,
+);
+
+function getTimeoutMsForUrl(url) {
+  if (!url || typeof url !== "string") return DEFAULT_API_TIMEOUT_MS;
+  const lower = url.toLowerCase();
+  const needsLong =
+    lower.includes("payment") ||
+    lower.includes("stripe") ||
+    lower.includes("intent") ||
+    lower.includes("upload-url") ||
+    lower.includes("/upload");
+  return needsLong ? LONG_API_TIMEOUT_MS : DEFAULT_API_TIMEOUT_MS;
+}
+
+const isDev = process.env.NODE_ENV !== "production";
 
 function getCookie(name) {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -59,20 +81,25 @@ async function nextJsFetchAdapter(config) {
         }
       }
 
-      // CRITICAL: Enable caching for Next.js ISR
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: config.headers || {},
-        cache: 'force-cache',
-        next: { 
-          revalidate: 3600,
-          tags: ['api-cache']
-        },
-      });
+      // Next.js 16 (cacheComponents): fetch-level cache options are ignored; use `"use cache"`
+      // in server-data-fetchers or route handlers. Server GETs here are uncached.
+      const timeoutMs = config.timeout ?? getTimeoutMsForUrl(url);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      let response;
+      try {
+        response = await fetch(url, {
+          method: "GET",
+          headers: config.headers || {},
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
-      const contentType = response.headers.get('content-type');
+      const contentType = response.headers.get("content-type");
       let data;
-      if (contentType && contentType.includes('application/json')) {
+      if (contentType && contentType.includes("application/json")) {
         data = await response.json();
       } else {
         data = await response.text();
@@ -87,13 +114,21 @@ async function nextJsFetchAdapter(config) {
         request: {},
       };
     } catch (error) {
-      const axiosError = new Error(error.message);
+      const builtUrl =
+        typeof config.url === "string" && config.url.startsWith("http")
+          ? config.url
+          : `${API_BASE_URL || ""}${config.url || ""}`;
+      const msg =
+        error?.name === "AbortError"
+          ? `Request timed out after ${config.timeout ?? getTimeoutMsForUrl(builtUrl)}ms`
+          : error.message;
+      const axiosError = new Error(msg);
       axiosError.config = config;
       axiosError.request = {};
       axiosError.response = {
         status: 500,
-        statusText: error.message,
-        data: error.message,
+        statusText: msg,
+        data: msg,
       };
       throw axiosError;
     }
@@ -109,7 +144,7 @@ async function nextJsFetchAdapter(config) {
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
-  timeout: API_TIMEOUT,
+  timeout: DEFAULT_API_TIMEOUT_MS,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -120,6 +155,16 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config) => {
     config.withCredentials = true;
+    const fullUrl = `${config.baseURL || ""}${config.url || ""}`;
+    const urlTimeout = getTimeoutMsForUrl(fullUrl);
+    if (config.timeout === DEFAULT_API_TIMEOUT_MS) {
+      config.timeout = urlTimeout;
+    } else if (
+      urlTimeout === LONG_API_TIMEOUT_MS &&
+      config.timeout < LONG_API_TIMEOUT_MS
+    ) {
+      config.timeout = LONG_API_TIMEOUT_MS;
+    }
     // Let axios set multipart/form-data (with boundary) for FormData; instance default is application/json
     if (config.data && typeof FormData !== 'undefined' && config.data instanceof FormData) {
       delete config.headers['Content-Type'];
@@ -189,12 +234,16 @@ axiosInstance.interceptors.response.use(
         isRefreshing = true;
 
         try {
-          console.log('[Axios] 401 detected on non-auth endpoint. Attempting silent refresh...');
+          if (isDev) {
+            console.log('[Axios] 401 detected on non-auth endpoint. Attempting silent refresh...');
+          }
           
           // Attempt to refresh the cookie
           await axiosInstance.post('/token/refresh/');
           
-          console.log('[Axios] Silent refresh successful. Retrying original request.');
+          if (isDev) {
+            console.log('[Axios] Silent refresh successful. Retrying original request.');
+          }
           
           // Process any queued requests (retry them)
           processQueue(null, true);
@@ -214,7 +263,9 @@ axiosInstance.interceptors.response.use(
             const { useAuthStore, redirectToLogin } = await import('./auth-client');
             
             // Clear user state
-            console.log('[Axios] Clearing user state due to session expiration');
+            if (isDev) {
+              console.log('[Axios] Clearing user state due to session expiration');
+            }
             useAuthStore.getState().clearUser();
             
             // Check if we are on the business or registration page (so after login we send them to registration)
@@ -225,7 +276,9 @@ axiosInstance.interceptors.response.use(
             if (isBusinessOrRegisterPage) {
               const { saveRedirectPath } = await import('./auth-client');
               saveRedirectPath('/business/register');
-              console.log('[Axios] Business/register page detected. Opening auth modal; will redirect to /business/register after auth.');
+              if (isDev) {
+                console.log('[Axios] Business/register page detected. Opening auth modal; will redirect to /business/register after auth.');
+              }
               useAuthStore.getState().setShouldOpenAuthModal(true);
             } else if (currentPath !== '/' && currentPath !== '') {
               // For other pages, use standard redirect logic

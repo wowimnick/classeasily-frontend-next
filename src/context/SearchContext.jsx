@@ -1,6 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  useMemo,
+} from "react";
 import debounce from "lodash/debounce";
 import { useRouter } from "next/navigation"; // Removed usePathname, useSearchParams
 import { LordIcon } from "@/services/ReactUtils";
@@ -23,7 +31,10 @@ function getSearchLogSessionId() {
 /** Fire-and-forget analytics when user runs a location-based explore search. */
 function logExploreSearchFromParams(params, { searchTerm, selectedLocation }) {
   let keyword = "";
-  if (typeof window !== "undefined" && window.location.pathname === "/explore") {
+  if (
+    typeof window !== "undefined" &&
+    window.location.pathname.startsWith("/explore")
+  ) {
     const cur = new URLSearchParams(window.location.search);
     keyword =
       cur.get("keyword") ||
@@ -183,52 +194,77 @@ export const SearchProvider = ({ children }) => {
   const [geocoding, setGeocoding] = useState(false);
   const [geocodedAddressResults, setGeocodedAddressResults] = useState([]);
 
+  const geocodeSeqRef = useRef(0);
+  const geocodeAbortRef = useRef(null);
+
   const debouncedGeocodeTrigger = useCallback(
     debounce(async (addr) => {
       if (!addr || addr.length < 3) {
+        geocodeAbortRef.current?.abort();
         setGeocodedAddressResults([]);
+        setGeocoding(false);
         return;
       }
+      geocodeAbortRef.current?.abort();
+      const controller = new AbortController();
+      geocodeAbortRef.current = controller;
+      const seq = ++geocodeSeqRef.current;
       setGeocoding(true);
       try {
         const encodedAddress = encodeURIComponent(addr);
         const response = await fetch(
           `${AWS_LOCATION_API_URL}?text=${encodedAddress}`,
+          { signal: controller.signal },
         );
         if (!response.ok)
           throw new Error(`Geocoding request failed: ${response.status}`);
         const data = await response.json();
+        if (seq !== geocodeSeqRef.current) return;
         if (Array.isArray(data)) {
           setGeocodedAddressResults(data);
         } else {
           setGeocodedAddressResults([]);
         }
       } catch (error) {
+        if (error?.name === "AbortError") return;
         console.error("AWS Geocoding error:", error);
+        if (seq !== geocodeSeqRef.current) return;
         setGeocodedAddressResults([]);
       } finally {
-        setGeocoding(false);
+        if (seq === geocodeSeqRef.current) {
+          setGeocoding(false);
+        }
       }
     }, 300),
     [],
   );
 
-  const handleLocationChange = (value) => {
-    setSearchTerm(value);
-    setSelectedLocation({
-      displayName: "",
-      coordinates: null,
-      citySlug: null,
-      provinceSlug: null,
-    });
-    if (!value) {
-      setGeocodedAddressResults([]);
-    } else {
-      debouncedGeocodeTrigger(value);
-    }
-  };
+  useEffect(() => {
+    return () => {
+      debouncedGeocodeTrigger.cancel();
+      geocodeAbortRef.current?.abort();
+    };
+  }, [debouncedGeocodeTrigger]);
 
-  const handleLocationSelect = (value, option) => {
+  const handleLocationChange = useCallback(
+    (value) => {
+      setSearchTerm(value);
+      setSelectedLocation({
+        displayName: "",
+        coordinates: null,
+        citySlug: null,
+        provinceSlug: null,
+      });
+      if (!value) {
+        setGeocodedAddressResults([]);
+      } else {
+        debouncedGeocodeTrigger(value);
+      }
+    },
+    [debouncedGeocodeTrigger],
+  );
+
+  const handleLocationSelect = useCallback((value, option) => {
     setSearchTerm(value);
     setGeocodedAddressResults([]);
     setSelectedLocation({
@@ -237,9 +273,9 @@ export const SearchProvider = ({ children }) => {
       citySlug: option.citySlug,
       provinceSlug: option.provinceSlug,
     });
-  };
+  }, []);
 
-  const clearAll = () => {
+  const clearAll = useCallback(() => {
     setSearchTerm("");
     setSelectedLocation({
       displayName: "",
@@ -253,7 +289,7 @@ export const SearchProvider = ({ children }) => {
     try {
       if (typeof window !== "undefined") sessionStorage.removeItem(SEARCH_STORAGE_KEY);
     } catch (_) {}
-  };
+  }, []);
 
   // Persist search state so it survives closing the drawer and shows in ExploreHeader
   useEffect(() => {
@@ -265,12 +301,16 @@ export const SearchProvider = ({ children }) => {
     });
   }, [searchTerm, selectedLocation, datePickerValue, participantCount]);
 
-  const performSearch = () => {
+  const performSearch = useCallback(() => {
     const { displayName, coordinates } = selectedLocation;
     const params = new URLSearchParams();
 
     // When already on explore, preserve current category/collection/filters so location change doesn't reset them
-    if (typeof window !== "undefined" && window.location.pathname === "/explore" && window.location.search) {
+    if (
+      typeof window !== "undefined" &&
+      window.location.pathname.startsWith("/explore") &&
+      window.location.search
+    ) {
       const current = new URLSearchParams(window.location.search);
       const preserveKeys = [
         "category",
@@ -301,12 +341,11 @@ export const SearchProvider = ({ children }) => {
       if (datePickerValue.start && datePickerValue.end) {
         params.set("start_date", datePickerValue.start);
         params.set("end_date", datePickerValue.end);
-      } else if (datePickerValue.format) {
-        // Single date object
+      } else if (typeof datePickerValue?.format === "function") {
+        // Single date object (dayjs)
         params.set("date", datePickerValue.format("YYYY-MM-DD"));
-      } else {
-        // Fallback for string
-        params.set("date", datePickerValue.toString());
+      } else if (typeof datePickerValue === "string") {
+        params.set("date", datePickerValue);
       }
     }
 
@@ -348,15 +387,37 @@ export const SearchProvider = ({ children }) => {
     router.push(newUrl);
 
     setIsDrawerOpen(false);
-  };
+  }, [
+    selectedLocation,
+    searchTerm,
+    datePickerValue,
+    participantCount,
+    router,
+  ]);
 
-  // Prefetch explore page when user has a location so it loads instantly on Search
+  const debouncedPrefetchExplore = useMemo(
+    () =>
+      debounce((url) => {
+        router.prefetch(url);
+      }, 450),
+    [router],
+  );
+
+  useEffect(() => {
+    return () => debouncedPrefetchExplore.cancel();
+  }, [debouncedPrefetchExplore]);
+
+  // Prefetch explore page when user has a location (debounced to avoid storms while typing)
   useEffect(() => {
     const { displayName, coordinates } = selectedLocation;
     const hasLocation = (displayName || searchTerm.trim()) && coordinates;
     if (!hasLocation) return;
     const params = new URLSearchParams();
-    params.set("location", (displayName || searchTerm.trim()).replace(/,?\s*ON\s*$/, "").trim() || "Toronto");
+    params.set(
+      "location",
+      (displayName || searchTerm.trim()).replace(/,?\s*ON\s*$/, "").trim() ||
+        "Toronto",
+    );
     params.set("lat", coordinates.lat.toString());
     params.set("lng", coordinates.lng.toString());
     params.set("participants", participantCount.toString());
@@ -364,34 +425,58 @@ export const SearchProvider = ({ children }) => {
       if (datePickerValue.start && datePickerValue.end) {
         params.set("start_date", datePickerValue.start);
         params.set("end_date", datePickerValue.end);
-      } else if (datePickerValue.format) {
+      } else if (typeof datePickerValue?.format === "function") {
         params.set("date", datePickerValue.format("YYYY-MM-DD"));
+      } else if (typeof datePickerValue === "string") {
+        params.set("date", datePickerValue);
       }
     }
     const exploreUrl = `/explore?${params.toString()}`;
-    router.prefetch(exploreUrl);
-  }, [selectedLocation, searchTerm, participantCount, datePickerValue, router]);
-
-  const value = {
-    isDrawerOpen,
-    setIsDrawerOpen,
-    isSearching,
-    setIsSearching,
-    searchTerm,
-    setSearchTerm,
+    debouncedPrefetchExplore(exploreUrl);
+  }, [
     selectedLocation,
-    setSelectedLocation,
-    datePickerValue,
-    setDatePickerValue,
+    searchTerm,
     participantCount,
-    setParticipantCount,
-    geocoding,
-    geocodedAddressResults,
-    handleLocationChange,
-    handleLocationSelect,
-    clearAll,
-    performSearch,
-  };
+    datePickerValue,
+    debouncedPrefetchExplore,
+  ]);
+
+  const value = useMemo(
+    () => ({
+      isDrawerOpen,
+      setIsDrawerOpen,
+      isSearching,
+      setIsSearching,
+      searchTerm,
+      setSearchTerm,
+      selectedLocation,
+      setSelectedLocation,
+      datePickerValue,
+      setDatePickerValue,
+      participantCount,
+      setParticipantCount,
+      geocoding,
+      geocodedAddressResults,
+      handleLocationChange,
+      handleLocationSelect,
+      clearAll,
+      performSearch,
+    }),
+    [
+      isDrawerOpen,
+      isSearching,
+      searchTerm,
+      selectedLocation,
+      datePickerValue,
+      participantCount,
+      geocoding,
+      geocodedAddressResults,
+      handleLocationChange,
+      handleLocationSelect,
+      clearAll,
+      performSearch,
+    ],
+  );
 
   return (
     <SearchContext.Provider value={value}>{children}</SearchContext.Provider>

@@ -193,8 +193,8 @@ function WidgetUpgradeModal({ open, onClose }) {
         <UpgradeModalBody>
           Subscribe to a widget plan to embed the booking widget on your website, customize its look, and start taking bookings.
         </UpgradeModalBody>
-        <UpgradeModalCta href="/booking-widget" onClick={onClose}>
-          Get the Widget <ArrowRight size={14} />
+        <UpgradeModalCta href="/business/dashboard/settings?tab=billing" onClick={onClose}>
+          Plan &amp; billing <ArrowRight size={14} />
         </UpgradeModalCta>
       </UpgradeModalInner>
     </>
@@ -260,8 +260,8 @@ function MembershipsUpgradeModal({ open, onClose }) {
         <UpgradeModalBody>
           Subscribe to Growth or Advanced to create membership plans, manage members and credits, and collect recurring revenue from your widget or business page.
         </UpgradeModalBody>
-        <UpgradeModalCta href="/booking-widget" onClick={onClose}>
-          View plans <ArrowRight size={14} />
+        <UpgradeModalCta href="/business/dashboard/settings?tab=billing" onClick={onClose}>
+          Plan &amp; billing <ArrowRight size={14} />
         </UpgradeModalCta>
       </UpgradeModalInner>
     </>

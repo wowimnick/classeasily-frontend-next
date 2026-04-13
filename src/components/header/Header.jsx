@@ -6,7 +6,7 @@ import styled, { keyframes } from "styled-components";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useAuth, getOptimisticAuthState } from "@/lib/auth-client";
 import { motion, AnimatePresence } from "framer-motion";
-import { debounce } from "lodash";
+import debounce from "lodash/debounce";
 import { useAuthModal } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";

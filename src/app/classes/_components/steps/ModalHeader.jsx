@@ -1,5 +1,5 @@
 import React from "react";
-import { Check, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import styled from "styled-components";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -9,7 +9,6 @@ const theme = {
   textSecondary: "#717171",
   borderLight: "#f0f0f0",
   white: "#ffffff",
-  success: "#00a96f",
 };
 
 // --- Header Styles ---
@@ -21,11 +20,10 @@ const HeaderContainer = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 24px;
+  gap: 0;
 
   @media (max-width: 640px) {
     padding: 20px 16px;
-    gap: 20px;
   }
 `;
 
@@ -56,90 +54,6 @@ const HeaderSubtitle = styled(motion.p)`
   font-size: 14px;
   color: ${theme.textSecondary};
   line-height: 1.5;
-`;
-
-// --- Progress Bar Styles ---
-const ProgressContainer = styled.div`
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  max-width: ${(props) => (props.$stepCount > 3 ? "420px" : "360px")};
-`;
-
-const ProgressTrack = styled.div`
-  position: absolute;
-  top: 15px; /* Aligned with center of circle */
-  left: 30px;
-  right: 30px;
-  height: 2px;
-  background-color: ${theme.borderLight};
-  transform: translateY(-50%);
-  z-index: 0;
-`;
-
-const ProgressFill = styled(motion.div)`
-  position: absolute;
-  top: 15px; /* Aligned with center of circle */
-  left: 30px;
-  right: 30px;
-  height: 2px;
-  background-color: ${theme.success};
-  transform: translateY(-50%);
-  transform-origin: left;
-  z-index: 0;
-`;
-
-const Step = styled.div`
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  width: 90px;
-`;
-
-const StepCircle = styled.div`
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  background: ${(props) =>
-    props.$active
-      ? theme.primary
-      : props.$completed
-        ? theme.success
-        : "#f3f4f6"};
-  color: ${(props) =>
-    props.$active || props.$completed ? "white" : "#9ca3af"};
-  border: 2px solid white;
-  box-shadow: 0 0 0 2px
-    ${(props) =>
-      props.$active
-        ? theme.primary
-        : props.$completed
-          ? theme.success
-          : "transparent"};
-`;
-
-const StepLabel = styled.span`
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: ${(props) =>
-    props.$active || props.$completed
-      ? theme.textPrimary
-      : theme.textSecondary};
-  white-space: nowrap;
-  transition: color 0.3s ease;
 `;
 
 // --- Footer Styles ---
@@ -304,9 +218,6 @@ export const ModalHeader = ({
   const currentLabel = steps[currentStep - 1] || "Unknown";
   const { title, subtitle } = getContent(currentLabel);
 
-  // Calculate progress fill percentage
-  const progressPercent = ((currentStep - 1) / (steps.length - 1)) * 100;
-
   return (
     <HeaderContainer>
       <TextContainer>
@@ -333,30 +244,6 @@ export const ModalHeader = ({
           </React.Fragment>
         </AnimatePresence>
       </TextContainer>
-
-      <ProgressContainer $stepCount={steps.length}>
-        <ProgressTrack />
-        <ProgressFill
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: progressPercent / 100 }}
-          transition={{ duration: 0.4, ease: "easeInOut" }}
-        />
-        {steps.map((label, index) => {
-          const stepNumber = index + 1;
-          const isActive = currentStep === stepNumber;
-          const isCompleted = currentStep > stepNumber;
-          return (
-            <Step key={index}>
-              <StepCircle $active={isActive} $completed={isCompleted}>
-                {isCompleted ? <Check size={16} /> : stepNumber}
-              </StepCircle>
-              <StepLabel $active={isActive} $completed={isCompleted}>
-                {label}
-              </StepLabel>
-            </Step>
-          );
-        })}
-      </ProgressContainer>
     </HeaderContainer>
   );
 };

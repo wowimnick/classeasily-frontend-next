@@ -10,6 +10,7 @@ import {
 } from "@/lib/server-data-fetchers";
 import FooterSmart from "@/components/homepage/FooterSmart.jsx";
 import ClassPageClient from "../_components/ClassPageClient";
+import ClassReviewsSeo from "../_components/ClassReviewsSeo";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -166,10 +167,28 @@ export async function generateMetadata({ params }) {
       title: pageTitle,
       description: pageDescription,
       url: canonicalUrl,
+      siteName: "Classeasily",
       images: [
         { url: imageUrl, width: 1200, height: 630, alt: classData.title },
       ],
       type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: pageTitle,
+      description: pageDescription,
+      images: [imageUrl],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
     },
   };
 }
@@ -327,6 +346,10 @@ export default async function ClassPage({ params }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       <main style={{ flex: 1 }}>
+        <ClassReviewsSeo
+          classTitle={classData.title}
+          reviews={initialReviews}
+        />
         <ClassPageClient
           classData={classData}
           businessData={businessData}

@@ -1884,7 +1884,7 @@ const BusinessWelcomePage = () => {
               "Already have a website? Embed our booking widget to manage schedules and accept payments directly on your own domain.",
             iconColor: "#1a1a1a",
             buttonLabel: "Get the Widget",
-            buttonPath: "/booking-widget",
+            buttonPath: "/business/dashboard/settings?tab=billing",
             buttonBg: "#1a1a1a",
             buttonShadow: "rgba(0, 0, 0, 0.25)",
             features: [

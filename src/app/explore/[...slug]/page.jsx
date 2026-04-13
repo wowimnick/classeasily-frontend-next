@@ -116,6 +116,8 @@ export async function generateMetadata({ params, searchParams }) {
       queryString ? `?${queryString}` : ""
     }`;
 
+    const defaultOgImage = "https://i.imgur.com/biTTckW.png";
+
     return {
       title,
       description,
@@ -126,7 +128,34 @@ export async function generateMetadata({ params, searchParams }) {
         title,
         description,
         url: fullUrl,
+        siteName: "Classeasily",
         type: "website",
+        locale: "en_US",
+        images: [
+          {
+            url: defaultOgImage,
+            width: 1200,
+            height: 630,
+            alt: "Classeasily — local classes and experiences",
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [defaultOgImage],
+      },
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+          "max-video-preview": -1,
+        },
       },
     };
   } catch (error) {
@@ -135,6 +164,17 @@ export async function generateMetadata({ params, searchParams }) {
       title: "Explore Experiences Near You | Classeasily",
       description:
         "Find and book amazing local experiences and activities. Plan your next date night or outing with friends today!",
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+          "max-video-preview": -1,
+        },
+      },
     };
   }
 }

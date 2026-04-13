@@ -85,7 +85,7 @@ export async function generateMetadata({ params }) {
       images: business_image_medium_url ? [business_image_medium_url] : [],
     },
     alternates: {
-      canonical: `https://classeasily.com/businesses/${slug}`,
+      canonical: `https://classeasily.com/business/${slug}`,
     },
   };
 }

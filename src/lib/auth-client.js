@@ -51,10 +51,8 @@ const handlePostLoginRedirect = (user, router) => {
 
   const { path: redirectPath, requiredPermission } = getRedirectPath();
 
-  // Business users: if they were heading to widget checkout, send them there first
   if (user?.has_business) {
-    if (redirectPath && redirectPath.startsWith("/booking-widget/checkout")) {
-      console.log("[Auth] User has business, redirecting to checkout:", redirectPath);
+    if (redirectPath && redirectPath.startsWith("/business/")) {
       clearRedirectPath();
       router.push(redirectPath);
       return true;

@@ -6,14 +6,19 @@ import posthog from "posthog-js";
 import styled from "styled-components";
 import { Drawer } from "vaul";
 import { VAUL_OVERLAY_BACKDROP_BLUR } from "@/lib/vaulOverlayBlur";
-import { Star, CalendarDays, Clock, Users, ChevronRight, Shield } from "lucide-react";
+import { Star, CalendarDays, Clock, Users, ChevronRight, Shield, X } from "lucide-react";
 import { formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
 import { getCancellationPolicyText, getDurationText } from "./steps/utils";
 import NumberFlow from "@number-flow/react";
 import message from "@/lib/message";
+import { useAuthUser } from "@/hooks/useAuthUser";
+import {
+  ESTIMATED_SALES_TAX_RATE,
+  estimateTaxFromSubtotal,
+  estimateTotalWithTax,
+} from "@/lib/bookingPricing";
 
 const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
-const HST_RATE = 0.13;
 
 const theme = {
   textPrimary: "#222222",
@@ -100,8 +105,8 @@ const DrawerFooter = styled.div`
 
 /* Header */
 const HeaderRow = styled.div`
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
   align-items: center;
   margin-bottom: 20px;
   padding-top: 8px;
@@ -114,13 +119,17 @@ const Title = styled.h2`
   font-weight: 700;
   color: ${theme.textPrimary};
   letter-spacing: -0.01em;
+  text-align: center;
+  grid-column: 2;
 `;
 
 const CloseBtn = styled.button`
   background: #f3f4f6;
   border: none;
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -128,7 +137,9 @@ const CloseBtn = styled.button`
   cursor: pointer;
   color: #111827;
   transition: background 0.2s;
-  
+  grid-column: 3;
+  justify-self: end;
+
   &:active {
     background-color: #e5e5e5;
   }
@@ -380,6 +391,7 @@ export default function MobileReserveReviewDrawer({
   onEditGuests,
 }) {
   const router = useRouter();
+  const { user: authUser } = useAuthUser();
   const [priceOpen, setPriceOpen] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
   const hasFiredBookingStartedRef = useRef(false);
@@ -403,8 +415,9 @@ export default function MobileReserveReviewDrawer({
   const participants = reserveData?.participants ?? 1;
   const pricePer = slot ? parseFloat(slot.price) || 0 : 0;
   const subtotal = pricePer * participants;
-  const taxAmount = subtotal * HST_RATE;
-  const total = subtotal + taxAmount;
+  const taxAmount = estimateTaxFromSubtotal(subtotal);
+  const total = estimateTotalWithTax(subtotal);
+  const estimatedTaxLabel = `Estimated tax (${Math.round(ESTIMATED_SALES_TAX_RATE * 100)}%)`;
   const currency = classData?.currency_code || "CAD";
 
   const imageUrl = useMemo(() => {
@@ -473,17 +486,24 @@ export default function MobileReserveReviewDrawer({
 
   const handleNext = () => {
     if (!classData?.slug || !slot || !option) return;
-    const participantDetails = Array.from({ length: participants }, () => ({
-      name: "",
+    const bookerName = authUser
+      ? `${authUser.first_name || ""} ${authUser.last_name || ""}`.trim()
+      : "";
+    const bookerEmail = authUser?.email?.trim() || "";
+    const bookerPhone = String(
+      authUser?.phone_number || authUser?.phone || "",
+    ).trim();
+    const participantDetails = Array.from({ length: participants }, (_, i) => ({
+      name: i === 0 ? bookerName : "",
     }));
     const nextBookingState = {
       selectedSlots: [slot],
       participants,
       participant_details: participantDetails,
       selectedOption: option,
-      userName: "",
-      userEmail: "",
-      userPhone: "",
+      userName: bookerName,
+      userEmail: bookerEmail,
+      userPhone: bookerPhone,
       price: pricePer,
       notes: "",
     };
@@ -514,13 +534,26 @@ export default function MobileReserveReviewDrawer({
           <DrawerHandle />
           <DrawerBody>
             <HeaderRow>
+              <span style={{ gridColumn: 1 }} aria-hidden />
               <Title>Review and continue</Title>
+              <CloseBtn
+                type="button"
+                onClick={onClose}
+                aria-label="Close review"
+              >
+                <X size={18} />
+              </CloseBtn>
             </HeaderRow>
 
             <InfoCard>
               <ListingHeader>
                 <ListingImage>
-                  {imageUrl && <img src={imageUrl} alt="" />}
+                  {imageUrl && (
+                    <img
+                      src={imageUrl}
+                      alt={classData?.title ? `${classData.title} listing` : "Class listing"}
+                    />
+                  )}
                 </ListingImage>
                 <ListingInfo>
                   <ListingTitle>{classData?.title || "Class"}</ListingTitle>
@@ -617,7 +650,7 @@ export default function MobileReserveReviewDrawer({
                                 <span><NumberFlow value={subtotal} format={{ style: "currency", currency }} /></span>
                             </PriceRow>
                             <PriceRow>
-                                <span>HST (13%)</span>
+                                <span>{estimatedTaxLabel}</span>
                                 <span><NumberFlow value={taxAmount} format={{ style: "currency", currency }} /></span>
                             </PriceRow>
                             <PriceRow className="total">

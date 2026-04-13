@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Suspense, useMemo, useEffect, useRef } from "react";
 import { ConfigProvider } from "antd";
 import { ThemeProvider } from "styled-components";
@@ -12,8 +13,12 @@ import CookieConsentProvider from "./providers/CookieConsentProvider";
 import { ToastProvider } from "@/lib/toast/ToastContext";
 import SessionMonitor from "@/components/auth/SessionMonitor";
 import { SearchProvider } from "@/context/SearchContext";
-import SearchFullScreen from "@/components/common/SearchFullScreen";
 import SearchUrlHandler from "@/components/common/SearchUrlHandler";
+
+const SearchFullScreen = dynamic(
+  () => import("@/components/common/SearchFullScreen"),
+  { ssr: false, loading: () => null },
+);
 import ScrollRestorationHome from "@/components/ScrollRestorationHome";
 import ScrollToTopOnNavigate from "@/components/ScrollToTopOnNavigate";
 

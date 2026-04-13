@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
+import { cacheLife } from "next/cache";
 import { preloadHomepageData } from "@/lib/server-data-fetchers";
 import "./(homepage)/_components/homepage.css";
 
@@ -66,25 +67,40 @@ const VerifyEmailOverlay = dynamic(
 import HomepageConversationOverlayClient from "./(homepage)/_components/HomepageConversationOverlayClient";
 
 export const metadata = {
-  title: "ClassEasily - Find Local Classes & Experiences Near You",
+  metadataBase: new URL("https://classeasily.com"),
+  title: "Classeasily - Find Local Classes & Experiences Near You",
   description:
     "Discover and book local experiences in your area for your next date night or friend gathering on Classeasily.",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "ClassEasily - Find Local Classes & Experiences Near You",
+    title: "Classeasily - Find Local Classes & Experiences Near You",
     description:
       "Discover and book local experiences in your area for your next date night or friend gathering on Classeasily.",
     type: "website",
+    images: [
+      {
+        url: "https://i.imgur.com/biTTckW.png",
+        width: 1200,
+        height: 630,
+        alt: "Classeasily - Discover local experiences",
+      },
+    ],
   },
 };
 
 export default async function HomePage() {
+  "use cache";
+  cacheLife("homepage");
+
   // Parallel data fetching
   const { row_collections, categories } = await preloadHomepageData();
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "ClassEasily",
+    name: "Classeasily",
     url: "https://classeasily.com",
     description:
       "Discover and book local experiences in your area for your next date night or friend gathering on Classeasily.",
@@ -95,11 +111,46 @@ export default async function HomePage() {
     },
   };
 
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "What is Classeasily?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Classeasily is a marketplace to discover and book local workshops, classes, and experiences near you. Guests browse verified hosts; hosts list schedules, take bookings, and get paid through the platform.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How do I find classes near me?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Use the search and explore pages on classeasily.com to filter by location, collection, or activity type, then book a session that fits your schedule.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How can I host classes on Classeasily?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Register your business at classeasily.com/business, complete verification, then create class listings with schedules. Classeasily handles discovery, booking, and payments.",
+        },
+      },
+    ],
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
 
       <div className="homepage-style">

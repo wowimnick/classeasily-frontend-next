@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "antd";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { debounce } from "lodash";
+import debounce from "lodash/debounce";
 import useEmblaCarousel from "embla-carousel-react";
 import CategoryCard from "./CategoryCard";
 import styles from "./HomepageCategories.module.css";

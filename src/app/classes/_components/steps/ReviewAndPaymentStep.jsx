@@ -54,8 +54,25 @@ import posthog from "posthog-js";
 import { theme as appTheme } from "@/components/theme";
 import { formatNaiveDate, formatTimeRangeForDisplay } from "@/services/utils";
 import loadingAnimation from "@/assets/animations/Scene.json";
+import {
+  ESTIMATED_SALES_TAX_RATE,
+  estimateTaxFromSubtotal,
+} from "@/lib/bookingPricing";
 
-const HST_RATE = 0.13;
+function buildIntentPriceBreakdown(response) {
+  if (!response || typeof response !== "object") return null;
+  const sub = response.subtotal;
+  const tax = response.tax_amount;
+  const total = response.amount;
+  if (
+    ![sub, tax, total].every(
+      (v) => typeof v === "number" && Number.isFinite(v),
+    )
+  ) {
+    return null;
+  }
+  return { subtotal: sub, tax_amount: tax, amount: total };
+}
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
@@ -67,7 +84,7 @@ const StepContainer = styled.div`
   gap: 24px;
   position: relative;
 
-  @media (min-width: 969px) {
+  @media (min-width: 1024px) {
     grid-template-columns: minmax(0, 1.2fr) 400px;
     gap: 40px;
     align-items: flex-start;
@@ -80,7 +97,7 @@ const LeftColumnWrap = styled.div`
   gap: 24px;
   min-width: 0;
 
-  @media (max-width: 968px) {
+  @media (max-width: 1023px) {
     .ant-input,
     .ant-input-affix-wrapper input,
     .ant-input-number-input {
@@ -105,7 +122,7 @@ const SectionCard = styled.div`
   padding-left: 4px;
   padding-right: 4px;
 
-  @media (max-width: 968px) {
+  @media (max-width: 1023px) {
     padding-left: 0;
     padding-right: 0;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
@@ -136,7 +153,7 @@ const SectionHeader = styled.div`
     color: #111827;
   }
 
-  @media (max-width: 968px) {
+  @media (max-width: 1023px) {
     padding: 20px;
     border-bottom: 1px solid #e5e7eb;
     h3 {
@@ -157,7 +174,7 @@ const SectionHeader = styled.div`
     padding: 0;
   }
 
-  @media (max-width: 968px) {
+  @media (max-width: 1023px) {
     .edit-btn {
       color: #222222;
     }
@@ -167,7 +184,7 @@ const SectionHeader = styled.div`
 const SectionContent = styled(motion.div)`
   padding: 8px 24px 24px 24px;
 
-  @media (max-width: 968px) {
+  @media (max-width: 1023px) {
     padding: 0;
   }
 `;
@@ -176,7 +193,7 @@ const SectionContentInner = styled.div`
   padding: 8px 24px 24px 24px;
   border-top: 1px solid #f3f4f6;
 
-  @media (max-width: 968px) {
+  @media (max-width: 1023px) {
     padding: 0;
     border-top: none;
   }
@@ -184,10 +201,10 @@ const SectionContentInner = styled.div`
 
 /* Drawer-style field rows on mobile (bordered rows like MobileReserveReviewDrawer) */
 const CheckoutFieldRow = styled.div`
-  @media (min-width: 969px) {
+  @media (min-width: 1024px) {
     margin-bottom: 12px;
   }
-  @media (max-width: 968px) {
+  @media (max-width: 1023px) {
     padding: 16px 20px;
     border-bottom: 1px solid #e5e7eb;
     margin-bottom: 0;
@@ -199,7 +216,7 @@ const CheckoutFieldRow = styled.div`
 
 /* On desktop: email + phone side by side; on mobile: stacked with borders */
 const CheckoutContactRow = styled.div`
-  @media (min-width: 969px) {
+  @media (min-width: 1024px) {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
@@ -207,7 +224,7 @@ const CheckoutContactRow = styled.div`
 `;
 
 const CheckoutPaymentBody = styled.div`
-  @media (max-width: 968px) {
+  @media (max-width: 1023px) {
     padding: 20px;
     padding-top: 0;
   }
@@ -280,7 +297,7 @@ const SummaryDataRow = styled.div`
     font-weight: 500;
   }
 
-  @media (max-width: 968px) {
+  @media (max-width: 1023px) {
     margin-bottom: 0;
     padding: 16px 12px;
     border-bottom: 1px solid #e5e7eb;
@@ -303,7 +320,7 @@ const SummaryDataRow = styled.div`
 /* Step action buttons (Continue to payment, Edit details) */
 const CheckoutStepActions = styled.div`
   margin-top: 16px;
-  @media (max-width: 968px) {
+  @media (max-width: 1023px) {
     padding: 16px 20px 0;
     margin-top: 0;
   }
@@ -314,7 +331,7 @@ const NextButtonContainer = styled.div`
     display: flex;
     justify-content: flex-end;
     margin-top: 16px;
-    @media (max-width: 968px) {
+    @media (max-width: 1023px) {
       padding: 16px 20px;
       margin-top: 0;
       justify-content: stretch;
@@ -336,7 +353,7 @@ const NextButton = styled(Button)`
     opacity: 1 !important;
   }
 
-  @media (max-width: 968px) {
+  @media (max-width: 1023px) {
     width: 100%;
     min-width: unset;
     height: 52px;
@@ -447,7 +464,7 @@ const CardRevealButton = styled.button`
 
 const SummarySection = styled.div`
   display: none;
-  @media (min-width: 969px) {
+  @media (min-width: 1024px) {
     display: block;
     position: sticky;
     top: 100px; /* Account for sticky header */
@@ -457,7 +474,7 @@ const SummarySection = styled.div`
 /* Desktop Footer rendered INSIDE the payment section, so we just style the container */
 const DesktopInlineFooter = styled.div`
   display: none;
-  @media (min-width: 969px) {
+  @media (min-width: 1024px) {
     display: block;
     margin-top: 24px;
     padding-top: 24px;
@@ -608,7 +625,7 @@ const MobileSummaryContainer = styled.div`
   margin-bottom: 24px;
   border-bottom: 1px solid #e5e7eb;
 
-  @media (min-width: 969px) {
+  @media (min-width: 1024px) {
     display: none;
   }
 `;
@@ -956,7 +973,7 @@ const FieldLabel = styled.span`
   font-weight: 600;
   font-size: 0.8125rem;
   color: #111827;
-  @media (max-width: 968px) {
+  @media (max-width: 1023px) {
     font-size: 15px;
     color: #222222;
   }
@@ -1093,7 +1110,7 @@ const CouponTicketInput = styled.div`
   .ant-input-affix-wrapper input {
     font-size: 14px;
   }
-  @media (max-width: 968px) {
+  @media (max-width: 1023px) {
     .ant-input,
     .ant-input-affix-wrapper input {
       font-size: 16px;
@@ -1179,7 +1196,7 @@ const MobileTimerContainer = styled.div`
     border-radius: 8px;
     margin-top: 12px;
   `}
-  @media (min-width: 969px) {
+  @media (min-width: 1024px) {
     display: none;
   }
 `;
@@ -1187,7 +1204,7 @@ const MobileTimerContainer = styled.div`
 const DesktopTimerContainer = styled.div`
   display: none;
   text-align: right;
-  @media (min-width: 969px) {
+  @media (min-width: 1024px) {
     display: block;
   }
 `;
@@ -1715,6 +1732,7 @@ const ReviewAndPaymentStep = ({
   });
   const fetchIntentInFlightRef = useRef(false);
   const intentCreationAttemptedRef = useRef(false);
+  const paymentSubmitInFlightRef = useRef(false);
 
   const bookingFingerprint = useMemo(() => {
     const slot = bookingData?.selectedSlots?.[0];
@@ -1873,35 +1891,59 @@ const ReviewAndPaymentStep = ({
     };
   }, [subtotalForGlobal]);
 
-  const { discountAmount, taxAmount, finalTotal, gcDeduction } = useMemo(() => {
-    const businessDiscount = appliedDiscount
-      ? parseFloat(appliedDiscount.calculated_discount_amount) || 0
-      : 0;
-    const globalDiscount = activeGlobalDiscount?.calculated_discount_amount
-      ? parseFloat(activeGlobalDiscount.calculated_discount_amount) || 0
-      : 0;
-    const totalDiscount = businessDiscount + globalDiscount;
-    const subtotalAfterDiscount = Math.max(0, subtotal - totalDiscount);
-    const tax = subtotalAfterDiscount * HST_RATE;
-    const grossTotal = subtotalAfterDiscount + tax;
+  const { discountAmount, taxAmount, finalTotal, gcDeduction, taxFromBackend } =
+    useMemo(() => {
+      const businessDiscount = appliedDiscount
+        ? parseFloat(appliedDiscount.calculated_discount_amount) || 0
+        : 0;
+      const globalDiscount = activeGlobalDiscount?.calculated_discount_amount
+        ? parseFloat(activeGlobalDiscount.calculated_discount_amount) || 0
+        : 0;
+      const totalDiscount = businessDiscount + globalDiscount;
+      const subtotalAfterDiscount = Math.max(0, subtotal - totalDiscount);
 
-    let deduction = 0;
-    if (appliedGiftCard) {
-      deduction = Math.min(grossTotal, parseFloat(appliedGiftCard.balance));
-    }
+      const breakdown = bookingData?.intentPriceBreakdown;
+      const hasBackend =
+        breakdown &&
+        typeof breakdown.tax_amount === "number" &&
+        Number.isFinite(breakdown.tax_amount) &&
+        typeof breakdown.amount === "number" &&
+        Number.isFinite(breakdown.amount);
 
-    const payable = Math.max(0, grossTotal - deduction);
+      const tax = hasBackend
+        ? breakdown.tax_amount
+        : estimateTaxFromSubtotal(subtotalAfterDiscount);
+      const grossTotal = hasBackend
+        ? breakdown.amount
+        : subtotalAfterDiscount + tax;
 
-    return {
-      discountAmount: totalDiscount,
-      taxAmount: tax,
-      finalTotal: payable,
-      gcDeduction: deduction,
-    };
-  }, [subtotal, appliedDiscount, appliedGiftCard, activeGlobalDiscount]);
+      let deduction = 0;
+      if (appliedGiftCard) {
+        deduction = Math.min(grossTotal, parseFloat(appliedGiftCard.balance));
+      }
+
+      const payable = Math.max(0, grossTotal - deduction);
+
+      return {
+        discountAmount: totalDiscount,
+        taxAmount: tax,
+        finalTotal: payable,
+        gcDeduction: deduction,
+        taxFromBackend: !!hasBackend,
+      };
+    }, [
+      subtotal,
+      appliedDiscount,
+      appliedGiftCard,
+      activeGlobalDiscount,
+      bookingData?.intentPriceBreakdown,
+    ]);
 
   const isFree = finalTotal === 0;
 
+  const taxLineLabel = taxFromBackend
+    ? "Tax"
+    : `Estimated tax (${Math.round(ESTIMATED_SALES_TAX_RATE * 100)}%)`;
 
   const fetchPaymentIntent = useCallback(
     async (currentDiscountId = null) => {
@@ -1944,9 +1986,13 @@ const ReviewAndPaymentStep = ({
           setPaymentIntentError(null);
           if (onUpdateBookingData) {
             const paymentIntentId = response.clientSecret.split("_secret_")[0];
+            const intentPriceBreakdown = buildIntentPriceBreakdown(response);
             onUpdateBookingData({
               paymentIntentId: paymentIntentId,
               clientSecret: response.clientSecret,
+              ...(intentPriceBreakdown
+                ? { intentPriceBreakdown }
+                : {}),
             });
           }
         } else {
@@ -2004,7 +2050,11 @@ const ReviewAndPaymentStep = ({
     const paymentIntentId = clientSecret.split("_secret_")[0];
     paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
     setClientSecret(null);
-    onUpdateBookingData?.({ clientSecret: null, paymentIntentId: null });
+    onUpdateBookingData?.({
+      clientSecret: null,
+      paymentIntentId: null,
+      intentPriceBreakdown: null,
+    });
     setPaymentIntentError(null);
   }, [
     appliedDiscount?.id,
@@ -2024,7 +2074,10 @@ const ReviewAndPaymentStep = ({
     const check = () => {
       paymentService
         .checkSlotAvailability(instanceId, participants)
-        .then((res) => setSlotUnavailable(!res.available));
+        .then((res) => {
+          if (res?.availabilityCheckFailed) return;
+          setSlotUnavailable(!res.available);
+        });
     };
     check();
     const interval = setInterval(check, 60 * 1000);
@@ -2073,15 +2126,19 @@ const ReviewAndPaymentStep = ({
         const response = await paymentService.createPaymentIntent(payload);
         if (response?.clientSecret) {
           const paymentIntentId = response.clientSecret.split("_secret_")[0];
-          console.info(
-            "[Booking] createPaymentIntent SUCCESS (useEffect)",
-            new Date().toISOString(),
-            { payment_intent_id: paymentIntentId, guest_email: payload.guest_email, guest_full_name: payload.guest_full_name, guest_phone: payload.guest_phone }
-          );
+          if (process.env.NODE_ENV === "development") {
+            console.info(
+              "[Booking] createPaymentIntent SUCCESS (useEffect)",
+              new Date().toISOString(),
+              { payment_intent_id: paymentIntentId },
+            );
+          }
+          const intentPriceBreakdown = buildIntentPriceBreakdown(response);
           setClientSecret(response.clientSecret);
           onUpdateBookingData?.({
             paymentIntentId,
             clientSecret: response.clientSecret,
+            ...(intentPriceBreakdown ? { intentPriceBreakdown } : {}),
           });
           intentDepsRef.current = {
             discountId: appliedDiscount?.id ?? null,
@@ -2091,6 +2148,7 @@ const ReviewAndPaymentStep = ({
           };
         }
       } catch (err) {
+        intentCreationAttemptedRef.current = false;
         const data = err?.response?.data || err;
         const errObj = data?.error;
         const msg =
@@ -2150,7 +2208,11 @@ const ReviewAndPaymentStep = ({
     setPaymentIntentError(
       "Payment form couldn't load. Please try again."
     );
-    onUpdateBookingData?.({ clientSecret: null, paymentIntentId: null });
+    onUpdateBookingData?.({
+      clientSecret: null,
+      paymentIntentId: null,
+      intentPriceBreakdown: null,
+    });
   }, [clientSecret, bookingData?.paymentIntentId, onUpdateBookingData, paymentService]);
 
   const handleGoBackToGuest = useCallback(() => {
@@ -2201,9 +2263,11 @@ const ReviewAndPaymentStep = ({
       if (response?.clientSecret) {
         setClientSecret(response.clientSecret);
         const paymentIntentId = response.clientSecret.split("_secret_")[0];
+        const intentPriceBreakdown = buildIntentPriceBreakdown(response);
         onUpdateBookingData?.({
           paymentIntentId,
           clientSecret: response.clientSecret,
+          ...(intentPriceBreakdown ? { intentPriceBreakdown } : {}),
         });
         intentDepsRef.current = {
           discountId: appliedDiscount?.id ?? null,
@@ -2346,17 +2410,21 @@ const ReviewAndPaymentStep = ({
           notes: values.notes || "",
           applied_discount_id: appliedDiscount?.id || null,
         };
-        console.info(
-          "[Booking] update_intent CALL_START",
-          new Date().toISOString(),
-          { payment_intent_id: paymentIntentId, guest_email: updatePayload.guest_email, guest_full_name: updatePayload.guest_full_name, guest_phone: updatePayload.guest_phone }
-        );
+        if (process.env.NODE_ENV === "development") {
+          console.info(
+            "[Booking] update_intent CALL_START",
+            new Date().toISOString(),
+            { payment_intent_id: paymentIntentId },
+          );
+        }
         await paymentService.updatePaymentIntent(updatePayload);
-        console.info(
-          "[Booking] update_intent CALL_SUCCESS",
-          new Date().toISOString(),
-          paymentIntentId
-        );
+        if (process.env.NODE_ENV === "development") {
+          console.info(
+            "[Booking] update_intent CALL_SUCCESS",
+            new Date().toISOString(),
+            paymentIntentId,
+          );
+        }
       } catch (err) {
         console.error(
           "[Booking] update_intent CALL_FAILED",
@@ -2380,7 +2448,7 @@ const ReviewAndPaymentStep = ({
         }
         setShowMobileSummary(false);
         setCheckoutStep("payment");
-        if (typeof window !== "undefined" && window.innerWidth < 969) {
+        if (typeof window !== "undefined" && window.innerWidth < 1024) {
       setTimeout(() => {
         paymentStepRef.current?.scrollIntoView({
           behavior: "smooth",
@@ -2392,11 +2460,13 @@ const ReviewAndPaymentStep = ({
 
   const handleSubmit = useCallback(
     async (stripe, elements) => {
+      if (paymentSubmitInFlightRef.current) return;
       if (!selectedSlot) {
         message.error("Whoops! Please select a date and time to continue.");
         return;
       }
 
+      paymentSubmitInFlightRef.current = true;
       setLoading(true);
 
       try {
@@ -2434,7 +2504,6 @@ const ReviewAndPaymentStep = ({
           message.error(
             res?.error || "Whoops! We couldn’t complete your free booking. Please try again."
           );
-          setLoading(false);
           return;
         }
 
@@ -2444,7 +2513,6 @@ const ReviewAndPaymentStep = ({
         const { error: submitError } = await elements.submit();
         if (submitError) {
           message.error(submitError.message || "Whoops! Something went wrong. Please try again.");
-          setLoading(false);
           return;
         }
 
@@ -2458,11 +2526,13 @@ const ReviewAndPaymentStep = ({
           "Guest";
         const billingEmail = values?.email?.trim() || bookingData?.email || "";
         const billingPhone = values?.phone?.trim() || bookingData?.phone || "";
-        console.info(
-          "[Booking] confirmPayment CALL_START",
-          new Date().toISOString(),
-          { payment_intent_id: paymentIntentIdAtConfirm, guest_email: billingEmail, guest_full_name: billingName, guest_phone: billingPhone }
-        );
+        if (process.env.NODE_ENV === "development") {
+          console.info(
+            "[Booking] confirmPayment CALL_START",
+            new Date().toISOString(),
+            { payment_intent_id: paymentIntentIdAtConfirm },
+          );
+        }
         const { error: confirmError, paymentIntent } =
           await stripe.confirmPayment({
             elements,
@@ -2483,7 +2553,6 @@ const ReviewAndPaymentStep = ({
 
         if (confirmError) {
           message.error(confirmError.message || "Whoops! Something went wrong. Please try again.");
-          setLoading(false);
           return;
         }
         if (paymentIntent && paymentIntent.status === "succeeded") {
@@ -2530,6 +2599,7 @@ const ReviewAndPaymentStep = ({
       } catch (err) {
         message.error(err.message || "Whoops! Something went wrong. Please try again.");
       } finally {
+        paymentSubmitInFlightRef.current = false;
         setLoading(false);
       }
     },
@@ -2581,7 +2651,7 @@ const ReviewAndPaymentStep = ({
   useEffect(() => {
     const updateStripeFontSize = () => {
       setStripeFontSize(
-        typeof window !== "undefined" && window.innerWidth < 969 ? "16px" : "14px"
+        typeof window !== "undefined" && window.innerWidth < 1024 ? "16px" : "14px"
       );
     };
     updateStripeFontSize();
@@ -2877,7 +2947,7 @@ const ReviewAndPaymentStep = ({
         </TicketRow>
       )}
       <TicketRow>
-        <span>HST (13%)</span>
+        <span>{taxLineLabel}</span>
         <span><NumberFlow value={taxAmount} format={{ style: "currency", currency: "CAD" }} /></span>
       </TicketRow>
       <TicketTotalRow>
@@ -3044,7 +3114,7 @@ const ReviewAndPaymentStep = ({
         )}
 
         <TicketRow>
-          <span>HST (13%)</span>
+          <span>{taxLineLabel}</span>
           <span><NumberFlow value={taxAmount} format={{ style: "currency", currency: "CAD" }} /></span>
         </TicketRow>
 

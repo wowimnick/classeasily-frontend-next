@@ -6,14 +6,12 @@ import Link from "next/link";
 import styled from "styled-components";
 import { X, ChevronLeft } from "lucide-react";
 import dynamic from "next/dynamic";
-import Lottie from "lottie-react";
 import { paymentService, scheduleService } from "@/services/apiService";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { classService } from "@/services/apiService";
 import { motion, AnimatePresence } from "framer-motion";
 import { Drawer } from "vaul";
 import ClientHeader from "@/components/layout/ClientHeader";
-import loadingAnimation from "@/assets/animations/Scene.json";
 import { getLocalYYYYMMDD } from "@/services/utils";
 import { formatTimeRangeForDisplay, formatNaiveDate } from "@/services/utils";
 import { getDurationText } from "@/app/classes/_components/steps/utils";
@@ -25,6 +23,49 @@ const ReviewAndPaymentStep = dynamic(
   () => import("@/app/classes/_components/steps/ReviewAndPaymentStep"),
   { loading: () => <div style={{ minHeight: "400px" }} />, ssr: false }
 );
+
+/** Lazy-loads lottie-react + Scene.json only while checkout is in loading state. */
+function CheckoutLoaderLottie() {
+  const [LottieComponent, setLottieComponent] = useState(null);
+  const [animationData, setAnimationData] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [lottieMod, animMod] = await Promise.all([
+          import("lottie-react"),
+          import("@/assets/animations/Scene.json"),
+        ]);
+        if (cancelled) return;
+        setLottieComponent(() => lottieMod.default);
+        setAnimationData(animMod.default ?? animMod);
+      } catch {
+        if (!cancelled) setAnimationData(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!LottieComponent || !animationData) {
+    return (
+      <div
+        style={{ width: 180, height: 180 }}
+        aria-hidden
+      />
+    );
+  }
+
+  return (
+    <LottieComponent
+      animationData={animationData}
+      loop
+      style={{ width: 180, height: 180 }}
+    />
+  );
+}
 
 // --- STYLED COMPONENTS ---
 
@@ -41,7 +82,7 @@ const PageWrapper = styled.div`
 /* ClientHeader wrapper: show only on desktop, above checkout bar */
 const DesktopClientHeaderWrap = styled.div`
   display: none;
-  @media (min-width: 970px) {
+  @media (min-width: 1024px) {
     display: block;
     width: 100%;
   }
@@ -50,7 +91,7 @@ const DesktopClientHeaderWrap = styled.div`
 /* --- NEW CUSTOM DESKTOP HEADER --- */
 const DesktopHeaderBar = styled.header`
   display: none;
-  @media (min-width: 970px) {
+  @media (min-width: 1024px) {
     display: flex;
     justify-content: center;
     width: 100%;
@@ -111,7 +152,7 @@ const MobileHeaderBar = styled.header`
   min-height: 56px;
   background: white;
   box-sizing: border-box;
-  @media (min-width: 970px) {
+  @media (min-width: 1024px) {
     display: none;
   }
 `;
@@ -162,10 +203,10 @@ const MainContainer = styled.div`
   flex: 1;
 
   @media (max-width: 900px) {
-    padding: 0x 0px 120px;
+    padding: 0 0 120px;
   }
 
-  @media (max-width: 969px) {
+  @media (max-width: 1023px) {
     padding: 0px 0px 220px;
   }
 `;
@@ -213,7 +254,7 @@ const CheckoutFooter = styled(motion.footer)`
 `;
 
 const MobileFooterWrap = styled.div`
-  @media (min-width: 969px) {
+  @media (min-width: 1024px) {
     display: none;
   }
 `;
@@ -315,8 +356,12 @@ const ChangeDateTimeRow = styled.button`
   &:first-of-type {
     border-top: none;
   }
-  &:hover {
+  &:hover:not(:disabled) {
     background: rgba(255, 56, 92, 0.04);
+  }
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
 `;
 
@@ -424,7 +469,10 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
 
   const [isMobileView, setIsMobileView] = useState(false);
   useEffect(() => {
-    const check = () => setIsMobileView(typeof window !== "undefined" && window.innerWidth < 969);
+    const check = () =>
+      setIsMobileView(
+        typeof window !== "undefined" && window.innerWidth < 1024,
+      );
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
@@ -460,8 +508,12 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
           return;
         }
 
-        const { paymentIntentId, clientSecret, ...restBookingData } =
-          state.bookingData || {};
+        const {
+          paymentIntentId,
+          clientSecret,
+          intentPriceBreakdown: _discardedBreakdown,
+          ...restBookingData
+        } = state.bookingData || {};
         
         if (paymentIntentId && !cancelled) {
           await paymentService.cancelPaymentIntent(paymentIntentId).catch(() => {});
@@ -504,7 +556,12 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
       if (!raw || !slug) return;
       const state = JSON.parse(raw);
       if (state.classSlug !== slug || !state.bookingData) return;
-      const { paymentIntentId, clientSecret, ...rest } = state.bookingData;
+      const {
+        paymentIntentId,
+        clientSecret,
+        intentPriceBreakdown: _discardedBreakdown,
+        ...rest
+      } = state.bookingData;
       state.bookingData = rest;
       sessionStorage.setItem(CHECKOUT_STORAGE_KEY, JSON.stringify(state));
     } catch (e) {
@@ -535,7 +592,14 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
       paymentService.cancelPaymentIntent(intentId).catch(() => {});
       clearIntentFromStorage();
       setBookingData((prev) =>
-        prev ? { ...prev, clientSecret: undefined, paymentIntentId: undefined } : prev
+        prev
+          ? {
+              ...prev,
+              clientSecret: undefined,
+              paymentIntentId: undefined,
+              intentPriceBreakdown: undefined,
+            }
+          : prev,
       );
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -779,7 +843,7 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
 
         <MainContainer>
           <CheckoutLoaderContainer>
-            <Lottie animationData={loadingAnimation} loop style={{ width: 180, height: 180 }} />
+            <CheckoutLoaderLottie />
             <CheckoutLoaderTitle>We're getting things ready</CheckoutLoaderTitle>
             <CheckoutLoaderSubtext>Let's get that booked for you!</CheckoutLoaderSubtext>
           </CheckoutLoaderContainer>
@@ -935,11 +999,15 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
                         <ChangeDateTimeList>
                           {(changeDateAvailableSlots[timeDrawerDateStr] || []).map((slot) => {
                             const price = parseFloat(slot.price);
+                            const soldOut = Number(slot.available_spots) === 0;
                             return (
                               <ChangeDateTimeRow
                                 type="button"
                                 key={slot.instance_id}
-                                onClick={() => handleChangeTimeSelect(slot)}
+                                disabled={soldOut}
+                                onClick={() => {
+                                  if (!soldOut) handleChangeTimeSelect(slot);
+                                }}
                               >
                                 <div>
                                   <span style={{ fontSize: "1rem", fontWeight: 700, color: "#111" }}>
@@ -952,7 +1020,9 @@ export default function ClassCheckoutClient({ slug, initialClassData }) {
                                     )}
                                   </span>
                                   <span style={{ display: "block", fontSize: "0.75rem", color: "#6b7280", marginTop: 2 }}>
-                                    {getDurationText(slot.duration)} · {slot.available_spots} spots left
+                                    {soldOut
+                                      ? `${getDurationText(slot.duration)} · Sold out`
+                                      : `${getDurationText(slot.duration)} · ${slot.available_spots} spots left`}
                                   </span>
                                 </div>
                                 <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>

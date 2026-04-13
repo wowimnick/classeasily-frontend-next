@@ -304,8 +304,9 @@ const BookingModal = ({
   }, [isOpen, initialParticipantCount]);
 
   useEffect(() => {
-    setIsMobile(window.innerWidth <= 768);
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    const mq = () => window.innerWidth < 1024;
+    setIsMobile(mq());
+    const handleResize = () => setIsMobile(mq());
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -804,9 +805,7 @@ const BookingModal = ({
                   onClose={handleClose}
                   loading={isLoading}
                   hideNextButton={shouldHideNextButton}
-                  hideBackButton={
-                    currentStep === 1 || currentStep === headerSteps.length
-                  }
+                  hideBackButton={currentStep === 1}
                   isNextDisabled={!validateStep(currentStep, bookingData)}
                   bookingData={bookingData}
                   paymentAction={null}
@@ -853,9 +852,7 @@ const BookingModal = ({
                 onClose={handleClose}
                 loading={isLoading}
                 hideNextButton={shouldHideNextButton}
-                hideBackButton={
-                  currentStep === 1 || currentStep === headerSteps.length
-                }
+                hideBackButton={currentStep === 1}
                 isNextDisabled={!validateStep(currentStep, bookingData)}
                 bookingData={bookingData}
                 paymentAction={null}

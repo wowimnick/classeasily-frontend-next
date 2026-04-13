@@ -1,6 +1,7 @@
 // src/app/content-policy/page.jsx
 
-import { Suspense } from "react"; // Add this
+import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import { contentPolicyContent } from "../_legalcomponents/legalPagesContent";
 import LegalContent from "../_legalcomponents/LegalContent";
 import { metadata } from "./metadata";
@@ -14,7 +15,10 @@ const HeaderFallback = () => {
   );
 };
 
-export default function ContentPolicyPage() {
+export default async function ContentPolicyPage() {
+  "use cache";
+  cacheLife("max");
+
   return (
     <>
       <Suspense fallback={<HeaderFallback />}>

@@ -8,6 +8,7 @@ import React, {
   useRef,
 } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Heart, Star, Navigation } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import styles from "./HomeClassCard.module.css";
@@ -82,21 +83,6 @@ const HomeClassCard = ({
   }, [identifier, router]);
 
   const cardRef = useRef(null);
-  const imgRef = useRef(null);
-
-  // Cached or already-loaded images may not fire onLoad; check complete when img mounts or url changes
-  useEffect(() => {
-    if (!imageUrl || imageError) return;
-    const img = imgRef.current;
-    if (!img) return;
-    if (img.complete && img.naturalWidth > 0) {
-      setImageLoaded(true);
-      return;
-    }
-    const handleLoad = () => setImageLoaded(true);
-    img.addEventListener("load", handleLoad);
-    return () => img.removeEventListener("load", handleLoad);
-  }, [imageUrl, imageError]);
 
   // Fallback: if load never fires (e.g. cross-origin/cache quirk), stop showing skeleton after a short delay
   useEffect(() => {
@@ -196,14 +182,14 @@ const HomeClassCard = ({
               className={`${styles.imageSkeleton} ${imageLoaded ? styles.imageSkeletonHidden : ""}`}
               aria-hidden="true"
             />
-            <img
-              ref={imgRef}
+            <Image
               src={imageUrl}
               alt={title || "Class experience"}
-              loading={priority ? "eager" : "lazy"}
-              decoding="async"
+              fill
+              sizes="(max-width: 640px) 45vw, 230px"
+              priority={priority}
               className={`${styles.cardImage} ${imageLoaded ? styles.cardImageLoaded : ""}`}
-              onLoad={() => setImageLoaded(true)}
+              onLoadingComplete={() => setImageLoaded(true)}
               onError={() => setImageError(true)}
             />
           </>

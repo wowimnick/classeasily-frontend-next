@@ -1,6 +1,6 @@
 // app/business/metadata.js
 export const metadata = {
-  title: "Grow Your Teaching Business | ClassEasily Business Platform",
+  title: "Grow Your Teaching Business | Classeasily Business Platform",
   description:
     "Join thousands of successful schools, studios, and instructors. Manage classes, reach more students, and increase revenue with our all-in-one business platform.",
   keywords: [
@@ -12,9 +12,9 @@ export const metadata = {
     "class scheduling",
     "student management",
   ],
-  authors: [{ name: "ClassEasily" }],
-  creator: "ClassEasily",
-  publisher: "ClassEasily",
+  authors: [{ name: "Classeasily" }],
+  creator: "Classeasily",
+  publisher: "Classeasily",
   formatDetection: {
     email: false,
     address: false,
@@ -25,17 +25,17 @@ export const metadata = {
     canonical: "/business",
   },
   openGraph: {
-    title: "Grow Your Teaching Business | ClassEasily Business Platform",
+    title: "Grow Your Teaching Business | Classeasily Business Platform",
     description:
       "Manage classes, reach more students, and increase revenue with our all-in-one business platform.",
     url: "/business",
-    siteName: "ClassEasily",
+    siteName: "Classeasily",
     images: [
       {
         url: "/assets/social-share-image.jpg",
         width: 1200,
         height: 630,
-        alt: "ClassEasily Business Platform",
+        alt: "Classeasily Business Platform",
       },
     ],
     locale: "en_US",
@@ -43,7 +43,7 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Grow Your Teaching Business | ClassEasily Business Platform",
+    title: "Grow Your Teaching Business | Classeasily Business Platform",
     description:
       "Manage classes, reach more students, and increase revenue with our all-in-one business platform.",
     images: ["/assets/social-share-image.jpg"],
@@ -59,40 +59,36 @@ export const metadata = {
       "max-snippet": -1,
     },
   },
-  verification: {
-    google: "your-google-verification-code",
-    yandex: "your-yandex-verification-code",
-  },
 };
 
 // Generate FAQ structured data
 export function generateFAQStructuredData() {
   const faqData = [
     {
-      question: "How does ClassEasily work?",
+      question: "How does Classeasily work?",
       answer:
-        "ClassEasily is a platform that connects local instructors with students seeking classes in their area. Instructors can list their classes, set their availability, and manage bookings through our intuitive dashboard. Students can search for classes, read reviews, and book sessions directly through the platform with seamless payment processing.",
+        "Classeasily is a platform that connects local instructors with students seeking classes in their area. Instructors can list their classes, set their availability, and manage bookings through our intuitive dashboard. Students can search for classes, read reviews, and book sessions directly through the platform with seamless payment processing.",
     },
     {
       question:
         "I'm already working with other online education platforms. Can I work with you, too?",
       answer:
-        "Yes, you can certainly work with ClassEasily while maintaining relationships with other platforms. We also offer an exclusive partnership program that comes with benefits like priority placement and dedicated support.",
+        "Yes, you can certainly work with Classeasily while maintaining relationships with other platforms. We also offer an exclusive partnership program that comes with benefits like priority placement and dedicated support.",
     },
     {
-      question: "What types of classes can I list on ClassEasily?",
+      question: "What types of classes can I list on Classeasily?",
       answer:
-        "Currently, ClassEasily supports workshop classes only. This includes hands-on, in-person workshops such as art, crafts, cooking, and similar experiences. We are expanding to other categories soon!",
+        "Currently, Classeasily supports workshop classes only. This includes hands-on, in-person workshops such as art, crafts, cooking, and similar experiences. We are expanding to other categories soon!",
     },
     {
-      question: "How do payments and fees work on ClassEasily?",
+      question: "How do payments and fees work on Classeasily?",
       answer:
         "We handle all payments through our secure platform (Stripe). Funds are transferred to your account after the class is completed, minus our transparent, all-inclusive 20% service fee. This fee covers all platform costs, including marketing, payment processing, and 24/7 support.",
     },
     {
-      question: "Is ClassEasily available in my area?",
+      question: "Is Classeasily available in my area?",
       answer:
-        "ClassEasily is rapidly expanding. To check if we're available in your area, simply enter your location on our homepage. If we're not there yet, you can join our waitlist to be the first to know when we launch.",
+        "Classeasily is rapidly expanding. To check if we're available in your area, simply enter your location on our homepage. If we're not there yet, you can join our waitlist to be the first to know when we launch.",
     },
   ];
 

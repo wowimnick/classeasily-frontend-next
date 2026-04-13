@@ -9,10 +9,8 @@ export function OrganizationSchema() {
     description:
       "Classeasily is a platform designed to help find the best experiences and activities in the area. We offer a wide range of options, from workshops to fun and engaging events, all tailored to make your time enjoyable and memorable. Whether you're looking for a fun activity to do with friends or family, or just want to explore new experiences, Classeasily has got you covered.",
     sameAs: [
-      // Add your social media profiles
-      // "https://facebook.com/classeasily",
-      // "https://twitter.com/classeasily",
-      // "https://linkedin.com/company/classeasily"
+      "https://www.facebook.com/p/ClassEasily-61577902526917/",
+      "https://twitter.com/classeasily",
     ],
     contactPoint: {
       "@type": "ContactPoint",

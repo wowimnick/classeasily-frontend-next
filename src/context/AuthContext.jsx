@@ -72,10 +72,8 @@ export const AuthProvider = ({ children }) => {
         setOnSuccessCallback(null);
       }
 
-      // Handle redirect logic: if they came from widget checkout, send them back there
       if (user.has_business) {
-        if (redirectPath && redirectPath.startsWith("/booking-widget/checkout")) {
-          console.log("[AuthContext] User has business, redirecting to checkout:", redirectPath);
+        if (redirectPath && redirectPath.startsWith("/business/")) {
           clearRedirectPath();
           router.push(redirectPath);
         } else {

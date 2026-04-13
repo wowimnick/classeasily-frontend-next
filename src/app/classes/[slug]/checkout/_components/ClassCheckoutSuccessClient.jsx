@@ -67,6 +67,15 @@ export default function ClassCheckoutSuccessClient() {
         router.replace(`/classes/${slug}`);
         return;
       }
+      const storedSlug =
+        data.classData?.slug ||
+        data.classData?.class_slug ||
+        data.classSlug;
+      if (storedSlug && String(storedSlug) !== String(slug)) {
+        setLoading(false);
+        router.replace(`/classes/${slug}`);
+        return;
+      }
       setSuccessData(data);
     } catch {
       setLoading(false);

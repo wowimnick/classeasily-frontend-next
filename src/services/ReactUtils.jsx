@@ -63,20 +63,38 @@ export const LordIcon = forwardRef(
     );
 
     useEffect(() => {
-      // Load LordIcon script if not already loaded
-      if (
-        typeof window !== "undefined" &&
-        !window.lordicon &&
-        !document.querySelector('script[src*="lordicon"]')
-      ) {
-        const script = document.createElement("script");
-        script.src = "https://cdn.lordicon.com/lordicon.js";
-        script.async = true;
-        script.onload = () => setIsLoaded(true);
-        document.head.appendChild(script);
-      } else if (typeof window !== "undefined") {
-        setIsLoaded(true);
+      // Single source of truth: root layout loads lordicon.js via next/script.
+      // Wait for that tag (or global) so we never inject a duplicate script.
+      if (typeof window === "undefined") return;
+
+      const markLoaded = () => setIsLoaded(true);
+
+      if (window.customElements?.get("lord-icon") || window.lordicon) {
+        markLoaded();
+        return;
       }
+
+      const existing = document.querySelector('script[src*="lordicon.js"]');
+      if (existing) {
+        if (window.customElements?.get("lord-icon") || window.lordicon) {
+          markLoaded();
+          return;
+        }
+        existing.addEventListener("load", markLoaded, { once: true });
+        setTimeout(() => {
+          if (window.customElements?.get("lord-icon") || window.lordicon) {
+            markLoaded();
+          }
+        }, 0);
+        return;
+      }
+
+      // Fallback (e.g. embeds/tests without RootLayout): inject once.
+      const script = document.createElement("script");
+      script.src = "https://cdn.lordicon.com/lordicon.js";
+      script.async = true;
+      script.onload = markLoaded;
+      document.head.appendChild(script);
     }, []);
 
     useEffect(() => {

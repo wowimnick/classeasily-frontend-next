@@ -994,8 +994,8 @@ const Hero = () => {
             <motion.div variants={fadeUp}>
               <ButtonGroup>
                 {hasSubscription ? (
-                  <Link href="/business/dashboard/widget">
-                    <Button variant="primary">Manage plan <ArrowRight size={16} /></Button>
+                  <Link href="/business/dashboard/settings?tab=billing">
+                    <Button variant="primary">Plan &amp; billing <ArrowRight size={16} /></Button>
                   </Link>
                 ) : (
                   <Button
@@ -2175,6 +2175,9 @@ const PLAN_CARDS = [
   { id: 'advanced', name: 'Advanced', price: '$89', commission: '2%', gradient: 'linear-gradient(90deg, #2563eb 0%, #ef4444 50%, #eab308 100%)', footnote: 'Need a custom plan?', featured: false },
 ];
 
+/** Widget plans are subscribed or changed only from Settings → Plan & Billing (single Stripe path). */
+const WIDGET_PLAN_BILLING_HREF = '/business/dashboard/settings?tab=billing';
+
 function PricingAndPath() {
   const { subscription } = useSubscription();
   const currentPlanId = subscription?.planId;
@@ -2182,18 +2185,18 @@ function PricingAndPath() {
   const getCta = (planId) => {
     const isCurrent = currentPlanId === planId;
     if (isCurrent) {
-      return { label: 'Manage plan', href: '/business/dashboard/widget' };
+      return { label: 'Manage plan', href: WIDGET_PLAN_BILLING_HREF };
     }
     if (!currentPlanId) {
-      return { label: 'Get started', href: `/booking-widget/checkout?plan=${planId}` };
+      return { label: 'Get started', href: WIDGET_PLAN_BILLING_HREF };
     }
     if (isUpgrade(currentPlanId, planId)) {
-      return { label: 'Upgrade', href: `/booking-widget/checkout?plan=${planId}` };
+      return { label: 'Upgrade', href: WIDGET_PLAN_BILLING_HREF };
     }
     if (isDowngrade(currentPlanId, planId)) {
-      return { label: 'Downgrade', href: `/booking-widget/checkout?plan=${planId}` };
+      return { label: 'Downgrade', href: WIDGET_PLAN_BILLING_HREF };
     }
-    return { label: 'Get started', href: `/booking-widget/checkout?plan=${planId}` };
+    return { label: 'View in settings', href: WIDGET_PLAN_BILLING_HREF };
   };
 
   return (

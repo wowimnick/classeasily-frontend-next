@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Geist } from "next/font/google";
 import styled, { createGlobalStyle, keyframes } from "styled-components";
 import { Modal } from "antd";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,12 +17,17 @@ import message from "@/lib/message";
 import { bookingService } from "@/services/apiService";
 import { theme } from "@/components/theme";
 
+const geistReschedule = Geist({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
+
 const PRIMARY = theme.token.colorPrimary;
 
 // ─── GLOBAL ──────────────────────────────────────────────────────────────────
 
 const ModalGlobalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap');
   .rs-modal .ant-modal-content { padding:0!important; border-radius:18px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.16); }
   .rs-modal .ant-modal-body { padding:0; }
 `;
@@ -29,7 +35,6 @@ const ModalGlobalStyle = createGlobalStyle`
 // ─── LAYOUT ──────────────────────────────────────────────────────────────────
 
 const Shell = styled.div`
-  font-family: 'Geist', -apple-system, sans-serif;
   display: flex; flex-direction: column;
   max-height: 84vh; background: white;
 `;
@@ -363,7 +368,7 @@ const RescheduleContent = ({ booking, onSuccess, onCancel, isInDrawer }) => {
   };
 
   return (
-    <Shell>
+    <Shell className={geistReschedule.className}>
       <Head>
         <HeadInfo>
           <div className="eyebrow">Reschedule</div>

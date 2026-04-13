@@ -8,7 +8,7 @@ import React, {
   Suspense,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import styled, { keyframes, createGlobalStyle } from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import confetti from "canvas-confetti";
@@ -29,7 +29,7 @@ import { useMobileReserveFlow, MOBILE_RESERVE_BREAKPOINT } from "./useMobileRese
 
 // Dynamic imports for better code splitting
 const ClassOffers = dynamic(() => import("./ClassOffers"));
-const Reviews = dynamic(() => import("./ClassReviews"));
+const Reviews = dynamic(() => import("./ClassReviews"), { ssr: true });
 const HostInfo = dynamic(() => import("./ClassHostInfo"));
 const ClassPageMap = dynamic(() => import("./ClassPageMap"), {
   ssr: false,
@@ -64,18 +64,6 @@ const LordIcon = dynamic(
 );
 
 const CHECKOUT_STORAGE_KEY = "classeasily_checkout";
-
-const HideScrollbarStyles = createGlobalStyle`
-  html,
-  body {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  html::-webkit-scrollbar,
-  body::-webkit-scrollbar {
-    display: none;
-  }
-`;
 
 // Skeleton loader styles (ORIGINAL)
 const shimmer = keyframes`
@@ -1122,7 +1110,8 @@ const MobileBookingFooter = ({ option, onBookNow, hidden }) => {
         style={{
           borderRadius: "8px",
           fontWeight: 600,
-          height: 36,
+          minHeight: 44,
+          height: 44,
           paddingLeft: 20,
           paddingRight: 20,
           fontSize: "0.875rem",
@@ -1359,7 +1348,6 @@ export default function ClassPageClient({
 
   return (
     <>
-      <HideScrollbarStyles />
       <DesktopHeaderWrapper>
         <ExploreHeader showOptionsWrapper={false} />
       </DesktopHeaderWrapper>
@@ -1381,6 +1369,15 @@ export default function ClassPageClient({
 
         <MainContentLayout>
           <PrimaryContentArea>
+            {mobileReserve.isMobileView && mobileReserve.mobileAvailabilityError && (
+              <Alert
+                type="warning"
+                showIcon
+                message="Couldn't load times"
+                description="Check your connection and try refreshing the page."
+                style={{ marginBottom: 16 }}
+              />
+            )}
             {/* Render Description immediately for SEO */}
             <ClassInformation
               title={classData.title}
@@ -1657,12 +1654,16 @@ export default function ClassPageClient({
                     (mobileReserve.mobileAvailableSlots[getLocalYYYYMMDD(mobileReserve.mobileSelectedDate)] || []).map((slot) => {
                       const isSelected = mobileReserve.mobileSelectedSlot?.id === slot.instance_id;
                       const price = parseFloat(slot.price);
+                      const soldOut = Number(slot.available_spots) === 0;
                       return (
                         <TimeSlotRow
                           type="button"
                           key={slot.instance_id}
                           $selected={isSelected}
-                          onClick={() => mobileReserve.handleMobileTimeSelect(slot)}
+                          disabled={soldOut}
+                          onClick={() => {
+                            if (!soldOut) mobileReserve.handleMobileTimeSelect(slot);
+                          }}
                         >
                           <div>
                             <TimeSlotTime>
@@ -1675,7 +1676,9 @@ export default function ClassPageClient({
                               )}
                             </TimeSlotTime>
                             <TimeSlotMeta>
-                              {getDurationText(slot.duration)} · {slot.available_spots} spots left
+                              {soldOut
+                                ? `${getDurationText(slot.duration)} · Sold out`
+                                : `${getDurationText(slot.duration)} · ${slot.available_spots} spots left`}
                             </TimeSlotMeta>
                           </div>
                           <TimeSlotPrice $selected={isSelected}>

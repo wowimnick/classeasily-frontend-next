@@ -115,6 +115,7 @@ export async function generateMetadata({ searchParams }) {
       card: "summary_large_image",
       title,
       description,
+      images: ["https://i.imgur.com/biTTckW.png"],
     },
     robots: {
       index: true,

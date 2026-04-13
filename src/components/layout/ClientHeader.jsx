@@ -2,7 +2,13 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useLayoutEffect,
+  useCallback,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -183,7 +189,10 @@ const ActivePillBackground = styled(motion.div)`
   z-index: 0;
 `;
 
-const SectionButton = styled.div`
+const SectionButton = styled.div.attrs({
+  role: "button",
+  tabIndex: 0,
+})`
   position: relative;
   display: flex;
   flex-direction: column;
@@ -197,11 +206,16 @@ const SectionButton = styled.div`
   background-color: transparent;
   isolation: isolate;
   min-width: 120px;
+  outline: none;
 
   &:hover {
     background-color: ${(props) =>
       props.$isActive ? "transparent" : "#f9fafb"};
     border-radius: 32px;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #e11d48;
   }
 `;
 
@@ -797,9 +811,9 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
     setIsMounted(true);
   }, []);
 
-  useClickOutside(containerRef, () => {
-    setActiveField(null);
-  });
+  const closeActiveField = useCallback(() => setActiveField(null), []);
+
+  useClickOutside(containerRef, closeActiveField);
 
   // Position Logic
   useLayoutEffect(() => {
@@ -845,6 +859,13 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
 
   const handleFieldClick = (field) => {
     setActiveField(activeField === field ? null : field);
+  };
+
+  const handleSectionButtonKeyDown = (e, field) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleFieldClick(field);
+    }
   };
 
   const handleSearchSubmit = (e) => {
@@ -976,6 +997,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
                 ref={locationRef}
                 $isActive={activeField === "location"}
                 onClick={() => handleFieldClick("location")}
+                onKeyDown={(e) => handleSectionButtonKeyDown(e, "location")}
                 style={{ width: 220, paddingLeft: 24 }}
               >
                 {activeField === "location" && (
@@ -1008,6 +1030,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
                 ref={dateRef}
                 $isActive={activeField === "date"}
                 onClick={() => handleFieldClick("date")}
+                onKeyDown={(e) => handleSectionButtonKeyDown(e, "date")}
                 style={{ width: 150 }}
               >
                 {activeField === "date" && (
@@ -1033,6 +1056,7 @@ function ExploreHeaderContent({ showOptionsWrapper = true, isFixed = true }) {
                 ref={participantsRef}
                 $isActive={activeField === "participants"}
                 onClick={() => handleFieldClick("participants")}
+                onKeyDown={(e) => handleSectionButtonKeyDown(e, "participants")}
                 style={{ width: 130 }}
               >
                 {activeField === "participants" && (

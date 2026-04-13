@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { Star } from "lucide-react";
 import styles from "./Testimonials.module.css";
 import TestimonialsClient from "./TestimonialsClient";
@@ -113,13 +114,13 @@ const RightCards = () => (
         <p className={styles.quote}>{t.quote}</p>
         <div className={styles.cardFooter}>
           <div className={styles.userInfo}>
-            <img
+            <Image
               src={t.avatarUrl}
               alt={t.userName}
               className={styles.avatar}
-              loading="lazy"
-              width="36"
-              height="36"
+              width={36}
+              height={36}
+              sizes="36px"
             />
             <div className={styles.userDetails}>
               <span className={styles.userName}>{t.userName}</span>
@@ -172,21 +173,25 @@ const Testimonials = () => {
 
           {/* CENTER: Image card */}
           <div className={styles.centerCol} aria-hidden="true">
-            <img
+            <Image
               src="https://images.unsplash.com/photo-1529543544282-ea669407fca3?w=600&h=800&fit=crop&crop=center"
               alt="Happy learner at a class"
+              fill
+              sizes="(max-width: 1023px) 60vw, 35vw"
               className={styles.centerImage}
+              priority
             />
             <div className={styles.imageOverlay} />
             <div className={styles.imageContent}>
               <p className={styles.imageQuote}>"{featuredTestimonial.quote}"</p>
               <div className={styles.imageAuthor}>
-                <img
+                <Image
                   src={featuredTestimonial.avatarUrl}
                   alt={featuredTestimonial.name}
                   className={styles.imageAvatar}
-                  width="38"
-                  height="38"
+                  width={38}
+                  height={38}
+                  sizes="38px"
                 />
                 <div className={styles.imageAuthorText}>
                   <span className={styles.imageAuthorName}>{featuredTestimonial.name}</span>
@@ -218,13 +223,13 @@ const Testimonials = () => {
                 <p className={styles.quote}>{testimonial.quote}</p>
                 <div className={styles.cardFooter}>
                   <div className={styles.userInfo}>
-                    <img
+                    <Image
                       src={testimonial.avatarUrl}
                       alt={testimonial.userName}
                       className={styles.avatar}
-                      loading="lazy"
-                      width="36"
-                      height="36"
+                      width={36}
+                      height={36}
+                      sizes="36px"
                     />
                     <div className={styles.userDetails}>
                       <span className={styles.userName}>{testimonial.userName}</span>

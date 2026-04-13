@@ -28,25 +28,25 @@ export async function generateMetadata({ params }) {
 
   if (!category) {
     return {
-      title: "Category Not Found | ClassEasily Blog",
+      title: "Category Not Found | Classeasily Blog",
       description: "The blog category you're looking for could not be found.",
     };
   }
 
-  const title = `${category.name} | ClassEasily Blog`;
+  const title = `${category.name} | Classeasily Blog`;
   const description = `Browse all posts in ${category.name}. Tips and insights for learners and instructors.`;
   const url = `${BASE}/blog/category/${slug}`;
 
   return {
     title,
     description,
-    keywords: ["blog", "category", category.name, "ClassEasily"].join(", "),
+    keywords: ["blog", "category", category.name, "Classeasily"].join(", "),
     openGraph: {
       title,
       description,
       type: "website",
       url,
-      siteName: "ClassEasily",
+      siteName: "Classeasily",
     },
     twitter: {
       card: "summary_large_image",
@@ -84,7 +84,7 @@ export default async function BlogCategoryPage({ params }) {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "@id": `${BASE}/blog/category/${slug}`,
-    name: `${category.name} | ClassEasily Blog`,
+    name: `${category.name} | Classeasily Blog`,
     description: `Posts in category: ${category.name}`,
     url: `${BASE}/blog/category/${slug}`,
     isPartOf: { "@id": `${BASE}/blog` },

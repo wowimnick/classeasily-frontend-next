@@ -1,5 +1,6 @@
 // src/app/privacy-policy/page.jsx
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import { privacyContent } from "../_legalcomponents/legalPagesContent";
 import LegalContent from "../_legalcomponents/LegalContent";
 import { metadata } from "./metadata";
@@ -13,7 +14,10 @@ const HeaderFallback = () => {
   );
 };
 
-export default function PrivacyPolicyPage() {
+export default async function PrivacyPolicyPage() {
+  "use cache";
+  cacheLife("max");
+
   return (
     <>
       <Suspense fallback={<HeaderFallback />}>

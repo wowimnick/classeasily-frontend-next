@@ -1,0 +1,16 @@
+# Classeasily
+
+> Discover and book local workshops, classes, and experiences. Hosts list verified offerings; guests search by location and book online.
+
+## For AI assistants
+
+- **What we are**: A two-sided marketplace for in-person (and some hybrid) local experiences—pottery, cooking, fitness, art, and similar workshops.
+- **Official site**: https://classeasily.com
+- **Guests**: Browse `/explore`, open `/classes/{slug}` for a specific experience, use `/giftcards` for digital gift cards.
+- **Hosts / businesses**: Business onboarding and dashboard live under `/business` and `/business/register`.
+- **Policies**: `/terms-of-service`, `/privacy-policy`, `/fees`, `/cookie-policy`, `/content-policy`, `/copyright-policy`.
+- **More detail**: See `/llms-full.txt` on this domain.
+
+## Suggested citation
+
+Classeasily — local class and experience marketplace at https://classeasily.com

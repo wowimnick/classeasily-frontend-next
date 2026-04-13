@@ -70,8 +70,6 @@ export const API_ENDPOINTS = {
   MY_BUSINESS_WIDGET_CONFIG: "/my-business/widget-config/",
   MY_BUSINESS_EMAIL_BRANDING_PREVIEW: "/my-business/email-branding/preview/",
   MY_BUSINESS_WIDGET_SUBSCRIPTION: "/my-business/widget-subscription/",
-  MY_BUSINESS_WIDGET_SUBSCRIPTION_CHECKOUT: "/my-business/widget-subscription/checkout/",
-  MY_BUSINESS_WIDGET_SUBSCRIPTION_PAYMENT_INTENT: "/my-business/widget-subscription/payment-intent/",
   MY_BUSINESS_WIDGET_SUBSCRIPTION_CANCEL: "/my-business/widget-subscription/cancel/",
   MY_BUSINESS_WIDGET_SUBSCRIPTION_REACTIVATE:
     "/my-business/widget-subscription/reactivate/",
@@ -386,7 +384,11 @@ export const paymentService = {
       return response.data;
     } catch (error) {
       console.error("Error checking slot availability:", error);
-      return { available: false, available_spots: 0 };
+      return {
+        available: true,
+        availabilityCheckFailed: true,
+        available_spots: null,
+      };
     }
   },
 };
@@ -877,56 +879,6 @@ export const businessService = {
         error.response?.data?.error ||
         error.response?.data?.detail ||
         "Failed to subscribe.";
-      return { success: false, error: errorMessage };
-    }
-  },
-
-  /**
-   * Create a Stripe Subscription in default_incomplete mode for inline Elements checkout.
-   * Returns { client_secret, subscription_id }.
-   */
-  createWidgetSubscriptionPaymentIntent: async ({ plan_id } = {}) => {
-    try {
-      const response = await axiosInstance.post(
-        API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION_PAYMENT_INTENT,
-        { plan_id },
-      );
-      return { success: true, ...response.data };
-    } catch (error) {
-      const data = error.response?.data;
-      const errorCode = data?.error;
-      const errorMessage =
-        (typeof errorCode === "string" ? errorCode : null) ||
-        data?.detail ||
-        "Failed to prepare payment.";
-      return { success: false, error: errorMessage, errorCode };
-    }
-  },
-
-  /**
-   * Create a Stripe Checkout Session for the widget subscription.
-   * Returns { url } to redirect the user to Stripe to complete payment.
-   */
-  createWidgetSubscriptionCheckoutSession: async ({
-    plan_id,
-    success_url,
-    cancel_url,
-  } = {}) => {
-    try {
-      const response = await axiosInstance.post(
-        API_ENDPOINTS.MY_BUSINESS_WIDGET_SUBSCRIPTION_CHECKOUT,
-        { plan_id, success_url, cancel_url },
-      );
-      return { success: true, url: response.data?.url };
-    } catch (error) {
-      console.error(
-        "Error creating widget subscription checkout session:",
-        error.response?.data || error,
-      );
-      const errorMessage =
-        error.response?.data?.error ||
-        error.response?.data?.detail ||
-        "Failed to start checkout.";
       return { success: false, error: errorMessage };
     }
   },

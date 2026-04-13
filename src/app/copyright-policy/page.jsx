@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import { copyrightPolicyContent } from "../_legalcomponents/legalPagesContent";
 import LegalContent from "../_legalcomponents/LegalContent";
 import ExploreHeader from "@/components/explore/ExploreHeader";
@@ -13,7 +14,10 @@ const HeaderFallback = () => {
   );
 };
 
-export default function CopyrightPolicyPage() {
+export default async function CopyrightPolicyPage() {
+  "use cache";
+  cacheLife("max");
+
   return (
     <>
       <Suspense fallback={<HeaderFallback />}>

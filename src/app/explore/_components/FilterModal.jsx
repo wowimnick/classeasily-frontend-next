@@ -317,8 +317,9 @@ export default function FilterModal({
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    setIsMobile(window.innerWidth <= 768);
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    const mq = () => window.innerWidth < 1048;
+    setIsMobile(mq());
+    const handleResize = () => setIsMobile(mq());
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -341,10 +342,16 @@ export default function FilterModal({
 
   const clearFiltersAndSort = () => {
     setTempFilters({
-      ...filters,
       pricePerClass: [0, 500],
-      distance: [0, 50], // 50 km default
+      distance: [0, 50],
       timePreference: [],
+      days: [],
+      classType: "class",
+      keyword: "",
+      date: "",
+      startDate: "",
+      endDate: "",
+      participants: filters.participants ?? 1,
     });
     setTempSortBy("relevance");
   };
@@ -464,7 +471,9 @@ export default function FilterModal({
               <ModalHeader>
                 <Title>Filters</Title>
                 <CloseButton
+                  type="button"
                   onClick={onClose}
+                  aria-label="Close filters"
                   style={{ right: 20, left: "auto" }}
                 >
                   <X size={20} />

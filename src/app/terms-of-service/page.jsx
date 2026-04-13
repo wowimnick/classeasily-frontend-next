@@ -1,5 +1,6 @@
 // src/app/terms-of-service/page.jsx
 import { Suspense } from "react";
+import { cacheLife } from "next/cache";
 import { termsContent } from "../_legalcomponents/legalPagesContent";
 import LegalContent from "../_legalcomponents/LegalContent";
 import { metadata } from "./metadata";
@@ -14,7 +15,10 @@ const HeaderFallback = () => {
   );
 };
 
-export default function TermsOfServicePage() {
+export default async function TermsOfServicePage() {
+  "use cache";
+  cacheLife("max");
+
   return (
     <>
       <Suspense fallback={<HeaderFallback />}>

@@ -550,8 +550,12 @@ export default function SearchFullScreen() {
                   style={{ flexShrink: 0 }}
                 >
                   <CardHeader
-                    onClick={() => setExpandedSection("location")}
-                    disabled={expandedSection === "location"}
+                    type="button"
+                    onClick={() => {
+                      if (expandedSection !== "location") {
+                        setExpandedSection("location");
+                      }
+                    }}
                   >
                     <WhereHeaderContainer>
                       <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>

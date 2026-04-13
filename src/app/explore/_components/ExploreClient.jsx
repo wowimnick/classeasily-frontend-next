@@ -36,6 +36,16 @@ const ContentArea = styled.main`
   position: relative;
 `;
 
+const FetchErrorBanner = styled.div`
+  flex-shrink: 0;
+  padding: 10px 16px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 14px;
+  text-align: center;
+  border-bottom: 1px solid #fecaca;
+`;
+
 const BreadcrumbContainer = styled.div`
   /* Visually hidden but kept in DOM for SEO and screen readers */
   position: absolute;
@@ -79,6 +89,7 @@ function ExploreClientContent({
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
 
   const observerTarget = useRef(null);
   const apiParamsRef = useRef({});
@@ -121,22 +132,21 @@ function ExploreClientContent({
 
   useEffect(() => {
     if (initialClasses) {
+      // Keep in sync with the URL that produced these server props so the
+      // client fetch effect does not mis-detect duplicate or stale navigations.
+      previousSearchParamsRef.current = searchParams.toString();
       setDisplayClasses(initialClasses);
       setTotalClassesCount(initialTotalCount);
       setNextPageUrl(initialNextPageUrl);
       setIsNavigating(false);
       setLoading(false);
+      setFetchError(null);
       // STOP GLOBAL SEARCH LOADING
       setIsSearching(false);
-      previousSearchParamsRef.current = searchParams.toString();
     }
-  }, [
-    initialClasses,
-    initialTotalCount,
-    initialNextPageUrl,
-    searchParams,
-    setIsSearching,
-  ]);
+    // searchParams read synchronously when server props update; omit from deps so
+    // client-only query changes do not re-apply stale initialClasses.
+  }, [initialClasses, initialTotalCount, initialNextPageUrl, setIsSearching]);
 
   const fetchClassesApi = useCallback(
     async (params, pageToFetch, isLoadMoreRequest, signal) => {
@@ -161,9 +171,15 @@ function ExploreClientContent({
           setTotalClassesCount(response.count || 0);
         }
         setNextPageUrl(response.next);
+        if (!isLoadMoreRequest) setFetchError(null);
       } catch (error) {
         if (error.name !== "AbortError" && error.name !== "CanceledError") {
           console.error("Error fetching classes:", error);
+          if (!isLoadMoreRequest) {
+            setFetchError(
+              "We couldn’t refresh results. Check your connection and try again."
+            );
+          }
         }
       } finally {
         if (signal && signal.aborted) return;
@@ -198,6 +214,7 @@ function ExploreClientContent({
     const isNavChange = currentObj.collection !== prevObj.collection;
 
     if (isNavChange) {
+      previousSearchParamsRef.current = currentParamsStr;
       return;
     }
 
@@ -442,6 +459,9 @@ function ExploreClientContent({
         <Breadcrumbs />
       </BreadcrumbContainer>
       <ContentArea>
+        {fetchError && !showSkeleton && (
+          <FetchErrorBanner role="alert">{fetchError}</FetchErrorBanner>
+        )}
         <ClassesDisplay {...classesDisplayProps} />
       </ContentArea>
     </PageLayout>

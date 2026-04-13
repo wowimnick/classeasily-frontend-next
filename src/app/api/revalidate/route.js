@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { secret, path, tag, type } = body;
+    const { secret, path, tag, type, tags } = body;
 
     // Verify the secret token to prevent unauthorized revalidation
     if (!secret || secret !== process.env.REVALIDATION_SECRET) {
@@ -30,6 +30,31 @@ export async function POST(request) {
         console.error(`❌ Error revalidating path ${path}:`, error);
         return NextResponse.json(
           { message: 'Error revalidating path', error: error.message },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Revalidate multiple tags in one request (optional)
+    if (Array.isArray(tags) && tags.length > 0) {
+      try {
+        const revalidated = [];
+        for (const t of tags) {
+          if (typeof t !== 'string' || !t.trim()) continue;
+          await revalidateTag(t.trim(), 'max');
+          revalidated.push(t.trim());
+        }
+        console.log(`✅ Successfully revalidated tags: ${revalidated.join(', ')}`);
+        return NextResponse.json({
+          revalidated: true,
+          type: 'tags',
+          tags: revalidated,
+          now: Date.now(),
+        });
+      } catch (error) {
+        console.error('❌ Error revalidating tags batch:', error);
+        return NextResponse.json(
+          { message: 'Error revalidating tags', error: error.message },
           { status: 500 }
         );
       }
